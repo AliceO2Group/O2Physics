@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file twoParticleCorrelationsMultSpher.cxx
 /// \brief Two-particle angular correlations in pp collisions at 13 TeV.
 ///        Structured in parallel with the AliRoot AliMESppColTask analysis.
 ///        MC truth level: McCollision + McParticles.
@@ -18,8 +19,8 @@
 ///                  direct normalisation (both per-trigger and per-pair).
 ///
 /// Pool structure (separate for MC generated and Reco reconstructed data):
-///   eventPools_MC[sphClass][zvtxBin][multBin]
-///   eventPools_Reco[sphClass][zvtxBin][multBin]
+///   eventPoolsMC[sphClass][zvtxBin][multBin]
+///   eventPoolsReco[sphClass][zvtxBin][multBin]
 ///   sphClass 0 : S_T in (0.0, 0.3]  — jetty
 ///   sphClass 1 : S_T in (0.3, 0.6]  — intermediate
 ///   sphClass 2 : S_T in (0.6, 1.0]  — isotropic
@@ -37,6 +38,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -51,12 +53,13 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-#include <TMath.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <deque>
 #include <memory>
 #include <string>
@@ -69,22 +72,22 @@ using namespace o2::framework::expressions;
 // ============================================================
 //  PID species
 // ============================================================
-enum PidSpecies { kPidUnidentified = 0,
-                  kPidPion,
-                  kPidKaon,
-                  kPidProton,
-                  kNPidSpecies };
-static constexpr std::array<const char*, kNPidSpecies> kPidNames{"unid", "pion", "kaon", "proton"};
+enum PidSpecies { PidUnidentified = 0,
+                  PidPion,
+                  PidKaon,
+                  PidProton,
+                  NPidSpecies };
+static constexpr std::array<const char*, NPidSpecies> PidNames{"unid", "pion", "kaon", "proton"};
 
 // ============================================================
 //  Sphericity classes
 // ============================================================
-static constexpr int nSphClasses = 4;
-static constexpr std::array<double, nSphClasses> kSphMax{0.3, 0.6, 1.0, 1.0};
-static constexpr std::array<const char*, nSphClasses> kSphLabels{"jetty", "intermediate", "isotropic", "all"};
+static constexpr int NSphClasses = 4;
+static constexpr std::array<double, NSphClasses> SphMax{0.3, 0.6, 1.0, 1.0};
+static constexpr std::array<const char*, NSphClasses> SphLabels{"jetty", "intermediate", "isotropic", "all"};
 
 // ============================================================
-struct myExampleTask {
+struct TwoParticleCorrelationsMultSpher {
 
   // ----------------------------------------------------------------
   //  Configurables
@@ -117,7 +120,7 @@ struct myExampleTask {
   // 2026-08-11; an earlier draft of this instruction conflated the two
   // into a single 2-sigma threshold, corrected here).
   Configurable<double> maxNSigmaPID{"maxNSigmaPID", 2.0, "Max combined N_sigma,PID for species selection (ALICE 2511.10399)"};
-  Configurable<double> maxNSigmaPIDAmbig{"maxNSigmaPIDAmbig", 3.0, "N_sigma,PID threshold for ambiguity rejection (>1 species below this -> kPidUnidentified)"};
+  Configurable<double> maxNSigmaPIDAmbig{"maxNSigmaPIDAmbig", 3.0, "N_sigma,PID threshold for ambiguity rejection (>1 species below this -> PidUnidentified)"};
 
   // Pre-2026-08-11 PID thresholds, restored (not reused for anything else)
   // so the legacy gating style below can be toggled back on without
@@ -156,24 +159,29 @@ struct myExampleTask {
   //  NOTE: no PID in pool — ME does not use PID
   // ----------------------------------------------------------------
   struct TrackSimple {
-    float phi;
-    float eta;
-    float pt;
-    int pdg; // PDG code: used only for SE sparse/TH2; 0 for reco
+    float phi = 0.f;
+    float eta = 0.f;
+    float pt = 0.f;
+    int pdg = 0; // PDG code: used only for SE sparse/TH2; 0 for reco
   };
 
   // ----------------------------------------------------------------
   //  Event class constants
   // ----------------------------------------------------------------
-  static constexpr int nMultBins = 6;
-  static constexpr int nZvtxBins = 5;
+  static constexpr float MaxValidNSigma = 100.f;  // larger |nSigma| means the detector had no signal (-999)
+  static constexpr float MinPtCombinedPid = 0.5f; // GeV/c, above this TPC+TOF are combined
+  static constexpr std::size_t MinTracksSphericity = 3;
+  static constexpr double Epsilon = 1e-12;
+  static constexpr double MinCharge = 0.1; // charged particle: |q| in units of e
+  static constexpr int NMultBins = 6;
+  static constexpr int NZvtxBins = 5;
   // Bin edges: bin i spans [edge[i], edge[i+1]); values outside [front, back) give -1 in findBin.
-  static constexpr std::array<double, nZvtxBins + 1> kZvtxEdges{-10., -5., -2.5, 2.5, 5., 10.};
-  static constexpr std::array<int, nMultBins + 1> kMultEdges{1, 10, 15, 20, 30, 46, 81};
+  static constexpr std::array<double, NZvtxBins + 1> ZvtxEdges{-10., -5., -2.5, 2.5, 5., 10.};
+  static constexpr std::array<int, NMultBins + 1> MultEdges{1, 10, 15, 20, 30, 46, 81};
 
   static std::string multLabel(int im)
   {
-    return std::to_string(kMultEdges[im]) + "-" + std::to_string(kMultEdges[im + 1] - 1);
+    return std::to_string(MultEdges[im]) + "-" + std::to_string(MultEdges[im + 1] - 1);
   }
 
   // ----------------------------------------------------------------
@@ -182,29 +190,29 @@ struct myExampleTask {
   //  [pidIdx][sphClass][zvtxBin][multBin] — per specie PID
   //    pidIdx: 0=pion, 1=kaon, 2=proton
   // ----------------------------------------------------------------
-  static constexpr int nPidCorr = 3; // pion, kaon, proton
-  static constexpr std::array<const char*, nPidCorr> kPidCorrNames{"pion", "kaon", "proton"};
+  static constexpr int NPidCorr = 3; // pion, kaon, proton
+  static constexpr std::array<const char*, NPidCorr> PidCorrNames{"pion", "kaon", "proton"};
   // PDG codes corrispondenti a pidIdx
   static int pidCorrPDG(int idx)
   {
     if (idx == 0) {
-      return 211;
+      return PDG_t::kPiPlus;
     }
     if (idx == 1) {
-      return 321;
+      return PDG_t::kKPlus;
     }
-    return 2212;
+    return PDG_t::kProton;
   }
   // Mappa PidSpecies -> pidIdx (-1 se non e' pion/kaon/proton)
   static int pidSpeciesToIdx(PidSpecies pid)
   {
-    if (pid == kPidPion) {
+    if (pid == PidPion) {
       return 0;
     }
-    if (pid == kPidKaon) {
+    if (pid == PidKaon) {
       return 1;
     }
-    if (pid == kPidProton) {
+    if (pid == PidProton) {
       return 2;
     }
     return -1;
@@ -212,11 +220,11 @@ struct myExampleTask {
 
   using EventPool = std::deque<std::vector<TrackSimple>>;
   // Pool "all" — separate per MC (generated) and Reco (reconstructed)
-  std::array<std::array<std::array<EventPool, nMultBins>, nZvtxBins>, nSphClasses> eventPools_MC;
-  std::array<std::array<std::array<EventPool, nMultBins>, nZvtxBins>, nSphClasses> eventPools_Reco;
+  std::array<std::array<std::array<EventPool, NMultBins>, NZvtxBins>, NSphClasses> eventPoolsMC;
+  std::array<std::array<std::array<EventPool, NMultBins>, NZvtxBins>, NSphClasses> eventPoolsReco;
   // Pool per specie PID (like-sign) — separate per MC e Reco
-  std::array<std::array<std::array<std::array<EventPool, nMultBins>, nZvtxBins>, nSphClasses>, nPidCorr> eventPoolsPID_MC;
-  std::array<std::array<std::array<std::array<EventPool, nMultBins>, nZvtxBins>, nSphClasses>, nPidCorr> eventPoolsPID_Reco;
+  std::array<std::array<std::array<std::array<EventPool, NMultBins>, NZvtxBins>, NSphClasses>, NPidCorr> eventPoolsPidMC;
+  std::array<std::array<std::array<std::array<EventPool, NMultBins>, NZvtxBins>, NSphClasses>, NPidCorr> eventPoolsPidReco;
 
   // ----------------------------------------------------------------
   //  Histogram registry + handles
@@ -224,26 +232,26 @@ struct myExampleTask {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // SE/ME TH2D "all": [sphClass][multBin] — MC e Reco separati
-  std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses> hSE_MC{};
-  std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses> hME_MC{};
-  std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses> hSE_Reco{};
-  std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses> hME_Reco{};
+  std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses> hSeMC{};
+  std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses> hMeMC{};
+  std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses> hSeReco{};
+  std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses> hMeReco{};
 
   // SE/ME TH2D like-sign per specie: [pidIdx][sphClass][multBin] — MC e Reco separati
-  std::array<std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses>, nPidCorr> hSEpid_MC{};
-  std::array<std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses>, nPidCorr> hMEpid_MC{};
-  std::array<std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses>, nPidCorr> hSEpid_Reco{};
-  std::array<std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses>, nPidCorr> hMEpid_Reco{};
+  std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr> hSePidMC{};
+  std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr> hMePidMC{};
+  std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr> hSePidReco{};
+  std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr> hMePidReco{};
 
   // Trigger counter: axes = mult bin (x) x sphClass (y) — MC e Reco separati
-  std::shared_ptr<TH2> hNtrig_MC;
-  std::shared_ptr<TH2> hNtrig_Reco;
-  std::array<std::shared_ptr<TH2>, nPidCorr> hNtrigPID_MC{};
-  std::array<std::shared_ptr<TH2>, nPidCorr> hNtrigPID_Reco{};
+  std::shared_ptr<TH2> hNtrigMC;
+  std::shared_ptr<TH2> hNtrigReco;
+  std::array<std::shared_ptr<TH2>, NPidCorr> hNtrigPidMC{};
+  std::array<std::shared_ptr<TH2>, NPidCorr> hNtrigPidReco{};
 
   // Per-mult sphericity — MC e Reco separati
-  std::array<std::shared_ptr<TH1>, nMultBins> hSphMult_MC{};
-  std::array<std::shared_ptr<TH1>, nMultBins> hSphMult_Reco{};
+  std::array<std::shared_ptr<TH1>, NMultBins> hSphMultMC{};
+  std::array<std::shared_ptr<TH1>, NMultBins> hSphMultReco{};
 
   // ----------------------------------------------------------------
   //  [DEBUG, TEMPORARY] Track-cut counter for processReco diagnostics.
@@ -251,7 +259,7 @@ struct myExampleTask {
   //        4=passed DCAz, 5=passed eta, 6=passed pt (selected).
   //  Remove once the empty-Reco-histograms issue is understood/fixed.
   // ----------------------------------------------------------------
-  std::shared_ptr<TH1> hTrackCutDebug_Reco;
+  std::shared_ptr<TH1> hTrackCutDebugReco;
 
   // ----------------------------------------------------------------
   //  PID confusion matrix (true species from PDG vs. tagged species from
@@ -263,7 +271,7 @@ struct myExampleTask {
   //  one or the other). See auto-memory / STATUS.md for the "rapid vs
   //  riguros" design discussion this came out of.
   // ----------------------------------------------------------------
-  std::shared_ptr<TH3> hPidConfusion_MC;
+  std::shared_ptr<TH3> hPidConfusionMC;
 
   // ----------------------------------------------------------------
   //  Helpers
@@ -273,13 +281,13 @@ struct myExampleTask {
   {
     switch (std::abs(pdg)) {
       case 211:
-        return kPidPion;
+        return PidPion;
       case 321:
-        return kPidKaon;
+        return PidKaon;
       case 2212:
-        return kPidProton;
+        return PidProton;
       default:
-        return kPidUnidentified;
+        return PidUnidentified;
     }
   }
 
@@ -299,7 +307,7 @@ struct myExampleTask {
   ///     required whenever available regardless of pT.
   ///
   /// legacySelection (what to do with hypotheses that pass the gate):
-  ///   false (default): reject the track outright (kPidUnidentified) if MORE
+  ///   false (default): reject the track outright (PidUnidentified) if MORE
   ///     THAN ONE hypothesis also falls below the looser ambiguity
   ///     threshold maxAmbig (3 sigma) -- this comparison always uses the
   ///     combined-quadrature N_sigma,PID, regardless of legacyGating, so
@@ -318,17 +326,17 @@ struct myExampleTask {
                            bool legacyGating, bool legacySelection) const
   {
     struct Hypo {
-      PidSpecies pid;
-      double nsTPC;
-      double nsTOF;
+      PidSpecies pid = PidUnidentified;
+      double nsTPC = 0.;
+      double nsTOF = 0.;
     };
-    const std::array<Hypo, 3> hypos{{{kPidPion, track.tpcNSigmaPi(), track.tofNSigmaPi()},
-                                     {kPidKaon, track.tpcNSigmaKa(), track.tofNSigmaKa()},
-                                     {kPidProton, track.tpcNSigmaPr(), track.tofNSigmaPr()}}};
+    const std::array<Hypo, 3> hypos{{{PidPion, track.tpcNSigmaPi(), track.tofNSigmaPi()},
+                                     {PidKaon, track.tpcNSigmaKa(), track.tofNSigmaKa()},
+                                     {PidProton, track.tpcNSigmaPr(), track.tofNSigmaPr()}}};
 
     // TOF unavailable -> nSigma returns -999; check with any species
-    bool hasTOF = (std::fabs(track.tofNSigmaPi()) < 100.f);
-    bool useCombined = (track.pt() > 0.5) && hasTOF; // only feeds the new-style gate
+    bool hasTOF = (std::fabs(track.tofNSigmaPi()) < MaxValidNSigma);
+    bool useCombined = (track.pt() > MinPtCombinedPid) && hasTOF; // only feeds the new-style gate
 
     auto passesGate = [&](const Hypo& h) {
       if (legacyGating) {
@@ -343,7 +351,7 @@ struct myExampleTask {
     if (legacySelection) {
       // Best-fit (min chi2) among hypotheses passing the gate -- no
       // ambiguity rejection (pre-2026-08-11 style).
-      PidSpecies best = kPidUnidentified;
+      PidSpecies best = PidUnidentified;
       double bestChi2 = 1e9;
       for (const auto& h : hypos) {
         if (!passesGate(h)) {
@@ -360,7 +368,7 @@ struct myExampleTask {
 
     // Ambiguity-rejection selection (current default style).
     int nBelowAmbig = 0;
-    PidSpecies selected = kPidUnidentified;
+    PidSpecies selected = PidUnidentified;
     for (const auto& h : hypos) {
       if (!passesGate(h)) {
         continue;
@@ -374,7 +382,7 @@ struct myExampleTask {
       selected = h.pid;
     }
     if (nBelowAmbig > 1) {
-      return kPidUnidentified; // ambiguous, reject
+      return PidUnidentified; // ambiguous, reject
     }
     return selected;
   }
@@ -383,12 +391,12 @@ struct myExampleTask {
   static double pidMass(PidSpecies pid)
   {
     switch (pid) {
-      case kPidPion:
-        return 0.13957;
-      case kPidKaon:
-        return 0.49368;
-      case kPidProton:
-        return 0.93827;
+      case PidPion:
+        return o2::constants::physics::MassPiPlus;
+      case PidKaon:
+        return o2::constants::physics::MassKPlus;
+      case PidProton:
+        return o2::constants::physics::MassProton;
       default:
         return 0.;
     }
@@ -402,8 +410,8 @@ struct myExampleTask {
     if (sph <= 0.) {
       return -1;
     }
-    for (int ic = 0; ic < nSphClasses - 1; ++ic) {
-      if (sph <= kSphMax[ic]) {
+    for (int ic = 0; ic < NSphClasses - 1; ++ic) {
+      if (sph <= SphMax[ic]) {
         return ic;
       }
     }
@@ -412,31 +420,31 @@ struct myExampleTask {
 
   static double computeSphericity(const std::vector<TrackSimple>& tracks)
   {
-    if (tracks.size() < 3) {
+    if (tracks.size() < MinTracksSphericity) {
       return -1.0;
     }
-    double Sxx = 0., Sxy = 0., Syy = 0.;
+    double sxx = 0., sxy = 0., syy = 0.;
     for (const auto& t : tracks) {
       double px = t.pt * std::cos(t.phi);
       double py = t.pt * std::sin(t.phi);
-      Sxx += px * px;
-      Sxy += px * py;
-      Syy += py * py;
+      sxx += px * px;
+      sxy += px * py;
+      syy += py * py;
     }
-    double tr = Sxx + Syy;
-    double disc = tr * tr - 4.0 * (Sxx * Syy - Sxy * Sxy);
+    double tr = sxx + syy;
+    double disc = tr * tr - 4.0 * (sxx * syy - sxy * sxy);
     if (disc < 0.) {
       disc = 0.;
     }
     double lambdaMin = (tr - std::sqrt(disc)) / 2.0;
-    if (tr < 1e-12) {
+    if (tr < Epsilon) {
       return -1.0;
     }
     return std::clamp(2.0 * lambdaMin / tr, 0.0, 1.0);
   }
 
   /// Compute rapidity from pT, eta and particle mass.
-  /// y = 0.5 * ln((E + pz) / (E - pz))
+  /// y = 0.5 * ln((energy + pz) / (energy - pz))
   /// For unidentified particles (mass <= 0), returns eta.
   static double computeRapidity(double pt, double eta, double mass)
   {
@@ -444,11 +452,11 @@ struct myExampleTask {
       return eta; // massless / unidentified -> y = eta
     }
     double pz = pt * std::sinh(eta);
-    double E = std::sqrt(mass * mass + pt * pt + pz * pz);
-    if (E <= std::fabs(pz) + 1e-12) {
+    double energy = std::sqrt(mass * mass + pt * pt + pz * pz);
+    if (energy <= std::fabs(pz) + Epsilon) {
       return eta; // safety
     }
-    return 0.5 * std::log((E + pz) / (E - pz));
+    return 0.5 * std::log((energy + pz) / (energy - pz));
   }
 
   // ----------------------------------------------------------------
@@ -459,8 +467,8 @@ struct myExampleTask {
     const AxisSpec axisZvtx{100, -15., 15., "z_{vtx} (cm)"};
     const AxisSpec axisMult{100, 0., 180., "N_{ch}"};
     const AxisSpec axisEta{30, -1.5, 1.5, "#eta"};
-    const AxisSpec axisPhi{60, 0., 2. * TMath::Pi(), "#phi"};
-    const AxisSpec axisDphi{30, -0.5 * TMath::Pi(), 1.5 * TMath::Pi(), "#Delta#phi"};
+    const AxisSpec axisPhi{60, 0., o2::constants::math::TwoPI, "#phi"};
+    const AxisSpec axisDphi{30, -o2::constants::math::PIHalf, o2::constants::math::PI + o2::constants::math::PIHalf, "#Delta#phi"};
     const AxisSpec axisDeta{32, -1.6, 1.6, "#Delta#eta"};
     // Reserved for a future rapidity-differentiated analysis -- unused
     // while the PID correlations run pseudorapidity-only (see
@@ -476,13 +484,13 @@ struct myExampleTask {
     //  Primeste referinte la toti membrii specifici canalului.
     // ----------------------------------------------------------------
     auto bookChannel = [&](const char* suf,
-                           std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses>& hSE_,
-                           std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses>& hME_,
-                           std::array<std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses>, nPidCorr>& hSEpid_,
-                           std::array<std::array<std::array<std::shared_ptr<TH2>, nMultBins>, nSphClasses>, nPidCorr>& hMEpid_,
-                           std::shared_ptr<TH2>& hNtrig_,
-                           std::array<std::shared_ptr<TH2>, nPidCorr>& hNtrigPID_,
-                           std::array<std::shared_ptr<TH1>, nMultBins>& hSphMult_) {
+                           std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>& hSE,
+                           std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>& hME,
+                           std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr>& hSEpid,
+                           std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr>& hMEpid,
+                           std::shared_ptr<TH2>& hNtrig,
+                           std::array<std::shared_ptr<TH2>, NPidCorr>& hNtrigPID,
+                           std::array<std::shared_ptr<TH1>, NMultBins>& hSphMult) {
       // QA
       // evSel bins: 1=read 2=zvtx 3=multBin 4=zvtxBin 5=leadPt 6=ST_valid 7=sphClass 8=SE_filled
       auto hQA = histos.add<TH1>(Form("evSel_%s", suf), Form("Event selection (%s)", suf), HistType::kTH1D, {{8, 0.5, 8.5}});
@@ -506,37 +514,37 @@ struct myExampleTask {
       histos.add(Form("sphericity_beforeCuts_%s", suf), Form("S_{T} (all evts with >=3 tracks, %s);S_{T};events", suf), kTH1D, {axisSph});
 
       // Per-mult sphericity
-      for (int im = 0; im < nMultBins; ++im) {
-        hSphMult_[im] = histos.add<TH1>(
+      for (int im = 0; im < NMultBins; ++im) {
+        hSphMult[im] = histos.add<TH1>(
           Form("sphericity_mult%d_%s", im, suf),
           Form("S_T [%s] (%s);S_{T};events", multLabel(im).c_str(), suf),
           HistType::kTH1D, {axisSph});
       }
 
       // Trigger counter TH2: x = multBin, y = sphClass
-      hNtrig_ = histos.add<TH2>(
-        Form("hNtrig_%s", suf),
+      hNtrig = histos.add<TH2>(
+        Form("hNtrig%s", suf),
         Form("N_{trig} (%s);mult bin;sph class", suf),
         HistType::kTH2D,
-        {{nMultBins, -0.5, static_cast<double>(nMultBins) - 0.5},
-         {nSphClasses, -0.5, static_cast<double>(nSphClasses) - 0.5}});
-      for (int im = 0; im < nMultBins; ++im) {
-        hNtrig_->GetXaxis()->SetBinLabel(im + 1, multLabel(im).c_str());
+        {{NMultBins, -0.5, static_cast<double>(NMultBins) - 0.5},
+         {NSphClasses, -0.5, static_cast<double>(NSphClasses) - 0.5}});
+      for (int im = 0; im < NMultBins; ++im) {
+        hNtrig->GetXaxis()->SetBinLabel(im + 1, multLabel(im).c_str());
       }
-      for (int ic = 0; ic < nSphClasses; ++ic) {
-        hNtrig_->GetYaxis()->SetBinLabel(ic + 1, kSphLabels[ic]);
+      for (int ic = 0; ic < NSphClasses; ++ic) {
+        hNtrig->GetYaxis()->SetBinLabel(ic + 1, SphLabels[ic]);
       }
 
       // SE/ME TH2D: [sphClass][multBin]
-      for (int ic = 0; ic < nSphClasses; ++ic) {
-        for (int im = 0; im < nMultBins; ++im) {
-          hSE_[ic][im] = histos.add<TH2>(
-            Form("hSE_%s_sph%d_mult%d", suf, ic, im),
-            Form("SE [%s][%s] (%s);#Delta#phi;#Delta#eta", kSphLabels[ic], multLabel(im).c_str(), suf),
+      for (int ic = 0; ic < NSphClasses; ++ic) {
+        for (int im = 0; im < NMultBins; ++im) {
+          hSE[ic][im] = histos.add<TH2>(
+            Form("hSE%s_sph%d_mult%d", suf, ic, im),
+            Form("SE [%s][%s] (%s);#Delta#phi;#Delta#eta", SphLabels[ic], multLabel(im).c_str(), suf),
             HistType::kTH2D, {axisDphi, axisDeta});
-          hME_[ic][im] = histos.add<TH2>(
-            Form("hME_%s_sph%d_mult%d", suf, ic, im),
-            Form("ME [%s][%s] (%s);#Delta#phi;#Delta#eta", kSphLabels[ic], multLabel(im).c_str(), suf),
+          hME[ic][im] = histos.add<TH2>(
+            Form("hME%s_sph%d_mult%d", suf, ic, im),
+            Form("ME [%s][%s] (%s);#Delta#phi;#Delta#eta", SphLabels[ic], multLabel(im).c_str(), suf),
             HistType::kTH2D, {axisDphi, axisDeta});
         }
       }
@@ -544,75 +552,75 @@ struct myExampleTask {
       // ---- SE/ME like-sign per specie PID: [pidIdx][sphClass][multBin] ---
       // Pseudorapidity-only regime (confirmed 2026-09-15, see Claude Code
       // auto-memory eventshape-pid-pseudorapidity-only): PID correlations
-      // use Delta-eta, same as the inclusive hSE_/hME_ histograms, NOT
+      // use Delta-eta, same as the inclusive hSE/hME histograms, NOT
       // Delta-y. The rapidity infrastructure (computeRapidity(), the
       // per-track y field, axisDy below) is kept for a future
       // higher-statistics rapidity-differentiated analysis -- it is
       // deliberately unused here for now, not dead code to remove.
-      for (int ip = 0; ip < nPidCorr; ++ip) {
-        for (int ic = 0; ic < nSphClasses; ++ic) {
-          for (int im = 0; im < nMultBins; ++im) {
-            hSEpid_[ip][ic][im] = histos.add<TH2>(
-              Form("hSE_%s_pid%d_sph%d_mult%d", suf, ip, ic, im),
+      for (int ip = 0; ip < NPidCorr; ++ip) {
+        for (int ic = 0; ic < NSphClasses; ++ic) {
+          for (int im = 0; im < NMultBins; ++im) {
+            hSEpid[ip][ic][im] = histos.add<TH2>(
+              Form("hSE%s_pid%d_sph%d_mult%d", suf, ip, ic, im),
               Form("SE %s--%s [%s][%s] (%s);#Delta#varphi;#Delta#eta",
-                   kPidCorrNames[ip], kPidCorrNames[ip], kSphLabels[ic], multLabel(im).c_str(), suf),
+                   PidCorrNames[ip], PidCorrNames[ip], SphLabels[ic], multLabel(im).c_str(), suf),
               HistType::kTH2D, {axisDphi, axisDeta});
-            hMEpid_[ip][ic][im] = histos.add<TH2>(
-              Form("hME_%s_pid%d_sph%d_mult%d", suf, ip, ic, im),
+            hMEpid[ip][ic][im] = histos.add<TH2>(
+              Form("hME%s_pid%d_sph%d_mult%d", suf, ip, ic, im),
               Form("ME %s--%s [%s][%s] (%s);#Delta#varphi;#Delta#eta",
-                   kPidCorrNames[ip], kPidCorrNames[ip], kSphLabels[ic], multLabel(im).c_str(), suf),
+                   PidCorrNames[ip], PidCorrNames[ip], SphLabels[ic], multLabel(im).c_str(), suf),
               HistType::kTH2D, {axisDphi, axisDeta});
           }
         }
         // Trigger counter per specie PID
-        hNtrigPID_[ip] = histos.add<TH2>(
-          Form("hNtrig_%s_pid%d", suf, ip),
-          Form("N_{trig} %s (%s);mult bin;sph class", kPidCorrNames[ip], suf),
+        hNtrigPID[ip] = histos.add<TH2>(
+          Form("hNtrig%s_pid%d", suf, ip),
+          Form("N_{trig} %s (%s);mult bin;sph class", PidCorrNames[ip], suf),
           HistType::kTH2D,
-          {{nMultBins, -0.5, static_cast<double>(nMultBins) - 0.5},
-           {nSphClasses, -0.5, static_cast<double>(nSphClasses) - 0.5}});
-        for (int im = 0; im < nMultBins; ++im) {
-          hNtrigPID_[ip]->GetXaxis()->SetBinLabel(im + 1, multLabel(im).c_str());
+          {{NMultBins, -0.5, static_cast<double>(NMultBins) - 0.5},
+           {NSphClasses, -0.5, static_cast<double>(NSphClasses) - 0.5}});
+        for (int im = 0; im < NMultBins; ++im) {
+          hNtrigPID[ip]->GetXaxis()->SetBinLabel(im + 1, multLabel(im).c_str());
         }
-        for (int ic = 0; ic < nSphClasses; ++ic) {
-          hNtrigPID_[ip]->GetYaxis()->SetBinLabel(ic + 1, kSphLabels[ic]);
+        for (int ic = 0; ic < NSphClasses; ++ic) {
+          hNtrigPID[ip]->GetYaxis()->SetBinLabel(ic + 1, SphLabels[ic]);
         }
       }
     };
 
     // Book histograms for MC (generated) channel
     bookChannel("MC",
-                hSE_MC, hME_MC, hSEpid_MC, hMEpid_MC,
-                hNtrig_MC, hNtrigPID_MC, hSphMult_MC);
+                hSeMC, hMeMC, hSePidMC, hMePidMC,
+                hNtrigMC, hNtrigPidMC, hSphMultMC);
 
     // Book histograms for Reco (reconstructed) channel
     bookChannel("Reco",
-                hSE_Reco, hME_Reco, hSEpid_Reco, hMEpid_Reco,
-                hNtrig_Reco, hNtrigPID_Reco, hSphMult_Reco);
+                hSeReco, hMeReco, hSePidReco, hMePidReco,
+                hNtrigReco, hNtrigPidReco, hSphMultReco);
 
     // [DEBUG, TEMPORARY] track-cut diagnostic counter for processReco
-    hTrackCutDebug_Reco = histos.add<TH1>(
+    hTrackCutDebugReco = histos.add<TH1>(
       "hTrackCutDebug_Reco",
       "Track cut flow (Reco, DEBUG);cut;tracks",
       HistType::kTH1D, {{6, 0.5, 6.5}});
-    hTrackCutDebug_Reco->GetXaxis()->SetBinLabel(1, "seen");
-    hTrackCutDebug_Reco->GetXaxis()->SetBinLabel(2, "passed isGlobalTrackWoDCA");
-    hTrackCutDebug_Reco->GetXaxis()->SetBinLabel(3, "passed DCAxy");
-    hTrackCutDebug_Reco->GetXaxis()->SetBinLabel(4, "passed DCAz");
-    hTrackCutDebug_Reco->GetXaxis()->SetBinLabel(5, "passed eta");
-    hTrackCutDebug_Reco->GetXaxis()->SetBinLabel(6, "passed pt (selected)");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(1, "seen");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(2, "passed isGlobalTrackWoDCA");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(3, "passed DCAxy");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(4, "passed DCAz");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(5, "passed eta");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(6, "passed pt (selected)");
 
     // PID confusion matrix (rapid contamination estimate, 2026-08-14) --
     // axes: pT, true species (PDG), tagged species (pidFromNSigma).
     // Species axis order matches PidSpecies: 0=unid,1=pion,2=kaon,3=proton.
-    const AxisSpec axisPidSpecies{static_cast<int>(kNPidSpecies), -0.5, static_cast<double>(kNPidSpecies) - 0.5, "species"};
-    hPidConfusion_MC = histos.add<TH3>(
+    const AxisSpec axisPidSpecies{static_cast<int>(NPidSpecies), -0.5, static_cast<double>(NPidSpecies) - 0.5, "species"};
+    hPidConfusionMC = histos.add<TH3>(
       "hPidConfusion_MC",
       "True vs. tagged PID species (MC);p_{T} (GeV/c);true species;tagged species",
       HistType::kTH3D, {axisPt2, axisPidSpecies, axisPidSpecies});
-    for (int ip = 0; ip < static_cast<int>(kNPidSpecies); ++ip) {
-      hPidConfusion_MC->GetYaxis()->SetBinLabel(ip + 1, kPidNames[ip]);
-      hPidConfusion_MC->GetZaxis()->SetBinLabel(ip + 1, kPidNames[ip]);
+    for (int ip = 0; ip < static_cast<int>(NPidSpecies); ++ip) {
+      hPidConfusionMC->GetYaxis()->SetBinLabel(ip + 1, PidNames[ip]);
+      hPidConfusionMC->GetZaxis()->SetBinLabel(ip + 1, PidNames[ip]);
     }
   }
 
@@ -633,7 +641,7 @@ struct myExampleTask {
 
     // ---- one-pass: build selTracks + find leading ---------------
     std::vector<TrackSimple> selTracks;
-    selTracks.reserve(kMultEdges.back() - 1);
+    selTracks.reserve(MultEdges.back() - 1);
     int leadIdx = -1;
     double pTlead = -1., phiLead = 0., etaLead = 0.;
 
@@ -642,7 +650,7 @@ struct myExampleTask {
         continue;
       }
       auto* pdgPtr = pdg->GetParticle(p.pdgCode());
-      if (!pdgPtr || std::fabs(pdgPtr->Charge()) < 0.1) {
+      if (!pdgPtr || std::fabs(pdgPtr->Charge()) < MinCharge) {
         continue;
       }
       if (std::fabs(p.eta()) > maxEta) {
@@ -659,10 +667,10 @@ struct myExampleTask {
       // (pion/kaon/proton) -- the all-species channel (hSE/hME) keeps the
       // track regardless, gated only by |eta| < maxEta above. Clean way to
       // do this: keep pdg for all-species bookkeeping, but zero it (->
-      // kPidUnidentified via pidFromPDG) when the rapidity cut fails, so the
+      // PidUnidentified via pidFromPDG) when the rapidity cut fails, so the
       // track contributes to hSE/hME but not hSEpid/hMEpid.
       int pdgForPID = p.pdgCode();
-      if (applyRapidityCutPID && pidFromPDG(pdgForPID) != kPidUnidentified && std::fabs(rap) > maxRapPID) {
+      if (applyRapidityCutPID && pidFromPDG(pdgForPID) != PidUnidentified && std::fabs(rap) > maxRapPID) {
         pdgForPID = 0;
       }
 
@@ -684,13 +692,13 @@ struct myExampleTask {
     const int nch = static_cast<int>(selTracks.size());
     histos.fill(HIST("multHist_MC"), nch);
 
-    const int mBin = o2::analysis::findBin(&kMultEdges, nch);
+    const int mBin = o2::analysis::findBin(&MultEdges, nch);
     if (mBin < 0) {
       return;
     }
     histos.fill(HIST("evSel_MC"), 3);
 
-    const int zBin = o2::analysis::findBin(&kZvtxEdges, zvtx);
+    const int zBin = o2::analysis::findBin(&ZvtxEdges, zvtx);
     if (zBin < 0) {
       return;
     }
@@ -717,7 +725,7 @@ struct myExampleTask {
     }
     histos.fill(HIST("evSel_MC"), 6);
     histos.fill(HIST("sphericity_MC"), sph);
-    hSphMult_MC[mBin]->Fill(sph);
+    hSphMultMC[mBin]->Fill(sph);
 
     const int sphCls = sphClass(sph); // 0,1,2 or -1
     if (sphCls < 0) {
@@ -728,8 +736,8 @@ struct myExampleTask {
     const PidSpecies pidLead = pidFromPDG(selTracks[leadIdx].pdg);
 
     // ---- trigger counter ----------------------------------------
-    hNtrig_MC->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
-    hNtrig_MC->Fill(static_cast<double>(mBin), static_cast<double>((nSphClasses - 1))); // "all"
+    hNtrigMC->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
+    hNtrigMC->Fill(static_cast<double>(mBin), static_cast<double>((NSphClasses - 1))); // "all"
 
     // ================================================================
     //  SAME-EVENT correlations
@@ -755,9 +763,9 @@ struct myExampleTask {
       const double deta = etaLead - assoc.eta;
 
       // TH2D SE: specific sph class (uses Delta-eta)
-      hSE_MC[sphCls][mBin]->Fill(dphi, deta);
+      hSeMC[sphCls][mBin]->Fill(dphi, deta);
       // TH2D SE: "all" class (uses Delta-eta)
-      hSE_MC[nSphClasses - 1][mBin]->Fill(dphi, deta);
+      hSeMC[NSphClasses - 1][mBin]->Fill(dphi, deta);
 
       // SE like-sign: fill solo se trigger e associato sono la stessa specie
       // Uses Delta-eta (pseudorapidity-only regime, see
@@ -765,8 +773,8 @@ struct myExampleTask {
       int pidLeadIdx = pidSpeciesToIdx(pidLead);
       int pidAssocIdx = pidSpeciesToIdx(pidAssoc);
       if (pidLeadIdx >= 0 && pidLeadIdx == pidAssocIdx) {
-        hSEpid_MC[pidLeadIdx][sphCls][mBin]->Fill(dphi, deta);
-        hSEpid_MC[pidLeadIdx][nSphClasses - 1][mBin]->Fill(dphi, deta);
+        hSePidMC[pidLeadIdx][sphCls][mBin]->Fill(dphi, deta);
+        hSePidMC[pidLeadIdx][NSphClasses - 1][mBin]->Fill(dphi, deta);
       }
 
       seHasPairs = true;
@@ -775,11 +783,11 @@ struct myExampleTask {
       histos.fill(HIST("evSel_MC"), 8);
     }
 
-    // ---- hNtrig_MC per specie PID leading --------------------------
+    // ---- hNtrigMC per specie PID leading --------------------------
     int pidLeadIdx = pidSpeciesToIdx(pidLead);
     if (pidLeadIdx >= 0) {
-      hNtrigPID_MC[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
-      hNtrigPID_MC[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>((nSphClasses - 1)));
+      hNtrigPidMC[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
+      hNtrigPidMC[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>((NSphClasses - 1)));
     }
 
     // ================================================================
@@ -787,7 +795,7 @@ struct myExampleTask {
     // ================================================================
     // Pool "all" — specific sph
     {
-      auto& pool = eventPools_MC[sphCls][zBin][mBin];
+      auto& pool = eventPoolsMC[sphCls][zBin][mBin];
       pool.push_back(selTracks);
       if (static_cast<int>(pool.size()) > mixPoolSize) {
         pool.pop_front();
@@ -795,7 +803,7 @@ struct myExampleTask {
     }
     // Pool "all" — all sph
     {
-      auto& poolAll = eventPools_MC[nSphClasses - 1][zBin][mBin];
+      auto& poolAll = eventPoolsMC[NSphClasses - 1][zBin][mBin];
       poolAll.push_back(selTracks);
       if (static_cast<int>(poolAll.size()) > mixPoolSize) {
         poolAll.pop_front();
@@ -803,7 +811,7 @@ struct myExampleTask {
     }
 
     // Pool per specie PID — contiene solo i track di quella specie
-    for (int ip = 0; ip < nPidCorr; ++ip) {
+    for (int ip = 0; ip < NPidCorr; ++ip) {
       // Costruisci un vettore con solo i track della specie ip
       std::vector<TrackSimple> pidTracks;
       for (const auto& t : selTracks) {
@@ -816,7 +824,7 @@ struct myExampleTask {
       }
       // Specific sph pool
       {
-        auto& pool = eventPoolsPID_MC[ip][sphCls][zBin][mBin];
+        auto& pool = eventPoolsPidMC[ip][sphCls][zBin][mBin];
         pool.push_back(pidTracks);
         if (static_cast<int>(pool.size()) > mixPoolSize) {
           pool.pop_front();
@@ -824,7 +832,7 @@ struct myExampleTask {
       }
       // "all" sph pool
       {
-        auto& pool = eventPoolsPID_MC[ip][nSphClasses - 1][zBin][mBin];
+        auto& pool = eventPoolsPidMC[ip][NSphClasses - 1][zBin][mBin];
         pool.push_back(pidTracks);
         if (static_cast<int>(pool.size()) > mixPoolSize) {
           pool.pop_front();
@@ -836,7 +844,7 @@ struct myExampleTask {
     //  MIXED-EVENT "all"
     // ================================================================
     auto doMixing = [&](int poolIdx) {
-      const auto& pool = eventPools_MC[poolIdx][zBin][mBin];
+      const auto& pool = eventPoolsMC[poolIdx][zBin][mBin];
       const int nEvts = static_cast<int>(pool.size()) - 1;
       for (int ie = 0; ie < nEvts; ++ie) {
         for (const auto& tr : pool[ie]) {
@@ -848,13 +856,13 @@ struct myExampleTask {
           }
           const double dphi = RecoDecay::constrainAngle(phiLead - tr.phi, -o2::constants::math::PIHalf);
           const double deta = etaLead - tr.eta;
-          hME_MC[poolIdx][mBin]->Fill(dphi, deta);
+          hMeMC[poolIdx][mBin]->Fill(dphi, deta);
         }
       }
     };
 
     doMixing(sphCls);
-    doMixing(nSphClasses - 1);
+    doMixing(NSphClasses - 1);
 
     // ================================================================
     //  MIXED-EVENT like-sign per specie PID
@@ -865,7 +873,7 @@ struct myExampleTask {
     // ================================================================
     if (pidLeadIdx >= 0) {
       auto doMixingPID = [&](int poolIdx) {
-        const auto& pool = eventPoolsPID_MC[pidLeadIdx][poolIdx][zBin][mBin];
+        const auto& pool = eventPoolsPidMC[pidLeadIdx][poolIdx][zBin][mBin];
         const int nEvts = static_cast<int>(pool.size()) - 1;
         for (int ie = 0; ie < nEvts; ++ie) {
           for (const auto& tr : pool[ie]) {
@@ -877,15 +885,15 @@ struct myExampleTask {
             }
             const double dphi = RecoDecay::constrainAngle(phiLead - tr.phi, -o2::constants::math::PIHalf);
             const double detaPID = etaLead - tr.eta;
-            hMEpid_MC[pidLeadIdx][poolIdx][mBin]->Fill(dphi, detaPID);
+            hMePidMC[pidLeadIdx][poolIdx][mBin]->Fill(dphi, detaPID);
           }
         }
       };
       doMixingPID(sphCls);
-      doMixingPID(nSphClasses - 1);
+      doMixingPID(NSphClasses - 1);
     }
   }
-  PROCESS_SWITCH(myExampleTask, processMC, "Process MC truth", true);
+  PROCESS_SWITCH(TwoParticleCorrelationsMultSpher, processMC, "Process MC truth", true);
 
   // ================================================================
   //  processReco — reconstructed data (Collision + Tracks)
@@ -913,38 +921,38 @@ struct myExampleTask {
 
     // ---- one-pass: build selTracks + find leading ---------------
     std::vector<TrackSimple> selTracks;
-    selTracks.reserve(kMultEdges.back() - 1);
+    selTracks.reserve(MultEdges.back() - 1);
     int leadIdx = -1;
     double pTlead = -1., phiLead = 0., etaLead = 0.;
 
     for (const auto& track : tracks) {
-      hTrackCutDebug_Reco->Fill(1); // seen
+      hTrackCutDebugReco->Fill(1); // seen
 
       // Quality selection: global track without DCA (apply DCA separately)
       if (!track.isGlobalTrackWoDCA()) {
         continue;
       }
-      hTrackCutDebug_Reco->Fill(2); // passed isGlobalTrackWoDCA
+      hTrackCutDebugReco->Fill(2); // passed isGlobalTrackWoDCA
 
       // DCA cuts
       if (std::fabs(track.dcaXY()) > maxDcaXY) {
         continue;
       }
-      hTrackCutDebug_Reco->Fill(3); // passed DCAxy
+      hTrackCutDebugReco->Fill(3); // passed DCAxy
       if (std::fabs(track.dcaZ()) > maxDcaZ) {
         continue;
       }
-      hTrackCutDebug_Reco->Fill(4); // passed DCAz
+      hTrackCutDebugReco->Fill(4); // passed DCAz
 
       // Kinematic cuts (same as MC)
       if (std::fabs(track.eta()) > maxEta) {
         continue;
       }
-      hTrackCutDebug_Reco->Fill(5); // passed eta
+      hTrackCutDebugReco->Fill(5); // passed eta
       if (track.pt() < minAssocPt) {
         continue;
       }
-      hTrackCutDebug_Reco->Fill(6); // passed pt (selected)
+      hTrackCutDebugReco->Fill(6); // passed pt (selected)
 
       // PID from nSigma (combined TPC+TOF, ALICE 2511.10399, unless the
       // legacy flags below switch to pre-2026-08-11 gating/selection)
@@ -957,8 +965,8 @@ struct myExampleTask {
       // |y| < maxRapPID cut applies ONLY to PID-identified species -- see
       // matching comment in processMC. Track stays in selTracks either way
       // (all-species channel unaffected); only the PID assignment is reset.
-      if (applyRapidityCutPID && pid != kPidUnidentified && std::fabs(rap) > maxRapPID) {
-        pid = kPidUnidentified;
+      if (applyRapidityCutPID && pid != PidUnidentified && std::fabs(rap) > maxRapPID) {
+        pid = PidUnidentified;
       }
 
       // pdg = 0 for reco (no MC truth); store sign for future like/unlike-sign
@@ -966,16 +974,8 @@ struct myExampleTask {
       selTracks.push_back({static_cast<float>(track.phi()), static_cast<float>(track.eta()), static_cast<float>(track.pt()), 0});
       // Store PID info in pdg field as signed pidIdx for later use:
       //   sign(track.sign()) * (211 for pion, 321 for kaon, 2212 for proton, 0 for unid)
-      int pdgLike = 0;
-      if (pid == kPidPion) {
-        pdgLike = 211;
-      }
-      if (pid == kPidKaon) {
-        pdgLike = 321;
-      }
-      if (pid == kPidProton) {
-        pdgLike = 2212;
-      }
+      const int pidIdx = pidSpeciesToIdx(pid);
+      const int pdgLike = pidIdx >= 0 ? pidCorrPDG(pidIdx) : 0;
       selTracks.back().pdg = track.sign() * pdgLike;
 
       histos.fill(HIST("etaHistogram_Reco"), track.eta());
@@ -993,13 +993,13 @@ struct myExampleTask {
     const int nch = static_cast<int>(selTracks.size());
     histos.fill(HIST("multHist_Reco"), nch);
 
-    const int mBin = o2::analysis::findBin(&kMultEdges, nch);
+    const int mBin = o2::analysis::findBin(&MultEdges, nch);
     if (mBin < 0) {
       return;
     }
     histos.fill(HIST("evSel_Reco"), 3);
 
-    const int zBin = o2::analysis::findBin(&kZvtxEdges, zvtx);
+    const int zBin = o2::analysis::findBin(&ZvtxEdges, zvtx);
     if (zBin < 0) {
       return;
     }
@@ -1025,7 +1025,7 @@ struct myExampleTask {
     }
     histos.fill(HIST("evSel_Reco"), 6);
     histos.fill(HIST("sphericity_Reco"), sph);
-    hSphMult_Reco[mBin]->Fill(sph);
+    hSphMultReco[mBin]->Fill(sph);
 
     const int sphCls = sphClass(sph);
     if (sphCls < 0) {
@@ -1036,8 +1036,8 @@ struct myExampleTask {
     const PidSpecies pidLead = pidFromPDG(selTracks[leadIdx].pdg);
 
     // ---- trigger counter ----------------------------------------
-    hNtrig_Reco->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
-    hNtrig_Reco->Fill(static_cast<double>(mBin), static_cast<double>((nSphClasses - 1)));
+    hNtrigReco->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
+    hNtrigReco->Fill(static_cast<double>(mBin), static_cast<double>((NSphClasses - 1)));
 
     // ================================================================
     //  SAME-EVENT correlations (identical logic to processMC)
@@ -1063,16 +1063,16 @@ struct myExampleTask {
       const double deta = etaLead - assoc.eta;
 
       // All-species SE (Delta-eta)
-      hSE_Reco[sphCls][mBin]->Fill(dphi, deta);
-      hSE_Reco[nSphClasses - 1][mBin]->Fill(dphi, deta);
+      hSeReco[sphCls][mBin]->Fill(dphi, deta);
+      hSeReco[NSphClasses - 1][mBin]->Fill(dphi, deta);
 
       // PID SE — same species, Delta-eta (pseudorapidity-only regime, see
       // eventshape-pid-pseudorapidity-only auto-memory)
       int pidLeadIdx = pidSpeciesToIdx(pidLead);
       int pidAssocIdx = pidSpeciesToIdx(pidAssoc);
       if (pidLeadIdx >= 0 && pidLeadIdx == pidAssocIdx) {
-        hSEpid_Reco[pidLeadIdx][sphCls][mBin]->Fill(dphi, deta);
-        hSEpid_Reco[pidLeadIdx][nSphClasses - 1][mBin]->Fill(dphi, deta);
+        hSePidReco[pidLeadIdx][sphCls][mBin]->Fill(dphi, deta);
+        hSePidReco[pidLeadIdx][NSphClasses - 1][mBin]->Fill(dphi, deta);
       }
 
       seHasPairs = true;
@@ -1081,32 +1081,32 @@ struct myExampleTask {
       histos.fill(HIST("evSel_Reco"), 8);
     }
 
-    // ---- hNtrig_Reco per specie PID leading --------------------------
+    // ---- hNtrigReco per specie PID leading --------------------------
     int pidLeadIdx = pidSpeciesToIdx(pidLead);
     if (pidLeadIdx >= 0) {
-      hNtrigPID_Reco[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
-      hNtrigPID_Reco[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>((nSphClasses - 1)));
+      hNtrigPidReco[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
+      hNtrigPidReco[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>((NSphClasses - 1)));
     }
 
     // ================================================================
     //  Update pools AFTER SE (identical to processMC)
     // ================================================================
     {
-      auto& pool = eventPools_Reco[sphCls][zBin][mBin];
+      auto& pool = eventPoolsReco[sphCls][zBin][mBin];
       pool.push_back(selTracks);
       if (static_cast<int>(pool.size()) > mixPoolSize) {
         pool.pop_front();
       }
     }
     {
-      auto& poolAll = eventPools_Reco[nSphClasses - 1][zBin][mBin];
+      auto& poolAll = eventPoolsReco[NSphClasses - 1][zBin][mBin];
       poolAll.push_back(selTracks);
       if (static_cast<int>(poolAll.size()) > mixPoolSize) {
         poolAll.pop_front();
       }
     }
 
-    for (int ip = 0; ip < nPidCorr; ++ip) {
+    for (int ip = 0; ip < NPidCorr; ++ip) {
       std::vector<TrackSimple> pidTracks;
       for (const auto& t : selTracks) {
         if (pidSpeciesToIdx(pidFromPDG(t.pdg)) == ip) {
@@ -1117,14 +1117,14 @@ struct myExampleTask {
         continue;
       }
       {
-        auto& pool = eventPoolsPID_Reco[ip][sphCls][zBin][mBin];
+        auto& pool = eventPoolsPidReco[ip][sphCls][zBin][mBin];
         pool.push_back(pidTracks);
         if (static_cast<int>(pool.size()) > mixPoolSize) {
           pool.pop_front();
         }
       }
       {
-        auto& pool = eventPoolsPID_Reco[ip][nSphClasses - 1][zBin][mBin];
+        auto& pool = eventPoolsPidReco[ip][NSphClasses - 1][zBin][mBin];
         pool.push_back(pidTracks);
         if (static_cast<int>(pool.size()) > mixPoolSize) {
           pool.pop_front();
@@ -1136,7 +1136,7 @@ struct myExampleTask {
     //  MIXED-EVENT "all" (Delta-eta)
     // ================================================================
     auto doMixing = [&](int poolIdx) {
-      const auto& pool = eventPools_Reco[poolIdx][zBin][mBin];
+      const auto& pool = eventPoolsReco[poolIdx][zBin][mBin];
       const int nEvts = static_cast<int>(pool.size()) - 1;
       for (int ie = 0; ie < nEvts; ++ie) {
         for (const auto& tr : pool[ie]) {
@@ -1148,13 +1148,13 @@ struct myExampleTask {
           }
           const double dphi = RecoDecay::constrainAngle(phiLead - tr.phi, -o2::constants::math::PIHalf);
           const double deta = etaLead - tr.eta;
-          hME_Reco[poolIdx][mBin]->Fill(dphi, deta);
+          hMeReco[poolIdx][mBin]->Fill(dphi, deta);
         }
       }
     };
 
     doMixing(sphCls);
-    doMixing(nSphClasses - 1);
+    doMixing(NSphClasses - 1);
 
     // ================================================================
     //  MIXED-EVENT PID (Delta-eta, pseudorapidity-only regime, see
@@ -1162,7 +1162,7 @@ struct myExampleTask {
     // ================================================================
     if (pidLeadIdx >= 0) {
       auto doMixingPID = [&](int poolIdx) {
-        const auto& pool = eventPoolsPID_Reco[pidLeadIdx][poolIdx][zBin][mBin];
+        const auto& pool = eventPoolsPidReco[pidLeadIdx][poolIdx][zBin][mBin];
         const int nEvts = static_cast<int>(pool.size()) - 1;
         for (int ie = 0; ie < nEvts; ++ie) {
           for (const auto& tr : pool[ie]) {
@@ -1174,19 +1174,19 @@ struct myExampleTask {
             }
             const double dphi = RecoDecay::constrainAngle(phiLead - tr.phi, -o2::constants::math::PIHalf);
             const double detaPID = etaLead - tr.eta;
-            hMEpid_Reco[pidLeadIdx][poolIdx][mBin]->Fill(dphi, detaPID);
+            hMePidReco[pidLeadIdx][poolIdx][mBin]->Fill(dphi, detaPID);
           }
         }
       };
       doMixingPID(sphCls);
-      doMixingPID(nSphClasses - 1);
+      doMixingPID(NSphClasses - 1);
     }
   }
-  PROCESS_SWITCH(myExampleTask, processReco, "Process reconstructed data", false);
+  PROCESS_SWITCH(TwoParticleCorrelationsMultSpher, processReco, "Process reconstructed data", false);
 
   // ----------------------------------------------------------------
   //  processMCConfusion -- "rapid" PID contamination estimate, requested
-  //  2026-08-14. Fills hPidConfusion_MC (pT, true species, tagged
+  //  2026-08-14. Fills hPidConfusionMC (pT, true species, tagged
   //  species) on MC only -- needs BOTH the truth PDG (via McTrackLabels)
   //  AND the reconstructed track's nSigma values on the SAME track,
   //  which neither processMC (truth only) nor processReco (no truth
@@ -1217,7 +1217,7 @@ struct myExampleTask {
         continue;
       }
       auto* pdgPtr = pdg->GetParticle(mcPart.pdgCode());
-      if (!pdgPtr || std::fabs(pdgPtr->Charge()) < 0.1) {
+      if (!pdgPtr || std::fabs(pdgPtr->Charge()) < MinCharge) {
         continue;
       }
 
@@ -1246,23 +1246,23 @@ struct myExampleTask {
       // effect on this matrix (found 2026-08-14, comparing Phase 1
       // rapidityOnly against baseline: identical confusion-matrix numbers
       // despite different processReco yields, before this fix).
-      if (applyRapidityCutPID && taggedPid != kPidUnidentified) {
+      if (applyRapidityCutPID && taggedPid != PidUnidentified) {
         double tagMass = pidMass(taggedPid);
         double tagRap = computeRapidity(track.pt(), track.eta(), tagMass);
         if (std::fabs(tagRap) > maxRapPID) {
-          taggedPid = kPidUnidentified;
+          taggedPid = PidUnidentified;
         }
       }
 
       histos.fill(HIST("hPidConfusion_MC"), track.pt(), static_cast<double>(truePid), static_cast<double>(taggedPid));
     }
   }
-  PROCESS_SWITCH(myExampleTask, processMCConfusion, "Rapid PID contamination estimate: true (PDG) vs tagged (nSigma) species confusion matrix, MC only", false);
+  PROCESS_SWITCH(TwoParticleCorrelationsMultSpher, processMCConfusion, "Rapid PID contamination estimate: true (PDG) vs tagged (nSigma) species confusion matrix, MC only", false);
 
 }; // end struct
 
 // ----------------------------------------------------------------
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<myExampleTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TwoParticleCorrelationsMultSpher>(cfgc)};
 }
