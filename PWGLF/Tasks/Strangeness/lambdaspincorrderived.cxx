@@ -59,6 +59,42 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+template <typename Container, typename SelectionFunc>
+static std::vector<int64_t> getCleanCandidateIndices(
+  const Container& candidates,
+  SelectionFunc&& passSelection)
+{
+  std::vector<int64_t> selected;
+  selected.reserve(candidates.size());
+
+  for (auto const& c : candidates) {
+    if (passSelection(c)) {
+      selected.push_back(c.globalIndex());
+    }
+  }
+
+  std::vector<bool> dirty(selected.size(), false);
+  for (size_t i = 0; i < selected.size(); ++i) {
+    for (size_t j = i + 1; j < selected.size(); ++j) {
+      auto a = candidates.iteratorAt(selected[i]);
+      auto b = candidates.iteratorAt(selected[j]);
+      if (hasSharedDaughters(a, b)) {
+        dirty[i] = true;
+        dirty[j] = true;
+      }
+    }
+  }
+
+  std::vector<int64_t> clean;
+  clean.reserve(selected.size());
+  for (size_t i = 0; i < selected.size(); ++i) {
+    if (!dirty[i]) {
+      clean.push_back(selected[i]);
+    }
+  }
+  return clean;
+}
+
 static inline double getKStar(
   const ROOT::Math::PtEtaPhiMVector& p1,
   const ROOT::Math::PtEtaPhiMVector& p2)
@@ -350,7 +386,18 @@ struct lambdaspincorrderived {
     Configurable<float> dcaPion{"dcaPion", 0.2, "DCA Pion"};
     Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
     Configurable<float> dcaV0ToPV{"dcaV0ToPV", 1.2, "DCA V0 to PV cut on lambda"};
-    Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.8, "Eta cut on mix event buffer"};
+    Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.5, "Eta cut on mix event buffer"};
+
+    // TPC crossed rows
+    Configurable<float> minTpcNClsCrossedRows{"minTpcNClsCrossedRows", 70.f, "Minimum TPC crossed rows for daughter"};
+
+    // ctau (lifetime)
+    Configurable<float> maxCtau{"maxCtau", 30.f, "Maximum ctau of Lambda candidate (cm)"};
+
+    // TPC nsigma
+    Configurable<float> maxTpcNsigma{"maxTpcNsigma", 4.f, "Maximum |TPC nsigma| for Lambda daughters"};
+
+    Configurable<float> confK0sMassWindow{"confK0sMassWindow", 0.01, "K0s competing mass rejection window (GeV/c2)"};
 
   } v0Configurations;
 
@@ -543,6 +590,8 @@ struct lambdaspincorrderived {
       histos.add("deltaPhiMix", "deltaPhiMix", HistType::kTH1D, {{72, -TMath::Pi(), TMath::Pi()}}, true);
       histos.add("ptCent", "ptCent", HistType::kTH2D, {{100, 0.0, 10.0}, {8, 0.0, 80.0}}, true);
       histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
+      histos.add("hNMEperSE_leg1", "ME replacements per SE pair, leg1", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
+      histos.add("hNMEperSE_leg2", "ME replacements per SE pair, leg2", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
     }
 
     if (fillHistConfig.fillWeightQAHistos) {
@@ -858,6 +907,34 @@ struct lambdaspincorrderived {
     if (candidate.lambdaPt() > ptMax) {
       return false;
     }
+
+    // additional cuts
+    if (candidate.v0Status() == 0 && (std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma || std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma)) {
+      return false;
+    }
+    if (candidate.v0Status() == 1 && (std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma || std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma)) {
+      return false;
+    }
+
+    // ---- K0s competing mass rejection ----
+    if (std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
+      return false;
+    }
+
+    /*
+    if (candidate.tpcPosNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows ) {
+      return false;
+    }
+
+    if (candidate.tpcNegNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows ) {
+      return false;
+    }
+
+    if (candidate.ctau() > v0Configurations.maxCtau ) {
+      return false;
+    }
+  */
+
     return true;
   }
 
@@ -1749,6 +1826,744 @@ struct lambdaspincorrderived {
   }
   PROCESS_SWITCH(lambdaspincorrderived, processData, "Process data", true);
 
+  void processDataShareDaughter(EventCandidates::iterator const& collision, AllTrackCandidates const& V0s)
+  {
+    auto centrality = collision.cent();
+
+    // ------------------------------------------------------------
+    // Candidate-level shared-daughter rejection
+    //
+    // First collect all candidates in this event that pass selectionV0,
+    // then flag every candidate that shares a daughter track with any
+    // other selected candidate. Only candidates that are not flagged
+    // are kept for the subsequent SE pairing.
+    //
+    // This corresponds to the lambdaSharingDauFlag + trueLambdaFlag
+    // approach used in Subhadeep Roy's analysis: a candidate that
+    // shares a daughter track is removed entirely, rather than only
+    // vetoing the specific pair that shares the track.
+    //
+    // Implementation note: we store index() (not globalIndex()) because
+    // V0s.iteratorAt() expects the row index within the current table.
+    // ------------------------------------------------------------
+    std::vector<int64_t> selected;
+    selected.reserve(V0s.size());
+
+    for (auto const& v0 : V0s) {
+      if (selectionV0(v0)) {
+        selected.push_back(v0.index());
+      }
+    }
+
+    std::vector<bool> isDirty(selected.size(), false);
+    for (size_t i = 0; i < selected.size(); ++i) {
+      for (size_t j = i + 1; j < selected.size(); ++j) {
+        auto a = V0s.iteratorAt(static_cast<uint64_t>(selected[i]));
+        auto b = V0s.iteratorAt(static_cast<uint64_t>(selected[j]));
+        if (hasSharedDaughters(a, b)) {
+          isDirty[i] = true;
+          isDirty[j] = true;
+        }
+      }
+    }
+
+    std::vector<int64_t> clean;
+    clean.reserve(selected.size());
+    for (size_t i = 0; i < selected.size(); ++i) {
+      if (!isDirty[i]) {
+        clean.push_back(selected[i]);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // SE pairing on clean candidates only
+    // ------------------------------------------------------------
+    for (size_t i = 0; i < clean.size(); ++i) {
+      const auto& v0 = V0s.iteratorAt(static_cast<uint64_t>(clean[i]));
+
+      if (fillHistConfig.fillBasicQAHistos) {
+        histos.fill(HIST("hPtRadiusV0"), v0.lambdaPt(), v0.v0Radius());
+      }
+      if (fillHistConfig.fillBasicQAHistos) {
+        histos.fill(HIST("ptCent"), v0.lambdaPt(), centrality);
+      }
+      if (fillHistConfig.fillBasicQAHistos) {
+        histos.fill(HIST("etaCent"), v0.lambdaEta(), centrality);
+      }
+
+      proton = ROOT::Math::PtEtaPhiMVector(v0.protonPt(), v0.protonEta(), v0.protonPhi(),
+                                           o2::constants::physics::MassProton);
+      lambda = ROOT::Math::PtEtaPhiMVector(v0.lambdaPt(), v0.lambdaEta(), v0.lambdaPhi(),
+                                           v0.lambdaMass());
+
+      const double phi = RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F, harmonic);
+      const double eta = v0.lambdaEta();
+
+      if (v0.v0Status() == 0) {
+        histos.fill(HIST("hEtaPhiLambdaRaw"), phi, eta,
+                    getNUAWeight(0, v0.lambdaPhi(), v0.lambdaEta()));
+      } else {
+        histos.fill(HIST("hEtaPhiAntiLambdaRaw"), phi, eta,
+                    getNUAWeight(1, v0.lambdaPhi(), v0.lambdaEta()));
+      }
+
+      for (size_t j = i + 1; j < clean.size(); ++j) {
+        const auto& v02 = V0s.iteratorAt(static_cast<uint64_t>(clean[j]));
+
+        // Note: hasSharedDaughters(v0, v02) is no longer needed here.
+        // All clean candidates are already guaranteed not to share a
+        // daughter track with any other selected candidate.
+
+        proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(),
+                                              o2::constants::physics::MassProton);
+        lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(),
+                                              v02.lambdaMass());
+
+        if ((v0.v0Status() == 0 && v02.v0Status() == 1) ||
+            (v0.v0Status() == 1 && v02.v0Status() == 0)) {
+          if (fillHistConfig.fillBasicQAHistos) {
+            histos.fill(HIST("deltaPhiSame"),
+                        RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(),
+                                                  -TMath::Pi(), harmonicDphi));
+          }
+        }
+
+        // const int ptype = pairTypeCode(v0.v0Status(), v02.v0Status());
+        if (v0.v0Status() == 0 && v02.v0Status() == 0) {
+          fillHistograms(0, 0, lambda, lambda2, proton, proton2, 0, 1.0);
+        }
+        if (v0.v0Status() == 0 && v02.v0Status() == 1) {
+          fillHistograms(0, 1, lambda, lambda2, proton, proton2, 0, 1.0);
+        }
+        if (v0.v0Status() == 1 && v02.v0Status() == 0) {
+          fillHistograms(0, 1, lambda2, lambda, proton2, proton, 0, 1.0);
+        }
+        if (v0.v0Status() == 1 && v02.v0Status() == 1) {
+          fillHistograms(1, 1, lambda, lambda2, proton, proton2, 0, 1.0);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdaspincorrderived, processDataShareDaughter, "Process data share daughter", true);
+
+  void processMEV6ShareDaughter(EventCandidates const& collisions, AllTrackCandidates const& V0s)
+  {
+    MixBinnerR mb{
+      ptMin.value,
+      ptMax.value,
+      ptMix.value,
+      v0Configurations.v0etaMixBuffer.value,
+      etaMix.value,
+      phiMix.value,
+      MassMin.value,
+      MassMax.value,
+      cfgV5MassBins.value,
+      cfgMixRadiusParam.cfgMixRadiusBins.value};
+
+    const int nCol = colBinning.getAllBinsCount();
+    const int nStat = N_STATUS;
+    const int nPt = mb.nPt();
+    const int nEta = mb.nEta();
+    const int nPhi = mb.nPhi();
+    const int nM = mb.nM();
+    const int nR = mb.nR();
+
+    const size_t nKeys = static_cast<size_t>(nCol) * nStat * nPt * nEta * nPhi * nM * nR;
+    std::vector<std::vector<BufferCandR>> buffer(nKeys);
+
+    // -------- PASS 1: fill buffer --------
+    for (auto const& col : collisions) {
+      const int colBin = colBinning.getBin(std::make_tuple(col.posz(), col.cent()));
+      if (colBin < 0) {
+        continue;
+      }
+
+      auto slice = V0s.sliceBy(tracksPerCollisionV0, col.index());
+
+      // ------------------------------------------------------------
+      // Candidate-level shared-daughter rejection (PASS 1)
+      //
+      // Only clean candidates are inserted into the mixing buffer.
+      // A candidate is dirty if it shares a daughter track with any
+      // other selected candidate in the same event.
+      //
+      // Implementation note: we store index() (not globalIndex()) because
+      // slice.iteratorAt() expects the row index within the current table.
+      // ------------------------------------------------------------
+      std::vector<int64_t> selected;
+      selected.reserve(slice.size());
+      for (auto const& t : slice) {
+        if (selectionV0(t)) {
+          selected.push_back(t.index());
+        }
+      }
+
+      std::vector<bool> isDirty(selected.size(), false);
+      for (size_t i = 0; i < selected.size(); ++i) {
+        for (size_t j = i + 1; j < selected.size(); ++j) {
+          auto a = slice.iteratorAt(static_cast<uint64_t>(selected[i]));
+          auto b = slice.iteratorAt(static_cast<uint64_t>(selected[j]));
+          if (hasSharedDaughters(a, b)) {
+            isDirty[i] = true;
+            isDirty[j] = true;
+          }
+        }
+      }
+
+      for (size_t i = 0; i < selected.size(); ++i) {
+        if (isDirty[i]) {
+          continue;
+        }
+        const auto& t = slice.iteratorAt(static_cast<uint64_t>(selected[i]));
+
+        const int status = static_cast<int>(t.v0Status());
+        if (status < 0 || status >= nStat) {
+          continue;
+        }
+
+        const int ptB = mb.ptBin(t.lambdaPt());
+
+        int etaB = mb.etaBin(t.lambdaEta());
+        if (userapidity) {
+          const auto lv = ROOT::Math::PtEtaPhiMVector(t.lambdaPt(), t.lambdaEta(), t.lambdaPhi(), t.lambdaMass());
+          etaB = mb.etaBin(lv.Rapidity());
+        }
+
+        const int phiB = mb.phiBin(RecoDecay::constrainAngle(t.lambdaPhi(), 0.0, harmonic));
+        const int mB = getMassMixClassFromEdges(t.lambdaMass(), massMixEdges.value);
+        const int rB = mb.radiusBin(t.v0Radius());
+
+        if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0 || rB < 0) {
+          continue;
+        }
+
+        const size_t key = linearKeyR(colBin, status, ptB, etaB, phiB, mB, rB,
+                                      nStat, nPt, nEta, nPhi, nM, nR);
+
+        buffer[key].push_back(BufferCandR{
+          .collisionIdx = static_cast<int64_t>(col.index()),
+          .rowIndex = static_cast<int64_t>(t.globalIndex()),
+          .v0Status = static_cast<uint8_t>(status),
+          .ptBin = static_cast<uint16_t>(ptB),
+          .etaBin = static_cast<uint16_t>(etaB),
+          .phiBin = static_cast<uint16_t>(phiB),
+          .mBin = static_cast<uint16_t>(mB),
+          .rBin = static_cast<uint16_t>(rB)});
+      }
+    }
+
+    const int nN_pt = std::max(0, cfgV5NeighborPt.value);
+    const int nN_eta = std::max(0, cfgV5NeighborEta.value);
+    const int nN_phi = std::max(0, cfgV5NeighborPhi.value);
+
+    std::vector<int> ptBins, etaBins, phiBins;
+    std::vector<MatchRef> matches1, matches2;
+    matches1.reserve(256);
+    matches2.reserve(256);
+
+    auto collectMatchesForReplacedLeg = [&](auto const& tRep, auto const& tKeep, int colBin, int64_t curColIdx, std::vector<MatchRef>& matches) {
+      matches.clear();
+
+      const int status = static_cast<int>(tRep.v0Status());
+      if (status < 0 || status >= nStat) {
+        return;
+      }
+
+      const int ptB = mb.ptBin(tRep.lambdaPt());
+
+      int etaB = mb.etaBin(tRep.lambdaEta());
+      if (userapidity) {
+        const auto lv = ROOT::Math::PtEtaPhiMVector(tRep.lambdaPt(), tRep.lambdaEta(), tRep.lambdaPhi(), tRep.lambdaMass());
+        etaB = mb.etaBin(lv.Rapidity());
+      }
+
+      const int phiB = mb.phiBin(RecoDecay::constrainAngle(tRep.lambdaPhi(), 0.0, harmonic));
+      const int mB = getMassMixClassFromEdges(tRep.lambdaMass(), massMixEdges.value);
+      const int rB = mb.radiusBin(tRep.v0Radius());
+
+      if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0 || rB < 0) {
+        return;
+      }
+      auto collectFromBins = [&](const std::vector<int>& ptUseBins,
+                                 const std::vector<int>& etaUseBins,
+                                 const std::vector<int>& phiUseBins) {
+        for (const auto& ptUse : ptUseBins) {
+          for (const auto& etaUse : etaUseBins) {
+            for (const auto& phiUse : phiUseBins) {
+              const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
+                                                  nStat, nPt, nEta, nPhi, nM, nR)];
+
+              for (auto const& bc : vec) {
+                if (bc.collisionIdx == curColIdx)
+                  continue;
+
+                auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
+
+                if (!selectionV0(tX))
+                  continue;
+                if (!checkKinematics(tRep, tX))
+                  continue;
+
+                if (tX.globalIndex() == tRep.globalIndex())
+                  continue;
+                if (tX.globalIndex() == tKeep.globalIndex())
+                  continue;
+
+                if (hasSharedDaughters(tX, tKeep))
+                  continue;
+                if (hasSharedDaughters(tX, tRep))
+                  continue;
+
+                matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
+              }
+            }
+          }
+        }
+      };
+
+      matches.clear();
+
+      // 1) exact bin first
+      ptBins.clear();
+      etaBins.clear();
+      phiBins.clear();
+
+      ptBins.push_back(ptB);
+      etaBins.push_back(etaB);
+      phiBins.push_back(phiB);
+
+      collectFromBins(ptBins, etaBins, phiBins);
+
+      // 2) if exact bin gives fewer than required matches, also search neighbors
+      const int targetMatches = (cfgV5MaxMatches.value > 0) ? cfgV5MaxMatches.value : 1;
+
+      if ((int)matches.size() < targetMatches) {
+        std::vector<int> ptBinsN, etaBinsN, phiBinsN;
+        collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBinsN);
+        collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
+        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBinsN);
+
+        for (const auto& ptUse : ptBinsN) {
+          for (const auto& etaUse : etaBinsN) {
+            for (const auto& phiUse : phiBinsN) {
+              if (ptUse == ptB && etaUse == etaB && phiUse == phiB)
+                continue;
+
+              const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
+                                                  nStat, nPt, nEta, nPhi, nM, nR)];
+
+              for (auto const& bc : vec) {
+                if (bc.collisionIdx == curColIdx)
+                  continue;
+
+                auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
+
+                if (!selectionV0(tX))
+                  continue;
+                if (!checkKinematics(tRep, tX))
+                  continue;
+
+                if (tX.globalIndex() == tRep.globalIndex())
+                  continue;
+                if (tX.globalIndex() == tKeep.globalIndex())
+                  continue;
+
+                if (hasSharedDaughters(tX, tKeep))
+                  continue;
+                if (hasSharedDaughters(tX, tRep))
+                  continue;
+
+                matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
+              }
+            }
+          }
+        }
+      }
+
+      std::sort(matches.begin(), matches.end(),
+                [](auto const& a, auto const& b) {
+                  return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex);
+                });
+      matches.erase(std::unique(matches.begin(), matches.end(),
+                                [](auto const& a, auto const& b) {
+                                  return a.collisionIdx == b.collisionIdx && a.rowIndex == b.rowIndex;
+                                }),
+                    matches.end());
+    };
+
+    auto downsampleMatches = [&](std::vector<MatchRef>& matches, uint64_t seedBase) {
+      if (cfgV5MaxMatches.value > 0 && (int)matches.size() > cfgV5MaxMatches.value) {
+        uint64_t seed = cfgMixSeed.value ^ splitmix64(seedBase);
+        const int K = cfgV5MaxMatches.value;
+        for (int i = 0; i < K; ++i) {
+          seed = splitmix64(seed);
+          const int j = i + (int)(seed % (uint64_t)(matches.size() - i));
+          std::swap(matches[i], matches[j]);
+        }
+        matches.resize(K);
+      }
+    };
+
+    const size_t pendingAtStart = v6Pending.data.size();
+    size_t pendingMatched = 0;
+    size_t pendingExpired = 0;
+    size_t pendingAdded = 0;
+    if (!cfgV6CarryUnmatched) {
+      v6Pending.data.clear();
+    } else {
+      for (auto it = v6Pending.data.begin(); it != v6Pending.data.end();) {
+        auto& pending = *it;
+        ++pending.age;
+        if (cfgV6MaxPendingAge.value > 0 && pending.age > cfgV6MaxPendingAge.value) {
+          ++pendingExpired;
+          it = v6Pending.data.erase(it);
+          continue;
+        }
+
+        auto& matches = pending.replacedLeg == 1 ? matches1 : matches2;
+        collectMatchesForReplacedLeg(pending.target, pending.fixed, pending.colBin, -1, matches);
+        limitMatchesToNEvents(matches, nEvtMixing.value);
+        downsampleMatches(matches, pending.seed ^ splitmix64(static_cast<uint64_t>(pending.age)));
+
+        int nAccepted = 0;
+        for (auto const& m : matches) {
+          auto replacement = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+          if (!selectionV0(replacement) || !checkKinematics(pending.target, replacement)) {
+            continue;
+          }
+          if (replacement.globalIndex() == pending.target.globalIndex() || replacement.globalIndex() == pending.fixed.globalIndex()) {
+            continue;
+          }
+          if (hasSharedDaughters(replacement, pending.target) || hasSharedDaughters(replacement, pending.fixed)) {
+            continue;
+          }
+          ++nAccepted;
+        }
+
+        if (nAccepted == 0) {
+          ++it;
+          continue;
+        }
+
+        const float controlWeight = 1.0f / static_cast<float>(nAccepted);
+        const float branchNorm = cfgMixLegMode.value == 2 ? 0.5f : 1.0f;
+        const float mixWeight = branchNorm * controlWeight;
+        for (auto const& m : matches) {
+          auto replacement = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+          if (!selectionV0(replacement) || !checkKinematics(pending.target, replacement)) {
+            continue;
+          }
+          if (replacement.globalIndex() == pending.target.globalIndex() || replacement.globalIndex() == pending.fixed.globalIndex()) {
+            continue;
+          }
+          if (hasSharedDaughters(replacement, pending.target) || hasSharedDaughters(replacement, pending.fixed)) {
+            continue;
+          }
+          fillV6MixedBranch(replacement, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
+        }
+        ++pendingMatched;
+        it = v6Pending.data.erase(it);
+      }
+    }
+
+    // -------- PASS 2: configurable one-leg / two-leg mixing --------
+    for (auto const& col1 : collisions) {
+      const int colBin = colBinning.getBin(std::make_tuple(col1.posz(), col1.cent()));
+      if (colBin < 0) {
+        continue;
+      }
+
+      const int64_t curColIdx = static_cast<int64_t>(col1.index());
+      auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.index());
+
+      // ------------------------------------------------------------
+      // Candidate-level shared-daughter rejection (PASS 2)
+      //
+      // Build the clean set for this event so that SE pairing only
+      // uses clean candidates. The mixing buffer already contains
+      // only clean candidates, so matched replacements are clean.
+      //
+      // Implementation note: we store index() (not globalIndex()) because
+      // poolA.iteratorAt() expects the row index within the current table.
+      // ------------------------------------------------------------
+      std::vector<int64_t> selectedA;
+      selectedA.reserve(poolA.size());
+      for (auto const& t : poolA) {
+        if (selectionV0(t)) {
+          selectedA.push_back(t.index());
+        }
+      }
+
+      std::vector<bool> dirtyA(selectedA.size(), false);
+      for (size_t i = 0; i < selectedA.size(); ++i) {
+        for (size_t j = i + 1; j < selectedA.size(); ++j) {
+          auto a = poolA.iteratorAt(static_cast<uint64_t>(selectedA[i]));
+          auto b = poolA.iteratorAt(static_cast<uint64_t>(selectedA[j]));
+          if (hasSharedDaughters(a, b)) {
+            dirtyA[i] = true;
+            dirtyA[j] = true;
+          }
+        }
+      }
+
+      // Build a set of clean row indices for fast lookup in the pairing loop.
+      // We use index() here, matching what soa::combinations yields via t.index().
+      std::unordered_set<int64_t> cleanIdxSet;
+      cleanIdxSet.reserve(selectedA.size());
+      for (size_t i = 0; i < selectedA.size(); ++i) {
+        if (!dirtyA[i]) {
+          cleanIdxSet.insert(selectedA[i]);
+        }
+      }
+
+      for (auto const& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
+        if (!selectionV0(t1) || !selectionV0(t2)) {
+          continue;
+        }
+        if (!cleanIdxSet.count(t1.index()) || !cleanIdxSet.count(t2.index())) {
+          continue;
+        }
+        if (t2.index() <= t1.index()) {
+          continue;
+        }
+
+        // Note: hasSharedDaughters(t1, t2) is no longer needed here.
+        // Both t1 and t2 are guaranteed to be clean candidates.
+
+        const bool doMixLeg1 = (cfgMixLegMode.value == 0 || cfgMixLegMode.value == 2);
+        const bool doMixLeg2 = (cfgMixLegMode.value == 1 || cfgMixLegMode.value == 2);
+
+        // Fill TGT maps before searching for replacements.  This makes TGT the
+        // true same-event target phase space for the selected pair, matching the
+        // hPtYSame definition.  REP below is filled only for accepted replacements.
+        if (doMixLeg1) {
+          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 1, true,
+                                    ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                    1.0f);
+          fillFixedLegControlMap(t1.v0Status(), t2.v0Status(), 1, true,
+                                 ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                 1.0f);
+        }
+        if (doMixLeg2) {
+          fillReplacementControlMap(t1.v0Status(), t2.v0Status(), 2, true,
+                                    ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                    1.0f);
+          fillFixedLegControlMap(t1.v0Status(), t2.v0Status(), 2, true,
+                                 ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                 1.0f);
+        }
+
+        if (doMixLeg1) {
+          collectMatchesForReplacedLeg(t1, t2, colBin, curColIdx, matches1);
+          limitMatchesToNEvents(matches1, nEvtMixing.value);
+          downsampleMatches(matches1, (uint64_t)t1.globalIndex() ^ (splitmix64((uint64_t)t2.globalIndex()) + 0x111ULL) ^ splitmix64((uint64_t)curColIdx));
+        } else {
+          matches1.clear();
+        }
+
+        if (doMixLeg2) {
+          collectMatchesForReplacedLeg(t2, t1, colBin, curColIdx, matches2);
+          limitMatchesToNEvents(matches2, nEvtMixing.value);
+          downsampleMatches(matches2, (uint64_t)t2.globalIndex() ^ (splitmix64((uint64_t)t1.globalIndex()) + 0x222ULL) ^ splitmix64((uint64_t)curColIdx));
+        } else {
+          matches2.clear();
+        }
+
+        // Do not fill TGT here. TGT has already been filled above as the
+        // selected same-event target phase space, independent of replacement success.
+        int nFill1 = 0;
+        int nFill2 = 0;
+        // count actual accepted fills for leg-1 replacement
+        if (doMixLeg1) {
+          for (auto const& m : matches1) {
+            auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+            if (!selectionV0(tX))
+              continue;
+            if (tX.v0Status() != t1.v0Status())
+              continue;
+            if (!checkKinematics(t1, tX))
+              continue;
+            if (tX.globalIndex() == t1.globalIndex())
+              continue;
+            if (tX.globalIndex() == t2.globalIndex())
+              continue;
+            if (hasSharedDaughters(tX, t2))
+              continue;
+            if (hasSharedDaughters(tX, t1))
+              continue;
+            ++nFill1;
+          }
+        }
+
+        // count actual accepted fills for leg-2 replacement
+        if (doMixLeg2) {
+          for (auto const& m : matches2) {
+            auto tY = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+            if (!selectionV0(tY))
+              continue;
+            if (tY.v0Status() != t2.v0Status())
+              continue;
+            if (!checkKinematics(t2, tY))
+              continue;
+            if (tY.globalIndex() == t2.globalIndex())
+              continue;
+            if (tY.globalIndex() == t1.globalIndex())
+              continue;
+            if (hasSharedDaughters(tY, t2))
+              continue;
+            if (hasSharedDaughters(tY, t1))
+              continue;
+            ++nFill2;
+          }
+        }
+
+        if (cfgV6CarryUnmatched) {
+          const auto hasPendingSpace = [&]() {
+            return cfgV6MaxPendingBranches.value <= 0 || static_cast<int>(v6Pending.data.size()) < cfgV6MaxPendingBranches.value;
+          };
+          if (doMixLeg1 && nFill1 == 0 && hasPendingSpace()) {
+            v6Pending.data.push_back({storeV6Candidate(t1, curColIdx), storeV6Candidate(t2, curColIdx), colBin, 1, 0,
+                                      static_cast<uint64_t>(t1.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t2.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
+            ++pendingAdded;
+          }
+          if (doMixLeg2 && nFill2 == 0 && hasPendingSpace()) {
+            v6Pending.data.push_back({storeV6Candidate(t2, curColIdx), storeV6Candidate(t1, curColIdx), colBin, 2, 0,
+                                      static_cast<uint64_t>(t2.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t1.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
+            ++pendingAdded;
+          }
+        }
+        histos.fill(HIST("hNMEperSE_leg2"), nFill2);
+        histos.fill(HIST("hNMEperSE_leg1"), nFill1);
+
+        if (nFill1 <= 0 && nFill2 <= 0) {
+          continue;
+        }
+        // Residual-weight QA needs a leg-specific normalization:
+        // TGT_leg is filled once per same-event target candidate with weight 1.
+        // REP_leg is the average replacement distribution for that same target.
+        const float wSELeg1 = (nFill1 > 0) ? 1.0f / static_cast<float>(nFill1) : 0.0f;
+        const float wSELeg2 = (nFill2 > 0) ? 1.0f / static_cast<float>(nFill2) : 0.0f;
+
+        const int nActiveMixBranches = ((doMixLeg1 && nFill1 > 0) ? 1 : 0) +
+                                       ((doMixLeg2 && nFill2 > 0) ? 1 : 0);
+        float branchNorm = 1.0f;
+        if (cfgMixLegMode.value == 2) {
+          branchNorm = cfgV6CarryUnmatched ? 0.5f : 1.0f / static_cast<float>(nActiveMixBranches);
+        }
+        const float finalMixWeightLeg1 = branchNorm * wSELeg1;
+        const float finalMixWeightLeg2 = branchNorm * wSELeg2;
+
+        // Do not fill target maps here: TGT has already been filled above,
+        // before searching for replacements, so that TGT represents all selected
+        // same-event targets rather than only targets with successful replacements.
+
+        if (doMixLeg1 && nFill1 > 0) {
+          for (auto const& m : matches1) {
+            auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+            if (!selectionV0(tX)) {
+              continue;
+            }
+            if (tX.v0Status() != t1.v0Status())
+              continue;
+            if (!checkKinematics(t1, tX))
+              continue;
+            if (tX.globalIndex() == t1.globalIndex())
+              continue;
+            if (tX.globalIndex() == t2.globalIndex())
+              continue;
+            if (hasSharedDaughters(tX, t1))
+              continue;
+            if (hasSharedDaughters(tX, t2))
+              continue;
+            fillReplacementControlMap(tX.v0Status(), t2.v0Status(), 1, false,
+                                      ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
+                                      wSELeg1);
+            // Fixed leg for leg1 replacement is original t2.
+            // Fill only for successful replacement.
+            fillFixedLegControlMap(tX.v0Status(), t2.v0Status(), 1, false,
+                                   ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                   wSELeg1);
+            auto proton = ROOT::Math::PtEtaPhiMVector(tX.protonPt(), tX.protonEta(), tX.protonPhi(), o2::constants::physics::MassProton);
+            auto lambda = ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass());
+            auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
+            auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
+
+            // const int ptype = pairTypeCode(tX.v0Status(), t2.v0Status());
+
+            const float meWeight = finalMixWeightLeg1;
+            const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
+            if ((tX.v0Status() == 0 && t2.v0Status() == 1) || (tX.v0Status() == 1 && t2.v0Status() == 0))
+              if (fillHistConfig.fillBasicQAHistos)
+                histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
+            const int s1 = tX.v0Status();
+            const int s2 = t2.v0Status();
+
+            if (s1 == 0 && s2 == 1) {
+              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
+            } else if (s1 == 1 && s2 == 0) {
+              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 2, 1);
+            } else {
+              fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
+            }
+          }
+        }
+
+        if (doMixLeg2 && nFill2 > 0) {
+          for (auto const& m : matches2) {
+            auto tY = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+            if (!selectionV0(tY)) {
+              continue;
+            }
+            if (tY.v0Status() != t2.v0Status())
+              continue;
+            if (!checkKinematics(t2, tY))
+              continue;
+            if (tY.globalIndex() == t2.globalIndex())
+              continue;
+            if (tY.globalIndex() == t1.globalIndex())
+              continue;
+            if (hasSharedDaughters(tY, t1))
+              continue;
+            if (hasSharedDaughters(tY, t2))
+              continue;
+            fillReplacementControlMap(t1.v0Status(), tY.v0Status(), 2, false,
+                                      ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass()),
+                                      wSELeg2);
+            // Fixed leg for leg2 replacement is original t1.
+            // Fill only for successful replacement.
+            fillFixedLegControlMap(t1.v0Status(), tY.v0Status(), 2, false,
+                                   ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                   wSELeg2);
+            auto proton = ROOT::Math::PtEtaPhiMVector(t1.protonPt(), t1.protonEta(), t1.protonPhi(), o2::constants::physics::MassProton);
+            auto lambda = ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass());
+            auto proton2 = ROOT::Math::PtEtaPhiMVector(tY.protonPt(), tY.protonEta(), tY.protonPhi(), o2::constants::physics::MassProton);
+            auto lambda2 = ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass());
+
+            // const int ptype = pairTypeCode(t1.v0Status(), tY.v0Status());
+            const float meWeight = finalMixWeightLeg2;
+            const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
+            if (fillHistConfig.fillBasicQAHistos)
+              histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
+            const int s1 = t1.v0Status();
+            const int s2 = tY.v0Status();
+            if (s1 == 0 && s2 == 1) {
+              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
+            } else if (s1 == 1 && s2 == 0) {
+              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 1, 2);
+            } else {
+              fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
+            }
+          }
+        }
+      }
+    }
+    if (cfgV6LogPending) {
+      LOGF(info, "MEV6 data pending branches: carriedIn=%zu matched=%zu expired=%zu newlyPropagated=%zu carriedToNext=%zu",
+           pendingAtStart, pendingMatched, pendingExpired, pendingAdded, v6Pending.data.size());
+    }
+  }
+  PROCESS_SWITCH(lambdaspincorrderived, processMEV6ShareDaughter, "Process data ME v6 with radius buffer share daughter", true);
+
   void processDataSys(EventCandidates::iterator const&, AllTrackCandidates const& V0s)
   {
     for (const auto& v0 : V0s) {
@@ -1951,7 +2766,7 @@ struct lambdaspincorrderived {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::lambdaevent::Posz, aod::lambdaevent::Cent>;
-  BinningType colBinning{{CfgVtxBins, CfgMultBins}};
+  BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
   Preslice<aod::LambdaPairs> tracksPerCollisionV0 = aod::lambdapair::lambdaeventId;
 
   void processMEV3(EventCandidates const& collisions, AllTrackCandidates const& V0s)
@@ -3190,6 +4005,8 @@ struct lambdaspincorrderived {
             ++pendingAdded;
           }
         }
+        histos.fill(HIST("hNMEperSE_leg2"), nFill2);
+        histos.fill(HIST("hNMEperSE_leg1"), nFill1);
 
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;

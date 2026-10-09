@@ -299,6 +299,13 @@ struct lambdaspincorrelation {
     std::vector<int> negativeIndex = {};
     std::vector<float> dcaBetweenDaughter = {};
     std::vector<float> dcaV0ToPV = {};
+    std::vector<float> tpcPosNClsCrossedRows = {};
+    std::vector<float> tpcNegNClsCrossedRows = {};
+    std::vector<float> ctau = {};
+    std::vector<float> tpcNsigmaPos = {};
+    std::vector<float> tpcNsigmaNeg = {};
+    std::vector<float> mK0Short = {};
+
     int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
@@ -350,6 +357,9 @@ struct lambdaspincorrelation {
           if (aLambdaTag) {
             histos.fill(HIST("hV0Info"), 3.5);
           }
+
+          float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * (o2::constants::physics::MassLambda);
+
           // LOGF(info, "v0 index2: (%d)", v0.index());
           auto postrack1 = v0.template posTrack_as<AllTrackCandidates>();
           auto negtrack1 = v0.template negTrack_as<AllTrackCandidates>();
@@ -357,6 +367,16 @@ struct lambdaspincorrelation {
           negativeIndex.push_back(negtrack1.globalIndex());
           v0Cospa.push_back(v0.v0cosPA());
           dcaV0ToPV.push_back(std::abs(v0.dcav0topv()));
+
+          tpcPosNClsCrossedRows.push_back(postrack1.tpcNClsCrossedRows());
+          tpcNegNClsCrossedRows.push_back(negtrack1.tpcNClsCrossedRows());
+          ctau.push_back(ctauLambda);
+
+          tpcNsigmaPos.push_back(std::abs(postrack1.tpcNSigmaPr()));
+          tpcNsigmaNeg.push_back(std::abs(negtrack1.tpcNSigmaPi()));
+
+          mK0Short.push_back(v0.mK0Short());
+
           v0Radius.push_back(v0.v0radius());
           dcaPositive.push_back(std::abs(v0.dcapostopv()));
           dcaNegative.push_back(std::abs(v0.dcanegtopv()));
@@ -393,7 +413,7 @@ struct lambdaspincorrelation {
           lambdaDummy = lambdaMother.at(i5);
           protonDummy = protonDaughter.at(i5);
           pionDummy = pionDaughter.at(i5);
-          lambdaPair(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5), dcaV0ToPV.at(i5));
+          lambdaPair(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5), dcaV0ToPV.at(i5), tpcPosNClsCrossedRows.at(i5), tpcNegNClsCrossedRows.at(i5), ctau.at(i5), tpcNsigmaPos.at(i5), tpcNsigmaNeg.at(i5), mK0Short.at(i5));
         }
       }
     }
