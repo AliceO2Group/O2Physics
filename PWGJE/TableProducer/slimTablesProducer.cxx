@@ -203,15 +203,6 @@ struct SlimTablesProducer {
   {
     float eventWeightMC = mccollision.weight();
 
-    // --- TEST pT hat (a retirer une fois la formule validee) ---
-    float ptHardTrue = mccollision.ptHard();
-    float ptHardFromW = 10.f * std::pow(eventWeightMC, -0.25f);
-    static int nPrint = 0;
-    if (nPrint < 50) {
-      LOG(info) << "ptHard vrai = " << ptHardTrue << "   |   ptHard formule = " << ptHardFromW;
-      ++nPrint;
-    }
-
     if (collisions.size() != 1) { // skip the mccollision if it has mre than 1 associated rec collision
       return;
     }
@@ -224,6 +215,19 @@ struct SlimTablesProducer {
       return;
     }
     histos.fill(HIST("h_mcCollMCP_counts_weight"), 2.5, eventWeightMC);
+
+    // --- TEST pT hat (a retirer une fois la formule validee) ---
+    // Ce log est place APRES le rejet des events min bias gap :
+    // il n'affiche donc que les events qui sont vraiment gardes dans l'analyse.
+    float ptHardTrue = mccollision.ptHard();
+    float ptHardFromW = 10.f * std::pow(eventWeightMC, -0.25f);
+    static int nPrint = 0;
+    if (nPrint < 50) {
+      LOG(info) << "ptHard vrai = " << ptHardTrue << "   |   ptHard formule = " << ptHardFromW;
+      ++nPrint;
+    }
+    // --- fin du test ---
+
     for (auto const& collision : collisions) {
       float eventWeight = collision.weight();
       histos.fill(HIST("h_mcCollMCD_counts_weight"), 0.5, eventWeightMC);
@@ -251,7 +255,7 @@ struct SlimTablesProducer {
         histos.fill(HIST("Ntracks_pT"), track.pt(), eventWeight);
         slimTracks(slimCollIndex, track.px(), track.py(), track.pz());
       }
-      slimMcCollisions(mccollision.posZ(), eventWeightMC, ptHardFromW);
+      slimMcCollisions(mccollision.posZ(), eventWeightMC, ptHardTrue);
       auto slimMcCollIndex = slimMcCollisions.lastIndex();
       for (const auto& particle : particles) {
         if (!particle.isPhysicalPrimary()) {
