@@ -77,7 +77,7 @@ struct phosQC {
 
     // for Clusters
     for (auto& cut : fPHOSCuts) {
-      std::string cutname = cut.getName();
+      const std::string& cutname = cut.getName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Cluster")->FindObject(cutname.c_str()));
       o2::aod::pwgem::photon::histogram::DefineHistograms(list, "Cluster", "PHOS");
     }

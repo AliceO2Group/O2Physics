@@ -17,6 +17,7 @@
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -28,10 +29,12 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <CommonDataFormat/TimeStamp.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -47,6 +50,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <numeric>
 #include <string>
 #include <vector> // std::vector
@@ -79,6 +83,9 @@ DECLARE_SOA_COLUMN(AmpFT0A, ampFT0A, float);
 DECLARE_SOA_COLUMN(AmpFT0C, ampFT0C, float);
 DECLARE_SOA_COLUMN(ZdcTimeZNA, zdcTimeZNA, float);
 DECLARE_SOA_COLUMN(ZdcTimeZNC, zdcTimeZNC, float);
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float);
 } // namespace full
 DECLARE_SOA_TABLE(HfUpcQa, "AOD", "HFUPCQA",
                   full::PvContributors,
@@ -103,18 +110,45 @@ DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
                   full::Chi2PCA,
                   full::DecayLength,
                   full::Cpa);
+DECLARE_SOA_TABLE(HfUpcLcMcBdtInfos, "AOD", "HFUPCLCMCBDT",
+                  full::M,
+                  full::Pt,
+                  full::BkgScore,
+                  full::FlagMcMatchRec,
+                  full::OriginMcRec,
+                  full::PtBhadMotherPart);
+DECLARE_SOA_TABLE(HfUpcLcMcInfos, "AOD", "HFUPCLCMCINFO",
+                  full::M,
+                  full::Pt,
+                  full::PtProng0,
+                  full::PtProng1,
+                  full::PtProng2,
+                  full::Chi2PCA,
+                  full::DecayLength,
+                  full::Cpa,
+                  full::FlagMcMatchRec,
+                  full::OriginMcRec,
+                  full::PtBhadMotherPart);
+DECLARE_SOA_TABLE(HfUpcLcMcGen, "AOD", "HFUPCLCMCGEN",
+                  full::Pt,
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen);
 } // namespace o2::aod
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskUpcLc {
   Produces<o2::aod::HfUpcLcBdtInfos> rowCandUpcBdt;
   Produces<o2::aod::HfUpcLcInfos> rowCandUpc;
+  Produces<o2::aod::HfUpcLcMcBdtInfos> rowCandUpcMcBdt;
+  Produces<o2::aod::HfUpcLcMcInfos> rowCandUpcMc;
+  Produces<o2::aod::HfUpcLcMcGen> rowLcMcGen;
   Produces<o2::aod::HfUpcQa> rowUpcQa;
 
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "Only fill the tree for candidates that pass the single-gap UPC events"};
+  Configurable<bool> fillMcGenLcTree{"fillMcGenLcTree", false, "Fill the generated Lc to p K pi tree"};
   Configurable<bool> fillTreeUpcQa{"fillTreeUpcQa", false, "Fill Tree for UPC QA"};
   Configurable<bool> fillHistQa{"fillHistQa", false, "Fill histograms for UPC detector QA"};
   Configurable<bool> verticesWithUpc{"verticesWithUpc", false, "Consider vertices with UPC settings"};
@@ -133,6 +167,8 @@ struct HfTaskUpcLc {
 
   using LcCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using LcCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
+  using LcCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
+  using LcCandidatesMlMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi, aod::HfCand3ProngMcRec>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
   Preslice<aod::HfCand3Prong> candLcPerCollision = aod::hf_cand::collisionId;
@@ -149,7 +185,7 @@ struct HfTaskUpcLc {
 
   void init(InitContext&)
   {
-    const std::array<bool, 2> doprocess{doprocessDataWithMlWithUpc, doprocessDataStdWithUpc};
+    const std::array<bool, 4> doprocess{doprocessDataWithMlWithUpc, doprocessDataStdWithUpc, doprocessMcWithMlWithUpc, doprocessMcStdWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
@@ -178,16 +214,28 @@ struct HfTaskUpcLc {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
-  template <bool FillMl, typename CollType, typename CandType, typename BCsType>
-  void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
-                                          CandType const& candidates,
-                                          BCsType const& bcs,
-                                          aod::FT0s const& ft0s,
-                                          aod::FV0As const& fv0as,
-                                          aod::FDDs const& fdds
-
-  )
+  template <bool FillMl, bool IsMc, typename CollType, typename CandType, typename BCsType>
+  void runAnalysisPerCollisionWithUpc(CollType const& collisions,
+                                      CandType const& candidates,
+                                      BCsType const& bcs,
+                                      aod::FT0s const& ft0s,
+                                      aod::FV0As const& fv0as,
+                                      aod::FDDs const& fdds,
+                                      soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const* mcParticles = nullptr)
   {
+    if constexpr (IsMc) {
+      if (fillMcGenLcTree) {
+        for (const auto& particle : *mcParticles) {
+          if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+            continue;
+          }
+          if (yCandRecoMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandRecoMax) {
+            continue;
+          }
+          rowLcMcGen(particle.pt(), particle.flagMcMatchGen(), particle.originMcGen());
+        }
+      }
+    }
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, registry, bcs);
@@ -244,7 +292,23 @@ struct HfTaskUpcLc {
         }
         registry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
       }
-      const bool ignoreZdcTime = (zdcTimeThreshold < 0.f);
+      if constexpr (!IsMc) {
+        if (!hasZdc) {
+          continue;
+        }
+      }
+      if constexpr (IsMc) {
+        if (!hasZdc && fillHistQa) {
+          registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+        }
+        if (!hasZdc) {
+          registry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
+        }
+      }
+      bool ignoreZdcTime = (zdcTimeThreshold < 0.f);
+      if constexpr (IsMc) {
+        ignoreZdcTime = ignoreZdcTime || !hasZdc;
+      }
       const auto multNTracksPV = collision.multNTracksPV();
       const auto posZ = collision.posZ();
       if (gap == o2::aod::sgselector::TrueGap::SingleGapA && (ignoreZdcTime || (std::abs(zdcTimeZNA) > zdcTimeThreshold && std::abs(zdcTimeZNC) < zdcTimeThreshold))) {
@@ -289,6 +353,18 @@ struct HfTaskUpcLc {
 
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+          if constexpr (IsMc) {
+            if constexpr (FillMl) {
+              const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
+              if (mlProb.size() == NumberOfMlClasses) {
+                outputBkg = mlProb[MlClassBackground]; /// bkg score
+              }
+              rowCandUpcMcBdt(massLc, pt, outputBkg, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.ptBhadMotherPart());
+            } else {
+              rowCandUpcMc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.ptBhadMotherPart());
+            }
+            return;
+          }
           if constexpr (FillMl) {
             const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
             if (mlProb.size() == NumberOfMlClasses) {
@@ -321,7 +397,7 @@ struct HfTaskUpcLc {
                                 aod::FDDs const& fdds,
                                 aod::Zdcs const& /*zdcs*/)
   {
-    runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
+    runAnalysisPerCollisionWithUpc<true, false>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
   }
   PROCESS_SWITCH(HfTaskUpcLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
 
@@ -334,9 +410,39 @@ struct HfTaskUpcLc {
                              aod::FDDs const& fdds,
                              aod::Zdcs const& /*zdcs*/)
   {
-    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedLcCandidates, bcs, ft0s, fv0as, fdds);
+    runAnalysisPerCollisionWithUpc<false, false>(collisions, selectedLcCandidates, bcs, ft0s, fv0as, fdds);
   }
   PROCESS_SWITCH(HfTaskUpcLc, processDataStdWithUpc, "Process real data with the standard method with UPC", false);
+
+  void processMcWithMlWithUpc(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults> const& collisions,
+                              aod::BcFullInfos const& bcs,
+                              LcCandidatesMlMc const& selectedLcCandidatesMlMc,
+                              aod::McCollisions const&,
+                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                              aod::TracksWMc const&,
+                              aod::FT0s const& ft0s,
+                              aod::FV0As const& fv0as,
+                              aod::FDDs const& fdds,
+                              aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionWithUpc<true, true>(collisions, selectedLcCandidatesMlMc, bcs, ft0s, fv0as, fdds, &mcParticles);
+  }
+  PROCESS_SWITCH(HfTaskUpcLc, processMcWithMlWithUpc, "Process MC with the ML method with UPC", false);
+
+  void processMcStdWithUpc(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults> const& collisions,
+                           aod::BcFullInfos const& bcs,
+                           LcCandidatesMc const& selectedLcCandidatesMc,
+                           aod::McCollisions const&,
+                           soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                           aod::TracksWMc const&,
+                           aod::FT0s const& ft0s,
+                           aod::FV0As const& fv0as,
+                           aod::FDDs const& fdds,
+                           aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionWithUpc<false, true>(collisions, selectedLcCandidatesMc, bcs, ft0s, fv0as, fdds, &mcParticles);
+  }
+  PROCESS_SWITCH(HfTaskUpcLc, processMcStdWithUpc, "Process MC with the standard method with UPC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

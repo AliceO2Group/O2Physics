@@ -78,34 +78,37 @@ using RecoTracks = soa::Join<aod::Tracks, aod::TracksExtra,
                              aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe,
                              aod::TrackSelection>;
 
-typedef std::shared_ptr<FilteredTracks::iterator> trkType;
-typedef std::shared_ptr<RecoTracks::iterator> trkTypeData;
+using TrackType = const FilteredTracks::iterator;
+using TrackTypePtr = std::shared_ptr<TrackType>;
+using TrackTypeData = const RecoTracks::iterator;
+using TrackTypeDataPtr = std::shared_ptr<TrackTypeData>;
 
-typedef std::shared_ptr<FilteredCollisions::iterator> colType;
+using ColType = const FilteredCollisions::iterator;
+using ColTypePtr = std::shared_ptr<ColType>;
 
-using MyFemtoPair = o2::aod::singletrackselector::FemtoPair<trkType>;
+using MyFemtoPair = o2::aod::singletrackselector::FemtoPair<TrackTypePtr>;
 
 class ResoPair : public MyFemtoPair
 {
  public:
   ResoPair() {}
-  ResoPair(trkType const& first, trkType const& second) : MyFemtoPair(first, second)
+  ResoPair(TrackTypePtr const& first, TrackTypePtr const& second) : MyFemtoPair(first, second)
   {
     setPair(first, second);
   }
-  ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical) {}
+  ResoPair(TrackTypePtr const& first, TrackTypePtr const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical) {}
   bool isClosePair() const { return MyFemtoPair::IsClosePair(mDeltaEta, mDeltaPhi, mRadius); }
   void setEtaDiff(const float deta) { mDeltaEta = deta; }
   void setPhiStarDiff(const float dphi) { mDeltaPhi = dphi; }
   void setRadius(const float r) { mRadius = r; }
-  void setPair(trkType const& first, trkType const& second)
+  void setPair(TrackTypePtr const& first, TrackTypePtr const& second)
   {
     MyFemtoPair::SetPair(first, second);
     lDecayDaughter1.SetPtEtaPhiM(first->pt(), first->eta(), first->phi(), particle_mass(GetPDG1()));
     lDecayDaughter2.SetPtEtaPhiM(second->pt(), second->eta(), second->phi(), particle_mass(GetPDG2()));
     lResonance = lDecayDaughter1 + lDecayDaughter2;
   }
-  void setPair(trkTypeData const& first, trkTypeData const& second)
+  void setPair(TrackTypeDataPtr const& first, TrackTypeDataPtr const& second)
   {
     // MyFemtoPair::SetPair(first, second);
     lDecayDaughter1.SetPtEtaPhiM(first->pt(), first->eta(), first->phi(), particle_mass(GetPDG1()));
@@ -369,8 +372,8 @@ struct K0MixedEvents {
   void mixTracks(Type const& tracks1, Type const& tracks2, const float centrality)
   {
     LOG(debug) << "Mixing tracks of two different events";
-    for (auto trk1 : tracks1) {
-      for (auto trk2 : tracks2) {
+    for (const auto& trk1 : tracks1) {
+      for (const auto& trk2 : tracks2) {
 
         Pair->setPair(trk1, trk2);
 
@@ -529,9 +532,9 @@ struct K0MixedEvents {
   void processDerived(FilteredTracks const& tracks, FilteredCollisions const& collisions)
   {
     LOG(debug) << "Processing " << collisions.size() << " collisions and " << tracks.size() << " tracks";
-    std::map<int64_t, std::vector<trkType>> selectedtracks_1;
-    std::map<int64_t, std::vector<trkType>> selectedtracks_2;
-    std::map<std::pair<int, int>, std::vector<colType>> mixbins;
+    std::map<int64_t, std::vector<TrackTypePtr>> selectedtracks_1;
+    std::map<int64_t, std::vector<TrackTypePtr>> selectedtracks_2;
+    std::map<std::pair<int, int>, std::vector<ColTypePtr>> mixbins;
     if (_particlePDG_1 == 0 || _particlePDG_2 == 0) {
       LOGF(fatal, "One of passed PDG is 0!!!");
     }
@@ -542,7 +545,7 @@ struct K0MixedEvents {
       registry.fill(HIST("multPerc"), collision.multPerc());
     }
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       LOG(debug) << "Track index " << track.singleCollSelId();
       if (!isTrackSelected(track)) {
         continue;
@@ -559,7 +562,7 @@ struct K0MixedEvents {
 
       if ((track.sign() == _sign_1) &&
           (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1))) { // filling the map: eventID <-> selected particles1
-        selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+        selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<TrackType>(track));
 
         registry.fill(HIST("p_first"), track.p());
         registry.fill(HIST("dcaXY_first"), track.pt(), track.dcaXY());
@@ -591,7 +594,7 @@ struct K0MixedEvents {
       } else if ((track.sign() == _sign_2) &&
                  (_particlePDGtoReject != 0 || !o2::aod::singletrackselector::TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF))) &&
                  (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
-        selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+        selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<TrackType>(track));
 
         registry.fill(HIST("p_second"), track.p());
         registry.fill(HIST("dcaXY_second"), track.pt(), track.dcaXY());
@@ -619,7 +622,7 @@ struct K0MixedEvents {
       }
     }
 
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;
@@ -627,7 +630,7 @@ struct K0MixedEvents {
           continue;
       }
 
-      mixbins[std::pair<int, int>{round(collision.posZ() / _vertexbinwidth), floor(collision.mult() / _multbinwidth)}].push_back(std::make_shared<decltype(collision)>(collision));
+      mixbins[std::pair<int, int>{round(collision.posZ() / _vertexbinwidth), floor(collision.mult() / _multbinwidth)}].push_back(std::make_shared<ColType>(collision));
     }
 
     //====================================== mixing starts here ======================================
@@ -711,15 +714,15 @@ struct K0MixedEvents {
   {
     initCCDB(bcs.iteratorAt(0));
     LOG(debug) << "Processing " << collisions.size() << " collisions and " << tracks.size() << " tracks";
-    std::map<int64_t, std::vector<trkTypeData>> selectedtracks_1;
-    std::map<int64_t, std::vector<trkTypeData>> selectedtracks_2;
-    std::map<std::pair<int, int>, std::vector<std::shared_ptr<RecoCollisions::iterator>>> mixbins;
+    std::map<int64_t, std::vector<TrackTypeDataPtr>> selectedtracks_1;
+    std::map<int64_t, std::vector<TrackTypeDataPtr>> selectedtracks_2;
+    std::map<std::pair<int, int>, std::vector<std::shared_ptr<const RecoCollisions::iterator>>> mixbins;
     if (_particlePDG_1 == 0 || _particlePDG_2 == 0) {
       LOGF(fatal, "One of passed PDG is 0!!!");
     }
 
     registry.fill(HIST("Trks"), 2.f, tracks.size());
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (!acceptEvent(collision))
         continue;
       LOG(debug) << "Collision index " << collision.globalIndex();
@@ -727,7 +730,7 @@ struct K0MixedEvents {
       registry.fill(HIST("multPerc"), collision.centFT0M());
     }
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (!isTrackSelected(track)) {
         continue;
       }
@@ -757,7 +760,7 @@ struct K0MixedEvents {
 
       if ((track.sign() == _sign_1) &&
           (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1))) { // filling the map: eventID <-> selected particles1
-        selectedtracks_1[track.collisionId()].push_back(std::make_shared<decltype(track)>(track));
+        selectedtracks_1[track.collisionId()].push_back(std::make_shared<TrackTypeData>(track));
 
         registry.fill(HIST("p_first"), track.p());
         registry.fill(HIST("dcaXY_first"), track.pt(), track.dcaXY());
@@ -789,7 +792,7 @@ struct K0MixedEvents {
       } else if ((track.sign() == _sign_2) &&
                  (_particlePDGtoReject != 0 || !o2::aod::singletrackselector::TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF))) &&
                  (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
-        selectedtracks_2[track.collisionId()].push_back(std::make_shared<decltype(track)>(track));
+        selectedtracks_2[track.collisionId()].push_back(std::make_shared<TrackTypeData>(track));
 
         registry.fill(HIST("p_second"), track.p());
         registry.fill(HIST("dcaXY_second"), track.pt(), track.dcaXY());
@@ -817,7 +820,7 @@ struct K0MixedEvents {
       }
     }
 
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;
@@ -825,7 +828,7 @@ struct K0MixedEvents {
           continue;
       }
 
-      mixbins[std::pair<int, int>{round(collision.posZ() / _vertexbinwidth), floor(collision.multNTracksPVeta1() / _multbinwidth)}].push_back(std::make_shared<decltype(collision)>(collision));
+      mixbins[std::pair<int, int>{round(collision.posZ() / _vertexbinwidth), floor(collision.multNTracksPVeta1() / _multbinwidth)}].push_back(std::make_shared<const RecoCollisions::iterator>(collision));
     }
 
     //====================================== mixing starts here ======================================

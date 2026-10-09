@@ -443,6 +443,10 @@ class EMCPhotonCut
   /// \return true if cluster survives cut else false
   bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, o2::soa::is_iterator auto const& cluster, IsFullTrackIterator auto& matchedTrackIter, int64_t const nMatchedTracks, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
+    if (nMatchedTracks == 0) {
+      // there are not tracks to match with, so its true
+      return true;
+    }
     switch (cut) {
       case EMCPhotonCuts::kTM:
         return checkTrackMatching(cluster, matchedTrackIter, nMatchedTracks, true, [this](float pt) { return GetTrackMatchingEta(pt); }, [this](float pt) { return GetTrackMatchingPhi(pt); }, fRegistry, TrackType::kPrimary);

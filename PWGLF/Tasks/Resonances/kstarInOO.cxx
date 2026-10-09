@@ -963,7 +963,7 @@ struct kstarInOO {
   } // TrackSlicingMC
 
   template <typename JetType>
-  double DistinguishJets(const JetType& jets, ROOT::Math::PxPyPzMVector& lResonance)
+  double DistinguishJets(const JetType& jets, const ROOT::Math::PxPyPzMVector& lResonance)
   {
     if (cDebugLevel > 0) {
       LOG(info) << "Found multiple jets to the same phi.";
@@ -1176,7 +1176,7 @@ struct kstarInOO {
 
     bool HasJets = false;
     int nJets = 0;
-    for (auto chargedjet : chargedjets) {
+    for (const auto& chargedjet : chargedjets) {
       if (std::abs(chargedjet.eta()) > (cfgJetMaxEta - cfgJetdR)) {
         continue;
       }
@@ -1263,7 +1263,7 @@ struct kstarInOO {
 
     bool HasJets = false;
     int nJets = 0;
-    for (auto mcdjet : mcdjets) {
+    for (const auto& mcdjet : mcdjets) {
       if (std::abs(mcdjet.eta()) > cfgJetMaxEta - cfgJetdR) {
         continue;
       }
@@ -1464,7 +1464,7 @@ struct kstarInOO {
   void processDataMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}, true}; // true is for 'ignore overflows' (true by default)
+    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}};
     SameKindPair<EventCandidates, TrackCandidates, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (cDebugLevel > 0) {
@@ -1556,7 +1556,7 @@ struct kstarInOO {
   void processMixedEventMC(EventCandidates const& collisions, TrackCandidatesMC const& tracks, aod::McParticles const&)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}, true}; // true is for 'ignore overflows' (true by default)
+    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}};
     SameKindPair<EventCandidates, TrackCandidatesMC, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (cDebugLevel > 0) {

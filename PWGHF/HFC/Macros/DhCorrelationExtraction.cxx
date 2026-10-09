@@ -201,7 +201,7 @@ Bool_t DhCorrelationExtraction::setDmesonSpecie(DmesonSpecie k)
   return kTRUE;
 }
 
-Bool_t DhCorrelationExtraction::extractCorrelations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax, TString codeName)
+Bool_t DhCorrelationExtraction::extractCorrelations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax, const TString& codeName)
 {
 
   if (fSubtractSoftPiME) {
@@ -1513,7 +1513,7 @@ Double_t DhCorrelationExtraction::calculateBaselineError(TH1D*& histo, Bool_t to
   return errBaseline;
 }
 
-void DhCorrelationExtraction::setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
+void DhCorrelationExtraction::setTH1HistoStyle(TH1D*& histo, const TString& hTitle, const TString& hXaxisTitle, const TString& hYaxisTitle,
                                                Style_t markerStyle, Color_t markerColor, Double_t markerSize,
                                                Color_t lineColor, Int_t lineWidth, Float_t hTitleXaxisOffset, Float_t hTitleYaxisOffset,
                                                Float_t hTitleXaxisSize, Float_t hTitleYaxisSize, Float_t hLabelXaxisSize, Float_t hLabelYaxisSize,
@@ -1538,7 +1538,7 @@ void DhCorrelationExtraction::setTH1HistoStyle(TH1D*& histo, TString hTitle, TSt
   histo->GetYaxis()->CenterTitle(centerYaxisTitle);
 }
 
-void DhCorrelationExtraction::setTH2HistoStyle(TH2D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, TString hZaxisTitle,
+void DhCorrelationExtraction::setTH2HistoStyle(TH2D*& histo, const TString& hTitle, const TString& hXaxisTitle, const TString& hYaxisTitle, const TString& hZaxisTitle,
                                                Float_t hTitleXaxisOffset, Float_t hTitleYaxisOffset, Float_t hTitleZaxisOffset,
                                                Float_t hTitleXaxisSize, Float_t hTitleYaxisSize, Float_t hTitleZaxisSize,
                                                Float_t hLabelXaxisSize, Float_t hLabelYaxisSize, Float_t hLabelZaxisSize,

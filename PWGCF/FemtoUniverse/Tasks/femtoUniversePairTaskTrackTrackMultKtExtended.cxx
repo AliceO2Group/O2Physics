@@ -208,7 +208,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.confUse3D>> to true in order to use)"};
   ConfigurableAxis confmultBins3D{"confmultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.confUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{confVtxBins, confMultBins}};
 
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> confIsCPR{"confIsCPR", true, "Close Pair Rejection"};
@@ -487,7 +487,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
 
   void init(InitContext&)
   {
-    colBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBins}, true};
+    colBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBins}};
 
     eventHisto.init(&qaRegistry);
 

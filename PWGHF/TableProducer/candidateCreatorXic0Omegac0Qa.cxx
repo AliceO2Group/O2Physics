@@ -34,6 +34,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -233,7 +234,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   Service<o2::framework::O2DatabasePDG> pdgdb{};
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   // DCAFitter
@@ -248,7 +249,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                 VertexFit };
 
   // Table aliases
-  using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
   using TracksWCovIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
   using TracksWCovDcaExtraPidPrPiKa = soa::Join<aod::TracksWCovDcaExtra, aod::TracksPidPr, aod::TracksPidPi, aod::TracksPidKa>;
   using TracksWCovExtraPidIU = soa::Join<aod::TracksIU, TracksCovIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
@@ -258,7 +259,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   HfEventSelection hfEvSel;
 
   // PDG Id of daughter tracks & V0s & cascades & charm baryons - Used in KFParticle
-  int pdgIdOfV0DauPos{}, pdgIdOfV0DauNeg{}, pdgIdOfBach{}, pdgIdOfCharmBach{};
+  int pdgIdOfV0DauPos{}, pdgIdOfV0DauNeg{}, pdgIdOfBach{}, pdgIdOfBachRej{}, pdgIdOfCharmBach{};
   int pdgIdOfV0{}, pdgIdOfCascade{}, pdgIdOfCharmBaryon{};
 
   // Track PID: PID value of tracks defined under o2::track::PID namespace
@@ -314,6 +315,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauPos = kProton;
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kPiMinus;
+      pdgIdOfBachRej = 0; // -> Not used in XiPi channel
       pdgIdOfCharmBach = kPiPlus;
 
       pdgIdOfV0 = kLambda0;
@@ -331,6 +333,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauPos = kProton;
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kKMinus;
+      pdgIdOfBachRej = kPiMinus;
       pdgIdOfCharmBach = kPiPlus;
 
       pdgIdOfV0 = kLambda0;
@@ -348,6 +351,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauPos = kProton;
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kKMinus;
+      pdgIdOfBachRej = kPiMinus;
       pdgIdOfCharmBach = kKPlus;
 
       pdgIdOfV0 = kLambda0;
@@ -369,6 +373,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     LOGF(info, "  PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
     LOGF(info, "  PDG ID of V0: %d", pdgIdOfV0);
     LOGF(info, "  PDG ID of Bachelor: %d", pdgIdOfBach);
+    LOGF(info, "  PDG ID of Bachelor Rej: %d", pdgIdOfBachRej);
     LOGF(info, "  PDG ID of Cascade: %d", pdgIdOfCascade);
     LOGF(info, "  PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
     LOGF(info, "  PDG ID of Charm Baryon: %d", pdgIdOfCharmBaryon);
@@ -964,7 +969,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       KFParticle kfPos(kfTrack0, (isAnti ? -pdgIdOfV0DauNeg : pdgIdOfV0DauPos));
       KFParticle kfNeg(kfTrack1, (isAnti ? -pdgIdOfV0DauPos : pdgIdOfV0DauNeg));
       KFParticle kfBach(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach));
-      KFParticle kfBachRej(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach)); // Rej -> Used for Omegac0->OmegaPi only
+      KFParticle kfBachRej(kfTrackBach, (isAnti ? -pdgIdOfBachRej : pdgIdOfBachRej)); // Rej -> Used for Omegac0->OmegaPi only
 
       // ~~~~~~~Construct V0 with KF~~~~~~~
       const KFParticle* v0Daughters[2] = {&kfPos, &kfNeg};
@@ -1391,7 +1396,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithDCAFitterNoCentWithTrackedCasc, "Charm candidte reconstruction with Xi Pi via DcaFitter method with tracked cascade, no centrality", false);
 #endif
 
-  void processToXiPiWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processToXiPiWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                           aod::HfCascLf2Prongs const& candidates,
                                           aod::Cascades const& cascades,
                                           aod::V0s const& v0s,
@@ -1403,7 +1408,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithDCAFitterCentFT0C, "Charm candidate reconstruction with Xi Pi via DcaFitter method, centrality selection on FT0C", false);
 
-  void processToXiPiWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processToXiPiWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                           aod::HfCascLf2Prongs const& candidates,
                                           aod::Cascades const& cascades,
                                           aod::V0s const& v0s,
@@ -1430,7 +1435,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithDCAFitterNoCent, "Charm candidte reconstruction with Omega Pi via DcaFitter method, no centrality", false);
 
-  void processToOmegaPiWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processToOmegaPiWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
                                              aod::Cascades const& cascades,
                                              aod::V0s const& v0s,
@@ -1442,7 +1447,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithDCAFitterCentFT0C, "Charm candidate reconstruction with Omega Pi via DcaFitter method, centrality selection on FT0C", false);
 
-  void processToOmegaPiWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processToOmegaPiWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
                                              aod::Cascades const& cascades,
                                              aod::V0s const& v0s,
@@ -1469,7 +1474,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithDCAFitterNoCent, "Charm candidte reconstruction with Omega Ka via DcaFitter method, no centrality", false);
 
-  void processToOmegaKaWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processToOmegaKaWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
                                              aod::Cascades const& cascades,
                                              aod::V0s const& v0s,
@@ -1481,7 +1486,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithDCAFitterCentFT0C, "Charm candidate reconstruction with Omega Ka via DcaFitter method, centrality selection on FT0C", false);
 
-  void processToOmegaKaWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processToOmegaKaWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
                                              aod::Cascades const& cascades,
                                              aod::V0s const& v0s,
@@ -1514,7 +1519,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithKFParticleNoCent, "Charm Baryon decaying to Xi Pi reconstruction via KFParticle method, no centrality", false);
 
-  void processToXiPiWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processToXiPiWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                            aod::HfCascLf2Prongs const& candidates,
                                            aod::Cascades const& cascades,
                                            aod::V0s const& v0s,
@@ -1526,7 +1531,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithKFParticleCentFT0C, "Charm Baryon decaying to Xi Pi reconstruction via KFParticle method, centrality on FT0C", false);
 
-  void processToXiPiWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processToXiPiWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                            aod::HfCascLf2Prongs const& candidates,
                                            aod::Cascades const& cascades,
                                            aod::V0s const& v0s,
@@ -1553,7 +1558,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithKFParticleNoCent, "Charm Baryon decaying to Omega Pi reconstruction via KFParticle method, no centrality", false);
 
-  void processToOmegaPiWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processToOmegaPiWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
                                               aod::Cascades const& cascades,
                                               aod::V0s const& v0s,
@@ -1565,7 +1570,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithKFParticleCentFT0C, "Charm Baryon decaying to Omega Pi reconstruction via KFParticle method, centrality on FT0C", false);
 
-  void processToOmegaPiWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processToOmegaPiWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
                                               aod::Cascades const& cascades,
                                               aod::V0s const& v0s,
@@ -1592,7 +1597,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithKFParticleNoCent, "Charm Baryon decaying to Omega Ka reconstruction via KFParticle method, no centrality", false);
 
-  void processToOmegaKaWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processToOmegaKaWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
                                               aod::Cascades const& cascades,
                                               aod::V0s const& v0s,
@@ -1604,7 +1609,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithKFParticleCentFT0C, "Charm Baryon decaying to Omega Ka reconstruction via KFParticle method, centrality on FT0C", false);
 
-  void processToOmegaKaWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processToOmegaKaWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
                                               aod::Cascades const& cascades,
                                               aod::V0s const& v0s,
@@ -1622,7 +1627,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   ///                                                         ///
   ///////////////////////////////////////////////////////////////
 
-  void processCollisionsNoCent(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processCollisionsNoCent(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
@@ -1638,7 +1643,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processCollisionsNoCent, "Collision monitoring - No Centrality", true);
 
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                  aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
@@ -1654,7 +1659,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processCollisionsCentFT0C, "Collision monitoring - Centrality selection with FT0C", false);
 
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                  aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
@@ -1713,9 +1718,9 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
   // Table aliases
   using TracksWMcIU = soa::Join<aod::TracksIU, McTrackLabels>;
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
-  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>; // -> Used for subscription for process functions of centrality with FT0Ms
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 

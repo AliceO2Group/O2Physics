@@ -108,16 +108,16 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
   return getTrackParCovFwd3DShift(track, 0.f, 0.f, zshift, covOpt...);
 }
 
-inline o2::track::TrackParCovFwd getTrackParCovFwdShiftManual(
+inline o2::track::TrackParCovFwd getTrackParCovFwd3DShiftManual(
   const double x, const double y, const double phi, const double tgl, const double signed1Pt,
   const double cXX,
   const double cXY, const double cYY,
   const double cPhiX, const double cPhiY, const double cPhiPhi,
   const double cTglX, const double cTglY, const double cTglPhi, const double cTglTgl,
   const double c1PtX, const double c1PtY, const double c1PtPhi, const double c1PtTgl, const double c1Pt21Pt2,
-  const float z, const float zshift, const float chi2)
+  const float z, const float xshift, const float yshift, const float zshift, const float chi2)
 {
-  SMatrix5 tpars(x, y, phi, tgl, signed1Pt);
+  SMatrix5 tpars(x + xshift, y + yshift, phi, tgl, signed1Pt);
 
   SMatrix55 tcovs;
   std::vector<double> v1{
@@ -164,15 +164,15 @@ o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov
 
 /// propagate fwdtrack to a certain point.
 template <typename TFwdTrack, typename TFwdTrackCov, typename TCollision>
-o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TFwdTrackCov const& cov, TCollision const& collision, const propagationPoint endPoint, const float matchingZ, const float bzkG, const float zshift = 0.f)
+o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TFwdTrackCov const& cov, TCollision const& collision, const propagationPoint endPoint, const float matchingZ, const float bzkG, const float xshift = 0.f, const float yshift = 0.f, const float zshift = 0.f)
 {
   o2::track::TrackParCovFwd trackParCovFwd;
   if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, cov);
+    trackParCovFwd = getTrackParCovFwd3DShift(muon, xshift, yshift, zshift, cov);
   } else if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
-    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, muon);
+    trackParCovFwd = getTrackParCovFwd3DShift(muon, xshift, yshift, zshift, muon);
   } else {
-    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, muon);
+    trackParCovFwd = getTrackParCovFwd3DShift(muon, xshift, yshift, zshift, muon);
   }
 
   o2::dataformats::GlobalFwdTrack propmuon = propagateTrackParCovFwd(trackParCovFwd, muon.trackType(), collision, endPoint, matchingZ, bzkG);
@@ -340,7 +340,7 @@ float getFwdChi2IP(TTrackParCovFwd const& inputTrk, TCollision const& collision,
 }
 
 template <typename TFullFwdTrack, typename TCollision>
-float getFwdChi2IP(const TFullFwdTrack& fwdtrack, const TCollision& collision, const float bz, const float zShift)
+float getFwdChi2IP(const TFullFwdTrack& fwdtrack, const TCollision& collision, const float bz, const float xShift, const float yShift, const float zShift)
 {
   // this function returns imcompatibility of fwdtrack respect to a given PV.
   // fwdtracks are never PV contributors in ALICE.
@@ -348,7 +348,7 @@ float getFwdChi2IP(const TFullFwdTrack& fwdtrack, const TCollision& collision, c
   // chi2IP cannot be used to decide the best fwdtrack-to-collision match or MFT-MCH match, because it gives biases toward small muon impact parameter.
   // chi2IP should be used only after the best fwdtrack-to-collision association and the best MFT-MCH match are defined.
 
-  o2::track::TrackParCovFwd trk = getTrackParCovFwdShift(fwdtrack, zShift, fwdtrack);
+  o2::track::TrackParCovFwd trk = getTrackParCovFwd3DShift(fwdtrack, xShift, yShift, zShift, fwdtrack);
 
   if (std::abs(bz) < 1e-12) {
     trk.propagateToZlinear(collision.posZ());

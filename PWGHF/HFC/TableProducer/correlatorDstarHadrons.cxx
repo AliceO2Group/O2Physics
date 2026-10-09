@@ -179,7 +179,7 @@ struct HfCorrelatorDstarHadrons {
 
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
-  BinningType binningScheme{{binsZVtx, binsMultiplicity}, true};
+  BinningType binningScheme{{binsZVtx, binsMultiplicity}};
   // Eta Phi Axes
   ConfigurableAxis axisEta{"axisEta", {16, -1.0, 1.0}, "Eta Axis"};
   ConfigurableAxis axisPhi{"axisPhi", {64, 0.0, 3.14}, "Phi Axis"};
@@ -203,7 +203,7 @@ struct HfCorrelatorDstarHadrons {
     invMassD0Particle = -999.0;
     binNumber = -2;
 
-    binningScheme = {{binsZVtx, binsMultiplicity}, true};
+    binningScheme = {{binsZVtx, binsMultiplicity}};
 
     registry.add("QA/hMultFT0M", "Multiplicity distribution in FT0M", {HistType::kTH1D, {axisSpecMultFT0M}});
     registry.add("QA/hCandsPerCol", "Candidates per Collision", {HistType::kTH1D, {{100, 0.0, 100.0}}});

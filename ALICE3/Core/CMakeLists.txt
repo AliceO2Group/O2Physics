@@ -11,6 +11,7 @@
 
 o2physics_add_library(ALICE3Core
                       SOURCES TrackUtilities.cxx
+                              ConfigurationParser.cxx
                               FlatLutEntry.cxx
                               FlatTrackSmearer.cxx
                               GeometryContainer.cxx
@@ -20,6 +21,7 @@ o2physics_add_library(ALICE3Core
 o2physics_target_root_dictionary(ALICE3Core
                       HEADERS TrackUtilities.h
                               FlatLutEntry.h
+                              OTFParticle.h
                               GeometryContainer.h
                       LINKDEF ALICE3CoreLinkDef.h)
 

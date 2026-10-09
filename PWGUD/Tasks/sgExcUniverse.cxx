@@ -140,7 +140,7 @@ struct SGExcUniverse {
     std::vector<int> iskaon;
     std::vector<int> ismuon;
     std::vector<int> iselec;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       TLorentzVector a;
       if (trackselector(t, parameters)) {
         px.push_back(t.px());

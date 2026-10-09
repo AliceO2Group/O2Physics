@@ -50,8 +50,9 @@ using TrackExtraA3 = TracksExtraA3::iterator;
 
 namespace mcparticle_alice3
 {
-DECLARE_SOA_COLUMN(NHits, nHits, int);     //! number of silicon hits
-DECLARE_SOA_COLUMN(Charge, charge, float); //! particle charge
+DECLARE_SOA_COLUMN(NHits, nHits, int);                  //! number of silicon hits
+DECLARE_SOA_COLUMN(Charge, charge, float);              //! particle charge
+DECLARE_SOA_COLUMN(DecayRadius, decayRadius, float);    //! Radius for decayed particle produced by decayer (-1 if not decayed)
 DECLARE_SOA_BITMAP_COLUMN(DecayerBits, decayerBits, 8); //! Bit mask for particle produced by the OTF decayer
 } // namespace mcparticle_alice3
 DECLARE_SOA_TABLE(MCParticlesExtraA3, "AOD", "MCParticlesExtraA3",
@@ -59,7 +60,10 @@ DECLARE_SOA_TABLE(MCParticlesExtraA3, "AOD", "MCParticlesExtraA3",
                   mcparticle_alice3::Charge);
 using MCParticleExtraA3 = MCParticlesExtraA3::iterator;
 
-DECLARE_SOA_TABLE(OTFDecayerBits, "AOD", "OTFDecayerBits", mcparticle_alice3::DecayerBits);
+DECLARE_SOA_TABLE(OTFParticleExtras, "AOD", "OTFPARTICLEEXTRA",
+                  mcparticle_alice3::DecayerBits,
+                  mcparticle_alice3::DecayRadius);
+using OTFParticleExtra = OTFParticleExtras::iterator;
 
 } // namespace o2::aod
 

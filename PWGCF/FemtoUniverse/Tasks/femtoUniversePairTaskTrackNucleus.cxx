@@ -191,7 +191,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   ConfigurableAxis confMtBins3D{"confMtBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twoobjectsconfigs.confUse3D>> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "Multiplicity binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twoobjectsconfigs.confUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{confVtxBins, confMultBins}};
 
   ConfigurableAxis confKstarBins{"confKstarBins", {1500, 0., 6.}, "Binning kstar"};
   ConfigurableAxis confKtBins{"confKtBins", {150, 0., 9.}, "Binning kT"};
@@ -491,7 +491,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     mixQARegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
     eventHisto.fillQA(col);
@@ -510,7 +510,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   /// \param pairType describes charge of correlation pair (plus-plus (1), minus-minus (2), plus-minus (3), minus-plus (4))
   /// \param fillQA enables filling of QA histograms
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupTrack, PartitionType groupNucleus, PartType parts, float magFieldTesla, int multCol, int pairType, bool /*fillQA*/)
+  void doSameEvent(const PartitionType& groupTrack, const PartitionType& groupNucleus, const PartType& parts, float magFieldTesla, int multCol, int pairType, bool /*fillQA*/)
   {
     for (const auto& part : groupTrack) {
       if (!isParticleNsigma((int8_t)1, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
@@ -680,7 +680,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   /// \param multCol multiplicity of the collision
   /// \param pairType describes charge of correlation pair (plus-minus (1), plus-plus (2), minus-minus (3))
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupTrack, PartitionType groupNucleus, PartType parts, float magFieldTesla, int multCol, int pairType)
+  void doMixedEvent(const PartitionType& groupTrack, const PartitionType& groupNucleus, const PartType& parts, float magFieldTesla, int multCol, int pairType)
   {
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupTrack, groupNucleus))) {
 

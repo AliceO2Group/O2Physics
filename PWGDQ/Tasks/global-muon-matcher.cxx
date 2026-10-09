@@ -26,6 +26,7 @@
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>

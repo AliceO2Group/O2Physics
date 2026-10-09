@@ -31,6 +31,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -403,7 +404,7 @@ struct HfCandidateCreatorDstar {
   ///////////////////////////////////
 
   /// @brief process function w/ PV refit and w/o centrality selections
-  void processPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processPvRefit(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                       aod::Hf2Prongs const& rowsTrackIndexD0,
                       aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                       TracksWCovExtraPidPiKa const& tracks,
@@ -414,7 +415,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefit, " Run candidate creator with PV refit and w/o centrality selections", false);
 
   /// @brief process function w/o PV refit and w/o centrality selections
-  void processNoPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoPvRefit(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexD0,
                         aod::HfDstars const& rowsTrackIndexDstar,
                         TracksWCovExtraPidPiKa const& tracks,
@@ -431,7 +432,7 @@ struct HfCandidateCreatorDstar {
   /////////////////////////////////////////////
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0C
-  void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                               TracksWCovExtraPidPiKa const& tracks,
@@ -442,7 +443,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefitCentFT0C, " Run candidate creator with PV refit nad w/ centrality selection on FT0C", false);
 
   /// @brief process function w/o PV refit and w/ centrality selection on FT0C
-  void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
                                 TracksWCovExtraPidPiKa const& tracks,
@@ -459,7 +460,7 @@ struct HfCandidateCreatorDstar {
   /////////////////////////////////////////////
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0M
-  void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                               TracksWCovExtraPidPiKa const& tracks,
@@ -470,7 +471,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefitCentFT0M, " Run candidate creator with PV refit nad w/ centrality selection on FT0M", false);
 
   /// @brief process function w/o PV refit and w/ centrality selection on FT0M
-  void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
                                 TracksWCovExtraPidPiKa const& tracks,
@@ -487,7 +488,7 @@ struct HfCandidateCreatorDstar {
   ///////////////////////////////////////////////////////////
 
   /// @brief process function to monitor collisions - no centrality
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -506,7 +507,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -525,7 +526,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -555,9 +556,9 @@ struct HfCandidateCreatorDstarExpressions {
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
 
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
-  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 

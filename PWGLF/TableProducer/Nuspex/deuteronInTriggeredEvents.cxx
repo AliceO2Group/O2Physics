@@ -266,6 +266,7 @@ struct DeuteronInTriggeredEvents {
   Produces<o2::aod::NucleiTable> nucleiTable;                       // For data
   Produces<o2::aod::NucleiTableMCExtension> nucleiTableMCExtension; // For MC analysis
   Produces<o2::aod::GenEventMCSel> genEventMCSel;                   // For MC reco events
+  Produces<o2::aod::NucleiTableMC> nucleiTableMC;                   // For MC analysis as data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB; // For INELgt0 gen MC selection
   Zorro zorro;                                 // Definition of Zorro: helpful for skimmed data
@@ -283,7 +284,6 @@ struct DeuteronInTriggeredEvents {
     Configurable<bool> rapidityToggle{"rapidityToggle", false, "If true, use rapidity cuts"};
     Configurable<float> tpcChi2ClusMax{"tpcChi2ClusMax", 4.f, "Max TPC Chi2 per cluster"};
     Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 70, "Minimum number of TPC crossed rows"};
-    Configurable<float> tpcNCrossedRowsOverFindableMin{"tpcNCrossedRowsOverFindableMin", 0.8f, "Minimum ratio of crossed rows over findable clusters"};
     Configurable<int> tpcNClsMin{"tpcNClsMin", 80, "Minimum number of TPC clusters"};
     Configurable<float> tpcRigidityMin{"tpcRigidityMin", 0.5f, "Minimum TPC rigidity for tracks"};
     Configurable<LabeledArray<double>> tpcNSigmaMax{"tpcNSigmaMax", {nuclei::NSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
@@ -355,7 +355,7 @@ struct DeuteronInTriggeredEvents {
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  double computeAbsoDecL(aod::McParticles::iterator particle)
+  double computeAbsoDecL(const aod::McParticles::iterator& particle)
   {
     if (!particle.has_daughters())
       return -1.f;
@@ -777,7 +777,6 @@ struct DeuteronInTriggeredEvents {
           track.itsNCls() < cfgTrackCut.itsNClusMin ||
           track.tpcNClsFound() < cfgTrackCut.tpcNClsMin ||
           track.tpcNClsCrossedRows() < cfgTrackCut.tpcNCrossedRowsMin ||
-          track.tpcNClsCrossedRows() < cfgTrackCut.tpcNCrossedRowsOverFindableMin * track.tpcNClsFindable() ||
           track.tpcChi2NCl() > cfgTrackCut.tpcChi2ClusMax ||
           track.itsChi2NCl() > cfgTrackCut.itsChi2ClusMax) {
         continue;
@@ -993,7 +992,7 @@ struct DeuteronInTriggeredEvents {
     }
 
     std::vector<bool> isReconstructed(particlesMC.size(), false);
-    for (auto& c : nuclei::candidates) {
+    for (auto& c : nuclei::candidates) { // o2-linter: disable=const-ref-in-for-loop (candidate is modified in loop)
       auto label = tracks.iteratorAt(c.globalIndex);
       if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
         continue;
@@ -1113,6 +1112,77 @@ struct DeuteronInTriggeredEvents {
     }
   }
   PROCESS_SWITCH(DeuteronInTriggeredEvents, processMC, "MC analysis", false);
+
+  void processMCasData(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  {
+    nuclei::candidates.clear();
+    std::vector<bool> goodCollisions(mcCollisions.size(), false);
+
+    for (const auto& collision : collisions) {
+      if (!eventSelectionWithHisto(collision)) {
+        continue;
+      }
+
+      // Avoid unwanted memory leaks
+      if (!collision.has_mcCollision())
+        continue;
+
+      int mcId = collision.mcCollisionId();
+      if (mcId < 0 || mcId >= static_cast<int>(mcCollisions.size()))
+        continue;
+
+      goodCollisions[collision.mcCollisionId()] = true;
+      const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
+      fillDataInfo(collision, slicedTracks);
+    }
+
+    std::vector<bool> isReconstructed(particlesMC.size(), false);
+    for (size_t i{0}; i < nuclei::candidates.size(); ++i) {
+      auto& c = nuclei::candidates[i];
+      if (c.fillTree) {
+        auto label = tracks.iteratorAt(c.globalIndex);
+
+        if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+          continue;
+        }
+
+        auto particle = particlesMC.iteratorAt(label.mcParticleId());
+
+        int motherPdgCode = 0;
+        float motherDecRadius = -1;
+        isReconstructed[particle.globalIndex()] = true;
+
+        if (particle.isPhysicalPrimary()) {
+          c.flags |= kIsPhysicalPrimary;
+          if (particle.has_mothers()) {
+            for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+              if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+                c.flags |= kIsSecondaryFromWeakDecay;
+                motherPdgCode = motherparticle.pdgCode();
+                motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
+                break;
+              }
+            }
+          }
+        } else if (particle.getProcess() == TMCProcess::kPDecay) {
+          c.flags |= kIsSecondaryFromWeakDecay;
+          for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+            motherPdgCode = motherparticle.pdgCode();
+            motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
+          }
+        } else {
+          c.flags |= kIsSecondaryFromMaterial;
+        }
+
+        isReconstructed[particle.globalIndex()] = true;
+        float absoDecL = computeAbsoDecL(particle);
+
+        nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.nContrib, c.dcaXY, c.dcaZ, c.tpcSignal, c.itsChi2, c.tpcChi2, c.tofChi2, c.flags, c.tpcFindableCls, c.tpcCrossedRows, c.itsClsMap, c.tpcNCls, c.tpcNClsShared, c.clusterSizesITS, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absoDecL);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(DeuteronInTriggeredEvents, processMCasData, "MC as data analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

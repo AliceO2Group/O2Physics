@@ -541,13 +541,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (nameStr == "JpsiPWGSkimmedCuts1") { // please do not remove or modify, this is used for the common Skimmed tree production, (Xiaozhi Bai)
-    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
-    cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed"));
-    cut->AddCut(GetAnalysisCut("electronPIDLooseSkimmed"));
-    return cut;
-  }
-
   if (nameStr == "JpsiPWGSkimmedCuts2") {
     cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
     cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed"));
@@ -3067,6 +3060,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "muonEtaCut") {
+    cut->AddCut(GetAnalysisCut("muonEtaCut"));
+    return cut;
+  }
+
   if (nameStr == "muonMinimalCuts") {
     cut->AddCut(GetAnalysisCut("muonMinimalCuts"));
     return cut;
@@ -3107,6 +3105,24 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (nameStr == "muonQualityCuts10SigmaPDCA_MCHMID") {
     cut->AddCut(GetAnalysisCut("muonQualityCuts10SigmaPDCA"));
     cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p5_MchMidmatching") {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p5"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p7_MchMidmatching") {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p7"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt6_MchMidmatching") {
+    cut->AddCut(GetAnalysisCut("muonLowPt6"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
     return cut;
   }
 
@@ -3170,6 +3186,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (nameStr == "muonLowPt6") {
     cut->AddCut(GetAnalysisCut("muonLowPt6"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p5") {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p5"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p7") {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p7"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
@@ -3629,6 +3657,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (nameStr == "pairX3872Cut3") {
     cut->AddCut(GetAnalysisCut("pairX3872_3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872Minitree")) {
+    cut->AddCut(GetAnalysisCut("pairX3872_minitree"));
     return cut;
   }
 
@@ -4278,7 +4311,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (nameStr == "eventStandardSel8PbPbQualityTightTrackOccupancyCollInTime") {
+  if (nameStr == "eventStandardSel8PbPbQualityTightTrackOccupancyCollInTime2") {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
@@ -4662,12 +4695,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (nameStr == "jpsiStandardKine5") {
     cut->AddCut(VarManager::kP, 1.0, 1000.0);
-    cut->AddCut(VarManager::kEta, -0.9, 0.9);
-    return cut;
-  }
-
-  if (nameStr == "jpsiKineSkimmed") {
-    cut->AddCut(VarManager::kPt, 0.7, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     return cut;
   }
@@ -5471,7 +5498,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   for (int i = 1; i <= 8; i++) { // o2-linter: disable=magic-number (number of cuts)
     if (nameStr == Form("dalitzLeg%d", i)) {
-      cut->AddCut(VarManager::kIsDalitzLeg + i - 1, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsDalitzLeg + i - 1, -0.5, 0.5, true);
       return cut;
     }
 
@@ -5482,17 +5509,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (nameStr == "pidcalib_ele") {
-    cut->AddCut(VarManager::kIsLegFromGamma, 0.5, 1.5, false);
+    cut->AddCut(VarManager::kIsLegFromGamma, -0.5, 0.5, true);
     return cut;
   }
 
   if (nameStr == "pidcalib_pion") {
-    cut->AddCut(VarManager::kIsLegFromK0S, 0.5, 1.5, false);
+    cut->AddCut(VarManager::kIsLegFromK0S, -0.5, 0.5, true);
     return cut;
   }
 
   if (nameStr == "pidcalib_proton") {
-    cut->AddCut(VarManager::kIsProtonFromLambdaAndAntiLambda, 0.5, 1.5, false);
+    cut->AddCut(VarManager::kIsProtonFromLambdaAndAntiLambda, -0.5, 0.5, true);
     return cut;
   }
 
@@ -6558,6 +6585,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "muonEtaCut") {
+    cut->AddCut(VarManager::kEta, -4.0, -2.5);
+    return cut;
+  }
+
   if (nameStr == "muonMinimalCuts") {
     cut->AddCut(VarManager::kEta, -4.0, -2.5);
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
@@ -6660,6 +6692,16 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (nameStr == "muonLowPt6") {
     cut->AddCut(VarManager::kPt, 2.0, 1000.0);
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p5") {
+    cut->AddCut(VarManager::kPt, 1.5, 1000.0);
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p7") {
+    cut->AddCut(VarManager::kPt, 1.7, 1000.0);
     return cut;
   }
 
@@ -7084,6 +7126,19 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kQ, 0.0, 0.5);
     cut->AddCut(VarManager::kDeltaR, 0.0, 5.0);
     cut->AddCut(VarManager::kQuadPt, 0.0, 1000.0);
+    return cut;
+  }
+
+  std::shared_ptr<TF1> fDeltaR2High = std::make_shared<TF1>("fDeltaR2High", "[0]+[1]*x", 0.0, 5.0);
+  fDeltaR2High->SetParameters(3.0, -0.4);
+  if (!nameStr.compare("pairX3872_minitree")) {
+    cut->AddCut(VarManager::kRap, -0.8, 0.8);
+    cut->AddCut(VarManager::kQuadDefaultDileptonMass, 3.0, 5.0);
+    cut->AddCut(VarManager::kDeltaR2, 0.0, 1.0, false, VarManager::kPt, 5.0, 1000.0);
+    cut->AddCut(VarManager::kDeltaR2, 0.0, fDeltaR2High, false, VarManager::kPt, 0.0, 5.0);
+    cut->AddCut(VarManager::kQuadPt, 0.0, 1000.0);
+    cut->AddCut(VarManager::kVertexingProcCode, 0.5, 2.5);
+    cut->AddCut(VarManager::kVertexingQuadProcCode, 0.5, 2.5);
     return cut;
   }
 
@@ -7937,9 +7992,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
           }
         }
 
-        if (!cutDirsFilled) {
-          cutDirsFilled = true;
-        }
+        cutDirsFilled = true;
 
         centBins.emplace_back(centMin, centMax);
         ptBins.emplace_back(ptMin, ptMax);
@@ -7988,9 +8041,10 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
       binaryCfg.cutsMl = makeLabeledCutsMl(cutsMl, labelsFlatBin, labelsClass);
 
       return binaryCfg;
+    }
 
-      // MultiClass
-    } else if (typeStr == "MultiClass") {
+    // MultiClass
+    if (typeStr == "MultiClass") {
       dqmlcuts::MultiClassBdtScoreConfig multiCfg;
       multiCfg.inputFeatures = namesInputFeatures;
       multiCfg.onnxFiles = onnxFileNames;

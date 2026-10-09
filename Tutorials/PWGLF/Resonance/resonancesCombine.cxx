@@ -93,7 +93,7 @@ struct ResonanceCombine {
   }
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     if (std::abs(track.pt()) < cMinPtcut)
       return false;

@@ -81,13 +81,13 @@ class EventPlaneHelper
   void DoRescale(float& qx, float& qy, float ap, float am);
 
   // Method to get the recentering correction on the Qx-Qy distribution.
-  void GetCorrRecentering(const std::shared_ptr<TH2> histQ, float& meanX, float& meanY);
+  void GetCorrRecentering(const std::shared_ptr<TH2>& histQ, float& meanX, float& meanY);
 
   // Method to get the std. deviation on the Qx-Qy distribution.
-  void GetCorrWidth(const std::shared_ptr<TH2> histQ, float& stdX, float& stdY);
+  void GetCorrWidth(const std::shared_ptr<TH2>& histQ, float& stdX, float& stdY);
 
   // Method to get the twist and rescale correction on the Qx-Qy distribution.
-  void GetCorrTwistRecale(const std::shared_ptr<TH2> histQ,
+  void GetCorrTwistRecale(const std::shared_ptr<TH2>& histQ,
                           float& aPlus, float& aMinus,
                           float& lambdaPlus, float& lambdaMinus);
 

@@ -31,11 +31,11 @@ struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<int>> rejectedPdgCodes{"rejectedPdgCodes", {}, "Reject particles with this exact pdg code (including the sign!)"};
   o2::framework::Configurable<bool> rejectParticleWithoutMcParticle{"rejectParticleWithoutMcParticle", false, "If true, particles which have no associated MC information, are rejected"};
   o2::framework::Configurable<bool> rejectParticleWithoutMcMother{"rejectParticleWithoutMcMother", false, "If true, particles which have no associated mother are rejected"};
-  o2::framework::Configurable<bool> rejectParticleWithoutMcPartonicMother{"rejectParticleWithoutMcPartonicMother", false, "If true, all particles which have no associated partonic mother"};
-  o2::framework::Configurable<std::vector<int>> requiredMotherPdgCodes{"requiredMotherPdgCodes", {}, "Only consider particles whose mothers have one of the supplied pdg codes (inclduing the sign!)"};
-  o2::framework::Configurable<std::vector<int>> rejectMotherPdgCodes{"rejectMotherPdgCodes", {}, "Only consider particles whose mothers do not have one of the supplied pdg codes (inclduing the sign!)"};
-  o2::framework::Configurable<std::vector<int>> requiredPartonicMotherPdgCodes{"requiredPartonicMotherPdgCodes", {}, "Only consider particles whose partonic mothers have one of the supplied pdg codes (inclduing the sign!)"};
-  o2::framework::Configurable<std::vector<int>> rejectPartonicMotherPdgCodes{"rejectPartonicMotherPdgCodes", {}, "Only consider particles whose mothers do not have one of the supplied pdg codes (inclduing the sign!)"};
+  o2::framework::Configurable<bool> rejectParticleWithoutMcPartonicMother{"rejectParticleWithoutMcPartonicMother", false, "If true, particles which have no associated partonic mother are rejected"};
+  o2::framework::Configurable<std::vector<int>> requiredMotherPdgCodes{"requiredMotherPdgCodes", {}, "Only consider particles whose mothers have one of the supplied pdg codes (including the sign!)"};
+  o2::framework::Configurable<std::vector<int>> rejectMotherPdgCodes{"rejectMotherPdgCodes", {}, "Only consider particles whose mothers do not have one of the supplied pdg codes (including the sign!)"};
+  o2::framework::Configurable<std::vector<int>> requiredPartonicMotherPdgCodes{"requiredPartonicMotherPdgCodes", {}, "Only consider particles whose partonic mothers have one of the supplied pdg codes (including the sign!)"};
+  o2::framework::Configurable<std::vector<int>> rejectPartonicMotherPdgCodes{"rejectPartonicMotherPdgCodes", {}, "Only consider particles whose partonic mothers do not have one of the supplied pdg codes (including the sign!)"};
 };
 
 constexpr const char PrefixTrackCleaner1[] = "TrackCleaner1";
@@ -85,8 +85,10 @@ using ConfOmegaCleaner2 = ConfParticleCleaner<PrefixOmegaCleaner2>;
 
 constexpr const char PrefixMcParticleCleaner1[] = "McParticleCleaner1";
 constexpr const char PrefixMcParticleCleaner2[] = "McParticleCleaner2";
+constexpr const char PrefixMcParticleCleaner3[] = "McParticleCleaner3";
 using ConfMcParticleCleaner1 = ConfParticleCleaner<PrefixMcParticleCleaner1>;
 using ConfMcParticleCleaner2 = ConfParticleCleaner<PrefixMcParticleCleaner2>;
+using ConfMcParticleCleaner3 = ConfParticleCleaner<PrefixMcParticleCleaner3>;
 
 class ParticleCleaner
 {

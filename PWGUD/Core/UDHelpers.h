@@ -243,7 +243,7 @@ T MCcompatibleBCs(F const& collision, int const& ndt, T const& bcs, int const& n
 // function to check if track provides good PID information
 // Checks the nSigma for any particle assumption to be within limits.
 template <typename TC>
-bool hasGoodPID(DGCutparHolder diffCuts, TC track)
+bool hasGoodPID(const DGCutparHolder& diffCuts, TC track)
 {
   // El, Mu, Pi, Ka, and Pr are considered
   // at least one nSigma must be within set limits
@@ -891,7 +891,7 @@ bool cleanCalo(T const& bc, o2::aod::Calos& calos, std::vector<float>& /*lims*/,
 // -----------------------------------------------------------------------------
 // check if all tracks come from same MCCollision
 template <typename T>
-int64_t sameMCCollision(T tracks, o2::aod::McCollisions, o2::aod::McParticles)
+int64_t sameMCCollision(T tracks, const o2::aod::McCollisions&, const o2::aod::McParticles&)
 {
   int64_t colID = -1;
   for (auto const& track : tracks) {

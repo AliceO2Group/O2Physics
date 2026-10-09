@@ -84,9 +84,11 @@ struct ConfMcParticleBinning : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixMcParticleBinning1[] = "McParticleBinning1";
 constexpr const char PrefixMcParticleBinning2[] = "McParticleBinning2";
+constexpr const char PrefixMcParticleBinning3[] = "McParticleBinning3";
 
 using ConfMcParticleBinning1 = ConfMcParticleBinning<PrefixMcParticleBinning1>;
 using ConfMcParticleBinning2 = ConfMcParticleBinning<PrefixMcParticleBinning2>;
+using ConfMcParticleBinning3 = ConfMcParticleBinning<PrefixMcParticleBinning3>;
 
 // the enum gives the correct index in the array
 constexpr std::array<histmanager::HistInfo<McParticleHist>, kMcParticleHistLast>
@@ -144,6 +146,7 @@ auto makeMcParticleHistSpecMap(const T& confBinning)
 
 inline constexpr char PrefixMcParticle1[] = "McParticle1/";
 inline constexpr char PrefixMcParticle2[] = "McParticle2/";
+inline constexpr char PrefixMcParticle3[] = "McParticle3/";
 
 constexpr std::string_view McDir = "MC/";
 

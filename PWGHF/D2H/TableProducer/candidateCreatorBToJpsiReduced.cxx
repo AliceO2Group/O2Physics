@@ -36,7 +36,7 @@
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <TH1.h>
@@ -46,6 +46,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <utility> // std::move
 
 using namespace o2;
 using namespace o2::aod;
@@ -76,6 +77,8 @@ struct HfCandidateCreatorBToJpsiReduced {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B+ is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<double> maxChi2JPsiVtx{"maxChi2JPsiVtx", 1e9, "maximum value of chi2 for JPsi vertex computed with DCAFitter"};
+  Configurable<double> maxChi2BhadVtx{"maxChi2BhadVtx", 0.9, "maximum value of chi2 for B-hadron vertex computed with DCAFitter"};
 
   // selection
   Configurable<double> invMassWindowJpsiHadTolerance{"invMassWindowJpsiHadTolerance", 0.01, "invariant-mass window tolerance for J/Psi K pair preselections (GeV/c2)"};
@@ -83,7 +86,7 @@ struct HfCandidateCreatorBToJpsiReduced {
   float myInvMassWindowJpsiK{1.}, myInvMassWindowJpsiK0Star{1.}, myInvMassWindowJpsiPhi{1.}; // variable that will store the value of invMassWindowJpsiK (defined in dataCreatorJpsiKReduced.cxx)
   double massBplus{o2::constants::physics::MassBPlus}, massB0{o2::constants::physics::MassB0}, massBs{o2::constants::physics::MassBS};
   double bz{0.};
-  o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<2> df2; // fitter for JPsi vertex (2-prong vertex fitter)
   o2::vertexing::DCAFitterN<3> df3; // fitter for B vertex (3-prong vertex fitter)
   o2::vertexing::DCAFitterN<4> df4; // fitter for B vertex (4-prong vertex fitter)
 
@@ -105,6 +108,7 @@ struct HfCandidateCreatorBToJpsiReduced {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setMaxChi2(maxChi2JPsiVtx);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
     df2.setMatCorrType(noMatCorr);
@@ -115,6 +119,7 @@ struct HfCandidateCreatorBToJpsiReduced {
       df3.setMaxDZIni(maxDZIni);
       df3.setMinParamChange(minParamChange);
       df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setMaxChi2(maxChi2BhadVtx);
       df3.setUseAbsDCA(useAbsDCA);
       df3.setWeightedFinalPCA(useWeightedFinalPCA);
       df3.setMatCorrType(noMatCorr);
@@ -124,6 +129,7 @@ struct HfCandidateCreatorBToJpsiReduced {
       df4.setMaxDZIni(maxDZIni);
       df4.setMinParamChange(minParamChange);
       df4.setMinRelChi2Change(minRelChi2Change);
+      df3.setMaxChi2(maxChi2BhadVtx);
       df4.setUseAbsDCA(useAbsDCA);
       df4.setWeightedFinalPCA(useWeightedFinalPCA);
       df4.setMatCorrType(noMatCorr);
@@ -172,10 +178,26 @@ struct HfCandidateCreatorBToJpsiReduced {
     }
 
     for (const auto& candJpsi : candsJpsiThisColl) {
-      o2::track::TrackParametrizationWithError<float> trackPosParCov(
-        candJpsi.xDauPos(), candJpsi.alphaDauPos(), {candJpsi.yDauPos(), candJpsi.zDauPos(), candJpsi.snpDauPos(), candJpsi.tglDauPos(), candJpsi.signed1PtDauPos()}, 1 /*Charge*/, 1 /*Muon*/);
-      o2::track::TrackParametrizationWithError<float> trackNegParCov(
-        candJpsi.xDauNeg(), candJpsi.alphaDauNeg(), {candJpsi.yDauNeg(), candJpsi.zDauNeg(), candJpsi.snpDauNeg(), candJpsi.tglDauNeg(), candJpsi.signed1PtDauNeg()}, -1 /*Charge*/, 1 /*Muon*/);
+
+      std::array<float, o2::track::kNParams> parsTrackPos = {candJpsi.yDauPos(), candJpsi.zDauPos(), candJpsi.snpDauPos(), candJpsi.tglDauPos(), candJpsi.signed1PtDauPos()};
+      std::array<float, o2::track::kNParams> parsTrackNeg = {candJpsi.yDauNeg(), candJpsi.zDauNeg(), candJpsi.snpDauNeg(), candJpsi.tglDauNeg(), candJpsi.signed1PtDauNeg()};
+
+      std::array<float, o2::track::kCovMatSize> covTrackPos = {candJpsi.cYYDauPos(), candJpsi.cZYDauPos(), candJpsi.cZZDauPos(),
+                                                               candJpsi.cSnpYDauPos(), candJpsi.cSnpZDauPos(),
+                                                               candJpsi.cSnpSnpDauPos(), candJpsi.cTglYDauPos(), candJpsi.cTglZDauPos(),
+                                                               candJpsi.cTglSnpDauPos(), candJpsi.cTglTglDauPos(),
+                                                               candJpsi.c1PtYDauPos(), candJpsi.c1PtZDauPos(), candJpsi.c1PtSnpDauPos(),
+                                                               candJpsi.c1PtTglDauPos(), candJpsi.c1Pt21Pt2DauPos()};
+
+      std::array<float, o2::track::kCovMatSize> covTrackNeg = {candJpsi.cYYDauNeg(), candJpsi.cZYDauNeg(), candJpsi.cZZDauNeg(),
+                                                               candJpsi.cSnpYDauNeg(), candJpsi.cSnpZDauNeg(),
+                                                               candJpsi.cSnpSnpDauNeg(), candJpsi.cTglYDauNeg(), candJpsi.cTglZDauNeg(),
+                                                               candJpsi.cTglSnpDauNeg(), candJpsi.cTglTglDauNeg(),
+                                                               candJpsi.c1PtYDauNeg(), candJpsi.c1PtZDauNeg(), candJpsi.c1PtSnpDauNeg(),
+                                                               candJpsi.c1PtTglDauNeg(), candJpsi.c1Pt21Pt2DauNeg()};
+
+      o2::track::TrackParametrizationWithError<float> trackPosParCov(candJpsi.xDauPos(), candJpsi.alphaDauPos(), std::move(parsTrackPos), std::move(covTrackPos));
+      o2::track::TrackParametrizationWithError<float> trackNegParCov(candJpsi.xDauNeg(), candJpsi.alphaDauNeg(), std::move(parsTrackNeg), std::move(covTrackNeg));
 
       // ---------------------------------
       // reconstruct J/Psi candidate

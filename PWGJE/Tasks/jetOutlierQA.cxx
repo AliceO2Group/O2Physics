@@ -418,7 +418,7 @@ struct JetOutlierQATask {
   {
     //
     // collision-based outlier checks based on BC and z position
-    // based on 2-event correlation checks in PWGDQ/Tasks/tableReader_withAssoc.cxx
+    // based on 2-event correlation checks in PWGDQ/Tasks/tableReader_withAssoc.h
     //
 
     fBCCollMap.clear();

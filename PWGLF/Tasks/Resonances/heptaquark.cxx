@@ -261,7 +261,7 @@ struct heptaquark {
     if (collision.numLambda() < 1 || collision.numPhi() < 2)
       return;
 
-    for (auto hqtrackd1 : hqtracks) {
+    for (const auto& hqtrackd1 : hqtracks) {
       if (hqtrackd1.hqId() != 333)
         continue;
 
@@ -289,7 +289,7 @@ struct heptaquark {
       auto hqd1id = hqtrackd1.index();
       histos.fill(HIST("hPhid1Mass"), HQ1.M(), HQ1.Pt());
 
-      for (auto hqtrackd2 : hqtracks) {
+      for (const auto& hqtrackd2 : hqtracks) {
         auto hqd2id = hqtrackd2.index();
         if (hqd2id <= hqd1id)
           continue;
@@ -325,7 +325,7 @@ struct heptaquark {
           histos.fill(HIST("hnsigmaTOFKa"), hqtrackd2.hqd2TOF(), DauVec2.Pt());
         histos.fill(HIST("hPhid2Mass"), HQ2.M(), HQ2.Pt());
 
-        for (auto hqtrackd3 : hqtracks) {
+        for (const auto& hqtrackd3 : hqtracks) {
           if (std::abs(hqtrackd3.hqId()) != 3122)
             continue;
 

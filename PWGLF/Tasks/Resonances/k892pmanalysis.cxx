@@ -197,7 +197,7 @@ struct k892pmanalysis {
   double massAntiLambda0 = MassLambda0Bar;
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -219,7 +219,7 @@ struct k892pmanalysis {
   }
 
   template <typename V0Type>
-  bool V0Cut(const V0Type v0)
+  bool V0Cut(const V0Type& v0)
   {
     // V0 track cuts
     if (std::abs(v0.eta()) > cMaxV0Etacut)
@@ -492,7 +492,7 @@ struct k892pmanalysis {
   {
     auto tracksV0sTuple = std::make_tuple(resotracks, resov0s);
     // auto V0sTuple = std::make_tuple(resov0s);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     Pair<aod::ResoCollisions, aod::ResoTracks, aod::ResoV0s, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, resotracks1, collision2, resov0s2] : pairs) {

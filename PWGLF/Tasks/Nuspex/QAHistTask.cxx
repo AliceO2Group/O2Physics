@@ -314,7 +314,7 @@ struct QAHistTask {
     if (!isEventSelected(event))
       return;
 
-    for (auto track : tracks) { // start loop over all tracks
+    for (const auto& track : tracks) { // start loop over all tracks
 
       if (event_selection_sel8 && !event.sel8())
         continue;
@@ -564,7 +564,7 @@ struct QAHistTask {
     if (!isEventSelected(event))
       return;
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
 
       if (event_selection_sel8 && !event.sel8()) {
         continue;

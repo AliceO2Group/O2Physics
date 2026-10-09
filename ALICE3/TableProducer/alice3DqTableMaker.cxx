@@ -28,7 +28,9 @@
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/ASoA.h>
@@ -63,8 +65,8 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                  aod::UpgradeTofs, aod::UpgradeRichs, aod::UpgradeRichSignals,
                                  aod::McTrackLabels>;
 
-using MyEvents = soa::Join<aod::Collisions, aod::CollisionsAlice3, aod::McCollisionLabels>;
-using MyEventsMC = aod::McCollisions;
+using MyEvents = soa::Join<aod::Collisions, aod::CollisionsAlice3, aod::McCollisionLabels, aod::PVMults, aod::MultsGlobal, aod::CentRun2V0Ms>;
+using MyEventsMC = soa::Join<aod::McCollisions, aod::MultsMCAlice3>;
 
 constexpr static uint32_t GkEventFillMap = VarManager::ObjTypes::Collision;
 constexpr static uint32_t GkEventMcFillMap = VarManager::ObjTypes::CollisionMC;
@@ -84,6 +86,7 @@ struct Alice3DqTableMaker {
   Produces<ReA3MCTracks> trackMC;
 
   Produces<ReA3Events> event;
+  Produces<ReA3EventsExtended> eventExtended;
   Produces<ReducedA3EventsVtxCov> eventVtxCov;
   Produces<ReducedA3MCEventLabels> eventMClabels;
 
@@ -140,8 +143,9 @@ struct Alice3DqTableMaker {
   {
     bool isProcessSkimmingEnabled = context.mOptions.get<bool>("processSkimming");
 
-    if (!isProcessSkimmingEnabled)
+    if (!isProcessSkimmingEnabled) {
       LOG(fatal) << "No process function was enabled ALICE 3 TableMaker";
+    }
 
     VarManager::SetDefaultVarNames(); // Important that this is called before defineCuts() !!!
 
@@ -309,7 +313,7 @@ struct Alice3DqTableMaker {
     fStatsList->Add(histEvents);
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
-    TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
+    TH1I* histTracks = new TH1I("TrackStats", "Track statistics", static_cast<int>(fTrackCuts.size() + 5.0), -0.5, fTrackCuts.size() - 0.5 + 5.0);
     ibX = 1;
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ibX++) {
       histTracks->GetXaxis()->SetBinLabel(ibX, (*cut)->GetName());
@@ -345,7 +349,8 @@ struct Alice3DqTableMaker {
       fHistMan->FillHistClass("Event_MCTruth", dqefficiency_helpers::varValues());
 
       eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
-              mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter()); // TODO: Determine and fill multiplicity values
+              mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(),
+              mcCollision.multMC(), mcCollision.multMC25(), mcCollision.multMC125(), mcCollision.multMC09());
     }
   }
 
@@ -443,10 +448,14 @@ struct Alice3DqTableMaker {
       (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       // Fill historams after event cuts
-      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      fHistMan->FillHistClass("Event_AfterCuts", dqefficiency_helpers::varValues());
 
       event(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(),
             collision.collisionTime(), collision.collisionTimeRes(), collision.multDensity());
+
+      eventExtended(collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(),
+                    collision.multNTracksGlobal(), collision.multNGlobalTracksPV(),
+                    collision.centRun2V0M());
 
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       eventMClabels(collision.mcCollisionId(), collision.mcMask());
@@ -617,8 +626,9 @@ struct Alice3DqTableMaker {
 
     skimCollisions(collisions);
 
-    if (fCollIndexMap.empty())
+    if (fCollIndexMap.empty()) {
       return;
+    }
 
     skimMCParticles(mcParticles, mcCollisions);
 

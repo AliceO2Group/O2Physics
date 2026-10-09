@@ -24,6 +24,7 @@
 #include <fastjet/Selector.hh>
 
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <math.h>
@@ -107,7 +108,7 @@ class JetBkgSubUtils
     constSubRMax = rmax_out;
   }
   void setDoRhoMassSub(bool doMSub_out = true) { doRhoMassSub = doMSub_out; }
-  void setGhostAreaSpec(fastjet::GhostedAreaSpec ghostAreaSpec_out) { ghostAreaSpec = ghostAreaSpec_out; }
+  void setGhostAreaSpec(fastjet::GhostedAreaSpec ghostAreaSpec_out) { ghostAreaSpec = std::move(ghostAreaSpec_out); }
 
   // Getters
   float getJetBkgR() const { return jetBkgR; }
@@ -124,7 +125,7 @@ class JetBkgSubUtils
   fastjet::Selector getRhoSelector() const { return selRho; }
 
   // Calculate the jet mass
-  double getMd(fastjet::PseudoJet jet) const;
+  double getMd(const fastjet::PseudoJet& jet) const;
 
  protected:
   float jetBkgR = 0.2;

@@ -44,3 +44,8 @@ o2physics_add_dpl_workflow(kink-builder
     SOURCES kinkBuilder.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(zdc2stagecalibration
+    SOURCES zdc2stagecalibration.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+    COMPONENT_NAME Analysis)

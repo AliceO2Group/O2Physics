@@ -104,7 +104,7 @@ struct SGPIDSpectraTable {
     float tpcde, tofde, tpcmu, tofmu;
     TVector3 a;
     int goodtracks = 0;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (trackselector(t, parameters)) {
         goodtracks++;
       }
@@ -113,7 +113,7 @@ struct SGPIDSpectraTable {
       return;
     SGevents(coll.runNumber(), coll.flags(), truegapSide, coll.energyCommonZNA(), coll.energyCommonZNC(), goodtracks, coll.occupancyInTime(), coll.hadronicRate());
     // SGevents(coll.runNumber(), coll.flags());
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (trackselector(t, parameters)) {
         a.SetXYZ(t.px(), t.py(), t.pz());
         tpcpi = t.hasTPC() ? t.tpcNSigmaPi() : -999;

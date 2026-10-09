@@ -191,6 +191,8 @@ struct Cha01710analysis {
 
     histos.add("Kaon/hTPCNSigma", "charged kaon TPC PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
     histos.add("Kaon/hTOFNSigma", "charged kaon TOF PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
+    histos.add("Kaon/hTPCNSigmaSelected", "charged kaon TPC PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
+    histos.add("Kaon/hTOFNSigmaSelected", "charged kaon TOF PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
 
     histos.add("Pair/hSignalPlus", "K0S K+ same-event versus EP", HistType::kTHnSparseF, {cfgAxisMass, cfgAxisPt, cfgAxisCent, cfgAxisEP});
     histos.add("Pair/hSignalMinus", "K0S K- same-event versus EP", HistType::kTHnSparseF, {cfgAxisMass, cfgAxisPt, cfgAxisCent, cfgAxisEP});
@@ -269,7 +271,7 @@ struct Cha01710analysis {
   template <typename T>
   bool selectPionDaughter(T const& track)
   {
-    return !(!track.hasTPC() || track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin || track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax || std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax);
+    return !(track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin || track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax || std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax);
   }
 
   template <typename C, typename V>
@@ -298,15 +300,12 @@ struct Cha01710analysis {
       return V0MassRegion::kReject;
     }
     float dm = std::abs(v0.mK0Short() - constants::physics::MassK0Short);
+    histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
+
     if (dm < v0Cuts.cfgKsMassWindow) {
-      histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
       return V0MassRegion::kSignal;
     }
-    if (dm > v0Cuts.cfgKsMassWindow) {
-      histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
-      return V0MassRegion::kSideband;
-    }
-    return V0MassRegion::kReject;
+    return V0MassRegion::kSideband;
   }
 
   template <typename CollisionType, typename TracksType, typename V0Type>
@@ -342,6 +341,9 @@ struct Cha01710analysis {
         if (track.globalIndex() == pos.globalIndex() || track.globalIndex() == neg.globalIndex() || !selectKaon(track)) {
           continue;
         }
+        histos.fill(HIST("Kaon/hTPCNSigmaSelected"), track.pt(), track.tpcNSigmaKa());
+        histos.fill(HIST("Kaon/hTOFNSigmaSelected"), track.pt(), track.tofNSigmaKa());
+
         ROOT::Math::PxPyPzMVector kaon(track.px(), track.py(), track.pz(), constants::physics::MassKaonCharged);
         auto mother = k0 + kaon;
         if (std::abs(mother.Rapidity()) > cfgMotherRapidityMax) {

@@ -18,6 +18,7 @@
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
@@ -110,8 +111,9 @@ struct FemtoTripletTrackTrackV0 {
   // setup triplets
   triplethistmanager::ConfTripletBinning confTripletBinning;
   triplethistmanager::ConfTripletCuts confTripletCuts;
+  paircleaner::ConfPairCleanerBinning confTripletCleanerBinning;
 
-  closetripletrejection::ConfCtrTrackTrackTrack confCtr;
+  closetripletrejection::ConfCtrTrackTrackV0 confCtr;
 
   tripletbuilder::TripletTrackTrackV0Builder<
     modes::V0::kLambda,
@@ -119,7 +121,7 @@ struct FemtoTripletTrackTrackV0 {
     trackhistmanager::PrefixTrack2,
     v0histmanager::PrefixLambda1,
     trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV02NegDaughter,
+    trackhistmanager::PrefixV01NegDaughter,
     triplethistmanager::PrefixTrackTrackLambdaSe,
     triplethistmanager::PrefixTrackTrackLambdaMe,
     closetripletrejection::PrefixTrack1Track2Se,
@@ -134,9 +136,9 @@ struct FemtoTripletTrackTrackV0 {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   triplethistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoTrackTrackV0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -154,9 +156,9 @@ struct FemtoTripletTrackTrackV0 {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histogram specs
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
@@ -168,6 +170,7 @@ struct FemtoTripletTrackTrackV0 {
     std::map<v0histmanager::V0Hist, std::vector<o2::framework::AxisSpec>> lambdaHistSpec;
     std::map<triplethistmanager::TripletHist, std::vector<o2::framework::AxisSpec>> tripletHistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> ctrHistSpec = closepairrejection::makeCprHistSpecMap(confCtr);
+    std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> tripletCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confTripletCleanerBinning);
 
     if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -177,7 +180,7 @@ struct FemtoTripletTrackTrackV0 {
       posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
       negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
       tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning, confMixing);
-      tripletTrackTrackLambdaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confTrackCleaner1, confTrackCleaner2, confLambdaCleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
+      tripletTrackTrackLambdaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confTrackCleaner1, confTrackCleaner2, confLambdaCleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
@@ -186,7 +189,7 @@ struct FemtoTripletTrackTrackV0 {
       posDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
       negDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
       tripletHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning, confMixing);
-      tripletTrackTrackLambdaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confTrackCleaner1, confTrackCleaner2, confLambdaCleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
+      tripletTrackTrackLambdaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confTrackCleaner1, confTrackCleaner2, confLambdaCleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
     }
     hRegistry.print();
   };

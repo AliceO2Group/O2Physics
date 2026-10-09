@@ -470,7 +470,7 @@ struct LongrangeCorrelation {
   }
 
   template <typename TTrack>
-  int getTrackPID(TTrack track)
+  int getTrackPID(const TTrack& track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -867,7 +867,7 @@ struct LongrangeCorrelation {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}};
     for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
       if (!isEventSelected(col1) || !isEventSelected(col2)) {
         continue;
@@ -902,7 +902,7 @@ struct LongrangeCorrelation {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}};
     for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
       if (!isEventSelected(col1) || !isEventSelected(col2)) {
         continue;
@@ -937,7 +937,7 @@ struct LongrangeCorrelation {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}};
     auto tracksTuple = std::make_tuple(tracks, mfttracks);
     Pair<CollTable, TrksTable, MftTrkTable, MixedBinning> pairs{binningOnVtxAndMult, mixingParameter, -1, col, tracksTuple, &cache};
     for (auto const& [col1, tracks1, col2, tracks2] : pairs) {
@@ -967,7 +967,7 @@ struct LongrangeCorrelation {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}};
     for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
       if (!isEventSelected(col1) || !isEventSelected(col2)) {
         continue;
@@ -1002,7 +1002,7 @@ struct LongrangeCorrelation {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}};
     for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
       if (!isEventSelected(col1) || !isEventSelected(col2)) {
         continue;

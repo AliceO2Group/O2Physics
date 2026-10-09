@@ -830,7 +830,7 @@ struct Filter2Prong {
     };
 
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertexMix, axisMultiplicityMix}, true};
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertexMix, axisMultiplicityMix}};
     auto tracksTuple = std::make_tuple(cftracks, cftracks);
     using TA = std::tuple_element<0, decltype(tracksTuple)>::type;
     using TB = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
