@@ -320,8 +320,8 @@ struct TreeCreatorPidTpcDiagnostics {
 #undef MAKE_PROCESS_FUNCTIONS
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcDiagnostics>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcDiagnostics>(context)};
 }
 #undef DO_FOR_ALL_PARTICLES
