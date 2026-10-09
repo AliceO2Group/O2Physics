@@ -91,7 +91,7 @@ struct TreeCreatorPidTpcDiagnostics {
 
   struct ParticleWiseCuts : ConfigurableGroup {
 
-#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong, Unused)                                                                                                                                                                   \
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(Unused1, ParticleNameLong, Unused2)                                                                                                                                                                            \
   Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
   Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong};  /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
   Configurable<float> cutExpSigmaMax##ParticleNameLong{"cutExpSigmaMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected sigma for " #ParticleNameLong};                    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
@@ -108,7 +108,7 @@ struct TreeCreatorPidTpcDiagnostics {
 #define PARTICLE_WISE_CUT_NAMES \
   (cutTpcInnerParameterMin)(cutTpcInnerParameterMax)(cutExpSigmaMax)(cutDeDxExpectedMin)(cutDeDxExpectedMax)(cutDeDxDiffMin)(cutDeDxDiffMax)(cutNSigmaTpcAbs)
 
-#define MAKE_PARTICLE_CUT_POINTER(ShortName, LongName, CutName) \
+#define MAKE_PARTICLE_CUT_POINTER(Unused, LongName, CutName) \
   &particleWiseCuts.BOOST_PP_CAT(CutName, LongName),
 
 #define PACK_CONFIGURABLES_TO_ARRAY(Unused1, Unused2, CutName)    \
@@ -144,7 +144,7 @@ struct TreeCreatorPidTpcDiagnostics {
     int enabledProcesses{0};
 
     switch (ParticleId) {
-#define INIT_PARTICLE(ParticleNameShort, ParticleNameLong, Unused)                                                     \
+#define INIT_PARTICLE(Unused1, ParticleNameLong, Unused2)                                                              \
   case PID::ParticleNameLong:                                                                                          \
     if (!doprocess##ParticleNameLong && !doprocessFull##ParticleNameLong && !doprocessFullWithTOF##ParticleNameLong) { \
       return false;                                                                                                    \
