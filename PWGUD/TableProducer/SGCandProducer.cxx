@@ -351,7 +351,8 @@ struct SGCandProducer {
                                     fitCuts.thr2_FV0A());
       }
 
-      outputFITBits(w1[0], w1[1], w1[2], w1[3],
+      outputFITBits(outputCollisions.lastIndex(),
+                    w1[0], w1[1], w1[2], w1[3],
                     w2[0], w2[1], w2[2], w2[3]);
 
       if (newbc.has_zdc()) {
