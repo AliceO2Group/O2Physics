@@ -43,6 +43,7 @@
 #include <TObject.h>
 #include <TString.h>
 
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -62,34 +63,34 @@ static const std::vector<std::string> parameterNames{"Use default tiny",
                                                      "Set parameters",
                                                      "bb1", "bb2", "bb3", "bb4", "bb5",
                                                      "MIP value", "Charge exponent", "Resolution"};
-static constexpr float defaultParameters[nSpecies][nParameters]{{2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}};
+static constexpr std::array<std::array<float, nParameters>, nSpecies> defaultParameters{{{2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}}};
 static constexpr int nOptions = 4;
 static const std::vector<std::string> optionNames{"Bethe Bloch path",      // If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://
                                                   "Post calibration path", // If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://
                                                   "Simple Bethe Bloch",    // (true/false)
                                                   "RequirePostCalib"};     // (true/false)
-const std::string defaultOptions[nSpecies][nOptions]{{"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"}};
+const std::array<std::array<std::string, nOptions>, nSpecies> defaultOptions{{{"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"}}};
 
 // Structure to hold the parameters
 struct bbParams {
   const std::string name;
-  bbParams(const std::string& n) : name(n) {}
+  explicit bbParams(const std::string& n) : name(n) {}
   // Parameters for the Bethe-Bloch parametrization
   float bb1 = 0.03209809958934784f;    // Aleph Bethe Bloch parameter 1
   float bb2 = 19.9768009185791f;       // Aleph Bethe Bloch parameter 2
@@ -472,15 +473,15 @@ struct lfTpcPid {
 
   // Parameters setting from json
   Configurable<LabeledArray<float>> bbParameters{"bbParameters",
-                                                 {defaultParameters[0], nSpecies, nParameters, particleNames, parameterNames},
+                                                 {defaultParameters.front().data(), nSpecies, nParameters, particleNames, parameterNames},
                                                  "Bethe Bloch parameters"};
   // Parameter setting from input file (including the ccdb)
   Configurable<LabeledArray<std::string>> fileParamBbPositive{"fileParamBbPositive",
-                                                              {defaultOptions[0], nSpecies, nOptions, particleNames, optionNames},
+                                                              {defaultOptions.front().data(), nSpecies, nOptions, particleNames, optionNames},
                                                               "Input for the parametrization for positive particles. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
 
   Configurable<LabeledArray<std::string>> fileParamBbNegative{"fileParamBbNegative",
-                                                              {defaultOptions[0], nSpecies, nOptions, particleNames, optionNames},
+                                                              {defaultOptions.front().data(), nSpecies, nOptions, particleNames, optionNames},
                                                               "Input for the parametrization for negative particles. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
 
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};

@@ -23,6 +23,7 @@
 
 #include <Rtypes.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <set>
@@ -110,7 +111,7 @@ class CutBrickLimit : public CutBrick<TValueToFilter>
  public:
   CutBrickLimit();
   CutBrickLimit(const char*, const TValueToFilter&);
-  CutBrickLimit(const TString&);
+  explicit CutBrickLimit(const TString&);
   ~CutBrickLimit() override = default;
   CutBrickLimit(const CutBrickLimit&) = delete;
   CutBrickLimit& operator=(const CutBrickLimit&) = delete;
@@ -154,7 +155,7 @@ class CutBrickFnLimit : public CutBrickLimit<TValueToFilter>
  public:
   CutBrickFnLimit();
   CutBrickFnLimit(const char*, const TF1&);
-  CutBrickFnLimit(const TString&);
+  explicit CutBrickFnLimit(const TString&);
   ~CutBrickFnLimit() override = default;
   CutBrickFnLimit(const CutBrickFnLimit&) = delete;
   CutBrickFnLimit& operator=(const CutBrickFnLimit&) = delete;
@@ -181,7 +182,7 @@ class CutBrickThreshold : public CutBrick<TValueToFilter>
  public:
   CutBrickThreshold();
   CutBrickThreshold(const char*, const TValueToFilter&);
-  CutBrickThreshold(const TString&);
+  explicit CutBrickThreshold(const TString&);
   ~CutBrickThreshold() override = default;
   CutBrickThreshold(const CutBrickThreshold&) = delete;
   CutBrickThreshold& operator=(const CutBrickThreshold&) = delete;
@@ -225,7 +226,7 @@ class CutBrickFnThreshold : public CutBrickThreshold<TValueToFilter>
  public:
   CutBrickFnThreshold();
   CutBrickFnThreshold(const char*, const TF1&);
-  CutBrickFnThreshold(const TString&);
+  explicit CutBrickFnThreshold(const TString&);
   ~CutBrickFnThreshold() override = default;
   CutBrickFnThreshold(const CutBrickFnThreshold&) = delete;
   CutBrickFnThreshold& operator=(const CutBrickFnThreshold&) = delete;
@@ -252,7 +253,7 @@ class CutBrickRange : public CutBrick<TValueToFilter>
  public:
   CutBrickRange();
   CutBrickRange(const char*, const TValueToFilter&, const TValueToFilter&);
-  CutBrickRange(const TString&);
+  explicit CutBrickRange(const TString&);
   ~CutBrickRange() override = default;
   CutBrickRange(const CutBrickRange&) = delete;
   CutBrickRange& operator=(const CutBrickRange&) = delete;
@@ -297,7 +298,7 @@ class CutBrickFnRange : public CutBrickRange<TValueToFilter>
  public:
   CutBrickFnRange();
   CutBrickFnRange(const char*, const TF1&, const TF1&);
-  CutBrickFnRange(const TString&);
+  explicit CutBrickFnRange(const TString&);
   ~CutBrickFnRange() override = default;
   CutBrickFnRange(const CutBrickFnRange&) = delete;
   CutBrickFnRange& operator=(const CutBrickFnRange&) = delete;
@@ -326,7 +327,7 @@ class CutBrickExtToRange : public CutBrick<TValueToFilter>
  public:
   CutBrickExtToRange();
   CutBrickExtToRange(const char*, const TValueToFilter&, const TValueToFilter&);
-  CutBrickExtToRange(const TString&);
+  explicit CutBrickExtToRange(const TString&);
   ~CutBrickExtToRange() override = default;
   CutBrickExtToRange(const CutBrickExtToRange&) = delete;
   CutBrickExtToRange& operator=(const CutBrickExtToRange&) = delete;
@@ -371,7 +372,7 @@ class CutBrickFnExtToRange : public CutBrickExtToRange<TValueToFilter>
  public:
   CutBrickFnExtToRange();
   CutBrickFnExtToRange(const char*, const TF1&, const TF1&);
-  CutBrickFnExtToRange(const TString&);
+  explicit CutBrickFnExtToRange(const TString&);
   ~CutBrickFnExtToRange() override = default;
   CutBrickFnExtToRange(const CutBrickFnExtToRange&) = delete;
   CutBrickFnExtToRange& operator=(const CutBrickFnExtToRange&) = delete;
@@ -402,7 +403,7 @@ class CutBrickSelectorMultipleRanges : public CutBrick<TValueToFilter>
  public:
   CutBrickSelectorMultipleRanges();
   CutBrickSelectorMultipleRanges(const char*, const std::vector<TValueToFilter>&);
-  CutBrickSelectorMultipleRanges(const TString&);
+  explicit CutBrickSelectorMultipleRanges(const TString&);
   ~CutBrickSelectorMultipleRanges() override = default;
   CutBrickSelectorMultipleRanges(const CutBrickSelectorMultipleRanges&) = delete;
   CutBrickSelectorMultipleRanges& operator=(const CutBrickSelectorMultipleRanges&) = delete;
@@ -432,7 +433,7 @@ class CutWithVariations : public CutBrick<TValueToFilter>
   /// Default constructor
   CutWithVariations();
   CutWithVariations(const char*, const char*, bool);
-  CutWithVariations(const TString&);
+  explicit CutWithVariations(const TString&);
   ~CutWithVariations() override = default;
   CutWithVariations(const CutWithVariations&) = delete;
   CutWithVariations& operator=(const CutWithVariations&) = delete;
@@ -510,7 +511,7 @@ class TrackSelectionBrick : public SpecialCutBrick
 {
  public:
   TrackSelectionBrick() = default;
-  TrackSelectionBrick(const TString&);
+  explicit TrackSelectionBrick(const TString&);
   ~TrackSelectionBrick() override = default;
 
   enum class TrackCuts : int {
@@ -530,7 +531,7 @@ class TrackSelectionBrick : public SpecialCutBrick
     kNCuts
   };
 
-  static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
+  static const std::array<std::string, static_cast<int>(TrackSelectionBrick::TrackCuts::kNCuts)> mCutNames;
 
   std::vector<bool> IsArmed() override;
   template <typename TrackToFilter>

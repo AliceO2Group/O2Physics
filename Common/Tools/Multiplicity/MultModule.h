@@ -36,6 +36,7 @@
 #include <TProfile.h>
 #include <TString.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -480,7 +481,7 @@ class MultModule
     LOGF(info, "Metadata information: isMC? %i", metadataInfo.isMC());
     const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
 
-    TString listOfRequestors[nTablesConst];
+    std::array<TString, nTablesConst> listOfRequestors{};
     for (int i = 0; i < nTablesConst; i++) {
       int f = internalOpts.enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
