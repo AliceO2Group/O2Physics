@@ -203,9 +203,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/m/mei/thesis-", "path to external ROOT file which holds all particle weights"};
 
   // *) Binnings
-  Configurable<bool> cfALICECentBinSwitch{"cfALICECentBinSwitch", true, "switch on or off to use ALICE default binning"};
+  Configurable<bool> cfALICECentBinSwitch{"cfALICECentBinSwitch", false, "switch on or off to use ALICE default binning for centrality hist"};
   Configurable<std::vector<float>> cfCentBins{"cfCentBins", {100, 0., 100.}, "Centrality bins: nCentBins, centMin, centMax"};
-  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {400, 0., 30000.}, "Multiplicity bins: nMultBins, multMin, multMax"};
+  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {400, 0., 25000.}, "Multiplicity bins: nMultBins, multMin, multMax"};
   Configurable<std::vector<float>> cfMultBinsRef{"cfMultBinsRef", {400, 0., 25000.}, "Reference mult bins: nMultBins, multMin, multMax"};
   Configurable<std::vector<float>> cfContribBins{"cfContribBins", {400, 0., 7000.}, "Number of contributors bins: nBinsContrib, contribMin, contribMax"};
   Configurable<std::vector<float>> cfVxBins{"cfVxBins", {500, -0.04, 0.04}, "Vertex X hist: nVxBins, vxMin, vxMax"};
@@ -223,9 +223,12 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<std::vector<std::string>> cfTechnicalCutSwitch{"cfTechnicalCutSwitch", {"1NoCollInTimeRangeStandard", "1NoCollInRofStandard", "1NoSameBunchPileUp", "1IsVertexITSTPC", "1IsGoodITSLayersAll", "1IsGoodZvtxFT0vsPV", "1NoHighMultCollInPrevRof"}, "technical cuts switch, on and off by the first number before name"};
 
   // event level cuts
-  Configurable<bool> cfEventCutSwitch{"cfEventCutSwitch", true, "switch to apply event level cut"};
+  Configurable<bool> cfSel8CutSwitch{"cfSel8CutSwitch", true, "switch to apply Sel8 cut"};
+  Configurable<bool> cfVertexZCutSwitch{"cfVertexZCutSwitch", true, "switch to apply VertexZ cut"};
   Configurable<std::vector<float>> cfVertexZCutRange{"cfVertexZCutRange", {-10., 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz <= max"};
+  Configurable<bool> cfCentCutSwitch{"cfCentCutSwitch", true, "switch to apply centrality cut"};
   Configurable<std::vector<float>> cfCentCutRange{"cfCentCutRange", {0., 80.}, "centrality range: {min, max}[cm], with convention: min <= cent <= max"};
+  Configurable<bool> cfNContribCutSwitch{"cfNContribCutSwitch", true, "switch to apply NContrib cut"};
   Configurable<int> cfNContribCutInf{"cfNContribCutInf", 2, "Cuts on number of tracks used for the vertex, only numContrib > cfNContribCutInf survives"};
 
   // particle level cuts
@@ -263,7 +266,10 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     bool fALICECentBinSwitch = true;
 
     bool fMasterCutSwitch = true;
-    bool fEventCutSwitch = true;
+    bool fSel8CutSwitch = true;
+    bool fVertexZCutSwitch = true;
+    bool fCentCutSwitch = true;
+    bool fNContribCutSwitch = true;
     bool fPtCutSwitch = true;
     bool fEtaCutSwitch = true;
     bool fChargeCutSwitch = true;
@@ -455,7 +461,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     bool bFileIsInCCDB = false;
 
     std::string path(filePath);
-
     if (path.starts_with("/alice/cern.ch/")) {
       bFileIsInAliEn = true;
     } else if (path.starts_with("/alice-ccdb.cern.ch/")) {
@@ -476,41 +481,13 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-
-      // Finally, from the top-level TList, get the desired nested TList => the technical problem here is that it can be nested at any level, for that there is a helper utility function getObjectFromList(...) , see its implementation further below
-      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
-      if (!listWithRuns) {
-        TString runNumberWithLeadingZeroes = "000";
-        runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
-        if (!listWithRuns) {
-          LOGF(error, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-          return;
-        }
-      }
-
-      // OK, we got the desired TList with efficiency corrections, after that we can use the common code for all 3 cases (local, AliEn, CCDB, that common code is below)
     } else if (bFileIsInCCDB) {
-      // File you want to access is in your home dir in CCDB:
-      // Remember that here I do not access the file; instead, I directly access the object in that file.
+      // File you want to access is in your home dir in CCDB: Remember that here I do not access the file; instead, I directly access the object in that file.
       ccdb->setURL("https://alice-ccdb.cern.ch");
       baseList = dynamic_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-
-      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
-      if (!listWithRuns) {
-        TString runNumberWithLeadingZeroes = "000";
-        runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
-        if (!listWithRuns) {
-          LOGF(error, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-          return;
-        }
-      }
-
-      // OK, we got the desired TList with efficiency corrections, after that we can use the common code for all 3 cases (local, AliEn, CCDB, that common code is below)
     } else {
       // this is the local case:
       // Check if the external ROOT file exists at the specified path:
@@ -518,7 +495,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-
       TFile* weightsFile = TFile::Open(filePath, "READ");
       if (!weightsFile) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m can't open file", __FUNCTION__, __LINE__);
@@ -527,23 +503,18 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-
-      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
-      if (!listWithRuns) {
-        TString runNumberWithLeadingZeroes = "000";
-        runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
-        if (!listWithRuns) {
-          LOGF(error, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
-          return;
-        }
-      }
     }
 
     // Here comes the common code for all three cases, where from "listWithRuns" you fetch the desired histogram with efficiency corrections:
+    listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
-      LOGF(fatal, "\033[1;31m%s: listWithRuns is null for run %s\033[0m", __FUNCTION__, runNumber);
-      return;
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(warning, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
+        return;
+      }
     }
 
     for (int i = 0; i < eWeightsHistograms_N; ++i) {
@@ -563,7 +534,8 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     }
 
     delete baseList;
-  } // end of TH1F* getHistogramWithWeights(const char* filePath, const char* runNumber, const char* histName)
+    baseList = nullptr;
+  } // end of void getHistogramWithWeights(const char* filePath, const char* runNumber)
 
   // templates
   template <typename T1>
@@ -640,32 +612,30 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      if (tc.fEventCutSwitch) { // event level cuts for Rec
-        if constexpr (rm == eReal) {
-          if (!collision.sel8()) { // sel8 cut
-            return false;
-          }
-          if (collision.posZ() > tc.fVertexZCutRange[1] || collision.posZ() < tc.fVertexZCutRange[0]) { // vertex z cut
-            return false;
-          }
-          auto thisCent = chooseCent(collision, tc.fCentralityEstimator);
-          if (thisCent > tc.fCentCutRange[1] || thisCent < tc.fCentCutRange[0]) { // centrality cut
-            return false;
-          }
-          if (collision.numContrib() < tc.fNContribCutInf) { // number of contribution cuts
-            return false;
-          }
+      if (tc.fSel8CutSwitch && !collision.sel8()) { // sel8 cut
+        return false;
+      }
+      if constexpr (rm == eReal) {
+        if (tc.fVertexZCutSwitch && (collision.posZ() > tc.fVertexZCutRange[1] || collision.posZ() < tc.fVertexZCutRange[0])) { // vertex z cut
+          return false;
         }
-        if constexpr (rs == eRecAndSim && rm == eMC) { // event level cuts for Sim
-          auto thisMCCollision = collision.mcCollision();
-          auto impactParameter = thisMCCollision.impactParameter();
-          auto centralityMC = math::PI * impactParameter * impactParameter / tc.fSigmaInel;
-          if (thisMCCollision.posZ() > tc.fVertexZCutRange[1] || thisMCCollision.posZ() < tc.fVertexZCutRange[0]) { // vertex z cut
-            return false;
-          }
-          if (centralityMC > tc.fCentCutRange[1] || centralityMC < tc.fCentCutRange[0]) { // centrality cut
-            return false;
-          }
+        auto thisCent = chooseCent(collision, tc.fCentralityEstimator);
+        if (tc.fCentCutSwitch && (thisCent > tc.fCentCutRange[1] || thisCent < tc.fCentCutRange[0])) { // centrality cut
+          return false;
+        }
+        if (tc.fNContribCutSwitch && (collision.numContrib() < tc.fNContribCutInf)) { // number of contribution cuts
+          return false;
+        }
+      }
+      if constexpr (rs == eRecAndSim && rm == eMC) { // event level cuts for Sim
+        auto thisMCCollision = collision.mcCollision();
+        auto impactParameter = thisMCCollision.impactParameter();
+        auto centralityMC = math::PI * impactParameter * impactParameter / tc.fSigmaInel;
+        if (thisMCCollision.posZ() > tc.fVertexZCutRange[1] || thisMCCollision.posZ() < tc.fVertexZCutRange[0]) { // vertex z cut
+          return false;
+        }
+        if (centralityMC > tc.fCentCutRange[1] || centralityMC < tc.fCentCutRange[0]) { // centrality cut
+          return false;
         }
       }
     }
@@ -717,7 +687,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           ec.fEventHist[eHistVertexY][eSim][eBefore]->Fill(thisMCCollision.posY());
           ec.fEventHist[eHistVertexZ][eSim][eBefore]->Fill(thisMCCollision.posZ());
         }
-
         if constexpr (cuts == eAfter) {
           ec.fEventHist[eHistMultiplicity][eSim][eAfter]->Fill(multiplicitySim);
           ec.fEventHist[eHistCentrality][eSim][eAfter]->Fill(centralityMC);
@@ -726,7 +695,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           ec.fEventHist[eHistVertexY][eSim][eAfter]->Fill(thisMCCollision.posY());
           ec.fEventHist[eHistVertexZ][eSim][eAfter]->Fill(thisMCCollision.posZ());
         }
-      }
+      } // end of if constexpr (rs == eRecAndSim && rm == eMC) {
     }
   }
 
@@ -801,7 +770,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           pc.fParticleHist[eHistEta][eRec][eBefore]->Fill(track.eta());
           pc.fParticleHist[eHistCharge][eRec][eBefore]->Fill(track.sign());
         }
-
         if constexpr (cuts == eAfter) {
           pc.fParticleHist[eHistPt][eRec][eAfter]->Fill(track.pt());
           pc.fParticleHist[eHistPhi][eRec][eAfter]->Fill(track.phi());
@@ -830,7 +798,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             pc.fParticleHist[eHistCharge][eSim][eBefore]->Fill(chargeMC);
           }
         }
-
         if constexpr (cuts == eAfter) {
           pc.fParticleHist[eHistPt][eSim][eAfter]->Fill(thisMCParticle.pt());
           pc.fParticleHist[eHistPhi][eSim][eAfter]->Fill(thisMCParticle.phi());
@@ -839,9 +806,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             pc.fParticleHist[eHistCharge][eSim][eAfter]->Fill(chargeMC);
           }
         }
-      }
+      } // end of if constexpr (rs == eRecAndSim && rm == eMC) {
     }
-  }
+  } // end of void particleHistFill(T1 const& track)
 
   template <ERecSim rs, ERealMC rm, ECuts cuts, typename T1>
   void qaFill(T1 const& collision)
@@ -987,18 +954,16 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         if (noneZeroDenom(resultTwo)) {
           obs.fProfTwo[eRec]->Fill(thisCollCentReal, (resultTwo[0] / resultTwo[1].Re()).Re());
         }
-      }
 
-      if constexpr (rs == eRecAndSim) {
-        if (passEventCutsReal && passTechnicalCut) {
+        if constexpr (rs == eRecAndSim) {
           auto impactParam = collision.mcCollision().impactParameter();
           auto thisCollCentMC = math::PI * impactParam * impactParam / tc.fSigmaInel;
           resultTwo = two(qVectorsTableMC, n2);
           if (noneZeroDenom(resultTwo)) {
             obs.fProfTwo[eSim]->Fill(thisCollCentMC, (resultTwo[0] / resultTwo[1].Re()).Re());
           }
-        } // end of if (passEventCutsReal && passTechnicalCut) {
-      } // end of if constexpr (rs == eRecAndSim) {
+        } // end of if constexpr (rs == eRecAndSim) {
+      }
     } // end of if (tc.fMasterCutSwitch) {
 
     isFirstCollision = false; // Now the first collision ends
@@ -1029,7 +994,11 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     tc.fMasterCutSwitch = cfMasterCutSwitch;
     tc.fTechnicalCutSwitch = cfTechnicalCutSwitch.value;
-    tc.fEventCutSwitch = cfEventCutSwitch;
+
+    tc.fSel8CutSwitch = cfSel8CutSwitch;
+    tc.fVertexZCutSwitch = cfVertexZCutSwitch;
+    tc.fCentCutSwitch = cfCentCutSwitch;
+    tc.fNContribCutSwitch = cfNContribCutSwitch;
     tc.fVertexZCutRange = cfVertexZCutRange.value;
     tc.fCentCutRange = cfCentCutRange.value;
     tc.fNContribCutInf = cfNContribCutInf;
