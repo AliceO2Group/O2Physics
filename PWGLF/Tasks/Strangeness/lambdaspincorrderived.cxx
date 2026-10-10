@@ -59,6 +59,31 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+// Compute the competing mass under the K0s (pi+, pi-) hypothesis.
+template <typename T>
+static double getK0sCompetingMass(T const& v0)
+{
+  const ROOT::Math::PtEtaPhiMVector lambda(
+    v0.lambdaPt(), v0.lambdaEta(), v0.lambdaPhi(), v0.lambdaMass());
+
+  const ROOT::Math::PtEtaPhiMVector posDaugh(
+    v0.protonPt(), v0.protonEta(), v0.protonPhi(),
+    o2::constants::physics::MassProton);
+
+  const auto negDaugh = lambda - posDaugh; // 反推 neg
+
+  //
+  const ROOT::Math::PtEtaPhiMVector pi1(
+    posDaugh.Pt(), posDaugh.Eta(), posDaugh.Phi(),
+    o2::constants::physics::MassPionCharged);
+
+  const ROOT::Math::PtEtaPhiMVector pi2(
+    negDaugh.Pt(), negDaugh.Eta(), negDaugh.Phi(),
+    o2::constants::physics::MassPionCharged);
+
+  return (pi1 + pi2).M();
+}
+
 template <typename Container, typename SelectionFunc>
 static std::vector<int64_t> getCleanCandidateIndices(
   const Container& candidates,
@@ -387,6 +412,9 @@ struct lambdaspincorrderived {
     Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
     Configurable<float> dcaV0ToPV{"dcaV0ToPV", 1.2, "DCA V0 to PV cut on lambda"};
     Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.5, "Eta cut on mix event buffer"};
+
+    Configurable<bool> useK0sRejection{"useK0sRejection", true, "Apply K0s competing mass rejection"};
+    Configurable<float> confK0sMassWindow{"confK0sMassWindow", 0.01f, "K0s competing mass rejection window (GeV/c^2)"};
 
   } v0Configurations;
 
@@ -895,6 +923,12 @@ struct lambdaspincorrderived {
     }
     if (candidate.lambdaPt() > ptMax) {
       return false;
+    }
+    if (v0Configurations.useK0sRejection) {
+      const double mK0s = getK0sCompetingMass(candidate);
+      if (std::abs(mK0s - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
+        return false;
+      }
     }
 
     return true;
