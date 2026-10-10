@@ -388,17 +388,6 @@ struct lambdaspincorrderived {
     Configurable<float> dcaV0ToPV{"dcaV0ToPV", 1.2, "DCA V0 to PV cut on lambda"};
     Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.5, "Eta cut on mix event buffer"};
 
-    // TPC crossed rows
-    Configurable<float> minTpcNClsCrossedRows{"minTpcNClsCrossedRows", 70.f, "Minimum TPC crossed rows for daughter"};
-
-    // ctau (lifetime)
-    Configurable<float> maxCtau{"maxCtau", 30.f, "Maximum ctau of Lambda candidate (cm)"};
-
-    // TPC nsigma
-    Configurable<float> maxTpcNsigma{"maxTpcNsigma", 4.f, "Maximum |TPC nsigma| for Lambda daughters"};
-
-    Configurable<float> confK0sMassWindow{"confK0sMassWindow", 0.01, "K0s competing mass rejection window (GeV/c2)"};
-
   } v0Configurations;
 
   // Event Mixing
@@ -907,33 +896,6 @@ struct lambdaspincorrderived {
     if (candidate.lambdaPt() > ptMax) {
       return false;
     }
-
-    // additional cuts
-    if (candidate.v0Status() == 0 && (std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma || std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma)) {
-      return false;
-    }
-    if (candidate.v0Status() == 1 && (std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma || std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma)) {
-      return false;
-    }
-
-    // ---- K0s competing mass rejection ----
-    if (std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
-      return false;
-    }
-
-    /*
-    if (candidate.tpcPosNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows ) {
-      return false;
-    }
-
-    if (candidate.tpcNegNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows ) {
-      return false;
-    }
-
-    if (candidate.ctau() > v0Configurations.maxCtau ) {
-      return false;
-    }
-  */
 
     return true;
   }
