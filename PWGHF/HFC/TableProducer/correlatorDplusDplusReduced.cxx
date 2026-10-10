@@ -20,6 +20,8 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/ReducedDMesonPairsTables.h"
@@ -30,10 +32,12 @@
 #include "Common/DataModel/Centrality.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
@@ -41,9 +45,12 @@
 #include <Framework/runDataProcessing.h>
 
 #include <cstdint>
+#include <cstdlib>
+#include <string>
 #include <vector>
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
@@ -51,7 +58,7 @@ using namespace o2::hf_centrality;
 /// Writes the full information in an output TTree
 struct HfCorrelatorDplusDplusReduced {
   Produces<o2::aod::HfCandDpFulls> rowCandidateFull;
-  Produces<o2::aod::HfCandDpLites> rowCandidateLite;
+  Produces<o2::aod::HfCandDpSimplifieds> rowCandidateLite;
   Produces<o2::aod::HfCandDpTinys> rowCandidateTiny;
   Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandDpMls> rowCandidateMl;
@@ -68,6 +75,34 @@ struct HfCorrelatorDplusDplusReduced {
   Configurable<int> centEstimator{"centEstimator", 0, "Centrality estimation (None: 0, FT0C: 2, FT0M: 3)"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Enables processing of skimmed datasets"};
   Configurable<bool> skipSingleD{"skipSingleD", true, "Skip collisions with one or less D candidates"};
+
+  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
+  Configurable<bool> applySkimming{"applySkimming", false, "Flag to apply Skimming selections"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTDPlus"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_DPlusToKPiPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+
+  Configurable<std::vector<double>> cutPtSkimming{"cutPtSkimming", {1, 5, 1000}, "pT bin limits for Skimming application"};
+  Configurable<std::vector<double>> massMin{"massMin", {1.7, 1.7}, "Mass minimal for the cut for each pt bin"};
+  Configurable<std::vector<double>> massMax{"massMax", {2.0, 2.1}, "Mass maximal for the cut for each pt bin"};
+  Configurable<std::vector<double>> cosThetaMin{"cosThetaMin", {0.96, 0.98}, "CosTheta minimal for the cut for each pt bin"};
+  Configurable<std::vector<double>> decayLengthMin{"decayLengthMin", {0.02, 0.03}, "DecayLength minimal for the cut for each pt bin"};
+  Configurable<std::vector<double>> nSigmaTpcMax{"nSigmaTpcMax", {3, 3}, "NsigmaTPC maximal for the cut for each pt bin"};
+  Configurable<std::vector<double>> nSigmaTofMax{"nSigmaTofMax", {3, 3}, "NsigmaTOF maximal for the cut for each pt bin"};
+
+  Configurable<std::vector<double>> binsPtSkimming{"binsPtSkimming", {0}, "pT bin limits for Skimming application"};
+
+  HfMlResponseDplusToPiKPi<float> hfMlResponse;
+
+  std::vector<float> outputML;
+  o2::ccdb::CcdbApi ccdbApi;
 
   HfHelper hfHelper;
 
@@ -102,6 +137,39 @@ struct HfCorrelatorDplusDplusReduced {
     if (cfgSkimmedProcessing) {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
+
+    if (applyMl) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
+  }
+
+  bool skimming(auto const& candidate)
+  {
+    if (candidate.pt() < cutPtSkimming.value.at(0) || candidate.pt() > cutPtSkimming.value.at(cutPtSkimming.value.size() - 1)) {
+      return false;
+    }
+    for (size_t i = 0; i < cutPtSkimming.value.size() - 1; i++) {
+      if (candidate.pt() <= cutPtSkimming.value.at(i + 1)) {
+        if (hfHelper.invMassDplusToPiKPi(candidate) < massMin.value.at(i) ||
+            hfHelper.invMassDplusToPiKPi(candidate) > massMax.value.at(i) ||
+            candidate.cpa() < cosThetaMin.value.at(i) ||
+            candidate.decayLength() < decayLengthMin.value.at(i) ||
+            std::abs(candidate.nSigTofKa1()) > nSigmaTofMax.value.at(i) ||
+            std::abs(candidate.nSigTpcKa1()) > nSigmaTpcMax.value.at(i)) {
+          return false;
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   template <typename T>
@@ -127,14 +195,14 @@ struct HfCorrelatorDplusDplusReduced {
       channelMc = candidate.flagMcDecayChanRec();
     }
 
-    std::vector<float> outputMl = {-999., -999.};
+    std::vector<float> mlProb = {-999., -999.};
     if constexpr (DoMl) {
       for (unsigned int iclass = 0; iclass < classMlIndexes->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
+        mlProb[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
       }
       rowCandidateMl(
-        outputMl[0],
-        outputMl[1]);
+        mlProb[0],
+        mlProb[1]);
     }
 
     float cent{-1.};
@@ -291,7 +359,9 @@ struct HfCorrelatorDplusDplusReduced {
     static int lastRunNumber = -1;
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
-    if (fillCandidateLiteTable) {
+    if (fillCandidateTinyTable) {
+      rowCandidateTiny.reserve(candidates.size());
+    } else if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     } else {
       rowCandidateFull.reserve(candidates.size());
@@ -320,6 +390,21 @@ struct HfCorrelatorDplusDplusReduced {
       for (const auto& candidate : candidatesInThisCollision) {
         auto prongCandidate = candidate.prong1_as<aod::Tracks>();
         auto candidateSign = -prongCandidate.sign();
+
+        if (applySkimming &&
+            !skimming(candidate)) {
+          continue;
+        }
+
+        if (applyMl) {
+          std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
+          bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures,
+                                                              std::abs(candidate.pt()),
+                                                              outputML);
+          if (!isSelectedMl) {
+            continue;
+          }
+        }
         fillCandidateTable<aod::Collisions>(candidate, rowCandidateFullEvents.lastIndex(), candidateSign);
       }
     }
@@ -332,7 +417,9 @@ struct HfCorrelatorDplusDplusReduced {
   {
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
-    if (fillCandidateLiteTable) {
+    if (fillCandidateTinyTable) {
+      rowCandidateTiny.reserve(candidates.size());
+    } else if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
     } else {
       rowCandidateFull.reserve(candidates.size());
@@ -348,6 +435,20 @@ struct HfCorrelatorDplusDplusReduced {
       for (const auto& candidate : candidatesInThisCollision) {
         auto prongCandidate = candidate.prong1_as<aod::Tracks>();
         auto candidateSign = -prongCandidate.sign();
+
+        if (applySkimming &&
+            !skimming(candidate)) {
+          continue;
+        }
+        if (applyMl) {
+          std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
+          bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures,
+                                                              std::abs(candidate.pt()),
+                                                              outputML);
+          if (!isSelectedMl) {
+            continue;
+          }
+        }
         fillCandidateTable<aod::Collisions, true>(candidate, rowCandidateFullEvents.lastIndex(), candidateSign);
       }
     }
