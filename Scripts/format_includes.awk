@@ -15,7 +15,7 @@
         else if ( h ~ /^([[:alnum:]_]+\/)+[[:alnum:]_]+\.h/ ) { $2 = "<"h">" } # other third-party
         else if ( $2 ~ /^".*\./ ) { } # other local-looking file
         else if ( h ~ /^[[:lower:]_]+\.h/ ) { $2 = "<"h">" } # C system
-        else if ( h ~ /^[[:lower:]_\/]+/ ) { $2 = "<"h">" } # C++ system
+        else if ( h ~ /^[[:lower:]_\/]+$/ ) { $2 = "<"h">" } # C++ system
     }
     print
 }
