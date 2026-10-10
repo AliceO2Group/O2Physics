@@ -46,9 +46,11 @@
 
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <utility>
@@ -154,6 +156,27 @@ struct SginclusivePhiKstarSD {
   ConfigurableAxis axisrhomass{"axisrhomass", {200, 1.0, 2.0}, ""};
   ConfigurableAxis axispt{"axispt", {200, 0.0, 20.0}, ""};
   ConfigurableAxis axisrapdity{"axisrapdity", {40, -2.0, 2.0}, ""};
+
+  std::vector<int> runNumbers = {
+    544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123,
+    544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474,
+    544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512,
+    544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567,
+    544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672,
+    544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794,
+    544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917,
+    544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047,
+    545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295,
+    545296, 545312};
+
+  int getRunBin(int runNumber)
+  {
+    auto it = std::lower_bound(runNumbers.begin(), runNumbers.end(), runNumber);
+    if (it == runNumbers.end() || *it != runNumber) {
+      return -1;
+    }
+    return static_cast<int>(std::distance(runNumbers.begin(), it)) + 1;
+  }
 
   int numTwoTracks = 2;
   int numFourTracks = 4;
@@ -307,6 +330,13 @@ struct SginclusivePhiKstarSD {
       rQA.add("V0A_2", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
       rQA.add("V0A_0", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
       rQA.add("V0A_1", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
+
+      rQA.add("hIntRateVsRun", "Hadronic interaction rate; Run number; Hadronic interaction rate (kHz)", kTH2F, {{92, 0.5, 92.5}, {1000, 0., 50.}});
+      auto hIntRateVsRun = rQA.get<TH2>(HIST("hIntRateVsRun"));
+      for (size_t i = 0; i < runNumbers.size(); ++i) {
+        hIntRateVsRun->GetXaxis()->SetBinLabel(i + 1, Form("%d", runNumbers[i]));
+      }
+      hIntRateVsRun->GetXaxis()->LabelsOption("v");
     }
     registry.add("gap_mult0", "Mult 0", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult1", "Mult 1", kTH1F, {{100, 0.0, 100.0}});
@@ -785,6 +815,11 @@ struct SginclusivePhiKstarSD {
   {
     if (qa) {
       rQA.fill(HIST("hOcc_before"), collision.occupancyInTime());
+
+      int runBin = getRunBin(collision.runNumber());
+      if (runBin > 0 && collision.hadronicRate() > 0.) {
+        rQA.fill(HIST("hIntRateVsRun"), runBin, collision.hadronicRate());
+      }
     }
 
     ROOT::Math::PxPyPzMVector v0;
@@ -2334,7 +2369,7 @@ struct SginclusivePhiKstarSD {
 
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
 
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
 
     for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
 
