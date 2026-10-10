@@ -95,14 +95,21 @@ struct lambdaspincorrelation {
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
   Configurable<float> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
   Configurable<float> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
-  Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 50, "Maximum V0 life time"};
 
   // config for V0 daughters
   Configurable<float> confDaughEta{"confDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.2, "minimum daughter proton pt"};
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
   Configurable<float> confDaughTPCnclsMin{"confDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 3, "PID selections for Lambda daughters"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "v0Configuration";
+    Configurable<int> cfgDaughTPCCrossedRows{"cfgDaughTPCCrossedRows", 70, "Min. TPC crossed rows for V0 daughters"};
+    Configurable<float> confK0sMassWindow{"confK0sMassWindow", 0.01, "K0s competing mass rejection window (GeV/c2)"};
+    Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 30, "Maximum V0 life time"};
+    Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 4, "PID selections for Lambda daughters"};
+
+  } v0Configurations;
 
   Configurable<int> iMNbins{"iMNbins", 50, "Number of bins in invariant mass"};
   Configurable<float> lbinIM{"lbinIM", 1.09, "lower bin value in IM histograms"};
@@ -149,7 +156,11 @@ struct lambdaspincorrelation {
     if (tranRad > confV0TranRadV0Max) {
       return false;
     }
-    if (std::abs(ctauLambda) > cMaxV0LifeTime) {
+    if (std::abs(ctauLambda) > v0Configurations.cMaxV0LifeTime) {
+      return false;
+    }
+
+    if (std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
       return false;
     }
     // if (std::abs(candidate.yLambda()) > confV0Rap) {
@@ -162,10 +173,9 @@ struct lambdaspincorrelation {
   bool isSelectedV0Daughter(V0 const& candidate, T const& track, int pid)
   {
     const auto tpcNClsF = track.tpcNClsFound();
-    const auto ncr = 70;
     const auto ncrfc = 0.8;
 
-    if (track.tpcNClsCrossedRows() < ncr) {
+    if (track.tpcNClsCrossedRows() < v0Configurations.cfgDaughTPCCrossedRows) {
       return false;
     }
     if (tpcNClsF < confDaughTPCnclsMin) {
@@ -175,10 +185,10 @@ struct lambdaspincorrelation {
       return false;
     }
 
-    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > confDaughPIDCuts) {
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > v0Configurations.confDaughPIDCuts) {
       return false;
     }
-    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > confDaughPIDCuts) {
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > v0Configurations.confDaughPIDCuts) {
       return false;
     }
     if (pid == 0 && (candidate.positivept() < cfgDaughPrPt || candidate.negativept() < cfgDaughPiPt)) {
@@ -299,13 +309,6 @@ struct lambdaspincorrelation {
     std::vector<int> negativeIndex = {};
     std::vector<float> dcaBetweenDaughter = {};
     std::vector<float> dcaV0ToPV = {};
-    std::vector<float> tpcPosNClsCrossedRows = {};
-    std::vector<float> tpcNegNClsCrossedRows = {};
-    std::vector<float> ctau = {};
-    std::vector<float> tpcNsigmaPos = {};
-    std::vector<float> tpcNsigmaNeg = {};
-    std::vector<float> mK0Short = {};
-
     int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
@@ -357,9 +360,6 @@ struct lambdaspincorrelation {
           if (aLambdaTag) {
             histos.fill(HIST("hV0Info"), 3.5);
           }
-
-          float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * (o2::constants::physics::MassLambda);
-
           // LOGF(info, "v0 index2: (%d)", v0.index());
           auto postrack1 = v0.template posTrack_as<AllTrackCandidates>();
           auto negtrack1 = v0.template negTrack_as<AllTrackCandidates>();
@@ -367,16 +367,6 @@ struct lambdaspincorrelation {
           negativeIndex.push_back(negtrack1.globalIndex());
           v0Cospa.push_back(v0.v0cosPA());
           dcaV0ToPV.push_back(std::abs(v0.dcav0topv()));
-
-          tpcPosNClsCrossedRows.push_back(postrack1.tpcNClsCrossedRows());
-          tpcNegNClsCrossedRows.push_back(negtrack1.tpcNClsCrossedRows());
-          ctau.push_back(ctauLambda);
-
-          tpcNsigmaPos.push_back(std::abs(postrack1.tpcNSigmaPr()));
-          tpcNsigmaNeg.push_back(std::abs(negtrack1.tpcNSigmaPi()));
-
-          mK0Short.push_back(v0.mK0Short());
-
           v0Radius.push_back(v0.v0radius());
           dcaPositive.push_back(std::abs(v0.dcapostopv()));
           dcaNegative.push_back(std::abs(v0.dcanegtopv()));
@@ -413,7 +403,7 @@ struct lambdaspincorrelation {
           lambdaDummy = lambdaMother.at(i5);
           protonDummy = protonDaughter.at(i5);
           pionDummy = pionDaughter.at(i5);
-          lambdaPair(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5), dcaV0ToPV.at(i5), tpcPosNClsCrossedRows.at(i5), tpcNegNClsCrossedRows.at(i5), ctau.at(i5), tpcNsigmaPos.at(i5), tpcNsigmaNeg.at(i5), mK0Short.at(i5));
+          lambdaPair(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5), dcaV0ToPV.at(i5));
         }
       }
     }
