@@ -105,7 +105,7 @@ struct lambdaspincorrelation {
   struct : ConfigurableGroup {
     std::string prefix = "v0Configuration";
     Configurable<int> cfgDaughTPCCrossedRows{"cfgDaughTPCCrossedRows", 70, "Min. TPC crossed rows for V0 daughters"};
-    Configurable<float> confK0sMassWindow{"confK0sMassWindow", 0.01, "K0s competing mass rejection window (GeV/c2)"};
+
     Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 30, "Maximum V0 life time"};
     Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 4, "PID selections for Lambda daughters"};
 
@@ -160,9 +160,6 @@ struct lambdaspincorrelation {
       return false;
     }
 
-    if (std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
-      return false;
-    }
     // if (std::abs(candidate.yLambda()) > confV0Rap) {
     // return false;
     // }
