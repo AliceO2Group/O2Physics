@@ -1730,10 +1730,10 @@ struct HParticleCorrelation2SameEvent {
   using BinningTypeVtxZFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
   using BinningTypeVtxZFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeVtxZFT0C colBinningFT0C{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}, true};
-  BinningTypeVtxZFT0M colBinningFT0M{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}, true};
-  BinningTypeVtxZFT0A colBinningFT0A{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}, true};
-  BinningTypeVtxZFV0A colBinningFV0A{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}, true};
+  BinningTypeVtxZFT0C colBinningFT0C{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}};
+  BinningTypeVtxZFT0M colBinningFT0M{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}};
+  BinningTypeVtxZFT0A colBinningFT0A{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}};
+  BinningTypeVtxZFV0A colBinningFV0A{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}};
 
   int nMixBins = 0;
 
@@ -4076,10 +4076,10 @@ struct HParticleCorrelation3MixedEvent {
   using BinningTypeVtxZFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
   using BinningTypeVtxZFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeVtxZFT0C colBinningFT0C{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}, true};
-  BinningTypeVtxZFT0M colBinningFT0M{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}, true};
-  BinningTypeVtxZFT0A colBinningFT0A{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}, true};
-  BinningTypeVtxZFV0A colBinningFV0A{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}, true};
+  BinningTypeVtxZFT0C colBinningFT0C{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}};
+  BinningTypeVtxZFT0M colBinningFT0M{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}};
+  BinningTypeVtxZFT0A colBinningFT0A{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}};
+  BinningTypeVtxZFV0A colBinningFV0A{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}};
 
   template <typename C>
   int getDerivedMixingBin(const C& collision)
