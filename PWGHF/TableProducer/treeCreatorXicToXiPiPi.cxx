@@ -368,7 +368,6 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::M,
                   hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen);
 } // namespace o2::aod
 
@@ -817,7 +816,6 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
-          particle.m(),
           particle.decayLengthMcGen());
       }
     }
