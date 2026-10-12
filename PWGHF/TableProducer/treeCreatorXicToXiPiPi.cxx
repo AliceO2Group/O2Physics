@@ -815,6 +815,7 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+          particle.m(),
           particle.decayLengthMcGen());
       }
     }
