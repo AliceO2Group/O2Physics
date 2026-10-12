@@ -47,7 +47,6 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <map>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -3531,7 +3530,7 @@ struct HParticleCorrelation2SameEvent {
             continue;
           }
           const uint16_t flags = trackUsedFlags[i];
-          if (flags & TriggerUsedFlag) {
+          if ((flags & TriggerUsedFlag) != 0u) {
             nTriggersWritten++;
             derivedTriggers(iCollGlobalCount, track.pt(), track.eta(), track.phi());
           }
