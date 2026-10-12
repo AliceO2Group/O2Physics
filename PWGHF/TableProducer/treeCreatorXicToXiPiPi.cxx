@@ -367,6 +367,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
+                  full::M,
                   hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen);
 } // namespace o2::aod
 
