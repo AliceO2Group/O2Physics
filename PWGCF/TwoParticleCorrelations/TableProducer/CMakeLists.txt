@@ -33,7 +33,7 @@ o2physics_add_dpl_workflow(longrange-maker
                            SOURCES longrangeMaker.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore O2Physics::SGCutParHolder
                            COMPONENT_NAME Analysis)
-                           
+
 o2physics_add_dpl_workflow(lambda-spin-polarization-loose-producer
                            SOURCES lambdaSpinPolarizationLooseProducer.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
