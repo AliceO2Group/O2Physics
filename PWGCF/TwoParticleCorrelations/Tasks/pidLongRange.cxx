@@ -111,9 +111,8 @@ struct PidLongRange {
     O2_DEFINE_CONFIGURABLE(cfgGlobalPtMin, float, 0.2f, "minimum accepted track pT")
     O2_DEFINE_CONFIGURABLE(cfgGlobalPtMax, float, 10.0f, "maximum accepted track pT")
     O2_DEFINE_CONFIGURABLE(cfgGlobalEta, float, 0.8f, "Eta cut")
-    O2_DEFINE_CONFIGURABLE(cfgGlobalChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-    O2_DEFINE_CONFIGURABLE(cfgGlobalDCAz, float, 2.0f, "DCAz range for tracks")
-    O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
+    O2_DEFINE_CONFIGURABLE(cfgGlobalChi2prTPCcls, float, 2.5f, "Maximum chi2 per TPC clusters")
+    O2_DEFINE_CONFIGURABLE(cfgGlobalDCAz, float, 2.0f, "Maximum DCA to vertex z")
     Configurable<std::vector<std::string>> cfgTrackCutsDCAxy{"cfgTrackCutsDCAxy", std::vector<std::string>{"(0.0026+0.005/(x^1.01))", "(0.0026+0.005/(x^1.01))"}, "Functional form of pt-dependent DCAxy cut"};
     Configurable<std::vector<std::string>> cfgTrackCutsDCAz{"cfgTrackCutsDCAz", std::vector<std::string>{"", ""}, "Functional form of pt-dependent DCAz cut"};
     Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {LongArrayFloat.front().data(), 10, 2, {"PtMin", "PtMax", "EtaCut", "Chi2PrTpcCls", "TpcCluster", "TpcCrossedRows", "ItsCluster", "DCAz", "DCAzNsigma", "DCAxyNsigma"}, {"General", "SelNch"}}, "Labeled array for track selections"};
@@ -127,6 +126,7 @@ struct PidLongRange {
     O2_DEFINE_CONFIGURABLE(cfgMinMultForCorrelations, int, 0, "minimum multiplicity for correlations")
     O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
     O2_DEFINE_CONFIGURABLE(cfgSelCollByNch, bool, true, "Select collisions by Nch or centrality")
+    O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
     O2_DEFINE_CONFIGURABLE(cfgMinCentForCorrelations, int, 0, "minimum centrality for correlations")
     O2_DEFINE_CONFIGURABLE(cfgMaxCentForCorrelations, int, 20, "maximum centrality for correlations")
     O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking (CBT)', 'CBT_hadronPID' ")
@@ -204,7 +204,7 @@ struct PidLongRange {
   ConfigurableAxis axisTpcNcls{"axisTpcNcls", {500, 0, 500}, "number of TPC clusters used for PID"};
 
   // Axes for long-range correlations QA
-  ConfigurableAxis axisAmplitudeFt0{"axisAmplitudeFt0a", {5000, 0, 1000}, "FT0A amplitude"};
+  ConfigurableAxis axisAmplitudeFt0{"axisAmplitudeFt0", {5000, 0, 1000}, "FT0A amplitude"};
   ConfigurableAxis axisChannelFt0aAxis{"axisChannelFt0aAxis", {96, 0.0, 96.0}, "FT0A channel"};
   ConfigurableAxis axisChannelFt0cAxis{"axisChannelFt0cAxis", {96, 0.0, 96.0}, "FT0C channel"};
   ConfigurableAxis cfgFITamp{"cfgFITamp", {1000, 0, 5000}, "FT0 amplitude"};
@@ -281,7 +281,7 @@ struct PidLongRange {
   };
   enum DetectorType {
     UseTPC = 0,
-    UseTof,
+    UseTOF,
     UseITS
   };
   enum Stage {
@@ -586,7 +586,7 @@ struct PidLongRange {
 
     LOGF(info, "Initializing correlation container");
 
-    // Initialize Nch-related histograms and containers
+    // Initialize containers
     std::vector<AxisSpec> corrAxisTpcFt0a = {{axisSample},
                                              {axisVertex, "z-vtx (cm)"},
                                              {axisEventClass},
@@ -636,7 +636,7 @@ struct PidLongRange {
   double getCentrality(TCollision const& collision)
   {
     double cent = 0.0;
-    switch (cfgTrkSel.cfgCentEstimator) {
+    switch (cfgEvSel.cfgCentEstimator) {
       case UseCentFT0C:
         cent = collision.centFT0C();
         break;
@@ -866,7 +866,7 @@ struct PidLongRange {
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
-    if (eventCuts[UseOccupancy][EvCut1] && (occupancy > cfgEvSel.cfgCutOccupancyLow || occupancy < cfgEvSel.cfgCutOccupancyHigh)) {
+    if (eventCuts[UseOccupancy][EvCut1] && (occupancy > cfgEvSel.cfgCutOccupancyLow && occupancy < cfgEvSel.cfgCutOccupancyHigh)) {
       histos.fill(HIST("hPassedEventSelection"), UseOccupancy);
     }
   }
@@ -1029,9 +1029,9 @@ struct PidLongRange {
     isDetectedKaon = nSigmaToUse[IndexKaonUp] < nSigmaVals[IndexKaonUp][useIndexDetector] && nSigmaToUse[IndexKaonUp] > nSigmaVals[IndexKaonLow][useIndexDetector];
     isDetectedProton = nSigmaToUse[IndexProtonUp] < nSigmaVals[IndexProtonUp][useIndexDetector] && nSigmaToUse[IndexProtonUp] > nSigmaVals[IndexProtonLow][useIndexDetector];
 
-    isTofPion = nSigmaTOF[IndexPionUp] < nSigmaVals[IndexPionUp][UseTof] && nSigmaTOF[IndexPionUp] > nSigmaVals[IndexPionLow][UseTof];
-    isTofKaon = nSigmaTOF[IndexKaonUp] < nSigmaVals[IndexKaonUp][UseTof] && nSigmaTOF[IndexKaonUp] > nSigmaVals[IndexKaonLow][UseTof];
-    isTofProton = nSigmaTOF[IndexProtonUp] < nSigmaVals[IndexProtonUp][UseTof] && nSigmaTOF[IndexProtonUp] > nSigmaVals[IndexProtonLow][UseTof];
+    isTofPion = nSigmaTOF[IndexPionUp] < nSigmaVals[IndexPionUp][UseTOF] && nSigmaTOF[IndexPionUp] > nSigmaVals[IndexPionLow][UseTOF];
+    isTofKaon = nSigmaTOF[IndexKaonUp] < nSigmaVals[IndexKaonUp][UseTOF] && nSigmaTOF[IndexKaonUp] > nSigmaVals[IndexKaonLow][UseTOF];
+    isTofProton = nSigmaTOF[IndexProtonUp] < nSigmaVals[IndexProtonUp][UseTOF] && nSigmaTOF[IndexProtonUp] > nSigmaVals[IndexProtonLow][UseTOF];
 
     if (track.pt() > cfgPIDConfigs.cfgTofPtCut && !track.hasTOF()) {
       return -1;
@@ -1536,7 +1536,6 @@ struct PidLongRange {
 
   void processMixedTpcFt0(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
-
     auto getTracksSize = [&tracks, this](FilteredCollisions::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
