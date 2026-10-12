@@ -19,7 +19,6 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 

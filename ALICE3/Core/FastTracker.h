@@ -58,7 +58,7 @@ class FastTracker
   /// \param phiEnd End angle of the dead region (in radians)
   void addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd);
   [[nodiscard]] DetLayer getLayer(const int layer) const { return layers[layer]; }
-  [[nodiscard]] std::vector<DetLayer> getLayers() const { return layers; }
+  [[nodiscard]] const std::vector<DetLayer>& getLayers() const { return layers; }
   [[nodiscard]] int getLayerIndex(const std::string& name) const;
   [[nodiscard]] size_t getNLayers() const { return layers.size(); }
   [[nodiscard]] bool isLayerInert(const int layer) const { return layers[layer].isInert(); }
