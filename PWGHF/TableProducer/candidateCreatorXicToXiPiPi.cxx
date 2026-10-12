@@ -1093,7 +1093,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       registry.add("hDecayedPions", "hDecayedPions", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("hInteractionsWithMaterial", "hInteractionsWithMaterial", {HistType::kTH1F, {{6, -0.5, 5.5}}});
       registry.add("hDebugRec", "hDebugRec", {HistType::kTH1F, {{4, -0.5, 3.5}}});
-      registry.add("hy_pt_gen","Generated MC",{HistType::kTH2F,{{20,-1.0,1.0},{200,0,20}}});
+      registry.add("hy_pt_gen", "Generated MC", {HistType::kTH2F, {{20, -1.0, 1.0}, {200, 0, 20}}});
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + TotalRec, "total");
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + XicToFinalState, "#Xi^{+}_{c} #rightarrow #pi^{#plus} #pi^{#plus} #pi^{#minus} p #pi^{#minus}");
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + XiToPiPPi, "#Xi^{#minus} #rightarrow #pi^{#minus} p #pi^{#minus}");
@@ -1346,8 +1346,8 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
-          //fill inclusive generated Xic+
-          registry.fill(HIST("hy_pt_gen"),particle.y(),particle.pt());
+          // fill inclusive generated Xic+
+          registry.fill(HIST("hy_pt_gen"), particle.y(), particle.pt());
 
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
           // Calculate the decay length of the generated particle
