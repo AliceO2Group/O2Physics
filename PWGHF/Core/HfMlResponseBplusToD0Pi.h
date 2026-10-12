@@ -29,10 +29,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BPLUS(FEATURE)                                       \
-  {                                                                   \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE) \
-  }
+#define FILL_MAP_BPLUS(FEATURE) \
+  {                             \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -89,6 +88,14 @@ enum class InputFeaturesBplusToD0Pi : uint8_t {
   decayLengthXYNormalised,
   cpa,
   cpaXY,
+  decayLengthDToPv,
+  decayLengthDToPvXY,
+  decayLengthDToB,
+  decayLengthDToBXY,
+  cpaDToPv,
+  cpaDToPvXY,
+  cpaDToB,
+  cpaDToBXY,
   maxNormalisedDeltaIP,
   prong0MlProbBkg,
   prong0MlProbPrompt,
@@ -134,6 +141,14 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_BPLUS(decayLengthXYNormalised);
           CHECK_AND_FILL_VEC_BPLUS(cpa);
           CHECK_AND_FILL_VEC_BPLUS(cpaXY);
+          CHECK_AND_FILL_VEC_BPLUS(decayLengthDToPv);
+          CHECK_AND_FILL_VEC_BPLUS(decayLengthDToPvXY);
+          CHECK_AND_FILL_VEC_BPLUS(decayLengthDToB);
+          CHECK_AND_FILL_VEC_BPLUS(decayLengthDToBXY);
+          CHECK_AND_FILL_VEC_BPLUS(cpaDToPv);
+          CHECK_AND_FILL_VEC_BPLUS(cpaDToPvXY);
+          CHECK_AND_FILL_VEC_BPLUS(cpaDToB);
+          CHECK_AND_FILL_VEC_BPLUS(cpaDToBXY);
           CHECK_AND_FILL_VEC_BPLUS(maxNormalisedDeltaIP);
           CHECK_AND_FILL_VEC_D0_INDEX(prong0MlProbBkg, mlProbD0, mlProbD0bar, 0);
           CHECK_AND_FILL_VEC_D0_INDEX(prong0MlProbPrompt, mlProbD0, mlProbD0bar, 1);
@@ -159,6 +174,14 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_BPLUS(decayLengthXYNormalised);
           CHECK_AND_FILL_VEC_BPLUS(cpa);
           CHECK_AND_FILL_VEC_BPLUS(cpaXY);
+          CHECK_AND_FILL_VEC_BPLUS(decayLengthDToPv);
+          CHECK_AND_FILL_VEC_BPLUS(decayLengthDToPvXY);
+          CHECK_AND_FILL_VEC_BPLUS(decayLengthDToB);
+          CHECK_AND_FILL_VEC_BPLUS(decayLengthDToBXY);
+          CHECK_AND_FILL_VEC_BPLUS(cpaDToPv);
+          CHECK_AND_FILL_VEC_BPLUS(cpaDToPvXY);
+          CHECK_AND_FILL_VEC_BPLUS(cpaDToB);
+          CHECK_AND_FILL_VEC_BPLUS(cpaDToBXY);
           CHECK_AND_FILL_VEC_BPLUS(maxNormalisedDeltaIP);
           // TPC PID variable
           CHECK_AND_FILL_VEC_BPLUS_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
@@ -190,6 +213,14 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BPLUS(decayLengthXYNormalised),
       FILL_MAP_BPLUS(cpa),
       FILL_MAP_BPLUS(cpaXY),
+      FILL_MAP_BPLUS(decayLengthDToPv),
+      FILL_MAP_BPLUS(decayLengthDToPvXY),
+      FILL_MAP_BPLUS(decayLengthDToB),
+      FILL_MAP_BPLUS(decayLengthDToBXY),
+      FILL_MAP_BPLUS(cpaDToPv),
+      FILL_MAP_BPLUS(cpaDToPvXY),
+      FILL_MAP_BPLUS(cpaDToB),
+      FILL_MAP_BPLUS(cpaDToBXY),
       FILL_MAP_BPLUS(maxNormalisedDeltaIP),
       FILL_MAP_BPLUS(prong0MlProbBkg),
       FILL_MAP_BPLUS(prong0MlProbPrompt),
