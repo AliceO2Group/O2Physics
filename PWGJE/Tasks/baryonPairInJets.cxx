@@ -17,6 +17,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -79,9 +80,9 @@ struct BaryonPairInJets {
   };
 
   enum class ChargePairType : uint8_t {
-    ProtonProton = 0,
-    AntiprotonAntiproton = 1,
-    ProtonAntiproton = 2
+    PositivePositive = 0,
+    NegativeNegative = 1,
+    OppositeSign = 2
   };
 
   enum class MixedReference : uint8_t {
@@ -96,18 +97,31 @@ struct BaryonPairInJets {
     TpcTofRectangular = 2
   };
 
-  struct SelectedBaryon {
+  enum class ControlSpecies : uint8_t {
+    Pion = 0,
+    Kaon = 1
+  };
+
+  // Species-independent selected-particle representation. Keep the full
+  // kinematics needed by pair and future jet-fragmentation observables.
+  struct SelectedParticle {
     float pt;
     float eta;
     float phi;
-    float rapidity;
     int8_t sign;
+  };
+
+  struct SelectedParticles {
+    std::vector<SelectedParticle> baryons;
+    std::vector<SelectedParticle> pions;
+    std::vector<SelectedParticle> kaons;
   };
 
   struct : ConfigurableGroup {
     Configurable<float> vertexZMax{"vertexZMax", 10.f, "Maximum absolute collision z vertex (cm)"};
     Configurable<std::string> eventSelections{"eventSelections", "sel8+NoITSROFrameBorder+NoTimeFrameBorder+NoSameBunchPileup+IsGoodZvtxFT0vsPV", "Event selections"};
     Configurable<bool> applyRctSelection{"applyRctSelection", true, "Apply the PWGJE hadron-PID RCT selection"};
+    Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection label"};
     Configurable<int> occupancyMin{"occupancyMin", -999999, "Minimum track occupancy in time range"};
     Configurable<int> occupancyMax{"occupancyMax", 999999, "Maximum track occupancy in time range"};
   } eventCuts;
@@ -123,8 +137,7 @@ struct BaryonPairInJets {
   struct : ConfigurableGroup {
     Configurable<float> protonPtMin{"protonPtMin", 0.5f, "Minimum proton transverse momentum (GeV/c)"};
     Configurable<float> protonPtMax{"protonPtMax", 2.5f, "Maximum proton transverse momentum (GeV/c)"};
-    Configurable<float> protonRapidityMax{"protonRapidityMax", 0.5f, "Maximum absolute proton rapidity"};
-    Configurable<float> protonEtaMax{"protonEtaMax", 0.8f, "Maximum absolute proton pseudorapidity before the rapidity cut"};
+    Configurable<float> protonEtaMax{"protonEtaMax", 0.8f, "Maximum absolute proton pseudorapidity"};
     Configurable<bool> requirePvContributor{"requirePvContributor", false, "Require the track to be a PV contributor"};
     Configurable<int> tpcCrossedRowsMin{"tpcCrossedRowsMin", 70, "Minimum number of crossed TPC rows"};
     Configurable<float> tpcChi2Max{"tpcChi2Max", 4.f, "Maximum TPC chi2 per cluster"};
@@ -141,6 +154,12 @@ struct BaryonPairInJets {
     Configurable<float> combinedNSigmaMax{"combinedNSigmaMax", 3.f, "Maximum circular TPC-TOF proton n-sigma"};
     Configurable<bool> rejectPionKaon{"rejectPionKaon", false, "Reject candidates compatible with the pion or kaon hypothesis"};
     Configurable<float> rejectionNSigma{"rejectionNSigma", 3.f, "Pion and kaon rejection threshold"};
+    Configurable<float> pionTpcNSigmaMax{"pionTpcNSigmaMax", 3.f, "Maximum absolute pion TPC n-sigma"};
+    Configurable<float> pionTofNSigmaMax{"pionTofNSigmaMax", 3.f, "Maximum absolute pion TOF n-sigma"};
+    Configurable<float> pionCombinedNSigmaMax{"pionCombinedNSigmaMax", 3.f, "Maximum circular TPC-TOF pion n-sigma"};
+    Configurable<float> kaonTpcNSigmaMax{"kaonTpcNSigmaMax", 3.f, "Maximum absolute kaon TPC n-sigma"};
+    Configurable<float> kaonTofNSigmaMax{"kaonTofNSigmaMax", 3.f, "Maximum absolute kaon TOF n-sigma"};
+    Configurable<float> kaonCombinedNSigmaMax{"kaonCombinedNSigmaMax", 3.f, "Maximum circular TPC-TOF kaon n-sigma"};
   } pidCuts;
 
   struct : ConfigurableGroup {
@@ -154,6 +173,14 @@ struct BaryonPairInJets {
     Configurable<int> looseJetNchDifferenceMax{"looseJetNchDifferenceMax", 8, "Maximum jet-constituent multiplicity difference for loose mixing"};
     Configurable<float> looseJetEtaDifferenceMax{"looseJetEtaDifferenceMax", 0.3f, "Maximum jet-eta difference for loose mixing"};
   } mixing;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> fillQa{"fillQa", true, "Fill event, jet, track, and PID QA histograms"};
+    Configurable<bool> fillReferenceVariations{"fillReferenceVariations", true, "Fill loose and unmatched mixed-event references"};
+    Configurable<bool> fillChargeSeparated{"fillChargeSeparated", true, "Fill charge-resolved pair histograms"};
+    Configurable<bool> fillPionControl{"fillPionControl", false, "Fill same-species pion control correlations"};
+    Configurable<bool> fillKaonControl{"fillKaonControl", false, "Fill same-species kaon control correlations"};
+  } output;
 
   struct : ConfigurableGroup {
     Configurable<float> nearSideDeltaPhiMax{"nearSideDeltaPhiMax", 0.2f, "Maximum absolute delta phi for near-side pair yields"};
@@ -177,18 +204,20 @@ struct BaryonPairInJets {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   std::vector<int> eventSelectionBits;
+  o2::aod::rctsel::RCTFlagsChecker inclusiveRctChecker;
   SliceCache mixingCache;
   SliceCache mcdMixingCache;
   SliceCache mcpMixingCache;
   SliceCache inclusiveMixingCache;
   using MixingBinning = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::MultFT0C>;
   using MCPMixingBinning = ColumnBinningPolicy<aod::jmccollision::PosZ, aod::jmccollision::MultFT0C>;
-  using InclusiveCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
-  using InclusiveMixingBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
+  using InclusiveCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
+  using InclusiveMixingBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0C>;
 
   void init(InitContext const&)
   {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventCuts.eventSelections));
+    inclusiveRctChecker.init(static_cast<std::string>(eventCuts.rctLabel));
 
     AxisSpec axisPairType{2, -0.5, 1.5, "pair type"};
     AxisSpec axisChargePairType{3, -0.5, 2.5, "charge pair type"};
@@ -211,41 +240,43 @@ struct BaryonPairInJets {
     AxisSpec axisOrigin{3, 0.5, 3.5, "origin"};
 
     registry.add("event/cutFlow", "Event selection;selection step;entries", HistType::kTH1F, {axisCounter});
-    registry.add("event/zVertex", "Selected collision z vertex;#it{z}_{vtx} (cm);entries", HistType::kTH1F, {{80, -20.f, 20.f}});
-    registry.add("event/multiplicityFT0C", "Selected collision FT0C multiplicity;FT0C multiplicity;entries", HistType::kTH1F, {{200, 0.f, 2000.f}});
+    if (output.fillQa.value) {
+      registry.add("event/zVertex", "Selected collision z vertex;#it{z}_{vtx} (cm);entries", HistType::kTH1F, {{80, -20.f, 20.f}});
+      registry.add("event/multiplicityFT0C", "Selected collision FT0C multiplicity;FT0C multiplicity;entries", HistType::kTH1F, {{200, 0.f, 2000.f}});
 
-    registry.add("jet/ptBeforePtSelection", "Charged jets before the jet-pT selection;#it{p}_{T,jet} (GeV/#it{c});entries", HistType::kTH1F, {axisJetPt});
-    registry.add("jet/pt", "Selected charged jets;#it{p}_{T,jet} (GeV/#it{c});entries", HistType::kTH1F, {axisJetPt});
-    registry.add("jet/eta", "Selected charged jets;#eta_{jet};entries", HistType::kTH1F, {axisJetEta});
-    registry.add("jet/phi", "Selected charged jets;#varphi_{jet};entries", HistType::kTH1F, {axisJetPhi});
-    registry.add("jet/nConstituents", "Charged-jet constituent multiplicity;#it{N}_{ch}^{jet};entries", HistType::kTH1F, {axisJetNch});
-    registry.add("jet/nSelectedBaryons", "Selected baryon multiplicity per jet;#it{N}_{p+#bar{p}};jets", HistType::kTH1F, {axisMultiplicity});
-    registry.add("jet/nProtons", "Selected proton multiplicity per jet;#it{N}_{p};jets", HistType::kTH1F, {axisMultiplicity});
-    registry.add("jet/nAntiprotons", "Selected antiproton multiplicity per jet;#it{N}_{#bar{p}};jets", HistType::kTH1F, {axisMultiplicity});
-    registry.add("jet/nProtonsVsAntiprotons", "Proton and antiproton multiplicities per jet;#it{N}_{p};#it{N}_{#bar{p}}", HistType::kTH2F, {axisMultiplicity, axisMultiplicity});
-    registry.add("jet/nConstituentsVsPt", "Constituent multiplicity versus jet momentum;#it{p}_{T,jet} (GeV/#it{c});#it{N}_{ch}^{jet}", HistType::kTH2F, {axisJetPt, axisJetNch});
-    registry.add("jet/nBaryonsVsPt", "Selected baryon multiplicity versus jet momentum;#it{p}_{T,jet} (GeV/#it{c});#it{N}_{p+#bar{p}}", HistType::kTH2F, {axisJetPt, axisMultiplicity});
-    registry.add("jet/sameSignPairsVsPt", "Same-sign pair count versus jet momentum;#it{p}_{T,jet} (GeV/#it{c});pairs", HistType::kTH1F, {axisJetPt});
-    registry.add("jet/oppositeSignPairsVsPt", "Opposite-sign pair count versus jet momentum;#it{p}_{T,jet} (GeV/#it{c});pairs", HistType::kTH1F, {axisJetPt});
+      registry.add("jet/ptBeforePtSelection", "Charged jets before the jet-pT selection;#it{p}_{T,jet} (GeV/#it{c});entries", HistType::kTH1F, {axisJetPt});
+      registry.add("jet/pt", "Selected charged jets;#it{p}_{T,jet} (GeV/#it{c});entries", HistType::kTH1F, {axisJetPt});
+      registry.add("jet/eta", "Selected charged jets;#eta_{jet};entries", HistType::kTH1F, {axisJetEta});
+      registry.add("jet/phi", "Selected charged jets;#varphi_{jet};entries", HistType::kTH1F, {axisJetPhi});
+      registry.add("jet/nConstituents", "Charged-jet constituent multiplicity;#it{N}_{ch}^{jet};entries", HistType::kTH1F, {axisJetNch});
+      registry.add("jet/nSelectedBaryons", "Selected baryon multiplicity per jet;#it{N}_{p+#bar{p}};jets", HistType::kTH1F, {axisMultiplicity});
+      registry.add("jet/nProtons", "Selected proton multiplicity per jet;#it{N}_{p};jets", HistType::kTH1F, {axisMultiplicity});
+      registry.add("jet/nAntiprotons", "Selected antiproton multiplicity per jet;#it{N}_{#bar{p}};jets", HistType::kTH1F, {axisMultiplicity});
+      registry.add("jet/nProtonsVsAntiprotons", "Proton and antiproton multiplicities per jet;#it{N}_{p};#it{N}_{#bar{p}}", HistType::kTH2F, {axisMultiplicity, axisMultiplicity});
+      registry.add("jet/nConstituentsVsPt", "Constituent multiplicity versus jet momentum;#it{p}_{T,jet} (GeV/#it{c});#it{N}_{ch}^{jet}", HistType::kTH2F, {axisJetPt, axisJetNch});
+      registry.add("jet/nBaryonsVsPt", "Selected baryon multiplicity versus jet momentum;#it{p}_{T,jet} (GeV/#it{c});#it{N}_{p+#bar{p}}", HistType::kTH2F, {axisJetPt, axisMultiplicity});
+      registry.add("jet/sameSignPairsVsPt", "Same-sign pair count versus jet momentum;#it{p}_{T,jet} (GeV/#it{c});pairs", HistType::kTH1F, {axisJetPt});
+      registry.add("jet/oppositeSignPairsVsPt", "Opposite-sign pair count versus jet momentum;#it{p}_{T,jet} (GeV/#it{c});pairs", HistType::kTH1F, {axisJetPt});
 
-    registry.add("proton/pt", "Selected proton and antiproton candidates;#it{p}_{T} (GeV/#it{c});entries", HistType::kTH1F, {axisBaryonPt});
-    registry.add("proton/eta", "Selected proton and antiproton candidates;#eta;entries", HistType::kTH1F, {axisBaryonEta});
-    registry.add("proton/rapidity", "Selected proton and antiproton candidates;#it{y};entries", HistType::kTH1F, {axisBaryonRapidity});
-    registry.add("proton/tpcNSigmaVsPt", "Proton TPC PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}^{p}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
-    registry.add("proton/tofNSigmaVsPt", "Proton TOF PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}^{p}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
-    registry.add("proton/dcaXYVsPt", "Selected proton transverse DCA;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2F, {axisBaryonPt, axisDca});
-    registry.add("proton/dcaZVsPt", "Selected proton longitudinal DCA;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2F, {axisBaryonPt, axisDca});
-    registry.add("pid/before/tpcSignalVsSignedP", "TPC response before proton PID;charge #times #it{p} (GeV/#it{c});TPC signal", HistType::kTH2F, {{120, -6.f, 6.f}, {200, 0.f, 200.f}});
-    registry.add("pid/before/tofBetaVsSignedP", "TOF response before proton PID;charge #times #it{p} (GeV/#it{c});#beta", HistType::kTH2F, {{120, -6.f, 6.f}, {120, 0.f, 1.2f}});
-    registry.add("pid/before/tpcNSigmaPiVsPt", "Pion TPC PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}^{#pi}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
-    registry.add("pid/before/tpcNSigmaKaVsPt", "Kaon TPC PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}^{K}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
-    registry.add("pid/before/tpcNSigmaPrVsPt", "Proton TPC PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}^{p}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
-    registry.add("pid/before/tofNSigmaPiVsPt", "Pion TOF PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}^{#pi}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
-    registry.add("pid/before/tofNSigmaKaVsPt", "Kaon TOF PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}^{K}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
-    registry.add("pid/before/tofNSigmaPrVsPt", "Proton TOF PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}^{p}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
-    registry.add("pid/tofMatchDenominator", "Tracks entering PID QA;#it{p}_{T} (GeV/#it{c});tracks", HistType::kTH1F, {axisBaryonPt});
-    registry.add("pid/tofMatchNumerator", "Tracks with TOF;#it{p}_{T} (GeV/#it{c});tracks", HistType::kTH1F, {axisBaryonPt});
-    registry.add("pid/selectedPtByCharge", "Selected proton candidates;charge;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{2, -1.5f, 1.5f}, axisBaryonPt});
+      registry.add("proton/pt", "Selected proton and antiproton candidates;#it{p}_{T} (GeV/#it{c});entries", HistType::kTH1F, {axisBaryonPt});
+      registry.add("proton/eta", "Selected proton and antiproton candidates;#eta;entries", HistType::kTH1F, {axisBaryonEta});
+      registry.add("proton/rapidity", "Selected proton and antiproton candidates;#it{y};entries", HistType::kTH1F, {axisBaryonRapidity});
+      registry.add("proton/tpcNSigmaVsPt", "Proton TPC PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}^{p}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
+      registry.add("proton/tofNSigmaVsPt", "Proton TOF PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}^{p}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
+      registry.add("proton/dcaXYVsPt", "Selected proton transverse DCA;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2F, {axisBaryonPt, axisDca});
+      registry.add("proton/dcaZVsPt", "Selected proton longitudinal DCA;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2F, {axisBaryonPt, axisDca});
+      registry.add("pid/before/tpcSignalVsSignedP", "TPC response before proton PID;charge #times #it{p} (GeV/#it{c});TPC signal", HistType::kTH2F, {{120, -6.f, 6.f}, {200, 0.f, 200.f}});
+      registry.add("pid/before/tofBetaVsSignedP", "TOF response before proton PID;charge #times #it{p} (GeV/#it{c});#beta", HistType::kTH2F, {{120, -6.f, 6.f}, {120, 0.f, 1.2f}});
+      registry.add("pid/before/tpcNSigmaPiVsPt", "Pion TPC PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}^{#pi}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
+      registry.add("pid/before/tpcNSigmaKaVsPt", "Kaon TPC PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}^{K}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
+      registry.add("pid/before/tpcNSigmaPrVsPt", "Proton TPC PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}^{p}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
+      registry.add("pid/before/tofNSigmaPiVsPt", "Pion TOF PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}^{#pi}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
+      registry.add("pid/before/tofNSigmaKaVsPt", "Kaon TOF PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}^{K}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
+      registry.add("pid/before/tofNSigmaPrVsPt", "Proton TOF PID before proton PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}^{p}", HistType::kTH2F, {axisBaryonPt, axisNSigma});
+      registry.add("pid/tofMatchDenominator", "Tracks entering PID QA;#it{p}_{T} (GeV/#it{c});tracks", HistType::kTH1F, {axisBaryonPt});
+      registry.add("pid/tofMatchNumerator", "Tracks with TOF;#it{p}_{T} (GeV/#it{c});tracks", HistType::kTH1F, {axisBaryonPt});
+      registry.add("pid/selectedPtByCharge", "Selected proton candidates;charge;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{2, -1.5f, 1.5f}, axisBaryonPt});
+    }
 
     addPairHistograms("sameEvent", axisPairType, axisJetPt, axisDeltaEta, axisDeltaPhi, axisDeltaR);
     addPairHistograms("mixedEvent/nominal", axisPairType, axisJetPt, axisDeltaEta, axisDeltaPhi, axisDeltaR);
@@ -258,7 +289,7 @@ struct BaryonPairInJets {
 
     addInclusivePairHistograms("inclusive/sameEvent", axisChargePairType, axisInclusiveDeltaEta, axisInclusiveDeltaPhi);
     addInclusivePairHistograms("inclusive/mixedEvent", axisChargePairType, axisInclusiveDeltaEta, axisInclusiveDeltaPhi);
-    registry.add("inclusive/event/multiplicity", "Inclusive selected-event multiplicity;#it{N}_{tracks}^{PV};events", HistType::kTH1F, {{200, 0.f, 200.f}});
+    registry.add("inclusive/event/multiplicity", "Inclusive selected-event multiplicity;FT0C multiplicity;events", HistType::kTH1F, {{200, 0.f, 2000.f}});
     registry.add("inclusive/normalization/sameEvent", "Inclusive same-event normalization;counter;entries", HistType::kTH1F, {axisCounter});
     registry.add("inclusive/normalization/mixedEvent", "Inclusive mixed-event normalization;counter;weighted entries", HistType::kTH1F, {axisCounter});
 
@@ -289,7 +320,51 @@ struct BaryonPairInJets {
     registry.add("mc/particle/normalizationSameEvent", "Particle-level same-event normalization;counter;weighted entries", HistType::kTH1F, {axisCounter});
     registry.add("mc/particle/normalizationMixedEvent", "Particle-level mixed-event normalization;counter;weighted entries", HistType::kTH1F, {axisCounter});
 
+    if (output.fillPionControl.value) {
+      addControlSpeciesHistograms("control/pion", "Pion", axisPairType, axisCounter, axisJetPt, axisBaryonPt, axisNSigma, axisOrigin, axisDeltaEta, axisDeltaPhi, axisDeltaR);
+    }
+    if (output.fillKaonControl.value) {
+      addControlSpeciesHistograms("control/kaon", "Kaon", axisPairType, axisCounter, axisJetPt, axisBaryonPt, axisNSigma, axisOrigin, axisDeltaEta, axisDeltaPhi, axisDeltaR);
+    }
+
     setHistogramLabels();
+  }
+
+  void addControlSpeciesHistograms(std::string const& directory,
+                                   std::string const& speciesName,
+                                   AxisSpec const& axisPairType,
+                                   AxisSpec const& axisCounter,
+                                   AxisSpec const& axisJetPt,
+                                   AxisSpec const& axisParticlePt,
+                                   AxisSpec const& axisNSigma,
+                                   AxisSpec const& axisOrigin,
+                                   AxisSpec const& axisDeltaEta,
+                                   AxisSpec const& axisDeltaPhi,
+                                   AxisSpec const& axisDeltaR)
+  {
+    auto addHistogram = [&](std::string const& suffix, std::string const& title, HistType type, std::vector<AxisSpec> const& histogramAxes) {
+      registry.add(directory + suffix, title.c_str(), type, histogramAxes);
+    };
+    AxisSpec const axisPdg{801, -4005.f, 4005.f, "true PDG code"};
+    addPairHistograms(directory + "/sameEvent", axisPairType, axisJetPt, axisDeltaEta, axisDeltaPhi, axisDeltaR);
+    addPairHistograms(directory + "/mixedEvent", axisPairType, axisJetPt, axisDeltaEta, axisDeltaPhi, axisDeltaR);
+    addHistogram("/normalizationSameEvent", speciesName + " same-event normalization;counter;weighted entries", HistType::kTH1F, {axisCounter});
+    addHistogram("/normalizationMixedEvent", speciesName + " mixed-event normalization;counter;weighted entries", HistType::kTH1F, {axisCounter});
+    if (output.fillQa.value) {
+      addHistogram("/qa/pt", "Selected " + speciesName + " candidates;#it{p}_{T} (GeV/#it{c});entries", HistType::kTH1F, {axisParticlePt});
+      addHistogram("/qa/tpcNSigmaVsPt", speciesName + " TPC PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", HistType::kTH2F, {axisParticlePt, axisNSigma});
+      addHistogram("/qa/tofNSigmaVsPt", speciesName + " TOF PID;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}", HistType::kTH2F, {axisParticlePt, axisNSigma});
+    }
+    addHistogram("/mc/generatedPrimaryPt", "Generated primary " + speciesName + " candidates;#it{p}_{T}^{part} (GeV/#it{c});particles", HistType::kTH1F, {axisParticlePt});
+    addHistogram("/mc/reconstructedTruePt", "Reconstructed true primary " + speciesName + " candidates;#it{p}_{T}^{rec} (GeV/#it{c});tracks", HistType::kTH1F, {axisParticlePt});
+    addHistogram("/mc/selectedTruePt", "PID-selected true primary " + speciesName + " candidates;#it{p}_{T}^{rec} (GeV/#it{c});tracks", HistType::kTH1F, {axisParticlePt});
+    addHistogram("/mc/selectedCandidateOriginVsPt", "Selected " + speciesName + " candidate origin;#it{p}_{T}^{rec} (GeV/#it{c});origin", HistType::kTH2F, {axisParticlePt, axisOrigin});
+    addHistogram("/mc/selectedCandidateTruePdgVsPt", "Selected " + speciesName + " candidate contamination;#it{p}_{T}^{rec} (GeV/#it{c});true PDG code", HistType::kTH2F, {axisParticlePt, axisPdg});
+    addHistogram("/mc/ptResponsePrimary", "Primary " + speciesName + " momentum response;#it{p}_{T}^{part} (GeV/#it{c});#it{p}_{T}^{rec} (GeV/#it{c})", HistType::kTH2F, {axisParticlePt, axisParticlePt});
+    addPairHistograms(directory + "/mc/particle/sameEvent", axisPairType, axisJetPt, axisDeltaEta, axisDeltaPhi, axisDeltaR);
+    addPairHistograms(directory + "/mc/particle/mixedEvent", axisPairType, axisJetPt, axisDeltaEta, axisDeltaPhi, axisDeltaR);
+    addHistogram("/mc/particle/normalizationSameEvent", speciesName + " particle-level same-event normalization;counter;weighted entries", HistType::kTH1F, {axisCounter});
+    addHistogram("/mc/particle/normalizationMixedEvent", speciesName + " particle-level mixed-event normalization;counter;weighted entries", HistType::kTH1F, {axisCounter});
   }
 
   void addPairHistograms(std::string const& directory,
@@ -336,6 +411,18 @@ struct BaryonPairInJets {
     setNormalizationLabels(registry.get<TH1>(HIST("normalization/mixedEventNominal")));
     setNormalizationLabels(registry.get<TH1>(HIST("normalization/mixedEventLoose")));
     setNormalizationLabels(registry.get<TH1>(HIST("normalization/mixedEventRandom")));
+    if (output.fillPionControl.value) {
+      setNormalizationLabels(registry.get<TH1>(HIST("control/pion/normalizationSameEvent")));
+      setNormalizationLabels(registry.get<TH1>(HIST("control/pion/normalizationMixedEvent")));
+      setNormalizationLabels(registry.get<TH1>(HIST("control/pion/mc/particle/normalizationSameEvent")));
+      setNormalizationLabels(registry.get<TH1>(HIST("control/pion/mc/particle/normalizationMixedEvent")));
+    }
+    if (output.fillKaonControl.value) {
+      setNormalizationLabels(registry.get<TH1>(HIST("control/kaon/normalizationSameEvent")));
+      setNormalizationLabels(registry.get<TH1>(HIST("control/kaon/normalizationMixedEvent")));
+      setNormalizationLabels(registry.get<TH1>(HIST("control/kaon/mc/particle/normalizationSameEvent")));
+      setNormalizationLabels(registry.get<TH1>(HIST("control/kaon/mc/particle/normalizationMixedEvent")));
+    }
   }
 
   template <typename CollisionType>
@@ -356,7 +443,7 @@ struct BaryonPairInJets {
     if (fillCutFlow) {
       registry.fill(HIST("event/cutFlow"), 3.f);
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, true, eventCuts.applyRctSelection.value)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, true, eventCuts.applyRctSelection.value, static_cast<std::string>(eventCuts.rctLabel))) {
       return false;
     }
     if (fillCutFlow) {
@@ -436,10 +523,39 @@ struct BaryonPairInJets {
     return !isPionCompatible && !isKaonCompatible;
   }
 
-  template <typename JetType>
-  std::vector<SelectedBaryon> collectBaryons(JetType const& jet, bool fillQa, float weight = 1.f)
+  bool passesControlPid(float pt, bool hasTof, float tpcNSigma, float tofNSigma, float tpcMaximum, float tofMaximum, float combinedMaximum) const
   {
-    std::vector<SelectedBaryon> baryons;
+    auto const pidMethod = static_cast<ProtonPidMethod>(pidCuts.method.value);
+    tpcNSigma = std::abs(tpcNSigma);
+    tofNSigma = std::abs(tofNSigma);
+    if (pidMethod == ProtonPidMethod::TpcOnly || pt < pidCuts.tofPtThreshold.value) {
+      return tpcNSigma < tpcMaximum;
+    }
+    if (!hasTof) {
+      return false;
+    }
+    if (pidMethod == ProtonPidMethod::TpcTofCircular) {
+      return std::hypot(tpcNSigma, tofNSigma) < combinedMaximum;
+    }
+    return tpcNSigma < tpcMaximum && tofNSigma < tofMaximum;
+  }
+
+  template <typename TrackType>
+  bool isSelectedPion(TrackType const& track) const
+  {
+    return passesControlPid(track.pt(), track.hasTOF(), track.tpcNSigmaPi(), track.tofNSigmaPi(), pidCuts.pionTpcNSigmaMax.value, pidCuts.pionTofNSigmaMax.value, pidCuts.pionCombinedNSigmaMax.value);
+  }
+
+  template <typename TrackType>
+  bool isSelectedKaon(TrackType const& track) const
+  {
+    return passesControlPid(track.pt(), track.hasTOF(), track.tpcNSigmaKa(), track.tofNSigmaKa(), pidCuts.kaonTpcNSigmaMax.value, pidCuts.kaonTofNSigmaMax.value, pidCuts.kaonCombinedNSigmaMax.value);
+  }
+
+  template <typename JetType>
+  SelectedParticles collectSelectedParticles(JetType const& jet, bool fillQa, float weight = 1.f, bool collectControls = true)
+  {
+    SelectedParticles selected;
     for (auto const& jetTrack : jet.template tracks_as<JetTracksWithOriginal>()) {
       auto track = jetTrack.template track_as<BaryonTracks>();
       if (!isSelectedTrack(track)) {
@@ -462,74 +578,250 @@ struct BaryonPairInJets {
         }
       }
 
-      float const rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, o2::constants::physics::MassProton);
-      if (std::abs(rapidity) > trackCuts.protonRapidityMax.value || !isSelectedProton(track)) {
-        continue;
-      }
-
-      baryons.push_back({track.pt(), track.eta(), track.phi(), rapidity, static_cast<int8_t>(track.sign())});
-      if (fillQa) {
-        registry.fill(HIST("proton/pt"), track.pt(), weight);
-        registry.fill(HIST("proton/eta"), track.eta(), weight);
-        registry.fill(HIST("proton/rapidity"), rapidity, weight);
-        registry.fill(HIST("proton/tpcNSigmaVsPt"), track.pt(), track.tpcNSigmaPr(), weight);
-        if (track.hasTOF()) {
-          registry.fill(HIST("proton/tofNSigmaVsPt"), track.pt(), track.tofNSigmaPr(), weight);
+      SelectedParticle const particle{track.pt(), track.eta(), track.phi(), static_cast<int8_t>(track.sign())};
+      if (isSelectedProton(track)) {
+        selected.baryons.push_back(particle);
+        if (fillQa) {
+          float const rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, o2::constants::physics::MassProton);
+          registry.fill(HIST("proton/pt"), particle.pt, weight);
+          registry.fill(HIST("proton/eta"), particle.eta, weight);
+          registry.fill(HIST("proton/rapidity"), rapidity, weight);
+          registry.fill(HIST("proton/tpcNSigmaVsPt"), track.pt(), track.tpcNSigmaPr(), weight);
+          if (track.hasTOF()) {
+            registry.fill(HIST("proton/tofNSigmaVsPt"), track.pt(), track.tofNSigmaPr(), weight);
+          }
+          registry.fill(HIST("proton/dcaXYVsPt"), track.pt(), track.dcaXY(), weight);
+          registry.fill(HIST("proton/dcaZVsPt"), track.pt(), track.dcaZ(), weight);
+          registry.fill(HIST("pid/selectedPtByCharge"), static_cast<float>(particle.sign), particle.pt, weight);
         }
-        registry.fill(HIST("proton/dcaXYVsPt"), track.pt(), track.dcaXY(), weight);
-        registry.fill(HIST("proton/dcaZVsPt"), track.pt(), track.dcaZ(), weight);
-        registry.fill(HIST("pid/selectedPtByCharge"), static_cast<float>(track.sign()), track.pt(), weight);
+      }
+      if (collectControls && output.fillPionControl.value && isSelectedPion(track)) {
+        selected.pions.push_back(particle);
+        if (fillQa) {
+          registry.fill(HIST("control/pion/qa/pt"), particle.pt, weight);
+          registry.fill(HIST("control/pion/qa/tpcNSigmaVsPt"), particle.pt, track.tpcNSigmaPi(), weight);
+          if (track.hasTOF()) {
+            registry.fill(HIST("control/pion/qa/tofNSigmaVsPt"), particle.pt, track.tofNSigmaPi(), weight);
+          }
+        }
+      }
+      if (collectControls && output.fillKaonControl.value && isSelectedKaon(track)) {
+        selected.kaons.push_back(particle);
+        if (fillQa) {
+          registry.fill(HIST("control/kaon/qa/pt"), particle.pt, weight);
+          registry.fill(HIST("control/kaon/qa/tpcNSigmaVsPt"), particle.pt, track.tpcNSigmaKa(), weight);
+          if (track.hasTOF()) {
+            registry.fill(HIST("control/kaon/qa/tofNSigmaVsPt"), particle.pt, track.tofNSigmaKa(), weight);
+          }
+        }
       }
     }
-    return baryons;
+    return selected;
   }
 
-  static PairType getPairType(SelectedBaryon const& baryon1, SelectedBaryon const& baryon2)
+  static PairType getPairType(SelectedParticle const& baryon1, SelectedParticle const& baryon2)
   {
     return baryon1.sign == baryon2.sign ? PairType::SameSign : PairType::OppositeSign;
   }
 
-  static ChargePairType getChargePairType(SelectedBaryon const& baryon1, SelectedBaryon const& baryon2)
+  static ChargePairType getChargePairType(SelectedParticle const& baryon1, SelectedParticle const& baryon2)
   {
     if (baryon1.sign > 0 && baryon2.sign > 0) {
-      return ChargePairType::ProtonProton;
+      return ChargePairType::PositivePositive;
     }
     if (baryon1.sign < 0 && baryon2.sign < 0) {
-      return ChargePairType::AntiprotonAntiproton;
+      return ChargePairType::NegativeNegative;
     }
-    return ChargePairType::ProtonAntiproton;
+    return ChargePairType::OppositeSign;
+  }
+
+  template <ControlSpecies Species>
+  void fillControlNormalization(bool isMixed, float counter, float weight)
+  {
+    if constexpr (Species == ControlSpecies::Pion) {
+      if (isMixed) {
+        registry.fill(HIST("control/pion/normalizationMixedEvent"), counter, weight);
+      } else {
+        registry.fill(HIST("control/pion/normalizationSameEvent"), counter, weight);
+      }
+    } else {
+      if (isMixed) {
+        registry.fill(HIST("control/kaon/normalizationMixedEvent"), counter, weight);
+      } else {
+        registry.fill(HIST("control/kaon/normalizationSameEvent"), counter, weight);
+      }
+    }
+  }
+
+  template <ControlSpecies Species>
+  void fillControlParticleNormalization(bool isMixed, float counter, float weight)
+  {
+    if constexpr (Species == ControlSpecies::Pion) {
+      if (isMixed) {
+        registry.fill(HIST("control/pion/mc/particle/normalizationMixedEvent"), counter, weight);
+      } else {
+        registry.fill(HIST("control/pion/mc/particle/normalizationSameEvent"), counter, weight);
+      }
+    } else {
+      if (isMixed) {
+        registry.fill(HIST("control/kaon/mc/particle/normalizationMixedEvent"), counter, weight);
+      } else {
+        registry.fill(HIST("control/kaon/mc/particle/normalizationSameEvent"), counter, weight);
+      }
+    }
+  }
+
+  template <ControlSpecies Species, bool IsParticleLevel>
+  void fillControlPair(bool isMixed, PairType pairType, float jetPt, float deltaEta, float deltaPhi, float deltaR, float weight)
+  {
+    auto fillPairHistograms = [&](auto const& sameSignName, auto const& oppositeSignName, auto const& deltaRSameSignName, auto const& deltaROppositeSignName, auto const& sparseName) {
+      if (pairType == PairType::SameSign) {
+        registry.fill(sameSignName, deltaEta, deltaPhi, 0.5f * weight);
+        registry.fill(sameSignName, -deltaEta, -deltaPhi, 0.5f * weight);
+        registry.fill(deltaRSameSignName, deltaR, weight);
+      } else {
+        registry.fill(oppositeSignName, deltaEta, deltaPhi, 0.5f * weight);
+        registry.fill(oppositeSignName, -deltaEta, -deltaPhi, 0.5f * weight);
+        registry.fill(deltaROppositeSignName, deltaR, weight);
+      }
+      registry.fill(sparseName, static_cast<float>(pairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
+      registry.fill(sparseName, static_cast<float>(pairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+    };
+
+    if constexpr (Species == ControlSpecies::Pion && !IsParticleLevel) {
+      if (isMixed) {
+        fillPairHistograms(HIST("control/pion/mixedEvent/sameSignDeltaEtaDeltaPhi"), HIST("control/pion/mixedEvent/oppositeSignDeltaEtaDeltaPhi"), HIST("control/pion/mixedEvent/sameSignDeltaR"), HIST("control/pion/mixedEvent/oppositeSignDeltaR"), HIST("control/pion/mixedEvent/pairSparse"));
+      } else {
+        fillPairHistograms(HIST("control/pion/sameEvent/sameSignDeltaEtaDeltaPhi"), HIST("control/pion/sameEvent/oppositeSignDeltaEtaDeltaPhi"), HIST("control/pion/sameEvent/sameSignDeltaR"), HIST("control/pion/sameEvent/oppositeSignDeltaR"), HIST("control/pion/sameEvent/pairSparse"));
+      }
+    } else if constexpr (Species == ControlSpecies::Kaon && !IsParticleLevel) {
+      if (isMixed) {
+        fillPairHistograms(HIST("control/kaon/mixedEvent/sameSignDeltaEtaDeltaPhi"), HIST("control/kaon/mixedEvent/oppositeSignDeltaEtaDeltaPhi"), HIST("control/kaon/mixedEvent/sameSignDeltaR"), HIST("control/kaon/mixedEvent/oppositeSignDeltaR"), HIST("control/kaon/mixedEvent/pairSparse"));
+      } else {
+        fillPairHistograms(HIST("control/kaon/sameEvent/sameSignDeltaEtaDeltaPhi"), HIST("control/kaon/sameEvent/oppositeSignDeltaEtaDeltaPhi"), HIST("control/kaon/sameEvent/sameSignDeltaR"), HIST("control/kaon/sameEvent/oppositeSignDeltaR"), HIST("control/kaon/sameEvent/pairSparse"));
+      }
+    } else if constexpr (Species == ControlSpecies::Pion) {
+      if (isMixed) {
+        fillPairHistograms(HIST("control/pion/mc/particle/mixedEvent/sameSignDeltaEtaDeltaPhi"), HIST("control/pion/mc/particle/mixedEvent/oppositeSignDeltaEtaDeltaPhi"), HIST("control/pion/mc/particle/mixedEvent/sameSignDeltaR"), HIST("control/pion/mc/particle/mixedEvent/oppositeSignDeltaR"), HIST("control/pion/mc/particle/mixedEvent/pairSparse"));
+      } else {
+        fillPairHistograms(HIST("control/pion/mc/particle/sameEvent/sameSignDeltaEtaDeltaPhi"), HIST("control/pion/mc/particle/sameEvent/oppositeSignDeltaEtaDeltaPhi"), HIST("control/pion/mc/particle/sameEvent/sameSignDeltaR"), HIST("control/pion/mc/particle/sameEvent/oppositeSignDeltaR"), HIST("control/pion/mc/particle/sameEvent/pairSparse"));
+      }
+    } else {
+      if (isMixed) {
+        fillPairHistograms(HIST("control/kaon/mc/particle/mixedEvent/sameSignDeltaEtaDeltaPhi"), HIST("control/kaon/mc/particle/mixedEvent/oppositeSignDeltaEtaDeltaPhi"), HIST("control/kaon/mc/particle/mixedEvent/sameSignDeltaR"), HIST("control/kaon/mc/particle/mixedEvent/oppositeSignDeltaR"), HIST("control/kaon/mc/particle/mixedEvent/pairSparse"));
+      } else {
+        fillPairHistograms(HIST("control/kaon/mc/particle/sameEvent/sameSignDeltaEtaDeltaPhi"), HIST("control/kaon/mc/particle/sameEvent/oppositeSignDeltaEtaDeltaPhi"), HIST("control/kaon/mc/particle/sameEvent/sameSignDeltaR"), HIST("control/kaon/mc/particle/sameEvent/oppositeSignDeltaR"), HIST("control/kaon/mc/particle/sameEvent/pairSparse"));
+      }
+    }
+  }
+
+  template <ControlSpecies Species, bool IsParticleLevel>
+  void fillControlSameJetPairs(std::vector<SelectedParticle> const& particles, float jetPt, float weight)
+  {
+    if constexpr (IsParticleLevel) {
+      fillControlParticleNormalization<Species>(false, 2.f, weight);
+    } else {
+      fillControlNormalization<Species>(false, 2.f, weight);
+    }
+    for (size_t first = 0; first < particles.size(); ++first) {
+      for (size_t second = first + 1; second < particles.size(); ++second) {
+        PairType const pairType = getPairType(particles[first], particles[second]);
+        float const deltaEta = particles[first].eta - particles[second].eta;
+        float const deltaPhi = RecoDecay::constrainAngle(particles[first].phi - particles[second].phi, -o2::constants::math::PI);
+        float const deltaR = std::hypot(deltaEta, deltaPhi);
+        fillControlPair<Species, IsParticleLevel>(false, pairType, jetPt, deltaEta, deltaPhi, deltaR, weight);
+        if constexpr (IsParticleLevel) {
+          fillControlParticleNormalization<Species>(false, pairType == PairType::SameSign ? 3.f : 4.f, weight);
+        } else {
+          fillControlNormalization<Species>(false, pairType == PairType::SameSign ? 3.f : 4.f, weight);
+        }
+      }
+    }
+  }
+
+  template <ControlSpecies Species, bool IsParticleLevel, typename JetType1, typename JetType2>
+  void fillControlMixedJetPairs(std::vector<SelectedParticle> const& particles1,
+                                std::vector<SelectedParticle> const& particles2,
+                                JetType1 const& jet1,
+                                JetType2 const& jet2,
+                                float weight)
+  {
+    if constexpr (IsParticleLevel) {
+      fillControlParticleNormalization<Species>(true, 2.f, weight);
+    } else {
+      fillControlNormalization<Species>(true, 2.f, weight);
+    }
+    float const mixedJetPt = 0.5f * (jet1.pt() + jet2.pt());
+    for (auto const& particle1 : particles1) {
+      float const localEta1 = particle1.eta - jet1.eta();
+      float const localPhi1 = RecoDecay::constrainAngle(particle1.phi - jet1.phi(), -o2::constants::math::PI);
+      for (auto const& particle2 : particles2) {
+        float const localEta2 = particle2.eta - jet2.eta();
+        float const localPhi2 = RecoDecay::constrainAngle(particle2.phi - jet2.phi(), -o2::constants::math::PI);
+        float const deltaEta = localEta1 - localEta2;
+        float const deltaPhi = RecoDecay::constrainAngle(localPhi1 - localPhi2, -o2::constants::math::PI);
+        float const deltaR = std::hypot(deltaEta, deltaPhi);
+        PairType const pairType = getPairType(particle1, particle2);
+        fillControlPair<Species, IsParticleLevel>(true, pairType, mixedJetPt, deltaEta, deltaPhi, deltaR, weight);
+        if constexpr (IsParticleLevel) {
+          fillControlParticleNormalization<Species>(true, pairType == PairType::SameSign ? 3.f : 4.f, weight);
+        } else {
+          fillControlNormalization<Species>(true, pairType == PairType::SameSign ? 3.f : 4.f, weight);
+        }
+      }
+    }
   }
 
   template <typename TracksType>
-  std::vector<SelectedBaryon> collectInclusiveBaryons(TracksType const& tracks)
+  std::vector<SelectedParticle> collectInclusiveBaryons(TracksType const& tracks)
   {
-    std::vector<SelectedBaryon> baryons;
+    std::vector<SelectedParticle> baryons;
     for (auto const& track : tracks) {
       if (!isSelectedTrack(track)) {
         continue;
       }
-      float const rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, o2::constants::physics::MassProton);
-      if (std::abs(rapidity) > trackCuts.protonRapidityMax.value || !isSelectedProton(track)) {
+      if (!isSelectedProton(track)) {
         continue;
       }
-      baryons.push_back({track.pt(), track.eta(), track.phi(), rapidity, static_cast<int8_t>(track.sign())});
+      baryons.push_back({track.pt(), track.eta(), track.phi(), static_cast<int8_t>(track.sign())});
     }
     return baryons;
   }
 
   template <typename CollisionType>
-  bool isSelectedInclusiveCollision(CollisionType const& collision) const
+  bool isSelectedInclusiveCollision(CollisionType const& collision)
   {
-    return std::abs(collision.posZ()) <= eventCuts.vertexZMax.value && collision.sel8() &&
-           collision.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
-           collision.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
-           collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
-           collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
+    if (std::abs(collision.posZ()) > eventCuts.vertexZMax.value ||
+        collision.trackOccupancyInTimeRange() < eventCuts.occupancyMin.value ||
+        collision.trackOccupancyInTimeRange() > eventCuts.occupancyMax.value) {
+      return false;
+    }
+
+    uint16_t const collisionSelection = jetderiveddatautilities::setEventSelectionBit(collision);
+    bool isOrCondition = false;
+    bool passedOrCondition = false;
+    for (auto const& selectionBit : eventSelectionBits) {
+      if (selectionBit == -1) {
+        isOrCondition = true;
+        continue;
+      }
+      bool const passed = collisionSelection & (1U << selectionBit);
+      if (!isOrCondition && !passed) {
+        return false;
+      }
+      if (isOrCondition && passed) {
+        passedOrCondition = true;
+      }
+    }
+    if (isOrCondition && !passedOrCondition) {
+      return false;
+    }
+    return !eventCuts.applyRctSelection.value || inclusiveRctChecker.checkTable(collision);
   }
 
   void fillInclusivePair(bool isMixed,
-                         SelectedBaryon const& baryon1,
-                         SelectedBaryon const& baryon2,
+                         SelectedParticle const& baryon1,
+                         SelectedParticle const& baryon2,
                          float weight)
   {
     PairType const pairType = getPairType(baryon1, baryon2);
@@ -545,8 +837,10 @@ struct BaryonPairInJets {
         registry.fill(HIST("inclusive/mixedEvent/oppositeSignDeltaEtaDeltaPhi"), deltaEta, deltaPhi, 0.5f * weight);
         registry.fill(HIST("inclusive/mixedEvent/oppositeSignDeltaEtaDeltaPhi"), -deltaEta, reflectedDeltaPhi, 0.5f * weight);
       }
-      registry.fill(HIST("inclusive/mixedEvent/chargePairSparse"), static_cast<float>(chargePairType), deltaEta, deltaPhi, 0.5f * weight);
-      registry.fill(HIST("inclusive/mixedEvent/chargePairSparse"), static_cast<float>(chargePairType), -deltaEta, reflectedDeltaPhi, 0.5f * weight);
+      if (output.fillChargeSeparated.value) {
+        registry.fill(HIST("inclusive/mixedEvent/chargePairSparse"), static_cast<float>(chargePairType), deltaEta, deltaPhi, 0.5f * weight);
+        registry.fill(HIST("inclusive/mixedEvent/chargePairSparse"), static_cast<float>(chargePairType), -deltaEta, reflectedDeltaPhi, 0.5f * weight);
+      }
     } else {
       if (pairType == PairType::SameSign) {
         registry.fill(HIST("inclusive/sameEvent/sameSignDeltaEtaDeltaPhi"), deltaEta, deltaPhi, 0.5f * weight);
@@ -555,8 +849,10 @@ struct BaryonPairInJets {
         registry.fill(HIST("inclusive/sameEvent/oppositeSignDeltaEtaDeltaPhi"), deltaEta, deltaPhi, 0.5f * weight);
         registry.fill(HIST("inclusive/sameEvent/oppositeSignDeltaEtaDeltaPhi"), -deltaEta, reflectedDeltaPhi, 0.5f * weight);
       }
-      registry.fill(HIST("inclusive/sameEvent/chargePairSparse"), static_cast<float>(chargePairType), deltaEta, deltaPhi, 0.5f * weight);
-      registry.fill(HIST("inclusive/sameEvent/chargePairSparse"), static_cast<float>(chargePairType), -deltaEta, reflectedDeltaPhi, 0.5f * weight);
+      if (output.fillChargeSeparated.value) {
+        registry.fill(HIST("inclusive/sameEvent/chargePairSparse"), static_cast<float>(chargePairType), deltaEta, deltaPhi, 0.5f * weight);
+        registry.fill(HIST("inclusive/sameEvent/chargePairSparse"), static_cast<float>(chargePairType), -deltaEta, reflectedDeltaPhi, 0.5f * weight);
+      }
     }
   }
 
@@ -599,8 +895,10 @@ struct BaryonPairInJets {
       } else {
         registry.fill(HIST("mixedEvent/nominal/oppositeSignDeltaR"), deltaR, weight);
       }
-      registry.fill(HIST("mixedEvent/nominal/chargePairSparse"), static_cast<float>(chargePairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
-      registry.fill(HIST("mixedEvent/nominal/chargePairSparse"), static_cast<float>(chargePairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+      if (output.fillChargeSeparated.value) {
+        registry.fill(HIST("mixedEvent/nominal/chargePairSparse"), static_cast<float>(chargePairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
+        registry.fill(HIST("mixedEvent/nominal/chargePairSparse"), static_cast<float>(chargePairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+      }
     } else if constexpr (Reference == MixedReference::Loose) {
       fillSymmetrized(HIST("mixedEvent/loose/sameSignDeltaEtaDeltaPhi"), HIST("mixedEvent/loose/oppositeSignDeltaEtaDeltaPhi"), HIST("mixedEvent/loose/pairSparse"));
       if (pairType == PairType::SameSign) {
@@ -608,8 +906,10 @@ struct BaryonPairInJets {
       } else {
         registry.fill(HIST("mixedEvent/loose/oppositeSignDeltaR"), deltaR, weight);
       }
-      registry.fill(HIST("mixedEvent/loose/chargePairSparse"), static_cast<float>(chargePairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
-      registry.fill(HIST("mixedEvent/loose/chargePairSparse"), static_cast<float>(chargePairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+      if (output.fillChargeSeparated.value) {
+        registry.fill(HIST("mixedEvent/loose/chargePairSparse"), static_cast<float>(chargePairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
+        registry.fill(HIST("mixedEvent/loose/chargePairSparse"), static_cast<float>(chargePairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+      }
     } else {
       fillSymmetrized(HIST("mixedEvent/random/sameSignDeltaEtaDeltaPhi"), HIST("mixedEvent/random/oppositeSignDeltaEtaDeltaPhi"), HIST("mixedEvent/random/pairSparse"));
       if (pairType == PairType::SameSign) {
@@ -617,8 +917,10 @@ struct BaryonPairInJets {
       } else {
         registry.fill(HIST("mixedEvent/random/oppositeSignDeltaR"), deltaR, weight);
       }
-      registry.fill(HIST("mixedEvent/random/chargePairSparse"), static_cast<float>(chargePairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
-      registry.fill(HIST("mixedEvent/random/chargePairSparse"), static_cast<float>(chargePairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+      if (output.fillChargeSeparated.value) {
+        registry.fill(HIST("mixedEvent/random/chargePairSparse"), static_cast<float>(chargePairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
+        registry.fill(HIST("mixedEvent/random/chargePairSparse"), static_cast<float>(chargePairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+      }
     }
   }
 
@@ -648,29 +950,45 @@ struct BaryonPairInJets {
     }
     registry.fill(HIST("sameEvent/pairSparse"), pairTypeValue, jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
     registry.fill(HIST("sameEvent/pairSparse"), pairTypeValue, jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
-    registry.fill(HIST("sameEvent/chargePairSparse"), static_cast<float>(chargePairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
-    registry.fill(HIST("sameEvent/chargePairSparse"), static_cast<float>(chargePairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+    if (output.fillChargeSeparated.value) {
+      registry.fill(HIST("sameEvent/chargePairSparse"), static_cast<float>(chargePairType), jetPt, deltaEta, deltaPhi, deltaR, 0.5f * weight);
+      registry.fill(HIST("sameEvent/chargePairSparse"), static_cast<float>(chargePairType), jetPt, -deltaEta, -deltaPhi, deltaR, 0.5f * weight);
+    }
   }
 
   template <typename JetType>
-  std::vector<SelectedBaryon> collectParticleBaryons(JetType const& jet, bool fillQa, float weight)
+  SelectedParticles collectParticleCandidates(JetType const& jet, bool fillQa, float weight)
   {
-    std::vector<SelectedBaryon> baryons;
+    SelectedParticles selected;
     for (auto const& particle : jet.template tracks_as<aod::JetParticles>()) {
-      if (std::abs(particle.pdgCode()) != PDG_t::kProton || !particle.isPhysicalPrimary()) {
+      if (!particle.isPhysicalPrimary()) {
         continue;
       }
       if (particle.pt() < trackCuts.protonPtMin.value || particle.pt() >= trackCuts.protonPtMax.value ||
-          std::abs(particle.eta()) > trackCuts.protonEtaMax.value || std::abs(particle.y()) > trackCuts.protonRapidityMax.value) {
+          std::abs(particle.eta()) > trackCuts.protonEtaMax.value) {
         continue;
       }
       int8_t const sign = particle.pdgCode() > 0 ? 1 : -1;
-      baryons.push_back({particle.pt(), particle.eta(), particle.phi(), particle.y(), sign});
-      if (fillQa) {
-        registry.fill(HIST("mc/pid/generatedPrimaryProtonPt"), particle.pt(), weight);
+      SelectedParticle const selectedParticle{particle.pt(), particle.eta(), particle.phi(), sign};
+      int const absolutePdg = std::abs(particle.pdgCode());
+      if (absolutePdg == PDG_t::kProton) {
+        selected.baryons.push_back(selectedParticle);
+        if (fillQa) {
+          registry.fill(HIST("mc/pid/generatedPrimaryProtonPt"), selectedParticle.pt, weight);
+        }
+      } else if (output.fillPionControl.value && absolutePdg == PDG_t::kPiPlus) {
+        selected.pions.push_back(selectedParticle);
+        if (fillQa) {
+          registry.fill(HIST("control/pion/mc/generatedPrimaryPt"), selectedParticle.pt, weight);
+        }
+      } else if (output.fillKaonControl.value && absolutePdg == PDG_t::kKPlus) {
+        selected.kaons.push_back(selectedParticle);
+        if (fillQa) {
+          registry.fill(HIST("control/kaon/mc/generatedPrimaryPt"), selectedParticle.pt, weight);
+        }
       }
     }
-    return baryons;
+    return selected;
   }
 
   void fillParticlePair(bool isMixed, PairType pairType, float jetPt, float deltaEta, float deltaPhi, float deltaR, float weight)
@@ -702,6 +1020,48 @@ struct BaryonPairInJets {
     }
   }
 
+  template <ControlSpecies Species, typename TrackType, typename ParticleType>
+  void fillControlMCPidQa(TrackType const& track, ParticleType const& particle, float weight)
+  {
+    int const expectedPdg = Species == ControlSpecies::Pion ? PDG_t::kPiPlus : PDG_t::kKPlus;
+    bool const isTruePrimary = std::abs(particle.pdgCode()) == expectedPdg && particle.isPhysicalPrimary();
+    bool const isSelected = Species == ControlSpecies::Pion ? isSelectedPion(track) : isSelectedKaon(track);
+    int origin = 2;
+    if (particle.isPhysicalPrimary()) {
+      origin = 1;
+    } else if (particle.getProcess() == TMCProcess::kPDecay) {
+      origin = 3;
+    }
+
+    if constexpr (Species == ControlSpecies::Pion) {
+      if (isTruePrimary) {
+        registry.fill(HIST("control/pion/mc/reconstructedTruePt"), track.pt(), weight);
+      }
+      if (!isSelected) {
+        return;
+      }
+      registry.fill(HIST("control/pion/mc/selectedCandidateOriginVsPt"), track.pt(), static_cast<float>(origin), weight);
+      registry.fill(HIST("control/pion/mc/selectedCandidateTruePdgVsPt"), track.pt(), static_cast<float>(particle.pdgCode()), weight);
+      if (isTruePrimary) {
+        registry.fill(HIST("control/pion/mc/selectedTruePt"), track.pt(), weight);
+        registry.fill(HIST("control/pion/mc/ptResponsePrimary"), particle.pt(), track.pt(), weight);
+      }
+    } else {
+      if (isTruePrimary) {
+        registry.fill(HIST("control/kaon/mc/reconstructedTruePt"), track.pt(), weight);
+      }
+      if (!isSelected) {
+        return;
+      }
+      registry.fill(HIST("control/kaon/mc/selectedCandidateOriginVsPt"), track.pt(), static_cast<float>(origin), weight);
+      registry.fill(HIST("control/kaon/mc/selectedCandidateTruePdgVsPt"), track.pt(), static_cast<float>(particle.pdgCode()), weight);
+      if (isTruePrimary) {
+        registry.fill(HIST("control/kaon/mc/selectedTruePt"), track.pt(), weight);
+        registry.fill(HIST("control/kaon/mc/ptResponsePrimary"), particle.pt(), track.pt(), weight);
+      }
+    }
+  }
+
   template <typename JetType>
   void fillMCPidQa(JetType const& jet, float weight)
   {
@@ -711,12 +1071,17 @@ struct BaryonPairInJets {
         continue;
       }
       auto particle = track.template mcParticle_as<aod::McParticles>();
+      if (output.fillPionControl.value) {
+        fillControlMCPidQa<ControlSpecies::Pion>(track, particle, weight);
+      }
+      if (output.fillKaonControl.value) {
+        fillControlMCPidQa<ControlSpecies::Kaon>(track, particle, weight);
+      }
       bool const isTruePrimaryProton = std::abs(particle.pdgCode()) == PDG_t::kProton && particle.isPhysicalPrimary();
       if (isTruePrimaryProton) {
         registry.fill(HIST("mc/pid/reconstructedTrueProtonPt"), track.pt(), weight);
       }
-      float const rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, o2::constants::physics::MassProton);
-      if (std::abs(rapidity) > trackCuts.protonRapidityMax.value || !isSelectedProton(track)) {
+      if (!isSelectedProton(track)) {
         continue;
       }
       int origin = 2;
@@ -741,12 +1106,20 @@ struct BaryonPairInJets {
       return;
     }
 
-    registry.fill(HIST("event/zVertex"), collision.posZ(), weight);
-    registry.fill(HIST("event/multiplicityFT0C"), collision.multFT0C(), weight);
+    if (output.fillQa.value) {
+      registry.fill(HIST("event/zVertex"), collision.posZ(), weight);
+      registry.fill(HIST("event/multiplicityFT0C"), collision.multFT0C(), weight);
+    }
     registry.fill(HIST("normalization/sameEvent"), 1.f, weight);
+    if (output.fillPionControl.value) {
+      fillControlNormalization<ControlSpecies::Pion>(false, 1.f, weight);
+    }
+    if (output.fillKaonControl.value) {
+      fillControlNormalization<ControlSpecies::Kaon>(false, 1.f, weight);
+    }
 
     for (auto const& jet : jets) {
-      if (isSelectedJetGeometry(jet)) {
+      if (output.fillQa.value && isSelectedJetGeometry(jet)) {
         registry.fill(HIST("jet/ptBeforePtSelection"), jet.pt(), weight);
       }
       if (!isSelectedJet(jet)) {
@@ -754,23 +1127,28 @@ struct BaryonPairInJets {
       }
 
       registry.fill(HIST("normalization/sameEvent"), 2.f, weight);
-      registry.fill(HIST("jet/pt"), jet.pt(), weight);
-      registry.fill(HIST("jet/eta"), jet.eta(), weight);
-      registry.fill(HIST("jet/phi"), jet.phi(), weight);
-      registry.fill(HIST("jet/nConstituents"), static_cast<float>(jet.tracksIds().size()), weight);
-      registry.fill(HIST("jet/nConstituentsVsPt"), jet.pt(), static_cast<float>(jet.tracksIds().size()), weight);
-
-      auto baryons = collectBaryons(jet, true, weight);
-      int numberOfProtons = 0;
-      int numberOfAntiprotons = 0;
-      for (auto const& baryon : baryons) {
-        baryon.sign > 0 ? ++numberOfProtons : ++numberOfAntiprotons;
+      if (output.fillQa.value) {
+        registry.fill(HIST("jet/pt"), jet.pt(), weight);
+        registry.fill(HIST("jet/eta"), jet.eta(), weight);
+        registry.fill(HIST("jet/phi"), jet.phi(), weight);
+        registry.fill(HIST("jet/nConstituents"), static_cast<float>(jet.tracksIds().size()), weight);
+        registry.fill(HIST("jet/nConstituentsVsPt"), jet.pt(), static_cast<float>(jet.tracksIds().size()), weight);
       }
-      registry.fill(HIST("jet/nSelectedBaryons"), static_cast<float>(baryons.size()), weight);
-      registry.fill(HIST("jet/nProtons"), numberOfProtons, weight);
-      registry.fill(HIST("jet/nAntiprotons"), numberOfAntiprotons, weight);
-      registry.fill(HIST("jet/nProtonsVsAntiprotons"), numberOfProtons, numberOfAntiprotons, weight);
-      registry.fill(HIST("jet/nBaryonsVsPt"), jet.pt(), static_cast<float>(baryons.size()), weight);
+
+      auto selectedParticles = collectSelectedParticles(jet, output.fillQa.value, weight);
+      auto const& baryons = selectedParticles.baryons;
+      if (output.fillQa.value) {
+        int numberOfProtons = 0;
+        int numberOfAntiprotons = 0;
+        for (auto const& baryon : baryons) {
+          baryon.sign > 0 ? ++numberOfProtons : ++numberOfAntiprotons;
+        }
+        registry.fill(HIST("jet/nSelectedBaryons"), static_cast<float>(baryons.size()), weight);
+        registry.fill(HIST("jet/nProtons"), numberOfProtons, weight);
+        registry.fill(HIST("jet/nAntiprotons"), numberOfAntiprotons, weight);
+        registry.fill(HIST("jet/nProtonsVsAntiprotons"), numberOfProtons, numberOfAntiprotons, weight);
+        registry.fill(HIST("jet/nBaryonsVsPt"), jet.pt(), static_cast<float>(baryons.size()), weight);
+      }
 
       for (size_t first = 0; first < baryons.size(); ++first) {
         for (size_t second = first + 1; second < baryons.size(); ++second) {
@@ -780,10 +1158,12 @@ struct BaryonPairInJets {
           float const deltaPhi = RecoDecay::constrainAngle(baryons[first].phi - baryons[second].phi, -o2::constants::math::PI);
           float const deltaR = std::hypot(deltaEta, deltaPhi);
           fillSameEventPair(pairType, chargePairType, jet.pt(), deltaEta, deltaPhi, deltaR, weight);
-          if (pairType == PairType::SameSign) {
-            registry.fill(HIST("jet/sameSignPairsVsPt"), jet.pt(), weight);
-          } else {
-            registry.fill(HIST("jet/oppositeSignPairsVsPt"), jet.pt(), weight);
+          if (output.fillQa.value) {
+            if (pairType == PairType::SameSign) {
+              registry.fill(HIST("jet/sameSignPairsVsPt"), jet.pt(), weight);
+            } else {
+              registry.fill(HIST("jet/oppositeSignPairsVsPt"), jet.pt(), weight);
+            }
           }
 
           float const counterBin = pairType == PairType::SameSign ? 3.f : 4.f;
@@ -792,6 +1172,12 @@ struct BaryonPairInJets {
             registry.fill(HIST("normalization/sameEvent"), pairType == PairType::SameSign ? 5.f : 6.f, weight);
           }
         }
+      }
+      if (output.fillPionControl.value) {
+        fillControlSameJetPairs<ControlSpecies::Pion, false>(selectedParticles.pions, jet.pt(), weight);
+      }
+      if (output.fillKaonControl.value) {
+        fillControlSameJetPairs<ControlSpecies::Kaon, false>(selectedParticles.kaons, jet.pt(), weight);
       }
     }
   }
@@ -821,8 +1207,11 @@ struct BaryonPairInJets {
       registry.fill(HIST("mixedEvent/jetNchDifference"), jetNchDifference, weight);
     }
 
-    auto baryons1 = collectBaryons(jet1, false);
-    auto baryons2 = collectBaryons(jet2, false);
+    constexpr bool CollectControls = Reference == MixedReference::Nominal;
+    auto selectedParticles1 = collectSelectedParticles(jet1, false, 1.f, CollectControls);
+    auto selectedParticles2 = collectSelectedParticles(jet2, false, 1.f, CollectControls);
+    auto const& baryons1 = selectedParticles1.baryons;
+    auto const& baryons2 = selectedParticles2.baryons;
     float const mixedJetPt = 0.5f * (jet1.pt() + jet2.pt());
     fillMixedNormalization<Reference>(2.f, weight);
 
@@ -842,6 +1231,14 @@ struct BaryonPairInJets {
         if (std::abs(deltaPhi) < axes.nearSideDeltaPhiMax.value && std::abs(deltaEta) < axes.nearSideDeltaEtaMax.value) {
           fillMixedNormalization<Reference>(pairType == PairType::SameSign ? 5.f : 6.f, weight);
         }
+      }
+    }
+    if constexpr (Reference == MixedReference::Nominal) {
+      if (output.fillPionControl.value) {
+        fillControlMixedJetPairs<ControlSpecies::Pion, false>(selectedParticles1.pions, selectedParticles2.pions, jet1, jet2, weight);
+      }
+      if (output.fillKaonControl.value) {
+        fillControlMixedJetPairs<ControlSpecies::Kaon, false>(selectedParticles1.kaons, selectedParticles2.kaons, jet1, jet2, weight);
       }
     }
   }
@@ -864,8 +1261,16 @@ struct BaryonPairInJets {
 
       float const weight = 1.f / static_cast<float>(iterator.currentWindowNeighbours());
       registry.fill(HIST("normalization/mixedEventNominal"), 1.f, weight);
-      registry.fill(HIST("normalization/mixedEventLoose"), 1.f, weight);
-      registry.fill(HIST("normalization/mixedEventRandom"), 1.f, weight);
+      if (output.fillPionControl.value) {
+        fillControlNormalization<ControlSpecies::Pion>(true, 1.f, weight);
+      }
+      if (output.fillKaonControl.value) {
+        fillControlNormalization<ControlSpecies::Kaon>(true, 1.f, weight);
+      }
+      if (output.fillReferenceVariations.value) {
+        registry.fill(HIST("normalization/mixedEventLoose"), 1.f, weight);
+        registry.fill(HIST("normalization/mixedEventRandom"), 1.f, weight);
+      }
 
       for (auto const& jet1 : jets1) {
         if (!isSelectedJet(jet1)) {
@@ -876,8 +1281,10 @@ struct BaryonPairInJets {
             continue;
           }
           fillMixedJetPair<MixedReference::Nominal>(jet1, jet2, weight);
-          fillMixedJetPair<MixedReference::Loose>(jet1, jet2, weight);
-          fillMixedJetPair<MixedReference::Random>(jet1, jet2, weight);
+          if (output.fillReferenceVariations.value) {
+            fillMixedJetPair<MixedReference::Loose>(jet1, jet2, weight);
+            fillMixedJetPair<MixedReference::Random>(jet1, jet2, weight);
+          }
         }
       }
     }
@@ -923,8 +1330,16 @@ struct BaryonPairInJets {
       }
       float const weight = collision1.mcCollision().weight() / static_cast<float>(iterator.currentWindowNeighbours());
       registry.fill(HIST("normalization/mixedEventNominal"), 1.f, weight);
-      registry.fill(HIST("normalization/mixedEventLoose"), 1.f, weight);
-      registry.fill(HIST("normalization/mixedEventRandom"), 1.f, weight);
+      if (output.fillPionControl.value) {
+        fillControlNormalization<ControlSpecies::Pion>(true, 1.f, weight);
+      }
+      if (output.fillKaonControl.value) {
+        fillControlNormalization<ControlSpecies::Kaon>(true, 1.f, weight);
+      }
+      if (output.fillReferenceVariations.value) {
+        registry.fill(HIST("normalization/mixedEventLoose"), 1.f, weight);
+        registry.fill(HIST("normalization/mixedEventRandom"), 1.f, weight);
+      }
       for (auto const& jet1 : jets1) {
         if (!isSelectedJet(jet1)) {
           continue;
@@ -934,8 +1349,10 @@ struct BaryonPairInJets {
             continue;
           }
           fillMixedJetPair<MixedReference::Nominal>(jet1, jet2, weight);
-          fillMixedJetPair<MixedReference::Loose>(jet1, jet2, weight);
-          fillMixedJetPair<MixedReference::Random>(jet1, jet2, weight);
+          if (output.fillReferenceVariations.value) {
+            fillMixedJetPair<MixedReference::Loose>(jet1, jet2, weight);
+            fillMixedJetPair<MixedReference::Random>(jet1, jet2, weight);
+          }
         }
       }
     }
@@ -951,13 +1368,20 @@ struct BaryonPairInJets {
     }
     float const weight = collision.weight();
     registry.fill(HIST("mc/particle/normalizationSameEvent"), 1.f, weight);
+    if (output.fillPionControl.value) {
+      fillControlParticleNormalization<ControlSpecies::Pion>(false, 1.f, weight);
+    }
+    if (output.fillKaonControl.value) {
+      fillControlParticleNormalization<ControlSpecies::Kaon>(false, 1.f, weight);
+    }
     for (auto const& jet : jets) {
       if (!isSelectedJet(jet)) {
         continue;
       }
       registry.fill(HIST("mc/jet/allParticlePt"), jet.pt(), weight);
       registry.fill(HIST("mc/particle/normalizationSameEvent"), 2.f, weight);
-      auto baryons = collectParticleBaryons(jet, true, weight);
+      auto selectedParticles = collectParticleCandidates(jet, true, weight);
+      auto const& baryons = selectedParticles.baryons;
       for (size_t first = 0; first < baryons.size(); ++first) {
         for (size_t second = first + 1; second < baryons.size(); ++second) {
           PairType const pairType = getPairType(baryons[first], baryons[second]);
@@ -967,6 +1391,12 @@ struct BaryonPairInJets {
           fillParticlePair(false, pairType, jet.pt(), deltaEta, deltaPhi, deltaR, weight);
           registry.fill(HIST("mc/particle/normalizationSameEvent"), pairType == PairType::SameSign ? 3.f : 4.f, weight);
         }
+      }
+      if (output.fillPionControl.value) {
+        fillControlSameJetPairs<ControlSpecies::Pion, true>(selectedParticles.pions, jet.pt(), weight);
+      }
+      if (output.fillKaonControl.value) {
+        fillControlSameJetPairs<ControlSpecies::Kaon, true>(selectedParticles.kaons, jet.pt(), weight);
       }
     }
   }
@@ -987,6 +1417,12 @@ struct BaryonPairInJets {
       }
       float const weight = collision1.weight() / static_cast<float>(iterator.currentWindowNeighbours());
       registry.fill(HIST("mc/particle/normalizationMixedEvent"), 1.f, weight);
+      if (output.fillPionControl.value) {
+        fillControlParticleNormalization<ControlSpecies::Pion>(true, 1.f, weight);
+      }
+      if (output.fillKaonControl.value) {
+        fillControlParticleNormalization<ControlSpecies::Kaon>(true, 1.f, weight);
+      }
       for (auto const& jet1 : jets1) {
         if (!isSelectedJet(jet1)) {
           continue;
@@ -995,8 +1431,10 @@ struct BaryonPairInJets {
           if (!isSelectedJet(jet2)) {
             continue;
           }
-          auto baryons1 = collectParticleBaryons(jet1, false, weight);
-          auto baryons2 = collectParticleBaryons(jet2, false, weight);
+          auto selectedParticles1 = collectParticleCandidates(jet1, false, weight);
+          auto selectedParticles2 = collectParticleCandidates(jet2, false, weight);
+          auto const& baryons1 = selectedParticles1.baryons;
+          auto const& baryons2 = selectedParticles2.baryons;
           registry.fill(HIST("mc/particle/normalizationMixedEvent"), 2.f, weight);
           for (auto const& baryon1 : baryons1) {
             float const localEta1 = baryon1.eta - jet1.eta();
@@ -1011,6 +1449,12 @@ struct BaryonPairInJets {
               fillParticlePair(true, pairType, 0.5f * (jet1.pt() + jet2.pt()), deltaEta, deltaPhi, deltaR, weight);
               registry.fill(HIST("mc/particle/normalizationMixedEvent"), pairType == PairType::SameSign ? 3.f : 4.f, weight);
             }
+          }
+          if (output.fillPionControl.value) {
+            fillControlMixedJetPairs<ControlSpecies::Pion, true>(selectedParticles1.pions, selectedParticles2.pions, jet1, jet2, weight);
+          }
+          if (output.fillKaonControl.value) {
+            fillControlMixedJetPairs<ControlSpecies::Kaon, true>(selectedParticles1.kaons, selectedParticles2.kaons, jet1, jet2, weight);
           }
         }
       }
@@ -1063,7 +1507,7 @@ struct BaryonPairInJets {
     if (!isSelectedInclusiveCollision(collision)) {
       return;
     }
-    registry.fill(HIST("inclusive/event/multiplicity"), collision.multNTracksPV());
+    registry.fill(HIST("inclusive/event/multiplicity"), collision.multFT0C());
     registry.fill(HIST("inclusive/normalization/sameEvent"), 1.f);
     auto baryons = collectInclusiveBaryons(tracks);
     registry.fill(HIST("inclusive/normalization/sameEvent"), 2.f, static_cast<float>(baryons.size()));
