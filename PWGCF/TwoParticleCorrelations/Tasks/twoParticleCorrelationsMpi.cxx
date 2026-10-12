@@ -2192,7 +2192,7 @@ struct TwoParticleCorrelationsMpi {
       return getAnalysisMultiplicity(col);
     };
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}}; // underflows and overflows get bin -1
     const float collisionMultiplicity = getMultiplicity(collision);
     const float multiplicity = outputMultiplicityOverride ? *outputMultiplicityOverride : collisionMultiplicity;
     const float efficiencyMultiplicity = efficiencyMultiplicityOverride ? *efficiencyMultiplicityOverride : collisionMultiplicity;

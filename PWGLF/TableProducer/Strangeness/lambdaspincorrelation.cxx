@@ -95,14 +95,21 @@ struct lambdaspincorrelation {
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
   Configurable<float> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
   Configurable<float> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
-  Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 50, "Maximum V0 life time"};
 
   // config for V0 daughters
   Configurable<float> confDaughEta{"confDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.2, "minimum daughter proton pt"};
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
   Configurable<float> confDaughTPCnclsMin{"confDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 3, "PID selections for Lambda daughters"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "v0Configuration";
+    Configurable<int> cfgDaughTPCCrossedRows{"cfgDaughTPCCrossedRows", 70, "Min. TPC crossed rows for V0 daughters"};
+
+    Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 30, "Maximum V0 life time"};
+    Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 4, "PID selections for Lambda daughters"};
+
+  } v0Configurations;
 
   Configurable<int> iMNbins{"iMNbins", 50, "Number of bins in invariant mass"};
   Configurable<float> lbinIM{"lbinIM", 1.09, "lower bin value in IM histograms"};
@@ -149,9 +156,10 @@ struct lambdaspincorrelation {
     if (tranRad > confV0TranRadV0Max) {
       return false;
     }
-    if (std::abs(ctauLambda) > cMaxV0LifeTime) {
+    if (std::abs(ctauLambda) > v0Configurations.cMaxV0LifeTime) {
       return false;
     }
+
     // if (std::abs(candidate.yLambda()) > confV0Rap) {
     // return false;
     // }
@@ -162,10 +170,9 @@ struct lambdaspincorrelation {
   bool isSelectedV0Daughter(V0 const& candidate, T const& track, int pid)
   {
     const auto tpcNClsF = track.tpcNClsFound();
-    const auto ncr = 70;
     const auto ncrfc = 0.8;
 
-    if (track.tpcNClsCrossedRows() < ncr) {
+    if (track.tpcNClsCrossedRows() < v0Configurations.cfgDaughTPCCrossedRows) {
       return false;
     }
     if (tpcNClsF < confDaughTPCnclsMin) {
@@ -175,10 +182,10 @@ struct lambdaspincorrelation {
       return false;
     }
 
-    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > confDaughPIDCuts) {
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > v0Configurations.confDaughPIDCuts) {
       return false;
     }
-    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > confDaughPIDCuts) {
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > v0Configurations.confDaughPIDCuts) {
       return false;
     }
     if (pid == 0 && (candidate.positivept() < cfgDaughPrPt || candidate.negativept() < cfgDaughPiPt)) {

@@ -1695,11 +1695,11 @@ struct DileptonSV {
       std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex()); // this gives the current event.
 
       // make a vector of selected photons in this collision.
-      auto selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
-      auto selected_negTracks_in_this_event = emh_neg->GetTracksPerCollision(key_df_collision);
+      const auto& selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
+      const auto& selected_negTracks_in_this_event = emh_neg->GetTracksPerCollision(key_df_collision);
       // LOGF(info, "N selected tracks in current event (%d, %d), zvtx = %f, centrality = %f , npos = %d , nneg = %d, nuls = %d , nlspp = %d, nlsmm = %d", ndf, collision.globalIndex(), collision.posZ(), centralities[cfgCentEstimator], selected_posTracks_in_this_event.size(), selected_negTracks_in_this_event.size(), nuls, nlspp, nlsmm);
 
-      auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
+      const auto& collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
       // LOGF(info, "collisionIds_in_mixing_pool.size() = %d", collisionIds_in_mixing_pool.size());
 
       for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool) {
@@ -1717,8 +1717,8 @@ struct DileptonSV {
         }
         fRegistry.fill(HIST("Event/hsMixCounter"), collision.posZ(), centrality, ep2, occupancy);
 
-        auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
-        auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
         // LOGF(info, "Do event mixing: current event (%d, %d) | event pool (%d, %d), npos = %d , nneg = %d", ndf, collision.globalIndex(), mix_dfId, mix_collisionId, posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
 
         for (const auto& pos : selected_posTracks_in_this_event) { // ULS mix
