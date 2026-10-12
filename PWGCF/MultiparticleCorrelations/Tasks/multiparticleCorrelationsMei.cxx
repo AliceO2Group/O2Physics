@@ -70,6 +70,25 @@ using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
 
 // *) Define enums:
+enum ERecSim {
+  eRec = 0,
+  eSim,
+  eRecAndSim,
+  eRecSim_N
+};
+
+enum EProcess {
+  eProcessRec = 0,
+  eProcessRecSim,
+  eProcessSim,
+  eProcess_N
+};
+
+enum ERealMC {
+  eReal = 0,
+  eMC
+};
+
 enum ECentralityEstimator {
   eFT0C = 0,
   eFT0M,
@@ -87,13 +106,6 @@ enum EMultiplicityTables {
   eMultiplicityTables_N
 };
 
-enum ERecSim {
-  eRec = 0,
-  eSim,
-  eRecAndSim,
-  eRecSim_N
-};
-
 enum ETechnicalCuts {
   eNoCollInTimeRangeStandard = 0,
   eNoCollInRofStandard,
@@ -105,22 +117,25 @@ enum ETechnicalCuts {
   ETechnicalCuts_N
 };
 
+enum EEventCuts {
+  eSel8Cut = 0,
+  eCentCut,
+  eVertexZCut,
+  eNContribCut,
+  EEventCuts_N
+};
+
+enum EParticleCuts {
+  ePtCut = 0,
+  eEtaCut,
+  eChargeCut,
+  EParticleCuts_N
+};
+
 enum ECuts {
   eBefore = 0,
   eAfter,
   eCuts_N
-};
-
-enum ERealMC {
-  eReal = 0,
-  eMC
-};
-
-enum EProcess {
-  eProcessRec = 0,
-  eProcessRecSim,
-  eProcessSim,
-  eProcess_N
 };
 
 enum EParticleHistograms {
@@ -142,16 +157,16 @@ enum EEventHistograms {
   eEventHistograms_N
 };
 
-enum EMiscHistograms {
-  eRunNumber = 0,
-  eMiscHistograms_N
-};
-
 enum EWeightsHistograms {
   ePhiRec = 0,
   ePhiSim,
   ePt,
   eWeightsHistograms_N
+};
+
+enum EMiscHistograms {
+  eRunNumber = 0,
+  eMiscHistograms_N
 };
 
 enum EObservables {
@@ -160,27 +175,19 @@ enum EObservables {
 };
 
 // *) Lists of names:
-static constexpr std::array<const char*, eCentralityEstimator_N> CentralityEstimatorNames = {
-  "FT0C",
-  "FT0M",
-  "FV0A",
-  "NTPV"};
+static constexpr std::array<const char*, eCentralityEstimator_N> CentralityEstimatorNames = {"FT0C", "FT0M", "FV0A", "NTPV"};
 
-static constexpr std::array<const char*, eMultiplicityTables_N> MultiplicityTablesNames = {
-  "multTPC",
-  "multFV0M",
-  "multFT0C",
-  "multFT0M",
-  "multNTracksPV"};
+static constexpr std::array<const char*, eMultiplicityTables_N> MultiplicityTablesNames = {"multTPC", "multFV0M", "multFT0C", "multFT0M", "multNTracksPV"};
 
-static constexpr std::array<const char*, eWeightsHistograms_N> WeightsNames = {
-  "ePhiRec",
-  "ePhiSim",
-  "ePt"};
+static constexpr std::array<const char*, eWeightsHistograms_N> WeightsNames = {"ePhiRec", "ePhiSim", "ePt"};
 
-static constexpr std::array<const char*, eCuts_N> CutsNames = {
-  "eBefore",
-  "eAfter"};
+static constexpr std::array<const char*, eCuts_N> CutsNames = {"eBefore", "eAfter"};
+
+static constexpr std::array<const char*, ETechnicalCuts_N> TechnicalCutsNames = {"NoCollInTimeRangeStandard", "eNoCollInRofStandard", "eNoSameBunchPileUp", "eIsVertexITSTPC", "eIsGoodITSLayersAll", "eIsGoodZvtxFT0vsPV", "eNoHighMultCollInPrevRof"};
+
+static constexpr std::array<const char*, EEventCuts_N> EventCutsNames = {"Sel8Cut", "CentCut", "VertexZCut", "NContribCut"};
+
+static constexpr std::array<const char*, EParticleCuts_N> ParticleCutsNames = {"PtCut", "EtaCut", "ChargeCut"};
 
 // *) Main task:
 struct MultiparticleCorrelationsMei // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
@@ -223,17 +230,17 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<std::vector<std::string>> cfTechnicalCutSwitch{"cfTechnicalCutSwitch", {"1NoCollInTimeRangeStandard", "1NoCollInRofStandard", "1NoSameBunchPileUp", "1IsVertexITSTPC", "1IsGoodITSLayersAll", "1IsGoodZvtxFT0vsPV", "1NoHighMultCollInPrevRof"}, "technical cuts switch, on and off by the first number before name"};
 
   // event level cuts
-  Configurable<bool> cfSel8CutSwitch{"cfSel8CutSwitch", true, "switch to apply Sel8 cut"};
+  Configurable<bool> cfSel8CutSwitch{"cfSel8CutSwitch", true, "switch to apply Sel8 (event selection decision based on TVX) cut"};
   Configurable<bool> cfVertexZCutSwitch{"cfVertexZCutSwitch", true, "switch to apply VertexZ cut"};
   Configurable<std::vector<float>> cfVertexZCutRange{"cfVertexZCutRange", {-10., 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz <= max"};
   Configurable<bool> cfCentCutSwitch{"cfCentCutSwitch", true, "switch to apply centrality cut"};
-  Configurable<std::vector<float>> cfCentCutRange{"cfCentCutRange", {0., 80.}, "centrality range: {min, max}[cm], with convention: min <= cent <= max"};
+  Configurable<std::vector<float>> cfCentCutRange{"cfCentCutRange", {0., 80.}, "centrality range: {min, max}, with convention: min <= cent <= max"};
   Configurable<bool> cfNContribCutSwitch{"cfNContribCutSwitch", true, "switch to apply NContrib cut"};
   Configurable<int> cfNContribCutInf{"cfNContribCutInf", 2, "Cuts on number of tracks used for the vertex, only numContrib > cfNContribCutInf survives"};
 
   // particle level cuts
   Configurable<bool> cfPtCutSwitch{"cfPtCutSwitch", true, "switch to apply pt cut"};
-  Configurable<std::vector<float>> cfPtCutRange{"cfPtCutRange", {0.2, 5.}, "pt cut range: {min, max}, with convention: min <= pt <= max"};
+  Configurable<std::vector<float>> cfPtCutRange{"cfPtCutRange", {0.2, 5.}, "pt cut range: {min, max}[GeV/c], with convention: min <= pt <= max"};
   Configurable<bool> cfEtaCutSwitch{"cfEtaCutSwitch", true, "switch to apply pt cut"};
   Configurable<std::vector<float>> cfEtaCutRange{"cfEtaCutRange", {-0.8, 0.8}, "eta cut range: {min, max}, with convention: min <= eta <= max"};
   Configurable<bool> cfChargeCutSwitch{"cfChargeCutSwitch", true, "switch to apply charge cut (cut neutral particle out)"};
@@ -249,9 +256,10 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     double fSigmaInel = 7.71;
 
     std::vector<std::string> fTechnicalCutSwitch = {"1NoCollInTimeRangeStandard", "1NoCollInRofStandard", "1NoSameBunchPileUp", "1IsVertexITSTPC", "1IsGoodITSLayersAll", "1IsGoodZvtxFT0vsPV", "1NoHighMultCollInPrevRof"};
-
+    std::vector<bool> fEventCutSwitch = std::vector<bool>(EEventCuts_N, true);
     std::vector<float> fVertexZCutRange = {-10., 10.};
     std::vector<float> fCentCutRange = {0., 80.};
+    std::vector<bool> fParticleCutSwitch = std::vector<bool>(EParticleCuts_N, true);
     std::vector<float> fPtCutRange = {0.2, 5.};
     std::vector<float> fEtaCutRange = {-0.8, 0.8};
 
@@ -264,15 +272,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     bool fDryRun = false; // book all histos and run without filling and calculating anything
     bool fExternalFileSwitch = false;
     bool fALICECentBinSwitch = true;
-
     bool fMasterCutSwitch = true;
-    bool fSel8CutSwitch = true;
-    bool fVertexZCutSwitch = true;
-    bool fCentCutSwitch = true;
-    bool fNContribCutSwitch = true;
-    bool fPtCutSwitch = true;
-    bool fEtaCutSwitch = true;
-    bool fChargeCutSwitch = true;
     bool fQualityAssuranceSwitch = false;
     bool fRunMessageSwitch = false;
 
@@ -289,11 +289,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     std::array<std::array<std::array<TH1F*, eCuts_N>, 2>, eEventHistograms_N> fEventHist{}; //! [ type - see enum EEventHistograms ][reco,sim][before, after event cuts]
   } ec;
 
-  struct MiscHistograms {
-    TList* fMiscHistList = nullptr;
-    TH1D* fMiscHistRunNumber = nullptr;
-  } misc;
-
   struct ExternalHistograms {
     TList* fExternalHistogramsList = nullptr;
     std::array<TH1F*, eWeightsHistograms_N> fWeights{};
@@ -309,6 +304,14 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     std::array<TH2F*, eCuts_N> fHistCentralityRecSim{};
     std::array<TH2F*, eCuts_N> fHistMultNContrib{};
   } qa;
+
+  struct MiscHistograms {
+    TList* fMiscHistList = nullptr;
+    TProfile* fMiscHistRunNumber = nullptr;
+    TProfile* fMiscEventCuts = nullptr;
+    TProfile* fMiscParticleCuts = nullptr;
+    TProfile* fMiscTechnicalCuts = nullptr;
+  } misc;
 
   // *) functions and templates
   std::vector<std::vector<TComplex>> initQVectorsTable(int maxCorrelator, const std::vector<int>& harmonic)
@@ -612,18 +615,18 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      if (tc.fSel8CutSwitch && !collision.sel8()) { // sel8 cut
+      if (tc.fEventCutSwitch[eSel8Cut] && !collision.sel8()) { // sel8 cut
         return false;
       }
       if constexpr (rm == eReal) {
-        if (tc.fVertexZCutSwitch && (collision.posZ() > tc.fVertexZCutRange[1] || collision.posZ() < tc.fVertexZCutRange[0])) { // vertex z cut
+        if (tc.fEventCutSwitch[eVertexZCut] && (collision.posZ() > tc.fVertexZCutRange[1] || collision.posZ() < tc.fVertexZCutRange[0])) { // vertex z cut
           return false;
         }
         auto thisCent = chooseCent(collision, tc.fCentralityEstimator);
-        if (tc.fCentCutSwitch && (thisCent > tc.fCentCutRange[1] || thisCent < tc.fCentCutRange[0])) { // centrality cut
+        if (tc.fEventCutSwitch[eCentCut] && (thisCent > tc.fCentCutRange[1] || thisCent < tc.fCentCutRange[0])) { // centrality cut
           return false;
         }
-        if (tc.fNContribCutSwitch && (collision.numContrib() < tc.fNContribCutInf)) { // number of contribution cuts
+        if (tc.fEventCutSwitch[eNContribCut] && (collision.numContrib() < tc.fNContribCutInf)) { // number of contribution cuts
           return false;
         }
       }
@@ -708,7 +711,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      if (tc.fPtCutSwitch) { // pt cuts for Rec
+      if (tc.fParticleCutSwitch[ePtCut]) { // pt cuts for Rec
         if constexpr (rm == eReal) {
           if (track.pt() < tc.fPtCutRange[0] || track.pt() > tc.fPtCutRange[1]) {
             return false;
@@ -721,7 +724,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           }
         }
       }
-      if (tc.fEtaCutSwitch) {
+      if (tc.fParticleCutSwitch[eEtaCut]) {
         if constexpr (rm == eReal) { // eta cuts for Rec
           if (track.eta() < tc.fEtaCutRange[0] || track.eta() > tc.fEtaCutRange[1]) {
             return false;
@@ -734,7 +737,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           }
         }
       }
-      if (tc.fChargeCutSwitch) {
+      if (tc.fParticleCutSwitch[eChargeCut]) {
         if constexpr (rm == eReal) { // charge cuts for Rec
           if (track.sign() != 1 && track.sign() != -1) {
             return false;
@@ -753,7 +756,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             return false;
           }
         } // end of if constexpr (rs == eRecAndSim && rm == eMC) // charge cuts for Sim
-      } // end of if (tc.fChargeCutSwitch) // charge cuts for Rec
+      } // end of if (tc.fParticleCutSwitch[eChargeCut]) // charge cuts for Rec
     } // end of if constexpr (rs == eRec || rs == eRecAndSim) {
 
     return true;
@@ -859,6 +862,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if (isFirstCollision) {
       thisRunNumber = collision.bc().runNumber();
       misc.fMiscHistRunNumber->SetTitle(Form("%d", thisRunNumber)); // Get run number
+      misc.fMiscHistRunNumber->Fill(0.5, thisRunNumber);
       if (tc.fExternalFileSwitch) {
         getHistogramWithWeights(tc.fFileWithWeights.c_str(), Form("%d", thisRunNumber));
       }
@@ -966,7 +970,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     } // end of if (tc.fMasterCutSwitch) {
 
-    isFirstCollision = false; // Now the first collision ends
+    if (isFirstCollision) {
+      isFirstCollision = false; // Now the first collision ends
+    }
   } // end of template <ERecSim rs, typename T1, typename T2> void steer(T1 const& collision, T2 const& tracks) {
 
   // *) Initialize and book all objects:
@@ -995,19 +1001,19 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     tc.fMasterCutSwitch = cfMasterCutSwitch;
     tc.fTechnicalCutSwitch = cfTechnicalCutSwitch.value;
 
-    tc.fSel8CutSwitch = cfSel8CutSwitch;
-    tc.fVertexZCutSwitch = cfVertexZCutSwitch;
-    tc.fCentCutSwitch = cfCentCutSwitch;
-    tc.fNContribCutSwitch = cfNContribCutSwitch;
+    tc.fEventCutSwitch[eSel8Cut] = cfSel8CutSwitch;
+    tc.fEventCutSwitch[eVertexZCut] = cfVertexZCutSwitch;
     tc.fVertexZCutRange = cfVertexZCutRange.value;
+    tc.fEventCutSwitch[eCentCut] = cfCentCutSwitch;
     tc.fCentCutRange = cfCentCutRange.value;
+    tc.fEventCutSwitch[eNContribCut] = cfNContribCutSwitch;
     tc.fNContribCutInf = cfNContribCutInf;
 
-    tc.fPtCutSwitch = cfPtCutSwitch;
+    tc.fParticleCutSwitch[ePtCut] = cfPtCutSwitch;
     tc.fPtCutRange = cfPtCutRange.value;
-    tc.fEtaCutSwitch = cfEtaCutSwitch;
+    tc.fParticleCutSwitch[eEtaCut] = cfEtaCutSwitch;
     tc.fEtaCutRange = cfEtaCutRange.value;
-    tc.fChargeCutSwitch = cfChargeCutSwitch;
+    tc.fParticleCutSwitch[eChargeCut] = cfChargeCutSwitch;
 
     tc.fSigmaInel = cfSigmaInel;
     tc.fQualityAssuranceSwitch = cfQualityAssuranceSwitch;
@@ -1033,8 +1039,36 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     misc.fMiscHistList->SetOwner(true);
     fBaseList->Add(misc.fMiscHistList);
 
-    misc.fMiscHistRunNumber = new TH1D("eRunNumber", "to be set", 1, 0, 1);
+    misc.fMiscHistRunNumber = new TProfile("[eRunNumber]", "to be set", 1, 0, 1);
+    misc.fMiscHistRunNumber->GetXaxis()->SetBinLabel(1, "RunNumber");
     misc.fMiscHistList->Add(misc.fMiscHistRunNumber);
+
+    misc.fMiscTechnicalCuts = new TProfile("[eTechnicalCuts]", "Technical Cuts", ETechnicalCuts_N, 0, ETechnicalCuts_N);
+    for (int i = 1; i <= ETechnicalCuts_N; ++i) {
+      misc.fMiscTechnicalCuts->GetXaxis()->SetBinLabel(i, TechnicalCutsNames[i - 1]);
+      if (tc.fTechnicalCutSwitch[i - 1].starts_with("1")) {
+        misc.fMiscTechnicalCuts->Fill(i - 0.5, 1);
+      }
+    }
+    misc.fMiscHistList->Add(misc.fMiscTechnicalCuts);
+
+    misc.fMiscEventCuts = new TProfile("[eEventCuts]", "Event Level Cuts", EEventCuts_N, 0, EEventCuts_N);
+    for (int i = 1; i <= EEventCuts_N; ++i) {
+      misc.fMiscEventCuts->GetXaxis()->SetBinLabel(i, EventCutsNames[i - 1]);
+      if (tc.fEventCutSwitch[i - 1]) {
+        misc.fMiscEventCuts->Fill(i - 0.5, 1);
+      }
+    }
+    misc.fMiscHistList->Add(misc.fMiscEventCuts);
+
+    misc.fMiscParticleCuts = new TProfile("[eParticleCuts]", "Particle Level Cuts", EParticleCuts_N, 0, EParticleCuts_N);
+    for (int i = 1; i <= EParticleCuts_N; ++i) {
+      misc.fMiscParticleCuts->GetXaxis()->SetBinLabel(i, ParticleCutsNames[i - 1]);
+      if (tc.fParticleCutSwitch[i - 1]) {
+        misc.fMiscParticleCuts->Fill(i - 0.5, 1);
+      }
+    }
+    misc.fMiscHistList->Add(misc.fMiscParticleCuts);
 
     // *) Book particle TLists:
     pc.fParticleHistList = new TList();
