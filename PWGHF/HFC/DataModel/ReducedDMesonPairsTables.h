@@ -40,8 +40,8 @@ DECLARE_SOA_TABLE(HfCandDpMcEvs, "AOD", "HFCANDDPMCEV",
 
 namespace full
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(HfCandDpFullEv, hfCandDpFullEv, int32_t, HfCandDpFullEvs, "");
-DECLARE_SOA_INDEX_COLUMN_FULL(HfCandDpMcEv, hfCandDpMcEv, int32_t, HfCandDpMcEvs, "");
+DECLARE_SOA_INDEX_COLUMN(HfCandDpFullEv, hfCandDpFullEv);
+DECLARE_SOA_INDEX_COLUMN(HfCandDpMcEv, hfCandDpMcEv);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! Radius of secondary vertex (cm)
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                     //! Transverse momentum of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);                                       //! Momentum of prong0 (GeV/c)
@@ -98,7 +98,7 @@ DECLARE_SOA_TABLE(HfCandDpMls, "AOD", "HFCANDDPML",
                   full::MlScore0,
                   full::MlScore1)
 
-DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY",
+DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY", o2::soa::Index<>,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -109,7 +109,7 @@ DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY",
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec)
 
-DECLARE_SOA_TABLE(HfCandDpSimples, "AOD", "HFCANDDPSIMPLE",
+DECLARE_SOA_TABLE(HfCandDpSimples, "AOD", "HFCANDDPSIMPLE", o2::soa::Index<>,
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -157,7 +157,7 @@ DECLARE_SOA_TABLE(HfCandDpSimples, "AOD", "HFCANDDPSIMPLE",
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec)
 
-DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
+DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL", o2::soa::Index<>,
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,
@@ -235,7 +235,7 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec);
 
-DECLARE_SOA_TABLE(HfCandDpMcPs, "AOD", "HFCANDDPMCP",
+DECLARE_SOA_TABLE(HfCandDpMcPs, "AOD", "HFCANDDPMCP", o2::soa::Index<>,
                   full::Pt,
                   full::Eta,
                   full::Phi,
