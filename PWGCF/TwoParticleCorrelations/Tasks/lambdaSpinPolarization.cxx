@@ -14,6 +14,7 @@
 ///\author Subhadeep Roy <subhadeep.roy@cern.ch>
 /// \author Yash Patley <yash.patley@cern.ch>,
 
+#include "PWGCF/TwoParticleCorrelations/DataModel/LambdaSpinPolarizationDerived.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -1237,6 +1238,112 @@ struct LambdaTableProducer {
     analyzeMcRecoGen<kRun3, kMC>(mcCollision, collisions, bcts, V0s, tracks, mcParticles);
   }
   PROCESS_SWITCH(LambdaTableProducer, processMCRun3, "Process for Run3 MC RecoGen", false);
+
+  template <typename T>
+  bool selLooseCandidate(T const& cand)
+  {
+    if (cKshortRejFlag && (std::abs(cand.mK0Short() - MassK0Short) <= cKshortRejMassWindow)) {
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kV0KShortMassRej);
+      return false;
+    }
+
+    auto passMassAndPid = [&](float mass, float tpcNSigmaPr, float tpcNSigmaPi) {
+      return (mass > cMinV0Mass && mass < cMaxV0Mass) && (std::abs(tpcNSigmaPr) < cTpcNsigmaCut && std::abs(tpcNSigmaPi) < cTpcNsigmaCut);
+    };
+    const bool isLambda = cand.v0Type() == kLambda;
+    const bool ownFlag = isLambda ? passMassAndPid(cand.mass(), cand.posNSigmaPr(), cand.negNSigmaPi()) : passMassAndPid(cand.mass(), cand.negNSigmaPr(), cand.posNSigmaPi());
+    const bool otherFlag = isLambda ? passMassAndPid(cand.massOther(), cand.negNSigmaPr(), cand.posNSigmaPi()) : passMassAndPid(cand.massOther(), cand.posNSigmaPr(), cand.negNSigmaPi());
+    if (!ownFlag) {
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kNotLambdaNotAntiLambda);
+      return false;
+    }
+    if (otherFlag) {
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kV0IsBothLambdaAntiLambda);
+      return false;
+    }
+    histos.fill(HIST("Tracks/h1f_tracks_info"), kV0IsLambdaOrAntiLambda);
+
+    if (cand.posTpcCrossedRows() <= cMinTpcCrossedRows || cand.negTpcCrossedRows() <= cMinTpcCrossedRows) {
+      return false;
+    }
+    histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0DauTrackSel);
+
+    float rap = cDoEtaAnalysis ? std::abs(cand.eta()) : std::abs(cand.rap());
+    if (!kinCutSelection(cand.pt(), rap, cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
+      return false;
+    }
+    histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0KinCuts);
+
+    if (cand.dcaDau() <= cMinV0DcaDaughters || cand.dcaDau() >= cMaxV0DcaDaughters) {
+      return false;
+    }
+    if (cand.dcaV0ToPV() <= cMinDcaV0ToPV || cand.dcaV0ToPV() >= cMaxDcaV0ToPV) {
+      return false;
+    }
+    if (cand.cTau() <= cMinV0CTau || cand.cTau() >= cMaxV0CTau) {
+      return false;
+    }
+    if (cand.cosPA() <= cMinV0CosPA) {
+      return false;
+    }
+    histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0TopoSel);
+    return true;
+  }
+
+  void processDerivedData(aod::LambdaLooseCollisions::iterator const& collision, aod::LambdaLooseTracks const& looseTracks)
+  {
+    histos.fill(HIST("Events/h1f_collisions_info"), kTotCol);
+    cent = collision.cent();
+    mult = collision.mult();
+    if (cent <= cMinMult || cent >= cMaxMult) {
+      return;
+    }
+    histos.fill(HIST("Events/hEventCutFlow"), kEvCentrality);
+    if (collision.posZ() <= cMinZVtx || collision.posZ() >= cMaxZVtx) {
+      return;
+    }
+    histos.fill(HIST("Events/hEventCutFlow"), kEvVz);
+
+    histos.fill(HIST("Events/h1f_collisions_info"), kPassSelCol);
+    histos.fill(HIST("Events/h1f_collision_posZ"), collision.posZ());
+    histos.fill(HIST("Events/h1f_collision_cent"), cent);
+
+    lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ(), collision.timeStamp());
+
+    std::size_t nWritten = 0;
+    for (auto const& cand : looseTracks) {
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kAllV0Tracks);
+      if (!selLooseCandidate(cand)) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kAllSelPassed);
+
+      if (cand.v0Type() == kLambda) {
+        histos.fill(HIST("Tracks/h1f_lambda_pt_vs_invm"), cand.mass(), cand.pt());
+        fillKinematicHists<kRec, kLambda>(cand.pt(), cand.eta(), cand.rap(), cand.phi());
+      } else {
+        histos.fill(HIST("Tracks/h1f_antilambda_pt_vs_invm"), cand.mass(), cand.pt());
+        fillKinematicHists<kRec, kAntiLambda>(cand.pt(), cand.eta(), cand.rap(), cand.phi());
+      }
+
+      lambdaTrackTable(lambdaCollisionTable.lastIndex(), cand.px(), cand.py(),
+                       cand.pz(), cand.pt(), cand.eta(), cand.phi(), cand.rap(), cand.mass(),
+                       cand.prPx(), cand.prPy(), cand.prPz(),
+                       static_cast<int64_t>(cand.posTrackId()),
+                       static_cast<int64_t>(cand.negTrackId()),
+                       cand.cosPA(), cand.dcaDau(), cand.v0Type(),
+                       static_cast<int8_t>(kPrimary), 1.f);
+      ++nWritten;
+    }
+
+    if (nWritten >= 1) {
+      histos.fill(HIST("Events/hEventCutFlow"), kEvOneV0);
+    }
+    if (nWritten >= NCandidatesForPair) {
+      histos.fill(HIST("Events/hEventCutFlow"), kEvTwoV0);
+    }
+  }
+  PROCESS_SWITCH(LambdaTableProducer, processDerivedData, "Process the derived data of lambda-spin-polarization-loose-producer", false);
 };
 
 struct LambdaTracksExtProducer {
