@@ -970,9 +970,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     } // end of if (tc.fMasterCutSwitch) {
 
-    if (isFirstCollision) {
-      isFirstCollision = false; // Now the first collision ends
-    }
+    isFirstCollision = false; // Now the first collision ends
   } // end of template <ERecSim rs, typename T1, typename T2> void steer(T1 const& collision, T2 const& tracks) {
 
   // *) Initialize and book all objects:
