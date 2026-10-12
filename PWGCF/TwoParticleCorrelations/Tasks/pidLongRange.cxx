@@ -488,8 +488,6 @@ struct PidLongRange {
       histos.add("h_centFT0M_centFT0C", "after cut;Centrality T0C;Centrality T0M", {HistType::kTH2D, {axisCent, axisCent}});
       histos.add("h_centFV0A_centFT0C", "after cut;Centrality T0C;Centrality V0A", {HistType::kTH2D, {axisCent, axisCent}});
 
-      histos.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisMult, axisMult}});
-
       // Add track cuts table
       histos.add("hDCAz_before", "DCAz before cuts; DCAz (cm); Pt", {HistType::kTH2D, {axisDCAz, axisPtFiner}});
       histos.add("hDCAxy_before", "DCAxy before cuts; DCAxy (cm); Pt", {HistType::kTH2D, {axisDCAxy, axisPtFiner}});
@@ -514,6 +512,7 @@ struct PidLongRange {
       histos.add("Nch_corrected", "N_{ch} corrected", {HistType::kTH1D, {axisMult}});
       histos.add("Centrality", "Centrality", {HistType::kTH1D, {axisCent}});
       histos.add("CentralityWeighted", "Centrality (weighted)", {HistType::kTH1D, {axisCent}});
+      histos.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisMult, axisMult}});
     }
 
     if (doprocessSameTpcFt0 || doprocessQA) {
@@ -567,6 +566,7 @@ struct PidLongRange {
 
       histos.add("FT0Amp", "", {HistType::kTH2F, {axisChID, cfgFITamp}});
       histos.add("FT0AmpCorrect", "", {HistType::kTH2F, {axisChID, cfgFITamp}});
+      histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
     }
 
     if (doprocessSameFt0aFt0c) {
@@ -581,9 +581,6 @@ struct PidLongRange {
 
       histos.add("FT0Amp", "", {HistType::kTH2F, {axisChID, cfgFITamp}});
       histos.add("FT0AmpCorrect", "", {HistType::kTH2F, {axisChID, cfgFITamp}});
-    }
-
-    if (!doprocessQA) {
       histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
     }
 
@@ -1159,7 +1156,7 @@ struct PidLongRange {
   }
 
   template <typename TTracks>
-  void nchCounter(const TTracks& tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
+  void nchCounter(const TTracks& tracks, double& multiplicity, bool fillHistogram) // function to count the number of tracks in the event and fill the histogram
   {
     double nTracksCorrected = 0;
     double nTracksUncorrected = 0;
@@ -1176,7 +1173,9 @@ struct PidLongRange {
       nTracksUncorrected += 1.0;
       nTracksCorrected += weightNch;
     }
-    histos.fill(HIST("hTrackCorrection2d"), nTracksUncorrected, nTracksCorrected);
+    if (fillHistogram) {
+      histos.fill(HIST("hTrackCorrection2d"), nTracksUncorrected, nTracksCorrected);
+    }
     multiplicity = nTracksCorrected;
   }
 
@@ -1509,7 +1508,7 @@ struct PidLongRange {
     }
 
     if (cfgGeneral.cfgStrictTrackCounter) {
-      nchCounter(tracks, multiplicity);
+      nchCounter(tracks, multiplicity, false);
     }
 
     if (cfgGeneral.cfgQABasic) {
@@ -1591,7 +1590,7 @@ struct PidLongRange {
       auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgGeneral.cfgStrictTrackCounter) {
-        nchCounter(tracks1, multiplicity);
+        nchCounter(tracks1, multiplicity, false);
       }
 
       if (cfgEvSel.cfgSelCollByNch && (multiplicity > cfgEvSel.cfgMaxMultForCorrelations || multiplicity < cfgEvSel.cfgMinMultForCorrelations)) {
@@ -1675,7 +1674,7 @@ struct PidLongRange {
     }
 
     if (cfgGeneral.cfgStrictTrackCounter) {
-      nchCounter(tracks, multiplicity);
+      nchCounter(tracks, multiplicity, false);
     }
 
     if (cfgGeneral.cfgQABasic) {
@@ -1753,7 +1752,7 @@ struct PidLongRange {
       auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgGeneral.cfgStrictTrackCounter) {
-        nchCounter(tracks1, multiplicity);
+        nchCounter(tracks1, multiplicity, false);
       }
 
       if (cfgEvSel.cfgSelCollByNch && (multiplicity > cfgEvSel.cfgMaxMultForCorrelations || multiplicity < cfgEvSel.cfgMinMultForCorrelations)) {
@@ -1844,7 +1843,7 @@ struct PidLongRange {
     histos.fill(HIST("Nch"), multiplicity);
 
     if (cfgGeneral.cfgStrictTrackCounter) {
-      nchCounter(tracks, multiplicity);
+      nchCounter(tracks, multiplicity, true);
     }
 
     histos.fill(HIST("Nch_corrected"), multiplicity);
