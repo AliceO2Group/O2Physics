@@ -1301,12 +1301,13 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          rowMcMatchGen(-99, -99, -99, decayLengthGen);
+          rowMcMatchGen(-99, -99, -99, decayLengthGen, -1.f);
         }
         continue;
       }
 
       for (const auto& particle : mcParticlesPerMcColl) {
+        const float massGen = RecoDecay::m(particle.pVector(), particle.e());
         sign = 0;
         flag = 0;
         origin = RecoDecay::OriginType::None;
@@ -1359,9 +1360,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         // Fill table
         if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-          rowMcMatchGen(flag, origin, bHadMother.pdgCode(), decayLengthGen);
+          rowMcMatchGen(flag, origin, bHadMother.pdgCode(), decayLengthGen, massGen);
         } else {
-          rowMcMatchGen(flag, origin, 0, decayLengthGen);
+          rowMcMatchGen(flag, origin, 0, decayLengthGen, massGen);
         }
       } // close loop over generated particles
     } // close loop over McCollisions
