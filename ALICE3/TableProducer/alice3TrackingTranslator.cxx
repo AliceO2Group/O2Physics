@@ -666,7 +666,9 @@ struct Alice3TrackingTranslator {
         tableTracksDCACov(0.0f,  // sigmaDcaXY2
                           0.0f); // sigmaDcaZ2
         // Fill ALICE3 specific tables
-        tableTracksAlice3(true); // isReconstructed
+        tableTracksAlice3(true,  // isReconstructed
+                          -1.f,  // todo: track innermost update
+                          -1.f); // todo: track outermost update
         if (mcParticleIdx > 0)
           tableTracksAlice3Pdg(GlobalIdxToPDGCode[mcParticleIdx]); // PdgCode to the linked MC truth particle
         else

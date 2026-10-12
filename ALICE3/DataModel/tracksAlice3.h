@@ -32,9 +32,13 @@ DECLARE_SOA_COLUMN(NTPCHits, nTPCHits, int);                //! number of tpc hi
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                  //! PDG code of the linked truth MC particle
 DECLARE_SOA_COLUMN(TrackType, trackType, int);              //! Type of the track
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! Has track contributed to the PV fit?
+DECLARE_SOA_COLUMN(TrackIU, trackIU, float);                //! Innermost update: radius (cm) of the innermost hit assigned to the track
+DECLARE_SOA_COLUMN(TrackOU, trackOU, float);                //! Outermost update: radius (cm) of the outermost hit assigned to the track
 } // namespace track_alice3
 DECLARE_SOA_TABLE(TracksAlice3, "AOD", "TRACKSALICE3",
-                  track_alice3::IsReconstructed);
+                  track_alice3::IsReconstructed,
+                  track_alice3::TrackIU,
+                  track_alice3::TrackOU);
 using TrackAlice3 = TracksAlice3::iterator;
 
 DECLARE_SOA_TABLE(TracksAlice3Pdg, "AOD", "TRACKSALICE3PDG",

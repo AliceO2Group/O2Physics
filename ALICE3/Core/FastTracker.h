@@ -127,6 +127,8 @@ class FastTracker
   [[nodiscard]] int getNIntercepts() const { return nIntercepts; }
   [[nodiscard]] int getNSiliconPoints() const { return nSiliconPoints; }
   [[nodiscard]] int getNGasPoints() const { return nGasPoints; }
+  [[nodiscard]] float getTrackIU() const { return trackIU; }
+  [[nodiscard]] float getTrackOU() const { return trackOU; }
   [[nodiscard]] float getGoodHitProb(int layer) const
   {
     return (layer >= 0 && static_cast<size_t>(layer) < goodHitProbability.size()) ? goodHitProbability[layer] : 0.0f;
@@ -172,6 +174,8 @@ class FastTracker
   int nIntercepts = 0;    /// found in first outward propagation
   int nSiliconPoints = 0; /// silicon-based space points added to track
   int nGasPoints = 0;     /// tpc-based space points added to track
+  float trackIU = -1.f;   /// innermost update: radius of the innermost active-layer hit added to track
+  float trackOU = -1.f;   /// outermost update: radius of the outermost active-layer hit added to track
   std::vector<float> goodHitProbability;
 
   ClassDef(FastTracker, 1);
