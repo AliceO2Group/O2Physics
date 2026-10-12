@@ -98,7 +98,7 @@ DECLARE_SOA_TABLE(HfCandDpMls, "AOD", "HFCANDDPML",
                   full::MlScore0,
                   full::MlScore1)
 
-DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY", o2::soa::Index<>,
+DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY",
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -109,7 +109,7 @@ DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY", o2::soa::Index<>,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec)
 
-DECLARE_SOA_TABLE(HfCandDpSimples, "AOD", "HFCANDDPSIMPLE", o2::soa::Index<>,
+DECLARE_SOA_TABLE(HfCandDpSimples, "AOD", "HFCANDDPSIMPLE",
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -157,7 +157,7 @@ DECLARE_SOA_TABLE(HfCandDpSimples, "AOD", "HFCANDDPSIMPLE", o2::soa::Index<>,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec)
 
-DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL", o2::soa::Index<>,
+DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,
@@ -235,7 +235,7 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL", o2::soa::Index<>,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec);
 
-DECLARE_SOA_TABLE(HfCandDpMcPs, "AOD", "HFCANDDPMCP", o2::soa::Index<>,
+DECLARE_SOA_TABLE(HfCandDpMcPs, "AOD", "HFCANDDPMCP",
                   full::Pt,
                   full::Eta,
                   full::Phi,
