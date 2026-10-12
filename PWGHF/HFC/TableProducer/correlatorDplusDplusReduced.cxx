@@ -58,7 +58,7 @@ using namespace o2::hf_centrality;
 /// Writes the full information in an output TTree
 struct HfCorrelatorDplusDplusReduced {
   Produces<o2::aod::HfCandDpFulls> rowCandidateFull;
-  Produces<o2::aod::HfCandDpSimplifieds> rowCandidateLite;
+  Produces<o2::aod::HfCandDpSimples> rowCandidateLite;
   Produces<o2::aod::HfCandDpTinys> rowCandidateTiny;
   Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandDpMls> rowCandidateMl;
@@ -101,7 +101,7 @@ struct HfCorrelatorDplusDplusReduced {
 
   HfMlResponseDplusToPiKPi<float> hfMlResponse;
 
-  std::vector<float> outputML;
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   HfHelper hfHelper;
@@ -400,7 +400,7 @@ struct HfCorrelatorDplusDplusReduced {
           std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
           bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures,
                                                               std::abs(candidate.pt()),
-                                                              outputML);
+                                                              outputMl);
           if (!isSelectedMl) {
             continue;
           }
@@ -444,7 +444,7 @@ struct HfCorrelatorDplusDplusReduced {
           std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
           bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures,
                                                               std::abs(candidate.pt()),
-                                                              outputML);
+                                                              outputMl);
           if (!isSelectedMl) {
             continue;
           }
