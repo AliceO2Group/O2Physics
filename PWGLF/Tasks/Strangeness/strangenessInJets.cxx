@@ -444,6 +444,15 @@ struct StrangenessInJets {
         registryMC.add("OmegaPos_reconstructed_ue", "OmegaPos_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_reconstructed_jet", "OmegaNeg_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_reconstructed_ue", "OmegaNeg_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
+        // Generated cascades associated to reconstructed jet / UE axes.
+        registryMC.add("XiPos_generated_recojet_jet", "XiPos_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiPos_generated_recojet_ue", "XiPos_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_generated_recojet_jet", "XiNeg_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_generated_recojet_ue", "XiNeg_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_generated_recojet_jet", "OmegaPos_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_generated_recojet_ue", "OmegaPos_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_generated_recojet_jet", "OmegaNeg_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_generated_recojet_ue", "OmegaNeg_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
         // Histograms to calculate probability of hyperons to be found within jets
         registryMC.add("XiPos_reconstructed_fullevent", "XiPos_reconstructed_fullevent", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("XiNeg_reconstructed_fullevent", "XiNeg_reconstructed_fullevent", HistType::kTH2F, {multAxis, ptAxis});
@@ -1974,6 +1983,50 @@ struct StrangenessInJets {
                   }
                 }
                 break;
+
+              // Cascades: generated particles classified with respect to the
+              // reconstructed jet and perpendicular-cone axes, exactly as for V0s.
+              case kXiPlusBar:
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+                  if (positionMC.isInJet()) {
+                    registryMC.fill(HIST("XiPos_generated_recojet_jet"), multiplicity, particle.pt());
+                  }
+                  if (positionMC.isInUE1() || positionMC.isInUE2()) {
+                    registryMC.fill(HIST("XiPos_generated_recojet_ue"), multiplicity, particle.pt());
+                  }
+                }
+                break;
+              case kXiMinus:
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+                  if (positionMC.isInJet()) {
+                    registryMC.fill(HIST("XiNeg_generated_recojet_jet"), multiplicity, particle.pt());
+                  }
+                  if (positionMC.isInUE1() || positionMC.isInUE2()) {
+                    registryMC.fill(HIST("XiNeg_generated_recojet_ue"), multiplicity, particle.pt());
+                  }
+                }
+                break;
+              case kOmegaPlusBar:
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+                  if (positionMC.isInJet()) {
+                    registryMC.fill(HIST("OmegaPos_generated_recojet_jet"), multiplicity, particle.pt());
+                  }
+                  if (positionMC.isInUE1() || positionMC.isInUE2()) {
+                    registryMC.fill(HIST("OmegaPos_generated_recojet_ue"), multiplicity, particle.pt());
+                  }
+                }
+                break;
+              case kOmegaMinus:
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+                  if (positionMC.isInJet()) {
+                    registryMC.fill(HIST("OmegaNeg_generated_recojet_jet"), multiplicity, particle.pt());
+                  }
+                  if (positionMC.isInUE1() || positionMC.isInUE2()) {
+                    registryMC.fill(HIST("OmegaNeg_generated_recojet_ue"), multiplicity, particle.pt());
+                  }
+                }
+                break;
+
               default:
                 break;
             }
