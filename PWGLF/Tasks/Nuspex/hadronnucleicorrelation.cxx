@@ -1032,7 +1032,7 @@ struct HadronNucleiCorrelation {
         const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
         const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
         const bool isNotPr = (std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value && std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value) || !doPrRej.value;
-        
+
         if (track.sign() > 0) {
 
           if (track.pt() >= pTthrprTOF.value || !doITSPID.value || track.itsNSigmaPr() > nsigmaITSPr.value) {
