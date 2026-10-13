@@ -1160,6 +1160,8 @@ struct AnalysisSameEventPairing {
     Configurable<bool> fConfigPseudoRMQA{"cfgPseudoRMQA", false, "If true, fill QA histograms with pseudo-proper decay length analysis with polarization RM"};
     Configurable<bool> fConfigTruthPbPbMIDYHE{"cfgTruthPbPbmidyHE", false, "If true, fill QA histograms with dielectron pairs in helicity frame"};
     Configurable<bool> fConfigTruthPbPbMIDYCS{"cfgTruthPbPbmidyCS", false, "If true, fill QA histograms with dielectron pairs in collion-soper frame"};
+    Configurable<bool> fConfigTruthPbPbMIDYGJB1{"cfgTruthPbPbmidyGJB1", false, "If true, fill QA histograms with dielectron pairs in Gottfried-Jackson frame, beam 1 (+z)"};
+    Configurable<bool> fConfigTruthPbPbMIDYGJB2{"cfgTruthPbPbmidyGJB2", false, "If true, fill QA histograms with dielectron pairs in Gottfried-Jackson frame, beam 2 (-z)"};
     Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
     Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
@@ -1537,6 +1539,12 @@ struct AnalysisSameEventPairing {
         if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
           histNames += Form("MCTruthGenPoldielectronPbPbPairCSSel_%s;", sig->GetName());
         }
+        if (fConfigOptions.fConfigTruthPbPbMIDYGJB1.value) {
+          histNames += Form("MCTruthGenPoldielectronPbPbPairGJB1Sel_%s;", sig->GetName());
+        }
+        if (fConfigOptions.fConfigTruthPbPbMIDYGJB2.value) {
+          histNames += Form("MCTruthGenPoldielectronPbPbPairGJB2Sel_%s;", sig->GetName());
+        }
         fHasTwoProngGenMCsignals = true;
       }
       // for these pair level signals, also add histograms for each MCgenAcc cut if specified
@@ -1559,6 +1567,12 @@ struct AnalysisSameEventPairing {
           }
           if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
             histNames += Form("MCTruthGenPoldielectronPbPbPairCSSel_%s_%s;", sig->GetName(), cut->GetName());
+          }
+          if (fConfigOptions.fConfigTruthPbPbMIDYGJB1.value) {
+            histNames += Form("MCTruthGenPoldielectronPbPbPairGJB1Sel_%s_%s;", sig->GetName(), cut->GetName());
+          }
+          if (fConfigOptions.fConfigTruthPbPbMIDYGJB2.value) {
+            histNames += Form("MCTruthGenPoldielectronPbPbPairGJB2Sel_%s_%s;", sig->GetName(), cut->GetName());
           }
         }
       }
@@ -2239,6 +2253,12 @@ struct AnalysisSameEventPairing {
                 if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
                   fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairCSSel_%s", sig->GetName()), static_cast<float*>(VarManager::fgValues));
                 }
+                if (fConfigOptions.fConfigTruthPbPbMIDYGJB1.value) {
+                  fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairGJB1Sel_%s", sig->GetName()), static_cast<float*>(VarManager::fgValues));
+                }
+                if (fConfigOptions.fConfigTruthPbPbMIDYGJB2.value) {
+                  fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairGJB2Sel_%s", sig->GetName()), static_cast<float*>(VarManager::fgValues));
+                }
 
                 if (fUseMCGenAccCut) {
                   for (const auto& cut : fMCGenAccCuts) {
@@ -2261,6 +2281,12 @@ struct AnalysisSameEventPairing {
                       }
                       if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
                         fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairCSSel_%s_%s", sig->GetName(), cut->GetName()), static_cast<float*>(VarManager::fgValues));
+                      }
+                      if (fConfigOptions.fConfigTruthPbPbMIDYGJB1.value) {
+                        fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairGJB1Sel_%s_%s", sig->GetName(), cut->GetName()), static_cast<float*>(VarManager::fgValues));
+                      }
+                      if (fConfigOptions.fConfigTruthPbPbMIDYGJB2.value) {
+                        fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairGJB2Sel_%s_%s", sig->GetName(), cut->GetName()), static_cast<float*>(VarManager::fgValues));
                       }
                     }
                   }
@@ -3824,6 +3850,12 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
 
     if (classStr.Contains("MCTruthGenPoldielectronPbPbPairCS")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-dielectron-pbpb-midy-cs-gen", histName);
+    }
+    if (classStr.Contains("MCTruthGenPoldielectronPbPbPairGJB1")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-dielectron-pbpb-midy-gjb1-gen", histName);
+    }
+    if (classStr.Contains("MCTruthGenPoldielectronPbPbPairGJB2")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-dielectron-pbpb-midy-gjb2-gen", histName);
     }
     if (classStr.Contains("MCTruthGenSelBR")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_triple");
