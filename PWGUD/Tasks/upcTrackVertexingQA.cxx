@@ -84,6 +84,10 @@ struct UpcTrackVertexingQA {
   int64_t currentTF = -1;  // current time frame being looked at
   int64_t nTF = 0;         // number of time frames in run
 
+  // constants
+  const unsigned int twoTracks = 2;
+  const int unassignedDCA = 999;
+
   static constexpr float MassPion = o2::constants::physics::MassPionCharged;
   static constexpr float MassMuon = o2::constants::physics::MassMuon;
 
@@ -143,7 +147,7 @@ struct UpcTrackVertexingQA {
 
     // MC histograms are only booked if at least one MC process function is enabled
     const bool needMc = doprocessRhoTracksBeforeGroupingMcInfo || doprocessJpsiTracksBeforeGroupingMcInfo ||
-                        doprocessRhoCandMcInfo || doprocessJpsiCandMcInfo || doprocessMcGenRho || doprocessMcGenJpsi;
+                        doprocessRhoCandMcInfo || doprocessJpsiCandMcInfo || doprocessMcGenExclusive || doprocessMcGenEmbedded;
     if (!needMc) {
       return;
     }
@@ -172,6 +176,8 @@ struct UpcTrackVertexingQA {
     registry.add("McGen/MotherPart/hPt", ";#it{p}_{T}^{MC} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("McGen/MotherPart/hRapidity", ";#it{y}^{MC};entries", {HistType::kTH1F, {axisY}});
     registry.add("McGen/MotherPart/hPtVsRapidity", ";#it{p}_{T}^{MC} (GeV/#it{c});#it{y}^{MC}", {HistType::kTH2F, {axisPt, axisY}});
+
+    registry.addClone("TrkColl/hTrackSizePerEvent", "McGen/Part/hTrackSizePerEvent");
 
   } // end init()
 
@@ -212,7 +218,7 @@ struct UpcTrackVertexingQA {
     if (track.pt() < ptTrackMin || std::abs(track.eta()) > etaTrackMax) {
       return false;
     }
-    if (std::abs(track.dcaZ()) >= 999 || std::abs(track.dcaXY()) >= 999) {
+    if (std::abs(track.dcaZ()) >= unassignedDCA || std::abs(track.dcaXY()) >= unassignedDCA) {
       return false;
     }
     return true;
@@ -307,9 +313,6 @@ struct UpcTrackVertexingQA {
     for (auto const& track : tracks) {
       if (isGoodTrack(track)) {
         goodTracks.push_back(track);
-        if (!track.has_collision()) {
-          continue;
-        }
         // use TrkColl directory
         fillTrackHistograms<species, 1, isMc>(track);
       }
@@ -318,7 +321,7 @@ struct UpcTrackVertexingQA {
     registry.fill(HIST("TrkColl/hTrackSizePerEvent"), goodTracks.size());
 
     // build UPC candidates using events with exactly two opposite sign good tracks
-    if (goodTracks.size() != 2) {
+    if (goodTracks.size() != twoTracks) {
       return;
     }
     auto const& track0 = goodTracks[0];
@@ -353,38 +356,61 @@ struct UpcTrackVertexingQA {
 
   //--------------------------------------------------------------------------------
   // generated (MC truth) level: daughters and their mothers
-  template <CandSpecies species>
-  void checkMcGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
-  {
-    constexpr int MotherPdg = species == CandSpecies::kRho ? 113 : 443;
+  template <bool isEmbedded>
+  void checkMcGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles){
 
     registry.fill(HIST("McGen/Coll/hVtxX"), mcCollision.posX());
     registry.fill(HIST("McGen/Coll/hVtxY"), mcCollision.posY());
     registry.fill(HIST("McGen/Coll/hVtxZ"), mcCollision.posZ());
 
+    std::vector<aod::McParticle> goodMcGenParticles;
     for (auto const& mcPart : mcParticles) {
-      if (mcPart.pt() < ptTrackMin || std::abs(mcPart.eta()) > etaTrackMax) {
-        continue;
+      
+      if (!mcPart.isPhysicalPrimary() || mcPart.pt() < ptTrackMin || std::abs(mcPart.eta()) > etaTrackMax) {
+        continue;      
       }
-
       registry.fill(HIST("McGen/Part/hPt"), mcPart.pt());
       registry.fill(HIST("McGen/Part/hEta"), mcPart.eta());
-      registry.fill(HIST("McGen/Part/hMcIsPhysicalPrimary"), static_cast<int>(mcPart.isPhysicalPrimary()));
+      
+      goodMcGenParticles.push_back(mcPart);
+    }
+    registry.fill(HIST("McGen/Part/hTrackSizePerEvent"), goodMcGenParticles.size());
 
-      if (!mcPart.has_mothers()) {
-        continue;
+    // consider only j/psi->mumu and rho->pipi events
+    auto genId = mcCollision.getGeneratorId();
+    LOGF(info, "Gen Id: {%d}", genId);
+    auto sourceId = mcCollision.getSourceId();
+    LOGF(info, "Source Id: {%d}", sourceId);
+
+    if constexpr (isEmbedded) {
+      if (!sourceId) {
+        return;
       }
-      for (auto const& mcMother : mcPart.template mothers_as<aod::McParticles>()) {
-        registry.fill(HIST("McGen/MotherPart/hMotherPdg"), std::abs(mcMother.pdgCode()));
-
-        // fill the mother once, not once per daughter: only via the positive-PDG prong
-        if (std::abs(mcMother.pdgCode()) == MotherPdg && mcPart.pdgCode() > 0) {
-          registry.fill(HIST("McGen/MotherPart/hPt"), mcMother.pt());
-          registry.fill(HIST("McGen/MotherPart/hRapidity"), mcMother.y());
-          registry.fill(HIST("McGen/MotherPart/hPtVsRapidity"), mcMother.pt(), mcMother.y());
-        }
+    } else {
+      if (sourceId) {
+        LOGF(fatal, "Source Id: {%d} is not zero for non-embedded MC", sourceId);
+        return;
       }
     }
+    
+    if (goodMcGenParticles.size() != twoTracks) {
+      return;
+    }
+
+    // we have 2 good tracks, with the same mother, taking it from the first one    
+    auto mothers = goodMcGenParticles[0].template mothers_as<aod::McParticles>();
+
+    if (mothers.empty()) {
+      LOGF(fatal, "Selected particle has no mother: pdgCode=%d", goodMcGenParticles[0].pdgCode());
+      return;
+    }
+    auto motherPart = mothers[0];
+
+    registry.fill(HIST("McGen/MotherPart/hMotherPdg"), std::abs(motherPart.pdgCode()));
+    registry.fill(HIST("McGen/MotherPart/hPt"), motherPart.pt());
+    registry.fill(HIST("McGen/MotherPart/hRapidity"), motherPart.y());
+    registry.fill(HIST("McGen/MotherPart/hPtVsRapidity"), motherPart.pt(), motherPart.y());
+    
   }
 
   //--------------------------------------------------------------------------------
@@ -478,17 +504,17 @@ struct UpcTrackVertexingQA {
   PROCESS_SWITCH(UpcTrackVertexingQA, processJpsiCandMcInfo, "J/Psi -> mu mu candidates and track QA", false);
 
   // look at gen MC
-  void processMcGenRho(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processMcGenEmbedded(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    checkMcGen<CandSpecies::kRho>(mcCollision, mcParticles);
+    checkMcGen<true>(mcCollision, mcParticles);
   }
-  PROCESS_SWITCH(UpcTrackVertexingQA, processMcGenRho, "Generated rho -> pi pi", false);
+  PROCESS_SWITCH(UpcTrackVertexingQA, processMcGenEmbedded, "Generated embedded events", false);
 
-  void processMcGenJpsi(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processMcGenExclusive(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    checkMcGen<CandSpecies::kJpsi>(mcCollision, mcParticles);
+    checkMcGen<false>(mcCollision, mcParticles);
   }
-  PROCESS_SWITCH(UpcTrackVertexingQA, processMcGenJpsi, "Generated J/Psi -> mu mu", false);
+  PROCESS_SWITCH(UpcTrackVertexingQA, processMcGenExclusive, "Generated exclusive events", false);
 
   PROCESS_SWITCH(UpcTrackVertexingQA, processTracksIU, "Track QA for IU tracks", false);
 };
