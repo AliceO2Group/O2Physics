@@ -131,6 +131,7 @@ struct HadronNucleiCorrelation {
   Configurable<float> nsigmaElDe{"nsigmaElDe", 3.0f, "cut nsigma TPC El for protons"};
   Configurable<float> nsigmaTOF{"nsigmaTOF", 3.5f, "cut nsigma TOF"};
   Configurable<float> nsigmaTPCPrRej{"nsigmaTPCPrRej", 3.f, "cut nsigma TPC for proton rejection"};
+  Configurable<float> nsigmaTOFPrRej{"nsigmaTOFPrRej", 3.f, "cut nsigma TOF for proton rejection"};
   Configurable<bool> doPrRej{"doPrRej", true, "do TPC proton rejection"};
   Configurable<float> nsigmaQuadratic{"nsigmaQuadratic", 3.0f, "cut on sqrt(nsigmaTPC^2 + nsigmaTOF^2), used above the TOF pT threshold when doQuadraticPID is on"};
   Configurable<float> nsigmaITSPr{"nsigmaITSPr", -2.0f, "cut nsigma ITS Pr"};
@@ -621,7 +622,7 @@ struct HadronNucleiCorrelation {
     const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
     const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
     const bool isITSPID = track.itsNSigmaDe() > nsigmaITSDe.value;
-    const bool isNotPr = std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value || !doPrRej.value;
+    const bool isNotPr = (std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value && std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value) || !doPrRej.value;
 
     const bool isQuadraticPID = std::hypot(track.tpcNSigmaDe(), track.tofNSigmaDe()) < nsigmaQuadratic.value;
 
@@ -1030,7 +1031,7 @@ struct HadronNucleiCorrelation {
 
         const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
         const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
-        const bool isNotPr = std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value || !doPrRej.value;
+        const bool isNotPr = (std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value && std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value) || !doPrRej.value;
 
         if (track.sign() > 0) {
 
