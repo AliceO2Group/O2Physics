@@ -127,11 +127,11 @@ struct HfTaskCorrelationDplusDplusReduced {
         sign1 = -1;
         registry.fill(HIST("hMassDminus"), mass1);
         if (std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-          registry.fill(HIST("hMassDminusMatched"), mass1);
+          {registry.fill(HIST("hMassDminusMatched"), mass1);}
       } else {
         registry.fill(HIST("hMassDplus"), mass1);
         if (std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-          registry.fill(HIST("hMassDplusMatched"), mass1);
+          {registry.fill(HIST("hMassDplusMatched"), mass1);}
       }
 
       for (auto cand2 = cand1 + 1; cand2 != localCandidates.end(); ++cand2) {
@@ -150,16 +150,16 @@ struct HfTaskCorrelationDplusDplusReduced {
           if (sign1 == 1) {
             registry.fill(HIST("hMassDplusPair"), mass1, mass2);
             if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-              registry.fill(HIST("hMassDplusPairsMatched"), mass1, mass2);
+              {registry.fill(HIST("hMassDplusPairsMatched"), mass1, mass2);}
           } else {
             registry.fill(HIST("hMassDminusPair"), mass1, mass2);
             if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-              registry.fill(HIST("hMassDminusPairsMatched"), mass1, mass2);
+              {registry.fill(HIST("hMassDminusPairsMatched"), mass1, mass2);}
           }
         } else {
           registry.fill(HIST("hMassDplusminusPair"), mass1, mass2);
           if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-            registry.fill(HIST("hMassDplusminusPairsMatched"), mass1, mass2);
+            {registry.fill(HIST("hMassDplusminusPairsMatched"), mass1, mass2);}
         }
       }
     }
