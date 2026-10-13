@@ -62,6 +62,8 @@ DECLARE_SOA_COLUMN(GenDecayLength, genDecayLength, float);
 DECLARE_SOA_COLUMN(PdgDoubleOmega, pdgDoubleOmega, int);
 DECLARE_SOA_COLUMN(GenMotherId, genMotherId, int64_t); // MC particle index within the input dataframe.
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
+
+DECLARE_SOA_COLUMN(MixingType, mixingType, uint8_t); // 1: Omega, 2: Lambda, 3: kaon from another collision; 4: Omega, Lambda and kaon from three different collisions.
 } // namespace DoubleOmegaTables
 
 #define DOUBLE_OMEGA_RECO_COLUMNS             \
@@ -106,6 +108,10 @@ DECLARE_SOA_TABLE(DoubleOmegaTableMC, "AOD", "DBLOMEGAMCTABLE",
                   DoubleOmegaTables::PdgDoubleOmega,
                   DoubleOmegaTables::GenMotherId,
                   DoubleOmegaTables::IsReco);
+
+DECLARE_SOA_TABLE(DoubleOmegaMixedTable, "AOD", "DBLOMEGAMIXTABLE",
+                  DOUBLE_OMEGA_RECO_COLUMNS,
+                  DoubleOmegaTables::MixingType);
 
 #undef DOUBLE_OMEGA_RECO_COLUMNS
 
