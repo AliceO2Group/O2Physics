@@ -23,7 +23,6 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
-
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(HfCandDpFullEvs, "AOD", "HFCANDDPFULLEV",

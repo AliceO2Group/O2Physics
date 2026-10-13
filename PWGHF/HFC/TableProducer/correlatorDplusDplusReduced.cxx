@@ -157,15 +157,13 @@ struct HfCorrelatorDplusDplusReduced {
       return false;
     }
     for (size_t i = 0; i < cutPtSkimming.value.size() - 1; i++) {
-      if (candidate.pt() <= cutPtSkimming.value.at(i + 1)) 
-      {
+      if (candidate.pt() <= cutPtSkimming.value.at(i + 1)){
         if (hfHelper.invMassDplusToPiKPi(candidate) < massMin.value.at(i) ||
             hfHelper.invMassDplusToPiKPi(candidate) > massMax.value.at(i) ||
             candidate.cpa() < cosThetaMin.value.at(i) ||
             candidate.decayLength() < decayLengthMin.value.at(i) ||
             std::abs(candidate.nSigTofKa1()) > nSigmaTofMax.value.at(i) ||
-            std::abs(candidate.nSigTpcKa1()) > nSigmaTpcMax.value.at(i)) 
-        {
+            std::abs(candidate.nSigTpcKa1()) > nSigmaTpcMax.value.at(i)){
           return false;
         }
         return true;
@@ -387,7 +385,9 @@ struct HfCorrelatorDplusDplusReduced {
       auto candidatesInThisCollision = candidates.sliceBy(tracksPerCollision, colId);
       if (skipSingleD) {
         if (candidatesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
-          {continue;}
+        {
+          continue;
+        }
       }
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
@@ -433,7 +433,9 @@ struct HfCorrelatorDplusDplusReduced {
       auto candidatesInThisCollision = candidates.sliceBy(tracksPerCollision, colId);
       if (skipSingleD) {
         if (candidatesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
-          {continue;}
+        {
+          continue;
+        }
       }
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
@@ -471,7 +473,9 @@ struct HfCorrelatorDplusDplusReduced {
       const auto particlesInThisCollision = mcparticles.sliceBy(mcParticlesPerMcCollision, colId);
       if (skipSingleD) {
         if (particlesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
-          {continue;}
+        {
+          continue;
+        }
       }
       rowCandidateMcCollisions(
         mccollision.posX(),
