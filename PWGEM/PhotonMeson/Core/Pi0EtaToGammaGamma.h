@@ -1007,11 +1007,11 @@ struct Pi0EtaToGammaGamma {
       }
 
       // make a vector of selected photons in this collision.
-      auto selected_photons1_in_this_event = emh1->GetTracksPerCollision(key_df_collision);
-      auto selected_photons2_in_this_event = emh2->GetTracksPerCollision(key_df_collision);
+      const auto& selected_photons1_in_this_event = emh1->GetTracksPerCollision(key_df_collision);
+      const auto& selected_photons2_in_this_event = emh2->GetTracksPerCollision(key_df_collision);
 
-      auto collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
-      auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
+      const auto& collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
+      const auto& collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
       if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPHOSPHOS || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kEMCEMC) { // same kinds pairing
         for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
@@ -1029,7 +1029,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
+          const auto& photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
           for (const auto& g1 : selected_photons1_in_this_event) {
@@ -1093,7 +1093,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
+          const auto& photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
 
           for (const auto& g1 : selected_photons1_in_this_event) {
@@ -1130,7 +1130,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
+          const auto& photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), nll = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons2_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
           for (const auto& g1 : selected_photons2_in_this_event) {

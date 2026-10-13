@@ -70,6 +70,25 @@ using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
 
 // *) Define enums:
+enum ERecSim {
+  eRec = 0,
+  eSim,
+  eRecAndSim,
+  eRecSim_N
+};
+
+enum EProcess {
+  eProcessRec = 0,
+  eProcessRecSim,
+  eProcessSim,
+  eProcess_N
+};
+
+enum ERealMC {
+  eReal = 0,
+  eMC
+};
+
 enum ECentralityEstimator {
   eFT0C = 0,
   eFT0M,
@@ -87,13 +106,6 @@ enum EMultiplicityTables {
   eMultiplicityTables_N
 };
 
-enum ERecSim {
-  eRec = 0,
-  eSim,
-  eRecAndSim,
-  eRecSim_N
-};
-
 enum ETechnicalCuts {
   eNoCollInTimeRangeStandard = 0,
   eNoCollInRofStandard,
@@ -105,22 +117,25 @@ enum ETechnicalCuts {
   ETechnicalCuts_N
 };
 
+enum EEventCuts {
+  eSel8Cut = 0,
+  eCentCut,
+  eVertexZCut,
+  eNContribCut,
+  EEventCuts_N
+};
+
+enum EParticleCuts {
+  ePtCut = 0,
+  eEtaCut,
+  eChargeCut,
+  EParticleCuts_N
+};
+
 enum ECuts {
   eBefore = 0,
   eAfter,
   eCuts_N
-};
-
-enum ERealMC {
-  eReal = 0,
-  eMC
-};
-
-enum EProcess {
-  eProcessRec = 0,
-  eProcessRecSim,
-  eProcessSim,
-  eProcess_N
 };
 
 enum EParticleHistograms {
@@ -142,16 +157,16 @@ enum EEventHistograms {
   eEventHistograms_N
 };
 
-enum EMiscHistograms {
-  eRunNumber = 0,
-  eMiscHistograms_N
-};
-
 enum EWeightsHistograms {
   ePhiRec = 0,
   ePhiSim,
   ePt,
   eWeightsHistograms_N
+};
+
+enum EMiscHistograms {
+  eRunNumber = 0,
+  eMiscHistograms_N
 };
 
 enum EObservables {
@@ -160,27 +175,19 @@ enum EObservables {
 };
 
 // *) Lists of names:
-static constexpr std::array<const char*, eCentralityEstimator_N> CentralityEstimatorNames = {
-  "FT0C",
-  "FT0M",
-  "FV0A",
-  "NTPV"};
+static constexpr std::array<const char*, eCentralityEstimator_N> CentralityEstimatorNames = {"FT0C", "FT0M", "FV0A", "NTPV"};
 
-static constexpr std::array<const char*, eMultiplicityTables_N> MultiplicityTablesNames = {
-  "multTPC",
-  "multFV0M",
-  "multFT0C",
-  "multFT0M",
-  "multNTracksPV"};
+static constexpr std::array<const char*, eMultiplicityTables_N> MultiplicityTablesNames = {"multTPC", "multFV0M", "multFT0C", "multFT0M", "multNTracksPV"};
 
-static constexpr std::array<const char*, eWeightsHistograms_N> WeightsNames = {
-  "ePhiRec",
-  "ePhiSim",
-  "ePt"};
+static constexpr std::array<const char*, eWeightsHistograms_N> WeightsNames = {"ePhiRec", "ePhiSim", "ePt"};
 
-static constexpr std::array<const char*, eCuts_N> CutsNames = {
-  "eBefore",
-  "eAfter"};
+static constexpr std::array<const char*, eCuts_N> CutsNames = {"eBefore", "eAfter"};
+
+static constexpr std::array<const char*, ETechnicalCuts_N> TechnicalCutsNames = {"NoCollInTimeRangeStandard", "eNoCollInRofStandard", "eNoSameBunchPileUp", "eIsVertexITSTPC", "eIsGoodITSLayersAll", "eIsGoodZvtxFT0vsPV", "eNoHighMultCollInPrevRof"};
+
+static constexpr std::array<const char*, EEventCuts_N> EventCutsNames = {"Sel8Cut", "CentCut", "VertexZCut", "NContribCut"};
+
+static constexpr std::array<const char*, EParticleCuts_N> ParticleCutsNames = {"PtCut", "EtaCut", "ChargeCut"};
 
 // *) Main task:
 struct MultiparticleCorrelationsMei // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
@@ -203,9 +210,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/m/mei/thesis-", "path to external ROOT file which holds all particle weights"};
 
   // *) Binnings
-  Configurable<bool> cfALICECentBinSwitch{"cfALICECentBinSwitch", true, "switch on or off to use ALICE default binning"};
+  Configurable<bool> cfALICECentBinSwitch{"cfALICECentBinSwitch", false, "switch on or off to use ALICE default binning for centrality hist"};
   Configurable<std::vector<float>> cfCentBins{"cfCentBins", {100, 0., 100.}, "Centrality bins: nCentBins, centMin, centMax"};
-  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {400, 0., 30000.}, "Multiplicity bins: nMultBins, multMin, multMax"};
+  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {400, 0., 25000.}, "Multiplicity bins: nMultBins, multMin, multMax"};
   Configurable<std::vector<float>> cfMultBinsRef{"cfMultBinsRef", {400, 0., 25000.}, "Reference mult bins: nMultBins, multMin, multMax"};
   Configurable<std::vector<float>> cfContribBins{"cfContribBins", {400, 0., 7000.}, "Number of contributors bins: nBinsContrib, contribMin, contribMax"};
   Configurable<std::vector<float>> cfVxBins{"cfVxBins", {500, -0.04, 0.04}, "Vertex X hist: nVxBins, vxMin, vxMax"};
@@ -223,14 +230,17 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<std::vector<std::string>> cfTechnicalCutSwitch{"cfTechnicalCutSwitch", {"1NoCollInTimeRangeStandard", "1NoCollInRofStandard", "1NoSameBunchPileUp", "1IsVertexITSTPC", "1IsGoodITSLayersAll", "1IsGoodZvtxFT0vsPV", "1NoHighMultCollInPrevRof"}, "technical cuts switch, on and off by the first number before name"};
 
   // event level cuts
-  Configurable<bool> cfEventCutSwitch{"cfEventCutSwitch", true, "switch to apply event level cut"};
+  Configurable<bool> cfSel8CutSwitch{"cfSel8CutSwitch", true, "switch to apply Sel8 (event selection decision based on TVX) cut"};
+  Configurable<bool> cfVertexZCutSwitch{"cfVertexZCutSwitch", true, "switch to apply VertexZ cut"};
   Configurable<std::vector<float>> cfVertexZCutRange{"cfVertexZCutRange", {-10., 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz <= max"};
-  Configurable<std::vector<float>> cfCentCutRange{"cfCentCutRange", {0., 80.}, "centrality range: {min, max}[cm], with convention: min <= cent <= max"};
+  Configurable<bool> cfCentCutSwitch{"cfCentCutSwitch", true, "switch to apply centrality cut"};
+  Configurable<std::vector<float>> cfCentCutRange{"cfCentCutRange", {0., 80.}, "centrality range: {min, max}, with convention: min <= cent <= max"};
+  Configurable<bool> cfNContribCutSwitch{"cfNContribCutSwitch", true, "switch to apply NContrib cut"};
   Configurable<int> cfNContribCutInf{"cfNContribCutInf", 2, "Cuts on number of tracks used for the vertex, only numContrib > cfNContribCutInf survives"};
 
   // particle level cuts
   Configurable<bool> cfPtCutSwitch{"cfPtCutSwitch", true, "switch to apply pt cut"};
-  Configurable<std::vector<float>> cfPtCutRange{"cfPtCutRange", {0.2, 5.}, "pt cut range: {min, max}, with convention: min <= pt <= max"};
+  Configurable<std::vector<float>> cfPtCutRange{"cfPtCutRange", {0.2, 5.}, "pt cut range: {min, max}[GeV/c], with convention: min <= pt <= max"};
   Configurable<bool> cfEtaCutSwitch{"cfEtaCutSwitch", true, "switch to apply pt cut"};
   Configurable<std::vector<float>> cfEtaCutRange{"cfEtaCutRange", {-0.8, 0.8}, "eta cut range: {min, max}, with convention: min <= eta <= max"};
   Configurable<bool> cfChargeCutSwitch{"cfChargeCutSwitch", true, "switch to apply charge cut (cut neutral particle out)"};
@@ -246,9 +256,10 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     double fSigmaInel = 7.71;
 
     std::vector<std::string> fTechnicalCutSwitch = {"1NoCollInTimeRangeStandard", "1NoCollInRofStandard", "1NoSameBunchPileUp", "1IsVertexITSTPC", "1IsGoodITSLayersAll", "1IsGoodZvtxFT0vsPV", "1NoHighMultCollInPrevRof"};
-
+    std::vector<bool> fEventCutSwitch = std::vector<bool>(EEventCuts_N, true);
     std::vector<float> fVertexZCutRange = {-10., 10.};
     std::vector<float> fCentCutRange = {0., 80.};
+    std::vector<bool> fParticleCutSwitch = std::vector<bool>(EParticleCuts_N, true);
     std::vector<float> fPtCutRange = {0.2, 5.};
     std::vector<float> fEtaCutRange = {-0.8, 0.8};
 
@@ -261,12 +272,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     bool fDryRun = false; // book all histos and run without filling and calculating anything
     bool fExternalFileSwitch = false;
     bool fALICECentBinSwitch = true;
-
     bool fMasterCutSwitch = true;
-    bool fEventCutSwitch = true;
-    bool fPtCutSwitch = true;
-    bool fEtaCutSwitch = true;
-    bool fChargeCutSwitch = true;
     bool fQualityAssuranceSwitch = false;
     bool fRunMessageSwitch = false;
 
@@ -283,11 +289,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     std::array<std::array<std::array<TH1F*, eCuts_N>, 2>, eEventHistograms_N> fEventHist{}; //! [ type - see enum EEventHistograms ][reco,sim][before, after event cuts]
   } ec;
 
-  struct MiscHistograms {
-    TList* fMiscHistList = nullptr;
-    TH1D* fMiscHistRunNumber = nullptr;
-  } misc;
-
   struct ExternalHistograms {
     TList* fExternalHistogramsList = nullptr;
     std::array<TH1F*, eWeightsHistograms_N> fWeights{};
@@ -303,6 +304,14 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     std::array<TH2F*, eCuts_N> fHistCentralityRecSim{};
     std::array<TH2F*, eCuts_N> fHistMultNContrib{};
   } qa;
+
+  struct MiscHistograms {
+    TList* fMiscHistList = nullptr;
+    TProfile* fMiscHistRunNumber = nullptr;
+    TProfile* fMiscEventCuts = nullptr;
+    TProfile* fMiscParticleCuts = nullptr;
+    TProfile* fMiscTechnicalCuts = nullptr;
+  } misc;
 
   // *) functions and templates
   std::vector<std::vector<TComplex>> initQVectorsTable(int maxCorrelator, const std::vector<int>& harmonic)
@@ -455,7 +464,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     bool bFileIsInCCDB = false;
 
     std::string path(filePath);
-
     if (path.starts_with("/alice/cern.ch/")) {
       bFileIsInAliEn = true;
     } else if (path.starts_with("/alice-ccdb.cern.ch/")) {
@@ -476,41 +484,13 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-
-      // Finally, from the top-level TList, get the desired nested TList => the technical problem here is that it can be nested at any level, for that there is a helper utility function getObjectFromList(...) , see its implementation further below
-      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
-      if (!listWithRuns) {
-        TString runNumberWithLeadingZeroes = "000";
-        runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
-        if (!listWithRuns) {
-          LOGF(error, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-          return;
-        }
-      }
-
-      // OK, we got the desired TList with efficiency corrections, after that we can use the common code for all 3 cases (local, AliEn, CCDB, that common code is below)
     } else if (bFileIsInCCDB) {
-      // File you want to access is in your home dir in CCDB:
-      // Remember that here I do not access the file; instead, I directly access the object in that file.
+      // File you want to access is in your home dir in CCDB: Remember that here I do not access the file; instead, I directly access the object in that file.
       ccdb->setURL("https://alice-ccdb.cern.ch");
       baseList = dynamic_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-
-      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
-      if (!listWithRuns) {
-        TString runNumberWithLeadingZeroes = "000";
-        runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
-        if (!listWithRuns) {
-          LOGF(error, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-          return;
-        }
-      }
-
-      // OK, we got the desired TList with efficiency corrections, after that we can use the common code for all 3 cases (local, AliEn, CCDB, that common code is below)
     } else {
       // this is the local case:
       // Check if the external ROOT file exists at the specified path:
@@ -518,7 +498,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-
       TFile* weightsFile = TFile::Open(filePath, "READ");
       if (!weightsFile) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m can't open file", __FUNCTION__, __LINE__);
@@ -527,23 +506,18 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
-
-      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
-      if (!listWithRuns) {
-        TString runNumberWithLeadingZeroes = "000";
-        runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
-        if (!listWithRuns) {
-          LOGF(error, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
-          return;
-        }
-      }
     }
 
     // Here comes the common code for all three cases, where from "listWithRuns" you fetch the desired histogram with efficiency corrections:
+    listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
-      LOGF(fatal, "\033[1;31m%s: listWithRuns is null for run %s\033[0m", __FUNCTION__, runNumber);
-      return;
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(warning, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
+        return;
+      }
     }
 
     for (int i = 0; i < eWeightsHistograms_N; ++i) {
@@ -563,7 +537,8 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     }
 
     delete baseList;
-  } // end of TH1F* getHistogramWithWeights(const char* filePath, const char* runNumber, const char* histName)
+    baseList = nullptr;
+  } // end of void getHistogramWithWeights(const char* filePath, const char* runNumber)
 
   // templates
   template <typename T1>
@@ -640,32 +615,30 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      if (tc.fEventCutSwitch) { // event level cuts for Rec
-        if constexpr (rm == eReal) {
-          if (!collision.sel8()) { // sel8 cut
-            return false;
-          }
-          if (collision.posZ() > tc.fVertexZCutRange[1] || collision.posZ() < tc.fVertexZCutRange[0]) { // vertex z cut
-            return false;
-          }
-          auto thisCent = chooseCent(collision, tc.fCentralityEstimator);
-          if (thisCent > tc.fCentCutRange[1] || thisCent < tc.fCentCutRange[0]) { // centrality cut
-            return false;
-          }
-          if (collision.numContrib() < tc.fNContribCutInf) { // number of contribution cuts
-            return false;
-          }
+      if (tc.fEventCutSwitch[eSel8Cut] && !collision.sel8()) { // sel8 cut
+        return false;
+      }
+      if constexpr (rm == eReal) {
+        if (tc.fEventCutSwitch[eVertexZCut] && (collision.posZ() > tc.fVertexZCutRange[1] || collision.posZ() < tc.fVertexZCutRange[0])) { // vertex z cut
+          return false;
         }
-        if constexpr (rs == eRecAndSim && rm == eMC) { // event level cuts for Sim
-          auto thisMCCollision = collision.mcCollision();
-          auto impactParameter = thisMCCollision.impactParameter();
-          auto centralityMC = math::PI * impactParameter * impactParameter / tc.fSigmaInel;
-          if (thisMCCollision.posZ() > tc.fVertexZCutRange[1] || thisMCCollision.posZ() < tc.fVertexZCutRange[0]) { // vertex z cut
-            return false;
-          }
-          if (centralityMC > tc.fCentCutRange[1] || centralityMC < tc.fCentCutRange[0]) { // centrality cut
-            return false;
-          }
+        auto thisCent = chooseCent(collision, tc.fCentralityEstimator);
+        if (tc.fEventCutSwitch[eCentCut] && (thisCent > tc.fCentCutRange[1] || thisCent < tc.fCentCutRange[0])) { // centrality cut
+          return false;
+        }
+        if (tc.fEventCutSwitch[eNContribCut] && (collision.numContrib() < tc.fNContribCutInf)) { // number of contribution cuts
+          return false;
+        }
+      }
+      if constexpr (rs == eRecAndSim && rm == eMC) { // event level cuts for Sim
+        auto thisMCCollision = collision.mcCollision();
+        auto impactParameter = thisMCCollision.impactParameter();
+        auto centralityMC = math::PI * impactParameter * impactParameter / tc.fSigmaInel;
+        if (thisMCCollision.posZ() > tc.fVertexZCutRange[1] || thisMCCollision.posZ() < tc.fVertexZCutRange[0]) { // vertex z cut
+          return false;
+        }
+        if (centralityMC > tc.fCentCutRange[1] || centralityMC < tc.fCentCutRange[0]) { // centrality cut
+          return false;
         }
       }
     }
@@ -717,7 +690,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           ec.fEventHist[eHistVertexY][eSim][eBefore]->Fill(thisMCCollision.posY());
           ec.fEventHist[eHistVertexZ][eSim][eBefore]->Fill(thisMCCollision.posZ());
         }
-
         if constexpr (cuts == eAfter) {
           ec.fEventHist[eHistMultiplicity][eSim][eAfter]->Fill(multiplicitySim);
           ec.fEventHist[eHistCentrality][eSim][eAfter]->Fill(centralityMC);
@@ -726,7 +698,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           ec.fEventHist[eHistVertexY][eSim][eAfter]->Fill(thisMCCollision.posY());
           ec.fEventHist[eHistVertexZ][eSim][eAfter]->Fill(thisMCCollision.posZ());
         }
-      }
+      } // end of if constexpr (rs == eRecAndSim && rm == eMC) {
     }
   }
 
@@ -739,7 +711,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      if (tc.fPtCutSwitch) { // pt cuts for Rec
+      if (tc.fParticleCutSwitch[ePtCut]) { // pt cuts for Rec
         if constexpr (rm == eReal) {
           if (track.pt() < tc.fPtCutRange[0] || track.pt() > tc.fPtCutRange[1]) {
             return false;
@@ -752,7 +724,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           }
         }
       }
-      if (tc.fEtaCutSwitch) {
+      if (tc.fParticleCutSwitch[eEtaCut]) {
         if constexpr (rm == eReal) { // eta cuts for Rec
           if (track.eta() < tc.fEtaCutRange[0] || track.eta() > tc.fEtaCutRange[1]) {
             return false;
@@ -765,7 +737,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           }
         }
       }
-      if (tc.fChargeCutSwitch) {
+      if (tc.fParticleCutSwitch[eChargeCut]) {
         if constexpr (rm == eReal) { // charge cuts for Rec
           if (track.sign() != 1 && track.sign() != -1) {
             return false;
@@ -784,7 +756,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             return false;
           }
         } // end of if constexpr (rs == eRecAndSim && rm == eMC) // charge cuts for Sim
-      } // end of if (tc.fChargeCutSwitch) // charge cuts for Rec
+      } // end of if (tc.fParticleCutSwitch[eChargeCut]) // charge cuts for Rec
     } // end of if constexpr (rs == eRec || rs == eRecAndSim) {
 
     return true;
@@ -801,7 +773,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           pc.fParticleHist[eHistEta][eRec][eBefore]->Fill(track.eta());
           pc.fParticleHist[eHistCharge][eRec][eBefore]->Fill(track.sign());
         }
-
         if constexpr (cuts == eAfter) {
           pc.fParticleHist[eHistPt][eRec][eAfter]->Fill(track.pt());
           pc.fParticleHist[eHistPhi][eRec][eAfter]->Fill(track.phi());
@@ -830,7 +801,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             pc.fParticleHist[eHistCharge][eSim][eBefore]->Fill(chargeMC);
           }
         }
-
         if constexpr (cuts == eAfter) {
           pc.fParticleHist[eHistPt][eSim][eAfter]->Fill(thisMCParticle.pt());
           pc.fParticleHist[eHistPhi][eSim][eAfter]->Fill(thisMCParticle.phi());
@@ -839,9 +809,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             pc.fParticleHist[eHistCharge][eSim][eAfter]->Fill(chargeMC);
           }
         }
-      }
+      } // end of if constexpr (rs == eRecAndSim && rm == eMC) {
     }
-  }
+  } // end of void particleHistFill(T1 const& track)
 
   template <ERecSim rs, ERealMC rm, ECuts cuts, typename T1>
   void qaFill(T1 const& collision)
@@ -892,6 +862,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if (isFirstCollision) {
       thisRunNumber = collision.bc().runNumber();
       misc.fMiscHistRunNumber->SetTitle(Form("%d", thisRunNumber)); // Get run number
+      misc.fMiscHistRunNumber->Fill(0.5, thisRunNumber);
       if (tc.fExternalFileSwitch) {
         getHistogramWithWeights(tc.fFileWithWeights.c_str(), Form("%d", thisRunNumber));
       }
@@ -987,18 +958,16 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         if (noneZeroDenom(resultTwo)) {
           obs.fProfTwo[eRec]->Fill(thisCollCentReal, (resultTwo[0] / resultTwo[1].Re()).Re());
         }
-      }
 
-      if constexpr (rs == eRecAndSim) {
-        if (passEventCutsReal && passTechnicalCut) {
+        if constexpr (rs == eRecAndSim) {
           auto impactParam = collision.mcCollision().impactParameter();
           auto thisCollCentMC = math::PI * impactParam * impactParam / tc.fSigmaInel;
           resultTwo = two(qVectorsTableMC, n2);
           if (noneZeroDenom(resultTwo)) {
             obs.fProfTwo[eSim]->Fill(thisCollCentMC, (resultTwo[0] / resultTwo[1].Re()).Re());
           }
-        } // end of if (passEventCutsReal && passTechnicalCut) {
-      } // end of if constexpr (rs == eRecAndSim) {
+        } // end of if constexpr (rs == eRecAndSim) {
+      }
     } // end of if (tc.fMasterCutSwitch) {
 
     isFirstCollision = false; // Now the first collision ends
@@ -1029,16 +998,20 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     tc.fMasterCutSwitch = cfMasterCutSwitch;
     tc.fTechnicalCutSwitch = cfTechnicalCutSwitch.value;
-    tc.fEventCutSwitch = cfEventCutSwitch;
+
+    tc.fEventCutSwitch[eSel8Cut] = cfSel8CutSwitch;
+    tc.fEventCutSwitch[eVertexZCut] = cfVertexZCutSwitch;
     tc.fVertexZCutRange = cfVertexZCutRange.value;
+    tc.fEventCutSwitch[eCentCut] = cfCentCutSwitch;
     tc.fCentCutRange = cfCentCutRange.value;
+    tc.fEventCutSwitch[eNContribCut] = cfNContribCutSwitch;
     tc.fNContribCutInf = cfNContribCutInf;
 
-    tc.fPtCutSwitch = cfPtCutSwitch;
+    tc.fParticleCutSwitch[ePtCut] = cfPtCutSwitch;
     tc.fPtCutRange = cfPtCutRange.value;
-    tc.fEtaCutSwitch = cfEtaCutSwitch;
+    tc.fParticleCutSwitch[eEtaCut] = cfEtaCutSwitch;
     tc.fEtaCutRange = cfEtaCutRange.value;
-    tc.fChargeCutSwitch = cfChargeCutSwitch;
+    tc.fParticleCutSwitch[eChargeCut] = cfChargeCutSwitch;
 
     tc.fSigmaInel = cfSigmaInel;
     tc.fQualityAssuranceSwitch = cfQualityAssuranceSwitch;
@@ -1064,8 +1037,36 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     misc.fMiscHistList->SetOwner(true);
     fBaseList->Add(misc.fMiscHistList);
 
-    misc.fMiscHistRunNumber = new TH1D("eRunNumber", "to be set", 1, 0, 1);
+    misc.fMiscHistRunNumber = new TProfile("[eRunNumber]", "to be set", 1, 0, 1);
+    misc.fMiscHistRunNumber->GetXaxis()->SetBinLabel(1, "RunNumber");
     misc.fMiscHistList->Add(misc.fMiscHistRunNumber);
+
+    misc.fMiscTechnicalCuts = new TProfile("[eTechnicalCuts]", "Technical Cuts", ETechnicalCuts_N, 0, ETechnicalCuts_N);
+    for (int i = 1; i <= ETechnicalCuts_N; ++i) {
+      misc.fMiscTechnicalCuts->GetXaxis()->SetBinLabel(i, TechnicalCutsNames[i - 1]);
+      if (tc.fTechnicalCutSwitch[i - 1].starts_with("1")) {
+        misc.fMiscTechnicalCuts->Fill(i - 0.5, 1);
+      }
+    }
+    misc.fMiscHistList->Add(misc.fMiscTechnicalCuts);
+
+    misc.fMiscEventCuts = new TProfile("[eEventCuts]", "Event Level Cuts", EEventCuts_N, 0, EEventCuts_N);
+    for (int i = 1; i <= EEventCuts_N; ++i) {
+      misc.fMiscEventCuts->GetXaxis()->SetBinLabel(i, EventCutsNames[i - 1]);
+      if (tc.fEventCutSwitch[i - 1]) {
+        misc.fMiscEventCuts->Fill(i - 0.5, 1);
+      }
+    }
+    misc.fMiscHistList->Add(misc.fMiscEventCuts);
+
+    misc.fMiscParticleCuts = new TProfile("[eParticleCuts]", "Particle Level Cuts", EParticleCuts_N, 0, EParticleCuts_N);
+    for (int i = 1; i <= EParticleCuts_N; ++i) {
+      misc.fMiscParticleCuts->GetXaxis()->SetBinLabel(i, ParticleCutsNames[i - 1]);
+      if (tc.fParticleCutSwitch[i - 1]) {
+        misc.fMiscParticleCuts->Fill(i - 0.5, 1);
+      }
+    }
+    misc.fMiscHistList->Add(misc.fMiscParticleCuts);
 
     // *) Book particle TLists:
     pc.fParticleHistList = new TList();

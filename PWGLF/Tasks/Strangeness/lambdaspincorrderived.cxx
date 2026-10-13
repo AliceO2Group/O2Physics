@@ -59,6 +59,66 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+// Compute the competing mass under the K0s (pi+, pi-) hypothesis.
+template <typename T>
+static double getK0sCompetingMass(T const& v0)
+{
+  const ROOT::Math::PtEtaPhiMVector lambda(
+    v0.lambdaPt(), v0.lambdaEta(), v0.lambdaPhi(), v0.lambdaMass());
+
+  const ROOT::Math::PtEtaPhiMVector posDaugh(
+    v0.protonPt(), v0.protonEta(), v0.protonPhi(),
+    o2::constants::physics::MassProton);
+
+  const auto negDaugh = lambda - posDaugh;
+
+  const ROOT::Math::PtEtaPhiMVector pi1(
+    posDaugh.Pt(), posDaugh.Eta(), posDaugh.Phi(),
+    o2::constants::physics::MassPionCharged);
+
+  const ROOT::Math::PtEtaPhiMVector pi2(
+    negDaugh.Pt(), negDaugh.Eta(), negDaugh.Phi(),
+    o2::constants::physics::MassPionCharged);
+
+  return (pi1 + pi2).M();
+}
+
+template <typename Container, typename SelectionFunc>
+static std::vector<int64_t> getCleanCandidateIndices(
+  const Container& candidates,
+  SelectionFunc&& passSelection)
+{
+  std::vector<int64_t> selected;
+  selected.reserve(candidates.size());
+
+  for (auto const& c : candidates) {
+    if (passSelection(c)) {
+      selected.push_back(c.globalIndex());
+    }
+  }
+
+  std::vector<bool> dirty(selected.size(), false);
+  for (size_t i = 0; i < selected.size(); ++i) {
+    for (size_t j = i + 1; j < selected.size(); ++j) {
+      auto a = candidates.iteratorAt(selected[i]);
+      auto b = candidates.iteratorAt(selected[j]);
+      if (hasSharedDaughters(a, b)) {
+        dirty[i] = true;
+        dirty[j] = true;
+      }
+    }
+  }
+
+  std::vector<int64_t> clean;
+  clean.reserve(selected.size());
+  for (size_t i = 0; i < selected.size(); ++i) {
+    if (!dirty[i]) {
+      clean.push_back(selected[i]);
+    }
+  }
+  return clean;
+}
+
 static inline double getKStar(
   const ROOT::Math::PtEtaPhiMVector& p1,
   const ROOT::Math::PtEtaPhiMVector& p2)
@@ -350,7 +410,19 @@ struct lambdaspincorrderived {
     Configurable<float> dcaPion{"dcaPion", 0.2, "DCA Pion"};
     Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
     Configurable<float> dcaV0ToPV{"dcaV0ToPV", 1.2, "DCA V0 to PV cut on lambda"};
-    Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.8, "Eta cut on mix event buffer"};
+    Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.5, "Eta cut on mix event buffer"};
+
+    Configurable<bool> useK0sRejection{"useK0sRejection", true, "Apply K0s competing mass rejection"};
+    Configurable<float> confK0sMassWindow{"confK0sMassWindow", 0.01f, "K0s competing mass rejection window (GeV/c^2)"};
+
+    Configurable<bool> useAdditionalCut{"useAdditionalCut", false, "Apply additional cut"};
+
+    // tpcnclustercorssedrows ()
+    Configurable<float> minTpcNClsCrossedRows{"minTpcNClsCrossedRows", 70.f, "Minimum TPC crossed rows for daughter"};
+    // ctau (lifetime)
+    Configurable<float> maxCtau{"maxCtau", 30.f, "Maximum ctau of Lambda candidate (cm)"};
+    // TPC nsigma
+    Configurable<float> maxTpcNsigma{"maxTpcNsigma", 4.f, "Maximum |TPC nsigma| for Lambda daughters"};
 
   } v0Configurations;
 
@@ -543,6 +615,8 @@ struct lambdaspincorrderived {
       histos.add("deltaPhiMix", "deltaPhiMix", HistType::kTH1D, {{72, -TMath::Pi(), TMath::Pi()}}, true);
       histos.add("ptCent", "ptCent", HistType::kTH2D, {{100, 0.0, 10.0}, {8, 0.0, 80.0}}, true);
       histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
+      histos.add("hNMEperSE_leg1", "ME replacements per SE pair, leg1", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
+      histos.add("hNMEperSE_leg2", "ME replacements per SE pair, leg2", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
     }
 
     if (fillHistConfig.fillWeightQAHistos) {
@@ -858,6 +932,35 @@ struct lambdaspincorrderived {
     if (candidate.lambdaPt() > ptMax) {
       return false;
     }
+    if (v0Configurations.useK0sRejection) {
+      const double mK0s = getK0sCompetingMass(candidate);
+      if (std::abs(mK0s - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
+        return false;
+      }
+    }
+
+    if (v0Configurations.useAdditionalCut) {
+      // additional cuts
+      if (candidate.v0Status() == 0 && (std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma || std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma)) {
+        return false;
+      }
+      if (candidate.v0Status() == 1 && (std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma || std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma)) {
+        return false;
+      }
+
+      if (candidate.tpcPosNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows) {
+        return false;
+      }
+
+      if (candidate.tpcNegNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows) {
+        return false;
+      }
+
+      if (candidate.ctau() > v0Configurations.maxCtau) {
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -1951,7 +2054,7 @@ struct lambdaspincorrderived {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::lambdaevent::Posz, aod::lambdaevent::Cent>;
-  BinningType colBinning{{CfgVtxBins, CfgMultBins}};
+  BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
   Preslice<aod::LambdaPairs> tracksPerCollisionV0 = aod::lambdapair::lambdaeventId;
 
   void processMEV3(EventCandidates const& collisions, AllTrackCandidates const& V0s)
@@ -3190,6 +3293,8 @@ struct lambdaspincorrderived {
             ++pendingAdded;
           }
         }
+        histos.fill(HIST("hNMEperSE_leg2"), nFill2);
+        histos.fill(HIST("hNMEperSE_leg1"), nFill1);
 
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;
