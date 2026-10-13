@@ -92,7 +92,7 @@ struct UpcTrackVertexingQA {
   static constexpr float MassMuon = o2::constants::physics::MassMuon;
 
   // folders that contains plots for all tracks and associated tracks
-  static constexpr std::array<const char*, 2> TrackFolders = {"Trk/", "TrkColl/"};
+  static constexpr std::array<const char*, 3> TrackFolders = {"Trk/", "TrkColl/", "TrkAmb/"};
 
   // Name shortenings
   // passed* columns are in TrackSelectionExtension; isGlobalTrack* and trackCutFlag in TrackSelection
@@ -135,6 +135,9 @@ struct UpcTrackVertexingQA {
     // track level (prongs of the candidate, after collision matching)
     registry.addClone("Trk/", "TrkColl/");
     registry.add("TrkColl/hTrackSizePerEvent", ";#it{N}_{tracks} per event;entries", {HistType::kTH1F, {{10, -0.5, 9.5}}});
+
+    // track level plots for ambiguous tracks
+    registry.addClone("Trk/", "TrkAmb/");
 
     // collision Id counter
     registry.add("Coll/hCollIdCounter", ";collision ID;entries", {HistType::kTH1F, {{3, -1.5, 1.5}}});
@@ -280,10 +283,14 @@ struct UpcTrackVertexingQA {
 
   //--------------------------------------------------------------------------------
   // loop over tracks and fill the histograms with info on track properties
-  template <CandSpecies species, int folder, bool isMc, typename TTrack>
+  template <CandSpecies species, bool isMc, typename TTrack>
   void loopOverTracksBeforeGrouping(TTrack const& tracks){
     for (auto const& track : tracks) {
-      fillTrackHistograms<species, folder, isMc>(track);
+      int32_t collId = track.collisionId();
+      fillTrackHistograms<species, 0, isMc>(track);
+      if (collId < 0) {
+        fillTrackHistograms<species, 2, false>(track); // isMc always false here since it fills Matched/.. histos
+      }
     }
   }
 
@@ -454,25 +461,25 @@ struct UpcTrackVertexingQA {
   // look at all tracks
   void processRhoTracksBeforeGrouping(TracksExtraWPidPi const& tracks)
   {
-    loopOverTracksBeforeGrouping<CandSpecies::kRho, 0, false>(tracks);
+    loopOverTracksBeforeGrouping<CandSpecies::kRho, false>(tracks);
   }
   PROCESS_SWITCH(UpcTrackVertexingQA, processRhoTracksBeforeGrouping, "Process rho tracks before asking for collisions", true);
 
   void processJpsiTracksBeforeGrouping(TracksExtraWPidMu const& tracks)
   {
-    loopOverTracksBeforeGrouping<CandSpecies::kJpsi, 0, false>(tracks);
+    loopOverTracksBeforeGrouping<CandSpecies::kJpsi, false>(tracks);
   }
   PROCESS_SWITCH(UpcTrackVertexingQA, processJpsiTracksBeforeGrouping, "Process J/Psi tracks before asking for collisions", false);
 
   void processRhoTracksBeforeGroupingMcInfo(TracksExtraWPidPiMc const& tracks, aod::McParticles const&)
   {
-    loopOverTracksBeforeGrouping<CandSpecies::kRho, 0, true>(tracks);
+    loopOverTracksBeforeGrouping<CandSpecies::kRho, true>(tracks);
   }
   PROCESS_SWITCH(UpcTrackVertexingQA, processRhoTracksBeforeGroupingMcInfo, "Process rho tracks before asking for collisions", false);
 
   void processJpsiTracksBeforeGroupingMcInfo(TracksExtraWPidMuMc const& tracks, aod::McParticles const&)
   {
-    loopOverTracksBeforeGrouping<CandSpecies::kJpsi, 0, true>(tracks);
+    loopOverTracksBeforeGrouping<CandSpecies::kJpsi, true>(tracks);
   }
   PROCESS_SWITCH(UpcTrackVertexingQA, processJpsiTracksBeforeGroupingMcInfo, "Process J/Psi tracks before asking for collisions", false);
 
