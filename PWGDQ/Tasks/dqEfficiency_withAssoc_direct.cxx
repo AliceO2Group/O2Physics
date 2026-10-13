@@ -3554,13 +3554,12 @@ struct AnalysisDileptonTrackTrack {
         auto track1MC = track1.mcParticle();
         auto track2MC = track2.mcParticle();
         mcDecision = 0;
-        size_t isig = 0;
-        for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-          if ((*sig)->CheckSignal(true, lepton1MC, lepton2MC, track1MC, track2MC)) {
-            mcDecision |= (static_cast<uint32_t>(1) << isig);
+        // size_t isig = 0;
+        for (size_t iSignal = 0; iSignal < fRecMCSignals.size(); ++iSignal) {
+          if (fRecMCSignals[iSignal]->CheckSignal(true, lepton1MC, lepton2MC, track1MC, track2MC)) {
+            mcDecision |= (static_cast<uint32_t>(1) << iSignal);
           }
         }
-
         int iCut = 0;
         uint32_t CutDecision = 0;
         for (auto cutname = fQuadrupletCutNames.begin(); cutname != fQuadrupletCutNames.end(); cutname++, iCut++) {
