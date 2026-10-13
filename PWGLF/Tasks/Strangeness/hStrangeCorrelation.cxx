@@ -1266,9 +1266,9 @@ struct HStrangeCorrelation {
     double phaseProton = (-0.3 * B * assoc[2]) / (2 * assoc[1]);
     double phaseTrack = (-0.3 * B * trigg[2]) / (2 * trigg[1]);
 
-    // radii MinRadiusTPC + i * RadiusStep below MaxRadiusTPC: 0.80 to 2.45 m
+    // radii MinRadiusTPC + i * RadiusStep below MaxRadiusTPC: 34 radii, 0.80 to 2.45 m
     constexpr double RadiusStep = 0.05;
-    constexpr int NRadii = 34;
+    constexpr int NRadii = static_cast<int>((MaxRadiusTPC - MinRadiusTPC) / RadiusStep + 0.5);
     for (int iRadius = 0; iRadius < NRadii; ++iRadius) {
       const double r = MinRadiusTPC + iRadius * RadiusStep;
       dPhiStar = dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r);
