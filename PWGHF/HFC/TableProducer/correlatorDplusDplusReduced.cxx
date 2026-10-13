@@ -157,13 +157,13 @@ struct HfCorrelatorDplusDplusReduced {
       return false;
     }
     for (size_t i = 0; i < cutPtSkimming.value.size() - 1; i++) {
-      if (candidate.pt() <= cutPtSkimming.value.at(i + 1)){
+      if (candidate.pt() <= cutPtSkimming.value.at(i + 1)) {
         if (hfHelper.invMassDplusToPiKPi(candidate) < massMin.value.at(i) ||
             hfHelper.invMassDplusToPiKPi(candidate) > massMax.value.at(i) ||
             candidate.cpa() < cosThetaMin.value.at(i) ||
             candidate.decayLength() < decayLengthMin.value.at(i) ||
             std::abs(candidate.nSigTofKa1()) > nSigmaTofMax.value.at(i) ||
-            std::abs(candidate.nSigTpcKa1()) > nSigmaTpcMax.value.at(i)){
+            std::abs(candidate.nSigTpcKa1()) > nSigmaTpcMax.value.at(i)) {
           return false;
         }
         return true;
