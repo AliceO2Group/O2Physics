@@ -18,8 +18,8 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CommonConstants/PhysicsConstants.h>
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -36,8 +36,8 @@
 #include <TPDGCode.h>
 
 #include <array>
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <vector>
 
@@ -169,7 +169,7 @@ struct UpcTrackVertexingQA {
     registry.add("Matched/Trk/hMotherPdg", ";mother PDG code;entries", {HistType::kTH1F, {{1001, 0.5, 1000.5}}});
 
     registry.addClone("Matched/Trk/", "Matched/TrkColl/");
-  
+
     // MC generated plots
     registry.addClone("Matched/Coll/", "McGen/Coll/");
 
@@ -284,7 +284,8 @@ struct UpcTrackVertexingQA {
   //--------------------------------------------------------------------------------
   // loop over tracks and fill the histograms with info on track properties
   template <CandSpecies species, bool isMc, typename TTrack>
-  void loopOverTracksBeforeGrouping(TTrack const& tracks){
+  void loopOverTracksBeforeGrouping(TTrack const& tracks)
+  {
     for (auto const& track : tracks) {
       int32_t collId = track.collisionId();
       fillTrackHistograms<species, 0, isMc>(track);
@@ -364,7 +365,8 @@ struct UpcTrackVertexingQA {
   //--------------------------------------------------------------------------------
   // generated (MC truth) level: daughters and their mothers
   template <bool isEmbedded>
-  void checkMcGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles){
+  void checkMcGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
 
     registry.fill(HIST("McGen/Coll/hVtxX"), mcCollision.posX());
     registry.fill(HIST("McGen/Coll/hVtxY"), mcCollision.posY());
@@ -372,13 +374,13 @@ struct UpcTrackVertexingQA {
 
     std::vector<aod::McParticle> goodMcGenParticles;
     for (auto const& mcPart : mcParticles) {
-      
+
       if (!mcPart.isPhysicalPrimary() || mcPart.pt() < ptTrackMin || std::abs(mcPart.eta()) > etaTrackMax) {
-        continue;      
+        continue;
       }
       registry.fill(HIST("McGen/Part/hPt"), mcPart.pt());
       registry.fill(HIST("McGen/Part/hEta"), mcPart.eta());
-      
+
       goodMcGenParticles.push_back(mcPart);
     }
     registry.fill(HIST("McGen/Part/hTrackSizePerEvent"), goodMcGenParticles.size());
@@ -399,12 +401,12 @@ struct UpcTrackVertexingQA {
         return;
       }
     }
-    
+
     if (goodMcGenParticles.size() != twoTracks) {
       return;
     }
 
-    // we have 2 good tracks, with the same mother, taking it from the first one    
+    // we have 2 good tracks, with the same mother, taking it from the first one
     auto mothers = goodMcGenParticles[0].template mothers_as<aod::McParticles>();
 
     if (mothers.empty()) {
@@ -417,7 +419,6 @@ struct UpcTrackVertexingQA {
     registry.fill(HIST("McGen/MotherPart/hPt"), motherPart.pt());
     registry.fill(HIST("McGen/MotherPart/hRapidity"), motherPart.y());
     registry.fill(HIST("McGen/MotherPart/hPtVsRapidity"), motherPart.pt(), motherPart.y());
-    
   }
 
   //--------------------------------------------------------------------------------
@@ -426,7 +427,8 @@ struct UpcTrackVertexingQA {
 
   //--------------------------------------------------------------------------------
   // check collisionId and TF
-  void processTracksIU(TracksExtraIU const& tracks, aod::Collisions const&, aod::BCs const&) {
+  void processTracksIU(TracksExtraIU const& tracks, aod::Collisions const&, aod::BCs const&)
+  {
     // track loop
     for (const auto& track : tracks) {
 
@@ -438,8 +440,7 @@ struct UpcTrackVertexingQA {
 
       if (collId < 0) {
         registry.fill(HIST("Coll/hCollIdCounter"), -1);
-      }
-      else if (collId > 0) {
+      } else if (collId > 0) {
         registry.fill(HIST("Coll/hCollIdCounter"), 1);
       } else {
         registry.fill(HIST("Coll/hCollIdCounter"), 0);
@@ -451,7 +452,7 @@ struct UpcTrackVertexingQA {
 
       auto collision = track.collision();
       auto bc = collision.bc();
-      
+
       getRunInfo(bc.runNumber());
 
       registry.fill(HIST("Coll/hnTF"), getTimeFrame(bc.globalBC()));
