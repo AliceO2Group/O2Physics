@@ -776,7 +776,7 @@ struct AnalysisTrackSelection {
       // compute quantities which depend on the associated collision, such as DCA
       if (track.collisionId() != event.globalIndex()) {
         VarManager::FillTrackCollision<TTrackFillMap>(track, event);
-      // cout << "Filled track observables for association" << endl;
+        // cout << "Filled track observables for association" << endl;
       }
 
       bool isCorrectAssoc = false;
@@ -1990,9 +1990,9 @@ struct AnalysisSameEventPairing {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
             isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
-            if (sign1 * sign2 < 0) {                                                    // +- pairs
+            if (sign1 * sign2 < 0) {                                                                         // +- pairs
               fHistMan->FillHistClass(histNames[icut][0].Data(), static_cast<float*>(VarManager::fgValues)); // reconstructed, unmatched
-              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {                             // loop over MC signals
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
                                           VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
@@ -3250,14 +3250,14 @@ struct AnalysisDileptonTrackTrack {
 
   Produces<aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
 
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
   // uint32_t fTrackCutBitMap; // track cut bit mask to be used in the selection of tracks associated with dileptons
   // cut name setting
   TString fTrackCutName1;
   TString fTrackCutName2;
   std::vector<TString> fTrackCutNames;
-  uint32_t fTrackCutBitMap1;
-  uint32_t fTrackCutBitMap2;
+  uint32_t fTrackCutBitMap1 = 0;
+  uint32_t fTrackCutBitMap2 = 0;
   bool fIsSameTrackCut = false;
   AnalysisCompositeCut fDileptonCut;
   std::vector<TString> fQuadrupletCutNames;
@@ -3272,8 +3272,8 @@ struct AnalysisDileptonTrackTrack {
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
-  float* fValuesQuadruplet;
-  HistogramManager* fHistMan;
+  float* fValuesQuadruplet = nullptr;
+  HistogramManager* fHistMan = nullptr;
 
   // o2::analysis::QuadMlResponse<float> fQuadMlResponse;
   // std::vector<float> fOutputMlQuad;
@@ -3473,7 +3473,7 @@ struct AnalysisDileptonTrackTrack {
     }
 
     uint32_t mcDecision = static_cast<uint32_t>(0);
-    size_t isig = 0;
+    // size_t isig = 0;
 
     for (auto dilepton : dileptons) {
       // get full track info of tracks based on the index
@@ -3554,7 +3554,7 @@ struct AnalysisDileptonTrackTrack {
         auto track1MC = track1.mcParticle();
         auto track2MC = track2.mcParticle();
         mcDecision = 0;
-        isig = 0;
+        size_t isig = 0;
         for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
           if ((*sig)->CheckSignal(true, lepton1MC, lepton2MC, track1MC, track2MC)) {
             mcDecision |= (static_cast<uint32_t>(1) << isig);
