@@ -258,8 +258,7 @@ TH1D* OutputHandler::getHist(Calculator::PtDiffFunc func, double min, double max
   }
   func = tmp_func;
   reth->SetName(getName(func, min, max).c_str());
-  if (reth->GetNbinsX() > 100)
-    xAxisTitle = "N_{ch}";
+  xAxisTitle = "#it{p}_{T} (GeV/#it{c})";
   reth->SetTitle(Form("; %s;%s", xAxisTitle.c_str(), getLatexName(func).c_str()));
   if (useFSRebin && !isVN(func))
     FSRebin(&reth);
@@ -410,8 +409,7 @@ TH1D* OutputHandler::getSysHist(Calculator::PtDiffFunc func, double min, double 
   calculator.readData(readFile(fileName), dirName, isGen, radialFlowAnalysis);
   sysHandler->setSysMap(sysMap);
   TH1D* sysh = sysHandler->getNominal(relative);
-  if (sysh->GetNbinsX() > 100)
-    xAxisTitle = "N_{ch}";
+  xAxisTitle = "#it{p}_{T} (GeV/#it{c})";
   return sysh;
 }
 
