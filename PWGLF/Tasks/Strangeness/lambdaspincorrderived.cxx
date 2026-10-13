@@ -932,12 +932,6 @@ struct lambdaspincorrderived {
     if (candidate.lambdaPt() > ptMax) {
       return false;
     }
-    if (v0Configurations.useK0sRejection) {
-      const double mK0s = getK0sCompetingMass(candidate);
-      if (std::abs(mK0s - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
-        return false;
-      }
-    }
 
     if (v0Configurations.useAdditionalCut) {
       // additional cuts
@@ -958,6 +952,12 @@ struct lambdaspincorrderived {
 
       if (candidate.ctau() > v0Configurations.maxCtau) {
         return false;
+      }
+
+      if (v0Configurations.useK0sRejection) {
+        if (std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
+          return false;
+        }
       }
     }
 
