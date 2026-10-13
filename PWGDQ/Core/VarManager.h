@@ -4528,7 +4528,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_GJB1{Beam1_CM.Unit()};
       // mother momentum in LAB (defines the production plane)
       ROOT::Math::XYZVectorF motherLab_GJB1{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
-      // y-axis: normal to the production plane 
+      // y-axis: normal to the production plane
       ROOT::Math::XYZVectorF yaxis_GJB1{zaxis_GJB1.Cross(motherLab_GJB1)};
       if (yaxis_GJB1.Mag2() > 1.e-6f) {
         yaxis_GJB1 = yaxis_GJB1.Unit();
