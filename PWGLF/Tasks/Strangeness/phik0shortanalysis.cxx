@@ -290,7 +290,7 @@ struct Phik0shortanalysis {
   ConfigurableAxis axisCentralityMixing{"axisCentralityMixing", {20, 0, 100}, "Multiplicity percentil binning for mixing"};
 
   using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
+  BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}};
 
   // Cache for manual slicing
   SliceCache cache;

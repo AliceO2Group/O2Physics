@@ -167,14 +167,14 @@ concept HasEventShapeRow = requires(T row) {
 template <typename T>
 concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typename std::decay_t<T>::iterator; } && HasEventShapeRow<typename std::decay_t<T>::iterator>);
 
-/// Recalculate pT for Kinks (Sigmas) using kinematic constraints
-inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
+/// Recalculate the pT of a kink mother from its direction and the charged daughter momentum
+inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter,
+                       float massMother, float massChargedDaughter, float massNeutralDaughter)
 {
   float almost0 = 1e-6f;
-  // Particle masses in GeV/c^2
-  auto massPion = o2::constants::physics::MassPionCharged;
-  auto massNeutron = o2::constants::physics::MassNeutron;
-  auto massSigmaMinus = o2::constants::physics::MassSigmaMinus;
+  const float massPion = massChargedDaughter;
+  const float massNeutron = massNeutralDaughter;
+  const float massSigmaMinus = massMother;
 
   // Calculate mother momentum and direction versor
   float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);

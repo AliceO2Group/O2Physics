@@ -233,6 +233,6 @@ class FlowPtContainer : public TNamed
   void getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& subevents);
   static constexpr std::array<float, 9> FactorialArray = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
   static constexpr std::array<int, 9> SignArray = {1, -1, 1, -1, 1, -1, 1, -1, 1};
-  ClassDef(FlowPtContainer, 2);
+  ClassDefOverride(FlowPtContainer, 2);
 };
 #endif // PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_

@@ -11,6 +11,7 @@
 
 o2physics_add_library(ALICE3Core
                       SOURCES TrackUtilities.cxx
+                              ConfigurationParser.cxx
                               FlatLutEntry.cxx
                               FlatTrackSmearer.cxx
                               GeometryContainer.cxx

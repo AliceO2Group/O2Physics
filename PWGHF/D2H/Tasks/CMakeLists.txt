@@ -99,6 +99,11 @@ o2physics_add_dpl_workflow(task-dstar-to-d0-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-flattenicity-d0-lc
+                    SOURCES taskFlattenicityD0Lc.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-flow-charm-hadrons
                     SOURCES taskFlowCharmHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
@@ -136,6 +141,11 @@ o2physics_add_dpl_workflow(task-net-charm-fluctuations
 
 o2physics_add_dpl_workflow(task-omegac0-to-omega-pi
                     SOURCES taskOmegac0ToOmegaPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-omegac0-to-omega-pi-qa
+                    SOURCES taskOmegac0ToOmegaPiQa.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

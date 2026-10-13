@@ -266,6 +266,7 @@ struct DeuteronInTriggeredEvents {
   Produces<o2::aod::NucleiTable> nucleiTable;                       // For data
   Produces<o2::aod::NucleiTableMCExtension> nucleiTableMCExtension; // For MC analysis
   Produces<o2::aod::GenEventMCSel> genEventMCSel;                   // For MC reco events
+  Produces<o2::aod::NucleiTableMC> nucleiTableMC;                   // For MC analysis as data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB; // For INELgt0 gen MC selection
   Zorro zorro;                                 // Definition of Zorro: helpful for skimmed data
@@ -1111,6 +1112,77 @@ struct DeuteronInTriggeredEvents {
     }
   }
   PROCESS_SWITCH(DeuteronInTriggeredEvents, processMC, "MC analysis", false);
+
+  void processMCasData(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  {
+    nuclei::candidates.clear();
+    std::vector<bool> goodCollisions(mcCollisions.size(), false);
+
+    for (const auto& collision : collisions) {
+      if (!eventSelectionWithHisto(collision)) {
+        continue;
+      }
+
+      // Avoid unwanted memory leaks
+      if (!collision.has_mcCollision())
+        continue;
+
+      int mcId = collision.mcCollisionId();
+      if (mcId < 0 || mcId >= static_cast<int>(mcCollisions.size()))
+        continue;
+
+      goodCollisions[collision.mcCollisionId()] = true;
+      const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
+      fillDataInfo(collision, slicedTracks);
+    }
+
+    std::vector<bool> isReconstructed(particlesMC.size(), false);
+    for (size_t i{0}; i < nuclei::candidates.size(); ++i) {
+      auto& c = nuclei::candidates[i];
+      if (c.fillTree) {
+        auto label = tracks.iteratorAt(c.globalIndex);
+
+        if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+          continue;
+        }
+
+        auto particle = particlesMC.iteratorAt(label.mcParticleId());
+
+        int motherPdgCode = 0;
+        float motherDecRadius = -1;
+        isReconstructed[particle.globalIndex()] = true;
+
+        if (particle.isPhysicalPrimary()) {
+          c.flags |= kIsPhysicalPrimary;
+          if (particle.has_mothers()) {
+            for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+              if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+                c.flags |= kIsSecondaryFromWeakDecay;
+                motherPdgCode = motherparticle.pdgCode();
+                motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
+                break;
+              }
+            }
+          }
+        } else if (particle.getProcess() == TMCProcess::kPDecay) {
+          c.flags |= kIsSecondaryFromWeakDecay;
+          for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+            motherPdgCode = motherparticle.pdgCode();
+            motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
+          }
+        } else {
+          c.flags |= kIsSecondaryFromMaterial;
+        }
+
+        isReconstructed[particle.globalIndex()] = true;
+        float absoDecL = computeAbsoDecL(particle);
+
+        nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.nContrib, c.dcaXY, c.dcaZ, c.tpcSignal, c.itsChi2, c.tpcChi2, c.tofChi2, c.flags, c.tpcFindableCls, c.tpcCrossedRows, c.itsClsMap, c.tpcNCls, c.tpcNClsShared, c.clusterSizesITS, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absoDecL);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(DeuteronInTriggeredEvents, processMCasData, "MC as data analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

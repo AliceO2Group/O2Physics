@@ -177,6 +177,7 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<double> invMassWindowCharmHadPi{"invMassWindowCharmHadPi", 0.3, "invariant-mass window for CharmHad-Pi pair preselections (GeV/c2)"};
     // MC extra
     Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "flag to enable MC checks on decay type"};
+    Configurable<int> nMcLoops{"nMcLoops", 0, "number of extra loops over generated particles per MC collision"};
   } configs;
   // vertexing
   struct : o2::framework::ConfigurableGroup {
@@ -394,6 +395,9 @@ struct HfDataCreatorCharmHadPiReduced {
     hCandidatesLc = registry.add<TH1>("hCandidatesLc", "Lc candidate counter", {HistType::kTH1D, {axisCands}});
     hCandidatesD0FromDstar = registry.add<TH1>("hCandidatesD0FromDstar", "D0 from D* candidate counter", {HistType::kTH1D, {axisCands}});
     hCandidatesBHadron = registry.add<TH1>("hCandidatesBHadron", "B hadron candidate counter", {HistType::kTH1D, {axisCands}});
+    if (configs.nMcLoops > 0) {
+      registry.add("hNMatchedMcLoops", "matches found in extra MC loops;matches per MC collision;entries", {HistType::kTH1D, {{100, -0.5, 99.5}}});
+    }
 
     setLabelHistoCands(hCandidatesD0);
     setLabelHistoCands(hCandidatesDPlus);
@@ -1793,6 +1797,20 @@ struct HfDataCreatorCharmHadPiReduced {
                                    ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
       }
     } // gen
+
+    // extra loops over generated particles (increases CPU time)
+    if (configs.nMcLoops > 0) {
+      int nMatched{0};
+      for (int iLoop = 0; iLoop < configs.nMcLoops; ++iLoop) {
+        for (const auto& particle : mcParticlesPerMcColl) {
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBPlus, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kLambdaB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+        }
+      }
+      registry.fill(HIST("hNMatchedMcLoops"), nMatched);
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////

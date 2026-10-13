@@ -111,7 +111,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   template <typename CollisionToFilter, typename AssociatedTracks>
   void StoreMultiplicities(CollisionToFilter const&, AssociatedTracks const&);
   int CalculateMaskLength() override;
-  virtual void StoreArmedMask() override;
+  void StoreArmedMask() override;
 
   std::vector<CutBrick<float>*> mBFieldSelection; //! the magnetic field selection cuts
   MultiplicityBrick* mMultiplicityClasses;        //! the multiplicity classes cuts
@@ -119,7 +119,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   CutBrick<float>* mZVertex;                      //! the z vertex selection cuts
   PileUpRejBrick* mPileUpRejection;               //! the pile-up rejection criteria
 
-  ClassDef(EventSelectionFilterAndAnalysis, 1)
+  ClassDefOverride(EventSelectionFilterAndAnalysis, 1)
 };
 
 /// \brief Stores the different multiplicities needed for proper collision filtering
@@ -230,8 +230,6 @@ inline uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const&
   if (mMultiplicityClasses != nullptr) {
     bool acc = mMultiplicityClasses->ComplexBrickHelper::Filter(selectedMask, bit);
     acceptcollision = acceptcollision && acc;
-  }
-  if (mTriggerSelection != nullptr) {
   }
   if (mZVertex != nullptr) {
     bool acc = filterBrickValue(selectedMask, bit, mZVertex, col.posZ());

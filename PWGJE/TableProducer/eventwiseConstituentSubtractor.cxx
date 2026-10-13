@@ -130,7 +130,7 @@ struct eventWiseConstituentSubtractorTask {
       }
       inputParticles.clear();
       tracksSubtracted.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, false, &candidate);
 
       tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, candidate.rho(), candidate.rhoM());
       for (auto const& trackSubtracted : tracksSubtracted) {

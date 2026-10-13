@@ -667,7 +667,7 @@ void processMixedEvent(T1 const& Collisions,
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
-  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
+  std::optional<decltype(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
 
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
 
@@ -678,12 +678,12 @@ void processMixedEvent(T1 const& Collisions,
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
 
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache);
+    auto sliceParticle2 = Partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache);
 
     PairHistManager.resetTrackedParticlesPerEvent();
 

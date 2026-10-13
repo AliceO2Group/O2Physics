@@ -1356,10 +1356,10 @@ struct decay3bodyBuilder {
     }
 
     if (decay3bodyBuilderOpts.useKFParticle) {
-      Binning3BodyKF binningOnRadPhiKF{{mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi}, true};
+      Binning3BodyKF binningOnRadPhiKF{{mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi}};
       buildMixedCandidates<aod::RedCollisions, aod::RedIUTracks>(decay3bodys, binningOnRadPhiKF);
     } else {
-      Binning3BodyDCAfitter binningOnRadPhiDCA{{mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi}, true};
+      Binning3BodyDCAfitter binningOnRadPhiDCA{{mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi}};
       buildMixedCandidates<aod::RedCollisions, aod::RedIUTracks>(decay3bodys, binningOnRadPhiDCA);
     }
   }

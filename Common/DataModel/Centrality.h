@@ -100,18 +100,22 @@ using BCCentFT0C = BCCentFT0Cs::iterator;
 
 template <typename T>
 concept HasRun2Centrality = requires(T&& t) {
+  // NOLINTBEGIN(readability/braces)
   { t.centRun2V0M() };
   { t.centRun2CL0() };
   { t.centRun2CL1() };
+  // NOLINTEND(readability/braces)
 };
 
 template <typename T>
 concept HasCentrality = requires(T&& t) {
+  // NOLINTBEGIN(readability/braces)
   { t.centFV0A() };
   { t.centFT0M() };
   { t.centFT0A() };
   { t.centFT0C() };
   { t.centNTPV() };
+  // NOLINTEND(readability/braces)
 };
 
 } // namespace o2::aod

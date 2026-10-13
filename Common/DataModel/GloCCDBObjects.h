@@ -59,6 +59,9 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Logger.h>
 
+#include <TBufferFile.h> // IWYU pragma: keep (needed by DECLARE_SOA_CCDB_COLUMN...)
+#include <TClass.h>      // IWYU pragma: keep (needed by DECLARE_SOA_CCDB_COLUMN...)
+
 #include <cstdint>
 #include <string>
 #include <string_view>

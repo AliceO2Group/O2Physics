@@ -103,8 +103,6 @@ struct Xi1820Analysis {
 
   // Constants
   static constexpr float SmallMomentumDenominator = 1e-10f; // Small value to avoid division by zero
-  static constexpr int PdgChargedXi1820 = 123314;           // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
-  static constexpr int PdgXi1820Zero = 123324;              // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
   static constexpr int ExpectedDaughters = 2;               // Expected number of daughters for two-body decay
 
   // Axes
@@ -1116,7 +1114,7 @@ struct Xi1820Analysis {
               }
 
               if constexpr (IsMC) { // Calculate Acceptance x efficiency for "the particle" channel
-                if (v0.motherPDG() != -PdgChargedXi1820 || kaon.motherPDG() != v0.motherPDG()) {
+                if (v0.motherPDG() != -Pdg::kXi1820Minus || kaon.motherPDG() != v0.motherPDG()) {
                   continue;
                 }
                 if (kaon.pdgCode() != PDG_t::kKPlus || v0.pdgCode() != PDG_t::kLambda0Bar) {
@@ -1193,7 +1191,7 @@ struct Xi1820Analysis {
                 }
               }
               if constexpr (IsMC) { // Calculate Acceptance x efficiency for "the particle" channel
-                if (v0.motherPDG() != PdgChargedXi1820 || kaon.motherPDG() != v0.motherPDG()) {
+                if (v0.motherPDG() != Pdg::kXi1820Minus || kaon.motherPDG() != v0.motherPDG()) {
                   continue;
                 }
                 if (kaon.pdgCode() != PDG_t::kKMinus || v0.pdgCode() != PDG_t::kLambda0) {
@@ -1398,7 +1396,7 @@ struct Xi1820Analysis {
               }
 
               if constexpr (IsMC) { // Calculate Acceptance x efficiency
-                if (lambda.motherPDG() != PdgXi1820Zero || k0s.motherPDG() != lambda.motherPDG()) {
+                if (lambda.motherPDG() != Pdg::kXi1820Zero || k0s.motherPDG() != lambda.motherPDG()) {
                   continue;
                 }
                 if (std::abs(k0s.pdgCode()) != PDG_t::kK0Short || lambda.pdgCode() != PDG_t::kLambda0) {
@@ -1468,7 +1466,7 @@ struct Xi1820Analysis {
               }
 
               if constexpr (IsMC) { // Calculate Acceptance x efficiency
-                if (lambda.motherPDG() != -PdgXi1820Zero || k0s.motherPDG() != lambda.motherPDG()) {
+                if (lambda.motherPDG() != -Pdg::kXi1820Zero || k0s.motherPDG() != lambda.motherPDG()) {
                   continue;
                 }
                 if (std::abs(k0s.pdgCode()) != PDG_t::kK0Short || lambda.pdgCode() != PDG_t::kLambda0Bar) {
@@ -1556,7 +1554,7 @@ struct Xi1820Analysis {
       return;
     }
     auto tracksTuple = std::make_tuple(resoTracks, resoV0s);
-    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}};
     Pair<ResoCollisions, ResoTracks, aod::ResoV0s, BinningTypeVertexContributor> pairs{binning, nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, v0s2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
       if (!acceptsMixedCollisions(collision1, collision2)) {
@@ -1575,7 +1573,7 @@ struct Xi1820Analysis {
       return;
     }
     auto tracksTuple = std::make_tuple(resoMicroTracks, resoV0s);
-    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}};
     Pair<ResoCollisions, ResoMicroTracks, aod::ResoV0s, BinningTypeVertexContributor> pairs{binning, nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, v0s2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
       if (!acceptsMixedCollisions(collision1, collision2)) {
@@ -1615,7 +1613,7 @@ struct Xi1820Analysis {
       mixingPools.clear();
       mixingBField = collision.bMagField();
     }
-    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}};
     const int bin = binning.getBin(std::make_tuple(collision.posZ(), collision.cent()));
     if (bin < 0) {
       return;
@@ -1656,7 +1654,7 @@ struct Xi1820Analysis {
       return;
     }
     auto v0sV0sTuple = std::make_tuple(resoV0s, resoV0s);
-    BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}};
     Pair<ResoCollisions, aod::ResoV0s, aod::ResoV0s, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, resoCollisions, v0sV0sTuple, &cache};
 
     for (auto& [collision1, k0s1, collision2, lambda2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
@@ -1680,7 +1678,7 @@ struct Xi1820Analysis {
       neutralMixingPools.clear();
       neutralMixingBField = collision.bMagField();
     }
-    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}};
     const int bin = binning.getBin(std::make_tuple(collision.posZ(), collision.cent()));
     if (bin < 0) {
       return;
@@ -1770,7 +1768,7 @@ struct Xi1820Analysis {
     histos.fill(HIST("multQA/h2MultCentMC"), inCent, multiplicity);
     for (const auto& part : resoParents) { // loop over all pre-filtered Gen particle on selected events
       auto pdgMother = part.pdgCode();
-      if (std::abs(pdgMother) != PdgChargedXi1820 && std::abs(pdgMother) != PdgXi1820Zero) {
+      if (std::abs(pdgMother) != Pdg::kXi1820Minus && std::abs(pdgMother) != Pdg::kXi1820Zero) {
         continue;
       }
       if (!passesRapidity(part.y())) {
@@ -1780,7 +1778,7 @@ struct Xi1820Analysis {
       auto daughter1PDG = part.daughterPDG1();
       auto daughter2PDG = part.daughterPDG2();
 
-      if (std::abs(pdgMother) == PdgChargedXi1820) { // Explicity check for the safety.
+      if (std::abs(pdgMother) == Pdg::kXi1820Minus) { // Explicity check for the safety.
         // K- + Anti-Lambda,  K+ + Anti-Lambda
         if ((daughter1PDG == PDG_t::kKMinus && daughter2PDG == PDG_t::kLambda0) ||
             (daughter1PDG == PDG_t::kLambda0 && daughter2PDG == PDG_t::kKMinus)) {
@@ -1813,7 +1811,7 @@ struct Xi1820Analysis {
       int pdg = mcParticle.pdgCode();
 
       // Select only the configured charged and neutral Xi(1820) states.
-      if (std::abs(pdg) != PdgChargedXi1820 && std::abs(pdg) != PdgXi1820Zero) {
+      if (std::abs(pdg) != Pdg::kXi1820Minus && std::abs(pdg) != Pdg::kXi1820Zero) {
         continue;
       }
 

@@ -21,9 +21,9 @@
 #include <Framework/Concepts.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep
 #include <Math/Vector3Dfwd.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep
 #include <Math/Vector4Dfwd.h>
 
 #include <algorithm>

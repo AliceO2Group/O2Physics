@@ -398,14 +398,6 @@ class PairV0V0Builder
                   << "). Overriding sameSpecies to false.";
         mSameSpecies = false;
       }
-    } else {
-      // same v0 species: both values are legitimate (e.g. lambda-lambda vs lambda-antilambda),
-      // but running as different species only makes sense if the two selections are disjoint
-      if (!mSameSpecies && confV0Selection1.sign.value == confV0Selection2.sign.value) {
-        LOG(warn) << "sameSpecies=false for identical v0 species with identical sign ("
-                  << confV0Selection1.sign.value << "). If both selections match the same "
-                  << "candidates, this produces self-pairs and double counting.";
-      }
     }
 
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
@@ -1910,17 +1902,17 @@ class PairTrackCascadeBuilder
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void processMixedEvent(T1 const& cols, T2& trackTable, T3& trackPartition, T4& v0Partition, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& trackPartition, T4& cascadePartition, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
   {
     switch (mMixingPolicy) {
       case static_cast<int>(pairhistmanager::kVtxMult):
-        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, v0Partition, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, cascadePartition, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
         break;
       case static_cast<int>(pairhistmanager::kVtxCent):
-        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, v0Partition, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, cascadePartition, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
         break;
       case static_cast<int>(pairhistmanager::kVtxMultCent):
-        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, v0Partition, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, cascadePartition, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
         break;
       default:
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -2067,7 +2059,7 @@ class PairMcParticleMcParticleBuilder
   bool processSameEvent(T1 const& col, T2 const& mcParticles, T3 const& mcMothers, T4 const& mcPartonicMothers, T5& partition1, T6& partition2, T7& cache)
   {
     if (mSameSpecies) {
-      auto mcParticleSlice = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+      auto mcParticleSlice = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
 
       if (mcParticleSlice.size() < nLimitPartitionIdenticalParticles) {
         return false;
@@ -2080,8 +2072,8 @@ class PairMcParticleMcParticleBuilder
       return pairprocesshelpers::processSameEvent<mode>(mcParticleSlice, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mPairHistManagerSe, mMcParticleCleaner1, mCprSe, mPcSe, pairOrder);
     }
 
-    auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
-    auto mcParticleSlice2 = partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    auto mcParticleSlice1 = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    auto mcParticleSlice2 = partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
     if (mcParticleSlice1.size() < nLimitPartitionParticles || mcParticleSlice2.size() < nLimitPartitionParticles) {
       return false;
     }

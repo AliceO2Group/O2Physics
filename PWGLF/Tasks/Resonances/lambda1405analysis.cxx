@@ -1182,10 +1182,10 @@ struct lambda1405analysis {
                             const aod::BCs&)
   {
     if (useCentrality) {
-      BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+      BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}};
       fillOutputData(collision, kinkCands, tracks, binPolicy);
     } else {
-      BinningMultPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+      BinningMultPosZ binPolicy{{centMultPoolBins, zPoolBins}};
       fillOutputData(collision, kinkCands, tracks, binPolicy);
     }
   }
@@ -1196,7 +1196,7 @@ struct lambda1405analysis {
                                   TracksFull const& tracks,
                                   const aod::BCs&)
   {
-    BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+    BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}};
     fillOutputData(collision, kinkCands, tracks, binPolicy);
   }
   PROCESS_SWITCH(lambda1405analysis, processDataWQVecsSameEvent, "Data processing with centrality and Q vectors info", false);
@@ -1208,7 +1208,7 @@ struct lambda1405analysis {
   {
     auto pairsTuple = std::make_tuple(kinkCands, tracks);
     if (useCentrality) {
-      BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+      BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}};
       Pair<CollisionsFull, aod::KinkCands, TracksFull, BinningCentPosZ> const pairs{binPolicy, numberEventsMixed, -1, collisions, pairsTuple, &cache};
       for (const auto& [sigmasColl, sigmas, bachPisColl, bachPis] : pairs) {
         if (sigmas.size() == 0 || bachPis.size() == 0) {
@@ -1223,7 +1223,7 @@ struct lambda1405analysis {
         fillOutputData(sigmasColl, sigmas, bachPis, binPolicy);
       }
     } else {
-      BinningMultPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+      BinningMultPosZ binPolicy{{centMultPoolBins, zPoolBins}};
       Pair<CollisionsFull, aod::KinkCands, TracksFull, BinningMultPosZ> const pairs{binPolicy, numberEventsMixed, -1, collisions, pairsTuple, &cache};
       for (const auto& [sigmasColl, sigmas, bachPisColl, bachPis] : pairs) {
         if (sigmas.size() == 0 || bachPis.size() == 0) {
@@ -1247,7 +1247,7 @@ struct lambda1405analysis {
                                    const aod::BCs&)
   {
     auto pairsTuple = std::make_tuple(kinkCands, tracks);
-    BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+    BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}};
     Pair<CollisionsSelWQVecs, aod::KinkCands, TracksFull, BinningCentPosZ> const pairs{binPolicy, numberEventsMixed, -1, collisions, pairsTuple, &cache};
     for (const auto& [sigmasColl, sigmas, bachPisColl, bachPis] : pairs) {
       if (sigmas.size() == 0 || bachPis.size() == 0) {

@@ -44,9 +44,11 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TPDGCode.h>
+#include <TParticlePDG.h>
 #include <TRandom3.h>
 
 #include <KFPTrack.h>
@@ -84,7 +86,6 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> chi2ItsMax{"chi2ItsMax", 15.0f, "its chi2 cut"};
   Configurable<float> ptMin{"ptMin", 3.0f, "minimum pT cut"};
   Configurable<float> ptAssMin{"ptAssMin", 0.15, "minimum pT cut for associated hadrons"};
-  Configurable<float> ptMatch{"ptMatch", 0.001, "pT match in Z->ee and associated tracks"};
   Configurable<float> ptZeeMin{"ptZeeMin", 20.0f, "minimum pT cut for Zee"};
   Configurable<float> chi2TpcMax{"chi2TpcMax", 4.0f, "tpc chi2 cut"};
   Configurable<float> nclItsMin{"nclItsMin", 2.0f, "its # of cluster cut"};
@@ -140,24 +141,46 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> centralityMax{"centralityMax", 101, "maximum cut on centrality selection"};
   Configurable<std::vector<double>> centralityBins{"centralityBins", {0, 20, 60, 100}, "centrality bins"};
 
-  // QA for Z->ee
-  Configurable<bool> enableZeeTrkRecoQA{"enableZeeTrkRecoQA", false, "Enable QA for track info Z->ee reconstruction"};
-  Configurable<bool> enableZeeEmcRecoQA{"enableZeeEmcRecoQA", false, "Enable QA for Emc info Z->ee reconstruction"};
-  Configurable<float> massZMinQA{"massZMinQA", 0.1, "minimum mass cut for Zee Reco QA"};
-  // UE
-  Configurable<int> nRandomCones{"nRandomCones", 100, "number of random cones"};
-  Configurable<float> rcHardE{"rcHardE", 5.0, "hard cluster veto energy"};
-  Configurable<float> rcVetoR{"rcVetoR", 0.4, "veto radius"};
-  Configurable<bool> useUEsub{"useUEsub", true, "apply UE subtraction in isolation"};
+  // QA for Z->ee.
+  // Grouped in a ConfigurableGroup to stay below the O2 limit of 100 task members.
+  struct : ConfigurableGroup {
+    Configurable<bool> enableZeeTrkRecoQA{"enableZeeTrkRecoQA", false, "Enable QA for track info Z->ee reconstruction"};
+    Configurable<bool> enableZeeEmcRecoQA{"enableZeeEmcRecoQA", false, "Enable QA for Emc info Z->ee reconstruction"};
+    Configurable<float> massZMinQA{"massZMinQA", 0.1, "minimum mass cut for Zee Reco QA"};
+  } zeeQaCfg;
+
+  // UE (same remark: grouped, no prefix, option names unchanged)
+  struct : ConfigurableGroup {
+    Configurable<int> nRandomCones{"nRandomCones", 100, "number of random cones"};
+    Configurable<float> rcHardE{"rcHardE", 5.0, "hard cluster veto energy"};
+    Configurable<float> rcVetoR{"rcVetoR", 0.4, "veto radius"};
+    Configurable<bool> useUEsub{"useUEsub", true, "apply UE subtraction in isolation"};
+  } ueCfg;
+
+  // MC : efficiency of the associated hadrons in the Z-h correlation.
+  struct : ConfigurableGroup {
+    std::string prefix = "mcEfficiency"; // JSON group name
+    Configurable<bool> requirePhysicalPrimary{"requirePhysicalPrimary", true, "require isPhysicalPrimary for the generated associated hadrons"};
+    Configurable<bool> requireSameMcCollision{"requireSameMcCollision", true, "require the matched MC particle to belong to the MC collision of the reconstructed one"};
+    ConfigurableAxis confaxisPtHadron{"confaxisPtHadron", {VARIABLE_WIDTH, 0.0, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0, 50.0, 100.0}, "p_{T,hadron} (GeV/c)"};
+    ConfigurableAxis confaxisEtaHadron{"confaxisEtaHadron", {20, -1.0, 1.0}, "#eta_{hadron}"};
+  } mcCfg;
 
   // CCDB service object
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
+  // PDG database, used to get the charge of the generated particles
+  Service<o2::framework::O2DatabasePDG> pdg{};
+
+  // TParticlePDG::Charge() is given in units of |e|/3, a charged particle has |Charge()| >= 1
+  static constexpr double ChargeTolerance = 0.001;
+
   struct HfElectronCandidate {
-    float pt, eta, phi, dcaxyTrk, dcazTrk, eop, energyIso, momIso, dedxTrk, m02Emc;
-    int ntrackIso, nclusterTPC, nclusterITS;
-    HfElectronCandidate(float ptr, float e, float ph, float dcaxy, float dcaz, float ep, float eiso, float piso, float dedx, float m02, int ntrkiso, int nclstpc, int nclsits)
-      : pt(ptr), eta(e), phi(ph), dcaxyTrk(dcaxy), dcazTrk(dcaz), eop(ep), energyIso(eiso), momIso(piso), dedxTrk(dedx), m02Emc(m02), ntrackIso(ntrkiso), nclusterTPC(nclstpc), nclusterITS(nclsits) {}
+    float pt, eta, phi, dcaxyTrk, dcazTrk, eop, energyIso, momIso, nSigmaTpc, m02Emc;
+    int ntrackIso, nclusterTPC, nclusterITS, sign;
+    int64_t indexTrk; // globalIndex of the track, used to remove the Z daughters exactly
+    HfElectronCandidate(float ptr, float e, float ph, float dcaxy, float dcaz, float ep, float eiso, float piso, float nsig, float m02, int ntrkiso, int nclstpc, int nclsits, int sgn, int64_t idxtrk)
+      : pt(ptr), eta(e), phi(ph), dcaxyTrk(dcaxy), dcazTrk(dcaz), eop(ep), energyIso(eiso), momIso(piso), nSigmaTpc(nsig), m02Emc(m02), ntrackIso(ntrkiso), nclusterTPC(nclstpc), nclusterITS(nclsits), sign(sgn), indexTrk(idxtrk) {}
   };
   std::vector<HfElectronCandidate> selectedElectronsIso;
   std::vector<HfElectronCandidate> selectedPositronsIso;
@@ -166,15 +189,22 @@ struct HfTaskElectronWeakBoson {
   struct HfZeeCandidate {
     float pt, eta, phi, mass, ptchild0, ptchild1;
     int charge;
-    HfZeeCandidate(float ptr, float e, float ph, float m, int ch, float ptzee0, float ptzee1)
-      : pt(ptr), eta(e), phi(ph), mass(m), ptchild0(ptzee0), ptchild1(ptzee1), charge(ch) {}
+    int64_t indexChild0, indexChild1; // globalIndex of the two tracks used to build the Z
+    HfZeeCandidate(float ptr, float e, float ph, float m, int ch, float ptzee0, float ptzee1, int64_t idxzee0, int64_t idxzee1)
+      : pt(ptr), eta(e), phi(ph), mass(m), ptchild0(ptzee0), ptchild1(ptzee1), charge(ch), indexChild0(idxzee0), indexChild1(idxzee1) {}
   };
   std::vector<HfZeeCandidate> reconstructedZ;
-  using CollisionsWithCent = soa::Join<aod::Collisions, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>;
+  using CollisionsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>;
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
   // using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>;
   using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::FullTracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi>;
+
+  // MC : same collisions/tracks as above, plus the MC labels. aod::EvSels already comes with
+  // CollisionsWithCent (joining it again would duplicate the table), so the data and the MC
+  // paths see exactly the same event selection.
+  using CollisionsWithCentMc = soa::Join<CollisionsWithCent, o2::aod::McCollisionLabels>;
+  using TrackEleMc = o2::soa::Join<TrackEle, o2::aod::McTrackLabels>;
 
   // pp
   // using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
@@ -202,7 +232,10 @@ struct HfTaskElectronWeakBoson {
   ConfigurableAxis confaxisIsoEnergy{"confaxisIsoEnergy", {255, 0, 2.0}, "E_{iso}"};
   ConfigurableAxis confaxisIsoMomentum{"confaxisIsoMomentum", {255, 0, 2.0}, "p_{iso}"};
   ConfigurableAxis confaxisIsoTrack{"confaxisIsoTrack", {25, -0.5, 24.5}, "Isolation Track"};
-  ConfigurableAxis confaxisDedxTrack{"confaxisDedxTrack", {200, -10, 10}, "dEdx"};
+  // raw TPC dE/dx (arbitrary units, MIP around 50) -- used by hTHnElectrons
+  ConfigurableAxis confaxisDedxTrack{"confaxisDedxTrack", {200, 0, 200}, "dE/dx"};
+  // TPC n-sigma of the associated hadrons -- used by hZHadronDphi
+  ConfigurableAxis confaxisNsigmaHadron{"confaxisNsigmaHadron", {200, -10, 10}, "n#sigma^{#pi}_{TPC}"};
   ConfigurableAxis confaxisInvMassZgamma{"confaxisInvMassZgamma", {150, 0, 150}, "M_{ee} (GeV/c^{2})"};
   ConfigurableAxis confaxisInvMassZ{"confaxisInvMassZ", {130, 20, 150}, "M_{ee} (GeV/c^{2})"};
   ConfigurableAxis confaxisZfrag{"confaxisZfrag", {200, 0, 2.0}, "p_{T,h}/p_{T,Z}"};
@@ -261,7 +294,10 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisNsigma{100, -5, 5, "N#sigma"};
     const AxisSpec axisNsigmaZneg{100, -5, 5, "N#sigma_{pos}"};
     const AxisSpec axisNsigmaZpos{100, -5, 5, "N#sigma_{neg}"};
-    const AxisSpec axisDedx{confaxisDedxTrack, "dEdx"};
+    const AxisSpec axisDedx{confaxisDedxTrack, "dE/dx"};
+    const AxisSpec axisNsigmaHadron{confaxisNsigmaHadron, "n#sigma^{#pi}_{TPC}"};
+    const AxisSpec axisSignHadron{2, -2, 2, "charge sign (hadron)"};
+    const AxisSpec axisNMatch{10, -0.5, 9.5, "N_{cluster} within rMatchMax"};
     const AxisSpec axisE{nBinsE, 0, binEmax, "Energy"};
     const AxisSpec axisM02{100, 0, 1, "M02"};
     const AxisSpec axisM02neg{100, 0, 1, "M02(neg)"};
@@ -343,9 +379,10 @@ struct HfTaskElectronWeakBoson {
     registry.add("hInvMassZeeEmcQAbg", "EMCal QA for invariant mass for Z", HistType::kTHnSparseF, {axisInvMassZ, axisPtZneg, axisPtZpos, axisEopZneg, axisEopZpos, axisM02neg, axisM02pos, axisNsigmaZneg, axisNsigmaZpos, axisIsoEnergyZneg, axisIsoEnergyZpos, axisIsoMomentumZneg, axisIsoMomentumZpos, axisIsoTrackZneg, axisIsoTrackZpos});
     registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoMomentum, axisIsoTrack, axisEta, axisDedx});
     registry.add("hTHnTrMatch", "Track EMC Match", HistType::kTHnSparseF, {axisPt, axisdPhi, axisdEta});
+    registry.add("hNMatchPerTrack", "number of matched clusters within rMatchMax per track", kTH2F, {{axisPt}, {axisNMatch}});
 
     // Z-hadron correlation histograms
-    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", HistType::kTHnSparseF, {axisCentrality, axisSign, axisPtZ, axisDPhiZh, axisDEtaZh, axisZfrag, axisPtHadron, axisDedx});
+    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", HistType::kTHnSparseF, {axisCentrality, axisSign, axisPtZ, axisDPhiZh, axisDEtaZh, axisZfrag, axisPtHadron, axisNsigmaHadron, axisSignHadron});
     registry.add("hZptSpectrum", "Z boson p_{T} spectrum", kTH2F, {{axisSign}, {axisPtZ}});
 
     // hisotgram for EMCal trigger
@@ -355,6 +392,112 @@ struct HfTaskElectronWeakBoson {
     registry.add("hRho", "rho UE density", kTH1F, {axisE});
     registry.add("hSumERC", "RC sumE", kTH1F, {axisE});
     registry.add("hEnergyUE", "UE vs. centrality", kTH2F, {{axisCentrality}, {axisE}});
+
+    // MC : associated-hadron efficiency
+    const AxisSpec axisPtHadronMc{mcCfg.confaxisPtHadron, "p_{T,hadron} (GeV/c)"};
+    const AxisSpec axisEtaHadronMc{mcCfg.confaxisEtaHadron, "#eta_{hadron}"};
+    const AxisSpec axisMcCollCounter{4, -0.5, 3.5, "MC collision selection step"};
+
+    if (doprocessMcGen) {
+      registry.add("hMcGenCollCounter", "generated collisions (0: all, 1: |zvtx| cut, 2: reconstructed & selected)", kTH1D, {axisMcCollCounter});
+      registry.add("hMcGenZvtx", "generated Z vertex", kTH1D, {axisZvtx});
+      // denominator of the efficiency
+      registry.add("hMcGenHadron", "generated primary charged hadrons", HistType::kTHnSparseF, {axisCentrality, axisPtHadronMc, axisEtaHadronMc});
+    }
+
+    if (doprocessMcRec) {
+      registry.add("hMcRecCollCounter", "reconstructed collisions in MC", kTH1D, {axisCounter});
+      // numerator of the efficiency, in generated kinematics (use with hMcGenHadron)
+      registry.add("hMcRecHadronMatchedGenKine", "reconstructed primary charged hadrons, generated kinematics", HistType::kTHnSparseF, {axisCentrality, axisPtHadronMc, axisEtaHadronMc});
+      // same tracks, but in reconstructed kinematics (use to correct in measured bins)
+      registry.add("hMcRecHadronMatchedRecKine", "reconstructed primary charged hadrons, reconstructed kinematics", HistType::kTHnSparseF, {axisCentrality, axisPtHadronMc, axisEtaHadronMc});
+      // purity : all selected tracks and the non-primary / unlabelled sub-samples
+      registry.add("hMcRecHadronAll", "all selected associated tracks", HistType::kTHnSparseF, {axisCentrality, axisPtHadronMc, axisEtaHadronMc});
+      registry.add("hMcRecHadronSecondary", "selected tracks matched to a non-primary particle", HistType::kTHnSparseF, {axisCentrality, axisPtHadronMc, axisEtaHadronMc});
+      registry.add("hMcRecHadronFake", "selected tracks without MC particle", HistType::kTHnSparseF, {axisCentrality, axisPtHadronMc, axisEtaHadronMc});
+      // momentum resolution
+      registry.add("hMcPtGenRec", "generated vs. reconstructed p_{T}", kTH2F, {{axisPtHadronMc}, {axisPtHadronMc}});
+    }
+  }
+
+  // Kinematic + quality selection shared by the data and the MC track loops,
+  // so that the efficiency is evaluated with exactly the same cuts.
+  template <typename TTrack>
+  bool isSelectedTrackKine(TTrack const& track)
+  {
+    if (!track.isGlobalTrackWoPtEta()) {
+      return false;
+    }
+    if (std::abs(track.eta()) > etaTrMax) {
+      return false;
+    }
+    if (applyTrackSys) {
+      if (track.tpcNClsCrossedRows() < nclcrossTpcMin) {
+        return false;
+      }
+      if (std::abs(track.dcaXY()) > dcaxyMax) {
+        return false;
+      }
+      if (track.itsChi2NCl() > chi2ItsMax) {
+        return false;
+      }
+      if (track.tpcChi2NCl() > chi2TpcMax) {
+        return false;
+      }
+      if (track.tpcNClsFound() < nclTpcMin) {
+        return false;
+      }
+      if (track.itsNCls() < nclItsMin) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Centrality selection, applied on the centrality estimator itself (as in processData,
+  // where the cut is done before the variable is possibly overwritten by the multiplicity)
+  template <typename TCollision>
+  bool isSelectedCentrality(TCollision const& collision)
+  {
+    if (!enableCentralityAnalysis) {
+      return true;
+    }
+    float const centrality = o2::hf_centrality::getCentralityColl(collision, centralityEstimator);
+    return (centrality >= centralityMin && centrality <= centralityMax);
+  }
+
+  // Value filled on the centrality axis, following the same priority as in processData
+  template <typename TCollision>
+  float getCentralityValue(TCollision const& collision)
+  {
+    float centrality = 1.0;
+    if (enableCentralityAnalysis) {
+      centrality = o2::hf_centrality::getCentralityColl(collision, centralityEstimator);
+    }
+    if (enableMultiplicityFT0MAnalysis) {
+      centrality = collision.multFT0M();
+    }
+    if (enableMultiplicityPVAnalysis) {
+      centrality = collision.multNTracksPV();
+    }
+    return centrality;
+  }
+
+  // Generated particle counted as an associated hadron
+  template <typename TParticle>
+  bool isChargedPrimary(TParticle const& particle)
+  {
+    if (mcCfg.requirePhysicalPrimary && !particle.isPhysicalPrimary()) {
+      return false;
+    }
+    const TParticlePDG* pdgParticle = pdg->GetParticle(particle.pdgCode());
+    if (!pdgParticle) {
+      return false;
+    }
+    if (std::abs(pdgParticle->Charge()) < ChargeTolerance) {
+      return false;
+    }
+    return true;
   }
 
   double getIsolatedCluster(const o2::aod::EMCALCluster& cluster,
@@ -431,9 +574,9 @@ struct HfTaskElectronWeakBoson {
     const float randomConeArea = o2::constants::math::PI * randomConeR * randomConeR;
 
     std::vector<float> sumErc;
-    sumErc.reserve(nRandomCones);
+    sumErc.reserve(ueCfg.nRandomCones);
 
-    for (int i = 0; i < nRandomCones; i++) {
+    for (int i = 0; i < ueCfg.nRandomCones; i++) {
 
       float etarc = rnd->Uniform(-etaEmcMax, etaEmcMax); // in EMCal acceptance
       float phirc = rnd->Uniform(phiEmcMin, phiEmcMax);  // in EMCal acceptance
@@ -441,7 +584,7 @@ struct HfTaskElectronWeakBoson {
       float energySumRC = 0;
 
       for (const auto& c : clusters) {
-        if (c.energy() > rcHardE) {
+        if (c.energy() > ueCfg.rcHardE) {
           continue;
         }
         double dEtarc = etarc - c.eta();
@@ -471,15 +614,69 @@ struct HfTaskElectronWeakBoson {
     return median / randomConeArea;
   }
 
+  // Outcome of the track - EMCal cluster matching for one track
+  struct HfEmcMatchResult {
+    int64_t posBestMatch = -1; // cursor position of the closest match inside the slice, -1 if none
+    double rMin = 999.9;       // smallest sqrt(dPhi^2 + dEta^2) over the matched clusters
+    double dPhiMin = 999.9;
+    double dEtaMin = 999.9;
+    int nMatchInRadius = 0; // number of matched clusters inside rMatchMax
+    bool isMatched = false; // the closest cluster is inside rMatchMax
+  };
+
+  template <typename TMatchedTracks>
+  HfEmcMatchResult findBestEmcMatch(TMatchedTracks const& matchesOfTrack, float centrality)
+  {
+    HfEmcMatchResult result;
+    int64_t posMatch = -1;
+
+    for (const auto& match : matchesOfTrack) {
+      ++posMatch;
+      const auto& cluster = match.template emcalcluster_as<SelectedClusters>();
+      if (cluster.time() < timeEmcMin || cluster.time() > timeEmcMax) {
+        continue;
+      }
+
+      double const dEta = match.template track_as<TrackEle>().trackEtaEmcal() - cluster.eta();
+      double dPhi = match.template track_as<TrackEle>().trackPhiEmcal() - cluster.phi();
+      dPhi = RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI);
+      double const r = RecoDecay::sqrtSumOfSquares(dPhi, dEta);
+
+      registry.fill(HIST("hMatchPhi"), cluster.phi(), match.template track_as<TrackEle>().trackPhiEmcal());
+      registry.fill(HIST("hMatchEta"), cluster.eta(), match.template track_as<TrackEle>().trackEtaEmcal());
+      registry.fill(HIST("hTHnTrMatch"), match.template track_as<TrackEle>().pt(), dPhi, dEta);
+      registry.fill(HIST("hEMCtime"), cluster.time());
+      registry.fill(HIST("hEnergy"), cluster.energy());
+      registry.fill(HIST("hEnergyMult"), centrality, cluster.energy());
+
+      if (std::abs(dPhi) <= rMatchMax && std::abs(dEta) <= rMatchMax) {
+        result.nMatchInRadius++;
+      }
+
+      // LOG(info) << "r match = " << r;
+      if (r < result.rMin) {
+        result.rMin = r;
+        result.dPhiMin = dPhi;
+        result.dEtaMin = dEta;
+        result.posBestMatch = posMatch;
+        // LOG(info) << "match cl info : " << r << " ; " << cluster.energy();
+      }
+    }
+
+    result.isMatched = (result.posBestMatch >= 0) && (std::abs(result.dPhiMin) <= rMatchMax) && (std::abs(result.dEtaMin) <= rMatchMax);
+    return result;
+  }
+
   void recoMassZee(const KFParticle& kfpIsoEle,
                    int charge,
+                   int64_t indexIsoEle,
                    float centrality,
                    TrackEle const& tracks)
   {
     // LOG(info) << "Invarimass cal by KF particle ";
     for (const auto& track : tracks) {
 
-      if (std::abs(track.pt() - kfpIsoEle.GetPt()) < ptMatch) {
+      if (track.globalIndex() == indexIsoEle) {
         continue;
       }
       if (track.pt() < ptZeeMin) {
@@ -537,16 +734,17 @@ struct HfTaskElectronWeakBoson {
         massZee,
         track.sign() * charge,
         kfpIsoEle.GetPt(),
-        kfpAssEle.GetPt());
+        kfpAssEle.GetPt(),
+        indexIsoEle,
+        track.globalIndex());
     }
   }
 
-  // void process(soa::Filtered<aod::Collisions>::iterator const& collision,
-  void process(soa::Filtered<CollisionsWithCent>::iterator const& collision,
-               aod::BCsWithTimestamps const&,
-               SelectedClusters const& emcClusters,
-               TrackEle const& tracks,
-               o2::aod::EMCALMatchedTracks const& matchedtracks)
+  void processData(soa::Filtered<CollisionsWithCent>::iterator const& collision,
+                   aod::BCsWithTimestamps const&,
+                   SelectedClusters const& emcClusters,
+                   TrackEle const& tracks,
+                   o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
     registry.fill(HIST("hEventCounterInit"), 0.5);
 
@@ -638,7 +836,7 @@ struct HfTaskElectronWeakBoson {
     float rho = 0.f;
     float energyUE = 0.f;
 
-    if (useUEsub) {
+    if (ueCfg.useUEsub) {
       rho = estimateRhoRC(emcClusters);
       energyUE = rho * static_cast<float>(o2::constants::math::PI * rIsolation * rIsolation);
       registry.fill(HIST("hEnergyUE"), centrality, energyUE);
@@ -648,31 +846,8 @@ struct HfTaskElectronWeakBoson {
     // track loop
     for (const auto& track : tracks) {
 
-      if (!track.isGlobalTrackWoPtEta()) {
+      if (!isSelectedTrackKine(track)) {
         continue;
-      }
-      if (std::abs(track.eta()) > etaTrMax) {
-        continue;
-      }
-      if (applyTrackSys) {
-        if (track.tpcNClsCrossedRows() < nclcrossTpcMin) {
-          continue;
-        }
-        if (std::abs(track.dcaXY()) > dcaxyMax) {
-          continue;
-        }
-        if (track.itsChi2NCl() > chi2ItsMax) {
-          continue;
-        }
-        if (track.tpcChi2NCl() > chi2TpcMax) {
-          continue;
-        }
-        if (track.tpcNClsFound() < nclTpcMin) {
-          continue;
-        }
-        if (track.itsNCls() < nclItsMin) {
-          continue;
-        }
       }
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hITSchi2"), track.itsChi2NCl());
@@ -700,11 +875,13 @@ struct HfTaskElectronWeakBoson {
           eop,
           isoEnergy,
           isoMomentum,
-          track.tpcNSigmaPi() * track.sign(),
+          track.tpcNSigmaPi(),
           m02,
           trackCount,
           track.tpcNClsCrossedRows(),
-          track.itsNCls());
+          track.itsNCls(),
+          track.sign(),
+          track.globalIndex());
       }
 
       if (track.pt() < ptMin) {
@@ -730,102 +907,71 @@ struct HfTaskElectronWeakBoson {
       bool isIsolatedTr = false;
 
       if ((tracksofcluster.size() != 0) && isEMCacceptance) {
-        int nMatch = 0;
-        for (const auto& match : tracksofcluster) {
-          if (match.emcalcluster_as<SelectedClusters>().time() < timeEmcMin || match.emcalcluster_as<SelectedClusters>().time() > timeEmcMax) {
-            continue;
+
+        // Pass 1 : QA over every matched cluster, and find the closest one
+        auto const emcMatch = findBestEmcMatch(tracksofcluster, centrality);
+        rMin = emcMatch.rMin;
+        dPhiMin = emcMatch.dPhiMin;
+        dEtaMin = emcMatch.dEtaMin;
+        registry.fill(HIST("hNMatchPerTrack"), track.pt(), emcMatch.nMatchInRadius);
+
+        // Pass 2 : only the closest cluster is used for E/p, isolation and the Z reconstruction
+        if (emcMatch.isMatched) {
+          auto const match = tracksofcluster.iteratorAt(emcMatch.posBestMatch);
+          const auto& cluster = match.emcalcluster_as<SelectedClusters>();
+          float const m02Emc = cluster.m02();
+          float const energyEmc = cluster.energy();
+
+          registry.fill(HIST("hTrMatchR"), match.track_as<TrackEle>().pt(), rMin);
+          registry.fill(HIST("hEnergyNcell"), energyEmc, cluster.nCells());
+
+          eop = energyEmc / match.track_as<TrackEle>().p();
+          m02 = m02Emc;
+          // LOG(info) << "check match cl info : " << cluster.energy();
+          isoEnergy = getIsolatedCluster(cluster, emcClusters, energyUE);
+
+          if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
+            registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, isoMomentum, trackCount, track.eta(), track.tpcSignal());
           }
+          // LOG(info) << "E/p" << eop;
+          registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
 
-          float const m02Emc = match.emcalcluster_as<SelectedClusters>().m02();
-          float const energyEmc = match.emcalcluster_as<SelectedClusters>().energy();
-          double const phiEmc = match.emcalcluster_as<SelectedClusters>().phi();
-          double const etaEmc = match.emcalcluster_as<SelectedClusters>().eta();
-          double const timeEmc = match.emcalcluster_as<SelectedClusters>().time();
-          // LOG(info) << "tr phi0 = " << match.track_as<TrackEle>().phi();
-          // LOG(info) << "tr phi1 = " << track.phi();
-          // LOG(info) << "emc phi = " << phiEmc;
-
-          if (nMatch == 0) {
-            double const dEta = match.track_as<TrackEle>().trackEtaEmcal() - etaEmc;
-            double dPhi = match.track_as<TrackEle>().trackPhiEmcal() - phiEmc;
-            dPhi = RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI);
-
-            registry.fill(HIST("hMatchPhi"), phiEmc, match.track_as<TrackEle>().trackPhiEmcal());
-            registry.fill(HIST("hMatchEta"), etaEmc, match.track_as<TrackEle>().trackEtaEmcal());
-
-            double const r = RecoDecay::sqrtSumOfSquares(dPhi, dEta);
-            // LOG(info) << "r match = " << r;
-            if (r < rMin) {
-              rMin = r;
-              dPhiMin = dPhi;
-              dEtaMin = dEta;
+          if (m02Emc >= m02Min && m02Emc <= m02Max &&
+              match.track_as<TrackEle>().tpcNSigmaEl() > nsigTpcMin && match.track_as<TrackEle>().tpcNSigmaEl() < nsigTpcMax) {
+            registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
+            if (eop > eopMin && eop < eopMax && isoEnergy < energyIsolationMax) {
+              isIsolated = true;
             }
-            registry.fill(HIST("hTHnTrMatch"), match.track_as<TrackEle>().pt(), dPhi, dEta);
-            registry.fill(HIST("hEMCtime"), timeEmc);
-            registry.fill(HIST("hEnergy"), energyEmc);
-            registry.fill(HIST("hEnergyMult"), centrality, energyEmc);
-
-            if (std::abs(dPhi) > rMatchMax || std::abs(dEta) > rMatchMax) {
-              continue;
+            if (eop > eopMin && eop < eopMax && trackCount < trackIsolationMax && isoMomentum < momentumIsolationMax) {
+              isIsolatedTr = true;
             }
 
-            registry.fill(HIST("hTrMatchR"), match.track_as<TrackEle>().pt(), r);
-            registry.fill(HIST("hEnergyNcell"), energyEmc, match.emcalcluster_as<SelectedClusters>().nCells());
+            if (isIsolated && isIsolatedTr) {
+              registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
 
-            const auto& cluster = match.emcalcluster_as<SelectedClusters>();
+              if (match.track_as<TrackEle>().pt() > ptZeeMin) {
+                int pdgIso = kElectron;
+                if (match.track_as<TrackEle>().sign() > 0) {
+                  pdgIso = kPositron;
+                }
+                KFPTrack const kfpTrackIsoEle = createKFPTrackFromTrack(match.track_as<TrackEle>());
+                KFParticle const kfpIsoEle(kfpTrackIsoEle, pdgIso);
+                recoMassZee(kfpIsoEle, match.track_as<TrackEle>().sign(), match.track_as<TrackEle>().globalIndex(), centrality, tracks);
 
-            eop = energyEmc / match.track_as<TrackEle>().p();
-            m02 = m02Emc;
-            // LOG(info) << "eop = " << eop;
-
-            isoEnergy = getIsolatedCluster(cluster, emcClusters, energyUE);
-
-            if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
-              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, isoMomentum, trackCount, track.eta(), track.tpcSignal());
+              } // end of pt cut for e from Z
+            } // end if isolation cut
+            if (isIsolatedTr) {
+              registry.fill(HIST("hEopIsolationTr"), match.track_as<TrackEle>().pt(), eop);
             }
-            // LOG(info) << "E/p" << eop;
-            registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
-            if (match.emcalcluster_as<SelectedClusters>().m02() < m02Min || match.emcalcluster_as<SelectedClusters>().m02() > m02Max) {
-              continue;
-            }
-
-            if (match.track_as<TrackEle>().tpcNSigmaEl() > nsigTpcMin && match.track_as<TrackEle>().tpcNSigmaEl() < nsigTpcMax) {
-              registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
-              if (eop > eopMin && eop < eopMax && isoEnergy < energyIsolationMax) {
-                isIsolated = true;
-              }
-              if (eop > eopMin && eop < eopMax && trackCount < trackIsolationMax && isoMomentum < momentumIsolationMax) {
-                isIsolatedTr = true;
-              }
-
-              if (isIsolated && isIsolatedTr) {
-                registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
-
-                if (match.track_as<TrackEle>().pt() > ptZeeMin) {
-                  int pdgIso = kElectron;
-                  if (match.track_as<TrackEle>().sign() > 0) {
-                    pdgIso = kPositron;
-                  }
-                  KFPTrack const kfpTrackIsoEle = createKFPTrackFromTrack(match.track_as<TrackEle>());
-                  KFParticle const kfpIsoEle(kfpTrackIsoEle, pdgIso);
-                  recoMassZee(kfpIsoEle, match.track_as<TrackEle>().sign(), centrality, tracks);
-
-                } // end of pt cut for e from Z
-              } // end if isolation cut
-              if (isIsolatedTr) {
-                registry.fill(HIST("hEopIsolationTr"), match.track_as<TrackEle>().pt(), eop);
-              }
-            } // end of PID cut
-          } // end of nmatch == 0
-          nMatch++;
-        } // end of cluster match
+          } // end of M02 + PID cut
+        } // end of isMatched
       } // end of cluster
 
       if (rMin < rMatchMax) {
         // LOG(info) << "R mim = " << rMin;
         registry.fill(HIST("hTrMatch_mim"), dPhiMin, dEtaMin);
       }
-      if ((enableZeeTrkRecoQA || enableZeeEmcRecoQA) && track.pt() > ptZeeMin) {
+      if ((zeeQaCfg.enableZeeTrkRecoQA || zeeQaCfg.enableZeeEmcRecoQA) && track.pt() > ptZeeMin) {
         if (track.sign() < 0) {
           selectedElectronsIso.emplace_back(
             track.pt(),
@@ -840,7 +986,9 @@ struct HfTaskElectronWeakBoson {
             m02,
             trackCount,
             track.tpcNClsFound(),
-            track.itsNCls());
+            track.itsNCls(),
+            track.sign(),
+            track.globalIndex());
         } else {
           selectedPositronsIso.emplace_back(
             track.pt(),
@@ -855,7 +1003,9 @@ struct HfTaskElectronWeakBoson {
             m02,
             trackCount,
             track.tpcNClsFound(),
-            track.itsNCls());
+            track.itsNCls(),
+            track.sign(),
+            track.globalIndex());
         }
       }
 
@@ -869,22 +1019,20 @@ struct HfTaskElectronWeakBoson {
         }
         registry.fill(HIST("hZptSpectrum"), zBoson.charge, zBoson.pt);
         for (const auto& trackAss : selectedElectronsAss) {
-          if (std::abs(trackAss.pt - zBoson.ptchild0) < ptMatch) {
-            continue;
-          }
-          if (std::abs(trackAss.pt - zBoson.ptchild1) < ptMatch) {
+          // remove the two tracks used to build this Z, matched exactly by globalIndex
+          if (trackAss.indexTrk == zBoson.indexChild0 || trackAss.indexTrk == zBoson.indexChild1) {
             continue;
           }
           // calculate Z-h correlation
           double const deltaPhi = RecoDecay::constrainAngle(trackAss.phi - zBoson.phi, -o2::constants::math::PIHalf);
           double const ptRatio = trackAss.pt / zBoson.pt;
           double const deltaEta = zBoson.eta - trackAss.eta;
-          registry.fill(HIST("hZHadronDphi"), centrality, zBoson.charge, zBoson.pt, deltaPhi, deltaEta, ptRatio, trackAss.pt, trackAss.dedxTrk);
+          registry.fill(HIST("hZHadronDphi"), centrality, zBoson.charge, zBoson.pt, deltaPhi, deltaEta, ptRatio, trackAss.pt, trackAss.nSigmaTpc, trackAss.sign);
         }
       }
     } // end of Z-hadron correlation
     // Z->ee QA
-    if (enableZeeTrkRecoQA || enableZeeEmcRecoQA) {
+    if (zeeQaCfg.enableZeeTrkRecoQA || zeeQaCfg.enableZeeEmcRecoQA) {
       if (!selectedElectronsIso.empty() && !selectedPositronsIso.empty()) {
         // signal
         for (const auto& trackEle : selectedElectronsIso) {
@@ -894,12 +1042,12 @@ struct HfTaskElectronWeakBoson {
             auto child2 = RecoDecayPtEtaPhi::pVector(trackPos.pt, trackPos.eta, trackPos.phi);
             double const invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
             float const sectorpos = trackPos.phi / o2::constants::math::SectorSpanRad;
-            if (invMass > massZMinQA) {
-              if (enableZeeTrkRecoQA) {
+            if (invMass > zeeQaCfg.massZMinQA) {
+              if (zeeQaCfg.enableZeeTrkRecoQA) {
                 registry.fill(HIST("hInvMassZeeTrkQA"), invMass, trackEle.pt, trackPos.pt, trackEle.dcaxyTrk, trackPos.dcaxyTrk, trackPos.dcazTrk, trackEle.nclusterTPC, trackPos.nclusterTPC, trackEle.nclusterITS, trackPos.nclusterITS, sectorneg, sectorpos, trackEle.eop, trackPos.eop, trackEle.energyIso, trackPos.energyIso, trackEle.momIso, trackPos.momIso, trackEle.ntrackIso, trackPos.ntrackIso);
               }
-              if (enableZeeEmcRecoQA) {
-                registry.fill(HIST("hInvMassZeeEmcQA"), invMass, trackEle.pt, trackPos.pt, trackEle.eop, trackPos.eop, trackEle.m02Emc, trackPos.m02Emc, trackEle.dedxTrk, trackPos.dedxTrk, trackEle.energyIso, trackPos.energyIso, trackEle.momIso, trackPos.momIso, trackEle.ntrackIso, trackPos.ntrackIso);
+              if (zeeQaCfg.enableZeeEmcRecoQA) {
+                registry.fill(HIST("hInvMassZeeEmcQA"), invMass, trackEle.pt, trackPos.pt, trackEle.eop, trackPos.eop, trackEle.m02Emc, trackPos.m02Emc, trackEle.nSigmaTpc, trackPos.nSigmaTpc, trackEle.energyIso, trackPos.energyIso, trackEle.momIso, trackPos.momIso, trackEle.ntrackIso, trackPos.ntrackIso);
               }
             }
           }
@@ -914,12 +1062,12 @@ struct HfTaskElectronWeakBoson {
             auto child2 = RecoDecayPtEtaPhi::pVector(trackEle2.pt, trackEle2.eta, trackEle2.phi);
             float const sectorpos = trackEle2.phi / o2::constants::math::SectorSpanRad;
             double const invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
-            if (invMass > massZMinQA) {
-              if (enableZeeTrkRecoQA) {
+            if (invMass > zeeQaCfg.massZMinQA) {
+              if (zeeQaCfg.enableZeeTrkRecoQA) {
                 registry.fill(HIST("hInvMassZeeTrkQAbg"), invMass, trackEle.pt, trackEle2.pt, trackEle.dcaxyTrk, trackEle2.dcaxyTrk, trackEle2.dcazTrk, trackEle.nclusterTPC, trackEle2.nclusterTPC, trackEle.nclusterITS, trackEle2.nclusterITS, sectorneg, sectorpos, trackEle.eop, trackEle2.eop, trackEle.energyIso, trackEle2.energyIso, trackEle.momIso, trackEle2.momIso, trackEle.ntrackIso, trackEle2.ntrackIso);
               }
-              if (enableZeeEmcRecoQA) {
-                registry.fill(HIST("hInvMassZeeEmcQAbg"), invMass, trackEle.pt, trackEle2.pt, trackEle.eop, trackEle2.eop, trackEle.m02Emc, trackEle2.m02Emc, trackEle.dedxTrk, trackEle2.dedxTrk, trackEle.energyIso, trackEle2.energyIso, trackEle.momIso, trackEle2.momIso, trackEle.ntrackIso, trackEle2.ntrackIso);
+              if (zeeQaCfg.enableZeeEmcRecoQA) {
+                registry.fill(HIST("hInvMassZeeEmcQAbg"), invMass, trackEle.pt, trackEle2.pt, trackEle.eop, trackEle2.eop, trackEle.m02Emc, trackEle2.m02Emc, trackEle.nSigmaTpc, trackEle2.nSigmaTpc, trackEle.energyIso, trackEle2.energyIso, trackEle.momIso, trackEle2.momIso, trackEle.ntrackIso, trackEle2.ntrackIso);
               }
             }
           }
@@ -934,19 +1082,131 @@ struct HfTaskElectronWeakBoson {
             auto child2 = RecoDecayPtEtaPhi::pVector(trackPos2.pt, trackPos2.eta, trackPos2.phi);
             float const sectorpos = trackPos2.phi / o2::constants::math::SectorSpanRad;
             double const invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
-            if (invMass > massZMinQA) {
-              if (enableZeeTrkRecoQA) {
+            if (invMass > zeeQaCfg.massZMinQA) {
+              if (zeeQaCfg.enableZeeTrkRecoQA) {
                 registry.fill(HIST("hInvMassZeeTrkQAbg"), invMass, trackPos.pt, trackPos2.pt, trackPos.dcaxyTrk, trackPos2.dcaxyTrk, trackPos2.dcazTrk, trackPos.nclusterTPC, trackPos2.nclusterTPC, trackPos.nclusterITS, trackPos2.nclusterITS, sectorneg, sectorpos, trackPos.eop, trackPos2.eop, trackPos.energyIso, trackPos2.energyIso, trackPos.momIso, trackPos2.momIso, trackPos.ntrackIso, trackPos2.ntrackIso);
               }
-              if (enableZeeEmcRecoQA) {
-                registry.fill(HIST("hInvMassZeeEmcQAbg"), invMass, trackPos.pt, trackPos2.pt, trackPos.eop, trackPos2.eop, trackPos.m02Emc, trackPos2.m02Emc, trackPos.dedxTrk, trackPos2.dedxTrk, trackPos.energyIso, trackPos2.energyIso, trackPos.momIso, trackPos2.momIso, trackPos.ntrackIso, trackPos2.ntrackIso);
+              if (zeeQaCfg.enableZeeEmcRecoQA) {
+                registry.fill(HIST("hInvMassZeeEmcQAbg"), invMass, trackPos.pt, trackPos2.pt, trackPos.eop, trackPos2.eop, trackPos.m02Emc, trackPos2.m02Emc, trackPos.nSigmaTpc, trackPos2.nSigmaTpc, trackPos.energyIso, trackPos2.energyIso, trackPos.momIso, trackPos2.momIso, trackPos.ntrackIso, trackPos2.ntrackIso);
               }
             }
           }
         } // end of pos-pos paring
       } // check arrays aren't empty
     } // end of Z->ee QA
-  } // process
+  } // processData
+  PROCESS_SWITCH(HfTaskElectronWeakBoson, processData, "process data (Z->ee and Z-h correlation)", true);
+
+  // -------------------------------------------------------------------------
+  // MC : denominator of the associated-hadron efficiency.
+  // Looping over the generated collisions (with the reconstructed ones collected by
+  // soa::SmallGroups) also gives access to the event-loss / split-collision effects
+  // through hMcGenCollCounter.
+  // -------------------------------------------------------------------------
+  void processMcGen(aod::McCollision const& mcCollision,
+                    soa::SmallGroups<CollisionsWithCentMc> const& collisions,
+                    aod::McParticles const& mcParticles)
+  {
+    registry.fill(HIST("hMcGenCollCounter"), 0.5);
+
+    if (std::abs(mcCollision.posZ()) > vtxZ) {
+      return;
+    }
+    registry.fill(HIST("hMcGenCollCounter"), 1.5);
+    registry.fill(HIST("hMcGenZvtx"), mcCollision.posZ());
+
+    // look for a reconstructed collision passing the same event selection as in processData
+    bool isReconstructed = false;
+    float centrality = 1.0;
+    for (const auto& collision : collisions) {
+      if (applySel8 && !collision.sel8()) {
+        continue;
+      }
+      if (std::abs(collision.posZ()) > vtxZ) {
+        continue;
+      }
+      if (!isSelectedCentrality(collision)) {
+        continue;
+      }
+      isReconstructed = true;
+      centrality = getCentralityValue(collision);
+      break;
+    }
+    if (!isReconstructed) {
+      return;
+    }
+    registry.fill(HIST("hMcGenCollCounter"), 2.5);
+
+    for (const auto& particle : mcParticles) {
+      if (!isChargedPrimary(particle)) {
+        continue;
+      }
+      // same acceptance as isSelectedTrackKine() applied to the reconstructed tracks
+      if (std::abs(particle.eta()) > etaTrMax) {
+        continue;
+      }
+      if (particle.pt() < ptAssMin) {
+        continue;
+      }
+      registry.fill(HIST("hMcGenHadron"), centrality, particle.pt(), particle.eta());
+    }
+  } // processMcGen
+  PROCESS_SWITCH(HfTaskElectronWeakBoson, processMcGen, "process MC generated level for the associated-hadron efficiency", false);
+
+  // -------------------------------------------------------------------------
+  // MC : numerator of the associated-hadron efficiency (and purity).
+  // The track selection is identical to the one applied to selectedElectronsAss
+  // in processData.
+  // -------------------------------------------------------------------------
+  void processMcRec(soa::Filtered<CollisionsWithCentMc>::iterator const& collision,
+                    TrackEleMc const& tracks,
+                    aod::McParticles const&,
+                    aod::McCollisions const&)
+  {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+
+    if (!isSelectedCentrality(collision)) {
+      return;
+    }
+    float const centrality = getCentralityValue(collision);
+    registry.fill(HIST("hMcRecCollCounter"), 0.5);
+
+    for (const auto& track : tracks) {
+      if (!isSelectedTrackKine(track)) {
+        continue;
+      }
+      if (track.pt() < ptAssMin) {
+        continue;
+      }
+
+      registry.fill(HIST("hMcRecHadronAll"), centrality, track.pt(), track.eta());
+
+      if (!track.has_mcParticle()) {
+        registry.fill(HIST("hMcRecHadronFake"), centrality, track.pt(), track.eta());
+        continue;
+      }
+
+      auto const mcParticle = track.mcParticle();
+
+      // reject pileup : the matched particle must come from this MC collision
+      if (mcCfg.requireSameMcCollision && mcParticle.mcCollisionId() != collision.mcCollisionId()) {
+        registry.fill(HIST("hMcRecHadronSecondary"), centrality, track.pt(), track.eta());
+        continue;
+      }
+      if (!isChargedPrimary(mcParticle)) {
+        registry.fill(HIST("hMcRecHadronSecondary"), centrality, track.pt(), track.eta());
+        continue;
+      }
+
+      registry.fill(HIST("hMcRecHadronMatchedGenKine"), centrality, mcParticle.pt(), mcParticle.eta());
+      registry.fill(HIST("hMcRecHadronMatchedRecKine"), centrality, track.pt(), track.eta());
+      registry.fill(HIST("hMcPtGenRec"), mcParticle.pt(), track.pt());
+    }
+  } // processMcRec
+  PROCESS_SWITCH(HfTaskElectronWeakBoson, processMcRec, "process MC reconstructed level for the associated-hadron efficiency", false);
+
 }; // struct HfTaskElectronWeakBoson
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
