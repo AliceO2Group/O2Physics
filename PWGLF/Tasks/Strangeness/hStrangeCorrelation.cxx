@@ -148,6 +148,7 @@ struct HStrangeCorrelation {
     Configurable<bool> doCorrelationsHadronV0daughter{"doCorrelationsHadronV0daughter", false, "if true, do correlations of hadrons with V0 daughters"};
     Configurable<bool> doLocalDensityStudy{"doLocalDensityStudy", false, "if true, create and fill the pt vs eta vs local density spectra of triggers and V0s"};
     Configurable<float> localDensityConeRadius{"localDensityConeRadius", 0.4, "radius of the cone in which the local density is counted"};
+    Configurable<bool> doMultEstimatorResponse{"doMultEstimatorResponse", false, "processSameEventHV0s: fill MultEstimatorResponse, multNTracksPVeta1 vs FT0M percentile and amplitude, with the event selection of PairLossK0/EventRecoEfficiency (no INEL cuts)"};
   } masterConfigurations;
 
   // master analysis switches
@@ -189,6 +190,9 @@ struct HStrangeCorrelation {
     ConfigurableAxis axisMidrapidityMultiplicity{"axisMidrapidityMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Midrapidity Multiplicity axis in model prediction process"};
     ConfigurableAxis axisNchGen{"axisNchGen", {151, -0.5f, 150.5f}, "generated charged primaries in |eta| < 1"};
     ConfigurableAxis axisNRecoCollisions{"axisNRecoCollisions", {6, -0.5f, 5.5f}, "reconstructed collisions per MC collision"};
+    // finer than axisMult but containing all its default edges, so the analysis classes can be recovered by merging bins
+    ConfigurableAxis axisCentFT0M{"axisCentFT0M", {VARIABLE_WIDTH, 0.0f, 0.01f, 0.1f, 0.5f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 45.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "FT0M percentile of the multNTracksPVeta1 vs FT0M response"};
+    ConfigurableAxis axisMultFT0M{"axisMultFT0M", {1000, 0.0f, 20000.0f}, "FT0M amplitude of the multNTracksPVeta1 vs FT0M response"};
 
   } axesConfigurations;
 
@@ -329,12 +333,13 @@ struct HStrangeCorrelation {
     //                       comment on runGenLevelStudy in processPairLossK0MC
     //   doEventRecoEfficiencyStudy
     //                       PairLossK0/EventRecoEfficiency: MC-collision
-    //                       reconstruction efficiency and Nch^gen vs Nch^reco
-    //                       response, see runEventRecoEfficiencyStudy
+    //                       reconstruction efficiency, Nch^gen vs Nch^reco and
+    //                       Nch^reco vs FT0M (percentile and amplitude) responses,
+    //                       see runEventRecoEfficiencyStudy
     Configurable<bool> doStageDiagnostics{"doStageDiagnostics", true, "part 1: fill the PairLossK0 truth-pair reconstruction ladder and its diagnostics"};
     Configurable<bool> doRecComparison{"doRecComparison", false, "part 2: fill the PairLossK0/Comparison cumulative Rec/Truth/Gen/Final ladder (runs the exact reconstructed path internally)"};
     Configurable<bool> doGenLevelStudy{"doGenLevelStudy", false, "part 3: fill the PairLossK0/GenStudy generated-vs-reconstructed split, using generator-level event selection only"};
-    Configurable<bool> doEventRecoEfficiencyStudy{"doEventRecoEfficiencyStudy", false, "fill PairLossK0/EventRecoEfficiency: Nch^gen (charged primaries, |eta| < 1) of all, reconstructed and selected MC collisions, and Nch^gen vs multNTracksPVeta1"};
+    Configurable<bool> doEventRecoEfficiencyStudy{"doEventRecoEfficiencyStudy", false, "fill PairLossK0/EventRecoEfficiency: Nch^gen (charged primaries, |eta| < 1) of all, reconstructed and selected MC collisions, Nch^gen vs multNTracksPVeta1 and multNTracksPVeta1 vs FT0M percentile and amplitude"};
     Configurable<bool> applyINELSelectionAtGenLevel{"applyINELSelectionAtGenLevel", false, "part 2 (pp only): replace the reconstructed INEL cuts by Nch^gen >= 1 of the MC collision in the Rec, Gen, Truth and Final stages (selectINELgtN is ignored) and fill only PairLossK0/Comparison/NchGen (Rec and Gen vs Nch^gen, integrated over vertex z and multiplicity); requires doRecComparison and applyNewMCSelection"};
     ConfigurableAxis axisComparisonNchGen{"axisComparisonNchGen", {VARIABLE_WIDTH, 0.5f, 4.5f, 9.5f, 19.5f, 1000.5f}, "Nch^gen classes (charged primaries in |eta| < 1) of PairLossK0/Comparison/NchGen"};
     // Generated charged multiplicity of the MC collision, counted in |eta| < 0.8
@@ -881,7 +886,11 @@ struct HStrangeCorrelation {
     const double maxRadius = pairLossK0Configurations.maxRadius;
     const double radiusStep = pairLossK0Configurations.radiusStep;
 
-    for (double radius = startRadius; radius <= maxRadius + 0.5 * radiusStep; radius += radiusStep) {
+    // radii startRadius + i * radiusStep up to maxRadius, with half a step of tolerance;
+    // nRadii <= 0 (no radius) if startRadius is beyond that
+    const int nRadii = static_cast<int>(std::floor((maxRadius - startRadius) / radiusStep + 0.5)) + 1;
+    for (int iRadius = 0; iRadius < nRadii; ++iRadius) {
+      const double radius = startRadius + iRadius * radiusStep;
       const double daughterArgument = daughterPhase * radius;
       const double triggerArgument = triggerPhase * radius;
       if (std::abs(daughterArgument) > 1.0 || std::abs(triggerArgument) > 1.0) {
@@ -1257,9 +1266,13 @@ struct HStrangeCorrelation {
     double phaseProton = (-0.3 * B * assoc[2]) / (2 * assoc[1]);
     double phaseTrack = (-0.3 * B * trigg[2]) / (2 * trigg[1]);
 
-    for (double r = MinRadiusTPC; r <= MaxRadiusTPC; r += 0.05) {
+    // radii MinRadiusTPC + i * RadiusStep below MaxRadiusTPC: 0.80 to 2.45 m
+    constexpr double RadiusStep = 0.05;
+    constexpr int NRadii = 34;
+    for (int iRadius = 0; iRadius < NRadii; ++iRadius) {
+      const double r = MinRadiusTPC + iRadius * RadiusStep;
       dPhiStar = dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r);
-      dPhiStarMean += (dPhiStar / 34);
+      dPhiStarMean += (dPhiStar / NRadii);
     }
 
     return dPhiStarMean;
@@ -2826,6 +2839,16 @@ struct HStrangeCorrelation {
       // Per reconstructed collision passing the Rec event selection without INEL
       // cuts, no |vz_gen| cut: the same collisions the Rec path sees before its INEL cut
       histos.add("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1", "reconstructed collisions passing the Rec event selection without INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);multNTracksPVeta1", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisNchGen});
+      histos.add("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsCentFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M percentile", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisCentFT0M});
+      histos.add("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsMultFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M amplitude", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisMultFT0M});
+    }
+
+    if (doprocessSameEventHV0s && masterConfigurations.doMultEstimatorResponse) {
+      // Same histograms and event selection as the multNTracksPVeta1 vs FT0M responses of
+      // PairLossK0/EventRecoEfficiency, filled per reconstructed collision in data
+      // (or in MC reco, which then reproduces the PairLossK0 ones)
+      histos.add("MultEstimatorResponse/hNTracksPVeta1VsCentFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M percentile", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisCentFT0M});
+      histos.add("MultEstimatorResponse/hNTracksPVeta1VsMultFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M amplitude", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisMultFT0M});
     }
 
     if (doprocessPairLossK0MC && pairLossK0Configurations.doRecComparison) {
@@ -3559,6 +3582,17 @@ struct HStrangeCorrelation {
     return true;
   }
 
+  // event selection of runSameEventHV0s before its INEL cut: trigger presence +
+  // isCollisionSelected (pp) or isCollisionSelectedPbPb, without filling hEventSelection
+  template <typename TCollision>
+  bool isCollisionSelectedNoInel(TCollision const& collision)
+  {
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return false;
+    }
+    return masterConfigurations.doPPAnalysis ? isCollisionSelected(collision, false) : isCollisionSelectedPbPb(collision, false);
+  }
+
   double getMagneticField(uint64_t timestamp)
   {
     static parameters::GRPMagField* grpo = nullptr;
@@ -3904,10 +3938,15 @@ struct HStrangeCorrelation {
                          collision.posX(), collision.posY(), collision.posZ(), cent, collision.multNTracksPVeta1(), bField);
   }
 
-  void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision,
+  void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults, aod::FT0Mults>::iterator const& collision,
                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
                             V0DatasWithoutTrackX const&, TracksComplete const& tracks, aod::BCsWithTimestamps const&)
   {
+    // filled here and not in runSameEventHV0s, which the PairLoss Rec replica also runs
+    if (masterConfigurations.doMultEstimatorResponse && isCollisionSelectedNoInel(collision)) {
+      histos.fill(HIST("MultEstimatorResponse/hNTracksPVeta1VsCentFT0M"), collision.multNTracksPVeta1(), collision.centFT0M());
+      histos.fill(HIST("MultEstimatorResponse/hNTracksPVeta1VsMultFT0M"), collision.multNTracksPVeta1(), collision.multFT0M());
+    }
     runSameEventHV0s(collision, associatedV0s, triggerTracks, tracks);
   }
 
@@ -4617,7 +4656,7 @@ struct HStrangeCorrelation {
     }
   }
   void processPairLossK0MC(aod::McCollision const& mcCollision,
-                           soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>> const& recCollisions,
+                           soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults, aod::FT0Mults>> const& recCollisions,
                            aod::McParticles const& mcParticles,
                            aod::McTrackLabels const& trackLabels,
                            aod::V0MCCores const& v0MCCores,
@@ -5260,20 +5299,16 @@ struct HStrangeCorrelation {
     };
 
     // MC-collision reconstruction efficiency vs Nch^gen and the Nch^gen vs
-    // multNTracksPVeta1 response. The event selection is the one runSameEventHV0s
-    // applies before its INEL cut: trigger presence + isCollisionSelected
+    // multNTracksPVeta1 and multNTracksPVeta1 vs FT0M (percentile and amplitude)
+    // responses. The event selection is the one runSameEventHV0s applies before
+    // its INEL cut: trigger presence + isCollisionSelected (isCollisionSelectedNoInel)
     auto runEventRecoEfficiencyStudy = [&]() {
-      auto passesRecEventSelectionNoInel = [&](auto const& collision) {
-        if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
-          return false;
-        }
-        return masterConfigurations.doPPAnalysis ? isCollisionSelected(collision, false) : isCollisionSelectedPbPb(collision, false);
-      };
-
-      // Response: one entry per reconstructed collision, as in the Rec path
+      // Responses: one entry per reconstructed collision, as in the Rec path
       for (auto const& collision : recCollisions) {
-        if (passesRecEventSelectionNoInel(collision)) {
+        if (isCollisionSelectedNoInel(collision)) {
           histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1"), nChGen, collision.multNTracksPVeta1());
+          histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsCentFT0M"), collision.multNTracksPVeta1(), collision.centFT0M());
+          histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsMultFT0M"), collision.multNTracksPVeta1(), collision.multFT0M());
         }
       }
 
@@ -5295,7 +5330,7 @@ struct HStrangeCorrelation {
           continue;
         }
         largestNContributors = collision.numContrib();
-        bestCollisionSelectedNoInel = passesRecEventSelectionNoInel(collision);
+        bestCollisionSelectedNoInel = isCollisionSelectedNoInel(collision);
         // reconstructed-level INEL cuts; the Pb-Pb event selection has none
         bestCollisionSelected = bestCollisionSelectedNoInel && (!masterConfigurations.doPPAnalysis || isCollisionInelSelected(collision));
       }
