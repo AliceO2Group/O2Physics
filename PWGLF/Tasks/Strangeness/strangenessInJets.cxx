@@ -1900,7 +1900,6 @@ struct StrangenessInJets {
             continue;
           if (!motherPos.isPhysicalPrimary())
             continue;
-          double maxPseudorap = 0.8;
           if (std::abs(motherPos.eta()) > maxPseudorap)
             continue;
 
@@ -1920,7 +1919,6 @@ struct StrangenessInJets {
       }
 
       for (auto const& particle : mcParticlesPerColl) {
-        double maxPseudorap = 0.8;
         if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= maxPseudorap) {
           switch (particle.pdgCode()) {
             case kK0Short:
