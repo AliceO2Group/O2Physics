@@ -22,6 +22,7 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
+#include "PWGHF/HFC/Utils/utilsCorrelations.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -186,9 +187,12 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::HcCandSelInfos> candSelInfo;
   Produces<aod::AssocTrackReds> assocTrackReduced;
   Produces<aod::AssocTrackSels> assocTrackSelInfo;
+  Produces<aod::BMotherPairInfo> entryDplusHadronBMotherInfo;
+  Produces<aod::BMotherCandInfo> entryDplusCandBMotherInfo;
 
   static constexpr std::size_t NDaughters{3u};
-  static constexpr float EtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
+  static constexpr float EtaDaughtersMax = 0.8f;     // Eta cut on daughters of D+ meson as Run2
+  static constexpr int8_t DepthMaxDplusDaughters{2}; // max. depth of the D+ daughters in the decay chain (resonant channels)
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -401,6 +405,9 @@ struct HfCorrelatorDplusHadrons {
       // Count triggers
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle.pt());
 
+      // beauty-mother information
+      const auto [ptB, deltaPhiBtoD] = hf_correlations::getBMotherInfoMcGen(particle, particlesToLoop);
+
       for (const auto& particleAssoc : groupedMcParticles) {
 
         if (std::abs(particleAssoc.eta()) > etaTrackMax ||
@@ -447,6 +454,7 @@ struct HfCorrelatorDplusHadrons {
         entryDplusHadronGenInfo(isDplusPrompt,
                                 particleAssoc.isPhysicalPrimary(),
                                 trackOrigin);
+        entryDplusHadronBMotherInfo(ptB, deltaPhiBtoD);
       }
     }
   }
@@ -552,7 +560,7 @@ struct HfCorrelatorDplusHadrons {
 
       int indexHfcReducedCollision = collReduced.lastIndex() + 1;
 
-      // Ds fill histograms and Dplus candidates information stored
+      // Dplus candidates information stored
       for (const auto& candidate : candsDplusThisColl) {
         std::vector<float> outputMl = {-1., -1., -1.};
         // candidate selected
@@ -631,6 +639,8 @@ struct HfCorrelatorDplusHadrons {
         bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
 
         std::vector<float> outputMl = {-1., -1., -1.};
+        // beauty-mother information (generated B, reconstructed D+)
+        const auto [ptB, deltaPhiBtoD] = hf_correlations::getBMotherInfoMcRec<TracksWithMc>(candidate, mcParticles, Pdg::kDPlus, DepthMaxDplusDaughters);
 
         // fill invariant mass plots from Dplus signal and background candidates
         registry.fill(HIST("hMassDplusMcRec"), HfHelper::invMassDplusToPiKPi(candidate), efficiencyWeightD);
@@ -663,6 +673,7 @@ struct HfCorrelatorDplusHadrons {
           registry.fill(HIST("hMassDplusMcRecSig"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), efficiencyWeightD);
           entryDplusCandRecoInfo(HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
           entryDplusCandGenInfo(isDplusPrompt);
+          entryDplusCandBMotherInfo(ptB, deltaPhiBtoD);
         } else {
           registry.fill(HIST("hPtCandMcRecBkg"), candidate.pt());
           registry.fill(HIST("hEtaMcRecBkg"), candidate.eta());
@@ -691,6 +702,7 @@ struct HfCorrelatorDplusHadrons {
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(HfHelper::invMassDplusToPiKPi(candidate), isDplusSignal);
           entryDplusHadronMlInfo(outputMl[0], outputMl[1], outputMl[2]);
+          entryDplusHadronBMotherInfo(ptB, deltaPhiBtoD);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -866,6 +878,8 @@ struct HfCorrelatorDplusHadrons {
                              poolBin);
         entryDplusHadronRecoInfo(HfHelper::invMassDplusToPiKPi(candidate), isDplusSignal);
         entryDplusHadronGenInfo(isDplusPrompt, isPhysicalPrimary, trackOrigin);
+        const auto [ptB, deltaPhiBtoD] = hf_correlations::getBMotherInfoMcRec<TracksWithMc>(candidate, mcParticles, Pdg::kDPlus, DepthMaxDplusDaughters);
+        entryDplusHadronBMotherInfo(ptB, deltaPhiBtoD);
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
@@ -910,6 +924,8 @@ struct HfCorrelatorDplusHadrons {
                              poolBin);
         entryDplusHadronRecoInfo(MassDPlus, true);
         entryDplusHadronGenInfo(isDplusPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
+        const auto [ptB, deltaPhiBtoD] = hf_correlations::getBMotherInfoMcGen(candidate, mcParticles);
+        entryDplusHadronBMotherInfo(ptB, deltaPhiBtoD);
       }
     }
   }
