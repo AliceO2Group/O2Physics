@@ -432,8 +432,8 @@ struct TwoPhotonMcTask {
         for (std::size_t i = 0; i < StatusLabels.size(); ++i) {
           hStatus->GetXaxis()->SetBinLabel(static_cast<int>(i) + 1, StatusLabels[i].data());
         }
-        registry.add(Form("PCMEMC/SameParticle/hLeg%sDp", type.data()), Form("cluster from a V0 leg: closest %s match in #it{p}", title.data()), HistType::kTH1F, {axisDp});
-        registry.add(Form("PCMEMC/SameParticle/hLeg%sResidual", type.data()), Form("cluster from a V0 leg: residual of the %s match", title.data()), HistType::kTH3F, {axisDeltaEta, axisDeltaPhi, axisPtLeg});
+        registry.add(std::format("PCMEMC/SameParticle/hLeg{}Dp", type.data()).data(), std::format("cluster from a V0 leg: closest {} match in #it{p}", title.data()).data(), HistType::kTH1F, {axisDp});
+        registry.add(std::format("PCMEMC/SameParticle/hLeg{}Residual", type.data()).data(), std::format("cluster from a V0 leg: residual of the {} match", title.data()).data(), HistType::kTH3F, {axisDeltaEta, axisDeltaPhi, axisPtLeg});
       }
     }
 
