@@ -730,12 +730,9 @@ struct HfCorrelatorDMesonPairs {
 
     int cntD0 = 0;
 
-    for (const auto& candidate : candidates) {
-      analysePid(candidate);
-    }
-
     getCountersPerEvent(candidates);
     for (const auto& candidate1 : candidates) {
+      analysePid(candidate1);
 
       outputMlD0Cand1.clear();
       outputMlD0barCand1.clear();
@@ -912,12 +909,10 @@ struct HfCorrelatorDMesonPairs {
 
   void processMcRec(SelCollisionsWithD0::iterator const& collision, CandidatesD0McRec const& candidates, aod::Tracks const&)
   {
-    for (const auto& candidate : candidates) {
-      analysePid(candidate);
-    }
 
     getCountersPerEvent(candidates);
     for (const auto& candidate1 : candidates) {
+      analysePid(candidate1);
 
       outputMlD0Cand1.clear();
       outputMlD0barCand1.clear();
