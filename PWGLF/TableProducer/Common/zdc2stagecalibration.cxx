@@ -78,9 +78,10 @@ struct zdc2stagecalibration {
   Configurable<bool> deriveSpatialCalib{"deriveSpatialCalib", false, "store spatial regression moments after gain correction"};
   Configurable<bool> deriveQRecentering{"deriveQRecentering", false, "store Q-vector recentering regression moments after gain and spatial correction"};
   Configurable<bool> useQRecentering{"useQRecentering", false, "apply Q-vector recentering calibration"};
-  Configurable<int> qRecenteringMethod{"qRecenteringMethod", 0, "Q recentering method: 0=current regression, 1=multidimensional cubic regression"};
+  Configurable<int> qRecenteringMethod{"qRecenteringMethod", 0, "Q recentering method: 0=current regression, 1=multidimensional cubic regression, 4=structured71 regression"};
   Configurable<std::string> confQRecenteringPath{"confQRecenteringPath", "", "CCDB path to the current run-wise Q-vector recentering coefficients"};
   Configurable<std::string> confQRecenteringMultidimPath{"confQRecenteringMultidimPath", "", "CCDB path to the multidimensional cubic Q-vector recentering coefficients"};
+  Configurable<std::string> confQRecenteringStructured71Path{"confQRecenteringStructured71Path", "", "CCDB path to the 71-feature structured Q-vector recentering coefficients"};
 
   Configurable<int> cfgSpatialCalibBins{
     "cfgSpatialCalibBins", 30,
@@ -128,8 +129,8 @@ struct zdc2stagecalibration {
   void init(o2::framework::InitContext&)
   {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
-    if (qRecenteringMethod.value < 0 || qRecenteringMethod.value > 1) {
-      LOGF(fatal, "Unsupported qRecenteringMethod=%d. Use 0 for the current regression or 1 for the multidimensional cubic regression.", qRecenteringMethod.value);
+    if (qRecenteringMethod.value != 0 && qRecenteringMethod.value != 1 && qRecenteringMethod.value != 4) {
+      LOGF(fatal, "Unsupported qRecenteringMethod=%d. Use 0 for the current regression, 1 for the multidimensional cubic regression or 4 for the structured71 regression.", qRecenteringMethod.value);
     }
 
     const int nTimeBins = static_cast<int>(std::ceil(cfgMaxRunHours.value * 60.f / cfgTimeSliceMinutes.value));
@@ -324,12 +325,19 @@ struct zdc2stagecalibration {
       }
     }
     if (calibrationStage.value == 2 && useQRecentering.value) {
-      const std::string qRecenteringPath = qRecenteringMethod.value == 1 ? confQRecenteringMultidimPath.value : confQRecenteringPath.value;
+      const std::string qRecenteringPath = qRecenteringMethod.value == 4 ? confQRecenteringStructured71Path.value : (qRecenteringMethod.value == 1 ? confQRecenteringMultidimPath.value : confQRecenteringPath.value);
       if (!qRecenteringPath.empty()) {
         qRecenteringProfile = ccdb->getForTimeStamp<TH3D>(qRecenteringPath, timestamp);
       }
       if (!qRecenteringProfile) {
         LOGF(warn, "No ZDC Q-recentering calibration found for run %d at timestamp %llu", runNumber, static_cast<unsigned long long>(timestamp));
+      } else if (qRecenteringMethod.value == 4) {
+        const bool structuredMapOK = qRecenteringProfile->GetYaxis()->GetNbins() == kQRecenteringStructuredNFeatures &&
+                                     std::string(qRecenteringProfile->GetYaxis()->GetBinLabel(kQRecenteringMultidimNFeatures + 1)) == "(T--0.8)_+^3" &&
+                                     std::string(qRecenteringProfile->GetYaxis()->GetBinLabel(kQRecenteringStructuredNFeatures)) == "(Vz-+0.8)_+^3";
+        if (!structuredMapOK) {
+          LOGF(fatal, "CCDB object at %s is not a valid structured71 map for run %d", qRecenteringPath.c_str(), runNumber);
+        }
       }
     }
   }
@@ -929,6 +937,24 @@ struct zdc2stagecalibration {
         for (int component = 0; component < kQRecenteringNComponents; ++component) {
           double predictedBias = 0.0;
           for (int i = 0; i < kQRecenteringNFeatures; ++i) {
+            const double coefficient = qRecenteringProfile->GetBinContent(qRecenteringProfile->FindBin(centrality, i + 0.5, component + 0.5));
+            if (!std::isfinite(coefficient)) {
+              qRecenteringOK = false;
+              break;
+            }
+            predictedBias += coefficient * qFeatures[i];
+          }
+          if (!qRecenteringOK || !std::isfinite(predictedBias)) {
+            qRecenteringOK = false;
+            break;
+          }
+          qValues[component] -= predictedBias;
+        }
+      } else if (qRecenteringMethod.value == 4) {
+        const auto qFeatures = makeQRecenteringStructuredFeatures(timeFromSOR, vx, vy, vz);
+        for (int component = 0; component < kQRecenteringNComponents; ++component) {
+          double predictedBias = 0.0;
+          for (int i = 0; i < kQRecenteringStructuredNFeatures; ++i) {
             const double coefficient = qRecenteringProfile->GetBinContent(qRecenteringProfile->FindBin(centrality, i + 0.5, component + 0.5));
             if (!std::isfinite(coefficient)) {
               qRecenteringOK = false;
