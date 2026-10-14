@@ -100,14 +100,13 @@ struct CorrReso {
     Configurable<int> cfgCorrLevel{"cfgCorrLevel", 0, "calibration step: 0 = no corr, 1 = gain corr"};
   } cfgGeneral;
 
-  struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
-    O2_DEFINE_CONFIGURABLE(cfgEfficiencyNch, std::string, "", "CCDB path to multiplicity dependent efficiency object")
-    O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
-    O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
-    O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
-    O2_DEFINE_CONFIGURABLE(cfgLocalEfficiencyNch, bool, false, "Use local multiplicity dependent efficiency object");
-  } cfgEffWeights;
+  struct : ConfigurableGroup{
+             O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+               O2_DEFINE_CONFIGURABLE(cfgEfficiencyNch, std::string, "", "CCDB path to multiplicity dependent efficiency object")
+                 O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
+                   O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
+                     O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
+                       O2_DEFINE_CONFIGURABLE(cfgLocalEfficiencyNch, bool, false, "Use local multiplicity dependent efficiency object")} cfgEffWeights;
 
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgGlobalPtMin, float, 0.2f, "minimum accepted track pT")
@@ -115,7 +114,7 @@ struct CorrReso {
     O2_DEFINE_CONFIGURABLE(cfgGlobalEta, float, 0.8f, "Eta cut")
     O2_DEFINE_CONFIGURABLE(cfgGlobalChi2prTPCcls, float, 2.5f, "Maximum chi2 per TPC clusters")
     O2_DEFINE_CONFIGURABLE(cfgGlobalDCAz, float, 2.0f, "Maximum DCA to vertex z")
-    Configurable<std::vector<std::string>> cfgTrackCutsDCAxy{"cfgTrackCutsDCAxy", std::vector<std::string>{"(0.0026+0.005/(x^1.01))", "(0.0026+0.005/(x^1.01))"}, "Functional form of pt-dependent DCAxy cut"};
+    Configurable<std::vector<std::string>> cfgTrackCutsDCAxy{"cfgTrackCutsDCAxy", std::vector<std::string>{"[0]*(0.0026+0.005/(x^1.01))", "[0]*(0.0026+0.005/(x^1.01))"}, "Functional form of pt-dependent DCAxy cut"};
     Configurable<std::vector<std::string>> cfgTrackCutsDCAz{"cfgTrackCutsDCAz", std::vector<std::string>{"", ""}, "Functional form of pt-dependent DCAz cut"};
     Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {LongArrayFloat.front().data(), 10, 2, {"PtMin", "PtMax", "EtaCut", "Chi2PrTpcCls", "TpcCluster", "TpcCrossedRows", "ItsCluster", "DCAz", "DCAzNsigma", "DCAxyNsigma"}, {"General", "SelNch"}}, "Labeled array for track selections"};
   } cfgTrkSel;
@@ -128,27 +127,27 @@ struct CorrReso {
     O2_DEFINE_CONFIGURABLE(cfgMinMultForCorrelations, int, 0, "minimum multiplicity for correlations")
     O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
     O2_DEFINE_CONFIGURABLE(cfgSelCollByNch, bool, true, "Select collisions by Nch or centrality")
-    O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
+    O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A")
     O2_DEFINE_CONFIGURABLE(cfgMinCentForCorrelations, int, 0, "minimum centrality for correlations")
     O2_DEFINE_CONFIGURABLE(cfgMaxCentForCorrelations, int, 20, "maximum centrality for correlations")
-    O2_DEFINE_CONFIGURABLE(cfgUseCol2ForMixedEvSel, bool, true, "Use Mult/Cent cut on collision 2 during mixed event");
+    O2_DEFINE_CONFIGURABLE(cfgUseCol2ForMixedEvSel, bool, true, "Use Mult/Cent cut on collision 2 during mixed event")
     O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking (CBT)', 'CBT_hadronPID' ")
     Configurable<LabeledArray<int>> cfgUseEventCuts{"cfgUseEventCuts", {LongArrayInt.front().data(), 14, 1, {"Filtered Events", "Sel8", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kNoCollInTimeRangeStandard", "kIsGoodITSLayersAll", "kIsGoodITSLayer0123", "kNoCollInRofStandard", "kNoHighMultCollInPrevRof", "Occupancy", "Multcorrelation", "T0AV0ACut"}, {"EvCuts"}}, "Labeled array (int) for various cuts on resonances"};
   } cfgEvSel;
 
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
-    O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut")
+    O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut")
     O2_DEFINE_CONFIGURABLE(cfgMultT0CCutEnabled, bool, false, "Enable Global multiplicity vs T0C centrality cut")
     Configurable<std::vector<double>> cfgMultT0CCutPars{"cfgMultT0CCutPars", std::vector<double>{143.04, -4.58368, 0.0766055, -0.000727796, 2.86153e-06, 23.3108, -0.36304, 0.00437706, -4.717e-05, 1.98332e-07}, "Global multiplicity vs T0C centrality cut parameter values"};
     O2_DEFINE_CONFIGURABLE(cfgMultPVT0CCutEnabled, bool, false, "Enable PV multiplicity vs T0C centrality cut")
     Configurable<std::vector<double>> cfgMultPVT0CCutPars{"cfgMultPVT0CCutPars", std::vector<double>{195.357, -6.15194, 0.101313, -0.000955828, 3.74793e-06, 30.0326, -0.43322, 0.00476265, -5.11206e-05, 2.13613e-07}, "PV multiplicity vs T0C centrality cut parameter values"};
-    O2_DEFINE_CONFIGURABLE(cfgMultMultPVHighCutFunction, std::string, "[0]+[1]*x + 5.*([2]+[3]*x)", "Functional for multiplicity correlation cut");
-    O2_DEFINE_CONFIGURABLE(cfgMultMultPVLowCutFunction, std::string, "[0]+[1]*x - 5.*([2]+[3]*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultMultPVHighCutFunction, std::string, "[0]+[1]*x + 5.*([2]+[3]*x)", "Functional for multiplicity correlation cut")
+    O2_DEFINE_CONFIGURABLE(cfgMultMultPVLowCutFunction, std::string, "[0]+[1]*x - 5.*([2]+[3]*x)", "Functional for multiplicity correlation cut")
     O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, false, "Enable global multiplicity vs PV multiplicity cut")
     Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars", std::vector<double>{-0.140809, 0.734344, 2.77495, 0.0165935}, "PV multiplicity vs T0C centrality cut parameter values"};
-    O2_DEFINE_CONFIGURABLE(cfgMultMultV0AHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 4.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
-    O2_DEFINE_CONFIGURABLE(cfgMultMultV0ALowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultMultV0AHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 4.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut")
+    O2_DEFINE_CONFIGURABLE(cfgMultMultV0ALowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut")
     O2_DEFINE_CONFIGURABLE(cfgMultMultV0ACutEnabled, bool, false, "Enable global multiplicity vs V0A multiplicity cut")
     Configurable<std::vector<double>> cfgMultMultV0ACutPars{"cfgMultMultV0ACutPars", std::vector<double>{534.893, 184.344, 0.423539, -0.00331436, 5.34622e-06, 871.239, 53.3735, -0.203528, 0.000122758, 5.41027e-07}, "Global multiplicity vs V0A multiplicity cut parameter values"};
     std::vector<double> multT0CCutPars;
@@ -179,9 +178,9 @@ struct CorrReso {
     Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat.front().data(), 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
     O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
     O2_DEFINE_CONFIGURABLE(cfgTpcCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
-    O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "4 = kshort, 5 = lambda, 6 = phi, 0 for no PID")
-    Configurable<LabeledArray<float>> cfgResoCuts{"cfgResoCuts", {LongArrayFloat.front().data(), 15, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "RapidityMin", "RapidityMax", "ArmPodMinVal", "DCABetDaug", "CompMassRej"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
-    Configurable<LabeledArray<int>> cfgResoSwitches{"cfgResoSwitches", {LongArrayInt.front().data(), 7, 3, {"UseCosPA", "NMassBins", "UseDCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompMassRej"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
+    O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "4 = kshort, 5 = lambda, 0 for no PID")
+    Configurable<LabeledArray<float>> cfgResoCuts{"cfgResoCuts", {LongArrayFloat.front().data(), 15, 2, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "RapidityMin", "RapidityMax", "ArmPodMinVal", "DCABetDaug", "CompMassRej"}, {"K0", "Lambda"}}, "Labeled array (float) for various cuts on resonances"};
+    Configurable<LabeledArray<int>> cfgResoSwitches{"cfgResoSwitches", {LongArrayInt.front().data(), 7, 2, {"UseCosPA", "NMassBins", "UseDCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompMassRej"}, {"K0", "Lambda"}}, "Labeled array (int) for various cuts on resonances"};
   } cfgPIDConfigs;
 
   SliceCache cache;
@@ -208,7 +207,6 @@ struct CorrReso {
   ConfigurableAxis axisAmplitudeFt0{"axisAmplitudeFt0", {5000, 0, 1000}, "FT0A amplitude"};
   ConfigurableAxis axisChannelFt0aAxis{"axisChannelFt0aAxis", {96, 0.0, 96.0}, "FT0A channel"};
   ConfigurableAxis axisChannelFt0cAxis{"axisChannelFt0cAxis", {96, 0.0, 96.0}, "FT0C channel"};
-  ConfigurableAxis cfgFITamp{"cfgFITamp", {1000, 0, 5000}, "FT0 amplitude"};
 
   // Axes for PID QA
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
@@ -244,8 +242,8 @@ struct CorrReso {
   std::array<std::array<float, 2>, 10> trackCuts{};
   std::array<std::array<int, 1>, 14> eventCuts{};
   std::array<std::array<float, 3>, 6> nSigmaVals{};
-  std::array<std::array<float, 3>, 15> resoCutVals{};
-  std::array<std::array<int, 3>, 7> resoSwitchVals{};
+  std::array<std::array<float, 2>, 15> resoCutVals{};
+  std::array<std::array<int, 2>, 7> resoSwitchVals{};
 
   // define global variables
   TRandom3 fRandom{0};
@@ -267,7 +265,6 @@ struct CorrReso {
     UseProtons,
     UseK0,
     UseLambda,
-    UsePhi
   };
 
   enum PiKpArrayIndex {
@@ -362,7 +359,7 @@ struct CorrReso {
   };
 
   enum ResoSelectionFlags {
-    FillCandidate = 1,
+    FillCandidate = 0,
     FillDaughterPt,
     FillMassCut,
     FillRapidityCut,
@@ -427,12 +424,16 @@ struct CorrReso {
 
       axisInvMass = {bins, min, max, "M_{p#pi} (GeV/c^{2})"};
     }
-    if (cfgPIDConfigs.cfgPIDParticle == UsePhi) {
-      const auto bins = resoSwitchVals[UseMassBins][IndexPhi];
-      const auto min = resoCutVals[CutMassMin][IndexPhi];
-      const auto max = resoCutVals[CutMassMax][IndexPhi];
 
-      axisInvMass = {bins, min, max, "M_{K^{+}K^{-}} (GeV/c^{2})"};
+    // Set the sample axis
+    auto maxSample = static_cast<double>(cfgGeneral.cfgSampleSize);
+    AxisSpec axisSample{cfgGeneral.cfgSampleSize, 0, maxSample, "Sample"};
+
+    // Choose if it is Nch selection or Centrality selection
+    AxisSpec axisEventClass = {axisMultForCorr, "N_{ch}"};
+
+    if (!cfgEvSel.cfgSelCollByNch) {
+      axisEventClass = {axisCentForCorr, "Centrality"};
     }
 
     if (cfgPIDConfigs.cfgPIDParticle == UseK0) { // For K0
@@ -445,18 +446,18 @@ struct CorrReso {
       histos.add("hK0Eta", "", {HistType::kTH1D, {axisEta}});
 
       histos.add("hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{12, -0.5, 11.5}}});
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillCandidate, "K0 candidates");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterPt, "Daughter pt");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillMassCut, "Mass cut");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillRapidityCut, "Rapidity cut");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDCAtoPV, "DCA to PV");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDCAxDaughters, "DCA between daughters");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillV0Radius, "V0radius");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillCosPA, "CosPA");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillProperLifetime, "Proper lifetime");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillArmPodCut, "ArmenterosPod");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillCompetingMass, "CompetingMassRejection");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterTrackSelected, "Daughter track selection");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillCandidate + 1, "K0 candidates");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterPt + 1, "Daughter pt");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillMassCut + 1, "Mass cut");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillRapidityCut + 1, "Rapidity cut");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDCAtoPV + 1, "DCA to PV");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDCAxDaughters + 1, "DCA between daughters");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillV0Radius + 1, "V0radius");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillCosPA + 1, "CosPA");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillProperLifetime + 1, "Proper lifetime");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillArmPodCut + 1, "ArmenterosPod");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillCompetingMass + 1, "CompetingMassRejection");
+      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterTrackSelected + 1, "Daughter track selection");
     }
 
     if (cfgPIDConfigs.cfgPIDParticle == UseLambda) { // For Lambda
@@ -475,18 +476,18 @@ struct CorrReso {
       histos.add("hLambdaEta", "", {HistType::kTH1D, {axisEta}});
 
       histos.add("hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{12, -0.5, 11.5}}});
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillCandidate, "Lambda candidates");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterPt, "Daughter pt");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillMassCut, "Mass cut");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillRapidityCut, "Rapidity cut");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDCAtoPV, "DCA to PV");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDCAxDaughters, "DCA between daughters");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillV0Radius, "V0radius");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillCosPA, "CosPA");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillProperLifetime, "Proper lifetime");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillArmPodCut, "ArmenterosPod");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillCompetingMass, "CompetingMassRejection");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterTrackSelected, "Daughter track selection");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillCandidate + 1, "Lambda candidates");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterPt + 1, "Daughter pt");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillMassCut + 1, "Mass cut");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillRapidityCut + 1, "Rapidity cut");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDCAtoPV + 1, "DCA to PV");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDCAxDaughters + 1, "DCA between daughters");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillV0Radius + 1, "V0radius");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillCosPA + 1, "CosPA");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillProperLifetime + 1, "Proper lifetime");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillArmPodCut + 1, "ArmenterosPod");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillCompetingMass + 1, "CompetingMassRejection");
+      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterTrackSelected + 1, "Daughter track selection");
     }
 
     histos.add("hEventCountRct", "Number of Event;; Count", {HistType::kTH1D, {{2, 0, 2}}});
@@ -581,48 +582,47 @@ struct CorrReso {
       LOGF(info, "DCAz pt-dependence function for Nch: %0.1f * %s", trackCuts[TrkCutDCAzNsigma][UseNchSelCuts], cfgTrkSel.cfgTrackCutsDCAz.value[UseNchSelCuts].c_str());
     }
 
-    auto maxSample = static_cast<double>(cfgGeneral.cfgSampleSize);
-    AxisSpec axisSample{cfgGeneral.cfgSampleSize, 0, maxSample, "Sample"};
+    if (doprocessSameTpcFt0) {
+      histos.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
+      histos.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMult}});
+      histos.add("Centrality", "Centrality", {HistType::kTH1D, {axisCent}});
 
-    // Choose if it is Nch selection or Centrality selection
-    AxisSpec axisEventClass = {axisMultForCorr, "N_{ch}"};
+      if (cfgGeneral.cfgStrictTrackCounter) {
+        histos.add("Nch_corrected", "N_{ch} corrected", {HistType::kTH1D, {axisMult}});
+      }
+      if (!cfgEvSel.cfgSelCollByNch) {
+        histos.add("CentralityWeighted", "Centrality (weighted)", {HistType::kTH1D, {axisCent}});
+      }
 
-    if (!cfgEvSel.cfgSelCollByNch) {
-      axisEventClass = {axisCentForCorr, "Centrality"};
+      if (cfgGeneral.cfgQABasic) {
+        histos.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
+        histos.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
+        histos.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
+        histos.add("pTFiner", "pTFiner", {HistType::kTH1D, {axisPtFiner}});
+        histos.add("pTFinerCorrected", "pTFinerCorrected", {HistType::kTH1D, {axisPtFiner}});
+      }
+
+      if (cfgGeneral.cfgAnalyzeTPCFT0A) {
+        histos.add("deltaEta_deltaPhi_same_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}}); // check to see the delta eta and delta phi distribution
+        histos.add("Assoc_amp_same_TPC_FT0A", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0}});
+        histos.add("Trig_hist_TPC_FT0A", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEventClass, axisPtTrigger, axisInvMass}}});
+      }
+      if (cfgGeneral.cfgAnalyzeTPCFT0C) {
+        histos.add("deltaEta_deltaPhi_same_TPC_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}}); // check to see the delta eta and delta phi distribution
+        histos.add("Assoc_amp_same_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0cAxis, axisAmplitudeFt0}});
+        histos.add("Trig_hist_TPC_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEventClass, axisPtTrigger, axisInvMass}}});
+      }
     }
 
-    histos.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
-    histos.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMult}});
-    histos.add("Centrality", "Centrality", {HistType::kTH1D, {axisCent}});
-
-    if (cfgGeneral.cfgStrictTrackCounter) {
-      histos.add("Nch_corrected", "N_{ch} corrected", {HistType::kTH1D, {axisMult}});
-    }
-    if (!cfgEvSel.cfgSelCollByNch) {
-      histos.add("CentralityWeighted", "Centrality (weighted)", {HistType::kTH1D, {axisCent}});
-    }
-
-    if (cfgGeneral.cfgQABasic) {
-      histos.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
-      histos.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
-      histos.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
-      histos.add("pTFiner", "pTFiner", {HistType::kTH1D, {axisPtFiner}});
-      histos.add("pTFinerCorrected", "pTFinerCorrected", {HistType::kTH1D, {axisPtFiner}});
-    }
-
-    if (cfgGeneral.cfgAnalyzeTPCFT0A) {
-      histos.add("deltaEta_deltaPhi_same_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}}); // check to see the delta eta and delta phi distribution
-      histos.add("deltaEta_deltaPhi_mixed_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}});
-      histos.add("Assoc_amp_same_TPC_FT0A", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0}});
-      histos.add("Assoc_amp_mixed_TPC_FT0A", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0}});
-      histos.add("Trig_hist_TPC_FT0A", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEventClass, axisPtTrigger, axisInvMass}}});
-    }
-    if (cfgGeneral.cfgAnalyzeTPCFT0C) {
-      histos.add("deltaEta_deltaPhi_same_TPC_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}}); // check to see the delta eta and delta phi distribution
-      histos.add("deltaEta_deltaPhi_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}});
-      histos.add("Assoc_amp_same_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0cAxis, axisAmplitudeFt0}});
-      histos.add("Assoc_amp_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0cAxis, axisAmplitudeFt0}});
-      histos.add("Trig_hist_TPC_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEventClass, axisPtTrigger, axisInvMass}}});
+    if (doprocessMixedTpcFt0) {
+      if (cfgGeneral.cfgAnalyzeTPCFT0A) {
+        histos.add("deltaEta_deltaPhi_mixed_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}});
+        histos.add("Assoc_amp_mixed_TPC_FT0A", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0}});
+      }
+      if (cfgGeneral.cfgAnalyzeTPCFT0C) {
+        histos.add("deltaEta_deltaPhi_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}});
+        histos.add("Assoc_amp_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0cAxis, axisAmplitudeFt0}});
+      }
     }
 
     histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -633,18 +633,18 @@ struct CorrReso {
     std::vector<AxisSpec> corrAxisTpcFt0a = {{axisSample},
                                              {axisVertex, "z-vtx (cm)"},
                                              {axisEventClass},
-                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                             {axisDeltaEtaTpcFt0a, "#Delta#eta"},
                                              {axisPtTrigger, "p_{T} (GeV/c)"},
-                                             {axisInvMass}};
+                                             {axisInvMass},
+                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                             {axisDeltaEtaTpcFt0a, "#Delta#eta"}};
 
     std::vector<AxisSpec> corrAxisTpcFt0c = {{axisSample},
                                              {axisVertex, "z-vtx (cm)"},
                                              {axisEventClass},
-                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                             {axisDeltaEtaTpcFt0c, "#Delta#eta"},
                                              {axisPtTrigger, "p_{T} (GeV/c)"},
-                                             {axisInvMass}};
+                                             {axisInvMass},
+                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                             {axisDeltaEtaTpcFt0c, "#Delta#eta"}};
 
     if (cfgGeneral.cfgAnalyzeTPCFT0A) {
       sameTpcFt0a.setObject(new DihadronContainer("sameEvent_TPC_FT0A", "sameEvent_TPC_FT0A", corrAxisTpcFt0a));
@@ -688,6 +688,9 @@ struct CorrReso {
   template <typename TCollision>
   bool eventRct(TCollision const& collision, const bool fillCounter)
   {
+    if (cfgEvSel.cfgEvSelRCTflags.value.empty()) {
+      return true;
+    }
     if (!rctChecker(collision)) {
       if (fillCounter) {
         histos.fill(HIST("hEventCountRct"), 0.5);
@@ -1002,29 +1005,17 @@ struct CorrReso {
   }
 
   template <typename TFT0s>
-  void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, float& ampl, int fitType, int system)
+  void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, float& ampl, int fitType)
   {
     if (fitType == IndexFT0C) {
       id = ft0.channelC()[iCh];
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
-      if (system == SameEvent) {
-        histos.fill(HIST("FT0Amp"), id, ampl);
-      }
       ampl = ampl / cstFT0RelGain[id];
-      if (system == SameEvent) {
-        histos.fill(HIST("FT0AmpCorrect"), id, ampl);
-      }
     } else if (fitType == IndexFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
-      if (system == SameEvent) {
-        histos.fill(HIST("FT0Amp"), id, ampl);
-      }
       ampl = ampl / cstFT0RelGain[id];
-      if (system == SameEvent) {
-        histos.fill(HIST("FT0AmpCorrect"), id, ampl);
-      }
     } else {
       LOGF(fatal, "Cor Index %d out of range", fitType);
     }
@@ -1104,9 +1095,6 @@ struct CorrReso {
       return false;
     }
     if (!(track.tpcNClsCrossedRows() >= trackCuts[TrkCutTpcCrossedRows][UseGenTrkCuts])) {
-      return false;
-    }
-    if (!(std::abs(track.dcaZ()) < trackCuts[TrkCutDCAz][UseGenTrkCuts])) {
       return false;
     }
 
@@ -1267,7 +1255,7 @@ struct CorrReso {
   }
 
   template <typename V0>
-  bool isSelectedK0(V0 const& candidate, float posZ, float posY, float posX)
+  bool isSelectedK0(V0 const& candidate, float posZ, float posY, float posX, int system, int corType)
   {
     double mk0 = candidate.mK0Short();
 
@@ -1275,80 +1263,103 @@ struct CorrReso {
     auto postrack = candidate.template posTrack_as<FilteredTracks>();
     auto negtrack = candidate.template negTrack_as<FilteredTracks>();
 
-    histos.fill(HIST("hK0Count"), FillCandidate);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillCandidate);
+    }
     if (postrack.pt() < resoCutVals[CutPosTrackPt][IndexK0] || negtrack.pt() < resoCutVals[CutNegTrackPt][IndexK0]) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillDaughterPt);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillDaughterPt);
+    }
     if (mk0 < resoCutVals[CutMassMin][IndexK0] || mk0 > resoCutVals[CutMassMax][IndexK0]) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillMassCut);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillMassCut);
+    }
     // Rapidity correction
     if (candidate.yK0Short() > resoCutVals[CutRapidityMax][IndexK0] || candidate.yK0Short() < resoCutVals[CutRapidityMin][IndexK0]) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillRapidityCut);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillRapidityCut);
+    }
     // DCA cuts for K0short
     if (std::abs(candidate.dcapostopv()) < resoCutVals[CutDCAPosToPVMin][IndexK0] || std::abs(candidate.dcanegtopv()) < resoCutVals[CutDCANegToPVMin][IndexK0]) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillDCAtoPV);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillDCAtoPV);
+    }
     if (resoSwitchVals[UseDCABetDaug][IndexK0] && std::abs(candidate.dcaV0daughters()) > resoCutVals[CutDCABetDaug][IndexK0]) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillDCAxDaughters);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillDCAxDaughters);
+    }
     // v0 radius cuts
     if (resoSwitchVals[UseV0Radius][IndexK0] && (candidate.v0radius() < resoCutVals[CutRadiusMin][IndexK0] || candidate.v0radius() > resoCutVals[CutRadiusMax][IndexK0])) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillV0Radius);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillV0Radius);
+    }
     // cosine pointing angle cuts
     if (resoSwitchVals[UseCosPA][IndexK0] && candidate.v0cosPA() < resoCutVals[CutCosPA][IndexK0]) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillCosPA);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillCosPA);
+    }
     // Proper lifetime
     float cTauK0 = candidate.distovertotmom(posX, posY, posZ) * massK0Short;
     if (resoSwitchVals[UseProperLifetime][IndexK0] && cTauK0 > resoCutVals[CutLifeTime][IndexK0]) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillProperLifetime);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillProperLifetime);
+    }
     // ArmenterosPodolanskiCut
     if (resoSwitchVals[UseArmPodCut][IndexK0] && (candidate.qtarm() / std::abs(candidate.alpha())) < resoCutVals[CutArmPodMinVal][IndexK0]) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillArmPodCut);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillArmPodCut);
+    }
 
     if (resoSwitchVals[UseCompMassRej][IndexK0]) {
-      if (std::abs(candidate.mLambda() - o2::constants::physics::MassLambda0) < resoCutVals[CutCompMassRej][IndexK0]) {
+      if (std::abs(candidate.mLambda() - o2::constants::physics::MassLambda) < resoCutVals[CutCompMassRej][IndexK0]) {
         return false;
       }
-      if (std::abs(candidate.mAntiLambda() - o2::constants::physics::MassLambda0) < resoCutVals[CutCompMassRej][IndexK0]) {
+      if (std::abs(candidate.mAntiLambda() - o2::constants::physics::MassLambda) < resoCutVals[CutCompMassRej][IndexK0]) {
         return false;
       }
     }
-    histos.fill(HIST("hK0Count"), FillCompetingMass);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillCompetingMass);
+    }
 
     // Selection on V0 daughters
     if (!selectionV0Daughter(postrack, UsePions) || !selectionV0Daughter(negtrack, UsePions)) {
       return false;
     }
-    histos.fill(HIST("hK0Count"), FillDaughterTrackSelected);
-
-    histos.fill(HIST("hK0Phi"), candidate.phi());
-    histos.fill(HIST("hK0Rap"), candidate.yK0Short());
-    histos.fill(HIST("hK0Eta"), candidate.eta());
-    histos.fill(HIST("PiPlusTPC_K0"), postrack.pt(), postrack.tpcNSigmaPi());
-    histos.fill(HIST("PiPlusTOF_K0"), postrack.pt(), postrack.tofNSigmaPi());
-    histos.fill(HIST("PiMinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaPi());
-    histos.fill(HIST("PiMinusTOF_K0"), negtrack.pt(), negtrack.tofNSigmaPi());
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hK0Count"), FillDaughterTrackSelected);
+      histos.fill(HIST("hK0Phi"), candidate.phi());
+      histos.fill(HIST("hK0Rap"), candidate.yK0Short());
+      histos.fill(HIST("hK0Eta"), candidate.eta());
+      histos.fill(HIST("PiPlusTPC_K0"), postrack.pt(), postrack.tpcNSigmaPi());
+      histos.fill(HIST("PiPlusTOF_K0"), postrack.pt(), postrack.tofNSigmaPi());
+      histos.fill(HIST("PiMinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaPi());
+      histos.fill(HIST("PiMinusTOF_K0"), negtrack.pt(), negtrack.tofNSigmaPi());
+    }
 
     return true;
   }
 
   template <typename V0>
-  bool isSelectedLambda(V0 const& candidate, float posZ, float posY, float posX)
+  bool isSelectedLambda(V0 const& candidate, float posZ, float posY, float posX, int system, int corType)
   {
     bool isL = false;  // Is lambda candidate
     bool isAL = false; // Is anti-lambda candidate
@@ -1360,11 +1371,15 @@ struct CorrReso {
     auto postrack = candidate.template posTrack_as<FilteredTracks>();
     auto negtrack = candidate.template negTrack_as<FilteredTracks>();
 
-    histos.fill(HIST("hLambdaCount"), FillCandidate);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillCandidate);
+    }
     if (postrack.pt() < resoCutVals[CutPosTrackPt][IndexLambda] || negtrack.pt() < resoCutVals[CutNegTrackPt][IndexLambda]) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillDaughterPt);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillDaughterPt);
+    }
     if (mlambda > resoCutVals[CutMassMin][IndexLambda] && mlambda < resoCutVals[CutMassMax][IndexLambda]) {
       isL = true;
     }
@@ -1375,13 +1390,17 @@ struct CorrReso {
     if (!isL && !isAL) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillMassCut);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillMassCut);
+    }
 
     // Rapidity correction
     if (candidate.yLambda() > resoCutVals[CutRapidityMax][IndexLambda] || candidate.yLambda() < resoCutVals[CutRapidityMin][IndexLambda]) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillRapidityCut);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillRapidityCut);
+    }
 
     // DCA cuts for lambda and antilambda
     if (isL && (std::abs(candidate.dcapostopv()) < resoCutVals[CutDCAPosToPVMin][IndexLambda] || std::abs(candidate.dcanegtopv()) < resoCutVals[CutDCANegToPVMin][IndexLambda])) {
@@ -1393,40 +1412,54 @@ struct CorrReso {
     if (!isL && !isAL) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillDCAtoPV);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillDCAtoPV);
+    }
     if (resoSwitchVals[UseDCABetDaug][IndexLambda] && std::abs(candidate.dcaV0daughters()) > resoCutVals[CutDCABetDaug][IndexLambda]) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillDCAxDaughters);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillDCAxDaughters);
+    }
     // v0 radius cuts
     if (resoSwitchVals[UseV0Radius][IndexLambda] && (candidate.v0radius() < resoCutVals[CutRadiusMin][IndexLambda] || candidate.v0radius() > resoCutVals[CutRadiusMax][IndexLambda])) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillV0Radius);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillV0Radius);
+    }
     // cosine pointing angle cuts
     if (resoSwitchVals[UseCosPA][IndexLambda] && candidate.v0cosPA() < resoCutVals[CutCosPA][IndexLambda]) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillCosPA);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillCosPA);
+    }
     // Proper lifetime
     float cTauLambda = candidate.distovertotmom(posX, posY, posZ) * massLambda;
     if (resoSwitchVals[UseProperLifetime][IndexLambda] && cTauLambda > resoCutVals[CutLifeTime][IndexLambda]) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillProperLifetime);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillProperLifetime);
+    }
 
     // ArmenterosPodolanskiCut
     if (resoSwitchVals[UseArmPodCut][IndexLambda] && (candidate.qtarm() / std::abs(candidate.alpha())) < resoCutVals[CutArmPodMinVal][IndexLambda]) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), FillArmPodCut);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillArmPodCut);
+    }
 
     if (resoSwitchVals[UseCompMassRej][IndexLambda]) {
       if (std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) < resoCutVals[CutCompMassRej][IndexLambda]) {
         return false;
       }
     }
-    histos.fill(HIST("hLambdaCount"), FillCompetingMass);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillCompetingMass);
+    }
 
     if (isL) {
       if (!selectionV0Daughter(postrack, UseProtons) || !selectionV0Daughter(negtrack, UsePions)) {
@@ -1441,18 +1474,22 @@ struct CorrReso {
     if (!isL && !isAL) {
       return false;
     }
-    histos.fill(HIST("hLambdaCount"), 9.5);
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaCount"), FillDaughterTrackSelected);
+    }
 
-    histos.fill(HIST("hLambdaPhi"), candidate.phi());
-    histos.fill(HIST("hLambdaEta"), candidate.eta());
-    histos.fill(HIST("hLambdaRap"), candidate.yLambda());
-    if (isL) {
+    if (system == SameEvent && corType == IndexFT0A) {
+      histos.fill(HIST("hLambdaPhi"), candidate.phi());
+      histos.fill(HIST("hLambdaEta"), candidate.eta());
+      histos.fill(HIST("hLambdaRap"), candidate.yLambda());
+    }
+    if (isL && system == SameEvent && corType == IndexFT0A) {
       histos.fill(HIST("PrPlusTPC_La"), postrack.pt(), postrack.tpcNSigmaPr());
       histos.fill(HIST("PrPlusTOF_La"), postrack.pt(), postrack.tofNSigmaPr());
       histos.fill(HIST("PiMinusTPC_La"), negtrack.pt(), negtrack.tpcNSigmaPi());
       histos.fill(HIST("PiMinusTOF_La"), negtrack.pt(), negtrack.tofNSigmaPi());
     }
-    if (isAL) {
+    if (isAL && system == SameEvent && corType == IndexFT0A) {
       histos.fill(HIST("PrMinusTPC_Al"), negtrack.pt(), negtrack.tpcNSigmaPr());
       histos.fill(HIST("PrMinusTOF_Al"), negtrack.pt(), negtrack.tofNSigmaPr());
       histos.fill(HIST("PiPlusTPC_Al"), postrack.pt(), postrack.tpcNSigmaPi());
@@ -1474,7 +1511,7 @@ struct CorrReso {
 
       // 4 = kshort, 5 = lambda, 6 = phi
       if (cfgPIDConfigs.cfgPIDParticle == UseK0) {
-        if (!isSelectedK0(track1, posZ, posY, posX)) {
+        if (!isSelectedK0(track1, posZ, posY, posX, system, corType)) {
           continue; // Reject if called for K0 but V0 is not K0
         }
 
@@ -1482,7 +1519,7 @@ struct CorrReso {
       }
 
       if (cfgPIDConfigs.cfgPIDParticle == UseLambda) {
-        if (!isSelectedLambda(track1, posZ, posY, posX)) {
+        if (!isSelectedLambda(track1, posZ, posY, posX, system, corType)) {
           continue; // Reject if called for Lambda but V0 is not lambda
         }
 
@@ -1508,7 +1545,7 @@ struct CorrReso {
       for (std::size_t iCh = 0; iCh < channelSize; iCh++) {
         int chanelid = 0;
         float ampl = 0.;
-        getChannel(ft0, iCh, chanelid, ampl, corType, system);
+        getChannel(ft0, iCh, chanelid, ampl, corType);
 
         auto phi = getPhiFT0(chanelid, corType);
         auto eta = getEtaFT0(chanelid, corType);
@@ -1518,31 +1555,23 @@ struct CorrReso {
         // fill the right sparse and histograms
         if (system == SameEvent) {
           if (corType == IndexFT0A) {
-            if (cfgGeneral.cfgQABasic) {
-              histos.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
-              histos.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
-            }
-            sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), resoMass, ampl * eventWeight * triggerWeight);
+            histos.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
+            histos.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), resoMass, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == IndexFT0C) {
-            if (cfgGeneral.cfgQABasic) {
-              histos.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
-              histos.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
-            }
-            sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), resoMass, ampl * eventWeight * triggerWeight);
+            histos.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
+            histos.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), resoMass, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           }
         } else if (system == MixedEvent) {
           if (corType == IndexFT0A) {
-            if (cfgGeneral.cfgQABasic) {
-              histos.fill(HIST("Assoc_amp_mixed_TPC_FT0A"), chanelid, ampl);
-              histos.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
-            }
-            mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), resoMass, ampl * eventWeight * triggerWeight);
+            histos.fill(HIST("Assoc_amp_mixed_TPC_FT0A"), chanelid, ampl);
+            histos.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), resoMass, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == IndexFT0C) {
-            if (cfgGeneral.cfgQABasic) {
-              histos.fill(HIST("Assoc_amp_mixed_TPC_FT0C"), chanelid, ampl);
-              histos.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
-            }
-            mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), resoMass, ampl * eventWeight * triggerWeight);
+            histos.fill(HIST("Assoc_amp_mixed_TPC_FT0C"), chanelid, ampl);
+            histos.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), resoMass, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           }
         }
       }
@@ -1560,11 +1589,10 @@ struct CorrReso {
     return true;
   }
 
-  double massKaPlus = o2::constants::physics::MassKPlus;    // same as MassKMinus
   double massLambda = o2::constants::physics::MassLambda;   // same as MassLambda0 and MassLambda0Bar
   double massK0Short = o2::constants::physics::MassK0Short; // same as o2::constants::physics::MassK0 and o2::constants::physics::MassK0Bar
 
-  void processSameTpcFt0(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&, aod::V0Datas const& V0s)
+  void processSameTpcFt0(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&, V0TrackCandidate const& V0s)
   {
     if (cfgGeneral.cfgQABasic) {
       eventSelectedIndividually(collision);
@@ -1608,7 +1636,6 @@ struct CorrReso {
     }
 
     histos.fill(HIST("zVtx"), collision.posZ());
-    histos.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
     if (cfgGeneral.cfgQABasic) {
       fillYield(collision, tracks);
@@ -1629,6 +1656,7 @@ struct CorrReso {
       return;
     }
 
+    histos.fill(HIST("eventcount"), SameEvent);
     auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity : cent;
 
     const auto& ft0 = collision.foundFT0();
@@ -1641,7 +1669,7 @@ struct CorrReso {
   }
   PROCESS_SWITCH(CorrReso, processSameTpcFt0, "Process same event for TPC-FT0 correlation", false);
 
-  void processMixedTpcFt0(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&, aod::V0Datas const& V0s)
+  void processMixedTpcFt0(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&, V0TrackCandidate const& V0s)
   {
     auto getTracksSize = [&tracks, this](FilteredCollisions::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
@@ -1654,7 +1682,7 @@ struct CorrReso {
     MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
 
     auto tracksTuple = std::make_tuple(V0s, tracks);
-    Pair<FilteredCollisions, aod::V0Datas, FilteredTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgGeneral.cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    Pair<FilteredCollisions, V0TrackCandidate, FilteredTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgGeneral.cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, v0s1, collision2, tracks2] = *it;
 
@@ -1682,8 +1710,6 @@ struct CorrReso {
         continue;
       }
 
-      histos.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
-
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       int currentRunNumber = bc.runNumber();
       if (!cfgGeneral.cfgRunRemoveList.value.empty()) {
@@ -1698,7 +1724,7 @@ struct CorrReso {
       auto multiplicity1 = static_cast<double>(tracks1.size());
       auto multiplicity2 = static_cast<double>(tracks2.size());
 
-      if (cfgGeneral.cfgStrictTrackCounter) {
+      if (cfgEvSel.cfgSelCollByNch && cfgGeneral.cfgStrictTrackCounter) {
         nchCounter(tracks1, multiplicity1);
         if (cfgEvSel.cfgUseCol2ForMixedEvSel) {
           nchCounter(tracks2, multiplicity2);
@@ -1718,6 +1744,7 @@ struct CorrReso {
         continue;
       }
 
+      histos.fill(HIST("eventcount"), MixedEvent);
       auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity1 : cent1;
 
       float eventWeight = 1.0f;
@@ -1726,7 +1753,11 @@ struct CorrReso {
         eventWeight = 1.0f / it.currentWindowNeighbours();
       }
       float weightCent = 1.0f;
-      getCentralityWeight(weightCent, cent1);
+      if (!cfgEvSel.cfgSelCollByNch) {
+        if (!getCentralityWeight(weightCent, cent1)) {
+          continue; // or continue in a loop
+        }
+      }
 
       const auto& ft0 = collision2.foundFT0();
       if (cfgGeneral.cfgAnalyzeTPCFT0A) {
