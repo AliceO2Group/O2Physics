@@ -56,8 +56,8 @@
 using namespace o2;
 using namespace o2::framework;
 
-static constexpr double kMinMomentumForLogBins = 0.05;
-static constexpr double kMaxMomentumForLogBins = 10.0;
+static constexpr double MinMomentumForLogBins = 0.05;
+static constexpr double MaxMomentumForLogBins = 10.0;
 
 /// Local path of a LUT file; "ccdb:<path>" is downloaded once to /tmp/ToTLUTs/<path>/snapshot.root
 std::string getLocalLutFile(const std::string& filename, o2::ccdb::BasicCCDBManager* ccdbManager)
@@ -114,7 +114,7 @@ class TrackDedxLut
     const size_t nDedx = mDedxEdges.size() - 1;
 
     bool allLoaded = true;
-    for (const int pdg : pdgCodes) {
+    for (const auto& pdg : pdgCodes) {
       std::unique_ptr<std::vector<float>> h(f->Get<std::vector<float>>(Form("h_%d", pdg)));
       if (!h || h->size() != nBins * nDedx) {
         LOG(warning) << "No dE/dx LUT for PDG " << pdg << " in " << filename;
@@ -205,16 +205,16 @@ class TrackDedxLut
 };
 
 struct OnTheFlyTrackerPid {
-  static constexpr int kNumSpecies = 9;
-  static constexpr std::array<int, kNumSpecies> kPdgCodes = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040};
-  static constexpr std::array<const char*, kNumSpecies> kNames = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
-  static constexpr std::array<const char*, kNumSpecies> kPrettyNames = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "#it{^{3}He}", "#it{^{4}He}"};
+  static constexpr int NumSpecies = 9;
+  static constexpr std::array<int, NumSpecies> PdgCodes = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040};
+  static constexpr std::array<const char*, NumSpecies> SpeciesNames = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
+  static constexpr std::array<const char*, NumSpecies> SpeciesLabels = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "#it{^{3}He}", "#it{^{4}He}"};
 
-  std::array<std::shared_ptr<TH2>, kNumSpecies> h2dToTvsPperParticle;
-  std::array<std::shared_ptr<TH2>, kNumSpecies> h2dToTvsPperParticleLin;
-  std::array<std::shared_ptr<TH3>, kNumSpecies> h3dToTvsPEtaPerParticle;
-  std::array<std::shared_ptr<TH2>, kNumSpecies> h2dTracks;
-  std::array<std::shared_ptr<TH2>, kNumSpecies> h2dTracksWithDedx;
+  std::array<std::shared_ptr<TH2>, NumSpecies> h2dToTvsPperParticle;
+  std::array<std::shared_ptr<TH2>, NumSpecies> h2dToTvsPperParticleLin;
+  std::array<std::shared_ptr<TH3>, NumSpecies> h3dToTvsPEtaPerParticle;
+  std::array<std::shared_ptr<TH2>, NumSpecies> h2dTracks;
+  std::array<std::shared_ptr<TH2>, NumSpecies> h2dTracksWithDedx;
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase{};
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -249,7 +249,7 @@ struct OnTheFlyTrackerPid {
     ccdb->setTimestamp(-1);
 
     mRandom.SetSeed(seed.value);
-    if (!mTrackLut.load(trackLut.value, ccdb.operator->(), kPdgCodes)) {
+    if (!mTrackLut.load(trackLut.value, ccdb.operator->(), PdgCodes)) {
       LOG(warning) << "dE/dx LUT incomplete, species without LUT get no tracker PID.";
     }
     bookHistograms();
@@ -272,7 +272,7 @@ struct OnTheFlyTrackerPid {
       LOG(fatal) << "At least one of enableLogPBins or enableLinearPBins must be true.";
     }
 
-    const std::vector<double> logBins = logBinning(numLogBins.value, kMinMomentumForLogBins, kMaxMomentumForLogBins);
+    const std::vector<double> logBins = logBinning(numLogBins.value, MinMomentumForLogBins, MaxMomentumForLogBins);
     const std::string signalTitle = "d#it{E}/d#it{x} (e^{-})";
     const AxisSpec axisDedx{logBinning(numDedxBins.value, dedxMin.value, dedxMax.value), signalTitle};
     const AxisSpec axisMomentumLog{logBins, "#it{p/z} (GeV/#it{c})"};
@@ -288,28 +288,28 @@ struct OnTheFlyTrackerPid {
       histos.add("hToTvsMomLin", ("Signal vs #it{p} (linear); #it{p} (GeV/#it{c}); " + signalTitle).c_str(), kTH2F, {axisMomentumLin, axisDedx});
     }
 
-    for (int i = 0; i < kNumSpecies; ++i) {
+    for (int i = 0; i < NumSpecies; ++i) {
       if (enableLogPBins.value) {
-        const std::string name = std::format("ToTvsP/hToTvsP_{}", kNames[i]);
-        const std::string title = std::format("Signal vs #it{{p/z}} for {}; #it{{p/z}} (GeV/#it{{c}}); {}", kPrettyNames[i], signalTitle);
+        const std::string name = std::format("ToTvsP/hToTvsP_{}", SpeciesNames[i]);
+        const std::string title = std::format("Signal vs #it{{p/z}} for {}; #it{{p/z}} (GeV/#it{{c}}); {}", SpeciesLabels[i], signalTitle);
         h2dToTvsPperParticle[i] = histos.add<TH2>(name.c_str(), title.c_str(), kTH2F, {axisMomentumLog, axisDedx});
       }
       if (enableLinearPBins.value) {
-        const std::string name = std::format("ToTvsPLin/hToTvsPLin_{}", kNames[i]);
-        const std::string title = std::format("Signal vs #it{{p/z}} for {} (linear); #it{{p/z}} (GeV/#it{{c}}); {}", kPrettyNames[i], signalTitle);
+        const std::string name = std::format("ToTvsPLin/hToTvsPLin_{}", SpeciesNames[i]);
+        const std::string title = std::format("Signal vs #it{{p/z}} for {} (linear); #it{{p/z}} (GeV/#it{{c}}); {}", SpeciesLabels[i], signalTitle);
         h2dToTvsPperParticleLin[i] = histos.add<TH2>(name.c_str(), title.c_str(), kTH2F, {axisMomentumLin, axisDedx});
       }
 
-      const std::string nameEta = std::format("ToTvsPEta/hToTvsPEta_{}", kNames[i]);
-      const std::string titleEta = std::format("Signal vs #it{{p/z}} and |#eta| for {}; #it{{p/z}} (GeV/#it{{c}}); |#eta|; {}", kPrettyNames[i], signalTitle);
+      const std::string nameEta = std::format("ToTvsPEta/hToTvsPEta_{}", SpeciesNames[i]);
+      const std::string titleEta = std::format("Signal vs #it{{p/z}} and |#eta| for {}; #it{{p/z}} (GeV/#it{{c}}); |#eta|; {}", SpeciesLabels[i], signalTitle);
       h3dToTvsPEtaPerParticle[i] = histos.add<TH3>(nameEta.c_str(), titleEta.c_str(), kTH3F, {axisMomentumLog, axisAbsEta, axisDedx});
 
-      const std::string nameTracks = std::format("Bookkeeping/hTracks_{}", kNames[i]);
-      const std::string titleTracks = std::format("Reconstructed {}; #it{{p/z}} (GeV/#it{{c}}); |#eta|", kPrettyNames[i]);
+      const std::string nameTracks = std::format("Bookkeeping/hTracks_{}", SpeciesNames[i]);
+      const std::string titleTracks = std::format("Reconstructed {}; #it{{p/z}} (GeV/#it{{c}}); |#eta|", SpeciesLabels[i]);
       h2dTracks[i] = histos.add<TH2>(nameTracks.c_str(), titleTracks.c_str(), kTH2F, {axisMomentumLog, axisAbsEta});
 
-      const std::string nameWithDedx = std::format("Bookkeeping/hTracksWithDedx_{}", kNames[i]);
-      const std::string titleWithDedx = std::format("Reconstructed {} with dE/dx; #it{{p/z}} (GeV/#it{{c}}); |#eta|", kPrettyNames[i]);
+      const std::string nameWithDedx = std::format("Bookkeeping/hTracksWithDedx_{}", SpeciesNames[i]);
+      const std::string titleWithDedx = std::format("Reconstructed {} with dE/dx; #it{{p/z}} (GeV/#it{{c}}); |#eta|", SpeciesLabels[i]);
       h2dTracksWithDedx[i] = histos.add<TH2>(nameWithDedx.c_str(), titleWithDedx.c_str(), kTH2F, {axisMomentumLog, axisAbsEta});
     }
   }
@@ -326,15 +326,15 @@ struct OnTheFlyTrackerPid {
         continue;
       }
       const int pdg = std::abs(mcParticle.pdgCode());
-      const auto itSpecies = std::find(kPdgCodes.begin(), kPdgCodes.end(), pdg);
-      if (itSpecies == kPdgCodes.end()) {
+      const auto itSpecies = std::find(PdgCodes.begin(), PdgCodes.end(), pdg);
+      if (itSpecies == PdgCodes.end()) {
         continue;
       }
       const auto* pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (!pdgInfo || pdgInfo->Charge() == 0) {
         continue;
       }
-      const int iSpecies = std::distance(kPdgCodes.begin(), itSpecies);
+      const int iSpecies = std::distance(PdgCodes.begin(), itSpecies);
       const float absCharge = std::abs(pdgInfo->Charge()) / 3.f;
       const float rigidityTrue = mcParticle.p() / absCharge;
 
