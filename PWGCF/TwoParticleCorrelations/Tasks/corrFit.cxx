@@ -1146,7 +1146,7 @@ struct CorrFit {
           registry.fill(HIST("TofItsNsigma_after"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.tofNSigmaPr(), track1.pt());
         break;
       default:
-        LOGF(info, "PID %d not recognized, skipping nSigma QA filling", pid);
+        LOGF(info, "PID %d not recognized, skipping nSigma QA filling, breaking", pid);
         break;
     } // end of switch
   }
@@ -1495,7 +1495,7 @@ struct CorrFit {
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      auto multiplicity = static_cast<double>(tracks.size());
+      auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1611,7 +1611,7 @@ struct CorrFit {
       float eventWeight = 1.0f;
 
       const auto& ft0 = collision2.foundFT0();
-      auto multiplicity = static_cast<double>(tracks.size());
+      auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1731,7 +1731,7 @@ struct CorrFit {
       const auto& ft0Col1 = collision1.foundFT0();
       const auto& ft0Col2 = collision2.foundFT0();
 
-      auto multiplicity = static_cast<double>(tracks.size());
+      auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1793,7 +1793,7 @@ struct CorrFit {
       return;
     }
 
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, multiplicity, getMagneticField(bc.timestamp()));
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, multiplicity, getMagneticField(bc.timestamp()), 1.0f);
   }
   PROCESS_SWITCH(CorrFit, processSameTPC, "Process same event for TPC-TPC correlation", false);
 
@@ -1837,7 +1837,7 @@ struct CorrFit {
 
       loadCorrection(bc.timestamp());
 
-      auto multiplicity = static_cast<double>(tracks.size());
+      auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1847,7 +1847,7 @@ struct CorrFit {
         continue;
       }
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, multiplicity, getMagneticField(collision1.bc_as<aod::BCsWithTimestamps>().timestamp()));
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, multiplicity, getMagneticField(collision1.bc_as<aod::BCsWithTimestamps>().timestamp()), 1.0f);
     }
   }
   PROCESS_SWITCH(CorrFit, processMixedTPC, "Process mixed events for TPC-TPC correlation", false);
