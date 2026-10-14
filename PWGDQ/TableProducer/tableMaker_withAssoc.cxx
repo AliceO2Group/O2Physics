@@ -336,6 +336,7 @@ struct TableMaker {
 
   // Spherocity configurables
   struct : ConfigurableGroup {
+    Configurable<bool> fConfigSpherocityCompute{"cfgSpherocityCompute", false, "Compute and store event spherocity (off by default)"};
     Configurable<float> fConfigSpherocityPtMin{"cfgSpherocityPtMin", 0.15f, "Min pT for spherocity calculation"};
     Configurable<float> fConfigSpherocityPtMax{"cfgSpherocityPtMax", 10.0f, "Max pT for spherocity calculation"};
     Configurable<float> fConfigSpherocityEtaMin{"cfgSpherocityEtaMin", -0.8f, "Min eta for spherocity calculation"};
@@ -1238,42 +1239,44 @@ struct TableMaker {
       float spherocityValue = -1.0f;
       float spherocityPtWeighted = -1.0f;
 
-      if constexpr (static_cast<bool>(TTrackFillMap)) {
-        auto groupedTrackIndices = trackAssocs.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      if (fConfigSpherocity.fConfigSpherocityCompute) {
+        if constexpr (static_cast<bool>(TTrackFillMap)) {
+          auto groupedTrackIndices = trackAssocs.sliceBy(trackIndicesPerCollision, collision.globalIndex());
 
-        if (static_cast<int>(groupedTrackIndices.size()) >= fConfigSpherocity.fConfigSpherocityMinMult) {
-          std::vector<typename std::decay_t<decltype(tracksBarrel.begin())>> trackVec;
-          trackVec.reserve(groupedTrackIndices.size());
+          if (static_cast<int>(groupedTrackIndices.size()) >= fConfigSpherocity.fConfigSpherocityMinMult) {
+            std::vector<typename std::decay_t<decltype(tracksBarrel.begin())>> trackVec;
+            trackVec.reserve(groupedTrackIndices.size());
 
-          int validTracks = 0;
-          for (auto const& assoc : groupedTrackIndices) {
-            if (assoc.trackId() < tracksBarrel.size()) {
-              auto track = tracksBarrel.rawIteratorAt(assoc.trackId());
-              trackVec.push_back(track);
-              validTracks++;
+            int validTracks = 0;
+            for (auto const& assoc : groupedTrackIndices) {
+              if (assoc.trackId() < tracksBarrel.size()) {
+                auto track = tracksBarrel.rawIteratorAt(assoc.trackId());
+                trackVec.push_back(track);
+                validTracks++;
+              }
             }
-          }
 
-          if (validTracks >= fConfigSpherocity.fConfigSpherocityMinMult) {
-            // Calculate unweighted spherocity
-            spherocityValue = VarManager::CalculateSpherocity(
-              trackVec,
-              fConfigSpherocity.fConfigSpherocityPtMin,
-              fConfigSpherocity.fConfigSpherocityPtMax,
-              fConfigSpherocity.fConfigSpherocityEtaMin,
-              fConfigSpherocity.fConfigSpherocityEtaMax,
-              fConfigSpherocity.fConfigSpherocityMinMult,
-              false);
+            if (validTracks >= fConfigSpherocity.fConfigSpherocityMinMult) {
+              // Calculate unweighted spherocity
+              spherocityValue = VarManager::CalculateSpherocity(
+                trackVec,
+                fConfigSpherocity.fConfigSpherocityPtMin,
+                fConfigSpherocity.fConfigSpherocityPtMax,
+                fConfigSpherocity.fConfigSpherocityEtaMin,
+                fConfigSpherocity.fConfigSpherocityEtaMax,
+                fConfigSpherocity.fConfigSpherocityMinMult,
+                false);
 
-            // Calculate pT-weighted spherocity
-            spherocityPtWeighted = VarManager::CalculateSpherocity(
-              trackVec,
-              fConfigSpherocity.fConfigSpherocityPtMin,
-              fConfigSpherocity.fConfigSpherocityPtMax,
-              fConfigSpherocity.fConfigSpherocityEtaMin,
-              fConfigSpherocity.fConfigSpherocityEtaMax,
-              fConfigSpherocity.fConfigSpherocityMinMult,
-              true);
+              // Calculate pT-weighted spherocity
+              spherocityPtWeighted = VarManager::CalculateSpherocity(
+                trackVec,
+                fConfigSpherocity.fConfigSpherocityPtMin,
+                fConfigSpherocity.fConfigSpherocityPtMax,
+                fConfigSpherocity.fConfigSpherocityEtaMin,
+                fConfigSpherocity.fConfigSpherocityEtaMax,
+                fConfigSpherocity.fConfigSpherocityMinMult,
+                true);
+            }
           }
         }
       }
