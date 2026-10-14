@@ -1290,7 +1290,7 @@ struct LambdaTableProducer {
     return true;
   }
 
-  void processDerivedData(aod::LambdaLooseCollisions::iterator const& collision, aod::LambdaLooseTracks const& looseTracks)
+  void processDerivedData(aod::LambdaLooseCols::iterator const& collision, aod::LambdaLooseTracks const& looseTracks)
   {
     histos.fill(HIST("Events/h1f_collisions_info"), kTotCol);
     cent = collision.cent();
