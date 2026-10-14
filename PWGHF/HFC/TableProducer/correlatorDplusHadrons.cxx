@@ -99,13 +99,12 @@ struct HfCorrelatorDplusHadronsDplusSelection {
                                  CandidatesDplusData const& candidates)
   {
     bool isSelColl = true;
-    bool isDplusFound = true;
+    bool isDplusFound = !doSelDplusCollision;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
     if (doSelDplusCollision) {
       for (const auto& candidate : candidates) {
         if (std::abs(HfHelper::yDplus(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
-          isDplusFound = false;
           continue;
         }
         isDplusFound = true;
@@ -127,7 +126,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
                                   CandidatesDplusMcRec const& candidates)
   {
     bool isSelColl = true;
-    bool isDplusFound = false;
+    bool isDplusFound = !doSelDplusCollision;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
     if (doSelDplusCollision) {
@@ -806,7 +805,7 @@ struct HfCorrelatorDplusHadrons {
                               TracksWithMc const& tracks,
                               aod::McParticles const& mcParticles)
   {
-    BinningType const corrBinning{{binsZVtx, binsMultiplicityMc}};
+    BinningType const corrBinningMcRec{{binsZVtx, binsMultiplicityMc}};
     for (const auto& candidate : candidates) {
       if (std::abs(HfHelper::yDplus(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
         continue;
@@ -831,11 +830,11 @@ struct HfCorrelatorDplusHadrons {
       }
     }
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithDplus, CandidatesDplusMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithDplus, CandidatesDplusMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinningMcRec, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
-      int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
-      int const poolBinDplus = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
+      int poolBin = corrBinningMcRec.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
+      int const poolBinDplus = corrBinningMcRec.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
       registry.fill(HIST("hMultFT0M"), c1.multFT0M());
       registry.fill(HIST("hZVtx"), c1.posZ());
       registry.fill(HIST("hTracksPoolBin"), poolBin);     // note that the selections here are not yet applied

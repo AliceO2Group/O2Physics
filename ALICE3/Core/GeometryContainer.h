@@ -36,8 +36,8 @@ struct GeometryEntry {
   // Default constructor
   GeometryEntry() = default;
   explicit GeometryEntry(const std::string& filename, o2::ccdb::BasicCCDBManager* ccdb = nullptr)
+    : mFileName(ConfigurationParser::accessFile(filename, "./.ALICE3/Configuration/", ccdb))
   {
-    mFileName = ConfigurationParser::accessFile(filename, "./.ALICE3/Configuration/", ccdb);
     mConfigurations = ConfigurationParser::parseTEnvConfiguration(mFileName, mLayerNames);
     LOG(info) << "Loaded geometry configuration from file: " << mFileName << " with " << mLayerNames.size() << " layers.";
     if (mLayerNames.empty()) {
@@ -45,9 +45,9 @@ struct GeometryEntry {
     }
   }
 
-  std::map<std::string, std::map<std::string, std::string>> getConfigurations() const { return mConfigurations; }
+  const std::map<std::string, std::map<std::string, std::string>>& getConfigurations() const { return mConfigurations; }
   std::map<std::string, std::string> getConfiguration(const std::string& layerName) const;
-  std::vector<std::string> getLayerNames() const { return mLayerNames; }
+  const std::vector<std::string>& getLayerNames() const { return mLayerNames; }
   bool hasValue(const std::string& layerName, const std::string& key) const;
   std::string getValue(const std::string& layerName, const std::string& key, bool require = true) const;
   void setValue(const std::string& layerName, const std::string& key, const std::string& value) { mConfigurations[layerName][key] = value; }

@@ -60,12 +60,7 @@
 #include <utility>
 #include <vector>
 
-// using namespace o2;
-// using namespace o2::soa;
-// using namespace o2::framework;
-// using namespace o2::framework::expressions;
-// using namespace o2::constants::physics;
-
+// NOLINTBEGIN(google-global-names-in-headers)
 using o2::framework::AxisSpec;
 using o2::framework::Configurable;
 using o2::framework::ConfigurableGroup;
@@ -76,6 +71,7 @@ using o2::framework::kTH2F;
 using o2::framework::kTHnSparseF;
 using o2::framework::Preslice;
 using o2::framework::Produces;
+// NOLINTEND(google-global-names-in-headers)
 
 using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::PMEvSels>;
 using MyCollisionsWithSWT = o2::soa::Join<MyCollisions, o2::aod::EMSWTriggerBitsTMP>;

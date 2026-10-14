@@ -189,6 +189,11 @@ o2physics_add_dpl_workflow(omega2012analysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(omega2012-training-table
+    SOURCES omega2012TrainingTable.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(xi1820analysis
     SOURCES xi1820Analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

@@ -18,6 +18,11 @@ o2physics_add_dpl_workflow(jet-deriveddata-producer
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils O2Physics::SGCutParHolder
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(jet-deriveddata-embedding-producer
+                    SOURCES derivedDataProducerEmbedding.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils O2Physics::SGCutParHolder
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(jet-deriveddata-trigger-producer
                     SOURCES derivedDataTriggerProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore

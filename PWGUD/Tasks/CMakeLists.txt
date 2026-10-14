@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(upc-polarisation-jpsi-incoh
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(upc-track-vertexing-qa
+                           SOURCES upcTrackVertexingQA.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(upc-analysis
                            SOURCES upcAnalysis.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
@@ -301,5 +306,10 @@ o2physics_add_dpl_workflow(upc-test-fit-bit-mapping
 
 o2physics_add_dpl_workflow(pt-spectra-inclusive-upc
                            SOURCES ptSpectraInclusiveUpc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-deuteron-spectra
+                           SOURCES sgDeuteronSpectra.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)

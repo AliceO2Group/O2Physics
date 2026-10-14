@@ -3321,6 +3321,17 @@ struct AnalysisDileptonTrackTrack {
     if (!cfgTrackSelection_TrackCuts.empty()) {
       cfgTrackSelection_objArrayTrackCuts = TString(cfgTrackSelection_TrackCuts).Tokenize(",");
     }
+    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", cfgTrackSelection_TrackCuts, false);
+    if (!cfgTrackSelection_TrackCuts.empty()) {
+      if (cfgTrackSelection_objArrayTrackCuts == nullptr) {
+        cfgTrackSelection_objArrayTrackCuts = new TObjArray();
+      }
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(cfgTrackSelection_TrackCuts.data());
+      for (const auto& t : addTrackCuts) {
+        auto tempObjStr = new TObjString(t->GetName());
+        cfgTrackSelection_objArrayTrackCuts->Add(tempObjStr);
+      }
+    }
     for (Int_t icut = 0; icut < cfgTrackSelection_objArrayTrackCuts->GetEntries(); ++icut) {
       TString cutName = cfgTrackSelection_objArrayTrackCuts->At(icut)->GetName();
       fTrackCutNames.push_back(cutName);
@@ -3721,7 +3732,7 @@ struct AnalysisDileptonTrackTrack {
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processX3872, "Run X(3872) -> J/psi + pi+ pi- pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processMCGenWithEventSelection, "Loop over MC particle stack and fill generator level histograms with event selection", false);
-  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -3824,6 +3835,10 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
     //   dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_track");
     // }
 
+    if (classStr.Contains("MCTruthGenQuad")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_quad", histName);
+    }
+
     if (classStr.Contains("DileptonsSelected")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
@@ -3846,6 +3861,10 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
 
     if (classStr.Contains("DileptonHadronCorrelation")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
+    }
+
+    if (classStr.Contains("Quadruplet")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-dihadron", histName);
     }
   } // end loop over histogram classes
 }

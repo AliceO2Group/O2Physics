@@ -312,6 +312,8 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   nIntercepts = 0;
   nSiliconPoints = 0;
   nGasPoints = 0;
+  trackIU = -1.f;
+  trackOU = -1.f;
   std::array<float, 3> posIni{}; // provision for != PV
   inputTrack.getXYZGlo(posIni);
   const float initialRadius = std::hypot(posIni[0], posIni[1]);
@@ -416,6 +418,9 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       firstLayerReached = il;
     }
     lastLayerReached = il;
+    if (layers[il].isTOF()) {
+      continue; // TOF layers are not used for tracking, but are kept in range for the innermost/outermost update
+    }
     nIntercepts++;
   }
 
@@ -475,7 +480,7 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       continue;
     }
 
-    if (!layers[il].isInert()) { // only update covm for tracker hits
+    if (!layers[il].isInert() && !layers[il].isTOF()) { // only update covm for tracker hits
       const o2::track::TrackParametrization<float>::dim2_t hitpoint = {xyz1[1], xyz1[2]};
       const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {layers[il].getResolutionRPhi() * layers[il].getResolutionRPhi(), 0.f, layers[il].getResolutionZ() * layers[il].getResolutionZ()};
 
@@ -510,7 +515,14 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     }
 
     hits.push_back(thisHit);
-    if (!layers[il].isInert()) { // good hit probability calculation
+    if (!layers[il].isInert()) {
+      trackIU = std::hypot(spacePoint[0], spacePoint[1]);
+      if (trackOU < 0.f) {
+        trackOU = trackIU;
+      }
+    }
+
+    if (!layers[il].isInert() && !layers[il].isTOF()) { // good hit probability calculation
       float sigYCmb = o2::math_utils::sqrt(inwardTrack.getSigmaY2() + layers[il].getResolutionRPhi() * layers[il].getResolutionRPhi());
       float sigZCmb = o2::math_utils::sqrt(inwardTrack.getSigmaZ2() + layers[il].getResolutionZ() * layers[il].getResolutionZ());
       goodHitProbability[il] = probGoodChiSqHit(layers[il].getRadius() * 100, sigYCmb * 100, sigZCmb * 100);

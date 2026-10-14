@@ -77,7 +77,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgDcaz, bool, false, "choose dcaz")
   O2_DEFINE_CONFIGURABLE(cfgDcazCut, float, 2.0, "dcaz cut")
   O2_DEFINE_CONFIGURABLE(cfgMaxTPCChi2NCl, int, 4, "tpcchi2")
-  O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 1, "choose one side 0:A; 1:C")
+  O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 0, "choose one side 0:A; 1:C")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum number of crossed TPC Rows")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum number of found TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum number of ITS clusters")
@@ -90,7 +90,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgRctFlagEnabled, bool, false, "use run condition table flag")
   O2_DEFINE_CONFIGURABLE(cfgRctFlagIndex, int, 1, "1: isCBTOk; 2:isCBTZdcOk; 3: isCBTHadronOk; 4:isCBTHadronZdcOk ")
   O2_DEFINE_CONFIGURABLE(cfgIRMaxCut, double, 50, "maximum interaction rate for UPC events")
-  O2_DEFINE_CONFIGURABLE(cfgZdcTime, bool, false, "choose zdc time cut")
+  O2_DEFINE_CONFIGURABLE(cfgZdcTime, bool, true, "choose zdc time cut")
   O2_DEFINE_CONFIGURABLE(cfgZdcTimeCut, float, 2.0, "zdc time cut")
   O2_DEFINE_CONFIGURABLE(cfgSbp, bool, true, "choose sbp")
   O2_DEFINE_CONFIGURABLE(cfgvtxITSTPC, bool, true, "choose vtxITSTPC")
@@ -121,7 +121,12 @@ struct FlowCorrelationsUpc {
 
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
-  Filter collisionFilter = ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) && (aod::upcservice::truegapside == cfgGapSide));
+  Filter collisionFilter = ifnode(
+    cfgGapSide.node() == 0,
+    ((aod::udcollision::gapSide == static_cast<uint8_t>(0)) &&
+     (aod::upcservice::truegapside == 0)),
+    ((aod::udcollision::gapSide == static_cast<uint8_t>(1)) &&
+     (aod::upcservice::truegapside == 1)));
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb{};
