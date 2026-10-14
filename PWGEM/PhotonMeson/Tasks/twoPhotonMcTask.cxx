@@ -50,6 +50,7 @@
 #include <TH2.h>
 #include <TH3.h>
 #include <THn.h>
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
@@ -59,6 +60,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <format>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -117,6 +119,36 @@ enum class LegMatchStatus : uint8_t {
   kInsideWindowEoverP, // leg found inside the window, but E/p above the cut (primaries only)
   kInsideWindow,       // leg found inside the window: the cluster should have been vetoed
   kNStatus
+};
+
+/// \brief Species of the closest common ancestor of an "other hadron" pair
+enum class OtherHadronSpecies : uint8_t {
+  kChargedPion = 0,
+  kChargedKaon,
+  kK0L,
+  kRho,
+  kKstar,
+  kPhi,
+  kOtherMeson, // incl. f0, f2, a, b, h resonances
+  kProton,
+  kNeutron,
+  kDelta,
+  kLambda,
+  kSigma,
+  kXi,
+  kOtherBaryon,
+  kOther,
+  kNSpecies
+};
+
+/// \brief How the particles directly below the common ancestor were produced, i.e. how the ancestor split into the two branches.
+///        Ordered such that std::max of the two branches gives the material interaction if one branch comes from it.
+enum class SplitProduction : uint8_t {
+  kGeneratorDecay = 0,  // produced by the event generator: decay in the generator (resonances, Sigma0, ...)
+  kTransportDecay,      // produced by the transport code in a decay (weak decays of K+-, K0L, Lambda, Xi, ...)
+  kHadronicInteraction, // produced by the transport code in a hadronic interaction in the detector material
+  kOtherProcess,        // produced by the transport code in any other process
+  kNProduction
 };
 
 enum CentralityEstimator {
@@ -388,6 +420,25 @@ struct TwoPhotonMcTask {
     for (std::size_t i = 0; i < BucketLabels.size(); ++i) {
       hPairAncestor->GetAxis(4)->SetBinLabel(static_cast<int>(i) + 1, BucketLabels[i].data());
     }
+    // "other hadron" pairs: which hadron is the common ancestor, and did it split in a decay or a material interaction
+    const AxisSpec axisOHMass{160, 0., 0.8, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
+    const AxisSpec axisOHPt{20, 0., 20., "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisOHSpecies{static_cast<int>(OtherHadronSpecies::kNSpecies), -0.5, static_cast<int>(OtherHadronSpecies::kNSpecies) - 0.5, "common ancestor"};
+    const AxisSpec axisOHProduction{static_cast<int>(SplitProduction::kNProduction), -0.5, static_cast<int>(SplitProduction::kNProduction) - 0.5, "split of the common ancestor"};
+    auto hOtherHadron = registry.add<THn>("PCM/OtherHadron/hAncestor", "other hadron pairs: minv vs pT vs ancestor species vs split production vs pair truth", HistType::kTHnF, {axisOHMass, axisOHPt, axisOHSpecies, axisOHProduction, thnAxisPairTruth});
+    static constexpr std::array<std::string_view, static_cast<int>(OtherHadronSpecies::kNSpecies)> SpeciesLabels = {"#pi^{#pm}", "K^{#pm}", "K^{0}_{L}", "#rho", "K^{*}", "#phi", "other meson", "p", "n", "#Delta", "#Lambda", "#Sigma", "#Xi", "other baryon", "other"};
+    for (std::size_t i = 0; i < SpeciesLabels.size(); ++i) {
+      hOtherHadron->GetAxis(2)->SetBinLabel(static_cast<int>(i) + 1, SpeciesLabels[i].data());
+    }
+    static constexpr std::array<std::string_view, static_cast<int>(SplitProduction::kNProduction)> ProductionLabels = {"generator decay", "transport decay", "hadronic interaction", "other process"};
+    for (std::size_t i = 0; i < ProductionLabels.size(); ++i) {
+      hOtherHadron->GetAxis(3)->SetBinLabel(static_cast<int>(i) + 1, ProductionLabels[i].data());
+    }
+    for (std::size_t i = 0; i < TruthLabels.size(); ++i) {
+      hOtherHadron->GetAxis(4)->SetBinLabel(static_cast<int>(i) + 1, TruthLabels[i].data());
+    }
+    registry.add("PCM/OtherHadron/hAncestorPdg", "other hadron pairs: |PDG| of the common ancestor;|PDG| (last bin: #geq 9999);pairs", HistType::kTH1D, {{10000, -0.5, 9999.5}});
+
     // mixed event, same axes as hPairAncestor without the bucket (pairs from different events share no ancestor)
     auto hMixed = registry.add<THn>("PCM/hMixed", "minv vs pT vs cent vs pair truth, mixed event", HistType::kTHnF, {thnAxisInvMass, thnAxisPtRec, thnAxisCentOrMult, thnAxisPairTruth});
     for (std::size_t i = 0; i < TruthLabels.size(); ++i) {
@@ -808,6 +859,112 @@ struct TwoPhotonMcTask {
     fillLegMatch<true>(matchedSeconds.sliceBy(perEMCClusterMS, emc.globalIndex()), emc.e(), pLeg, ptLeg);
   }
 
+  /// \brief Species class of the common ancestor of an "other hadron" pair
+  /// \param pdg PDG code of the ancestor
+  static OtherHadronSpecies otherHadronSpecies(const int pdg)
+  {
+    const int absPdg = std::abs(pdg);
+    switch (absPdg) {
+      case PDG_t::kPiPlus:
+        return OtherHadronSpecies::kChargedPion;
+      case PDG_t::kKPlus:
+        return OtherHadronSpecies::kChargedKaon;
+      case PDG_t::kK0Long:
+        return OtherHadronSpecies::kK0L;
+      case PDG_t::kRho770_0:
+      case PDG_t::kRho770Plus:
+        return OtherHadronSpecies::kRho;
+      case o2::constants::physics::Pdg::kK0Star892:
+      case o2::constants::physics::Pdg::kKPlusStar892:
+        return OtherHadronSpecies::kKstar;
+      case o2::constants::physics::Pdg::kPhi:
+        return OtherHadronSpecies::kPhi;
+      case PDG_t::kProton:
+        return OtherHadronSpecies::kProton;
+      case PDG_t::kNeutron:
+        return OtherHadronSpecies::kNeutron;
+      case 1114: // o2-linter: disable=pdg/explicit-code (Delta-, no named constant)
+      case 2114: // o2-linter: disable=pdg/explicit-code (Delta0, no named constant)
+      case 2214: // o2-linter: disable=pdg/explicit-code (Delta+, no named constant)
+      case 2224: // o2-linter: disable=pdg/explicit-code (Delta++, no named constant)
+        return OtherHadronSpecies::kDelta;
+      case PDG_t::kLambda0:
+        return OtherHadronSpecies::kLambda;
+      case PDG_t::kSigmaMinus:
+      case PDG_t::kSigma0:
+      case PDG_t::kSigmaPlus:
+        return OtherHadronSpecies::kSigma;
+      case PDG_t::kXiMinus:
+      case 3322: // o2-linter: disable=pdg/explicit-code (Xi0, no named constant)
+        return OtherHadronSpecies::kXi;
+      default:
+        break;
+    }
+    constexpr int MinHadronPdg = 100;
+    constexpr int MaxHadronPdg = 10000000;
+    if (absPdg < MinHadronPdg || absPdg >= MaxHadronPdg) {
+      return OtherHadronSpecies::kOther;
+    }
+    // PDG numbering: mesons have no third quark, i.e. the thousands digit is 0 (also for 9000000 type resonances)
+    return (absPdg / 1000) % 10 == 0 ? OtherHadronSpecies::kOtherMeson : OtherHadronSpecies::kOtherBaryon; // o2-linter: disable=magic-number (PDG digit)
+  }
+
+  /// \brief How an MC particle was produced
+  /// \param mcIter iterator of the full MC particle table, WILL BE CHANGED
+  /// \param id index of the particle
+  template <o2::soa::is_iterator TMCIter>
+  static SplitProduction productionOf(TMCIter& mcIter, const int id)
+  {
+    mcIter.setCursor(id);
+    if (mcIter.producedByGenerator()) {
+      return SplitProduction::kGeneratorDecay;
+    }
+    switch (mcIter.getProcess()) {
+      case TMCProcess::kPDecay:
+        return SplitProduction::kTransportDecay;
+      case TMCProcess::kPHadronic:
+      case TMCProcess::kPHInhelastic:
+      case TMCProcess::kPNuclearAbsorption:
+      case TMCProcess::kPNCapture:
+      case TMCProcess::kPPbarAnnihilation:
+      case TMCProcess::kPNbarAnnihilation:
+      case TMCProcess::kPEvaporation:
+      case TMCProcess::kPNuclearFission:
+      case TMCProcess::kPPhotoNuclear:
+      case TMCProcess::kPPhotonInhelastic:
+        return SplitProduction::kHadronicInteraction;
+      default:
+        return SplitProduction::kOtherProcess;
+    }
+  }
+
+  /// \brief Fill which hadron is the common ancestor of an "other hadron" pair and how it split into the two branches
+  /// \param chain1 ancestor chain of the first candidate
+  /// \param chain2 ancestor chain of the second candidate
+  /// \param pairTruth truth flag of the pair
+  /// \param vMeson pair four vector
+  /// \param mcIter iterator of the full MC particle table, WILL BE CHANGED
+  template <int pairType, o2::soa::is_iterator TMCIter>
+  void diagnoseOtherHadron(Chain const& chain1, Chain const& chain2, const PhotonTruth pairTruth, ROOT::Math::PtEtaPhiMVector const& vMeson, TMCIter& mcIter)
+  {
+    static constexpr std::array<std::string_view, 3> HistAncestor = {"PCM/OtherHadron/hAncestor", "EMC/OtherHadron/hAncestor", "PCMEMC/OtherHadron/hAncestor"};
+    static constexpr std::array<std::string_view, 3> HistAncestorPdg = {"PCM/OtherHadron/hAncestorPdg", "EMC/OtherHadron/hAncestorPdg", "PCMEMC/OtherHadron/hAncestorPdg"};
+    static constexpr int MaxPdgBin = 9999;
+
+    const int ancestor = getFirstCommonAncestor(chain1, chain2);
+    const auto pos1 = std::distance(chain1.begin(), std::ranges::find(chain1, ancestor));
+    const auto pos2 = std::distance(chain2.begin(), std::ranges::find(chain2, ancestor));
+    if (ancestor < 0 || pos1 < 1 || pos2 < 1 || pos1 >= std::ssize(chain1) || pos2 >= std::ssize(chain2)) {
+      return; // not possible for "other hadron" (the ancestor is neither of the candidates), protection only
+    }
+    // the particle directly below the ancestor in each branch tells how the ancestor split
+    const SplitProduction production = std::max(productionOf(mcIter, chain1[pos1 - 1]), productionOf(mcIter, chain2[pos2 - 1]));
+    mcIter.setCursor(ancestor);
+    const int pdg = mcIter.pdgCode();
+    registry.fill(HIST(HistAncestor[pairType]), vMeson.M(), vMeson.Pt(), static_cast<int>(otherHadronSpecies(pdg)), static_cast<int>(production), static_cast<int>(pairTruth));
+    registry.fill(HIST(HistAncestorPdg[pairType]), std::min(std::abs(pdg), MaxPdgBin));
+  }
+
   /// \brief Apply the pair cuts and fill the pair ancestor histogram
   /// \return bucket of the pair, std::nullopt if the pair was rejected
   template <int pairType, o2::soa::is_iterator TPhoton1, o2::soa::is_iterator TPhoton2, o2::soa::is_iterator TMCIter>
@@ -830,6 +987,9 @@ struct TwoPhotonMcTask {
     const PhotonTruth pairTruth = std::max(truth1, truth2);
     const PairBucket bucket = classifyPair(chain1, chain2, mcIter);
     registry.fill(HIST(HistPairAncestor[pairType]), vMeson.M(), vMeson.Pt(), centOrMult, static_cast<int>(pairTruth), static_cast<int>(bucket));
+    if (bucket == PairBucket::kCrossOtherHadron) {
+      diagnoseOtherHadron<pairType>(chain1, chain2, pairTruth, vMeson, mcIter);
+    }
     if (mesonConfig.cfgEnableQA.value) {
       registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
     }
