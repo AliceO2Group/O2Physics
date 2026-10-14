@@ -515,7 +515,7 @@ struct matchingMFT {
   }
 
   template <bool withMFTCov = false, typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTTracksCov>
-  void fillHistograms(TCollision const& collision, TFwdTrack fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTTracksCov const& mftCovs)
+  void fillHistograms(TCollision const& collision, const TFwdTrack& fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTTracksCov const& mftCovs)
   {
     if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) { // only for protection
       return;

@@ -35,8 +35,11 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TMath.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;

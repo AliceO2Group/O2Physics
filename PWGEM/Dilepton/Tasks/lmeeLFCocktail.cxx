@@ -127,7 +127,7 @@ struct lmeelfcocktail {
     return true;
   }
 
-  bool isAcceptedSingle(ROOT::Math::PtEtaPhiMVector p1)
+  bool isAcceptedSingle(const ROOT::Math::PtEtaPhiMVector& p1)
   {
     if (p1.Pt() < fConfigMinPt)
       return false;
@@ -138,7 +138,7 @@ struct lmeelfcocktail {
     return true;
   }
 
-  bool isAcceptedPair(ROOT::Math::PtEtaPhiMVector p1, ROOT::Math::PtEtaPhiMVector p2)
+  bool isAcceptedPair(const ROOT::Math::PtEtaPhiMVector& p1, const ROOT::Math::PtEtaPhiMVector& p2)
   {
     if (!isAcceptedSingle(p1)) {
       return false;
@@ -167,7 +167,7 @@ struct lmeelfcocktail {
   }
 
   template <typename T>
-  bool isAcceptedPair(T& p1, T& p2)
+  bool isAcceptedPair(const T& p1, const T& p2)
   {
     ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(p2.ptSmeared(), p2.etaSmeared(), p2.phiSmeared(), o2::constants::physics::MassElectron);
@@ -175,13 +175,13 @@ struct lmeelfcocktail {
   }
 
   template <typename T>
-  bool isAcceptedSingle(T& p1)
+  bool isAcceptedSingle(const T& p1)
   {
     ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
     return isAcceptedSingle(v1);
   }
 
-  void addHistogram1D_stage(TString histname, AxisSpec axis, int& i, TString s)
+  void addHistogram1D_stage(const TString& histname, const AxisSpec& axis, int& i, const TString& s)
   {
     i++;
     TString name = s + histname;
@@ -201,14 +201,14 @@ struct lmeelfcocktail {
     }
   }
 
-  void addHistogram1D(TString histname, AxisSpec axis, int& i)
+  void addHistogram1D(const TString& histname, const AxisSpec& axis, int& i)
   {
-    for (auto s : stage) {
+    for (const auto& s : stage) {
       addHistogram1D_stage(histname, axis, i, s);
     }
   }
 
-  void addHistogram1D_mother(TString histname, AxisSpec axis, int& i) // mother histograms only for gen. level, no decay channels
+  void addHistogram1D_mother(const TString& histname, const AxisSpec& axis, int& i) // mother histograms only for gen. level, no decay channels
   {
     i++;
     TString name = stage[0] + histname;
@@ -222,7 +222,7 @@ struct lmeelfcocktail {
     }
   }
 
-  void addHistogram2D_stage(TString histname, AxisSpec axis1, AxisSpec axis2, int& i, TString s)
+  void addHistogram2D_stage(const TString& histname, const AxisSpec& axis1, const AxisSpec& axis2, int& i, const TString& s)
   {
     i++;
     TString name = s + histname;
@@ -242,15 +242,15 @@ struct lmeelfcocktail {
     }
   }
 
-  void addHistogram2D(TString histname, AxisSpec axis1, AxisSpec axis2, int& i)
+  void addHistogram2D(const TString& histname, const AxisSpec& axis1, const AxisSpec& axis2, int& i)
   {
-    for (auto s : stage) {
+    for (const auto& s : stage) {
       addHistogram2D_stage(histname, axis1, axis2, i, s);
     }
   }
 
   template <typename TAxes>
-  void addHistogramND_stage(TString histname, TAxes const& axes, int& i, TString s)
+  void addHistogramND_stage(const TString& histname, TAxes const& axes, int& i, const TString& s)
   {
     i++;
     TString name = s + histname;
@@ -271,34 +271,34 @@ struct lmeelfcocktail {
   }
 
   template <typename TAxes>
-  void addHistogramND(TString histname, TAxes const& axes, int& i)
+  void addHistogramND(const TString& histname, TAxes const& axes, int& i)
   {
-    for (auto s : stage) {
+    for (const auto& s : stage) {
       addHistogramND_stage(histname, axes, i, s);
     }
   }
 
-  void fillHistogram1D(TString histname, int s, int pdg, int other_daughter_pdg, float value, float weight)
+  void fillHistogram1D(const TString& histname, int s, int pdg, int other_daughter_pdg, float value, float weight)
   {
     histograms1D[histogramId[stage[s] + histname]]->Fill(value, weight);
     histograms1D[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(value, weight);
     histograms1D[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(value, weight);
   }
 
-  void fillHistogram1D_mother(TString histname, int pdg, float value, float weight)
+  void fillHistogram1D_mother(const TString& histname, int pdg, float value, float weight)
   {
     histograms1D[histogramId[stage[0] + histname]]->Fill(value, weight);
     histograms1D[histogramId[stage[0] + mesons[pdg].name + histname]]->Fill(value, weight);
   }
 
-  void fillHistogram2D(TString histname, int s, int pdg, int other_daughter_pdg, float value1, float value2, float weight)
+  void fillHistogram2D(const TString& histname, int s, int pdg, int other_daughter_pdg, float value1, float value2, float weight)
   {
     histograms2D[histogramId[stage[s] + histname]]->Fill(value1, value2, weight);
     histograms2D[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(value1, value2, weight);
     histograms2D[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(value1, value2, weight);
   }
 
-  void fillHistogramND(TString histname, int s, int pdg, int other_daughter_pdg, double* values, double weight)
+  void fillHistogramND(const TString& histname, int s, int pdg, int other_daughter_pdg, double* values, double weight)
   {
     histogramsND[histogramId[stage[s] + histname]]->Fill(values, weight);
     histogramsND[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(values, weight);

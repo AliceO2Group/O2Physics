@@ -19,6 +19,7 @@
 ///
 
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
@@ -58,6 +59,8 @@
 
 using namespace o2;
 using namespace o2::framework;
+
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected,
                                aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
@@ -106,6 +109,7 @@ struct QVectorsTable {
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest"};
   Configurable<float> cfgMaxCentrality{"cfgMaxCentrality", 100.f, "max. centrality for Q vector calibration"};
 
+  Configurable<bool> autodetectApass{"autodetectApass", false, "Automatically detect the analysis pass of the Qvector corrections"};
   Configurable<bool> useCorrectionForRun{"useCorrectionForRun", true, "Get Qvector corrections based on run number instead of timestamp"};
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
   Configurable<std::string> cfgQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB path for Q-vector calibration constants"};
@@ -293,14 +297,27 @@ struct QVectorsTable {
     }
 
     corrsQvecSp.clear();
+    std::string periodFolder;
+    if (autodetectApass) {
+      // Construct a subfolder like LHCXX_apassY
+      int maxCharactersLHCYear = 5; // LHCXX
+      periodFolder = "/" + metadataInfo.get("LPMProductionTag").substr(0, maxCharactersLHCYear) +
+                     "_" + metadataInfo.get("RecoPassName");
+    }
     for (std::size_t i = 0; i < cfgnMods->size(); i++) {
       int ind = cfgnMods->at(i);
       fullPath = cfgQvecCalibPath;
+      if (autodetectApass) {
+        fullPath += periodFolder;
+      }
       fullPath += "/v";
       fullPath += std::to_string(ind);
       auto modeCorrQvecSp = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       if (!modeCorrQvecSp) {
         fullPath = cfgQvecCalibPath;
+        if (autodetectApass) {
+          fullPath += periodFolder;
+        }
         fullPath += "/v2";
         modeCorrQvecSp = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       }
@@ -316,11 +333,17 @@ struct QVectorsTable {
       for (std::size_t i = 0; i < cfgnMods->size(); i++) {
         int ind = cfgnMods->at(i);
         fullPath = cfgQvecCalibPath;
+        if (autodetectApass) {
+          fullPath += periodFolder;
+        }
         fullPath += "/eseq";
         fullPath += std::to_string(ind);
         auto modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
         if (!modeCorrQvecEse) {
           fullPath = cfgQvecCalibPath;
+          if (autodetectApass) {
+            fullPath += periodFolder;
+          }
           fullPath += "/eseq2";
           modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
         }
@@ -337,6 +360,9 @@ struct QVectorsTable {
       for (std::size_t i = 0; i < cfgnMods->size(); i++) {
         int ind = cfgnMods->at(i);
         fullPath = cfgShiftPath;
+        if (autodetectApass) {
+          fullPath += periodFolder;
+        }
         fullPath += "/v";
         fullPath += std::to_string(ind);
         auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
@@ -352,6 +378,9 @@ struct QVectorsTable {
         for (std::size_t i = 0; i < cfgnMods->size(); i++) {
           int ind = cfgnMods->at(i);
           fullPath = cfgShiftPath;
+          if (autodetectApass) {
+            fullPath += periodFolder;
+          }
           fullPath += "/eseq";
           fullPath += std::to_string(ind);
           auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
@@ -365,6 +394,9 @@ struct QVectorsTable {
     }
 
     fullPath = cfgGainEqPath;
+    if (autodetectApass) {
+      fullPath += periodFolder + "/GainEq";
+    }
     fullPath += "/FT0";
     const int nPixelsFT0 = 208;
     auto const* objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
@@ -377,6 +409,9 @@ struct QVectorsTable {
     }
 
     fullPath = cfgGainEqPath;
+    if (autodetectApass) {
+      fullPath += periodFolder + "/GainEq";
+    }
     fullPath += "/FV0";
     const int nChannelsFV0 = 48;
     auto const* objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
@@ -390,7 +425,7 @@ struct QVectorsTable {
   }
 
   template <typename TrackType>
-  bool selTrack(const TrackType track)
+  bool selTrack(const TrackType& track)
   {
     if (track.pt() < cfgMinPtOnTPC)
       return false;
@@ -917,6 +952,7 @@ struct QVectorsTable {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{
     adaptAnalysisTask<QVectorsTable>(cfgc)};
 }

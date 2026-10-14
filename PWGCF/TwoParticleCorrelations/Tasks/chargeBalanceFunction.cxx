@@ -120,6 +120,7 @@ struct ChargeBalanceFunction {
   // Efficiency Correction
   Configurable<bool> cGetCorrectionFlag{"cGetCorrectionFlag", false, "Apply correction flag"};
   Configurable<bool> cGetNuaCorrectionFlag{"cGetNuaCorrectionFlag", false, "Apply NUA correction flag"};
+  Configurable<bool> cDoEffNuaCorrection{"cDoEffNuaCorrection", false, "Do NUE x NUA correction"};
 
   // CCDB
   Configurable<std::string> cUrlCCDB{"cUrlCCDB", "http://alice-ccdb.cern.ch", "ALICE CCDB URL"};
@@ -247,6 +248,10 @@ struct ChargeBalanceFunction {
     // Rho1 for R2 RapPhi
     histos.add("Reco/h3f_n1_rapphi_P", "#rho_{1}^{#plus}", kTH3F, {axisCent, axisTrackEta, axisTrackPhi});
     histos.add("Reco/h3f_n1_rapphi_M", "#rho_{1}^{#minus}", kTH3F, {axisCent, axisTrackEta, axisTrackPhi});
+
+    // Rho1 for P2 pT
+    histos.add("Reco/h2f_n1_pt_P", "#rho_{1}^{#plus}", kTH2F, {axisCent, axisTrackPt});
+    histos.add("Reco/h2f_n1_pt_M", "#rho_{1}^{#minus}", kTH2F, {axisCent, axisTrackPt});
 
     // Rho1 for P2 RapPhi
     histos.add("Reco/h3f_pt_rapphi_P", "#rho_{1}^{#plus}", kTH3F, {axisCent, axisTrackEta, axisTrackPhi});
@@ -394,7 +399,7 @@ struct ChargeBalanceFunction {
   }
 
   template <RecGenType rec_gen, typename T, typename S>
-  float getCorrectionFactor(T const& track, S const& sign)
+  float getEffCorrectionFactor(T const& track, S const& sign)
   {
     if (!cGetCorrectionFlag) {
       return 1.;
@@ -530,7 +535,13 @@ struct ChargeBalanceFunction {
     const auto phibin1 = static_cast<int>(trk_1.phi() / phibinwidth);
     const auto phibin2 = static_cast<int>(trk_2.phi() / phibinwidth);
 
-    float corfac = getCorrectionFactor<rec_gen>(trk_1, sign_1) * getCorrectionFactor<rec_gen>(trk_2, sign_2);
+    float effcorr = getEffCorrectionFactor<rec_gen>(trk_1, sign_1) * getEffCorrectionFactor<rec_gen>(trk_2, sign_2);
+    float nuacorr = getNuaCorrectionFactor<rec_gen>(trk_1, sign_1) * getNuaCorrectionFactor<rec_gen>(trk_2, sign_2);
+    float corrfact = effcorr;
+
+    if (cDoEffNuaCorrection) {
+      corrfact *= nuacorr;
+    }
 
     if (rapbin1 >= 0 && rapbin2 >= 0 && phibin1 >= 0 && phibin2 >= 0 && rapbin1 < nrapbins && rapbin2 < nrapbins && phibin1 < nphibins && phibin2 < nphibins) {
 
@@ -538,21 +549,21 @@ struct ChargeBalanceFunction {
       int rapphiy = rapbin2 * nphibins + phibin2;
 
       if ((sign_1 > 0 && sign_2 < 0) || (sign_1 < 0 && sign_2 > 0)) {
-        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n2_rapphi_PM"), cent, rapphix + 0.5, rapphiy + 0.5, corfac);
-        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptpt_rapphi_PM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * trk_2.pt() * corfac);
-        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_npt_rapphi_PM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * corfac);
-        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptn_rapphi_PM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_2.pt() * corfac);
+        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n2_rapphi_PM"), cent, rapphix + 0.5, rapphiy + 0.5, corrfact);
+        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptpt_rapphi_PM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * trk_2.pt() * corrfact);
+        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_npt_rapphi_PM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * corrfact);
+        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptn_rapphi_PM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_2.pt() * corrfact);
       } else {
         if (sign_1 > 0 && sign_2 > 0) {
-          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n2_rapphi_PP"), cent, rapphix + 0.5, rapphiy + 0.5, corfac);
-          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptpt_rapphi_PP"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * trk_2.pt() * corfac);
-          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_npt_rapphi_PP"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * corfac);
-          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptn_rapphi_PP"), cent, rapphix + 0.5, rapphiy + 0.5, trk_2.pt() * corfac);
+          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n2_rapphi_PP"), cent, rapphix + 0.5, rapphiy + 0.5, corrfact);
+          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptpt_rapphi_PP"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * trk_2.pt() * corrfact);
+          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_npt_rapphi_PP"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * corrfact);
+          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptn_rapphi_PP"), cent, rapphix + 0.5, rapphiy + 0.5, trk_2.pt() * corrfact);
         } else if (sign_1 < 0 && sign_2 < 0) {
-          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n2_rapphi_MM"), cent, rapphix + 0.5, rapphiy + 0.5, corfac);
-          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptpt_rapphi_MM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * trk_2.pt() * corfac);
-          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_npt_rapphi_MM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * corfac);
-          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptn_rapphi_MM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_2.pt() * corfac);
+          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n2_rapphi_MM"), cent, rapphix + 0.5, rapphiy + 0.5, corrfact);
+          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptpt_rapphi_MM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * trk_2.pt() * corrfact);
+          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_npt_rapphi_MM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_1.pt() * corrfact);
+          histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_ptn_rapphi_MM"), cent, rapphix + 0.5, rapphiy + 0.5, trk_2.pt() * corrfact);
         }
       }
     }
@@ -573,8 +584,13 @@ struct ChargeBalanceFunction {
     static constexpr auto SubDirRecGen = std::array{"Reco/", "McGen/"};
 
     // Correction factor
-    float corrFact = getCorrectionFactor<rec_gen>(track, sign);
+    float effCorr = getEffCorrectionFactor<rec_gen>(track, sign);
     float nuaCorr = getNuaCorrectionFactor<rec_gen>(track, sign);
+    float corrFact = effCorr;
+
+    if (cDoEffNuaCorrection) {
+      corrFact *= nuaCorr;
+    }
 
     // Histograms
     if (sign > 0) {
@@ -584,14 +600,15 @@ struct ChargeBalanceFunction {
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("NUA/h3f_n1_vzrapphi_P"), posz, track.eta(), track.phi());
 
       // Checks
-      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1f_n1_pt_P"), track.pt(), corrFact);
-      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1f_n1_rap_P"), track.eta(), corrFact);
+      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1f_n1_pt_P"), track.pt(), effCorr);
+      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1f_n1_rap_P"), track.eta(), effCorr);
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1f_n1_phi_P"), track.phi(), nuaCorr);
 
       // R2 Rho1 (Eta,Phi)
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n1_rapphi_P"), cent, track.eta(), track.phi(), corrFact);
 
       // P2 Rho1 (Eta,Phi)
+      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2f_n1_pt_P"), cent, track.pt(), corrFact);
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_pt_rapphi_P"), cent, track.eta(), track.phi(), track.pt() * corrFact);
     } else if (sign < 0) {
       // Corrections
@@ -608,6 +625,7 @@ struct ChargeBalanceFunction {
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n1_rapphi_M"), cent, track.eta(), track.phi(), corrFact);
 
       // P2 Rho1 (Eta,Phi)
+      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2f_n1_pt_M"), cent, track.pt(), corrFact);
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_pt_rapphi_M"), cent, track.eta(), track.phi(), track.pt() * corrFact);
     }
   }

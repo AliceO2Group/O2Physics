@@ -418,7 +418,7 @@ struct HfTaskDstarToD0Pi {
   /// @param selectedCands selected candidates with selection flag
   /// @param preslice preslice to slice
   template <bool ApplyMl, typename T1, typename T2>
-  void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice)
+  void runTaskDstar(CollisionsWCent const& cols, const T1& selectedCands, const T2& preslice)
   {
     for (const auto& col : cols) {
       auto nPVContributors = col.numContrib();

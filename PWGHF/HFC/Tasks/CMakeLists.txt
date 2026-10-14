@@ -70,3 +70,8 @@ o2physics_add_dpl_workflow(task-flow
                     COMPONENT_NAME Analysis)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/PWGCF/Core)
+
+o2physics_add_dpl_workflow(task-charm-hadrons-charm-femto-dream
+                    SOURCES taskCharmHadronsCharmFemtoDream.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

@@ -33,6 +33,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -51,38 +52,38 @@ struct ConfV0Filters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massMinLambda{"massMinLambda", 1.f, "Minimum mass for Lambda hypothesis"};
   o2::framework::Configurable<float> massMaxLambda{"massMaxLambda", 1.2f, "Maximum mass for Lambda hypothesis"};
   o2::framework::Configurable<bool> rejectHypothesisK0short{"rejectHypothesisK0short", true, "Rejection of K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMinK0short{"rejectMassMinK0short", 0.475f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMaxK0short{"rejectMassMaxK0short", 0.515f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<float> rejectMassMinK0short{"rejectMassMinK0short", 0.475f, "Minimum mass to reject K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<float> rejectMassMaxK0short{"rejectMassMaxK0short", 0.515f, "Maximum mass to reject K0short hypothesis for Lambda candidates"};
   o2::framework::Configurable<float> massMinK0short{"massMinK0short", 0.45f, "Minimum mass for K0Short hypothesis"};
   o2::framework::Configurable<float> massMaxK0short{"massMaxK0short", 0.53f, "Maximum mass for K0Short hypothesis"};
   o2::framework::Configurable<bool> rejectHypothesisLambda{"rejectHypothesisLambda", true, "Rejection of Lambda hypothesis for K0short candidates"};
-  o2::framework::Configurable<float> rejectMassMinLambda{"rejectMassMinLambda", 1.11f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMaxLambda{"rejectMassMaxLambda", 1.12f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<float> rejectMassMinLambda{"rejectMassMinLambda", 1.11f, "Minimum mass to reject Lambda hypothesis for K0short candidates"};
+  o2::framework::Configurable<float> rejectMassMaxLambda{"rejectMassMaxLambda", 1.12f, "Maximum mass to reject Lambda hypothesis for K0short candidates"};
 };
 
 // selections bits for all v0s
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define V0_DEFAULT_BITS                                                                                                                                          \
-  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all V0s are passed through. Bits for all selections are stored."};               \
-  o2::framework::Configurable<std::vector<float>> dcaDauMax{"dcaDauMax", {1.5f}, "Maximum DCA between the daughters at V0 decay vertex (cm)"};                   \
-  o2::framework::Configurable<std::vector<float>> cpaMin{"cpaMin", {0.99f}, "Minimum cosine of pointing angle"};                                                 \
-  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                                          \
-  o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                                         \
-  o2::framework::Configurable<std::vector<float>> decayVtxMax{"decayVtxMax", {100.f}, "Maximum distance in x,y,z of the decay vertex from primary vertex (cm)"}; \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| for daughter tracks"};                                     \
-  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum DCAxy of the daughters from primary vertex (cm)"};          \
-  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};          \
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a minimal selection. If false, TOF PID is an optional"};                \
-  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, the bit mask for the TOF selection will be ture for all limits if the daugher track has no TOF"};
+#define V0_DEFAULT_BITS                                                                                                                                                                                                                                                                 \
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all V0s are passed through. Bits for all selections are stored."};                                                                                                                                      \
+  o2::framework::Configurable<std::vector<float>> dcaDauMax{"dcaDauMax", {1.5f}, "Maximum DCA between the daughters at V0 decay vertex (cm)"};                                                                                                                                          \
+  o2::framework::Configurable<std::vector<float>> cpaMin{"cpaMin", {0.99f}, "Minimum cosine of pointing angle"};                                                                                                                                                                        \
+  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                                                                                                                                                                 \
+  o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                                                                                                                                                                \
+  o2::framework::Configurable<std::vector<float>> decayVtxMax{"decayVtxMax", {100.f}, "Maximum distance in x,y,z of the decay vertex from primary vertex (cm)"};                                                                                                                        \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| for daughter tracks"};                                                                                                                                                            \
+  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum DCAxy of the daughters from primary vertex (cm)"};                                                                                                                                 \
+  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};                                                                                                                                 \
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, the TOF PID cut is mandatory. For daughters with a TOF signal, the candidate is rejected on failure. For daughters without a TOF signal, the candidate is rejected unless keepTracksWithoutTof is true"}; \
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, daughters without a TOF signal pass the TOF PID cut unconditionally, overriding requireTof. If false, daughters without a TOF signal fail the TOF cut (and are rejected if requireTof is true)"};
 
 // derived selection bits for lambda
 struct ConfLambdaBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("LambdaBits");
   V0_DEFAULT_BITS
-  o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for positive daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> posDauTpcProton{"posDauTpcProton", {5.f}, "Maximum |nsimga_Proton| TPC for positive daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> negDauTpcProton{"negDauTpcProton", {5.f}, "Maximum |nsimga_Proton| TPC negative for daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTpcProton{"posDauTpcProton", {5.f}, "Maximum |nsigma_Proton| TPC for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTpcProton{"negDauTpcProton", {5.f}, "Maximum |nsigma_Proton| TPC for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofProton{"posDauTofProton", {}, "Maximum |nsigma_Proton| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
@@ -93,8 +94,8 @@ struct ConfLambdaBits : o2::framework::ConfigurableGroup {
 struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("K0shortBits");
   V0_DEFAULT_BITS
-  o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for positive daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
 };
@@ -116,11 +117,11 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<datatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
 
 // base selection for analysis task for lambdas
-template <auto& Prefix>
+template <auto& Prefix, int DefaultSign = 1>
 struct ConfLambdaSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   V0_DEFAULT_SELECTIONS(1.0, 1.2, 3122)
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Lambda (+1: Lambda; -1: Antilambda; 0: both)"};
+  o2::framework::Configurable<int> sign{"sign", DefaultSign, "Sign of the Lambda (+1: Lambda; -1: Antilambda; 0: both)"};
 };
 
 // base selection for analysis task for k0short
@@ -128,7 +129,7 @@ template <auto& Prefix>
 struct ConfK0shortSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   V0_DEFAULT_SELECTIONS(0.47, 0.51, 310)
-  o2::framework::Configurable<int> sign{"sign", 0, "Dummy value. For compatability with Lambda selection"};
+  o2::framework::Configurable<int> sign{"sign", 0, "Dummy value. For compatibility with Lambda selection"};
 };
 
 #undef V0_DEFAULT_SELECTIONS
@@ -141,6 +142,12 @@ constexpr const char PrefixK0shortSelection1[] = "K0shortSelection1";
 constexpr const char PrefixK0shortSelection2[] = "K0shortSelection2";
 using ConfK0shortSelection1 = ConfK0shortSelection<PrefixK0shortSelection1>;
 using ConfK0shortSelection2 = ConfK0shortSelection<PrefixK0shortSelection2>;
+
+// selections for strangeness yields (e.g. strangeness enhancement in dN/deta tasks), independent of any pair/triplet selection
+constexpr const char PrefixLambdaSelectionStrangeness[] = "LambdaSelectionStrangeness";
+using ConfLambdaSelectionStrangeness = ConfLambdaSelection<PrefixLambdaSelectionStrangeness, 0>; // lambdas and antilambdas by default
+constexpr const char PrefixK0shortSelectionStrangeness[] = "K0shortSelectionStrangeness";
+using ConfK0shortSelectionStrangeness = ConfK0shortSelection<PrefixK0shortSelectionStrangeness>;
 
 /// The different selections for v0s
 enum V0Sels {
@@ -250,6 +257,7 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     mPhiMax = filter.phiMax.value;
     mRequireTof = config.requireTof.value;
     mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
+    const std::string tofComment = "requireTof = " + std::to_string(mRequireTof) + "; keepTracksWithoutTof = " + std::to_string(mKeepTracksWithoutTof);
 
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       mMassLambdaLowerLimit = filter.massMinLambda.value;
@@ -261,15 +269,19 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         this->addSelection(kPosDaughTpcProton, v0SelectionNames.at(kPosDaughTpcProton), config.posDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, true, mRequireTof, false);
-        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addComments(kPosDaughTofProton, tofComment);
+        this->addComments(kNegDaughTofPion, tofComment);
       }
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
         this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcProton, v0SelectionNames.at(kNegDaughTpcProton), config.negDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
-        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addComments(kPosDaughTofPion, tofComment);
+        this->addComments(kNegDaughTofProton, tofComment);
       }
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
@@ -281,8 +293,10 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
 
       this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
-      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addComments(kPosDaughTofPion, tofComment);
+      this->addComments(kNegDaughTofPion, tofComment);
     }
 
     this->addSelection(kDcaDaughMax, v0SelectionNames.at(kDcaDaughMax), config.dcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
@@ -344,7 +358,9 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
 
     // PID of the daughters under the mass hypothesis of this v0 type
     // TPC nSigma comes from the daughter track, TOF nSigma from the strangeness-tagged v0 candidate
-    // if the daughter has no TOF signal, feed 0 so the bit passes any limit (opt-in via keepTracksWithoutTof)
+    // if the daughter has no TOF signal: feed 0 so the bit passes any limit if keepTracksWithoutTof is set,
+    // overriding requireTof; otherwise feed a value that fails every limit, so that if requireTof is also
+    // true, the mandatory TOF cut correctly rejects the candidate instead of silently letting it through
     auto evaluateDaughterPid = [this](V0Sels tpcBit, float tpcNSigma,
                                       V0Sels tofBit, float tofNSigma, bool hasTof) {
       this->evaluateObservable(tpcBit, tpcNSigma);
@@ -352,6 +368,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
         this->evaluateObservable(tofBit, tofNSigma);
       } else if (mKeepTracksWithoutTof) {
         this->evaluateObservable(tofBit, 0.f);
+      } else {
+        this->evaluateObservable(tofBit, std::numeric_limits<float>::max());
       }
     };
 
@@ -709,7 +727,9 @@ class V0Builder
         v0.v0radius(),
         v0.x(),
         v0.y(),
-        v0.z());
+        v0.z(),
+        v0.alpha(),
+        v0.qtarm());
     }
   }
 
@@ -748,7 +768,9 @@ class V0Builder
         v0.v0radius(),
         v0.x(),
         v0.y(),
-        v0.z());
+        v0.z(),
+        v0.alpha(),
+        v0.qtarm());
     }
   }
 

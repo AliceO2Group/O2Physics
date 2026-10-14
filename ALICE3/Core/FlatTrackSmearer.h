@@ -17,11 +17,12 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <ReconstructionDataFormats/Track.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <span>
 
-namespace o2::delphes
+namespace o2::fastsim
 {
 /**
  * @brief Track smearing with flat LUT backend
@@ -37,47 +38,49 @@ class TrackSmearer
   bool adoptTable(int pdg, const uint8_t* buffer, size_t size, bool forceReload = false);
   bool viewTable(int pdg, const uint8_t* buffer, size_t size, bool forceReload = false);
   bool viewTable(int pdg, std::span<std::byte> const& span, bool forceReload = false);
-  bool hasTable(int pdg) const;
+  [[nodiscard]] bool hasTable(int pdg) const;
 
   void useEfficiency(bool val) { mUseEfficiency = val; }
   void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }
   void skipUnreconstructed(bool val) { mSkipUnreconstructed = val; }
-  void setWhatEfficiency(int val);
+  enum EfficiencyType : uint8_t {
+    kWhatEfficiencyReco = 0,
+    kWhatEfficiencyRecoAndTOF = 1
+  };
+  void setWhatEfficiency(EfficiencyType val) { mWhatEfficiency = val; }
 
-  const lutHeader_t* getLUTHeader(int pdg) const;
-  const lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff) const;
+  [[nodiscard]] const lutHeader_t* getLUTHeader(const int pdg) const;
+  const lutEntry_t* getLUTEntry(const int pdg, const float nch, const float radius, const float eta, const float pt, float& interpolatedEff) const;
 
-  bool smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, float interpolatedEff);
-  bool smearTrack(O2Track& o2track, int pdg, float nch);
+  bool smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, const float interpolatedEff);
+  bool smearTrack(O2Track& o2track, const int pdg, const float nch);
 
-  double getPtRes(const int pdg, const float nch, const float eta, const float pt) const;
-  double getEtaRes(const int pdg, const float nch, const float eta, const float pt) const;
-  double getAbsPtRes(const int pdg, const float nch, const float eta, const float pt) const;
-  double getAbsEtaRes(const int pdg, const float nch, const float eta, const float pt) const;
-  double getEfficiency(const int pdg, const float nch, const float eta, const float pt) const;
+  [[nodiscard]] double getPtRes(const int pdg, const float nch, const float eta, const float pt) const;
+  [[nodiscard]] double getEtaRes(const int pdg, const float nch, const float eta, const float pt) const;
+  [[nodiscard]] double getAbsPtRes(const int pdg, const float nch, const float eta, const float pt) const;
+  [[nodiscard]] double getAbsEtaRes(const int pdg, const float nch, const float eta, const float pt) const;
+  [[nodiscard]] double getEfficiency(const int pdg, const float nch, const float eta, const float pt) const;
 
-  static int getIndexPDG(int pdg);
-  static const char* getParticleName(int pdg);
+  static int getIndexPDG(const int pdg);
+  static const char* getParticleName(const int pdg);
 
-  void setdNdEta(float val) { mdNdEta = val; }
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; }
 
  protected:
-  static constexpr unsigned int nLUTs = 9; // Number of LUT available
-  FlatLutData mLUTData[nLUTs];             // Flat data storage
+  static constexpr unsigned int nLUTs = 9; // Number of LUT available, une per particle species (electron, muon, pion, kaon, proton, deuteron, triton, helium3, alpha)
+  std::array<FlatLutData, nLUTs> mLUTData; // Flat data storage
 
   bool mUseEfficiency = true;
   bool mInterpolateEfficiency = false;
   bool mSkipUnreconstructed = true; // don't smear tracks that are not reco'ed
-  int mWhatEfficiency = 1;
-  float mdNdEta = 1600.f;
+  EfficiencyType mWhatEfficiency = kWhatEfficiencyReco;
 
  private:
   o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
 
-  static bool checkSpecialCase(int pdg, lutHeader_t const& header);
+  static bool checkSpecialCase(const int pdg, lutHeader_t const& header);
 };
 
-} // namespace o2::delphes
+} // namespace o2::fastsim
 
 #endif // ALICE3_CORE_FLATTRACKSMEARER_H_

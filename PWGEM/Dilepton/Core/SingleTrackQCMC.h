@@ -375,7 +375,8 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PromptLF/positive/hsDelta", "diff. between GL and associated SA;p_{T}^{gl} (GeV/c);(p_{T}^{sa} - p_{T}^{gl})/p_{T}^{gl};#Delta#eta;#Delta#varphi (rad.);", o2::framework::HistType::kTHnSparseF, {axis_pt, {100, -0.5, +0.5}, {100, -0.5, +0.5}, {90, -M_PI / 4, M_PI / 4}}, false);
         fRegistry.add("Track/PromptLF/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", o2::framework::HistType::kTH1F, {{1000, -5, 5}}, false);
         fRegistry.add("Track/PromptLF/positive/hTrackType", "track type", o2::framework::HistType::kTH1F, {{6, -0.5f, 5.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDCAxy", "DCAxy;DCA_{xy} (cm)", o2::framework::HistType::kTH1F, {{100, 0.f, 1.0f}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxy", "DCAxy;DCA_{xy} (cm)", o2::framework::HistType::kTH1F, {{1000, 0.f, 1.0f}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxyinSigma", "DCAxy;DCA_{xy} (#sigma)", o2::framework::HistType::kTH1F, {{100, 0.f, 10.0f}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2F, {{200, -0.5f, 0.5f}, {200, -0.5f, 0.5f}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCAxy2DinSigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", o2::framework::HistType::kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
@@ -396,7 +397,6 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPtOverPtGen", "muon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", o2::framework::HistType::kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaEta", "muon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", o2::framework::HistType::kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPhi", "muon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
-        fRegistry.add("Track/PromptLF/positive/hdR_Chi2MatchMCHMFT", "dr vs. matching chi2 MCH-MFT;chi2 match MCH-MFT;#DeltaR;", o2::framework::HistType::kTH2F, {{200, 0.0f, 100}, {200, 0, 0.5}}, false);
         fRegistry.add("Track/PromptLF/positive/hLog10Chi2IP", "chi2IP;log_{10}(#chi^{2}_{IP})", o2::framework::HistType::kTH1F, {{100, -5, 5}}, false);
       }
       fRegistry.addClone("Track/PromptLF/positive/", "Track/PromptLF/negative/");
@@ -776,6 +776,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTrackType"), track.trackType());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxy"), std::sqrt(std::pow(track.fwdDcaX(), 2) + std::pow(track.fwdDcaY(), 2)));
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyinSigma"), dca_xy);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxy2D"), track.fwdDcaX(), track.fwdDcaY());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxy2DinSigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
@@ -793,7 +794,6 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2MatchMCHMID_Pt"), track.pt(), track.chi2MatchMCHMID());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2MatchMCHMFT_Pt"), track.pt(), track.chi2MatchMCHMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hMFTClusterMap"), track.mftClusterMap());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hdR_Chi2MatchMCHMFT"), track.chi2MatchMCHMFT(), std::sqrt(deta * deta + dphi * dphi));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hLog10Chi2IP"), std::log10(track.chi2IP()));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
@@ -810,6 +810,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTrackType"), track.trackType());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxy"), std::sqrt(std::pow(track.fwdDcaX(), 2) + std::pow(track.fwdDcaY(), 2)));
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyinSigma"), dca_xy);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxy2D"), track.fwdDcaX(), track.fwdDcaY());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxy2DinSigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
@@ -827,7 +828,6 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2MatchMCHMID_Pt"), track.pt(), track.chi2MatchMCHMID());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2MatchMCHMFT_Pt"), track.pt(), track.chi2MatchMCHMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hMFTClusterMap"), track.mftClusterMap());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hdR_Chi2MatchMCHMFT"), track.chi2MatchMCHMFT(), std::sqrt(deta * deta + dphi * dphi));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hLog10Chi2IP"), std::log10(track.chi2IP()));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());

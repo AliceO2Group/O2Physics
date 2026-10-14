@@ -60,6 +60,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace o2
@@ -553,6 +554,10 @@ int tracktype = 1;
 std::vector<DptDptTrackSelection*> trackFilters = {}; // the vector of track selectors
 
 struct DptDptTrackSelection {
+  /* disable copying and assignment explicitly */
+  DptDptTrackSelection(const DptDptTrackSelection&) = delete;
+  DptDptTrackSelection& operator=(const DptDptTrackSelection&) = delete;
+
   DptDptTrackSelection(TrackSelection* stdTs, TList* outputList, const char* name) : stdTrackSelection(stdTs)
   {
     passedHistogram = new TH1F(name, name, ptbins, ptlow, ptup);
@@ -560,7 +565,7 @@ struct DptDptTrackSelection {
   }
   DptDptTrackSelection(TrackSelection* stdTs, std::function<float(float)> ptDepCut, TList* outputList, const char* name)
     : stdTrackSelection(stdTs),
-      maxDcazPtDep(ptDepCut)
+      maxDcazPtDep(std::move(ptDepCut))
   {
     passedHistogram = new TH1F(name, name, ptbins, ptlow, ptup);
     outputList->Add(passedHistogram);
@@ -577,7 +582,7 @@ struct DptDptTrackSelection {
   }
   void setMaxDcazPtDep(std::function<float(float)> ptDepCut)
   {
-    maxDcazPtDep = ptDepCut;
+    maxDcazPtDep = std::move(ptDepCut);
   }
   void setRequirePvContributor(bool pvc = true)
   {
@@ -835,7 +840,7 @@ float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
-inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, bool periodInPath = false, const std::string& suffix = "")
+inline TList* getCCDBInput(const auto& ccdb, const char* ccdbpath, const char* ccdbdate, bool periodInPath = false, const std::string& suffix = "")
 {
   std::tm cfgtm = {};
   std::stringstream ss(ccdbdate);
@@ -1106,7 +1111,7 @@ template <typename CollisionObject>
 inline bool triggerSelection(CollisionObject const&)
 {
   LOGF(fatal, "Trigger selection not implemented for this kind of collisions");
-  return false;
+  return true;
 }
 
 /// \brief Trigger selection for reconstructed collision tables without centrality/multiplicity
@@ -1210,7 +1215,7 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
 /// \brief Centrality/multiplicity percentile
 template <typename CollisionObject>
   requires(o2::aod::HasRun2Centrality<CollisionObject>)
-float getCentMultPercentile(CollisionObject collision)
+float getCentMultPercentile(const CollisionObject& collision)
 {
   switch (fCentMultEstimator) {
     case CentMultV0M:
@@ -1226,7 +1231,7 @@ float getCentMultPercentile(CollisionObject collision)
 
 template <typename CollisionObject>
   requires(o2::aod::HasCentrality<CollisionObject>)
-float getCentMultPercentile(CollisionObject collision)
+float getCentMultPercentile(const CollisionObject& collision)
 {
   switch (fCentMultEstimator) {
     case CentMultFV0A:
@@ -1246,9 +1251,9 @@ float getCentMultPercentile(CollisionObject collision)
 
 /// \brief Centrality selection when there is centrality/multiplicity information
 template <typename CollisionObject>
-inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
+inline bool centralitySelectionMult(const CollisionObject& collision, float& centmult)
 {
-  float mult = getCentMultPercentile(collision);
+  float mult = getCentMultPercentile(std::move(collision));
   if (mult < ValidPercentileUpLimit && ValidPercentileLowLimit < mult) {
     centmult = mult;
     collisionFlags.set(CollSelCENTRALITYBIT);
@@ -1279,7 +1284,7 @@ template <typename CollisionObject>
 inline bool centralitySelection(CollisionObject const&, float&)
 {
   LOGF(fatal, "Centrality selection not implemented for this kind of collisions");
-  return false;
+  return true;
 }
 
 /// \brief Centrality selection for reconstructed and detector level collision tables with centrality/multiplicity information
@@ -1365,7 +1370,7 @@ inline bool isCollisionNotExcluded()
 /// \brief select on the collision occupancy
 /// \return true if collison passes the occupancy cut false otherwise
 template <typename CollisionObject>
-inline bool selectOnOccupancy(CollisionObject collision)
+inline bool selectOnOccupancy(const CollisionObject& collision)
 {
   switch (fOccupancyEstimation) {
     case OccupancyNOOCC:
@@ -1395,7 +1400,7 @@ template <typename CollisionObject>
 inline bool occupancySelection(CollisionObject const&)
 {
   LOGF(fatal, "Occupancy selection not implemented for this kind of collisions");
-  return false;
+  return true;
 }
 
 /// \brief Occupancy selection for reconstructed and detector level collision tables with centrality/multiplicity information
@@ -1560,7 +1565,7 @@ struct TpcExcludeTrack {
     switch (method) {
       case kNOEXCLUSION: {
         return false;
-      } break;
+      }
       case kSTATIC: {
         int phiBinIx = getPhiBinIx(track);
         /* bins multiple of four have got sector border */
@@ -1569,7 +1574,7 @@ struct TpcExcludeTrack {
         } else {
           return true;
         }
-      } break;
+      }
       case kDYNAMIC: {
         float phiInTpcSector = std::fmod(track.phi(), TpcPhiSectorWidth);
         if (track.sign() > 0) {
@@ -1577,13 +1582,13 @@ struct TpcExcludeTrack {
         } else {
           return (phiInTpcSector < negativeUpCut->Eval(track.pt())) && (negativeLowCut->Eval(track.pt()) < phiInTpcSector);
         }
-      } break;
+      }
       default:
         return false;
     }
   }
 
-  void setCuts(std::string pLowCut, std::string pUpCut, std::string nLowCut, std::string nUpCut)
+  void setCuts(const std::string& pLowCut, const std::string& pUpCut, const std::string& nLowCut, const std::string& nUpCut)
   {
     LOGF(info, "Setting the TPC exclusion cuts: pLow=%s, pUp=%s, nLow=%s, nUp=%s", pLowCut, pUpCut, nLowCut, nUpCut);
     positiveLowCut = new TF1("posLowCut", pLowCut.c_str(), ptlow, ptup);
@@ -1732,12 +1737,12 @@ inline bool acceptParticle(ParticleObject& particle, MCCollisionObject const&)
 //////////////////////////////////////////////////////////////////////////////////
 
 struct PIDSpeciesSelection {
-  const std::vector<int> pdgcodes = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
-  const std::vector<std::string_view> spnames = {"e", "mu", "pi", "ka", "p"};
-  const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p"};
-  const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
-  const std::vector<std::string_view> spadjnames = {"Electron", "Muon", "Pion", "Kaon", "Proton"};
-  const std::vector<double> spmasses = {o2::constants::physics::MassElectron, o2::constants::physics::MassMuon, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton};
+  const std::vector<int> pdgcodes = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, o2::constants::physics::kDeuteron};
+  const std::vector<std::string_view> spnames = {"e", "mu", "pi", "ka", "p", "d"};
+  const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p", "d"};
+  const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr", "De"};
+  const std::vector<std::string_view> spadjnames = {"Electron", "Muon", "Pion", "Kaon", "Proton", "Deuteron"};
+  const std::vector<double> spmasses = {o2::constants::physics::MassElectron, o2::constants::physics::MassMuon, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron};
   const std::vector<std::string_view> chadjnames = {"P", "M"};
   const char* hadname = "h";
   const char* hadtitle = "h";
@@ -1786,10 +1791,10 @@ struct PIDSpeciesSelection {
     auto last = config[config.size() - 1];
     uint8_t lastsp = species[config.size() - 1];
     LOGF(info, "Inserted species %d with", lastsp);
-    LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4]);
-    LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
-    LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
-    LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
+    LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4], last->mMinNSigmasTPC[5]);
+    LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4], last->mMaxNSigmasTPC[5]);
+    LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4], last->mMinNSigmasTOF[5]);
+    LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4], last->mMaxNSigmasTOF[5]);
     LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
   void addExcludedSpecies(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
@@ -1801,18 +1806,18 @@ struct PIDSpeciesSelection {
     uint8_t lastsp = speciesexclude[configexclude.size() - 1];
 
     LOGF(info, "Inserted species %d for exclusion with", lastsp);
-    LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4]);
-    LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
-    LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
-    LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
+    LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4], last->mMinNSigmasTPC[5]);
+    LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4], last->mMaxNSigmasTPC[5]);
+    LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4], last->mMinNSigmasTOF[5]);
+    LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4], last->mMaxNSigmasTOF[5]);
     LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
   template <StrongDebugging outdebug, typename TrackObject>
   int8_t whichSpecies(TrackObject const& track)
   {
     TString debuginfo;
-    std::vector<float> tpcnsigmas = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-    std::vector<float> tofnsigmas = {track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+    std::vector<float> tpcnsigmas = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe()};
+    std::vector<float> tofnsigmas = {track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe()};
 
     auto outmomentumdebug = [&]() {
       if constexpr (outdebug != 0) {
@@ -1835,14 +1840,14 @@ struct PIDSpeciesSelection {
     /* out debug if needed */
     outnsigmasdebug();
 
-    auto closeTo = [](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
+    auto closeTo = [](const auto& values, const auto& mindet, const auto& maxdet, uint8_t sp) {
       if (mindet[sp] <= values[sp] && values[sp] < maxdet[sp]) {
         return true;
       } else {
         return false;
       }
     };
-    auto awayFrom = [&](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
+    auto awayFrom = [&](const auto& values, const auto& mindet, const auto& maxdet, uint8_t sp) {
       for (size_t ix = 0; ix < pdgcodes.size(); ix++) {
         if (ix != sp) {
           if (mindet[ix] <= values[ix] && values[ix] < maxdet[ix]) {
@@ -1888,7 +1893,7 @@ struct PIDSpeciesSelection {
       }
       return true;
     };
-    auto aboveThreshold = [&](auto& config) {
+    auto aboveThreshold = [&](const auto& config) {
       return ((config->mPThreshold > 0.0) && (config->mPThreshold < track.p()));
     };
     auto isA = [&](auto& config, uint8_t sp) {

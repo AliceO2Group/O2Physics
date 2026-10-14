@@ -203,7 +203,7 @@ struct NeutronProtonCorrZdc {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision coll, const float centrality)
+  bool eventSelected(const TCollision& coll, const float centrality)
   {
     if (!coll.sel8())
       return 0;

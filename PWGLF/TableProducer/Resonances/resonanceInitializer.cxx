@@ -596,7 +596,7 @@ struct ResonanceInitializer {
 
   // Centralicity estimator selection
   template <typename ResoColl>
-  float centEst(ResoColl ResoEvents)
+  float centEst(const ResoColl& ResoEvents)
   {
     float returnValue = -999.0;
     switch (multEstimator) {
@@ -673,7 +673,7 @@ struct ResonanceInitializer {
   }
 
   template <typename ResoColl>
-  float getEvtPl(ResoColl ResoEvents)
+  float getEvtPl(const ResoColl& ResoEvents)
   {
     float returnValue = -999.0;
     if (ResoEvents.qvecAmp()[evtPlDetId] > 1e-8)
@@ -682,7 +682,7 @@ struct ResonanceInitializer {
   }
 
   template <typename ResoColl>
-  float getEvtPlRes(ResoColl ResoEvents, int a, int b)
+  float getEvtPlRes(const ResoColl& ResoEvents, int a, int b)
   {
     float returnValue = -999.0;
     if (ResoEvents.qvecAmp()[a] < 1e-8 || ResoEvents.qvecAmp()[b] < 1e-8)

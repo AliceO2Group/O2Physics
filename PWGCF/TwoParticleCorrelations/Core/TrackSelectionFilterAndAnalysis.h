@@ -23,6 +23,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace o2
@@ -51,20 +52,20 @@ class TrackSelectionConfigurable
                              std::string dcaz = "",
                              std::string ptrange = "",
                              std::string etarange = "")
-    : mTrackTypes{ttype},
-      mNClustersTPC{nclstpc},
-      mNCrossedRowsTPC{nxrtpc},
-      mNClustersITS{nclsits},
-      mMaxChi2PerClusterTPC{chi2clustpc},
-      mMaxChi2PerClusterITS{chi2clusits},
-      mMinNCrossedRowsOverFindableClustersTPC{xrofctpc},
-      mMaxDcaXY{dcaxy},
-      mMaxDcaZ{dcaz},
-      mPtRange{ptrange},
-      mEtaRange{etarange}
+    : mTrackTypes{std::move(ttype)},
+      mNClustersTPC{std::move(nclstpc)},
+      mNCrossedRowsTPC{std::move(nxrtpc)},
+      mNClustersITS{std::move(nclsits)},
+      mMaxChi2PerClusterTPC{std::move(chi2clustpc)},
+      mMaxChi2PerClusterITS{std::move(chi2clusits)},
+      mMinNCrossedRowsOverFindableClustersTPC{std::move(xrofctpc)},
+      mMaxDcaXY{std::move(dcaxy)},
+      mMaxDcaZ{std::move(dcaz)},
+      mPtRange{std::move(ptrange)},
+      mEtaRange{std::move(etarange)}
   {
   }
-  TrackSelectionConfigurable(std::vector<std::string> ttype,
+  TrackSelectionConfigurable(const std::vector<std::string>& ttype,
                              std::vector<std::string> nclstpc,
                              std::vector<std::string> nxrtpc,
                              std::vector<std::string> nclsits,

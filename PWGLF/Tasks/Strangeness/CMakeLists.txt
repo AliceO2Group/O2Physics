@@ -69,6 +69,11 @@ o2physics_add_dpl_workflow(derivedcascadeanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(derivedxi0analysis
+    SOURCES derivedXi0analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(cascpostprocessing
     SOURCES cascpostprocessing.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -81,7 +86,7 @@ o2physics_add_dpl_workflow(hstrangecorrelation
 
 o2physics_add_dpl_workflow(sigmaanalysis
     SOURCES sigmaanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(phik0shortanalysis

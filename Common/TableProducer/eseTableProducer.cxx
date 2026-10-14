@@ -405,7 +405,7 @@ struct EseTableProducer {
   }
 
   template <typename TTrack>
-  double getEfficiency(TTrack track)
+  double getEfficiency(const TTrack& track)
   {
     double eff = 1.;
     if (cfg.mEfficiency)
@@ -453,7 +453,7 @@ struct EseTableProducer {
   };
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  bool eventSelected(const TCollision& collision, const int& multTrk, const float& centrality)
   {
     if (cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {

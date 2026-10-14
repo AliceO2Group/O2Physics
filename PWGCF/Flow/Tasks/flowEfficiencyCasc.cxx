@@ -145,7 +145,7 @@ struct FlowEfficiencyCasc {
     registry.add("QAhisto/Casc/hqadcaCascV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
   }
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(const TCollision& collision)
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered

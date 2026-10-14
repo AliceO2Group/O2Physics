@@ -27,7 +27,15 @@
 namespace o2::analysis::femto::closetripletrejection
 {
 constexpr const char PrefixCtrTrackTrackTrack[] = "CtrTrackTrackTrack";
+constexpr const char PrefixCtrTrackTrackV0[] = "CtrTrackTrackV0";
+constexpr const char PrefixCtrTrackTrackCascade[] = "CtrTrackTrackCascade";
+constexpr const char PrefixCtrMcParticleMcParticleMcParticle[] = "CtrMcParticleMcParticleMcParticle";
+
 using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack>;
+using ConfCtrTrackTrackV0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackV0>;
+using ConfCtrTrackTrackCascade = closepairrejection::ConfCpr<PrefixCtrTrackTrackCascade>;
+// generated particles, no cut by default (close triplet rejection corrects a detector effect)
+using ConfCtrMcParticleMcParticleMcParticle = closepairrejection::ConfCpr<PrefixCtrMcParticleMcParticleMcParticle, false>;
 
 // directory names
 constexpr char PrefixTrack1Track2Se[] = "CPR_Track1Track2/SE/";
@@ -36,6 +44,13 @@ constexpr char PrefixTrack1Track3Se[] = "CPR_Track1Track3/SE/";
 constexpr char PrefixTrack1Track2Me[] = "CPR_Track1Track2/ME/";
 constexpr char PrefixTrack2Track3Me[] = "CPR_Track2Track3/ME/";
 constexpr char PrefixTrack1Track3Me[] = "CPR_Track1Track3/ME/";
+
+constexpr char PrefixMcParticle1McParticle2Se[] = "CPR_McParticle1McParticle2/SE/";
+constexpr char PrefixMcParticle2McParticle3Se[] = "CPR_McParticle2McParticle3/SE/";
+constexpr char PrefixMcParticle1McParticle3Se[] = "CPR_McParticle1McParticle3/SE/";
+constexpr char PrefixMcParticle1McParticle2Me[] = "CPR_McParticle1McParticle2/ME/";
+constexpr char PrefixMcParticle2McParticle3Me[] = "CPR_McParticle2McParticle3/ME/";
+constexpr char PrefixMcParticle1McParticle3Me[] = "CPR_McParticle1McParticle3/ME/";
 
 constexpr char PrefixTrack1V0Se[] = "CPR_Track1V0/SE/";
 constexpr char PrefixTrack2V0Se[] = "CPR_Track2V0/SE/";
@@ -85,23 +100,17 @@ class CloseTripletRejectionTrackTrackTrack
     mCtrTrack23.setMagField(magField);
     mCtrTrack13.setMagField(magField);
   }
-  template <typename T1, typename T2, typename T3, typename T4>
-  void setTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& trackTable)
-  {
-    mCtrTrack12.setPair(track1, track2, trackTable);
-    mCtrTrack23.setPair(track2, track3, trackTable);
-    mCtrTrack13.setPair(track1, track3, trackTable);
-  }
-  [[nodiscard]] bool isCloseTriplet() const
-  {
-    return mCtrTrack12.isClosePair() || mCtrTrack23.isClosePair() || mCtrTrack13.isClosePair();
-  }
 
-  void fill(float q3)
+  // checks all three constituent pairs of the triplet; fills the deta-dphi/kinematic
+  // histograms of each pair internally and returns whether the triplet is rejected.
+  // tripletHistManager must expose getKinematic() (same interface CloseTrackRejection expects).
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  [[nodiscard]] bool isCloseTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& trackTable, T5 const& tripletHistManager)
   {
-    mCtrTrack12.fill(q3);
-    mCtrTrack23.fill(q3);
-    mCtrTrack13.fill(q3);
+    bool isClose12 = mCtrTrack12.isClosePair(track1, track2, trackTable, tripletHistManager);
+    bool isClose23 = mCtrTrack23.isClosePair(track2, track3, trackTable, tripletHistManager);
+    bool isClose13 = mCtrTrack13.isClosePair(track1, track3, trackTable, tripletHistManager);
+    return isClose12 || isClose23 || isClose13;
   }
 
  private:
@@ -137,23 +146,16 @@ class CloseTripletRejectionTrackTrackV0
     mCtrTrack1V0.setMagField(magField);
     mCtrTrack2V0.setMagField(magField);
   }
-  template <typename T1, typename T2, typename T3, typename T4>
-  void setTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable)
-  {
-    mCtrTrack12.setPair(track1, track2, trackTable);
-    mCtrTrack1V0.setPair(track1, v0, trackTable);
-    mCtrTrack2V0.setPair(track2, v0, trackTable);
-  }
-  [[nodiscard]] bool isCloseTriplet() const
-  {
-    return mCtrTrack12.isClosePair() || mCtrTrack1V0.isClosePair() || mCtrTrack2V0.isClosePair();
-  }
 
-  void fill(float q3)
+  // checks track1-track2, track1-v0 and track2-v0; fills the deta-dphi/kinematic
+  // histograms of each pair internally and returns whether the triplet is rejected.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  [[nodiscard]] bool isCloseTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable, T5 const& tripletHistManager)
   {
-    mCtrTrack12.fill(q3);
-    mCtrTrack1V0.fill(q3);
-    mCtrTrack2V0.fill(q3);
+    bool isClose12 = mCtrTrack12.isClosePair(track1, track2, trackTable, tripletHistManager);
+    bool isClose1V0 = mCtrTrack1V0.isClosePair(track1, v0, trackTable, tripletHistManager);
+    bool isClose2V0 = mCtrTrack2V0.isClosePair(track2, v0, trackTable, tripletHistManager);
+    return isClose12 || isClose1V0 || isClose2V0;
   }
 
  private:
@@ -195,29 +197,57 @@ class CloseTripletRejectionTrackTrackCascade
     mCtrTrack1Cascade.setMagField(magField);
     mCtrTrack2Cascade.setMagField(magField);
   }
-  template <typename T1, typename T2, typename T3, typename T4>
-  void setTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable)
-  {
-    mCtrTrack12.setPair(track1, track2, trackTable);
-    mCtrTrack1Cascade.setPair(track1, cascade, trackTable);
-    mCtrTrack2Cascade.setPair(track2, cascade, trackTable);
-  }
-  [[nodiscard]] bool isCloseTriplet() const
-  {
-    return mCtrTrack12.isClosePair() || mCtrTrack1Cascade.isClosePair() || mCtrTrack2Cascade.isClosePair();
-  }
 
-  void fill(float q3)
+  // checks track1-track2, track1-cascade and track2-cascade; fills the deta-dphi/kinematic
+  // histograms of each pair internally and returns whether the triplet is rejected.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  [[nodiscard]] bool isCloseTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable, T5 const& tripletHistManager)
   {
-    mCtrTrack12.fill(q3);
-    mCtrTrack1Cascade.fill(q3);
-    mCtrTrack2Cascade.fill(q3);
+    bool isClose12 = mCtrTrack12.isClosePair(track1, track2, trackTable, tripletHistManager);
+    bool isClose1Cascade = mCtrTrack1Cascade.isClosePair(track1, cascade, trackTable, tripletHistManager);
+    bool isClose2Cascade = mCtrTrack2Cascade.isClosePair(track2, cascade, trackTable, tripletHistManager);
+    return isClose12 || isClose1Cascade || isClose2Cascade;
   }
 
  private:
   closepairrejection::ClosePairRejectionTrackTrack<prefixTrack1Track2> mCtrTrack12;
   closepairrejection::ClosePairRejectionTrackCascade<prefixTrack1Bachelor, prefixTrack1V0Daughter> mCtrTrack1Cascade;
   closepairrejection::ClosePairRejectionTrackCascade<prefixTrack2Bachelor, prefixTrack2V0Daughter> mCtrTrack2Cascade;
+};
+
+// close triplet rejection for triplets of generated particles; checks all three constituent pairs
+template <auto& prefixMcParticle1McParticle2,
+          auto& prefixMcParticle2McParticle3,
+          auto& prefixMcParticle1McParticle3>
+class CloseTripletRejectionMcParticleMcParticleMcParticle
+{
+ public:
+  CloseTripletRejectionMcParticleMcParticleMcParticle() = default;
+  ~CloseTripletRejectionMcParticleMcParticleMcParticle() = default;
+
+  template <typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
+            T const& confCpr)
+  {
+    mCtr12.init(registry, specs, confCpr);
+    mCtr23.init(registry, specs, confCpr);
+    mCtr13.init(registry, specs, confCpr);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isCloseTriplet(T1 const& particle1, T2 const& particle2, T3 const& particle3, T4 const& tripletHistManager)
+  {
+    bool isClose12 = mCtr12.isClosePair(particle1, particle2, tripletHistManager);
+    bool isClose23 = mCtr23.isClosePair(particle2, particle3, tripletHistManager);
+    bool isClose13 = mCtr13.isClosePair(particle1, particle3, tripletHistManager);
+    return isClose12 || isClose23 || isClose13;
+  }
+
+ private:
+  closepairrejection::ClosePairRejectionMcParticleMcParticle<prefixMcParticle1McParticle2> mCtr12;
+  closepairrejection::ClosePairRejectionMcParticleMcParticle<prefixMcParticle2McParticle3> mCtr23;
+  closepairrejection::ClosePairRejectionMcParticleMcParticle<prefixMcParticle1McParticle3> mCtr13;
 };
 
 } // namespace o2::analysis::femto::closetripletrejection

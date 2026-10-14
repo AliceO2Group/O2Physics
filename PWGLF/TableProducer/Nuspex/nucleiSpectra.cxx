@@ -230,6 +230,8 @@ std::shared_ptr<THnSparse> hFlowHists[2][5];
 std::shared_ptr<THnSparse> hDCAHists[2][5];
 std::shared_ptr<THnSparse> hMatchingStudy[2];
 std::shared_ptr<THn> hMatchingStudyHadrons[2];
+std::shared_ptr<THnSparse> hMatchingCountsHadrons;
+std::shared_ptr<THnSparse> hMatchingCountsHe3;
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
@@ -366,6 +368,7 @@ struct nucleiSpectra {
   ConfigurableAxis cfgNITSClusBins{"cfgNITSClusBins", {3, 4.5, 7.5}, "N ITS clusters binning"};
   ConfigurableAxis cfgNTPCClusBins{"cfgNTPCClusBins", {3, 89.5, 159.5}, "N TPC clusters binning"};
 
+  Configurable<bool> cfgMatchingCounts{"cfgMatchingCounts", false, "Enable event-level ITS-TPC matching counts for binomiality studies"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
   Configurable<std::string> cfgTriggerList{"cfgTriggerList", "fHe", "Trigger List"};
   Configurable<bool> cfgSelectTrgEv{"cfgSelectTrgEv", false, "If true, select events with active trigger list"};
@@ -394,7 +397,7 @@ struct nucleiSpectra {
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  double computeAbsoDecL(aod::McParticles::iterator particle)
+  double computeAbsoDecL(const aod::McParticles::iterator& particle)
   {
     if (!particle.has_daughters())
       return -1.f;
@@ -601,6 +604,10 @@ struct nucleiSpectra {
     if (doprocessMatching) {
       std::vector<double> occBins{-0.5, 499.5, 999.5, 1999.5, 2999.5, 3999.5, 4999.5, 10000., 50000.};
       AxisSpec occAxis{occBins, "Occupancy"};
+      if (cfgMatchingCounts) {
+        nuclei::hMatchingCountsHadrons = spectra.add<THnSparse>("hMatchingCountsHadrons", ";N_{ITS};N_{ITS+TPC};Centrality;Occupancy;Charge sign", HistType::kTHnSparseD, {{10001, -0.5, 10000.5}, {10001, -0.5, 10000.5}, {8, 0., 80.}, occAxis, {2, -0.5, 1.5}});
+        nuclei::hMatchingCountsHe3 = spectra.add<THnSparse>("hMatchingCountsHe3", ";N_{ITS};N_{ITS+TPC};Centrality;Occupancy;Charge sign", HistType::kTHnSparseD, {{10001, -0.5, 10000.5}, {10001, -0.5, 10000.5}, {8, 0., 80.}, occAxis, {2, -0.5, 1.5}});
+      }
       for (unsigned int iC{0}; iC < nuclei::matter.size(); ++iC) {
         nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF};Centrality", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}, {8, 0., 80.}});
         nuclei::hMatchingStudyHadrons[iC] = spectra.add<THn>(fmt::format("hMatchingStudyHadrons{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;Centrality;Track type; Occupancy", HistType::kTHnF, {{23, 0.4, 5.}, {20, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {8, 0., 80.}, {2, -0.5, 1.5}, occAxis});
@@ -1156,12 +1163,17 @@ struct nucleiSpectra {
   }
   PROCESS_SWITCH(nucleiSpectra, processMC, "MC analysis", false);
 
-  void processMatching(soa::Join<aod::Collisions, aod::EvSels, aod::EPCalibrationTables, aod::CentFT0Cs>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void processMatching(soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::CentFT0Cs>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
-    if (!eventSelection(collision) || !collision.triggereventep()) {
+    if (!eventSelection(collision) || !collision.isCalibrated()) {
       return;
     }
     const float centrality = collision.centFT0C();
+    const float psi2FT0C = std::atan2(collision.qvecFT0CIm(), collision.qvecFT0CRe()) / 2.f;
+    int nITSHadrons[2]{};
+    int nITSTPCHadrons[2]{};
+    int nITSHe3[2]{};
+    int nITSTPCHe3[2]{};
     o2::aod::ITSResponse itsResponse;
     for (const auto& track : tracks) {
       if (std::abs(track.eta()) > cfgTrackCut.EtaMax ||
@@ -1173,11 +1185,26 @@ struct nucleiSpectra {
       double expSigma{expBethe * cfgBetheBlochParams->get(4, 5u)};
       double nSigmaTPC{(track.tpcSignal() - expBethe) / expSigma};
       int iC = track.signed1Pt() > 0;
+      if (cfgMatchingCounts) {
+        ++nITSHadrons[iC];
+        nITSTPCHadrons[iC] += track.hasTPC();
+      }
       const float pt = track.pt();
-      const float phi = 2.f * RecoDecay::constrainAngle(track.phi() - collision.psiFT0C(), 0.f, 2);
+      const float phi = 2.f * RecoDecay::constrainAngle(track.phi() - psi2FT0C, 0.f, 2);
       nuclei::hMatchingStudyHadrons[iC]->Fill(pt, phi, track.eta(), centrality, track.hasTPC(), collision.trackOccupancyInTimeRange());
-      if (itsResponse.nSigmaITS<o2::track::PID::Helium3>(track) > -1.) {
+      if (itsResponse.nSigmaITS<o2::track::PID::Helium3>(track) > -2.) {
+        if (cfgMatchingCounts) {
+          ++nITSHe3[iC];
+          nITSTPCHe3[iC] += track.hasTPC();
+        }
         nuclei::hMatchingStudy[iC]->Fill(pt * 2, phi, track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track), centrality);
+      }
+    }
+    if (cfgMatchingCounts) {
+      // One entry per collision and charge sign, including zero-track events.
+      for (unsigned int iC{0}; iC < nuclei::matter.size(); ++iC) {
+        nuclei::hMatchingCountsHadrons->Fill(nITSHadrons[iC], nITSTPCHadrons[iC], centrality, collision.trackOccupancyInTimeRange(), iC);
+        nuclei::hMatchingCountsHe3->Fill(nITSHe3[iC], nITSTPCHe3[iC], centrality, collision.trackOccupancyInTimeRange(), iC);
       }
     }
   }

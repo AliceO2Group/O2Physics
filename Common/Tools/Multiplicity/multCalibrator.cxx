@@ -319,7 +319,7 @@ bool multCalibrator::IsBinningSane(TH1* histogram)
 }
 
 //________________________________________________________________
-TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, TString lHistoName)
+TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, const TString& lHistoName)
 {
   // This function returns a calibration histogram
   //(pp or p-Pb like, no anchor point considered)

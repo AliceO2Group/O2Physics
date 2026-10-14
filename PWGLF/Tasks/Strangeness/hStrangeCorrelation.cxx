@@ -76,6 +76,7 @@
 #include <initializer_list>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -97,9 +98,9 @@ using V0DatasWithoutTrackXWithMCCores = soa::Join<aod::V0Indices, aod::V0Cores, 
 
 struct HStrangeCorrelation {
   // for efficiency corrections if requested
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -125,9 +126,13 @@ struct HStrangeCorrelation {
     Configurable<bool> doCorrelationOmegaPlus{"doCorrelationOmegaPlus", false, "do OmegaPlus correlation"};
     Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
     Configurable<bool> doGenEventSelection{"doGenEventSelection", true, "use event selections when performing closure test for the gen events"};
+    Configurable<bool> doClosureTestPureMC{"doClosureTestPureMC", false, "fill regular ClosureTest histograms without event or reconstructed-trigger selection, using MC vertex z and centrality 0.05; keep truth-particle selections"};
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
+    Configurable<bool> selectINELgtN{"selectINELgtN", false, "select INEL>N events (more than N charged particles in |eta| < 1), N = inelGtNThreshold"};
+    Configurable<int> inelGtNThreshold{"inelGtNThreshold", 1, "N of the INEL>N selection (reco: PV contributors, gen: charged physical primaries, both in |eta| < 1)"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
     Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
+    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions associated with the same found-by-T0 bunch crossing"};
     Configurable<bool> requireGoodTriggerTVX{"requireGoodTriggerTVX", false, " require acceptable FT0C-FT0A time difference"};
     Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, " require small difference between z-vertex from PV and from FT0"};
     Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
@@ -143,6 +148,7 @@ struct HStrangeCorrelation {
     Configurable<bool> doCorrelationsHadronV0daughter{"doCorrelationsHadronV0daughter", false, "if true, do correlations of hadrons with V0 daughters"};
     Configurable<bool> doLocalDensityStudy{"doLocalDensityStudy", false, "if true, create and fill the pt vs eta vs local density spectra of triggers and V0s"};
     Configurable<float> localDensityConeRadius{"localDensityConeRadius", 0.4, "radius of the cone in which the local density is counted"};
+    Configurable<bool> doMultEstimatorResponse{"doMultEstimatorResponse", false, "processSameEventHV0s: fill MultEstimatorResponse, multNTracksPVeta1 vs FT0M percentile and amplitude, with the event selection of PairLossK0/EventRecoEfficiency (no INEL cuts)"};
   } masterConfigurations;
 
   // master analysis switches
@@ -182,6 +188,11 @@ struct HStrangeCorrelation {
     ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.01f, 1.21f}, "Inv. Mass (GeV/c^{2})"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Multiplicity axis in model prediction process"};
     ConfigurableAxis axisMidrapidityMultiplicity{"axisMidrapidityMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Midrapidity Multiplicity axis in model prediction process"};
+    ConfigurableAxis axisNchGen{"axisNchGen", {151, -0.5f, 150.5f}, "generated charged primaries in |eta| < 1"};
+    ConfigurableAxis axisNRecoCollisions{"axisNRecoCollisions", {6, -0.5f, 5.5f}, "reconstructed collisions per MC collision"};
+    // finer than axisMult but containing all its default edges, so the analysis classes can be recovered by merging bins
+    ConfigurableAxis axisCentFT0M{"axisCentFT0M", {VARIABLE_WIDTH, 0.0f, 0.01f, 0.1f, 0.5f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 45.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "FT0M percentile of the multNTracksPVeta1 vs FT0M response"};
+    ConfigurableAxis axisMultFT0M{"axisMultFT0M", {1000, 0.0f, 20000.0f}, "FT0M amplitude of the multNTracksPVeta1 vs FT0M response"};
 
   } axesConfigurations;
 
@@ -220,7 +231,7 @@ struct HStrangeCorrelation {
     Configurable<int> assocMaxTPCSharedClusters{"assocMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive) for assoc primary tracks"};
     Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
     Configurable<bool> assocRequireL0{"assocRequireL0", true, "require ITS L0 cluster for assoc primary track"};
-    Configurable<float> minTPCChi2PerClusterAssociated{"minTPCChi2PerClusterAssociated", 4.0f, "Minimum TPC chi2 per cluster for associated primary tracks"};
+    Configurable<float> maxTPCChi2PerClusterAssociated{"maxTPCChi2PerClusterAssociated", 4.0f, "Maximum TPC chi2 per cluster for associated primary tracks"};
     Configurable<bool> checksRequireTPCChi2{"checksRequireTPCChi2", false, "require TPC chi2 per cluster for trigger and associated primary tracks"};
     Configurable<bool> requireClusterInITS{"requireClusterInITS", false, "require cluster in ITS for V0 and cascade daughter tracks"};
     Configurable<int> minITSClustersForDaughterTracks{"minITSClustersForDaughterTracks", 1, "Minimum number of ITS clusters for V0 daughter tracks"};
@@ -320,14 +331,25 @@ struct HStrangeCorrelation {
     //                       processSameEventHV0s must be off when it is on.
     //   doGenLevelStudy     PairLossK0/GenStudy: generator-level only, see the
     //                       comment on runGenLevelStudy in processPairLossK0MC
+    //   doEventRecoEfficiencyStudy
+    //                       PairLossK0/EventRecoEfficiency: MC-collision
+    //                       reconstruction efficiency, Nch^gen vs Nch^reco and
+    //                       Nch^reco vs FT0M (percentile and amplitude) responses,
+    //                       see runEventRecoEfficiencyStudy
     Configurable<bool> doStageDiagnostics{"doStageDiagnostics", true, "part 1: fill the PairLossK0 truth-pair reconstruction ladder and its diagnostics"};
     Configurable<bool> doRecComparison{"doRecComparison", false, "part 2: fill the PairLossK0/Comparison cumulative Rec/Truth/Gen/Final ladder (runs the exact reconstructed path internally)"};
     Configurable<bool> doGenLevelStudy{"doGenLevelStudy", false, "part 3: fill the PairLossK0/GenStudy generated-vs-reconstructed split, using generator-level event selection only"};
+    Configurable<bool> doEventRecoEfficiencyStudy{"doEventRecoEfficiencyStudy", false, "fill PairLossK0/EventRecoEfficiency: Nch^gen (charged primaries, |eta| < 1) of all, reconstructed and selected MC collisions, Nch^gen vs multNTracksPVeta1 and multNTracksPVeta1 vs FT0M percentile and amplitude"};
+    Configurable<bool> applyINELSelectionAtGenLevel{"applyINELSelectionAtGenLevel", false, "part 2 (pp only): replace the reconstructed INEL cuts by Nch^gen >= 1 of the MC collision in the Rec, Gen, Truth and Final stages (selectINELgtN is ignored) and fill only PairLossK0/Comparison/NchGen (Rec and Gen vs Nch^gen, integrated over vertex z and multiplicity); requires doRecComparison and applyNewMCSelection"};
+    ConfigurableAxis axisComparisonNchGen{"axisComparisonNchGen", {VARIABLE_WIDTH, 0.5f, 4.5f, 9.5f, 19.5f, 1000.5f}, "Nch^gen classes (charged primaries in |eta| < 1) of PairLossK0/Comparison/NchGen"};
     // Generated charged multiplicity of the MC collision, counted in |eta| < 0.8
     // by mCounter. Plain ConfigurableAxis: unlike the correlation axes it is NOT
     // trimmed by skipUnderOverflowInTHn, so what you configure is what you get.
     ConfigurableAxis axisGenStudyNch{"axisGenStudyNch", {VARIABLE_WIDTH, 0.0f, 2.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 40.0f, 60.0f, 100.0f}, "generated charged multiplicity in |#eta| < 0.8"};
     Configurable<bool> doClosureTestStages{"doClosureTestStages", true, "create and fill the whole ClosureTest/PairLossK0 folder: the truth and any-reconstructed-object stages of the truth h-K0 pair, mirroring the first processPairLossK0MC stages"};
+    Configurable<bool> doEventQualityStudy{"doEventQualityStudy", false, "add eight EventQuality folders to the closure PairLossK0 study; requires doClosureTestStages"};
+    Configurable<int> eventQualityDeltaPhiBins{"eventQualityDeltaPhiBins", 36, "delta phi bins in the sparse event-quality histograms"};
+    Configurable<int> eventQualityDeltaEtaBins{"eventQualityDeltaEtaBins", 20, "delta eta bins in the sparse event-quality histograms"};
     Configurable<bool> applyRecoEventSelection{"applyRecoEventSelection", true, "apply the standard reconstructed-event selection in the K0 pair-loss diagnostic"};
     Configurable<bool> fillFinalPairOnce{"fillFinalPairOnce", true, "part 1: fill each truth h-K0 pair at most once at the final stage. Set false to loop over all reconstructed trigger x K0 combinations, as the data path does"};
     Configurable<bool> finalPairUseBestCollisionOnly{"finalPairUseBestCollisionOnly", true, "part 1: build the final trigger and K0 objects only in the best collision. Set false to use every associated reconstructed collision that passes the event selection, pairing within one collision, as the data path does"};
@@ -392,22 +414,22 @@ struct HStrangeCorrelation {
   // objects to use for efficiency corrections
   TH2F* hEfficiencyTrigger = nullptr;
   TH3F* hEfficiencyTriggerMult = nullptr;
-  THnF* hEfficiencyTriggerMultVsPhi = nullptr;
+  THnT<float>* hEfficiencyTriggerMultVsPhi = nullptr;
   TH2F* hEfficiencyPion = nullptr;
   TH2F* hEfficiencyK0Short = nullptr;
-  THnF* hEfficiencyK0ShortMultVsPhi = nullptr;
+  THnT<float>* hEfficiencyK0ShortMultVsPhi = nullptr;
   TH2F* hEfficiencyLambda = nullptr;
-  THnF* hEfficiencyLambdaMultVsPhi = nullptr;
+  THnT<float>* hEfficiencyLambdaMultVsPhi = nullptr;
   TH2F* hEfficiencyAntiLambda = nullptr;
-  THnF* hEfficiencyAntiLambdaMultVsPhi = nullptr;
+  THnT<float>* hEfficiencyAntiLambdaMultVsPhi = nullptr;
   TH2F* hEfficiencyXiMinus = nullptr;
-  THnF* hEfficiencyXiMinusMultVsPhi = nullptr;
+  THnT<float>* hEfficiencyXiMinusMultVsPhi = nullptr;
   TH2F* hEfficiencyXiPlus = nullptr;
-  THnF* hEfficiencyXiPlusMultVsPhi = nullptr;
+  THnT<float>* hEfficiencyXiPlusMultVsPhi = nullptr;
   TH2F* hEfficiencyOmegaMinus = nullptr;
-  THnF* hEfficiencyOmegaMinusMultVsPhi = nullptr;
+  THnT<float>* hEfficiencyOmegaMinusMultVsPhi = nullptr;
   TH2F* hEfficiencyOmegaPlus = nullptr;
-  THnF* hEfficiencyOmegaPlusMultVsPhi = nullptr;
+  THnT<float>* hEfficiencyOmegaPlusMultVsPhi = nullptr;
   TH2F* hEfficiencyHadron = nullptr;
   TH3F* hEfficiencyHadronMult = nullptr;
   TH1F* hPurityHadron = nullptr;
@@ -530,6 +552,23 @@ struct HStrangeCorrelation {
     "V0 final selection",
     "Final reconstructed pair"};
 
+  // Independent event classifications, not cumulative cuts. Values are fixed
+  // diagnostic bins (labels below), and never change the parent pair selection.
+  static constexpr int PairLossNEventQualityGroups = 8;
+  static constexpr std::array<std::string_view, PairLossNEventQualityGroups> PairLossEventQualityNames = {
+    "NContributors", "PVMaxPull", "PVPurity", "CollisionAssociation",
+    "TimeResolution", "Occupancy", "GenMultiplicity", "EventShape"};
+  static constexpr std::array<std::array<std::string_view, 6>, PairLossNEventQualityGroups> PairLossEventQualityLabels = {{
+    {"no contributors", "1-2", "3-5", "6-10", "11-20", ">=21"},
+    {"invalid covariance/pull", "max |pull| <1", "1<=max |pull|<3", "3<=max |pull|<5", "max |pull|>=5", "unused"},
+    {"no PV tracks", "missing MC labels", "purity <0.95", "0.95<=purity<1", "purity =1", "unused"},
+    {"no matched tracks", "one rec collision", "multiple: best fraction >=0.9", "multiple: 0.5<=fraction<0.9", "multiple: fraction <0.5", "unused"},
+    {"invalid time resolution", "0<sigma_t<25 ns", "25<=sigma_t<100 ns", "100<=sigma_t<500 ns", "sigma_t>=500 ns", "unused"},
+    {"unavailable", "0", "1-99", "100-499", "500-999", ">=1000"},
+    {"0", "1-4", "5-9", "10-19", "20-39", ">=40"},
+    {"fewer than 3 shape tracks", "S_T<0.3", "0.3<=S_T<0.7", "S_T>=0.7", "unused", "unused"},
+  }};
+
   struct PairLossTrackInfo {
     int64_t globalIndex = -1;
     float pt = 0.0f;
@@ -612,6 +651,18 @@ struct HStrangeCorrelation {
     bool physicalPrimary = false;
   };
 
+  // One object of a GenStudy h-K0 pair: generated kinematics plus whether it has a
+  // reconstructed counterpart, in exactly the sense the GenStudy single-particle
+  // folders use.
+  struct GenStudyPairObject {
+    float pt = 0.0f;
+    float eta = 0.0f;
+    float phi = 0.0f;
+    int64_t globalIndex = -1;
+    int64_t motherIndex = -1;
+    bool reconstructed = false;
+  };
+
   struct PairLossTruthK0Info {
     int64_t globalIndex = -1;
     float pt = 0.0f;
@@ -657,6 +708,9 @@ struct HStrangeCorrelation {
     int64_t bestCollisionId = -1;
     float vtxZ = 0.0f;
     float multiplicity = 0.0f;
+    // Nch^gen of the MC collision; >= 0 only with applyINELSelectionAtGenLevel,
+    // then the Rec branches fill only PairLossK0/Comparison/NchGen
+    int nChGen = -1;
     std::unordered_map<int64_t, int64_t> trackToMc;
     std::unordered_map<int64_t, int64_t> v0ToMc;
     std::unordered_map<int64_t, PairLossTruthTrackInfo> truthTriggers;
@@ -677,6 +731,7 @@ struct HStrangeCorrelation {
       bestCollisionId = -1;
       vtxZ = 0.0f;
       multiplicity = 0.0f;
+      nChGen = -1;
       trackToMc.clear();
       v0ToMc.clear();
       truthTriggers.clear();
@@ -723,20 +778,37 @@ struct HStrangeCorrelation {
     return localDensity;
   }
 
-  /// Generated-level counterpart: counts the primary charged particles in the associated pt range inside the same cone, skipping the reference particle
-  template <typename TMcParticles>
-  int computeLocalDensityGen(float etaRef, float phiRef, TMcParticles const& mcParticles, int64_t skipId)
+  /// Collects the MC index of a particle and of its decay products, so that a particle never contributes to its own local density
+  template <typename TMcParticle>
+  void collectDescendantIds(TMcParticle const& mcParticle, std::vector<int64_t>& ids, int depth = 0)
   {
+    ids.push_back(mcParticle.globalIndex());
+    if (depth >= 3 || !mcParticle.has_daughters()) {
+      return;
+    }
+    for (auto const& daughter : mcParticle.template daughters_as<aod::McParticles>()) {
+      collectDescendantIds(daughter, ids, depth + 1);
+    }
+  }
+
+  /// Generated-level counterpart: the density the reconstruction would have measured around the generated
+  /// direction, i.e. the same associated-quality tracks of the same collision, so that the axis means the
+  /// same thing here as in the reconstructed histograms and can be used to correct data binned in it
+  template <typename TMcParticle, typename TTracks>
+  int computeLocalDensityGen(TMcParticle const& mcParticle, TTracks const& tracks)
+  {
+    std::vector<int64_t> skipIds;
+    collectDescendantIds(mcParticle, skipIds);
     int localDensity = 0;
-    for (auto const& mcParticle : mcParticles) {
-      if (mcParticle.globalIndex() == skipId || !mcParticle.isPhysicalPrimary() || !isPairLossTriggerPdg(mcParticle.pdgCode())) {
+    for (auto const& track : tracks) {
+      if (!isValidAssocHadron(track)) {
         continue;
       }
-      if (mcParticle.pt() < axisRanges[2][0] || mcParticle.pt() > axisRanges[2][1]) {
+      if (track.has_mcParticle() && std::find(skipIds.begin(), skipIds.end(), track.mcParticleId()) != skipIds.end()) {
         continue;
       }
-      double deltaEta = mcParticle.eta() - etaRef;
-      double deltaPhi = RecoDecay::constrainAngle(mcParticle.phi() - phiRef, -PI);
+      double deltaEta = track.eta() - mcParticle.eta();
+      double deltaPhi = RecoDecay::constrainAngle(track.phi() - mcParticle.phi(), -PI);
       if (std::hypot(deltaEta, deltaPhi) < masterConfigurations.localDensityConeRadius) {
         localDensity++;
       }
@@ -814,7 +886,11 @@ struct HStrangeCorrelation {
     const double maxRadius = pairLossK0Configurations.maxRadius;
     const double radiusStep = pairLossK0Configurations.radiusStep;
 
-    for (double radius = startRadius; radius <= maxRadius + 0.5 * radiusStep; radius += radiusStep) {
+    // radii startRadius + i * radiusStep up to maxRadius, with half a step of tolerance;
+    // nRadii <= 0 (no radius) if startRadius is beyond that
+    const int nRadii = static_cast<int>(std::floor((maxRadius - startRadius) / radiusStep + 0.5)) + 1;
+    for (int iRadius = 0; iRadius < nRadii; ++iRadius) {
+      const double radius = startRadius + iRadius * radiusStep;
       const double daughterArgument = daughterPhase * radius;
       const double triggerArgument = triggerPhase * radius;
       if (std::abs(daughterArgument) > 1.0 || std::abs(triggerArgument) > 1.0) {
@@ -865,21 +941,21 @@ struct HStrangeCorrelation {
 
     hEfficiencyTrigger = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyTrigger"));
     hEfficiencyTriggerMult = dynamic_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyTriggerMult"));
-    hEfficiencyTriggerMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyTriggerMultVsPhi"));
+    hEfficiencyTriggerMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyTriggerMultVsPhi"));
     hEfficiencyK0Short = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyK0Short"));
-    hEfficiencyK0ShortMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyK0ShortMultVsPhi"));
+    hEfficiencyK0ShortMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyK0ShortMultVsPhi"));
     hEfficiencyLambda = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyLambda"));
-    hEfficiencyLambdaMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyLambdaMultVsPhi"));
+    hEfficiencyLambdaMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyLambdaMultVsPhi"));
     hEfficiencyAntiLambda = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyAntiLambda"));
-    hEfficiencyAntiLambdaMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyAntiLambdaMultVsPhi"));
+    hEfficiencyAntiLambdaMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyAntiLambdaMultVsPhi"));
     hEfficiencyXiMinus = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyXiMinus"));
-    hEfficiencyXiMinusMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyXiMinusMultVsPhi"));
+    hEfficiencyXiMinusMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyXiMinusMultVsPhi"));
     hEfficiencyXiPlus = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyXiPlus"));
-    hEfficiencyXiPlusMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyXiPlusMultVsPhi"));
+    hEfficiencyXiPlusMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyXiPlusMultVsPhi"));
     hEfficiencyOmegaMinus = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaMinus"));
-    hEfficiencyOmegaMinusMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyOmegaMinusMultVsPhi"));
+    hEfficiencyOmegaMinusMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyOmegaMinusMultVsPhi"));
     hEfficiencyOmegaPlus = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaPlus"));
-    hEfficiencyOmegaPlusMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyOmegaPlusMultVsPhi"));
+    hEfficiencyOmegaPlusMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyOmegaPlusMultVsPhi"));
     hEfficiencyHadron = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyHadron"));
     hEfficiencyHadronMult = dynamic_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyHadronMult"));
     hEfficiencyPion = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPion"));
@@ -1190,9 +1266,13 @@ struct HStrangeCorrelation {
     double phaseProton = (-0.3 * B * assoc[2]) / (2 * assoc[1]);
     double phaseTrack = (-0.3 * B * trigg[2]) / (2 * trigg[1]);
 
-    for (double r = MinRadiusTPC; r <= MaxRadiusTPC; r += 0.05) {
+    // radii MinRadiusTPC + i * RadiusStep below MaxRadiusTPC: 34 radii, 0.80 to 2.45 m
+    constexpr double RadiusStep = 0.05;
+    constexpr int NRadii = static_cast<int>((MaxRadiusTPC - MinRadiusTPC) / RadiusStep + 0.5);
+    for (int iRadius = 0; iRadius < NRadii; ++iRadius) {
+      const double r = MinRadiusTPC + iRadius * RadiusStep;
       dPhiStar = dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r);
-      dPhiStarMean += (dPhiStar / 34);
+      dPhiStarMean += (dPhiStar / NRadii);
     }
 
     return dPhiStarMean;
@@ -1208,7 +1288,8 @@ struct HStrangeCorrelation {
     hist->SetBinContent(binx, biny, newContent);
     hist->SetBinError(binx, biny, newUncert);
   }
-  void fillCorrelationHistogram(std::shared_ptr<THn> const& hist, std::array<double, 6> const& binFillThn, float etaWeight, float efficiency, float totalEffUncert, float purity, float totalPurityUncert)
+  template <std::size_t NDimensions>
+  void fillCorrelationHistogram(std::shared_ptr<THn> const& hist, std::array<double, NDimensions> const& binFillThn, float etaWeight, float efficiency, float totalEffUncert, float purity, float totalPurityUncert)
   {
     float previousContent = 0.0f, previousError2 = 0.0f, currentContent = 0.0f, currentError2 = 0.0f;
     int bin = hist->GetBin(binFillThn.data());
@@ -1218,6 +1299,13 @@ struct HStrangeCorrelation {
     currentError2 = previousError2 + std::pow(etaWeight * purity / (efficiency), 2) + std::pow(etaWeight * totalPurityUncert / (efficiency), 2) + std::pow(totalEffUncert * purity * etaWeight, 2) / std::pow(efficiency, 4);
     hist->SetBinContent(bin, currentContent);
     hist->SetBinError2(bin, currentError2);
+  }
+  // Rec coordinates for the PairLossK0/Comparison/NchGen histograms: the vertex-z
+  // and multiplicity coordinates are replaced by the Nch^gen of the current
+  // PairLoss MC collision
+  static std::array<double, 5> toPairLossNchGenCoordinates(std::array<double, 6> const& binFillThn)
+  {
+    return {binFillThn[0], binFillThn[1], binFillThn[2], binFillThn[3], static_cast<double>(pairLossComparison.nChGen)};
   }
   void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, bool mixingInBf, float pvx, float pvy, float pvz, float mult, double bField)
   {
@@ -1277,12 +1365,16 @@ struct HStrangeCorrelation {
       if (!mixing) {
 
         fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesV0")), trigg.pt(), mult, efficiencyTrigg, efficiencyTriggError, purityTrigg, purityTriggErr);
+        if (pairLossComparison.active && pairLossComparison.nChGen >= 0) {
+          fillTriggerHistogram(histos.get<TH2>(HIST("PairLossK0/Comparison/NchGen/TriggerRec")), trigg.pt(), pairLossComparison.nChGen, efficiencyTrigg, efficiencyTriggError, purityTrigg, purityTriggErr);
+        }
 
         // Trigger-side control chain, filled from the exact Rec trigger loop so
         // that it is the same denominator the ordinary Rec correlation uses.
         // Each pair variant needs the matching trigger variant, otherwise only
-        // shapes and not per-trigger amplitudes can be compared.
-        if (pairLossComparison.active) {
+        // shapes and not per-trigger amplitudes can be compared. Not booked with
+        // applyINELSelectionAtGenLevel (pairLossComparison.nChGen >= 0).
+        if (pairLossComparison.active && pairLossComparison.nChGen < 0) {
           const double triggerWeight = purityTrigg / efficiencyTrigg;
           auto fillTriggerVariant = [&](int variant, double fillPtTrigger, double fillVtxZ, double fillMult, double weight) {
             histos.fill(HIST("PairLossK0/Comparison/TriggerVariants"), variant, fillPtTrigger, fillVtxZ, fillMult, weight);
@@ -1358,7 +1450,7 @@ struct HStrangeCorrelation {
         if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
           continue;
         }
-        if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated)) {
+        if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated)) {
           continue;
         }
         if (trackSelection.requireClusterInITS && (postrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks || negtrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks)) {
@@ -1483,7 +1575,11 @@ struct HStrangeCorrelation {
               if (pairLossComparison.active && Index == IndexK0) {
                 // Exact Rec left sideband, with the same reconstructed
                 // selections, coordinates and weight as the ordinary Rec path.
-                fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/RecLeftBg")), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+                if (pairLossComparison.nChGen >= 0) {
+                  fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/NchGen/RecLeftBg")), toPairLossNchGenCoordinates(binFillThn), etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+                } else {
+                  fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/RecLeftBg")), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+                }
               }
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
@@ -1511,8 +1607,15 @@ struct HStrangeCorrelation {
               // PairLoss Rec control study. Stage 0 is filled from this
               // exact Rec signal branch, so it is not a hand-written
               // approximation of the reconstructed pair selection. Each next
-              // stage adds exactly one cumulative condition.
-              if (pairLossComparison.active && Index == IndexK0) {
+              // stage adds exactly one cumulative condition. With
+              // applyINELSelectionAtGenLevel (pairLossComparison.nChGen >= 0)
+              // only the Nch^gen-binned Rec is filled; fake K0 = Rec - RecPeakTrueK0.
+              if (pairLossComparison.active && Index == IndexK0 && pairLossComparison.nChGen >= 0) {
+                fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/NchGen/Rec")), toPairLossNchGenCoordinates(binFillThn), etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+                if (assocCandidate.mcTrue(IndexK0)) {
+                  fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/NchGen/RecPeakTrueK0")), toPairLossNchGenCoordinates(binFillThn), etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+                }
+              } else if (pairLossComparison.active && Index == IndexK0) {
                 fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/Rec")), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
                 // Rec is the complete peak-window sample. Split it into true
                 // and fake K0 components without changing any reconstructed
@@ -1620,7 +1723,7 @@ struct HStrangeCorrelation {
                                         // weight. Reconstructed matches remain separate.
                                         histos.fill(HIST("PairLossK0/Comparison/RecVariants"), 13, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, pairLossComparison.vtxZ, pairLossComparison.multiplicity);
 
-                                        const PairLossPairKey truthPairKey{truthTrigger.globalIndex, truthK0.globalIndex};
+                                        const PairLossPairKey truthPairKey{.triggerId = truthTrigger.globalIndex, .k0Id = truthK0.globalIndex};
                                         if (pairLossComparison.countedPairs.insert(truthPairKey).second) {
                                           // 14 additionally keeps one reconstructed
                                           // match per truth pair. Stage 15 and Final
@@ -1672,7 +1775,11 @@ struct HStrangeCorrelation {
               if (pairLossComparison.active && Index == IndexK0) {
                 // Exact Rec right sideband, with the same reconstructed
                 // selections, coordinates and weight as the ordinary Rec path.
-                fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/RecRightBg")), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+                if (pairLossComparison.nChGen >= 0) {
+                  fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/NchGen/RecRightBg")), toPairLossNchGenCoordinates(binFillThn), etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+                } else {
+                  fillCorrelationHistogram(histos.get<THn>(HIST("PairLossK0/Comparison/RecRightBg")), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+                }
               }
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
@@ -1731,7 +1838,7 @@ struct HStrangeCorrelation {
       return;
     }
     for (const auto& collision : validCollisions[binnumb]) {
-      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
       // When 'collisionHasTriggOrAssoc' = 0:
       // binContent(hMECollisionBins) = Σ(Submitted jobs(done))[binContent(the same bin of hSECollisionBins) * masterConfigurations.mixingParameter - Σ(k=0 to min(masterConfigurations.mixingParameter,binContent)) k]
       // When 'collisionHasTriggOrAssoc' = 3
@@ -1915,7 +2022,7 @@ struct HStrangeCorrelation {
         if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || bachtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
           continue;
         }
-        if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated || bachtrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated)) {
+        if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || bachtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated)) {
           continue;
         }
         if (trackSelection.requireClusterInITS && (postrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks || negtrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks || bachtrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks)) {
@@ -2069,7 +2176,7 @@ struct HStrangeCorrelation {
       return;
     }
     for (const auto& collision : validCollisions[binnumb]) {
-      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
       histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision.pvz, collision.mult}));
       for (const auto& trigger : collision.trigParticles) {
         for (const auto& assoc : currentCollision.assocParticles) {
@@ -2704,73 +2811,132 @@ struct HStrangeCorrelation {
       }
     }
 
+    if (pairLossK0Configurations.applyINELSelectionAtGenLevel) {
+      if (!doprocessPairLossK0MC || !pairLossK0Configurations.doRecComparison) {
+        LOGF(fatal, "pairLossK0Configurations.applyINELSelectionAtGenLevel acts on the Rec/Gen/Truth/Final stages of part 2; enable processPairLossK0MC and pairLossK0Configurations.doRecComparison");
+      }
+      if (!masterConfigurations.doPPAnalysis) {
+        LOGF(fatal, "pairLossK0Configurations.applyINELSelectionAtGenLevel is only defined for pp: the Pb-Pb event selection has no INEL cut");
+      }
+      if (!masterConfigurations.applyNewMCSelection) {
+        LOGF(fatal, "pairLossK0Configurations.applyINELSelectionAtGenLevel requires masterConfigurations.applyNewMCSelection=true so that the Gen stage uses the same event selection function as the Rec stage");
+      }
+      if (masterConfigurations.selectINELgtN) {
+        LOGF(warning, "pairLossK0Configurations.applyINELSelectionAtGenLevel: masterConfigurations.selectINELgtN is ignored in the PairLossK0/Comparison stages, which select Nch^gen >= 1 only");
+      }
+    }
+
+    if (doprocessPairLossK0MC && pairLossK0Configurations.doEventRecoEfficiencyStudy) {
+      // Per MC collision with |vz_gen| <= zVertexCut, each histogram a subset of
+      // the previous one: HasRecoColl/All is the MC-collision reconstruction
+      // efficiency vs Nch^gen. The event selection is the one of the Rec path
+      // (trigger presence + isCollisionSelected) evaluated on the best collision
+      histos.add("PairLossK0/EventRecoEfficiency/hNchGenAll", "all MC collisions;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+      histos.add("PairLossK0/EventRecoEfficiency/hNchGenHasRecoColl", "MC collisions with at least one reconstructed collision;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+      histos.add("PairLossK0/EventRecoEfficiency/hNchGenEvSelNoInel", "best reconstructed collision passes the Rec event selection without INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+      histos.add("PairLossK0/EventRecoEfficiency/hNchGenEvSel", "best reconstructed collision passes the Rec event selection with reconstructed-level INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+      histos.add("PairLossK0/EventRecoEfficiency/hNchGenVsNRecoColl", "all MC collisions;#it{N}_{ch}^{gen} (|#eta| < 1);reconstructed collisions", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisNRecoCollisions});
+      // Per reconstructed collision passing the Rec event selection without INEL
+      // cuts, no |vz_gen| cut: the same collisions the Rec path sees before its INEL cut
+      histos.add("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1", "reconstructed collisions passing the Rec event selection without INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);multNTracksPVeta1", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisNchGen});
+      histos.add("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsCentFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M percentile", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisCentFT0M});
+      histos.add("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsMultFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M amplitude", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisMultFT0M});
+    }
+
+    if (doprocessSameEventHV0s && masterConfigurations.doMultEstimatorResponse) {
+      // Same histograms and event selection as the multNTracksPVeta1 vs FT0M responses of
+      // PairLossK0/EventRecoEfficiency, filled per reconstructed collision in data
+      // (or in MC reco, which then reproduces the PairLossK0 ones)
+      histos.add("MultEstimatorResponse/hNTracksPVeta1VsCentFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M percentile", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisCentFT0M});
+      histos.add("MultEstimatorResponse/hNTracksPVeta1VsMultFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M amplitude", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisMultFT0M});
+    }
+
     if (doprocessPairLossK0MC && pairLossK0Configurations.doRecComparison) {
       if (doprocessSameEventHV0s) {
         LOGF(fatal, "pairLossK0Configurations.doRecComparison already runs the exact Rec path internally; set processSameEventHV0s=false to avoid double filling");
       }
-      constexpr int PairLossComparisonNVariants = 16;
-      const AxisSpec axisPairLossComparisonVariant{PairLossComparisonNVariants, -0.5, PairLossComparisonNVariants - 0.5, "cumulative Rec control variant"};
-      constexpr int PairLossComparisonNTriggerVariants = 10;
-      const AxisSpec axisPairLossComparisonTriggerVariant{PairLossComparisonNTriggerVariants, -0.5, PairLossComparisonNTriggerVariants - 0.5, "cumulative Rec trigger control variant"};
-      histos.add("PairLossK0/Comparison/Rec", "exact Rec peak-window h-K0 pairs; all candidates", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/RecPeakTrueK0", "exact Rec peak-window pairs with a true K0", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/RecPeakFakeK0", "exact Rec peak-window pairs without a true K0", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/RecLeftBg", "exact Rec left invariant-mass sideband pairs", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/RecRightBg", "exact Rec right invariant-mass sideband pairs", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/Truth", "PairLoss truth pairs; same axes as Rec", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/Gen", "Closure-test Gen pairs; same axes as Rec", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/Final", "PairLoss final truth-matched pairs; same axes as Rec", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/RecVariants", "cumulative controlled variants of the Rec pair definition", kTHnF, {axisPairLossComparisonVariant, axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      // The two directional set differences between Rec variant 14 and the
-      // exact old Final definition. They make non-nested pair definitions
-      // explicit instead of hiding the mismatch in a single yield ratio.
-      histos.add("PairLossK0/Comparison/FinalNotInRec", "old-Final truth pairs absent from Rec variant 14", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("PairLossK0/Comparison/RecNotInFinal", "Rec variant-14 truth pairs absent from old Final", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      // Trigger-side counterpart of the pair ladder. Pair variant i has to be
-      // divided by the trigger variant listed in the label to obtain a
-      // per-trigger yield that is narrowed by the same cumulative conditions.
-      histos.add("PairLossK0/Comparison/TriggerVariants", "cumulative controlled variants of the Rec trigger normalisation", kTHnF, {axisPairLossComparisonTriggerVariant, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+      if (pairLossK0Configurations.applyINELSelectionAtGenLevel) {
+        // Only Rec and Gen, with the Nch^gen of the MC collision in place of the
+        // vertex-z and multiplicity axes (memory), for a closure test per Nch^gen
+        // class; the rest of the Comparison ladder (Truth, Final, variants, set
+        // differences) is neither booked nor filled
+        const AxisSpec axisNchGenClass{pairLossK0Configurations.axisComparisonNchGen, "#it{N}_{ch}^{gen} (|#eta| < 1)"};
+        histos.add("PairLossK0/Comparison/NchGen/Rec", "Comparison/Rec vs Nch^gen, integrated over vertex z and multiplicity", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisNchGenClass});
+        histos.add("PairLossK0/Comparison/NchGen/RecPeakTrueK0", "Comparison/RecPeakTrueK0 vs Nch^gen, integrated over vertex z and multiplicity", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisNchGenClass});
+        histos.add("PairLossK0/Comparison/NchGen/RecLeftBg", "Comparison/RecLeftBg vs Nch^gen, integrated over vertex z and multiplicity", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisNchGenClass});
+        histos.add("PairLossK0/Comparison/NchGen/RecRightBg", "Comparison/RecRightBg vs Nch^gen, integrated over vertex z and multiplicity", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisNchGenClass});
+        histos.add("PairLossK0/Comparison/NchGen/Gen", "Comparison/Gen vs Nch^gen, integrated over vertex z and multiplicity", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisNchGenClass});
+        // Trigger counts for the per-trigger normalisation of the pairs above, with
+        // the same trigger and event selections: TriggerRec next to
+        // sameEvent/TriggerParticlesV0 with the same trigger weight, TriggerGen in
+        // the Gen trigger loop, including events without a K0
+        histos.add("PairLossK0/Comparison/NchGen/TriggerRec", "Rec triggers;#it{p}_{T}^{trigger} (GeV/#it{c});#it{N}_{ch}^{gen} (|#eta| < 1)", kTH2D, {axesConfigurations.axisPtQA, axisNchGenClass});
+        histos.add("PairLossK0/Comparison/NchGen/TriggerGen", "Gen triggers;#it{p}_{T}^{trigger} (GeV/#it{c});#it{N}_{ch}^{gen} (|#eta| < 1)", kTH2D, {axesConfigurations.axisPtQA, axisNchGenClass});
+      } else {
+        constexpr int PairLossComparisonNVariants = 16;
+        const AxisSpec axisPairLossComparisonVariant{PairLossComparisonNVariants, -0.5, PairLossComparisonNVariants - 0.5, "cumulative Rec control variant"};
+        constexpr int PairLossComparisonNTriggerVariants = 10;
+        const AxisSpec axisPairLossComparisonTriggerVariant{PairLossComparisonNTriggerVariants, -0.5, PairLossComparisonNTriggerVariants - 0.5, "cumulative Rec trigger control variant"};
+        histos.add("PairLossK0/Comparison/Rec", "exact Rec peak-window h-K0 pairs; all candidates", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/RecPeakTrueK0", "exact Rec peak-window pairs with a true K0", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/RecPeakFakeK0", "exact Rec peak-window pairs without a true K0", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/RecLeftBg", "exact Rec left invariant-mass sideband pairs", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/RecRightBg", "exact Rec right invariant-mass sideband pairs", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/Truth", "PairLoss truth pairs; same axes as Rec", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/Gen", "Closure-test Gen pairs; same axes as Rec", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/Final", "PairLoss final truth-matched pairs; same axes as Rec", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/RecVariants", "cumulative controlled variants of the Rec pair definition", kTHnF, {axisPairLossComparisonVariant, axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        // The two directional set differences between Rec variant 14 and the
+        // exact old Final definition. They make non-nested pair definitions
+        // explicit instead of hiding the mismatch in a single yield ratio.
+        histos.add("PairLossK0/Comparison/FinalNotInRec", "old-Final truth pairs absent from Rec variant 14", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("PairLossK0/Comparison/RecNotInFinal", "Rec variant-14 truth pairs absent from old Final", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        // Trigger-side counterpart of the pair ladder. Pair variant i has to be
+        // divided by the trigger variant listed in the label to obtain a
+        // per-trigger yield that is narrowed by the same cumulative conditions.
+        histos.add("PairLossK0/Comparison/TriggerVariants", "cumulative controlled variants of the Rec trigger normalisation", kTHnF, {axisPairLossComparisonTriggerVariant, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
 
-      const std::array<std::string_view, PairLossComparisonNVariants> variantLabels = {
-        "0 exact Rec",
-        "1 + truth-trigger match/acceptance",
-        "2 + true K0 (remove peak background)",
-        "3 + truth-K0 match/acceptance",
-        "4 + truth daughter exclusion",
-        "5 + truth-trigger primary",
-        "6 + truth-K0 primary",
-        "7 + old truth-leading choice",
-        "8 + best collision",
-        "9 + truth pT coordinates only",
-        "10 + truth event coordinates (vtxZ, mult)",
-        "11 + truth delta eta only",
-        "12 + truth delta phi and truth angular range",
-        "13 + unit pair weight",
-        "14 + one entry per truth pair",
-        "15 exact old Final reference"};
-      auto recVariants = histos.get<THn>(HIST("PairLossK0/Comparison/RecVariants"));
-      for (size_t i = 0; i < variantLabels.size(); ++i) {
-        recVariants->GetAxis(0)->SetBinLabel(i + 1, variantLabels[i].data());
-      }
+        const std::array<std::string_view, PairLossComparisonNVariants> variantLabels = {
+          "0 exact Rec",
+          "1 + truth-trigger match/acceptance",
+          "2 + true K0 (remove peak background)",
+          "3 + truth-K0 match/acceptance",
+          "4 + truth daughter exclusion",
+          "5 + truth-trigger primary",
+          "6 + truth-K0 primary",
+          "7 + old truth-leading choice",
+          "8 + best collision",
+          "9 + truth pT coordinates only",
+          "10 + truth event coordinates (vtxZ, mult)",
+          "11 + truth delta eta only",
+          "12 + truth delta phi and truth angular range",
+          "13 + unit pair weight",
+          "14 + one entry per truth pair",
+          "15 exact old Final reference"};
+        auto recVariants = histos.get<THn>(HIST("PairLossK0/Comparison/RecVariants"));
+        for (size_t i = 0; i < variantLabels.size(); ++i) {
+          recVariants->GetAxis(0)->SetBinLabel(i + 1, variantLabels[i].data());
+        }
 
-      // Pair variant -> trigger variant pairing for per-trigger yields:
-      // pair 0-3 with trigger 0-1, pair 4-6 with trigger 2, pair 7 with
-      // trigger 3, pair 8-9 with trigger 4, pair 10-12 with trigger 6,
-      // pair 13-14 with trigger 7-8, pair 15 with trigger 9.
-      const std::array<std::string_view, PairLossComparisonNTriggerVariants> triggerVariantLabels = {
-        "0 exact Rec trigger",
-        "1 + truth-trigger match/acceptance",
-        "2 + truth-trigger primary",
-        "3 + old truth-leading choice",
-        "4 + best collision",
-        "5 + truth pT coordinate only",
-        "6 + truth event coordinates (vtxZ, mult)",
-        "7 + unit trigger weight",
-        "8 + one entry per truth trigger",
-        "9 exact old Final trigger reference"};
-      auto triggerVariants = histos.get<THn>(HIST("PairLossK0/Comparison/TriggerVariants"));
-      for (size_t i = 0; i < triggerVariantLabels.size(); ++i) {
-        triggerVariants->GetAxis(0)->SetBinLabel(i + 1, triggerVariantLabels[i].data());
+        // Pair variant -> trigger variant pairing for per-trigger yields:
+        // pair 0-3 with trigger 0-1, pair 4-6 with trigger 2, pair 7 with
+        // trigger 3, pair 8-9 with trigger 4, pair 10-12 with trigger 6,
+        // pair 13-14 with trigger 7-8, pair 15 with trigger 9.
+        const std::array<std::string_view, PairLossComparisonNTriggerVariants> triggerVariantLabels = {
+          "0 exact Rec trigger",
+          "1 + truth-trigger match/acceptance",
+          "2 + truth-trigger primary",
+          "3 + old truth-leading choice",
+          "4 + best collision",
+          "5 + truth pT coordinate only",
+          "6 + truth event coordinates (vtxZ, mult)",
+          "7 + unit trigger weight",
+          "8 + one entry per truth trigger",
+          "9 exact old Final trigger reference"};
+        auto triggerVariants = histos.get<THn>(HIST("PairLossK0/Comparison/TriggerVariants"));
+        for (size_t i = 0; i < triggerVariantLabels.size(); ++i) {
+          triggerVariants->GetAxis(0)->SetBinLabel(i + 1, triggerVariantLabels[i].data());
+        }
       }
     }
 
@@ -2795,8 +2961,18 @@ struct HStrangeCorrelation {
       // bin by bin and NotReconstructed/Gen reads directly as the loss.
       histos.add("PairLossK0/GenStudy/Gen/hTrigger", "generated triggers;#it{p}_{T}^{gen} (GeV/#it{c});#eta^{gen};#varphi^{gen};#it{N}_{ch}^{gen}", kTHnF, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi, axisGenStudyNch});
       histos.add("PairLossK0/GenStudy/Gen/hK0Short", "generated K0s;#it{p}_{T}^{gen} (GeV/#it{c});#eta^{gen};#varphi^{gen};#it{N}_{ch}^{gen};findable", kTHnF, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi, axisGenStudyNch, axisGenStudyFindable});
+      // h-K0 correlations of the very same objects. Gen/ is every generated pair and the
+      // four exclusive classes below split it by which of the two objects was
+      // reconstructed, so Reconstructed + OnlyTriggerReconstructed + OnlyK0Reconstructed
+      // + NotReconstructed equals Gen bin by bin.
+      histos.add("PairLossK0/GenStudy/Gen/hCorrelation", "generated h-K0s pairs;#Delta#eta;#Delta#varphi;#it{p}_{T}^{trigger} (GeV/#it{c});#it{p}_{T}^{K^{0}_{S}} (GeV/#it{c});#it{N}_{ch}^{gen}", kTHnF, {axisDeltaEtaNDim, axisDeltaPhiNDim, axisPtTriggerNDim, axisPtAssocNDim, axisGenStudyNch});
       histos.addClone("PairLossK0/GenStudy/Gen/", "PairLossK0/GenStudy/Reconstructed/");
       histos.addClone("PairLossK0/GenStudy/Gen/", "PairLossK0/GenStudy/NotReconstructed/");
+      // Only the correlation exists for the two mixed classes -- a single particle is
+      // either reconstructed or not, so cloning the single-particle folders here would
+      // only produce histograms with no meaning.
+      histos.add("PairLossK0/GenStudy/OnlyTriggerReconstructed/hCorrelation", "h-K0s pairs with only the trigger reconstructed;#Delta#eta;#Delta#varphi;#it{p}_{T}^{trigger} (GeV/#it{c});#it{p}_{T}^{K^{0}_{S}} (GeV/#it{c});#it{N}_{ch}^{gen}", kTHnF, {axisDeltaEtaNDim, axisDeltaPhiNDim, axisPtTriggerNDim, axisPtAssocNDim, axisGenStudyNch});
+      histos.add("PairLossK0/GenStudy/OnlyK0Reconstructed/hCorrelation", "h-K0s pairs with only the K0s reconstructed;#Delta#eta;#Delta#varphi;#it{p}_{T}^{trigger} (GeV/#it{c});#it{p}_{T}^{K^{0}_{S}} (GeV/#it{c});#it{N}_{ch}^{gen}", kTHnF, {axisDeltaEtaNDim, axisDeltaPhiNDim, axisPtTriggerNDim, axisPtAssocNDim, axisGenStudyNch});
 
       for (auto const& histogram : {histos.get<THn>(HIST("PairLossK0/GenStudy/Gen/hK0Short")),
                                     histos.get<THn>(HIST("PairLossK0/GenStudy/Reconstructed/hK0Short")),
@@ -2821,8 +2997,8 @@ struct HStrangeCorrelation {
     }
     if (!masterConfigurations.doPPAnalysis) {
       // event selections in Pb-Pb
-      histos.add("hEventSelection", "hEventSelection", kTH1F, {{10, 0, 10}});
-      std::array<TString, 10> eventSelLabel = {"all", "sel8", "kIsTriggerTVX", "PV_{z}", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "OccupCut", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup "};
+      histos.add("hEventSelection", "hEventSelection", kTH1F, {{11, 0, 11}});
+      std::array<TString, 11> eventSelLabel = {"all", "sel8", "kIsTriggerTVX", "Centrality", "PV_{z}", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "OccupCut", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup "};
       for (int i = 1; i <= histos.get<TH1>(HIST("hEventSelection"))->GetNbinsX(); i++) {
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(i, eventSelLabel[i - 1].Data());
       }
@@ -3018,6 +3194,8 @@ struct HStrangeCorrelation {
       }
       histos.addClone("Generated/", "GeneratedWithPV/");
 
+      // The density axis is the reconstructed one on both sides: these generated histograms are counted
+      // from the tracks of the best collision, exactly like their reconstructed counterparts.
       if (masterConfigurations.doLocalDensityStudy && masterConfigurations.doPPAnalysis) {
         histos.add("GeneratedWithPV/hTriggerLocalDensity", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisLocalDensity});
         for (int i = 0; i < AssocParticleTypesNoHadron; i++) {
@@ -3076,6 +3254,32 @@ struct HStrangeCorrelation {
         histos.add("ClosureTest/PairLossK0/Final/sameEvent/K0Short", "truth h-K0 pairs whose trigger and K0 both have a fully selected reconstructed counterpart in the same reconstructed collision", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/PairLossK0/Final/hTrigger", "truth triggers with a fully selected reconstructed counterpart;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
         histos.add("ClosureTest/PairLossK0/Final/hK0Short", "truth K0s with a fully selected reconstructed counterpart;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        if (pairLossK0Configurations.doEventQualityStudy) {
+          if (pairLossK0Configurations.eventQualityDeltaPhiBins <= 0 || pairLossK0Configurations.eventQualityDeltaEtaBins <= 0) {
+            LOGF(fatal, "Event-quality angular bin counts must be positive");
+          }
+          // Six sparse axes; omit vertex and multiplicity dimensions. Each folder
+          // has exactly three histograms, including its event/trigger denominators.
+          const std::vector<AxisSpec> qualityAxes = {
+            {6, -0.5, 5.5, "event class"},
+            {3, -0.5, 2.5, "entry kind"},
+            {pairLossK0Configurations.eventQualityDeltaPhiBins, axisRanges[0][0], axisRanges[0][1], "#Delta#varphi^{truth}"},
+            {pairLossK0Configurations.eventQualityDeltaEtaBins, axisRanges[1][0], axisRanges[1][1], "#Delta#eta^{truth}"},
+            axisPtAssocNDim,
+            axisPtTriggerNDim,
+          };
+          for (int group = 0; group < PairLossNEventQualityGroups; ++group) {
+            for (auto const& stage : {"Truth", "AnyTrackBoth", "Final"}) {
+              auto histogram = histos.add<THnSparse>(fmt::format("ClosureTest/PairLossK0/EventQuality/{}/{}", PairLossEventQualityNames[group], stage), "unit-weight counts; select entry kind before projection", kTHnSparseF, qualityAxes);
+              for (size_t bin = 0; bin < PairLossEventQualityLabels[group].size(); ++bin) {
+                histogram->GetAxis(0)->SetBinLabel(bin + 1, PairLossEventQualityLabels[group][bin].data());
+              }
+              histogram->GetAxis(1)->SetBinLabel(1, "event (common baseline)");
+              histogram->GetAxis(1)->SetBinLabel(2, "trigger");
+              histogram->GetAxis(1)->SetBinLabel(3, "pair");
+            }
+          }
+        }
       }
       for (int i = 0; i < AssocParticleTypes; i++) {
         if (TESTBIT(doCorrelation, i)) {
@@ -3176,13 +3380,76 @@ struct HStrangeCorrelation {
     }
   }
 
-  // this function allows for all event selections to be done in a modular way
+  // INEL>N at reconstructed level: more than N PV contributors in |eta| < 1.
+  // multNTracksPVeta1 is exactly this count (filled by multcenttable), so this is
+  // collision.isInelGt0() / isInelGt1() with a free N and needs no track table
   template <typename TCollision>
-  bool isCollisionSelected(TCollision const& collision)
+  bool isInelGtNReco(TCollision const& collision, int threshold)
+  {
+    return collision.multNTracksPVeta1() > threshold;
+  }
+
+  // Number of charged physical primaries in |eta| < 1 at generated level,
+  // counted the same way as multcenttable fills multMCNParticlesEta10
+  template <typename TMcParticles>
+  int countNchGenEta1(TMcParticles const& mcParticles)
+  {
+    constexpr double ChargeTolerance = 1e-3; // |charge| below this counts as neutral
+    int nChEta1 = 0;
+    for (auto const& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (pdgParticle == nullptr || std::abs(pdgParticle->Charge()) < ChargeTolerance) {
+        continue;
+      }
+      if (std::abs(mcParticle.eta()) < 1.0f) {
+        ++nChEta1;
+      }
+    }
+    return nChEta1;
+  }
+
+  // INEL>N at generated level: more than N charged physical primaries in |eta| < 1
+  template <typename TMcParticles>
+  bool isInelGtNGen(TMcParticles const& mcParticles, int threshold)
+  {
+    return countNchGenEta1(mcParticles) > threshold;
+  }
+
+  // reconstructed INEL>0 / INEL>N cuts of the pp event selection
+  template <typename TCollision>
+  bool isCollisionInelSelected(TCollision const& collision)
+  {
+    if (!collision.isInelGt0() && masterConfigurations.selectINELgtZERO) {
+      return false;
+    }
+    if (!isInelGtNReco(collision, masterConfigurations.inelGtNThreshold) && masterConfigurations.selectINELgtN) {
+      return false;
+    }
+    return true;
+  }
+
+  // generated-level INEL>0 of the PairLoss Comparison stages with
+  // applyINELSelectionAtGenLevel: Nch^gen (countNchGenEta1) >= 1
+  static bool isGenInelGt0(int nChGen)
+  {
+    return nChGen > 0;
+  }
+
+  // this function allows for all event selections to be done in a modular way
+  // applyInelSelection = false skips only the reconstructed INEL>0 / INEL>N cuts
+  template <typename TCollision>
+  bool isCollisionSelected(TCollision const& collision, bool applyInelSelection = true)
   {
     // ________________________________________________
     // Perform basic event selection
     if (!collision.sel8()) {
+      return false;
+    }
+    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && masterConfigurations.requireGoodTriggerTVX) {
+      // FT0 vertex (acceptable FT0C-FT0A time difference) collisions
       return false;
     }
     if (std::abs(collision.posZ()) > masterConfigurations.zVertexCut) {
@@ -3191,13 +3458,22 @@ struct HStrangeCorrelation {
     if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
       return false;
     }
-    if (!collision.isInelGt0() && masterConfigurations.selectINELgtZERO) {
+    if (applyInelSelection && !isCollisionInelSelected(collision)) {
       return false;
     }
     if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
       return false;
     }
-    if (zorroMask.value != "") {
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && masterConfigurations.requireGoodZvtxFT0vsPV) {
+      // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
+      // use this cut at low multiplicities with caution
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && masterConfigurations.rejectSameBunchPileup) {
+      // rejects collisions which are associated with the same "found-by-T0" bunch crossing
+      return false;
+    }
+    if (!zorroMask.value.empty()) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initZorro(bc);
       bool zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
@@ -3231,11 +3507,18 @@ struct HStrangeCorrelation {
       histos.fill(HIST("hEventSelection"), 2.5 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
     }
 
+    if (collision.centFT0C() > axisRanges[5][1] || collision.centFT0C() < axisRanges[5][0]) {
+      return false;
+    }
+    if (fillHists) {
+      histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel centrality sel*/);
+    }
+
     if (std::abs(collision.posZ()) > masterConfigurations.zVertexCut) {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel pvz sel*/);
+      histos.fill(HIST("hEventSelection"), 4.5 /* collisions  after sel pvz sel*/);
     }
 
     if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
@@ -3243,7 +3526,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 4.5 /* collisions  after cut time intervals with dead ITS staves*/);
+      histos.fill(HIST("hEventSelection"), 5.5 /* collisions  after cut time intervals with dead ITS staves*/);
     }
 
     if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && masterConfigurations.requireGoodZvtxFT0vsPV) {
@@ -3252,7 +3535,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 5.5 /* removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference*/);
+      histos.fill(HIST("hEventSelection"), 6.5 /* removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference*/);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
@@ -3260,7 +3543,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 6.5 /* Below min occupancy and Above max occupancy*/);
+      histos.fill(HIST("hEventSelection"), 7.5 /* Below min occupancy and Above max occupancy*/);
     }
 
     /*
@@ -3276,7 +3559,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 7.5 /* reject collisions close to Time Frame borders*/);
+      histos.fill(HIST("hEventSelection"), 8.5 /* reject collisions close to Time Frame borders*/);
     }
 
     if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
@@ -3285,7 +3568,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 8.5 /* reject events affected by the ITS ROF border*/);
+      histos.fill(HIST("hEventSelection"), 9.5 /* reject events affected by the ITS ROF border*/);
     }
 
     if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -3294,9 +3577,20 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 9.5 /* rejects collisions which are associated with the same "found-by-T0" bunch crossing*/);
+      histos.fill(HIST("hEventSelection"), 10.5 /* rejects collisions which are associated with the same "found-by-T0" bunch crossing*/);
     }
     return true;
+  }
+
+  // event selection of runSameEventHV0s before its INEL cut: trigger presence +
+  // isCollisionSelected (pp) or isCollisionSelectedPbPb, without filling hEventSelection
+  template <typename TCollision>
+  bool isCollisionSelectedNoInel(TCollision const& collision)
+  {
+    if (!triggerPresenceMap.empty() && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return false;
+    }
+    return masterConfigurations.doPPAnalysis ? isCollisionSelected(collision, false) : isCollisionSelectedPbPb(collision, false);
   }
 
   double getMagneticField(uint64_t timestamp)
@@ -3345,8 +3639,12 @@ struct HStrangeCorrelation {
 
     for (auto const& collision : collisions) {
       // ________________________________________________
-      // Perform basic event selection
-      if (!isCollisionSelected(collision)) {
+      // Perform basic event selection. The INEL cuts are left to the consumers of
+      // triggerPresenceMap, which apply their own event selection afterwards, so that
+      // a generated-level INEL selection (applyINELSelectionAtGenLevel) is not
+      // overridden. Only the generated-level closure paths with applyNewMCSelection
+      // and doGenEventSelection both false have no event selection of their own
+      if (!isCollisionSelected(collision, false)) {
         continue;
       }
 
@@ -3371,11 +3669,11 @@ struct HStrangeCorrelation {
                                 aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks,
                                 TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
 
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (!triggerPresenceMap.empty() && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
 
@@ -3471,8 +3769,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     if (!doprocessSameEventHCascades && doMixingQAandEventQA) {
       std::visit([&](auto const& binning) {
@@ -3506,7 +3804,7 @@ struct HStrangeCorrelation {
       if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
         continue;
       }
-      if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated)) {
+      if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated)) {
         continue;
       }
       if (trackSelection.requireClusterInITS && (postrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks || negtrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks)) {
@@ -3611,17 +3909,23 @@ struct HStrangeCorrelation {
   }
 
   template <typename TCollision>
-  void runSameEventHV0s(TCollision const& collision, aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks, TracksComplete const& tracks)
+  void runSameEventHV0s(TCollision const& collision, aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks, TracksComplete const& tracks,
+                        std::optional<int> nChGenForInelSelection = std::nullopt)
   {
     const float cent = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
 
     // Keep the trigger-presence and reconstructed-event decisions identical
-    // for the ordinary Rec process and for its PairLoss replica.
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    // for the ordinary Rec process and for its PairLoss replica. When
+    // nChGenForInelSelection is given (PairLoss replica only), the reconstructed
+    // INEL cuts are replaced by Nch^gen >= 1 of that generated multiplicity
+    if (!triggerPresenceMap.empty() && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
-    if ((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision)) ||
+    if ((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision, !nChGenForInelSelection.has_value())) ||
         (!masterConfigurations.doPPAnalysis && !isCollisionSelectedPbPb(collision, true))) {
+      return;
+    }
+    if (nChGenForInelSelection.has_value() && !isGenInelGt0(*nChGenForInelSelection)) {
       return;
     }
 
@@ -3634,10 +3938,15 @@ struct HStrangeCorrelation {
                          collision.posX(), collision.posY(), collision.posZ(), cent, collision.multNTracksPVeta1(), bField);
   }
 
-  void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision,
+  void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults, aod::FT0Mults>::iterator const& collision,
                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
                             V0DatasWithoutTrackX const&, TracksComplete const& tracks, aod::BCsWithTimestamps const&)
   {
+    // filled here and not in runSameEventHV0s, which the PairLoss Rec replica also runs
+    if (masterConfigurations.doMultEstimatorResponse && isCollisionSelectedNoInel(collision)) {
+      histos.fill(HIST("MultEstimatorResponse/hNTracksPVeta1VsCentFT0M"), collision.multNTracksPVeta1(), collision.centFT0M());
+      histos.fill(HIST("MultEstimatorResponse/hNTracksPVeta1VsMultFT0M"), collision.multNTracksPVeta1(), collision.multFT0M());
+    }
     runSameEventHV0s(collision, associatedV0s, triggerTracks, tracks);
   }
 
@@ -3648,13 +3957,13 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     double cent = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (!triggerPresenceMap.empty() && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
 
@@ -3720,7 +4029,7 @@ struct HStrangeCorrelation {
       if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || bachtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
         continue;
       }
-      if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated || bachtrack.tpcChi2NCl() < trackSelection.minTPCChi2PerClusterAssociated)) {
+      if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || bachtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated)) {
         continue;
       }
       if (trackSelection.requireClusterInITS && (postrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks || negtrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks)) {
@@ -3806,10 +4115,10 @@ struct HStrangeCorrelation {
                               soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                               TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (!triggerPresenceMap.empty() && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -3884,7 +4193,7 @@ struct HStrangeCorrelation {
                                  aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks,
                                  TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -3894,7 +4203,7 @@ struct HStrangeCorrelation {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (!triggerPresenceMap.empty() && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
         return;
       }
 
@@ -3936,8 +4245,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     std::visit([&](auto const& binning) {
       for (auto const& [collision1, collision2] : soa::selfCombinations(binning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
@@ -3951,7 +4260,7 @@ struct HStrangeCorrelation {
         }
         // ________________________________________________
         // skip if desired trigger not found
-        if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        if (!triggerPresenceMap.empty() && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
           continue;
         }
 
@@ -3995,8 +4304,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     std::visit([&](auto const& binning) {
       for (auto const& [collision1, collision2] : soa::selfCombinations(binning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
@@ -4010,7 +4319,7 @@ struct HStrangeCorrelation {
         }
         // ________________________________________________
         // skip if desired trigger not found
-        if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        if (!triggerPresenceMap.empty() && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
           continue;
         }
 
@@ -4050,7 +4359,7 @@ struct HStrangeCorrelation {
                                soa::Join<aod::AssocHadrons, aod::AssocPID> const& assocPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                                TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -4060,7 +4369,7 @@ struct HStrangeCorrelation {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (!triggerPresenceMap.empty() && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
         continue;
       }
 
@@ -4095,7 +4404,7 @@ struct HStrangeCorrelation {
     }
   }
 
-  void processMCGenerated(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>> const& collisions, aod::McParticles const& mcParticles)
+  void processMCGenerated(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>> const& collisions, aod::McParticles const& mcParticles, TracksCompleteMC const& tracks)
   {
     histos.fill(HIST("hClosureTestEventCounter"), 2.5f);
 
@@ -4143,17 +4452,23 @@ struct HStrangeCorrelation {
 
     // determine best collision properties
     int biggestNContribs = -1;
+    int64_t bestCollisionId = -1;
     float bestCollisionFT0Mpercentile = -1;
     float bestCollisionFT0Cpercentile = -1;
     float bestCollisionVtxZ = 0.0f;
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
+    bool bestCollisionINELgtN = false;
+    bool bestCollisionNoSameBunchPileup = false;
+    bool bestCollisionGoodTriggerTVX = false;
+    bool bestCollisionGoodZvtxFT0vsPV = false;
     bool isCollisionSelect = false;
     uint32_t bestCollisionTriggerPresenceMap = 0;
 
     for (auto const& collision : collisions) {
       if (biggestNContribs < collision.numContrib()) {
         biggestNContribs = collision.numContrib();
+        bestCollisionId = collision.globalIndex();
         bestCollisionFT0Mpercentile = collision.centFT0M();
         bestCollisionFT0Cpercentile = collision.centFT0C();
         if (masterConfigurations.applyNewMCSelection) {
@@ -4162,8 +4477,12 @@ struct HStrangeCorrelation {
           bestCollisionSel8 = collision.sel8();
           bestCollisionVtxZ = collision.posZ();
           bestCollisionINELgtZERO = collision.isInelGt0();
+          bestCollisionINELgtN = isInelGtNReco(collision, masterConfigurations.inelGtNThreshold);
+          bestCollisionNoSameBunchPileup = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+          bestCollisionGoodTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
+          bestCollisionGoodZvtxFT0vsPV = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
         }
-        if (triggerPresenceMap.size() > 0) {
+        if (!triggerPresenceMap.empty()) {
           bestCollisionTriggerPresenceMap = triggerPresenceMap[collision.globalIndex()];
         }
       }
@@ -4193,7 +4512,7 @@ struct HStrangeCorrelation {
 
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
+    if (!triggerPresenceMap.empty() && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
       return;
     }
     if (masterConfigurations.applyNewMCSelection) {
@@ -4208,6 +4527,18 @@ struct HStrangeCorrelation {
         return;
       }
       if (!bestCollisionINELgtZERO) {
+        return;
+      }
+      if (masterConfigurations.selectINELgtN && !bestCollisionINELgtN) {
+        return;
+      }
+      if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
+        return;
+      }
+      if (masterConfigurations.requireGoodTriggerTVX && !bestCollisionGoodTriggerTVX) {
+        return;
+      }
+      if (masterConfigurations.requireGoodZvtxFT0vsPV && !bestCollisionGoodZvtxFT0vsPV) {
         return;
       }
     }
@@ -4233,6 +4564,10 @@ struct HStrangeCorrelation {
       }
     }
 
+    // The local density of a generated particle is counted from the tracks of the best collision,
+    // the same collision whose centrality already labels these generated histograms.
+    const auto bestCollisionTracks = tracks.sliceBy(pairLossTracksPerCollision, bestCollisionId);
+
     for (auto const& mcParticle : mcParticles) {
       if (doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary()) {
         continue;
@@ -4246,7 +4581,7 @@ struct HStrangeCorrelation {
           histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
         }
         if (masterConfigurations.doLocalDensityStudy && masterConfigurations.doPPAnalysis) {
-          histos.fill(HIST("GeneratedWithPV/hTriggerLocalDensity"), gpt, geta, computeLocalDensityGen(geta, mcParticle.phi(), mcParticles, mcParticle.globalIndex()));
+          histos.fill(HIST("GeneratedWithPV/hTriggerLocalDensity"), gpt, geta, computeLocalDensityGen(mcParticle, bestCollisionTracks));
         }
         if (mcParticle.pdgCode() > 0) {
           histos.fill(HIST("GeneratedWithPV/hPositiveTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
@@ -4314,14 +4649,14 @@ struct HStrangeCorrelation {
             histos.fill(HIST("GeneratedWithPV/h") + HIST(Particlenames[Index]) + HIST("_MidYVsMult"), gpt, bestCollisionFT0Mpercentile);
           }
           if (masterConfigurations.doLocalDensityStudy && masterConfigurations.doPPAnalysis) {
-            histos.fill(HIST("GeneratedWithPV/h") + HIST(Particlenames[Index]) + HIST("LocalDensity"), gpt, geta, computeLocalDensityGen(geta, mcParticle.phi(), mcParticles, mcParticle.globalIndex()));
+            histos.fill(HIST("GeneratedWithPV/h") + HIST(Particlenames[Index]) + HIST("LocalDensity"), gpt, geta, computeLocalDensityGen(mcParticle, bestCollisionTracks));
           }
         }
       });
     }
   }
   void processPairLossK0MC(aod::McCollision const& mcCollision,
-                           soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>> const& recCollisions,
+                           soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults, aod::FT0Mults>> const& recCollisions,
                            aod::McParticles const& mcParticles,
                            aod::McTrackLabels const& trackLabels,
                            aod::V0MCCores const& v0MCCores,
@@ -4331,11 +4666,16 @@ struct HStrangeCorrelation {
                            V0DatasWithoutTrackX const& v0Candidates,
                            TracksComplete const& tracks)
   {
+    // Nch^gen of this MC collision (charged primaries in |eta| < 1), shared by the
+    // event-reconstruction-efficiency study and the generated-level INEL selection
+    const bool applyGenInel = pairLossK0Configurations.applyINELSelectionAtGenLevel;
+    const int nChGen = (pairLossK0Configurations.doEventRecoEfficiencyStudy || applyGenInel) ? countNchGenEta1(mcParticles) : -1;
+
     // Part 3: a self-contained generator-level study. It deliberately touches no
     // reconstructed quantity in its event selection or in any of its axes: the
-    // event is selected on generated INEL>0 and the generated vertex only, the
-    // multiplicity is counted from generated particles, and every object is
-    // filled with generated coordinates.
+    // event is selected on generated INEL>0 (INEL>N if enabled) and the generated
+    // vertex only, the multiplicity is counted from generated particles, and every
+    // object is filled with generated coordinates.
     //
     // Reconstruction enters in exactly one place -- whether a generated object
     // has a reconstructed counterpart at all -- and that splits the very same
@@ -4356,8 +4696,15 @@ struct HStrangeCorrelation {
       histos.fill(HIST("PairLossK0/GenStudy/hEventCounter"), 0.0f);
 
       // Generated-level event selection. No reconstructed variable is used.
-      if (masterConfigurations.selectINELgtZERO && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
-        return;
+      // INEL>N (N >= 0) implies INEL>0, so only the tighter enabled selection has to be evaluated
+      if (masterConfigurations.selectINELgtN) {
+        if (!isInelGtNGen(mcParticles, masterConfigurations.inelGtNThreshold)) {
+          return;
+        }
+      } else if (masterConfigurations.selectINELgtZERO) {
+        if (!o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
+          return;
+        }
       }
       histos.fill(HIST("PairLossK0/GenStudy/hEventCounter"), 1.0f);
       if (std::abs(mcCollision.posZ()) > masterConfigurations.zVertexCut) {
@@ -4392,6 +4739,8 @@ struct HStrangeCorrelation {
       // them.
       std::unordered_set<int64_t> reconstructedTrackMcIds;
       std::unordered_set<int64_t> reconstructedV0McIds;
+      std::vector<GenStudyPairObject> genStudyTriggers;
+      std::vector<GenStudyPairObject> genStudyK0s;
       for (auto const& collision : recCollisions) {
         const auto trackSlice = tracks.sliceBy(pairLossTracksPerCollision, collision.globalIndex());
         for (auto const& track : trackSlice) {
@@ -4426,13 +4775,20 @@ struct HStrangeCorrelation {
           auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
           const double charge = pdgParticle != nullptr ? pdgParticle->Charge() : 0.0;
           const int sign = charge > 0.0 ? 1 : (charge < 0.0 ? -1 : 0);
-          if (!((triggerParticleCharge > 0 && sign < 0) || (triggerParticleCharge < 0 && sign > 0) || sign == 0)) {
+          if ((triggerParticleCharge <= 0 || sign >= 0) && (triggerParticleCharge >= 0 || sign <= 0) && sign != 0) {
             histos.fill(HIST("PairLossK0/GenStudy/Gen/hTrigger"), genPt, genEta, genPhi, generatedNch);
-            if (reconstructedTrackMcIds.count(mcParticle.globalIndex()) > 0) {
+            if (reconstructedTrackMcIds.contains(mcParticle.globalIndex())) {
               histos.fill(HIST("PairLossK0/GenStudy/Reconstructed/hTrigger"), genPt, genEta, genPhi, generatedNch);
             } else {
               histos.fill(HIST("PairLossK0/GenStudy/NotReconstructed/hTrigger"), genPt, genEta, genPhi, generatedNch);
             }
+            genStudyTriggers.push_back(GenStudyPairObject{
+              .pt = genPt,
+              .eta = genEta,
+              .phi = genPhi,
+              .globalIndex = mcParticle.globalIndex(),
+              .motherIndex = mcParticle.has_mothers() ? mcParticle.mothers_first_as<aod::McParticles>().globalIndex() : -1,
+              .reconstructed = reconstructedTrackMcIds.contains(mcParticle.globalIndex())});
           }
         }
 
@@ -4465,10 +4821,42 @@ struct HStrangeCorrelation {
           const float k0Findable = (hasPositiveDaughter && hasNegativeDaughter && daughtersInAcceptance) ? 1.0f : 0.0f;
 
           histos.fill(HIST("PairLossK0/GenStudy/Gen/hK0Short"), genPt, genEta, genPhi, generatedNch, k0Findable);
-          if (reconstructedV0McIds.count(mcParticle.globalIndex()) > 0) {
+          if (reconstructedV0McIds.contains(mcParticle.globalIndex())) {
             histos.fill(HIST("PairLossK0/GenStudy/Reconstructed/hK0Short"), genPt, genEta, genPhi, generatedNch, k0Findable);
           } else {
             histos.fill(HIST("PairLossK0/GenStudy/NotReconstructed/hK0Short"), genPt, genEta, genPhi, generatedNch, k0Findable);
+          }
+          genStudyK0s.push_back(GenStudyPairObject{
+            .pt = genPt,
+            .eta = genEta,
+            .phi = genPhi,
+            .globalIndex = mcParticle.globalIndex(),
+            .motherIndex = -1,
+            .reconstructed = reconstructedV0McIds.contains(mcParticle.globalIndex())});
+        }
+      }
+
+      // h-K0 correlations of the objects collected above, in generated coordinates.
+      // Same delta-phi / delta-eta convention as every other correlation in this task
+      // (trigger minus associated), and the same autocorrelation rejection: a trigger
+      // that is a decay product of the K0 it would be paired with is skipped.
+      // Every pair goes into Gen/ and into exactly one of the four exclusive classes.
+      for (auto const& trigger : genStudyTriggers) {
+        for (auto const& k0 : genStudyK0s) {
+          if (trigger.globalIndex == k0.globalIndex || trigger.motherIndex == k0.globalIndex) {
+            continue;
+          }
+          const float deltaPhi = computeDeltaPhi(trigger.phi, k0.phi);
+          const float deltaEta = trigger.eta - k0.eta;
+          histos.fill(HIST("PairLossK0/GenStudy/Gen/hCorrelation"), deltaEta, deltaPhi, trigger.pt, k0.pt, generatedNch);
+          if (trigger.reconstructed && k0.reconstructed) {
+            histos.fill(HIST("PairLossK0/GenStudy/Reconstructed/hCorrelation"), deltaEta, deltaPhi, trigger.pt, k0.pt, generatedNch);
+          } else if (trigger.reconstructed) {
+            histos.fill(HIST("PairLossK0/GenStudy/OnlyTriggerReconstructed/hCorrelation"), deltaEta, deltaPhi, trigger.pt, k0.pt, generatedNch);
+          } else if (k0.reconstructed) {
+            histos.fill(HIST("PairLossK0/GenStudy/OnlyK0Reconstructed/hCorrelation"), deltaEta, deltaPhi, trigger.pt, k0.pt, generatedNch);
+          } else {
+            histos.fill(HIST("PairLossK0/GenStudy/NotReconstructed/hCorrelation"), deltaEta, deltaPhi, trigger.pt, k0.pt, generatedNch);
           }
         }
       }
@@ -4498,8 +4886,11 @@ struct HStrangeCorrelation {
         bestCollisionVtxY = collision.posY();
         bestCollisionVtxZ = collision.posZ();
         bestCollisionMultiplicity = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+        // with applyGenInel (pp only) the reconstructed INEL cuts are replaced by
+        // Nch^gen >= 1, as in the Rec and Gen stages
         pairLossEventSelected = !pairLossK0Configurations.applyRecoEventSelection ||
-                                (masterConfigurations.doPPAnalysis ? isCollisionSelected(collision) : isCollisionSelectedPbPb(collision, false));
+                                (masterConfigurations.doPPAnalysis ? isCollisionSelected(collision, !applyGenInel) && (!applyGenInel || isGenInelGt0(nChGen))
+                                                                   : isCollisionSelectedPbPb(collision, false));
       }
       if (bestCollisionId < 0) {
         return;
@@ -4517,9 +4908,9 @@ struct HStrangeCorrelation {
           auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
           const double charge = pdgParticle != nullptr ? pdgParticle->Charge() : 0.0;
           const int sign = charge > 0.0 ? 1 : (charge < 0.0 ? -1 : 0);
-          if (!((triggerParticleCharge > 0 && sign < 0) || (triggerParticleCharge < 0 && sign > 0) || sign == 0)) {
+          if ((triggerParticleCharge <= 0 || sign >= 0) && (triggerParticleCharge >= 0 || sign <= 0) && sign != 0) {
             comparisonTruthTriggers.push_back(PairLossTruthTrackInfo{
-              .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
+              .globalIndex = mcParticle.globalIndex(),
               .pt = mcParticle.pt(),
               .eta = mcParticle.eta(),
               .phi = mcParticle.phi(),
@@ -4533,7 +4924,7 @@ struct HStrangeCorrelation {
           continue;
         }
         PairLossTruthK0Info truthK0{
-          .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
+          .globalIndex = mcParticle.globalIndex(),
           .pt = mcParticle.pt(),
           .eta = mcParticle.eta(),
           .phi = mcParticle.phi(),
@@ -4544,7 +4935,7 @@ struct HStrangeCorrelation {
           .negativeDaughter = {}};
         for (auto const& daughter : mcParticle.daughters_as<aod::McParticles>()) {
           PairLossTruthTrackInfo daughterInfo{
-            .globalIndex = static_cast<int64_t>(daughter.globalIndex()),
+            .globalIndex = daughter.globalIndex(),
             .pt = daughter.pt(),
             .eta = daughter.eta(),
             .phi = daughter.phi(),
@@ -4576,7 +4967,8 @@ struct HStrangeCorrelation {
       }
 
       // Truth: identical pair definition to the original PairLoss truth stage.
-      if (pairLossEventSelected) {
+      // Not booked with applyGenInel, like the rest of the ladder except Rec and Gen.
+      if (pairLossEventSelected && !applyGenInel) {
         for (auto const& truthTrigger : truthTriggers) {
           for (auto const& truthK0 : truthK0s) {
             if (truthTrigger.globalIndex == truthK0.positiveDaughter.globalIndex || truthTrigger.globalIndex == truthK0.negativeDaughter.globalIndex) {
@@ -4601,6 +4993,10 @@ struct HStrangeCorrelation {
       float genBestCollisionVtxZ = 0.0f;
       bool genBestCollisionSel8 = false;
       bool genBestCollisionINELgtZERO = false;
+      bool genBestCollisionINELgtN = false;
+      bool genBestCollisionNoSameBunchPileup = false;
+      bool genBestCollisionGoodTriggerTVX = false;
+      bool genBestCollisionGoodZvtxFT0vsPV = false;
       bool genCollisionSelected = false;
       int genLargestNContributors = -1;
       uint32_t genBestCollisionTriggerPresenceMap = 0;
@@ -4610,24 +5006,33 @@ struct HStrangeCorrelation {
         }
         genLargestNContributors = recCollision.numContrib();
         genBestCollisionMultiplicity = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
+        // Both branches fill the Gen THn with this vertex position
+        genBestCollisionVtxZ = recCollision.posZ();
         if (masterConfigurations.applyNewMCSelection) {
-          genCollisionSelected = (masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision)) ||
+          genCollisionSelected = (masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision, !applyGenInel)) ||
                                  (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false));
         } else {
           genBestCollisionSel8 = recCollision.sel8();
-          genBestCollisionVtxZ = recCollision.posZ();
           genBestCollisionINELgtZERO = recCollision.isInelGt0();
+          genBestCollisionINELgtN = isInelGtNReco(recCollision, masterConfigurations.inelGtNThreshold);
+          genBestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+          genBestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
+          genBestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
         }
-        if (triggerPresenceMap.size() > 0) {
+        if (!triggerPresenceMap.empty()) {
           genBestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
         }
       }
-      bool genEventSelected = triggerPresenceMap.size() == 0 || TESTBIT(genBestCollisionTriggerPresenceMap, triggerBinToSelect);
+      bool genEventSelected = triggerPresenceMap.empty() || TESTBIT(genBestCollisionTriggerPresenceMap, triggerBinToSelect);
       if (masterConfigurations.applyNewMCSelection) {
-        genEventSelected = genEventSelected && genCollisionSelected;
+        genEventSelected = genEventSelected && genCollisionSelected && (!applyGenInel || isGenInelGt0(nChGen));
       } else if (masterConfigurations.doGenEventSelection) {
         genEventSelected = genEventSelected && genBestCollisionSel8 && std::abs(genBestCollisionVtxZ) <= masterConfigurations.zVertexCut &&
-                           genBestCollisionINELgtZERO && genBestCollisionMultiplicity >= axisRanges[5][0] && genBestCollisionMultiplicity <= axisRanges[5][1];
+                           genBestCollisionINELgtZERO && (!masterConfigurations.selectINELgtN || genBestCollisionINELgtN) &&
+                           (!masterConfigurations.rejectSameBunchPileup || genBestCollisionNoSameBunchPileup) &&
+                           (!masterConfigurations.requireGoodTriggerTVX || genBestCollisionGoodTriggerTVX) &&
+                           (!masterConfigurations.requireGoodZvtxFT0vsPV || genBestCollisionGoodZvtxFT0vsPV) &&
+                           genBestCollisionMultiplicity >= axisRanges[5][0] && genBestCollisionMultiplicity <= axisRanges[5][1];
       }
 
       if (genEventSelected && masterConfigurations.doCorrelationK0Short && TESTBIT(doCorrelation, IndexK0)) {
@@ -4651,6 +5056,9 @@ struct HStrangeCorrelation {
           if (triggerParticle.pt() > axisRanges[3][1] || triggerParticle.pt() < axisRanges[3][0]) {
             continue;
           }
+          if (applyGenInel) {
+            histos.fill(HIST("PairLossK0/Comparison/NchGen/TriggerGen"), triggerParticle.pt(), nChGen);
+          }
           auto const& triggerMother = triggerParticle.mothers_first_as<aod::McParticles>();
           const auto triggerMotherIndex = triggerMother.globalIndex();
           for (auto const& k0Index : genK0Indices) {
@@ -4664,7 +5072,11 @@ struct HStrangeCorrelation {
                 k0Particle.pt() < axisRanges[2][0] || k0Particle.pt() > axisRanges[2][1]) {
               continue;
             }
-            histos.fill(HIST("PairLossK0/Comparison/Gen"), deltaPhi, deltaEta, k0Particle.pt(), triggerParticle.pt(), genBestCollisionVtxZ, genBestCollisionMultiplicity);
+            if (applyGenInel) {
+              histos.fill(HIST("PairLossK0/Comparison/NchGen/Gen"), deltaPhi, deltaEta, k0Particle.pt(), triggerParticle.pt(), nChGen);
+            } else {
+              histos.fill(HIST("PairLossK0/Comparison/Gen"), deltaPhi, deltaEta, k0Particle.pt(), triggerParticle.pt(), genBestCollisionVtxZ, genBestCollisionMultiplicity);
+            }
           }
         }
       }
@@ -4720,8 +5132,8 @@ struct HStrangeCorrelation {
         passesFinalSelection = passesFinalSelection && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
                                negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
         if (trackSelection.checksRequireTPCChi2) {
-          passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() >= trackSelection.minTPCChi2PerClusterAssociated &&
-                                 negativeTrack.tpcChi2NCl() >= trackSelection.minTPCChi2PerClusterAssociated;
+          passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated &&
+                                 negativeTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated;
         }
         if (trackSelection.requireClusterInITS) {
           passesFinalSelection = passesFinalSelection && positiveTrack.itsNCls() >= trackSelection.minITSClustersForDaughterTracks &&
@@ -4736,9 +5148,9 @@ struct HStrangeCorrelation {
           continue;
         }
         oldFinalV0s[v0MC.particleIdMC()].push_back(PairLossV0Info{
-          .globalIndex = static_cast<int64_t>(v0.globalIndex()),
-          .positiveTrackId = static_cast<int64_t>(positiveTrack.globalIndex()),
-          .negativeTrackId = static_cast<int64_t>(negativeTrack.globalIndex()),
+          .globalIndex = v0.globalIndex(),
+          .positiveTrackId = positiveTrack.globalIndex(),
+          .negativeTrackId = negativeTrack.globalIndex(),
           .pt = v0.pt(),
           .eta = v0.eta(),
           .phi = v0.phi(),
@@ -4759,9 +5171,11 @@ struct HStrangeCorrelation {
       };
       std::vector<PairLossFinalRecord> finalPairRecords;
 
-      if (pairLossEventSelected) {
+      // Not filled with applyGenInel: finalPairRecords then stays empty, so
+      // FinalNotInRec below is not filled either.
+      if (pairLossEventSelected && !applyGenInel) {
         for (auto const& truthTrigger : truthTriggers) {
-          if (oldFinalTriggers.find(truthTrigger.globalIndex) == oldFinalTriggers.end()) {
+          if (!oldFinalTriggers.contains(truthTrigger.globalIndex)) {
             continue;
           }
           histos.fill(HIST("PairLossK0/Comparison/TriggerVariants"), 9, truthTrigger.pt, bestCollisionVtxZ, bestCollisionMultiplicity);
@@ -4815,8 +5229,11 @@ struct HStrangeCorrelation {
               histos.fill(HIST("PairLossK0/Comparison/Final"), truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, bestCollisionVtxZ, bestCollisionMultiplicity);
               histos.fill(HIST("PairLossK0/Comparison/RecVariants"), 15, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, bestCollisionVtxZ, bestCollisionMultiplicity);
               finalPairRecords.push_back(PairLossFinalRecord{
-                PairLossPairKey{truthTrigger.globalIndex, truthK0.globalIndex},
-                truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt});
+                .key = PairLossPairKey{.triggerId = truthTrigger.globalIndex, .k0Id = truthK0.globalIndex},
+                .deltaPhi = truthDeltaPhi,
+                .deltaEta = truthDeltaEta,
+                .k0Pt = truthK0.pt,
+                .triggerPt = truthTrigger.pt});
             }
           }
         }
@@ -4862,12 +5279,14 @@ struct HStrangeCorrelation {
       pairLossComparison.bestCollisionId = bestCollisionId;
       pairLossComparison.vtxZ = bestCollisionVtxZ;
       pairLossComparison.multiplicity = bestCollisionMultiplicity;
+      pairLossComparison.nChGen = applyGenInel ? nChGen : -1;
       pairLossComparison.active = true;
       for (auto const& recCollision : recCollisions) {
         const auto recTriggerSlice = triggerTracks.sliceBy(collisionSliceTracks, recCollision.globalIndex());
         const auto recV0Slice = associatedV0s.sliceBy(collisionSliceV0s, recCollision.globalIndex());
         const auto recTrackSlice = tracks.sliceBy(pairLossTracksPerCollision, recCollision.globalIndex());
-        runSameEventHV0s(recCollision, recV0Slice, recTriggerSlice, recTrackSlice);
+        runSameEventHV0s(recCollision, recV0Slice, recTriggerSlice, recTrackSlice,
+                         applyGenInel ? std::optional<int>{nChGen} : std::nullopt);
       }
 
       // Final-minus-Rec counterpart of RecNotInFinal. Both set differences use
@@ -4882,6 +5301,53 @@ struct HStrangeCorrelation {
       pairLossComparison.clear();
     };
 
+    // MC-collision reconstruction efficiency vs Nch^gen and the Nch^gen vs
+    // multNTracksPVeta1 and multNTracksPVeta1 vs FT0M (percentile and amplitude)
+    // responses. The event selection is the one runSameEventHV0s applies before
+    // its INEL cut: trigger presence + isCollisionSelected (isCollisionSelectedNoInel)
+    auto runEventRecoEfficiencyStudy = [&]() {
+      // Responses: one entry per reconstructed collision, as in the Rec path
+      for (auto const& collision : recCollisions) {
+        if (isCollisionSelectedNoInel(collision)) {
+          histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1"), nChGen, collision.multNTracksPVeta1());
+          histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsCentFT0M"), collision.multNTracksPVeta1(), collision.centFT0M());
+          histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsMultFT0M"), collision.multNTracksPVeta1(), collision.multFT0M());
+        }
+      }
+
+      // Efficiency: one entry per MC collision, evaluated on the best collision
+      if (std::abs(mcCollision.posZ()) > masterConfigurations.zVertexCut) {
+        return;
+      }
+      histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenAll"), nChGen);
+      histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenVsNRecoColl"), nChGen, recCollisions.size());
+      if (recCollisions.size() == 0) {
+        return;
+      }
+      histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenHasRecoColl"), nChGen);
+      int largestNContributors = -1;
+      bool bestCollisionSelectedNoInel = false;
+      bool bestCollisionSelected = false;
+      for (auto const& collision : recCollisions) {
+        if (collision.numContrib() <= largestNContributors) {
+          continue;
+        }
+        largestNContributors = collision.numContrib();
+        bestCollisionSelectedNoInel = isCollisionSelectedNoInel(collision);
+        // reconstructed-level INEL cuts; the Pb-Pb event selection has none
+        bestCollisionSelected = bestCollisionSelectedNoInel && (!masterConfigurations.doPPAnalysis || isCollisionInelSelected(collision));
+      }
+      if (bestCollisionSelectedNoInel) {
+        histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenEvSelNoInel"), nChGen);
+      }
+      if (bestCollisionSelected) {
+        histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenEvSel"), nChGen);
+      }
+    };
+
+    if (pairLossK0Configurations.doEventRecoEfficiencyStudy) {
+      runEventRecoEfficiencyStudy();
+    }
     if (pairLossK0Configurations.doGenLevelStudy) {
       runGenLevelStudy();
     }
@@ -4931,7 +5397,7 @@ struct HStrangeCorrelation {
           continue;
         }
         v0sAnyCollision[v0MC.particleIdMC()].push_back(PairLossV0Info{
-          .globalIndex = static_cast<int64_t>(v0.globalIndex()),
+          .globalIndex = v0.globalIndex(),
           .positiveTrackId = static_cast<int64_t>(v0.posTrackId()),
           .negativeTrackId = static_cast<int64_t>(v0.negTrackId()),
           .pt = v0.pt(),
@@ -4945,7 +5411,7 @@ struct HStrangeCorrelation {
     }
 
     for (auto const& collision : recCollisions) {
-      if (static_cast<int64_t>(collision.globalIndex()) != bestCollisionId) {
+      if (collision.globalIndex() != bestCollisionId) {
         continue;
       }
 
@@ -4979,7 +5445,7 @@ struct HStrangeCorrelation {
           continue;
         }
         v0sBestCollision[v0MC.particleIdMC()].push_back(PairLossV0Info{
-          .globalIndex = static_cast<int64_t>(v0.globalIndex()),
+          .globalIndex = v0.globalIndex(),
           .positiveTrackId = static_cast<int64_t>(v0.posTrackId()),
           .negativeTrackId = static_cast<int64_t>(v0.negTrackId()),
           .pt = v0.pt(),
@@ -4996,7 +5462,7 @@ struct HStrangeCorrelation {
       PairLossV0Map v0sInTable;
       PairLossV0Map v0sFinal;
       for (auto const& finalCollision : recCollisions) {
-        const int64_t finalCollisionId = static_cast<int64_t>(finalCollision.globalIndex());
+        const int64_t finalCollisionId = finalCollision.globalIndex();
         const bool isBestCollision = finalCollisionId == bestCollisionId;
         if (!isBestCollision) {
           if (pairLossK0Configurations.finalPairUseBestCollisionOnly) {
@@ -5043,9 +5509,9 @@ struct HStrangeCorrelation {
           auto positiveTrack = v0.posTrack_as<TracksComplete>();
           auto negativeTrack = v0.negTrack_as<TracksComplete>();
           const PairLossV0Info v0Info{
-            .globalIndex = static_cast<int64_t>(v0.globalIndex()),
-            .positiveTrackId = static_cast<int64_t>(positiveTrack.globalIndex()),
-            .negativeTrackId = static_cast<int64_t>(negativeTrack.globalIndex()),
+            .globalIndex = v0.globalIndex(),
+            .positiveTrackId = positiveTrack.globalIndex(),
+            .negativeTrackId = negativeTrack.globalIndex(),
             .pt = v0.pt(),
             .eta = v0.eta(),
             .phi = v0.phi(),
@@ -5072,8 +5538,8 @@ struct HStrangeCorrelation {
           passesFinalSelection = passesFinalSelection && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
                                  negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
           if (trackSelection.checksRequireTPCChi2) {
-            passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() >= trackSelection.minTPCChi2PerClusterAssociated &&
-                                   negativeTrack.tpcChi2NCl() >= trackSelection.minTPCChi2PerClusterAssociated;
+            passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated &&
+                                   negativeTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated;
           }
           if (trackSelection.requireClusterInITS) {
             passesFinalSelection = passesFinalSelection && positiveTrack.itsNCls() >= trackSelection.minITSClustersForDaughterTracks &&
@@ -5103,7 +5569,7 @@ struct HStrangeCorrelation {
             continue;
           }
           truthTriggers.push_back(PairLossTruthTrackInfo{
-            .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
+            .globalIndex = mcParticle.globalIndex(),
             .pt = mcParticle.pt(),
             .eta = mcParticle.eta(),
             .phi = mcParticle.phi(),
@@ -5116,7 +5582,7 @@ struct HStrangeCorrelation {
           continue;
         }
         PairLossTruthK0Info truthK0{
-          .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
+          .globalIndex = mcParticle.globalIndex(),
           .pt = mcParticle.pt(),
           .eta = mcParticle.eta(),
           .phi = mcParticle.phi(),
@@ -5127,7 +5593,7 @@ struct HStrangeCorrelation {
         const auto daughters = mcParticle.daughters_as<aod::McParticles>();
         for (auto const& daughter : daughters) {
           PairLossTruthTrackInfo daughterInfo{
-            .globalIndex = static_cast<int64_t>(daughter.globalIndex()),
+            .globalIndex = daughter.globalIndex(),
             .pt = daughter.pt(),
             .eta = daughter.eta(),
             .phi = daughter.phi(),
@@ -5207,7 +5673,7 @@ struct HStrangeCorrelation {
           true,                                                    // V0 in AssocV0s: K0 side only
           true,                                                    // V0 final selection: K0 side only
           contains(triggersFinal, truthTrigger.globalIndex)};      // Final reconstructed pair
-        std::array<int, PairLossK0NStages> triggerStageFills;
+        std::array<int, PairLossK0NStages> triggerStageFills{};
         triggerStageFills.fill(1);
         if (!pairLossK0Configurations.fillFinalPairOnce) {
           triggerStageFills[PairLossTriggerPureReco] = static_cast<int>(numberOfMatches(tracksBestCollision, truthTrigger.globalIndex));
@@ -5476,7 +5942,7 @@ struct HStrangeCorrelation {
     }
   }
 
-  void processClosureTest(aod::McCollision const& /*mcCollision*/,
+  void processClosureTest(aod::McCollision const& mcCollision,
                           soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>> const& recCollisions,
                           aod::McParticles const& mcParticles,
                           aod::V0MCCores const& v0MCCores,
@@ -5553,21 +6019,19 @@ struct HStrangeCorrelation {
       // recomputed from raw tracks so that this stage cannot drift away from the
       // reconstructed analysis it exists to be compared against.
       //
-      // The sets are built per reconstructed collision and a pair is required to be
-      // final within one and the same collision: the reconstructed same-event
-      // correlation only ever pairs a trigger with a V0 sitting in the same vertex,
-      // so a pair split across two reconstructed vertices of one MC collision must
-      // not count as final here either.
-      //
-      // N.B.: the reconstructed autocorrelation rejection (trigger track identical
-      // to a V0 daughter track) is deliberately not replicated. It is a no-op as
-      // soon as the trigger is required to be a physical primary, because
-      // mcTrue(IndexK0) forces the daughters to be genuine -- hence secondary --
-      // K0 decay products.
-      std::vector<std::pair<std::unordered_set<int64_t>, std::unordered_set<int64_t>>> pairLossFinalPerCollision;
+      // The stage is restricted to the best reconstructed collision and keeps the
+      // reconstructed kinematics of every matched object, so that the pair test below
+      // can also impose the reconstructed-coordinate angular range and the
+      // reconstructed autocorrelation rejection. Both are conditions the reconstructed
+      // same-event correlation imposes as well, so this Final stage is by construction
+      // the same object as PairLossK0/Comparison/Final: the truth pairs that really do
+      // end up in the reconstructed correlation.
+      PairLossTrackMap pairLossFinalTriggers;
+      PairLossV0Map pairLossFinalV0s;
       for (auto const& collision : recCollisions) {
-        std::unordered_set<int64_t> finalTriggerMcIds;
-        std::unordered_set<int64_t> finalK0McIds;
+        if (collision.globalIndex() != pairLossBestCollisionId) {
+          continue;
+        }
 
         const auto finalTriggerSlice = triggerTracks.sliceBy(collisionSliceTracks, collision.globalIndex());
         for (auto const& triggerEntry : finalTriggerSlice) {
@@ -5584,7 +6048,7 @@ struct HStrangeCorrelation {
           if (masterConfigurations.doTriggPhysicalPrimary && !triggerEntry.mcPhysicalPrimary()) {
             continue;
           }
-          finalTriggerMcIds.insert(track.mcParticleId());
+          pairLossFinalTriggers[track.mcParticleId()].push_back(makePairLossTrackInfo(track));
         }
 
         const auto finalV0Slice = associatedV0s.sliceBy(collisionSliceV0s, collision.globalIndex());
@@ -5613,8 +6077,8 @@ struct HStrangeCorrelation {
           passesFinalSelection = passesFinalSelection && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
                                  negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
           if (trackSelection.checksRequireTPCChi2) {
-            passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() >= trackSelection.minTPCChi2PerClusterAssociated &&
-                                   negativeTrack.tpcChi2NCl() >= trackSelection.minTPCChi2PerClusterAssociated;
+            passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated &&
+                                   negativeTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated;
           }
           if (trackSelection.requireClusterInITS) {
             passesFinalSelection = passesFinalSelection && positiveTrack.itsNCls() >= trackSelection.minITSClustersForDaughterTracks &&
@@ -5628,34 +6092,54 @@ struct HStrangeCorrelation {
           if (!passesFinalSelection) {
             continue;
           }
-          finalK0McIds.insert(v0MC.particleIdMC());
+          pairLossFinalV0s[v0MC.particleIdMC()].push_back(PairLossV0Info{
+            .globalIndex = v0.globalIndex(),
+            .positiveTrackId = positiveTrack.globalIndex(),
+            .negativeTrackId = negativeTrack.globalIndex(),
+            .pt = v0.pt(),
+            .eta = v0.eta(),
+            .phi = v0.phi(),
+            .radius = v0.v0radius(),
+            .cosPA = v0.v0cosPA(),
+            .dcaDaughters = v0.dcaV0daughters(),
+            .massNSigma = assocEntry.invMassNSigma(IndexK0)});
         }
-
-        pairLossFinalPerCollision.emplace_back(std::move(finalTriggerMcIds), std::move(finalK0McIds));
       }
 
-      // Object-level membership, used only for the single-particle spectra: at
-      // least one collision in which the object is fully selected. The pair
-      // histogram uses pairLossHasFinalPair() instead, which is stricter.
+      // Object-level membership, used only for the single-particle spectra: the object
+      // has a fully selected reconstructed counterpart in the best collision. The pair
+      // histogram uses pairLossHasFinalPair() instead, which is stricter: it also
+      // requires the reconstructed pair itself to fall in the reconstructed angular
+      // range and to survive the reconstructed autocorrelation rejection.
       auto pairLossHasFinalTrigger = [&](int64_t mcId) {
-        for (auto const& perCollision : pairLossFinalPerCollision) {
-          if (perCollision.first.count(mcId) > 0) {
-            return true;
-          }
-        }
-        return false;
+        return pairLossFinalTriggers.contains(mcId);
       };
       auto pairLossHasFinalK0 = [&](int64_t mcId) {
-        for (auto const& perCollision : pairLossFinalPerCollision) {
-          if (perCollision.second.count(mcId) > 0) {
-            return true;
-          }
-        }
-        return false;
+        return pairLossFinalV0s.contains(mcId);
       };
       auto pairLossHasFinalPair = [&](int64_t triggerMcId, int64_t k0McId) {
-        for (auto const& perCollision : pairLossFinalPerCollision) {
-          if (perCollision.first.count(triggerMcId) > 0 && perCollision.second.count(k0McId) > 0) {
+        const auto triggerMatches = pairLossFinalTriggers.find(triggerMcId);
+        if (triggerMatches == pairLossFinalTriggers.end()) {
+          return false;
+        }
+        const auto v0Matches = pairLossFinalV0s.find(k0McId);
+        if (v0Matches == pairLossFinalV0s.end()) {
+          return false;
+        }
+        for (auto const& reconstructedTrigger : triggerMatches->second) {
+          for (auto const& reconstructedV0 : v0Matches->second) {
+            float reconstructedDeltaEta = reconstructedTrigger.eta - reconstructedV0.eta;
+            if (masterConfigurations.doMirroringInDelataEta) {
+              reconstructedDeltaEta = std::abs(reconstructedDeltaEta);
+            }
+            const float reconstructedDeltaPhi = computeDeltaPhi(reconstructedTrigger.phi, reconstructedV0.phi);
+            if (reconstructedDeltaPhi < axisRanges[0][0] || reconstructedDeltaPhi > axisRanges[0][1] ||
+                reconstructedDeltaEta < axisRanges[1][0] || reconstructedDeltaEta > axisRanges[1][1]) {
+              continue;
+            }
+            if (doAutocorrelationRejection && (reconstructedTrigger.globalIndex == reconstructedV0.positiveTrackId || reconstructedTrigger.globalIndex == reconstructedV0.negativeTrackId)) {
+              continue;
+            }
             return true;
           }
         }
@@ -5663,7 +6147,7 @@ struct HStrangeCorrelation {
       };
 
       for (auto const& collision : recCollisions) {
-        if (static_cast<int64_t>(collision.globalIndex()) != pairLossBestCollisionId) {
+        if (collision.globalIndex() != pairLossBestCollisionId) {
           continue;
         }
 
@@ -5675,6 +6159,116 @@ struct HStrangeCorrelation {
 
         const float pairLossBestCollisionVtxZ = collision.posZ();
         const float pairLossBestCollisionMultiplicity = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+        std::array<int, PairLossNEventQualityGroups> eventQualityClasses{};
+        if (pairLossK0Configurations.doEventQualityStudy) {
+          // Category edges correspond to the labels declared above.
+          auto classFromEdges = [](auto value, auto const& edges) {
+            return static_cast<int>(std::upper_bound(edges.begin(), edges.end(), value) - edges.begin());
+          };
+          constexpr double PurePVThreshold = 0.95;
+          constexpr double DominantCollisionFraction = 0.9;
+          constexpr double MajorityCollisionFraction = 0.5;
+          constexpr float GenEtaMax = 0.8f;
+          constexpr float ShapePtMin = 0.15f;
+          constexpr int MinShapeTracks = 3;
+          const auto nContributors = collision.numContrib();
+          eventQualityClasses[0] = classFromEdges(nContributors, std::array{1u, 3u, 6u, 11u, 21u});
+
+          // Maximum component pull, not a 3D chi-square: covariance correlations
+          // are deliberately not used. Invalid covariance gets its own category.
+          const std::array<double, 3> residuals = {collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ()};
+          const std::array<double, 3> variances = {collision.covXX(), collision.covYY(), collision.covZZ()};
+          double maxPull = 0.;
+          bool validPull = true;
+          for (size_t component = 0; component < variances.size(); ++component) {
+            if (!std::isfinite(variances[component]) || variances[component] <= 0. || !std::isfinite(residuals[component])) {
+              validPull = false;
+              break;
+            }
+            maxPull = std::max(maxPull, std::abs(residuals[component]) / std::sqrt(variances[component]));
+          }
+          eventQualityClasses[1] = !validPull || !std::isfinite(maxPull) ? 0 : 1 + classFromEdges(maxPull, std::array{1., 3., 5.});
+
+          std::unordered_set<int64_t> currentMcIds;
+          int nAnyMatched = 0;
+          int nGenCharged = 0;
+          int nShapeTracks = 0;
+          double sumPt = 0., q2x = 0., q2y = 0.;
+          for (auto const& particle : mcParticles) {
+            currentMcIds.insert(particle.globalIndex());
+            nAnyMatched += pairLossAnyTrackMcParticleIds.contains(particle.globalIndex());
+            if (!particle.isPhysicalPrimary() || !std::isfinite(particle.eta()) || std::abs(particle.eta()) >= GenEtaMax) {
+              continue;
+            }
+            auto const* pdgParticle = pdgDB->GetParticle(particle.pdgCode());
+            if (pdgParticle == nullptr || pdgParticle->Charge() == 0.) {
+              continue;
+            }
+            ++nGenCharged;
+            // Linearized transverse sphericity, using truth primary charged
+            // particles with |eta|<0.8 and pT>=0.15 GeV/c (not spherocity).
+            if (std::isfinite(particle.pt()) && particle.pt() >= ShapePtMin && std::isfinite(particle.phi())) {
+              ++nShapeTracks;
+              sumPt += particle.pt();
+              q2x += particle.pt() * std::cos(2. * particle.phi());
+              q2y += particle.pt() * std::sin(2. * particle.phi());
+            }
+          }
+          int nPVTracks = 0, nLabeledPVTracks = 0, nSameMcPVTracks = 0;
+          std::unordered_set<int64_t> bestMatchedMcIds;
+          const auto bestTracks = tracks.sliceBy(pairLossTracksPerCollision, collision.globalIndex());
+          for (auto const& track : bestTracks) {
+            const bool sameMc = track.has_mcParticle() && currentMcIds.contains(track.mcParticleId());
+            if (sameMc) {
+              bestMatchedMcIds.insert(track.mcParticleId());
+            }
+            if (track.isPVContributor()) {
+              ++nPVTracks;
+              nLabeledPVTracks += track.has_mcParticle();
+              nSameMcPVTracks += sameMc;
+            }
+          }
+          // Missing labels take precedence; purity otherwise uses all PV tracks.
+          const double purity = nPVTracks > 0 ? static_cast<double>(nSameMcPVTracks) / nPVTracks : 0.;
+          eventQualityClasses[2] = nPVTracks == 0 ? 0 : nLabeledPVTracks < nPVTracks ? 1
+                                                      : purity < PurePVThreshold     ? 2
+                                                      : nSameMcPVTracks < nPVTracks  ? 3
+                                                                                     : 4;
+          const double bestFraction = nAnyMatched > 0 ? static_cast<double>(bestMatchedMcIds.size()) / nAnyMatched : 0.;
+          eventQualityClasses[3] = nAnyMatched == 0 ? 0 : recCollisions.size() == 1                 ? 1
+                                                        : bestFraction >= DominantCollisionFraction ? 2
+                                                        : bestFraction >= MajorityCollisionFraction ? 3
+                                                                                                    : 4;
+          const double timeResolution = collision.collisionTimeRes(); // ns
+          eventQualityClasses[4] = !std::isfinite(timeResolution) || timeResolution <= 0. ? 0 : 1 + classFromEdges(timeResolution, std::array{25., 100., 500.});
+          const auto occupancy = collision.trackOccupancyInTimeRange();
+          eventQualityClasses[5] = occupancy < 0 ? 0 : 1 + classFromEdges(occupancy, std::array{1, 100, 500, 1000});
+          eventQualityClasses[6] = classFromEdges(nGenCharged, std::array{1, 5, 10, 20, 40});
+          if (nShapeTracks >= MinShapeTracks && sumPt > 0.) {
+            const double sphericity = std::clamp(1. - std::hypot(q2x, q2y) / sumPt, 0., 1.);
+            eventQualityClasses[7] = 1 + classFromEdges(sphericity, std::array{0.3, 0.7});
+          }
+        }
+        auto fillEventQuality = [&](int entryKind, float deltaPhi, float deltaEta, float assocPt, float triggerPt, bool hasAny, bool hasFinal) {
+          if (!pairLossK0Configurations.doEventQualityStudy) {
+            return;
+          }
+          static_for<0, PairLossNEventQualityGroups - 1>([&](auto i) {
+            constexpr int Index = i.value;
+            histos.fill(HIST("ClosureTest/PairLossK0/EventQuality/") + HIST(PairLossEventQualityNames[Index]) + HIST("/Truth"), eventQualityClasses[Index], entryKind, deltaPhi, deltaEta, assocPt, triggerPt);
+            if (hasAny) {
+              histos.fill(HIST("ClosureTest/PairLossK0/EventQuality/") + HIST(PairLossEventQualityNames[Index]) + HIST("/AnyTrackBoth"), eventQualityClasses[Index], entryKind, deltaPhi, deltaEta, assocPt, triggerPt);
+            }
+            if (hasFinal) {
+              histos.fill(HIST("ClosureTest/PairLossK0/EventQuality/") + HIST(PairLossEventQualityNames[Index]) + HIST("/Final"), eventQualityClasses[Index], entryKind, deltaPhi, deltaEta, assocPt, triggerPt);
+            }
+          });
+        };
+        // Unused coordinates lie inside regular bins. Select entry kind before
+        // projecting; reset pair-coordinate ranges for event/trigger counts.
+        const float countDeltaPhi = (axisRanges[0][0] + axisRanges[0][1]) * 0.5f;
+        const float countDeltaEta = (axisRanges[1][0] + axisRanges[1][1]) * 0.5f;
+        fillEventQuality(0, countDeltaPhi, countDeltaEta, axisRanges[2][0], axisRanges[3][0], true, true);
         std::vector<PairLossTruthTrackInfo> pairLossTruthTriggers;
         std::vector<PairLossTruthK0Info> pairLossTruthK0s;
 
@@ -5685,9 +6279,9 @@ struct HStrangeCorrelation {
             auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
             const double charge = pdgParticle != nullptr ? pdgParticle->Charge() : 0.0;
             const int sign = charge > 0.0 ? 1 : (charge < 0.0 ? -1 : 0);
-            if (!((triggerParticleCharge > 0 && sign < 0) || (triggerParticleCharge < 0 && sign > 0) || sign == 0)) {
+            if ((triggerParticleCharge <= 0 || sign >= 0) && (triggerParticleCharge >= 0 || sign <= 0) && sign != 0) {
               pairLossTruthTriggers.push_back(PairLossTruthTrackInfo{
-                .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
+                .globalIndex = mcParticle.globalIndex(),
                 .pt = mcParticle.pt(),
                 .eta = mcParticle.eta(),
                 .phi = mcParticle.phi(),
@@ -5702,7 +6296,7 @@ struct HStrangeCorrelation {
           }
 
           PairLossTruthK0Info truthK0{
-            .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
+            .globalIndex = mcParticle.globalIndex(),
             .pt = mcParticle.pt(),
             .eta = mcParticle.eta(),
             .phi = mcParticle.phi(),
@@ -5712,7 +6306,7 @@ struct HStrangeCorrelation {
             .negativeDaughter = {}};
           for (auto const& daughter : mcParticle.daughters_as<aod::McParticles>()) {
             PairLossTruthTrackInfo daughterInfo{
-              .globalIndex = static_cast<int64_t>(daughter.globalIndex()),
+              .globalIndex = daughter.globalIndex(),
               .pt = daughter.pt(),
               .eta = daughter.eta(),
               .phi = daughter.phi(),
@@ -5739,9 +6333,12 @@ struct HStrangeCorrelation {
         // at truth level in Truth/ and AnyTrack/, at any level in AnyTrackK0/ and
         // AnyTrackBoth/, at fully-selected level in Final/.
         for (auto const& truthTrigger : pairLossTruthTriggers) {
+          if (pairLossK0Configurations.doEventQualityStudy) {
+            fillEventQuality(1, countDeltaPhi, countDeltaEta, axisRanges[2][0], truthTrigger.pt, pairLossAnyTrackMcParticleIds.contains(truthTrigger.globalIndex), pairLossHasFinalTrigger(truthTrigger.globalIndex));
+          }
           histos.fill(HIST("ClosureTest/PairLossK0/Truth/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
           histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackK0/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
-          if (pairLossAnyTrackMcParticleIds.find(truthTrigger.globalIndex) != pairLossAnyTrackMcParticleIds.end()) {
+          if (pairLossAnyTrackMcParticleIds.contains(truthTrigger.globalIndex)) {
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackBoth/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
           }
@@ -5752,7 +6349,7 @@ struct HStrangeCorrelation {
         for (auto const& truthK0 : pairLossTruthK0s) {
           histos.fill(HIST("ClosureTest/PairLossK0/Truth/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
           histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
-          if (pairLossAnyV0McParticleIds.find(truthK0.globalIndex) != pairLossAnyV0McParticleIds.end()) {
+          if (pairLossAnyV0McParticleIds.contains(truthK0.globalIndex)) {
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackK0/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackBoth/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
           }
@@ -5762,7 +6359,7 @@ struct HStrangeCorrelation {
         }
 
         for (auto const& truthTrigger : pairLossTruthTriggers) {
-          const bool triggerHasAnyTrack = pairLossAnyTrackMcParticleIds.find(truthTrigger.globalIndex) != pairLossAnyTrackMcParticleIds.end();
+          const bool triggerHasAnyTrack = pairLossAnyTrackMcParticleIds.contains(truthTrigger.globalIndex);
           for (auto const& truthK0 : pairLossTruthK0s) {
             if (truthTrigger.globalIndex == truthK0.positiveDaughter.globalIndex || truthTrigger.globalIndex == truthK0.negativeDaughter.globalIndex) {
               continue;
@@ -5777,7 +6374,7 @@ struct HStrangeCorrelation {
               continue;
             }
 
-            const bool k0HasAnyV0 = pairLossAnyV0McParticleIds.find(truthK0.globalIndex) != pairLossAnyV0McParticleIds.end();
+            const bool k0HasAnyV0 = pairLossAnyV0McParticleIds.contains(truthK0.globalIndex);
 
             histos.fill(HIST("ClosureTest/PairLossK0/Truth/sameEvent/K0Short"), truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, pairLossBestCollisionVtxZ, pairLossBestCollisionMultiplicity);
             if (triggerHasAnyTrack) {
@@ -5789,7 +6386,9 @@ struct HStrangeCorrelation {
             if (triggerHasAnyTrack && k0HasAnyV0) {
               histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackBoth/sameEvent/K0Short"), truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, pairLossBestCollisionVtxZ, pairLossBestCollisionMultiplicity);
             }
-            if (pairLossHasFinalPair(truthTrigger.globalIndex, truthK0.globalIndex)) {
+            const bool hasFinalPair = pairLossHasFinalPair(truthTrigger.globalIndex, truthK0.globalIndex);
+            fillEventQuality(2, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, triggerHasAnyTrack && k0HasAnyV0, hasFinalPair);
+            if (hasFinalPair) {
               histos.fill(HIST("ClosureTest/PairLossK0/Final/sameEvent/K0Short"), truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, pairLossBestCollisionVtxZ, pairLossBestCollisionMultiplicity);
             }
           }
@@ -5850,51 +6449,82 @@ struct HStrangeCorrelation {
 
     float bestCollisionCentpercentile = -1;
     float bestCollisionVtxZ = 0.0f;
-    bool bestCollisionSel8 = false;
-    bool bestCollisionINELgtZERO = false;
-    bool isCollisionSelect = false;
-    int biggestNContribs = -1;
-    uint32_t bestCollisionTriggerPresenceMap = 0;
+    // Pure MC defines an inclusive generated-event reference, independent of
+    // reconstructed collisions and triggerPresenceMap. Particle/pair selections
+    // below still define the observable. PairLossK0 diagnostics above retain
+    // their own event selection.
+    if (masterConfigurations.doClosureTestPureMC) {
+      bestCollisionCentpercentile = 0.05f;
+      bestCollisionVtxZ = mcCollision.posZ();
+    } else {
+      bool bestCollisionSel8 = false;
+      bool bestCollisionINELgtZERO = false;
+      bool bestCollisionINELgtN = false;
+      bool bestCollisionNoSameBunchPileup = false;
+      bool bestCollisionGoodTriggerTVX = false;
+      bool bestCollisionGoodZvtxFT0vsPV = false;
+      bool isCollisionSelect = false;
+      int biggestNContribs = -1;
+      uint32_t bestCollisionTriggerPresenceMap = 0;
 
-    for (auto const& recCollision : recCollisions) {
-      if (biggestNContribs < recCollision.numContrib()) {
-        biggestNContribs = recCollision.numContrib();
-        bestCollisionCentpercentile = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
-        if (masterConfigurations.applyNewMCSelection) {
-          isCollisionSelect = ((masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision)) || (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false)));
-        } else {
-          bestCollisionSel8 = recCollision.sel8();
+      for (auto const& recCollision : recCollisions) {
+        if (biggestNContribs < recCollision.numContrib()) {
+          biggestNContribs = recCollision.numContrib();
+          bestCollisionCentpercentile = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
+          // Both branches fill the generated-level THns with this vertex position, so it
+          // is taken from the best collision regardless of which event selection is used.
           bestCollisionVtxZ = recCollision.posZ();
-          bestCollisionINELgtZERO = recCollision.isInelGt0();
-        }
-        if (triggerPresenceMap.size() > 0) {
-          bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
+          if (masterConfigurations.applyNewMCSelection) {
+            isCollisionSelect = ((masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision)) || (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false)));
+          } else {
+            bestCollisionSel8 = recCollision.sel8();
+            bestCollisionINELgtZERO = recCollision.isInelGt0();
+            bestCollisionINELgtN = isInelGtNReco(recCollision, masterConfigurations.inelGtNThreshold);
+            bestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+            bestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
+            bestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+          }
+          if (!triggerPresenceMap.empty()) {
+            bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
+          }
         }
       }
-    }
-    // ________________________________________________
-    // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
-      return;
-    }
-
-    if (masterConfigurations.applyNewMCSelection) {
-      if (!isCollisionSelect) {
+      // ________________________________________________
+      // skip if desired trigger not found
+      if (!triggerPresenceMap.empty() && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
         return;
       }
-    } else {
-      if (masterConfigurations.doGenEventSelection) {
-        if (!bestCollisionSel8) {
+
+      if (masterConfigurations.applyNewMCSelection) {
+        if (!isCollisionSelect) {
           return;
         }
-        if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut) {
-          return;
-        }
-        if (!bestCollisionINELgtZERO) {
-          return;
-        }
-        if (bestCollisionCentpercentile > axisRanges[5][1] || bestCollisionCentpercentile < axisRanges[5][0]) {
-          return;
+      } else {
+        if (masterConfigurations.doGenEventSelection) {
+          if (!bestCollisionSel8) {
+            return;
+          }
+          if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut) {
+            return;
+          }
+          if (!bestCollisionINELgtZERO) {
+            return;
+          }
+          if (masterConfigurations.selectINELgtN && !bestCollisionINELgtN) {
+            return;
+          }
+          if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
+            return;
+          }
+          if (masterConfigurations.requireGoodTriggerTVX && !bestCollisionGoodTriggerTVX) {
+            return;
+          }
+          if (masterConfigurations.requireGoodZvtxFT0vsPV && !bestCollisionGoodZvtxFT0vsPV) {
+            return;
+          }
+          if (bestCollisionCentpercentile > axisRanges[5][1] || bestCollisionCentpercentile < axisRanges[5][0]) {
+            return;
+          }
         }
       }
     }
@@ -5932,7 +6562,7 @@ struct HStrangeCorrelation {
         if (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           triggerIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionCentpercentile);
-          if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch && mcParticleIdsWithRecoTrackMatch.find(mcParticle.globalIndex()) != mcParticleIdsWithRecoTrackMatch.end()) {
+          if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch && mcParticleIdsWithRecoTrackMatch.contains(mcParticle.globalIndex())) {
             histos.fill(HIST("ClosureTest/TriggerWithRecoTrackMatch/hTrigger"), gpt, geta, bestCollisionCentpercentile);
           }
         }
@@ -5998,7 +6628,7 @@ struct HStrangeCorrelation {
       double getatrigger = triggerParticle.eta();
       double gphitrigger = triggerParticle.phi();
       double pttrigger = triggerParticle.pt();
-      const bool triggerHasRecoTrackMatch = masterConfigurations.doClosureTestTriggerWithRecoTrackMatch && mcParticleIdsWithRecoTrackMatch.find(triggerParticle.globalIndex()) != mcParticleIdsWithRecoTrackMatch.end();
+      const bool triggerHasRecoTrackMatch = masterConfigurations.doClosureTestTriggerWithRecoTrackMatch && mcParticleIdsWithRecoTrackMatch.contains(triggerParticle.globalIndex());
       auto const* triggerPdg = pdgDB->GetParticle(triggerParticle.pdgCode());
       const double triggerCharge = triggerPdg ? triggerPdg->Charge() : 0.;
       auto const& mother = triggerParticle.mothers_first_as<aod::McParticles>();
@@ -6058,12 +6688,12 @@ struct HStrangeCorrelation {
     }
   }
 
-  void processFeedDown(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, aod::AssocV0s const& associatedV0s, aod::McParticles const&, V0DatasWithoutTrackXMC const&, TracksComplete const&, aod::BCsWithTimestamps const&)
+  void processFeedDown(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, aod::AssocV0s const& associatedV0s, aod::McParticles const&, V0DatasWithoutTrackXMC const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
 
     // ________________________________________________
     // Perform basic event selection
-    if (!isCollisionSelected(collision)) {
+    if (!(masterConfigurations.doPPAnalysis ? isCollisionSelected(collision) : isCollisionSelectedPbPb(collision, false))) {
       return;
     }
 
@@ -6076,7 +6706,9 @@ struct HStrangeCorrelation {
       if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
         continue;
       }
-
+      if (trackSelection.requireClusterInITS && (postrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks || negtrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks)) {
+        continue;
+      }
       //---] syst cuts [---
       if (v0Data.v0radius() < v0Selection.v0RadiusMin || v0Data.v0radius() > v0Selection.v0RadiusMax ||
           std::abs(v0Data.dcapostopv()) < v0Selection.dcapostopv || std::abs(v0Data.dcanegtopv()) < v0Selection.dcanegtopv ||
@@ -6154,7 +6786,7 @@ struct HStrangeCorrelation {
     }
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (!triggerPresenceMap.empty() && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
 
@@ -6184,7 +6816,7 @@ struct HStrangeCorrelation {
     }
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (!triggerPresenceMap.empty() && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
     // Perform basic event selection on both collisions
@@ -6222,8 +6854,15 @@ struct HStrangeCorrelation {
     float multEta08 = -1;
     float multEta05 = -1;
     histos.fill(HIST("Prediction/hEventSelection"), 0.5);
-    if (masterConfigurations.selectINELgtZERO && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
-      return;
+    // INEL>N (N >= 0) implies INEL>0, so only the tighter enabled selection has to be evaluated
+    if (masterConfigurations.selectINELgtN) {
+      if (!isInelGtNGen(mcParticles, masterConfigurations.inelGtNThreshold)) {
+        return;
+      }
+    } else if (masterConfigurations.selectINELgtZERO) {
+      if (!o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
+        return;
+      }
     }
     histos.fill(HIST("Prediction/hEventSelection"), 1.5);
     if (std::abs(mcCollision.posZ()) > masterConfigurations.zVertexCut) {

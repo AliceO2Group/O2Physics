@@ -216,7 +216,7 @@ inline float abs(float vx, float vy, float vz)
 }
 
 // generice function for checking if the value of a variable passes a cut
-inline bool SurviveCut(LabeledArray<float> ConfigValue, float Value)
+inline bool SurviveCut(const LabeledArray<float>& ConfigValue, float Value)
 {
   uint32_t row = 0;
   bool flag = true;
@@ -616,7 +616,7 @@ struct MultiParticleCorrelationsARTask {
     for (auto SC : cfgSC.value) {
       Correlators = MapSCToCor(SC);
       fMapScToCor.insert({SC, Correlators});
-      for (auto cor : Correlators) {
+      for (const auto& cor : Correlators) {
         if (std::find(fCorrelators.begin(), fCorrelators.end(), cor) !=
             fCorrelators.end()) {
           continue;
@@ -749,7 +749,7 @@ struct MultiParticleCorrelationsARTask {
 
   // function for checking if collision survives event cuts
   template <typename CollisionObject, typename TrackObject>
-  bool SurviveEventCuts(CollisionObject collision, TrackObject tracks)
+  bool SurviveEventCuts(const CollisionObject& collision, const TrackObject& tracks)
   {
 
     // Check if event survives event cuts, where we can get the values for the variables immediately
@@ -780,7 +780,7 @@ struct MultiParticleCorrelationsARTask {
 
   // function for checking if track survices trach cuts
   template <typename TrackObject>
-  bool SurviveTrackCuts(TrackObject track)
+  bool SurviveTrackCuts(const TrackObject& track)
   {
     // if all SurviveCut return true, the function will return true
     // if at least one fails, it will return false
@@ -797,7 +797,7 @@ struct MultiParticleCorrelationsARTask {
   }
 
   template <typename TrackObject>
-  void FillAzimuthalAngle(TrackObject track)
+  void FillAzimuthalAngle(const TrackObject& track)
   {
     double angle = track.phi();
     double weight = GetWeight<TrackObject>(track);
@@ -817,7 +817,7 @@ struct MultiParticleCorrelationsARTask {
   };
 
   template <typename TrackObject>
-  double GetWeight(TrackObject /*track*/)
+  double GetWeight(const TrackObject& /*track*/)
   {
     // for efficiency corrections, tbi
     return 1.;

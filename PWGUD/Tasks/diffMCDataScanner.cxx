@@ -163,7 +163,7 @@ struct collisionsInfo {
     // count tracks
     int cntAll = 0;
     int netCharge = 0;
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       cntAll++;
       netCharge += track.sign();
     }
@@ -198,7 +198,7 @@ struct collisionsInfo {
 
     // loop over FWD tracks
     LOGF(info, "FWD tracks: %i", fwdtracks.size());
-    for (auto fwdtrack : fwdtracks) {
+    for (const auto& fwdtrack : fwdtracks) {
       registry.get<TH1>(HIST("etaFWDAll"))->Fill(fwdtrack.eta());
     }
 
@@ -213,7 +213,7 @@ struct collisionsInfo {
       //      registry.get<TH2>(HIST("globalVsMFTDG"))->Fill(cntGlobal, mfttracks.size());
 
       // loop over FWD tracks
-      for (auto fwdtrack : fwdtracks) {
+      for (const auto& fwdtrack : fwdtracks) {
         registry.get<TH1>(HIST("etaFWDDG"))->Fill(fwdtrack.eta());
       }
     }
@@ -251,7 +251,7 @@ struct BCInfo {
 
     // count collisions with good time resoluton
     auto nColGT = 0;
-    for (auto col : cols) {
+    for (const auto& col : cols) {
       if (col.collisionTimeRes() <= 20.) {
         nColGT++;
       }
@@ -311,7 +311,7 @@ struct TrackTypes {
 
   void process(TCs const& tracks, /*MTs const& mfttracks,*/ FTs const& fwdtracks)
   {
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       LOGF(debug, "isGlobal %i Detector map %i %i %i %i time resolution %f", track.isGlobalTrack(),
            track.hasITS(), track.hasTPC(), track.hasTRD(), track.hasTOF(), track.trackTimeRes());
 
@@ -353,7 +353,7 @@ struct TrackTypes {
 
     // ForwardTrackTypeEnum has 5 values
     auto nTypes = 5;
-    for (auto fwdtrack : fwdtracks) {
+    for (const auto& fwdtrack : fwdtracks) {
       registry.get<TH2>(HIST("FwdType"))->Fill(0., 0., 1.);
       if (fwdtrack.collisionId() >= 0) {
         registry.get<TH2>(HIST("FwdType"))->Fill(1., 0., 1.);
@@ -379,7 +379,7 @@ struct MCTracks {
   void process(CCs const& collisions, aod::McCollisions& /*McCols*/, aod::McParticles& McParts)
   {
 
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
 
       // get McCollision which belongs to collision
       auto MCCol = collision.mcCollision();
@@ -397,7 +397,7 @@ struct MCTracks {
       bool hasDiff = false;
       int prongs = 0;
 
-      for (auto mcpart : MCPartSlice) {
+      for (const auto& mcpart : MCPartSlice) {
         LOGF(info, " MCPart: %i %i %i %i %i - %i", mcpart.mcCollisionId(), mcpart.isPhysicalPrimary(), mcpart.getProcess(), mcpart.getGenStatusCode(), mcpart.globalIndex(), mcpart.pdgCode());
         if (mcpart.pdgCode() == 9900110) {
           LOGF(info, "  rho_diff0 energy: %f", mcpart.e());
@@ -413,8 +413,8 @@ struct MCTracks {
         // }
 
         if (hasDiff && mothers.size() > 1) {
-          auto mom1 = mothers[0];
-          auto mom2 = mothers[1];
+          const auto& mom1 = mothers[0];
+          const auto& mom2 = mothers[1];
           if (mcpart.isPhysicalPrimary() &&
               (mcpart.getGenStatusCode() == 1 || mcpart.getGenStatusCode() == 2) &&
               mom1.globalIndex() != mom2.globalIndex() &&
@@ -456,7 +456,7 @@ struct TPCnSigma {
 
   void process(TCwPIDs& tracks, aod::McParticles const& /*mcParticles*/)
   {
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (track.isGlobalTrack()) {
         nSigmas(track.mcParticle_as<aod::McParticles>().pdgCode(), track.mcParticle_as<aod::McParticles>().pt(),
                 track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(),

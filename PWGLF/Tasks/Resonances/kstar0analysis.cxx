@@ -436,7 +436,7 @@ struct Kstar0analysis {
 
   // Centralicity estimator selection
   template <typename Coll>
-  float centEst(Coll collisions)
+  float centEst(const Coll& collisions)
   {
     float returnValue = -999.0f;
     switch (centEstimator) {
@@ -503,7 +503,7 @@ struct Kstar0analysis {
   }
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (configTracks.cDCAr7SigCut && std::abs(track.dcaXY()) > (0.004f + 0.013f / (track.pt()))) // 7 - Sigma cut
@@ -1133,7 +1133,7 @@ struct Kstar0analysis {
   {
     auto tracksTuple = std::make_tuple(tracks);
 
-    BinningTypeVtxZT0M colBinning{{configBkg.cfgVtxBins, configBkg.cfgMultPercentileBins}, true};
+    BinningTypeVtxZT0M colBinning{{configBkg.cfgVtxBins, configBkg.cfgMultPercentileBins}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVtxZT0M> pairs{colBinning, configBkg.nEvtMixing, -1, collision, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {

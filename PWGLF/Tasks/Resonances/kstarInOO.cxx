@@ -960,7 +960,7 @@ struct kstarInOO {
   } // TrackSlicingMC
 
   template <typename JetType>
-  double DistinguishJets(const JetType& jets, ROOT::Math::PxPyPzMVector& lResonance)
+  double DistinguishJets(const JetType& jets, const ROOT::Math::PxPyPzMVector& lResonance)
   {
     if (cDebugLevel > 0) {
       LOG(info) << "Found multiple jets to the same phi.";
@@ -1467,7 +1467,7 @@ struct kstarInOO {
   {
     static int nEventsMix = 0;
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}, true}; // true is for 'ignore overflows' (true by default)
+    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}};
     SameKindPair<EventCandidates, TrackCandidates, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (cDebugLevel > 0) {
@@ -1559,7 +1559,7 @@ struct kstarInOO {
   {
     static int nEventsMCMix = 0;
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}, true}; // true is for 'ignore overflows' (true by default)
+    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}};
     SameKindPair<EventCandidates, TrackCandidatesMC, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (cDebugLevel > 0) {

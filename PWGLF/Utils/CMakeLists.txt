@@ -36,3 +36,7 @@ o2physics_add_library(LfStrangenessBuilderHelper
 o2physics_add_library(LfStrangenessBuilderModule
     SOURCES strangenessBuilderModule.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle)
+
+o2physics_add_library(LfCascadeMlResponse
+    SOURCES cascadeMlResponse.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::MLCore)

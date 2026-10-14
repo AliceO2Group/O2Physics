@@ -500,7 +500,7 @@ struct QaEfficiency {
     subList->SetName(partName);
     listEfficiencyMC->Add(subList);
 
-    auto makeEfficiency = [&](const TString effname, auto h) { // 1D efficiencies
+    auto makeEfficiency = [&](const TString& effname, const auto& h) { // 1D efficiencies
       LOG(debug) << " Making 1D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axis = h->GetXaxis();
       TString efftitle = h->GetTitle();
@@ -563,7 +563,7 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPhi_Prm_Trk", hPhiTrkItsTpcPrm[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPhi_Prm", hPhiItsTpcTofPrm[histogramIndex]);
 
-    auto makeEfficiency2D = [&](const TString effname, auto h) { // 2D efficiencies
+    auto makeEfficiency2D = [&](const TString& effname, const auto& h) { // 2D efficiencies
       LOG(debug) << " Making 2D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axisX = h->GetXaxis();
       const TAxis* axisY = h->GetYaxis();
@@ -898,7 +898,7 @@ struct QaEfficiency {
     listEfficiencyData.setObject(new THashList);
     if (makeEff) {
       LOG(debug) << "Making TEfficiency for Data";
-      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto, TEfficiency*& eff) {
+      auto makeEfficiency = [&](const TString& effname, const TString& efftitle, auto templateHisto, TEfficiency*& eff) {
         TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
         if (axis->IsVariableBinSize()) {
           eff = new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray());
@@ -927,7 +927,7 @@ struct QaEfficiency {
                      "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/pos/phi/its_tpc_tof"),
                      effTPCTOFMatchingVsPhi);
 
-      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY, TEfficiency*& eff) {
+      auto makeEfficiency2D = [&](const TString& effname, const TString& efftitle, auto templateHistoX, auto templateHistoY, TEfficiency*& eff) {
         TAxis* axisX = histos.get<TH1>(templateHistoX)->GetXaxis();
         TAxis* axisY = histos.get<TH1>(templateHistoY)->GetYaxis();
         if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
@@ -1366,7 +1366,7 @@ struct QaEfficiency {
     }
 
     // Filling 1D efficiencies
-    auto doFillEfficiency = [&](const TString effname, auto num, auto den) {
+    auto doFillEfficiency = [&](const TString& effname, const auto& num, const auto& den) {
       TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
@@ -1436,7 +1436,7 @@ struct QaEfficiency {
     }
 
     // Filling 2D efficiencies
-    auto fillEfficiency2D = [&](const TString effname, auto num, auto den) {
+    auto fillEfficiency2D = [&](const TString& effname, const auto& num, const auto& den) {
       TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;

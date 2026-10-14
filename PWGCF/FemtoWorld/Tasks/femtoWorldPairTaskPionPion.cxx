@@ -157,7 +157,7 @@ struct femtoWorldPairTaskPionPion {
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}};
 
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
@@ -269,7 +269,7 @@ struct femtoWorldPairTaskPionPion {
 
   // Function to build combinations
   template <typename T1, typename T2, typename T3, typename T4>
-  void CombineParticles(T1 groupPartsOne, T1 groupPartsTwo, T2 cont, T3 parts, T4 magFieldTesla, int multCol, int sameOrMixed)
+  void CombineParticles(const T1& groupPartsOne, const T1& groupPartsTwo, T2 cont, const T3& parts, T4 magFieldTesla, int multCol, int sameOrMixed)
   {
     if (sameOrMixed == 1) {
       for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {

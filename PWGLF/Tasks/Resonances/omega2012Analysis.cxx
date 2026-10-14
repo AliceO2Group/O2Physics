@@ -12,7 +12,27 @@
 /// \file omega2012Analysis.cxx
 /// \brief Invariant Mass Reconstruction of Omega(2012) Resonance
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
+///
+/// Two decay modes, analysed separately (never merged in any histogram or process function):
+///  - mode A (XiK0s): Omega(2012)- -> Xi- K0S. processData, processMixedEvent, processMC, processMCGenerated.
+///    Histograms: Event/, QAbefore/, QAafter/, omega2012/, MC/ (unchanged).
+///  - mode B (Xi1530K): Omega(2012)- -> Xi(1530)0 K- -> Xi- pi+ K- with a charged kaon track.
+///    processXi1530KMicro, processXi1530KTracks, processXi1530KMCMicro, processXi1530KMixedMicro.
+///    Histograms: xi1530K/ (signal charge pattern) and xi1530K_wrongSign/ (charge-pattern controls).
+/// Selection, candidate enumeration and truth classification: PWGLF/Core/Omega2012AnalysisCore.h.
+///
+/// Configuration keys: all mode-A keys are unchanged. The former three-body (Xi pi K0S) process functions
+/// processThreeBodyWithTracks / processThreeBodyWithMicroTracks are removed (that final state cannot be an Omega(2012)-).
+/// Mode-B pion/kaon track selection: the common resonance TrackCuts with the prefix "trk.":
+///   cPionPtMin -> trk.cMinPtcut, cPionEtaMax -> trk.cMaxEtacut, cPionDCAxyMax -> trk.cMaxDCArToPVcut,
+///   cPionDCAzMax -> trk.cMaxDCAzToPVcut (default 0.15 cm), cPionTPCNClusMin -> trk.cfgTPCcluster;
+///   further trk.* keys as in PWGLF/Core/ResoAnalysisSelectionCore.h.
+/// Pion PID keys cPion* are unchanged; the kaon PID keys cKaon* have the same shape.
+/// New mode-B keys: cXi1530UseMassWindow, cXi1530KFillWrongSign, cByPassTOF.
 
+#include "PWGLF/Core/Omega2012AnalysisCore.h"
+#include "PWGLF/Core/Omega2012MlFeatures.h"
+#include "PWGLF/Core/ResoAnalysisSelectionCore.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
@@ -25,6 +45,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
@@ -33,29 +54,24 @@
 #include <Math/Vector4Dfwd.h>
 #include <TPDGCode.h>
 
-#include <array>
 #include <cmath>
-#include <cstddef>
-#include <type_traits>
-#include <vector>
+#include <tuple>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
+using namespace o2::analysis::omega2012;
 
 struct Omega2012Analysis {
   // Constants
-  static constexpr float kSmallNumber = 1e-10f;       // Small number to avoid division by zero
-  static constexpr float kMaxDCAV0ToPV = 1.0f;        // Maximum DCA of V0 to PV
-  static constexpr int kNumExpectedDaughters = 2;     // Expected number of daughters for 2-body decay
-  static constexpr int kPlaceholderPdgCode = 3335;
+  static constexpr int NumExpectedDaughters = 2; // Expected number of daughters for 2-body decay
   SliceCache cache;
   Preslice<aod::ResoCascades> perResoCollisionCasc = aod::resodaughter::resoCollisionId;
   Preslice<aod::ResoV0s> perResoCollisionV0 = aod::resodaughter::resoCollisionId;
   Preslice<aod::ResoTracks> perResoCollisionTrack = aod::resodaughter::resoCollisionId;
-  Preslice<aod::ResoMicroTracks> perResoCollisionMicroTrack = aod::resodaughter::resoCollisionId;
+  Preslice<aod::ResoMicroTracks_001> perResoCollisionMicroTrack = aod::resodaughter::resoCollisionId;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Axes
@@ -63,102 +79,38 @@ struct Omega2012Analysis {
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pT (QA)"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Centrality"};
 
-  // Invariant mass range for Omega(2012) → Xi + K0s
+  // Invariant mass range for Omega(2012)
   Configurable<float> cInvMassStart{"cInvMassStart", 1.6, "Invariant mass start (GeV/c^2)"};
   Configurable<float> cInvMassEnd{"cInvMassEnd", 2.2, "Invariant mass end (GeV/c^2)"};
   Configurable<int> cInvMassBins{"cInvMassBins", 600, "Invariant mass bins"};
 
-  // Basic pre-selections (mirroring refs)
-  Configurable<float> cMinPtcut{"cMinPtcut", 0.15, "Minimum pT for candidates"};
-  Configurable<float> cMaxEtaCut{"cMaxEtaCut", 0.8, "Maximum |eta|"};
-  Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.5, "Rapidity cut"};
-  Configurable<bool> cRecoINELgt0{"cRecoINELgt0", false, "Apply Reco INEL>0 event selection"};
-  Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic cuts for Xi-K0s opening angle"};
-  Configurable<std::vector<float>> cKinCutsPt{"cKinCutsPt", {0.0, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0, 4.0, 5.0, 6.0, 1e10}, "Omega(2012) pT bins for kinematic cuts"};
-  Configurable<std::vector<float>> cKinLowerCutsAlpha{"cKinLowerCutsAlpha", {1.5, 1.0, 0.5, 0.3, 0.2, 0.15, 0.1, 0.08, 0.07, 0.06, 0.04, 0.02, 0.02}, "Lower cut on Xi-K0s opening angle"};
-  Configurable<std::vector<float>> cKinUpperCutsAlpha{"cKinUpperCutsAlpha", {3.0, 2.0, 1.5, 1.4, 1.0, 0.8, 0.6, 0.5, 0.45, 0.35, 0.3, 0.25, 0.2}, "Upper cut on Xi-K0s opening angle"};
-  // V0 selections (K0s)
-  Configurable<double> cK0sMinCosPA{"cK0sMinCosPA", 0.98, "K0s minimum pointing angle cosine"};
-  Configurable<double> cK0sMaxDaughDCA{"cK0sMaxDaughDCA", 0.5, "K0s daughter DCA Maximum"};
-  Configurable<double> cK0sMassWindow{"cK0sMassWindow", 0.025, "Mass window for K0s selection (GeV/c^2)"};
-  Configurable<double> cMaxV0Etacut{"cMaxV0Etacut", 0.8, "V0 maximum eta cut"};
-
-  // Xi (cascade) selections from xi1530Analysisqa.cxx
-  Configurable<float> cDCAxyToPVByPtCascP0{"cDCAxyToPVByPtCascP0", 999., "Cascade DCAxy p0"};
-  Configurable<float> cDCAxyToPVByPtCascExp{"cDCAxyToPVByPtCascExp", 1., "Cascade DCAxy exp"};
-  Configurable<bool> cDCAxyToPVAsPtForCasc{"cDCAxyToPVAsPtForCasc", true, "Use pt-dep DCAxy cut (casc)"};
-
-  Configurable<bool> cDCAzToPVAsPtForCasc{"cDCAzToPVAsPtForCasc", true, "Use pt-dep DCAz cut (casc)"};
-
-  // V0 topology inside cascade (Λ)
-  Configurable<float> cDCALambdaDaugtherscut{"cDCALambdaDaugtherscut", 0.7, "Λ daughters DCA cut"};
-  Configurable<float> cDCALambdaToPVcut{"cDCALambdaToPVcut", 0.02, "Λ DCA to PV min"};
-  Configurable<float> cDCAPionToPVcut{"cDCAPionToPVcut", 0.06, "π DCA to PV min"};
-  Configurable<float> cDCAProtonToPVcut{"cDCAProtonToPVcut", 0.07, "p DCA to PV min"};
-  Configurable<float> cV0CosPACutPtDepP0{"cV0CosPACutPtDepP0", 0.25, "V0 CosPA p0"};
-  Configurable<float> cV0CosPACutPtDepP1{"cV0CosPACutPtDepP1", 0.022, "V0 CosPA p1"};
-  Configurable<float> cMaxV0radiuscut{"cMaxV0radiuscut", 200., "V0 radius max"};
-  Configurable<float> cMinV0radiuscut{"cMinV0radiuscut", 2.5, "V0 radius min"};
-  Configurable<float> cMasswindowV0cut{"cMasswindowV0cut", 0.005, "Λ mass window for cascade V0"};
-
-  // Cascade topology
-  Configurable<float> cDCABachlorToPVcut{"cDCABachlorToPVcut", 0.06, "Bachelor DCA to PV min"};
-  Configurable<float> cDCAXiDaugthersCutPtRangeLower{"cDCAXiDaugthersCutPtRangeLower", 1., "Xi pt low boundary"};
-  Configurable<float> cDCAXiDaugthersCutPtRangeUpper{"cDCAXiDaugthersCutPtRangeUpper", 4., "Xi pt high boundary"};
-  Configurable<float> cDCAXiDaugthersCutPtDepLower{"cDCAXiDaugthersCutPtDepLower", 0.8, "Xi daugh DCA (pt<low)"};
-  Configurable<float> cDCAXiDaugthersCutPtDepMiddle{"cDCAXiDaugthersCutPtDepMiddle", 0.5, "Xi daugh DCA (low<=pt<high)"};
-  Configurable<float> cDCAXiDaugthersCutPtDepUpper{"cDCAXiDaugthersCutPtDepUpper", 0.2, "Xi daugh DCA (pt>=high)"};
-  Configurable<float> cCosPACascCutPtDepP0{"cCosPACascCutPtDepP0", 0.2, "Cascade CosPA p0"};
-  Configurable<float> cCosPACascCutPtDepP1{"cCosPACascCutPtDepP1", 0.022, "Cascade CosPA p1"};
-  Configurable<float> cMaxCascradiuscut{"cMaxCascradiuscut", 200., "Cascade radius max"};
-  Configurable<float> cMinCascradiuscut{"cMinCascradiuscut", 1.1, "Cascade radius min"};
-  Configurable<float> cMasswindowCasccut{"cMasswindowCasccut", 0.008, "Xi mass window"};
-  Configurable<float> cMassXiminus{"cMassXiminus", 1.32171, "Xi mass (GeV/c^2)"}; // PDG
+  // Selection shared with the Omega(2012) training-table task (plain JSON keys; the mode-B track cuts carry "trk.")
+  o2::analysis::resonance::EventCuts eventCuts;
+  XiCuts xiCuts;
+  K0sCuts k0sCuts;
+  Xi1530KCuts xi1530KCuts;
+  o2::analysis::resonance::TrackCuts trackCuts = makeXi1530KTrackCuts();
+  PionPidCuts pionPID;
+  KaonPidCuts kaonPID;
+  CandidateCuts candidateCuts;
 
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - centrality"};
 
-  // Enhanced K0s selections
-  Configurable<float> cK0sProperLifetimeMax{"cK0sProperLifetimeMax", 20.0, "K0s proper lifetime max (cm/c)"};
-  Configurable<float> cK0sArmenterosQtMin{"cK0sArmenterosQtMin", 0.0, "K0s Armenteros qt min"};
-  Configurable<float> cK0sArmenterosAlphaCoeff{"cK0sArmenterosAlphaCoeff", 0.2, "K0s Armenteros alpha coefficient"};
-  Configurable<float> cK0sDauPosDCAtoPVMin{"cK0sDauPosDCAtoPVMin", 0.05, "K0s positive daughter DCA to PV min"};
-  Configurable<float> cK0sDauNegDCAtoPVMin{"cK0sDauNegDCAtoPVMin", 0.05, "K0s negative daughter DCA to PV min"};
-  Configurable<float> cK0sRadiusMin{"cK0sRadiusMin", 0.5, "K0s decay radius min"};
-  Configurable<float> cK0sRadiusMax{"cK0sRadiusMax", 200.0, "K0s decay radius max"};
-  Configurable<bool> cK0sCrossMassRejection{"cK0sCrossMassRejection", true, "Enable Lambda mass rejection for K0s"};
-  Configurable<float> cK0sCrossMassRejectionWindow{"cK0sCrossMassRejectionWindow", 0.01, "Lambda mass rejection window for K0s (GeV/c^2)"};
-  Configurable<float> cK0sDaughterPiTPCNSigmaMax{"cK0sDaughterPiTPCNSigmaMax", 5.0, "Maximum TPC NSigma for K0s daughter pions"};
-  Configurable<int> cK0sPosDaughterMinCrossedRows{"cK0sPosDaughterMinCrossedRows", 50, "Minimum TPC crossed rows for K0s positive daughter"};
-  Configurable<int> cK0sNegDaughterMinCrossedRows{"cK0sNegDaughterMinCrossedRows", 50, "Minimum TPC crossed rows for K0s negative daughter"};
-
-  // Pion track selections for 3-body decay
-  Configurable<float> cPionPtMin{"cPionPtMin", 0.15, "Minimum pion pT"};
-  Configurable<float> cPionEtaMax{"cPionEtaMax", 0.8, "Maximum pion |eta|"};
-  Configurable<float> cPionDCAxyMax{"cPionDCAxyMax", 0.1, "Maximum pion DCAxy to PV"};
-  Configurable<float> cPionDCAzMax{"cPionDCAzMax", 0.2, "Maximum pion DCAz to PV"};
-  Configurable<int> cPionTPCNClusMin{"cPionTPCNClusMin", 70, "Minimum TPC clusters for pion"};
-
-  // Pion PID selections
-  Configurable<float> cPionTPCNSigmaMax{"cPionTPCNSigmaMax", 3.0, "Maximum TPC NSigma for pion"};
-  Configurable<float> cPionTOFNSigmaMax{"cPionTOFNSigmaMax", 3.0, "Maximum TOF NSigma for pion"};
-  Configurable<bool> cPionUsePtDepPID{"cPionUsePtDepPID", false, "Use pT-dependent PID cuts for pion"};
-  Configurable<std::vector<float>> cPionPIDPtBins{"cPionPIDPtBins", {0.0f, 0.5f, 0.8f, 2.0f, 999.0f}, "pT bin edges for pion PID cuts"};
-  Configurable<std::vector<float>> cPionTPCNSigmaCuts{"cPionTPCNSigmaCuts", {3.0f, 3.0f, 2.0f, 2.0f}, "TPC NSigma cuts per pT bin (pion)"};
-  Configurable<std::vector<float>> cPionTOFNSigmaCuts{"cPionTOFNSigmaCuts", {3.0f, 3.0f, 3.0f, 3.0f}, "TOF NSigma cuts per pT bin (pion)"};
-  Configurable<std::vector<int>> cPionTOFRequired{"cPionTOFRequired", {0, 0, 1, 1}, "Require TOF per pT bin (pion)"};
-
-  // Xi1530 mass window cut
-  Configurable<float> cXi1530Mass{"cXi1530Mass", 1.53, "Xi(1530) mass (GeV/c^2)"};
-  Configurable<float> cXi1530MassWindow{"cXi1530MassWindow", 0.01, "Xi(1530) mass window (GeV/c^2)"};
-
-  // PDG masses
-  double massK0 = MassK0Short;
+  // Module-initializer collision and daughter tables (matches the resonance-module-initializer producer)
+  using ResoCollisions = aod::ResoCollisions_001;
+  using ResoMCCollisions = soa::Join<ResoCollisions, aod::ResoMCCollisions_001>;
+  using ResoMicroTracks = aod::ResoMicroTracks_001;
+  using ResoMCCascades = soa::Join<aod::ResoCascades, aod::ResoMCCascades>;
+  using ResoMCV0s = soa::Join<aod::ResoV0s, aod::ResoMCV0s>;
+  using ResoMCMicroTracks = soa::Join<ResoMicroTracks, aod::ResoMCMicroTracks_001>;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
-  BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}, true};
+  BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}};
+
+  Omega2012AnalysisCore core;
 
   void init(InitContext&)
   {
@@ -256,27 +208,6 @@ struct Omega2012Analysis {
     histos.add("QAbefore/omegaAlphaVsPt", "#alpha_{oa} vs p_{T} before kinematic cuts", kTH2F, {omegaKinPtAxis, openingAngleAxis});
     histos.add("QAafter/omegaAlphaVsPt", "#alpha_{oa} vs p_{T} after kinematic cuts", kTH2F, {omegaKinPtAxis, openingAngleAxis});
 
-    // 3-body decay: Xi + pi + K0s
-    histos.add("omega2012_3body/invmass", "Invariant mass of Omega(2012) → Xi + #pi + K^{0}_{S}", kTH1F, {invMassAxis});
-    histos.add("omega2012_3body/massPtCent", "Omega(2012) 3-body mass vs pT vs cent", kTH3F, {invMassAxis, ptAxis, centAxis});
-
-    // Pion QA histograms for 3-body
-    histos.add("QAbefore/pionPt", "Pion pT before cuts", kTH1F, {ptAxisQA});
-    histos.add("QAbefore/pionEta", "Pion eta before cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
-    histos.add("QAbefore/pionDCAxy", "Pion DCAxy before cuts", kTH2F, {ptAxisQA, dcaxyAxis});
-    histos.add("QAbefore/pionDCAz", "Pion DCAz before cuts", kTH2F, {ptAxisQA, dcazAxis});
-    histos.add("QAbefore/pionTPCNcls", "Pion TPC clusters before cuts", kTH1F, {{160, 0, 160, "N_{TPC clusters}"}});
-    histos.add("QAbefore/pionTPCNSigma", "Pion TPC NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
-    histos.add("QAbefore/pionTOFNSigma", "Pion TOF NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
-
-    histos.add("QAafter/pionPt", "Pion pT after cuts", kTH1F, {ptAxisQA});
-    histos.add("QAafter/pionEta", "Pion eta after cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
-    histos.add("QAafter/pionDCAxy", "Pion DCAxy after cuts", kTH2F, {ptAxisQA, dcaxyAxis});
-    histos.add("QAafter/pionDCAz", "Pion DCAz after cuts", kTH2F, {ptAxisQA, dcazAxis});
-    histos.add("QAafter/pionTPCNcls", "Pion TPC clusters after cuts", kTH1F, {{160, 0, 160, "N_{TPC clusters}"}});
-    histos.add("QAafter/pionTPCNSigma", "Pion TPC NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
-    histos.add("QAafter/pionTOFNSigma", "Pion TOF NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
-
     // MC truth histograms
     AxisSpec etaAxis = {100, -2.0, 2.0, "#eta"};
     AxisSpec rapidityAxis = {100, -2.0, 2.0, "y"};
@@ -296,590 +227,177 @@ struct Omega2012Analysis {
     histos.add("MC/hMCRecK0sPt", "MC Reconstructed K0s pT", kTH1F, {ptAxis});
     histos.add("MC/hMCTrueXiPt", "MC True Xi pT", kTH1F, {ptAxis});
     histos.add("MC/hMCTrueK0sPt", "MC True K0s pT", kTH1F, {ptAxis});
-  }
 
-  template <typename CascT>
-  static std::array<int, 3> cascadeDaughterIds(const CascT& xi)
-  {
-    auto indices = xi.cascadeIndices();
-    return {indices[0], indices[1], indices[2]};
-  }
+    ProcessModes modes;
+    modes.xiK0s = doprocessData || doprocessMixedEvent || doprocessMC;
+    modes.xi1530K = doprocessXi1530KMicro || doprocessXi1530KTracks || doprocessXi1530KMCMicro || doprocessXi1530KMixedMicro;
+    modes.microTracks = doprocessXi1530KMicro || doprocessXi1530KMCMicro || doprocessXi1530KMixedMicro;
+    modes.mcReco = doprocessMC || doprocessXi1530KMCMicro;
+    modes.mixing = doprocessMixedEvent || doprocessXi1530KMixedMicro;
+    core.init(histos, eventCuts, xiCuts, k0sCuts, xi1530KCuts, trackCuts, pionPID, kaonPID, candidateCuts, modes);
 
-  template <typename V0Type>
-  static std::array<int, 2> v0DaughterIds(const V0Type& v0)
-  {
-    auto indices = v0.indices();
-    return {indices[0], indices[1]};
-  }
+    if (modes.xi1530K) {
+      AxisSpec xiPiMassAxis = {300, 1.4, 1.7, "M_{#Xi#pi} (GeV/#it{c}^{2})"};
+      AxisSpec patternAxis = {3, 0.5, 3.5, "charge pattern (1: wrong-sign #pi, 2: wrong-sign K, 3: both)"};
+      AxisSpec etaAxisQA = {100, -2.0, 2.0, "#eta"};
 
-  template <std::size_t N, std::size_t M>
-  static bool sharesAnyDaughterId(const std::array<int, N>& first, const std::array<int, M>& second)
-  {
-    for (const auto& firstId : first) {
-      for (const auto& secondId : second) {
-        if (firstId == secondId) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
+      // Signal charge pattern: Xi- pi+ K- and Xi+ pi- K+
+      histos.add("xi1530K/invmass", "Invariant mass of Omega(2012) → #Xi(1530)^{0} K → #Xi #pi K", kTH1F, {invMassAxis});
+      histos.add("xi1530K/massPtCent", "Omega(2012) → #Xi(1530)^{0} K mass vs pT vs cent", kTH3F, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1530K/invmass_Mix", "Mixed event invariant mass of Omega(2012) → #Xi(1530)^{0} K", kTH1F, {invMassAxis});
+      histos.add("xi1530K/massPtCent_Mix", "Mixed event Omega(2012) → #Xi(1530)^{0} K mass vs pT vs cent", kTH3F, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1530K/massXiPi", "#Xi #pi mass of selected candidates (before the rapidity cut)", kTH1F, {xiPiMassAxis});
+      histos.add("xi1530K/massXiPiVsMass", "#Xi #pi mass vs #Xi #pi K mass", kTH2F, {invMassAxis, xiPiMassAxis});
 
-  template <std::size_t N>
-  static bool sharesDaughterId(const std::array<int, N>& daughters, int trackId)
-  {
-    for (const auto& daughterId : daughters) {
-      if (daughterId == trackId) {
-        return true;
-      }
-    }
-    return false;
-  }
+      // QA of the mode-B inputs (once per object and collision)
+      histos.add("xi1530K/QAbefore/xiMass", "Xi mass before cuts", kTH1F, {xiMassAxis});
+      histos.add("xi1530K/QAbefore/xiPt", "Xi pT before cuts", kTH1F, {ptAxisQA});
+      histos.add("xi1530K/QAbefore/xiEta", "Xi eta before cuts", kTH1F, {etaAxisQA});
+      histos.add("xi1530K/QAafter/xiMass", "Xi mass after cuts", kTH1F, {xiMassAxis});
+      histos.add("xi1530K/QAafter/xiPt", "Xi pT after cuts", kTH1F, {ptAxisQA});
+      histos.add("xi1530K/QAafter/xiEta", "Xi eta after cuts", kTH1F, {etaAxisQA});
+      histos.add("xi1530K/QAbefore/trackPt", "Track pT before cuts", kTH1F, {ptAxisQA});
+      histos.add("xi1530K/QAbefore/trackEta", "Track eta before cuts", kTH1F, {etaAxisQA});
+      histos.add("xi1530K/QAbefore/trackDCAxy", "Track DCAxy before cuts", kTH2F, {ptAxisQA, dcaxyAxis});
+      histos.add("xi1530K/QAbefore/trackDCAz", "Track DCAz before cuts", kTH2F, {ptAxisQA, dcazAxis});
+      histos.add("xi1530K/QAbefore/pionTPCNSigma", "Pion TPC NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("xi1530K/QAbefore/pionTOFNSigma", "Pion TOF NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("xi1530K/QAbefore/kaonTPCNSigma", "Kaon TPC NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("xi1530K/QAbefore/kaonTOFNSigma", "Kaon TOF NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("xi1530K/QAafter/pionPt", "Pion pT after cuts", kTH1F, {ptAxisQA});
+      histos.add("xi1530K/QAafter/pionEta", "Pion eta after cuts", kTH1F, {etaAxisQA});
+      histos.add("xi1530K/QAafter/pionDCAxy", "Pion DCAxy after cuts", kTH2F, {ptAxisQA, dcaxyAxis});
+      histos.add("xi1530K/QAafter/pionDCAz", "Pion DCAz after cuts", kTH2F, {ptAxisQA, dcazAxis});
+      histos.add("xi1530K/QAafter/pionTPCNSigma", "Pion TPC NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("xi1530K/QAafter/pionTOFNSigma", "Pion TOF NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("xi1530K/QAafter/kaonPt", "Kaon pT after cuts", kTH1F, {ptAxisQA});
+      histos.add("xi1530K/QAafter/kaonEta", "Kaon eta after cuts", kTH1F, {etaAxisQA});
+      histos.add("xi1530K/QAafter/kaonDCAxy", "Kaon DCAxy after cuts", kTH2F, {ptAxisQA, dcaxyAxis});
+      histos.add("xi1530K/QAafter/kaonDCAz", "Kaon DCAz after cuts", kTH2F, {ptAxisQA, dcazAxis});
+      histos.add("xi1530K/QAafter/kaonTPCNSigma", "Kaon TPC NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("xi1530K/QAafter/kaonTOFNSigma", "Kaon TOF NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
 
-  template <typename TrackT, typename TrackIdsT>
-  static int trackSourceId(const TrackT& track, const TrackIdsT& trackIds)
-  {
-    auto rowIndex = track.globalIndex();
-    if (rowIndex >= 0 && rowIndex < trackIds.size()) {
-      return trackIds.rawIteratorAt(rowIndex).trackId();
-    }
-    return rowIndex;
-  }
+      // Charge-pattern controls (never part of the signal)
+      histos.add("xi1530K_wrongSign/invmassPattern", "Wrong-sign #Xi #pi K mass by charge pattern", kTH2F, {patternAxis, invMassAxis});
+      histos.add("xi1530K_wrongSign/massPtPattern", "Wrong-sign #Xi #pi K mass vs pT by charge pattern", kTH3F, {invMassAxis, ptAxis, patternAxis});
 
-  template <typename FirstVecT, typename SecondVecT, typename MotherVecT>
-  bool kinCuts(const FirstVecT& firstDaughter, const SecondVecT& secondDaughter, const MotherVecT& mother, float& alpha)
-  {
-    auto firstP = std::sqrt(firstDaughter.Px() * firstDaughter.Px() + firstDaughter.Py() * firstDaughter.Py() + firstDaughter.Pz() * firstDaughter.Pz());
-    auto secondP = std::sqrt(secondDaughter.Px() * secondDaughter.Px() + secondDaughter.Py() * secondDaughter.Py() + secondDaughter.Pz() * secondDaughter.Pz());
-    if (firstP < kSmallNumber || secondP < kSmallNumber) {
-      alpha = 0.f;
-      return false;
-    }
-
-    auto cosAlpha = (firstDaughter.Px() * secondDaughter.Px() + firstDaughter.Py() * secondDaughter.Py() + firstDaughter.Pz() * secondDaughter.Pz()) / (firstP * secondP);
-    if (cosAlpha > 1.) {
-      cosAlpha = 1.;
-    } else if (cosAlpha < -1.) {
-      cosAlpha = -1.;
-    }
-    alpha = std::acos(cosAlpha);
-
-    std::vector<float> kinCutsPt = static_cast<std::vector<float>>(cKinCutsPt);
-    std::vector<float> kinLowerCutsAlpha = static_cast<std::vector<float>>(cKinLowerCutsAlpha);
-    std::vector<float> kinUpperCutsAlpha = static_cast<std::vector<float>>(cKinUpperCutsAlpha);
-
-    int kinCutsSize = static_cast<int>(kinUpperCutsAlpha.size());
-    if (kinCutsSize > static_cast<int>(kinLowerCutsAlpha.size())) {
-      kinCutsSize = static_cast<int>(kinLowerCutsAlpha.size());
-    }
-    if (kinCutsSize > static_cast<int>(kinCutsPt.size()) - 1) {
-      kinCutsSize = static_cast<int>(kinCutsPt.size()) - 1;
-    }
-
-    for (int i = 0; i < kinCutsSize; ++i) {
-      if ((mother.Pt() > kinCutsPt[i] && mother.Pt() <= kinCutsPt[i + 1]) && (alpha < kinLowerCutsAlpha[i] || alpha > kinUpperCutsAlpha[i])) {
-        return false;
+      if (doprocessXi1530KMCMicro) {
+        histos.add("xi1530K/MC/hMCRecOmega2012Pt", "MC reconstructed Omega(2012) → #Xi(1530)^{0} K pT", kTH1F, {ptAxis});
+        histos.add("xi1530K/MC/hMCRecOmega2012PtEta", "MC reconstructed Omega(2012) → #Xi(1530)^{0} K pT vs eta", kTH2F, {ptAxis, etaAxis});
+        histos.add("xi1530K/MC/hMCRecMass", "MC reconstructed Omega(2012) → #Xi(1530)^{0} K mass", kTH1F, {invMassAxis});
+        histos.add("xi1530K/MC/hMCRecMassXiPi", "MC reconstructed #Xi #pi mass", kTH1F, {xiPiMassAxis});
+        histos.add("xi1530K/MC/hMCRecXiPt", "MC reconstructed Xi pT", kTH1F, {ptAxis});
+        histos.add("xi1530K/MC/hMCRecPionPt", "MC reconstructed pion pT", kTH1F, {ptAxis});
+        histos.add("xi1530K/MC/hMCRecKaonPt", "MC reconstructed kaon pT", kTH1F, {ptAxis});
       }
     }
 
-    return true;
+    LOG(info) << "Size of the histograms in Omega(2012) analysis task";
+    histos.print();
   }
 
-  // Enhanced V0 selection (K0s) with detailed criteria
-  template <typename CollisionType, typename V0Type>
-  bool v0CutEnhanced(const CollisionType& collision, const V0Type& v0)
-  {
-    // Basic kinematic cuts
-    if (std::abs(v0.eta()) > cMaxV0Etacut)
-      return false;
-    if (v0.pt() < cMinPtcut)
-      return false;
-
-    // Topological cuts
-    if (v0.v0CosPA() < cK0sMinCosPA)
-      return false;
-    if (v0.daughDCA() > cK0sMaxDaughDCA)
-      return false;
-
-    // Enhanced selections from chk892Flow
-    // Daughter DCA to PV cuts
-    if (std::abs(v0.dcapostopv()) < cK0sDauPosDCAtoPVMin)
-      return false;
-    if (std::abs(v0.dcanegtopv()) < cK0sDauNegDCAtoPVMin)
-      return false;
-
-    // Radius cuts - use transRadius instead of v0radius
-    auto radius = v0.transRadius();
-    if (radius < cK0sRadiusMin || radius > cK0sRadiusMax)
-      return false;
-
-    // DCA to PV
-    if (std::abs(v0.dcav0topv()) > kMaxDCAV0ToPV)
-      return false; // max DCA to PV
-
-    // Proper lifetime cut - calculate manually
-    float dx = v0.decayVtxX() - collision.posX();
-    float dy = v0.decayVtxY() - collision.posY();
-    float dz = v0.decayVtxZ() - collision.posZ();
-    float l = std::sqrt(dx * dx + dy * dy + dz * dz);
-    float p = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
-    auto properLifetime = (l / (p + kSmallNumber)) * MassK0Short;
-    if (properLifetime > cK0sProperLifetimeMax)
-      return false;
-
-    if (v0.qtarm() < cK0sArmenterosQtMin)
-      return false;
-
-    // Mass window
-    if (std::abs(v0.mK0Short() - MassK0Short) > cK0sMassWindow)
-      return false;
-
-    // Competing V0 rejection: remove (Anti)Λ
-    if (cK0sCrossMassRejection) {
-      if (std::abs(v0.mLambda() - MassLambda) < cK0sCrossMassRejectionWindow)
-        return false;
-      if (std::abs(v0.mAntiLambda() - MassLambda) < cK0sCrossMassRejectionWindow)
-        return false;
-    }
-
-    if (std::abs(v0.daughterTPCNSigmaPosPi()) >= cK0sDaughterPiTPCNSigmaMax)
-      return false;
-    if (std::abs(v0.daughterTPCNSigmaNegPi()) >= cK0sDaughterPiTPCNSigmaMax)
-      return false;
-
-    if (v0.nCrossedRowsPos() <= cK0sPosDaughterMinCrossedRows)
-      return false;
-    if (v0.nCrossedRowsNeg() <= cK0sNegDaughterMinCrossedRows)
-      return false;
-
-    if (v0.qtarm() < cK0sArmenterosAlphaCoeff * std::fabs(v0.alpha()))
-      return false;
-
-    return true;
-  }
-
-  // Helper function to find pT bin index
-  int getPtBinIndex(float pt)
-  {
-    auto ptBins = static_cast<std::vector<float>>(cPionPIDPtBins);
-    for (size_t i = 0; i < ptBins.size() - 1; i++) {
-      if (pt >= ptBins[i] && pt < ptBins[i + 1]) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  // Pion PID selection
-  template <bool IsResoMicrotrack, typename TrackType>
-  bool pionPidCut(const TrackType& track)
-  {
-    float pt = track.pt();
-
-    if constexpr (IsResoMicrotrack) {
-      // For ResoMicroTracks - decode PID from flags
-      float tpcNSigma = o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(track.pidNSigmaPiFlag());
-      float tofNSigma = track.hasTOF() ? o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(track.pidNSigmaPiFlag()) : 999.f;
-
-      if (cPionUsePtDepPID) {
-        int ptBin = getPtBinIndex(pt);
-        if (ptBin < 0)
-          return false;
-
-        auto tpcCuts = static_cast<std::vector<float>>(cPionTPCNSigmaCuts);
-        auto tofCuts = static_cast<std::vector<float>>(cPionTOFNSigmaCuts);
-        auto tofRequired = static_cast<std::vector<int>>(cPionTOFRequired);
-
-        if (ptBin >= static_cast<int>(tpcCuts.size()) ||
-            ptBin >= static_cast<int>(tofCuts.size()) ||
-            ptBin >= static_cast<int>(tofRequired.size())) {
-          return false;
-        }
-
-        if (std::abs(tpcNSigma) >= tpcCuts[ptBin])
-          return false;
-
-        if (tofRequired[ptBin] != 0) {
-          if (!track.hasTOF())
-            return false;
-          if (std::abs(tofNSigma) >= tofCuts[ptBin])
-            return false;
-        } else {
-          if (track.hasTOF() && std::abs(tofNSigma) >= tofCuts[ptBin])
-            return false;
-        }
-
-        return true;
-      } else {
-        bool tpcPass = std::abs(tpcNSigma) < cPionTPCNSigmaMax;
-        bool tofPass = track.hasTOF() ? std::abs(tofNSigma) < cPionTOFNSigmaMax : true;
-        return tpcPass && tofPass;
-      }
-    } else {
-      // For ResoTracks - direct access
-      float tpcNSigma = track.tpcNSigmaPi();
-      float tofNSigma = track.hasTOF() ? track.tofNSigmaPi() : 999.f;
-
-      if (cPionUsePtDepPID) {
-        int ptBin = getPtBinIndex(pt);
-        if (ptBin < 0)
-          return false;
-
-        auto tpcCuts = static_cast<std::vector<float>>(cPionTPCNSigmaCuts);
-        auto tofCuts = static_cast<std::vector<float>>(cPionTOFNSigmaCuts);
-        auto tofRequired = static_cast<std::vector<int>>(cPionTOFRequired);
-
-        if (ptBin >= static_cast<int>(tpcCuts.size()) ||
-            ptBin >= static_cast<int>(tofCuts.size()) ||
-            ptBin >= static_cast<int>(tofRequired.size())) {
-          return false;
-        }
-
-        if (std::abs(tpcNSigma) >= tpcCuts[ptBin])
-          return false;
-
-        if (tofRequired[ptBin] != 0) {
-          if (!track.hasTOF())
-            return false;
-          if (std::abs(tofNSigma) >= tofCuts[ptBin])
-            return false;
-        } else {
-          if (track.hasTOF() && std::abs(tofNSigma) >= tofCuts[ptBin])
-            return false;
-        }
-
-        return true;
-      } else {
-        bool tpcPass = std::abs(tpcNSigma) < cPionTPCNSigmaMax;
-        bool tofPass = track.hasTOF() ? std::abs(tofNSigma) < cPionTOFNSigmaMax : true;
-        return tpcPass && tofPass;
-      }
-    }
-  }
-
-  // Pion track selection (for both ResoTracks and ResoMicroTracks)
-  template <bool IsResoMicrotrack, typename TrackType>
-  bool pionCut(const TrackType& track)
-  {
-    // Basic kinematic cuts
-    if (track.pt() < cPionPtMin)
-      return false;
-    if (std::abs(track.eta()) > cPionEtaMax)
-      return false;
-
-    // DCA cuts - different access for ResoMicroTracks
-    if constexpr (IsResoMicrotrack) {
-      if (o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags()) > cPionDCAxyMax)
-        return false;
-      if (o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags()) > cPionDCAzMax)
-        return false;
-    } else {
-      if (std::abs(track.dcaXY()) > cPionDCAxyMax)
-        return false;
-      if (std::abs(track.dcaZ()) > cPionDCAzMax)
-        return false;
-    }
-
-    // Track quality cuts - only for ResoTracks
-    if constexpr (!IsResoMicrotrack) {
-      if constexpr (requires { track.tpcNClsFound(); }) {
-        if (track.tpcNClsFound() < cPionTPCNClusMin)
-          return false;
-      }
-    }
-
-    // PID selection
-    if (!pionPidCut<IsResoMicrotrack>(track))
-      return false;
-
-    return true;
-  }
-
-  // Xi1530 mass window cut
-  template <typename XiType, typename PionType>
-  bool xi1530MassCut(const XiType& xi, const PionType& pion)
-  {
-    // Calculate Xi + pion invariant mass
-    ROOT::Math::PxPyPzEVector pXi, pPion, pXi1530;
-    pXi = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(xi.pt(), xi.eta(), xi.phi(), xi.mXi()));
-    pPion = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(pion.pt(), pion.eta(), pion.phi(), MassPionCharged));
-    pXi1530 = pXi + pPion;
-
-    // Check if mass is within Xi(1530) window
-    float massDiff = std::abs(pXi1530.M() - cXi1530Mass);
-    return massDiff < cXi1530MassWindow;
-  }
-
-  // Primary-level cascade kinematics
-  template <typename CascT>
-  bool cascprimaryTrackCut(const CascT& c)
-  {
-    if (std::abs(c.eta()) > cMaxEtaCut)
-      return false;
-    if (std::abs(c.pt()) < cMinPtcut)
-      return false;
-    if (cDCAxyToPVAsPtForCasc) {
-      if (std::abs(c.dcaXYCascToPV()) > (cDCAxyToPVByPtCascP0 + cDCAxyToPVByPtCascExp * c.pt()))
-        return false;
-    }
-    if (cDCAzToPVAsPtForCasc) {
-      if (std::abs(c.dcaZCascToPV()) > (cDCAxyToPVByPtCascP0 + cDCAxyToPVByPtCascExp * std::pow(c.pt(), -1.1f)))
-        return false;
-    }
-    return true;
-  }
-
-  // Cascade topological selections adapted from xi1530Analysisqa
-  template <typename CascT>
-  bool casctopCut(const CascT& c)
-  {
-    // V0 (Λ) topology inside cascade
-    if (std::abs(c.daughDCA()) > cDCALambdaDaugtherscut)
-      return false;
-    if (std::abs(c.dcav0topv()) < cDCALambdaToPVcut)
-      return false;
-
-    if (c.sign() < 0) { // Xi-
-      if (std::abs(c.dcanegtopv()) < cDCAPionToPVcut)
-        return false;
-      if (std::abs(c.dcapostopv()) < cDCAProtonToPVcut)
-        return false;
-    } else { // Anti-Xi
-      if (std::abs(c.dcanegtopv()) < cDCAProtonToPVcut)
-        return false;
-      if (std::abs(c.dcapostopv()) < cDCAPionToPVcut)
-        return false;
-    }
-
-    if (c.v0CosPA() < std::cos(cV0CosPACutPtDepP0 - cV0CosPACutPtDepP1 * c.pt()))
-      return false;
-    if (c.transRadius() > cMaxV0radiuscut || c.transRadius() < cMinV0radiuscut)
-      return false;
-    if (std::abs(c.mLambda() - MassLambda) > cMasswindowV0cut)
-      return false;
-
-    // Cascade-level topology
-    if (std::abs(c.dcabachtopv()) < cDCABachlorToPVcut)
-      return false;
-
-    if (c.pt() < cDCAXiDaugthersCutPtRangeLower) {
-      if (c.cascDaughDCA() > cDCAXiDaugthersCutPtDepLower)
-        return false;
-    } else if (c.pt() < cDCAXiDaugthersCutPtRangeUpper) {
-      if (c.cascDaughDCA() > cDCAXiDaugthersCutPtDepMiddle)
-        return false;
-    } else {
-      if (c.cascDaughDCA() > cDCAXiDaugthersCutPtDepUpper)
-        return false;
-    }
-
-    if (c.cascCosPA() < std::cos(cCosPACascCutPtDepP0 - cCosPACascCutPtDepP1 * c.pt()))
-      return false;
-    if (c.cascTransRadius() > cMaxCascradiuscut || c.cascTransRadius() < cMinCascradiuscut)
-      return false;
-    if (std::abs(c.mXi() - cMassXiminus) > cMasswindowCasccut)
-      return false;
-
-    return true;
-  }
-
-  template <typename CandidateT>
-  struct SelectedXiCandidate {
-    CandidateT candidate;
-    std::array<int, 3> daughterIds;
-  };
-
-  template <typename CandidateT>
-  struct SelectedK0sCandidate {
-    CandidateT candidate;
-    std::array<int, 2> daughterIds;
-  };
-
-  template <bool FillQA, typename CollisionT, typename V0sT>
-  auto selectK0sCandidates(const CollisionT& collision, const V0sT& v0s, int& nV0sAfterCuts)
-  {
-    using V0Candidate = std::decay_t<decltype(v0s.begin())>;
-    std::vector<SelectedK0sCandidate<V0Candidate>> selectedK0s;
-    selectedK0s.reserve(v0s.size());
-
-    for (const auto& v0 : v0s) {
-      float dx = v0.decayVtxX() - collision.posX();
-      float dy = v0.decayVtxY() - collision.posY();
-      float dz = v0.decayVtxZ() - collision.posZ();
-      float l = std::sqrt(dx * dx + dy * dy + dz * dz);
-      float p = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
-      auto properLifetime = (l / (p + kSmallNumber)) * MassK0Short;
-
-      if constexpr (FillQA) {
-        histos.fill(HIST("QAbefore/k0sMassPt"), v0.pt(), v0.mK0Short());
-        histos.fill(HIST("QAbefore/k0sPt"), v0.pt());
-        histos.fill(HIST("QAbefore/k0sEta"), v0.eta());
-        histos.fill(HIST("QAbefore/k0sCosPA"), v0.pt(), v0.v0CosPA());
-        histos.fill(HIST("QAbefore/k0sRadius"), v0.pt(), v0.transRadius());
-        histos.fill(HIST("QAbefore/k0sDauDCA"), v0.pt(), v0.daughDCA());
-        histos.fill(HIST("QAbefore/k0sDCAtoPV"), v0.pt(), std::abs(v0.dcav0topv()));
-        histos.fill(HIST("QAbefore/k0sProperLifetime"), v0.pt(), properLifetime);
-        histos.fill(HIST("QAbefore/k0sArmenteros"), v0.alpha(), v0.qtarm());
-        histos.fill(HIST("QAbefore/k0sDauPosDCA"), v0.pt(), std::abs(v0.dcapostopv()));
-        histos.fill(HIST("QAbefore/k0sDauNegDCA"), v0.pt(), std::abs(v0.dcanegtopv()));
-        histos.fill(HIST("QAbefore/k0sDauTPCNsigmaPosPi"), v0.pt(), v0.daughterTPCNSigmaPosPi());
-        histos.fill(HIST("QAbefore/k0sDauTPCNsigmaNegPi"), v0.pt(), v0.daughterTPCNSigmaNegPi());
-        histos.fill(HIST("QAbefore/k0sNCrossedRowsPos"), v0.pt(), v0.nCrossedRowsPos());
-        histos.fill(HIST("QAbefore/k0sNCrossedRowsNeg"), v0.pt(), v0.nCrossedRowsNeg());
-      }
-
-      if (!v0CutEnhanced(collision, v0))
-        continue;
-
-      if constexpr (FillQA) {
-        nV0sAfterCuts++;
-        histos.fill(HIST("QAafter/k0sMassPt"), v0.pt(), v0.mK0Short());
-        histos.fill(HIST("QAafter/k0sPt"), v0.pt());
-        histos.fill(HIST("QAafter/k0sEta"), v0.eta());
-        histos.fill(HIST("QAafter/k0sCosPA"), v0.pt(), v0.v0CosPA());
-        histos.fill(HIST("QAafter/k0sRadius"), v0.pt(), v0.transRadius());
-        histos.fill(HIST("QAafter/k0sDauDCA"), v0.pt(), v0.daughDCA());
-        histos.fill(HIST("QAafter/k0sDCAtoPV"), v0.pt(), std::abs(v0.dcav0topv()));
-        histos.fill(HIST("QAafter/k0sProperLifetime"), v0.pt(), properLifetime);
-        histos.fill(HIST("QAafter/k0sArmenteros"), v0.alpha(), v0.qtarm());
-        histos.fill(HIST("QAafter/k0sDauPosDCA"), v0.pt(), std::abs(v0.dcapostopv()));
-        histos.fill(HIST("QAafter/k0sDauNegDCA"), v0.pt(), std::abs(v0.dcanegtopv()));
-        histos.fill(HIST("QAafter/k0sDauTPCNsigmaPosPi"), v0.pt(), v0.daughterTPCNSigmaPosPi());
-        histos.fill(HIST("QAafter/k0sDauTPCNsigmaNegPi"), v0.pt(), v0.daughterTPCNSigmaNegPi());
-        histos.fill(HIST("QAafter/k0sNCrossedRowsPos"), v0.pt(), v0.nCrossedRowsPos());
-        histos.fill(HIST("QAafter/k0sNCrossedRowsNeg"), v0.pt(), v0.nCrossedRowsNeg());
-      }
-
-      selectedK0s.push_back({v0, v0DaughterIds(v0)});
-    }
-
-    return selectedK0s;
-  }
-
-  template <bool FillQA, typename CascadesT>
-  auto selectXiCandidates(const CascadesT& cascades, int& nCascAfterCuts)
-  {
-    using XiCandidate = std::decay_t<decltype(cascades.begin())>;
-    std::vector<SelectedXiCandidate<XiCandidate>> selectedXis;
-    selectedXis.reserve(cascades.size());
-
-    for (const auto& xi : cascades) {
-      if constexpr (FillQA) {
-        histos.fill(HIST("QAbefore/xiMass"), xi.mXi());
-        histos.fill(HIST("QAbefore/xiPt"), xi.pt());
-        histos.fill(HIST("QAbefore/xiEta"), xi.eta());
-        histos.fill(HIST("QAbefore/xiDCAxy"), xi.pt(), xi.dcaXYCascToPV());
-        histos.fill(HIST("QAbefore/xiDCAz"), xi.pt(), xi.dcaZCascToPV());
-        histos.fill(HIST("QAbefore/xiV0CosPA"), xi.pt(), xi.v0CosPA());
-        histos.fill(HIST("QAbefore/xiCascCosPA"), xi.pt(), xi.cascCosPA());
-        histos.fill(HIST("QAbefore/xiV0Radius"), xi.pt(), xi.transRadius());
-        histos.fill(HIST("QAbefore/xiCascRadius"), xi.pt(), xi.cascTransRadius());
-        histos.fill(HIST("QAbefore/xiV0DauDCA"), xi.pt(), xi.daughDCA());
-        histos.fill(HIST("QAbefore/xiCascDauDCA"), xi.pt(), xi.cascDaughDCA());
-      }
-
-      if (!cascprimaryTrackCut(xi))
-        continue;
-      if (!casctopCut(xi))
-        continue;
-
-      if constexpr (FillQA) {
-        nCascAfterCuts++;
-        histos.fill(HIST("QAafter/xiMass"), xi.mXi());
-        histos.fill(HIST("QAafter/xiPt"), xi.pt());
-        histos.fill(HIST("QAafter/xiEta"), xi.eta());
-        histos.fill(HIST("QAafter/xiDCAxy"), xi.pt(), xi.dcaXYCascToPV());
-        histos.fill(HIST("QAafter/xiDCAz"), xi.pt(), xi.dcaZCascToPV());
-        histos.fill(HIST("QAafter/xiV0CosPA"), xi.pt(), xi.v0CosPA());
-        histos.fill(HIST("QAafter/xiCascCosPA"), xi.pt(), xi.cascCosPA());
-        histos.fill(HIST("QAafter/xiV0Radius"), xi.pt(), xi.transRadius());
-        histos.fill(HIST("QAafter/xiCascRadius"), xi.pt(), xi.cascTransRadius());
-        histos.fill(HIST("QAafter/xiV0DauDCA"), xi.pt(), xi.daughDCA());
-        histos.fill(HIST("QAafter/xiCascDauDCA"), xi.pt(), xi.cascDaughDCA());
-      }
-
-      selectedXis.push_back({xi, cascadeDaughterIds(xi)});
-    }
-
-    return selectedXis;
-  }
-
-  template <bool IsMix, typename CollisionT, typename CascadesT, typename V0sT>
-  void fill(const CollisionT& collision, const CascadesT& cascades, const V0sT& v0s)
+  // Mode A, same event (data): event QA, Xi and K0S QA, kinematic-cut QA and the Xi K0S mass
+  template <typename CollisionT, typename CascadesT, typename V0sT>
+  void fillXiK0s(const CollisionT& collision, const CascadesT& cascades, const V0sT& v0s)
   {
     auto cent = collision.cent();
 
-    // Fill event QA histograms (only for same-event)
-    if constexpr (!IsMix) {
-      histos.fill(HIST("Event/posZ"), collision.posZ());
-      histos.fill(HIST("Event/centrality"), cent);
-      histos.fill(HIST("Event/posZvsCent"), collision.posZ(), cent);
-      histos.fill(HIST("Event/nCascades"), cascades.size());
-      histos.fill(HIST("Event/nV0s"), v0s.size());
-    }
+    histos.fill(HIST("Event/posZ"), collision.posZ());
+    histos.fill(HIST("Event/centrality"), cent);
+    histos.fill(HIST("Event/posZvsCent"), collision.posZ(), cent);
+    histos.fill(HIST("Event/nCascades"), cascades.size());
+    histos.fill(HIST("Event/nV0s"), v0s.size());
 
     // Count candidates after cuts
     int nCascAfterCuts = 0;
     int nV0sAfterCuts = 0;
 
-    auto selectedK0s = selectK0sCandidates<!IsMix>(collision, v0s, nV0sAfterCuts);
-    auto selectedXis = selectXiCandidates<!IsMix>(cascades, nCascAfterCuts);
-
-    for (const auto& selectedXi : selectedXis) {
-      const auto& xi = selectedXi.candidate;
-
-      // Build Xi + K0s
-      for (const auto& selectedK0 : selectedK0s) {
-        const auto& v0 = selectedK0.candidate;
-
-        if constexpr (!IsMix) {
-          if (sharesAnyDaughterId(selectedXi.daughterIds, selectedK0.daughterIds)) {
-            continue;
-          }
-        }
-
-        // 4-vectors
-        ROOT::Math::PxPyPzEVector pXi, pK0s, pRes;
-        pXi = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(xi.pt(), xi.eta(), xi.phi(), xi.mXi()));
-        pK0s = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), massK0));
-        pRes = pXi + pK0s;
-
-        float alpha = 0.f;
-        bool kinCutFlag = true;
-        if (cKinCuts) {
-          kinCutFlag = kinCuts(pXi, pK0s, pRes, alpha);
-          if constexpr (!IsMix) {
-            histos.fill(HIST("QAbefore/omegaAlphaVsPt"), pRes.Pt(), alpha);
-          }
-        }
-
-        if (cKinCuts && !kinCutFlag)
-          continue;
-
-        if constexpr (!IsMix) {
-          if (cKinCuts) {
-            histos.fill(HIST("QAafter/omegaAlphaVsPt"), pRes.Pt(), alpha);
-          }
-        }
-
-        if (std::abs(pRes.Rapidity()) >= cfgRapidityCut)
-          continue;
-
-        if constexpr (!IsMix) {
-          histos.fill(HIST("omega2012/invmass"), pRes.M());
-          histos.fill(HIST("omega2012/massPtCent"), pRes.M(), pRes.Pt(), cent);
-        } else {
-          histos.fill(HIST("omega2012/invmass_Mix"), pRes.M());
-          histos.fill(HIST("omega2012/massPtCent_Mix"), pRes.M(), pRes.Pt(), cent);
-        }
+    auto onK0s = [&](auto const& v0, double properLifetime, bool selected) {
+      histos.fill(HIST("QAbefore/k0sMassPt"), v0.pt(), v0.mK0Short());
+      histos.fill(HIST("QAbefore/k0sPt"), v0.pt());
+      histos.fill(HIST("QAbefore/k0sEta"), v0.eta());
+      histos.fill(HIST("QAbefore/k0sCosPA"), v0.pt(), v0.v0CosPA());
+      histos.fill(HIST("QAbefore/k0sRadius"), v0.pt(), v0.transRadius());
+      histos.fill(HIST("QAbefore/k0sDauDCA"), v0.pt(), v0.daughDCA());
+      histos.fill(HIST("QAbefore/k0sDCAtoPV"), v0.pt(), std::abs(v0.dcav0topv()));
+      histos.fill(HIST("QAbefore/k0sProperLifetime"), v0.pt(), properLifetime);
+      histos.fill(HIST("QAbefore/k0sArmenteros"), v0.alpha(), v0.qtarm());
+      histos.fill(HIST("QAbefore/k0sDauPosDCA"), v0.pt(), std::abs(v0.dcapostopv()));
+      histos.fill(HIST("QAbefore/k0sDauNegDCA"), v0.pt(), std::abs(v0.dcanegtopv()));
+      histos.fill(HIST("QAbefore/k0sDauTPCNsigmaPosPi"), v0.pt(), v0.daughterTPCNSigmaPosPi());
+      histos.fill(HIST("QAbefore/k0sDauTPCNsigmaNegPi"), v0.pt(), v0.daughterTPCNSigmaNegPi());
+      histos.fill(HIST("QAbefore/k0sNCrossedRowsPos"), v0.pt(), v0.nCrossedRowsPos());
+      histos.fill(HIST("QAbefore/k0sNCrossedRowsNeg"), v0.pt(), v0.nCrossedRowsNeg());
+      if (!selected) {
+        return;
       }
-    }
+      nV0sAfterCuts++;
+      histos.fill(HIST("QAafter/k0sMassPt"), v0.pt(), v0.mK0Short());
+      histos.fill(HIST("QAafter/k0sPt"), v0.pt());
+      histos.fill(HIST("QAafter/k0sEta"), v0.eta());
+      histos.fill(HIST("QAafter/k0sCosPA"), v0.pt(), v0.v0CosPA());
+      histos.fill(HIST("QAafter/k0sRadius"), v0.pt(), v0.transRadius());
+      histos.fill(HIST("QAafter/k0sDauDCA"), v0.pt(), v0.daughDCA());
+      histos.fill(HIST("QAafter/k0sDCAtoPV"), v0.pt(), std::abs(v0.dcav0topv()));
+      histos.fill(HIST("QAafter/k0sProperLifetime"), v0.pt(), properLifetime);
+      histos.fill(HIST("QAafter/k0sArmenteros"), v0.alpha(), v0.qtarm());
+      histos.fill(HIST("QAafter/k0sDauPosDCA"), v0.pt(), std::abs(v0.dcapostopv()));
+      histos.fill(HIST("QAafter/k0sDauNegDCA"), v0.pt(), std::abs(v0.dcanegtopv()));
+      histos.fill(HIST("QAafter/k0sDauTPCNsigmaPosPi"), v0.pt(), v0.daughterTPCNSigmaPosPi());
+      histos.fill(HIST("QAafter/k0sDauTPCNsigmaNegPi"), v0.pt(), v0.daughterTPCNSigmaNegPi());
+      histos.fill(HIST("QAafter/k0sNCrossedRowsPos"), v0.pt(), v0.nCrossedRowsPos());
+      histos.fill(HIST("QAafter/k0sNCrossedRowsNeg"), v0.pt(), v0.nCrossedRowsNeg());
+    };
 
-    // Fill event QA for after-cuts counters (only for same-event)
-    if constexpr (!IsMix) {
-      histos.fill(HIST("Event/nCascadesAfterCuts"), nCascAfterCuts);
-      histos.fill(HIST("Event/nV0sAfterCuts"), nV0sAfterCuts);
-    }
+    auto onXi = [&](auto const& xi, bool selected) {
+      histos.fill(HIST("QAbefore/xiMass"), xi.mXi());
+      histos.fill(HIST("QAbefore/xiPt"), xi.pt());
+      histos.fill(HIST("QAbefore/xiEta"), xi.eta());
+      histos.fill(HIST("QAbefore/xiDCAxy"), xi.pt(), xi.dcaXYCascToPV());
+      histos.fill(HIST("QAbefore/xiDCAz"), xi.pt(), xi.dcaZCascToPV());
+      histos.fill(HIST("QAbefore/xiV0CosPA"), xi.pt(), xi.v0CosPA());
+      histos.fill(HIST("QAbefore/xiCascCosPA"), xi.pt(), xi.cascCosPA());
+      histos.fill(HIST("QAbefore/xiV0Radius"), xi.pt(), xi.transRadius());
+      histos.fill(HIST("QAbefore/xiCascRadius"), xi.pt(), xi.cascTransRadius());
+      histos.fill(HIST("QAbefore/xiV0DauDCA"), xi.pt(), xi.daughDCA());
+      histos.fill(HIST("QAbefore/xiCascDauDCA"), xi.pt(), xi.cascDaughDCA());
+      if (!selected) {
+        return;
+      }
+      nCascAfterCuts++;
+      histos.fill(HIST("QAafter/xiMass"), xi.mXi());
+      histos.fill(HIST("QAafter/xiPt"), xi.pt());
+      histos.fill(HIST("QAafter/xiEta"), xi.eta());
+      histos.fill(HIST("QAafter/xiDCAxy"), xi.pt(), xi.dcaXYCascToPV());
+      histos.fill(HIST("QAafter/xiDCAz"), xi.pt(), xi.dcaZCascToPV());
+      histos.fill(HIST("QAafter/xiV0CosPA"), xi.pt(), xi.v0CosPA());
+      histos.fill(HIST("QAafter/xiCascCosPA"), xi.pt(), xi.cascCosPA());
+      histos.fill(HIST("QAafter/xiV0Radius"), xi.pt(), xi.transRadius());
+      histos.fill(HIST("QAafter/xiCascRadius"), xi.pt(), xi.cascTransRadius());
+      histos.fill(HIST("QAafter/xiV0DauDCA"), xi.pt(), xi.daughDCA());
+      histos.fill(HIST("QAafter/xiCascDauDCA"), xi.pt(), xi.cascDaughDCA());
+    };
+
+    const bool kinCutsOn = core.kinCutsEnabled();
+    auto onCandidate = [&](auto const& /*xi*/, auto const& /*v0*/, XiK0sCandidateValues const& c) {
+      if (kinCutsOn) {
+        histos.fill(HIST("QAbefore/omegaAlphaVsPt"), c.omega.Pt(), c.alpha);
+        if (!c.passesKinCut) {
+          return;
+        }
+        histos.fill(HIST("QAafter/omegaAlphaVsPt"), c.omega.Pt(), c.alpha);
+      }
+      if (!c.inRapidity) {
+        return;
+      }
+      histos.fill(HIST("omega2012/invmass"), c.omega.M());
+      histos.fill(HIST("omega2012/massPtCent"), c.omega.M(), c.omega.Pt(), cent);
+    };
+
+    core.forEachXiK0sCandidate<false, false>(histos, collision, collision, cascades, v0s, false, onXi, onK0s, onCandidate);
+
+    histos.fill(HIST("Event/nCascadesAfterCuts"), nCascAfterCuts);
+    histos.fill(HIST("Event/nV0sAfterCuts"), nV0sAfterCuts);
   }
 
   void processDummy(aod::ResoCollision const& /*collision*/)
@@ -888,79 +406,70 @@ struct Omega2012Analysis {
   }
   PROCESS_SWITCH(Omega2012Analysis, processDummy, "Process Dummy", true);
 
-  void processData(const aod::ResoCollision& collision,
+  void processData(ResoCollisions::iterator const& collision,
                    aod::ResoCascades const& resocasc,
                    aod::ResoV0s const& resov0s)
   {
-    if (cRecoINELgt0 && !collision.isRecINELgt0())
+    if (!core.passesEventCuts(collision)) {
       return;
-
-    fill<false>(collision, resocasc, resov0s);
+    }
+    fillXiK0s(collision, resocasc, resov0s);
   }
   PROCESS_SWITCH(Omega2012Analysis, processData, "Process Event for data", false);
 
-  void processMixedEvent(const aod::ResoCollisions& collisions,
+  void processMixedEvent(ResoCollisions const& collisions,
                          aod::ResoCascades const& resocasc,
                          aod::ResoV0s const& resov0s)
   {
-
     auto cascV0sTuple = std::make_tuple(resocasc, resov0s);
-    Pair<aod::ResoCollisions, aod::ResoCascades, aod::ResoV0s, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, collisions, cascV0sTuple, &cache};
+    Pair<ResoCollisions, aod::ResoCascades, aod::ResoV0s, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, collisions, cascV0sTuple, &cache};
 
+    const bool kinCutsOn = core.kinCutsEnabled();
     for (const auto& [collision1, casc1, collision2, v0s2] : pairs) {
-      if (cRecoINELgt0 && (!collision1.isRecINELgt0() || !collision2.isRecINELgt0()))
+      if (!core.passesEventCuts(collision1) || !core.passesEventCuts(collision2)) {
         continue;
-
-      auto cent = collision1.cent();
-      int unusedXiCount = 0;
-      int unusedK0sCount = 0;
-      auto selectedXis = selectXiCandidates<false>(casc1, unusedXiCount);
-      auto selectedK0s = selectK0sCandidates<false>(collision2, v0s2, unusedK0sCount);
-
-      for (const auto& selectedXi : selectedXis) {
-        const auto& xi = selectedXi.candidate;
-
-        for (const auto& selectedK0 : selectedK0s) {
-          const auto& v0 = selectedK0.candidate;
-          ROOT::Math::PxPyPzEVector pXi, pK0s, pRes;
-          pXi = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(xi.pt(), xi.eta(), xi.phi(), xi.mXi()));
-          pK0s = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), massK0));
-          pRes = pXi + pK0s;
-
-          float alpha = 0.f;
-          bool kinCutFlag = true;
-          if (cKinCuts) {
-            kinCutFlag = kinCuts(pXi, pK0s, pRes, alpha);
-          }
-
-          if (cKinCuts && !kinCutFlag)
-            continue;
-
-          if (std::abs(pRes.Rapidity()) >= cfgRapidityCut)
-            continue;
-
-          histos.fill(HIST("omega2012/invmass_Mix"), pRes.M());
-          histos.fill(HIST("omega2012/massPtCent_Mix"), pRes.M(), pRes.Pt(), cent);
-        }
       }
+      auto cent = collision1.cent();
+      // Xi from collision 1, K0s from collision 2 (selected with the vertex of collision 2)
+      auto onCandidate = [&](auto const& /*xi*/, auto const& /*v0*/, XiK0sCandidateValues const& c) {
+        if (kinCutsOn && !c.passesKinCut) {
+          return;
+        }
+        if (!c.inRapidity) {
+          return;
+        }
+        histos.fill(HIST("omega2012/invmass_Mix"), c.omega.M());
+        histos.fill(HIST("omega2012/massPtCent_Mix"), c.omega.M(), c.omega.Pt(), cent);
+      };
+      core.forEachXiK0sCandidate<false, true>(histos, collision1, collision2, casc1, v0s2, false, nullptr, nullptr, onCandidate);
     }
   }
   PROCESS_SWITCH(Omega2012Analysis, processMixedEvent, "Process Mixed Event", false);
 
-  // MC processes - placeholder for future implementation
-  void processMC(const aod::ResoCollision& /*collision*/,
-                 aod::ResoCascades const& /*resocasc*/,
-                 aod::ResoV0s const& /*resov0s*/,
-                 aod::McParticles const& /*mcParticles*/)
+  // MC reconstructed processing: match reconstructed Xi + K0s pairs to a common Omega(2012) mother
+  void processMC(ResoMCCollisions::iterator const& collision,
+                 ResoMCCascades const& resocasc,
+                 ResoMCV0s const& resov0s)
   {
-    // TODO: Implement MC truth matching for Xi + K0s
-    // - Match reconstructed Xi to MC Xi
-    // - Match reconstructed K0s to MC K0s
-    // - Fill MC truth histograms
-    // - Fill reconstruction efficiency histograms
-    // - Check if the Xi and K0s come from same Omega(2012) mother
+    if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
+      return;
+    }
+    // No kinematic cut in the truth-matched spectra (as before the refactoring)
+    auto onCandidate = [&](auto const& xi, auto const& v0, XiK0sCandidateValues const& c) {
+      if (classifyXiK0sTruth(xi, v0) != XiK0sTruth::Matched) {
+        return;
+      }
+      if (!c.inRapidity) {
+        return;
+      }
+      histos.fill(HIST("MC/hMCRecOmega2012Pt"), c.omega.Pt());
+      histos.fill(HIST("MC/hMCRecOmega2012PtEta"), c.omega.Pt(), c.omega.Eta());
+      histos.fill(HIST("MC/hMCRecXiPt"), xi.pt());
+      histos.fill(HIST("MC/hMCRecK0sPt"), v0.pt());
+    };
+    core.forEachXiK0sCandidate<true, false>(histos, collision, collision, resocasc, resov0s, false, nullptr, nullptr, onCandidate);
   }
-  PROCESS_SWITCH(Omega2012Analysis, processMC, "Process MC with truth matching (placeholder)", false);
+  PROCESS_SWITCH(Omega2012Analysis, processMC, "Process MC with truth matching", false);
 
   void processMCGenerated(aod::McParticles const& mcParticles)
   {
@@ -968,12 +477,12 @@ struct Omega2012Analysis {
     // This resonance decays to Xi + K0s
 
     for (const auto& mcParticle : mcParticles) {
-      // Look for Omega(2012) - PDG code may vary by generator
+      // Look for Omega(2012)
       int pdg = mcParticle.pdgCode();
 
-      // TODO: Update the PDG code library to include Omega(2012) codes
-      if (std::abs(pdg) != kPlaceholderPdgCode)
+      if (std::abs(pdg) != kOmega2012Minus) {
         continue;
+      }
 
       // Fill generated level histograms
       auto pt = mcParticle.pt();
@@ -986,8 +495,9 @@ struct Omega2012Analysis {
 
       // Get daughters
       auto daughters = mcParticle.daughters_as<aod::McParticles>();
-      if (daughters.size() != kNumExpectedDaughters)
+      if (daughters.size() != NumExpectedDaughters) {
         continue;
+      }
 
       int daughter1PDG = 0, daughter2PDG = 0;
       ROOT::Math::PxPyPzEVector p1, p2, pMother;
@@ -1015,139 +525,166 @@ struct Omega2012Analysis {
           (std::abs(daughter2PDG) == kXiMinus && daughter1PDG == kK0Short)) {
         histos.fill(HIST("MC/hMCTruthInvMassXiK0s"), motherM);
         histos.fill(HIST("MC/hMCTruthMassPtXiK0s"), motherM, motherPt);
+
+        const bool isDaughter1Xi = std::abs(daughter1PDG) == kXiMinus;
+        const auto& pXiTruth = isDaughter1Xi ? p1 : p2;
+        const auto& pK0sTruth = isDaughter1Xi ? p2 : p1;
+        histos.fill(HIST("MC/hMCTrueXiPt"), pXiTruth.Pt());
+        histos.fill(HIST("MC/hMCTrueK0sPt"), pK0sTruth.Pt());
       }
     }
   }
-  PROCESS_SWITCH(Omega2012Analysis, processMCGenerated, "Process MC generated particles (placeholder)", false);
+  PROCESS_SWITCH(Omega2012Analysis, processMCGenerated, "Process MC generated particles", false);
 
-  // Fill function for 3-body decay analysis
-  template <bool IsResoMicrotrack, typename CollisionT, typename CascadesT, typename V0sT, typename TracksT, typename TrackIdsT>
-  void fillThreeBody(const CollisionT& collision, const CascadesT& cascades, const V0sT& v0s, const TracksT& tracks, const TrackIdsT& trackIds)
+  // Mode B: Xi(1530)0 K- -> Xi- pi+ K- (and charge conjugate) from one collision, or Xi and tracks from two mixed collisions
+  template <bool IsMC, bool IsMix, bool IsResoMicrotrack, typename CollisionT, typename CascadesT, typename TracksT, typename TrackIdsT>
+  void fillXi1530K(const CollisionT& collision, float cent, const CascadesT& cascades, const TracksT& tracks, const TrackIdsT& trackIds)
   {
-    auto cent = collision.cent();
-    int unusedXiCount = 0;
-    int unusedK0sCount = 0;
-    auto selectedXis = selectXiCandidates<false>(cascades, unusedXiCount);
-    auto selectedK0s = selectK0sCandidates<false>(collision, v0s, unusedK0sCount);
+    // Input QA: same event only (each object once per collision)
+    auto onXi = [&](auto const& xi, bool selected) {
+      if constexpr (IsMix) {
+        return;
+      }
+      histos.fill(HIST("xi1530K/QAbefore/xiMass"), xi.mXi());
+      histos.fill(HIST("xi1530K/QAbefore/xiPt"), xi.pt());
+      histos.fill(HIST("xi1530K/QAbefore/xiEta"), xi.eta());
+      if (!selected) {
+        return;
+      }
+      histos.fill(HIST("xi1530K/QAafter/xiMass"), xi.mXi());
+      histos.fill(HIST("xi1530K/QAafter/xiPt"), xi.pt());
+      histos.fill(HIST("xi1530K/QAafter/xiEta"), xi.eta());
+    };
 
-    // First loop: xi + pion to check xi1530 mass window
-    for (const auto& selectedXi : selectedXis) {
-      const auto& xi = selectedXi.candidate;
-
-      for (const auto& pion : tracks) {
-        auto pionTrackId = trackSourceId(pion, trackIds);
-        if (sharesDaughterId(selectedXi.daughterIds, pionTrackId)) {
-          continue;
-        }
-
-        // Pion QA before cuts
-        histos.fill(HIST("QAbefore/pionPt"), pion.pt());
-        histos.fill(HIST("QAbefore/pionEta"), pion.eta());
-
-        if constexpr (IsResoMicrotrack) {
-          histos.fill(HIST("QAbefore/pionDCAxy"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(pion.trackSelectionFlags()));
-          histos.fill(HIST("QAbefore/pionDCAz"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(pion.trackSelectionFlags()));
-          histos.fill(HIST("QAbefore/pionTPCNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(pion.pidNSigmaPiFlag()));
-          if (pion.hasTOF()) {
-            histos.fill(HIST("QAbefore/pionTOFNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(pion.pidNSigmaPiFlag()));
-          }
-        } else {
-          histos.fill(HIST("QAbefore/pionDCAxy"), pion.pt(), pion.dcaXY());
-          histos.fill(HIST("QAbefore/pionDCAz"), pion.pt(), pion.dcaZ());
-          histos.fill(HIST("QAbefore/pionTPCNSigma"), pion.pt(), pion.tpcNSigmaPi());
-          if (pion.hasTOF()) {
-            histos.fill(HIST("QAbefore/pionTOFNSigma"), pion.pt(), pion.tofNSigmaPi());
-          }
-          if constexpr (requires { pion.tpcNClsFound(); }) {
-            histos.fill(HIST("QAbefore/pionTPCNcls"), pion.tpcNClsFound());
-          }
-        }
-
-        if (!pionCut<IsResoMicrotrack>(pion))
-          continue;
-
-        // Pion QA after cuts
-        histos.fill(HIST("QAafter/pionPt"), pion.pt());
-        histos.fill(HIST("QAafter/pionEta"), pion.eta());
-
-        if constexpr (IsResoMicrotrack) {
-          histos.fill(HIST("QAafter/pionDCAxy"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(pion.trackSelectionFlags()));
-          histos.fill(HIST("QAafter/pionDCAz"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(pion.trackSelectionFlags()));
-          histos.fill(HIST("QAafter/pionTPCNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(pion.pidNSigmaPiFlag()));
-          if (pion.hasTOF()) {
-            histos.fill(HIST("QAafter/pionTOFNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(pion.pidNSigmaPiFlag()));
-          }
-        } else {
-          histos.fill(HIST("QAafter/pionDCAxy"), pion.pt(), pion.dcaXY());
-          histos.fill(HIST("QAafter/pionDCAz"), pion.pt(), pion.dcaZ());
-          histos.fill(HIST("QAafter/pionTPCNSigma"), pion.pt(), pion.tpcNSigmaPi());
-          if (pion.hasTOF()) {
-            histos.fill(HIST("QAafter/pionTOFNSigma"), pion.pt(), pion.tofNSigmaPi());
-          }
-          if constexpr (requires { pion.tpcNClsFound(); }) {
-            histos.fill(HIST("QAafter/pionTPCNcls"), pion.tpcNClsFound());
-          }
-        }
-
-        // Check xi1530 mass window cut
-        if (!xi1530MassCut(xi, pion))
-          continue;
-
-        // Second loop: v0 for the selected xi-pion pair
-        for (const auto& selectedK0 : selectedK0s) {
-          const auto& v0 = selectedK0.candidate;
-          if (sharesAnyDaughterId(selectedXi.daughterIds, selectedK0.daughterIds)) {
-            continue;
-          }
-          if (sharesDaughterId(selectedK0.daughterIds, pionTrackId)) {
-            continue;
-          }
-
-          // 4-vectors for 3-body decay: Xi + K0s + pion
-          ROOT::Math::PxPyPzEVector pXi, pK0s, pPion, pRes;
-          pXi = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(xi.pt(), xi.eta(), xi.phi(), xi.mXi()));
-          pK0s = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), massK0));
-          pPion = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(pion.pt(), pion.eta(), pion.phi(), MassPionCharged));
-
-          pRes = pXi + pK0s + pPion;
-
-          if (std::abs(pRes.Rapidity()) >= cfgRapidityCut)
-            continue;
-
-          histos.fill(HIST("omega2012_3body/invmass"), pRes.M());
-          histos.fill(HIST("omega2012_3body/massPtCent"), pRes.M(), pRes.Pt(), cent);
+    auto onTrack = [&](auto const& track, int pionStage, int kaonStage) {
+      if constexpr (IsMix) {
+        return;
+      }
+      const bool hasTOF = track.hasTOF();
+      histos.fill(HIST("xi1530K/QAbefore/trackPt"), track.pt());
+      histos.fill(HIST("xi1530K/QAbefore/trackEta"), track.eta());
+      histos.fill(HIST("xi1530K/QAbefore/trackDCAxy"), track.pt(), track.dcaXY());
+      histos.fill(HIST("xi1530K/QAbefore/trackDCAz"), track.pt(), track.dcaZ());
+      histos.fill(HIST("xi1530K/QAbefore/pionTPCNSigma"), track.pt(), track.tpcNSigmaPi());
+      histos.fill(HIST("xi1530K/QAbefore/kaonTPCNSigma"), track.pt(), track.tpcNSigmaKa());
+      if (hasTOF) {
+        histos.fill(HIST("xi1530K/QAbefore/pionTOFNSigma"), track.pt(), track.tofNSigmaPi());
+        histos.fill(HIST("xi1530K/QAbefore/kaonTOFNSigma"), track.pt(), track.tofNSigmaKa());
+      }
+      if (pionStage == o2::analysis::resonance::kTrkPID) {
+        histos.fill(HIST("xi1530K/QAafter/pionPt"), track.pt());
+        histos.fill(HIST("xi1530K/QAafter/pionEta"), track.eta());
+        histos.fill(HIST("xi1530K/QAafter/pionDCAxy"), track.pt(), track.dcaXY());
+        histos.fill(HIST("xi1530K/QAafter/pionDCAz"), track.pt(), track.dcaZ());
+        histos.fill(HIST("xi1530K/QAafter/pionTPCNSigma"), track.pt(), track.tpcNSigmaPi());
+        if (hasTOF) {
+          histos.fill(HIST("xi1530K/QAafter/pionTOFNSigma"), track.pt(), track.tofNSigmaPi());
         }
       }
+      if (kaonStage == o2::analysis::resonance::kTrkPID) {
+        histos.fill(HIST("xi1530K/QAafter/kaonPt"), track.pt());
+        histos.fill(HIST("xi1530K/QAafter/kaonEta"), track.eta());
+        histos.fill(HIST("xi1530K/QAafter/kaonDCAxy"), track.pt(), track.dcaXY());
+        histos.fill(HIST("xi1530K/QAafter/kaonDCAz"), track.pt(), track.dcaZ());
+        histos.fill(HIST("xi1530K/QAafter/kaonTPCNSigma"), track.pt(), track.tpcNSigmaKa());
+        if (hasTOF) {
+          histos.fill(HIST("xi1530K/QAafter/kaonTOFNSigma"), track.pt(), track.tofNSigmaKa());
+        }
+      }
+    };
+
+    const bool fillWrongSign = core.fillWrongSign();
+    auto onCandidate = [&]([[maybe_unused]] auto const& xi, [[maybe_unused]] auto const& pion, [[maybe_unused]] auto const& kaon, Xi1530KCandidateValues const& c) {
+      if (c.chargePattern != o2::analysis::omega2012ml::kSignalPattern) {
+        // Charge-pattern controls: same event only, never in the signal histograms
+        if constexpr (!IsMix) {
+          if (fillWrongSign && c.inRapidity) {
+            histos.fill(HIST("xi1530K_wrongSign/invmassPattern"), c.chargePattern, c.omega.M());
+            histos.fill(HIST("xi1530K_wrongSign/massPtPattern"), c.omega.M(), c.omega.Pt(), c.chargePattern);
+          }
+        }
+        return;
+      }
+      if constexpr (IsMix) {
+        if (c.inRapidity) {
+          histos.fill(HIST("xi1530K/invmass_Mix"), c.omega.M());
+          histos.fill(HIST("xi1530K/massPtCent_Mix"), c.omega.M(), c.omega.Pt(), cent);
+        }
+        return;
+      }
+      histos.fill(HIST("xi1530K/massXiPi"), c.massXiPi);
+      if (!c.inRapidity) {
+        return;
+      }
+      histos.fill(HIST("xi1530K/invmass"), c.omega.M());
+      histos.fill(HIST("xi1530K/massPtCent"), c.omega.M(), c.omega.Pt(), cent);
+      histos.fill(HIST("xi1530K/massXiPiVsMass"), c.omega.M(), c.massXiPi);
+      if constexpr (IsMC) {
+        if (classifyXi1530KTruth(xi, pion, kaon) != Xi1530KTruth::Matched) {
+          return;
+        }
+        histos.fill(HIST("xi1530K/MC/hMCRecOmega2012Pt"), c.omega.Pt());
+        histos.fill(HIST("xi1530K/MC/hMCRecOmega2012PtEta"), c.omega.Pt(), c.omega.Eta());
+        histos.fill(HIST("xi1530K/MC/hMCRecMass"), c.omega.M());
+        histos.fill(HIST("xi1530K/MC/hMCRecMassXiPi"), c.massXiPi);
+        histos.fill(HIST("xi1530K/MC/hMCRecXiPt"), xi.pt());
+        histos.fill(HIST("xi1530K/MC/hMCRecPionPt"), pion.pt());
+        histos.fill(HIST("xi1530K/MC/hMCRecKaonPt"), kaon.pt());
+      }
+    };
+
+    core.forEachXi1530KCandidate<IsMC, IsMix, IsResoMicrotrack>(histos, collision, cascades, tracks, trackIds, false, onXi, onTrack, onCandidate);
+  }
+
+  void processXi1530KMicro(ResoCollisions::iterator const& collision,
+                           aod::ResoCascades const& resocasc,
+                           ResoMicroTracks const& resomicrotracks)
+  {
+    if (!core.passesEventCuts(collision)) {
+      return;
+    }
+    fillXi1530K<false, false, true>(collision, collision.cent(), resocasc, resomicrotracks, nullptr);
+  }
+  PROCESS_SWITCH(Omega2012Analysis, processXi1530KMicro, "Process Xi(1530)0 K mode with ResoMicroTracks_001", false);
+
+  void processXi1530KTracks(ResoCollisions::iterator const& collision,
+                            aod::ResoCascades const& resocasc,
+                            aod::ResoTracks const& resotracks,
+                            aod::ResoTrackTracks const& resotrackids)
+  {
+    if (!core.passesEventCuts(collision)) {
+      return;
+    }
+    fillXi1530K<false, false, false>(collision, collision.cent(), resocasc, resotracks, resotrackids);
+  }
+  PROCESS_SWITCH(Omega2012Analysis, processXi1530KTracks, "Process Xi(1530)0 K mode with ResoTracks", false);
+
+  void processXi1530KMCMicro(ResoMCCollisions::iterator const& collision,
+                             ResoMCCascades const& resocasc,
+                             ResoMCMicroTracks const& resomicrotracks)
+  {
+    if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
+      return;
+    }
+    fillXi1530K<true, false, true>(collision, collision.cent(), resocasc, resomicrotracks, nullptr);
+  }
+  PROCESS_SWITCH(Omega2012Analysis, processXi1530KMCMicro, "Process Xi(1530)0 K mode with truth matching (ResoMicroTracks_001)", false);
+
+  // Mixed events: Xi from collision 1, pion and kaon from collision 2
+  void processXi1530KMixedMicro(ResoCollisions const& collisions,
+                                aod::ResoCascades const& resocasc,
+                                ResoMicroTracks const& resomicrotracks)
+  {
+    auto cascTracksTuple = std::make_tuple(resocasc, resomicrotracks);
+    Pair<ResoCollisions, aod::ResoCascades, ResoMicroTracks, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, collisions, cascTracksTuple, &cache};
+    for (const auto& [collision1, casc1, collision2, tracks2] : pairs) {
+      if (!core.passesEventCuts(collision1) || !core.passesEventCuts(collision2)) {
+        continue;
+      }
+      fillXi1530K<false, true, true>(collision1, collision1.cent(), casc1, tracks2, nullptr);
     }
   }
-
-  // 3-body decay analysis: Xi + pi + K0s with ResoTracks
-  void processThreeBodyWithTracks(const aod::ResoCollision& collision,
-                                  aod::ResoCascades const& resocasc,
-                                  aod::ResoV0s const& resov0s,
-                                  aod::ResoTracks const& resotracks,
-                                  aod::ResoTrackTracks const& resotrackids)
-  {
-    if (cRecoINELgt0 && !collision.isRecINELgt0())
-      return;
-
-    fillThreeBody<false>(collision, resocasc, resov0s, resotracks, resotrackids);
-  }
-  PROCESS_SWITCH(Omega2012Analysis, processThreeBodyWithTracks, "Process 3-body decay with ResoTracks", false);
-
-  // 3-body decay analysis: Xi + pi + K0s with ResoMicroTracks
-  void processThreeBodyWithMicroTracks(const aod::ResoCollision& collision,
-                                       aod::ResoCascades const& resocasc,
-                                       aod::ResoV0s const& resov0s,
-                                       aod::ResoMicroTracks const& resomicrotracks,
-                                       aod::ResoMicroTrackTracks const& resomicrotrackids)
-  {
-    if (cRecoINELgt0 && !collision.isRecINELgt0())
-      return;
-
-    fillThreeBody<true>(collision, resocasc, resov0s, resomicrotracks, resomicrotrackids);
-  }
-  PROCESS_SWITCH(Omega2012Analysis, processThreeBodyWithMicroTracks, "Process 3-body decay with ResoMicroTracks", false);
+  PROCESS_SWITCH(Omega2012Analysis, processXi1530KMixedMicro, "Process mixed events of the Xi(1530)0 K mode (ResoMicroTracks_001)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

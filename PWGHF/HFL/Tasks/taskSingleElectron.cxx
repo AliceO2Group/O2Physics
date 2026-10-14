@@ -171,6 +171,18 @@ struct HfTaskSingleElectron {
     histos.add("hTpcNSigPtAfterTofCut", "", kTH2D, {{axisPtEl}, {axisNsig}});
     histos.add("hTpcNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
 
+    // TPC nSigma(e) vs pT per MC truth species (electron, pion, kaon, proton, other), after the track selection and after the TOF electron selection
+    histos.add("hTpcNSigPtRecElectron", "MC truth e^{#pm} after track selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtRecPion", "MC truth #pi^{#pm} after track selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtRecKaon", "MC truth K^{#pm} after track selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtRecProton", "MC truth p after track selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtRecOther", "MC truth other after track selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtAfterTofCutRecElectron", "MC truth e^{#pm} after TOF selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtAfterTofCutRecPion", "MC truth #pi^{#pm} after TOF selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtAfterTofCutRecKaon", "MC truth K^{#pm} after TOF selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtAfterTofCutRecProton", "MC truth p after TOF selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTpcNSigPtAfterTofCutRecOther", "MC truth other after TOF selection;#it{p}_{T} (GeV/#it{c});n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+
     // track impact parameter
     histos.add("hDcaTrack", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
     histos.add("hDcaBeauty", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
@@ -203,6 +215,42 @@ struct HfTaskSingleElectron {
     histos.fill(HIST("hPtChi2ItsPreCut"), pt, track.itsChi2NCl());
     histos.fill(HIST("hPtDcaXYPreCut"), pt, track.dcaXY());
     histos.fill(HIST("hPtDcaZPreCut"), pt, track.dcaZ());
+  }
+
+  template <typename TrackType>
+  void fillTpcNSigPtRec(const TrackType& track, bool afterTofCut)
+  {
+    if (!track.has_mcParticle()) {
+      return;
+    }
+    double const pt = track.pt();
+    double const nSigmaEl = track.tpcNSigmaEl();
+    int const absPdg = std::abs(track.mcParticle().pdgCode());
+    if (!afterTofCut) {
+      if (absPdg == kElectron) {
+        histos.fill(HIST("hTpcNSigPtRecElectron"), pt, nSigmaEl);
+      } else if (absPdg == kPiPlus) {
+        histos.fill(HIST("hTpcNSigPtRecPion"), pt, nSigmaEl);
+      } else if (absPdg == kKPlus) {
+        histos.fill(HIST("hTpcNSigPtRecKaon"), pt, nSigmaEl);
+      } else if (absPdg == kProton) {
+        histos.fill(HIST("hTpcNSigPtRecProton"), pt, nSigmaEl);
+      } else {
+        histos.fill(HIST("hTpcNSigPtRecOther"), pt, nSigmaEl);
+      }
+      return;
+    }
+    if (absPdg == kElectron) {
+      histos.fill(HIST("hTpcNSigPtAfterTofCutRecElectron"), pt, nSigmaEl);
+    } else if (absPdg == kPiPlus) {
+      histos.fill(HIST("hTpcNSigPtAfterTofCutRecPion"), pt, nSigmaEl);
+    } else if (absPdg == kKPlus) {
+      histos.fill(HIST("hTpcNSigPtAfterTofCutRecKaon"), pt, nSigmaEl);
+    } else if (absPdg == kProton) {
+      histos.fill(HIST("hTpcNSigPtAfterTofCutRecProton"), pt, nSigmaEl);
+    } else {
+      histos.fill(HIST("hTpcNSigPtAfterTofCutRecOther"), pt, nSigmaEl);
+    }
   }
 
   template <typename TrackType>
@@ -566,6 +614,7 @@ struct HfTaskSingleElectron {
 
       histos.fill(HIST("hTofNSigPt"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("hTpcNSigPt"), track.pt(), track.tpcNSigmaEl());
+      fillTpcNSigPtRec(track, false);
 
       int mpdg{};   // electron source pdg code
       double mpt{}; // electron source pt
@@ -599,6 +648,7 @@ struct HfTaskSingleElectron {
       }
       histos.fill(HIST("hTofNSigPtQA"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("hTpcNSigPtAfterTofCut"), track.pt(), track.tpcNSigmaEl());
+      fillTpcNSigPtRec(track, true);
 
       if (track.tpcNSigmaEl() < nSigmaTpcMin || track.tpcNSigmaEl() > nSigmaTpcMax) {
         continue;

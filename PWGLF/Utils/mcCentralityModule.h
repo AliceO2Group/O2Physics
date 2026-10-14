@@ -202,10 +202,10 @@ struct BuilderModule {
   std::vector<std::shared_ptr<TProfile>> hCalibPVMC;
 
   int nEnabledTables = 0;
-  int mRunNumber;
+  int mRunNumber = 0;
 
   // TAxis
-  int nCentBins;
+  int nCentBins = 0;
   std::vector<double> centralityBins;
 
   // Registers the on-the-fly-calibration QA histograms for one estimator (no-op unless recalibrateCentrality
@@ -396,13 +396,13 @@ struct BuilderModule {
   {
 
     auto CalibMC = [&](TString const& estimator) {
-      LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Starting...\n", estimator.Data());
+      LOGF(info, "Calibration for %s estimator -> Starting...\n", estimator.Data());
 
       std::vector<double> percentile_center(nCentBins);
       std::vector<double> epercentile_center(nCentBins);
 
       // Histograms
-      TH2D* h2dMultVsCent_Data = getHist<TH2D>(Form("h2dMultVsCent%s_Data", estimator.Data()));
+      TH2D* h2dMultVsCent_Data = getHist<TH2D>(Form("hMultEta05VsCent%s_Data", estimator.Data()));
       TH2D* h2dMultRecoVsMultGen_MC = getHist<TH2D>(Form("hMultEta05VsGenMult%s", estimator.Data()));
       if (!h2dMultVsCent_Data || !h2dMultRecoVsMultGen_MC) {
         return (TH1D*)0x0;
@@ -445,7 +445,7 @@ struct BuilderModule {
           double meanMult_MC = -1;
           double diffMultDataVsMC = 1e+09;
           int endBinMc = startBinMc;
-          for (int j = startBinMc; j >= 1; j--) {
+          for (int j = startBinMc - 1; j >= 1; j--) {
             // Loop over MC bins
             TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", j, startBinMc);
             int nEntries = projMC->Integral();
@@ -489,11 +489,10 @@ struct BuilderModule {
             }
           }
 
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev], centralityBins[irev + 1]);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(endBinMc), projMC->GetBinLowEdge(startBinMc));
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC - meanMult_Data) * 100 / meanMult_Data);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
-          LOGF(info, "\n");
+          LOGF(info, "Calibration for %s estimator -> Data centrality bin %g-%g%%\n", estimator.Data(), centralityBins[irev], centralityBins[irev + 1]);
+          LOGF(info, "Calibration for %s estimator -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(endBinMc), projMC->GetBinLowEdge(startBinMc));
+          LOGF(info, "Calibration for %s estimator -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC - meanMult_Data) * 100 / meanMult_Data);
+          LOGF(info, "Calibration for %s estimator -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
             if (ibin <= startBinMc && ibin >= endBinMc) {
               h1dCalib->SetBinContent(ibin, percentile_center[i]);
@@ -519,9 +518,9 @@ struct BuilderModule {
           double meanMult_MC = -1;
           double diffMultDataVsMC = 1e+09;
           int endBinMc = h1dCalib->GetNbinsX();
-          for (int j = startBinMc; j <= h1dCalib->GetNbinsX(); j++) {
+          for (int j = startBinMc + 1; j <= h1dCalib->GetNbinsX(); j++) {
             // Loop over MC bins
-            TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", startBinMc, endBinMc);
+            TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", startBinMc, j);
             int nEntries = projMC->Integral();
             double meanMC = projMC->GetMean();
             double ldiff = std::abs(meanMC - meanMult_Data);
@@ -563,10 +562,10 @@ struct BuilderModule {
             }
           }
 
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev - 1], centralityBins[irev]);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc + 1));
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f\n", estimator.Data(), meanMult_Data, meanMult_MC);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
+          LOGF(info, "Calibration for %s estimator -> Data centrality bin %g-%g%%\n", estimator.Data(), centralityBins[irev - 1], centralityBins[irev]);
+          LOGF(info, "Calibration for %s estimator -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc + 1));
+          LOGF(info, "Calibration for %s estimator -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC - meanMult_Data) * 100 / meanMult_Data);
+          LOGF(info, "Calibration for %s estimator -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
             if (ibin <= endBinMc && ibin >= startBinMc) {
               h1dCalib->SetBinContent(ibin, percentile_center[i]);
@@ -577,7 +576,7 @@ struct BuilderModule {
         } // End loop over centrality bins
       }
 
-      LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Done!\n", estimator.Data());
+      LOGF(info, "Calibration for %s estimator -> Done!\n", estimator.Data());
 
       return h1dCalib;
     };
@@ -734,4 +733,4 @@ struct BuilderModule {
 } // namespace pwglf
 } // namespace o2
 
-#endif // PWGLF_UTILS_MCCENTRALITYMODULE_
+#endif // PWGLF_UTILS_MCCENTRALITYMODULE_H_

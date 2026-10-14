@@ -19,7 +19,6 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -29,7 +28,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
 #include <TH1.h>
 
 #include <cstdint>
@@ -52,6 +50,7 @@ struct filterEoI {
   Configurable<bool> inheritFromOtherTask{"inheritFromOtherTask", true, "Flag to iherit all common configurables from skimmerPrimaryElectron or skimmerPrimaryMuon"};
   Configurable<int> minNelectron{"minNelectron", -1, "min number of electron candidates per collision"};
   Configurable<int> minNmuon{"minNmuon", -1, "min number of muon candidates per collision"};
+  Configurable<int> minNgamma{"minNgamma", 1, "min number of V0-photon candidates per collision"};
   Configurable<std::string> taskNameForNelectron{"taskNameForNelectron", "skimmer-primary-electron", "task name where minNelectron is defined."};
   Configurable<std::string> varNameForNelectron{"varNameForNelectron", "minNelectron", "variable name for minNelectron"};
 
@@ -109,7 +108,8 @@ struct filterEoI {
       }
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
-        if (v0s_coll.size() >= 1) {
+        if (v0s_coll.size() >= minNgamma) {
+          does_pcm_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 4);
         }
       }
@@ -133,7 +133,11 @@ struct filterEoI {
         fRegistry.fill(HIST("hEventCounter"), 8);
       }
 
-      emeoi(does_electron_exist || does_fwdmuon_exist || does_pcm_exist || does_electronda_exist);
+      if constexpr (static_cast<bool>(system & kPCM) && static_cast<bool>(system & kElectronFromDalitz)) {
+        emeoi(does_pcm_exist && does_electronda_exist);
+      } else {
+        emeoi(does_electron_exist || does_fwdmuon_exist || does_pcm_exist || does_electronda_exist);
+      }
 
     } // end of collision loop
 
@@ -169,6 +173,12 @@ struct filterEoI {
     selectEoI<sysflag>(collisions, electrons, muons, v0s, nullptr);
   }
 
+  void process_ElectronFromDalitz(aod::Collisions const& collisions, aod::EMPrimaryElectronsFromDalitz const& electronsda)
+  {
+    const uint8_t sysflag = kElectronFromDalitz;
+    selectEoI<sysflag>(collisions, nullptr, nullptr, nullptr, electronsda);
+  }
+
   void process_PCM_ElectronFromDalitz(aod::Collisions const& collisions, aod::V0PhotonsKF const& v0s, aod::EMPrimaryElectronsFromDalitz const& electronsda)
   {
     const uint8_t sysflag = kPCM | kElectronFromDalitz;
@@ -187,6 +197,7 @@ struct filterEoI {
   PROCESS_SWITCH(filterEoI, process_PCM, "create filter bit for PCM", false);
   PROCESS_SWITCH(filterEoI, process_Electron_FwdMuon, "create filter bit for Electron, FwdMuon", false);
   PROCESS_SWITCH(filterEoI, process_Electron_FwdMuon_PCM, "create filter bit for Electron, FwdMuon, PCM", false);
+  PROCESS_SWITCH(filterEoI, process_ElectronFromDalitz, "create filter bit for ElectronFromDalitz", false);
   PROCESS_SWITCH(filterEoI, process_PCM_ElectronFromDalitz, "create filter bit for PCM, ElectronFromDalitz", false);
   PROCESS_SWITCH(filterEoI, processDummy, "processDummy", true);
 };

@@ -266,23 +266,23 @@ struct strangenessFilter {
   {
     return track.pt() > cfgHMOmegaCuts.hMinPtHM && std::abs(track.eta()) < cfgHMOmegaCuts.hEtaHM && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
   }
-  float getV0V0DCA(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
+  float getV0V0DCA(const TVector3& v01pos, const TVector3& v01mom, const TVector3& v02pos, const TVector3& v02mom)
   {
     TVector3 posdiff = v02pos - v01pos;
     TVector3 cross = v01mom.Cross(v02mom);
     TVector3 dcaVec = (posdiff.Dot(cross) / cross.Mag2()) * cross;
     return dcaVec.Mag();
   }
-  float getV0V0CPA(TVector3 v01mom, TVector3 v02mom)
+  float getV0V0CPA(const TVector3& v01mom, const TVector3& v02mom)
   {
     return v01mom.Dot(v02mom) / (v01mom.Mag() * v02mom.Mag());
   }
-  float getV0V0Distance(TVector3 v01pos, TVector3 v02pos)
+  float getV0V0Distance(const TVector3& v01pos, const TVector3& v02pos)
   {
     TVector3 posdiff = v02pos - v01pos;
     return posdiff.Mag();
   }
-  float getV0V0Radius(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
+  float getV0V0Radius(const TVector3& v01pos, TVector3 v01mom, const TVector3& v02pos, TVector3 v02mom)
   {
     TVector3 posdiff = v02pos - v01pos;
     v01mom *= 1. / v01mom.Mag();
@@ -296,7 +296,7 @@ struct strangenessFilter {
     radVec *= 0.5;
     return radVec.Mag();
   }
-  bool isSelectedV0V0(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
+  bool isSelectedV0V0(const TVector3& v01pos, const TVector3& v01mom, const TVector3& v02pos, const TVector3& v02mom)
   {
     if (getV0V0DCA(v01pos, v01mom, v02pos, v02mom) > cfgLLCuts.cfgMaxDCAV0V0)
       return false;
@@ -1217,7 +1217,7 @@ struct strangenessFilter {
 
     // QA tracks
     int triggcounterAllEv = 0;
-    for (auto track : tracks) { // start loop over tracks
+    for (const auto& track : tracks) { // start loop over tracks
       if (cfgTrackCuts.isTrackFilter && !selectTrack(track)) {
         continue;
       }
@@ -1524,7 +1524,7 @@ struct strangenessFilter {
       QAHistosSigma.fill(HIST("hDecayRadiusSigma"), decRad);
       // pair a proton
       bool isProtonPaired = false;
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         if (track.globalIndex() == dauTrack.globalIndex()) {
           continue;
         }

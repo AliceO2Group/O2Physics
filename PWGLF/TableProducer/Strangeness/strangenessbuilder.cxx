@@ -1006,7 +1006,7 @@ struct StrangenessBuilder {
                                          AvgPA,                             // 6. Avg Pointing Angle
                                          static_cast<float>(v0zRanks[ic])}; // 7. V0 Vtx z Rank
 
-        float* BDTProbability = deduplication_bdt.evalModel(inputFeatures);
+        const std::vector<float> BDTProbability = deduplication_bdt.evalModel(inputFeatures);
 
         if (BDTProbability[1] > bestMLScore) {
           bestMLScore = BDTProbability[1];

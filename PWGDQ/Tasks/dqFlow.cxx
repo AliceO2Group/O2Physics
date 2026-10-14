@@ -100,7 +100,7 @@ constexpr static uint32_t gkEventFillMapRun3 = VarManager::ObjTypes::BC | VarMan
 constexpr static uint32_t gkEventFillMapRun3Qvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionQvectCentr;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses);
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses);
 
 struct DQEventQvector {
 
@@ -142,7 +142,7 @@ struct DQEventQvector {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
 
   // Define the filter for barrel tracks and forward tracks
-  Filter trackFilter = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackFilter = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
   Filter fwdFilter = (aod::fwdtrack::eta < -2.45f) && (aod::fwdtrack::eta > -3.6f);
 
   // Histograms used for optionnal efficiency and non-uniform acceptance corrections
@@ -656,7 +656,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<DQEventQvector>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses)
 {
   //
   // Define here the histograms for all the classes required in analysis.

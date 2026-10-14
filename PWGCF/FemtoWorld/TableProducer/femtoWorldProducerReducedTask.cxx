@@ -37,6 +37,8 @@
 #include <Math/Vector4D.h>
 #include <TMath.h>
 
+#include <vector>
+
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
 using namespace o2::framework;

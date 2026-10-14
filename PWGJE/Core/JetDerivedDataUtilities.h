@@ -63,7 +63,7 @@ enum JCollisionSubGeneratorId {
 };
 
 template <typename T>
-bool selectCollision(T const& collision, const std::vector<int>& eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
+bool selectCollision(T const& collision, const std::vector<int>& eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, const std::string& rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
 {
 
   if (skipMBGapEvents && collision.getSubGeneratorId() == JCollisionSubGeneratorId::mbGap) {
@@ -96,7 +96,7 @@ bool selectCollision(T const& collision, const std::vector<int>& eventSelectionM
   return !isOrCondition;
 }
 
-bool eventSelectionMasksContainSelection(const std::string& eventSelectionMasks, std::string selection)
+bool eventSelectionMasksContainSelection(const std::string& eventSelectionMasks, const std::string& selection)
 {
   size_t position = 0;
   while ((position = eventSelectionMasks.find(selection, position)) != std::string::npos) {
@@ -325,7 +325,7 @@ bool selectTrigger(T const& collision, int triggerMaskBit)
   return collision.triggerSel() & (1ULL << triggerMaskBit);
 }
 
-bool triggerMasksContainTrigger(const std::string& triggerMasks, std::string trigger)
+bool triggerMasksContainTrigger(const std::string& triggerMasks, const std::string& trigger)
 {
   size_t position = 0;
   while ((position = triggerMasks.find(trigger, position)) != std::string::npos) {
@@ -653,12 +653,12 @@ bool applyTrackKinematics(T const& track, float pTMin = 0.15, float pTMax = 100.
 }
 
 template <typename T>
-bool selectTrack(T const& track, int trackSelection, bool isEmbedded = false)
+bool selectTrack(T const& track, int trackSelection, bool rejectNonEmbedded = false)
 {
   if (!(track.trackSel() & (1ULL << JTrackSel::notBadMcTrack))) {
     return false;
   }
-  if (isEmbedded && !(track.trackSel() & (1ULL << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
+  if (rejectNonEmbedded && !(track.trackSel() & (1ULL << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
     return false;
   }
   if (trackSelection == -1) {
@@ -733,7 +733,7 @@ bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
   return std::abs(track.dcaZ()) < dcaZmax;
 }
 
-std::vector<int> initialiseClusterDefinitions(const std::string clusterDefinitions)
+std::vector<int> initialiseClusterDefinitions(const std::string& clusterDefinitions)
 {
   std::vector<int> clusterDefinitionsVec;
   if (clusterDefinitions.empty()) {

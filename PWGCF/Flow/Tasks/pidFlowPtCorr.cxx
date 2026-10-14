@@ -367,6 +367,8 @@ struct PidFlowPtCorr {
   ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis cfgaxisEta{"cfgaxisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis cfgaxisPt{"cfgaxisPt", {VARIABLE_WIDTH, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 10.0}, "pt (GeV)"};
+  ConfigurableAxis cfgaxisTPCDedx{"cfgaxisTPCDedx", {500, 0.0f, 1000.0f}, "d#it{E}/d#it{x} axis for detector-PID QA"};
+  ConfigurableAxis cfgaxisTOFDelta{"cfgaxisTOFDelta", {200, -1000.0f, 1000.0f}, "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} axis for detector-PID QA"};
   ConfigurableAxis cfgaxisMeanPt{"cfgaxisMeanPt", {300, 0, 3}, "pt (GeV)"};
   ConfigurableAxis cfgaxisNch{"cfgaxisNch", {3000, 0.5, 3000.5}, "Nch"};
   ConfigurableAxis cfgaxisLocalDensity{"cfgaxisLocalDensity", {200, 0, 600}, "local density"};
@@ -393,8 +395,10 @@ struct PidFlowPtCorr {
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+  using TracksPIDForDetectorPidQA = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   // data tracks filter
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU, aod::TracksDCA>>;
+  using AodTracksForDetectorPidQA = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPIDForDetectorPidQA, aod::TracksIU, aod::TracksDCA>>;
   // data collisions filter
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::MultsRun3>>;
 
@@ -609,20 +613,15 @@ struct PidFlowPtCorr {
 
     registry.add("hNchUnCorrectedVSNchCorrected", "", {HistType::kTH2D, {cfgaxisNch, cfgaxisNch}});
     runNumbers = cfgRunNumbers;
-    // TPC vs TOF vs its, comparation graphs, check the PID performance in difference pt
+    // Minimal detector-PID performance QA.
     if (switchsOpts.cfgOutputQA.value) {
-      registry.add("DetectorPidPerformace/TPCvsTOF/Pi", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/TPCvsTOF/Pr", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/TPCvsTOF/Ka", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
+      registry.add("DetectorPidQA/TPC/dEdxPi", "TPC d#it{E}/d#it{x} (pion)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
+      registry.add("DetectorPidQA/TPC/dEdxKa", "TPC d#it{E}/d#it{x} (kaon)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
+      registry.add("DetectorPidQA/TPC/dEdxPr", "TPC d#it{E}/d#it{x} (proton)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
 
-      registry.add("DetectorPidPerformace/TPCvsITS/Pi", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/TPCvsITS/Pr", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/TPCvsITS/Ka", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
-
-      registry.add("DetectorPidPerformace/ITSvsTOF/Pi", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/ITSvsTOF/Pr", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/ITSvsTOF/Ka", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
-      // end TPC vs TOF vs its, comparation graphs
+      registry.add("DetectorPidQA/TOF/deltaPi", "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} (pion)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFDelta}});
+      registry.add("DetectorPidQA/TOF/deltaKa", "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} (kaon)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFDelta}});
+      registry.add("DetectorPidQA/TOF/deltaPr", "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} (proton)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFDelta}});
 
       // run by run QA hists
       /**
@@ -3748,8 +3747,8 @@ struct PidFlowPtCorr {
   PROCESS_SWITCH(PidFlowPtCorr, processMCClosure, "Run truth-level MC flow closure", false);
 
   /**
-   * @brief this function is used to fill THn hist for NUA correction and for NUE correction
-   * @details hist THn: (runNumberIDX, phi, eta, Vz), note that different runNumber will be put in the same hist
+   * @brief Fill THnSparse histograms used to derive NUA weights
+   * @details Histograms use (runNumberIDX, phi, eta, Vz, pT); cfgUseNUAWithPt enables NUE weighting before filling
    *
    * @param collision
    * @param tracks
@@ -3779,6 +3778,10 @@ struct PidFlowPtCorr {
       return;
     }
     // end collision cut
+
+    if (switchsOpts.cfgUseNUAWithPt.value) {
+      loadCorrections(bc.timestamp());
+    }
 
     // loop the vector, find the place to put (phi eta Vz)
     // if the run number is new, create one
@@ -3816,24 +3819,32 @@ struct PidFlowPtCorr {
 
       // fill the THn
       if (isWithinRefPtRange(track.pt())) {
-        registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+        float weightNUE = 1.f;
+        if (switchsOpts.cfgUseNUAWithPt.value) {
+          setParticleNUEWeight(weightNUE, track, cent);
+        }
+        registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUE);
       }
 
       int pid = this->getPidConfigurable(track);
       if (!isWithinPOIPtRange(pid, track.pt())) {
         continue;
       }
+      float weightNUEPid = 1.f;
+      if (switchsOpts.cfgUseNUAWithPt.value) {
+        setParticleNUEWeight(weightNUEPid, track, cent, pid);
+      }
       switch (pid) {
         case MyParticleType::kPion:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexPion"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexPion"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         case MyParticleType::kKaon:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexKaon"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexKaon"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         case MyParticleType::kProton:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexProton"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexProton"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         default:
@@ -3911,16 +3922,19 @@ struct PidFlowPtCorr {
   PROCESS_SWITCH(PidFlowPtCorr, processQA, "", true);
 
   /**
-   * @brief this main function is used to check the PID performance of ITS TOC TPC, also used to do QA
+   * @brief Minimal PID-performance QA for TPC dE/dx and TOF time-of-flight.
    * @note open switch outputQA if use it
    *
    * @param collision
    * @param tracks
    */
-  void detectorPidQA(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  void detectorPidQA(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracksForDetectorPidQA const& tracks)
   {
+    if (!switchsOpts.cfgOutputQA.value) {
+      return;
+    }
+
     // cut and correction
-    o2::aod::ITSResponse itsResponse;
     int nTot = tracks.size();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
@@ -3973,39 +3987,37 @@ struct PidFlowPtCorr {
 
     // start filling graphs
     for (const auto& track : tracks) {
-      // track cut
-      if (!trackSelectedGlobal(track)) {
+      // Use the same track-quality, PID and species pT selection as processData.
+      if (!trackSelectedForFlow(track)) {
         continue;
       }
-      if (!track.hasITS()) {
+      const int pid = getPidConfigurable(track);
+      if (!isWithinPOIPtRange(pid, track.pt())) {
         continue;
       }
-      if (!track.hasTPC()) {
-        continue;
-      }
-      if (!trackSelected4ITS(track)) {
-        continue;
-      }
-      if (!trackSelected4TPC(track)) {
-        continue;
-      }
-      // end track cut
 
-      // TPC TOF
-      registry.fill(HIST("DetectorPidPerformace/TPCvsTOF/Pi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
-      registry.fill(HIST("DetectorPidPerformace/TPCvsTOF/Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
-      registry.fill(HIST("DetectorPidPerformace/TPCvsTOF/Ka"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
-
-      // TPC ITS
-      registry.fill(HIST("DetectorPidPerformace/TPCvsITS/Pi"), track.tpcNSigmaPi(), itsResponse.nSigmaITS<o2::track::PID::Pion>(track), track.pt());
-      registry.fill(HIST("DetectorPidPerformace/TPCvsITS/Pr"), track.tpcNSigmaPr(), itsResponse.nSigmaITS<o2::track::PID::Proton>(track), track.pt());
-      registry.fill(HIST("DetectorPidPerformace/TPCvsITS/Ka"), track.tpcNSigmaKa(), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), track.pt());
-
-      // ITS vs TOF
-      registry.fill(HIST("DetectorPidPerformace/ITSvsTOF/Pi"), itsResponse.nSigmaITS<o2::track::PID::Pion>(track), track.tofNSigmaPi(), track.pt());
-      registry.fill(HIST("DetectorPidPerformace/ITSvsTOF/Pr"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track), track.tofNSigmaPr(), track.pt());
-      registry.fill(HIST("DetectorPidPerformace/ITSvsTOF/Ka"), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), track.tofNSigmaKa(), track.pt());
-
+      switch (pid) {
+        case MyParticleType::kPion:
+          registry.fill(HIST("DetectorPidQA/TPC/dEdxPi"), track.tpcInnerParam(), track.tpcSignal());
+          if (track.hasTOF()) {
+            registry.fill(HIST("DetectorPidQA/TOF/deltaPi"), track.p(), o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Pion>(track));
+          }
+          break;
+        case MyParticleType::kKaon:
+          registry.fill(HIST("DetectorPidQA/TPC/dEdxKa"), track.tpcInnerParam(), track.tpcSignal());
+          if (track.hasTOF()) {
+            registry.fill(HIST("DetectorPidQA/TOF/deltaKa"), track.p(), o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Kaon>(track));
+          }
+          break;
+        case MyParticleType::kProton:
+          registry.fill(HIST("DetectorPidQA/TPC/dEdxPr"), track.tpcInnerParam(), track.tpcSignal());
+          if (track.hasTOF()) {
+            registry.fill(HIST("DetectorPidQA/TOF/deltaPr"), track.p(), o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Proton>(track));
+          }
+          break;
+        default:
+          break;
+      }
     } // end filling graphs
   }
   PROCESS_SWITCH(PidFlowPtCorr, detectorPidQA, "", true);

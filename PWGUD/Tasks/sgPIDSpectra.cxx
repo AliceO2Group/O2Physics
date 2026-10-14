@@ -153,7 +153,7 @@ struct SGPIDSpectra {
     // select PV contributors
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // check rho0 signals
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (trackselector(t, parameters) && t.hasTPC()) {
         if (truegapSide == 0) {
           if (t.sign() > 0) {

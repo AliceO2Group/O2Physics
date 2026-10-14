@@ -395,7 +395,7 @@ struct UpcPhotonuclearAnalysisJMG {
   }
 
   std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, -7.0f, -5.0f, -2.5f, 0.0f, 2.5f, 5.0f, 7.0f, 10.0f};
-  std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
+  // std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
 
   enum EventType {
     SameEvent = 1,
@@ -409,9 +409,9 @@ struct UpcPhotonuclearAnalysisJMG {
 
   // Binning only on PosZ without multiplicity
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::udcollision::GapSide>;
-  // BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}, true};
+  // BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
-  // BinningType bindingOnVtx{{vtxBinsEdges}, true};
+  // BinningType bindingOnVtx{{vtxBinsEdges}};
   // SameKindPair<FullSGUDCollision, FullUDTracks, BinningType> pairs{bindingOnVtx, nEventsMixed, -1, &cache};
 
   template <typename CSG>
@@ -551,7 +551,7 @@ struct UpcPhotonuclearAnalysisJMG {
   }
 
   template <typename TTracks>
-  void fillQAUD(const TTracks tracks, float multiplicity)
+  void fillQAUD(const TTracks& tracks, float multiplicity)
   {
     for (const auto& track : tracks) {
       if (isTrackCut(track) == false) {
@@ -706,7 +706,7 @@ struct UpcPhotonuclearAnalysisJMG {
           nTracksCharged++;
           sumPt += track.pt();
           float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
-          float pTotal = momentum(track.px(), track.py(), track.pz()) * track.sign();
+          float pTotal = momentum(track.px(), track.py(), track.pz());
           float etaVal = eta(track.px(), track.py(), track.pz());
           histos.fill(HIST("Tracks/SGsideA/hTrackPt"), track.pt());
           histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phiVal);
@@ -755,7 +755,6 @@ struct UpcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideA/hTrackPV"), nchPVGapSideA, nchGapSideA);
         nTracksChargedSideA = nTracksCharged;
         multiplicitySideA = reconstructedTracks.size();
-        nTracksCharged = sumPt = 0;
         break;
       case 1: // gap for side C
         if (isCollisionCutSG(reconstructedCollision, 1) == false) {
@@ -782,7 +781,7 @@ struct UpcPhotonuclearAnalysisJMG {
           nTracksCharged++;
           sumPt += track.pt();
           float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
-          float pTotal = momentum(track.px(), track.py(), track.pz()) * track.sign();
+          float pTotal = momentum(track.px(), track.py(), track.pz());
           float etaVal = eta(track.px(), track.py(), track.pz());
           histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
           histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phiVal);
@@ -831,7 +830,6 @@ struct UpcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideC/hTrackPV"), nchPVGapSideC, nchGapSideC);
         nTracksChargedSideC = nTracksCharged;
         multiplicitySideC = reconstructedTracks.size();
-        nTracksCharged = sumPt = 0;
         break;
       default:
         return;
@@ -871,16 +869,16 @@ struct UpcPhotonuclearAnalysisJMG {
          vTrackChargeSideC,
          vTrackEtaSideC,
          vTrackPhiSideC,
-         vTrackTPCSignalSideA,
-         vTrackTOFSignalSideA,
-         vTrackTPCNSigmaPiSideA,
-         vTrackTOFNSigmaPiSideA,
-         vTrackTPCNSigmaKaSideA,
-         vTrackTOFNSigmaKaSideA,
-         vTrackTPCNSigmaProSideA,
-         vTrackTOFNSigmaProSideA,
-         vTrackTOFBetaSideA,
-         vTrackTOFBetaErrorSideA,
+         vTrackTPCSignalSideC,
+         vTrackTOFSignalSideC,
+         vTrackTPCNSigmaPiSideC,
+         vTrackTOFNSigmaPiSideC,
+         vTrackTPCNSigmaKaSideC,
+         vTrackTOFNSigmaKaSideC,
+         vTrackTPCNSigmaProSideC,
+         vTrackTOFNSigmaProSideC,
+         vTrackTOFBetaSideC,
+         vTrackTOFBetaErrorSideC,
          nTracksChargedSideA,
          multiplicitySideA,
          nTracksChargedSideC,
@@ -896,8 +894,8 @@ struct UpcPhotonuclearAnalysisJMG {
     // int sgSide = reconstructedCollision.gapSide();
     // int sgSide = 0;
 
-    // BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}, true};
-    BinningType bindingOnVtx{{vtxBinsEdges}, true};
+    // BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}};
+    BinningType bindingOnVtx{{vtxBinsEdges}};
     auto tracksTuple = std::make_tuple(reconstructedTracks);
     SameKindPair<FullSGUDCollision, FullUDTracks, BinningType> pairs{bindingOnVtx, nEventsMixed, -1, reconstructedCollision, tracksTuple, &cache};
 
@@ -924,9 +922,10 @@ struct UpcPhotonuclearAnalysisJMG {
         ++multiplicity;
       }
       // multiplicity = tracks1.size();
-      if (fillCollisionUD(mixed, multiplicity) == false) {
-        return;
-      }
+      // if (fillCollisionUD(mixed, multiplicity) == false) {
+      //   return;
+      // }
+      fillCollisionUD(mixed, multiplicity);
       histos.fill(HIST("Events/hCountCollisionsMixed"), 2);
       // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
       // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.gapSide()}));
@@ -1122,9 +1121,10 @@ struct UpcPhotonuclearAnalysisJMG {
       ++multiplicity;
     }
     // multiplicity = reconstructedTracks.size();
-    if (fillCollisionUD(same, multiplicity) == false) {
-      return;
-    }
+    // if (fillCollisionUD(same, multiplicity) == false) {
+    //   return;
+    // }
+    fillCollisionUD(same, multiplicity);
     // LOGF(debug, "Filling same events");
     histos.fill(HIST("eventcount"), -2);
     if (minMultiplicity <= multiplicity && multiplicity <= range1Max) {

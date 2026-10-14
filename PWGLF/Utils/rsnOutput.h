@@ -28,9 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace o2::analysis
-{
-namespace rsn
+namespace o2::analysis::rsn
 {
 enum class EventType {
   zvertex,
@@ -47,14 +45,21 @@ enum class TrackType {
 enum class PairType {
   unlikepm,
   unlikemp,
+  unlikepmInelgt0,
+  unlikempInelgt0,
   likepp,
   likemm,
-  unliketrue,
+  unliketruerec,
+  unliketruerecInelgt0,
+  unliketruegen,
+  unliketruegenInelgt0,
   unlikegen,
-  unlikegenold,
+  unlikegenInelgt0,
   mixingpm,
   mixingmp,
-  rotationpm,
+  rotationz,
+  rotation,
+  rotationlike,
   all
 };
 
@@ -80,13 +85,14 @@ enum class MixingType {
   none
 };
 
-MixingType mixingTypeName(std::string name)
+MixingType mixingTypeName(const std::string& name)
 {
-  if (name == "ce")
+  if (name == "ce") {
     return MixingType::ce;
-  else if (name == "mu")
+  }
+  if (name == "mu") {
     return MixingType::mu;
-
+  }
   return MixingType::none;
 }
 
@@ -94,14 +100,15 @@ enum class SystematicsAxisType {
   ncl,
   unknown
 };
+
 namespace pair_axis
 {
-std::vector<std::string> names{"im", "pt", "mu", "ce", "ns1", "ns2", "eta", "y", "vz", "mum", "cem", "vzm"};
+const std::vector<std::string> names{"im", "pt", "mu", "ce", "ns1", "ns2", "eta", "y", "vz", "mum", "cem", "vzm"};
 }
 
 namespace systematic_axis
 {
-std::vector<std::string> names{"ncl"};
+const std::vector<std::string> names{"ncl"};
 }
 
 class Output
@@ -109,22 +116,23 @@ class Output
  public:
   virtual ~Output() = default;
 
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool /*produceTrue*/ = false, MixingType /*eventMixing*/ = MixingType::none, bool /*produceLikesign*/ = false, bool /*produceRotational*/ = false, o2::framework::HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool /*produceTrue*/, MixingType /*eventMixing*/, bool /*produceLikesign*/, bool /*produceRotational*/, bool /*produceInelgt0*/, o2::framework::HistogramRegistry* registry)
   {
     mHistogramRegistry = registry;
-    if (mHistogramRegistry == nullptr)
+    if (mHistogramRegistry == nullptr) {
       mHistogramRegistry = new o2::framework::HistogramRegistry("registry");
+    }
 
     // check if all axes are added in correct order
     for (int i = 0; i < static_cast<int>(PairAxisType::unknown); i++) {
       auto aname = *std::move(allAxes[i].name);
       LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
-      if (aname.compare(pair_axis::names[static_cast<int>(i)])) {
+      if (aname != pair_axis::names[i]) {
         LOGF(fatal, "rsn::Output::Error: Order in allAxes is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), pair_axis::names[static_cast<int>(i)]);
       }
     }
 
-    PairAxisType currentType;
+    PairAxisType currentType = PairAxisType::unknown;
     for (const auto& c : sparseAxes) {
       currentType = type(c);
       if (currentType >= PairAxisType::unknown) {
@@ -136,8 +144,8 @@ class Output
       mCurrentAxisTypes.push_back(currentType);
     }
 
-    if (mFillPoint != nullptr)
-      delete mFillPoint;
+    delete mFillPoint;
+
     mFillPoint = new double[mCurrentAxisTypes.size()];
 
     LOGF(info, "Number of axis added: %d", mCurrentAxes.size());
@@ -147,12 +155,12 @@ class Output
     for (int i = 0; i < static_cast<int>(SystematicsAxisType::unknown); i++) {
       auto aname = *std::move(allAxes_sys[i].name);
       LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
-      if (aname.compare(systematic_axis::names[static_cast<int>(i)])) {
+      if (aname != systematic_axis::names[i]) {
         LOGF(fatal, "rsn::Output::Error: Order in allAxes_sys is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), systematic_axis::names[static_cast<int>(i)]);
       }
     }
 
-    SystematicsAxisType currentTypeSys;
+    SystematicsAxisType currentTypeSys = SystematicsAxisType::unknown;
     for (const auto& c : sysAxes) {
       currentTypeSys = typeSys(c);
       if (currentTypeSys >= SystematicsAxisType::unknown) {
@@ -164,8 +172,8 @@ class Output
       mCurrentAxisTypesSys.push_back(currentTypeSys);
     }
 
-    if (mFillPointSys != nullptr)
-      delete mFillPointSys;
+    delete mFillPointSys;
+
     mFillPointSys = new double[mCurrentAxisTypesSys.size()];
 
     LOGF(info, "Number of systematic axis added: %d", mCurrentAxesSys.size());
@@ -173,7 +181,7 @@ class Output
   }
 
   template <typename T>
-  void fillSparse(const T& h, double* point)
+  void fillSparse(const T& h, const double* point)
   {
     int i = 0;
     for (const auto& at : mCurrentAxisTypes) {
@@ -183,7 +191,7 @@ class Output
   }
 
   template <typename T>
-  void fillSparseSys(const T& h, double* point)
+  void fillSparseSys(const T& h, const double* point)
   {
     int i = 0;
     for (const auto& at : mCurrentAxisTypesSys) {
@@ -207,17 +215,24 @@ class Output
 
   virtual void fillUnlikepm(double* point) = 0;
   virtual void fillUnlikemp(double* point) = 0;
+  virtual void fillUnlikepmInelgt0(double* point) = 0;
+  virtual void fillUnlikempInelgt0(double* point) = 0;
   virtual void fillLikepp(double* point) = 0;
   virtual void fillLikemm(double* point) = 0;
-  virtual void fillUnliketrue(double* point) = 0;
-  virtual void fillUnlikegen(double* point) = 0;
-  virtual void fillUnlikegenOld(double* point) = 0;
+  virtual void fillUnlikeTrueRec(double* point) = 0;
+  virtual void fillUnlikeTrueGen(double* point) = 0;
+  virtual void fillUnlikeGen(double* point) = 0;
+  virtual void fillUnlikeTrueRecInelgt0(double* point) = 0;
+  virtual void fillUnlikeTrueGenInelgt0(double* point) = 0;
+  virtual void fillUnlikeGenInelgt0(double* point) = 0;
   virtual void fillMixingpm(double* point) = 0;
   virtual void fillMixingmp(double* point) = 0;
-  virtual void fillRotationpm(double* point) = 0;
+  virtual void fillRotationZ(double* point) = 0;
+  virtual void fillRotation(double* point) = 0;
+  virtual void fillRotationLike(double* point) = 0;
   virtual void fillSystematics(double* point) = 0;
 
-  PairAxisType type(std::string name)
+  PairAxisType type(const std::string& name)
   {
     auto it = std::find(pair_axis::names.begin(), pair_axis::names.end(), name);
     if (it == pair_axis::names.end()) {
@@ -226,7 +241,7 @@ class Output
     return static_cast<PairAxisType>(std::distance(pair_axis::names.begin(), it));
   }
 
-  SystematicsAxisType typeSys(std::string name)
+  SystematicsAxisType typeSys(const std::string& name)
   {
     auto it = std::find(systematic_axis::names.begin(), systematic_axis::names.end(), name);
     if (it == systematic_axis::names.end()) {
@@ -235,22 +250,22 @@ class Output
     return static_cast<SystematicsAxisType>(std::distance(systematic_axis::names.begin(), it));
   }
 
-  std::string name(PairAxisType type)
+  std::string name(PairAxisType axisType)
   {
-    return pair_axis::names[(static_cast<int>(type))];
+    return pair_axis::names[(static_cast<int>(axisType))];
   }
 
-  std::string nameSys(SystematicsAxisType type)
+  std::string nameSys(SystematicsAxisType axisType)
   {
-    return systematic_axis::names[(static_cast<int>(type))];
+    return systematic_axis::names[(static_cast<int>(axisType))];
   }
 
-  o2::framework::AxisSpec axis(std::vector<o2::framework::AxisSpec> const& allAxes, PairAxisType type)
+  o2::framework::AxisSpec axis(std::vector<o2::framework::AxisSpec> const& allAxes, PairAxisType axisType)
   {
-    const o2::framework::AxisSpec unknownAxis = {1, 0., 1., "unknown axis", "unknown"};
-    if (type == PairAxisType::unknown)
-      return unknownAxis;
-    return allAxes[static_cast<int>(type)];
+    if (axisType == PairAxisType::unknown) {
+      return {1, 0., 1., "unknown axis", "unknown"};
+    }
+    return allAxes[static_cast<int>(axisType)];
   }
 
  protected:
@@ -268,32 +283,41 @@ class Output
 class OutputSparse : public Output
 {
  public:
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool produceTrue = false, MixingType eventMixing = MixingType::none, bool produceLikesign = false, bool produceRotational = false, o2::framework::HistogramRegistry* registry = nullptr)
+  void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool produceTrue, MixingType eventMixing, bool produceLikesign, bool produceRotational, bool produceInelgt0, o2::framework::HistogramRegistry* registry) override
   {
-    Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, produceRotational, registry);
+    Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, produceRotational, produceInelgt0, registry);
 
     mHistogramRegistry->add("unlikepm", "Unlike pm", *mPairHisto);
+    mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);
+    if (produceInelgt0) {
+      mHistogramRegistry->add("unlikepmInelgt0", "Unlike pm (INEL>0)", *mPairHisto);
+      mHistogramRegistry->add("unlikempInelgt0", "Unlike mp (INEL>0)", *mPairHisto);
+    }
     if (produceLikesign) {
       mHistogramRegistry->add("likepp", "Like PP", *mPairHisto);
       mHistogramRegistry->add("likemm", "Like MM", *mPairHisto);
     }
     if (produceTrue) {
-      mHistogramRegistry->add("unliketrue", "Unlike True", *mPairHisto);
+      mHistogramRegistry->add("unliketruerec", "Unlike True (Rec)", *mPairHisto);
+      mHistogramRegistry->add("unliketruegen", "Unlike True (Gen)", *mPairHisto);
+      mHistogramRegistry->add("unliketruerecInelgt0", "Unlike True (Rec) (INEL>0)", *mPairHisto);
+      mHistogramRegistry->add("unliketruegenInelgt0", "Unlike True (Gen) (INEL>0)", *mPairHisto);
       mHistogramRegistry->add("unlikegen", "Unlike Gen", *mPairHisto);
-      mHistogramRegistry->add("unlikegenold", "Unlike Gen Old", *mPairHisto);
+      mHistogramRegistry->add("unlikegenInelgt0", "Unlike Gen (INEL>0)", *mPairHisto);
     }
     if (eventMixing != MixingType::none) {
       mHistogramRegistry->add("mixingpm", "Event Mixing pm", *mPairHisto);
       mHistogramRegistry->add("mixingmp", "Event Mixing mp", *mPairHisto);
     }
     if (produceRotational) {
-      mHistogramRegistry->add("rotationpm", "Rotational pm", *mPairHisto);
+      mHistogramRegistry->add("rotationz", "Rotation around z axis", *mPairHisto);
+      mHistogramRegistry->add("rotation", "Momentum-axis rotation, unlike-sign", *mPairHisto);
+      mHistogramRegistry->add("rotationlike", "Momentum-axis rotation, like-sign", *mPairHisto);
     }
     mHistogramRegistry->add("Mapping/systematics", "Systematics mapping", *mPairHistoSys);
   }
 
-  virtual void
-    fill(EventType t, double* point)
+  void fill(EventType t, double* point) override
   {
     switch (t) {
       case EventType::zvertex:
@@ -304,7 +328,7 @@ class OutputSparse : public Output
     }
   }
 
-  virtual void fill(PairType t, double* point)
+  void fill(PairType t, double* point) override
   {
     switch (t) {
       case PairType::unlikepm:
@@ -319,14 +343,29 @@ class OutputSparse : public Output
       case PairType::likemm:
         fillLikemm(point);
         break;
-      case PairType::unliketrue:
-        fillUnliketrue(point);
+      case PairType::unliketruerec:
+        fillUnlikeTrueRec(point);
         break;
       case PairType::unlikegen:
-        fillUnlikegen(point);
+        fillUnlikeGen(point);
         break;
-      case PairType::unlikegenold:
-        fillUnlikegenOld(point);
+      case PairType::unliketruegen:
+        fillUnlikeTrueGen(point);
+        break;
+      case PairType::unlikepmInelgt0:
+        fillUnlikepmInelgt0(point);
+        break;
+      case PairType::unlikempInelgt0:
+        fillUnlikempInelgt0(point);
+        break;
+      case PairType::unliketruerecInelgt0:
+        fillUnlikeTrueRecInelgt0(point);
+        break;
+      case PairType::unliketruegenInelgt0:
+        fillUnlikeTrueGenInelgt0(point);
+        break;
+      case PairType::unlikegenInelgt0:
+        fillUnlikeGenInelgt0(point);
         break;
       case PairType::mixingpm:
         fillMixingpm(point);
@@ -334,60 +373,94 @@ class OutputSparse : public Output
       case PairType::mixingmp:
         fillMixingmp(point);
         break;
-      case PairType::rotationpm:
-        fillRotationpm(point);
+      case PairType::rotationz:
+        fillRotationZ(point);
+        break;
+      case PairType::rotation:
+        fillRotation(point);
+        break;
+      case PairType::rotationlike:
+        fillRotationLike(point);
         break;
       default:
         break;
     }
   }
 
-  virtual void fillUnlikepm(double* point)
+  void fillUnlikepm(double* point) override
   {
     fillSparse(HIST("unlikepm"), point);
   }
-  virtual void fillUnlikemp(double* point)
+  void fillUnlikemp(double* point) override
   {
     fillSparse(HIST("unlikemp"), point);
   }
-  virtual void fillLikepp(double* point)
+  void fillLikepp(double* point) override
   {
     fillSparse(HIST("likepp"), point);
   }
-  virtual void fillLikemm(double* point)
+  void fillLikemm(double* point) override
   {
     fillSparse(HIST("likemm"), point);
   }
-  virtual void fillUnliketrue(double* point)
+  void fillUnlikeTrueRec(double* point) override
   {
-    fillSparse(HIST("unliketrue"), point);
+    fillSparse(HIST("unliketruerec"), point);
   }
-  virtual void fillUnlikegen(double* point)
+  void fillUnlikeTrueGen(double* point) override
+  {
+    fillSparse(HIST("unliketruegen"), point);
+  }
+  void fillUnlikeGen(double* point) override
   {
     fillSparse(HIST("unlikegen"), point);
   }
-  virtual void fillUnlikegenOld(double* point)
+  void fillUnlikepmInelgt0(double* point) override
   {
-    fillSparse(HIST("unlikegenold"), point);
+    fillSparse(HIST("unlikepmInelgt0"), point);
   }
-  virtual void fillMixingpm(double* point)
+  void fillUnlikempInelgt0(double* point) override
+  {
+    fillSparse(HIST("unlikempInelgt0"), point);
+  }
+  void fillUnlikeTrueRecInelgt0(double* point) override
+  {
+    fillSparse(HIST("unliketruerecInelgt0"), point);
+  }
+  void fillUnlikeTrueGenInelgt0(double* point) override
+  {
+    fillSparse(HIST("unliketruegenInelgt0"), point);
+  }
+  void fillUnlikeGenInelgt0(double* point) override
+  {
+    fillSparse(HIST("unlikegenInelgt0"), point);
+  }
+
+  void fillMixingpm(double* point) override
   {
     fillSparse(HIST("mixingpm"), point);
   }
-  virtual void fillMixingmp(double* point)
+  void fillMixingmp(double* point) override
   {
     fillSparse(HIST("mixingmp"), point);
   }
-  virtual void fillRotationpm(double* point)
+  void fillRotationZ(double* point) override
   {
-    fillSparse(HIST("rotationpm"), point);
+    fillSparse(HIST("rotationz"), point);
   }
-  virtual void fillSystematics(double* point)
+  void fillRotation(double* point) override
+  {
+    fillSparse(HIST("rotation"), point);
+  }
+  void fillRotationLike(double* point) override
+  {
+    fillSparse(HIST("rotationlike"), point);
+  }
+  void fillSystematics(double* point) override
   {
     fillSparse(HIST("Mapping/systematics"), point);
   }
 };
-} // namespace rsn
-} // namespace o2::analysis
+} // namespace o2::analysis::rsn
 
 #endif // PWGLF_UTILS_RSNOUTPUT_H_

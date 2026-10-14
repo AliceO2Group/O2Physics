@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace o2
@@ -47,10 +48,10 @@ class EventSelectionConfigurable
                              std::string trigsel = "",
                              std::string zvtxsel = "",
                              std::string pileuprej = "")
-    : mBFiledSel(bfieldsel), mMultSel{multsel}, mTriggerSel{trigsel}, mZVertexSel{zvtxsel}, mPileUpRejection{pileuprej}
+    : mBFiledSel(std::move(bfieldsel)), mMultSel{std::move(multsel)}, mTriggerSel{std::move(trigsel)}, mZVertexSel{std::move(zvtxsel)}, mPileUpRejection{std::move(pileuprej)}
   {
   }
-  EventSelectionConfigurable(std::vector<std::string> bfieldsel,
+  EventSelectionConfigurable(const std::vector<std::string>& bfieldsel,
                              std::vector<std::string> multsel,
                              std::vector<std::string> trigsel,
                              std::vector<std::string> zvtxsel,
@@ -110,7 +111,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   template <typename CollisionToFilter, typename AssociatedTracks>
   void StoreMultiplicities(CollisionToFilter const&, AssociatedTracks const&);
   int CalculateMaskLength() override;
-  virtual void StoreArmedMask() override;
+  void StoreArmedMask() override;
 
   std::vector<CutBrick<float>*> mBFieldSelection; //! the magnetic field selection cuts
   MultiplicityBrick* mMultiplicityClasses;        //! the multiplicity classes cuts
@@ -118,7 +119,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   CutBrick<float>* mZVertex;                      //! the z vertex selection cuts
   PileUpRejBrick* mPileUpRejection;               //! the pile-up rejection criteria
 
-  ClassDef(EventSelectionFilterAndAnalysis, 1)
+  ClassDefOverride(EventSelectionFilterAndAnalysis, 1)
 };
 
 /// \brief Stores the different multiplicities needed for proper collision filtering
@@ -229,8 +230,6 @@ inline uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const&
   if (mMultiplicityClasses != nullptr) {
     bool acc = mMultiplicityClasses->ComplexBrickHelper::Filter(selectedMask, bit);
     acceptcollision = acceptcollision && acc;
-  }
-  if (mTriggerSelection != nullptr) {
   }
   if (mZVertex != nullptr) {
     bool acc = filterBrickValue(selectedMask, bit, mZVertex, col.posZ());

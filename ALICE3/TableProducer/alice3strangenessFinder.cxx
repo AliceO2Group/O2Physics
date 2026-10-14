@@ -21,7 +21,6 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "ALICE3/Core/GeometryContainer.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
@@ -32,7 +31,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DetectorsBase/Propagator.h>
@@ -74,9 +72,6 @@ struct Alice3strangenessFinder {
   SliceCache cache;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Service<o2::ccdb::BasicCCDBManager> ccdb{};
-  o2::fastsim::GeometryContainer geoContainer;
-  std::vector<std::vector<float>> trackingLayers;
 
   Produces<aod::V0CandidateIndices> v0CandidateIndices;    // contains V0 candidate indices
   Produces<aod::V0CandidateCores> v0CandidateCores;        // contains V0 candidate core information
@@ -151,7 +146,6 @@ struct Alice3strangenessFinder {
   o2::vertexing::DCAFitterN<2> fitter;
   Service<o2::framework::O2DatabasePDG> pdgDB{};
   static constexpr float ToMicrons = 1e+4;
-  static constexpr int LutConfig = 0; // todo
 
   // partitions for v0/casc dau tracks
   Partition<Alice3TracksACTS> positiveSecondaryTracksACTS =
@@ -199,7 +193,7 @@ struct Alice3strangenessFinder {
     float dcaToPV{};
   };
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     // Initialization code here
     fitter.setBz(magneticField);
@@ -280,30 +274,6 @@ struct Alice3strangenessFinder {
       histos.add("Generated/hGeneratedAntiOmega", "hGeneratedAntiOmega", kTH2D, {{axisPt}, {axisEta}});
     }
 
-    if (doprocessFindV0CandidateOTF) {
-      ccdb->setURL("http://alice-ccdb.cern.ch");
-      ccdb->setTimestamp(-1);
-      geoContainer.setCcdbManager(ccdb.operator->());
-      geoContainer.init(initContext);
-      const int nGeometries = geoContainer.getNumberOfConfigurations();
-      trackingLayers.resize(nGeometries);
-
-      for (int icfg = 0; icfg < nGeometries; ++icfg) {
-        auto globalConfiguration = geoContainer.getConfigurations(icfg);
-
-        for (const auto& [outerKey, innerMap] : globalConfiguration) {
-          if (outerKey.empty() || outerKey[0] != 'B') {
-            continue;
-          }
-
-          auto it = innerMap.find("r");
-          if (it != innerMap.end()) {
-            trackingLayers[icfg].push_back(std::stof(it->second));
-          }
-        }
-      }
-    }
-
     if (buildCascade) {
       histos.add("CascadeBuilding/hDcaBetweenDaus", "hDcaBetweenDaus", kTH1D, {{axisDCA}});
       histos.add("CascadeBuilding/hXiMass", "", kTH1D, {axisXiMass});
@@ -372,19 +342,6 @@ struct Alice3strangenessFinder {
       }
     } // end association check
     return returnValue;
-  }
-
-  template <typename TTrackType>
-  [[nodiscard]] float getFirstLayerHitRadius(const TTrackType& track, const std::vector<float>& layers)
-  {
-    const float trueRadius = std::hypot(track.x(), track.y());
-    for (const float layerRadius : layers) {
-      if (layerRadius >= trueRadius) {
-        return layerRadius;
-      }
-    }
-    static constexpr float OutsideALICE3 = 100.f;
-    return OutsideALICE3;
   }
 
   template <typename TTrackType>
@@ -672,15 +629,12 @@ struct Alice3strangenessFinder {
 
           const float radiusV0 = std::hypot(v0Cand.posSV[0], v0Cand.posSV[1]);
           const float radiusCasc = std::hypot(cascCand.posSV[0], cascCand.posSV[1]);
-          const float posCausalityRadius = getFirstLayerHitRadius(posTrack, trackingLayers[LutConfig]);
-          const float negCausalityRadius = getFirstLayerHitRadius(negTrack, trackingLayers[LutConfig]);
-          const float bachCausalityRadius = getFirstLayerHitRadius(bachTrack, trackingLayers[LutConfig]);
-
-          if (posCausalityRadius < radiusV0) {
+          // tracks without update information (IU < 0) are not checked
+          if (posTrack.trackIU() > 0.f && posTrack.trackIU() < radiusV0) {
             continue; // positive track hit a layer before v0 decayed
           }
 
-          if (negCausalityRadius < radiusV0) {
+          if (negTrack.trackIU() > 0.f && negTrack.trackIU() < radiusV0) {
             continue; // negative track hit a layer before v0 decayed
           }
 
@@ -688,7 +642,7 @@ struct Alice3strangenessFinder {
             continue; // v0 decayed before cascade
           }
 
-          if (bachCausalityRadius < radiusCasc) {
+          if (bachTrack.trackIU() > 0.f && bachTrack.trackIU() < radiusCasc) {
             continue; // bachelor track hit a layer before v0 decayed
           }
 

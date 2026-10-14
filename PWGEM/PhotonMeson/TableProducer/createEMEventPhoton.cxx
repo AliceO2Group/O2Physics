@@ -50,7 +50,7 @@ using namespace o2::soa;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs, aod::Mults>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels, aod::EMEoIs, aod::Mults>;
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsCentQvec = soa::Join<MyCollisionsCent, MyQvectors>;
 
@@ -95,6 +95,7 @@ struct CreateEMEventPhoton {
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const&)
   {
+
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {

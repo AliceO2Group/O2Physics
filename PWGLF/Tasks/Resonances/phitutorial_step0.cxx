@@ -70,7 +70,7 @@ struct phitutorial_step0 {
   // PREAMBLE COMPLETE, NOW WE DO HELPER FCNS
   //**************************************//
   template <typename EventType>
-  bool eventSelection(const EventType event)
+  bool eventSelection(const EventType& event)
   {
     if (!event.sel8()) // This is required to extract good events
       return false;
