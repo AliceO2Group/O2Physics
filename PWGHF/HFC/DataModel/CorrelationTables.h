@@ -498,19 +498,19 @@ DECLARE_SOA_TABLE(TrkRecInfoDplus, "AOD", "TRKRECINFODPLUS", //! Tracks Reconstr
                   aod::hf_correlation_dplus_hadron::TrackTPCNClsCrossedRows);
 
 // definition of columns and tables for the beauty-mother information of the charm-hadron trigger (MC only), usable by any D-hadron correlation analysis
-namespace hf_correlation_b_mother
+namespace hf_correlation_info_b_mother
 {
 DECLARE_SOA_COLUMN(PtB, ptB, float);                   //! Generated pT of the beauty mother of the charm hadron (-1 if not from beauty)
 DECLARE_SOA_COLUMN(DeltaPhiBtoD, deltaPhiBtoD, float); //! phi(charm hadron) - phi(B mother, generated) in [-pihalf, 3.*pihalf) (-999 if not from beauty)
-} // namespace hf_correlation_b_mother
+} // namespace hf_correlation_info_b_mother
 
 DECLARE_SOA_TABLE(BMotherPairInfo, "AOD", "BMOTHERPAIRINFO", //! Charm-hadron-hadron pairs beauty-mother information, joinable with the pair table
-                  aod::hf_correlation_b_mother::PtB,
-                  aod::hf_correlation_b_mother::DeltaPhiBtoD);
+                  aod::hf_correlation_info_b_mother::PtB,
+                  aod::hf_correlation_info_b_mother::DeltaPhiBtoD);
 
 DECLARE_SOA_TABLE(BMotherCandInfo, "AOD", "BMOTHERCANDINFO", //! Charm-hadron candidates beauty-mother information, joinable with the candidate table
-                  aod::hf_correlation_b_mother::PtB,
-                  aod::hf_correlation_b_mother::DeltaPhiBtoD);
+                  aod::hf_correlation_info_b_mother::PtB,
+                  aod::hf_correlation_info_b_mother::DeltaPhiBtoD);
 
 // definition of columns and tables for Dstar-Hadron correlation pair
 namespace hf_correlation_dstar_hadron
