@@ -14,14 +14,15 @@
 /// \author Andrea Tavira Garcia a.tavira@cern.ch
 /// \author Andrea Giovanni Riffero andrea.giovanni.riffero@cern.ch
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -30,10 +31,9 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TH1.h>
-#include <TH2.h>
-#include <TPDGCode.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
+#include <Math/Vector4Dfwd.h>
 
 #include <array>
 #include <cmath>
@@ -72,7 +72,7 @@ struct UpcTrackVertexingQA {
   HistogramRegistry registry{"registry"};
 
   // services
-  Service<o2::ccdb::BasicCCDBManager> ccdb; // access to database
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; // access to database
 
   // variables to store run info
   int runNumberBc = 0;     // run number used to process BCs
@@ -85,8 +85,8 @@ struct UpcTrackVertexingQA {
   int64_t nTF = 0;         // number of time frames in run
 
   // constants
-  const unsigned int twoTracks = 2;
-  const int unassignedDCA = 999;
+  static constexpr unsigned int twoTracks = 2;
+  static constexpr int unassignedDCA = 999;
 
   static constexpr float MassPion = o2::constants::physics::MassPionCharged;
   static constexpr float MassMuon = o2::constants::physics::MassMuon;
@@ -386,10 +386,7 @@ struct UpcTrackVertexingQA {
     registry.fill(HIST("McGen/Part/hTrackSizePerEvent"), goodMcGenParticles.size());
 
     // consider only j/psi->mumu and rho->pipi events
-    auto genId = mcCollision.getGeneratorId();
-    LOGF(info, "Gen Id: {%d}", genId);
     auto sourceId = mcCollision.getSourceId();
-    LOGF(info, "Source Id: {%d}", sourceId);
 
     if constexpr (isEmbedded) {
       if (!sourceId) {
@@ -413,7 +410,7 @@ struct UpcTrackVertexingQA {
       LOGF(fatal, "Selected particle has no mother: pdgCode=%d", goodMcGenParticles[0].pdgCode());
       return;
     }
-    auto motherPart = mothers[0];
+    auto const& motherPart = mothers[0];
 
     registry.fill(HIST("McGen/MotherPart/hMotherPdg"), std::abs(motherPart.pdgCode()));
     registry.fill(HIST("McGen/MotherPart/hPt"), motherPart.pt());
