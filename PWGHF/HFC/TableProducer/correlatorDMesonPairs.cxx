@@ -189,7 +189,7 @@ struct HfCorrelatorDMesonPairs {
   SliceCache cache;
 
   using SelCollisionsWithD0 = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
-  using CandidatesD0Data = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>;
+  using CandidatesD0Data = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>;
 
   using FilteredD0Candidates = soa::Filtered<CandidatesD0Data>;
   using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>; // trackFilter applied
@@ -213,8 +213,8 @@ struct HfCorrelatorDMesonPairs {
 
   // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
-  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   // ThnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisBkgScore{"thnConfigAxisBkgScore", {100, 0, 1}, "Bkg score bins"};
@@ -923,7 +923,7 @@ struct HfCorrelatorDMesonPairs {
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processData, "Process data mode", true);
 
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngMcRec> const& candidates, aod::Tracks const&)
+  void processMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates, aod::Tracks const&)
   {
     for (const auto& candidate : candidates) {
       analysePid(candidate);
@@ -943,10 +943,6 @@ struct HfCorrelatorDMesonPairs {
       float const massD0barCand1 = HfHelper::invMassD0barToKPi(candidate1);
       auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
       auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
-
-      if (candidate1.isSelD0() < selectionFlagD0 && candidate1.isSelD0bar() < selectionFlagD0bar) {
-        continue;
-      }
 
       auto candidateType1 = assignCandidateTypeD0<true>(candidate1); // Candidate type attribution
 
@@ -1048,9 +1044,6 @@ struct HfCorrelatorDMesonPairs {
         auto prong0Cand2 = candidate2.template prong0_as<aod::Tracks>();
         auto prong1Cand2 = candidate2.template prong1_as<aod::Tracks>();
 
-        if (candidate2.isSelD0() < selectionFlagD0 && candidate2.isSelD0bar() < selectionFlagD0bar) {
-          continue;
-        }
         if ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2)) {
           continue;
         }
