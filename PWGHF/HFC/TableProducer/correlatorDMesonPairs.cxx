@@ -51,6 +51,7 @@
 
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -525,6 +526,18 @@ struct HfCorrelatorDMesonPairs {
     return (TESTBIT(candidateType, TrueDbar));
   }
 
+  /// Canonical pair ordering:
+  /// D0 before D0bar; for equal flavours, higher pT first.
+  /// \return true if candidate 1 and candidate 2 should be exchanged
+  template <typename T>
+  static bool shouldSwapOrder(const bool isD1, const bool isDbar1, const bool isD2, const bool isDbar2, const T& candidate1, const T& candidate2)
+  {
+    if (isD1 != isD2 || isDbar1 != isDbar2) { // different flavour content
+      return !isD1 && isD2;                    // Dbar(-only) first, D second -> swap
+    }
+    return candidate1.pt() < candidate2.pt();
+  }
+
   template <typename T>
   bool passMlSelections(const T& candidate, bool isDCand, bool isDbarCand, std::vector<float>& outputMlD0Cand, std::vector<float>& outputMlD0barCand)
   {
@@ -798,10 +811,10 @@ struct HfCorrelatorDMesonPairs {
       }
 
       auto candidateType1 = assignCandidateTypeD0<IsMcRec>(candidate1); // Candidate type attribution
-      bool const isDCand1 = isD(candidateType1);
-      bool const isDbarCand1 = isDbar(candidateType1);
-      bool const isTrueDCand1 = isTrueD(candidateType1);
-      bool const isTrueDbarCand1 = isTrueDbar(candidateType1);
+      bool isDCand1 = isD(candidateType1);
+      bool isDbarCand1 = isDbar(candidateType1);
+      bool isTrueDCand1 = isTrueD(candidateType1);
+      bool isTrueDbarCand1 = isTrueDbar(candidateType1);
 
       registry.fill(HIST("hPtCand"), candidate1.pt());
 
@@ -928,8 +941,10 @@ struct HfCorrelatorDMesonPairs {
         }
 
         auto candidateType2 = assignCandidateTypeD0<IsMcRec>(candidate2); // Candidate type attribution
-        bool const isDCand2 = isD(candidateType2);
-        bool const isDbarCand2 = isDbar(candidateType2);
+        bool isDCand2 = isD(candidateType2);
+        bool isDbarCand2 = isDbar(candidateType2);
+        bool isTrueDCand2 = isTrueD(candidateType2);
+        bool isTrueDbarCand2 = isTrueDbar(candidateType2);
 
         int8_t matchedRec2 = 0;
         int8_t originRec2 = 0;
@@ -958,6 +973,12 @@ struct HfCorrelatorDMesonPairs {
         }
 
         uint8_t pairType = setPairType(candidateType1, candidateType2);
+        if (shouldSwapOrder(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidate1, candidate2)) {
+          std::swap(isDCand1, isDCand2);
+          std::swap(isDbarCand1, isDbarCand2);
+          std::swap(isTrueDCand1, isTrueDCand2);
+          std::swap(isTrueDbarCand1, isTrueDbarCand2);
+        }
 
         // Fill entries for D0-D0(bar) pairs and plot histos
         fillSelectionStatusHisto(candidateType1, candidateType2);
@@ -989,7 +1010,7 @@ struct HfCorrelatorDMesonPairs {
   }
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processData, "Process data mode", true);
 
-  void processMcRec(SelCollisionsWithD0::iterator const& collision, CandidatesD0McRec const&, TracksData const& tracks)
+  void processMcRec(SelCollisionsWithD0::iterator const& collision, CandidatesD0McRec const&, TracksData const& tracks, aod::BCsWithTimestamps const&)
   {
     const auto timeStamp = collision.bc_as<aod::BCsWithTimestamps>().timestamp();
     auto grouped = selectedD0CandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
