@@ -673,7 +673,6 @@ struct HfCorrelatorDsHadrons {
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         } else if (isCorrectInvMassHypo && candidate.isSelDsToPiKK() >= selectionFlagDs) {
           // if (track.has_mcParticle()) {
-          auto mcParticle = track.template mcParticle_as<aod::McParticles>();
           entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
                             candidate.pt() * chargeDs,
