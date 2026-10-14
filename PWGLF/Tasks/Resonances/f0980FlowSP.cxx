@@ -31,6 +31,8 @@
 
 #include <Math/Vector4D.h>
 
+#include <array>
+#include <cinttypes>
 #include <cmath>
 #include <cstdint>
 #include <utility>
@@ -44,23 +46,81 @@ using namespace o2::soa;
 namespace
 {
 using P4 = ROOT::Math::PxPyPzMVector;
-constexpr float kInvalidQ = -900.f;
+constexpr float InvalidQ = -900.f;
+constexpr int ProtonMassNumber = 1;
+constexpr int OxygenMassNumber = 16;
 } // namespace
 
 struct F0980FlowSP {
   SliceCache cache;
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry{"registry"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  enum CollisionSystem : int {
-    kPP = 0,
-    kOO = 1,
-    kPO = 2,
-    kUnsupported = 3
+  enum class CollisionSystem : int {
+    PP = 0,
+    OO = 1,
+    PO = 2,
+    Unsupported = 3
+  };
+
+  enum class PionPidMode : int {
+    TPCWithTOFWhenAvailable = 0,
+    TPCOnly = 1,
+    TPCTOFRequired = 2,
+    MomentumDependentTOF = 4
+  };
+
+  enum class EventSelectionStep : int {
+    All,
+    Sel8,
+    NoSameBunchPileup,
+    NoTimeFrameBorder,
+    NoITSROFrameBorder,
+    ITSTPCVertex,
+    Centrality,
+    QVectorCalibrated,
+    QVectorValid,
+    Count
+  };
+
+  enum class PPEventSelectionStep : int {
+    All,
+    Sel8,
+    NoSameBunchPileup,
+    NoTimeFrameBorder,
+    NoITSROFrameBorder,
+    ITSTPCVertex,
+    Inelastic,
+    QVectorValid,
+    Count
+  };
+
+  enum class QVectorStatus {
+    IndexUnavailable,
+    Uncalibrated,
+    Invalid,
+    Valid
+  };
+
+  struct QVectorData {
+    double qAx = 0.;
+    double qAy = 0.;
+    double qBx = 0.;
+    double qBy = 0.;
+    double qCx = 0.;
+    double qCy = 0.;
+    double qAMagnitude = 0.;
+    double qBMagnitude = 0.;
+    double qCMagnitude = 0.;
+
+    bool hasValidEventPlanes() const
+    {
+      return qAMagnitude > 0. && qBMagnitude > 0. && qCMagnitude > 0.;
+    }
   };
 
   int cachedRunNumber = -1;
-  CollisionSystem cachedCollisionSystem = kUnsupported;
+  CollisionSystem cachedCollisionSystem = CollisionSystem::Unsupported;
 
   // Pair and daughter selection. Defaults follow rho770analysis.cxx.
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15f, "Minimum daughter transverse momentum"};
@@ -90,7 +150,7 @@ struct F0980FlowSP {
   Configurable<float> cfgTOFNSigmaPi{"cfgTOFNSigmaPi", 3.f, "TOF pion n-sigma"};
   Configurable<float> cfgTOFRequiredAboveP{"cfgTOFRequiredAboveP", 0.6f, "For PID mode 4, require TOF at and above this total momentum (GeV/c)"};
   // The vector tables contain one entry per harmonic requested from qVectorsTable.
-  Configurable<int> cfgHarmonicIndex{"cfgHarmonicIndex", 0, "Index of n=2 in Q-vector vector columns"};
+  Configurable<size_t> cfgHarmonicIndex{"cfgHarmonicIndex", 0, "Index of n=2 in Q-vector vector columns"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0.f, "Minimum FT0C centrality for OO"};
   Configurable<float> cfgCentMax{"cfgCentMax", 100.f, "Maximum FT0C centrality for OO"};
 
@@ -116,7 +176,7 @@ struct F0980FlowSP {
   template <typename Collision>
   CollisionSystem collisionSystem(Collision const& collision)
   {
-    if (cfgCollisionSystem.value >= kPP && cfgCollisionSystem.value <= kPO) {
+    if (cfgCollisionSystem.value >= static_cast<int>(CollisionSystem::PP) && cfgCollisionSystem.value <= static_cast<int>(CollisionSystem::PO)) {
       return static_cast<CollisionSystem>(cfgCollisionSystem.value);
     }
 
@@ -127,23 +187,58 @@ struct F0980FlowSP {
 
     auto* grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bc.timestamp());
     if (grplhcif == nullptr) {
-      LOGF(fatal, "Cannot load GLO/Config/GRPLHCIF for run %d and timestamp %llu", bc.runNumber(), static_cast<unsigned long long>(bc.timestamp()));
+      LOGF(fatal, "Cannot load GLO/Config/GRPLHCIF for run %d and timestamp %" PRIu64, bc.runNumber(), bc.timestamp());
     }
 
     const int beamAA = grplhcif->getBeamA(o2::constants::lhc::BeamA);
     const int beamCA = grplhcif->getBeamA(o2::constants::lhc::BeamC);
-    if (beamAA == 1 && beamCA == 1) {
-      cachedCollisionSystem = kPP;
-    } else if (beamAA == 16 && beamCA == 16) {
-      cachedCollisionSystem = kOO;
-    } else if ((beamAA == 1 && beamCA == 16) || (beamAA == 16 && beamCA == 1)) {
-      cachedCollisionSystem = kPO;
+    if (beamAA == ProtonMassNumber && beamCA == ProtonMassNumber) {
+      cachedCollisionSystem = CollisionSystem::PP;
+    } else if (beamAA == OxygenMassNumber && beamCA == OxygenMassNumber) {
+      cachedCollisionSystem = CollisionSystem::OO;
+    } else if ((beamAA == ProtonMassNumber && beamCA == OxygenMassNumber) ||
+               (beamAA == OxygenMassNumber && beamCA == ProtonMassNumber)) {
+      cachedCollisionSystem = CollisionSystem::PO;
     } else {
-      cachedCollisionSystem = kUnsupported;
+      cachedCollisionSystem = CollisionSystem::Unsupported;
     }
     cachedRunNumber = bc.runNumber();
     LOGF(info, "Automatically identified collision system for run %d: beam A values %d and %d, mode %d", cachedRunNumber, beamAA, beamCA, static_cast<int>(cachedCollisionSystem));
     return cachedCollisionSystem;
+  }
+
+  template <typename Collision>
+  QVectorStatus getQVectorData(Collision const& collision, QVectorData& qVector) const
+  {
+    const size_t harmonicIndex = cfgHarmonicIndex.value;
+    if (harmonicIndex >= collision.qvecFT0CReVec().size() ||
+        harmonicIndex >= collision.qvecFT0CImVec().size() ||
+        harmonicIndex >= collision.qvecFT0AReVec().size() ||
+        harmonicIndex >= collision.qvecFT0AImVec().size() ||
+        harmonicIndex >= collision.qvecTPCposReVec().size() ||
+        harmonicIndex >= collision.qvecTPCposImVec().size()) {
+      return QVectorStatus::IndexUnavailable;
+    }
+    if (!collision.isCalibrated()) {
+      return QVectorStatus::Uncalibrated;
+    }
+
+    qVector.qAx = collision.qvecFT0CReVec()[harmonicIndex];
+    qVector.qAy = collision.qvecFT0CImVec()[harmonicIndex];
+    qVector.qBx = collision.qvecFT0AReVec()[harmonicIndex];
+    qVector.qBy = collision.qvecFT0AImVec()[harmonicIndex];
+    qVector.qCx = collision.qvecTPCposReVec()[harmonicIndex];
+    qVector.qCy = collision.qvecTPCposImVec()[harmonicIndex];
+    if (qVector.qAx < InvalidQ || qVector.qAy < InvalidQ ||
+        qVector.qBx < InvalidQ || qVector.qBy < InvalidQ ||
+        qVector.qCx < InvalidQ || qVector.qCy < InvalidQ) {
+      return QVectorStatus::Invalid;
+    }
+
+    qVector.qAMagnitude = std::hypot(qVector.qAx, qVector.qAy);
+    qVector.qBMagnitude = std::hypot(qVector.qBx, qVector.qBy);
+    qVector.qCMagnitude = std::hypot(qVector.qCx, qVector.qCy);
+    return QVectorStatus::Valid;
   }
 
   void init(InitContext const&)
@@ -168,7 +263,7 @@ struct F0980FlowSP {
     registry.add("PP/pCosPsiAB", "<cos(2(PsiFT0C-PsiFT0A))>;multiplicity", HistType::kTProfile, {axisMult});
     registry.add("PP/pCosPsiAC", "<cos(2(PsiFT0C-PsiTPCpos))>;multiplicity", HistType::kTProfile, {axisMult});
     registry.add("PP/pCosPsiBC", "<cos(2(PsiFT0A-PsiTPCpos))>;multiplicity", HistType::kTProfile, {axisMult});
-    registry.add("PP/QA/Event/hSelection", "pp event-selection cut flow;selection step;events", HistType::kTH1F, {{8, -0.5, 7.5}});
+    registry.add("PP/QA/Event/hSelection", "pp event-selection cut flow;selection step;events", HistType::kTH1F, {{static_cast<int>(PPEventSelectionStep::Count), -0.5, static_cast<double>(PPEventSelectionStep::Count) - 0.5}});
     registry.add("PP/QA/Event/hMultiplicityBefore", "pp events before selection;N_{PV contributors};events", HistType::kTH1F, {{106, -0.5, 105.5}});
     registry.add("PP/QA/Event/hMultiplicityAfter", "pp events after selection;N_{PV contributors};events", HistType::kTH1F, {{106, -0.5, 105.5}});
     registry.add("PP/QA/Event/hVertexZBefore", "pp events before selection;z_{vtx} (cm);events", HistType::kTH1F, {{240, -30., 30.}});
@@ -237,7 +332,7 @@ struct F0980FlowSP {
     registry.add("PO/pCosPsiAC", "<cos(2(PsiFT0C-PsiTPCpos))>;centrality", HistType::kTProfile, {axisCent});
     registry.add("PO/pCosPsiBC", "<cos(2(PsiFT0A-PsiTPCpos))>;centrality", HistType::kTProfile, {axisCent});
 
-    registry.add("QA/Event/hSelection", "ion-collision event-selection cut flow;selection step;events", HistType::kTH1F, {{9, -0.5, 8.5}});
+    registry.add("QA/Event/hSelection", "ion-collision event-selection cut flow;selection step;events", HistType::kTH1F, {{static_cast<int>(EventSelectionStep::Count), -0.5, static_cast<double>(EventSelectionStep::Count) - 0.5}});
     registry.add("QA/Event/hCentrality", "selected ion collisions;FT0C centrality (%);events", HistType::kTH1F, {{100, 0., 100.}});
     registry.add("QA/Event/hCentralityBefore", "ion-collision events before selection;FT0C centrality (%);events", HistType::kTH1F, {{100, 0., 100.}});
     registry.add("QA/Event/hCentralityAfter", "ion-collision events after selection;FT0C centrality (%);events", HistType::kTH1F, {{100, 0., 100.}});
@@ -270,17 +365,17 @@ struct F0980FlowSP {
     registry.add("QA/Qvector/pQyTPCposVsRun", "mean corrected q_{y,TPCpos};run number;<#it{q}_{y}>", HistType::kTProfile, {axisRun});
 
     auto eventSelection = registry.get<TH1>(HIST("QA/Event/hSelection"));
-    const char* eventSelectionLabels[] = {
+    constexpr std::array eventSelectionLabels = {
       "all", "sel8", "no same-bunch pileup", "no TF border",
       "no ITS ROF border", "ITS-TPC vertex", "centrality", "Q calibrated", "Q valid"};
-    for (int i = 0; i < 9; ++i) {
+    for (size_t i = 0; i < eventSelectionLabels.size(); ++i) {
       eventSelection->GetXaxis()->SetBinLabel(i + 1, eventSelectionLabels[i]);
     }
     auto ppEventSelection = registry.get<TH1>(HIST("PP/QA/Event/hSelection"));
-    const char* ppEventSelectionLabels[] = {
+    constexpr std::array ppEventSelectionLabels = {
       "all", "sel8", "no same-bunch pileup", "no TF border",
       "no ITS ROF border", "ITS-TPC vertex", "INEL > 0", "Q valid"};
-    for (int i = 0; i < 8; ++i) {
+    for (size_t i = 0; i < ppEventSelectionLabels.size(); ++i) {
       ppEventSelection->GetXaxis()->SetBinLabel(i + 1, ppEventSelectionLabels[i]);
     }
     registry.add("QA/TrackSelected/hPt", "track-selected candidates;p_{T} (GeV/c);counts", HistType::kTH1F, {{200, 0., 20.}});
@@ -335,33 +430,33 @@ struct F0980FlowSP {
   template <typename C>
   bool selectOOEventWithQA(C const& collision, float centrality)
   {
-    registry.fill(HIST("QA/Event/hSelection"), 0.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::All));
     registry.fill(HIST("QA/Event/hCentralityBefore"), centrality);
     registry.fill(HIST("QA/Event/hVertexZBefore"), collision.posZ());
     if (cfgRequireSel8.value && !collision.sel8()) {
       return false;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 1.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::Sel8));
     if (cfgRequireNoSameBunchPileup.value && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 2.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::NoSameBunchPileup));
     if (cfgRequireNoTimeFrameBorder.value && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 3.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::NoTimeFrameBorder));
     if (cfgRequireNoITSROFrameBorder.value && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 4.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::NoITSROFrameBorder));
     if (cfgRequireITSTPCVertex.value && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 5.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::ITSTPCVertex));
     if (centrality < cfgCentMin.value || centrality >= cfgCentMax.value) {
       return false;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 6.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::Centrality));
     registry.fill(HIST("QA/Event/hCentrality"), centrality);
     registry.fill(HIST("QA/Event/hCentralityAfter"), centrality);
     registry.fill(HIST("QA/Event/hVertexZAfter"), collision.posZ());
@@ -435,20 +530,20 @@ struct F0980FlowSP {
   {
     const float tpc = std::abs(track.tpcNSigmaPi());
     const float tof = std::abs(track.tofNSigmaPi());
-    switch (cfgPIDMode.value) {
-      case 0:
+    switch (static_cast<PionPidMode>(cfgPIDMode.value)) {
+      case PionPidMode::TPCWithTOFWhenAvailable:
         if (track.hasTOF()) {
           return tpc < cfgTPCNSigmaPi.value &&
                  tof < cfgTOFNSigmaPi.value;
         }
         return tpc < cfgTPCNSigmaPiNoTOF.value;
-      case 1:
+      case PionPidMode::TPCOnly:
         return tpc < cfgTPCNSigmaPiNoTOF.value;
-      case 2:
+      case PionPidMode::TPCTOFRequired:
         return track.hasTOF() &&
                tpc < cfgTPCNSigmaPi.value &&
                tof < cfgTOFNSigmaPi.value;
-      case 4:
+      case PionPidMode::MomentumDependentTOF:
         if (track.p() < cfgTOFRequiredAboveP.value) {
           return tpc < cfgTPCNSigmaPiNoTOF.value;
         }
@@ -470,10 +565,10 @@ struct F0980FlowSP {
   void loopPairsSelected(Tracks const& tracks, TrackSelect&& trackSelect, PionSelect&& pionSelect, FillPair&& fillPair)
   {
     struct SelectedPion {
-      float px;
-      float py;
-      float pz;
-      int8_t sign;
+      float px = 0.f;
+      float py = 0.f;
+      float pz = 0.f;
+      int8_t sign = 0;
     };
 
     // Apply daughter-quality and PID selections once per track before building
@@ -537,61 +632,47 @@ struct F0980FlowSP {
   void processPP(PPCollisions::iterator const& collision, TracksTPCTOF const& tracks,
                  aod::BCsWithTimestamps const&)
   {
-    if (collisionSystem(collision) != kPP) {
+    if (collisionSystem(collision) != CollisionSystem::PP) {
       return;
     }
     const float multiplicity = collision.numContrib();
-    registry.fill(HIST("PP/QA/Event/hSelection"), 0.);
+    registry.fill(HIST("PP/QA/Event/hSelection"), static_cast<int>(PPEventSelectionStep::All));
     registry.fill(HIST("PP/QA/Event/hMultiplicityBefore"), multiplicity);
     registry.fill(HIST("PP/QA/Event/hVertexZBefore"), collision.posZ());
     if (cfgRequireSel8.value && !collision.sel8()) {
       return;
     }
-    registry.fill(HIST("PP/QA/Event/hSelection"), 1.);
+    registry.fill(HIST("PP/QA/Event/hSelection"), static_cast<int>(PPEventSelectionStep::Sel8));
     if (cfgRequireNoSameBunchPileup.value && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
-    registry.fill(HIST("PP/QA/Event/hSelection"), 2.);
+    registry.fill(HIST("PP/QA/Event/hSelection"), static_cast<int>(PPEventSelectionStep::NoSameBunchPileup));
     if (cfgRequireNoTimeFrameBorder.value && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
-    registry.fill(HIST("PP/QA/Event/hSelection"), 3.);
+    registry.fill(HIST("PP/QA/Event/hSelection"), static_cast<int>(PPEventSelectionStep::NoTimeFrameBorder));
     if (cfgRequireNoITSROFrameBorder.value && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
-    registry.fill(HIST("PP/QA/Event/hSelection"), 4.);
+    registry.fill(HIST("PP/QA/Event/hSelection"), static_cast<int>(PPEventSelectionStep::NoITSROFrameBorder));
     if (cfgRequireITSTPCVertex.value && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return;
     }
-    registry.fill(HIST("PP/QA/Event/hSelection"), 5.);
+    registry.fill(HIST("PP/QA/Event/hSelection"), static_cast<int>(PPEventSelectionStep::ITSTPCVertex));
     if (collision.numContrib() < 1) {
       return;
     }
-    registry.fill(HIST("PP/QA/Event/hSelection"), 6.);
+    registry.fill(HIST("PP/QA/Event/hSelection"), static_cast<int>(PPEventSelectionStep::Inelastic));
     registry.fill(HIST("PP/QA/Event/hMultiplicityAfter"), multiplicity);
     registry.fill(HIST("PP/QA/Event/hVertexZAfter"), collision.posZ());
 
-    const int ih = cfgHarmonicIndex;
-    if (ih < 0 || ih >= static_cast<int>(collision.qvecFT0CReVec().size()) ||
-        ih >= static_cast<int>(collision.qvecFT0AReVec().size()) ||
-        ih >= static_cast<int>(collision.qvecTPCposReVec().size())) {
+    QVectorData qVector;
+    if (getQVectorData(collision, qVector) != QVectorStatus::Valid) {
       return;
     }
-    const bool calibrated = collision.isCalibrated();
-    if (!calibrated) {
-      return;
-    }
+    registry.fill(HIST("PP/QA/Event/hSelection"), static_cast<int>(PPEventSelectionStep::QVectorValid));
 
-    const double qAx = collision.qvecFT0CReVec()[ih];
-    const double qAy = collision.qvecFT0CImVec()[ih];
-    const double qBx = collision.qvecFT0AReVec()[ih];
-    const double qBy = collision.qvecFT0AImVec()[ih];
-    const double qCx = collision.qvecTPCposReVec()[ih];
-    const double qCy = collision.qvecTPCposImVec()[ih];
-    if (qAx < kInvalidQ || qAy < kInvalidQ || qBx < kInvalidQ || qBy < kInvalidQ || qCx < kInvalidQ || qCy < kInvalidQ) {
-      return;
-    }
-    registry.fill(HIST("PP/QA/Event/hSelection"), 7.);
+    const auto [qAx, qAy, qBx, qBy, qCx, qCy, qAMagnitude, qBMagnitude, qCMagnitude] = qVector;
 
     const int runNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     fillPPQVectorQA(multiplicity, runNumber, qAx, qAy, qBx, qBy, qCx, qCy);
@@ -602,10 +683,7 @@ struct F0980FlowSP {
     registry.fill(HIST("PP/pQABIm"), multiplicity, qAy * qBx - qAx * qBy);
     registry.fill(HIST("PP/pQACIm"), multiplicity, qAy * qCx - qAx * qCy);
     registry.fill(HIST("PP/pQBCIm"), multiplicity, qBy * qCx - qBx * qCy);
-    const double qAMagnitude = std::hypot(qAx, qAy);
-    const double qBMagnitude = std::hypot(qBx, qBy);
-    const double qCMagnitude = std::hypot(qCx, qCy);
-    const bool validEventPlanes = qAMagnitude > 0. && qBMagnitude > 0. && qCMagnitude > 0.;
+    const bool validEventPlanes = qVector.hasValidEventPlanes();
     if (validEventPlanes) {
       registry.fill(HIST("PP/pCosPsiAB"), multiplicity, (qAx * qBx + qAy * qBy) / (qAMagnitude * qBMagnitude));
       registry.fill(HIST("PP/pCosPsiAC"), multiplicity, (qAx * qCx + qAy * qCy) / (qAMagnitude * qCMagnitude));
@@ -643,7 +721,7 @@ struct F0980FlowSP {
   void processOO(OOCollisions::iterator const& collision, TracksTPCTOF const& tracks,
                  aod::BCsWithTimestamps const&)
   {
-    if (collisionSystem(collision) != kOO) {
+    if (collisionSystem(collision) != CollisionSystem::OO) {
       return;
     }
     const float centrality = collision.centFT0C();
@@ -651,28 +729,18 @@ struct F0980FlowSP {
       return;
     }
 
-    const int ih = cfgHarmonicIndex;
-    if (ih < 0 || ih >= static_cast<int>(collision.qvecFT0CReVec().size()) ||
-        ih >= static_cast<int>(collision.qvecFT0AReVec().size()) ||
-        ih >= static_cast<int>(collision.qvecTPCposReVec().size())) {
+    QVectorData qVector;
+    const auto qVectorStatus = getQVectorData(collision, qVector);
+    if (qVectorStatus == QVectorStatus::IndexUnavailable || qVectorStatus == QVectorStatus::Uncalibrated) {
       return;
     }
-    const bool calibrated = collision.isCalibrated();
-    if (!calibrated) {
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::QVectorCalibrated));
+    if (qVectorStatus != QVectorStatus::Valid) {
       return;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 7.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::QVectorValid));
 
-    const double qAx = collision.qvecFT0CReVec()[ih];
-    const double qAy = collision.qvecFT0CImVec()[ih];
-    const double qBx = collision.qvecFT0AReVec()[ih];
-    const double qBy = collision.qvecFT0AImVec()[ih];
-    const double qCx = collision.qvecTPCposReVec()[ih];
-    const double qCy = collision.qvecTPCposImVec()[ih];
-    if (qAx < kInvalidQ || qAy < kInvalidQ || qBx < kInvalidQ || qBy < kInvalidQ || qCx < kInvalidQ || qCy < kInvalidQ) {
-      return;
-    }
-    registry.fill(HIST("QA/Event/hSelection"), 8.);
+    const auto [qAx, qAy, qBx, qBy, qCx, qCy, qAMagnitude, qBMagnitude, qCMagnitude] = qVector;
 
     const int runNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     fillQVectorQA(centrality, runNumber, qAx, qAy, qBx, qBy, qCx, qCy);
@@ -682,10 +750,7 @@ struct F0980FlowSP {
     registry.fill(HIST("OO/pQABIm"), centrality, qAy * qBx - qAx * qBy);
     registry.fill(HIST("OO/pQACIm"), centrality, qAy * qCx - qAx * qCy);
     registry.fill(HIST("OO/pQBCIm"), centrality, qBy * qCx - qBx * qCy);
-    const double qAMagnitude = std::hypot(qAx, qAy);
-    const double qBMagnitude = std::hypot(qBx, qBy);
-    const double qCMagnitude = std::hypot(qCx, qCy);
-    const bool validEventPlanes = qAMagnitude > 0. && qBMagnitude > 0. && qCMagnitude > 0.;
+    const bool validEventPlanes = qVector.hasValidEventPlanes();
     if (validEventPlanes) {
       registry.fill(HIST("OO/pCosPsiAB"), centrality, (qAx * qBx + qAy * qBy) / (qAMagnitude * qBMagnitude));
       registry.fill(HIST("OO/pCosPsiAC"), centrality, (qAx * qCx + qAy * qCy) / (qAMagnitude * qCMagnitude));
@@ -723,7 +788,7 @@ struct F0980FlowSP {
   void processPO(POCollisions::iterator const& collision, TracksTPCTOF const& tracks,
                  aod::BCsWithTimestamps const&)
   {
-    if (collisionSystem(collision) != kPO) {
+    if (collisionSystem(collision) != CollisionSystem::PO) {
       return;
     }
     const float centrality = collision.centFT0C();
@@ -731,28 +796,18 @@ struct F0980FlowSP {
       return;
     }
 
-    const int ih = cfgHarmonicIndex;
-    if (ih < 0 || ih >= static_cast<int>(collision.qvecFT0CReVec().size()) ||
-        ih >= static_cast<int>(collision.qvecFT0AReVec().size()) ||
-        ih >= static_cast<int>(collision.qvecTPCposReVec().size())) {
+    QVectorData qVector;
+    const auto qVectorStatus = getQVectorData(collision, qVector);
+    if (qVectorStatus == QVectorStatus::IndexUnavailable || qVectorStatus == QVectorStatus::Uncalibrated) {
       return;
     }
-    const bool calibrated = collision.isCalibrated();
-    if (!calibrated) {
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::QVectorCalibrated));
+    if (qVectorStatus != QVectorStatus::Valid) {
       return;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 7.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::QVectorValid));
 
-    const double qAx = collision.qvecFT0CReVec()[ih];
-    const double qAy = collision.qvecFT0CImVec()[ih];
-    const double qBx = collision.qvecFT0AReVec()[ih];
-    const double qBy = collision.qvecFT0AImVec()[ih];
-    const double qCx = collision.qvecTPCposReVec()[ih];
-    const double qCy = collision.qvecTPCposImVec()[ih];
-    if (qAx < kInvalidQ || qAy < kInvalidQ || qBx < kInvalidQ || qBy < kInvalidQ || qCx < kInvalidQ || qCy < kInvalidQ) {
-      return;
-    }
-    registry.fill(HIST("QA/Event/hSelection"), 8.);
+    const auto [qAx, qAy, qBx, qBy, qCx, qCy, qAMagnitude, qBMagnitude, qCMagnitude] = qVector;
 
     const int runNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     fillQVectorQA(centrality, runNumber, qAx, qAy, qBx, qBy, qCx, qCy);
@@ -762,10 +817,7 @@ struct F0980FlowSP {
     registry.fill(HIST("PO/pQABIm"), centrality, qAy * qBx - qAx * qBy);
     registry.fill(HIST("PO/pQACIm"), centrality, qAy * qCx - qAx * qCy);
     registry.fill(HIST("PO/pQBCIm"), centrality, qBy * qCx - qBx * qCy);
-    const double qAMagnitude = std::hypot(qAx, qAy);
-    const double qBMagnitude = std::hypot(qBx, qBy);
-    const double qCMagnitude = std::hypot(qCx, qCy);
-    const bool validEventPlanes = qAMagnitude > 0. && qBMagnitude > 0. && qCMagnitude > 0.;
+    const bool validEventPlanes = qVector.hasValidEventPlanes();
     if (validEventPlanes) {
       registry.fill(HIST("PO/pCosPsiAB"), centrality, (qAx * qBx + qAy * qBy) / (qAMagnitude * qBMagnitude));
       registry.fill(HIST("PO/pCosPsiAC"), centrality, (qAx * qCx + qAy * qCy) / (qAMagnitude * qCMagnitude));
@@ -803,7 +855,7 @@ struct F0980FlowSP {
   void processOOTPCOnly(OOCollisions::iterator const& collision, TracksTPC const& tracks,
                         aod::BCsWithTimestamps const&)
   {
-    if (collisionSystem(collision) != kOO) {
+    if (collisionSystem(collision) != CollisionSystem::OO) {
       return;
     }
     const float centrality = collision.centFT0C();
@@ -811,27 +863,18 @@ struct F0980FlowSP {
       return;
     }
 
-    const int ih = cfgHarmonicIndex;
-    if (ih < 0 || ih >= static_cast<int>(collision.qvecFT0CReVec().size()) ||
-        ih >= static_cast<int>(collision.qvecFT0AReVec().size()) ||
-        ih >= static_cast<int>(collision.qvecTPCposReVec().size())) {
+    QVectorData qVector;
+    const auto qVectorStatus = getQVectorData(collision, qVector);
+    if (qVectorStatus == QVectorStatus::IndexUnavailable || qVectorStatus == QVectorStatus::Uncalibrated) {
       return;
     }
-    const bool calibrated = collision.isCalibrated();
-    if (!calibrated) {
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::QVectorCalibrated));
+    if (qVectorStatus != QVectorStatus::Valid) {
       return;
     }
-    registry.fill(HIST("QA/Event/hSelection"), 7.);
-    const double qAx = collision.qvecFT0CReVec()[ih];
-    const double qAy = collision.qvecFT0CImVec()[ih];
-    const double qBx = collision.qvecFT0AReVec()[ih];
-    const double qBy = collision.qvecFT0AImVec()[ih];
-    const double qCx = collision.qvecTPCposReVec()[ih];
-    const double qCy = collision.qvecTPCposImVec()[ih];
-    if (qAx < kInvalidQ || qAy < kInvalidQ || qBx < kInvalidQ || qBy < kInvalidQ || qCx < kInvalidQ || qCy < kInvalidQ) {
-      return;
-    }
-    registry.fill(HIST("QA/Event/hSelection"), 8.);
+    registry.fill(HIST("QA/Event/hSelection"), static_cast<int>(EventSelectionStep::QVectorValid));
+
+    const auto [qAx, qAy, qBx, qBy, qCx, qCy, qAMagnitude, qBMagnitude, qCMagnitude] = qVector;
 
     const int runNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     fillQVectorQA(centrality, runNumber, qAx, qAy, qBx, qBy, qCx, qCy);
@@ -841,10 +884,7 @@ struct F0980FlowSP {
     registry.fill(HIST("OO/pQABIm"), centrality, qAy * qBx - qAx * qBy);
     registry.fill(HIST("OO/pQACIm"), centrality, qAy * qCx - qAx * qCy);
     registry.fill(HIST("OO/pQBCIm"), centrality, qBy * qCx - qBx * qCy);
-    const double qAMagnitude = std::hypot(qAx, qAy);
-    const double qBMagnitude = std::hypot(qBx, qBy);
-    const double qCMagnitude = std::hypot(qCx, qCy);
-    const bool validEventPlanes = qAMagnitude > 0. && qBMagnitude > 0. && qCMagnitude > 0.;
+    const bool validEventPlanes = qVector.hasValidEventPlanes();
     if (validEventPlanes) {
       registry.fill(HIST("OO/pCosPsiAB"), centrality, (qAx * qBx + qAy * qBy) / (qAMagnitude * qBMagnitude));
       registry.fill(HIST("OO/pCosPsiAC"), centrality, (qAx * qCx + qAy * qCy) / (qAMagnitude * qCMagnitude));
@@ -881,5 +921,5 @@ struct F0980FlowSP {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<F0980FlowSP>(cfgc, TaskName{"lf-f0980-flow-sp"})};
+  return WorkflowSpec{adaptAnalysisTask<F0980FlowSP>(cfgc)};
 }
