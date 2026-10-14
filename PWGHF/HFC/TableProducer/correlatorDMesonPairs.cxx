@@ -212,8 +212,8 @@ struct HfCorrelatorDMesonPairs {
   std::vector<float> outputMlD0barCand2;
 
   // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<CandidatesD0Data> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<CandidatesD0McRec> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   // ThnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisBkgScore{"thnConfigAxisBkgScore", {100, 0, 1}, "Bkg score bins"};
@@ -524,6 +524,28 @@ struct HfCorrelatorDMesonPairs {
     return (TESTBIT(candidateType, TrueDbar));
   }
 
+  template <typename T>
+  bool passMlSelections(const T& candidate, bool isDCand, bool isDbarCand, std::vector<float>& outputMlD0Cand, std::vector<float>& outputMlD0barCand)
+  {
+    bool isSelectedMlD0Cand = false;
+    bool isSelectedMlD0barCand = false;
+
+    if (isDCand) {
+      std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures<false>(candidate, o2::constants::physics::kD0);
+      isSelectedMlD0Cand = hfMlResponse.isSelectedMl(inputFeaturesD0, candidate.pt(), outputMlD0Cand);
+    }
+    if (isDbarCand) {
+      std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures<false>(candidate, o2::constants::physics::kD0Bar);
+      isSelectedMlD0barCand = hfMlResponse.isSelectedMl(inputFeaturesD0bar, candidate.pt(), outputMlD0barCand);
+    }
+
+    // Remove non-ML selected D0 candidates
+    if (!isSelectedMlD0Cand && !isSelectedMlD0barCand) {
+      return false;
+    }
+    return true;
+  }
+
   /// Fill PID related plots for D0 and D0bar
   /// \param candidate is candidate
   template <typename T>
@@ -770,23 +792,8 @@ struct HfCorrelatorDMesonPairs {
         continue;
       }
 
-      bool isSelectedMlD0Cand1 = false;
-      bool isSelectedMlD0barCand1 = false;
-
-      if (applyMl) {
-        if (isDCand1) {
-          std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures<false>(candidate1, o2::constants::physics::kD0);
-          isSelectedMlD0Cand1 = hfMlResponse.isSelectedMl(inputFeaturesD0, candidate1.pt(), outputMlD0Cand1);
-        }
-        if (isDbarCand1) {
-          std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures<false>(candidate1, o2::constants::physics::kD0Bar);
-          isSelectedMlD0barCand1 = hfMlResponse.isSelectedMl(inputFeaturesD0bar, candidate1.pt(), outputMlD0barCand1);
-        }
-
-        // Remove non-ML selected D0 candidates
-        if (!isSelectedMlD0Cand1 && !isSelectedMlD0barCand1) {
-          continue;
-        }
+      if (applyMl && !passMlSelections(candidate1, isDCand1, isDbarCand1, outputMlD0Cand1, outputMlD0barCand1)) {
+        continue;
       }
 
       registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
@@ -881,23 +888,8 @@ struct HfCorrelatorDMesonPairs {
           continue;
         }
 
-        bool isSelectedMlD0Cand2 = false;
-        bool isSelectedMlD0barCand2 = false;
-
-        if (applyMl) {
-          if (isDCand2) {
-            std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures<false>(candidate2, o2::constants::physics::kD0);
-            isSelectedMlD0Cand2 = hfMlResponse.isSelectedMl(inputFeaturesD0, candidate2.pt(), outputMlD0Cand2);
-          }
-          if (isDbarCand2) {
-            std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures<false>(candidate2, o2::constants::physics::kD0Bar);
-            isSelectedMlD0barCand2 = hfMlResponse.isSelectedMl(inputFeaturesD0bar, candidate2.pt(), outputMlD0barCand2);
-          }
-
-          // Remove non-ML selected D0 candidates
-          if (!isSelectedMlD0Cand2 && !isSelectedMlD0barCand2) {
-            continue;
-          }
+        if (applyMl && !passMlSelections(candidate2, isDCand2, isDbarCand2, outputMlD0Cand2, outputMlD0barCand2)) {
+          continue;
         }
 
         if (applyMixedEvent) {
@@ -955,26 +947,12 @@ struct HfCorrelatorDMesonPairs {
       int8_t matchedRec1 = candidate1.flagMcMatchRec();
       int8_t originRec1 = candidate1.originMcRec();
 
-      bool isSelectedMlD0Cand1 = false;
-      bool isSelectedMlD0barCand1 = false;
-
       if (!passKinematicSelections(candidate1, isDCand1, isDbarCand1)) {
         continue;
       }
 
-      if (applyMl) {
-        if (isDCand1) {
-          std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures<false>(candidate1, o2::constants::physics::kD0);
-          isSelectedMlD0Cand1 = hfMlResponse.isSelectedMl(inputFeaturesD0, candidate1.pt(), outputMlD0Cand1);
-        }
-        if (isDbarCand1) {
-          std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures<false>(candidate1, o2::constants::physics::kD0Bar);
-          isSelectedMlD0barCand1 = hfMlResponse.isSelectedMl(inputFeaturesD0bar, candidate1.pt(), outputMlD0barCand1);
-        }
-        // Remove non-ML selected D0 candidates
-        if (!isSelectedMlD0Cand1 && !isSelectedMlD0barCand1) {
-          continue;
-        }
+      if (applyMl && !passMlSelections(candidate1, isDCand1, isDbarCand1, outputMlD0Cand1, outputMlD0barCand1)) {
+        continue;
       }
 
       if (isTrueDCand1) {
@@ -1054,23 +1032,8 @@ struct HfCorrelatorDMesonPairs {
           continue;
         }
 
-        bool isSelectedMlD0Cand2 = false;
-        bool isSelectedMlD0barCand2 = false;
-
-        if (applyMl) {
-          if (isDCand2) {
-            std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures<false>(candidate2, o2::constants::physics::kD0);
-            isSelectedMlD0Cand2 = hfMlResponse.isSelectedMl(inputFeaturesD0, candidate2.pt(), outputMlD0Cand2);
-          }
-          if (isDbarCand2) {
-            std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures<false>(candidate2, o2::constants::physics::kD0Bar);
-            isSelectedMlD0barCand2 = hfMlResponse.isSelectedMl(inputFeaturesD0bar, candidate2.pt(), outputMlD0barCand2);
-          }
-
-          // Remove non-ML selected D0 candidates
-          if (!isSelectedMlD0Cand2 && !isSelectedMlD0barCand2) {
-            continue;
-          }
+        if (applyMl && !passMlSelections(candidate2, isDCand2, isDbarCand2, outputMlD0Cand2, outputMlD0barCand2)) {
+          continue;
         }
 
         uint8_t pairType = setPairType(candidateType1, candidateType2);
