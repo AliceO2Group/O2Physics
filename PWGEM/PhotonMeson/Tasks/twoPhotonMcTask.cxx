@@ -89,7 +89,8 @@ enum class PhotonTruth : uint8_t {
 /// \brief Class of the closest common ancestor of the two photon candidates of a pair
 enum class PairBucket : uint8_t {
   kNone = 0,         // no common ancestor
-  kSameParticle,     // common ancestor is one of the two candidates themselves (EMC conversion split, Dalitz)
+  kSameParticle,     // one particle seen twice: the common ancestor is one of the two candidates themselves (EMC conversion split, Dalitz),
+                     // or a photon/electron whose electromagnetic shower made both candidates (e.g. bremsstrahlung of both conversion legs)
   kSignalPi0,        // pi0 is the direct mother of both
   kSignalEta,        // eta is the direct mother of both
   kCrossPi0,         // pi0 further up in the chain: the pi0 has no hadronic decays, so these are pi0 decays with an EM interaction in between (conversion, bremsstrahlung, shower in front of the EMCal)
@@ -129,7 +130,13 @@ enum class OtherHadronSpecies : uint8_t {
   kRho,
   kKstar,
   kPhi,
-  kOtherMeson, // incl. f0, f2, a, b, h resonances
+  kA1,          // a1(1260)
+  kExcitedK,    // K1(1270), K1(1400), K0*(1430), K2*(1430)
+  kOpenCharm,   // D, D*, Ds, ... (one c quark)
+  kCharmonium,  // J/psi, psi(2S), chi_c, ...
+  kOpenBeauty,  // B, B*, Bs, Bc, ... (one b quark)
+  kBottomonium, // Upsilon, chi_b, ...
+  kOtherMeson,  // incl. f0, f2, b, h resonances
   kProton,
   kNeutron,
   kDelta,
@@ -426,7 +433,7 @@ struct TwoPhotonMcTask {
     const AxisSpec axisOHSpecies{static_cast<int>(OtherHadronSpecies::kNSpecies), -0.5, static_cast<int>(OtherHadronSpecies::kNSpecies) - 0.5, "common ancestor"};
     const AxisSpec axisOHProduction{static_cast<int>(SplitProduction::kNProduction), -0.5, static_cast<int>(SplitProduction::kNProduction) - 0.5, "split of the common ancestor"};
     auto hOtherHadron = registry.add<THn>("PCM/OtherHadron/hAncestor", "other hadron pairs: minv vs pT vs ancestor species vs split production vs pair truth", HistType::kTHnF, {axisOHMass, axisOHPt, axisOHSpecies, axisOHProduction, thnAxisPairTruth});
-    static constexpr std::array<std::string_view, static_cast<int>(OtherHadronSpecies::kNSpecies)> SpeciesLabels = {"#pi^{#pm}", "K^{#pm}", "K^{0}_{L}", "#rho", "K^{*}", "#phi", "other meson", "p", "n", "#Delta", "#Lambda", "#Sigma", "#Xi", "other baryon", "other"};
+    static constexpr std::array<std::string_view, static_cast<int>(OtherHadronSpecies::kNSpecies)> SpeciesLabels = {"#pi^{#pm}", "K^{#pm}", "K^{0}_{L}", "#rho", "K^{*}", "#phi", "a_{1}", "K_{1}, K^{*}_{0,2}", "open charm", "c#bar{c}", "open beauty", "b#bar{b}", "other meson", "p", "n", "#Delta", "#Lambda", "#Sigma", "#Xi", "other baryon", "other"};
     for (std::size_t i = 0; i < SpeciesLabels.size(); ++i) {
       hOtherHadron->GetAxis(2)->SetBinLabel(static_cast<int>(i) + 1, SpeciesLabels[i].data());
     }
@@ -725,6 +732,9 @@ struct TwoPhotonMcTask {
     }
     mcIter.setCursor(ancestor);
     const int absPdg = std::abs(mcIter.pdgCode());
+    if (absPdg == PDG_t::kGamma || absPdg == PDG_t::kElectron) {
+      return PairBucket::kSameParticle; // both candidates come from the electromagnetic shower of one photon or electron
+    }
     const bool isDirectMother = chain1[1] == ancestor && chain2[1] == ancestor;
     if (isDirectMother && absPdg == PDG_t::kPi0) {
       return PairBucket::kSignalPi0;
@@ -906,7 +916,29 @@ struct TwoPhotonMcTask {
       return OtherHadronSpecies::kOther;
     }
     // PDG numbering: mesons have no third quark, i.e. the thousands digit is 0 (also for 9000000 type resonances)
-    return (absPdg / 1000) % 10 == 0 ? OtherHadronSpecies::kOtherMeson : OtherHadronSpecies::kOtherBaryon; // o2-linter: disable=magic-number (PDG digit)
+    if ((absPdg / 1000) % 10 != 0) { // o2-linter: disable=magic-number (PDG digit)
+      return OtherHadronSpecies::kOtherBaryon;
+    }
+    // mesons: hundreds digit = heavier quark, tens digit = lighter quark, last digit = 2J+1
+    // (also covers excited states with a radial/orbital prefix, e.g. 10441, 20443, 100553)
+    const int heavyQuark = (absPdg / 100) % 10; // o2-linter: disable=magic-number (PDG digit)
+    const int lightQuark = (absPdg / 10) % 10;  // o2-linter: disable=magic-number (PDG digit)
+    constexpr int Strange = 3, Charm = 4, Beauty = 5;
+    constexpr int ExcitedPrefix = 10000;
+    constexpr int SpinTwo = 5; // 2J+1 for J = 2
+    if (heavyQuark == Charm) {
+      return lightQuark == Charm ? OtherHadronSpecies::kCharmonium : OtherHadronSpecies::kOpenCharm;
+    }
+    if (heavyQuark == Beauty) {
+      return lightQuark == Beauty ? OtherHadronSpecies::kBottomonium : OtherHadronSpecies::kOpenBeauty;
+    }
+    if (absPdg == 20213 || absPdg == 20113) { // o2-linter: disable=pdg/explicit-code (a1(1260), no named constant)
+      return OtherHadronSpecies::kA1;
+    }
+    if (heavyQuark == Strange && lightQuark < Strange && (absPdg >= ExcitedPrefix || absPdg % 10 == SpinTwo)) { // o2-linter: disable=magic-number (PDG digit)
+      return OtherHadronSpecies::kExcitedK;
+    }
+    return OtherHadronSpecies::kOtherMeson;
   }
 
   /// \brief How an MC particle was produced
