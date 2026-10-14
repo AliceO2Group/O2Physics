@@ -196,6 +196,7 @@ struct F0980FlowSP {
     auto* grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bc.timestamp());
     if (grplhcif == nullptr) {
       LOGF(fatal, "Cannot load GLO/Config/GRPLHCIF for run %d and timestamp %" PRIu64, bc.runNumber(), bc.timestamp());
+      return CollisionSystem::Unsupported;
     }
 
     const int beamAA = grplhcif->getBeamA(o2::constants::lhc::BeamA);
