@@ -326,6 +326,9 @@ struct AntinucleiInJets {
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
       registryData.add("jetArea", "jetArea", HistType::kTH1F, {{5000, 0, 5, "area"}});
 
+      // Jet pt distribution in data
+      registryData.add("jetPtData", "jet pt distribution in data", HistType::kTH1F, {{2000, 0, 200, "#it{p}^{jet}_{T} (GeV/#it{c})"}});
+
       // angle between track and jet axis
       registryData.add("theta_track_jet", "theta_track_jet", HistType::kTH2F, {{100, 0, 100, "#it{p}^{jet}_{T} (GeV/#it{c})"}, {400, 0, 20.0, "#theta_{track-jet} (deg)"}});
 
@@ -379,6 +382,9 @@ struct AntinucleiInJets {
       registryMC.add("genEvents", "number of generated events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
       registryMC.add("genJets", "number of generated jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
+      // Jet pt distribution in gen MC
+      registryMC.add("jetPtMCgenerated", "jet pt distribution in gen MC", HistType::kTH1F, {{2000, 0, 200, "#it{p}^{jet}_{T} (GeV/#it{c})"}});
+
       // Size of particle array
       registryMC.add("sizeParticleArray", "number of particles", HistType::kTH1F, {{1000, 0, 1000, "#it{N}_{part}"}});
 
@@ -414,6 +420,9 @@ struct AntinucleiInJets {
       // Event counter
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{20, 0, 20, "counter"}});
       registryMC.add("recJets", "number of reconstructed jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
+
+      // Jet pt distribution in rec MC
+      registryMC.add("jetPtMCreconstructed", "jet pt distribution in rec MC", HistType::kTH1F, {{2000, 0, 200, "#it{p}^{jet}_{T} (GeV/#it{c})"}});
 
       // Configuration
       registryMC.add("settingMC", "settingMC", HistType::kTH2F, {{100, 0.0, 50.0, "min #it{p}^{jet}_{T} (GeV/#it{c})"}, {20, 0.0, 1.0, "#it{R}_{jet}"}});
@@ -1303,6 +1312,10 @@ struct AntinucleiInJets {
       // Jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+
+      // Fill jet pt distribution
+      registryData.fill(HIST("jetPtData"), jetMinusBkg.pt());
+
       if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
         continue;
       if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
@@ -2141,6 +2154,10 @@ struct AntinucleiInJets {
         // Jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+
+        // Fill jet pt distribution
+        registryMC.fill(HIST("jetPtMCgenerated"), jetMinusBkg.pt());
+
         if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
           continue;
         if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
@@ -2440,6 +2457,10 @@ struct AntinucleiInJets {
         // Jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+
+        // Fill jet pt distribution
+        registryMC.fill(HIST("jetPtMCreconstructed"), jetMinusBkg.pt());
+
         if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
           continue;
         if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
