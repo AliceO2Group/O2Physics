@@ -10,7 +10,6 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
@@ -21,7 +20,8 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -29,11 +29,14 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 
 #include <array>
 #include <cinttypes>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -54,7 +57,7 @@ constexpr int OxygenMassNumber = 16;
 struct F0980FlowSP {
   SliceCache cache;
   HistogramRegistry registry{"registry"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   enum class CollisionSystem : int {
     PP = 0,
@@ -562,7 +565,7 @@ struct F0980FlowSP {
   }
 
   template <typename Tracks, typename TrackSelect, typename PionSelect, typename FillPair>
-  void loopPairsSelected(Tracks const& tracks, TrackSelect&& trackSelect, PionSelect&& pionSelect, FillPair&& fillPair)
+  void loopPairsSelected(Tracks const& tracks, TrackSelect trackSelect, PionSelect pionSelect, FillPair fillPair)
   {
     struct SelectedPion {
       float px = 0.f;
