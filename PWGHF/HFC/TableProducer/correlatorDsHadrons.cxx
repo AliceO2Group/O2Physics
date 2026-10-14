@@ -859,13 +859,14 @@ struct HfCorrelatorDsHadrons {
             outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
           }
           candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt() * chargeDs, HfHelper::invMassDsToKKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
-          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
+          // Check compatibility with the candidate selector options; candSelInfo considers BdtScoreBkg, BdtScorePrompt, BdtScoreNonPrompt
+          candSelInfo(indexHfcReducedCollision, outputMl[2], outputMl[0], outputMl[1]); // bkg, prompt, non-prompt (Ds convention: outputMl[0] = prompt, outputMl[2] = bkg)
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
           }
           candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt() * chargeDs, HfHelper::invMassDsToPiKK(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
-          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
+          candSelInfo(indexHfcReducedCollision, outputMl[2], outputMl[0], outputMl[1]); // bkg, prompt, non-prompt (Ds convention: outputMl[0] = prompt, outputMl[2] = bkg)
         }
       }
 

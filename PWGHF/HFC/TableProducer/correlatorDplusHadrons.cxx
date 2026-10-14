@@ -569,7 +569,8 @@ struct HfCorrelatorDplusHadrons {
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
           }
           candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), HfHelper::invMassDplusToPiKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
-          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
+          // Check compatibility with the candidate selector options: BdtScoreBkg, BdtScorePrompt, BdtScoreNonPrompt
+          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[1], outputMl[2]);
         }
       }
 
