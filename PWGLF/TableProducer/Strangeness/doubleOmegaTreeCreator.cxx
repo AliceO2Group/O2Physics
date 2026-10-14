@@ -49,7 +49,6 @@
 #include <TPDGCode.h>
 
 #include <algorithm>
-#include <chrono>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -166,7 +165,6 @@ struct doubleOmegaTreeCreator {
   std::vector<int64_t> reconstructedDoubleOmegaIds;
 
   Preslice<TracksFullMC> tracksPerCollision = aod::track::collisionId;
-  Preslice<TracksFull> tracksPerCollisionData = aod::track::collisionId;
   Preslice<aod::Cascades> rawCascadesPerCollision = aod::cascade::collisionId;
   Preslice<aod::V0s> rawV0sPerCollision = aod::v0::collisionId;
   Preslice<aod::DOmegaTracks> derivedTracksPerCollision = aod::domega::dOmegaCollId;
