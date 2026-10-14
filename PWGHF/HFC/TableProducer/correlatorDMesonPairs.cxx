@@ -149,7 +149,6 @@ struct HfCorrelatorDMesonPairs {
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "maximum |y| of D0 candidates"};
   Configurable<float> ptCandMin{"ptCandMin", -1., "minimum pT of D0 candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
@@ -186,10 +185,9 @@ struct HfCorrelatorDMesonPairs {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  SliceCache cache;
-
   using SelCollisionsWithD0 = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
   using CandidatesD0Data = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>;
+  using CandidatesD0McRec = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec>;
 
   using FilteredD0Candidates = soa::Filtered<CandidatesD0Data>;
   using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>; // trackFilter applied
@@ -212,9 +210,6 @@ struct HfCorrelatorDMesonPairs {
   std::vector<float> outputMlD0barCand2;
 
   // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-
-  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   // ThnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisBkgScore{"thnConfigAxisBkgScore", {100, 0, 1}, "Bkg score bins"};
@@ -556,22 +551,14 @@ struct HfCorrelatorDMesonPairs {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
     for (const auto& candidate : d0Candidates) {
       // Get counters per event
-      bool const isSignalD0 = std::abs(HfHelper::invMassD0ToPiK(candidate) - MassD0) < massCut;
-      bool const isSignalD0bar = std::abs(HfHelper::invMassD0barToKPi(candidate) - MassD0Bar) < massCut;
-      if (selectSignalRegionOnly && !(isSignalD0 || isSignalD0bar)) {
-        continue;
-      }
       auto candidateType1 = assignCandidateTypeD0<false>(candidate); // Candidate type attribution
-      registry.fill(HIST("hPtCand"), candidate.pt());
-      if (std::abs(HfHelper::yD0(candidate)) > yCandMax) {
-        continue;
-      }
-      if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
+      bool const isDCand1 = isD(candidateType1);
+      bool const isDbarCand1 = isDbar(candidateType1);
+
+      if (!passKinematicSelections(candidate, isDCand1, isDbarCand1)) {
         continue;
       }
 
-      bool const isDCand1 = isD(candidateType1);
-      bool const isDbarCand1 = isDbar(candidateType1);
       if (isDCand1) {
         nDevent++;
       }
@@ -746,9 +733,9 @@ struct HfCorrelatorDMesonPairs {
     for (const auto& candidate : candidates) {
       analysePid(candidate);
     }
-    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, gCollisionId, cache);
-    getCountersPerEvent(selectedD0CandidatesGrouped);
-    for (const auto& candidate1 : selectedD0CandidatesGrouped) {
+
+    getCountersPerEvent(candidates);
+    for (const auto& candidate1 : candidates) {
 
       outputMlD0Cand1.clear();
       outputMlD0barCand1.clear();
@@ -856,7 +843,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       // Loop on the second D0 candidate
-      for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGrouped.end(); ++candidate2) {
+      for (auto candidate2 = candidate1 + 1; candidate2 != candidates.end(); ++candidate2) {
 
         outputMlD0Cand2.clear();
         outputMlD0barCand2.clear();
@@ -923,14 +910,14 @@ struct HfCorrelatorDMesonPairs {
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processData, "Process data mode", true);
 
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates, aod::Tracks const&)
+  void processMcRec(SelCollisionsWithD0::iterator const& collision, CandidatesD0McRec const& candidates, aod::Tracks const&)
   {
     for (const auto& candidate : candidates) {
       analysePid(candidate);
     }
-    auto selectedD0CandidatesGroupedMc = selectedD0CandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    getCountersPerEvent(selectedD0CandidatesGroupedMc);
-    for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
+
+    getCountersPerEvent(candidates);
+    for (const auto& candidate1 : candidates) {
 
       outputMlD0Cand1.clear();
       outputMlD0barCand1.clear();
@@ -1030,7 +1017,7 @@ struct HfCorrelatorDMesonPairs {
         }
       }
 
-      for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGroupedMc.end(); ++candidate2) {
+      for (auto candidate2 = candidate1 + 1; candidate2 != candidates.end(); ++candidate2) {
 
         outputMlD0Cand2.clear();
         outputMlD0barCand2.clear();
