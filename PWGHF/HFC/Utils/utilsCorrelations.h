@@ -268,7 +268,7 @@ std::pair<float, float> getBMotherInfoMcRec(TCandidate const& candidate, TMcPart
   }
   auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0] - mcParticles.offset());
   bMotherInfo.first = bHadMother.pt();
-  bMotherInfo.second = RecoDecay::constrainAngle(candidate.phi() - bHadMother.phi(), -o2::constants::math::PI);
+  bMotherInfo.second = RecoDecay::constrainAngle(candidate.phi() - bHadMother.phi(), -o2::constants::math::PIhalf);
   return bMotherInfo;
 }
 
@@ -285,7 +285,7 @@ std::pair<float, float> getBMotherInfoMcGen(TParticle const& particle, TMcPartic
   }
   auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
   bMotherInfo.first = bHadMother.pt();
-  bMotherInfo.second = RecoDecay::constrainAngle(particle.phi() - bHadMother.phi(), -o2::constants::math::PI);
+  bMotherInfo.second = RecoDecay::constrainAngle(particle.phi() - bHadMother.phi(), -o2::constants::math::PIhalf);
   return bMotherInfo;
 }
 } // namespace o2::analysis::hf_correlations
