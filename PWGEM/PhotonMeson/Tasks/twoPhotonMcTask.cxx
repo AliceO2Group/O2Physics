@@ -24,14 +24,13 @@
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
-#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Concepts.h>
@@ -59,6 +58,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -428,7 +428,7 @@ struct TwoPhotonMcTask {
       }
       registry.add("PCMEMC/SameParticle/hLegEoverP", "cluster from a V0 leg: #it{E}_{cls}/#it{p}_{leg}", HistType::kTH2F, {{200, 0., 4., "#it{E}_{cls}/#it{p}_{leg}"}, axisPtLeg});
       for (const auto& [type, title] : {std::pair<std::string_view, std::string_view>{"Prim", "primary"}, {"Sec", "secondary"}}) {
-        auto hStatus = registry.add<TH2>(Form("PCMEMC/SameParticle/hLeg%sStatus", type.data()), Form("cluster from a V0 leg: leg among the matched %s tracks", title.data()), HistType::kTH2F, {axisStatus, axisPtLeg});
+        auto hStatus = registry.add<TH2>(std::format("PCMEMC/SameParticle/hLeg{}Status", type.data()).data(), std::format("cluster from a V0 leg: leg among the matched {} tracks", title.data()).data(), HistType::kTH2F, {axisStatus, axisPtLeg});
         for (std::size_t i = 0; i < StatusLabels.size(); ++i) {
           hStatus->GetXaxis()->SetBinLabel(static_cast<int>(i) + 1, StatusLabels[i].data());
         }
