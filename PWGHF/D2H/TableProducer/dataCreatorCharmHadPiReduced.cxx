@@ -188,6 +188,7 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
     Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
     Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+    Configurable<double> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   } vertexConfigurations;
   // selection
   struct : o2::framework::ConfigurableGroup {
@@ -325,6 +326,7 @@ struct HfDataCreatorCharmHadPiReduced {
     df2.setMinRelChi2Change(vertexConfigurations.minRelChi2Change);
     df2.setUseAbsDCA(vertexConfigurations.useAbsDCA);
     df2.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
+    df2.setMaxChi2(vertexConfigurations.maxChi2);
     df2.setMatCorrType(noMatCorr);
     if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiDataWithQvec || doprocessDplusPiDataWithMlAndQvec || doprocessDplusPiMc || doprocessDplusPiMcWithMl ||
         doprocessDsPiData || doprocessDsPiDataWithMl || doprocessDsPiDataWithQvec || doprocessDsPiDataWithMlAndQvec || doprocessDsPiMc || doprocessDsPiMcWithMl ||
@@ -336,6 +338,7 @@ struct HfDataCreatorCharmHadPiReduced {
       df3.setMinRelChi2Change(vertexConfigurations.minRelChi2Change);
       df3.setUseAbsDCA(vertexConfigurations.useAbsDCA);
       df3.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
+      df3.setMaxChi2(vertexConfigurations.maxChi2);
       df3.setMatCorrType(noMatCorr);
     }
 
