@@ -1476,9 +1476,6 @@ struct CorrReso {
     }
     if (system == SameEvent && corType == IndexFT0A) {
       histos.fill(HIST("hLambdaCount"), FillDaughterTrackSelected);
-    }
-
-    if (system == SameEvent && corType == IndexFT0A) {
       histos.fill(HIST("hLambdaPhi"), candidate.phi());
       histos.fill(HIST("hLambdaEta"), candidate.eta());
       histos.fill(HIST("hLambdaRap"), candidate.yLambda());

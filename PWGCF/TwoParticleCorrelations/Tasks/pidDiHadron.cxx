@@ -1769,9 +1769,6 @@ struct PidDiHadron {
     }
     if (system == SameEvent) {
       histos.fill(HIST("hLambdaCount"), FillDaughterTrackSelected);
-    }
-
-    if (system == SameEvent) {
       histos.fill(HIST("hLambdaPhi"), candidate.phi());
       histos.fill(HIST("hLambdaEta"), candidate.eta());
       histos.fill(HIST("hLambdaRap"), candidate.yLambda());
