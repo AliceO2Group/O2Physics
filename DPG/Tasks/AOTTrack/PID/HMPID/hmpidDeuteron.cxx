@@ -44,10 +44,15 @@ struct HmpidDeuteron {
   Configurable<float> maxDCAxy{"maxDCAxy", 0.5f, "maxDCAxy"};
   Configurable<float> maxDCAz{"maxDCAz", 0.5f, "maxDCAz"};
 
-  Configurable<float> cutMinMomGlobalTrack{"cutMinMomGlobalTrack", 1.5f, "minimum momentum of global track"};
+  Configurable<float> qMipThreshold{"qMipThreshold", 120.0f, "minimum MIP charge required for a real signal"};
+  Configurable<float> cutDistanceMipTrack{"cutDistanceMipTrack", 6.0f, "cut distance between MIP and track"};
 
   Configurable<float> offsetX{"offsetX", 0.696712f, "Residuals offset - X direction"};
   Configurable<float> offsetY{"offsetY", 2.32849f, "Residuals offset - Y direction"};
+
+  Configurable<bool> collisionsPbPb{"collisionsPbPb", false, "Require PbPb collisions"};
+
+  Configurable<float> centralityCut{"centralityCut", 20.0f, "centrality cut for PbPb collisions"};
 
   // Configurables for plotting
   //  Momentum
@@ -56,17 +61,17 @@ struct HmpidDeuteron {
   Configurable<float> momMax{"momMax", 5.0f, "Momentum max"};
 
   // DeltaR
-  Configurable<int> deltaRNBins{"deltaRNBins", 500, "DeltaR bins"};
+  Configurable<int> deltaRNBins{"deltaRNBins", 50, "DeltaR bins"};
   Configurable<float> deltaRMin{"deltaRMin", 0.0f, "DeltaR min"};
   Configurable<float> deltaRMax{"deltaRMax", 50.0f, "DeltaR max"};
 
   // nSigma TPC
-  Configurable<int> nSigmaTPCNBins{"nSigmaTPCNBins", 20, "nSigmaTPC bins"};
+  Configurable<int> nSigmaTPCNBins{"nSigmaTPCNBins", 100, "nSigmaTPC bins"};
   Configurable<float> nSigmaTPCMinPlot{"nSigmaTPCMinPlot", -5.0f, "nSigmaTPC min"};
   Configurable<float> nSigmaTPCMaxPlot{"nSigmaTPCMaxPlot", 5.0f, "nSigmaTPC max"};
 
   // nSigma TOF
-  Configurable<int> nSigmaTOFNBins{"nSigmaTOFNBins", 20, "nSigmaTOF bins"};
+  Configurable<int> nSigmaTOFNBins{"nSigmaTOFNBins", 100, "nSigmaTOF bins"};
   Configurable<float> nSigmaTOFMinPlot{"nSigmaTOFMinPlot", -5.0f, "nSigmaTOF min"};
   Configurable<float> nSigmaTOFMaxPlot{"nSigmaTOFMaxPlot", 5.0f, "nSigmaTOF max"};
 
@@ -161,6 +166,17 @@ struct HmpidDeuteron {
     registryDA.add("nSigmaTPC_vs_momHMPID_Cut_DeNeg", "nSigmaTPC_vs_momHMPID_Cut_DeNeg", HistType::kTH2F, {axisMom, axisNsigmaTPC});
     registryDA.add("nSigmaTOF_vs_momHMPID_Cut_DeNeg", "nSigmaTOF_vs_momHMPID_Cut_DeNeg", HistType::kTH2F, {axisMom, axisNsigmaTOF});
 
+    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_DePos", "nSigmaTOF_vs_momHMPID_TPCOnly_DePos", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg", "nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+
+    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_DePos_4cm", "nSigmaTOF_vs_momHMPID_TPCOnly_DePos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_DePos_8cm", "nSigmaTOF_vs_momHMPID_TPCOnly_DePos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg_4cm", "nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg_8cm", "nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+
+    registryDA.add("pidTPC_TOF_p_ch_DePos", "pidTPC_TOF_p_ch_DePos", HistType::kTHnSparseF, {axisMom, axisNsigmaTPC, axisNsigmaTOF, axisChamber});
+    registryDA.add("pidTPC_TOF_p_ch_DeNeg", "pidTPC_TOF_p_ch_DeNeg", HistType::kTHnSparseF, {axisMom, axisNsigmaTPC, axisNsigmaTOF, axisChamber});
+
     // general plots
     registryDA.add("hEta", "hEta", kTH1F, {axisEta});
     registryDA.add("hPhi", "hPhi", kTH1F, {axisPhi});
@@ -175,6 +191,14 @@ struct HmpidDeuteron {
       registryDA.add(Form("De_Neg_deltaR_%d", iCh), Form("De_Neg_deltaR_%d", iCh), HistType::kTH1F, {axisDeltaR});
       registryDA.add(Form("hEta_%d", iCh), Form("hEta_%d", iCh), HistType::kTH1F, {axisEta});
       registryDA.add(Form("hPhi_%d", iCh), Form("hPhi_%d", iCh), HistType::kTH1F, {axisPhi});
+
+      // tracking efficiency hmpid
+      registryDA.add(Form("hAllTracks_%d", iCh), Form("hAllTracks_%d", iCh), HistType::kTH1F, {axisMom});
+      registryDA.add(Form("hCutQandD_%d", iCh), Form("hCutQandD_%d", iCh), HistType::kTH1F, {axisMom});
+      registryDA.add(Form("hAllTracks_Pos_%d", iCh), Form("hAllTracks_Pos_%d", iCh), HistType::kTH1F, {axisMom});
+      registryDA.add(Form("hAllTracks_Neg_%d", iCh), Form("hAllTracks_Neg_%d", iCh), HistType::kTH1F, {axisMom});
+      registryDA.add(Form("hCutQandD_Pos_%d", iCh), Form("hCutQandD_Pos_%d", iCh), HistType::kTH1F, {axisMom});
+      registryDA.add(Form("hCutQandD_Neg_%d", iCh), Form("hCutQandD_Neg_%d", iCh), HistType::kTH1F, {axisMom});
     }
   }
 
@@ -216,6 +240,7 @@ struct HmpidDeuteron {
       const float dx = hmpid.xMip() - hmpid.xTrack();
       const float dy = hmpid.yMip() - hmpid.yTrack();
       const float dr = std::hypot(dx - offsetX, dy - offsetY);
+      const float dMipTrack = std::hypot(dx, dy);
 
       const float mass =
         std::pow(Nmean * momAbs * std::cos(hmpid.chAngle()), 2) -
@@ -224,6 +249,8 @@ struct HmpidDeuteron {
       const int chamber = static_cast<int>(hmpid.chamber());
       const bool isPos = momHmpid > 0;
       const bool isNeg = momHmpid < 0;
+
+      const bool passQandD = hmpid.chargeMip() > qMipThreshold && dMipTrack < cutDistanceMipTrack;
 
       // -------------------------
       // global distributions
@@ -238,35 +265,171 @@ struct HmpidDeuteron {
       }
 
       // -------------------------
-      // RICH chamber maps (0–6)
+      // Fill plots per chamber
       // -------------------------
-      if (chamber == Rich0) {
-        registryDA.fill(HIST("hEta_0"), hmpid.etaTrack());
-        registryDA.fill(HIST("hPhi_0"), hmpid.phiTrack());
+
+      switch (chamber) {
+
+        case Rich0:
+          registryDA.fill(HIST("hEta_0"), hmpid.etaTrack());
+          registryDA.fill(HIST("hPhi_0"), hmpid.phiTrack());
+          registryDA.fill(HIST("hAllTracks_0"), momAbs);
+          if (passQandD) {
+            registryDA.fill(HIST("hCutQandD_0"), momAbs);
+          }
+          if (isPos) {
+            registryDA.fill(HIST("hAllTracks_Pos_0"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Pos_0"), momAbs);
+            }
+          }
+          if (isNeg) {
+            registryDA.fill(HIST("hAllTracks_Neg_0"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Neg_0"), momAbs);
+            }
+          }
+          break;
+
+        case Rich1:
+          registryDA.fill(HIST("hEta_1"), hmpid.etaTrack());
+          registryDA.fill(HIST("hPhi_1"), hmpid.phiTrack());
+          registryDA.fill(HIST("hAllTracks_1"), momAbs);
+          if (passQandD) {
+            registryDA.fill(HIST("hCutQandD_1"), momAbs);
+          }
+
+          if (isPos) {
+            registryDA.fill(HIST("hAllTracks_Pos_1"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Pos_1"), momAbs);
+            }
+          }
+          if (isNeg) {
+            registryDA.fill(HIST("hAllTracks_Neg_1"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Neg_1"), momAbs);
+            }
+          }
+          break;
+
+        case Rich2:
+          registryDA.fill(HIST("hEta_2"), hmpid.etaTrack());
+          registryDA.fill(HIST("hPhi_2"), hmpid.phiTrack());
+          registryDA.fill(HIST("hAllTracks_2"), momAbs);
+          if (passQandD) {
+            registryDA.fill(HIST("hCutQandD_2"), momAbs);
+          }
+          if (isPos) {
+            registryDA.fill(HIST("hAllTracks_Pos_2"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Pos_2"), momAbs);
+            }
+          }
+          if (isNeg) {
+            registryDA.fill(HIST("hAllTracks_Neg_2"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Neg_2"), momAbs);
+            }
+          }
+          break;
+
+        case Rich3:
+          registryDA.fill(HIST("hEta_3"), hmpid.etaTrack());
+          registryDA.fill(HIST("hPhi_3"), hmpid.phiTrack());
+          registryDA.fill(HIST("hAllTracks_3"), momAbs);
+          if (passQandD) {
+            registryDA.fill(HIST("hCutQandD_3"), momAbs);
+          }
+          if (isPos) {
+            registryDA.fill(HIST("hAllTracks_Pos_3"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Pos_3"), momAbs);
+            }
+          }
+          if (isNeg) {
+            registryDA.fill(HIST("hAllTracks_Neg_3"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Neg_3"), momAbs);
+            }
+          }
+          break;
+
+        case Rich4:
+          registryDA.fill(HIST("hEta_4"), hmpid.etaTrack());
+          registryDA.fill(HIST("hPhi_4"), hmpid.phiTrack());
+          registryDA.fill(HIST("hAllTracks_4"), momAbs);
+          if (passQandD) {
+            registryDA.fill(HIST("hCutQandD_4"), momAbs);
+          }
+          if (isPos) {
+            registryDA.fill(HIST("hAllTracks_Pos_4"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Pos_4"), momAbs);
+            }
+          }
+          if (isNeg) {
+            registryDA.fill(HIST("hAllTracks_Neg_4"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Neg_4"), momAbs);
+            }
+          }
+          break;
+
+        case Rich5:
+          registryDA.fill(HIST("hEta_5"), hmpid.etaTrack());
+          registryDA.fill(HIST("hPhi_5"), hmpid.phiTrack());
+          registryDA.fill(HIST("hAllTracks_5"), momAbs);
+          if (passQandD) {
+            registryDA.fill(HIST("hCutQandD_5"), momAbs);
+          }
+          if (isPos) {
+            registryDA.fill(HIST("hAllTracks_Pos_5"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Pos_5"), momAbs);
+            }
+          }
+          if (isNeg) {
+            registryDA.fill(HIST("hAllTracks_Neg_5"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Neg_5"), momAbs);
+            }
+          }
+          break;
+
+        case Rich6:
+          registryDA.fill(HIST("hEta_6"), hmpid.etaTrack());
+          registryDA.fill(HIST("hPhi_6"), hmpid.phiTrack());
+          registryDA.fill(HIST("hAllTracks_6"), momAbs);
+          if (passQandD) {
+            registryDA.fill(HIST("hCutQandD_6"), momAbs);
+          }
+          if (isPos) {
+            registryDA.fill(HIST("hAllTracks_Pos_6"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Pos_6"), momAbs);
+            }
+          }
+          if (isNeg) {
+            registryDA.fill(HIST("hAllTracks_Neg_6"), momAbs);
+            if (passQandD) {
+              registryDA.fill(HIST("hCutQandD_Neg_6"), momAbs);
+            }
+          }
+          break;
+
+        default:
+          break;
       }
-      if (chamber == Rich1) {
-        registryDA.fill(HIST("hEta_1"), hmpid.etaTrack());
-        registryDA.fill(HIST("hPhi_1"), hmpid.phiTrack());
+
+      // -------------------------
+      // TPC + TOF PID distributions
+      // -------------------------
+      if (isPos) {
+        registryDA.fill(HIST("pidTPC_TOF_p_ch_DePos"), momAbs, hmpid.tpcNSigmaDe(), hmpid.tofNSigmaDe(), chamber);
       }
-      if (chamber == Rich2) {
-        registryDA.fill(HIST("hEta_2"), hmpid.etaTrack());
-        registryDA.fill(HIST("hPhi_2"), hmpid.phiTrack());
-      }
-      if (chamber == Rich3) {
-        registryDA.fill(HIST("hEta_3"), hmpid.etaTrack());
-        registryDA.fill(HIST("hPhi_3"), hmpid.phiTrack());
-      }
-      if (chamber == Rich4) {
-        registryDA.fill(HIST("hEta_4"), hmpid.etaTrack());
-        registryDA.fill(HIST("hPhi_4"), hmpid.phiTrack());
-      }
-      if (chamber == Rich5) {
-        registryDA.fill(HIST("hEta_5"), hmpid.etaTrack());
-        registryDA.fill(HIST("hPhi_5"), hmpid.phiTrack());
-      }
-      if (chamber == Rich6) {
-        registryDA.fill(HIST("hEta_6"), hmpid.etaTrack());
-        registryDA.fill(HIST("hPhi_6"), hmpid.phiTrack());
+      if (isNeg) {
+        registryDA.fill(HIST("pidTPC_TOF_p_ch_DeNeg"), momAbs, hmpid.tpcNSigmaDe(), hmpid.tofNSigmaDe(), chamber);
       }
 
       // -------------------------
@@ -281,12 +444,25 @@ struct HmpidDeuteron {
       // post TPC cut
       // -------------------------
       if (isPos) {
-        registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_Cut_DePos"),
-                        momAbs, hmpid.tpcNSigmaDe());
+        registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_Cut_DePos"), momAbs, hmpid.tpcNSigmaDe());
+        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_DePos"), momAbs, hmpid.tofNSigmaDe());
       }
       if (isNeg) {
-        registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_Cut_DeNeg"),
-                        momAbs, hmpid.tpcNSigmaDe());
+        registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_Cut_DeNeg"), momAbs, hmpid.tpcNSigmaDe());
+        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg"), momAbs, hmpid.tofNSigmaDe());
+      }
+
+      if (isPos && chamber == Rich2) {
+        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_DePos_4cm"), momAbs, hmpid.tofNSigmaDe());
+      }
+      if (isPos && chamber == Rich4) {
+        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_DePos_8cm"), momAbs, hmpid.tofNSigmaDe());
+      }
+      if (isNeg && chamber == Rich2) {
+        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg_4cm"), momAbs, hmpid.tofNSigmaDe());
+      }
+      if (isNeg && chamber == Rich4) {
+        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_DeNeg_8cm"), momAbs, hmpid.tofNSigmaDe());
       }
 
       registryDA.fill(HIST("hMass_postDeuteron"), mass);
@@ -315,6 +491,13 @@ struct HmpidDeuteron {
       // -------------------------
       // DEUTERON CANDIDATES AFTER ALL CUTS
       // -------------------------
+
+      // Pb-Pb collisions centrality requirement
+      if (collisionsPbPb) {
+        if (hmpid.centrality() < centralityCut) {
+          continue;
+        }
+      }
 
       // -------------------------
       // deltaR per chamber (Pos/Neg)
