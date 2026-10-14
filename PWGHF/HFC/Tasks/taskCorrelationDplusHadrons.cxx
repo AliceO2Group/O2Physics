@@ -338,7 +338,7 @@ struct HfTaskCorrelationDplusHadrons {
       }
       LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
     }
-    auto effD = isPromptAnalysis ? mEfficiencyPrompt : mEfficiencyFD;
+    effD = isPromptAnalysis ? mEfficiencyPrompt : mEfficiencyFD;
     idxBdtScore = isPromptAnalysis ? 1 : 2;
 
     if (activateQA) {
