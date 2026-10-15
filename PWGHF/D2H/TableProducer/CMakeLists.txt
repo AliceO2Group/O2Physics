@@ -13,31 +13,37 @@
 
 o2physics_add_dpl_workflow(candidate-creator-b-to-jpsi-reduced
                     SOURCES candidateCreatorBToJpsiReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-b0-reduced
                     SOURCES candidateCreatorB0Reduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-bplus-reduced
                     SOURCES candidateCreatorBplusReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-bs-reduced
                     SOURCES candidateCreatorBsReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-charm-reso-reduced
                     SOURCES candidateCreatorCharmResoReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-lb-reduced
                     SOURCES candidateCreatorLbReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
@@ -45,21 +51,25 @@ o2physics_add_dpl_workflow(candidate-creator-lb-reduced
 
 o2physics_add_dpl_workflow(candidate-selector-b0-to-d-pi-reduced
                     SOURCES candidateSelectorB0ToDPiReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-bplus-to-d0-pi-reduced
                     SOURCES candidateSelectorBplusToD0PiReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-bs-to-ds-pi-reduced
                     SOURCES candidateSelectorBsToDsPiReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-lb-to-lc-pi-reduced
                     SOURCES candidateSelectorLbToLcPiReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
@@ -74,31 +84,37 @@ o2physics_add_dpl_workflow(ml-based-track-selector
 
 o2physics_add_dpl_workflow(data-creator-charm-had-pi-reduced
                     SOURCES dataCreatorCharmHadPiReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-charm-reso-to-dstar-reduced
                     SOURCES dataCreatorCharmResoToDstarReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-charm-reso-to-dplus-reduced
                     SOURCES dataCreatorCharmResoToDplusReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-charm-reso-to-d0-reduced
                     SOURCES dataCreatorCharmResoToD0Reduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-jpsi-had-reduced
                     SOURCES dataCreatorJpsiHadReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-hidden-charm-reduced
                     SOURCES dataCreatorHiddenCharmReduced.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
@@ -106,11 +122,13 @@ o2physics_add_dpl_workflow(data-creator-hidden-charm-reduced
 
 o2physics_add_dpl_workflow(converter-reduced-3-prongs-ml
                     SOURCES converterReduced3ProngsMl.cxx
+                    REUSE_FROM D2HReducedPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
  o2physics_add_dpl_workflow(converter-reduced-hadron-daus-pid
                      SOURCES converterReducedHadronDausPid.cxx
+                     REUSE_FROM D2HReducedPCH
                      PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                      COMPONENT_NAME Analysis)
 
