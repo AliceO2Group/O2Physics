@@ -11,30 +11,36 @@
 
 o2physics_add_dpl_workflow(fwd-tracks-extra-converter
                            SOURCES UDFwdTracksExtraConverter.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 
 o2physics_add_dpl_workflow(collisions-converter
                            SOURCES UDCollisionsConverter.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(collision-fit-bits-converter
                            SOURCES UDCollisionFITBitsConverter.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(collisionselextras-converter
                            SOURCES UDCollisionSelExtrasConverter.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(collisionselextras-converter-v002
         SOURCES UDCollisionSelExtrasV002Converter.cxx
+        REUSE_FROM UDTablesPCH
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(collisionselextras-converter-v003
   SOURCES UDCollisionSelExtrasV003Converter.cxx
+  REUSE_FROM UDTablesPCH
   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
   COMPONENT_NAME Analysis)
