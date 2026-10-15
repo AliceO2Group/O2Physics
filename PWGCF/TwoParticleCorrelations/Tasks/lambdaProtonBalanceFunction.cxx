@@ -3858,7 +3858,7 @@ struct LambdaProtonBalanceFunction {
     registryOther.fill(HIST("hNPairs_AntiLambda_PrimProton"), static_cast<float>(nPairs_AntiLambda_PrimProton));
     registryOther.fill(HIST("hNPairs_AntiLambda_PrimAntiProton"), static_cast<float>(nPairs_AntiLambda_PrimAntiProton));
   }
-  // ── Run-level summary printed once at the end of the analysis job ─────
+  // ── Run-level summary printed once at the end of the analysis job ────
   // Called automatically by the O2 framework after all events are processed.
   // Prints totals accumulated in runTotalProtonBeforeVeto / runTotalProtonRemovedVeto.
   void endOfStream(EndOfStreamContext const&)
