@@ -145,7 +145,6 @@ struct HfCorrelatorDMesonPairs {
   // Tables for event mixing
   Produces<aod::DMesonInfoCand1> entryDMesonInfoCand1;
   Produces<aod::DMesonInfoCand2> entryDMesonInfoCand2;
-  Produces<aod::AssocHadInfo> entryAssocHad;
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -183,6 +182,8 @@ struct HfCorrelatorDMesonPairs {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
+  SliceCache cache;
+
   // Table aliases. The partitions below must have exactly the same type as the
   // candidate table taken by the process functions, otherwise they are never bound.
   using SelCollisionsWithD0 = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
@@ -192,8 +193,6 @@ struct HfCorrelatorDMesonPairs {
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
-
-  SliceCache cache;
 
   Partition<CandidatesD0Data> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<CandidatesD0McRec> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
