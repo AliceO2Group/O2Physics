@@ -1264,8 +1264,8 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             ec.fEventHist[i][eRec][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
             ec.fEventHistList->Add(ec.fEventHist[i][eRec][eAfter]);
           }
-        }
-      }
+        } // end of for (int i = 0; i < eEventHistograms_N; ++i) {
+      } // end of if (tc.fMasterCutSwitch) {
     }
 
     if (doprocessSim || doprocessRecSim) {
