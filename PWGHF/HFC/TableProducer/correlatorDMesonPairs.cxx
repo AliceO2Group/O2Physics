@@ -410,6 +410,8 @@ struct HfCorrelatorDMesonPairs {
     }
   }
 
+  /// ------- FUNCTION DEFINITIONS -------
+
   /// Kinematic, signal-region and ambiguity selections of a candidate
   /// \return true if the candidate passes the selections
   template <typename T>
@@ -431,6 +433,57 @@ struct HfCorrelatorDMesonPairs {
       return false;
     }
     return true;
+  }
+
+  /// ML selections of a candidate
+  /// \return true if the candidate is selected by the ML model (as D0 and/or D0bar)
+  template <typename T>
+  bool passMlSelections(const T& candidate, const bool isDCand, const bool isDbarCand, std::vector<float>& outputMlD0Cand, std::vector<float>& outputMlD0barCand)
+  {
+    bool isSelectedMlD0Cand = false;
+    bool isSelectedMlD0barCand = false;
+
+    if (isDCand) {
+      std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures<false>(candidate, o2::constants::physics::kD0);
+      isSelectedMlD0Cand = hfMlResponse.isSelectedMl(inputFeaturesD0, candidate.pt(), outputMlD0Cand);
+    }
+    if (isDbarCand) {
+      std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures<false>(candidate, o2::constants::physics::kD0Bar);
+      isSelectedMlD0barCand = hfMlResponse.isSelectedMl(inputFeaturesD0bar, candidate.pt(), outputMlD0barCand);
+    }
+
+    return isSelectedMlD0Cand || isSelectedMlD0barCand;
+  }
+
+  /// Rapidity and pT selections of gen-level particles
+  template <typename T>
+  bool passGenSelections(const T& particle)
+  {
+    return std::abs(particle.y()) <= yCandMax && (ptCandMin < 0. || particle.pt() >= ptCandMin);
+  }
+
+  /// Sets bits to select pair types.
+  /// \param candidate is candidate
+  /// \return bitmap with type of pair (DD, DbarDbar, DDbar, DbarD)
+  uint8_t setPairType(const uint8_t candidateType1, const uint8_t candidateType2)
+  {
+    uint8_t pairType(0);
+    bool const isDCand1 = isD(candidateType1), isDCand2 = isD(candidateType2);
+    bool const isDbarCand1 = isDbar(candidateType1), isDbarCand2 = isDbar(candidateType2);
+
+    if (isDCand1 && isDCand2) {
+      SETBIT(pairType, DD);
+    }
+    if (isDbarCand1 && isDbarCand2) {
+      SETBIT(pairType, DbarDbar);
+    }
+    if (isDCand1 && isDbarCand2) {
+      SETBIT(pairType, DDbar);
+    }
+    if (isDbarCand1 && isDCand2) {
+      SETBIT(pairType, DbarD);
+    }
+    return pairType;
   }
 
   /// Sets bits to select candidate type for D0
@@ -498,13 +551,6 @@ struct HfCorrelatorDMesonPairs {
     return (TESTBIT(candidateType, TrueDbar));
   }
 
-  /// Rapidity and pT selections of gen-level particles
-  template <typename T>
-  bool passGenSelections(const T& particle)
-  {
-    return std::abs(particle.y()) <= yCandMax && (ptCandMin < 0. || particle.pt() >= ptCandMin);
-  }
-
   /// Canonical pair ordering: D0 before D0bar; for equal flavours, higher pT first.
   /// \return true if candidate 1 and candidate 2 should be exchanged
   template <typename T>
@@ -514,26 +560,6 @@ struct HfCorrelatorDMesonPairs {
       return !isD1 && isD2;                    // Dbar(-only) first, D second -> swap
     }
     return candidate1.pt() < candidate2.pt();
-  }
-
-  /// ML selections of a candidate
-  /// \return true if the candidate is selected by the ML model (as D0 and/or D0bar)
-  template <typename T>
-  bool passMlSelections(const T& candidate, const bool isDCand, const bool isDbarCand, std::vector<float>& outputMlD0Cand, std::vector<float>& outputMlD0barCand)
-  {
-    bool isSelectedMlD0Cand = false;
-    bool isSelectedMlD0barCand = false;
-
-    if (isDCand) {
-      std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures<false>(candidate, o2::constants::physics::kD0);
-      isSelectedMlD0Cand = hfMlResponse.isSelectedMl(inputFeaturesD0, candidate.pt(), outputMlD0Cand);
-    }
-    if (isDbarCand) {
-      std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures<false>(candidate, o2::constants::physics::kD0Bar);
-      isSelectedMlD0barCand = hfMlResponse.isSelectedMl(inputFeaturesD0bar, candidate.pt(), outputMlD0barCand);
-    }
-
-    return isSelectedMlD0Cand || isSelectedMlD0barCand;
   }
 
   /// Fill PID related plots for D0 and D0bar
@@ -692,27 +718,6 @@ struct HfCorrelatorDMesonPairs {
     } else if (isTrueDbarCand1 && isTrueDCand2) {
       registry.fill(HIST("hSelectionStatus"), 25);
     }
-  }
-
-  uint8_t setPairType(const uint8_t candidateType1, const uint8_t candidateType2)
-  {
-    uint8_t pairType(0);
-    bool const isDCand1 = isD(candidateType1), isDCand2 = isD(candidateType2);
-    bool const isDbarCand1 = isDbar(candidateType1), isDbarCand2 = isDbar(candidateType2);
-
-    if (isDCand1 && isDCand2) {
-      SETBIT(pairType, DD);
-    }
-    if (isDbarCand1 && isDbarCand2) {
-      SETBIT(pairType, DbarDbar);
-    }
-    if (isDCand1 && isDbarCand2) {
-      SETBIT(pairType, DDbar);
-    }
-    if (isDbarCand1 && isDCand2) {
-      SETBIT(pairType, DbarD);
-    }
-    return pairType;
   }
 
   template <bool IsGen>
