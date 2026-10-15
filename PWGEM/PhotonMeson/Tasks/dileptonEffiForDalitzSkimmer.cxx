@@ -15,19 +15,14 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include <PWGEM/Dilepton/Utils/MCUtilities.h>
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include  "Common/DataModel/PIDResponseTOF.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -35,7 +30,6 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-#include <Math/Vector4Dfwd.h>
 
 #include <cmath>
 #include <cstdint>
@@ -189,27 +183,27 @@ struct DileptonEffiForDalitzSkimmer {
         }
       }
     }
-    uint32_t maxNumOccurrences = 0;
-    uint32_t mcIndexWithMaxTracks = 0;
-    uint32_t numOkMc = 0;
-    uint32_t numNotOkMc = 0;
+    // uint32_t maxNumOccurrences = 0;
+    // uint32_t mcIndexWithMaxTracks = 0;
+    // uint32_t numOkMc = 0;
+    // uint32_t numNotOkMc = 0;
 
-    for (const auto& [mcGlobalIndex, numOccurrences] : mapMultCount) {
-      if (numOccurrences > 1) {
-        iterMC.setCursor(mcGlobalIndex);
-        fRegistry.fill(HIST("hPtEPrimMulti"), iterMC.pt());
-        fRegistry.fill(HIST("hEPrimNumOccurence"), numOccurrences);
-        numNotOkMc++;
-      } else {
-        numOkMc++;
-      }
-      if (numOccurrences > maxNumOccurrences) {
-        maxNumOccurrences = numOccurrences;
-        mcIndexWithMaxTracks = mcGlobalIndex;
-      }
-    }
-    LOG(info) << "numOkMc: " << numOkMc;
-    LOG(info) << "numNotOkMc: " << numNotOkMc;
+    // for (const auto& [mcGlobalIndex, numOccurrences] : mapMultCount) {
+    //   if (numOccurrences > 1) {
+    //     iterMC.setCursor(mcGlobalIndex);
+    //     fRegistry.fill(HIST("hPtEPrimMulti"), iterMC.pt());
+    //     fRegistry.fill(HIST("hEPrimNumOccurence"), numOccurrences);
+    //     numNotOkMc++;
+    //   } else {
+    //     numOkMc++;
+    //   }
+    //   if (numOccurrences > maxNumOccurrences) {
+    //     maxNumOccurrences = numOccurrences;
+    //     mcIndexWithMaxTracks = mcGlobalIndex;
+    //   }
+    // }
+    // LOG(info) << "numOkMc: " << numOkMc;
+    // LOG(info) << "numNotOkMc: " << numNotOkMc;
   }
   PROCESS_SWITCH(DileptonEffiForDalitzSkimmer, processReco, "process for reco table emprimary", false);
 
@@ -268,26 +262,26 @@ struct DileptonEffiForDalitzSkimmer {
         }
       }
     }
-    uint32_t maxNumOccurrences = 0;
-    uint64_t mcIndexWithMaxTracks = 0;
-    uint32_t numOkMc = 0;
-    uint64_t numNotOkMc = 0;
+    // uint32_t maxNumOccurrences = 0;
+    // uint64_t mcIndexWithMaxTracks = 0;
+    // uint32_t numOkMc = 0;
+    // uint64_t numNotOkMc = 0;
 
-    for (const auto& [mcGlobalIndex, numOccurrences] : mapMultCount) {
-      if (numOccurrences > 1) {
-        iterMCTrack.setCursor(mcGlobalIndex);
-        // LOG(info) << "Track | Global Index: " << iterMCTrack.globalIndex();
-        fRegistry.fill(HIST("hPtTrackMulti"), iterMCTrack.pt());
-        fRegistry.fill(HIST("hTrackNumOccurence"), numOccurrences);
-        numNotOkMc++;
-      } else {
-        numOkMc++;
-      }
-      if (numOccurrences > maxNumOccurrences) {
-        maxNumOccurrences = numOccurrences;
-        mcIndexWithMaxTracks = mcGlobalIndex;
-      }
-    }
+    // for (const auto& [mcGlobalIndex, numOccurrences] : mapMultCount) {
+    //   if (numOccurrences > 1) {
+    //     iterMCTrack.setCursor(mcGlobalIndex);
+    //     // LOG(info) << "Track | Global Index: " << iterMCTrack.globalIndex();
+    //     fRegistry.fill(HIST("hPtTrackMulti"), iterMCTrack.pt());
+    //     fRegistry.fill(HIST("hTrackNumOccurence"), numOccurrences);
+    //     numNotOkMc++;
+    //   } else {
+    //     numOkMc++;
+    //   }
+    //   if (numOccurrences > maxNumOccurrences) {
+    //     maxNumOccurrences = numOccurrences;
+    //     mcIndexWithMaxTracks = mcGlobalIndex;
+    //   }
+    // }
   }
   PROCESS_SWITCH(DileptonEffiForDalitzSkimmer, processTracks, "process for reco MyTracks", true);
 
