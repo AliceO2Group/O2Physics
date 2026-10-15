@@ -47,6 +47,7 @@
 #include <cstddef>
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <string>
