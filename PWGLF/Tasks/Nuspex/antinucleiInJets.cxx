@@ -282,7 +282,7 @@ struct AntinucleiInJets {
       getReweightingHistograms(ccdb, TString(pathToFile));
     }
 
-    // Binning
+    // pt binning
     double min = 0.0;
     double max = 6.0;
     int nbins = 120;
