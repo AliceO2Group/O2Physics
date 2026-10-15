@@ -100,6 +100,7 @@ struct DoubleOmegaMCInfo {
 struct MixingSeed {
   int64_t collisionId = -1;
   std::array<float, 3> primaryVertex{};
+  int runNumber = 0;
   float bz = 0.f;
   BuiltOmegaCandidate omega;
   BuiltLambdaCandidate lambda;
@@ -233,6 +234,33 @@ struct doubleOmegaTreeCreator {
 
   using DerivedMixingBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::domega::MultFT0M>;
   static constexpr float kBzTolerance = 1.e-3f; // kG
+
+  // Magnetic fields of two collisions: kaons can be mixed between collisions recorded with the same or
+  // the opposite field (see DoubleOmegaBuilderHelper::mirrorCharge), Omegas and Lambdas only between
+  // collisions recorded with the same field.
+  enum class FieldRelation : uint8_t {
+    kSame,
+    kOpposite,
+    kIncompatible
+  };
+
+  static FieldRelation fieldRelation(float bz0, float bz1)
+  {
+    if (std::abs(bz0 - bz1) < kBzTolerance) {
+      return FieldRelation::kSame;
+    }
+    if (std::abs(bz0 + bz1) < kBzTolerance) {
+      return FieldRelation::kOpposite;
+    }
+    return FieldRelation::kIncompatible;
+  }
+
+  // Effective charge of a candidate: candidates of opposite charge recorded with opposite fields have
+  // the same trajectories.
+  static int8_t effectiveCharge(int8_t charge, float bz)
+  {
+    return bz < 0.f ? static_cast<int8_t>(-charge) : charge;
+  }
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -399,9 +427,9 @@ struct doubleOmegaTreeCreator {
       histos.add("Mixing/hMixedCollisions", ";;Entries", HistType::kTH1F, {{4, -0.5f, 3.5f}});
       auto mixedCollisions = histos.get<TH1>(HIST("Mixing/hMixedCollisions"));
       mixedCollisions->GetXaxis()->SetBinLabel(1, "Pairs");
-      mixedCollisions->GetXaxis()->SetBinLabel(2, "Pairs, #Delta#it{z}_{PV}, same #it{B}");
+      mixedCollisions->GetXaxis()->SetBinLabel(2, "Pairs, #Delta#it{z}_{PV}, same or opposite #it{B}");
       mixedCollisions->GetXaxis()->SetBinLabel(3, "Triples");
-      mixedCollisions->GetXaxis()->SetBinLabel(4, "Triples, #Delta#it{z}_{PV}, same #it{B}");
+      mixedCollisions->GetXaxis()->SetBinLabel(4, "Triples, #Delta#it{z}_{PV}, same or opposite #it{B}");
       histos.add("Mixing/hMixedCandidates", ";;Entries", HistType::kTH1F, {{kNMixingTypes - 1, 0.5f, static_cast<float>(kNMixingTypes) - 0.5f}});
       auto mixedCandidates = histos.get<TH1>(HIST("Mixing/hMixedCandidates"));
       mixedCandidates->GetXaxis()->SetBinLabel(kMixedOmega, "#Omega mixed");
@@ -871,28 +899,70 @@ struct doubleOmegaTreeCreator {
     });
   }
 
+  // A mixed combination of the candidates of up to three collisions, built with respect to the primary
+  // vertex and in the magnetic field of the reference collision.
+  struct MixingJob {
+    int64_t reference = -1;
+    int64_t omegaSource = -1;
+    int64_t lambdaSource = -1;
+    int64_t kaonSource = -1;
+    bool mirrorKaons = false; // Kaons from a collision recorded with the opposite field.
+    MixingType type = kSameEvent;
+  };
+
   // Two candidates from one collision and one from the other, in both directions. The collision
-  // providing two candidates is the reference one.
-  void mixPair(CollisionCandidates const& candidates0, CollisionCandidates const& candidates1)
+  // providing two candidates is the reference one. With opposite fields only the kaon is mixed.
+  static void addPairJobs(std::vector<MixingJob>& jobs, int64_t collision0, int64_t collision1, FieldRelation relation)
   {
-    mix(candidates0, candidates1, candidates0, candidates0, kMixedOmega);
-    mix(candidates1, candidates0, candidates1, candidates1, kMixedOmega);
-    mix(candidates0, candidates0, candidates1, candidates0, kMixedLambda);
-    mix(candidates1, candidates1, candidates0, candidates1, kMixedLambda);
-    mix(candidates0, candidates0, candidates0, candidates1, kMixedKaon);
-    mix(candidates1, candidates1, candidates1, candidates0, kMixedKaon);
+    if (relation == FieldRelation::kSame) {
+      jobs.push_back({collision0, collision1, collision0, collision0, false, kMixedOmega});
+      jobs.push_back({collision1, collision0, collision1, collision1, false, kMixedOmega});
+      jobs.push_back({collision0, collision0, collision1, collision0, false, kMixedLambda});
+      jobs.push_back({collision1, collision1, collision0, collision1, false, kMixedLambda});
+    }
+    const bool mirrorKaons = relation == FieldRelation::kOpposite;
+    jobs.push_back({collision0, collision0, collision0, collision1, mirrorKaons, kMixedKaon});
+    jobs.push_back({collision1, collision1, collision1, collision0, mirrorKaons, kMixedKaon});
   }
 
-  // All the assignments of the Omega, Lambda and kaon to three different collisions. The collision
-  // providing the Omega is the reference one.
-  void mixTriple(CollisionCandidates const& candidates0, CollisionCandidates const& candidates1, CollisionCandidates const& candidates2)
+  // All the assignments of the Omega, Lambda and kaon to three different collisions, with the Omega and
+  // Lambda from collisions recorded with the same field. The collision providing the Omega is the
+  // reference one.
+  static void addTripleJobs(std::vector<MixingJob>& jobs, std::array<int64_t, 3> const& collisions, std::array<float, 3> const& bz)
   {
-    const std::array<const CollisionCandidates*, 3> sources{&candidates0, &candidates1, &candidates2};
     std::array<int, 3> roles{0, 1, 2}; // Sources of the Omega, Lambda and kaon.
     do {
-      const auto& omegaSource = *sources[roles[0]];
-      mix(omegaSource, omegaSource, *sources[roles[1]], *sources[roles[2]], kMixedAll);
+      const auto [omega, lambda, kaon] = roles;
+      const auto kaonRelation = fieldRelation(bz[omega], bz[kaon]);
+      if (fieldRelation(bz[omega], bz[lambda]) != FieldRelation::kSame || kaonRelation == FieldRelation::kIncompatible) {
+        continue;
+      }
+      jobs.push_back({collisions[omega], collisions[omega], collisions[lambda], collisions[kaon], kaonRelation == FieldRelation::kOpposite, kMixedAll});
     } while (std::next_permutation(roles.begin(), roles.end()));
+  }
+
+  // Builds the mixed combinations grouped by the field of the reference collision, so that the field is
+  // switched as few times as possible.
+  void runMixingJobs(std::vector<MixingJob>& jobs, std::unordered_map<int64_t, CollisionCandidates> const& candidatesPerCollision)
+  {
+    std::stable_sort(jobs.begin(), jobs.end(), [&](MixingJob const& job0, MixingJob const& job1) {
+      return candidatesPerCollision.at(job0.reference).bz < candidatesPerCollision.at(job1.reference).bz;
+    });
+    std::unordered_map<int64_t, CollisionCandidates> mirroredKaonsPerCollision;
+    for (const auto& job : jobs) {
+      const auto& reference = candidatesPerCollision.at(job.reference);
+      initCCDBForDerived(reference.runNumber, reference.bz);
+      const auto& kaons = candidatesPerCollision.at(job.kaonSource);
+      if (job.mirrorKaons) {
+        auto mirrored = mirroredKaonsPerCollision.find(job.kaonSource);
+        if (mirrored == mirroredKaonsPerCollision.end()) {
+          mirrored = mirroredKaonsPerCollision.emplace(job.kaonSource, DoubleOmegaBuilderHelper::mirroredKaons(kaons)).first;
+        }
+        mix(reference, candidatesPerCollision.at(job.omegaSource), candidatesPerCollision.at(job.lambdaSource), mirrored->second, job.type);
+      } else {
+        mix(reference, candidatesPerCollision.at(job.omegaSource), candidatesPerCollision.at(job.lambdaSource), kaons, job.type);
+      }
+    }
   }
 
   void processData(Collisions const& collision,
@@ -1207,10 +1277,44 @@ struct doubleOmegaTreeCreator {
 
   // The track identifiers read from the derived tables (see trackFingerprint) already identify a track
   // in any dataframe; the collision index is made unique across dataframes.
-  MixingSeed makeSeed(int64_t collisionId, std::array<float, 3> const& primaryVertex, BuiltOmegaCandidate const& omega,
+  MixingSeed makeSeed(int64_t collisionId, CollisionCandidates const& candidates, BuiltOmegaCandidate const& omega,
                       BuiltLambdaCandidate const& lambda, BuiltKaonCandidate const& kaon) const
   {
-    return {uniqueIndex(collisionId), primaryVertex, mBz, omega, lambda, kaon};
+    return {uniqueIndex(collisionId), candidates.primaryVertex, candidates.runNumber, candidates.bz, omega, lambda, kaon};
+  }
+
+  // Mixed candidates whose reference seed was recorded with a field different from the current one:
+  // they are built after the other mixed candidates of the collision, switching the field only once.
+  struct DeferredMix {
+    std::array<float, 3> primaryVertex{};
+    int runNumber = 0;
+    float bz = 0.f;
+    BuiltOmegaCandidate omega;
+    BuiltLambdaCandidate lambda;
+    BuiltKaonCandidate kaon;
+    MixingType type = kSameEvent;
+  };
+  std::vector<DeferredMix> mDeferredMixes;
+
+  void buildMixedCandidate(std::array<float, 3> const& primaryVertex, BuiltOmegaCandidate const& omega, BuiltLambdaCandidate const& lambda,
+                           BuiltKaonCandidate const& kaon, MixingType mixingType)
+  {
+    DoubleOmegaCandidate cand;
+    if (!helper.buildDoubleOmega(primaryVertex, omega, lambda, kaon, cand)) {
+      return;
+    }
+    histos.fill(HIST("Mixing/hMixedCandidates"), mixingType);
+    writeMixedCandidate(cand, mixingType);
+  }
+
+  void buildDeferredMixes()
+  {
+    std::stable_sort(mDeferredMixes.begin(), mDeferredMixes.end(), [](DeferredMix const& mix0, DeferredMix const& mix1) { return mix0.bz < mix1.bz; });
+    for (const auto& deferred : mDeferredMixes) {
+      initCCDBForDerived(deferred.runNumber, deferred.bz);
+      buildMixedCandidate(deferred.primaryVertex, deferred.omega, deferred.lambda, deferred.kaon, deferred.type);
+    }
+    mDeferredMixes.clear();
   }
 
   // Builds and writes one mixed candidate, with the primary vertex of the reference seed.
@@ -1224,44 +1328,58 @@ struct doubleOmegaTreeCreator {
     if (!written.insert(combination).second || DoubleOmegaBuilderHelper::sharesTracks(omega, lambda, kaon)) {
       return;
     }
-    DoubleOmegaCandidate cand;
-    if (!helper.buildDoubleOmega(reference.primaryVertex, omega, lambda, kaon, cand)) {
+    if (std::abs(reference.bz - mBz) >= kBzTolerance) {
+      mDeferredMixes.push_back({reference.primaryVertex, reference.runNumber, reference.bz, omega, lambda, kaon, mixingType});
       return;
     }
-    histos.fill(HIST("Mixing/hMixedCandidates"), mixingType);
-    writeMixedCandidate(cand, mixingType);
+    buildMixedCandidate(reference.primaryVertex, omega, lambda, kaon, mixingType);
+  }
+
+  // Kaon of a seed as used with a seed recorded with the given field.
+  static BuiltKaonCandidate kaonForField(MixingSeed const& seed, float bz)
+  {
+    return fieldRelation(seed.bz, bz) == FieldRelation::kOpposite ? DoubleOmegaBuilderHelper::mirrorCharge(seed.kaon) : seed.kaon;
   }
 
   // One daughter of each seed replaced by the corresponding daughter of the other seed. The seed
-  // keeping two of its daughters provides the primary vertex.
+  // keeping two of its daughters provides the primary vertex. With opposite fields only the kaon is
+  // mixed, charge conjugated (the seeds have opposite charges, see effectiveCharge).
   void mixSeedPair(MixingSeed const& seed0, MixingSeed const& seed1, std::set<MixedCombination>& written)
   {
-    mixSeedDaughters(seed0, seed1.omega, seed0.lambda, seed0.kaon, kMixedOmega, written);
-    mixSeedDaughters(seed1, seed0.omega, seed1.lambda, seed1.kaon, kMixedOmega, written);
-    mixSeedDaughters(seed0, seed0.omega, seed1.lambda, seed0.kaon, kMixedLambda, written);
-    mixSeedDaughters(seed1, seed1.omega, seed0.lambda, seed1.kaon, kMixedLambda, written);
-    mixSeedDaughters(seed0, seed0.omega, seed0.lambda, seed1.kaon, kMixedKaon, written);
-    mixSeedDaughters(seed1, seed1.omega, seed1.lambda, seed0.kaon, kMixedKaon, written);
+    if (fieldRelation(seed0.bz, seed1.bz) == FieldRelation::kSame) {
+      mixSeedDaughters(seed0, seed1.omega, seed0.lambda, seed0.kaon, kMixedOmega, written);
+      mixSeedDaughters(seed1, seed0.omega, seed1.lambda, seed1.kaon, kMixedOmega, written);
+      mixSeedDaughters(seed0, seed0.omega, seed1.lambda, seed0.kaon, kMixedLambda, written);
+      mixSeedDaughters(seed1, seed1.omega, seed0.lambda, seed1.kaon, kMixedLambda, written);
+    }
+    mixSeedDaughters(seed0, seed0.omega, seed0.lambda, kaonForField(seed1, seed0.bz), kMixedKaon, written);
+    mixSeedDaughters(seed1, seed1.omega, seed1.lambda, kaonForField(seed0, seed1.bz), kMixedKaon, written);
   }
 
   // Two daughters of a seed replaced by those of two other seeds: Omega, Lambda and kaon from three
-  // different collisions, in all the assignments. The seed providing the Omega is the reference.
+  // different collisions, in all the assignments with the Omega and Lambda recorded with the same field.
+  // The seed providing the Omega is the reference.
   void mixSeedTriple(MixingSeed const& seed0, MixingSeed const& seed1, MixingSeed const& seed2, std::set<MixedCombination>& written)
   {
     const std::array<const MixingSeed*, 3> seeds{&seed0, &seed1, &seed2};
     std::array<int, 3> roles{0, 1, 2}; // Seeds providing the Omega, Lambda and kaon.
     do {
       const auto& omegaSeed = *seeds[roles[0]];
-      mixSeedDaughters(omegaSeed, omegaSeed.omega, seeds[roles[1]]->lambda, seeds[roles[2]]->kaon, kMixedAll, written);
+      const auto& lambdaSeed = *seeds[roles[1]];
+      const auto& kaonSeed = *seeds[roles[2]];
+      if (fieldRelation(omegaSeed.bz, lambdaSeed.bz) != FieldRelation::kSame) {
+        continue;
+      }
+      mixSeedDaughters(omegaSeed, omegaSeed.omega, lambdaSeed.lambda, kaonForField(kaonSeed, omegaSeed.bz), kMixedAll, written);
     } while (std::next_permutation(roles.begin(), roles.end()));
   }
 
   // Seeds can be mixed if they come from different collisions with close primary vertices, recorded
-  // with the same magnetic field.
+  // with the same or the opposite magnetic field.
   bool canMix(MixingSeed const& seed0, MixingSeed const& seed1) const
   {
     return seed0.collisionId != seed1.collisionId &&
-           std::abs(seed0.bz - seed1.bz) < 1.e-3f &&
+           fieldRelation(seed0.bz, seed1.bz) != FieldRelation::kIncompatible &&
            std::abs(seed0.primaryVertex[2] - seed1.primaryVertex[2]) <= mixingOpts.maxDeltaPVz.value;
   }
 
@@ -1296,8 +1414,9 @@ struct doubleOmegaTreeCreator {
   }
 
   // Same-event candidates of a collision become seeds, binned in decay radius, momentum azimuth and
-  // charge (mixingOpts.binsRadius, mixingOpts.binsPhi). The seeds are mixed with the pool first and
-  // added to it afterwards, so seeds of the same collision are never mixed with each other.
+  // effective charge (mixingOpts.binsRadius, mixingOpts.binsPhi, effectiveCharge). The seeds are mixed
+  // with the pool first and added to it afterwards, so seeds of the same collision are never mixed with
+  // each other.
   void mixCollisionSeeds(int64_t collisionId, CollisionCandidates const& candidates, std::set<MixedCombination>& written)
   {
     const int nPhiBins = nBins(mixingOpts.binsPhi.value);
@@ -1312,11 +1431,15 @@ struct doubleOmegaTreeCreator {
                        return;
                      }
                      histos.fill(HIST("Mixing/hSeedRadiusPhi"), radius, cand.phi);
-                     const int key = (radiusBin * nPhiBins + phiBin) * 2 + DoubleOmegaBuilderHelper::chargeIndex(cand.sign);
-                     newSeeds.emplace_back(key, makeSeed(collisionId, candidates.primaryVertex, omega, lambda, kaon));
+                     const int key = (radiusBin * nPhiBins + phiBin) * 2 + DoubleOmegaBuilderHelper::chargeIndex(effectiveCharge(cand.sign, candidates.bz));
+                     newSeeds.emplace_back(key, makeSeed(collisionId, candidates, omega, lambda, kaon));
                    });
     for (const auto& [key, seed] : newSeeds) {
       mixWithPool(seed, mSeedPool[key], written);
+    }
+    if (!mDeferredMixes.empty()) {
+      buildDeferredMixes();
+      initCCDBForDerived(candidates.runNumber, candidates.bz);
     }
     for (auto& [key, seed] : newSeeds) {
       auto& pool = mSeedPool[key];
@@ -1361,27 +1484,42 @@ struct doubleOmegaTreeCreator {
     return static_cast<int64_t>(hash);
   }
 
-  // Derived collisions store the run number and the magnetic field: the propagator, the material LUT
-  // and the fitters are configured again only when the field changes.
+  // Field objects of the derived collisions, one per nominal field, so that the mixing can switch between
+  // the fields of the mixed collisions without accessing the CCDB again.
+  std::vector<std::pair<float, o2::parameters::GRPMagField>> mGrpMagFields;
+  bool mHasDerivedField = false;
+  bool mMatLUTLoaded = false;
+
+  // Derived collisions store the run number and the magnetic field: the propagator and the fitters are
+  // configured again only when the field changes.
   void initCCDBForDerived(int runNumber, float bz)
   {
-    if (mRunNumber != 0 && std::abs(bz - mBz) < kBzTolerance) {
+    if (mHasDerivedField && std::abs(bz - mBz) < kBzTolerance) {
       return;
     }
-    auto* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", runNumber);
-    if (!grpmag) {
-      LOG(fatal) << "Could not retrieve GRPMagField for run " << runNumber;
+    auto grpmag = std::find_if(mGrpMagFields.begin(), mGrpMagFields.end(),
+                               [&](auto const& field) { return std::abs(field.first - bz) < kBzTolerance; });
+    if (grpmag == mGrpMagFields.end()) {
+      auto* ccdbGrpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", runNumber);
+      if (!ccdbGrpmag) {
+        LOG(fatal) << "Could not retrieve GRPMagField for run " << runNumber;
+      }
+      mGrpMagFields.emplace_back(bz, *ccdbGrpmag);
+      grpmag = std::prev(mGrpMagFields.end());
     }
-    o2::base::Propagator::initFieldFromGRP(grpmag);
+    o2::base::Propagator::initFieldFromGRP(&grpmag->second);
     mBz = o2::base::Propagator::Instance()->getNominalBz();
     helper.setBz(mBz);
-    if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
+    // The material LUT does not depend on the field; it is set once the field is initialised.
+    if (!mMatLUTLoaded && static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForRun<o2::base::MatLayerCylSet>("GLO/Param/MatLUT", runNumber));
       if (!lut) {
         LOG(fatal) << "Could not retrieve material LUT for run " << runNumber;
       }
       o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMatLUTLoaded = true;
     }
+    mHasDerivedField = true;
     mRunNumber = runNumber;
   }
 
@@ -1393,6 +1531,8 @@ struct doubleOmegaTreeCreator {
   {
     CollisionCandidates candidates;
     candidates.primaryVertex = {collision.posX(), collision.posY(), collision.posZ()};
+    candidates.runNumber = collision.runNumber();
+    candidates.bz = collision.bz();
 
     for (const auto& row : omegas.sliceBy(derivedOmegasPerCollision, collision.globalIndex())) {
       const auto posTrack = tracks.rawIteratorAt(row.posTrackId());
@@ -1472,8 +1612,9 @@ struct doubleOmegaTreeCreator {
   PROCESS_SWITCH(doubleOmegaTreeCreator, processDerivedData, "Same-event Omega + Lambda + kaon from the derived tables of doubleOmegaBuilder", false);
 
   // Mixed-event background from the derived tables. Saved derived data can be merged into large
-  // dataframes, which provides many more mixing partners than the input AO2D dataframes. Only
-  // collisions recorded with the same magnetic field are mixed.
+  // dataframes, which provides many more mixing partners than the input AO2D dataframes. Omegas and
+  // Lambdas are mixed only between collisions recorded with the same magnetic field, kaons also between
+  // collisions recorded with opposite fields (charge conjugated, see DoubleOmegaBuilderHelper::mirrorCharge).
   void processDerivedMixing(aod::DOmegaColls const& collisions,
                             aod::DOmegaTracks const& tracks,
                             aod::DOmegaOmegas const& omegas,
@@ -1485,33 +1626,33 @@ struct doubleOmegaTreeCreator {
     }
 
     DerivedMixingBinning binning{{mixingOpts.binsVtxZ, mixingOpts.binsMultiplicity}, true};
+    std::vector<MixingJob> jobs;
     for (const auto& [collision0, collision1] : selfPairCombinations(binning, mixingOpts.nMixingCollisions, -1, collisions)) {
       histos.fill(HIST("Mixing/hMixedCollisions"), 0);
-      if (std::abs(collision0.posZ() - collision1.posZ()) > mixingOpts.maxDeltaPVz ||
-          std::abs(collision0.bz() - collision1.bz()) > kBzTolerance) {
+      const auto relation = fieldRelation(collision0.bz(), collision1.bz());
+      if (std::abs(collision0.posZ() - collision1.posZ()) > mixingOpts.maxDeltaPVz || relation == FieldRelation::kIncompatible) {
         continue;
       }
       histos.fill(HIST("Mixing/hMixedCollisions"), 1);
-      initCCDBForDerived(collision0.runNumber(), collision0.bz());
-      mixPair(candidatesPerCollision.at(collision0.globalIndex()), candidatesPerCollision.at(collision1.globalIndex()));
+      addPairJobs(jobs, collision0.globalIndex(), collision1.globalIndex(), relation);
     }
 
-    if (!(mixingOpts.mixingTypes & (1 << (kMixedAll - 1)))) {
-      return;
-    }
-    for (const auto& [collision0, collision1, collision2] : selfTripleCombinations(binning, mixingOpts.nMixingCollisions, -1, collisions)) {
-      histos.fill(HIST("Mixing/hMixedCollisions"), 2);
-      const auto [minPVz, maxPVz] = std::minmax({collision0.posZ(), collision1.posZ(), collision2.posZ()});
-      if (maxPVz - minPVz > mixingOpts.maxDeltaPVz ||
-          std::abs(collision0.bz() - collision1.bz()) > kBzTolerance ||
-          std::abs(collision0.bz() - collision2.bz()) > kBzTolerance) {
-        continue;
+    if (mixingOpts.mixingTypes & (1 << (kMixedAll - 1))) {
+      for (const auto& [collision0, collision1, collision2] : selfTripleCombinations(binning, mixingOpts.nMixingCollisions, -1, collisions)) {
+        histos.fill(HIST("Mixing/hMixedCollisions"), 2);
+        const auto [minPVz, maxPVz] = std::minmax({collision0.posZ(), collision1.posZ(), collision2.posZ()});
+        if (maxPVz - minPVz > mixingOpts.maxDeltaPVz ||
+            fieldRelation(collision0.bz(), collision1.bz()) == FieldRelation::kIncompatible ||
+            fieldRelation(collision0.bz(), collision2.bz()) == FieldRelation::kIncompatible ||
+            fieldRelation(collision1.bz(), collision2.bz()) == FieldRelation::kIncompatible) {
+          continue;
+        }
+        histos.fill(HIST("Mixing/hMixedCollisions"), 3);
+        addTripleJobs(jobs, {collision0.globalIndex(), collision1.globalIndex(), collision2.globalIndex()},
+                      {collision0.bz(), collision1.bz(), collision2.bz()});
       }
-      histos.fill(HIST("Mixing/hMixedCollisions"), 3);
-      initCCDBForDerived(collision0.runNumber(), collision0.bz());
-      mixTriple(candidatesPerCollision.at(collision0.globalIndex()), candidatesPerCollision.at(collision1.globalIndex()),
-                candidatesPerCollision.at(collision2.globalIndex()));
     }
+    runMixingJobs(jobs, candidatesPerCollision);
   }
   PROCESS_SWITCH(doubleOmegaTreeCreator, processDerivedMixing, "Mixed-event Omega + Lambda + kaon background from the derived tables of doubleOmegaBuilder", false);
 
@@ -1531,8 +1672,8 @@ struct doubleOmegaTreeCreator {
     std::set<MixedCombination> written; // Every combination has a daughter from this dataframe.
 
     for (const auto& collision : collisions) {
-      // Seeds are mixed only with seeds recorded with the same field (canMix), so the field of the
-      // current collision is the right one for all its mixed candidates.
+      // Mixed candidates whose reference seed was recorded with the opposite field are built in that
+      // field (see mixSeedDaughters), the others in the field of the current collision.
       initCCDBForDerived(collision.runNumber(), collision.bz());
       histos.fill(HIST("QA/zVtx"), collision.posZ());
       const auto candidates = readCollisionCandidates(collision, tracks, omegas, lambdas);

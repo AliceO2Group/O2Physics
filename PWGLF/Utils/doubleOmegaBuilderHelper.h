@@ -122,6 +122,8 @@ struct BuiltKaonCandidate {
 // Lambdas and kaons are stored per charge of the Omega they can be paired with (see chargeIndex).
 struct CollisionCandidates {
   std::array<float, 3> primaryVertex{};
+  int runNumber = 0;
+  float bz = 0.f; // Nominal magnetic field (kG) the collision was recorded with.
   std::vector<BuiltOmegaCandidate> omegas;
   std::array<std::vector<BuiltLambdaCandidate>, 2> lambdas;
   std::array<std::vector<BuiltKaonCandidate>, 2> kaons;
@@ -199,6 +201,35 @@ class DoubleOmegaBuilderHelper
             track.hasTPC() ? track.tpcNSigmaKa() : -999.f,
             track.hasTOF() ? track.tofNSigmaKa() : -999.f,
             detectorMap(track)};
+  }
+
+  // Charge-conjugated kaon with the same trajectory in the opposite magnetic field: a K+ recorded with
+  // field -B follows the trajectory of a K- in the field +B. Only q/pt and its correlations change sign.
+  static BuiltKaonCandidate mirrorCharge(BuiltKaonCandidate kaon)
+  {
+    kaon.track.setQ2Pt(-kaon.track.getQ2Pt());
+    for (const int element : {o2::track::kSigQ2PtY, o2::track::kSigQ2PtZ, o2::track::kSigQ2PtSnp, o2::track::kSigQ2PtTgl}) {
+      kaon.track.setCov(-kaon.track.getCov()[element], element);
+    }
+    kaon.sign = -kaon.sign;
+    return kaon;
+  }
+
+  // Kaons of a collision mirrored to the opposite magnetic field (see mirrorCharge), stored per charge
+  // of the Omega they can be paired with. Omegas and Lambdas are not mirrored.
+  static CollisionCandidates mirroredKaons(CollisionCandidates const& candidates)
+  {
+    CollisionCandidates mirrored;
+    mirrored.primaryVertex = candidates.primaryVertex;
+    mirrored.runNumber = candidates.runNumber;
+    mirrored.bz = -candidates.bz;
+    for (const auto& kaons : candidates.kaons) {
+      for (const auto& kaon : kaons) {
+        const auto mirroredKaon = mirrorCharge(kaon);
+        mirrored.kaons[chargeIndex(mirroredKaon.sign)].push_back(mirroredKaon);
+      }
+    }
+    return mirrored;
   }
 
   static bool sharesTracks(BuiltOmegaCandidate const& omega, BuiltLambdaCandidate const& lambda)
