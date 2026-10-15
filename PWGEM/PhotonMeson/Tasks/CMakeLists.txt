@@ -205,3 +205,8 @@ o2physics_add_dpl_workflow(pair-qc-task
                     SOURCES pairQcTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dilepton-effi-for-dalitz-skimmer
+                    dileptonEffiForDalitzSkimmer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
