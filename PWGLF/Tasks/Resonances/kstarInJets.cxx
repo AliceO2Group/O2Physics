@@ -1937,9 +1937,9 @@ struct kstarInJets {
         hasJets = true;
 
         // QA
-        double dPhi = TVector2::Phi_mpi_pi(mcdjet.phi() - mcpjet.phi());
-        double dEta = mcdjet.eta() - mcpjet.eta();
-        double dR = std::sqrt((dPhi * dPhi) + (dEta * dEta));
+        // double dPhi = TVector2::Phi_mpi_pi(mcdjet.phi() - mcpjet.phi());
+        // double dEta = mcdjet.eta() - mcpjet.eta();
+        // double dR = std::sqrt((dPhi * dPhi) + (dEta * dEta));
 
         if (cfgMatchedGenHistos) {
           histos.fill(HIST("matchedJets_pT"), mcpjet.pt(), mcdjet.pt() - mcpjet.pt());
