@@ -64,7 +64,7 @@ DECLARE_SOA_COLUMN(BachDCAxy, bachDCAxy, float);
 DECLARE_SOA_COLUMN(BachDCAz, bachDCAz, float);
 
 DECLARE_SOA_COLUMN(CascDCADaughters, cascDCADaughters, float); // DCA between V0 and bachelor
-DECLARE_SOA_COLUMN(V0DCADaughters, v0DCADaughters, float); // DCA between proton and pion
+DECLARE_SOA_COLUMN(V0DCADaughters, v0DCADaughters, float);     // DCA between proton and pion
 
 DECLARE_SOA_COLUMN(CascCosPA, casccosPA, float);
 DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);
