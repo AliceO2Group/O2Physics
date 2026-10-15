@@ -84,8 +84,8 @@ struct UpcTrackVertexingQA {
   int64_t nTF = 0;         // number of time frames in run
 
   // constants
-  static constexpr unsigned int twoTracks = 2;
-  static constexpr int unassignedDCA = 999;
+  static constexpr unsigned int TwoTracks = 2;
+  static constexpr int UnassignedDCA = 999;
 
   static constexpr float MassPion = o2::constants::physics::MassPionCharged;
   static constexpr float MassMuon = o2::constants::physics::MassMuon;
