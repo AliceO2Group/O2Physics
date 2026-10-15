@@ -21,6 +21,8 @@
 /// \since  May 22, 2025
 ///
 
+#include "ALICE3/DataModel/OTFPIDTrk.h"
+
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
@@ -122,15 +124,22 @@ class TrackDedxLut
         allLoaded = false;
         continue;
       }
-      // cumulative distributions, only for the filled bins
+      // cumulative distributions and raw moments, only for the filled bins
       auto& offset = mOffset[pdg];
       auto& cdf = mCdf[pdg];
+      auto& mean = mMean[pdg];
+      auto& sigma = mSigma[pdg];
       offset.assign(nBins, -1);
+      mean.assign(nBins, -1.f);
+      sigma.assign(nBins, -1.f);
       for (size_t b = 0; b < nBins; ++b) {
         const float* hb = h->data() + b * nDedx;
-        double sum = 0.;
+        double sum = 0., m1 = 0., m2 = 0.;
         for (size_t k = 0; k < nDedx; ++k) {
+          const double x = 0.5 * (mDedxEdges[k] + mDedxEdges[k + 1]);
           sum += hb[k];
+          m1 += hb[k] * x;
+          m2 += hb[k] * x * x;
         }
         if (sum <= 0.) {
           continue;
@@ -141,6 +150,9 @@ class TrackDedxLut
           cum += hb[k];
           cdf.push_back(cum / sum);
         }
+        const double mu = m1 / sum;
+        mean[b] = mu;
+        sigma[b] = std::sqrt(std::max(0., m2 / sum - mu * mu));
       }
     }
     LOG(info) << "Loaded dE/dx LUT " << filename << " (" << mEtaEdges.size() - 1 << " |eta| x " << mRigEdges.size() - 1
@@ -151,33 +163,66 @@ class TrackDedxLut
   /// Sampled dE/dx for uniform random number u, or -1 if there is no LUT entry
   float sample(int pdg, float eta, float rigidity, double u) const
   {
-    const auto it = mOffset.find(pdg);
-    const float absEta = std::abs(eta);
-    if (it == mOffset.end() || mEtaEdges.empty() || absEta < mEtaEdges.front() || absEta >= mEtaEdges.back() ||
-        rigidity < mRigEdges.front() || rigidity >= mRigEdges.back()) {
+    int bin = -1, binNext = -1;
+    float weight = 0.f;
+    if (!locate(pdg, eta, rigidity, bin, binNext, weight)) {
       return -1.f;
     }
-    const int nRig = mRigEdges.size() - 1;
-    const int iEta = std::upper_bound(mEtaEdges.begin(), mEtaEdges.end(), absEta) - mEtaEdges.begin() - 1;
-    const int iRig = std::upper_bound(mRigEdges.begin(), mRigEdges.end(), rigidity) - mRigEdges.begin() - 1;
-    const int offset = it->second[iEta * nRig + iRig];
-    if (offset < 0) {
-      return -1.f;
-    }
+    const auto& offset = mOffset.at(pdg);
     const float* cdf = mCdf.at(pdg).data();
-    float dedx = inverseCdf(cdf + offset, u);
-
-    // neighbouring bin on the side of the track, no interpolation if it is empty
-    const double logRig = std::log(rigidity);
-    const int iNext = logRig < mLogRigCentres[iRig] ? iRig - 1 : iRig + 1;
-    if (iNext >= 0 && iNext < nRig && it->second[iEta * nRig + iNext] >= 0) {
-      const float w = (logRig - mLogRigCentres[iRig]) / (mLogRigCentres[iNext] - mLogRigCentres[iRig]);
-      dedx += w * (inverseCdf(cdf + it->second[iEta * nRig + iNext], u) - dedx);
+    float dedx = inverseCdf(cdf + offset[bin], u);
+    if (binNext >= 0) {
+      dedx += weight * (inverseCdf(cdf + offset[binNext], u) - dedx);
     }
     return dedx;
   }
 
+  bool getMeanSigma(int pdg, float eta, float rigidity, float& mean, float& sigma) const
+  {
+    int bin = -1, binNext = -1;
+    float weight = 0.f;
+    if (!locate(pdg, eta, rigidity, bin, binNext, weight)) {
+      return false;
+    }
+    const auto& m = mMean.at(pdg);
+    const auto& s = mSigma.at(pdg);
+    mean = m[bin];
+    sigma = s[bin];
+    if (binNext >= 0) {
+      mean += weight * (m[binNext] - mean);
+      sigma += weight * (s[binNext] - sigma);
+    }
+    return sigma > 0.f;
+  }
+
  private:
+  /// LUT bin of the track and the neighbouring rigidity bin on its side (-1 if empty)
+  bool locate(int pdg, float eta, float rigidity, int& bin, int& binNext, float& weight) const
+  {
+    const auto it = mOffset.find(pdg);
+    const float absEta = std::abs(eta);
+    if (it == mOffset.end() || mEtaEdges.empty() || absEta < mEtaEdges.front() || absEta >= mEtaEdges.back() ||
+        rigidity < mRigEdges.front() || rigidity >= mRigEdges.back()) {
+      return false;
+    }
+    const int nRig = mRigEdges.size() - 1;
+    const int iEta = std::upper_bound(mEtaEdges.begin(), mEtaEdges.end(), absEta) - mEtaEdges.begin() - 1;
+    const int iRig = std::upper_bound(mRigEdges.begin(), mRigEdges.end(), rigidity) - mRigEdges.begin() - 1;
+    bin = iEta * nRig + iRig;
+    if (it->second[bin] < 0) {
+      return false;
+    }
+    binNext = -1;
+    weight = 0.f;
+    const double logRig = std::log(rigidity);
+    const int iNext = logRig < mLogRigCentres[iRig] ? iRig - 1 : iRig + 1;
+    if (iNext >= 0 && iNext < nRig && it->second[iEta * nRig + iNext] >= 0) {
+      binNext = iEta * nRig + iNext;
+      weight = (logRig - mLogRigCentres[iRig]) / (mLogRigCentres[iNext] - mLogRigCentres[iRig]);
+    }
+    return true;
+  }
+
   /// dE/dx at which the cumulative distribution reaches u, uniform within the dE/dx bin
   float inverseCdf(const float* cdf, double u) const
   {
@@ -203,6 +248,8 @@ class TrackDedxLut
   std::vector<double> mDedxEdges;
   std::unordered_map<int, std::vector<int>> mOffset; // |pdg| -> start of the cdf of bin etaBin * nRig + rigBin, -1 if empty
   std::unordered_map<int, std::vector<float>> mCdf;  // |pdg| -> cumulative dE/dx distributions of the filled bins
+  std::unordered_map<int, std::vector<float>> mMean; // |pdg| -> mean dE/dx per bin, -1 if empty
+  std::unordered_map<int, std::vector<float>> mSigma;
 };
 
 struct OnTheFlyTrackerPid {
@@ -210,12 +257,16 @@ struct OnTheFlyTrackerPid {
   static constexpr std::array<int, NumSpecies> PdgCodes = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040};
   static constexpr std::array<const char*, NumSpecies> SpeciesNames = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
   static constexpr std::array<const char*, NumSpecies> SpeciesLabels = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "#it{^{3}He}", "#it{^{4}He}"};
+  static constexpr float NoNsigma = 999.f;
 
   std::array<std::shared_ptr<TH2>, NumSpecies> h2dToTvsPperParticle;
   std::array<std::shared_ptr<TH2>, NumSpecies> h2dToTvsPperParticleLin;
   std::array<std::shared_ptr<TH3>, NumSpecies> h3dToTvsPEtaPerParticle;
   std::array<std::shared_ptr<TH2>, NumSpecies> h2dTracks;
   std::array<std::shared_ptr<TH2>, NumSpecies> h2dTracksWithDedx;
+
+  Produces<aod::UpgradeTrkPidSignals> tableUpgradeTrkPidSignals;
+  Produces<aod::UpgradeTrkPids> tableUpgradeTrkPids;
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase{};
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -226,7 +277,7 @@ struct OnTheFlyTrackerPid {
 
   Configurable<std::string> trackLut{"trackLut", "", "Per-track dE/dx LUT from MakeToTLUT.C (local file or ccdb:<path>)"};
   Configurable<int> seed{"seed", 0, "Seed for the dE/dx sampling (0: different in every job)"};
-  Configurable<bool> primariesOnly{"primariesOnly", false, "Only physical primaries (otherwise all tracks, including decay products)"};
+  Configurable<bool> primariesOnly{"primariesOnly", false, "Fill the histograms only with physical primaries (the tables are filled for all tracks)"};
   Configurable<bool> useTrueKinematics{"useTrueKinematics", false, "Fill the histograms vs the true instead of the reconstructed p/z and |eta| (the dE/dx is always sampled at the true ones)"};
 
   // dE/dx axis, logarithmic
@@ -315,52 +366,71 @@ struct OnTheFlyTrackerPid {
     }
   }
 
+  /// dE/dx of the track (-1 if there is none) and its nsigma for every species
+  template <typename TTrack>
+  float processTrack(TTrack const& track, std::array<float, NumSpecies>& nSigma)
+  {
+    if (!track.has_mcParticle()) {
+      return -1.f;
+    }
+    const auto& mcParticle = track.mcParticle();
+    const int pdg = std::abs(mcParticle.pdgCode());
+    const auto itSpecies = std::find(PdgCodes.begin(), PdgCodes.end(), pdg);
+    if (itSpecies == PdgCodes.end()) {
+      return -1.f;
+    }
+    const auto* pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
+    if (!pdgInfo || pdgInfo->Charge() == 0) {
+      return -1.f;
+    }
+    const int iSpecies = std::distance(PdgCodes.begin(), itSpecies);
+    const float absCharge = std::abs(pdgInfo->Charge()) / 3.f;
+    const float rigidityTrue = mcParticle.p() / absCharge;
+    const float dedx = mTrackLut.sample(pdg, mcParticle.eta(), rigidityTrue, mRandom.Rndm());
+
+    if (dedx > 0.f) {
+      for (int i = 0; i < NumSpecies; ++i) {
+        float mean = 0.f, sigma = 0.f;
+        if (mTrackLut.getMeanSigma(PdgCodes[i], track.eta(), track.p(), mean, sigma)) {
+          nSigma[i] = (dedx - mean) / sigma;
+        }
+      }
+    }
+
+    if (primariesOnly.value && !mcParticle.isPhysicalPrimary()) {
+      return dedx;
+    }
+    const float rigidity = useTrueKinematics.value ? rigidityTrue : track.p();
+    const float absEta = std::abs(useTrueKinematics.value ? mcParticle.eta() : track.eta());
+    const float p = rigidity * absCharge;
+    h2dTracks[iSpecies]->Fill(rigidity, absEta);
+    if (dedx < 0.f) {
+      return dedx;
+    }
+    h2dTracksWithDedx[iSpecies]->Fill(rigidity, absEta);
+    h3dToTvsPEtaPerParticle[iSpecies]->Fill(rigidity, absEta, dedx);
+    if (enableLogPBins.value) {
+      histos.fill(HIST("hToTvsMom"), p, dedx);
+      histos.fill(HIST("hToTvsP"), rigidity, dedx);
+      h2dToTvsPperParticle[iSpecies]->Fill(rigidity, dedx);
+    }
+    if (enableLinearPBins.value) {
+      histos.fill(HIST("hToTvsMomLin"), p, dedx);
+      histos.fill(HIST("hToTvsPLin"), rigidity, dedx);
+      h2dToTvsPperParticleLin[iSpecies]->Fill(rigidity, dedx);
+    }
+    return dedx;
+  }
+
   void process(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks,
                aod::McParticles const&)
   {
+    std::array<float, NumSpecies> nSigma{};
     for (const auto& track : tracks) {
-      if (!track.has_mcParticle()) {
-        continue;
-      }
-      const auto& mcParticle = track.mcParticle();
-      if (primariesOnly.value && !mcParticle.isPhysicalPrimary()) {
-        continue;
-      }
-      const int pdg = std::abs(mcParticle.pdgCode());
-      const auto itSpecies = std::find(PdgCodes.begin(), PdgCodes.end(), pdg);
-      if (itSpecies == PdgCodes.end()) {
-        continue;
-      }
-      const auto* pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
-      if (!pdgInfo || pdgInfo->Charge() == 0) {
-        continue;
-      }
-      const int iSpecies = std::distance(PdgCodes.begin(), itSpecies);
-      const float absCharge = std::abs(pdgInfo->Charge()) / 3.f;
-      const float rigidityTrue = mcParticle.p() / absCharge;
-
-      // the OTF tracks carry p/z
-      const float rigidity = useTrueKinematics.value ? rigidityTrue : track.p();
-      const float absEta = std::abs(useTrueKinematics.value ? mcParticle.eta() : track.eta());
-      const float p = rigidity * absCharge;
-      h2dTracks[iSpecies]->Fill(rigidity, absEta);
-
-      const float dedx = mTrackLut.sample(pdg, mcParticle.eta(), rigidityTrue, mRandom.Rndm());
-      if (dedx < 0.f) {
-        continue;
-      }
-      h2dTracksWithDedx[iSpecies]->Fill(rigidity, absEta);
-      h3dToTvsPEtaPerParticle[iSpecies]->Fill(rigidity, absEta, dedx);
-      if (enableLogPBins.value) {
-        histos.fill(HIST("hToTvsMom"), p, dedx);
-        histos.fill(HIST("hToTvsP"), rigidity, dedx);
-        h2dToTvsPperParticle[iSpecies]->Fill(rigidity, dedx);
-      }
-      if (enableLinearPBins.value) {
-        histos.fill(HIST("hToTvsMomLin"), p, dedx);
-        histos.fill(HIST("hToTvsPLin"), rigidity, dedx);
-        h2dToTvsPperParticleLin[iSpecies]->Fill(rigidity, dedx);
-      }
+      nSigma.fill(NoNsigma);
+      const float dedx = processTrack(track, nSigma);
+      tableUpgradeTrkPidSignals(dedx);
+      tableUpgradeTrkPids(nSigma[0], nSigma[1], nSigma[2], nSigma[3], nSigma[4], nSigma[5], nSigma[6], nSigma[7], nSigma[8]);
     }
   }
 };
