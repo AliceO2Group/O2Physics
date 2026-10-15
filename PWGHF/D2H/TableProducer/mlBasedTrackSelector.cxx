@@ -190,9 +190,9 @@ struct HfTrackSelectorTagSelCollisions {
     }
 
     // set numerical value of the Run 2 trigger class
-    auto* const triggerAlias = std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data());
-    if (triggerAlias != aliasLabels + kNaliases) {
-      hfEvSel.triggerClass.value = std::distance(aliasLabels, triggerAlias);
+    auto* const triggerAlias = std::find(aliasLabels.begin(), aliasLabels.end(), triggerClassName.value.data());
+    if (triggerAlias != aliasLabels.end()) {
+      hfEvSel.triggerClass.value = std::distance(aliasLabels.begin(), triggerAlias);
     }
 
     hfEvSel.init(registry, &zorroSummary); // collision monitoring
