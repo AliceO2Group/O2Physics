@@ -887,16 +887,16 @@ DECLARE_SOA_COLUMN(CosThetaStarTPC, costhetaStarTPC, float);   //! global polari
 DECLARE_SOA_COLUMN(CosThetaStarFT0A, costhetaStarFT0A, float); //! global polarization, event plane reconstructed from FT0A tracks
 DECLARE_SOA_COLUMN(CosThetaStarFT0C, costhetaStarFT0C, float); //! global polarization, event plane reconstructed from FT0C tracks
 DECLARE_SOA_COLUMN(CosThetaStarRandom, costhetaStarRandom, float); //! global polarization, event plane reconstructed from random tracks
-DECLARE_SOA_COLUMN(PhiDaughter, phiDaughter, float); //! azimuthal angle of the daughter particle in the pair rest frame
-DECLARE_SOA_COLUMN(DeltaPhiTPC, deltaPhiTPC, float); //! azimuthal angle difference between the daughter and TPC event plane
-DECLARE_SOA_COLUMN(DeltaPhiFT0A, deltaPhiFT0A, float); //! azimuthal angle difference between the daughter and FT0A event plane
-DECLARE_SOA_COLUMN(DeltaPhiFT0C, deltaPhiFT0C, float); //! azimuthal angle difference between the daughter and FT0C event plane
-DECLARE_SOA_COLUMN(Cos2DeltaPhiTPC, cos2DeltaPhiTPC, float); //! cos(2*deltaPhi) between the daughter and TPC event plane
-DECLARE_SOA_COLUMN(Cos2DeltaPhiFT0A, cos2DeltaPhiFT0A, float); //! cos(2*deltaPhi) between the daughter and FT0A event plane
-DECLARE_SOA_COLUMN(Cos2DeltaPhiFT0C, cos2DeltaPhiFT0C, float); //! cos(2*deltaPhi) between the daughter and FT0C
-DECLARE_SOA_COLUMN(A2TPC, a2TPC, float); //! cos(2*deltaPhi)/R2SP_TPC
-DECLARE_SOA_COLUMN(A2FT0A, a2FT0A, float); //! cos(2*deltaPhi)/R2SP_FT0A
-DECLARE_SOA_COLUMN(A2FT0C, a2FT0C, float); //! cos(2*deltaPhi)/R2SP_FT0C
+DECLARE_SOA_COLUMN(PhiDaughter, phiDaughter, float);               //! azimuthal angle of the daughter particle in the pair rest frame
+DECLARE_SOA_COLUMN(DeltaPhiTPC, deltaPhiTPC, float);               //! azimuthal angle difference between the daughter and TPC event plane
+DECLARE_SOA_COLUMN(DeltaPhiFT0A, deltaPhiFT0A, float);             //! azimuthal angle difference between the daughter and FT0A event plane
+DECLARE_SOA_COLUMN(DeltaPhiFT0C, deltaPhiFT0C, float);             //! azimuthal angle difference between the daughter and FT0C event plane
+DECLARE_SOA_COLUMN(Cos2DeltaPhiTPC, cos2DeltaPhiTPC, float);       //! cos(2*deltaPhi) between the daughter and TPC event plane
+DECLARE_SOA_COLUMN(Cos2DeltaPhiFT0A, cos2DeltaPhiFT0A, float);     //! cos(2*deltaPhi) between the daughter and FT0A event plane
+DECLARE_SOA_COLUMN(Cos2DeltaPhiFT0C, cos2DeltaPhiFT0C, float);     //! cos(2*deltaPhi) between the daughter and FT0C
+DECLARE_SOA_COLUMN(A2TPC, a2TPC, float);                           //! cos(2*deltaPhi)/R2SP_TPC
+DECLARE_SOA_COLUMN(A2FT0A, a2FT0A, float);                         //! cos(2*deltaPhi)/R2SP_FT0A
+DECLARE_SOA_COLUMN(A2FT0C, a2FT0C, float);                         //! cos(2*deltaPhi)/R2SP_FT0C
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                             //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
