@@ -88,7 +88,7 @@ enum LooseCentEstimator { kLooseCentFT0M = 0,
 
 struct LambdaSpinPolarizationLooseProducer {
 
-  Produces<aod::LambdaLooseCollisions> lambdaLooseCollisionTable;
+  Produces<aod::LambdaLooseCols> lambdaLooseCollisionTable;
   Produces<aod::LambdaLooseTracks> lambdaLooseTrackTable;
 
   Configurable<int> cCentEstimator{"cCentEstimator", 0, "Centrality Estimator: 0=FT0M, 1=FT0C"};
