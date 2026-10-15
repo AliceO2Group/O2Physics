@@ -88,7 +88,6 @@ struct CentRho2Set {
 
 struct LambdaProtonBalanceFunction {
   HistogramRegistry registryLambda{"Lambda_invMass", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry registryLambdaExtended{"Lambda_invMassExtended", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryRho{"rho1ANDrho2_LP", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryCent{"rho1ANDrho2_LP_CentralityBased", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryOther{"Other_Hists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -100,19 +99,6 @@ struct LambdaProtonBalanceFunction {
   // Folder: ProtonVetoQA/
   // Contains per-event distributions of N_before, N_after, N_removed, fraction.
   HistogramRegistry registryProtonVetoQA{"ProtonVetoQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-
-  // ════════════════════════════════════════════════════════════════════════
-  // Static compile-time constants (not non-static data members: do not count
-  // toward the O2 StructToTuple arity).
-  // ════════════════════════════════════════════════════════════════════════
-  static constexpr int kExtNyBins = 2;
-  static constexpr int kExtNptBins = 25;
-  static constexpr float kExtYMin = -0.8f;
-  static constexpr float kExtYMax = -0.6f;
-  static constexpr float kExtYStep = 0.1f;
-  static constexpr float kExtPtMin = 0.0f;
-  static constexpr float kExtPtMax = 2.5f;
-  static constexpr float kExtPtStep = 0.1f;
 
   // ════════════════════════════════════════════════════════════════════════
   // TaskState — ordinary C++ runtime/implementation state.
@@ -132,17 +118,6 @@ struct LambdaProtonBalanceFunction {
     std::vector<std::shared_ptr<TH1>> hMassAntiLambdaPtBins;
     std::shared_ptr<TH1> hMassLambdaMerged;
     std::shared_ptr<TH1> hMassAntiLambdaMerged;
-
-    // ════════════════════════════════════════════════════════════════════════
-    // SECTION A2— Extended invariant-mass histograms (y × pT grid)
-    //   hMassLambdaExtended[iY][iPt]     → Lambda_invMassExtended/Lambda/
-    //   hMassAntiLambdaExtended[iY][iPt] → Lambda_invMassExtended/AntiLambda/
-    //   Rapidity bins (kExtNyBins = 2): [-0.8,-0.7), [-0.7,-0.6]
-    //   pT bins (kExtNptBins = 25):     [0.0,0.1), [0.1,0.2), ..., [2.4,2.5]
-    // ════════════════════════════════════════════════════════════════════════
-
-    std::vector<std::vector<std::shared_ptr<TH1>>> hMassLambdaExtended;
-    std::vector<std::vector<std::shared_ptr<TH1>>> hMassAntiLambdaExtended;
 
     // ════════════════════════════════════════════════════════════════════════
     // SECTION C — rho2 rapidity-space histograms, filled with unrolledIndexY(y, phi).
@@ -392,7 +367,7 @@ struct LambdaProtonBalanceFunction {
   }
 
   // QA-only: true => pair would survive the q_inv cut, regardless of the cUseQinvCut master switch.
-  // Used ONLY for the "After_qinvCut" QA histograms so they always show the mathematical effect of the cut.
+  // Used for ALL "After_qinvCut" QA histograms (PP, pAp, App, ApAp, LP-family, LL-family) so they always show the mathematical effect of the cut.
   // Physics logic must keep using failsQinvCut().
   bool passesQinvQA(float qinv) const { return qinv > cQinvCutValue.value; }
 
@@ -2016,53 +1991,6 @@ struct LambdaProtonBalanceFunction {
     }
     // ─────────────────────────────────────────────────────────────────────
 
-    // ── Extended y × pT invariant-mass histograms ─────────────────────────
-    // Rapidity bins: 2 bins from -0.8 to -0.6 in steps of 0.1
-    // pT bins:       25 bins from 0.0 to 2.5 in steps of 0.1
-    // Folder structure:
-    //   Lambda_invMassExtended/Lambda/hMassLambda_yBinXX_ptBinYY
-    //   Lambda_invMassExtended/AntiLambda/hMassAntiLambda_yBinXX_ptBinYY
-    state.hMassLambdaExtended.clear();
-    state.hMassAntiLambdaExtended.clear();
-    state.hMassLambdaExtended.resize(kExtNyBins);
-    state.hMassAntiLambdaExtended.resize(kExtNyBins);
-
-    for (int iY = 0; iY < kExtNyBins; ++iY) {
-      const float yLow = kExtYMin + iY * kExtYStep;
-      const float yHigh = yLow + kExtYStep;
-      // Last rapidity bin [-0.7,-0.6] has inclusive upper edge in filling logic
-      const bool lastYBin = (iY == kExtNyBins - 1);
-      const char* yUpBracket = lastYBin ? "<=" : "<";
-
-      state.hMassLambdaExtended[iY].resize(kExtNptBins);
-      state.hMassAntiLambdaExtended[iY].resize(kExtNptBins);
-
-      for (int iPt = 0; iPt < kExtNptBins; ++iPt) {
-        const float ptLow = kExtPtMin + iPt * kExtPtStep;
-        const float ptHigh = ptLow + kExtPtStep;
-        // Last pT bin [2.4,2.5] has inclusive upper edge in filling logic
-        const bool lastPtBin = (iPt == kExtNptBins - 1);
-        const char* ptUpBracket = lastPtBin ? "<=" : "<";
-
-        // Lambda
-        state.hMassLambdaExtended[iY][iPt] =
-          registryLambdaExtended.add<TH1>(
-            Form("Lambda/hMassLambda_yBin%02d_ptBin%02d", iY, iPt),
-            Form("#Lambda mass (no mass-window cut) | %.1f #leq y %s %.1f | %.1f #leq #it{p}_{T} %s %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
-                 yLow, yUpBracket, yHigh, ptLow, ptUpBracket, ptHigh),
-            {HistType::kTH1F, {lambdaMassAxis}});
-
-        // AntiLambda
-        state.hMassAntiLambdaExtended[iY][iPt] =
-          registryLambdaExtended.add<TH1>(
-            Form("AntiLambda/hMassAntiLambda_yBin%02d_ptBin%02d", iY, iPt),
-            Form("#bar{#Lambda} mass (no mass-window cut) | %.1f #leq y %s %.1f | %.1f #leq #it{p}_{T} %s %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
-                 yLow, yUpBracket, yHigh, ptLow, ptUpBracket, ptHigh),
-            {HistType::kTH1F, {lambdaMassAxis}});
-      }
-    }
-    // ─────────────────────────────────────────────────────────────────────
-
     // ══════════════════════════════════════════════════════════════════════
     // Centrality-differential histograms → top-level folder "rho1ANDrho2_LP_CentralityBased"
     // ══════════════════════════════════════════════════════════════════════
@@ -2461,7 +2389,6 @@ struct LambdaProtonBalanceFunction {
       // const float eta = v0.eta();
       // VS Code: commented out unused variable.
       // const float pz  = pt * std::sinh(eta);
-      const float y = v0DauPID_AsLambda ? v0.rapidity(1) : v0.rapidity(2);
       int bin = -1;
       for (size_t i = 0; i < state.ptEdges.size() - 1; ++i) {
         if (pt >= state.ptEdges[i] && pt < state.ptEdges[i + 1]) {
@@ -2487,27 +2414,6 @@ struct LambdaProtonBalanceFunction {
         if (selLambda) {
           registryQaDetector.fill(HIST("Lambda/InvariantMass/MassCut/h2f_mass_vs_pt"), pt, v0.mLambda());
         }
-
-        // ── Extended y × pT Lambda invariant-mass fill ────────────────────
-        // Use the same rapidity variable `y` computed above
-        // and the same pT variable `pt` = v0.pt() already in scope.
-        // Accept only -0.8 <= y <= -0.6 and 0.0 <= pT <= 2.5 GeV/c.
-        if (y >= kExtYMin && y <= kExtYMax && pt >= kExtPtMin && pt <= kExtPtMax) {
-          // Determine rapidity bin index
-          int iYext = static_cast<int>((y - kExtYMin) / kExtYStep);
-          if (iYext >= kExtNyBins) {
-            iYext = kExtNyBins - 1;
-          } // clamp upper edge of last bin
-          // Determine pT bin index
-          int iPtext = static_cast<int>((pt - kExtPtMin) / kExtPtStep);
-          if (iPtext >= kExtNptBins) {
-            iPtext = kExtNptBins - 1;
-          } // clamp upper edge of last bin
-          if (iYext >= 0 && iPtext >= 0) {
-            state.hMassLambdaExtended[iYext][iPtext]->Fill(v0.mLambda());
-          }
-        }
-        // ─────────────────────────────────────────────────────────────────
       }
       if (v0DauPID_AsAntiLambda) {
         if (bin >= 0) {
@@ -2522,25 +2428,6 @@ struct LambdaProtonBalanceFunction {
         if (selAntiLambda) {
           registryQaDetector.fill(HIST("AntiLambda/InvariantMass/MassCut/h2f_mass_vs_pt"), pt, v0.mAntiLambda());
         }
-
-        // ── Extended y × pT AntiLambda invariant-mass fill ────────────────
-        // Use the same rapidity variable `y` computed above
-        // and the same pT variable `pt` = v0.pt() already in scope.
-        // Accept only -0.8 <= y <= -0.6 and 0.0 <= pT <= 2.5 GeV/c.
-        if (y >= kExtYMin && y <= kExtYMax && pt >= kExtPtMin && pt <= kExtPtMax) {
-          int iYext = static_cast<int>((y - kExtYMin) / kExtYStep);
-          if (iYext >= kExtNyBins) {
-            iYext = kExtNyBins - 1;
-          } // clamp upper edge of last bin
-          int iPtext = static_cast<int>((pt - kExtPtMin) / kExtPtStep);
-          if (iPtext >= kExtNptBins) {
-            iPtext = kExtNptBins - 1;
-          } // clamp upper edge of last bin
-          if (iYext >= 0 && iPtext >= 0) {
-            state.hMassAntiLambdaExtended[iYext][iPtext]->Fill(v0.mAntiLambda());
-          }
-        }
-        // ─────────────────────────────────────────────────────────────────
       }
       // ─────────────────────────────────────────────────────────────────
 
@@ -3165,11 +3052,11 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted Lambda-proton pair
         float qinvLP = 0.0f;
         {
-          const float dauPmag = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
           const float pprmag = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
-          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
           const float Eppr = std::sqrt(pprmag * pprmag + kMassProton * kMassProton);
-          qinvLP = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau, primProton.px(), primProton.py(), primProton.pz(), Eppr);
+          qinvLP = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primProton.px(), primProton.py(), primProton.pz(), Eppr);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLP);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
@@ -3191,6 +3078,10 @@ struct LambdaProtonBalanceFunction {
           const float pprmag_3d = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
           const float Eppr_3d = std::sqrt(pprmag_3d * pprmag_3d + kMassProton * kMassProton);
           const float qinvLP_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr_3d);
+          // q_inv using Lambda daughter proton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmag_3d = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float Edau_3d = std::sqrt(dauPmag_3d * dauPmag_3d + kMassProton * kMassProton);
+          const float qinvLP_dau = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr_3d);
           // Angular variables w.r.t. Lambda daughter proton
           const float dPhi_dau_p = RecoDecay::constrainAngle((v0PosDau.phi() - primProton.phi()), -PIHalf3D);
           const float dEta_dau_p = v0PosDau.eta() - primProton.eta();
@@ -3198,10 +3089,10 @@ struct LambdaProtonBalanceFunction {
           const float dY_dau_p = yDauP - yPrimP;
           // eta space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp"), qinvLP_V0, dPhi_V0_p, dEta_V0_p);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp_dau"), qinvLP, dPhi_dau_p, dEta_dau_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp_dau"), qinvLP_dau, dPhi_dau_p, dEta_dau_p);
           // y space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp"), qinvLP_V0, dPhi_V0_p, dY_V0_p);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp_dau"), qinvLP, dPhi_dau_p, dY_dau_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp_dau"), qinvLP_dau, dPhi_dau_p, dY_dau_p);
         }
         // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
         {
@@ -3260,11 +3151,11 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted Lambda-antiproton pair
         float qinvLAp = 0.0f;
         {
-          const float dauPmag = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
           const float paprmag = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
-          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
           const float Epapr = std::sqrt(paprmag * paprmag + kMassProton * kMassProton);
-          qinvLAp = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr);
+          qinvLAp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLAp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
@@ -3286,6 +3177,10 @@ struct LambdaProtonBalanceFunction {
           const float paprmag_3dL = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
           const float Epapr_3dL = std::sqrt(paprmag_3dL * paprmag_3dL + kMassProton * kMassProton);
           const float qinvLAp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0_3dL, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr_3dL);
+          // q_inv using Lambda daughter proton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmag_3dL = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float Edau_3dL = std::sqrt(dauPmag_3dL * dauPmag_3dL + kMassProton * kMassProton);
+          const float qinvLAp_dau = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau_3dL, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr_3dL);
           // Angular variables w.r.t. Lambda daughter proton
           const float dPhi_dau_ap = RecoDecay::constrainAngle((v0PosDau.phi() - primAntiProton.phi()), -PIHalf3D);
           const float dEta_dau_ap = v0PosDau.eta() - primAntiProton.eta();
@@ -3293,10 +3188,10 @@ struct LambdaProtonBalanceFunction {
           const float dY_dau_ap = yDauPL - yPrimAp;
           // eta space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp"), qinvLAp_V0, dPhi_V0_ap, dEta_V0_ap);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp_dau"), qinvLAp, dPhi_dau_ap, dEta_dau_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp_dau"), qinvLAp_dau, dPhi_dau_ap, dEta_dau_ap);
           // y space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp"), qinvLAp_V0, dPhi_V0_ap, dY_V0_ap);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp_dau"), qinvLAp, dPhi_dau_ap, dY_dau_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp_dau"), qinvLAp_dau, dPhi_dau_ap, dY_dau_ap);
         }
         // QA3/RawPairDensity: Lambda-antiproton → same LP histogram
         {
@@ -3410,11 +3305,11 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-proton pair
         float qinvALp = 0.0f;
         {
-          const float dauPmag = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
           const float pprmag3 = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
-          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
           const float Eppr3 = std::sqrt(pprmag3 * pprmag3 + kMassProton * kMassProton);
-          qinvALp = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), Edau, primProton.px(), primProton.py(), primProton.pz(), Eppr3);
+          qinvALp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primProton.px(), primProton.py(), primProton.pz(), Eppr3);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
@@ -3436,6 +3331,10 @@ struct LambdaProtonBalanceFunction {
           const float pprmag3_3d = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
           const float Eppr3_3d = std::sqrt(pprmag3_3d * pprmag3_3d + kMassProton * kMassProton);
           const float qinvALp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), EalL_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr3_3d);
+          // q_inv using AntiLambda daughter antiproton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmagAL_3d = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float EdauAL_3d = std::sqrt(dauPmagAL_3d * dauPmagAL_3d + kMassProton * kMassProton);
+          const float qinvALp_dau = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), EdauAL_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr3_3d);
           // Angular variables w.r.t. AntiLambda daughter antiproton
           const float dPhi_dauAL_p = RecoDecay::constrainAngle((v0NegDau.phi() - primProton.phi()), -PIHalf3D);
           const float dEta_dauAL_p = v0NegDau.eta() - primProton.eta();
@@ -3443,10 +3342,10 @@ struct LambdaProtonBalanceFunction {
           const float dY_dauAL_p = yDauAL - yPrimP3;
           // eta space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp"), qinvALp_V0, dPhi_AL_p, dEta_AL_p);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp_dau"), qinvALp, dPhi_dauAL_p, dEta_dauAL_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp_dau"), qinvALp_dau, dPhi_dauAL_p, dEta_dauAL_p);
           // y space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp"), qinvALp_V0, dPhi_AL_p, dY_AL_p);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp_dau"), qinvALp, dPhi_dauAL_p, dY_dauAL_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp_dau"), qinvALp_dau, dPhi_dauAL_p, dY_dauAL_p);
         }
         // QA3/RawPairDensity: AntiLambda-proton → same LP histogram
         {
@@ -3488,11 +3387,11 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-antiproton pair
         float qinvALAp = 0.0f;
         {
-          const float dauPmag = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
           const float paprmag2 = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
-          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
           const float Epapr2 = std::sqrt(paprmag2 * paprmag2 + kMassProton * kMassProton);
-          qinvALAp = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), Edau, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2);
+          qinvALAp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALAp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
@@ -3514,6 +3413,10 @@ struct LambdaProtonBalanceFunction {
           const float paprmag2_3d = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
           const float Epapr2_3d = std::sqrt(paprmag2_3d * paprmag2_3d + kMassProton * kMassProton);
           const float qinvALAp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), EalL2_3d, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2_3d);
+          // q_inv using AntiLambda daughter antiproton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmagAL2_3d = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float EdauAL2_3d = std::sqrt(dauPmagAL2_3d * dauPmagAL2_3d + kMassProton * kMassProton);
+          const float qinvALAp_dau = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), EdauAL2_3d, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2_3d);
           // Angular variables w.r.t. AntiLambda daughter antiproton
           const float dPhi_dauAL_ap = RecoDecay::constrainAngle((v0NegDau.phi() - primAntiProton.phi()), -PIHalf3D);
           const float dEta_dauAL_ap = v0NegDau.eta() - primAntiProton.eta();
@@ -3521,10 +3424,10 @@ struct LambdaProtonBalanceFunction {
           const float dY_dauAL_ap = yDauAL2 - yPrimAp2;
           // eta space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp"), qinvALAp_V0, dPhi_AL_ap, dEta_AL_ap);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp_dau"), qinvALAp, dPhi_dauAL_ap, dEta_dauAL_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp_dau"), qinvALAp_dau, dPhi_dauAL_ap, dEta_dauAL_ap);
           // y space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp"), qinvALAp_V0, dPhi_AL_ap, dY_AL_ap);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp_dau"), qinvALAp, dPhi_dauAL_ap, dY_dauAL_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp_dau"), qinvALAp_dau, dPhi_dauAL_ap, dY_dauAL_ap);
         }
         // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
         {
@@ -3869,7 +3772,7 @@ struct LambdaProtonBalanceFunction {
     LOG(info) << "===============================================";
     LOG(info) << "";
   }
-  // ───────────────────────xx──────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
