@@ -14,101 +14,121 @@ if(FastJet_FOUND)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-ch
                     SOURCES jetSubstructureMatchingMCCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-d0-ch
                     SOURCES jetSubstructureMatchingMCD0Charged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-dplus-ch
                     SOURCES jetSubstructureMatchingMCDplusCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-ds-ch
                     SOURCES jetSubstructureMatchingMCDsCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-dstar-ch
                     SOURCES jetSubstructureMatchingMCDstarCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-lc-ch
                     SOURCES jetSubstructureMatchingMCLcCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-b0-ch
                     SOURCES jetSubstructureMatchingMCB0Charged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-bplus-ch
                     SOURCES jetSubstructureMatchingMCBplusCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-xictoxipipi-ch
                     SOURCES jetSubstructureMatchingMCXicToXiPiPiCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-mc-dielectron-ch
                     SOURCES jetSubstructureMatchingMCDielectronCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-ch
                     SOURCES jetSubstructureMatchingSubCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-d0-ch
                     SOURCES jetSubstructureMatchingSubD0Charged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-dplus-ch
                     SOURCES jetSubstructureMatchingSubDplusCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-ds-ch
                     SOURCES jetSubstructureMatchingSubDsCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-dstar-ch
                     SOURCES jetSubstructureMatchingSubDstarCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-lc-ch
                     SOURCES jetSubstructureMatchingSubLcCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-b0-ch
                     SOURCES jetSubstructureMatchingSubB0Charged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-bplus-ch
                     SOURCES jetSubstructureMatchingSubBplusCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-xictoxipipi-ch
                     SOURCES jetSubstructureMatchingSubXicToXiPiPiCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-substructure-matching-sub-dielectron-ch
                     SOURCES jetSubstructureMatchingSubDielectronCharged.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
