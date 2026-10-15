@@ -86,6 +86,7 @@ o2physics_add_dpl_workflow(photon-isolation-qa
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(photon-charged-trigger-correlation
                     SOURCES photonChargedTriggerCorrelation.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(task-emc-extensive-mc-qa
@@ -94,10 +95,12 @@ o2physics_add_dpl_workflow(task-emc-extensive-mc-qa
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(photon-charged-trigger-producer
                     SOURCES photonChargedTriggerProducer.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(hadron-photon-correlation
 										SOURCES hadronPhotonCorrelation.cxx
+										REUSE_FROM JetDataModelPCH
 										PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
 										COMPONENT_NAME Analysis)
 
@@ -299,6 +302,7 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-spectra-charged-gen
                         SOURCES jetSpectraChargedGen.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(charged-jet-hadron
@@ -471,6 +475,7 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-correlation-dmeson
                         SOURCES jetCorrelationDmeson.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(hf-debug
@@ -505,10 +510,12 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-hadrons-pid
                         SOURCES jetHadronsPid.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-hf-ang-substructure
                         SOURCES jetHFAngularity.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-upc-qa
@@ -517,10 +524,12 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(embedding-qa
                         SOURCES embeddingQA.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(baryon-pair-in-jets
                         SOURCES baryonPairInJets.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
 endif()

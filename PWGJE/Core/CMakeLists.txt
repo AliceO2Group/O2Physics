@@ -27,3 +27,21 @@ o2physics_target_root_dictionary(PWGJECore
                       utilsTrackMatchingEMC.h
               LINKDEF PWGJECoreLinkDef.h)
 endif()
+
+# Precompiled header shared across PWGJE. Percentages are the share of the
+# group's workflow translation units that include the header, measured over the tree.
+# Jet.h reaches 90% of the group; the existing substructure carriers already
+# precompile it, so this one serves everything they do not cover.
+#
+# runDataProcessing.h is deliberately NOT precompiled: it requires each workflow's
+# customize() to be declared before it is included, so precompiling it silently
+# unregisters every option (the binary aborts at --dump-workflow, but links fine).
+#
+# Skipped under recc, which caches compilations remotely instead.
+add_library(JetDataModelPCH OBJECT jetDataModelPCH.cxx)
+target_link_libraries(JetDataModelPCH PUBLIC O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore)
+if(NOT DEFINED ENV{USE_RECC})
+  target_precompile_headers(JetDataModelPCH PRIVATE
+    [["PWGJE/DataModel/Jet.h"]]                # 90%
+  )
+endif()
