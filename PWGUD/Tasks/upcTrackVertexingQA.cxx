@@ -220,7 +220,7 @@ struct UpcTrackVertexingQA {
     if (track.pt() < ptTrackMin || std::abs(track.eta()) > etaTrackMax) {
       return false;
     }
-    if (std::abs(track.dcaZ()) >= unassignedDCA || std::abs(track.dcaXY()) >= unassignedDCA) {
+    if (std::abs(track.dcaZ()) >= UnassignedDCA || std::abs(track.dcaXY()) >= UnassignedDCA) {
       return false;
     }
     return true;
@@ -328,7 +328,7 @@ struct UpcTrackVertexingQA {
     registry.fill(HIST("TrkColl/hTrackSizePerEvent"), goodTracks.size());
 
     // build UPC candidates using events with exactly two opposite sign good tracks
-    if (goodTracks.size() != twoTracks) {
+    if (goodTracks.size() != TwoTracks) {
       return;
     }
     auto const& track0 = goodTracks[0];
@@ -398,7 +398,7 @@ struct UpcTrackVertexingQA {
       }
     }
 
-    if (goodMcGenParticles.size() != twoTracks) {
+    if (goodMcGenParticles.size() != TwoTracks) {
       return;
     }
 
