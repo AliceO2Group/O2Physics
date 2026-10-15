@@ -21,7 +21,6 @@
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/DataModel/DMesonPairsTables.h"
 
@@ -41,6 +40,7 @@
 #include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -51,12 +51,13 @@
 
 #include <Rtypes.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -67,6 +68,8 @@ using namespace o2::framework::expressions;
 
 namespace
 {
+using DecayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain;
+
 enum CandidateType {
   SelectedD = 0, // This particle is selected as a D
   SelectedDbar,  // This particle is selected as a Dbar
@@ -103,25 +106,21 @@ struct HfCorrelatorD0HadronsSelection {
   using CandidatesD0Data = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
 
   Partition<CandidatesD0Data> selectedD0Candidates =
-    aod::hf_sel_candidate_d0::isSelD0 >= 1 ||
-    aod::hf_sel_candidate_d0::isSelD0bar >= 1;
+    aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 ||
+    aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   // Process function to select collisions with at least one D0 candidate passing the selection criteria
   void processD0SelectionData(SelCollisions::iterator const& collision,
                               CandidatesD0Data const&)
   {
-    bool isSel8 = !useSel8 || collision.sel8();
-    bool isNoSameBunchPileUp = !selNoSameBunchPileUpColl ||
-                               collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+    bool const isSel8 = !useSel8 || collision.sel8();
+    bool const isNoSameBunchPileUp = !selNoSameBunchPileUpColl ||
+                                     collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     bool isD0Found = !doSelD0Collision;
 
     if (doSelD0Collision) {
       auto grouped = selectedD0Candidates.sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (const auto& candidate : grouped) {
-
-        if (candidate.isSelD0() < selectionFlagD0 && candidate.isSelD0bar() < selectionFlagD0bar) {
-          continue;
-        }
         if (std::abs(HfHelper::yD0(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
           continue;
         }
@@ -157,7 +156,6 @@ struct HfCorrelatorDMesonPairs {
   Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
   Configurable<bool> removeAmbiguous{"removeAmbiguous", false, "Flag to remove ambiguous candidates"};
   Configurable<float> ptMaxRemoveAmbiguous{"ptMaxRemoveAmbiguous", 5.0, "Max. pT to remove the ambiguous candidates"};
-  Configurable<bool> useD0SelectorMlInfo{"useD0SelectorMlInfo", false, "Flag for applying ML info in D0 selection"};
 
   // Event mixing configurables
   Configurable<bool> applyMixedEvent{"applyMixedEvent", false, "Flag to make the event mixing"};
@@ -167,9 +165,8 @@ struct HfCorrelatorDMesonPairs {
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
-  Configurable<float> ptTrackMax{"ptTrackMax", 100., "max. track pT"};
-  Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
-  Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<int> multMin{"multMin", 0, "minimum multiplicity accepted"};
+  Configurable<int> multMax{"multMax", 10000, "maximum multiplicity accepted"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -186,22 +183,20 @@ struct HfCorrelatorDMesonPairs {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
+  // Table aliases. The partitions below must have exactly the same type as the
+  // candidate table taken by the process functions, otherwise they are never bound.
   using SelCollisionsWithD0 = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
   using CandidatesD0Data = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>;
   using CandidatesD0McRec = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec>;
-
-  using FilteredD0Candidates = soa::Filtered<CandidatesD0Data>;
-  using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>; // trackFilter applied
+  using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter d0Filter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK))) != static_cast<uint8_t>(0);
-  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
   SliceCache cache;
 
-  Preslice<aod::HfCand2ProngWPid> perCol2Prong = aod::hf_cand::collisionId;
-  Preslice<FilteredD0Candidates> candsD0PerCollision = aod::hf_cand::collisionId;
-  Preslice<TracksData> trackIndicesPerCollision = aod::track::collisionId;
+  Partition<CandidatesD0Data> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<CandidatesD0McRec> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
@@ -211,10 +206,6 @@ struct HfCorrelatorDMesonPairs {
 
   std::vector<float> outputMlD0Cand2;
   std::vector<float> outputMlD0barCand2;
-
-  // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-  Partition<CandidatesD0Data> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<CandidatesD0McRec> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   // ThnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisBkgScore{"thnConfigAxisBkgScore", {100, 0, 1}, "Bkg score bins"};
@@ -236,8 +227,6 @@ struct HfCorrelatorDMesonPairs {
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
-  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
-  ConfigurableAxis binsDcaXY{"binsDcaXY", {128, -0.2, 0.2}, "DCA xy"};
   std::unique_ptr<BinningType> corrBinning;
 
   HistogramRegistry registry{
@@ -257,7 +246,7 @@ struct HfCorrelatorDMesonPairs {
      {"hPhiMcGen", "D meson candidates MC Gen;candidate #it{#varphi};entries", hTH1Phi},
      {"hPtVsYVsNContribMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
      {"hPtVsYVsNContribMcGenPrompt", "D meson candidates MC Gen Prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
-     {"hPtVsYVsNContribMcGenNonPrompt", "D meson candidates MC Gen Prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
+     {"hPtVsYVsNContribMcGenNonPrompt", "D meson candidates MC Gen Non-prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
      {"hNContribMcGen", "D meson candidates MC Gen;Number of PV contributors", hTH1NContrib},
      // MC Rec plots
      {"hPtVsYVsNContribMcRec", "D meson candidates MC Rec;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
@@ -274,7 +263,6 @@ struct HfCorrelatorDMesonPairs {
 
   void init(InitContext&)
   {
-
     if (applyMl) {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
@@ -411,32 +399,24 @@ struct HfCorrelatorDMesonPairs {
     }
 
     // Event mixing
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
-    AxisSpec const axisMultiplicity = {binsMultiplicity, "Multiplicity"};
-    AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
-    AxisSpec const axisPosZ = {binsZVtx, "PosZ"};
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
-    AxisSpec const axisDcaXY = {binsDcaXY, "DCA xy"};
     corrBinning = std::make_unique<BinningType>(BinningType{{binsZVtx, binsMultiplicity}});
 
     if (applyMixedEvent) {
-      registry.add("hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
-      registry.add("hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
       registry.add("hMultFT0M", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
       registry.add("hZvtx", "z vertex;z vertex;entries", {HistType::kTH1F, {{200, -20., 20.}}});
       registry.add("hD0Bin", "D0 selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{axisPoolBin}}});
       registry.add("hD0Cand2Bin", "D0 selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{axisPoolBin}}});
-      registry.add("hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{axisPoolBin}}});
-      registry.add("hDcaXYVsPt", "DCA xy vs pt", {HistType::kTH2F, {{axisDcaXY}, {axisPtHadron}}});
     }
   }
 
-
+  /// Kinematic, signal-region and ambiguity selections of a candidate
+  /// \return true if the candidate passes the selections
   template <typename T>
-  bool passKinematicSelections(const T& candidate, bool isDCand, bool isDbarCand)
+  bool passKinematicSelections(const T& candidate, const bool isDCand, const bool isDbarCand)
   {
     if (std::abs(HfHelper::yD0(candidate)) > yCandMax) {
-        return false;
+      return false;
     }
     if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
       return false;
@@ -468,10 +448,10 @@ struct HfCorrelatorDMesonPairs {
       SETBIT(candidateType, SelectedDbar);
     }
     if constexpr (IsMcRec) {
-      if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // matched as D0
+      if (candidate.flagMcMatchRec() == DecayChannel::D0ToPiK) { // matched as D0
         SETBIT(candidateType, TrueD);
       }
-      if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // matched as D0bar
+      if (candidate.flagMcMatchRec() == -DecayChannel::D0ToPiK) { // matched as D0bar
         SETBIT(candidateType, TrueDbar);
       }
     }
@@ -495,39 +475,37 @@ struct HfCorrelatorDMesonPairs {
   }
 
   /// Check if the candidate is a D
-  /// \param candidate is candidate
-  /// \return true if is a D
   bool isD(const uint8_t candidateType)
   {
     return (TESTBIT(candidateType, SelectedD));
   }
 
   /// Check if the candidate is a Dbar
-  /// \param candidate is candidate
-  /// \return true if is a Dbar
   bool isDbar(const uint8_t candidateType)
   {
     return (TESTBIT(candidateType, SelectedDbar));
   }
 
   /// Check if the candidate is a true D
-  /// \param candidate is candidate
-  /// \return true if is a true D
   bool isTrueD(const uint8_t candidateType)
   {
     return (TESTBIT(candidateType, TrueD));
   }
 
   /// Check if the candidate is a true Dbar
-  /// \param candidate is candidate
-  /// \return true if is a true Dbar
   bool isTrueDbar(const uint8_t candidateType)
   {
     return (TESTBIT(candidateType, TrueDbar));
   }
 
-  /// Canonical pair ordering:
-  /// D0 before D0bar; for equal flavours, higher pT first.
+  /// Rapidity and pT selections of gen-level particles
+  template <typename T>
+  bool passGenSelections(const T& particle)
+  {
+    return std::abs(particle.y()) <= yCandMax && (ptCandMin < 0. || particle.pt() >= ptCandMin);
+  }
+
+  /// Canonical pair ordering: D0 before D0bar; for equal flavours, higher pT first.
   /// \return true if candidate 1 and candidate 2 should be exchanged
   template <typename T>
   static bool shouldSwapOrder(const bool isD1, const bool isDbar1, const bool isD2, const bool isDbar2, const T& candidate1, const T& candidate2)
@@ -538,8 +516,10 @@ struct HfCorrelatorDMesonPairs {
     return candidate1.pt() < candidate2.pt();
   }
 
+  /// ML selections of a candidate
+  /// \return true if the candidate is selected by the ML model (as D0 and/or D0bar)
   template <typename T>
-  bool passMlSelections(const T& candidate, bool isDCand, bool isDbarCand, std::vector<float>& outputMlD0Cand, std::vector<float>& outputMlD0barCand)
+  bool passMlSelections(const T& candidate, const bool isDCand, const bool isDbarCand, std::vector<float>& outputMlD0Cand, std::vector<float>& outputMlD0barCand)
   {
     bool isSelectedMlD0Cand = false;
     bool isSelectedMlD0barCand = false;
@@ -553,11 +533,7 @@ struct HfCorrelatorDMesonPairs {
       isSelectedMlD0barCand = hfMlResponse.isSelectedMl(inputFeaturesD0bar, candidate.pt(), outputMlD0barCand);
     }
 
-    // Remove non-ML selected D0 candidates
-    if (!isSelectedMlD0Cand && !isSelectedMlD0barCand) {
-      return false;
-    }
-    return true;
+    return isSelectedMlD0Cand || isSelectedMlD0barCand;
   }
 
   /// Fill PID related plots for D0 and D0bar
@@ -584,14 +560,14 @@ struct HfCorrelatorDMesonPairs {
   }
 
   /// Fill counters for D0 and D0bar
-  /// \param d0Candidates contains all D0 candidates
+  /// \param d0Candidates contains the D0 candidates of the collision
   template <bool IsMcRec, typename T>
   void getCountersPerEvent(const T& d0Candidates)
   {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
     for (const auto& candidate : d0Candidates) {
       // Get counters per event
-      auto candidateType = assignCandidateTypeD0<IsMcRec>(candidate); // Candidate type attribution
+      auto const candidateType = assignCandidateTypeD0<IsMcRec>(candidate); // Candidate type attribution
       bool const isDCand = isD(candidateType);
       bool const isDbarCand = isDbar(candidateType);
       bool const isTrueDCand = isTrueD(candidateType);
@@ -697,23 +673,23 @@ struct HfCorrelatorDMesonPairs {
       }
     }
     // Fill True info
-    if (isTrueDCand1 != 0) {
+    if (isTrueDCand1) {
       registry.fill(HIST("hSelectionStatus"), 6);
-    } else if (isTrueDbarCand1 != 0) {
+    } else if (isTrueDbarCand1) {
       registry.fill(HIST("hSelectionStatus"), 7);
     }
-    if (isTrueDCand2 != 0) {
+    if (isTrueDCand2) {
       registry.fill(HIST("hSelectionStatus"), 12);
-    } else if (isTrueDbarCand2 != 0) {
+    } else if (isTrueDbarCand2) {
       registry.fill(HIST("hSelectionStatus"), 13);
     }
-    if ((isTrueDCand1 != 0) && (isTrueDCand2 != 0)) {
+    if (isTrueDCand1 && isTrueDCand2) {
       registry.fill(HIST("hSelectionStatus"), 22);
-    } else if ((isTrueDbarCand1 != 0) && (isTrueDbarCand2 != 0)) {
+    } else if (isTrueDbarCand1 && isTrueDbarCand2) {
       registry.fill(HIST("hSelectionStatus"), 23);
-    } else if ((isTrueDCand1 != 0) && (isTrueDbarCand2 != 0)) {
+    } else if (isTrueDCand1 && isTrueDbarCand2) {
       registry.fill(HIST("hSelectionStatus"), 24);
-    } else if ((isTrueDbarCand1 != 0) && (isTrueDCand2 != 0)) {
+    } else if (isTrueDbarCand1 && isTrueDCand2) {
       registry.fill(HIST("hSelectionStatus"), 25);
     }
   }
@@ -739,57 +715,40 @@ struct HfCorrelatorDMesonPairs {
     return pairType;
   }
 
-  void fillMatchingHisto(int8_t matchedRec1, int8_t matchedRec2)
+  template <bool IsGen>
+  void fillMatchingHisto(const int8_t matched1, const int8_t matched2)
   {
-    // Fill hMatchingMcRec - Cand 1
-    registry.fill(HIST("hMatchingMcRec"), 1);
-    if (matchedRec1 == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-      registry.fill(HIST("hMatchingMcRec"), 2);
-    } else if (matchedRec1 == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-      registry.fill(HIST("hMatchingMcRec"), 3);
-    } else if (matchedRec1 == 0) {
-      registry.fill(HIST("hMatchingMcRec"), 4);
+    auto hist = IsGen ? registry.get<TH1>(HIST("hMatchingMcGen")) : registry.get<TH1>(HIST("hMatchingMcRec"));
+    hist->Fill(1);
+    if (matched1 == DecayChannel::D0ToPiK) {
+      hist->Fill(2);
+    } else if (matched1 == -DecayChannel::D0ToPiK) {
+      hist->Fill(3);
+    } else if (matched1 == 0) {
+      hist->Fill(4);
     }
-    // Fill hMatchingMcRec - Cand 2
-    registry.fill(HIST("hMatchingMcRec"), 5);
-    if (matchedRec2 == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-      registry.fill(HIST("hMatchingMcRec"), 6);
-    } else if (matchedRec2 == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-      registry.fill(HIST("hMatchingMcRec"), 7);
-    } else if (matchedRec2 == 0) {
-      registry.fill(HIST("hMatchingMcRec"), 8);
+    hist->Fill(5);
+    if (matched2 == DecayChannel::D0ToPiK) {
+      hist->Fill(6);
+    } else if (matched2 == -DecayChannel::D0ToPiK) {
+      hist->Fill(7);
+    } else if (matched2 == 0) {
+      hist->Fill(8);
     }
   }
 
-  template <bool IsMcRec, typename TCollision, typename TCandidates, typename TTracks>
+  /// D0(bar)-D0(bar) correlation pair builder, shared by the data and MC-reco modes
+  /// \param collision is the collision
+  /// \param selectedD0CandidatesGrouped is the per-collision slice of the selected D0 candidates
+  /// \param tracks are the (already filtered) tracks of the collision
+  /// \param timeStamp is the BC timestamp of the collision
+  template <bool IsMcRec, typename TCollision, typename TCandidates>
   void processImpl(TCollision const& collision,
-                   TCandidates const& selectedD0CandidatesGrouped, // per-collision slice of the partition
-                   TTracks const& tracks,
+                   TCandidates const& selectedD0CandidatesGrouped,
                    const int64_t timeStamp)
   {
-    int gCollisionId = collision.globalIndex();
-    int poolBin = corrBinning->getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
-
-    int nTracks = 0;
-    if (collision.numContrib() > 1) {
-      for (const auto& track : tracks) {
-        if (std::abs(track.eta()) >= etaTrackMax || std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
-          continue;
-        }
-        nTracks++;
-      }
-    }
-    if (applyMixedEvent) {
-      registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
-    }
-    if (nTracks < multMin || nTracks > multMax) {
-      return;
-    }
-    if (applyMixedEvent) {
-      registry.fill(HIST("hMultiplicity"), nTracks);
-    }
-
-    int cntD0 = 0;
+    int const gCollisionId = collision.globalIndex();
+    int const poolBin = corrBinning->getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
 
     getCountersPerEvent<IsMcRec>(selectedD0CandidatesGrouped);
 
@@ -799,22 +758,21 @@ struct HfCorrelatorDMesonPairs {
       outputMlD0Cand1.clear();
       outputMlD0barCand1.clear();
 
-      auto prong0Cand1 = candidate1.template prong0_as<TracksData>();
-      auto prong1Cand1 = candidate1.template prong1_as<TracksData>();
+      auto const prong0Cand1 = candidate1.prong0Id();
+      auto const prong1Cand1 = candidate1.prong1Id();
 
-      int8_t matchedRec1 = 0;
-      int8_t originRec1 = 0;
-
+      [[maybe_unused]] int8_t matchedRec1 = 0;
+      [[maybe_unused]] int8_t originRec1 = 0;
       if constexpr (IsMcRec) {
         matchedRec1 = candidate1.flagMcMatchRec();
         originRec1 = candidate1.originMcRec();
       }
 
-      auto candidateType1 = assignCandidateTypeD0<IsMcRec>(candidate1); // Candidate type attribution
-      bool isDCand1 = isD(candidateType1);
-      bool isDbarCand1 = isDbar(candidateType1);
-      bool isTrueDCand1 = isTrueD(candidateType1);
-      bool isTrueDbarCand1 = isTrueDbar(candidateType1);
+      auto const candidateType1 = assignCandidateTypeD0<IsMcRec>(candidate1); // Candidate type attribution
+      bool const isDCand1 = isD(candidateType1);
+      bool const isDbarCand1 = isDbar(candidateType1);
+      bool const isTrueDCand1 = isTrueD(candidateType1);
+      bool const isTrueDbarCand1 = isTrueDbar(candidateType1);
 
       registry.fill(HIST("hPtCand"), candidate1.pt());
 
@@ -866,8 +824,8 @@ struct HfCorrelatorDMesonPairs {
         }
       }
       if (isDbarCand1) {
-        // Fill THnSparse for D0bar candidates
         registry.fill(HIST("hMass"), HfHelper::invMassD0barToKPi(candidate1), candidate1.pt());
+        // Fill THnSparse for D0bar candidates
         if (applyMl) {
           registry.fill(HIST("hnDMesonMl"), outputMlD0barCand1[0], outputMlD0barCand1[1], HfHelper::invMassD0barToKPi(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
         } else {
@@ -880,52 +838,18 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
           if (originRec1 == RecoDecay::Prompt) {
             registry.fill(HIST("hMassMcRecPrompt"), HfHelper::invMassD0barToKPi(candidate1), candidate1.pt());
+            registry.fill(HIST("hPtVsYVsNContribMcRecPrompt"), candidate1.pt(), HfHelper::yD0(candidate1), collision.numContrib());
           } else if (originRec1 == RecoDecay::NonPrompt) {
             registry.fill(HIST("hMassMcRecNonPrompt"), HfHelper::invMassD0barToKPi(candidate1), candidate1.pt());
+            registry.fill(HIST("hPtVsYVsNContribMcRecNonPrompt"), candidate1.pt(), HfHelper::yD0(candidate1), collision.numContrib());
           }
         } else if (isTrueDCand1) {
           registry.fill(HIST("hMassMcRecReflections"), HfHelper::invMassD0barToKPi(candidate1), candidate1.pt());
         }
-        // Fill D0 table for offline event mixing
+        // Fill D0bar table for offline event mixing
         if (applyMixedEvent) {
-          entryDMesonInfoCand1(candidate1.pt(), candidate1.eta(), candidate1.phi(), HfHelper::invMassD0ToPiK(candidate1), candidateType1, poolBin, gCollisionId, timeStamp);
+          entryDMesonInfoCand1(candidate1.pt(), candidate1.eta(), candidate1.phi(), HfHelper::invMassD0barToKPi(candidate1), candidateType1, poolBin, gCollisionId, timeStamp);
         }
-      }
-
-      if (applyMixedEvent) {
-        // Loop on the associated tracks for offline event mixing
-        for (const auto& track : tracks) {
-          // apply track selection
-          if (track.collisionId() != gCollisionId) {
-            continue;
-          }
-
-          // Manual trackFilter check
-          if (std::abs(track.eta()) >= etaTrackMax) {
-            continue;
-          }
-          if (track.pt() <= ptTrackMin) {
-            continue;
-          }
-          if (std::abs(track.dcaXY()) >= dcaXYTrackMax) {
-            continue;
-          }
-          if (std::abs(track.dcaZ()) >= dcaZTrackMax) {
-            continue;
-          }
-          // Removing D0 daughters by checking track indices
-          if (daughterTracksCutFlag) {
-            if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
-              continue;
-            }
-          }
-          if (cntD0 == 0) {
-            entryAssocHad(track.pt(), track.eta(), track.phi(), poolBin, gCollisionId, timeStamp);
-            registry.fill(HIST("hTracksBin"), poolBin);
-            registry.fill(HIST("hDcaXYVsPt"), track.dcaXY(), track.pt());
-          }
-        } // Hadron Tracks loop
-        cntD0++;
       }
 
       // Loop on the second D0 candidate
@@ -934,21 +858,18 @@ struct HfCorrelatorDMesonPairs {
         outputMlD0Cand2.clear();
         outputMlD0barCand2.clear();
 
-        auto prong0Cand2 = candidate2.template prong0_as<TracksData>();
-        auto prong1Cand2 = candidate2.template prong1_as<TracksData>();
+        auto const prong0Cand2 = candidate2.prong0Id();
+        auto const prong1Cand2 = candidate2.prong1Id();
         if ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2)) {
           continue;
         }
 
-        auto candidateType2 = assignCandidateTypeD0<IsMcRec>(candidate2); // Candidate type attribution
-        bool isDCand2 = isD(candidateType2);
-        bool isDbarCand2 = isDbar(candidateType2);
-        bool isTrueDCand2 = isTrueD(candidateType2);
-        bool isTrueDbarCand2 = isTrueDbar(candidateType2);
+        auto const candidateType2 = assignCandidateTypeD0<IsMcRec>(candidate2); // Candidate type attribution
+        bool const isDCand2 = isD(candidateType2);
+        bool const isDbarCand2 = isDbar(candidateType2);
 
         int8_t matchedRec2 = 0;
         int8_t originRec2 = 0;
-
         if constexpr (IsMcRec) {
           matchedRec2 = candidate2.flagMcMatchRec();
           originRec2 = candidate2.originMcRec();
@@ -964,7 +885,7 @@ struct HfCorrelatorDMesonPairs {
 
         if (applyMixedEvent) {
           if (isDCand2) {
-            entryDMesonInfoCand2(candidate2.pt(), candidate2.eta(), candidate2.phi(), HfHelper::invMassD0barToKPi(candidate2), candidateType2, poolBin, gCollisionId, timeStamp);
+            entryDMesonInfoCand2(candidate2.pt(), candidate2.eta(), candidate2.phi(), HfHelper::invMassD0ToPiK(candidate2), candidateType2, poolBin, gCollisionId, timeStamp);
           }
           if (isDbarCand2) {
             entryDMesonInfoCand2(candidate2.pt(), candidate2.eta(), candidate2.phi(), HfHelper::invMassD0barToKPi(candidate2), candidateType2, poolBin, gCollisionId, timeStamp);
@@ -972,25 +893,27 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hD0Cand2Bin"), poolBin);
         }
 
-        uint8_t pairType = setPairType(candidateType1, candidateType2);
-        if (shouldSwapOrder(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidate1, candidate2)) {
-          std::swap(isDCand1, isDCand2);
-          std::swap(isDbarCand1, isDbarCand2);
-          std::swap(isTrueDCand1, isTrueDCand2);
-          std::swap(isTrueDbarCand1, isTrueDbarCand2);
-        }
+        // Canonical ordering of the pair: D0 first (higher pT first for equal flavours)
+        bool const swapOrder = shouldSwapOrder(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidate1, candidate2);
+        uint8_t const type1 = swapOrder ? candidateType2 : candidateType1;
+        uint8_t const type2 = swapOrder ? candidateType1 : candidateType2;
+        auto const& first = swapOrder ? candidate2 : candidate1;
+        auto const& second = swapOrder ? candidate1 : candidate2;
+        uint8_t const pairType = setPairType(type1, type2);
 
         // Fill entries for D0-D0(bar) pairs and plot histos
-        fillSelectionStatusHisto(candidateType1, candidateType2);
-        entryD0Pair(candidate1.pt(), candidate2.pt(), HfHelper::yD0(candidate1), HfHelper::yD0(candidate2), candidate1.eta(), candidate2.eta(), 
-                    candidate1.phi(), candidate2.phi(), HfHelper::invMassD0ToPiK(candidate1), HfHelper::invMassD0barToKPi(candidate1),
-                    HfHelper::invMassD0ToPiK(candidate2), HfHelper::invMassD0barToKPi(candidate2), pairType, candidateType1, candidateType2);
+        fillSelectionStatusHisto(type1, type2);
+        entryD0Pair(first.pt(), second.pt(), HfHelper::yD0(first), HfHelper::yD0(second), first.eta(), second.eta(),
+                    first.phi(), second.phi(), HfHelper::invMassD0ToPiK(first), HfHelper::invMassD0barToKPi(first),
+                    HfHelper::invMassD0ToPiK(second), HfHelper::invMassD0barToKPi(second), pairType, type1, type2);
         if (applyMl) {
-          entryD0PairMl(outputMlD0Cand1, outputMlD0barCand1, outputMlD0Cand2, outputMlD0barCand2);
+          entryD0PairMl(swapOrder ? outputMlD0Cand2 : outputMlD0Cand1, swapOrder ? outputMlD0barCand2 : outputMlD0barCand1,
+                        swapOrder ? outputMlD0Cand1 : outputMlD0Cand2, swapOrder ? outputMlD0barCand1 : outputMlD0barCand2);
         }
         if constexpr (IsMcRec) {
-          fillMatchingHisto(matchedRec1, matchedRec2);
-          entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
+          fillMatchingHisto<false>(swapOrder ? matchedRec2 : matchedRec1, swapOrder ? matchedRec1 : matchedRec2);
+          entryD0PairMcInfo(swapOrder ? originRec2 : originRec1, swapOrder ? originRec1 : originRec2,
+                            swapOrder ? matchedRec2 : matchedRec1, swapOrder ? matchedRec1 : matchedRec2);
         }
       } // end inner loop (Cand2)
     } // end outer loop (Cand1)
@@ -1001,61 +924,84 @@ struct HfCorrelatorDMesonPairs {
     }
   }
 
+  /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(SelCollisionsWithD0::iterator const& collision,
-                   CandidatesD0Data const&, TracksData const& tracks, aod::BCsWithTimestamps const&)
+                   CandidatesD0Data const&, aod::Tracks const&, aod::BCsWithTimestamps const&)
   {
-    const auto timeStamp = collision.bc_as<aod::BCsWithTimestamps>().timestamp();
+    auto const timeStamp = collision.bc_as<aod::BCsWithTimestamps>().timestamp();
     auto grouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    processImpl<false>(collision, grouped, tracks, timeStamp);
+    processImpl<false>(collision, grouped, timeStamp);
   }
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processData, "Process data mode", true);
 
-  void processMcRec(SelCollisionsWithD0::iterator const& collision, CandidatesD0McRec const&, TracksData const& tracks, aod::BCsWithTimestamps const&)
+  /// D0(bar)-D0(bar) correlation pair builder - MC reco level (candidates matched to MC truth)
+  void processMcRec(SelCollisionsWithD0::iterator const& collision,
+                    CandidatesD0McRec const&, aod::Tracks const&, aod::BCsWithTimestamps const&)
   {
-    const auto timeStamp = collision.bc_as<aod::BCsWithTimestamps>().timestamp();
+    auto const timeStamp = collision.bc_as<aod::BCsWithTimestamps>().timestamp();
     auto grouped = selectedD0CandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    processImpl<true>(collision, grouped, tracks, timeStamp);
+    processImpl<true>(collision, grouped, timeStamp);
   }
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRec, "Process MC reco mode", false);
 
-  void processMcGen(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesPlus2Prong const& mcParticles)
+  /// D0(bar)-D0(bar) correlation pair builder - MC generator level (particles flagged as D0 -> pi K)
+    void processMcGen(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesPlus2Prong const& mcParticles)
   {
+    // Take the associated reconstructed collision with the highest number of PV contributors
     int numPvContributorsGen{0};
-    for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
+    for (const auto& collision : collisions) {
       int const numPvContributors = collision.numContrib();
-
-      if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
+      if (numPvContributors > numPvContributorsGen) {
         numPvContributorsGen = numPvContributors;
       }
     }
-    // Get counters per event
-    int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
+
+    // Select the D0(bar) -> K pi particles
+    std::vector<McParticlesPlus2Prong::iterator> selectedParticles;
     for (const auto& particle : mcParticles) {
-      // check if the particle is D0 or D0bar decaying to k pi
-      if (!(std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
+      if (std::abs(particle.flagMcMatchGen()) != DecayChannel::D0ToPiK) {
         continue;
       }
-      if (std::abs(particle.y()) > yCandMax) {
+      registry.fill(HIST("hPtCandMcGen"), particle.pt());
+      if (!passGenSelections(particle)) {
         continue;
       }
-      if (ptCandMin >= 0. && particle.pt() < ptCandMin) {
-        continue;
-      }
-      auto particleType = assignParticleTypeD0Gen(particle); // Candidate type attribution
+      selectedParticles.push_back(particle);
+    }
+
+    // Single-particle histograms and per-event counters
+    int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
+    for (const auto& particle : selectedParticles) {
+      auto const particleType = assignParticleTypeD0Gen(particle);
       bool const isDParticle = isTrueD(particleType);
       bool const isDbarParticle = isTrueDbar(particleType);
-      if (isDParticle) {
-        nDevent++;
+      nDevent += isDParticle;
+      nDbarevent += isDbarParticle;
+      nDDbarevent += (isDParticle && isDbarParticle);
+      nDorDbarevent += (isDParticle || isDbarParticle);
+
+      registry.fill(HIST("hEtaMcGen"), particle.eta());
+      registry.fill(HIST("hPhiMcGen"), particle.phi());
+      registry.fill(HIST("hPtCandAfterCutMcGen"), particle.pt());
+
+      registry.fill(HIST("hStatusSinglePartMcGen"), 1);
+      if (isDParticle && !isDbarParticle) {
+        registry.fill(HIST("hStatusSinglePartMcGen"), 2);
+        registry.fill(HIST("hStatusSinglePartMcGen"), 5);
+      } else if (isDbarParticle && !isDParticle) {
+        registry.fill(HIST("hStatusSinglePartMcGen"), 3);
+        registry.fill(HIST("hStatusSinglePartMcGen"), 6);
+      } else if (isDParticle && isDbarParticle) {
+        registry.fill(HIST("hStatusSinglePartMcGen"), 4);
       }
-      if (isDbarParticle) {
-        nDbarevent++;
+
+      registry.fill(HIST("hPtVsYVsNContribMcGen"), particle.pt(), particle.y(), numPvContributorsGen);
+      if (particle.originMcGen() == RecoDecay::Prompt) {
+        registry.fill(HIST("hPtVsYVsNContribMcGenPrompt"), particle.pt(), particle.y(), numPvContributorsGen);
+      } else if (particle.originMcGen() == RecoDecay::NonPrompt) {
+        registry.fill(HIST("hPtVsYVsNContribMcGenNonPrompt"), particle.pt(), particle.y(), numPvContributorsGen);
       }
-      if (isDParticle && isDbarParticle) {
-        nDDbarevent++;
-      }
-      if (isDParticle || isDbarParticle) {
-        nDorDbarevent++;
-      }
+      registry.fill(HIST("hNContribMcGen"), numPvContributorsGen);
     }
     if (nDevent > 0) {
       registry.fill(HIST("hInputCheckD0McGen"), nDevent);
@@ -1070,138 +1016,61 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hInputCheckD0OrD0barMcGen"), nDorDbarevent);
     }
 
-    for (const auto& particle1 : mcParticles) {
-      // check if the particle is D0 or D0bar decaying to k pi
-      if (!(std::abs(particle1.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
-        continue;
-      }
-      registry.fill(HIST("hPtCandMcGen"), particle1.pt());
+    // Pairs of selected particles
+    for (size_t i = 0; i < selectedParticles.size(); ++i) {
+      for (size_t j = i + 1; j < selectedParticles.size(); ++j) {
+        auto const& particle1 = selectedParticles[i];
+        auto const& particle2 = selectedParticles[j];
 
-      if (std::abs(particle1.y()) > yCandMax) {
-        continue;
-      }
-      if (ptCandMin >= 0. && particle1.pt() < ptCandMin) {
-        continue;
-      }
-      registry.fill(HIST("hEtaMcGen"), particle1.eta());
-      registry.fill(HIST("hPhiMcGen"), particle1.phi());
-      registry.fill(HIST("hPtCandAfterCutMcGen"), particle1.pt());
+        auto const type1 = assignParticleTypeD0Gen(particle1);
+        auto const type2 = assignParticleTypeD0Gen(particle2);
 
-      auto particleType1 = assignParticleTypeD0Gen(particle1); // Candidate sign attribution
-      bool const isDParticle1 = isTrueD(particleType1);
-      bool const isDbarParticle1 = isTrueDbar(particleType1);
+        // Canonical ordering (same as reco): D0 first, higher pT first for equal flavours
+        bool const swapOrder = shouldSwapOrder(isTrueD(type1), isTrueDbar(type1), isTrueD(type2), isTrueDbar(type2), particle1, particle2);
+        auto const& first = swapOrder ? particle2 : particle1;
+        auto const& second = swapOrder ? particle1 : particle2;
+        auto const typeFirst = swapOrder ? type2 : type1;
+        auto const typeSecond = swapOrder ? type1 : type2;
+        bool const isDFirst = isTrueD(typeFirst), isDbarFirst = isTrueDbar(typeFirst);
+        bool const isDSecond = isTrueD(typeSecond), isDbarSecond = isTrueDbar(typeSecond);
 
-      // check if it's MC matched
-      int8_t matchedGen1 = particle1.flagMcMatchGen();
-      // check origin
-      int8_t originGen1 = particle1.originMcGen();
+        fillMatchingHisto<true>(first.flagMcMatchGen(), second.flagMcMatchGen());
 
-      // Fill selection status single particle
-      registry.fill(HIST("hStatusSinglePartMcGen"), 1);
-      if (isDParticle1 && !isDbarParticle1) {
-        registry.fill(HIST("hStatusSinglePartMcGen"), 2);
-        registry.fill(HIST("hStatusSinglePartMcGen"), 5);
-      } else if (isDbarParticle1 && !isDParticle1) {
-        registry.fill(HIST("hStatusSinglePartMcGen"), 3);
-        registry.fill(HIST("hStatusSinglePartMcGen"), 6);
-      } else if (isDParticle1 && isDbarParticle1) {
-        registry.fill(HIST("hStatusSinglePartMcGen"), 4);
-      }
-
-      registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), numPvContributorsGen);
-      if (originGen1 == RecoDecay::Prompt) {
-        registry.fill(HIST("hPtVsYVsNContribMcGenPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
-      }
-      if (originGen1 == RecoDecay::NonPrompt) {
-        registry.fill(HIST("hPtVsYVsNContribMcGenNonPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
-      }
-      registry.fill(HIST("hNContribMcGen"), numPvContributorsGen);
-
-      for (auto particle2 = particle1 + 1; particle2 != mcParticles.end(); ++particle2) {
-        // check if the particle is D0 or D0bar decaying to k pi
-        if (!(std::abs(particle2.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
-          continue;
-        }
-        if (std::abs(particle2.y()) > yCandMax) {
-          continue;
-        }
-        if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
-          continue;
-        }
-        // Candidate sign attribution.
-        auto particleType2 = assignParticleTypeD0Gen(particle2);
-        bool const isDParticle2 = isTrueD(particleType2);
-        bool const isDbarParticle2 = isTrueDbar(particleType2);
-
-        // check if it's MC matched
-        int8_t matchedGen2 = particle2.flagMcMatchGen();
-        // check origin
-        int8_t originGen2 = particle2.originMcGen();
-
-        // Fill hMatchingMcGen - Cand 1
-        registry.fill(HIST("hMatchingMcGen"), 1);
-        if (matchedGen1 == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-          registry.fill(HIST("hMatchingMcGen"), 2);
-        } else if (matchedGen1 == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-          registry.fill(HIST("hMatchingMcGen"), 3);
-        } else if (matchedGen1 == 0) {
-          registry.fill(HIST("hMatchingMcGen"), 4);
-        }
-        // Fill hMatchingMcRec - Cand 2
-        registry.fill(HIST("hMatchingMcGen"), 5);
-        if (matchedGen2 == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-          registry.fill(HIST("hMatchingMcGen"), 6);
-        } else if (matchedGen2 == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-          registry.fill(HIST("hMatchingMcGen"), 7);
-        } else if (matchedGen2 == 0) {
-          registry.fill(HIST("hMatchingMcGen"), 8);
-        }
-
-        // Fill particle1's Selection Status
+        // Selection status
         registry.fill(HIST("hSelectionStatusMcGen"), 2);
-        if (isDParticle1 && !isDbarParticle1) {
+        if (isDFirst && !isDbarFirst) {
           registry.fill(HIST("hSelectionStatusMcGen"), 6);
-        } else if (isDbarParticle1 && !isDParticle1) {
+        } else if (isDbarFirst && !isDFirst) {
           registry.fill(HIST("hSelectionStatusMcGen"), 7);
         }
-
-        // Fill particle2's Selection Status
         registry.fill(HIST("hSelectionStatusMcGen"), 8);
-        if (isDParticle2 && !isDbarParticle2) {
+        if (isDSecond && !isDbarSecond) {
           registry.fill(HIST("hSelectionStatusMcGen"), 12);
-        } else if (isDbarParticle2 && !isDParticle2) {
+        } else if (isDbarSecond && !isDSecond) {
           registry.fill(HIST("hSelectionStatusMcGen"), 13);
         }
 
-        // Fill pair Selection Status
-        uint8_t pairType(0);
         registry.fill(HIST("hSelectionStatusMcGen"), 1);
-
-        if (isDParticle1 && isDParticle2) {
-          SETBIT(pairType, DD);
+        if (isDFirst && isDSecond) {
           registry.fill(HIST("hSelectionStatusMcGen"), 22);
         }
-        if (isDbarParticle1 && isDbarParticle2) {
-          SETBIT(pairType, DbarDbar);
+        if (isDbarFirst && isDbarSecond) {
           registry.fill(HIST("hSelectionStatusMcGen"), 23);
         }
-        if (isDParticle1 && isDbarParticle2) {
-          SETBIT(pairType, DDbar);
+        if (isDFirst && isDbarSecond) {
           registry.fill(HIST("hSelectionStatusMcGen"), 24);
         }
-        if (isDbarParticle1 && isDParticle2) {
-          SETBIT(pairType, DbarD);
+        if (isDbarFirst && isDSecond) {
           registry.fill(HIST("hSelectionStatusMcGen"), 25);
         }
 
-        // Fill pair Selection Status
-        entryD0PairMcGen(particle1.pt(), particle2.pt(), particle1.y(), particle2.y(), particle1.eta(), particle2.eta(), particle1.phi(), particle2.phi(), MassD0, MassD0Bar, MassD0, MassD0Bar, pairType, particleType1, particleType2);
-        entryD0PairMcGenInfo(originGen1, originGen2, matchedGen1, matchedGen2);
-
-      } // end inner loop
-    } // end outer loop
+        uint8_t const pairType = setPairType(typeFirst, typeSecond);
+        entryD0PairMcGen(first.pt(), second.pt(), first.y(), second.y(), first.eta(), second.eta(), first.phi(), second.phi(),
+                         MassD0, MassD0Bar, MassD0, MassD0Bar, pairType, typeFirst, typeSecond);
+        entryD0PairMcGenInfo(first.originMcGen(), second.originMcGen(), first.flagMcMatchGen(), second.flagMcMatchGen());
+      }
+    }
   }
-
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcGen, "Process D0 Mc Gen mode", false);
 };
 
