@@ -1064,7 +1064,7 @@ DECLARE_SOA_TABLE(DileptonsPolarization, "AOD", "RTDILPOLAR", //!
 DECLARE_SOA_TABLE(DileptonsA2, "AOD", "RTDILEPTONA2", //!
                   reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Sign, reducedpair::FilterMap,
                   reducedpair::A2TPC, reducedpair::A2FT0A, reducedpair::A2FT0C,
-                  reducedpair::Cos2DeltaPhiTPC, reducedpair::Cos2DeltaPhiFT0A, reducedpair::Cos2DeltaPhiFT0C
+                  reducedpair::Cos2DeltaPhiTPC, reducedpair::Cos2DeltaPhiFT0A, reducedpair::Cos2DeltaPhiFT0C,
                   reducedpair::DeltaPhiTPC, reducedpair::DeltaPhiFT0A, reducedpair::DeltaPhiFT0C,
                   reducedpair::PhiDaughter);
 
