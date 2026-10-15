@@ -159,6 +159,7 @@ struct TwoParticleCorrelationsMpi {
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
+  ConfigurableAxis axisMultiplicityQA{"axisMultiplicityQA", {250, 0, 250}, "fine multiplicity / centrality axis for control histograms"};
 
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
@@ -437,8 +438,8 @@ struct TwoParticleCorrelationsMpi {
          eventSeedEstimatorEnabled ? "enabled" : "disabled",
          cfgNuncSeedsTemplateFile.value.c_str(), cfgNuncSeedsTemplate.value.c_str());
 
-    registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
+    registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{axisMultiplicityQA, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
+    registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{axisMultiplicityQA, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
     if (doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected) {
       if (cfgMultCorrelationsMask == 0) {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
@@ -461,7 +462,7 @@ struct TwoParticleCorrelationsMpi {
       }
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
-    registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{100, 0, 100, "/multiplicity/centrality"}}});
+    registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{axisMultiplicityQA, "/multiplicity/centrality"}}});
     if (doprocessMCDetectorClosure) {
       registry.add("detectorClosure/rawMultiplicityVsTrue", "raw reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{raw,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
       registry.add("detectorClosure/correctedMultiplicityVsTrue", "corrected reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{corr,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
@@ -475,14 +476,14 @@ struct TwoParticleCorrelationsMpi {
       detectorClosureStatus->GetXaxis()->SetBinLabel(3, "invalid best-collision count");
     }
     if (eventSeedEstimatorEnabled) {
-      registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+      registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{axisMultiplicityQA, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
       registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
       registry.add("eventSeedEstimatorStatus", "event-estimator status", {HistType::kTH1F, {{5, -0.5, 4.5, "status"}}});
-      registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
-      registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+      registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{axisMultiplicityQA, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
+      registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{axisMultiplicityQA, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
       registry.add("eventSeedFixedProbabilityVsMultiplicity", "fixed-probability event Seed versus multiplicity;multiplicity;N_{seed}^{probability sum}", {HistType::kTH2F, {axisMultiplicity, {1000, 0, 100}}});
-      registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
-      registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
+      registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{axisMultiplicityQA, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
+      registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{axisMultiplicityQA, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
       registry.add("profileEventNTriggers", "mean event trigger count", {HistType::kTProfile, {axisMultiplicity}});
       registry.add("profileEventNearPairs", "mean summed near-pair probability", {HistType::kTProfile, {axisMultiplicity}});
       registry.add("profileEventAwayPairs", "mean summed away-pair probability", {HistType::kTProfile, {axisMultiplicity}});
