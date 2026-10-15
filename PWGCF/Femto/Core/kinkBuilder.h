@@ -821,6 +821,58 @@ class KinkBuilderDerivedToDerived
     }
   }
 
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15>
+  void processSigmaWithMc(T1 const& col, T2 const& /*sigmaTable*/, T3 const& oldTrackTable, T4& partitionSigma, T5& trackBuilder, T6& cache, T7& newSigmaTable, T8& newTrackTable, T9& newCollisionTable,
+                          T10& mcBuilder, T11 const& mcCols, T12 const& mcParticles, T13 const& mcMothers, T14 const& mcPartonicMothers, T15& mcProducts)
+  {
+    if (mLimitSigma == 0) {
+      return;
+    }
+
+    auto sigmaSlice = partitionSigma->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& sigma : sigmaSlice) {
+      auto chaDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(sigma.chaDauId(), oldTrackTable));
+
+      int64_t chaDaughterIndex = trackBuilder.getDaughterIndex(chaDaughter, newTrackTable, newCollisionTable, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+
+      newSigmaTable.producedSigmas(newCollisionTable.producedCollision.lastIndex(),
+                                   sigma.signedPt(),
+                                   sigma.eta(),
+                                   sigma.phi(),
+                                   sigma.mass(),
+                                   chaDaughterIndex);
+      newSigmaTable.producedSigmaMasks(sigma.mask());
+      mcBuilder.fillSigmaWithLabel(sigma, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15>
+  void processSigmaPlusWithMc(T1 const& col, T2 const& /*sigmaPlusTable*/, T3 const& oldTrackTable, T4& partitionSigmaPlus, T5& trackBuilder, T6& cache, T7& newSigmaPlusTable, T8& newTrackTable, T9& newCollisionTable,
+                              T10& mcBuilder, T11 const& mcCols, T12 const& mcParticles, T13 const& mcMothers, T14 const& mcPartonicMothers, T15& mcProducts)
+  {
+    if (mLimitSigmaPlus == 0) {
+      return;
+    }
+
+    auto sigmaPlusSlice = partitionSigmaPlus->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& sigmaPlus : sigmaPlusSlice) {
+      auto chaDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(sigmaPlus.chaDauId(), oldTrackTable));
+
+      int64_t chaDaughterIndex = trackBuilder.getDaughterIndex(chaDaughter, newTrackTable, newCollisionTable, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+
+      newSigmaPlusTable.producedSigmaPluses(newCollisionTable.producedCollision.lastIndex(),
+                                            sigmaPlus.signedPt(),
+                                            sigmaPlus.eta(),
+                                            sigmaPlus.phi(),
+                                            sigmaPlus.mass(),
+                                            chaDaughterIndex);
+      newSigmaPlusTable.producedSigmaPlusMasks(sigmaPlus.mask());
+      mcBuilder.fillSigmaPlusWithLabel(sigmaPlus, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+    }
+  }
+
  private:
   int mLimitSigma = 0;
   int mLimitSigmaPlus = 0;
