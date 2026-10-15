@@ -116,6 +116,11 @@ o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-emcemc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-pcmemc
+                    SOURCES Pi0EtaToGammaGammaMCPCMEMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(tag-and-probe
                     SOURCES TagAndProbe.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
@@ -208,5 +213,10 @@ o2physics_add_dpl_workflow(pair-qc-task
 
 o2physics_add_dpl_workflow(dilepton-effi-for-dalitz-skimmer
                     SOURCES dileptonEffiForDalitzSkimmer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+                    
+o2physics_add_dpl_workflow(two-photon-mc-task
+                    SOURCES twoPhotonMcTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)

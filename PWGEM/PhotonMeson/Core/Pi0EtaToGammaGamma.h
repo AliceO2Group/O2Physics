@@ -428,9 +428,9 @@ struct Pi0EtaToGammaGamma {
     std::vector<double> epBinsForHs(ep_bin_edges.begin(), ep_bin_edges.end());
     std::vector<double> vtxBinsForHs(zvtx_bin_edges.begin(), zvtx_bin_edges.end());
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMDalitzEE) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs, "ee#gamma");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "ee#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs);
     } else {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs, "#gamma#gamma");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "#gamma#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs);
     }
     DefineEMEventCut();
     DefinePCMCut();
