@@ -187,7 +187,7 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
     Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
     Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
-    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old < this"};
     Configurable<double> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   } vertexConfigurations;
   // selection
