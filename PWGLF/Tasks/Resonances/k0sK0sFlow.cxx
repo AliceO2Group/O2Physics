@@ -444,9 +444,8 @@ struct K0sK0sFlow {
       return false;
     if (useTOF && std::abs(t.tofNSigmaPi()) > daughterCuts.maxTOFNSigmaPi)
       return false;
-    if (qa)
-      registry.fill(HIST("QA/Tracks/hCutFlow"), enumValue(TrackSelectionStep::TofPid));
     if (qa) {
+      registry.fill(HIST("QA/Tracks/hCutFlow"), enumValue(TrackSelectionStep::TofPid));
       registry.fill(HIST("QA/Tracks/AfterSelection/hPt"), t.pt());
       registry.fill(HIST("QA/Tracks/AfterSelection/hEta"), t.eta());
       registry.fill(HIST("QA/Tracks/AfterSelection/hDCAxyVsPt"), t.pt(), t.dcaXY());
