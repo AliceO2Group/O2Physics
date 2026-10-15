@@ -85,7 +85,8 @@ enum : std::size_t {
   kC24 = 1,
   kC22Full = 2,
   kC32Gap = 3,
-  kC34Gap = 4
+  kC34Gap = 4,
+  kC24Gap = 52
 };
 } // namespace charged
 
@@ -103,7 +104,8 @@ enum : std::size_t {
   kC22Pure = 29,
   kC32Pure = 32,
   kC22FullA = 35,
-  kC22FullB = 36
+  kC22FullB = 36,
+  kC24PIDChargedGap = 48
 };
 } // namespace pion
 
@@ -121,7 +123,8 @@ enum : std::size_t {
   kC22Pure = 30,
   kC32Pure = 33,
   kC22FullA = 37,
-  kC22FullB = 38
+  kC22FullB = 38,
+  kC24PIDChargedGap = 49
 };
 } // namespace kaon
 
@@ -139,7 +142,8 @@ enum : std::size_t {
   kC22Pure = 31,
   kC32Pure = 34,
   kC22FullA = 39,
-  kC22FullB = 40
+  kC22FullB = 40,
+  kC24PIDChargedGap = 50
 };
 } // namespace proton
 
@@ -154,12 +158,13 @@ enum : std::size_t {
   kC24B = 44,
   kC22Pure = 45,
   kC22FullA = 46,
-  kC22FullB = 47
+  kC22FullB = 47,
+  kC24PIDChargedGap = 51
 };
 } // namespace unidentified
 
 enum : std::size_t {
-  kCount = 48
+  kCount = 53
 };
 } // namespace corrConfigIndex
 
@@ -369,6 +374,7 @@ struct PidFlowPtCorr {
   ConfigurableAxis cfgaxisPt{"cfgaxisPt", {VARIABLE_WIDTH, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 10.0}, "pt (GeV)"};
   ConfigurableAxis cfgaxisTPCDedx{"cfgaxisTPCDedx", {500, 0.0f, 1000.0f}, "d#it{E}/d#it{x} axis for detector-PID QA"};
   ConfigurableAxis cfgaxisTOFDelta{"cfgaxisTOFDelta", {200, -1000.0f, 1000.0f}, "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} axis for detector-PID QA"};
+  ConfigurableAxis cfgaxisTOFTime{"cfgaxisTOFTime", {10000, 0.0f, 2.0e6f}, "TOF #it{t} - #it{t}_{ev} (ps) axis for detector-PID QA"};
   ConfigurableAxis cfgaxisMeanPt{"cfgaxisMeanPt", {300, 0, 3}, "pt (GeV)"};
   ConfigurableAxis cfgaxisNch{"cfgaxisNch", {3000, 0.5, 3000.5}, "Nch"};
   ConfigurableAxis cfgaxisLocalDensity{"cfgaxisLocalDensity", {200, 0, 600}, "local density"};
@@ -398,7 +404,7 @@ struct PidFlowPtCorr {
   using TracksPIDForDetectorPidQA = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   // data tracks filter
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU, aod::TracksDCA>>;
-  using AodTracksForDetectorPidQA = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPIDForDetectorPidQA, aod::TracksIU, aod::TracksDCA>>;
+  using AodTracksForDetectorPidQA = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, TracksPIDForDetectorPidQA, aod::TracksIU, aod::TracksDCA>>;
   // data collisions filter
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::MultsRun3>>;
 
@@ -618,10 +624,12 @@ struct PidFlowPtCorr {
       registry.add("DetectorPidQA/TPC/dEdxPi", "TPC d#it{E}/d#it{x} (pion)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
       registry.add("DetectorPidQA/TPC/dEdxKa", "TPC d#it{E}/d#it{x} (kaon)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
       registry.add("DetectorPidQA/TPC/dEdxPr", "TPC d#it{E}/d#it{x} (proton)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
+      registry.add("DetectorPidQA/TPC/dEdxAll", "TPC d#it{E}/d#it{x} (all particles)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
 
       registry.add("DetectorPidQA/TOF/deltaPi", "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} (pion)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFDelta}});
       registry.add("DetectorPidQA/TOF/deltaKa", "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} (kaon)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFDelta}});
       registry.add("DetectorPidQA/TOF/deltaPr", "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} (proton)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFDelta}});
+      registry.add("DetectorPidQA/TOF/tofTimeAll", "TOF #it{t} - #it{t}_{ev} (all particles)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFTime}});
 
       // run by run QA hists
       /**
@@ -868,6 +876,10 @@ struct PidFlowPtCorr {
     oba4Ch->Add(new TNamed("hMeanPtWeightFull", "hMeanPtWeightFull"));
     // end fill TObjArray for charged
 
+    // Clone the shared profiles before appending the charged-only SC baseline.
+    auto* oba4PID = dynamic_cast<TObjArray*>(oba4Ch->Clone());
+    oba4Ch->Add(new TNamed("c24Gap", "c24Gap"));
+
     // init fFCCh
     if (switchsOpts.cfgOutputCharged.value) {
       fFCCh->SetName("FlowContainerCharged");
@@ -877,13 +889,14 @@ struct PidFlowPtCorr {
 
     // init fFCPID
     // note that need to add c22pure and c32pure
-    auto* oba4PID = dynamic_cast<TObjArray*>(oba4Ch->Clone());
     oba4PID->Add(new TNamed("c22pure", "c22pure"));
     oba4PID->Add(new TNamed("c32pure", "c32pure"));
     oba4PID->Add(new TNamed("covV2PtPID", "covV2PtPID"));
     oba4PID->Add(new TNamed("c22TrackWeightPID", "c22TrackWeightPID"));
 
     oba4PID->Add(new TNamed("hMeanPtWeightCharged", "hMeanPtWeightCharged"));
+    // Raw mixed <4> for SC/NSC; reuse PID c22pure and charged c22 as <2>.
+    oba4PID->Add(new TNamed("c24PIDChargedGap", "c24PIDChargedGap"));
 
     if (switchsOpts.cfgOutputPion.value) {
       fFCPi->SetName("FlowContainerPi");
@@ -1006,6 +1019,8 @@ struct PidFlowPtCorr {
 
     fGFW->AddRegion("olPiN", -etaMax, 0, 1, gfwBitMask::pion::kOverlap);
     fGFW->AddRegion("olPiP", 0, etaMax, 1, gfwBitMask::pion::kOverlap);
+    fGFW->AddRegion("olPiN08", -etaMax, -etaGap, 1, gfwBitMask::pion::kOverlap);
+    fGFW->AddRegion("olPiP08", etaGap, etaMax, 1, gfwBitMask::pion::kOverlap);
 
     // Kaon POI and overlap regions.
     fGFW->AddRegion("poiKaN08", -etaMax, -etaGap, 1, gfwBitMask::kaon::kPOI);
@@ -1015,6 +1030,8 @@ struct PidFlowPtCorr {
 
     fGFW->AddRegion("olKaN", -etaMax, 0, 1, gfwBitMask::kaon::kOverlap);
     fGFW->AddRegion("olKaP", 0, etaMax, 1, gfwBitMask::kaon::kOverlap);
+    fGFW->AddRegion("olKaN08", -etaMax, -etaGap, 1, gfwBitMask::kaon::kOverlap);
+    fGFW->AddRegion("olKaP08", etaGap, etaMax, 1, gfwBitMask::kaon::kOverlap);
 
     // Proton POI and overlap regions.
     fGFW->AddRegion("poiPrN08", -etaMax, -etaGap, 1, gfwBitMask::proton::kPOI);
@@ -1024,6 +1041,8 @@ struct PidFlowPtCorr {
 
     fGFW->AddRegion("olPrN", -etaMax, 0, 1, gfwBitMask::proton::kOverlap);
     fGFW->AddRegion("olPrP", 0, etaMax, 1, gfwBitMask::proton::kOverlap);
+    fGFW->AddRegion("olPrN08", -etaMax, -etaGap, 1, gfwBitMask::proton::kOverlap);
+    fGFW->AddRegion("olPrP08", etaGap, etaMax, 1, gfwBitMask::proton::kOverlap);
 
     // Tracks for which the PID selection returns -1. They use the charged
     // pT range and corrections, but have independent POI and overlap masks.
@@ -1033,6 +1052,8 @@ struct PidFlowPtCorr {
     fGFW->AddRegion("poiUnidentifiedP", 0, etaMax, 1, gfwBitMask::unidentified::kPOI);
     fGFW->AddRegion("olUnidentifiedN", -etaMax, 0, 1, gfwBitMask::unidentified::kOverlap);
     fGFW->AddRegion("olUnidentifiedP", 0, etaMax, 1, gfwBitMask::unidentified::kOverlap);
+    fGFW->AddRegion("olUnidentifiedN08", -etaMax, -etaGap, 1, gfwBitMask::unidentified::kOverlap);
+    fGFW->AddRegion("olUnidentifiedP08", etaGap, etaMax, 1, gfwBitMask::unidentified::kOverlap);
     // end data region add
 
     // pushback
@@ -1089,6 +1110,16 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN08 {2} poiUnidentifiedP08 {-2}", "UnidentifiedPure08gap22", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN reffull | olUnidentifiedN {2 -2}", "UnidentifiedFull22a", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP reffull | olUnidentifiedP {2 -2}", "UnidentifiedFull22b", false)); // 47
+
+    // One POI and one reference on each eta side, with distinct tracks.
+    // Each overlap region has the same eta range as its POI/reference pair.
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 refN08 | olPiN08 {2 2} poiPiP08 refP08 | olPiP08 {-2 -2}", "PionPIDChargedGap24", false)); // 48
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 refN08 | olKaN08 {2 2} poiKaP08 refP08 | olKaP08 {-2 -2}", "KaonPIDChargedGap24", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 refN08 | olPrN08 {2 2} poiPrP08 refP08 | olPrP08 {-2 -2}", "ProtonPIDChargedGap24", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN08 refN08 | olUnidentifiedN08 {2 2} poiUnidentifiedP08 refP08 | olUnidentifiedP08 {-2 -2}", "UnidentifiedPIDChargedGap24", false)); // 51
+
+    // Charged-charged SC baseline: two distinct reference tracks per eta side.
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Ref08Gap24", false)); // 52
 
     if (corrconfigs.size() != corrConfigIndex::kCount) {
       LOGF(fatal, "Correlation index table expects %zu configurations, but %zu were created", static_cast<std::size_t>(corrConfigIndex::kCount), corrconfigs.size());
@@ -2767,7 +2798,10 @@ struct PidFlowPtCorr {
         // Fill GFW and counters using the same species-specific POI pT range.
         if (pid == MyParticleType::kPion) {
           fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::pion::kPOI);
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::pion::kOverlap, wacc * weff);
+          // Only tracks in both pT selections contribute to POI-ref overlap.
+          if (withinPtRefGlobal) {
+            fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::pion::kOverlap, wacc * weff);
+          }
           registry.fill(HIST("hPhiPi"), track.phi());
           registry.fill(HIST("hPhicorrPi"), track.phi(), waccPid);
           registry.fill(HIST("hPhiCorrNUANUEPi"), track.phi(), waccPid * weffPid);
@@ -2776,7 +2810,9 @@ struct PidFlowPtCorr {
           numOfPi++;
         } else if (pid == MyParticleType::kKaon) {
           fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::kaon::kPOI);
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::kaon::kOverlap, wacc * weff);
+          if (withinPtRefGlobal) {
+            fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::kaon::kOverlap, wacc * weff);
+          }
           registry.fill(HIST("hPhiKa"), track.phi());
           registry.fill(HIST("hPhicorrKa"), track.phi(), waccPid);
           registry.fill(HIST("hPhiCorrNUANUEKa"), track.phi(), waccPid * weffPid);
@@ -2785,7 +2821,9 @@ struct PidFlowPtCorr {
           numOfKa++;
         } else if (pid == MyParticleType::kProton) {
           fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::proton::kPOI);
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::proton::kOverlap, wacc * weff);
+          if (withinPtRefGlobal) {
+            fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::proton::kOverlap, wacc * weff);
+          }
           registry.fill(HIST("hPhiPr"), track.phi());
           registry.fill(HIST("hPhicorrPr"), track.phi(), waccPid);
           registry.fill(HIST("hPhiCorrNUANUEPr"), track.phi(), waccPid * weffPid);
@@ -2813,6 +2851,8 @@ struct PidFlowPtCorr {
     if (nch > 0) {
       fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, "c22");
       fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC24), cent, rndm, "c24");
+      // Raw gap <4> for SC(ch,ch); reuse c22 for both two-particle factors.
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC24Gap), cent, rndm, "c24Gap");
       fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Full), cent, rndm, "c22Full");
       fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC32Gap), cent, rndm, "c32");
       fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC34Gap), cent, rndm, "c34");
@@ -2853,6 +2893,14 @@ struct PidFlowPtCorr {
       bool filledKa = fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, "c22pure");
       bool filledPr = fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, "c22pure");
       bool filledUnidentified = fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22Pure), cent, rndm, "c22pure");
+
+      // SC/NSC components only: the mixed raw <4> uses its GFW tuple weight
+      // and the same bootstrap draw as the existing c22pure and charged c22.
+      // Existing <2> profiles retain their own valid-event samples/weights.
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC24PIDChargedGap), cent, rndm, "c24PIDChargedGap");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC24PIDChargedGap), cent, rndm, "c24PIDChargedGap");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC24PIDChargedGap), cent, rndm, "c24PIDChargedGap");
+      fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC24PIDChargedGap), cent, rndm, "c24PIDChargedGap");
 
       fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32Pure), cent, rndm, "c32pure");
       fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32Pure), cent, rndm, "c32pure");
@@ -3987,32 +4035,43 @@ struct PidFlowPtCorr {
 
     // start filling graphs
     for (const auto& track : tracks) {
-      // Use the same track-quality, PID and species pT selection as processData.
+      // Use the same track-quality selection as processData, but do not
+      // require a PID hypothesis for the all-particle QA histograms.
       if (!trackSelectedForFlow(track)) {
         continue;
       }
+      const float pt = track.pt();
+      if (std::abs(track.sign()) == 1) {
+        registry.fill(HIST("DetectorPidQA/TPC/dEdxAll"), pt, track.tpcSignal());
+        if (track.hasTOF()) {
+          registry.fill(HIST("DetectorPidQA/TOF/tofTimeAll"), pt, track.tofSignal() - track.tofEvTime());
+        }
+      }
+
+      // The species-dependent histograms additionally require an identified
+      // PID and the corresponding POI pT range.
       const int pid = getPidConfigurable(track);
-      if (!isWithinPOIPtRange(pid, track.pt())) {
+      if (!isWithinPOIPtRange(pid, pt)) {
         continue;
       }
 
       switch (pid) {
         case MyParticleType::kPion:
-          registry.fill(HIST("DetectorPidQA/TPC/dEdxPi"), track.tpcInnerParam(), track.tpcSignal());
+          registry.fill(HIST("DetectorPidQA/TPC/dEdxPi"), pt, track.tpcSignal());
           if (track.hasTOF()) {
-            registry.fill(HIST("DetectorPidQA/TOF/deltaPi"), track.p(), o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Pion>(track));
+            registry.fill(HIST("DetectorPidQA/TOF/deltaPi"), pt, o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Pion>(track));
           }
           break;
         case MyParticleType::kKaon:
-          registry.fill(HIST("DetectorPidQA/TPC/dEdxKa"), track.tpcInnerParam(), track.tpcSignal());
+          registry.fill(HIST("DetectorPidQA/TPC/dEdxKa"), pt, track.tpcSignal());
           if (track.hasTOF()) {
-            registry.fill(HIST("DetectorPidQA/TOF/deltaKa"), track.p(), o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Kaon>(track));
+            registry.fill(HIST("DetectorPidQA/TOF/deltaKa"), pt, o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Kaon>(track));
           }
           break;
         case MyParticleType::kProton:
-          registry.fill(HIST("DetectorPidQA/TPC/dEdxPr"), track.tpcInnerParam(), track.tpcSignal());
+          registry.fill(HIST("DetectorPidQA/TPC/dEdxPr"), pt, track.tpcSignal());
           if (track.hasTOF()) {
-            registry.fill(HIST("DetectorPidQA/TOF/deltaPr"), track.p(), o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Proton>(track));
+            registry.fill(HIST("DetectorPidQA/TOF/deltaPr"), pt, o2::aod::pidutils::tofExpSignalDiff<o2::track::PID::Proton>(track));
           }
           break;
         default:
