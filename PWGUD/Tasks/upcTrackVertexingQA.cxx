@@ -32,7 +32,6 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/LorentzVector.h>
-#include <Math/GenVector/PxPyPzM4D.h>
 #include <Math/Vector4Dfwd.h>
 
 #include <array>
