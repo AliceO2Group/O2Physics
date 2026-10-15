@@ -31,6 +31,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
+#include <SimulationDataFormat/MCGenProperties.h>
 
 #include <Math/GenVector/RotationZ.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
@@ -49,6 +50,7 @@
 #include <map>
 #include <memory>
 #include <tuple>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -80,6 +82,12 @@ struct Xi1530Analysisqa {
   using ResoTracks = soa::Join<aod::ResoTracks, aod::ResoTrackTracks>;
   using ResoMicroTracks = aod::ResoMicroTracks_001;
   using ResoMCCols = soa::Join<ResoCollisions, aod::ResoMCCollisions_001>;
+
+  // This native generator status is a production-specific injection tag.
+  static constexpr auto IsInjectedParent = [](auto const& mcparent) {
+    constexpr int InjectedGeneratorStatus = -11;
+    return o2::mcgenstatus::getGenStatusCode(mcparent.statusCode()) == InjectedGeneratorStatus;
+  };
 
   // Own just the event rows: zero-copy slices would retain entire DF buffers.
   struct MixingCollision {
@@ -142,8 +150,8 @@ struct Xi1530Analysisqa {
 
   struct : ConfigurableGroup {
     // Primary track selections
-    Configurable<float> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
-    Configurable<float> cMaxetacut{"cMaxetacut", 0.8, "Track maximum eta cut"};
+    Configurable<float> cMinPtcut{"cMinPtcut", 0.00, "Track minium pt cut"};
+    Configurable<float> cMaxetacut{"cMaxetacut", 999., "Track maximum eta cut"};
 
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
@@ -151,6 +159,11 @@ struct Xi1530Analysisqa {
     Configurable<int> cfgTPCcluster{"cfgTPCcluster", 1, "Minimum Number of TPC cluster"}; // Minmimum
 
     Configurable<int> cfgTPCRows{"cfgTPCRows", 80, "Minimum Number of TPC Crossed Rows "};
+
+    // Micro001 quality cuts use strict lower bounds; -1 preserves the previous selection.
+    // Full ResoTracks has no ITS cluster map and retains cfgTPCcluster/cfgTPCRows.
+    Configurable<int> cfgITSNCls{"cfgITSNCls", -1, "Require ITS NCls > cut; -1 disables the cut"};
+    Configurable<int> cfgITSNClsInnerBarrel{"cfgITSNClsInnerBarrel", -1, "Require inner-barrel ITS NCls > cut; -1 disables the cut"};
 
     Configurable<float> cfgRapidityMinCut{"cfgRapidityMinCut", -0.5, "Rapidity cut for tracks"};
     Configurable<float> cfgRapidityMaxCut{"cfgRapidityMaxCut", 0.5, "Rapidity cut for tracks"};
@@ -315,6 +328,8 @@ struct Xi1530Analysisqa {
     Configurable<float> cfgMaxRot{"cfgMaxRot", 7.0 * constants::math::PI / 6.0, "Maximum of rotation"};
     Configurable<bool> cfgRotPion{"cfgRotPion", true, "Rotate pion"};
     Configurable<int> cfgNrotBkg{"cfgNrotBkg", 4, "Number of rotated copies (background) per each original candidate"};
+
+    Configurable<bool> cMCInjection{"cMCInjection", true, "Select generated MC parents with native status -11 (production-specific injection tag)"};
   } additionalConfig;
 
   //*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//
@@ -589,7 +604,13 @@ struct Xi1530Analysisqa {
     if (std::abs(track.dcaXY()) >= dcaXYCut || std::abs(track.dcaZ()) >= dcaZCut) {
       return false;
     }
-    if constexpr (!IsResoMicrotrack) {
+    if constexpr (IsResoMicrotrack) {
+      if (track.itsNCls() <= primarytrackConfig.cfgITSNCls ||
+          track.itsNClsInnerBarrel() <= primarytrackConfig.cfgITSNClsInnerBarrel ||
+          track.tpcNClsCrossedRows() <= primarytrackConfig.cfgTPCRows) {
+        return false;
+      }
+    } else {
       if (track.tpcNClsFound() <= primarytrackConfig.cfgTPCcluster) {
         return false;
       }
@@ -808,9 +829,25 @@ struct Xi1530Analysisqa {
     return properLifetime;
   }
 
+  // Build once per selected collision, not once per reconstructed pair.
+  std::unordered_set<int> getInjectedMotherIds(aod::ResoMCParents_001 const& parents)
+  {
+    std::unordered_set<int> motherIds;
+    if (!additionalConfig.cMCInjection) {
+      return motherIds;
+    }
+    for (auto const& parent : parents) {
+      if (std::abs(parent.pdgCode()) == kXiStar && IsInjectedParent(parent)) {
+        motherIds.insert(parent.originalMcParticleId());
+      }
+    }
+    return motherIds;
+  }
+
   template <bool IsResoMicrotrack, bool IsMC, bool IsMix, typename CollisionType, typename centType, typename TracksType, typename TracksTypeCasc>
   void fillHistograms(const CollisionType& collision, const centType& inCent, const TracksType& dTracks1, const TracksTypeCasc& dTracks2,
-                      const MixingCollision* cascadeCollision = nullptr) // Order: ResoColl, ResoTrack, ResoCascTrack
+                      const MixingCollision* cascadeCollision = nullptr,
+                      const std::unordered_set<int>& injectedMotherIds = {}) // Order: ResoColl, ResoTrack, ResoCascTrack
   {
     auto cent = inCent;
 
@@ -1194,6 +1231,9 @@ struct Xi1530Analysisqa {
             if (xiCand.motherId() < 0 || pionCand.motherId() != xiCand.motherId()) {
               continue;
             }
+            if (additionalConfig.cMCInjection && !injectedMotherIds.contains(xiCand.motherId())) {
+              continue;
+            }
             auto lResonancePtMC = xiCand.motherPt();
             if (additionalConfig.cUseTruthRapidity) {
               const bool passesTruthRapidity = xiCand.motherRap() > primarytrackConfig.cfgRapidityMinCut && xiCand.motherRap() < primarytrackConfig.cfgRapidityMaxCut;
@@ -1352,7 +1392,8 @@ struct Xi1530Analysisqa {
   // Calculate numerator for the Acceptance x Efficiency
   void processMC(ResoMCCols::iterator const& resoCollision,
                  soa::Join<aod::ResoCascades, aod::ResoMCCascades> const& cascTracks,
-                 soa::Join<aod::ResoTracks, aod::ResoTrackTracks, aod::ResoMCTracks> const& resoTracks)
+                 soa::Join<aod::ResoTracks, aod::ResoTrackTracks, aod::ResoMCTracks> const& resoTracks,
+                 aod::ResoMCParents_001 const& resoParents)
   {
     auto inCent = resoCollision.cent();
     const auto multiplicity = resoCollision.multiplicity();
@@ -1365,12 +1406,14 @@ struct Xi1530Analysisqa {
     if (histoConfig.multQA) {
       histos.fill(HIST("multQA/h2MultCent"), inCent, multiplicity);
     }
-    fillHistograms<false, true, false>(resoCollision, inCent, resoTracks, cascTracks);
+    const auto injectedMotherIds = getInjectedMotherIds(resoParents);
+    fillHistograms<false, true, false>(resoCollision, inCent, resoTracks, cascTracks, nullptr, injectedMotherIds);
   }
 
   void processMCMicro(ResoMCCols::iterator const& resoCollision,
                       soa::Join<aod::ResoCascades, aod::ResoMCCascades> const& cascTracks,
-                      soa::Join<ResoMicroTracks, aod::ResoMCMicroTracks_001> const& resoTracks)
+                      soa::Join<ResoMicroTracks, aod::ResoMCMicroTracks_001> const& resoTracks,
+                      aod::ResoMCParents_001 const& reParent)
   {
     if ((additionalConfig.cRecoINELgt0 && !resoCollision.isRecINELgt0()) ||
         (additionalConfig.cMCINELgt0 && !resoCollision.isINELgt0()) ||
@@ -1380,7 +1423,8 @@ struct Xi1530Analysisqa {
     if (histoConfig.multQA) {
       histos.fill(HIST("multQA/h2MultCent"), resoCollision.cent(), resoCollision.multiplicity());
     }
-    fillHistograms<true, true, false>(resoCollision, resoCollision.cent(), resoTracks, cascTracks);
+    const auto injectedMotherIds = getInjectedMotherIds(reParent);
+    fillHistograms<true, true, false>(resoCollision, resoCollision.cent(), resoTracks, cascTracks, nullptr, injectedMotherIds);
   }
 
   // Calculate denominator for the Acceptance x Efficiency, actually it is not Trueth info...
@@ -1400,6 +1444,9 @@ struct Xi1530Analysisqa {
 
     for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (std::abs(part.pdgCode()) != kXiStar) {
+        continue;
+      }
+      if (additionalConfig.cMCInjection && !IsInjectedParent(part)) {
         continue;
       }
       if ((part.y() <= primarytrackConfig.cfgRapidityMinCut) || (part.y() >= primarytrackConfig.cfgRapidityMaxCut)) {
