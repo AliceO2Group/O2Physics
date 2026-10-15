@@ -776,7 +776,7 @@ struct AnalysisTrackSelection {
       // compute quantities which depend on the associated collision, such as DCA
       if (track.collisionId() != event.globalIndex()) {
         VarManager::FillTrackCollision<TTrackFillMap>(track, event);
-      // cout << "Filled track observables for association" << endl;
+        // cout << "Filled track observables for association" << endl;
       }
 
       bool isCorrectAssoc = false;
@@ -1976,9 +1976,9 @@ struct AnalysisSameEventPairing {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
             isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
-            if (sign1 * sign2 < 0) {                                                    // +- pairs
+            if (sign1 * sign2 < 0) {                                                                         // +- pairs
               fHistMan->FillHistClass(histNames[icut][0].Data(), static_cast<float*>(VarManager::fgValues)); // reconstructed, unmatched
-              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {                             // loop over MC signals
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
                                           VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
@@ -3233,7 +3233,7 @@ struct AnalysisDileptonTrackTrack {
   uint32_t fTrackCutBitMap1;
   uint32_t fTrackCutBitMap2;
   bool fIsSameTrackCut = false;
-  AnalysisCompositeCut fDileptonCut;
+  AnalysisCompositeCut fDileptonCut{};
   std::vector<TString> fQuadrupletCutNames;
   std::vector<AnalysisCompositeCut> fQuadrupletCuts;
 
