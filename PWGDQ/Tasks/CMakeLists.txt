@@ -18,6 +18,12 @@
 #
 # Skipped under recc, which caches compilations remotely instead.
 add_library(TableReaderWithAssocPCH OBJECT tableReaderWithAssocPCH.cxx)
+# The PCH compile is one of the heaviest translation units in the tree -- it
+# instantiates the whole data model up front -- but add_library() does not put
+# it in the 'analysis' job pool that o2physics_add_dpl_workflow() uses for the
+# workflows. Left out, it runs unthrottled alongside the pooled compilations
+# and defeats the per-job memory budget the pool exists to enforce.
+set_property(TARGET TableReaderWithAssocPCH PROPERTY JOB_POOL_COMPILE analysis)
 target_link_libraries(TableReaderWithAssocPCH PUBLIC O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::MLCore)
 if(NOT DEFINED ENV{USE_RECC})
   target_precompile_headers(TableReaderWithAssocPCH PRIVATE
