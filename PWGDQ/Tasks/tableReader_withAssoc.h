@@ -2101,7 +2101,7 @@ struct AnalysisSameEventPairing {
           }
           if (fConfigOptions.A2Tables.value) {
             dileptonA2List(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], t1.sign() + t2.sign(), twoTrackFilter,
-                           VarManager::fgValues[VarManager::kA2EP_TPC], VarManager::fgValues[VarManager::kA2EP_FT0A], VarManager::fgValues[VarManager::kA2EP_FT0C], 
+                           VarManager::fgValues[VarManager::kA2EP_TPC], VarManager::fgValues[VarManager::kA2EP_FT0A], VarManager::fgValues[VarManager::kA2EP_FT0C],
                            VarManager::fgValues[VarManager::kCos2DeltaPhi_TPC], VarManager::fgValues[VarManager::kCos2DeltaPhi_FT0A], VarManager::fgValues[VarManager::kCos2DeltaPhi_FT0C],
                            VarManager::fgValues[VarManager::kDeltaPhi_TPC], VarManager::fgValues[VarManager::kDeltaPhi_FT0A], VarManager::fgValues[VarManager::kDeltaPhi_FT0C],
                            VarManager::fgValues[VarManager::kPhiDau]);
