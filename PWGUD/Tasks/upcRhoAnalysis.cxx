@@ -72,6 +72,7 @@ DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, float);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(LocalBC, localBC, int);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
@@ -111,7 +112,7 @@ DECLARE_SOA_COLUMN(LeadingTrackTofHit, leadingTrackTofHit, int);
 DECLARE_SOA_COLUMN(SubleadingTrackTofHit, subleadingTrackTofHit, int);
 } // namespace reco_tree
 DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
-                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ, reco_tree::OccupancyInTime, reco_tree::HadronicRate, reco_tree::LocalBC,
+                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ, reco_tree::OccupancyInTime, reco_tree::HadronicRate, reco_tree::GlobalBC, reco_tree::LocalBC,
                   reco_tree::TotalFT0AmplitudeA, reco_tree::TotalFT0AmplitudeC, reco_tree::TotalFV0AmplitudeA, reco_tree::TotalFDDAmplitudeA, reco_tree::TotalFDDAmplitudeC,
                   reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
                   reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, reco_tree::NeutronClass,
@@ -131,6 +132,7 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(LocalBC, localBC, int);
 // tracks
 DECLARE_SOA_COLUMN(LeadingTrackSign, leadingTrackSign, int);
@@ -143,7 +145,7 @@ DECLARE_SOA_COLUMN(LeadingTrackPhi, leadingTrackPhi, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPhi, subleadingTrackPhi, float);
 } // namespace mc_tree
 DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
-                  mc_tree::RunNumber, mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ, mc_tree::LocalBC,
+                  mc_tree::RunNumber, mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ, mc_tree::GlobalBC, mc_tree::LocalBC,
                   mc_tree::LeadingTrackSign, mc_tree::SubleadingTrackSign,
                   mc_tree::LeadingTrackPt, mc_tree::SubleadingTrackPt,
                   mc_tree::LeadingTrackEta, mc_tree::SubleadingTrackEta,
@@ -152,8 +154,10 @@ DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
 namespace resolution_tree
 {
 // misc event info
+DECLARE_SOA_COLUMN(GenGlobalBC, genGlobalBC, uint64_t);
 DECLARE_SOA_COLUMN(GenLocalBC, genLocalBC, int);
 DECLARE_SOA_COLUMN(RecoRunNumber, recoRunNumber, int);
+DECLARE_SOA_COLUMN(RecoGlobalBC, recoGlobalBC, uint64_t);
 DECLARE_SOA_COLUMN(RecoLocalBC, recoLocalBC, int);
 // vertex info
 DECLARE_SOA_COLUMN(GenPosX, genPosX, float);
@@ -192,8 +196,9 @@ DECLARE_SOA_COLUMN(SubleadingRecoPhi, subleadingRecoPhi, float);
 DECLARE_SOA_COLUMN(SubleadingRecoTofHit, subleadingRecoTofHit, int);
 } // namespace resolution_tree
 DECLARE_SOA_TABLE(ResolutionTree, "AOD", "RESOLUTIONTREE",
-                  resolution_tree::GenLocalBC,
-                  resolution_tree::RecoRunNumber, resolution_tree::RecoLocalBC,
+                  resolution_tree::GenGlobalBC, resolution_tree::GenLocalBC,
+                  resolution_tree::RecoRunNumber, 
+                  resolution_tree::RecoGlobalBC, resolution_tree::RecoLocalBC,
                   resolution_tree::GenPosX, resolution_tree::GenPosY, resolution_tree::GenPosZ,
                   resolution_tree::RecoPosX, resolution_tree::RecoPosY, resolution_tree::RecoPosZ,
                   resolution_tree::TotalFT0AmplitudeA, resolution_tree::TotalFT0AmplitudeC, resolution_tree::TotalFV0AmplitudeA, resolution_tree::TotalFDDAmplitudeA, resolution_tree::TotalFDDAmplitudeC,
@@ -949,7 +954,7 @@ struct UpcRhoAnalysis {
       return;
 
     // fill recoTree
-    recoTree(collision.flags(), collision.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.occupancyInTime(), collision.hadronicRate(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+    recoTree(collision.flags(), collision.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.occupancyInTime(), collision.hadronicRate(), collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
              collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
              energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
@@ -1154,7 +1159,7 @@ struct UpcRhoAnalysis {
     }
 
     // fill mcTree
-    mcTree(runNumber, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+    mcTree(runNumber, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.globalBC(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
            leadingPion.pdgCode() / std::abs(leadingPion.pdgCode()), subleadingPion.pdgCode() / std::abs(subleadingPion.pdgCode()),
            pt(leadingPion.px(), leadingPion.py()), pt(subleadingPion.px(), subleadingPion.py()),
            eta(leadingPion.px(), leadingPion.py(), leadingPion.pz()), eta(subleadingPion.px(), subleadingPion.py(), subleadingPion.pz()),
@@ -1269,8 +1274,9 @@ struct UpcRhoAnalysis {
     auto leadingRecoPion = momentum(recoTracks[0].px(), recoTracks[0].py(), recoTracks[0].pz()) > momentum(recoTracks[1].px(), recoTracks[1].py(), recoTracks[1].pz()) ? recoTracks[0] : recoTracks[1];
     auto subleadingRecoPion = (leadingRecoPion == recoTracks[0]) ? recoTracks[1] : recoTracks[0];
 
-    resolutionTree(mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
-                   collision.runNumber(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+    resolutionTree(mcCollision.globalBC(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+                   collision.runNumber(), 
+                   collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
                    mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                    collision.posX(), collision.posY(), collision.posZ(),
                    collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
@@ -1313,8 +1319,9 @@ struct UpcRhoAnalysis {
     auto leadingRecoPion = momentum(recoTracks[0].px(), recoTracks[0].py(), recoTracks[0].pz()) > momentum(recoTracks[1].px(), recoTracks[1].py(), recoTracks[1].pz()) ? recoTracks[0] : recoTracks[1];
     auto subleadingRecoPion = (leadingRecoPion == recoTracks[0]) ? recoTracks[1] : recoTracks[0];
 
-    resolutionTree(mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
-                   collision.runNumber(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+    resolutionTree(mcCollision.globalBC(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+                   collision.runNumber(), 
+                   collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
                    mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                    collision.posX(), collision.posY(), collision.posZ(),
                    collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
