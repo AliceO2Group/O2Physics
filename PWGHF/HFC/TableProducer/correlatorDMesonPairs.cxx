@@ -544,7 +544,7 @@ struct HfCorrelatorDMesonPairs {
   static bool shouldSwapOrder(const bool isD1, const bool isDbar1, const bool isD2, const bool isDbar2, const T& candidate1, const T& candidate2)
   {
     if (isD1 != isD2 || isDbar1 != isDbar2) { // different flavour content
-      return !isD1 && isD2;                    // Dbar(-only) first, D second -> swap
+      return !isD1 && isD2;                   // Dbar(-only) first, D second -> swap
     }
     return candidate1.pt() < candidate2.pt();
   }
@@ -937,7 +937,7 @@ struct HfCorrelatorDMesonPairs {
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRec, "Process MC reco mode", false);
 
   /// D0(bar)-D0(bar) correlation pair builder - MC generator level (particles flagged as D0 -> pi K)
-    void processMcGen(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesPlus2Prong const& mcParticles)
+  void processMcGen(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesPlus2Prong const& mcParticles)
   {
     // Take the associated reconstructed collision with the highest number of PV contributors
     int numPvContributorsGen{0};
