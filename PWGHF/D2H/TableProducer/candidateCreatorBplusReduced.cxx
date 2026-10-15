@@ -62,6 +62,7 @@ struct HfCandidateCreatorBplusReduced {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B+ is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   // selection
   Configurable<double> invMassWindowD0PiTolerance{"invMassWindowD0PiTolerance", 0.01, "invariant-mass window tolerance for D0Pi pair preselections (GeV/c2)"};
 
@@ -101,6 +102,7 @@ struct HfCandidateCreatorBplusReduced {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
+    df2.setMaxChi2(maxChi2);
 
     // histograms
     registry.add("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #overline{D^{0}}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
