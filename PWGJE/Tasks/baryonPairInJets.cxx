@@ -17,7 +17,6 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
@@ -1551,7 +1550,7 @@ struct BaryonPairInJets {
           float const particleDeltaPhi = RecoDecay::constrainAngle(particle.phi() - particleJet.phi(), -o2::constants::math::PI);
           float const particleJetDistance = std::hypot(particle.eta() - particleJet.eta(), particleDeltaPhi);
           int8_t const sign = particle.pdgCode() > 0 ? 1 : -1;
-          generatedParticleIds.insert(static_cast<int64_t>(particle.globalIndex()));
+          generatedParticleIds.insert(particle.globalIndex());
           generatedProtons.push_back({particle.pt(), particle.eta(), particle.phi(), sign});
           registry.fill(HIST("mc/efficiency/generatedPrimaryProton"), static_cast<float>(sign), particle.pt(), detectorJet.pt(), particleJetDistance, weight);
         }
@@ -1567,7 +1566,7 @@ struct BaryonPairInJets {
             continue;
           }
           auto particle = jetTrack.template mcParticle_as<aod::JetParticles>();
-          auto const particleId = static_cast<int64_t>(particle.globalIndex());
+          auto const particleId = particle.globalIndex();
           if (!generatedParticleIds.contains(particleId)) {
             continue;
           }
@@ -1578,7 +1577,11 @@ struct BaryonPairInJets {
           float const particleDeltaPhi = RecoDecay::constrainAngle(particle.phi() - particleJet.phi(), -o2::constants::math::PI);
           float const particleJetDistance = std::hypot(particle.eta() - particleJet.eta(), particleDeltaPhi);
           int8_t const sign = particle.pdgCode() > 0 ? 1 : -1;
-          SelectedParticle const selectedParticle{particle.pt(), particle.eta(), particle.phi(), sign};
+          SelectedParticle const selectedParticle{
+            .pt = particle.pt(),
+            .eta = particle.eta(),
+            .phi = particle.phi(),
+            .sign = sign};
           if (trackSelectedParticleIds.insert(particleId).second) {
             trackSelectedProtons.push_back(selectedParticle);
             registry.fill(HIST("mc/efficiency/trackSelectedPrimaryProton"), static_cast<float>(sign), particle.pt(), detectorJet.pt(), particleJetDistance, weight);
