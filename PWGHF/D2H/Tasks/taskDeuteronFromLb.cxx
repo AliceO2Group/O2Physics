@@ -533,7 +533,7 @@ struct HfTaskDeuteronFromLb {
 
           // same final selection as in data
           const bool passFinalSel = (track.pt() < ptThresholdforPID && isTPCDe && isITSDe) ||
-                                    (track.pt() >= ptThresholdforPID && isTPCTOFDeClean && passTOFVeto && isTOFDe && track.hasTOF());
+                                    (track.pt() >= ptThresholdforPID && isTPCTOFDeClean && isTOFDe && track.hasTOF());
           if (passFinalSel) {
             if (motherPdg == pdgCodeBeautyMeson) {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromBminus"), track.pt(), dca[0]);
