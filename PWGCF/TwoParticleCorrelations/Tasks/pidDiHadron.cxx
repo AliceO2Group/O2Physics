@@ -18,7 +18,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -51,9 +50,6 @@
 #include <TH3.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
-#include <TString.h>
-
-#include <RtypesCore.h>
 
 #include <array>
 #include <chrono>
@@ -69,7 +65,7 @@ using namespace o2::framework::expressions;
 using namespace constants::math;
 
 // define the filtered collisions and tracks
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)}; // NOLINT(bugprone-macro-parentheses)
 
 template <typename T, typename P>
 auto readMatrix(Array2D<T> const& mat, P& array)
@@ -88,7 +84,7 @@ static constexpr std::array<std::array<int, 3>, 20> LongArrayInt = {{{{1, 2, 3}}
 
 struct PidDiHadron {
   o2::aod::ITSResponse itsResponse;
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgQABasic, bool, true, "Enable QA histograms for event and track selection")
@@ -123,7 +119,7 @@ struct PidDiHadron {
     O2_DEFINE_CONFIGURABLE(cfgCutMultMin, int, 0, "Minimum multiplicity for collision")
     O2_DEFINE_CONFIGURABLE(cfgCutMultMax, int, 10, "Maximum multiplicity for collision")
     O2_DEFINE_CONFIGURABLE(cfgSelCollByNch, bool, true, "Select collisions by Nch or centrality")
-    O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
+    O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A")
     O2_DEFINE_CONFIGURABLE(cfgCentTableUnavailable, bool, false, "if a dataset does not provide centrality information")
     O2_DEFINE_CONFIGURABLE(cfgCutCentMin, float, 60.0f, "Minimum centrality for collision")
     O2_DEFINE_CONFIGURABLE(cfgCutCentMax, float, 80.0f, "Maximum centrality for collision")
@@ -495,7 +491,7 @@ struct PidDiHadron {
     }
 
     // Multiplicity correlation cuts
-    if (eventCuts[UseMultCorrCut][EvCut1]) {
+    if (eventCuts[UseMultCorrCut][EvCut1] != 0) {
       cfgFuncParas.multT0CCutPars = cfgFuncParas.cfgMultT0CCutPars;
       cfgFuncParas.multPVT0CCutPars = cfgFuncParas.cfgMultPVT0CCutPars;
       cfgFuncParas.multGlobalPVCutPars = cfgFuncParas.cfgMultGlobalPVCutPars;
@@ -681,7 +677,7 @@ struct PidDiHadron {
   template <typename TCollision>
   float getCentrality(TCollision const& collision)
   {
-    float cent;
+    float cent = 0.0;
     switch (cfgEvSel.cfgCentEstimator) {
       case UseCentFT0C:
         cent = collision.centFT0C();
@@ -768,8 +764,9 @@ struct PidDiHadron {
     } else {
       int partIndex = getNsigmaPID(track);
       int pidIndex = partIndex; // 1 = pion, 2 = kaon, 3 = proton
-      if (pidIndex != pid)
+      if (pidIndex != pid) {
         return false;
+      }
     }
 
     return true;
@@ -808,7 +805,8 @@ struct PidDiHadron {
 
     if (track.pt() > cfgPIDConfigs.cfgPIDTofPtCut && !track.hasTOF()) {
       return -1;
-    } else if (track.pt() > cfgPIDConfigs.cfgPIDTofPtCut && track.hasTOF()) {
+    }
+    if (track.pt() > cfgPIDConfigs.cfgPIDTofPtCut && track.hasTOF()) {
       isPion = isTofPion && isDetectedPion;
       isKaon = isTofKaon && isDetectedKaon;
       isProton = isTofProton && isDetectedProton;
@@ -1042,10 +1040,12 @@ struct PidDiHadron {
 
     float dPhiStar = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
 
-    if (dPhiStar > constants::math::PI)
+    if (dPhiStar > constants::math::PI) {
       dPhiStar = constants::math::TwoPI - dPhiStar;
-    if (dPhiStar < -constants::math::PI)
+    }
+    if (dPhiStar < -constants::math::PI) {
       dPhiStar = -constants::math::TwoPI - dPhiStar;
+    }
 
     return dPhiStar;
   }
@@ -1140,7 +1140,13 @@ struct PidDiHadron {
           bool bIsBelow = false;
 
           if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
-            for (double rad(cfgGeneral.cfgRadiusLow); rad < cfgGeneral.cfgRadiusHigh; rad += 0.01) {
+            const double step = 0.01;
+            const double low = cfgGeneral.cfgRadiusLow;
+            const double high = cfgGeneral.cfgRadiusHigh;
+            const auto nSteps = static_cast<int>(std::ceil((high - low) / step));
+
+            for (int i = 0; i < nSteps; ++i) {
+              const double rad = low + i * step;
               double dPhiStar = getDPhiStar(trig.sign(), assc.sign(), trig.phi(), assc.phi(), trig.pt(), assc.pt(), rad, magneticField);
               if (std::abs(dPhiStar) < kLimit) {
                 bIsBelow = true;
@@ -1255,7 +1261,13 @@ struct PidDiHadron {
           bool bIsBelow = false;
 
           if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
-            for (double rad(cfgGeneral.cfgRadiusLow); rad < cfgGeneral.cfgRadiusHigh; rad += 0.01) {
+            const double step = 0.01;
+            const double low = cfgGeneral.cfgRadiusLow;
+            const double high = cfgGeneral.cfgRadiusHigh;
+            const auto nSteps = static_cast<int>(std::ceil((high - low) / step));
+
+            for (int i = 0; i < nSteps; ++i) {
+              const double rad = low + i * step;
               double dPhiStar = getDPhiStar(0, assc.sign(), trig.phi(), assc.phi(), trig.pt(), assc.pt(), rad, magneticField);
               if (std::abs(dPhiStar) < kLimit) {
                 bIsBelow = true;
@@ -1937,8 +1949,9 @@ struct PidDiHadron {
     // loop over all tracks
     for (auto const& track : tracksmc) {
 
-      if (!trackSelected(track))
+      if (!trackSelected(track)) {
         continue;
+      }
 
       int pidIndex = getNsigmaPID(track);
 
