@@ -389,8 +389,8 @@ struct HfTaskD0 {
         axes.insert(axes.begin() + 2, thnAxisPromptScore);
         axes.insert(axes.begin() + 2, thnAxisBkgScore);
       } else {
-        axes.insert(axes.begin(), thnAxisPromptScore);
         axes.insert(axes.begin(), thnAxisNonPromptScore);
+        axes.insert(axes.begin(), thnAxisPromptScore);
         axes.insert(axes.begin(), thnAxisBkgScore);
       }
     }
