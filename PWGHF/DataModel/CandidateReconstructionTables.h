@@ -1529,6 +1529,7 @@ DECLARE_SOA_COLUMN(NSigTofPiFromLambda, nSigTofPiFromLambda, float);
 DECLARE_SOA_COLUMN(NSigTofPrFromLambda, nSigTofPrFromLambda, float);
 // MC
 DECLARE_SOA_COLUMN(DecayLengthMcGen, decayLengthMcGen, float);
+DECLARE_SOA_COLUMN(MassMcGen, massMcGen, float);
 // Residuals and pulls
 DECLARE_SOA_COLUMN(PtResidual, ptResidual, float);
 DECLARE_SOA_COLUMN(PResidual, pResidual, float);
@@ -1634,7 +1635,8 @@ DECLARE_SOA_TABLE(HfCandXicMcGen, "AOD", "HFCANDXICMCGEN",
                   hf_cand_mc_flag::FlagMcMatchGen,
                   hf_cand_mc_flag::OriginMcGen,
                   hf_cand_mc_flag::PdgBhadMotherPart,
-                  hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen);
+                  hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen,
+                  hf_cand_xic_to_xi_pi_pi::MassMcGen);
 
 // table with residuals and pulls of PV
 DECLARE_SOA_TABLE(HfCandXicResid, "AOD", "HFCANDXICRESID",
