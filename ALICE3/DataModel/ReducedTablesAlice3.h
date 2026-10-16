@@ -20,10 +20,10 @@
 
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
+#include "ALICE3/DataModel/OTFMID.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/OTFMID.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
