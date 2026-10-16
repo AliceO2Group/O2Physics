@@ -128,7 +128,7 @@ struct OnTheFlyMidPid {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer array, one per geometry
-  //std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
+  // std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
   std::vector<std::unique_ptr<o2::fastsim::TrackSmearer>> mSmearer;
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
