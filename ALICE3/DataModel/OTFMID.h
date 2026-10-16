@@ -21,8 +21,8 @@
 #define ALICE3_DATAMODEL_MID_H_
 
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/Logger.h>
 #include <cstdlib>
+#include <vector>
 
 namespace o2::aod
 {

@@ -42,6 +42,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <Math/GenVector/PositionVector3D.h>
 #include <TAxis.h>
@@ -52,6 +53,7 @@
 #include <TRandom3.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -128,7 +130,7 @@ struct OnTheFlyMidPid {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer array, one per geometry
-  //std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
+  // std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
   std::vector<std::unique_ptr<o2::fastsim::TrackSmearer>> mSmearer;
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
@@ -243,7 +245,7 @@ struct OnTheFlyMidPid {
       const AxisSpec axisNsigmaCorrect{plotsConfig.nBinsNsigmaCorrectSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True "};
       const AxisSpec axisDeltaWrong{plotsConfig.nBinsDeltaWrongSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True "};
       const AxisSpec axisX{plotsConfig.doSeparationVsPt.value ? axisPt : axisMomentum};
-      const AxisSpec axisNSigma{axisNsigmaCorrect};
+      // const AxisSpec axisNSigma{axisNsigmaCorrect};
 
       const AxisSpec axisTrackTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +3000.0f, "Track time resolution (ps)"};
       const AxisSpec axisTotalTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +3000.0f, "Total time resolution (ps)"};
