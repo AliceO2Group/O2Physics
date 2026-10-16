@@ -1052,7 +1052,7 @@ struct HadronNucleiCorrelation {
             registryQa.fill(HIST("QA/h3dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
           }
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
-            if (isPr) {
+            if (!isPr) {
               registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
               if (isTPCElRejection || isTOFPID) {
                 registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
