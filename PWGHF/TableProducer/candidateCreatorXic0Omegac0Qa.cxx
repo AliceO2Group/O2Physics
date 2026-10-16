@@ -1651,7 +1651,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // bitmask with event selection info
       float centrality{-1.f};
       float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       // monitor the satisfied event selection
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
@@ -1667,7 +1667,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // bitmask with event selection info
       float centrality{-1.f};
       float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       // monitor the satisfied event selection
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
