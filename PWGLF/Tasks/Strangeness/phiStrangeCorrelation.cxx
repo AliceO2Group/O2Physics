@@ -39,6 +39,7 @@
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
 #include <THnSparse.h>
@@ -54,7 +55,6 @@
 #include <deque>
 #include <functional>
 #include <iterator>
-#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -114,7 +114,9 @@ constexpr int getPdgCode()
   }
 }
 
-using EffMapPtr = std::variant<std::shared_ptr<TH2>, std::shared_ptr<TH3>>;
+// Non-owning: CCDB owns its objects. With caching on (the default) the manager keeps each map and deletes it when a
+// newer one replaces it, so wrapping the pointer in a smart pointer deletes the map while the cache still serves it
+using EffMapPtr = std::variant<const TH2*, const TH3*>;
 
 struct BoundEfficiencyMap {
   using CoordsTuple = std::tuple<float, float, float>;
@@ -135,11 +137,8 @@ struct BoundEfficiencyMap {
 
         const auto& [x, y, z] = coords;
 
-        // Extract the actual histogram type (TH2 or TH3) held by the smart pointer
-        using HistoType = typename std::decay_t<decltype(mapPtr)>::element_type;
-
-        // Compile-time branching: generates the exact correct function call
-        if constexpr (std::is_same_v<HistoType, TH2>) {
+        // Compile-time branching on the alternative held (TH2 or TH3): generates the exact correct function call
+        if constexpr (std::is_same_v<std::decay_t<decltype(mapPtr)>, const TH2*>) {
           int bin = mapPtr->FindFixBin(y, z); // 2D case only
           return {mapPtr->GetBinContent(bin), mapPtr->GetBinError(bin)};
         } else {
@@ -160,9 +159,7 @@ struct BoundEfficiencyMap {
 
         const auto& [x, y, z] = coords;
 
-        using HistoType = typename std::decay_t<decltype(mapPtr)>::element_type;
-
-        if constexpr (std::is_same_v<HistoType, TH2>) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(mapPtr)>, const TH2*>) {
           return mapPtr->Interpolate(y, z); // Native 2D interpolation
         } else {
           return mapPtr->Interpolate(x, y, z); // Native 3D interpolation
@@ -558,18 +555,18 @@ struct PhiStrangeCorrelation {
   {
     std::string path = fmt::format("{}{}", ccdbEfficiencyPath.value, particleName);
 
-    auto fetchFromCCDB = [&]<typename HistoType>() -> std::shared_ptr<HistoType> {
-      auto mapPtr = runNumber ? ccdb->getForRun<HistoType>(path, *runNumber) : ccdb->get<HistoType>(path);
-      return std::shared_ptr<HistoType>(mapPtr);
-    };
+    // Fetch once as TH1, the common base, and dispatch on the actual type: the CCDB cache is keyed by path only and
+    // hands back whatever it holds cast to the requested type, so asking the same path as TH3D and then as TH2D
+    // would return a TH2 as a non-null TH3 on a cache hit
+    const TH1* map = runNumber ? ccdb->getForRun<TH1>(path, *runNumber) : ccdb->get<TH1>(path);
 
-    if (auto map3D = fetchFromCCDB.operator()<TH3D>()) {
+    if (const auto* map3D = dynamic_cast<const TH3*>(map)) {
       effMap = map3D;
       LOG(debug) << "Efficiency map (TH3) for " << particleName << " loaded from CCDB";
       return;
     }
 
-    if (auto map2D = fetchFromCCDB.operator()<TH2D>()) {
+    if (const auto* map2D = dynamic_cast<const TH2*>(map)) {
       effMap = map2D;
       LOG(debug) << "Efficiency map (TH2) for " << particleName << " loaded from CCDB";
       return;
