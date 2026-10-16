@@ -17,8 +17,8 @@
 /// \brief  Set of tables for the ALICE3 OTFMID information
 /// TODO: remove the columns that are not usefulf for me
 
-#ifndef ALICE3_DATAMODEL_MID_H_
-#define ALICE3_DATAMODEL_MID_H_
+#ifndef ALICE3_DATAMODEL_OTFMID_H_
+#define ALICE3_DATAMODEL_OTFMID_H_
 
 #include <Framework/AnalysisDataModel.h>
 #include <cstdlib>

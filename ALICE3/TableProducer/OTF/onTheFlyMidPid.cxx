@@ -74,7 +74,7 @@ struct OnTheFlyMidPid {
   Produces<aod::UpgradeMidExpected> upgradeMidExpected;
 
   // necessary for particle charges
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase;
   // Necessary for LUTs
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -138,7 +138,6 @@ struct OnTheFlyMidPid {
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   OutputObj<THashList> listEfficiency{"efficiency"};
-  static constexpr int kParticles = 9;
 
   // Configuration defined at init time
   o2::fastsim::GeometryContainer mGeoContainer;
@@ -441,7 +440,7 @@ struct OnTheFlyMidPid {
   };
 
   std::vector<TracksWithTime> tracksWithTime;
-  bool eventTime(std::vector<TracksWithTime>& tracks,
+  bool eventTime(const std::vector<TracksWithTime>& tracks,
                  std::array<float, 2>& tzero)
   {
 
@@ -450,7 +449,7 @@ struct OnTheFlyMidPid {
 
     // Todo: check the different mass hypothesis iteratively
     for (const auto& track : tracks) {
-      auto pdgInfo = pdg->GetParticle(track.mPdgCode);
+      auto pdgInfo = pdgDatabase->GetParticle(track.mPdgCode);
       if (pdgInfo == nullptr) {
         continue;
       }
@@ -509,12 +508,12 @@ struct OnTheFlyMidPid {
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
-    double a0 = mass * mass;
-    double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
-    double a2 = (detRadius * 0.01) * (detRadius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
-    double dtofOndPt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    double dtofOndEta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    double trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution, std::fabs(dtofOndEta) * trackEtaResolution);
+    const double a0 = mass * mass;
+    const double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
+    const double a2 = (detRadius * 0.01) * (detRadius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
+    const double dtofOndPt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    const double dtofOndEta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    const double trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution, std::fabs(dtofOndEta) * trackEtaResolution);
     return trackTimeResolution;
   }
 
@@ -894,7 +893,7 @@ struct OnTheFlyMidPid {
       if (mcParticle.has_daughters()) {
         continue;
       }
-      const auto& pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (!pdgInfo) {
         // LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
         continue;
@@ -922,9 +921,9 @@ struct OnTheFlyMidPid {
       }
       const auto& mcParticle = track.mcParticle();
       float true_pt = mcParticle.pt();
-      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
+      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDatabase);
       // get mass to calculate velocity
-      auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      auto pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (pdgInfo == nullptr) {
         LOG(error) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
         upgradeMidMC(-999.f, -999.f);
@@ -1085,7 +1084,7 @@ struct OnTheFlyMidPid {
           }
         }
       }
-      auto truePdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      auto truePdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       float rigidity = momentum; // fallback to momentum if charge unknown
 
       // Use MC truth charge for rigidity calculation
