@@ -43,6 +43,7 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
 
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
