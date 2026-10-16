@@ -138,8 +138,8 @@ struct Alice3DimuonPrefilter {
   Configurable<float> etaMax{"etaMax", 5.f, "Upper limit in eta"};
   Configurable<float> maxMass{"maxMass", 5.f, "Upper limit in mass"};
   Configurable<float> maxOp{"maxOp", 5.f, "Upper limit in opening angle"};
-  Configurable<bool>  isMuMID{"isMuMID", true, "Muon candidate reaching MID"};
-  Configurable<int>   nBinsP{"nBinsP", 80, "number of bins in momentum/pT depending on doSeparationVsPt"};
+  Configurable<bool> isMuMID{"isMuMID", true, "Muon candidate reaching MID"};
+  Configurable<int> nBinsP{"nBinsP", 80, "number of bins in momentum/pT depending on doSeparationVsPt"};
   Configurable<int> nBinsEta{"nBinsEta", 400, "number of bins plot relative eta error"};
   std::unordered_map<int, uint16_t> map_pfb; // map track.globalIndex -> prefilter bit
 
@@ -161,11 +161,11 @@ struct Alice3DimuonPrefilter {
   void init(InitContext&)
   {
     const AxisSpec axisM{500, 0, 5, "#it{m}_{ll} (GeV/#it{c}^{2})"};
-    //const AxisSpec axisPt{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
+    // const AxisSpec axisPt{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPt{nBinsP, 0.0f, +10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    //const AxisSpec axisSigmaEl{200, -10, 10, "n#sigma_{El}"};
+    // const AxisSpec axisSigmaEl{200, -10, 10, "n#sigma_{El}"};
     const AxisSpec axisTrackLengthMID{310, 0., 310., "Track length (cm)"};
-//    const AxisSpec axisEta{1000, -5, 5, "#it{#eta}"};
+    //    const AxisSpec axisEta{1000, -5, 5, "#it{#eta}"};
     const AxisSpec axisEta{static_cast<int>(nBinsEta), -2.0f, +2.0f, "#eta"};
     const AxisSpec axisPhi{360, 0, TMath::TwoPi(), "#it{#varphi} (rad.)"};
     const AxisSpec axisProdx{2000, -100, 100, "Prod. Vertex X (cm)"};
@@ -175,15 +175,15 @@ struct Alice3DimuonPrefilter {
     registry.add("Reconstructed/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
     registry.add("ReconstructedFiltered/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
     registry.add("Reconstructed/Track/Pt", "Track Pt", kTH1F, {axisPt});
-    registry.add("Reconstructed/Track/Eta_P", "Track Eta vs Track P", kTH2F, {axisPt,axisEta});
+    registry.add("Reconstructed/Track/Eta_P", "Track Eta vs Track P", kTH2F, {axisPt, axisEta});
     registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Track/Phi", "Track Phi", kTH1F, {axisPhi});
     registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
 
     if (doprocessPreFilter) {
-      //registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
-      //registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
-      //registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
+      // registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
+      // registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
+      // registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
       registry.add("Reconstructed/Track/midTrackLength", "Track length MID", kTH1F, {axisTrackLengthMID});
     }
   }
@@ -204,7 +204,7 @@ struct Alice3DimuonPrefilter {
         }
         registry.fill(HIST("Reconstructed/Track/Pt"), pos.ptSmeared());
         registry.fill(HIST("Reconstructed/Track/Eta"), pos.etaSmeared());
-        //registry.fill(HIST("Reconstructed/Track/Eta_P"), pos.momentumSmeared(),pos.etaSmeared());
+        // registry.fill(HIST("Reconstructed/Track/Eta_P"), pos.momentumSmeared(),pos.etaSmeared());
         registry.fill(HIST("Reconstructed/Track/Phi"), pos.phiSmeared());
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), pos.ptSmeared(), pos.etaSmeared());
       } else {
@@ -217,11 +217,11 @@ struct Alice3DimuonPrefilter {
         if (pos.pt() < ptMin || ptMax < pos.pt()) {
           continue;
         }
-        if (pos.midCandidate()){
+        if (pos.midCandidate()) {
           registry.fill(HIST("Reconstructed/Track/midTrackLength"), pos.midTrackLength());
           registry.fill(HIST("Reconstructed/Track/Pt"), pos.pt());
           registry.fill(HIST("Reconstructed/Track/Eta"), pos.eta());
-          registry.fill(HIST("Reconstructed/Track/Eta_P"), pos.p(),pos.eta());
+          registry.fill(HIST("Reconstructed/Track/Eta_P"), pos.p(), pos.eta());
           registry.fill(HIST("Reconstructed/Track/Phi"), pos.phi());
           registry.fill(HIST("Reconstructed/Track/Eta_Pt"), pos.pt(), pos.eta());
         }
@@ -240,7 +240,7 @@ struct Alice3DimuonPrefilter {
         }
         registry.fill(HIST("Reconstructed/Track/Pt"), ele.ptSmeared());
         registry.fill(HIST("Reconstructed/Track/Eta"), ele.etaSmeared());
-        //registry.fill(HIST("Reconstructed/Track/Eta_P"), ele.pSmeared(),ele.etaSmeared());
+        // registry.fill(HIST("Reconstructed/Track/Eta_P"), ele.pSmeared(),ele.etaSmeared());
         registry.fill(HIST("Reconstructed/Track/Phi"), ele.phiSmeared());
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), ele.ptSmeared(), ele.etaSmeared());
       } else {
@@ -253,11 +253,11 @@ struct Alice3DimuonPrefilter {
         if (ele.pt() < ptMin || ptMax < ele.pt()) {
           continue;
         }
-        if (ele.midCandidate()){
+        if (ele.midCandidate()) {
           registry.fill(HIST("Reconstructed/Track/midTrackLength"), ele.midTrackLength());
           registry.fill(HIST("Reconstructed/Track/Pt"), ele.pt());
           registry.fill(HIST("Reconstructed/Track/Eta"), ele.eta());
-          registry.fill(HIST("Reconstructed/Track/Eta_P"), ele.p(),ele.eta());
+          registry.fill(HIST("Reconstructed/Track/Eta_P"), ele.p(), ele.eta());
           registry.fill(HIST("Reconstructed/Track/Phi"), ele.phi());
           registry.fill(HIST("Reconstructed/Track/Eta_Pt"), ele.pt(), ele.eta());
         }
@@ -322,8 +322,8 @@ struct Alice3DimuonPrefilter {
 
       } else {
 
-        if (pos.midCandidate()){
-          if (ele.midCandidate()){
+        if (pos.midCandidate()) {
+          if (ele.midCandidate()) {
 
             ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
