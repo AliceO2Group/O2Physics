@@ -144,7 +144,6 @@ struct HfTaskDeuteronFromLb {
     qaHistos.add("Data/hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
     qaHistos.add("Data/hnSigmaTOFVsPtPurity", "n#sigma TOF vs p_{T} for #bar{d} hypothesis for Data-driven purity check; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     qaHistos.add("Data/hnSigmaTOFVsPtPurityVeto", "n#sigma TOF vs p_{T} for #bar{d} hypothesis for Data-driven purity check with TPC veto for e,pi,K,p; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
-    qaHistos.add("Data/hnSigmaTOFVsPtPurityVetoTPCTOFClean", "n#sigma TOF vs p_{T} for #bar{d} hypothesis for Data-driven purity check with TPC and TOF veto for e,pi,K,p; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     qaHistos.add("Data/hnSigmaTPCVsPtPurity", "n#sigma TPC vs p_{T} for #bar{d} hypothesis for Data-driven purity check; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     qaHistos.add("Data/hnSigmaITSVsPt", "n#sigma ITS vs p_{T} for #bar{d} hypothesis, used to clean up the TPC/TOF purity sample; p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     // MC generated-level histograms
@@ -325,18 +324,16 @@ struct HfTaskDeuteronFromLb {
 
         qaHistos.fill(HIST("Data/hnSigmaITSVsPt"), track.pt(), track.itsNSigmaDe());
 
-        // TPC veto against pi/K/p/e
-        const bool passTPCVeto = std::abs(track.tpcNSigmaPi()) > cfgTPCNsigma &&
-                                 std::abs(track.tpcNSigmaKa()) > cfgTPCNsigma &&
-                                 std::abs(track.tpcNSigmaPr()) > cfgTPCNsigma &&
-                                 std::abs(track.tpcNSigmaEl()) > cfgTPCNsigma;
-        // TOF veto against pi/K/p/e
-        const bool passTOFVeto = std::abs(track.tofNSigmaPi()) > cfgTofNsigma &&
-                                 std::abs(track.tofNSigmaKa()) > cfgTofNsigma &&
-                                 std::abs(track.tofNSigmaPr()) > cfgTofNsigma &&
-                                 std::abs(track.tofNSigmaEl()) > cfgTofNsigma;
+        const bool isElectron = std::abs(track.tpcNSigmaEl()) < cfgTPCNsigma && std::abs(track.tofNSigmaEl()) < cfgTofNsigma;
+        const bool isNotElectron = !isElectron;
+        const bool isPion = std::abs(track.tpcNSigmaPi()) < cfgTPCNsigma && std::abs(track.tofNSigmaPi()) < cfgTofNsigma;
+        const bool isNotPion = !isPion;
+        const bool isKaon = std::abs(track.tpcNSigmaKa()) < cfgTPCNsigma && std::abs(track.tofNSigmaKa()) < cfgTofNsigma;
+        const bool isNotKaon = !isKaon;
+        const bool isProton = std::abs(track.tpcNSigmaPr()) < cfgTPCNsigma && std::abs(track.tofNSigmaPr()) < cfgTofNsigma;
+        const bool isNotProton = !isProton;
 
-        const bool isTPCDeClean = isTPCDe && passTPCVeto;
+        const bool isTPCTOFDeClean = isTPCDe && isNotElectron && isNotPion && isNotKaon && isNotProton;
 
         if (track.pt() < ptThresholdforPID) {
           if (isITSDe) {
@@ -346,16 +343,13 @@ struct HfTaskDeuteronFromLb {
           if (isTPCDe && track.hasTOF()) {
             qaHistos.fill(HIST("Data/hnSigmaTOFVsPtPurity"), track.pt(), track.tofNSigmaDe());
           }
-          if (isTPCDeClean && track.hasTOF()) {
+          if (isTPCTOFDeClean && track.hasTOF()) {
             qaHistos.fill(HIST("Data/hnSigmaTOFVsPtPurityVeto"), track.pt(), track.tofNSigmaDe());
-          }
-          if (isTPCDeClean && passTOFVeto && track.hasTOF()) {
-            qaHistos.fill(HIST("Data/hnSigmaTOFVsPtPurityVetoTPCTOFClean"), track.pt(), track.tofNSigmaDe());
           }
         }
 
         const bool passFinalSel = (track.pt() < ptThresholdforPID && isTPCDe && isITSDe) ||
-                                  (track.pt() >= ptThresholdforPID && isTPCDeClean && passTOFVeto && isTOFDe && track.hasTOF());
+                                  (track.pt() >= ptThresholdforPID && isTPCTOFDeClean && isTOFDe && track.hasTOF());
 
         if (passFinalSel) {
           qaHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
@@ -486,18 +480,16 @@ struct HfTaskDeuteronFromLb {
           }
         }
 
-        // TPC veto against pi/K/p/e
-        const bool passTPCVeto = std::abs(track.tpcNSigmaPi()) > cfgTPCNsigma &&
-                                 std::abs(track.tpcNSigmaKa()) > cfgTPCNsigma &&
-                                 std::abs(track.tpcNSigmaPr()) > cfgTPCNsigma &&
-                                 std::abs(track.tpcNSigmaEl()) > cfgTPCNsigma;
-        // TOF veto against pi/K/p/e
-        const bool passTOFVeto = std::abs(track.tofNSigmaPi()) > cfgTofNsigma &&
-                                 std::abs(track.tofNSigmaKa()) > cfgTofNsigma &&
-                                 std::abs(track.tofNSigmaPr()) > cfgTofNsigma &&
-                                 std::abs(track.tofNSigmaEl()) > cfgTofNsigma;
+        const bool isElectron = std::abs(track.tpcNSigmaEl()) < cfgTPCNsigma && std::abs(track.tofNSigmaEl()) < cfgTofNsigma;
+        const bool isNotElectron = !isElectron;
+        const bool isPion = std::abs(track.tpcNSigmaPi()) < cfgTPCNsigma && std::abs(track.tofNSigmaPi()) < cfgTofNsigma;
+        const bool isNotPion = !isPion;
+        const bool isKaon = std::abs(track.tpcNSigmaKa()) < cfgTPCNsigma && std::abs(track.tofNSigmaKa()) < cfgTofNsigma;
+        const bool isNotKaon = !isKaon;
+        const bool isProton = std::abs(track.tpcNSigmaPr()) < cfgTPCNsigma && std::abs(track.tofNSigmaPr()) < cfgTofNsigma;
+        const bool isNotProton = !isProton;
 
-        const bool isTPCDeClean = isTPCDe && passTPCVeto;
+        const bool isTPCTOFDeClean = isTPCDe && isNotElectron && isNotPion && isNotKaon && isNotProton;
 
         if (isTrueDeuteron) {
           int motherPdg = 0;
@@ -541,7 +533,7 @@ struct HfTaskDeuteronFromLb {
 
           // same final selection as in data
           const bool passFinalSel = (track.pt() < ptThresholdforPID && isTPCDe && isITSDe) ||
-                                    (track.pt() >= ptThresholdforPID && isTPCDeClean && passTOFVeto && isTOFDe && track.hasTOF());
+                                    (track.pt() >= ptThresholdforPID && isTPCTOFDeClean && passTOFVeto && isTOFDe && track.hasTOF());
           if (passFinalSel) {
             if (motherPdg == pdgCodeBeautyMeson) {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromBminus"), track.pt(), dca[0]);
