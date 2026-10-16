@@ -19,11 +19,13 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsPid.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -91,6 +93,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_BPLUSToD0Pi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<bool> useD0TriggerMassCut{"useD0TriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
   // variable that will store the value of selectionFlagD (defined in dataCreatorD0PiReduced.cxx)
   int mySelectionFlagD0 = -1;
   int mySelectionFlagD0bar = -1;
@@ -101,6 +104,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
+  HfTrigger2ProngCuts hfTriggerCuts;
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
@@ -154,6 +158,19 @@ struct HfCandidateSelectorBplusToD0PiReduced {
     }
   }
 
+  /// Utility function to apply the pT-differential mass cut for triggered data
+  /// on the D0 daughter of the B+ candidate
+  /// \param candidate is the B+ candidate
+  /// \param trackPi is the bachelor pion of the B+ candidate
+  /// \return true if the D0 daughter passes the mass selection
+  template <typename T1>
+  bool isDmesInMassRange(const T1& candidate, TracksPion::iterator const& trackPi)
+  {
+    const auto candD0 = candidate.template prong0_as<HfRed2Prongs>();
+    const auto invMassD0 = (trackPi.signed1Pt() < 0) ? candD0.invMassHypo0() : candD0.invMassHypo1();
+    return isCandidateInMassRange(invMassD0, o2::constants::physics::MassD0, candidate.ptProng0(), hfTriggerCuts);
+  }
+
   /// Main function to perform B+ candidate creation
   /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
   /// \param hfCandsBp B+ candidates
@@ -189,6 +206,18 @@ struct HfCandidateSelectorBplusToD0PiReduced {
         continue;
       }
 
+      auto trackPi = hfCandBp.template prong1_as<TracksPion>();
+
+      // pT-differential mass cut on the D0 daughter for triggered data
+      if (useD0TriggerMassCut && !isDmesInMassRange(hfCandBp, trackPi)) {
+        hfSelBplusToD0PiCandidate(statusBplus);
+        if (applyBplusMl) {
+          hfMlBplusToD0PiCandidate(outputMlNotPreselected);
+        }
+        // LOGF(info, "B+ candidate selection failed at D0-meson mass selection");
+        continue;
+      }
+
       if constexpr (WithDmesMl) { // we include it in the topological selections
         if (!HfHelper::selectionDmesMlScoresForBReduced(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
           hfSelBplusToD0PiCandidate(statusBplus);
@@ -206,7 +235,6 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
 
       // track-level PID selection
-      auto trackPi = hfCandBp.template prong1_as<TracksPion>();
       if (pionPidMethod == PidMethod::TpcOrTof || pionPidMethod == PidMethod::TpcAndTof) {
         int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
         if (pionPidMethod == PidMethod::TpcOrTof) {
@@ -250,7 +278,8 @@ struct HfCandidateSelectorBplusToD0PiReduced {
 
   void processSelection(HfRedCandBplus const& hfCandsBp,
                         TracksPion const& pionTracks,
-                        HfCandBpConfigs const& configs)
+                        HfCandBpConfigs const& configs,
+                        HfRed2Prongs const& /*candsD*/)
   {
     runSelection<false>(hfCandsBp, pionTracks, configs);
   } // processSelection
@@ -259,7 +288,8 @@ struct HfCandidateSelectorBplusToD0PiReduced {
 
   void processSelectionWithDmesMl(soa::Join<HfRedCandBplus, HfRedBplusD0Mls> const& hfCandsBp,
                                   TracksPion const& pionTracks,
-                                  HfCandBpConfigs const& configs)
+                                  HfCandBpConfigs const& configs,
+                                  HfRed2Prongs const& /*candsD*/)
   {
     runSelection<true>(hfCandsBp, pionTracks, configs);
   } // processSelectionWithDmesMl
