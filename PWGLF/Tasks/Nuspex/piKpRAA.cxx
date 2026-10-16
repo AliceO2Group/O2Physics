@@ -1472,9 +1472,13 @@ struct PiKpRAA {
           isBestCollIndex = true;
         }
 
-        const bool hasbc{collision.has_foundBC()};
-        const bool hasft0{collision.has_foundFT0()};
-        const bool hastvx{collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)};
+        bool hasbc{false};
+        bool hasft0{false};
+        bool hastvx{false};
+
+        hasbc = collision.has_foundBC();
+        hasft0 = collision.has_foundFT0();
+        hastvx = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX);
         const bool hasBcFT0TVX{hasbc && hasft0 && hastvx};
 
         if (hasBcFT0TVX) {
