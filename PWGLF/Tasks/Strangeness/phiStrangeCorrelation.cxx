@@ -42,7 +42,6 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-#include <THnSparse.h>
 #include <TPDGCode.h>
 
 #include <fmt/format.h>
@@ -127,23 +126,21 @@ struct BoundEfficiencyMap {
   BoundEfficiencyMap(const EffMapPtr& effMap, float x, float y, float z) : effMap(&effMap), coords(x, y, z) {}
   BoundEfficiencyMap(const EffMapPtr& effMap, const CoordsTuple& coords) : effMap(&effMap), coords(coords) {}
 
-  [[nodiscard]] std::pair<float, float> getBinEfficiencyAndError() const
+  [[nodiscard]] float getBinEfficiency() const
   {
     return std::visit(
-      [this](auto&& mapPtr) -> std::pair<float, float> {
+      [this](auto&& mapPtr) -> float {
         if (!mapPtr) {
-          return {1.0f, 0.0f};
+          return 1.0f;
         }
 
         const auto& [x, y, z] = coords;
 
         // Compile-time branching on the alternative held (TH2 or TH3): generates the exact correct function call
         if constexpr (std::is_same_v<std::decay_t<decltype(mapPtr)>, const TH2*>) {
-          int bin = mapPtr->FindFixBin(y, z); // 2D case only
-          return {mapPtr->GetBinContent(bin), mapPtr->GetBinError(bin)};
+          return mapPtr->GetBinContent(mapPtr->FindFixBin(y, z)); // 2D case only
         } else {
-          int bin = mapPtr->FindFixBin(x, y, z); // Full 3D case
-          return {mapPtr->GetBinContent(bin), mapPtr->GetBinError(bin)};
+          return mapPtr->GetBinContent(mapPtr->FindFixBin(x, y, z)); // Full 3D case
         }
       },
       *effMap);
@@ -273,7 +270,6 @@ struct PhiStrangeCorrelation {
     Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
     Configurable<bool> useEffInterpolation{"useEffInterpolation", false, "If true, interpolates efficiency map, else uses bin center"};
     Configurable<bool> applyPhiEfficiency{"applyPhiEfficiency", false, "Apply efficiency for Phi candidates"};
-    Configurable<bool> propagateEffError{"propagateEffError", false, "Propagate efficiency error"};
     Configurable<bool> perPeriodEfficiency{"perPeriodEfficiency", false, "Use per period efficiency maps"};
   } efficiencyConfigs;
 
@@ -396,7 +392,7 @@ struct PhiStrangeCorrelation {
     std::array<std::string, kAssocPartSize> assocTitles = {"K0Short", "Lambda", "AntiLambda", "Xi", "Omega", "Pion"};
     std::array<std::string, kAssocPartSize> dirNames = {"k0s", "lambda", "antilambda", "xi", "omega", "pi"};
 
-    histos.add("phi/h3PhiData", "Invariant mass of Phi in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+    histos.add("phi/h3PhiData", "Invariant mass of Phi in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis}, true);
 
     histos.add("phi/h4PhiMCReco", "Phi in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPhiAxis, yAxis});
     histos.add("phi/h3PhiMCGen", "Phi in MC Gen", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
@@ -410,18 +406,18 @@ struct PhiStrangeCorrelation {
       std::string dir = dirNames[i];
 
       if (i == kPion) {
-        histos.add("phiPi/h6PhiPiTPCData", "Invariant mass of Phi vs nSigmaTPC of Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
-        histos.add("phiPi/h6PhiPiTPCDataME", "Invariant mass of Phi vs nSigmaTPC of Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
-        histos.add("phiPi/h6PhiPiTOFData", "Invariant mass of Phi vs nSigmaTOF of Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
-        histos.add("phiPi/h6PhiPiTOFDataME", "Invariant mass of Phi vs nSigmaTOF of Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
+        histos.add("phiPi/h6PhiPiTPCData", "Invariant mass of Phi vs nSigmaTPC of Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]}, true);
+        histos.add("phiPi/h6PhiPiTPCDataME", "Invariant mass of Phi vs nSigmaTPC of Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]}, true);
+        histos.add("phiPi/h6PhiPiTOFData", "Invariant mass of Phi vs nSigmaTOF of Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]}, true);
+        histos.add("phiPi/h6PhiPiTOFDataME", "Invariant mass of Phi vs nSigmaTOF of Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]}, true);
       } else {
-        histos.add(fmt::format("phi{}/h6Phi{}Data", pName, pName).c_str(), fmt::format("Invariant mass of Phi vs Invariant mass of {} in Data", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
-        histos.add(fmt::format("phi{}/h6Phi{}DataME", pName, pName).c_str(), fmt::format("Invariant mass of Phi vs Invariant mass of {} in Data ME", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
+        histos.add(fmt::format("phi{}/h6Phi{}Data", pName, pName).c_str(), fmt::format("Invariant mass of Phi vs Invariant mass of {} in Data", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]}, true);
+        histos.add(fmt::format("phi{}/h6Phi{}DataME", pName, pName).c_str(), fmt::format("Invariant mass of Phi vs Invariant mass of {} in Data ME", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]}, true);
       }
 
       for (const auto& label : PhiMassRegionLabels) {
-        histos.add(fmt::format("phi{}/h5Phi{}Data{}", pName, pName, label).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in Data", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, deltaphiAxis});
-        histos.add(fmt::format("phi{}/h5Phi{}DataME{}", pName, pName, label).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in Data ME", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, deltaphiAxis});
+        histos.add(fmt::format("phi{}/h5Phi{}Data{}", pName, pName, label).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in Data", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, deltaphiAxis}, true);
+        histos.add(fmt::format("phi{}/h5Phi{}DataME{}", pName, pName, label).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in Data ME", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, deltaphiAxis}, true);
       }
 
       histos.add(fmt::format("{}/h4{}MCReco", dir, pName).c_str(), fmt::format("{} in MC Reco", pTitle).c_str(), kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTAxes[i], yAxis});
@@ -507,50 +503,37 @@ struct PhiStrangeCorrelation {
     }
   }
 
-  // Compute weight based on efficiencies
+  // Weight of an entry: the inverse of the product of the efficiencies of the maps it reads. Only the weight goes into
+  // the histograms, whose Sumw2 then gives the statistical variance, sum of w^2. The uncertainty of the maps is not
+  // added per entry: it is the same for every entry reading a map bin, so it adds linearly within the bin, which a
+  // per-entry sum in quadrature underestimates by sqrt(N); it is propagated offline
   template <typename... BoundEffMaps>
-  std::pair<float, float> computeWeightAndError(const BoundEffMaps&... boundEffMaps)
+  float computeWeight(const BoundEffMaps&... boundEffMaps)
   {
     if (!efficiencyConfigs.applyEfficiency) {
-      return {1.0f, 0.0f};
+      return 1.0f;
     }
 
     float effTot = 1.0f;
-    float relErrSqSum = 0.0f;
 
     auto processMap = [&](const auto& boundMap) {
-      auto [eff, err] = boundMap.getBinEfficiencyAndError(); // Unpack efficiency and error from the map
-
-      if (efficiencyConfigs.useEffInterpolation) {
-        eff = boundMap.interpolateEfficiency();
-        // For simplicity, we keep the error from the bin content even when interpolating, but this can be refined if needed
-      }
-
-      effTot *= eff;
-
-      if (eff > 0.0f) {
-        float mapErr = efficiencyConfigs.propagateEffError ? err : 0.0f; // Optionally propagate error, otherwise treat as zero
-        relErrSqSum += (mapErr / eff) * (mapErr / eff);
-      }
+      effTot *= efficiencyConfigs.useEffInterpolation ? boundMap.interpolateEfficiency() : boundMap.getBinEfficiency();
     };
 
     (processMap(boundEffMaps), ...); // Fold expression to process all bound efficiency maps
 
     if (effTot <= 0.0f) {
-      return {1.0f, 0.0f};
+      return 1.0f;
     }
 
-    float weight = 1.0f / effTot;
-    float weightErr = weight * std::sqrt(relErrSqSum); // Propagate relative error to the weight
-
-    return {weight, weightErr};
+    return 1.0f / effTot;
   }
 
   template <AssociatedParticleType PartType>
-  std::pair<float, float> computeAssocWeight(float multiplicity, const auto& phiCand, const auto& assocCand)
+  float computeAssocWeight(float multiplicity, const auto& phiCand, const auto& assocCand)
   {
-    return computeWeightAndError(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
-                                 BoundEfficiencyMap(effMapsAssoc[PartType], multiplicity, assocCand.pt(), assocCand.y()));
+    return computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
+                         BoundEfficiencyMap(effMapsAssoc[PartType], multiplicity, assocCand.pt(), assocCand.y()));
   }
 
   float getDeltaPhi(float phiTrigger, float phiAssociated)
@@ -612,72 +595,6 @@ struct PhiStrangeCorrelation {
     }
   }
 
-  template <typename THist, typename... Args>
-  void customFillHist(auto histId, const std::pair<float, float>& weightPair, Args... coords)
-  {
-    auto hist = histos.get<THist>(histId);
-    if (!hist) {
-      return;
-    }
-
-    // Extract the weight and its propagated uncertainty
-    auto [w, wErr] = weightPair;
-
-    // Find the global bin number for the given physical coordinates
-    int bin = hist->FindFixBin(coords...);
-
-    // Retrieve the previous bin content and its absolute error
-    double prevContent = hist->GetBinContent(bin);
-    double prevErr = hist->GetBinError(bin);
-
-    // Calculate the new content by adding the current weight
-    double newContent = prevContent + w;
-
-    // Error propagation in quadrature:
-    // prevErr^2 : previous accumulated variance
-    // (w * w)   : statistical fluctuation added by this specific particle count
-    // (wErr * wErr) : systematic uncertainty added by the efficiency map inaccuracy
-    double newErr = std::sqrt(prevErr * prevErr + (w * w) + (wErr * wErr));
-
-    // Update the histogram bin
-    hist->SetBinContent(bin, newContent);
-    hist->SetBinError(bin, newErr);
-  }
-
-  template <typename... Args>
-  void customFillTHn(auto histId, const std::pair<float, float>& weightPair, Args... coords)
-  {
-    auto hist = histos.get<THnSparse>(histId);
-    if (!hist) {
-      return;
-    }
-
-    // Extract the weight and its propagated uncertainty
-    auto [w, wErr] = weightPair;
-
-    // Create an array of floats for the coordinates to pass to GetBin and SetBinContent
-    std::array<double, sizeof...(Args)> coordArray{static_cast<double>(coords)...};
-
-    // Find the bin number.
-    // The 'true' flag is mandatory: it allocates the bin in memory if it doesn't exist yet.
-    auto bin = hist->GetBin(coordArray.data(), true);
-
-    // Retrieve the previous content and the squared error (variance)
-    double prevContent = hist->GetBinContent(bin);
-    double prevErr2 = hist->GetBinError2(bin);
-
-    // Calculate the new content
-    double newContent = prevContent + w;
-
-    // Add the new variances to the accumulated variance
-    // (w * w) is the statistical term, (wErr * wErr) is the map uncertainty term
-    double newErr2 = prevErr2 + (w * w) + (wErr * wErr);
-
-    // Update the THnSparse bin
-    hist->SetBinContent(bin, newContent);
-    hist->SetBinError2(bin, newErr2); // Note: SetBinError2 takes the squared error directly
-  }
-
   template <AssociatedParticleType PartType, typename TAssoc>
   bool isAssocValid(TAssoc const& assoc)
   {
@@ -716,7 +633,7 @@ struct PhiStrangeCorrelation {
   }
 
   template <AssociatedParticleType PartType, bool IsME, typename TPhiCand, typename TAssoc>
-  void fillPhiAssocCorrelation(TPhiCand const& phiCand, TAssoc const& assoc, float multiplicity, const std::pair<float, float>& weight)
+  void fillPhiAssocCorrelation(TPhiCand const& phiCand, TAssoc const& assoc, float multiplicity, float weight)
   {
     const std::array<std::pair<float, float>, kPhiMassRegions> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
@@ -725,13 +642,13 @@ struct PhiStrangeCorrelation {
 
     if (analysisMode == kMassvsMass) {
 
-#define FILL_MASS_CASE(PART_ENUM, PART_STR)                                                                                                           \
-  if constexpr (PartType == PART_ENUM) {                                                                                                              \
-    if constexpr (IsME) {                                                                                                                             \
-      customFillTHn(HIST("phi" PART_STR "/h6Phi" PART_STR "DataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.m()); \
-    } else {                                                                                                                                          \
-      customFillTHn(HIST("phi" PART_STR "/h6Phi" PART_STR "Data"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.m());   \
-    }                                                                                                                                                 \
+#define FILL_MASS_CASE(PART_ENUM, PART_STR)                                                                                                         \
+  if constexpr (PartType == PART_ENUM) {                                                                                                            \
+    if constexpr (IsME) {                                                                                                                           \
+      histos.fill(HIST("phi" PART_STR "/h6Phi" PART_STR "DataME"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.m(), weight); \
+    } else {                                                                                                                                        \
+      histos.fill(HIST("phi" PART_STR "/h6Phi" PART_STR "Data"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.m(), weight);   \
+    }                                                                                                                                               \
   }
 
       FILL_MASS_CASE(kK0S, "K0S");
@@ -741,11 +658,11 @@ struct PhiStrangeCorrelation {
       FILL_MASS_CASE(kOmega, "Omega");
       if constexpr (PartType == kPion) {
         if constexpr (IsME) {
-          customFillTHn(HIST("phiPi/h6PhiPiTPCDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTPC());
-          customFillTHn(HIST("phiPi/h6PhiPiTOFDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTOF());
+          histos.fill(HIST("phiPi/h6PhiPiTPCDataME"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTPC(), weight);
+          histos.fill(HIST("phiPi/h6PhiPiTOFDataME"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTOF(), weight);
         } else {
-          customFillTHn(HIST("phiPi/h6PhiPiTPCData"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTPC());
-          customFillTHn(HIST("phiPi/h6PhiPiTOFData"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTOF());
+          histos.fill(HIST("phiPi/h6PhiPiTPCData"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTPC(), weight);
+          histos.fill(HIST("phiPi/h6PhiPiTOFData"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTOF(), weight);
         }
       }
 #undef FILL_MASS_CASE
@@ -754,15 +671,15 @@ struct PhiStrangeCorrelation {
       std::function<void()> fillSignal;
       std::function<void()> fillSideband;
 
-#define FILL_DYDP_CASE(PART_ENUM, PART_STR)                                                                                                                               \
-  if constexpr (PartType == PART_ENUM) {                                                                                                                                  \
-    if constexpr (IsME) {                                                                                                                                                 \
-      fillSignal = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };     \
-      fillSideband = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); }; \
-    } else {                                                                                                                                                              \
-      fillSignal = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };       \
-      fillSideband = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };   \
-    }                                                                                                                                                                     \
+#define FILL_DYDP_CASE(PART_ENUM, PART_STR)                                                                                                                             \
+  if constexpr (PartType == PART_ENUM) {                                                                                                                                \
+    if constexpr (IsME) {                                                                                                                                               \
+      fillSignal = [&]() { histos.fill(HIST("phi" PART_STR "/h5Phi" PART_STR "DataMESignal"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi, weight); };     \
+      fillSideband = [&]() { histos.fill(HIST("phi" PART_STR "/h5Phi" PART_STR "DataMESideband"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi, weight); }; \
+    } else {                                                                                                                                                            \
+      fillSignal = [&]() { histos.fill(HIST("phi" PART_STR "/h5Phi" PART_STR "DataSignal"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi, weight); };       \
+      fillSideband = [&]() { histos.fill(HIST("phi" PART_STR "/h5Phi" PART_STR "DataSideband"), multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi, weight); };   \
+    }                                                                                                                                                                   \
   }
 
       FILL_DYDP_CASE(kK0S, "K0S");
@@ -825,8 +742,8 @@ struct PhiStrangeCorrelation {
         continue;
       }
 
-      auto weightPhi = computeWeightAndError(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
-      customFillHist<TH3>(HIST("phi/h3PhiData"), weightPhi, multiplicity, phiCand.pt(), phiCand.m());
+      auto weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
+      histos.fill(HIST("phi/h3PhiData"), multiplicity, phiCand.pt(), phiCand.m(), weightPhi);
 
       // Fold expression: elaborate the correlation for each associated particle type in the parameter pack
       (processOneAssocSpeciesSE<TAssocInputs::Type>(phiCand, *assocInputs.candidates, multiplicity), ...);
