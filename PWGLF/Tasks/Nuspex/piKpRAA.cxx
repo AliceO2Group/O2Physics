@@ -128,10 +128,6 @@ struct PiKpRAA {
   static constexpr float KmaxdEdxMIP{60.0f};
   static constexpr float KmindEdxMIPPlateau{70.0f};
   static constexpr float KmaxdEdxMIPPlateau{90.0f};
-  static constexpr float KminFT0A{3.5f};
-  static constexpr float KmaxFT0A{4.9f};
-  static constexpr float KminFT0C{-3.3f};
-  static constexpr float KmaxFT0C{-2.1f};
 
   static constexpr float DefaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {DefaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -1475,11 +1471,12 @@ struct PiKpRAA {
         bool hasbc{false};
         bool hasft0{false};
         bool hastvx{false};
+        bool hasBcFT0TVX{false};
 
         hasbc = collision.has_foundBC();
         hasft0 = collision.has_foundFT0();
         hastvx = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX);
-        const bool hasBcFT0TVX{hasbc && hasft0 && hastvx};
+        hasBcFT0TVX = hasbc && hasft0 && hastvx;
 
         if (hasBcFT0TVX) {
           // NUMERATOR/DENOMINATOR OF THE EVENT LOSS
