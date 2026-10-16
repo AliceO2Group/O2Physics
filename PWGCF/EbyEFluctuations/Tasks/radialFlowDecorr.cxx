@@ -185,7 +185,7 @@ struct RadialFlowDecorr {
 
   Configurable<int> cfgSys{"cfgSys", 1, "Which collision system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
   Configurable<int> cfgSystType{"cfgSystType", 0, "Systematic variation: 0=Base,1=systCent,2=systDCA,3=systEff,4=systEffpTDep,5=systFlat,6=systNITS,7=systNTPC,8=systPileup,9=systVz"};
-  Configurable<int> cfgNBootstrap{"cfgNBootstrap", 16, "Number of Poisson bootstrap samples (base data run only)"};
+  Configurable<int> cfgNBootstrap{"cfgNBootstrap", 20, "Number of Poisson bootstrap samples (base data run only)"};
   Configurable<int> cfgBootstrapSeed{"cfgBootstrapSeed", 0, "TRandom3 seed for bootstrap (0 = machine-random per job)"};
 
   Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights"};
