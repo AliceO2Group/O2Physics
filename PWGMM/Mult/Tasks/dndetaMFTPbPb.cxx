@@ -773,7 +773,6 @@ struct DndetaMFTPbPb {
   using CollsCorr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
   using CollsMCExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
   using CollsMCExtraMult = soa::Join<aod::McCollisions, aod::MultMCExtras, aod::McCollsExtra>;
-
   /// Tracks
   using MftTracksLabeled = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
   using MftBestTracksLabeled = soa::Join<aod::MFTTracks, aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>;
