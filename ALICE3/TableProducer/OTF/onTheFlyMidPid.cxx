@@ -508,12 +508,12 @@ struct OnTheFlyMidPid {
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
-    const double a0 = mass * mass;
-    const double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
-    const double a2 = (detRadius * 0.01) * (detRadius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
-    const double dtofOndPt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    const double dtofOndEta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    const double trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution, std::fabs(dtofOndEta) * trackEtaResolution);
+    float a0 = mass * mass;
+    float a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
+    float a2 = (detRadius * 0.01) * (detRadius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
+    float dtofOndPt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    float dtofOndEta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    float trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution, std::fabs(dtofOndEta) * trackEtaResolution);
     return trackTimeResolution;
   }
 
