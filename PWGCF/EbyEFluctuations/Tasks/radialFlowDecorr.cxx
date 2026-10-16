@@ -113,9 +113,11 @@ struct RadialFlowDecorr {
   // Systematic-variation selector for DATA. Base is the main measurement; each
   // variation reads its own DataMean object (systSuffix) for the correlation step.
   // kSystEff and kSystEffPtDep scale the efficiency by cfgEffVarPercent; kSystEffPtDep
-  // always uses the pT-dependent shape.
+  // always uses the pT-dependent shape. kSystCent is run with a different
+  // cfgCentralityChoice than the base (base FT0C, variation FT0M).
   enum ESystType {
     kSystBase = 0,
+    kSystCent,
     kSystDCA,
     kSystEff,
     kSystEffPtDep,
@@ -128,7 +130,7 @@ struct RadialFlowDecorr {
   };
   // Suffix appended to the DataMean CCDB path per systematic (Base -> no suffix).
   inline static const std::vector<std::string> systSuffix = {
-    "", "_systDCA", "_systEff", "_systEffpTDep", "_systFlat",
+    "", "_systCent", "_systDCA", "_systEff", "_systEffpTDep", "_systFlat",
     "_systNITS", "_systNTPC", "_systPileup", "_systVz"};
 
   static constexpr float KinvalidCentrality = -1.0f;
@@ -182,7 +184,7 @@ struct RadialFlowDecorr {
   Configurable<int> cfgNchOMax{"cfgNchOMax", 800, "Max Nch range for OO collisions"};
 
   Configurable<int> cfgSys{"cfgSys", 1, "Which collision system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
-  Configurable<int> cfgSystType{"cfgSystType", 0, "Systematic variation: 0=Base,1=systDCA,2=systEff,3=systEffpTDep,4=systFlat,5=systNITS,6=systNTPC,7=systPileup,8=systVz"};
+  Configurable<int> cfgSystType{"cfgSystType", 0, "Systematic variation: 0=Base,1=systCent,2=systDCA,3=systEff,4=systEffpTDep,5=systFlat,6=systNITS,7=systNTPC,8=systPileup,9=systVz"};
   Configurable<int> cfgNBootstrap{"cfgNBootstrap", 16, "Number of Poisson bootstrap samples (base data run only)"};
   Configurable<int> cfgBootstrapSeed{"cfgBootstrapSeed", 0, "TRandom3 seed for bootstrap (0 = machine-random per job)"};
 
@@ -1031,6 +1033,9 @@ struct RadialFlowDecorr {
   void init(InitContext&)
   {
     TH1::SetDefaultSumw2(true);
+    if (cfgSystType == kSystCent && cfgCentralityChoice == kCentFT0C) {
+      LOGF(warning, "cfgSystType=systCent but cfgCentralityChoice is still FT0C (the base estimator).");
+    }
     // Nch axes by system
     if (cfgSys == kPbPb) {
       nChAxis = {cfgNchPbMax / 2, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
