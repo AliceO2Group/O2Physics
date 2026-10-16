@@ -21,6 +21,7 @@
 #define ALICE3_DATAMODEL_MID_H_
 
 #include <Framework/AnalysisDataModel.h>
+
 #include <cstdlib>
 #include <vector>
 
@@ -31,13 +32,13 @@ namespace upgrade_mid
 DECLARE_SOA_COLUMN(MIDTrackTime, midTrackTime, float);     //! Track time generated at the MID
 DECLARE_SOA_COLUMN(MIDTrackLength, midTrackLength, float); //! track length for calculation of MID (generated)
 
-DECLARE_SOA_COLUMN(MIDEventTime, midEventTime, float);                       //! Event time reconstructed with the MID
-DECLARE_SOA_COLUMN(MIDEventTimeErr, midEventTimeErr, float);                 //! Uncertainty on the event time reconstructed with the MID
-DECLARE_SOA_COLUMN(MIDTrackPosReco, midTrackPosReco, std::vector<float>);  //! Measured position in MID
-DECLARE_SOA_COLUMN(MIDTrackPos, midTrackPos, std::vector<float>);  //! Expected position in MID
-DECLARE_SOA_COLUMN(MIDCandidate, midCandidate, bool);              //! Muon candidate
-DECLARE_SOA_COLUMN(MIDTrackTimeReco, midTrackTimeReco, float);     //! Track time measured at MID
-DECLARE_SOA_COLUMN(MIDTrackLengthReco, midTrackLengthReco, float); //! track length for calculation of MID (reconstructed)
+DECLARE_SOA_COLUMN(MIDEventTime, midEventTime, float);                    //! Event time reconstructed with the MID
+DECLARE_SOA_COLUMN(MIDEventTimeErr, midEventTimeErr, float);              //! Uncertainty on the event time reconstructed with the MID
+DECLARE_SOA_COLUMN(MIDTrackPosReco, midTrackPosReco, std::vector<float>); //! Measured position in MID
+DECLARE_SOA_COLUMN(MIDTrackPos, midTrackPos, std::vector<float>);         //! Expected position in MID
+DECLARE_SOA_COLUMN(MIDCandidate, midCandidate, bool);                     //! Muon candidate
+DECLARE_SOA_COLUMN(MIDTrackTimeReco, midTrackTimeReco, float);            //! Track time measured at MID
+DECLARE_SOA_COLUMN(MIDTrackLengthReco, midTrackLengthReco, float);        //! track length for calculation of MID (reconstructed)
 
 } // namespace upgrade_mid
 
@@ -57,8 +58,6 @@ DECLARE_SOA_TABLE(UpgradeMidExpecteds, "AOD", "UPGRADEMIDEXPT",
                   upgrade_mid::MIDTrackPos,
                   upgrade_mid::MIDTrackTime,
                   upgrade_mid::MIDTrackLength);
-
-
 
 using UpgradeMidMC = UpgradeMidMCs::iterator;
 using UpgradeMid = UpgradeMids::iterator;
