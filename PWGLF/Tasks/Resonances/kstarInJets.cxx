@@ -29,7 +29,6 @@
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
-
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -44,15 +43,13 @@
 #include <TString.h>
 #include <TVector2.h>
 
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <memory>
-#include <string>
-#include <chrono>
-#include <cstdlib>
 #include <random>
-
+#include <string>
 #include <utility>
 #include <vector>
 
