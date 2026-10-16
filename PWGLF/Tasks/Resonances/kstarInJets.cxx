@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file kstarInOO.cxx
-/// \brief the pT spectra of k*0(892) resonance analysis in OO collisions
+/// \file kstarInJets.cxx
+/// \brief the pT spectra of k*0(892) resonance analysis in Jets collisions
 /// \author Jimun Lee <jimun.lee@cern.ch>
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
