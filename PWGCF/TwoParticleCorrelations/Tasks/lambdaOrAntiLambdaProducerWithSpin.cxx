@@ -1520,6 +1520,7 @@ struct LambdaAntiLambdaPairAnalysis {
 
   // Mixed-Event Compatablity variables
   Configurable<float> mixedEventMaxDeltaMultiplicity{"mixedEventMaxDeltaMultiplicity", 10.f, "Maximum multiplicity difference between mixed events"};
+  Configurable<int> maxMixedEvents{"maxMixedEvents", 5, "Maximum multiplicity-compatible collision combinations with selected candidates in both collisions per dataframe"};
 
   // Short-range pairs
   Configurable<float> sameEventShortRangePairMaxDeltaRapidity{"sameEventShortRangePairMaxDeltaRapidity", 0.5f, "ShortRangePai Maximum absolute rapidity difference for same-event pairs"};
@@ -2258,7 +2259,7 @@ struct LambdaAntiLambdaPairAnalysis {
   Preslice<FilteredLambdas> lambdasPerCollision = aod::lambdahyperon::collisionId;
   Preslice<FilteredAntiLambdas> antiLambdasPerCollision = aod::lambdahyperon::collisionId;
 
-  void processData(CollisionsWithMultiplicity const& collisions, FilteredLambdas const& lambdas, FilteredAntiLambdas const& antiLambdas)
+  void processSameEventData(CollisionsWithMultiplicity const& collisions, FilteredLambdas const& lambdas, FilteredAntiLambdas const& antiLambdas)
   {
     static constexpr int MinimumSameSpeciesCandidates = 2;
 
@@ -2282,14 +2283,19 @@ struct LambdaAntiLambdaPairAnalysis {
         fillAntiLambdaAntiLambdaSameEvent(antiLambdasThisCollision);
       }
     }
+  }
 
-    // ============================================================
-    // Mixed events
-    // ============================================================
+  void processMixedEventData(CollisionsWithMultiplicity const& collisions, FilteredLambdas const& lambdas, FilteredAntiLambdas const& antiLambdas)
+  {
+    int mixedEventCounter = 0;
 
     for (auto const& [collision1, collision2] : combinations(CombinationsStrictlyUpperIndexPolicy(collisions, collisions))) {
 
       const float deltaMultiplicity = std::abs(static_cast<float>(collision1.multNTracksPV()) - static_cast<float>(collision2.multNTracksPV()));
+
+      if (mixedEventCounter >= maxMixedEvents) {
+        break;
+      }
 
       if (deltaMultiplicity > mixedEventMaxDeltaMultiplicity) {
         continue;
@@ -2300,6 +2306,12 @@ struct LambdaAntiLambdaPairAnalysis {
 
       const auto antiLambdas1 = antiLambdas.sliceBy(antiLambdasPerCollision, collision1.globalIndex());
       const auto antiLambdas2 = antiLambdas.sliceBy(antiLambdasPerCollision, collision2.globalIndex());
+
+      // Empty collisions must not consume the mixing allowance.
+      if ((lambdas1.size() == 0 && antiLambdas1.size() == 0) ||
+          (lambdas2.size() == 0 && antiLambdas2.size() == 0)) {
+        continue;
+      }
 
       // Lambda–anti-Lambda requires at least one of each.
       if (lambdas1.size() > 0 && antiLambdas2.size() > 0) {
@@ -2316,32 +2328,17 @@ struct LambdaAntiLambdaPairAnalysis {
       if (antiLambdas1.size() > 0 && antiLambdas2.size() > 0) {
         fillAntiLambdaAntiLambdaMixedEvent(antiLambdas1, antiLambdas2);
       }
+
+      ++mixedEventCounter;
     }
   }
+
   void processDummy(aod::Collisions const&) {}
 
-  PROCESS_SWITCH(LambdaAntiLambdaPairAnalysis, processData, "Run candidate production", true);
+  PROCESS_SWITCH(LambdaAntiLambdaPairAnalysis, processSameEventData, "Run same-event pair analysis", true);
+  PROCESS_SWITCH(LambdaAntiLambdaPairAnalysis, processMixedEventData, "Run mixed-event pair analysis", false);
   PROCESS_SWITCH(LambdaAntiLambdaPairAnalysis, processDummy, "Skip candidate production", false);
 };
-
-/*WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  const bool isMC = cfgc.options().get<bool>("isMC");
-
-  WorkflowSpec workflow;
-
-  if (isMC) {
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaMcRecoTableProducer>(cfgc));
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaEfficiencyPlots>(cfgc));
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaSelectionCutFlow>(cfgc));
-  } else {
-    workflow.push_back(adaptAnalysisTask<LambdaOrAntiLambdaProducerWithSpin>(cfgc));
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaSelector>(cfgc));
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaPairAnalysis>(cfgc));
-  }
-
-  return workflow;
-}*/
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

@@ -653,8 +653,8 @@ struct lambdaAnalysis {
   {
 
     LOGF(debug, "Event Mixing Started");
-    BinningType1 binningPositions1{{cMixVtxBins, cMixMultBins, cMixSphBins}, true};
-    BinningType2 binningPositions2{{cMixVtxBins, cMixMultBins}, true};
+    BinningType1 binningPositions1{{cMixVtxBins, cMixMultBins, cMixSphBins}};
+    BinningType2 binningPositions2{{cMixVtxBins, cMixMultBins}};
     auto tracksTuple = std::make_tuple(tracks);
     if (cMixSph) {
       SameKindPair<resoCols, resoTracks, BinningType1> pairs{binningPositions1, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip

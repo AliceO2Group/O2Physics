@@ -2782,8 +2782,8 @@ struct Photonhbt {
       if (!mixing.cfgDoMix || ndiphoton == 0) {
         continue;
       }
-      auto selectedPhotons = emh1->GetTracksPerCollision(keyDFCollision);
-      auto poolIDs = emh1->GetCollisionIdsFromEventPool(keyBin);
+      const auto& selectedPhotons = emh1->GetTracksPerCollision(keyDFCollision);
+      const auto& poolIDs = emh1->GetCollisionIdsFromEventPool(keyBin);
       for (const auto& mixID : poolIDs) {
         if (mixID.second == collision.globalIndex() && mixID.first == ndf) {
           continue;
@@ -2794,7 +2794,7 @@ struct Photonhbt {
         if (diffBC < mixing.ndiffBCMix) {
           continue;
         }
-        auto poolPhotons = emh1->GetTracksPerCollision(mixID);
+        const auto& poolPhotons = emh1->GetTracksPerCollision(mixID);
         for (const auto& g1 : selectedPhotons) {
           for (const auto& g2 : poolPhotons) {
             if (!passAsymmetryCut(g1.pt(), g2.pt())) {
@@ -3102,8 +3102,8 @@ struct Photonhbt {
       if (!mixing.cfgDoMix || ndiphoton == 0) {
         continue;
       }
-      auto selectedPhotons = emh1->GetTracksPerCollision(keyDFCollision);
-      auto poolIDs = emh1->GetCollisionIdsFromEventPool(keyBin);
+      const auto& selectedPhotons = emh1->GetTracksPerCollision(keyDFCollision);
+      const auto& poolIDs = emh1->GetCollisionIdsFromEventPool(keyBin);
       for (const auto& mixID : poolIDs) {
         if (mixID.second == collision.globalIndex() && mixID.first == ndf) {
           continue;
@@ -3114,7 +3114,7 @@ struct Photonhbt {
         if (diffBC < mixing.ndiffBCMix) {
           continue;
         }
-        auto poolPhotons = emh1->GetTracksPerCollision(mixID);
+        const auto& poolPhotons = emh1->GetTracksPerCollision(mixID);
         for (const auto& g1 : selectedPhotons) {
           for (const auto& g2 : poolPhotons) {
             if (!passAsymmetryCut(g1.pt(), g2.pt())) {

@@ -38,6 +38,13 @@ o2physics_add_library(AnalysisCore
 # is linked here.
 add_library(AnalysisPCH OBJECT analysisPCH.cxx)
 target_link_libraries(AnalysisPCH PUBLIC O2::Framework O2Physics::AnalysisCore)
+# The PCH compile is one of the heaviest translation units in the tree -- it
+# instantiates the whole data model up front -- but add_library() does not
+# put it in the 'analysis' job pool the way o2physics_add_dpl_workflow() does
+# for the workflows. Left out, it runs unthrottled next to the pooled
+# compilations and blows past the per-job memory budget the pool exists to
+# enforce.
+set_property(TARGET AnalysisPCH PROPERTY JOB_POOL_COMPILE analysis)
 if(NOT DEFINED ENV{USE_RECC})
   target_precompile_headers(AnalysisPCH PRIVATE
     <Framework/ASoA.h>

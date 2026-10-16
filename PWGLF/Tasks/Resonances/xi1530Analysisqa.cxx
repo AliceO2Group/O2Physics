@@ -1445,7 +1445,7 @@ struct Xi1530Analysisqa {
     }
     auto tracksTuple = std::make_tuple(resomicrotracks, cascTracks);
 
-    BinningTypeVtxZT0M colBinning{{mixingConfig.cfgVtxBins, mixingConfig.cfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{mixingConfig.cfgVtxBins, mixingConfig.cfgMultBins}};
     Pair<ResoCollisions, ResoMicroTracks, aod::ResoCascades, BinningTypeVtxZT0M> pairs{colBinning, mixingConfig.nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -1493,7 +1493,7 @@ struct Xi1530Analysisqa {
       mixingPools.clear();
       mixingBField = collision.bMagField();
     }
-    BinningTypeVtxZT0M binning{{mixingConfig.cfgVtxBins, mixingConfig.cfgMultBins}, true};
+    BinningTypeVtxZT0M binning{{mixingConfig.cfgVtxBins, mixingConfig.cfgMultBins}};
     const int bin = binning.getBin(std::make_tuple(collision.posZ(), collision.cent()));
     if (bin < 0) {
       return;

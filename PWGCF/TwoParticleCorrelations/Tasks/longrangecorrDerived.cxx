@@ -648,7 +648,7 @@ struct LongrangecorrDerived {
       return multiplicity;
     };
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}};
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
     using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
@@ -717,7 +717,7 @@ struct LongrangecorrDerived {
       };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}};
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
     using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
@@ -749,7 +749,7 @@ struct LongrangecorrDerived {
       return collision.multiplicity();
     };
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}, true};
+    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {cfgAxis.axisVtxZME, cfgAxis.axisMultME}};
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
     using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;

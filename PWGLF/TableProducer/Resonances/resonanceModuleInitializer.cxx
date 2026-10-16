@@ -273,9 +273,25 @@ struct ResonanceModuleInitializer {
     }
     LOGF(info, "Stored collision multiplicity estimator: %d", EventConfig.cfgMultiplicityEstimator.value);
 
+    const int enabledGenProcesses = static_cast<int>(doprocessMCgen) +
+                                    static_cast<int>(doprocessMCgenFT0M) +
+                                    static_cast<int>(doprocessMCgenFT0C) +
+                                    static_cast<int>(doprocessMCgenFV0A) +
+                                    static_cast<int>(doprocessMCgenNoCent);
+    const bool anyGenProcess = enabledGenProcesses > 0;
+    if (enabledGenProcesses > 1) {
+      LOGF(fatal, "Enable only one generator process: processMCgen, processMCgenFT0M, processMCgenFT0C, processMCgenFV0A, or processMCgenNoCent");
+    }
+    if (doprocessMCgenNoCent && GenCuts.cfgGenMultPercentile) {
+      LOGF(fatal, "processMCgenNoCent requires cfgGenMultPercentile=false");
+    }
+    if ((doprocessMCgenFT0M || doprocessMCgenFT0C || doprocessMCgenFV0A) && !GenCuts.cfgGenMultPercentile) {
+      LOGF(fatal, "The estimator-specific generator processes require cfgGenMultPercentile=true; use processMCgenNoCent otherwise");
+    }
+
     // Run 2 and Run 3 callbacks require different event-selection semantics.
     const bool anyRun2Process = doprocessRun2 || doprocessRun2MC;
-    const bool anyRun3Process = doprocessRun3 || doprocessRun3MC || doprocessMCgen;
+    const bool anyRun3Process = doprocessRun3 || doprocessRun3MC || anyGenProcess;
     if (anyRun2Process && anyRun3Process) {
       LOG(fatal) << "Run 2 and Run 3 processes cannot be enabled in the same ResonanceModuleInitializer";
     }
@@ -290,13 +306,13 @@ struct ResonanceModuleInitializer {
                                                  static_cast<int>(GenCuts.cfgGenMultFT0M.value) +
                                                  static_cast<int>(GenCuts.cfgGenMultFT0C.value) +
                                                  static_cast<int>(GenCuts.cfgGenMultFV0A.value);
-    if ((doprocessMCgen || doprocessRun2MC || doprocessRun3MC) && enabledGenMultiplicityEstimators > 1) {
+    if ((anyGenProcess || doprocessRun2MC || doprocessRun3MC) && enabledGenMultiplicityEstimators > 1) {
       LOG(fatal) << "Only one generator multiplicity estimator can be enabled: cfgGenMult05, cfgGenMult10, cfgGenMultFT0M, cfgGenMultFT0C, or cfgGenMultFV0A";
     }
-    if (doprocessMCgen) {
-      if (GenCuts.cfgGenMultPercentile && multEstimator != CentralityFT0M &&
+    if (anyGenProcess) {
+      if (doprocessMCgen && GenCuts.cfgGenMultPercentile && multEstimator != CentralityFT0M &&
           multEstimator != CentralityFT0C && multEstimator != CentralityFV0A) {
-        LOGF(fatal, "cfgGenMultPercentile supports cfgMultName=FT0M, FT0C, or FV0A");
+        LOGF(fatal, "processMCgen with cfgGenMultPercentile supports cfgMultName=FT0M, FT0C, or FV0A");
       }
       if (GenCuts.isZvtxcutGen &&
           (!std::isfinite(GenCuts.cutzvertexGen.value) || GenCuts.cutzvertexGen.value <= 0.f)) {
@@ -362,7 +378,7 @@ struct ResonanceModuleInitializer {
       ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
     }
 
-    if (doprocessMCgen) {
+    if (anyGenProcess) {
       constexpr std::array<char const*, 5> MCEventLabels{"All", "z vertex", "BC RCT", "INEL", "INEL>0"};
       AxisSpec centAxisGen = {GenCuts.binsCentGen, "Centrality (%)"};
       AxisSpec eventTypeAxis = {2, 0.f, 2.f, "Event type"};
@@ -533,7 +549,14 @@ struct ResonanceModuleInitializer {
     fillDetailedCollisionQA(collision, o2::analysis::CollisonCuts::kAllpassed);
   }
 
+  // Keep the original input for existing processMCgen configurations. The
+  // dedicated callbacks select the MC percentile independently of cfgMultName
+  // (reconstructed centrality) and cfgGenMult* (generator multiplicity).
   using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFV0As, aod::MultsExtraMC>;
+  using GenMCCollisionsFT0M = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
+  using GenMCCollisionsFT0C = soa::Join<aod::McCollisions, aod::McCentFT0Cs, aod::MultsExtraMC>;
+  using GenMCCollisionsFV0A = soa::Join<aod::McCollisions, aod::McCentFV0As, aod::MultsExtraMC>;
+  using GenMCCollisionsNoCent = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using Run3MCCollisions = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using Run2MCCollisions = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using GenRecoCollisions = soa::Join<aod::ResoCollisionCandidates, aod::MultsExtra, aod::PVMults, aod::McCollisionLabels>;
@@ -846,19 +869,19 @@ struct ResonanceModuleInitializer {
    * reduced AOD tables. RCT quality is evaluated through the generator
    * collision's associated BC because it is a run-condition property.
    */
-  void processMCgen(GenMCCollisions::iterator const& mcCollision,
-                    aod::McParticles const& mcParticles,
-                    soa::SmallGroups<GenRecoCollisions> const& collisions,
-                    BCsWithRCT const&)
+  template <typename MCCollision>
+  void processMCgenQA(MCCollision const& mcCollision,
+                      aod::McParticles const& mcParticles,
+                      soa::SmallGroups<GenRecoCollisions> const& collisions,
+                      float generatorCentrality)
   {
-    auto bc = mcCollision.bc_as<BCsWithRCT>();
+    auto bc = mcCollision.template bc_as<BCsWithRCT>();
     initCCDB(bc);
 
     const auto getReconstructedCentrality = [&](auto const& collision) {
       return centEst(collision);
     };
 
-    const float generatorCentrality = getMCCentrality(mcCollision);
     const float impactParameter = mcCollision.impactParameter();
     const float multiplicity = getMCMultiplicity(mcCollision);
 
@@ -910,7 +933,51 @@ struct ResonanceModuleInitializer {
       qaRegistry.fill(HIST("EventGen/h4MultCent_recMC"), eventType, reconstructedCentrality, multiplicity, impactParameter);
     }
   }
-  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgen, "Process generator-level MC QA", false);
+
+  void processMCgen(GenMCCollisions::iterator const& mcCollision,
+                    aod::McParticles const& mcParticles,
+                    soa::SmallGroups<GenRecoCollisions> const& collisions,
+                    BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, getMCCentrality(mcCollision));
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgen, "Process generator-level MC QA with all MC percentile inputs (legacy)", false);
+
+  void processMCgenFT0M(GenMCCollisionsFT0M::iterator const& mcCollision,
+                        aod::McParticles const& mcParticles,
+                        soa::SmallGroups<GenRecoCollisions> const& collisions,
+                        BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, mcCollision.centFT0M());
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgenFT0M, "Process generator-level MC QA with only the FT0M MC percentile input", false);
+
+  void processMCgenFT0C(GenMCCollisionsFT0C::iterator const& mcCollision,
+                        aod::McParticles const& mcParticles,
+                        soa::SmallGroups<GenRecoCollisions> const& collisions,
+                        BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, mcCollision.centFT0C());
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgenFT0C, "Process generator-level MC QA with only the FT0C MC percentile input", false);
+
+  void processMCgenFV0A(GenMCCollisionsFV0A::iterator const& mcCollision,
+                        aod::McParticles const& mcParticles,
+                        soa::SmallGroups<GenRecoCollisions> const& collisions,
+                        BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, mcCollision.centFV0A());
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgenFV0A, "Process generator-level MC QA with only the FV0A MC percentile input", false);
+
+  void processMCgenNoCent(GenMCCollisionsNoCent::iterator const& mcCollision,
+                          aod::McParticles const& mcParticles,
+                          soa::SmallGroups<GenRecoCollisions> const& collisions,
+                          BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, 100.5f);
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgenNoCent, "Process generator-level MC QA using reconstructed centrality without MC percentile inputs", false);
 
   /**
    * @brief Processes Run3 MC data

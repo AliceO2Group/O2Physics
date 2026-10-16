@@ -27,6 +27,7 @@
 #include <cmath>       // std::abs, std::sqrt
 #include <cstddef>     // std::size_t
 #include <cstdint>     // intX_t
+#include <numeric>     // std::iota
 #include <tuple>       // std::apply
 #include <type_traits> // std::decay_t
 #include <utility>     // std::move
@@ -49,6 +50,10 @@ struct RecoDecay {
   };
 
   static constexpr int8_t StatusCodeAfterFlavourOscillation{92}; // decay products after B0(s) flavour oscillation
+  static constexpr int8_t StatusCodePrimaryMin{81};              // primary particles (after hadronization) have status code >= 81
+  static constexpr int8_t StatusCodePrimaryMax{89};              // primary particles (after hadronization) have status code <= 89
+  static constexpr int8_t StatusCodeRhadronMin{101};             // R-hadrons (after hadronization) have status code >= 101
+  static constexpr int8_t StatusCodeRhadronMax{109};             // R-hadrons (after hadronization) have status code <= 109
   static constexpr int PdgQuarkMax{8};                           // largest quark PDG code; o2-linter: disable=pdg/explicit-code (t' does not have a named constant.)
   static constexpr int PdgBosonMin{PDG_t::kGluon};               // smallest boson (gauge or H) PDG code
   static constexpr int PdgBosonMax{37};                          // largest boson (gauge or H) PDG code; o2-linter: disable=pdg/explicit-code (H+ does not have a named constant.)
@@ -561,6 +566,46 @@ struct RecoDecay {
     return maxNormDeltaIP;
   }
 
+  template <typename PPart>
+  static void getOrderedMotherIds(const PPart& particle,
+                                  std::vector<int64_t>& motherIdsOrdered,
+                                  const bool searchUpToQuark = false)
+  {
+    if (!particle.has_mothers()) {
+      return;
+    }
+
+    if (particle.mothersIds().front() == particle.globalIndex()) {
+      return;
+    }
+
+    if (!searchUpToQuark) {
+      motherIdsOrdered.push_back(particle.mothersIds().front());
+    } else {
+      if (particle.mothersIds().size() == 2) {
+        if (particle.mothersIds().front() == particle.mothersIds().back()) {
+          motherIdsOrdered.push_back(particle.mothersIds().front());
+        } else if (particle.mothersIds().front() < particle.mothersIds().back()) {
+          auto absStatusCode = std::abs(particle.getGenStatusCode());
+          if ((absStatusCode >= StatusCodePrimaryMin && absStatusCode <= StatusCodePrimaryMax) || (absStatusCode >= StatusCodeRhadronMin && absStatusCode <= StatusCodeRhadronMax)) {
+            motherIdsOrdered.resize(particle.mothersIds().back() - particle.mothersIds().front() + 1);
+            std::iota(motherIdsOrdered.begin(), motherIdsOrdered.end(), particle.mothersIds().front());
+          } else {
+            motherIdsOrdered.push_back(particle.mothersIds().front());
+            motherIdsOrdered.push_back(particle.mothersIds().back());
+          }
+        } else if (particle.mothersIds().front() > particle.mothersIds().back()) {
+          if (particle.mothersIds().back() != 0) {
+            motherIdsOrdered.push_back(particle.mothersIds().back());
+          }
+          motherIdsOrdered.push_back(particle.mothersIds().front());
+        }
+      } else if (particle.mothersIds().size() == 1) {
+        motherIdsOrdered.push_back(particle.mothersIds().front());
+      }
+    }
+  }
+
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
   /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
   /// \param particlesMC  table with MC particles
@@ -599,10 +644,12 @@ struct RecoDecay {
       for (auto iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage, o2-linter: disable=const-ref-in-for-loop (int elements)
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
-          // If searchUpToQuark is false we only take the first mother (since decay products only have one mother)
-          auto lastMotherIdxToCheck = searchUpToQuark ? particleMother.mothersIds().back() : particleMother.mothersIds().front();
-          for (auto iMother = particleMother.mothersIds().front(); iMother <= lastMotherIdxToCheck; ++iMother) { // loop over the mother particles of the analysed particle
-            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {         // if a mother is still present in the vector, do not check it again
+
+          std::vector<int64_t> motherIdsOrdered{};
+          getOrderedMotherIds(particleMother, motherIdsOrdered, searchUpToQuark);
+
+          for (auto const& iMother : motherIdsOrdered) {                                                 // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) { // if a mother is still present in the vector, do not check it again
               continue;
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
@@ -1059,6 +1106,7 @@ struct RecoDecay {
     while (arrayIds[-stage].size() > 0) {
       // vector of mother indices for the current stage
       std::vector<int64_t> arrayIdsStage{};
+      std::vector<int64_t> motherIdsOrdered{};
       for (auto iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage, o2-linter: disable=const-ref-in-for-loop (int elements)
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
@@ -1072,8 +1120,9 @@ struct RecoDecay {
             }
           }
 
-          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
-            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+          getOrderedMotherIds(particleMother, motherIdsOrdered, searchUpToQuark);
+          for (auto const& iMother : motherIdsOrdered) {                                                 // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) { // if a mother is still present in the vector, do not check it again
               continue;
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
@@ -1161,30 +1210,11 @@ struct RecoDecay {
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
-          // we break immediately if searchUpToQuark is false and the first mother is a quark or a boson (a hadron should never be the mother of a parton)
-          if (!searchUpToQuark) {
-            auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
-            auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-            if (pdgParticleIMother <= PdgQuarkMax || (pdgParticleIMother >= PdgBosonMin && pdgParticleIMother <= PdgBosonMax)) {
-              // auto PDGPaticle = std::abs(particleMother.pdgCode());
-              if (
-                (pdgParticle / PdgDivisorMeson == PDG_t::kBottom || // b mesons
-                 pdgParticle / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
-              ) {
-                return OriginType::NonPrompt; // beauty
-              }
-              if (
-                (pdgParticle / PdgDivisorMeson == PDG_t::kCharm || // c mesons
-                 pdgParticle / PdgDivisorBaryon == PDG_t::kCharm)  // c baryons
-              ) {
-                return OriginType::Prompt; // charm
-              }
-              break;
-            }
-          }
+          std::vector<int64_t> motherIdsOrdered{};
+          getOrderedMotherIds(particleMother, motherIdsOrdered, searchUpToQuark);
 
-          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
-            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+          for (auto const& iMother : motherIdsOrdered) {                                                 // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) { // if a mother is still present in the vector, do not check it again
               continue;
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());

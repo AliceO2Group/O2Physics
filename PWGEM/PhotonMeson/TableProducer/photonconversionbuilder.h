@@ -82,6 +82,7 @@
 #include <utility>
 #include <vector>
 
+// NOLINTBEGIN(google-global-names-in-headers)
 using o2::framework::AxisSpec;
 using o2::framework::Configurable;
 using o2::framework::ConfigurableGroup;
@@ -92,6 +93,7 @@ using o2::framework::kTH2F;
 using o2::framework::kTHnSparseF;
 using o2::framework::Preslice;
 using o2::framework::Produces;
+// NOLINTEND(google-global-names-in-headers)
 
 using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::PMEvSels, o2::aod::CentFT0Ms, o2::aod::CentFT0As, o2::aod::CentFT0Cs>;
 // using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;

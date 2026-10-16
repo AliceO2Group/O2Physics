@@ -234,6 +234,12 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
   kKstar0Bar
 };
 
+// resonances reconstructed from two photons (PCM), e.g. pi0 -> gamma gamma, eta -> gamma gamma
+enum class TwoPhotonResonance : o2::analysis::femto::datatypes::TwoPhotonResonanceType {
+  kPi0,
+  kEta
+};
+
 enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
   kD0,
   kD0Bar,

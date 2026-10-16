@@ -417,7 +417,7 @@ struct HfCorrelatorLcScHadrons {
   ConfigurableAxis binsCandMass{"binsCandMass", {200, 1.98, 2.58}, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
   ConfigurableAxis binsNSigmas{"binsNSigmas", {4000, -500., 500.}, "n#sigma"};
 
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int8_t chargeCand = 3;
@@ -536,7 +536,7 @@ struct HfCorrelatorLcScHadrons {
     registry.add("hV0LambdaReflPiKRejMcRec", "McRec V0 Lambda reflected candidates with #pi K rejection;inv. mass (p #pi) (GeV/#it{c}^{2});GeV/#it{c};GeV/#it{c}", {HistType::kTH3F, {{axisMassV0}, {axisPtV0}, {axisPtHadron}}});
     registry.add("hV0PtPrimLambdaMcGen", "Mcgen V0 Lambda candidates;GeV/#it{c}", {HistType::kTH1F, {{axisPtV0}}});
 
-    corrBinning = {{binsZVtx, binsMultiplicity}, true};
+    corrBinning = {{binsZVtx, binsMultiplicity}};
   }
 
   template <typename MlProbType>
@@ -1603,7 +1603,7 @@ struct HfCorrelatorLcScHadrons {
     static constexpr std::size_t PDGChargeScale{3u};
 
     registry.fill(HIST("hMcEvtCount"), 0);
-    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}};
     poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
@@ -1834,7 +1834,7 @@ struct HfCorrelatorLcScHadrons {
   void processMcGenMixedEvent(SelCollisionsMc const& collisions,
                               CandidatesLcMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}};
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelCollisionsMc, CandidatesLcMcGen, CandidatesLcMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, cfgCharmCand.numberEventsMixed, -1, collisions, tracksTuple, &cache};
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {

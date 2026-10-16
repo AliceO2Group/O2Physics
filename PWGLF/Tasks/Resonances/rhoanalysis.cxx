@@ -267,7 +267,7 @@ struct rhoanalysis {
   void processMixedEvent(Event const& events, TrackPi const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
+    BinningType binningOnPositions{{axisVertex, axisMultiplicity}};
     SameKindPair<Event, TrackPi, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, events, tracksTuple, &cache};
     float massPiplus = Ipdg->Mass(kPiPlus);
     float massPiminus = Ipdg->Mass(kPiMinus);

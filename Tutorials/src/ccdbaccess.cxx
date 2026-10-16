@@ -29,6 +29,7 @@
 #include <TH2.h>
 
 #include <chrono>
+#include <cstdint>
 #include <string>
 
 using namespace o2::framework;
@@ -39,7 +40,7 @@ struct TimestampUserTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "qc/TOF/TOFTaskCompressed/hDiagnostic", "path to the ccdb object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   void init(o2::framework::InitContext&)
   {

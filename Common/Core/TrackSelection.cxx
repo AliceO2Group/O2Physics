@@ -18,6 +18,7 @@
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <set>
@@ -37,7 +38,7 @@ bool TrackSelection::FulfillsITSHitRequirements(uint8_t itsClusterMap) const
   return true;
 }
 
-const std::string TrackSelection::mCutNames[static_cast<int>(TrackSelection::TrackCuts::kNCuts)] = {"TrackType", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCRefit", "ITSNCls", "ITSChi2NDF", "ITSRefit", "ITSHits", "GoldenChi2", "DCAxy", "DCAz", "TPCFracSharedCls"};
+const std::array<std::string, static_cast<int>(TrackSelection::TrackCuts::kNCuts)> TrackSelection::mCutNames{"TrackType", "PtRange", "EtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCRefit", "ITSNCls", "ITSChi2NDF", "ITSRefit", "ITSHits", "GoldenChi2", "DCAxy", "DCAz", "TPCFracSharedCls"};
 
 void TrackSelection::SetTrackType(o2::aod::track::TrackTypeEnum trackType)
 {
@@ -149,7 +150,7 @@ void TrackSelection::print() const
   for (int i = 0; i < static_cast<int>(TrackCuts::kNCuts); i++) {
     switch (static_cast<TrackCuts>(i)) {
       case TrackCuts::kTrackType:
-        LOG(info) << mCutNames[i].data() << " == " << static_cast<int>(mTrackType);
+        LOG(info) << mCutNames[i] << " == " << static_cast<int>(mTrackType);
         break;
       case TrackCuts::kPtRange:
         LOG(info) << mCutNames[i] << " in [" << mMinPt << ", " << mMaxPt << "]";

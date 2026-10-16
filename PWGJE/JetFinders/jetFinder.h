@@ -64,6 +64,7 @@ struct JetFinderTask {
   o2::framework::Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   o2::framework::Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
   o2::framework::Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
+  o2::framework::Configurable<bool> isEmbedding{"isEmbedding", false, "running on an embedded dataset"};
 
   // track level configurables
   o2::framework::Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
@@ -207,7 +208,7 @@ struct JetFinderTask {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<o2::soa::Filtered<o2::aod::JetTracks>, o2::soa::Filtered<o2::aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection);
+    jetfindingutilities::analyseTracks<o2::soa::Filtered<o2::aod::JetTracks>, o2::soa::Filtered<o2::aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, isEmbedding);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJet")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
 
@@ -220,7 +221,7 @@ struct JetFinderTask {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<o2::soa::Filtered<o2::aod::JetTracksSub>, o2::soa::Filtered<o2::aod::JetTracksSub>::iterator>(inputParticles, tracks, trackSelection);
+    jetfindingutilities::analyseTracks<o2::soa::Filtered<o2::aod::JetTracksSub>, o2::soa::Filtered<o2::aod::JetTracksSub>::iterator>(inputParticles, tracks, trackSelection, isEmbedding);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetEWSPtMin, jetEWSPtMax, jetRadius, jetAreaFractionMin, collision, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, fillTHnSparse ? registry.get<THn>(HIST("hJetEWS")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
 
@@ -252,7 +253,7 @@ struct JetFinderTask {
     for (auto const& clusterDefinition : clusterDefinitionsVec) {
       for (auto const& hadronicCorrectionType : hadronicCorrectionTypesVec) {
         inputParticles.clear();
-        jetfindingutilities::analyseTracks<o2::soa::Filtered<o2::aod::JetTracks>, o2::soa::Filtered<o2::aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection);
+        jetfindingutilities::analyseTracks<o2::soa::Filtered<o2::aod::JetTracks>, o2::soa::Filtered<o2::aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, isEmbedding);
         jetfindingutilities::analyseClusters(inputParticles, clusters, clusterDefinition, hadronicCorrectionType);
         jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJet")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
       }

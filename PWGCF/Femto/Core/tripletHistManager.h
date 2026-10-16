@@ -11,7 +11,7 @@
 
 /// \file tripletHistManager.h
 /// \brief histogram manager for triplet tasks
-/// \author anton.riedel@tum.de, TU München, anton.riedel@tum.de
+/// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #ifndef PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_
@@ -147,12 +147,12 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
 
 struct ConfTripletCuts : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TripletCuts");
-  o2::framework::Configurable<float> q3Max{"q3Max", -1, "Maximal kstar (set to -1 to deactivate)"};
-  o2::framework::Configurable<float> q3Min{"q3Min", -1, "Minimal kstar (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> q3Max{"q3Max", -1, "Maximal Q3 (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> q3Min{"q3Min", -1, "Minimal Q3 (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMax{"mtMax", -1, "Maximal mt (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMin{"mtMin", -1, "Minimal mt (set to -1 to deactivate)"};
-  o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common anchestor (in the same event)"};
-  o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common anchestor (in the same event)"};
+  o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common ancestor (in the same event)"};
+  o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common ancestor (in the same event)"};
   o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
 };
 

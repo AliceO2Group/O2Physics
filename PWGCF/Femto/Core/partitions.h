@@ -94,6 +94,21 @@
            ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).negDauMaskAboveThres),                                          \
            ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).negDauMaskBelowThres))
 
+// partition for resonances built from two photons (pi0, eta, ...): unlike MAKE_RESONANCE_0/1_PARTITON
+// there is no sign and no momentum-threshold PID switch, just a plain mask check per (unordered) daughter
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_TWOPHOTONRESONANCE_PARTITION(selection)                                \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&                           \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&                         \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                       \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                       \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                       \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                       \
+    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                     \
+    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                     \
+    ncheckbit(o2::aod::femtotwophotonresonances::maskDau1, (selection).dau1Mask) && \
+    ncheckbit(o2::aod::femtotwophotonresonances::maskDau2, (selection).dau2Mask)
+
 // partition for lambdas
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_LAMBDA_PARTITION(selection)                                                                                                       \
@@ -122,6 +137,18 @@
     (o2::aod::femtobase::stored::mass > (selection).massMin) && \
     (o2::aod::femtobase::stored::mass < (selection).massMax) && \
     ncheckbit(o2::aod::femtov0s::mask, (selection).mask)
+
+// partition for photons (PCM)
+// no sign/mass handling: photons are their own antiparticle and have no mass window
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_PHOTON_PARTITION(selection)                      \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&     \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&   \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) && \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) && \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) && \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) && \
+    ncheckbit(o2::aod::femtophotons::mask, (selection).mask)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_CASCADE_PARTITION(selection)                                                                                                      \

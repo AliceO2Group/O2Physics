@@ -122,7 +122,7 @@ struct HfCorrelatorHfeHadrons {
   ConfigurableAxis binsNSigma{"binsNSigma", {30, -15., 15.}, "#it{#sigma_{TPC}}"};
   ConfigurableAxis binsMass{"binsMass", {100, 0.0, 2.0}, "Mass (GeV/#it{c}^{2}); entries"};
 
-  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
+  BinningType corrBinning{{zPoolBins, multPoolBins}};
   HistogramRegistry registry{
     "registry",
     {}};
@@ -479,7 +479,7 @@ struct HfCorrelatorHfeHadrons {
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles, aod::HfMcGenSelEl const& electrons)
   {
 
-    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
 
     for (const auto& particleMc : mcParticles) {
@@ -598,7 +598,7 @@ struct HfCorrelatorHfeHadrons {
   void processMcGenMixedEvent(McGenTableCollisions const& mcCollision, aod::HfMcGenSelEl const& electrons, aod::McParticles const& mcParticles)
   {
 
-    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}};
 
     auto tracksTuple = std::make_tuple(electrons, mcParticles);
     Pair<McGenTableCollisions, aod::HfMcGenSelEl, aod::McParticles, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, 5, -1, mcCollision, tracksTuple, &cache};
