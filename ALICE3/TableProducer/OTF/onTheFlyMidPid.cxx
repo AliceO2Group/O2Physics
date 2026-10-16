@@ -291,6 +291,9 @@ struct OnTheFlyMidPid {
       delete hHitMapInCellBefore;
     }
 
+    MIDEfficiency(const MIDEfficiency&) = delete;
+    MIDEfficiency& operator=(const MIDEfficiency&) = delete;
+
     MIDEfficiency(float r, float l, std::array<float, 2> pDimensions, float fIA, float m)
       : layerRadius(r), layerLength(l), cellDimensionZ(pDimensions[0]), cellDimensionRPhi(pDimensions[1]), fractionInactive(fIA), magField(m)
     {
@@ -739,8 +742,8 @@ struct OnTheFlyMidPid {
 
     // Displacement projections
     deltaMID[0] = posMID[0] - pos1[0];
-    deltaMID[0] = posMID[1] - pos1[1];
-    deltaMID[0] = posMID[2] - pos1[2];
+    deltaMID[1] = posMID[1] - pos1[1];
+    deltaMID[2] = posMID[2] - pos1[2];
 
     return totalLength;
   }
