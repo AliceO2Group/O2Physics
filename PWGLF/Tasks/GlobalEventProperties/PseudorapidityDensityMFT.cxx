@@ -50,6 +50,7 @@
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
 #include <TUUID.h>
 
@@ -97,7 +98,7 @@ const AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 const AxisSpec vxAxis = {200, -0.5, 0.5, "V_{x} (cm)"};
 const AxisSpec vyAxis = {200, -0.5, 0.5, "V_{y} (cm)"};
 // Status axis for reco/truth (1=reco, 2=true)
-AxisSpec recoTruthStatusAxis = {2, 0.5, 2.5, "status"};
+const AxisSpec recoTruthStatusAxis = {2, 0.5, 2.5, "status"};
 
 // Delta-vertex axes (reco - true) in cm
 const AxisSpec deltaVxAxis = {400, -0.5, 0.5, "#DeltaV_{x} = V_{x}^{rec}-V_{x}^{true} (cm)"};
@@ -2280,7 +2281,7 @@ struct PseudorapidityDensityMFT {
     const auto countAndPassEvSelGenReco = [&](auto const& collision) {
       struct EvSelStep {
         bool enabled{false};
-        decltype(aod::evsel::kIsTriggerTVX) bit;
+        decltype(aod::evsel::kIsTriggerTVX) bit{aod::evsel::kIsTriggerTVX};
         GenRecoCutBin bin{GenRecoCutBin::AllRecoCollisions};
       };
 
@@ -2607,7 +2608,7 @@ struct PseudorapidityDensityMFT {
     const auto countAndPassEvSelGenReco = [&](auto const& collision) {
       struct EvSelStep {
         bool enabled{false};
-        decltype(aod::evsel::kIsTriggerTVX) bit;
+        decltype(aod::evsel::kIsTriggerTVX) bit{aod::evsel::kIsTriggerTVX};
         GenRecoCutBin bin{GenRecoCutBin::AllRecoCollisions};
       };
 
@@ -2698,7 +2699,7 @@ struct PseudorapidityDensityMFT {
       // The reconstructed event has now passed the z window, reconstructed
       // INEL>0, reco-gen z matching and the complete event selection.
       if (!atLeastOneSel8VzGt0) {
-        selectedRecoNtrkForEventLoss = static_cast<int64_t>(perCollisionSample.size());
+        selectedRecoNtrkForEventLoss = perCollisionSample.size();
         selectedRecoZvtxForEventLoss = collision.posZ();
       }
       atLeastOneSel8VzGt0 = true;
@@ -2802,9 +2803,9 @@ struct PseudorapidityDensityMFT {
     if (associationInvocation >= 0xffffffffULL) {
       LOGF(fatal, "Association offline event-key invocation range exhausted");
     }
-    const uint32_t associationCall = static_cast<uint32_t>(associationInvocation++);
-    UChar_t associationUuid[16];
-    associationKeyNamespace.GetUUID(associationUuid);
+    const auto associationCall = static_cast<uint32_t>(associationInvocation++);
+    std::array<unsigned char, 16> associationUuid{};
+    associationKeyNamespace.GetUUID(associationUuid.data());
     std::array<unsigned int, 6> associationNamespaceParts{};
     for (size_t part = 0; part < associationNamespaceParts.size(); ++part) {
       associationNamespaceParts[part] =
@@ -2861,7 +2862,7 @@ struct PseudorapidityDensityMFT {
             registry.fill(HIST("Association/UnclassifiedTrackSparseBeforeDCA"), original.eta(), chosenVz->second,
                           offlineTrack.bestDCAXY(), offlineTrack.bestDCAZ(), category);
           }
-          const uint32_t chosenKey = static_cast<uint32_t>(chosenId);
+          const auto chosenKey = static_cast<uint32_t>(chosenId);
           registry.fill(HIST("Association/EventTrackKeysBeforeDCA"),
                         original.eta(), chosenVz->second, offlineTrack.bestDCAXY(), offlineTrack.bestDCAZ(),
                         category, association,
@@ -2873,10 +2874,12 @@ struct PseudorapidityDensityMFT {
             (!useDCAxyCut || std::abs(offlineTrack.bestDCAXY()) <= maxDCAxy) &&
             (!useDCAzCut || std::abs(offlineTrack.bestDCAZ()) <= maxDCAz);
           if (passesConfiguredDCA) {
-            if (association == 0)
+            if (association == 0) {
               recoEventsWithRightTracks.insert(chosenId);
-            if (association == 1)
+            }
+            if (association == 1) {
               recoEventsWithWrongTracks.insert(chosenId);
+            }
           }
         }
 
