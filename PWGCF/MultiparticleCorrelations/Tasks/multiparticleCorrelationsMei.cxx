@@ -48,7 +48,6 @@
 
 #include <array>
 #include <cmath>
-#include <numeric>
 #include <string>
 #include <vector>
 
