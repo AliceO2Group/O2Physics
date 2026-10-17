@@ -426,24 +426,24 @@ struct CorrFit {
       registry.add("deltaEta_deltaPhi_mixed_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}});
       registry.add("Assoc_amp_same_TPC_FT0A", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
       registry.add("Assoc_amp_mixed_TPC_FT0A", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
-      registry.add("Trig_hist_TPC_FT0A", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+      registry.add("Trig_hist_TPC_FT0A", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger, axisMult}}});
     }
     if (doprocessSameTpcFt0c) {
       registry.add("deltaEta_deltaPhi_same_TPC_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}}); // check to see the delta eta and delta phi distribution
       registry.add("deltaEta_deltaPhi_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}});
       registry.add("Assoc_amp_same_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
       registry.add("Assoc_amp_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
-      registry.add("Trig_hist_TPC_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+      registry.add("Trig_hist_TPC_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger, axisMult}}});
     }
     if (doprocessSameFt0aFt0c) {
       registry.add("deltaEta_deltaPhi_same_FT0A_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaFt0aFt0c}}); // check to see the delta eta and delta phi distribution
       registry.add("deltaEta_deltaPhi_mixed_FT0A_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaFt0aFt0c}});
-      registry.add("Trig_hist_FT0A_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+      registry.add("Trig_hist_FT0A_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger, axisMult}}});
     }
     if (doprocessSameTPC) {
       registry.add("deltaEta_deltaPhi_same_TPC", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcTpc}}); // check to see the delta eta and delta phi distribution
       registry.add("deltaEta_deltaPhi_mixed_TPC", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcTpc}});
-      registry.add("Trig_hist_TPC", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+      registry.add("Trig_hist_TPC", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger, axisMult}}});
     }
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -1146,7 +1146,7 @@ struct CorrFit {
           registry.fill(HIST("TofItsNsigma_after"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.tofNSigmaPr(), track1.pt());
         break;
       default:
-        LOGF(info, "PID %d not recognized, skipping nSigma QA filling", pid);
+        LOGF(info, "PID %d not recognized, skipping nSigma QA filling, breaking", pid);
         break;
     } // end of switch
   }
@@ -1155,7 +1155,7 @@ struct CorrFit {
   void fillCorrelationsTPCFT0(const TTracks& tracks1, TFT0s const& ft0, float posZ, int system, double multiplicity, int corType, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
-    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
+    auto fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
     // loop over all tracks
@@ -1178,9 +1178,9 @@ struct CorrFit {
 
       if (system == SameEvent) {
         if (corType == kFT0C) {
-          registry.fill(HIST("Trig_hist_TPC_FT0C"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
+          registry.fill(HIST("Trig_hist_TPC_FT0C"), fSampleIndex, posZ, track1.pt(), multiplicity, eventWeight * triggerWeight);
         } else if (corType == kFT0A) {
-          registry.fill(HIST("Trig_hist_TPC_FT0A"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
+          registry.fill(HIST("Trig_hist_TPC_FT0A"), fSampleIndex, posZ, track1.pt(), multiplicity, eventWeight * triggerWeight);
         }
       }
 
@@ -1239,7 +1239,7 @@ struct CorrFit {
   template <CorrelationContainer::CFStep step, typename TFT0s>
   void fillCorrelationsFT0AFT0C(TFT0s const& ft0Col1, TFT0s const& ft0Col2, float posZ, int system, double multiplicity, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
-    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
+    auto fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
     std::size_t channelASize = ft0Col1.channelA().size();
@@ -1254,7 +1254,7 @@ struct CorrFit {
       auto etaA = getEtaFT0(chanelAid, kFT0A);
 
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist_FT0A_FT0C"), fSampleIndex, posZ, 0.5, eventWeight * amplA);
+        registry.fill(HIST("Trig_hist_FT0A_FT0C"), fSampleIndex, posZ, 0.5, multiplicity, eventWeight * amplA);
       }
 
       for (std::size_t iChC = 0; iChC < channelCSize; iChC++) {
@@ -1283,10 +1283,10 @@ struct CorrFit {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, double multiplicity, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, double multiplicity, int magneticField, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
-    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
+    auto fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
 
@@ -1312,7 +1312,7 @@ struct CorrFit {
         continue;
 
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist_TPC"), fSampleIndex, posZ, track1.pt(), triggerWeight);
+        registry.fill(HIST("Trig_hist_TPC"), fSampleIndex, posZ, track1.pt(), multiplicity, eventWeight * triggerWeight);
       }
 
       for (auto const& track2 : tracks2) {
@@ -1427,7 +1427,7 @@ struct CorrFit {
 
     fillYield(collision, tracks);
 
-    double multiplicity = static_cast<double>(tracks.size());
+    auto multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1495,7 +1495,7 @@ struct CorrFit {
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      double multiplicity = static_cast<double>(tracks.size());
+      auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1545,7 +1545,7 @@ struct CorrFit {
 
     const auto& ft0 = collision.foundFT0();
 
-    double multiplicity = static_cast<double>(tracks.size());
+    auto multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1611,7 +1611,7 @@ struct CorrFit {
       float eventWeight = 1.0f;
 
       const auto& ft0 = collision2.foundFT0();
-      double multiplicity = static_cast<double>(tracks.size());
+      auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1663,7 +1663,7 @@ struct CorrFit {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
-    double multiplicity = static_cast<double>(tracks.size());
+    auto multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1731,7 +1731,7 @@ struct CorrFit {
       const auto& ft0Col1 = collision1.foundFT0();
       const auto& ft0Col2 = collision2.foundFT0();
 
-      double multiplicity = static_cast<double>(tracks.size());
+      auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1775,7 +1775,7 @@ struct CorrFit {
 
     fillYield(collision, tracks);
 
-    double multiplicity = static_cast<double>(tracks.size());
+    auto multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1793,7 +1793,7 @@ struct CorrFit {
       return;
     }
 
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, multiplicity, getMagneticField(bc.timestamp()));
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, multiplicity, getMagneticField(bc.timestamp()), 1.0f);
   }
   PROCESS_SWITCH(CorrFit, processSameTPC, "Process same event for TPC-TPC correlation", false);
 
@@ -1837,7 +1837,7 @@ struct CorrFit {
 
       loadCorrection(bc.timestamp());
 
-      double multiplicity = static_cast<double>(tracks.size());
+      auto multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1847,7 +1847,7 @@ struct CorrFit {
         continue;
       }
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, multiplicity, getMagneticField(collision1.bc_as<aod::BCsWithTimestamps>().timestamp()));
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, multiplicity, getMagneticField(collision1.bc_as<aod::BCsWithTimestamps>().timestamp()), 1.0f);
     }
   }
   PROCESS_SWITCH(CorrFit, processMixedTPC, "Process mixed events for TPC-TPC correlation", false);
