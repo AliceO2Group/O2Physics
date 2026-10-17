@@ -50,7 +50,7 @@
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <THnSparse.h>
+#include <TUUID.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
@@ -296,6 +296,7 @@ struct PseudorapidityDensityMFT {
   static constexpr int NoCompatibleCollisions = 0;
   static constexpr int SingleCompatibleCollision = 1;
 
+
   static constexpr int ChargeUnitTimesThree = 3;
 
   void initMagField(FullBCs::iterator const& bc)
@@ -393,8 +394,13 @@ struct PseudorapidityDensityMFT {
   Configurable<bool> useTriggerTVX{"useTriggerTVX", true, "Require kIsTriggerTVX in processGenReco"};
   Configurable<bool> useNoTimeFrameBorderCut{"useNoTimeFrameBorderCut", true, "Require kNoTimeFrameBorder in processGenReco"};
   Configurable<bool> useNoITSROFrameBorderCut{"useNoITSROFrameBorderCut", true, "Require kNoITSROFrameBorder in processGenReco"};
-  AxisSpec multAxisRecoMFT = {multBinning, "N_{ch}^{reco,MFT}"};
+  AxisSpec multAxisRecoMFT = {multBinning, "N_{ch}^{reco,MFT}"};  
   AxisSpec multAxisGenMFT = {multBinning, "N_{ch}^{gen,MFT}"};
+  // Namespace plus invocation/reco IDs makes offline event keys independent of
+  // local collision-index reuse across dataframes and separate worker outputs.
+  TUUID associationKeyNamespace;
+  uint64_t associationInvocation{0};
+
   HistogramRegistry registry{
     "registry",
     {
@@ -498,6 +504,46 @@ struct PseudorapidityDensityMFT {
                   {HistType::kTH1F, {dcaXyAxis}}});
 
     if (doprocessGenReco3d || doprocessGenReco2d || doprocessGenRecoTimeCom) {
+      // Additional inputs for offline vertex/DCA studies. Existing histograms are unchanged.
+      if (doprocessGenReco3d) {
+        registry.add({"Association/RightTrackSparseBeforeDCA",
+                      ";#eta;z_{chosen}^{reco} (cm);DCA_{xy} (cm);DCA_{z} (cm);category (0: nonamb, 1: amb)",
+                      {HistType::kTHnSparseD, {etaBinning, zAxis, dcaXyAxis, dcaZAxis, {2, -0.5, 1.5}}}});
+        registry.add({"Association/WrongTrackSparseBeforeDCA",
+                      ";#eta;z_{chosen}^{reco} (cm);DCA_{xy} (cm);DCA_{z} (cm);category (0: nonamb, 1: amb)",
+                      {HistType::kTHnSparseD, {etaBinning, zAxis, dcaXyAxis, dcaZAxis, {2, -0.5, 1.5}}}});
+        registry.add({"Association/UnclassifiedTrackSparseBeforeDCA",
+                      ";#eta;z_{chosen}^{reco} (cm);DCA_{xy} (cm);DCA_{z} (cm);category (0: nonamb, 1: amb)",
+                      {HistType::kTHnSparseD, {etaBinning, zAxis, dcaXyAxis, dcaZAxis, {2, -0.5, 1.5}}}});
+        // Key components are exact 16-bit integers. Six namespace components
+        // retain 96 UUID bits; then two invocation and two chosen-reco-ID parts.
+        const AxisSpec key16{65536, -0.5, 65535.5};
+        registry.add({"Association/EventTrackKeysBeforeDCA",
+                      ";#eta;z_{chosen}^{reco};DCAxy;DCAz;track category;association (0:right,1:wrong,2:unclassified);namespace0;namespace1;namespace2;namespace3;namespace4;namespace5;callLow;callHigh;recoLow;recoHigh",
+                      {HistType::kTHnSparseD, {etaBinning, zAxis, dcaXyAxis, dcaZAxis,
+                       {2, -0.5, 1.5}, {3, -0.5, 2.5},
+                       key16, key16, key16, key16, key16, key16, key16, key16, key16, key16}}});
+        registry.add({"Association/hNumRecoEventsWithRightTracks", ";Selected reco collisions with right-associated tracks;Count",
+                      {HistType::kTH1D, {{1, 0.5, 1.5}}}});
+        registry.add({"Association/hNumRecoEventsWithWrongTracks", ";Selected reco collisions with wrong-associated tracks;Count",
+                      {HistType::kTH1D, {{1, 0.5, 1.5}}}});
+        registry.add({"Association/RecoEventVzWithRightTracks", ";z_{chosen}^{reco} (cm);Selected reco collisions",
+                      {HistType::kTH1D, {zAxis}}});
+        registry.add({"Association/RecoEventVzWithWrongTracks", ";z_{chosen}^{reco} (cm);Selected reco collisions",
+                      {HistType::kTH1D, {zAxis}}});
+        registry.add({"OfflineVariations/RecoTrackSparseBeforeDCA",
+                      ";#eta;z_{vtx}^{reco} (cm);DCA_{xy} (cm);DCA_{z} (cm);category (0: nonamb, 1: amb)",
+                      {HistType::kTHnSparseF, {etaBinning, zAxis, dcaXyAxis, dcaZAxis, {2, -0.5, 1.5}}}});
+        registry.add({"OfflineVariations/RecoStrangeSparseBeforeDCA",
+                      ";#eta;z_{vtx}^{reco} (cm);DCA_{xy} (cm);DCA_{z} (cm);category (0: nonamb, 1: amb)",
+                      {HistType::kTHnSparseF, {etaBinning, zAxis, dcaXyAxis, dcaZAxis, {2, -0.5, 1.5}}}});
+      }
+      registry.add({"OfflineVariations/SelectedRecoEventVertexResponse",
+                    ";z_{vtx}^{true} (cm);z_{vtx}^{reco} (cm);selected reco collisions",
+                    {HistType::kTHnSparseD, {zAxis, zAxis}}});
+      registry.add({"OfflineVariations/GenPrimaryEtaTrueZRecoZ",
+                    ";#eta_{gen};z_{vtx}^{true} (cm);z_{vtx}^{reco} (cm)",
+                    {HistType::kTHnSparseD, {etaBinning, zAxis, zAxis}}});
       registry.add({"EventsRecoCuts_GenReco",
                     ";cut;events",
                     {HistType::kTH1F, {{16, 0.5, 16.5}}}});
@@ -1062,6 +1108,14 @@ struct PseudorapidityDensityMFT {
                     {HistType::kTHnSparseF,
                      {dcaXyAxis, dcaZAxis, dcaXAxis, dcaYAxis}}});
 
+      // Category-specific selected reconstructed-collision counts (not generated events).
+      registry.add({"Purity/hNumCollisionsNonAmb_InelMFT",
+                    ";Selected reco collisions with nonambiguous tracks;Count",
+                    {HistType::kTH1D, {{1, 0.5, 1.5}}}});
+      registry.add({"Purity/hNumCollisionsAmb_InelMFT",
+                    ";Selected reco collisions with ambiguous tracks;Count",
+                    {HistType::kTH1D, {{1, 0.5, 1.5}}}});
+
       registry.add({"Purity/RecoSparseAll_EventCount",
                     ";events;counts",
                     {HistType::kTH1F, {{1, 0.5, 1.5}}}});
@@ -1167,6 +1221,16 @@ struct PseudorapidityDensityMFT {
     }
 
     if (doprocessMultReassoc || doprocessMultReassoc3d) {
+      // Offline DCA variations need tracks before either DCA rejection.
+      // Only the 3D process supplies a measured bestDCAZ; do not fill fake zeros
+      // for the 2D process. Category 0 = nonambiguous, 1 = ambiguous; no orphans.
+      if (doprocessMultReassoc3d) {
+        registry.add({"Tracks/2Danalysis/DataTrackSparseBeforeDCA",
+                      ";#eta;z_{vtx}^{reco} (cm);DCA_{xy} (cm);DCA_{z} (cm);track category (0: nonamb, 1: amb)",
+                      {HistType::kTHnSparseF,
+                       {etaBinning, zAxis, dcaXyAxis, dcaZAxis, {2, -0.5, 1.5}}}});
+      }
+
       // Purity denominator histograms (reco side after DCAxy selection)
 
       registry.add({"Tracks/Control/DeltaZ",
@@ -1318,8 +1382,8 @@ struct PseudorapidityDensityMFT {
                     //  {HistType::kTH1F,{{100000, 0.5, 100000.0}}}}); //
                     {HistType::kTH1F, {{100000, -50000.0, 50000.0}}}});                                                                                        //
       registry.add({"NonambEventCounts", " ; EventCounts Nonamb", {HistType::kTH1F, {{1, 0.5, 1.5}}}});                                                        //
-      registry.add({"hNumCollisionsNonAmb_InelMFT", " ; Number of Collisions with Non-Ambiguous Tracks;Count;Frequency", {HistType::kTH1F, {{1, 0.5, 1.5}}}}); //
-      registry.add({"hNumCollisionsAmb_InelMFT", " ; Number of Collisions with Non-Ambiguous Tracks;Count;Frequency", {HistType::kTH1F, {{1, 0.5, 1.5}}}});    //
+      registry.add({"hNumCollisionsNonAmb_InelMFT", ";Selected collisions with nonambiguous tracks;Count", {HistType::kTH1D, {{1, 0.5, 1.5}}}});
+      registry.add({"hNumCollisionsAmb_InelMFT", ";Selected collisions with ambiguous tracks;Count", {HistType::kTH1D, {{1, 0.5, 1.5}}}});
       registry.add({"hNumCollisions_InelMFT", " ; Number of selected events with Inel>0 and MFT>0;Count;Frequency", {HistType::kTH1F, {{1, 0.5, 1.5}}}});      //
       registry.add({"hNumCollisions_Inel", " ; Number of selected events with Inel>0;Count;Frequency", {HistType::kTH1F, {{1, 0.5, 1.5}}}});                   //
       registry.add({"ambEventCounts", " ; EventCounts Nonamb", {HistType::kTH1F, {{1, 0.5, 1.5}}}});                                                           //
@@ -1409,10 +1473,10 @@ struct PseudorapidityDensityMFT {
 
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (const auto& bc : bcs) {
-      if (!useEvSel ||
-          (bc.selection_bit(aod::evsel::kIsBBT0A) &&
-           bc.selection_bit(aod::evsel::kIsBBT0C))) {
-        registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBCs));
+    if (!useEvSel ||
+    (bc.selection_bit(aod::evsel::kIsBBT0A) &&
+     bc.selection_bit(aod::evsel::kIsBBT0C))) {        
+      registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBCs));
         cols.clear();
         for (const auto& collision : collisions) {
           if (collision.has_foundBC()) {
@@ -1535,7 +1599,7 @@ struct PseudorapidityDensityMFT {
                 ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
                  (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut))) {
               continue;
-            }
+                 }
           }
 
           registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
@@ -1567,8 +1631,6 @@ struct PseudorapidityDensityMFT {
   {
     std::unordered_set<int> uniqueEvents;
     std::unordered_set<int> uniqueEventsAmb;
-    std::unordered_set<int> uniqueCollisions;
-    std::unordered_set<int> uniqueCollisionsAmb;
     std::unordered_set<int> eventsInelMFT;
     std::unordered_set<int> eventsInel;
 
@@ -1674,7 +1736,7 @@ struct PseudorapidityDensityMFT {
       o2::math_utils::bringTo02Pi(phi);
       const float dcaXyCut = retrack.bestDCAXY();
 
-      bool failTrackCuts =
+      const bool failTrackQualityCuts =
         track.nClusters() < cfgnCluster ||
         track.eta() <= cfgnEta1 ||
         track.eta() >= cfgnEta2 ||
@@ -1686,8 +1748,23 @@ struct PseudorapidityDensityMFT {
          ((phi <= PhiVetoLow) ||
           ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
           (phi >= PhiVetoHigh))) ||
-        (useDCAxyCut && std::abs(dcaXyCut) > maxDCAxy) || (usePtCut && ptCut > cfgnPt);
+        (usePtCut && ptCut > cfgnPt);
 
+      if (failTrackQualityCuts) {
+        continue;
+      }
+
+      // Selected INEL>0 events and quality-selected non-orphan tracks, before
+      // both DCA cuts. This keeps the existing post-DCA spectra unchanged.
+      if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+        if (hasMidtracks) {
+          const int category = retrack.ambDegree() == SingleCompatibleCollision ? 0 : 1;
+          registry.fill(HIST("Tracks/2Danalysis/DataTrackSparseBeforeDCA"),
+                        track.eta(), z, dcaXyCut, retrack.bestDCAZ(), category);
+        }
+      }
+
+      bool failTrackCuts = useDCAxyCut && std::abs(dcaXyCut) > maxDCAxy;
       if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
         const float dcaZCut = retrack.bestDCAZ();
         failTrackCuts = failTrackCuts || (useDCAzCut && std::abs(dcaZCut) > maxDCAz);
@@ -1776,9 +1853,6 @@ struct PseudorapidityDensityMFT {
         }
         uniqueEventsAmb.insert(retrack.bestCollisionId());
       }
-      if (midtracks.size() > 0 && retrack.ambDegree() > 1) {
-        uniqueCollisionsAmb.insert(collision.globalIndex());
-      }
       registry.fill(HIST("Tracks/Control/TrackIsAmb"), isAmbiguous);
       if (retrack.ambDegree() == 1) {
         ++j;
@@ -1795,9 +1869,6 @@ struct PseudorapidityDensityMFT {
         }
         uniqueEvents.insert(retrack.bestCollisionId());
       }
-      if (midtracks.size() > 0 && retrack.ambDegree() == 1) {
-        uniqueCollisions.insert(collision.globalIndex());
-      }
       registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksEtaZvtx"),
                     track.eta(), z);
       registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksPhiEta"), phi,
@@ -1810,9 +1881,18 @@ struct PseudorapidityDensityMFT {
       }
       registry.fill(HIST("ambEventCounts"), 1, uniqueEventsAmb.size());
       registry.fill(HIST("NonambEventCounts"), 1, uniqueEvents.size());
-      registry.fill(HIST("hNumCollisionsNonAmb_InelMFT"), 1, uniqueCollisions.size());
-      registry.fill(HIST("hNumCollisionsAmb_InelMFT"), 1, uniqueCollisionsAmb.size());
       registry.fill(HIST("hNumCollisions_InelMFT"), 1, eventsInelMFT.size());
+    }
+
+    // Count selected reconstructed collisions once, not once per track.
+    // Mixed events contribute to both categories; orphan tracks were rejected above.
+    if (midtracks.size() > 0) {
+      if (nMFTSelectedNonAmb > 0) {
+        registry.fill(HIST("hNumCollisionsNonAmb_InelMFT"), 1.);
+      }
+      if (nMFTSelectedAmb > 0) {
+        registry.fill(HIST("hNumCollisionsAmb_InelMFT"), 1.);
+      }
     }
 
     registry.fill(HIST("Tracks/Control/amb/nTrkAmb"), i);
@@ -1882,7 +1962,7 @@ struct PseudorapidityDensityMFT {
               ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
                (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut))) {
             continue;
-          }
+               }
         }
 
         registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
@@ -2022,9 +2102,9 @@ struct PseudorapidityDensityMFT {
 
         if (usePhiCut) {
           if ((phi <= PhiVetoLow) ||
-              ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-              (phi >= PhiVetoHigh)) {
-            continue;
+          ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
+          (phi >= PhiVetoHigh)) {
+          continue;
           }
         }
         if (usePtCut) {
@@ -2664,7 +2744,8 @@ struct PseudorapidityDensityMFT {
             std::abs(parentPdg) != PDG_t::kLambda0) {
           continue;
         }
-        const int parentSpecies = parentPdg == PDG_t::kK0Short ? 1 : (parentPdg == PDG_t::kLambda0 ? 2 : 3);
+        const int parentSpecies = parentPdg == PDG_t::kK0Short ? 1 :
+          (parentPdg == PDG_t::kLambda0 ? 2 : 3);
         registry.fill(HIST("Strangeness/Mid/RecoStrangeEtaZvtx"),
                       centralTrack.eta(), z,
                       centralTrack.dcaXY(), centralTrack.dcaZ(), parentSpecies);
@@ -2696,6 +2777,10 @@ struct PseudorapidityDensityMFT {
       recoVtxByRecoId[recoCol] = {collision.posX(), collision.posY(), collision.posZ()};
       recoVtxByMcId[mcCol] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
 
+      // One entry per accepted reconstructed collision, including zero-MFT events.
+      registry.fill(HIST("OfflineVariations/SelectedRecoEventVertexResponse"),
+                    mcCollision.posZ(), collision.posZ());
+
       registry.fill(HIST("Purity/xReco"), collision.posX());
       registry.fill(HIST("Purity/xTrue"), mcCollision.posX());
       registry.fill(HIST("Purity/yReco"), collision.posY());
@@ -2717,6 +2802,103 @@ struct PseudorapidityDensityMFT {
     int64_t nRecoMFTSelectedForPNch{0};
     int64_t nGenPrimaryChargedMFT{0};
     std::unordered_set<int> uniqueBestRecoCols;
+    std::unordered_set<int> recoColsWithNonAmbTracks;
+    std::unordered_set<int> recoColsWithAmbTracks;
+
+    std::unordered_set<int> recoEventsWithRightTracks;
+    std::unordered_set<int> recoEventsWithWrongTracks;
+    if (associationInvocation >= 0xffffffffULL) {
+      LOGF(fatal, "Association offline event-key invocation range exhausted");
+    }
+    const uint32_t associationCall = static_cast<uint32_t>(associationInvocation++);
+    UChar_t associationUuid[16];
+    associationKeyNamespace.GetUUID(associationUuid);
+    std::array<unsigned int, 6> associationNamespaceParts{};
+    for (size_t part = 0; part < associationNamespaceParts.size(); ++part) {
+      associationNamespaceParts[part] =
+        (static_cast<unsigned int>(associationUuid[2 * part]) << 8) | associationUuid[2 * part + 1];
+    }
+
+    // Separate pre-DCA pass: intentionally does not alter any existing track
+    // cuts, counters or fills. The 3D process supplies both measured DCA values.
+    if constexpr (requires { tracks.begin().bestDCAZ(); }) {
+      for (const auto& offlineTrack : tracks) {
+        const auto original = offlineTrack.template mfttrack_as<MFTTracksLabeledOrg>();
+        float offlinePhi = original.phi();
+        o2::math_utils::bringTo02Pi(offlinePhi);
+        const auto compatibleCount = offlineTrack.compatibleCollIds().size();
+        if (compatibleCount == 0 || original.nClusters() < cfgnCluster ||
+            original.eta() <= cfgnEta1 || original.eta() >= cfgnEta2 ||
+            original.chi2() / getTrackNdf(original) >= cfgChi2NDFMax ||
+            offlinePhi <= cfgPhiCut1 || offlinePhi >= cfgPhiCut2 ||
+            (usePhiCut && (offlinePhi <= PhiVetoLow ||
+             (offlinePhi >= PhiVetoPiMin && offlinePhi <= PhiVetoPiMax) ||
+             offlinePhi >= PhiVetoHigh)) ||
+            (usePtCut && original.pt() > cfgnPt) || !passGenRecoTrackMode(offlineTrack)) {
+          continue;
+        }
+        // Same original-collision association as the existing reco denominator.
+        const int offlineRecoId = original.collisionId();
+        if (!acceptedRecoCols.contains(offlineRecoId)) {
+          continue;
+        }
+        auto offlineVz = recoVtxZ.find(offlineRecoId);
+        if (offlineVz == recoVtxZ.end()) {
+          continue;
+        }
+        const int category = compatibleCount == SingleCompatibleCollision ? 0 : 1;
+        registry.fill(HIST("OfflineVariations/RecoTrackSparseBeforeDCA"),
+                      original.eta(), offlineVz->second,
+                      offlineTrack.bestDCAXY(), offlineTrack.bestDCAZ(), category);
+        const int chosenId = offlineTrack.bestCollisionId();
+        auto chosenVz = recoVtxZ.find(chosenId);
+        auto chosenMc = recoToMc.find(chosenId);
+        // Only selected chosen reco collisions have a meaningful event denominator.
+        if (chosenId >= 0 && chosenVz != recoVtxZ.end() && chosenMc != recoToMc.end()) {
+          int association = 2; // Neither fake nor missing labels are forced into "wrong".
+          if (offlineTrack.has_mcParticle() && offlineTrack.mcMask() == 0) {
+            association = chosenMc->second == offlineTrack.mcParticle().mcCollisionId() ? 0 : 1;
+          }
+          if (association == 0) {
+            registry.fill(HIST("Association/RightTrackSparseBeforeDCA"), original.eta(), chosenVz->second,
+                          offlineTrack.bestDCAXY(), offlineTrack.bestDCAZ(), category);
+          } else if (association == 1) {
+            registry.fill(HIST("Association/WrongTrackSparseBeforeDCA"), original.eta(), chosenVz->second,
+                          offlineTrack.bestDCAXY(), offlineTrack.bestDCAZ(), category);
+          } else {
+            registry.fill(HIST("Association/UnclassifiedTrackSparseBeforeDCA"), original.eta(), chosenVz->second,
+                          offlineTrack.bestDCAXY(), offlineTrack.bestDCAZ(), category);
+          }
+          const uint32_t chosenKey = static_cast<uint32_t>(chosenId);
+          registry.fill(HIST("Association/EventTrackKeysBeforeDCA"),
+                        original.eta(), chosenVz->second, offlineTrack.bestDCAXY(), offlineTrack.bestDCAZ(),
+                        category, association,
+                        associationNamespaceParts[0], associationNamespaceParts[1], associationNamespaceParts[2],
+                        associationNamespaceParts[3], associationNamespaceParts[4], associationNamespaceParts[5],
+                        associationCall & 0xffffU, associationCall >> 16,
+                        chosenKey & 0xffffU, chosenKey >> 16);
+          const bool passesConfiguredDCA =
+            (!useDCAxyCut || std::abs(offlineTrack.bestDCAXY()) <= maxDCAxy) &&
+            (!useDCAzCut || std::abs(offlineTrack.bestDCAZ()) <= maxDCAz);
+          if (passesConfiguredDCA) {
+            if (association == 0) recoEventsWithRightTracks.insert(chosenId);
+            if (association == 1) recoEventsWithWrongTracks.insert(chosenId);
+          }
+        }
+
+        if (offlineTrack.has_mcParticle() && offlineTrack.mcMask() == 0) {
+          const auto particle = offlineTrack.mcParticle();
+          if (!particle.isPhysicalPrimary() && particle.has_mothers()) {
+            const auto mother = particle.template mothers_as<aod::McParticles>().front();
+            if (mother.pdgCode() == PDG_t::kK0Short || std::abs(mother.pdgCode()) == PDG_t::kLambda0) {
+              registry.fill(HIST("OfflineVariations/RecoStrangeSparseBeforeDCA"),
+                            original.eta(), offlineVz->second,
+                            offlineTrack.bestDCAXY(), offlineTrack.bestDCAZ(), category);
+            }
+          }
+        }
+      }
+    }
 
     if (tracks.size() > 0) {
       for (const auto& track : tracks) {
@@ -2804,6 +2986,16 @@ struct PseudorapidityDensityMFT {
           continue;
         }
 
+        // Match the inclusive reconstructed-MC denominator below: all accepted
+        // tracks, including fakes/no-label tracks, grouped by original recoCol.
+        // Event selection, track mode and both configured DCA cuts have passed.
+        const auto nCompatibleCollisions = track.compatibleCollIds().size();
+        if (nCompatibleCollisions == SingleCompatibleCollision) {
+          recoColsWithNonAmbTracks.insert(recoCol);
+        } else if (nCompatibleCollisions > SingleCompatibleCollision) {
+          recoColsWithAmbTracks.insert(recoCol);
+        }
+
         ++nRecoMFTSelectedForPNch;
 
         // Inclusive reconstructed-MC denominator: fill every selected track,
@@ -2877,7 +3069,8 @@ struct PseudorapidityDensityMFT {
               // excludes fake labels and counts only matched secondaries.
               if (isSecondaryCharged) {
                 const int parentSpecies =
-                  mcpartMother.pdgCode() == PDG_t::kK0Short ? 1 : (mcpartMother.pdgCode() == PDG_t::kLambda0 ? 2 : 3);
+                  mcpartMother.pdgCode() == PDG_t::kK0Short ? 1 :
+                  (mcpartMother.pdgCode() == PDG_t::kLambda0 ? 2 : 3);
                 registry.fill(HIST("Strangeness/Fwd/RecoStrangeEtaZvtx"),
                               etaReco, z, dcaXYReco, dcaZReco, parentSpecies);
               }
@@ -3235,6 +3428,33 @@ struct PseudorapidityDensityMFT {
         } // hasmclable
       } // track loop
     } // track>mid
+    if constexpr (requires { tracks.begin().bestDCAZ(); }) {
+      if (!recoEventsWithRightTracks.empty()) {
+        registry.fill(HIST("Association/hNumRecoEventsWithRightTracks"), 1.,
+                      static_cast<double>(recoEventsWithRightTracks.size()));
+      }
+      if (!recoEventsWithWrongTracks.empty()) {
+        registry.fill(HIST("Association/hNumRecoEventsWithWrongTracks"), 1.,
+                      static_cast<double>(recoEventsWithWrongTracks.size()));
+      }
+      for (const int id : recoEventsWithRightTracks) {
+        registry.fill(HIST("Association/RecoEventVzWithRightTracks"), recoVtxZ.at(id));
+      }
+      for (const int id : recoEventsWithWrongTracks) {
+        registry.fill(HIST("Association/RecoEventVzWithWrongTracks"), recoVtxZ.at(id));
+      }
+    }
+
+    // Sets contain distinct reconstructed collisions, even when several reco
+    // collisions belong to this generated event. Mixed events enter both sets.
+    if (!recoColsWithNonAmbTracks.empty()) {
+      registry.fill(HIST("Purity/hNumCollisionsNonAmb_InelMFT"), 1.,
+                    static_cast<double>(recoColsWithNonAmbTracks.size()));
+    }
+    if (!recoColsWithAmbTracks.empty()) {
+      registry.fill(HIST("Purity/hNumCollisionsAmb_InelMFT"), 1.,
+                    static_cast<double>(recoColsWithAmbTracks.size()));
+    }
     registry.fill(HIST("Purity/HashTableRowCounts"),
                   static_cast<int>(HashTableRowCountsBin::UniqueBestRecoCols), uniqueBestRecoCols.size());
     registry.fill(HIST("Purity/reco/woOrp/nTrk"), woOrpCount);
@@ -3291,7 +3511,7 @@ struct PseudorapidityDensityMFT {
             ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
             (phi >= PhiVetoHigh)) {
           continue;
-        }
+            }
       }
       if (usePtCut) {
         if (ptCut > cfgnPt) {
@@ -3304,44 +3524,54 @@ struct PseudorapidityDensityMFT {
                         mcCollision.posZ());
           registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
         }
-        if (mcCollision.posZ() >= cfgVzCut1 && mcCollision.posZ() <= cfgVzCut2) {
+        if ( mcCollision.posZ() >= cfgVzCut1 && mcCollision.posZ() <= cfgVzCut2) {
           registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
                         mcCollision.posZ());
           registry.fill(HIST("TracksPhiEtaGen_gt0t"), particle.phi(), particle.eta());
+        
+        if ( nChargedCentral > 0) {
+          if (particle.isPhysicalPrimary()) {
+            registry.fill(HIST("TracksEtaZvtxGen_gt0t_primary"), particle.eta(), mcCollision.posZ());
+          }
+          registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
+                        mcCollision.posZ());
+          registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
+          registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+          registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
+                        mcCollision.posZ());
+          if (particle.isPhysicalPrimary()) {
+            registry.fill(HIST("Purity/mc/PrimaryAll"), static_cast<int>(SingleCountBin::Count));
+            registry.fill(HIST("Purity/mc/PrimaryAllEta"), particle.eta());
+            registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx"), particle.eta(), mcCollision.posZ());
+            registry.fill(HIST("Purity/mc/PrimaryTracksPhiEta"), particle.phi(), particle.eta());
+          }
 
-          if (nChargedCentral > 0) {
-            if (particle.isPhysicalPrimary()) {
-              registry.fill(HIST("TracksEtaZvtxGen_gt0t_primary"), particle.eta(), mcCollision.posZ());
+          // Retain both vertex definitions for narrow reco-z slices. A split
+          // generated event contributes once per accepted reconstructed collision,
+          // matching SelectedRecoEventVertexResponse; do not interpret as unique MC events.
+          if (particle.isPhysicalPrimary()) {
+            for (const auto& [offlineRecoId, offlineRecoZ] : recoVtxZ) {
+              registry.fill(HIST("OfflineVariations/GenPrimaryEtaTrueZRecoZ"),
+                            particle.eta(), mcCollision.posZ(), offlineRecoZ);
             }
-            registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
-                          mcCollision.posZ());
-            registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
-            registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
-            registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
-                          mcCollision.posZ());
-            if (particle.isPhysicalPrimary()) {
-              registry.fill(HIST("Purity/mc/PrimaryAll"), static_cast<int>(SingleCountBin::Count));
-              registry.fill(HIST("Purity/mc/PrimaryAllEta"), particle.eta());
-              registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx"), particle.eta(), mcCollision.posZ());
-              registry.fill(HIST("Purity/mc/PrimaryTracksPhiEta"), particle.phi(), particle.eta());
-            }
+          }
 
-            if (atLeastOneSel8VzGt0) {
-              registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
-                            mcCollision.posZ());
-              registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
-              if (particle.isPhysicalPrimary()) {
-                registry.fill(HIST("TracksEtaZvtxGen_gt0_primary"), particle.eta(), mcCollision.posZ());
-                registry.fill(HIST("TracksPhiEtaGen_gt0_primary"), particle.phi(), particle.eta());
-                registry.fill(HIST("TracksPtZvtxGen_gt0_primary"), particle.pt(), mcCollision.posZ());
-                registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx_gt0"), particle.eta(), mcCollision.posZ());
-                registry.fill(HIST("Purity/mc/PrimaryTracksPtZvtx_gt0"), particle.pt(), mcCollision.posZ());
-                //   registry.fill(HIST("Purity/mc/PrimaryTracksDCAxyZvtx_gt0"), dcaXyCut, mcCollision.posZ());
-                //        registry.fill(HIST("Purity/mc/PrimaryTracksDCAzZvtx_gt0"), dcaZCut, mcCollision.posZ());
-              }
+          if (atLeastOneSel8VzGt0) {
+            registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
+                          mcCollision.posZ());
+            registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
+            if (particle.isPhysicalPrimary()) {
+              registry.fill(HIST("TracksEtaZvtxGen_gt0_primary"), particle.eta(), mcCollision.posZ());
+              registry.fill(HIST("TracksPhiEtaGen_gt0_primary"), particle.phi(), particle.eta());
+              registry.fill(HIST("TracksPtZvtxGen_gt0_primary"), particle.pt(), mcCollision.posZ());
+              registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx_gt0"), particle.eta(), mcCollision.posZ());
+              registry.fill(HIST("Purity/mc/PrimaryTracksPtZvtx_gt0"), particle.pt(), mcCollision.posZ());
+              //   registry.fill(HIST("Purity/mc/PrimaryTracksDCAxyZvtx_gt0"), dcaXyCut, mcCollision.posZ());
+              //        registry.fill(HIST("Purity/mc/PrimaryTracksDCAzZvtx_gt0"), dcaZCut, mcCollision.posZ());
             }
           }
         }
+      }
         if (particle.isPhysicalPrimary()) {
 
           ++nGenPrimaryChargedMFT;
