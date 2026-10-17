@@ -3537,12 +3537,6 @@ struct PseudorapidityDensityMFT {
               registry.fill(HIST("Purity/mc/PrimaryAllEta"), particle.eta());
               registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx"), particle.eta(), mcCollision.posZ());
               registry.fill(HIST("Purity/mc/PrimaryTracksPhiEta"), particle.phi(), particle.eta());
-            }
-
-            // Retain both vertex definitions for narrow reco-z slices. A split
-            // generated event contributes once per accepted reconstructed collision,
-            // matching SelectedRecoEventVertexResponse; do not interpret as unique MC events.
-            if (particle.isPhysicalPrimary()) {
               for (const auto& [offlineRecoId, offlineRecoZ] : recoVtxZ) {
                 registry.fill(HIST("OfflineVariations/GenPrimaryEtaTrueZRecoZ"),
                               particle.eta(), mcCollision.posZ(), offlineRecoZ);
