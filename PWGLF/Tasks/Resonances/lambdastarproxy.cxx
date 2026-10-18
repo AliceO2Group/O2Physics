@@ -207,26 +207,26 @@ struct Lambdastarproxy {
   };
 
   struct KaonCand {
-    float px, py, pz;
-    int charge;
-    int tid;
+    float px = 0.f, py = 0.f, pz = 0.f;
+    int charge = 0;
+    int tid = -1;
     TruthInfo truth;
   };
   // PID flags describe detector compatibility, not truth-level purity.
   struct ProxyCand {
-    float px, py, pz;
-    float pxFull, pyFull, pzFull;
-    bool protonLike;
-    bool hasTOF;
-    bool protonTPCCompatible;
-    int charge;
-    int tid;
+    float px = 0.f, py = 0.f, pz = 0.f;
+    float pxFull = 0.f, pyFull = 0.f, pzFull = 0.f;
+    bool protonLike = false;
+    bool hasTOF = false;
+    bool protonTPCCompatible = false;
+    int charge = 0;
+    int tid = -1;
     TruthInfo truth;
   };
   struct ProtonCand {
-    float px, py, pz;
-    int charge;
-    int tid;
+    float px = 0.f, py = 0.f, pz = 0.f;
+    int charge = 0;
+    int tid = -1;
     TruthInfo truth;
   };
 
