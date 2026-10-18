@@ -1519,7 +1519,7 @@ struct FlowTask {
     if (cfgAdditionObs.cfgManualCk) {
       // 2pc event weight:
       double ev2pc = mpt_sub1_weffEv * mpt_sub3_weffEv;
-      // manual pt-pt variance 
+      // manual pt-pt variance
       if (mpt_sub1_weffEv) {
         mpt_sub1 = mpt_sub1 / mpt_sub1_weffEv;
         registry.fill(HIST("pt_1sub1_1pc"), independent, mpt_sub1, mpt_sub1_weffEv);
