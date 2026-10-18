@@ -61,7 +61,6 @@ namespace o2::analysis
 {
 
 enum class InputFeaturesXic0ToXiPiKf : uint8_t {
-  // Existing feature keys retained for backwards compatibility.
   tpcNSigmaPiFromLambda,
   tpcNSigmaPiFromCasc,
   tpcNSigmaPiFromCharmBaryon,
@@ -76,7 +75,6 @@ enum class InputFeaturesXic0ToXiPiKf : uint8_t {
   chi2TopoCascToXic,
   cosPaCascToXic,
   decayLenXYCasc,
-  // Remaining features used by the local PbPb Transformer.
   decayLenXYXic,
   chi2TopoXicToPv,
   chi2TopoPiFromXicToPv,
