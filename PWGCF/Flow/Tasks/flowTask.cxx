@@ -288,7 +288,7 @@ struct FlowTask {
   std::vector<GFW::CorrConfig> corrconfigs;
   GFWCorrConfigs gfwConfigs;
   std::vector<GFW::CorrConfig> corrconfigsPtVn;
-  TAxis* fPtAxis;
+  TAxis* fPtAxis = nullptr;
   TRandom3* fRndm = new TRandom3(0);
   std::vector<std::pair<double, double>> etagapsPtPt;
   std::vector<std::vector<std::shared_ptr<TProfile>>> bootstrapArray;
@@ -325,15 +325,15 @@ struct FlowTask {
   double mMinSeconds{-1.};
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
-  TH2* gCurrentHadronicRate;
+  TH2* gCurrentHadronicRate = nullptr;
   RCTFlagsChecker rctChecker{"CBT"};
 
   // phi-EP correction
   std::vector<TF1*> funcEff;
-  TH1D* hFindPtBin;
-  TF1* funcV2;
-  TF1* funcV3;
-  TF1* funcV4;
+  TH1D* hFindPtBin = nullptr;
+  TF1* funcV2 = nullptr;
+  TF1* funcV3 = nullptr;
+  TF1* funcV4 = nullptr;
 
   void init(InitContext const&)
   {
@@ -918,30 +918,30 @@ struct FlowTask {
     if (cfgUserIO.cfgAcceptance.value.empty() == false) {
       mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgUserIO.cfgAcceptance, timestamp);
       if (mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
       else
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
     }
     if (cfgUserIO.cfgEfficiency.value.empty() == false) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgUserIO.cfgEfficiency, timestamp);
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgUserIO.cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     if (cfgUserIO.cfgEfficiencyForNch.value.empty() == false) {
       mEfficiencyForNch = ccdb->getForTimeStamp<TH1D>(cfgUserIO.cfgEfficiencyForNch, timestamp);
       if (mEfficiencyForNch == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgUserIO.cfgEfficiencyForNch.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiencyForNch.value.c_str(), (void*)mEfficiencyForNch);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiencyForNch.value.c_str(), static_cast<void*>(mEfficiencyForNch));
     }
     if (cfgAdditionObs.cfgDptDisEnable && cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.empty() == false) {
       cfgAdditionObs.hEvAvgMeanPt = ccdb->getForTimeStamp<TH1D>(cfgAdditionObs.cfgDptDishEvAvgMeanPt, timestamp);
       if (cfgAdditionObs.hEvAvgMeanPt == nullptr) {
         LOGF(fatal, "Could not load mean pT histogram from %s", cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.c_str());
       }
-      LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgAdditionObs.hEvAvgMeanPt);
+      LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.c_str(), static_cast<void*>(cfgAdditionObs.hEvAvgMeanPt));
     }
     if (cfgAdditionObs.cfgDptDisEnable && cfgAdditionObs.cfgDptDisSelectionSwitch > kNoDptCut) {
       if (cfgAdditionObs.cfgDptDisCutLow.value.empty() == false) {
@@ -949,14 +949,14 @@ struct FlowTask {
         if (cfgAdditionObs.fDptDisCutLow == nullptr) {
           LOGF(fatal, "Could not load dptDis low cut histogram from %s", cfgAdditionObs.cfgDptDisCutLow.value.c_str());
         }
-        LOGF(info, "Loaded dptDis low cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutLow.value.c_str(), (void*)cfgAdditionObs.fDptDisCutLow);
+        LOGF(info, "Loaded dptDis low cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutLow.value.c_str(), static_cast<void*>(cfgAdditionObs.fDptDisCutLow));
       }
       if (cfgAdditionObs.cfgDptDisCutHigh.value.empty() == false) {
         cfgAdditionObs.fDptDisCutHigh = ccdb->getForTimeStamp<TH1D>(cfgAdditionObs.cfgDptDisCutHigh, timestamp);
         if (cfgAdditionObs.fDptDisCutHigh == nullptr) {
           LOGF(fatal, "Could not load dptDis high cut histogram from %s", cfgAdditionObs.cfgDptDisCutHigh.value.c_str());
         }
-        LOGF(info, "Loaded dptDis high cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutHigh.value.c_str(), (void*)cfgAdditionObs.fDptDisCutHigh);
+        LOGF(info, "Loaded dptDis high cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutHigh.value.c_str(), static_cast<void*>(cfgAdditionObs.fDptDisCutHigh));
       }
     }
     correctionsLoaded = true;
@@ -1499,13 +1499,12 @@ struct FlowTask {
     if (weffEvent) {
       registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
     }
-    if (weffEventWithinGap08)
+    if (weffEventWithinGap08) {
       registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgUserIO.cfgUserPtVnEvWeightEnabled ? weffEventWithinGap08 : 1.);
-    if (weffEventWithinGap08)
       bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
     // c22_gap8 * pt_withGap8
-    if (weffEventWithinGap08)
       fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
+    }
     // PtVariance
     if (weffEventDiffWithGap08) {
       registry.fill(HIST("PtVariance_partA_WithinGap08"), independent,
@@ -1610,9 +1609,8 @@ struct FlowTask {
           ptSum_Gap08 += mcParticle.pt();
           count_Gap08 += 1.;
         }
-      }
-      if (withinPtRef)
         fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 1);
+      }        
       if (withinPtPOI)
         fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 2);
       if (withinPtPOI && withinPtRef)
