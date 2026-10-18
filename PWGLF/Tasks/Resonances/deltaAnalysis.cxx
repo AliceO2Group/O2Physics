@@ -246,15 +246,15 @@ struct DeltaAnalysis {
     mPionDCAPtEdges = dcaCuts.pionDCAPtBinEdges.value;
     mPionMaxDCAxy = dcaCuts.pionMaxDCAxyPerPtBin.value;
 
-    const AxisSpec ptAxis{200, 0., 10., "p_{T} (GeV/c)"};
+    const AxisSpec ptAxis{2000, 0., 20., "p_{T} (GeV/c)"};
     const AxisSpec massAxis{trackCuts.numberOfInvMassBins, 1.0, 8.0, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{axes.cfgCentAxis, "Centrality (%)"};
     const AxisSpec vtxAxis{axes.cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{axes.cfgRapAxis, "Rapidity y"};
     const AxisSpec nSigmaTPCaxis{100, -10., 10., "n#sigma^{TPC}"};
     const AxisSpec nSigmaTOFaxis{100, -10., 10., "n#sigma^{TOF}"};
-    const AxisSpec momentumAxis{200, 0., 10., "p (GeV/#it{c})"};
-    const AxisSpec ptForPIDAxis{200, 0., 10., "p_{T} (GeV/#it{c})"};
+    const AxisSpec momentumAxis{2000, 0., 20., "p (GeV/#it{c})"};
+    const AxisSpec ptForPIDAxis{2000, 0., 20., "p_{T} (GeV/#it{c})"};
     const AxisSpec dcaXYaxis{200, -0.2f, 0.2f, "DCA_{xy} (cm)"};
     const AxisSpec dcaZaxis{200, -1.2f, 1.2f, "DCA_{z} (cm)"};
     const AxisSpec tpcClusAxis{200, 0, 200, "N_{clusters}^{TPC}"};
