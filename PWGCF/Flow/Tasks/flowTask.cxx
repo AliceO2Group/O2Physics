@@ -243,6 +243,7 @@ struct FlowTask {
     std::vector<float> nPt; // fraction of particles in each pT bin in one event
     std::vector<std::shared_ptr<TProfile2D>> listNptV2;
     std::vector<std::shared_ptr<TH2>> listPtX;
+    O2_DEFINE_CONFIGURABLE(cfgManualCk, bool, false, "Produce pt-pt variance")
   } cfgAdditionObs;
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
@@ -438,6 +439,13 @@ struct FlowTask {
       registry.add("hPt_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
       registry.add("hPtA_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
       registry.add("hPtB_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
+    }
+    if (cfgAdditionObs.cfgManualCk) {
+      registry.add("ptpt_1sub1_1sub3_2pc", "", {HistType::kTProfile, {axisIndependent}});
+      registry.add("pt_1sub1_1pc", "", {HistType::kTProfile, {axisIndependent}});
+      registry.add("pt_1sub1_2pc", "", {HistType::kTProfile, {axisIndependent}});
+      registry.add("pt_1sub3_1pc", "", {HistType::kTProfile, {axisIndependent}});
+      registry.add("pt_1sub3_2pc", "", {HistType::kTProfile, {axisIndependent}});
     }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -1289,6 +1297,10 @@ struct FlowTask {
     double weffEventWithinGap08 = 0., weffEventSquareWithinGap08 = 0.;
     double sumPtsquareWsquareWithinGap08 = 0., sumPtWsquareWithinGap08 = 0.;
     double nTracksCorrected = 0;
+    double mpt_sub1 = 0;
+    double mpt_sub1_weffEv = 0;
+    double mpt_sub3 = 0;
+    double mpt_sub3_weffEv = 0;
     int magnetfield = 0;
     float independent = cent;
     float nTracksUncorrected = 0;
@@ -1405,6 +1417,16 @@ struct FlowTask {
           weffEventWithinGap08 += weff;
           weffEventSquareWithinGap08 += weff * weff;
         }
+        if (cfgAdditionObs.cfgManualCk) {
+          if (track.eta() >= etagapsPtPt[0].first && track.eta() <= etagapsPtPt[0].second) {
+            mpt_sub1 += weff * track.pt();
+            mpt_sub1_weffEv += weff;
+          }
+          if (track.eta() >= etagapsPtPt[2].first && track.eta() <= etagapsPtPt[2].second) {
+            mpt_sub3 += weff * track.pt();
+            mpt_sub3_weffEv += weff;
+          }
+        }
       }
       if (cfgUserIO.cfgConsistentEventFlag && consistentEventVector.size() == 6) { // o2-linter: disable=magic-number (size match)
         acceptedTracks.nFull += 1;
@@ -1492,6 +1514,25 @@ struct FlowTask {
       registry.fill(HIST("PtVariance_partB_WithinGap08"), independent,
                     (weffEventWithinGap08 * ptSum_Gap08 - sumPtWsquareWithinGap08) / weffEventDiffWithGap08,
                     weffEventDiffWithGap08);
+    }
+
+    if (cfgAdditionObs.cfgManualCk) {
+      // 2pc event weight:
+      double ev2pc = mpt_sub1_weffEv * mpt_sub3_weffEv;
+      // manual pt-pt variance 
+      if (mpt_sub1_weffEv) {
+        mpt_sub1 = mpt_sub1 / mpt_sub1_weffEv;
+        registry.fill(HIST("pt_1sub1_1pc"), independent, mpt_sub1, mpt_sub1_weffEv);
+      }
+      if (mpt_sub3_weffEv) {
+        mpt_sub3 = mpt_sub3 / mpt_sub3_weffEv;
+        registry.fill(HIST("pt_1sub3_1pc"), independent, mpt_sub3, mpt_sub3_weffEv);
+      }
+      if (mpt_sub1_weffEv && mpt_sub3_weffEv) {
+        registry.fill(HIST("ptpt_1sub1_1sub3_2pc"), independent, mpt_sub1 * mpt_sub3, ev2pc);
+        registry.fill(HIST("pt_1sub1_2pc"), independent, mpt_sub1, ev2pc);
+        registry.fill(HIST("pt_1sub3_2pc"), independent, mpt_sub3, ev2pc);
+      }
     }
 
     // v02
