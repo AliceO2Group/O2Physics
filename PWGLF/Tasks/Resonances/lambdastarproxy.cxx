@@ -29,15 +29,21 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH2.h>
 #include <THn.h>
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <deque>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -48,6 +54,8 @@ using namespace o2::framework::expressions;
 using namespace constants::math;
 
 struct Lambdastarproxy {
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   // ---- Ion/nucleus PDG encoding helpers (10LZZZAAAI) ----
   // Note: these are *format* constants (not particle PDG species codes)
   static constexpr int IonCodeThreshold = 1000000000; // 10^9
@@ -182,10 +190,27 @@ struct Lambdastarproxy {
   Configurable<int> lstarEnableSparse{"lstarEnableSparse", 1, "Enable THnSparse invariant-mass histograms (#Lambda^{*} pK and proxy); 1 = ON, 0 = OFF"};
   Configurable<float> lstarLambdaAbsYMax{"lstarLambdaAbsYMax", 0.5f, "Max |y_{pK}| (or y_{proxy K}) for #Lambda^{*} candidates"};
 
+  // Booking and filling use the same switches. Full mass maps grow with
+  // occupied mass x mass x pT x multiplicity cells and are diagnostic only.
+  Configurable<int> lstarEnableFullPKMaps{"lstarEnableFullPKMaps", 0, "Book/fill 4D and 8D proxy/full-pK maps; enable only for diagnostic productions"};
+  Configurable<int> lstarEnableProtonLikeSparse{"lstarEnableProtonLikeSparse", 0, "Book/fill redundant proton-like proxy spectra (also obtainable from compact controls)"};
+  Configurable<int> lstarSparseMultBins{"lstarSparseMultBins", 100, "Multiplicity-axis bins in all invariant-mass sparse histograms; keep identical across merge inputs"};
+  Configurable<int> lstarMCPrimaryOnly{"lstarMCPrimaryOnly", 1, "Generated p/K/d fiducial spectra: require physical primaries (strong-decay daughters included)"};
+
+  struct TruthInfo {
+    int64_t id = -1;
+    int collisionId = -1;
+    int pdg = 0;
+    float px = 0.f, py = 0.f, pz = 0.f;
+    bool primary = false;
+    std::vector<int64_t> lambdaMothers;
+  };
+
   struct KaonCand {
     float px, py, pz;
     int charge;
     int tid;
+    TruthInfo truth;
   };
   // PID flags describe detector compatibility, not truth-level purity.
   struct ProxyCand {
@@ -196,11 +221,13 @@ struct Lambdastarproxy {
     bool protonTPCCompatible;
     int charge;
     int tid;
+    TruthInfo truth;
   };
   struct ProtonCand {
     float px, py, pz;
     int charge;
     int tid;
+    TruthInfo truth;
   };
 
   // Helpers for invariant-mass kinematics
@@ -226,7 +253,6 @@ struct Lambdastarproxy {
     float zvtx = 0.f;
     std::vector<KaonCand> kaons;
     std::vector<ProtonCand> protons;
-    std::vector<ProxyCand> proxies;
   };
 
   // Keep last N events for event-mixing
@@ -309,7 +335,7 @@ struct Lambdastarproxy {
     return fallback;
   }
 
-  static int chargeFromPdg(int pdg)
+  int chargeFromPdg(int pdg) const
   {
     const int apdg = std::abs(pdg);
 
@@ -322,11 +348,15 @@ struct Lambdastarproxy {
     switch (apdg) {
       case PdgElectron: // e
       case PdgMuon:     // mu
-      case PdgPion:     // pi
-      case PdgKaon:     // K
-      case PdgProton:   // p
+        return (pdg >= 0) ? -1 : 1;
+      case PdgPion:   // pi
+      case PdgKaon:   // K
+      case PdgProton: // p
         return (pdg >= 0) ? 1 : -1;
       default:
+        if (auto* particle = pdgDB->GetParticle(pdg)) {
+          return static_cast<int>(std::lround(particle->Charge() / 3.));
+        }
         return 0;
     }
   }
@@ -460,6 +490,12 @@ struct Lambdastarproxy {
 
   void init(o2::framework::InitContext&)
   {
+    if (doprocess && doprocessMCReco) {
+      LOGF(fatal, "Enable either process (data) or processMCReco, never both");
+    }
+    if (lstarNoMixedEvents.value < 0 || lstarSparseMultBins.value <= 0) {
+      LOGF(fatal, "lstarNoMixedEvents must be nonnegative; lstarSparseMultBins must be positive");
+    }
     AxisSpec massAxis{200, 1.4, 1.9, "M_{pK} (GeV/c^{2})"};
     AxisSpec ptAxis{100, 0., 10., "p_{T} (GeV/c)"};
     AxisSpec nsAxis{500, -50., 50., "n#sigma"};
@@ -467,7 +503,7 @@ struct Lambdastarproxy {
     AxisSpec pAxis{100, 0., 10., "p (GeV/c)"};
     AxisSpec etaAxis{80, -2., 2., "#eta"};
     AxisSpec phiAxis{64, 0., o2::constants::math::TwoPI, "#varphi"};
-    AxisSpec centAxis{100, 0., 100., "multiplicity/centrality"};
+    AxisSpec centAxis{lstarSparseMultBins.value, 0., 100., "multiplicity/centrality"};
 
     AxisSpec pdgAxis{10001, -5000.5, 5000.5, "PDG code"};
 
@@ -511,61 +547,74 @@ struct Lambdastarproxy {
         mapAxes.emplace_back(1000, 1.4, 2.4, "M_{pK}^{full} (GeV/c^{2})");
         mapAxes.emplace_back(2, -0.5, 1.5, "passes full-pK rapidity (0/1)");
         for (auto const& pairClass : {"Unlike", "Like", "Mixed"}) {
+          if (std::strcmp(pairClass, "Mixed") == 0 && lstarNoMixedEvents.value == 0) {
+            continue;
+          }
           const std::string spectrumName = std::string("hLambdaStarProxyControl") + pairClass + "Sparse";
           const std::string mapName = std::string("hLambdaStarProxyControlFullPK") + pairClass + "Sparse";
           histos.add(spectrumName.c_str(), "Inclusive proxy acceptance; PID compatibility controls", HistType::kTHnSparseF, controlAxes, true);
-          histos.add(mapName.c_str(), "Inclusive proxy acceptance; full-pK control map", HistType::kTHnSparseF, mapAxes, true);
+          if (lstarEnableFullPKMaps.value != 0) {
+            histos.add(mapName.c_str(), "Inclusive proxy acceptance; full-pK control map", HistType::kTHnSparseF, mapAxes, true);
+          }
         }
       }
 
-      histos.add(
-        "hLambdaStarProxyVsFullPKMixedSparse",
-        "d-selected mixed-event pairs: full-p proton hypothesis vs (d/2)K proxy;"
-        "M_{(d/2)K} (GeV/c^{2});"
-        "M_{pK}^{full} (GeV/c^{2});"
-        "p_{T}^{(d/2)K} (GeV/c);"
-        "multiplicity/centrality",
-        HistType::kTHnSparseF,
-        {AxisSpec{400, 1.4, 1.8,
-                  "M_{(d/2)K} (GeV/c^{2})"},
+      if (lstarEnableFullPKMaps.value != 0) {
+        if (lstarNoMixedEvents.value > 0) {
+          histos.add(
+            "hLambdaStarProxyVsFullPKMixedSparse",
+            "d-selected mixed-event pairs: full-p proton hypothesis vs (d/2)K proxy;"
+            "M_{(d/2)K} (GeV/c^{2});"
+            "M_{pK}^{full} (GeV/c^{2});"
+            "p_{T}^{(d/2)K} (GeV/c);"
+            "multiplicity/centrality",
+            HistType::kTHnSparseF,
+            {AxisSpec{400, 1.4, 1.8,
+                      "M_{(d/2)K} (GeV/c^{2})"},
 
-         AxisSpec{400, 1.4, 1.8,
-                  "M_{pK}^{full} (GeV/c^{2})"},
+             AxisSpec{400, 1.4, 1.8,
+                      "M_{pK}^{full} (GeV/c^{2})"},
 
-         AxisSpec{100, 0., 10.,
-                  "p_{T}^{(d/2)K} (GeV/c)"},
+             AxisSpec{100, 0., 10.,
+                      "p_{T}^{(d/2)K} (GeV/c)"},
 
-         centAxis});
+             centAxis});
+        }
+      }
 
-      histos.add(
-        "hLambdaStarProxyProtonLikeUnlikeSparse",
-        "d-selected and proton-like OS proxy candidates;"
-        "M_{(d/2)K} (GeV/c^{2});"
-        "p_{T}^{(d/2)K} (GeV/c);"
-        "multiplicity/centrality",
-        HistType::kTHnSparseF,
-        {AxisSpec{400, 1.4, 1.8,
-                  "M_{(d/2)K} (GeV/c^{2})"},
+      if (lstarEnableProtonLikeSparse.value != 0) {
+        histos.add(
+          "hLambdaStarProxyProtonLikeUnlikeSparse",
+          "d-selected and proton-like OS proxy candidates;"
+          "M_{(d/2)K} (GeV/c^{2});"
+          "p_{T}^{(d/2)K} (GeV/c);"
+          "multiplicity/centrality",
+          HistType::kTHnSparseF,
+          {AxisSpec{400, 1.4, 1.8,
+                    "M_{(d/2)K} (GeV/c^{2})"},
 
-         AxisSpec{100, 0., 10.,
-                  "p_{T}^{(d/2)K} (GeV/c)"},
+           AxisSpec{100, 0., 10.,
+                    "p_{T}^{(d/2)K} (GeV/c)"},
 
-         centAxis});
+           centAxis});
+      }
 
-      histos.add(
-        "hLambdaStarProxyProtonLikeLikeSparse",
-        "d-selected and proton-like LS proxy candidates;"
-        "M_{(d/2)K} (GeV/c^{2});"
-        "p_{T}^{(d/2)K} (GeV/c);"
-        "multiplicity/centrality",
-        HistType::kTHnSparseF,
-        {AxisSpec{400, 1.4, 1.8,
-                  "M_{(d/2)K} (GeV/c^{2})"},
+      if (lstarEnableProtonLikeSparse.value != 0) {
+        histos.add(
+          "hLambdaStarProxyProtonLikeLikeSparse",
+          "d-selected and proton-like LS proxy candidates;"
+          "M_{(d/2)K} (GeV/c^{2});"
+          "p_{T}^{(d/2)K} (GeV/c);"
+          "multiplicity/centrality",
+          HistType::kTHnSparseF,
+          {AxisSpec{400, 1.4, 1.8,
+                    "M_{(d/2)K} (GeV/c^{2})"},
 
-         AxisSpec{100, 0., 10.,
-                  "p_{T}^{(d/2)K} (GeV/c)"},
+           AxisSpec{100, 0., 10.,
+                    "p_{T}^{(d/2)K} (GeV/c)"},
 
-         centAxis});
+           centAxis});
+      }
 
       histos.add("hLambdaStarPKUnlikeSparse",
                  "#Lambda^{*}(1520) pK unlike-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
@@ -579,11 +628,13 @@ struct Lambdastarproxy {
                  {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
                   AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
 
-      histos.add("hLambdaStarPKMixedSparse",
-                 "#Lambda^{*}(1520) pK mixed-event candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
-                 HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
+      if (lstarNoMixedEvents.value > 0) {
+        histos.add("hLambdaStarPKMixedSparse",
+                   "#Lambda^{*}(1520) pK mixed-event candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
+                   HistType::kTHnSparseF,
+                   {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
+                    AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
+      }
 
       // THnSparse for deuteron-proxy invariant-mass analysis (mass, pT, multiplicity/centrality)
       histos.add("hLambdaStarProxySparse",
@@ -598,49 +649,55 @@ struct Lambdastarproxy {
                  {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
                   AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
 
-      histos.add("hLambdaStarProxyMixedSparse",
-                 "#Lambda^{*}(1520) deuteron-proxy mixed-event candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);multiplicity/centrality",
-                 HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
+      if (lstarNoMixedEvents.value > 0) {
+        histos.add("hLambdaStarProxyMixedSparse",
+                   "#Lambda^{*}(1520) deuteron-proxy mixed-event candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);multiplicity/centrality",
+                   HistType::kTHnSparseF,
+                   {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
+                    AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
+      }
 
-      histos.add(
-        "hLambdaStarProxyVsFullPKUnlikeSparse",
-        "d-selected OS pairs: full-p proton hypothesis vs (d/2)K proxy;"
-        "M_{(d/2)K} (GeV/c^{2});"
-        "M_{pK}^{full} (GeV/c^{2});"
-        "p_{T}^{(d/2)K} (GeV/c);"
-        "multiplicity/centrality",
-        HistType::kTHnSparseF,
-        {AxisSpec{400, 1.4, 1.8,
-                  "M_{(d/2)K} (GeV/c^{2})"},
+      if (lstarEnableFullPKMaps.value != 0) {
+        histos.add(
+          "hLambdaStarProxyVsFullPKUnlikeSparse",
+          "d-selected OS pairs: full-p proton hypothesis vs (d/2)K proxy;"
+          "M_{(d/2)K} (GeV/c^{2});"
+          "M_{pK}^{full} (GeV/c^{2});"
+          "p_{T}^{(d/2)K} (GeV/c);"
+          "multiplicity/centrality",
+          HistType::kTHnSparseF,
+          {AxisSpec{400, 1.4, 1.8,
+                    "M_{(d/2)K} (GeV/c^{2})"},
 
-         AxisSpec{400, 1.4, 1.8,
-                  "M_{pK}^{full} (GeV/c^{2})"},
+           AxisSpec{400, 1.4, 1.8,
+                    "M_{pK}^{full} (GeV/c^{2})"},
 
-         AxisSpec{100, 0., 10.,
-                  "p_{T}^{(d/2)K} (GeV/c)"},
+           AxisSpec{100, 0., 10.,
+                    "p_{T}^{(d/2)K} (GeV/c)"},
 
-         centAxis});
+           centAxis});
+      }
 
-      histos.add(
-        "hLambdaStarProxyVsFullPKLikeSparse",
-        "d-selected LS pairs: full-p proton hypothesis vs (d/2)K proxy;"
-        "M_{(d/2)K} (GeV/c^{2});"
-        "M_{pK}^{full} (GeV/c^{2});"
-        "p_{T}^{(d/2)K} (GeV/c);"
-        "multiplicity/centrality",
-        HistType::kTHnSparseF,
-        {AxisSpec{400, 1.4, 1.8,
-                  "M_{(d/2)K} (GeV/c^{2})"},
+      if (lstarEnableFullPKMaps.value != 0) {
+        histos.add(
+          "hLambdaStarProxyVsFullPKLikeSparse",
+          "d-selected LS pairs: full-p proton hypothesis vs (d/2)K proxy;"
+          "M_{(d/2)K} (GeV/c^{2});"
+          "M_{pK}^{full} (GeV/c^{2});"
+          "p_{T}^{(d/2)K} (GeV/c);"
+          "multiplicity/centrality",
+          HistType::kTHnSparseF,
+          {AxisSpec{400, 1.4, 1.8,
+                    "M_{(d/2)K} (GeV/c^{2})"},
 
-         AxisSpec{400, 1.4, 1.8,
-                  "M_{pK}^{full} (GeV/c^{2})"},
+           AxisSpec{400, 1.4, 1.8,
+                    "M_{pK}^{full} (GeV/c^{2})"},
 
-         AxisSpec{100, 0., 10.,
-                  "p_{T}^{(d/2)K} (GeV/c)"},
+           AxisSpec{100, 0., 10.,
+                    "p_{T}^{(d/2)K} (GeV/c)"},
 
-         centAxis});
+           centAxis});
+      }
     }
 
     // Deuteron-proxy invariant mass (p_{proxy} from d/2 combined with K)
@@ -648,248 +705,444 @@ struct Lambdastarproxy {
                "#Lambda^{*} proxy invariant mass from (d/2 + K);M_{p_{proxy}K} (GeV/c^{2});Counts",
                HistType::kTH1F, {massAxis});
 
-    // Inclusive PID QA before final candidate PID cuts: after track-quality cuts only
-    // TPC dE/dx vs total momentum
-    histos.add("hTPCdEdxVsP",
-               "TPC dE/dx vs p;p (GeV/c);dE/dx (arb. units);Counts",
-               HistType::kTH2F, {pAxis, dEdxAxis});
+    if (lstarEnablePidQA.value != 0) {
+      // Inclusive PID QA before final candidate PID cuts: after track-quality cuts only
+      // TPC dE/dx vs total momentum
+      histos.add("hTPCdEdxVsP",
+                 "TPC dE/dx vs p;p (GeV/c);dE/dx (arb. units);Counts",
+                 HistType::kTH2F, {pAxis, dEdxAxis});
 
-    // TOF #beta vs total momentum
-    histos.add("hTOFBetaVsP",
-               "TOF #beta vs p;p (GeV/c);#beta_{TOF};Counts",
-               HistType::kTH2F, {pAxis, betaAxis});
+      // TOF #beta vs total momentum
+      histos.add("hTOFBetaVsP",
+                 "TOF #beta vs p;p (GeV/c);#beta_{TOF};Counts",
+                 HistType::kTH2F, {pAxis, betaAxis});
 
-    histos.add("hHasTOFVsP",
-               "TOF matching flag vs p;p (GeV/c);has TOF match;Counts",
-               HistType::kTH2F, {pAxis, tofMatchAxis});
+      histos.add("hHasTOFVsP",
+                 "TOF matching flag vs p;p (GeV/c);has TOF match;Counts",
+                 HistType::kTH2F, {pAxis, tofMatchAxis});
 
-    histos.add("hHasTOFVsPt",
-               "TOF matching flag vs p_{T};p_{T} (GeV/c);has TOF match;Counts",
-               HistType::kTH2F, {ptAxis, tofMatchAxis});
+      histos.add("hHasTOFVsPt",
+                 "TOF matching flag vs p_{T};p_{T} (GeV/c);has TOF match;Counts",
+                 HistType::kTH2F, {ptAxis, tofMatchAxis});
 
-    // --- Per-species inclusive PID QA before final candidate PID cuts ---
-    // Species tagging here uses classifyPidSpecies() and is meant only for QA.
-    histos.add("hTPCdEdxVsP_Pi",
-               "TPC dE/dx vs p (tagged #pi);p (GeV/c);dE/dx (arb. units);Counts",
-               HistType::kTH2F, {pAxis, dEdxAxis});
-    histos.add("hTPCdEdxVsP_K",
-               "TPC dE/dx vs p (tagged K);p (GeV/c);dE/dx (arb. units);Counts",
-               HistType::kTH2F, {pAxis, dEdxAxis});
-    histos.add("hTPCdEdxVsP_P",
-               "TPC dE/dx vs p (tagged p);p (GeV/c);dE/dx (arb. units);Counts",
-               HistType::kTH2F, {pAxis, dEdxAxis});
-    histos.add("hTPCdEdxVsP_D",
-               "TPC dE/dx vs p (tagged d);p (GeV/c);dE/dx (arb. units);Counts",
-               HistType::kTH2F, {pAxis, dEdxAxis});
+      // --- Per-species inclusive PID QA before final candidate PID cuts ---
+      // Species tagging here uses classifyPidSpecies() and is meant only for QA.
+      histos.add("hTPCdEdxVsP_Pi",
+                 "TPC dE/dx vs p (tagged #pi);p (GeV/c);dE/dx (arb. units);Counts",
+                 HistType::kTH2F, {pAxis, dEdxAxis});
+      histos.add("hTPCdEdxVsP_K",
+                 "TPC dE/dx vs p (tagged K);p (GeV/c);dE/dx (arb. units);Counts",
+                 HistType::kTH2F, {pAxis, dEdxAxis});
+      histos.add("hTPCdEdxVsP_P",
+                 "TPC dE/dx vs p (tagged p);p (GeV/c);dE/dx (arb. units);Counts",
+                 HistType::kTH2F, {pAxis, dEdxAxis});
+      histos.add("hTPCdEdxVsP_D",
+                 "TPC dE/dx vs p (tagged d);p (GeV/c);dE/dx (arb. units);Counts",
+                 HistType::kTH2F, {pAxis, dEdxAxis});
 
-    histos.add("hTOFBetaVsP_Pi",
-               "TOF #beta vs p (tagged #pi);p (GeV/c);#beta_{TOF};Counts",
-               HistType::kTH2F, {pAxis, betaAxis});
-    histos.add("hTOFBetaVsP_K",
-               "TOF #beta vs p (tagged K);p (GeV/c);#beta_{TOF};Counts",
-               HistType::kTH2F, {pAxis, betaAxis});
-    histos.add("hTOFBetaVsP_P",
-               "TOF #beta vs p (tagged p);p (GeV/c);#beta_{TOF};Counts",
-               HistType::kTH2F, {pAxis, betaAxis});
-    histos.add("hTOFBetaVsP_D",
-               "TOF #beta vs p (tagged d);p (GeV/c);#beta_{TOF};Counts",
-               HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("hTOFBetaVsP_Pi",
+                 "TOF #beta vs p (tagged #pi);p (GeV/c);#beta_{TOF};Counts",
+                 HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("hTOFBetaVsP_K",
+                 "TOF #beta vs p (tagged K);p (GeV/c);#beta_{TOF};Counts",
+                 HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("hTOFBetaVsP_P",
+                 "TOF #beta vs p (tagged p);p (GeV/c);#beta_{TOF};Counts",
+                 HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("hTOFBetaVsP_D",
+                 "TOF #beta vs p (tagged d);p (GeV/c);#beta_{TOF};Counts",
+                 HistType::kTH2F, {pAxis, betaAxis});
 
-    // Inclusive tagged nSigma QA before final candidate PID cuts: after track-quality cuts only.
-    // These are separate from the final-candidate PID QA histograms.
-    histos.add("hNsigmaTPCPionTaggedVsP",
-               "TPC n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TPC}_{#pi};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
-    histos.add("hNsigmaTOFPionTaggedVsP",
-               "TOF n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TOF}_{#pi};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
+      // Inclusive tagged nSigma QA before final candidate PID cuts: after track-quality cuts only.
+      // These are separate from the final-candidate PID QA histograms.
+      histos.add("hNsigmaTPCPionTaggedVsP",
+                 "TPC n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TPC}_{#pi};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTOFPionTaggedVsP",
+                 "TOF n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TOF}_{#pi};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
 
-    histos.add("hNsigmaTPCKaonTaggedVsP",
-               "TPC n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TPC}_{K};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
-    histos.add("hNsigmaTOFKaonTaggedVsP",
-               "TOF n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TOF}_{K};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTPCKaonTaggedVsP",
+                 "TPC n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TPC}_{K};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTOFKaonTaggedVsP",
+                 "TOF n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TOF}_{K};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
 
-    histos.add("hNsigmaTPCProtonTaggedVsP",
-               "TPC n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
-    histos.add("hNsigmaTOFProtonTaggedVsP",
-               "TOF n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTPCProtonTaggedVsP",
+                 "TPC n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTOFProtonTaggedVsP",
+                 "TOF n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
 
-    histos.add("hNsigmaTPCDeuteronTaggedVsP",
-               "TPC n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TPC}_{d};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
-    histos.add("hNsigmaTOFDeuteronTaggedVsP",
-               "TOF n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TOF}_{d};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTPCDeuteronTaggedVsP",
+                 "TPC n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TPC}_{d};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTOFDeuteronTaggedVsP",
+                 "TOF n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TOF}_{d};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+    }
 
-    // --- MC QA (AO2D-MC mode) ---
-    histos.add("hMcPrimariesPtEta",
-               "MC charged physical primaries; p_{T} (GeV/c); #eta; Counts",
-               HistType::kTH2F, {ptAxis, etaAxis});
+    if (doprocessMCQA && lstarFillMCTruth.value != 0) {
+      // --- MC QA (AO2D-MC mode) ---
+      histos.add("hMcPrimariesPtEta",
+                 "MC charged physical primaries; p_{T} (GeV/c); #eta; Counts",
+                 HistType::kTH2F, {ptAxis, etaAxis});
 
-    histos.add("hRecoMatchedPdg",
-               "Reco tracks matched to MC (PDG); PDG code; Counts",
-               HistType::kTH1F, {pdgAxis});
+      histos.add("hRecoMatchedPdg",
+                 "Reco tracks matched to MC (PDG); PDG code; Counts",
+                 HistType::kTH1F, {pdgAxis});
 
-    histos.add("hRecoFakePtEta",
-               "Reco tracks without MC label (fakes / unmatched); p_{T} (GeV/c); #eta; Counts",
-               HistType::kTH2F, {ptAxis, etaAxis});
+      histos.add("hRecoFakePtEta",
+                 "Reco tracks without MC label (fakes / unmatched); p_{T} (GeV/c); #eta; Counts",
+                 HistType::kTH2F, {ptAxis, etaAxis});
+    }
 
-    // Deuteron-proxy kinematics and PID QA
-    histos.add("hDeuteronProxyPt",
-               "Deuteron proxy p_{T};p_{T} (GeV/c);Counts",
-               HistType::kTH1F, {ptAxis});
-    histos.add("hDeuteronProxyEta",
-               "Deuteron proxy #eta;#eta;Counts",
-               HistType::kTH1F, {etaAxis});
-    histos.add("hDeuteronProxyPhi",
-               "Deuteron proxy #varphi;#varphi;Counts",
-               HistType::kTH1F, {phiAxis});
+    if (lstarEnablePidQA.value != 0) {
+      // Deuteron-proxy kinematics and PID QA
+      histos.add("hDeuteronProxyPt",
+                 "Deuteron proxy p_{T};p_{T} (GeV/c);Counts",
+                 HistType::kTH1F, {ptAxis});
+      histos.add("hDeuteronProxyEta",
+                 "Deuteron proxy #eta;#eta;Counts",
+                 HistType::kTH1F, {etaAxis});
+      histos.add("hDeuteronProxyPhi",
+                 "Deuteron proxy #varphi;#varphi;Counts",
+                 HistType::kTH1F, {phiAxis});
 
-    histos.add("hNsigmaTPCDeuteron",
-               "TPC n#sigma_{d};n#sigma^{TPC}_{d};Counts",
-               HistType::kTH1F, {nsAxis});
-    histos.add("hNsigmaTOFDeuteron",
-               "TOF n#sigma_{d};n#sigma^{TOF}_{d};Counts",
-               HistType::kTH1F, {nsAxis});
+      histos.add("hNsigmaTPCDeuteron",
+                 "TPC n#sigma_{d};n#sigma^{TPC}_{d};Counts",
+                 HistType::kTH1F, {nsAxis});
+      histos.add("hNsigmaTOFDeuteron",
+                 "TOF n#sigma_{d};n#sigma^{TOF}_{d};Counts",
+                 HistType::kTH1F, {nsAxis});
 
-    histos.add("hNsigmaTPCDeuteronVsP",
-               "TPC n#sigma_{d} vs p; p (GeV/c); n#sigma^{TPC}_{d};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
-    histos.add("hNsigmaTOFDeuteronVsP",
-               "TOF n#sigma_{d} vs p; p (GeV/c); n#sigma^{TOF}_{d};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTPCDeuteronVsP",
+                 "TPC n#sigma_{d} vs p; p (GeV/c); n#sigma^{TPC}_{d};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTOFDeuteronVsP",
+                 "TOF n#sigma_{d} vs p; p (GeV/c); n#sigma^{TOF}_{d};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
 
-    // Kaon kinematics and PID QA
-    histos.add("hKaonPt",
-               "Kaon p_{T};p_{T} (GeV/c);Counts",
-               HistType::kTH1F, {ptAxis});
-    histos.add("hKaonEta",
-               "Kaon #eta;#eta;Counts",
-               HistType::kTH1F, {etaAxis});
-    histos.add("hKaonPhi",
-               "Kaon #varphi;#varphi;Counts",
-               HistType::kTH1F, {phiAxis});
+      // Kaon kinematics and PID QA
+      histos.add("hKaonPt",
+                 "Kaon p_{T};p_{T} (GeV/c);Counts",
+                 HistType::kTH1F, {ptAxis});
+      histos.add("hKaonEta",
+                 "Kaon #eta;#eta;Counts",
+                 HistType::kTH1F, {etaAxis});
+      histos.add("hKaonPhi",
+                 "Kaon #varphi;#varphi;Counts",
+                 HistType::kTH1F, {phiAxis});
 
-    histos.add("hNsigmaTPCKaon",
-               "TPC n#sigma_{K};n#sigma^{TPC}_{K};Counts",
-               HistType::kTH1F, {nsAxis});
-    histos.add("hNsigmaTOFKaon",
-               "TOF n#sigma_{K};n#sigma^{TOF}_{K};Counts",
-               HistType::kTH1F, {nsAxis});
+      histos.add("hNsigmaTPCKaon",
+                 "TPC n#sigma_{K};n#sigma^{TPC}_{K};Counts",
+                 HistType::kTH1F, {nsAxis});
+      histos.add("hNsigmaTOFKaon",
+                 "TOF n#sigma_{K};n#sigma^{TOF}_{K};Counts",
+                 HistType::kTH1F, {nsAxis});
 
-    histos.add("hNsigmaTPCKaonVsP",
-               "TPC n#sigma_{K} vs p; p (GeV/c); n#sigma^{TPC}_{K};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
-    histos.add("hNsigmaTOFKaonVsP",
-               "TOF n#sigma_{K} vs p; p (GeV/c); n#sigma^{TOF}_{K};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTPCKaonVsP",
+                 "TPC n#sigma_{K} vs p; p (GeV/c); n#sigma^{TPC}_{K};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTOFKaonVsP",
+                 "TOF n#sigma_{K} vs p; p (GeV/c); n#sigma^{TOF}_{K};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
 
-    // --- Candidate PID QA after final selected K/p/d PID cuts ---
-    // These histograms are needed for PID studies in the same pT intervals used by the analysis.
-    histos.add("hTOFBetaVsPt_K",
-               "TOF #beta vs p_{T} for selected K;p_{T} (GeV/c);#beta_{TOF};Counts",
-               HistType::kTH2F, {ptAxis, betaAxis});
-    histos.add("hTOFBetaVsPt_P",
-               "TOF #beta vs p_{T} for selected p;p_{T} (GeV/c);#beta_{TOF};Counts",
-               HistType::kTH2F, {ptAxis, betaAxis});
-    histos.add("hTOFBetaVsPt_D",
-               "TOF #beta vs p_{T} for selected d;p_{T} (GeV/c);#beta_{TOF};Counts",
-               HistType::kTH2F, {ptAxis, betaAxis});
+      // --- Candidate PID QA after final selected K/p/d PID cuts ---
+      // These histograms are needed for PID studies in the same pT intervals used by the analysis.
+      histos.add("hTOFBetaVsPt_K",
+                 "TOF #beta vs p_{T} for selected K;p_{T} (GeV/c);#beta_{TOF};Counts",
+                 HistType::kTH2F, {ptAxis, betaAxis});
+      histos.add("hTOFBetaVsPt_P",
+                 "TOF #beta vs p_{T} for selected p;p_{T} (GeV/c);#beta_{TOF};Counts",
+                 HistType::kTH2F, {ptAxis, betaAxis});
+      histos.add("hTOFBetaVsPt_D",
+                 "TOF #beta vs p_{T} for selected d;p_{T} (GeV/c);#beta_{TOF};Counts",
+                 HistType::kTH2F, {ptAxis, betaAxis});
 
-    histos.add("hNsigmaTPCKaonVsPt",
-               "TPC n#sigma_{K} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{K};Counts",
-               HistType::kTH2F, {ptAxis, nsAxis});
-    histos.add("hNsigmaTOFKaonVsPt",
-               "TOF n#sigma_{K} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{K};Counts",
-               HistType::kTH2F, {ptAxis, nsAxis});
+      histos.add("hNsigmaTPCKaonVsPt",
+                 "TPC n#sigma_{K} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{K};Counts",
+                 HistType::kTH2F, {ptAxis, nsAxis});
+      histos.add("hNsigmaTOFKaonVsPt",
+                 "TOF n#sigma_{K} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{K};Counts",
+                 HistType::kTH2F, {ptAxis, nsAxis});
 
-    histos.add("hNsigmaTPCProtonVsP",
-               "TPC n#sigma_{p} vs p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
-    histos.add("hNsigmaTOFProtonVsP",
-               "TOF n#sigma_{p} vs p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
-               HistType::kTH2F, {pAxis, nsAxis});
-    histos.add("hNsigmaTPCProtonVsPt",
-               "TPC n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{p};Counts",
-               HistType::kTH2F, {ptAxis, nsAxis});
-    histos.add("hNsigmaTOFProtonVsPt",
-               "TOF n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{p};Counts",
-               HistType::kTH2F, {ptAxis, nsAxis});
+      histos.add("hNsigmaTPCProtonVsP",
+                 "TPC n#sigma_{p} vs p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTOFProtonVsP",
+                 "TOF n#sigma_{p} vs p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
+                 HistType::kTH2F, {pAxis, nsAxis});
+      histos.add("hNsigmaTPCProtonVsPt",
+                 "TPC n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{p};Counts",
+                 HistType::kTH2F, {ptAxis, nsAxis});
+      histos.add("hNsigmaTOFProtonVsPt",
+                 "TOF n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{p};Counts",
+                 HistType::kTH2F, {ptAxis, nsAxis});
 
-    histos.add("hNsigmaTPCDeuteronVsPt",
-               "TPC n#sigma_{d} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{d};Counts",
-               HistType::kTH2F, {ptAxis, nsAxis});
-    histos.add("hNsigmaTOFDeuteronVsPt",
-               "TOF n#sigma_{d} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{d};Counts",
-               HistType::kTH2F, {ptAxis, nsAxis});
-    histos.add(
-      "hNsigmaTPCProtonForSelectedDeuteronVsPt",
-      "TPC n#sigma_{p} for selected d candidates vs p_{T};"
-      "p_{T} (GeV/c);"
-      "n#sigma^{TPC}_{p};Counts",
-      HistType::kTH2F,
-      {ptAxis, nsAxis});
+      histos.add("hNsigmaTPCDeuteronVsPt",
+                 "TPC n#sigma_{d} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{d};Counts",
+                 HistType::kTH2F, {ptAxis, nsAxis});
+      histos.add("hNsigmaTOFDeuteronVsPt",
+                 "TOF n#sigma_{d} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{d};Counts",
+                 HistType::kTH2F, {ptAxis, nsAxis});
+      histos.add(
+        "hNsigmaTPCProtonForSelectedDeuteronVsPt",
+        "TPC n#sigma_{p} for selected d candidates vs p_{T};"
+        "p_{T} (GeV/c);"
+        "n#sigma^{TPC}_{p};Counts",
+        HistType::kTH2F,
+        {ptAxis, nsAxis});
 
-    histos.add(
-      "hNsigmaTOFProtonForSelectedDeuteronVsPt",
-      "TOF n#sigma_{p} for selected d candidates vs p_{T};"
-      "p_{T} (GeV/c);"
-      "n#sigma^{TOF}_{p};Counts",
-      HistType::kTH2F,
-      {ptAxis, nsAxis});
+      histos.add(
+        "hNsigmaTOFProtonForSelectedDeuteronVsPt",
+        "TOF n#sigma_{p} for selected d candidates vs p_{T};"
+        "p_{T} (GeV/c);"
+        "n#sigma^{TOF}_{p};Counts",
+        HistType::kTH2F,
+        {ptAxis, nsAxis});
 
-    histos.add(
-      "hTPCNsigmaDeVsPrForSelectedDeuteron",
-      "TPC PID overlap for selected d candidates;"
-      "n#sigma^{TPC}_{d};"
-      "n#sigma^{TPC}_{p};Counts",
-      HistType::kTH2F,
-      {nsAxis, nsAxis});
+      histos.add(
+        "hTPCNsigmaDeVsPrForSelectedDeuteron",
+        "TPC PID overlap for selected d candidates;"
+        "n#sigma^{TPC}_{d};"
+        "n#sigma^{TPC}_{p};Counts",
+        HistType::kTH2F,
+        {nsAxis, nsAxis});
 
-    histos.add(
-      "hTOFNsigmaDeVsPrForSelectedDeuteron",
-      "TOF PID overlap for selected d candidates;"
-      "n#sigma^{TOF}_{d};"
-      "n#sigma^{TOF}_{p};Counts",
-      HistType::kTH2F,
-      {nsAxis, nsAxis});
+      histos.add(
+        "hTOFNsigmaDeVsPrForSelectedDeuteron",
+        "TOF PID overlap for selected d candidates;"
+        "n#sigma^{TOF}_{d};"
+        "n#sigma^{TOF}_{p};Counts",
+        HistType::kTH2F,
+        {nsAxis, nsAxis});
 
-    histos.add("hTPCvsTOFNsigma_K",
-               "TPC vs TOF n#sigma for selected K;n#sigma^{TPC}_{K};n#sigma^{TOF}_{K};Counts",
-               HistType::kTH2F, {nsAxis, nsAxis});
-    histos.add("hTPCvsTOFNsigma_P",
-               "TPC vs TOF n#sigma for selected p;n#sigma^{TPC}_{p};n#sigma^{TOF}_{p};Counts",
-               HistType::kTH2F, {nsAxis, nsAxis});
-    histos.add("hTPCvsTOFNsigma_D",
-               "TPC vs TOF n#sigma for selected d;n#sigma^{TPC}_{d};n#sigma^{TOF}_{d};Counts",
-               HistType::kTH2F, {nsAxis, nsAxis});
+      histos.add("hTPCvsTOFNsigma_K",
+                 "TPC vs TOF n#sigma for selected K;n#sigma^{TPC}_{K};n#sigma^{TOF}_{K};Counts",
+                 HistType::kTH2F, {nsAxis, nsAxis});
+      histos.add("hTPCvsTOFNsigma_P",
+                 "TPC vs TOF n#sigma for selected p;n#sigma^{TPC}_{p};n#sigma^{TOF}_{p};Counts",
+                 HistType::kTH2F, {nsAxis, nsAxis});
+      histos.add("hTPCvsTOFNsigma_D",
+                 "TPC vs TOF n#sigma for selected d;n#sigma^{TPC}_{d};n#sigma^{TOF}_{d};Counts",
+                 HistType::kTH2F, {nsAxis, nsAxis});
 
-    // --- DCA QA for final selected K/p/d candidates ---
-    // Filled only when lstarEnablePidQA = 1.
-    histos.add("hDCAxyVsPt_K",
-               "DCA_{xy} vs p_{T} distribution for selected K;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
-               HistType::kTH2F, {ptAxis, dcaXYAxis});
-    histos.add("hDCAzVsPt_K",
-               "DCA_{z} vs p_{T} distribution for selected K;p_{T} (GeV/c);DCA_{z} (cm);Counts",
-               HistType::kTH2F, {ptAxis, dcaZAxis});
+      // --- DCA QA for final selected K/p/d candidates ---
+      // Filled only when lstarEnablePidQA = 1.
+      histos.add("hDCAxyVsPt_K",
+                 "DCA_{xy} vs p_{T} distribution for selected K;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+                 HistType::kTH2F, {ptAxis, dcaXYAxis});
+      histos.add("hDCAzVsPt_K",
+                 "DCA_{z} vs p_{T} distribution for selected K;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+                 HistType::kTH2F, {ptAxis, dcaZAxis});
 
-    histos.add("hDCAxyVsPt_P",
-               "DCA_{xy} vs p_{T} distribution for selected p;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
-               HistType::kTH2F, {ptAxis, dcaXYAxis});
-    histos.add("hDCAzVsPt_P",
-               "DCA_{z} vs p_{T} distribution for selected p;p_{T} (GeV/c);DCA_{z} (cm);Counts",
-               HistType::kTH2F, {ptAxis, dcaZAxis});
+      histos.add("hDCAxyVsPt_P",
+                 "DCA_{xy} vs p_{T} distribution for selected p;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+                 HistType::kTH2F, {ptAxis, dcaXYAxis});
+      histos.add("hDCAzVsPt_P",
+                 "DCA_{z} vs p_{T} distribution for selected p;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+                 HistType::kTH2F, {ptAxis, dcaZAxis});
 
-    histos.add("hDCAxyVsPt_D",
-               "DCA_{xy} vs p_{T} distribution for selected d;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
-               HistType::kTH2F, {ptAxis, dcaXYAxis});
-    histos.add("hDCAzVsPt_D",
-               "DCA_{z} vs p_{T} distribution for selected d;p_{T} (GeV/c);DCA_{z} (cm);Counts",
-               HistType::kTH2F, {ptAxis, dcaZAxis});
+      histos.add("hDCAxyVsPt_D",
+                 "DCA_{xy} vs p_{T} distribution for selected d;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+                 HistType::kTH2F, {ptAxis, dcaXYAxis});
+      histos.add("hDCAzVsPt_D",
+                 "DCA_{z} vs p_{T} distribution for selected d;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+                 HistType::kTH2F, {ptAxis, dcaZAxis});
+    }
+    bookMC();
+  }
+
+  static constexpr int PdgLambdaStar = static_cast<int>(PDG_t::kLambda1520);
+  static constexpr int PdgDeuteron = static_cast<int>(o2::constants::physics::Pdg::kDeuteron);
+  // MC outputs are 2D mass/pT histograms. They add no high-dimensional maps.
+  std::array<std::shared_ptr<TH2>, 5> mcGenSpectra{};
+  std::array<std::array<std::shared_ptr<TH2>, 2>, 4> mcRecoProxy{};
+  std::shared_ptr<TH2> mcRecoPKTrue, mcPKResponse, mcProxyResponse;
+
+  bool mixingEnabled() const
+  {
+    return lstarEnableSparse.value != 0 && lstarNoMixedEvents.value > 0;
+  }
+
+  void bookMC()
+  {
+    const std::vector<AxisSpec> massPt{
+      AxisSpec{400, 1.4, 1.8, "Invariant mass (GeV/c^{2})"},
+      AxisSpec{100, 0., 10., "Pair p_{T} (GeV/c)"}};
+    const std::vector<AxisSpec> response{
+      AxisSpec{100, 0., 10., "Generated pair p_{T} (GeV/c)"},
+      AxisSpec{100, 0., 10., "Reconstructed pair p_{T} (GeV/c)"}};
+    if (doprocessMCGen) {
+      histos.add("hMCGenEventSelection", "Generated events;Stage;Events", HistType::kTH1D,
+                 {AxisSpec{3, 0.5, 3.5, "1=all, 2=vertex, 3=vertex+truth INEL>0"}});
+      const std::array<const char*, 5> names{
+        "hMCGenPKUnlike", "hMCGenPKLike", "hMCGenProxyUnlike", "hMCGenProxyLike", "hMCGenPKTrueLambdaStar"};
+      for (size_t i = 0; i < names.size(); ++i) {
+        mcGenSpectra[i] = histos.add<TH2>(names[i], "Generated fiducial pairs", HistType::kTH2D, massPt, true);
+      }
+    }
+    if (doprocessMCReco) {
+      const std::array<const char*, 4> categories{"TrueD", "ProtonMisID", "Other", "Unmatched"};
+      for (size_t i = 0; i < categories.size(); ++i) {
+        for (size_t sign = 0; sign < mcRecoProxy[i].size(); ++sign) {
+          const std::string name = std::string("hMCRecoProxy") + categories[i] + (sign == 0 ? "Unlike" : "Like");
+          mcRecoProxy[i][sign] = histos.add<TH2>(name.c_str(), "Reconstructed proxy truth component", HistType::kTH2D, massPt, true);
+        }
+      }
+      mcRecoPKTrue = histos.add<TH2>("hMCRecoPKTrueLambdaStar", "Selected true common-parent pK", HistType::kTH2D, massPt, true);
+      mcPKResponse = histos.add<TH2>("hMCRecoPKPtResponse", "Selected true common-parent pK;Generated pair pT;Reconstructed pair pT", HistType::kTH2D, response, true);
+      mcProxyResponse = histos.add<TH2>("hMCRecoProxyPtResponse", "Selected true primary dK pairs;Generated proxy pair pT;Reconstructed proxy pair pT", HistType::kTH2D, response, true);
+    }
+  }
+
+  template <typename TParticle>
+  static TruthInfo particleTruth(TParticle const& particle)
+  {
+    TruthInfo info;
+    info.id = particle.globalIndex();
+    info.collisionId = particle.mcCollisionId();
+    info.pdg = particle.pdgCode();
+    info.px = particle.px();
+    info.py = particle.py();
+    info.pz = particle.pz();
+    info.primary = particle.isPhysicalPrimary();
+    for (auto const& mother : particle.template mothers_as<aod::McParticles>()) {
+      if (std::abs(mother.pdgCode()) == PdgLambdaStar && mother.mcCollisionId() == info.collisionId) {
+        info.lambdaMothers.push_back(mother.globalIndex());
+      }
+    }
+    return info;
+  }
+
+  template <typename TTrack>
+  static TruthInfo trackTruth(TTrack const& track, int collisionId)
+  {
+    if (collisionId < 0 || !track.has_mcParticle()) {
+      return {};
+    }
+    auto particle = track.template mcParticle_as<aod::McParticles>();
+    if (particle.mcCollisionId() != collisionId) {
+      return {}; // pileup or wrong-collision labels do not enter truth components
+    }
+    return particleTruth(particle);
+  }
+
+  static bool commonLambdaStar(TruthInfo const& proton, TruthInfo const& kaon)
+  {
+    if (std::abs(proton.pdg) != PdgProton || std::abs(kaon.pdg) != PdgKaon ||
+        proton.pdg * kaon.pdg >= 0 || proton.id == kaon.id ||
+        proton.collisionId != kaon.collisionId) {
+      return false;
+    }
+    for (auto const& id : proton.lambdaMothers) {
+      if (std::find(kaon.lambdaMothers.begin(), kaon.lambdaMothers.end(), id) != kaon.lambdaMothers.end()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  template <typename TCandidate>
+  void fillRecoMC(TCandidate const& candidate, KaonCand const& kaon, double mass, float pt, bool proxy)
+  {
+    const auto& a = candidate.truth;
+    const auto& b = kaon.truth;
+    if (!proxy) {
+      if (commonLambdaStar(a, b) && chargeFromPdg(a.pdg) == candidate.charge && chargeFromPdg(b.pdg) == kaon.charge) {
+        mcRecoPKTrue->Fill(mass, pt);
+        mcPKResponse->Fill(ptFromPxPy(a.px + b.px, a.py + b.py), pt);
+      }
+      return;
+    }
+    size_t category = 2; // all other labelled species, secondaries included
+    if (a.id < 0 || b.id < 0) {
+      category = 3;
+    } else if (std::abs(b.pdg) == PdgKaon && chargeFromPdg(b.pdg) == kaon.charge && chargeFromPdg(a.pdg) == candidate.charge) {
+      if (std::abs(a.pdg) == PdgDeuteron) {
+        category = 0;
+      } else if (std::abs(a.pdg) == PdgProton) {
+        category = 1;
+      }
+    }
+    const size_t sign = candidate.charge * kaon.charge < 0 ? 0 : 1;
+    mcRecoProxy[category][sign]->Fill(mass, pt);
+    if (category == 0 && a.primary && b.primary && a.id != b.id) {
+      mcProxyResponse->Fill(ptFromPxPy(ProxyMomentumScale * a.px + b.px, ProxyMomentumScale * a.py + b.py), pt);
+    }
+    // TrueD means true d + true K, not a truth tag of resonance-fed coalescence.
+  }
+
+  template <typename TCollision, typename TParticles>
+  void fillGenerated(TCollision const& collision, TParticles const& particles)
+  {
+    histos.fill(HIST("hMCGenEventSelection"), 1.);
+    if (!(std::abs(collision.posZ()) < lstarCutVertex.value)) {
+      return;
+    }
+    histos.fill(HIST("hMCGenEventSelection"), 2.);
+    // Truth INEL>0 uses charged physical primaries in |eta|<1, with no pT cut.
+    // It is independent of detector trigger/vertex reconstruction efficiency.
+    bool inel = false;
+    for (auto const& particle : particles) {
+      if (particle.isPhysicalPrimary() && std::abs(particle.eta()) < 1.f && chargeFromPdg(particle.pdgCode()) != 0) {
+        inel = true;
+        break;
+      }
+    }
+    if (lstarRequireINELgt0.value != 0 && !inel) {
+      return;
+    }
+    histos.fill(HIST("hMCGenEventSelection"), 3.);
+    std::vector<TruthInfo> protons, kaons, deuterons;
+    for (auto const& particle : particles) {
+      // Use the DATA daughter kinematic acceptance for generated pair spectra.
+      // lstarCutMC* remains specific to the optional legacy track-QA process.
+      if (!(particle.pt() > lstarCutPtMin.value) || !(std::abs(particle.eta()) < lstarCutEtaMax.value) ||
+          (lstarMCPrimaryOnly.value != 0 && !particle.isPhysicalPrimary())) {
+        continue;
+      }
+      switch (std::abs(particle.pdgCode())) {
+        case PdgProton:
+          protons.push_back(particleTruth(particle));
+          break;
+        case PdgKaon:
+          kaons.push_back(particleTruth(particle));
+          break;
+        case PdgDeuteron:
+          deuterons.push_back(particleTruth(particle));
+          break;
+        default:
+          break;
+      }
+    }
+    auto fillPairs = [&](auto const& candidates, bool proxy) {
+      const float scale = proxy ? ProxyMomentumScale : 1.f;
+      for (auto const& a : candidates) {
+        for (auto const& b : kaons) {
+          if (a.id == b.id) {
+            continue;
+          }
+          const double mass = invariantMass(scale * a.px, scale * a.py, scale * a.pz, o2::constants::physics::MassProton,
+                                            b.px, b.py, b.pz, o2::constants::physics::MassKaonCharged);
+          const float px = scale * a.px + b.px, py = scale * a.py + b.py, pz = scale * a.pz + b.pz;
+          if (std::abs(rapidityFromMomentumAndMass(px, py, pz, mass)) > lstarLambdaAbsYMax.value) {
+            continue;
+          }
+          const float pt = ptFromPxPy(px, py);
+          const size_t sign = chargeFromPdg(a.pdg) * chargeFromPdg(b.pdg) < 0 ? 0 : 1;
+          mcGenSpectra[(proxy ? 2 : 0) + sign]->Fill(mass, pt);
+          if (!proxy && commonLambdaStar(a, b)) {
+            mcGenSpectra[4]->Fill(mass, pt);
+          }
+        }
+      }
+    };
+    fillPairs(protons, false);
+    fillPairs(deuterons, true);
   }
 
   // AO2D-MC QA: truth primaries + reco-to-MC matching sanity plots
@@ -1187,7 +1440,8 @@ struct Lambdastarproxy {
                         std::array{m1, m2});
   }
 
-  void process(CollisionsWithEvSel::iterator const& collision, FilteredTracks const& tracks)
+  template <bool IsMC, typename TCollision, typename TTracks>
+  void processReco(TCollision const& collision, TTracks const& tracks)
   {
     histos.fill(HIST("hEventSelection"), 1.);
     // Use unfiltered collisions here so the first bin includes vertex rejects.
@@ -1470,6 +1724,9 @@ struct Lambdastarproxy {
           .tid =
             static_cast<int>(
               trkD.globalIndex())});
+      if constexpr (IsMC) {
+        proxyCands.back().truth = trackTruth(trkD, collision.mcCollisionId());
+      }
     }
 
     // Proton candidates (for genuine pK #Lambda^{*} reconstruction)
@@ -1530,6 +1787,9 @@ struct Lambdastarproxy {
       const float pzP = ptP * std::sinh(etaP);
 
       protonCands.push_back(ProtonCand{.px = pxP, .py = pyP, .pz = pzP, .charge = static_cast<int>(trkP.sign()), .tid = static_cast<int>(trkP.globalIndex())});
+      if constexpr (IsMC) {
+        protonCands.back().truth = trackTruth(trkP, collision.mcCollisionId());
+      }
     }
 
     // Kaon candidates
@@ -1598,21 +1858,26 @@ struct Lambdastarproxy {
       const float pzK = ptK * std::sinh(etaK);
 
       kaonCands.push_back(KaonCand{.px = pxK, .py = pyK, .pz = pzK, .charge = static_cast<int>(trkK.sign()), .tid = static_cast<int>(trkK.globalIndex())});
+      if constexpr (IsMC) {
+        kaonCands.back().truth = trackTruth(trkK, collision.mcCollisionId());
+      }
     }
 
     if (kaonCands.empty()) {
       // Still update mixing buffer so that later events can mix with this one.
       // The pK mixed-event background needs stored protons, while the proxy background
       // needs stored proxy candidates. Therefore, do not require proxy candidates here.
-      LStarMixEventEntry entry;
-      entry.mult = eventMult;
-      entry.zvtx = collision.posZ();
-      entry.kaons = std::move(kaonCands);
-      entry.protons = std::move(protonCands);
-      entry.proxies = std::move(proxyCands);
-      mLStarMixEvents.push_front(std::move(entry));
-      if (mLStarMixEvents.size() > static_cast<size_t>(lstarNoMixedEvents.value)) {
-        mLStarMixEvents.pop_back();
+      if (mixingEnabled()) {
+        LStarMixEventEntry entry;
+        entry.mult = eventMult;
+        entry.zvtx = collision.posZ();
+        entry.kaons = std::move(kaonCands);
+        entry.protons = std::move(protonCands);
+
+        mLStarMixEvents.push_front(std::move(entry));
+        if (mLStarMixEvents.size() > static_cast<size_t>(lstarNoMixedEvents.value)) {
+          mLStarMixEvents.pop_back();
+        }
       }
       return;
     }
@@ -1641,6 +1906,9 @@ struct Lambdastarproxy {
             continue;
           }
 
+          if constexpr (IsMC) {
+            fillRecoMC(pr, k, mass, ptPair, false);
+          }
           const bool unlikeSignPK = (pr.charge * k.charge) < 0;
           if (unlikeSignPK) {
             histos.fill(HIST("hInvMassPKUnlike"), mass);
@@ -1713,6 +1981,9 @@ struct Lambdastarproxy {
             continue;
           }
 
+          if constexpr (IsMC) {
+            fillRecoMC(pr, k, mass, ptPair, true);
+          }
           const bool unlikeSignProxy =
             (pr.charge * k.charge) < 0;
 
@@ -1723,10 +1994,14 @@ struct Lambdastarproxy {
               const bool passFullY = std::abs(yFullPK) <= lstarLambdaAbsYMax.value;
               if (unlikeSignProxy) {
                 histos.fill(HIST("hLambdaStarProxyControlUnlikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible);
-                histos.fill(HIST("hLambdaStarProxyControlFullPKUnlikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
+                if (lstarEnableFullPKMaps.value != 0) {
+                  histos.fill(HIST("hLambdaStarProxyControlFullPKUnlikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
+                }
               } else {
                 histos.fill(HIST("hLambdaStarProxyControlLikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible);
-                histos.fill(HIST("hLambdaStarProxyControlFullPKLikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
+                if (lstarEnableFullPKMaps.value != 0) {
+                  histos.fill(HIST("hLambdaStarProxyControlFullPKLikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
+                }
               }
             }
 
@@ -1753,42 +2028,50 @@ struct Lambdastarproxy {
 
               if (unlikeSignProxy) {
 
-                histos.fill(
-                  HIST(
-                    "hLambdaStarProxyVsFullPKUnlikeSparse"),
-                  mass,
-                  massFullPK,
-                  ptPair,
-                  eventMult);
+                if (lstarEnableFullPKMaps.value != 0) {
+                  histos.fill(
+                    HIST(
+                      "hLambdaStarProxyVsFullPKUnlikeSparse"),
+                    mass,
+                    massFullPK,
+                    ptPair,
+                    eventMult);
+                }
 
               } else {
 
-                histos.fill(
-                  HIST(
-                    "hLambdaStarProxyVsFullPKLikeSparse"),
-                  mass,
-                  massFullPK,
-                  ptPair,
-                  eventMult);
+                if (lstarEnableFullPKMaps.value != 0) {
+                  histos.fill(
+                    HIST(
+                      "hLambdaStarProxyVsFullPKLikeSparse"),
+                    mass,
+                    massFullPK,
+                    ptPair,
+                    eventMult);
+                }
               }
             }
             if (pr.protonLike) {
 
               if (unlikeSignProxy) {
 
-                histos.fill(
-                  HIST("hLambdaStarProxyProtonLikeUnlikeSparse"),
-                  mass,
-                  ptPair,
-                  eventMult);
+                if (lstarEnableProtonLikeSparse.value != 0) {
+                  histos.fill(
+                    HIST("hLambdaStarProxyProtonLikeUnlikeSparse"),
+                    mass,
+                    ptPair,
+                    eventMult);
+                }
 
               } else {
 
-                histos.fill(
-                  HIST("hLambdaStarProxyProtonLikeLikeSparse"),
-                  mass,
-                  ptPair,
-                  eventMult);
+                if (lstarEnableProtonLikeSparse.value != 0) {
+                  histos.fill(
+                    HIST("hLambdaStarProxyProtonLikeLikeSparse"),
+                    mass,
+                    ptPair,
+                    eventMult);
+                }
               }
             }
           }
@@ -1796,100 +2079,9 @@ struct Lambdastarproxy {
       }
     }
 
-    // --- MIXED-EVENT: current kaons + previous-event real protons ---
-    // This fills the standard pK mixed-event background.
-    for (auto const& prev : mLStarMixEvents) {
-
-      if (std::abs(prev.zvtx - collision.posZ()) >
-          lstarMixZvtxMax.value) {
-        continue;
-      }
-
-      if (std::abs(prev.mult - eventMult) >
-          lstarMixMultMax.value) {
-        continue;
-      }
-
-      if (prev.protons.empty()) {
-        continue;
-      }
-
-      for (auto const& pr : prev.protons) {
-
-        for (auto const& k : kaonCands) {
-
-          // Unlike-sign pK mixed-event background.
-          if ((pr.charge * k.charge) >= 0) {
-            continue;
-          }
-
-          const double mass =
-            invariantMass(
-              pr.px,
-              pr.py,
-              pr.pz,
-              MassProton,
-              k.px,
-              k.py,
-              k.pz,
-              MassKaonCharged);
-
-          const float pxTot =
-            pr.px + k.px;
-
-          const float pyTot =
-            pr.py + k.py;
-
-          const float pzTot =
-            pr.pz + k.pz;
-
-          const float ptPair =
-            ptFromPxPy(
-              pxTot,
-              pyTot);
-
-          const float yPair =
-            rapidityFromMomentumAndMass(
-              pxTot,
-              pyTot,
-              pzTot,
-              mass);
-
-          if (std::abs(yPair) >
-              lstarLambdaAbsYMax.value) {
-            continue;
-          }
-
-          if (lstarEnableSparse.value != 0) {
-
-            histos.fill(
-              HIST(
-                "hLambdaStarPKMixedSparse"),
-              mass,
-              ptPair,
-              eventMult);
-          }
-        }
-      }
-    }
-
-    // --- MIXED-EVENT: current proxies + previous-event kaons ---
-    // This fills the deuteron-proxy mixed-event background.
-    //
-    // For every d-selected proxy candidate we calculate:
-    //
-    //   1) M_{(d/2)K}
-    //      using p_proxy = p_track / 2
-    //
-    //   2) M_{pK}^{full}
-    //      using the FULL measured momentum of the same d-selected track,
-    //      but assigning the proton mass.
-    //
-    // The standard proxy mixed spectrum requires only the proxy rapidity
-    // acceptance. The 2D proxy-vs-full-pK map additionally requires the
-    // full-pK hypothesis to satisfy the same rapidity acceptance.
-    if (hasProxyCandidates) {
-
+    if (mixingEnabled()) {
+      // --- MIXED-EVENT: current kaons + previous-event real protons ---
+      // This fills the standard pK mixed-event background.
       for (auto const& prev : mLStarMixEvents) {
 
         if (std::abs(prev.zvtx - collision.posZ()) >
@@ -1902,22 +2094,18 @@ struct Lambdastarproxy {
           continue;
         }
 
-        if (prev.kaons.empty()) {
+        if (prev.protons.empty()) {
           continue;
         }
 
-        for (auto const& pr : proxyCands) {
+        for (auto const& pr : prev.protons) {
 
-          for (auto const& k : prev.kaons) {
+          for (auto const& k : kaonCands) {
 
-            // Unlike-sign proxy-K mixed-event background.
+            // Unlike-sign pK mixed-event background.
             if ((pr.charge * k.charge) >= 0) {
               continue;
             }
-
-            // ----------------------------------------------------------
-            // Proxy hypothesis: p_proxy = p_d / 2
-            // ----------------------------------------------------------
 
             const double mass =
               invariantMass(
@@ -1944,83 +2132,25 @@ struct Lambdastarproxy {
                 pxTot,
                 pyTot);
 
-            const float yProxy =
+            const float yPair =
               rapidityFromMomentumAndMass(
                 pxTot,
                 pyTot,
                 pzTot,
                 mass);
 
-            // Standard proxy rapidity acceptance.
-            if (std::abs(yProxy) >
+            if (std::abs(yPair) >
                 lstarLambdaAbsYMax.value) {
               continue;
             }
 
-            // ----------------------------------------------------------
-            // Full-momentum proton hypothesis for the SAME d-selected
-            // track.
-            // ----------------------------------------------------------
-
-            const double massFullPK =
-              invariantMass(
-                pr.pxFull,
-                pr.pyFull,
-                pr.pzFull,
-                MassProton,
-                k.px,
-                k.py,
-                k.pz,
-                MassKaonCharged);
-
-            const float pxTotFullPK =
-              pr.pxFull + k.px;
-
-            const float pyTotFullPK =
-              pr.pyFull + k.py;
-
-            const float pzTotFullPK =
-              pr.pzFull + k.pz;
-
-            const float yFullPK =
-              rapidityFromMomentumAndMass(
-                pxTotFullPK,
-                pyTotFullPK,
-                pzTotFullPK,
-                massFullPK);
-
             if (lstarEnableSparse.value != 0) {
 
-              if (lstarEnableProxyControls.value != 0) {
-                const bool passFullY = std::abs(yFullPK) <= lstarLambdaAbsYMax.value;
-                histos.fill(HIST("hLambdaStarProxyControlMixedSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible);
-                histos.fill(HIST("hLambdaStarProxyControlFullPKMixedSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
-              }
-
-              // Standard mixed-event proxy spectrum.
-              //
-              // This requires only the proxy hypothesis to satisfy
-              // |y| < lstarLambdaAbsYMax.
-              histos.fill(
-                HIST(
-                  "hLambdaStarProxyMixedSparse"),
-                mass,
-                ptPair,
-                eventMult);
-
-              // Mixed-event 2D map.
-              //
-              // Since this histogram explicitly represents both
-              // hypotheses, require the full-pK hypothesis to satisfy
-              // the same configurable rapidity acceptance as well.
-              if (std::abs(yFullPK) <=
-                  lstarLambdaAbsYMax.value) {
-
+              if (lstarNoMixedEvents.value > 0) {
                 histos.fill(
                   HIST(
-                    "hLambdaStarProxyVsFullPKMixedSparse"),
+                    "hLambdaStarPKMixedSparse"),
                   mass,
-                  massFullPK,
                   ptPair,
                   eventMult);
               }
@@ -2028,23 +2158,210 @@ struct Lambdastarproxy {
           }
         }
       }
-    }
 
-    // --- Update mixing buffer with current event ---
-    LStarMixEventEntry entry;
-    entry.mult = eventMult;
-    entry.zvtx = collision.posZ();
-    entry.kaons = std::move(kaonCands);
-    entry.protons = std::move(protonCands);
-    entry.proxies = std::move(proxyCands);
+      // --- MIXED-EVENT: current proxies + previous-event kaons ---
+      // This fills the deuteron-proxy mixed-event background.
+      //
+      // For every d-selected proxy candidate we calculate:
+      //
+      //   1) M_{(d/2)K}
+      //      using p_proxy = p_track / 2
+      //
+      //   2) M_{pK}^{full}
+      //      using the FULL measured momentum of the same d-selected track,
+      //      but assigning the proton mass.
+      //
+      // The standard proxy mixed spectrum requires only the proxy rapidity
+      // acceptance. The 2D proxy-vs-full-pK map additionally requires the
+      // full-pK hypothesis to satisfy the same rapidity acceptance.
+      if (hasProxyCandidates) {
 
-    mLStarMixEvents.push_front(std::move(entry));
-    if (mLStarMixEvents.size() > static_cast<size_t>(lstarNoMixedEvents.value)) {
-      mLStarMixEvents.pop_back();
+        for (auto const& prev : mLStarMixEvents) {
+
+          if (std::abs(prev.zvtx - collision.posZ()) >
+              lstarMixZvtxMax.value) {
+            continue;
+          }
+
+          if (std::abs(prev.mult - eventMult) >
+              lstarMixMultMax.value) {
+            continue;
+          }
+
+          if (prev.kaons.empty()) {
+            continue;
+          }
+
+          for (auto const& pr : proxyCands) {
+
+            for (auto const& k : prev.kaons) {
+
+              // Unlike-sign proxy-K mixed-event background.
+              if ((pr.charge * k.charge) >= 0) {
+                continue;
+              }
+
+              // ----------------------------------------------------------
+              // Proxy hypothesis: p_proxy = p_d / 2
+              // ----------------------------------------------------------
+
+              const double mass =
+                invariantMass(
+                  pr.px,
+                  pr.py,
+                  pr.pz,
+                  MassProton,
+                  k.px,
+                  k.py,
+                  k.pz,
+                  MassKaonCharged);
+
+              const float pxTot =
+                pr.px + k.px;
+
+              const float pyTot =
+                pr.py + k.py;
+
+              const float pzTot =
+                pr.pz + k.pz;
+
+              const float ptPair =
+                ptFromPxPy(
+                  pxTot,
+                  pyTot);
+
+              const float yProxy =
+                rapidityFromMomentumAndMass(
+                  pxTot,
+                  pyTot,
+                  pzTot,
+                  mass);
+
+              // Standard proxy rapidity acceptance.
+              if (std::abs(yProxy) >
+                  lstarLambdaAbsYMax.value) {
+                continue;
+              }
+
+              // ----------------------------------------------------------
+              // Full-momentum proton hypothesis for the SAME d-selected
+              // track.
+              // ----------------------------------------------------------
+
+              const double massFullPK =
+                invariantMass(
+                  pr.pxFull,
+                  pr.pyFull,
+                  pr.pzFull,
+                  MassProton,
+                  k.px,
+                  k.py,
+                  k.pz,
+                  MassKaonCharged);
+
+              const float pxTotFullPK =
+                pr.pxFull + k.px;
+
+              const float pyTotFullPK =
+                pr.pyFull + k.py;
+
+              const float pzTotFullPK =
+                pr.pzFull + k.pz;
+
+              const float yFullPK =
+                rapidityFromMomentumAndMass(
+                  pxTotFullPK,
+                  pyTotFullPK,
+                  pzTotFullPK,
+                  massFullPK);
+
+              if (lstarEnableSparse.value != 0) {
+
+                if (lstarEnableProxyControls.value != 0) {
+                  const bool passFullY = std::abs(yFullPK) <= lstarLambdaAbsYMax.value;
+                  histos.fill(HIST("hLambdaStarProxyControlMixedSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible);
+                  if (lstarEnableFullPKMaps.value != 0) {
+                    histos.fill(HIST("hLambdaStarProxyControlFullPKMixedSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
+                  }
+                }
+
+                // Standard mixed-event proxy spectrum.
+                //
+                // This requires only the proxy hypothesis to satisfy
+                // |y| < lstarLambdaAbsYMax.
+                if (lstarNoMixedEvents.value > 0) {
+                  histos.fill(
+                    HIST(
+                      "hLambdaStarProxyMixedSparse"),
+                    mass,
+                    ptPair,
+                    eventMult);
+                }
+
+                // Mixed-event 2D map.
+                //
+                // Since this histogram explicitly represents both
+                // hypotheses, require the full-pK hypothesis to satisfy
+                // the same configurable rapidity acceptance as well.
+                if (std::abs(yFullPK) <=
+                    lstarLambdaAbsYMax.value) {
+
+                  if (lstarEnableFullPKMaps.value != 0) {
+                    if (lstarNoMixedEvents.value > 0) {
+                      histos.fill(
+                        HIST(
+                          "hLambdaStarProxyVsFullPKMixedSparse"),
+                        mass,
+                        massFullPK,
+                        ptPair,
+                        eventMult);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // --- Update mixing buffer with current event ---
+      LStarMixEventEntry entry;
+      entry.mult = eventMult;
+      entry.zvtx = collision.posZ();
+      entry.kaons = std::move(kaonCands);
+      entry.protons = std::move(protonCands);
+
+      mLStarMixEvents.push_front(std::move(entry));
+      if (mLStarMixEvents.size() > static_cast<size_t>(lstarNoMixedEvents.value)) {
+        mLStarMixEvents.pop_back();
+      }
     }
   }
 
-  PROCESS_SWITCH(Lambdastarproxy, process, "Lambda* proxy via (d/2)+K", true);
+  void processData(CollisionsWithEvSel::iterator const& collision, FilteredTracks const& tracks)
+  {
+    processReco<false>(collision, tracks);
+  }
+
+  // A literal process() is always invoked by O2 in addition to optional methods.
+  // Keep the established JSON key "process" while registering data only once.
+  PROCESS_SWITCH_FULL(Lambdastarproxy, processData, process, "Lambda* proxy via (d/2)+K", true);
+
+  void processMCReco(CollisionsWithEvSelMC::iterator const& collision,
+                     FilteredTracksMC const& tracks, aod::McParticles const&,
+                     aod::McCollisions const&)
+  {
+    // Inclusive reconstructed spectra include unmatched tracks and collisions,
+    // just as in data. Truth components require a valid same-event MC label.
+    processReco<true>(collision, tracks);
+  }
+  PROCESS_SWITCH(Lambdastarproxy, processMCReco, "MC: data-identical reconstruction and truth-component spectra", false);
+
+  void processMCGen(aod::McCollision const& collision, aod::McParticles const& particles)
+  {
+    fillGenerated(collision, particles);
+  }
+  PROCESS_SWITCH(Lambdastarproxy, processMCGen, "MC: generated pK and (d/2)K spectra, without reconstructed-event requirements", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context)
