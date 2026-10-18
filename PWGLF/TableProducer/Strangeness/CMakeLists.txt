@@ -70,6 +70,11 @@ o2physics_add_dpl_workflow(double-omega-tree-creator
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(double-omega-builder
+    SOURCES doubleOmegaBuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lambdakzerofinder
     SOURCES lambdakzerofinder.cxx
     REUSE_FROM LfStrangenessPCH
