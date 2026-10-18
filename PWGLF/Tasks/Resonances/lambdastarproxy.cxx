@@ -24,6 +24,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -54,7 +55,7 @@ using namespace o2::framework::expressions;
 using namespace constants::math;
 
 struct Lambdastarproxy {
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
 
   // ---- Ion/nucleus PDG encoding helpers (10LZZZAAAI) ----
   // Note: these are *format* constants (not particle PDG species codes)
@@ -210,7 +211,7 @@ struct Lambdastarproxy {
     float px = 0.f, py = 0.f, pz = 0.f;
     int charge = 0;
     int tid = -1;
-    TruthInfo truth;
+    TruthInfo truth{};
   };
   // PID flags describe detector compatibility, not truth-level purity.
   struct ProxyCand {
@@ -221,13 +222,13 @@ struct Lambdastarproxy {
     bool protonTPCCompatible = false;
     int charge = 0;
     int tid = -1;
-    TruthInfo truth;
+    TruthInfo truth{};
   };
   struct ProtonCand {
     float px = 0.f, py = 0.f, pz = 0.f;
     int charge = 0;
     int tid = -1;
-    TruthInfo truth;
+    TruthInfo truth{};
   };
 
   // Helpers for invariant-mass kinematics
