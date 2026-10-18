@@ -11,6 +11,7 @@
 
 #include "FlatTrackSmearer.h"
 
+#include "ALICE3/Core/ConfigurationParser.h"
 #include "ALICE3/Core/FlatLutEntry.h"
 #include "ALICE3/Core/GeometryContainer.h"
 
@@ -28,9 +29,9 @@
 #include <span>
 #include <string>
 
-namespace o2::delphes
+namespace o2::fastsim
 {
-int TrackSmearer::getIndexPDG(int pdg)
+int TrackSmearer::getIndexPDG(const int pdg)
 {
   switch (std::abs(pdg)) {
     case 11:
@@ -56,7 +57,7 @@ int TrackSmearer::getIndexPDG(int pdg)
   }
 }
 
-const char* TrackSmearer::getParticleName(int pdg)
+const char* TrackSmearer::getParticleName(const int pdg)
 {
   switch (std::abs(pdg)) {
     case 11:
@@ -82,15 +83,6 @@ const char* TrackSmearer::getParticleName(int pdg)
   }
 }
 
-void TrackSmearer::setWhatEfficiency(int val)
-{
-  // FIXME: this really should be an enum
-  if (val > 2) {
-    throw framework::runtime_error_f("getLUTEntry: unknown efficiency type %d", mWhatEfficiency);
-  }
-  mWhatEfficiency = val;
-}
-
 bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 {
   if (!filename || filename[0] == '\0') {
@@ -105,7 +97,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   }
 
   LOGF(info, "Loading %s LUT file: '%s'", getParticleName(pdg), filename);
-  const std::string localFilename = o2::fastsim::GeometryEntry::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager, 10);
+  const std::string localFilename = o2::fastsim::ConfigurationParser::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager, o2::fastsim::GeometryContainer::cleanLutWhenLoaded() ? 10 : 0);
 
   std::ifstream lutFile(localFilename, std::ifstream::binary);
   if (!lutFile.is_open()) {
@@ -121,7 +113,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
       LOGF(error, "LUT header PDG mismatch: expected %d, got %d; not loading", pdg, header.pdg);
       return false;
     }
-  } catch (framework::RuntimeErrorRef ref) {
+  } catch (framework::RuntimeErrorRef& ref) {
     LOGF(error, "%s", framework::error_from_ref(ref).what);
     return false;
   }
@@ -139,13 +131,13 @@ bool TrackSmearer::adoptTable(int pdg, const uint8_t* buffer, size_t size, bool 
     return false;
   }
   try {
-    auto header = FlatLutData::PreviewHeader(buffer, size);
+    auto header = FlatLutData::previewHeader(buffer, size);
     if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
       LOGF(error, "LUT header PDG mismatch: expected %d, got %d", pdg, header.pdg);
       return false;
     }
     mLUTData[ipdg] = FlatLutData::AdoptFromBuffer(buffer, size);
-  } catch (framework::RuntimeErrorRef ref) {
+  } catch (framework::RuntimeErrorRef& ref) {
     LOGF(error, "%s", framework::error_from_ref(ref).what);
   }
 
@@ -162,13 +154,13 @@ bool TrackSmearer::viewTable(int pdg, const uint8_t* buffer, size_t size, bool f
     return false;
   }
   try {
-    auto header = FlatLutData::PreviewHeader(buffer, size);
+    auto header = FlatLutData::previewHeader(buffer, size);
     if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
       LOGF(error, "LUT header PDG mismatch: expected %d, got %d", pdg, header.pdg);
       return false;
     }
     mLUTData[ipdg] = FlatLutData::ViewFromBuffer(buffer, size);
-  } catch (framework::RuntimeErrorRef ref) {
+  } catch (framework::RuntimeErrorRef& ref) {
     LOGF(error, "%s", framework::error_from_ref(ref).what);
   }
 
@@ -188,22 +180,14 @@ bool TrackSmearer::hasTable(int pdg) const
   return mLUTData[ipdg].isLoaded();
 }
 
-bool TrackSmearer::checkSpecialCase(int pdg, lutHeader_t const& header)
+bool TrackSmearer::checkSpecialCase(const int pdg, lutHeader_t const& header)
 {
   // Validate header
-  bool specialPdgCase = false;
-  switch (pdg) {
-    case o2::constants::physics::kAlpha:
-      // Special case: Allow Alpha particles to use He3 LUT
-      specialPdgCase = (header.pdg == o2::constants::physics::kHelium3);
-      if (specialPdgCase) {
-        LOGF(info, "Alpha particles (PDG %d) will use He3 LUT data (PDG %d)", pdg, header.pdg);
-      }
-      break;
-    default:
-      break;
+  if (pdg == o2::constants::physics::kAlpha && (header.pdg == o2::constants::physics::kHelium3)) { // Special case: Allow Alpha particles to use He3 LUT
+    LOGF(info, "Alpha particles (PDG %d) will use He3 LUT data (PDG %d)", pdg, header.pdg);
+    return true;
   }
-  return specialPdgCase;
+  return false;
 }
 
 const lutHeader_t* TrackSmearer::getLUTHeader(int pdg) const
@@ -235,7 +219,7 @@ const lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, cons
     static constexpr float kFractionThreshold = 0.5f;
     if (fraction > kFractionThreshold) {
       switch (mWhatEfficiency) {
-        case 1: {
+        case kWhatEfficiencyReco: {
           const auto* entry_curr = mLUTData[ipdg].getEntryRef(inch, irad, ieta, ipt);
           if (inch < header.nchmap.nbins - 1) {
             const auto* entry_next = mLUTData[ipdg].getEntryRef(inch + 1, irad, ieta, ipt);
@@ -245,7 +229,7 @@ const lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, cons
           }
           break;
         }
-        case 2: {
+        case kWhatEfficiencyRecoAndTOF: {
           const auto* entry_curr = mLUTData[ipdg].getEntryRef(inch, irad, ieta, ipt);
           if (inch < header.nchmap.nbins - 1) {
             const auto* entry_next = mLUTData[ipdg].getEntryRef(inch + 1, irad, ieta, ipt);
@@ -255,11 +239,13 @@ const lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, cons
           }
           break;
         }
+        default:
+          LOG(fatal) << "Unknown efficiency type: " << mWhatEfficiency;
       }
     } else {
       float comparisonValue = header.nchmap.log ? std::log10(nch) : nch;
       switch (mWhatEfficiency) {
-        case 1: {
+        case kWhatEfficiencyReco: {
           const auto* entry_curr = mLUTData[ipdg].getEntryRef(inch, irad, ieta, ipt);
           if (inch > 0 && comparisonValue < header.nchmap.max) {
             const auto* entry_prev = mLUTData[ipdg].getEntryRef(inch - 1, irad, ieta, ipt);
@@ -269,7 +255,7 @@ const lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, cons
           }
           break;
         }
-        case 2: {
+        case kWhatEfficiencyRecoAndTOF: {
           const auto* entry_curr = mLUTData[ipdg].getEntryRef(inch, irad, ieta, ipt);
           if (inch > 0 && comparisonValue < header.nchmap.max) {
             const auto* entry_prev = mLUTData[ipdg].getEntryRef(inch - 1, irad, ieta, ipt);
@@ -279,18 +265,22 @@ const lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, cons
           }
           break;
         }
+        default:
+          LOG(fatal) << "Unknown efficiency type: " << mWhatEfficiency;
       }
     }
   } else {
     const auto* entry = mLUTData[ipdg].getEntryRef(inch, irad, ieta, ipt);
     if (entry) {
       switch (mWhatEfficiency) {
-        case 1:
+        case kWhatEfficiencyReco:
           interpolatedEff = entry->eff;
           break;
-        case 2:
+        case kWhatEfficiencyRecoAndTOF:
           interpolatedEff = entry->eff2;
           break;
+        default:
+          LOG(fatal) << "Unknown efficiency type: " << mWhatEfficiency;
       }
     }
   }
@@ -298,7 +288,7 @@ const lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, cons
   return mLUTData[ipdg].getEntryRef(inch, irad, ieta, ipt);
 }
 
-bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, float interpolatedEff)
+bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, const float interpolatedEff)
 {
   bool isReconstructed = true;
 
@@ -306,10 +296,10 @@ bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, floa
   if (mUseEfficiency) {
     auto eff = 0.f;
     switch (mWhatEfficiency) {
-      case 1:
+      case kWhatEfficiencyReco:
         eff = lutEntry->eff;
         break;
-      case 2:
+      case kWhatEfficiencyRecoAndTOF:
         eff = lutEntry->eff2;
         break;
     }
@@ -327,20 +317,19 @@ bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, floa
   }
 
   // Transform params vector and smear
-  static constexpr int kParSize = 5;
-  double params[kParSize];
-  for (int i = 0; i < kParSize; ++i) {
+  EigenArrayDouble params;
+  for (int i = 0; i < kNumEigenModes; ++i) {
     double val = 0.;
-    for (int j = 0; j < kParSize; ++j) {
+    for (int j = 0; j < kNumEigenModes; ++j) {
       val += lutEntry->eigvec[j][i] * o2track.getParam(j);
     }
     params[i] = gRandom->Gaus(val, std::sqrt(lutEntry->eigval[i]));
   }
 
   // Transform back params vector
-  for (int i = 0; i < kParSize; ++i) {
+  for (int i = 0; i < kNumEigenModes; ++i) {
     double val = 0.;
-    for (int j = 0; j < kParSize; ++j) {
+    for (int j = 0; j < kNumEigenModes; ++j) {
       val += lutEntry->eiginv[j][i] * params[j];
     }
     o2track.setParam(val, i);
@@ -352,22 +341,21 @@ bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, floa
   }
 
   // Set covariance matrix
-  static constexpr int kCovMatSize = 15;
-  for (int i = 0; i < kCovMatSize; ++i) {
+  for (int i = 0; i < kNumCovarianceTerms; ++i) {
     o2track.setCov(lutEntry->covm[i], i);
   }
 
   return isReconstructed;
 }
 
-bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
+bool TrackSmearer::smearTrack(O2Track& o2track, const int pdg, const float nch)
 {
   auto pt = o2track.getPt();
-  switch (pdg) {
-    case o2::constants::physics::kHelium3:
-    case -o2::constants::physics::kHelium3:
-      pt *= 2.f;
-      break;
+  if (pdg == o2::constants::physics::kHelium3 ||
+      pdg == -o2::constants::physics::kHelium3 ||
+      pdg == o2::constants::physics::kAlpha ||
+      pdg == -o2::constants::physics::kAlpha) {
+    pt *= 2.f;
   }
 
   auto eta = o2track.getEta();
@@ -423,4 +411,4 @@ double TrackSmearer::getEfficiency(const int pdg, const float nch, const float e
   return efficiency;
 }
 
-} // namespace o2::delphes
+} // namespace o2::fastsim

@@ -438,7 +438,7 @@ struct Lstaranalysis {
 
   // Centralicity estimator selection
   template <typename ResoColl>
-  float centEst(ResoColl ResoEvents)
+  float centEst(const ResoColl& ResoEvents)
   {
     float returnValue = -999.0;
     switch (multEstimator) {
@@ -477,7 +477,7 @@ struct Lstaranalysis {
   }
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -1154,7 +1154,7 @@ struct Lstaranalysis {
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<collision::PosZ, cent::CentFT0M>;
-  BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
+  BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}};
 
   void processME(EventCandidates const& collision,
                  TrackCandidates const& tracks)

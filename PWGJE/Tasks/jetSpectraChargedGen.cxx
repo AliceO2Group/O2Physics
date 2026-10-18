@@ -62,8 +62,8 @@ struct JetSpectraChargedGen {
   Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
   Configurable<double> jetPtMax{"jetPtMax", 200.0, "max of the jet pT axis"};
 
-  static constexpr float kConfigSwitchLow = -98.0f;
-  static constexpr float kConfigSwitchHigh = 9998.0f;
+  static constexpr float ConfigSwitchLow = -98.0f;
+  static constexpr float ConfigSwitchHigh = 9998.0f;
 
   void init(InitContext const&)
   {
@@ -116,13 +116,13 @@ struct JetSpectraChargedGen {
   template <typename TJet>
   bool isAcceptedJet(TJet const& jet)
   {
-    if (jetAreaFractionMin > kConfigSwitchLow) {
+    if (jetAreaFractionMin > ConfigSwitchLow) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
-    bool checkMin = (leadingConstituentPtMin > kConfigSwitchLow);
-    bool checkMax = (leadingConstituentPtMax < kConfigSwitchHigh);
+    bool checkMin = (leadingConstituentPtMin > ConfigSwitchLow);
+    bool checkMax = (leadingConstituentPtMax < ConfigSwitchHigh);
     if (!checkMin && !checkMax) {
       return true;
     }
@@ -157,9 +157,9 @@ struct JetSpectraChargedGen {
     float angularity = 0.0f;
     for (const auto& constituent : jet.template tracks_as<aod::JetParticles>()) {
       registry.fill(HIST("h2_jet_pt_part_track_pt_part"), jet.pt(), constituent.pt(), weight);
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.0f));
+    angularity /= std::pow(jet.pt(), kappa);
     registry.fill(HIST("h2_jet_pt_jet_angularity_part"), jet.pt(), angularity, weight);
   }
 

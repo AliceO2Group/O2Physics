@@ -221,7 +221,7 @@ struct centralityStudypp {
       hCentralityMFT = dynamic_cast<TH1*>(hCentralityObjects->FindObject("hCalibZeqMFT"));
 
       // won't capture null pointers -> explicitly check for those when attempting to evaluate
-      auto reportSuccess = [](TH1* a, std::string name) {
+      auto reportSuccess = [](TH1* a, const std::string& name) {
         if (!a) {
           LOGF(info, "Calibration missing for %s", name);
         } else {

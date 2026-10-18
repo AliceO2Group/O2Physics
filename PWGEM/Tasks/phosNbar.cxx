@@ -248,7 +248,7 @@ struct phosNbar {
     if constexpr (isMC) {
       // check current collision Id for clusters
       int cluMcBCId = -1;
-      for (auto clu : clusters) {
+      for (const auto& clu : clusters) {
         auto mcList = clu.labels(); // const std::vector<int>
         int nParents = mcList.size();
         for (int iParent = 0; iParent < nParents; iParent++) { // Not found nbar parent yiet
@@ -265,7 +265,7 @@ struct phosNbar {
       }
       // Scan MC particles in current MC event
       if (mcParticles->begin() != mcParticles->end()) {
-        for (auto part : *mcParticles) {
+        for (const auto& part : *mcParticles) {
           if (part.mcCollision().bcId() != cluMcBCId) {
             continue;
             if (part.pdgCode() == -3112) { // Sigma+
@@ -384,7 +384,7 @@ struct phosNbar {
       return; // do not fill Mixed, do not update stack of events
     }
     for (auto tr : piEvent) {
-      for (auto nbarMixEv : mixNbarEvts[mixIndex]) {
+      for (const auto& nbarMixEv : mixNbarEvts[mixIndex]) {
         for (auto nbar : nbarMixEv) {
           double dca = 999.;
           switch (mPairingMethod) {
@@ -417,7 +417,7 @@ struct phosNbar {
         }
       }
     }
-    for (auto trMixEvent : mixTrackEvts[mixIndex]) {
+    for (const auto& trMixEvent : mixTrackEvts[mixIndex]) {
       for (auto tr : trMixEvent) {
         for (auto nbar : nbarEvent) {
           double dca = 999.;

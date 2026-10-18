@@ -192,7 +192,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   using FilteredMcColisions = soa::Filtered<soa::Join<aod::FDCollisions, FDColMasks, aod::FDMCCollLabels>>;
   using FilteredMcColision = FilteredMcColisions::iterator;
 
-  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>>;
+  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDTrkTimeStamp, aod::FDMCLabels, aod::FDExtMCLabels>>;
   using FilteredFDMcPart = FilteredFDMcParts::iterator;
 
   using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex, aod::FDTrkTimeStamp>>;
@@ -263,9 +263,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   ConfigurableAxis mixingBinMultPercentile{"mixingBinMultPercentile", {VARIABLE_WIDTH, 0.0f, 100.f}, "Mixing bins - multiplicity percentile"};
   ConfigurableAxis mixingBinVztx{"mixingBinVztx", {VARIABLE_WIDTH, -10.0f, -4.f, 0.f, 4.f, 10.f}, "Mixing bins - z-vertex"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{mixingBinVztx, mixingBinMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{mixingBinVztx, mixingBinMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{mixingBinVztx, mixingBinMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{mixingBinVztx, mixingBinMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -312,9 +312,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     massTwo = o2::analysis::femtoDream::getMass(charmSel.charmHadPDGCode.value);
 
     // setup columnpolicy for binning
-    colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
-    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
-    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
+    colBinningMult = {{mixingBinVztx, mixingBinMult}};
+    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}};
+    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}};
     eventHisto.init(&registry);
     allTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, trackSel.pdgCodeTrack1, true);
     selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, trackSel.pdgCodeTrack1, true);
@@ -768,6 +768,13 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       timeStamp = part.timeStamp();
 
+      int charmHadMc = 0;
+      int originType = 0;
+      if constexpr (IsMc) {
+        charmHadMc = part.flagMc();
+        originType = part.originMcRec();
+      }
+
       if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
         rowFemtoResultCharm3Prong(
@@ -783,7 +790,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::XicToXiPiPi) {
         rowFemtoResultCharm3Prong(
           col.globalIndex(),
@@ -798,7 +807,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::D0ToPiK) {
         rowFemtoResultCharm2Prong(
           col.globalIndex(),
@@ -812,7 +823,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         float invMassD0 = getCharmHadronMass<Channel>(part, true);
         rowFemtoResultCharmDstar(
@@ -829,7 +842,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       }
     }
     // ---- Fill Track Table ----
@@ -1130,6 +1145,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::LcToPKPi>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::LcToPKPi, FilteredCharmMcCand3Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {
@@ -1171,6 +1190,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::DplusToPiKPi>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::DplusToPiKPi, FilteredCharmMcCand3Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {
@@ -1212,6 +1235,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::D0ToPiK>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::D0ToPiK, FilteredCharmMcCand2Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {
@@ -1253,6 +1280,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::DstarToD0Pi>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::DstarToD0Pi, FilteredCharmMcCandDstars>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {
@@ -1294,6 +1325,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::XicToXiPiPi>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::XicToXiPiPi, FilteredCharmMcCand3ProngsXic>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {

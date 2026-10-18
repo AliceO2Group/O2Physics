@@ -18,6 +18,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/MetadataHelper.h"
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -34,7 +35,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>

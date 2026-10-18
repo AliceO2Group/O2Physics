@@ -78,9 +78,9 @@ struct OnTheFlyRichPid {
   Produces<aod::UpgradeRichSignal> upgradeRichSignal;
 
   // necessary for particle charges
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase{};
   // Necessary for LUTs
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // add rich-specific configurables here
   Configurable<int> bRichNumberOfSectors{"bRichNumberOfSectors", 21, "barrel RICH number of sectors"};
@@ -132,7 +132,7 @@ struct OnTheFlyRichPid {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer array, one per geometry
-  std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
+  std::vector<std::unique_ptr<o2::fastsim::TrackSmearer>> mSmearer;
 
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
@@ -296,12 +296,12 @@ struct OnTheFlyRichPid {
 
     if (flagRICHLoadDelphesLUTs) {
       for (int icfg = 0; icfg < nGeometries; ++icfg) {
-        mSmearer.emplace_back(std::make_unique<o2::delphes::TrackSmearer>());
+        mSmearer.emplace_back(std::make_unique<o2::fastsim::TrackSmearer>());
         mSmearer[icfg]->setCcdbManager(ccdb.operator->());
         std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
         for (const auto& entry : globalConfiguration) {
           int pdg = 0;
-          if (entry.first.find("lut") != 0) {
+          if (!entry.first.starts_with("lut")) {
             continue;
           }
           if (entry.first.find("lutEl") != std::string::npos) {
@@ -359,11 +359,11 @@ struct OnTheFlyRichPid {
       histos.add("hSectorID", "hSectorID", kTH1F, {axisSector});
 
       const int kNspec = 9; // electron, muon, pion, kaon, proton, deuteron, triton, helium3, alpha
-      std::string particleNames1[kNspec] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "^{3}He", "#it{#alpha}"};
-      std::string particleNames2[kNspec] = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
+      const std::array<std::string, kNspec> particleNames1 = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "^{3}He", "#it{#alpha}"};
+      const std::array<std::string, kNspec> particleNames2 = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
       for (int iTrue = 0; iTrue < kNspec; iTrue++) {
-        std::string nameTitleBarrelTrackRes = "h2dBarrelAngularResTrack" + particleNames2[iTrue] + "VsP";
-        std::string nameTitleBarrelTotalRes = "h2dBarrelAngularResTotal" + particleNames2[iTrue] + "VsP";
+        const std::string nameTitleBarrelTrackRes = "h2dBarrelAngularResTrack" + particleNames2[iTrue] + "VsP";
+        const std::string nameTitleBarrelTotalRes = "h2dBarrelAngularResTotal" + particleNames2[iTrue] + "VsP";
         const AxisSpec axisTrackAngularRes{static_cast<int>(nBinsAngularRes), 0.0f, +5.0f, "Track angular resolution - " + particleNames1[iTrue] + " (mrad)"};
         const AxisSpec axisTotalAngularRes{static_cast<int>(nBinsAngularRes), 0.0f, +5.0f, "Total angular resolution - " + particleNames1[iTrue] + " (mrad)"};
         histos.add(nameTitleBarrelTrackRes.c_str(), nameTitleBarrelTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackAngularRes});
@@ -371,7 +371,7 @@ struct OnTheFlyRichPid {
       }
       for (int iTrue = 0; iTrue < kNspec; iTrue++) {
         for (int iHyp = 0; iHyp < kNspec; iHyp++) {
-          std::string nameTitle = "h2dBarrelNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          const std::string nameTitle = "h2dBarrelNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
           if (iTrue == iHyp) {
             const AxisSpec axisNsigmaCorrect{static_cast<int>(nBinsNsigmaCorrectSpecies), -10.0f, +10.0f, "N#sigma - True " + particleNames1[iTrue] + " vs " + particleNames1[iHyp] + " hypothesis"};
             histos.add(nameTitle.c_str(), nameTitle.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
@@ -437,18 +437,14 @@ struct OnTheFlyRichPid {
   bool checkMagfieldLimit(o2::track::TrackParCov track, const float radius, const float magneticField)
   {
     o2::math_utils::CircleXYf_t trcCircle;
-    float sna, csa;
+    float sna = NAN, csa = NAN;
     track.getCircleParams(magneticField, trcCircle, sna, csa);
 
     // distance between circle centers (one circle is at origin -> easy)
     float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
 
     // condition of circles touching - if not satisfied returned value if false
-    if (centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius)) {
-      return true;
-    } else {
-      return false;
-    }
+    return centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius);
   }
 
   /// returns sector hit by the track (if any), -1 otherwise
@@ -476,9 +472,8 @@ struct OnTheFlyRichPid {
       const float rSecRichSquared = rSecRich * rSecRich;
       const float zSecRichSquared = zSecRich * zSecRich;
       return (rSecRichSquared + zSecRichSquared) / (rSecRich + zSecRich / std::tan(polar));
-    } else {
-      return kErrorValue;
     }
+    return kErrorValue;
   }
 
   /// returns Cherenkov angle in rad (above threshold) or bad flag (below threshold)
@@ -516,10 +511,7 @@ struct OnTheFlyRichPid {
 
     // Require at least 3 photons on average for real angle reconstruction
     static constexpr float kMinPhotons = 3.f;
-    if (meanNumberofDetectedPhotons <= kMinPhotons) {
-      return false;
-    }
-    return true;
+    return meanNumberofDetectedPhotons > kMinPhotons;
   }
 
   /// returns linear interpolation
@@ -552,15 +544,13 @@ struct OnTheFlyRichPid {
         float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithAbsWalls[lowerIndex], kResRingSamplingWithAbsWalls[upperIndex]);
         // std::cout << "Interpolated y value: " << interpolatedY << std::endl;
         return interpolatedResRing;
-      } else {
-        float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithoutAbsWalls[lowerIndex], kResRingSamplingWithoutAbsWalls[upperIndex]);
-        // std::cout << "Interpolated y value: " << interpolatedY << std::endl;
-        return interpolatedResRing;
       }
-    } else {
-      // std::cout << "Unable to interpolate. Target x value is outside the range of available data." << std::endl;
-      return kErrorValue;
-    }
+      float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithoutAbsWalls[lowerIndex], kResRingSamplingWithoutAbsWalls[upperIndex]);
+      // std::cout << "Interpolated y value: " << interpolatedY << std::endl;
+      return interpolatedResRing;
+
+    } // std::cout << "Unable to interpolate. Target x value is outside the range of available data." << std::endl;
+    return kErrorValue;
   }
 
   /// To account border effects in bRICH
@@ -579,7 +569,7 @@ struct OnTheFlyRichPid {
         iSecor = jSector;
       }
     }
-    if (flagSector == false) {
+    if (!flagSector) {
       return kErrorValue; // <-- Returning negative value
     }
     float rSecRich = radCenters[iSecor].X();
@@ -588,9 +578,9 @@ struct OnTheFlyRichPid {
     // float zSecTof = detCenters[iSecor].Z();
     const float rSecRichSquared = rSecRich * rSecRich;
     const float zSecRichSquared = zSecRich * zSecRich;
-    const float radiusRipple = (rSecRichSquared + zSecRichSquared) / (rSecRich + zSecRich / std::tan(polar));
-    const float zRipple = radiusRipple / std::tan(polar);
-    const float absZ = std::hypot(radiusRipple - rSecRich, zRipple - zSecRich);
+    const float radRipple = (rSecRichSquared + zSecRichSquared) / (rSecRich + zSecRich / std::tan(polar));
+    const float zRipple = radRipple / std::tan(polar);
+    const float absZ = std::hypot(radRipple - rSecRich, zRipple - zSecRich);
     float fraction = 1.;
     if (tileZlength / 2. - absZ < radius) {
       fraction = fraction - (1. / o2::constants::math::PI) * std::acos((tileZlength / 2. - absZ) / radius);
@@ -613,8 +603,9 @@ struct OnTheFlyRichPid {
   float extractRingAngularResolution(const float eta, const float n, const float nGas, const float thicknessRad, const float thicknessGas, const float pixelSize, const float thetaCherenkov, const float tileZlength)
   {
     // Check if input angle is error value
-    if (thetaCherenkov <= kErrorValue + 1)
+    if (thetaCherenkov <= kErrorValue + 1) {
       return kErrorValue;
+    }
     // Parametrization variables (notation from https://doi.org/10.1016/0168-9002(94)90532-0)
     const float phiC = 0.;
     const float thetaP = 0.;
@@ -686,8 +677,9 @@ struct OnTheFlyRichPid {
     // float nPhotons = (tileZlength / 2.0 > radius) ? n0Photons * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength)) : n0Photons * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength) - (2.0/(tileZlength*o2::constants::math::PI))*(-(tileZlength/(2.0))*std::acos(tileZlength/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tileZlength/(2.0*radius),2.0))));
     // Considering "exact" resolution (eta by eta)
     const float nPhotons = n0Photons * multiplicitySpectrumFactor * fractionPhotonsProjectiveRICH(eta, tileZlength, radius);
-    if (nPhotons <= kErrorValue + 1)
+    if (nPhotons <= kErrorValue + 1) {
       return kErrorValue;
+    }
     // Ring angular resolution
     const float ringAngularResolution = singlePhotonAngularResolution / std::sqrt(nPhotons);
     return ringAngularResolution;
@@ -704,7 +696,7 @@ struct OnTheFlyRichPid {
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
-    const double a0 = mass * mass;
+    const double a0 = 1.0 * mass * mass;
     const double a1 = refractiveIndex;
     const double a1Squared = a1 * a1;
     const float ptCoshEta = pt * std::cosh(eta);
@@ -735,9 +727,10 @@ struct OnTheFlyRichPid {
     // First we compute the number of charged particles in the event
     float dNdEta = 0.f;
     if (flagRICHLoadDelphesLUTs) {
-      for (const auto& track : tracks) {
-        if (!track.has_mcParticle())
+      for (const auto& track : tracks) { // We first compute the number of charged particles in the event
+        if (!track.has_mcParticle()) {
           continue;
+        }
         auto mcParticle = track.mcParticle();
         if (std::abs(mcParticle.eta()) > multiplicityEtaRange) {
           continue;
@@ -745,7 +738,7 @@ struct OnTheFlyRichPid {
         if (mcParticle.has_daughters()) {
           continue;
         }
-        const auto& pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+        const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
         if (!pdgInfo) {
           // LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
           continue;
@@ -771,7 +764,7 @@ struct OnTheFlyRichPid {
       }
 
       const auto& mcParticle = track.mcParticle();
-      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
+      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDatabase);
 
       // float xPv = kErrorValue;
       if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
@@ -779,7 +772,7 @@ struct OnTheFlyRichPid {
       }
 
       // get particle to calculate Cherenkov angle and resolution
-      auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (pdgInfo == nullptr) {
         fillDummyValues();
         continue;

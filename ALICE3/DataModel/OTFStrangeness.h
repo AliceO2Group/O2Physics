@@ -314,7 +314,7 @@ DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float);
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);
 DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);
-DECLARE_SOA_COLUMN(MK0, mK0, float);
+DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);
 
 // kinematics
 DECLARE_SOA_COLUMN(Pt, pt, float);
@@ -330,7 +330,7 @@ DECLARE_SOA_TABLE(UpgradeV0s, "AOD", "UPGRADEV0S",
                   otfv0::V0Radius,
                   otfv0::MLambda,
                   otfv0::MAntiLambda,
-                  otfv0::MK0,
+                  otfv0::MK0Short,
                   otfv0::Pt);
 
 using UpgradeV0 = UpgradeV0s::iterator;

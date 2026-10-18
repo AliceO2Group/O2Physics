@@ -18,6 +18,7 @@
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
@@ -121,6 +122,7 @@ struct FemtoPairV0V0 {
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
   pairhistmanager::ConfPairCuts confPairCuts;
+  paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairV0V0Builder<
     v0histmanager::PrefixLambda1,
@@ -177,9 +179,9 @@ struct FemtoPairV0V0 {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoV0V0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -217,9 +219,9 @@ struct FemtoPairV0V0 {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histograms
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
@@ -234,6 +236,7 @@ struct FemtoPairV0V0 {
     std::map<pairhistmanager::PairHist, std::vector<o2::framework::AxisSpec>> pairV0V0HistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecPos = closepairrejection::makeCprHistSpecMap(confCprPos);
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecNeg = closepairrejection::makeCprHistSpecMap(confCprNeg);
+    std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
     if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -246,19 +249,19 @@ struct FemtoPairV0V0 {
       if (processLambdaLambda) {
         lambdaHistSpec1 = v0histmanager::makeV0HistSpecMap(confLambdaBinning1);
         lambdaHistSpec2 = v0histmanager::makeV0HistSpecMap(confLambdaBinning2);
-        pairLambdaLambdaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confLambdaSelection1, confLambdaSelection2, confLambdaCleaner1, confLambdaCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec1, lambdaHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+        pairLambdaLambdaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confLambdaSelection1, confLambdaSelection2, confLambdaCleaner1, confLambdaCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec1, lambdaHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
       }
 
       if (processK0shortK0short) {
         k0shortHistSpec1 = v0histmanager::makeV0HistSpecMap(confK0shortBinning1);
         k0shortHistSpec2 = v0histmanager::makeV0HistSpecMap(confK0shortBinning2);
-        pairK0shortK0shortBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confK0shortSelection1, confK0shortSelection2, confK0shortCleaner1, confK0shortCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec1, k0shortHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+        pairK0shortK0shortBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confK0shortSelection1, confK0shortSelection2, confK0shortCleaner1, confK0shortCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec1, k0shortHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
       }
 
       if (processLambdaK0short) {
         lambdaHistSpec1 = v0histmanager::makeV0HistSpecMap(confLambdaBinning1);
         k0shortHistSpec2 = v0histmanager::makeV0HistSpecMap(confK0shortBinning2);
-        pairLambdaK0shortBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confLambdaSelection1, confK0shortSelection2, confLambdaCleaner1, confK0shortCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec1, k0shortHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+        pairLambdaK0shortBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confLambdaSelection1, confK0shortSelection2, confLambdaCleaner1, confK0shortCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec1, k0shortHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
@@ -271,21 +274,22 @@ struct FemtoPairV0V0 {
       if (processLambdaLambda) {
         lambdaHistSpec1 = v0histmanager::makeV0McHistSpecMap(confLambdaBinning1);
         lambdaHistSpec2 = v0histmanager::makeV0McHistSpecMap(confLambdaBinning2);
-        pairLambdaLambdaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confLambdaSelection1, confLambdaSelection2, confLambdaCleaner1, confLambdaCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec1, lambdaHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+        pairLambdaLambdaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confLambdaSelection1, confLambdaSelection2, confLambdaCleaner1, confLambdaCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec1, lambdaHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
       }
 
       if (processK0shortK0short) {
         k0shortHistSpec1 = v0histmanager::makeV0McHistSpecMap(confK0shortBinning1);
         k0shortHistSpec2 = v0histmanager::makeV0McHistSpecMap(confK0shortBinning2);
-        pairK0shortK0shortBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confK0shortSelection1, confK0shortSelection2, confK0shortCleaner1, confK0shortCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec1, k0shortHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+        pairK0shortK0shortBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confK0shortSelection1, confK0shortSelection2, confK0shortCleaner1, confK0shortCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec1, k0shortHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
       }
 
       if (processLambdaK0short) {
         lambdaHistSpec1 = v0histmanager::makeV0McHistSpecMap(confLambdaBinning1);
         k0shortHistSpec2 = v0histmanager::makeV0McHistSpecMap(confK0shortBinning2);
-        pairLambdaK0shortBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confLambdaSelection1, confK0shortSelection2, confLambdaCleaner1, confK0shortCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec1, k0shortHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+        pairLambdaK0shortBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confLambdaSelection1, confK0shortSelection2, confLambdaCleaner1, confK0shortCleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec1, k0shortHistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
       }
     }
+    hRegistry.print();
   }
 
   void processLambdaLambdaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& lambdas)

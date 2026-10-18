@@ -1323,7 +1323,7 @@ class EventSelectionModule
       float vZ = col.posZ();
 
       // ### in-ROF occupancy
-      std::vector<int> vAssocCollInSameROF = vCollsInSameITSROF[colIndex];
+      const std::vector<int>& vAssocCollInSameROF = vCollsInSameITSROF[colIndex];
       int nITS567tracksForSameRofVetoStrict = 0;    // to veto events with other collisions in the same ITS ROF
       int nCollsInRofWithFT0CAboveVetoStandard = 0; // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
       int nITS567tracksForRofVetoOnCloseVz = 0;     // to veto events with nearby collisions with close vZ
@@ -1341,7 +1341,7 @@ class EventSelectionModule
       vNoCollInSameRofWithCloseVz[colIndex] = (nITS567tracksForRofVetoOnCloseVz == 0);
 
       // ### occupancy in previous ROF
-      std::vector<int> vAssocCollInPrevROF = vCollsInPrevITSROF[colIndex];
+      const std::vector<int>& vAssocCollInPrevROF = vCollsInPrevITSROF[colIndex];
       float totalFT0amplInPrevROF = 0;
       for (uint32_t iCol = 0; iCol < vAssocCollInPrevROF.size(); iCol++) {
         int thisColIndex = vAssocCollInPrevROF[iCol];
@@ -1351,8 +1351,8 @@ class EventSelectionModule
       vNoHighMultCollInPrevRof[colIndex] = (totalFT0amplInPrevROF < evselOpts.confFT0CamplCutVetoOnCollInROF);
 
       // ### occupancy in time windows
-      std::vector<int> vAssocToThisCol = vCollsInTimeWin[colIndex];
-      std::vector<float> vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
+      const std::vector<int>& vAssocToThisCol = vCollsInTimeWin[colIndex];
+      const std::vector<float>& vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
       int nITS567tracksInFullTimeWindow = 0;
       float sumAmpFT0CInFullTimeWindow = 0;
       int nITS567tracksForVetoNarrow = 0;      // to veto events with nearby collisions (narrow range) with per-collision multiplicity above threshold

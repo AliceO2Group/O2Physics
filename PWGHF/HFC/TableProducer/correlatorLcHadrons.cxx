@@ -282,7 +282,7 @@ struct HfCorrelatorLcHadrons {
   ConfigurableAxis binsMassLc{"binsMassLc", {200, 1.98, 2.58}, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
   ConfigurableAxis binsCentFt0m{"binsCentFt0m", {100, 0., 100.}, "Centrality percentile (FT0M)"};
 
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext&)
@@ -362,7 +362,7 @@ struct HfCorrelatorLcHadrons {
     registry.add("hEtaMcGen", "Lc,Hadron particles - MC Gen", {HistType::kTH1D, {axisEta}});
     registry.add("hPhiMcGen", "Lc,Hadron particles - MC Gen", {HistType::kTH1D, {axisPhi}});
     registry.add("hMultFT0AMcGen", "Lc,Hadron multiplicity FT0A - MC Gen", {HistType::kTH1D, {axisMultiplicity}});
-    corrBinning = {{binsZVtx, binsMultiplicity}, true};
+    corrBinning = {{binsZVtx, binsMultiplicity}};
   }
 
   /// Lc-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -696,7 +696,11 @@ struct HfCorrelatorLcHadrons {
         }
         //}
       }
-      float cent = 100.0; // will be updated later
+
+      float cent = 0.;
+      if (useCentrality) {
+        cent = collision.centFT0M();
+      }
 
       // Lc-Hadron correlation dedicated section
       // if the candidate is selected as Lc, search for Hadron ad evaluate correlations
@@ -821,7 +825,7 @@ struct HfCorrelatorLcHadrons {
     int counterLcHadron = 0;
     registry.fill(HIST("hMcEvtCount"), 0);
 
-    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
@@ -908,8 +912,8 @@ struct HfCorrelatorLcHadrons {
           }
         }
 
-        int8_t const chargeLc = pdg->GetParticle(particle.pdgCode())->Charge();         // Retrieve charge
-        int8_t const chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
+        auto const chargeLc = static_cast<int8_t>(pdg->GetParticle(particle.pdgCode())->Charge());         // Retrieve charge
+        auto const chargeAssoc = static_cast<int8_t>(pdg->GetParticle(particleAssoc.pdgCode())->Charge()); // Retrieve charge
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
@@ -1007,7 +1011,7 @@ struct HfCorrelatorLcHadrons {
                               TracksWithMc const& tracks,
                               aod::McParticles const& mcParticles)
   {
-    BinningType const corrBinning{{binsZVtx, binsMultiplicityMc}, true};
+    BinningType const corrBinningMcRec{{binsZVtx, binsMultiplicityMc}};
     for (const auto& candidate : candidates) {
       if (std::abs(HfHelper::yLc(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
         continue;
@@ -1043,11 +1047,11 @@ struct HfCorrelatorLcHadrons {
       }
     }
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithLc, CandidatesLcMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithLc, CandidatesLcMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinningMcRec, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
-      int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
-      int const poolBinLc = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
+      int poolBin = corrBinningMcRec.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
+      int const poolBinLc = corrBinningMcRec.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
       registry.fill(HIST("hMultFT0M"), c1.multFT0M());
       registry.fill(HIST("hZvtx"), c1.posZ());
       registry.fill(HIST("hTracksPoolBin"), poolBin);
@@ -1128,7 +1132,7 @@ struct HfCorrelatorLcHadrons {
   void processMcGenMixedEvent(SelCollisionsWithLcMc const& collisions,
                               CandidatesLcMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}};
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelCollisionsWithLcMc, CandidatesLcMcGen, CandidatesLcMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
@@ -1153,9 +1157,9 @@ struct HfCorrelatorLcHadrons {
         if (pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue; // proton PID
         }
-        int8_t const chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
-        int8_t const chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
-        float cent = 100.0;                                                             // will be updated later
+        auto const chargeLc = static_cast<int8_t>(pdg->GetParticle(candidate.pdgCode())->Charge());        // Retrieve charge
+        auto const chargeAssoc = static_cast<int8_t>(pdg->GetParticle(particleAssoc.pdgCode())->Charge()); // Retrieve charge
+        float cent = 100.0;                                                                                // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         bool isLcPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;

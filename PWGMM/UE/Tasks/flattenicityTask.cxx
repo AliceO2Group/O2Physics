@@ -10,10 +10,12 @@
 // or submit itself to any jurisdiction.
 
 /// \file flattenicityTask.cxx
-/// \brief Flattenicity analysis task for UE studies
+/// \brief Run-1 calibration task for FT0 flattenicity (fine-binned histograms for percentile extraction)
 /// \author Eisha Rani
-/// \since August 2026
+/// \since September 2026
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -22,277 +24,277 @@
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
-
-#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <string>
-#include <vector>
+#include <cstddef>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::constants::physics;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+using FullTracks =
+  soa::Join<aod::Tracks,
+            aod::TracksExtra,
+            aod::TracksDCA,
+            aod::TrackSelection>;
+
+using CollisionsWithSelection =
+  soa::Join<aod::Collisions, aod::EvSels>;
 
 struct FlattenicityTask {
-  // ============================================
-  // FT0 Constants
-  // ============================================
-  static constexpr int NPhiSectors = 8;
-  static constexpr int NEtaA = 12;
-  static constexpr int NEtaC = 14;
-  static constexpr int NchA = 96;
-  static constexpr int NchC = 112;
-  static constexpr int NCell = NchA + NchC; // 208
 
+  // NOLINTNEXTLINE(misc-include-cleaner) - Service<> is provided by Framework/AnalysisTask.h; there is no separate standalone header for it in this O2 version.
+  Service<o2::framework::O2DatabasePDG> pdg{};
+
+  // ========================================================================
+  // FT0 geometry
+  // ========================================================================
+
+  static constexpr int NPhiSectors = 8;
+  static constexpr int NSectorsA = 24;
+  static constexpr int NSectorsC = 28;
+  static constexpr int NSectorsCombined = NSectorsA + NSectorsC; // 52
+  static constexpr int ChannelsPerSector = 4;
+  static constexpr int NchA = NSectorsA * ChannelsPerSector; // 96
+  static constexpr int NchC = NSectorsC * ChannelsPerSector; // 112
+  static constexpr int NCell = NchA + NchC;                  // 208
+  static constexpr int NEtaA = NchA / NPhiSectors;           // 12
+  static constexpr int NEtaC = NchC / NPhiSectors;           // 14
   static constexpr float FT0AEtaMin = 3.5;
   static constexpr float FT0AEtaMax = 4.9;
   static constexpr float FT0CEtaMin = -3.3;
   static constexpr float FT0CEtaMax = -2.1;
-
   static constexpr int NPhysicalPrimaryBit = 0x4;
+  static constexpr float ChargeEpsilon = 1e-6f;
 
-  // ============================================
-  // Multiplicity class boundaries
-  // ============================================
-  static constexpr int NchBound10 = 5;
-  static constexpr int NchBound20 = 8;
-  static constexpr int NchBound30 = 11;
-  static constexpr int NchBound40 = 14;
-  static constexpr int NchBound50 = 17;
-  static constexpr int NchBound60 = 20;
-  static constexpr int NchBound70 = 24;
-  static constexpr int NchBound80 = 28;
-  static constexpr int NchBound90 = 33;
+  // ========================================================================
+  // Run-1 fine binning
+  // ========================================================================
+  static constexpr int NFlatBins = 10000;
 
-  // ============================================
-  // Histogram Definitions
-  // ============================================
+  // ========================================================================
+  // Histograms
+  // ========================================================================
   HistogramRegistry histos{
     "histos",
     {
-      // Event-level
-      {"hEvents", "Event selection;;Counts", {HistType::kTH1F, {{5, 0, 5}}}},
+      {"QA/hEvents", "Event selection;selection;Entries", {HistType::kTH1F, {{5, 0, 5}}}},
+      {"QA/hNchINEL", "INEL>0 multiplicity (|eta|<0.8);N_{ch};Entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
 
-      // dNch/deta
-      {"hNch_INEL", "Nch distribution (INEL>0);N_{ch};Entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
-      {"hNch_FT0", "Nch distribution (INEL>0 & FT0);N_{ch};Entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
+      {"Truth/hFlattenicityTruthAverage_fine", "MC truth flattenicity - average of FT0A-like/FT0C-like grids;1-#rho;Entries", {HistType::kTH1F, {{NFlatBins, 0.0, 1.0}}}},
+      {"Truth/hFlattenicityTruthCombined_fine", "MC truth flattenicity - combined 208-cell grid;1-#rho;Entries", {HistType::kTH1F, {{NFlatBins, 0.0, 1.0}}}},
+      {"Reco/hFlattenicityFT0Average_fine", "FT0 flattenicity - average of FT0A and FT0C;1-#rho;Entries", {HistType::kTH1F, {{NFlatBins, 0.0, 1.0}}}},
+      {"Reco/hFlattenicityFT0Combined_fine", "FT0 flattenicity - combined FT0A+FT0C;1-#rho;Entries", {HistType::kTH1F, {{NFlatBins, 0.0, 1.0}}}},
+      {"Reco/hFT0Mraw_fine", "Raw FT0M amplitude sum;FT0A+FT0C amplitude;Entries", {HistType::kTH1F, {{NFlatBins, 0.0, 20000.0}}}},
 
-      // Flattenicity
-      {"hFlattenicity", "Flattenicity distribution;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_vs_Nch", "Flattenicity vs Nch;N_{ch};1-#rho", {HistType::kTH2F, {{50, -0.5, 99.5}, {50, 0.0, 1.0}}}},
+      {"Truth/hFlattenicityTruthAverage", "MC truth flattenicity - average definition;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"Truth/hFlattenicityTruthCombined", "MC truth flattenicity - combined definition;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"Reco/hFlattenicityFT0Average", "FT0 flattenicity - average definition;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"Reco/hFlattenicityFT0Combined", "FT0 flattenicity - combined definition;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"Reco/hFT0Mraw", "Raw FT0M amplitude sum;FT0A+FT0C amplitude;Entries", {HistType::kTH1F, {{200, 0.0, 20000.0}}}},
 
-      // FT0 cell occupancy
-      {"hCellOccupancy", "FT0 cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NCell, 0, NCell}}}},
-      {"hCellOccupancyFT0A", "FT0-A cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NchA, 0, NchA}}}},
-      {"hCellOccupancyFT0C", "FT0-C cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NchC, 0, NchC}}}},
-
-      // Multiplicity classes
-      {"hFlattenicity_0_10", "Flattenicity 0-10%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_10_20", "Flattenicity 10-20%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_20_30", "Flattenicity 20-30%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_30_40", "Flattenicity 30-40%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_40_50", "Flattenicity 40-50%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_50_60", "Flattenicity 50-60%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_60_70", "Flattenicity 60-70%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_70_80", "Flattenicity 70-80%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_80_90", "Flattenicity 80-90%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_90_100", "Flattenicity 90-100%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"Truth/hCellOccupancy", "Truth FT0 cell occupancy;cell ID;Entries", {HistType::kTH1F, {{NCell, 0, NCell}}}},
+      {"Truth/hCellOccupancyFT0A", "Truth FT0A cell occupancy;cell ID;Entries", {HistType::kTH1F, {{NchA, 0, NchA}}}},
+      {"Truth/hCellOccupancyFT0C", "Truth FT0C cell occupancy;cell ID;Entries", {HistType::kTH1F, {{NchC, 0, NchC}}}},
     }};
 
-  // ============================================
+  // ========================================================================
   // Configurables
-  // ============================================
-  Configurable<float> cfgPtMin{"cfgPtMin", 0.1, "Minimum pT for tracks"};
-  Configurable<float> cfgEtaMax{"cfgEtaMax", 0.8, "Maximum |eta| for tracks"};
-  Configurable<float> cfgVzMax{"cfgVzMax", 10.0, "Maximum |vz| for collisions"};
+  // ========================================================================
+
+  Configurable<float> cfgPtMin{"cfgPtMin", 0.0, "Minimum pT for charged particles/tracks (GeV/c) - Antonio's instruction: require pT > 0, not a physical pT-threshold cut"};
+  Configurable<float> cfgEtaMax{"cfgEtaMax", 0.8, "Maximum |eta| for INEL>0 and track selection"};
+  Configurable<float> cfgVzMax{"cfgVzMax", 10.0, "Maximum absolute collision vertex z (cm)"};
+  Configurable<bool> cfgApplySel8{"cfgApplySel8", true, "Apply sel8 event selection (set to true for all samples)"};
   Configurable<int> cfgNCrossedRowsTPC{"cfgNCrossedRowsTPC", 70, "Minimum TPC crossed rows"};
   Configurable<float> cfgChi2PerClusterTPC{"cfgChi2PerClusterTPC", 4.0, "Maximum TPC chi2 per cluster"};
   Configurable<float> cfgChi2PerClusterITS{"cfgChi2PerClusterITS", 36.0, "Maximum ITS chi2 per cluster"};
-  Configurable<float> cfgDCAZ{"cfgDCAZ", 0.1, "Maximum DCA z"};
-  Configurable<bool> cfgRequireGoldenChi2{"cfgRequireGoldenChi2", true, "Require golden chi2"};
+  Configurable<float> cfgDCAZ{"cfgDCAZ", 0.1, "Maximum absolute DCAz (cm)"};
+  Configurable<bool> cfgRequireGoldenChi2{"cfgRequireGoldenChi2", true, "Require global/golden track selection"};
 
-  // ============================================
-  // Particle charge function
-  // ============================================
-  int getCharge(int pdgCode)
+  // ========================================================================
+  // PDG charge helper
+  // ========================================================================
+  bool isChargedParticle(int pdgCode)
   {
-    switch (std::abs(pdgCode)) {
-      case PDG_t::kPiPlus: // 211
-      case PDG_t::kKPlus:  // 321
-      case PDG_t::kProton: // 2212
-        return 1;
-      case PDG_t::kElectron: // 11
-      case PDG_t::kMuonPlus: // 13
-        return -1;
-      default:
-        return 0;
-    }
-  }
-
-  // ============================================
-  // Flattenicity calculation
-  // ============================================
-  float computeFlattenicity(const std::array<float, NCell>& counts)
-  {
-    float total = 0.0;
-    for (int i = 0; i < NCell; i++) {
-      total += counts[i];
-    }
-
-    if (total <= 0) {
-      return -1.0;
-    }
-
-    float mean = total / NCell;
-    if (mean <= 0) {
-      return -1.0;
-    }
-
-    float sumSq = 0.0;
-    for (int i = 0; i < NCell; i++) {
-      sumSq += (counts[i] - mean) * (counts[i] - mean);
-    }
-
-    float rho = std::sqrt(sumSq) / (NCell * mean);
-    return rho;
-  }
-
-  // ============================================
-  // Assign particle to FT0 cell
-  // ============================================
-  int assignToFT0Cell(float eta, float phi, bool& isFT0A)
-  {
-    // Check if in FT0 acceptance
-    bool inFT0A = (eta > FT0AEtaMin && eta < FT0AEtaMax);
-    bool inFT0C = (eta > FT0CEtaMin && eta < FT0CEtaMax);
-
-    if (!inFT0A && !inFT0C) {
-      return -1;
-    }
-
-    isFT0A = inFT0A;
-
-    // Phi bin
-    int phiBin = static_cast<int>(std::floor(phi / (o2::constants::math::TwoPI / NPhiSectors)));
-    phiBin = std::max(0, std::min(phiBin, NPhiSectors - 1));
-
-    int cellId = -1;
-
-    if (inFT0A) {
-      // FT0-A: cells 0-95
-      float etaWidth = (FT0AEtaMax - FT0AEtaMin) / NEtaA;
-      int etaBin = static_cast<int>(std::floor((eta - FT0AEtaMin) / etaWidth));
-      etaBin = std::max(0, std::min(etaBin, NEtaA - 1));
-      cellId = etaBin * NPhiSectors + phiBin;
-    } else if (inFT0C) {
-      // FT0-C: cells 96-207
-      float etaWidth = (FT0CEtaMax - FT0CEtaMin) / NEtaC;
-      int etaBin = static_cast<int>(std::floor((eta - FT0CEtaMin) / etaWidth));
-      etaBin = std::max(0, std::min(etaBin, NEtaC - 1));
-      cellId = NchA + etaBin * NPhiSectors + phiBin;
-    }
-
-    return cellId;
-  }
-
-  // ============================================
-  // Track selection (Paola/Jesus criteria)
-  // ============================================
-  template <typename T>
-  bool isSelectedTrack(const T& track)
-  {
-    // pT selection
-    if (track.pt() < cfgPtMin) {
+    const auto* pdgParticle = pdg->GetParticle(pdgCode);
+    if (!pdgParticle) {
       return false;
     }
-
-    // Eta selection
-    if (std::abs(track.eta()) > cfgEtaMax) {
+    if (std::abs(pdgParticle->Charge()) < ChargeEpsilon) {
       return false;
     }
-
-    // TPC crossed rows
-    if (track.tpcNClsCrossedRows() < cfgNCrossedRowsTPC) {
-      return false;
-    }
-
-    // TPC chi2 per cluster
-    if (track.tpcChi2NCl() > cfgChi2PerClusterTPC) {
-      return false;
-    }
-
-    // ITS chi2 per cluster
-    if (track.itsChi2NCl() > cfgChi2PerClusterITS) {
-      return false;
-    }
-
-    // DCA z
-    if (std::abs(track.dcaZ()) > cfgDCAZ) {
-      return false;
-    }
-
-    // Golden chi2 (global track)
-    if (cfgRequireGoldenChi2 && !track.isGlobalTrack()) {
-      return false;
-    }
-
     return true;
   }
 
-  // ============================================
-  // Process MC collisions
-  // ============================================
-  void processMC(
-    aod::McCollision const& /* mcCollision */,
-    aod::McParticles const& mcParticles)
+  // ========================================================================
+  // Rho / flattenicity calculation
+  // ========================================================================
+  template <std::size_t N>
+  float computeRho(const std::array<float, N>& counts)
   {
-    // Initialize counters
+    float total = 0.0f;
+    for (std::size_t i = 0; i < N; ++i) {
+      total += counts[i];
+    }
+    if (total <= 0.0f) {
+      return -1.0f;
+    }
+    const float mean = total / static_cast<float>(N);
+    if (mean <= 0.0f) {
+      return -1.0f;
+    }
+    float sumSq = 0.0f;
+    for (std::size_t i = 0; i < N; ++i) {
+      const float diff = counts[i] - mean;
+      sumSq += diff * diff;
+    }
+    return std::sqrt(sumSq) / (static_cast<float>(N) * mean);
+  }
+
+  template <std::size_t N>
+  float computeFlattenicity(const std::array<float, N>& counts)
+  {
+    const float rho = computeRho(counts);
+    if (rho < 0.0f) {
+      return -1.0f;
+    }
+    return 1.0f - rho;
+  }
+
+  // ========================================================================
+  // FT0 channel -> sector
+  // ========================================================================
+  int getFT0ASector(int channel)
+  {
+    if (channel < 0 || channel >= NchA) {
+      return -1;
+    }
+    return channel / ChannelsPerSector;
+  }
+  int getFT0CSector(int channel)
+  {
+    if (channel < 0 || channel >= NchC) {
+      return -1;
+    }
+    return channel / ChannelsPerSector;
+  }
+
+  // ========================================================================
+  // Generator particle -> 208-cell grid
+  // ========================================================================
+  int assignToFT0Cell(float eta, float phi, bool& isFT0A)
+  {
+    const bool inFT0A = (eta > FT0AEtaMin && eta < FT0AEtaMax);
+    const bool inFT0C = (eta > FT0CEtaMin && eta < FT0CEtaMax);
+    if (!inFT0A && !inFT0C) {
+      return -1;
+    }
+    isFT0A = inFT0A;
+
+    // Wrap phi into [0, 2pi) using the O2-standard helper - avoids the
+    // manual +=/-= TwoPI pattern the linter flags (two-pi-add-subtract).
+    const float wrappedPhi = RecoDecay::constrainAngle(phi, 0.0f);
+
+    const float phiWidth = o2::constants::math::TwoPI / static_cast<float>(NPhiSectors);
+    int phiBin = static_cast<int>(std::floor(wrappedPhi / phiWidth));
+    phiBin = std::max(0, std::min(phiBin, NPhiSectors - 1));
+
+    if (inFT0A) {
+      const float etaWidth = (FT0AEtaMax - FT0AEtaMin) / static_cast<float>(NEtaA);
+      int etaBin = static_cast<int>(std::floor((eta - FT0AEtaMin) / etaWidth));
+      etaBin = std::max(0, std::min(etaBin, NEtaA - 1));
+      return etaBin * NPhiSectors + phiBin;
+    }
+    const float etaWidth = (FT0CEtaMax - FT0CEtaMin) / static_cast<float>(NEtaC);
+    int etaBin = static_cast<int>(std::floor((eta - FT0CEtaMin) / etaWidth));
+    etaBin = std::max(0, std::min(etaBin, NEtaC - 1));
+    return NchA + etaBin * NPhiSectors + phiBin;
+  }
+
+  // ========================================================================
+  // Compute both reco definitions
+  // ========================================================================
+  template <typename FT0>
+  bool computeFT0Flattenicities(const FT0& ft0, float& flattenicityAverage, float& flattenicityCombined, float& sumAmplitude)
+  {
+    std::array<float, NSectorsA> countsA{};
+    std::array<float, NSectorsC> countsC{};
+    std::array<float, NSectorsCombined> countsCombined{};
+    sumAmplitude = 0.0f;
+    for (std::size_t i = 0; i < ft0.amplitudeA().size(); ++i) {
+      const int channel = ft0.channelA()[i];
+      const int sector = getFT0ASector(channel);
+      const float amplitude = ft0.amplitudeA()[i];
+      if (sector >= 0 && sector < NSectorsA) {
+        countsA[sector] += amplitude;
+        countsCombined[sector] += amplitude;
+      }
+      sumAmplitude += amplitude;
+    }
+    for (std::size_t i = 0; i < ft0.amplitudeC().size(); ++i) {
+      const int channel = ft0.channelC()[i];
+      const int sector = getFT0CSector(channel);
+      const float amplitude = ft0.amplitudeC()[i];
+      if (sector >= 0 && sector < NSectorsC) {
+        countsC[sector] += amplitude;
+        countsCombined[NSectorsA + sector] += amplitude;
+      }
+      sumAmplitude += amplitude;
+    }
+    const float rhoA = computeRho(countsA);
+    const float rhoC = computeRho(countsC);
+    if (rhoA < 0.0f || rhoC < 0.0f) {
+      return false;
+    }
+    flattenicityAverage = 1.0f - 0.5f * (rhoA + rhoC);
+    const float rhoCombined = computeRho(countsCombined);
+    if (rhoCombined < 0.0f) {
+      return false;
+    }
+    flattenicityCombined = 1.0f - rhoCombined;
+    return true;
+  }
+
+  // ========================================================================
+  // processMC
+  // ========================================================================
+  void processMC(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    if (std::abs(mcCollision.posZ()) > cfgVzMax) {
+      return;
+    }
+    // Combined 208-cell truth grid (cells 0..NchA-1 = FT0A-like, NchA..NCell-1
+    // = FT0C-like) AND the two separate sub-arrays, filled in parallel, so we
+    // can compute BOTH truth definitions - average and combined - the same
+    // way the reco side already does for the real FT0-A/FT0-C sectors.
     std::array<float, NCell> truthCounts{};
+    std::array<float, NchA> truthCountsA{};
+    std::array<float, NchC> truthCountsC{};
+    int nChINEL = 0;
+    bool hasFT0A = false, hasFT0C = false;
 
-    int nchINEL = 0;
-    int nchFT0 = 0;
-    bool hasFT0A = false;
-    bool hasFT0C = false;
-
-    // Loop over MC particles
     for (const auto& particle : mcParticles) {
-      // Check if primary
       if ((particle.flags() & NPhysicalPrimaryBit) == 0) {
         continue;
       }
-
-      // Check if charged
-      int charge = getCharge(particle.pdgCode());
-      if (charge == 0) {
+      if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
-
-      // pT > 0.1
-      if (particle.pt() < cfgPtMin) {
-        continue;
+      if (particle.pt() <= cfgPtMin) {
+        continue; // Antonio: require pT > 0
       }
-
-      // INEL>0: |eta| < 1
-      if (std::abs(particle.eta()) < 1.0) {
-        nchINEL++;
-      }
-
-      // dNch/deta: |eta| < 0.8
       if (std::abs(particle.eta()) < cfgEtaMax) {
-        nchFT0++;
+        ++nChINEL;
       }
 
-      // FT0 acceptance
-      bool inFT0A = (particle.eta() > FT0AEtaMin && particle.eta() < FT0AEtaMax);
-      bool inFT0C = (particle.eta() > FT0CEtaMin && particle.eta() < FT0CEtaMax);
-
+      const bool inFT0A = (particle.eta() > FT0AEtaMin && particle.eta() < FT0AEtaMax);
+      const bool inFT0C = (particle.eta() > FT0CEtaMin && particle.eta() < FT0CEtaMax);
       if (inFT0A) {
         hasFT0A = true;
       }
@@ -300,87 +302,96 @@ struct FlattenicityTask {
         hasFT0C = true;
       }
 
-      // Assign to FT0 cell
       bool isFT0A = false;
-      int cellId = assignToFT0Cell(particle.eta(), particle.phi(), isFT0A);
+      const int cellId = assignToFT0Cell(particle.eta(), particle.phi(), isFT0A);
+      if (cellId < 0 || cellId >= NCell) {
+        continue;
+      }
+      truthCounts[cellId] += 1.0f;
+      if (isFT0A) {
+        truthCountsA[cellId] += 1.0f;
+      } else {
+        truthCountsC[cellId - NchA] += 1.0f;
+      }
 
-      if (cellId >= 0 && cellId < NCell) {
-        truthCounts[cellId] += 1.0;
-        histos.fill(HIST("hCellOccupancy"), cellId);
-        if (isFT0A) {
-          histos.fill(HIST("hCellOccupancyFT0A"), cellId);
-        } else {
-          histos.fill(HIST("hCellOccupancyFT0C"), cellId - NchA);
-        }
+      histos.fill(HIST("Truth/hCellOccupancy"), cellId);
+      if (isFT0A) {
+        histos.fill(HIST("Truth/hCellOccupancyFT0A"), cellId);
+      } else {
+        histos.fill(HIST("Truth/hCellOccupancyFT0C"), cellId - NchA);
       }
     }
 
-    // Event selection
-    bool isINEL = (nchINEL > 0);
-    bool isFT0 = (hasFT0A && hasFT0C);
+    if (nChINEL == 0) {
+      return;
+    }
+    histos.fill(HIST("QA/hEvents"), 1);
+    histos.fill(HIST("QA/hNchINEL"), nChINEL);
 
-    histos.fill(HIST("hEvents"), 0); // All events
+    // Require activity on BOTH sides of the detector (Antonio's instruction),
+    // for MC truth exactly as already required on the reco side.
+    if (!hasFT0A || !hasFT0C) {
+      return;
+    }
+    histos.fill(HIST("QA/hEvents"), 2);
 
-    if (isINEL) {
-      histos.fill(HIST("hEvents"), 1); // INEL>0
-      histos.fill(HIST("hNch_INEL"), nchFT0);
+    // Definition 1: average of two separately-normalized rho's (mirrors the
+    // reco "average" definition, using the truth-grid A/C sub-arrays).
+    const float rhoATruth = computeRho(truthCountsA);
+    const float rhoCTruth = computeRho(truthCountsC);
+    if (rhoATruth >= 0.0f && rhoCTruth >= 0.0f) {
+      const float flattenicityTruthAverage = 1.0f - 0.5f * (rhoATruth + rhoCTruth);
+      if (flattenicityTruthAverage >= 0.0f && flattenicityTruthAverage <= 1.0f) {
+        histos.fill(HIST("Truth/hFlattenicityTruthAverage_fine"), flattenicityTruthAverage);
+        histos.fill(HIST("Truth/hFlattenicityTruthAverage"), flattenicityTruthAverage);
+      }
     }
 
-    if (isINEL && isFT0) {
-      histos.fill(HIST("hEvents"), 2); // INEL>0 & FT0
-      histos.fill(HIST("hNch_FT0"), nchFT0);
-
-      // Compute flattenicity
-      float rho = computeFlattenicity(truthCounts);
-      if (rho > 0) {
-        float flattenicity = 1.0 - rho;
-        histos.fill(HIST("hFlattenicity"), flattenicity);
-        histos.fill(HIST("hFlattenicity_vs_Nch"), nchFT0, flattenicity);
-
-        // Multiplicity classes (based on Nch)
-        if (nchFT0 < NchBound10) {
-          histos.fill(HIST("hFlattenicity_0_10"), flattenicity);
-        } else if (nchFT0 < NchBound20) {
-          histos.fill(HIST("hFlattenicity_10_20"), flattenicity);
-        } else if (nchFT0 < NchBound30) {
-          histos.fill(HIST("hFlattenicity_20_30"), flattenicity);
-        } else if (nchFT0 < NchBound40) {
-          histos.fill(HIST("hFlattenicity_30_40"), flattenicity);
-        } else if (nchFT0 < NchBound50) {
-          histos.fill(HIST("hFlattenicity_40_50"), flattenicity);
-        } else if (nchFT0 < NchBound60) {
-          histos.fill(HIST("hFlattenicity_50_60"), flattenicity);
-        } else if (nchFT0 < NchBound70) {
-          histos.fill(HIST("hFlattenicity_60_70"), flattenicity);
-        } else if (nchFT0 < NchBound80) {
-          histos.fill(HIST("hFlattenicity_70_80"), flattenicity);
-        } else if (nchFT0 < NchBound90) {
-          histos.fill(HIST("hFlattenicity_80_90"), flattenicity);
-        } else {
-          histos.fill(HIST("hFlattenicity_90_100"), flattenicity);
-        }
-      }
+    // Definition 2: one combined rho over the full 208-cell truth grid.
+    const float flattenicityTruthCombined = computeFlattenicity(truthCounts);
+    if (flattenicityTruthCombined >= 0.0f) {
+      histos.fill(HIST("Truth/hFlattenicityTruthCombined_fine"), flattenicityTruthCombined);
+      histos.fill(HIST("Truth/hFlattenicityTruthCombined"), flattenicityTruthCombined);
     }
   }
 
-  PROCESS_SWITCH(FlattenicityTask, processMC, "Process MC events", true);
+  PROCESS_SWITCH(FlattenicityTask, processMC, "Process MC truth for Run-1 calibration", true);
 
-  // ============================================
-  // Process data collisions
-  // ============================================
-  void processData(
-    aod::Collision const& collision,
-    aod::FT0s const& ft0s,
-    FullTracks const& tracks)
+  // ========================================================================
+  // processData
+  // ========================================================================
+  void processData(CollisionsWithSelection::iterator const& collision,
+                   aod::FT0s const& ft0s,
+                   FullTracks const& tracks)
   {
-    // Event selection: |vz| < 10 cm
+    if (cfgApplySel8 && !collision.sel8()) {
+      return;
+    }
     if (std::abs(collision.posZ()) > cfgVzMax) {
       return;
     }
 
-    // Find FT0 matching this collision's BC
-    auto ft0 = ft0s.begin();
+    int nChINEL = 0;
+    for (const auto& track : tracks) {
+      if (track.collisionId() != collision.globalIndex()) {
+        continue;
+      }
+      if (track.pt() <= cfgPtMin) {
+        continue;
+      }
+      if (std::abs(track.eta()) < cfgEtaMax) {
+        ++nChINEL;
+      }
+    }
+    if (nChINEL == 0) {
+      return;
+    }
+
+    histos.fill(HIST("QA/hEvents"), 3);
+    histos.fill(HIST("QA/hNchINEL"), nChINEL);
+
     bool foundFT0 = false;
+    aod::FT0s::iterator ft0;
     for (const auto& f : ft0s) {
       if (f.bcId() == collision.bcId()) {
         ft0 = f;
@@ -392,49 +403,31 @@ struct FlattenicityTask {
       return;
     }
 
-    // Track selection and counting
-    std::array<float, NCell> recoCounts{};
-
-    for (const auto& track : tracks) {
-      if (!isSelectedTrack(track)) {
-        continue;
-      }
-
-      // Assign to FT0 cell using track extrapolation
-      bool isFT0A = false;
-      int cellId = assignToFT0Cell(track.eta(), track.phi(), isFT0A);
-      if (cellId >= 0 && cellId < NCell) {
-        recoCounts[cellId] += 1.0;
-      }
+    float flattenicityAverage = -1.0f, flattenicityCombined = -1.0f, sumFT0M = 0.0f;
+    if (!computeFT0Flattenicities(ft0, flattenicityAverage, flattenicityCombined, sumFT0M)) {
+      return;
     }
 
-    histos.fill(HIST("hEvents"), 3); // Data events
+    histos.fill(HIST("Reco/hFT0Mraw"), sumFT0M);
+    histos.fill(HIST("Reco/hFT0Mraw_fine"), sumFT0M);
 
-    // Compute flattenicity from FT0 amplitudes
-    std::array<float, NCell> ft0Counts{};
-
-    // FT0-A channels (0-95)
-    for (int i = 0; i < NchA; i++) {
-      ft0Counts[i] = ft0.channelA()[i];
+    if (flattenicityAverage >= 0.0f && flattenicityAverage <= 1.0f) {
+      histos.fill(HIST("Reco/hFlattenicityFT0Average_fine"), flattenicityAverage);
+      histos.fill(HIST("Reco/hFlattenicityFT0Average"), flattenicityAverage);
     }
-
-    // FT0-C channels (96-207)
-    for (int i = 0; i < NchC; i++) {
-      ft0Counts[NchA + i] = ft0.channelC()[i];
-    }
-
-    float rho = computeFlattenicity(ft0Counts);
-    if (rho > 0) {
-      histos.fill(HIST("hFlattenicity"), 1.0 - rho);
+    if (flattenicityCombined >= 0.0f && flattenicityCombined <= 1.0f) {
+      histos.fill(HIST("Reco/hFlattenicityFT0Combined_fine"), flattenicityCombined);
+      histos.fill(HIST("Reco/hFlattenicityFT0Combined"), flattenicityCombined);
     }
   }
 
-  PROCESS_SWITCH(FlattenicityTask, processData, "Process data events", false);
+  PROCESS_SWITCH(FlattenicityTask, processData, "Process data / MC-reco for Run-1 calibration", true);
 };
 
+// ============================================================================
+// Workflow
+// ============================================================================
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<FlattenicityTask>(cfgc));
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<FlattenicityTask>(cfgc)};
 }

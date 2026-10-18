@@ -414,25 +414,33 @@ DECLARE_SOA_COLUMN(TOFNSigmaOmLaPr, tofNSigmaOmLaPr, float); //! baryon track NS
 DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track NSigma from kaon <- om expectation
 
 // for wrong hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaElFromLambdaFromXi, tofNSigmaElFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under electron hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaElFromXi, tofNSigmaElFromXi, float);                           //! nigma of bachelor track from Xi under electron hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaElFromLambdaFromOmega, tofNSigmaElFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under electron hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaElFromOmega, tofNSigmaElFromOmega, float);                     //! nigma of bachelor track from Omega under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElPosFromLambdaFromXi, tofNSigmaElPosFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElNegFromLambdaFromXi, tofNSigmaElNegFromLambdaFromXi, float);       //! nigma of negative track from Lambda from Xi under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElFromXi, tofNSigmaElFromXi, float);                                 //! nigma of bachelor track from Xi under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElPosFromLambdaFromOmega, tofNSigmaElPosFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElNegFromLambdaFromOmega, tofNSigmaElNegFromLambdaFromOmega, float); //! nigma of negative track from Lambda from Omega under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElFromOmega, tofNSigmaElFromOmega, float);                           //! nigma of bachelor track from Omega under electron hypothesis
 
-DECLARE_SOA_COLUMN(TOFNSigmaPiFromLambdaFromXi, tofNSigmaPiFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under pion hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaPiFromXi, tofNSigmaPiFromXi, float);                           //! nigma of bachelor track from Xi under pion hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaPiFromLambdaFromOmega, tofNSigmaPiFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under pion hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);                     //! nigma of bachelor track from Omega under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiPosFromLambdaFromXi, tofNSigmaPiPosFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiNegFromLambdaFromXi, tofNSigmaPiNegFromLambdaFromXi, float);       //! nigma of negative track from Lambda from Xi under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiFromXi, tofNSigmaPiFromXi, float);                                 //! nigma of bachelor track from Xi under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiPosFromLambdaFromOmega, tofNSigmaPiPosFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiNegFromLambdaFromOmega, tofNSigmaPiNegFromLambdaFromOmega, float); //! nigma of negative track from Lambda from Omega under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);                           //! nigma of bachelor track from Omega under pion hypothesis
 
-DECLARE_SOA_COLUMN(TOFNSigmaKaFromLambdaFromXi, tofNSigmaKaFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under kaon hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaKaFromXi, tofNSigmaKaFromXi, float);                           //! nigma of bachelor track from Xi under kaon hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaKaFromLambdaFromOmega, tofNSigmaKaFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under kaon hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaKaFromOmega, tofNSigmaKaFromOmega, float);                     //! nigma of bachelor track from Omega under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaPosFromLambdaFromXi, tofNSigmaKaPosFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaNegFromLambdaFromXi, tofNSigmaKaNegFromLambdaFromXi, float);       //! nigma of negative track from Lambda from Xi under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaFromXi, tofNSigmaKaFromXi, float);                                 //! nigma of bachelor track from Xi under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaPosFromLambdaFromOmega, tofNSigmaKaPosFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaNegFromLambdaFromOmega, tofNSigmaKaNegFromLambdaFromOmega, float); //! nigma of negative track from Lambda from Omega under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaFromOmega, tofNSigmaKaFromOmega, float);                           //! nigma of bachelor track from Omega under kaon hypothesis
 
-DECLARE_SOA_COLUMN(TOFNSigmaPrFromLambdaFromXi, tofNSigmaPrFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under proton hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaPrFromXi, tofNSigmaPrFromXi, float);                           //! nigma of bachelor track from Xi under proton hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaPrFromLambdaFromOmega, tofNSigmaPrFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under proton hypothesis
-DECLARE_SOA_COLUMN(TOFNSigmaPrFromOmega, tofNSigmaPrFromOmega, float);                     //! nigma of bachelor track from Omega under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrPosFromLambdaFromXi, tofNSigmaPrPosFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrNegFromLambdaFromXi, tofNSigmaPrNegFromLambdaFromXi, float);       //! nigma of negative track from Lambda from Xi under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrFromXi, tofNSigmaPrFromXi, float);                                 //! nigma of bachelor track from Xi under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrPosFromLambdaFromOmega, tofNSigmaPrPosFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrNegFromLambdaFromOmega, tofNSigmaPrNegFromLambdaFromOmega, float); //! nigma of negative track from Lambda from Omega under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrFromOmega, tofNSigmaPrFromOmega, float);                           //! nigma of bachelor track from Omega under proton hypothesis
 
 // dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
 // note: only single hypothesis check necessary; other hypotheses will always be valid
@@ -518,10 +526,14 @@ DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascad
                   cascdata::TofXiCompatibility<cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiPi>,
                   cascdata::TofOmegaCompatibility<cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmKa>);
 DECLARE_SOA_TABLE(CascTOFNSigmasAll, "AOD", "CascTOFNSigmasAll", // Nsigmas for cascades including wrong hypothesis
-                  cascdata::TOFNSigmaElFromLambdaFromXi, cascdata::TOFNSigmaElFromXi, cascdata::TOFNSigmaElFromLambdaFromOmega, cascdata::TOFNSigmaElFromOmega,
-                  cascdata::TOFNSigmaPiFromLambdaFromXi, cascdata::TOFNSigmaPiFromXi, cascdata::TOFNSigmaPiFromLambdaFromOmega, cascdata::TOFNSigmaPiFromOmega,
-                  cascdata::TOFNSigmaKaFromLambdaFromXi, cascdata::TOFNSigmaKaFromXi, cascdata::TOFNSigmaKaFromLambdaFromOmega, cascdata::TOFNSigmaKaFromOmega,
-                  cascdata::TOFNSigmaPrFromLambdaFromXi, cascdata::TOFNSigmaPrFromXi, cascdata::TOFNSigmaPrFromLambdaFromOmega, cascdata::TOFNSigmaPrFromOmega);
+                  cascdata::TOFNSigmaElPosFromLambdaFromXi, cascdata::TOFNSigmaElNegFromLambdaFromXi, cascdata::TOFNSigmaElFromXi,
+                  cascdata::TOFNSigmaElPosFromLambdaFromOmega, cascdata::TOFNSigmaElNegFromLambdaFromOmega, cascdata::TOFNSigmaElFromOmega,
+                  cascdata::TOFNSigmaPiPosFromLambdaFromXi, cascdata::TOFNSigmaPiNegFromLambdaFromXi, cascdata::TOFNSigmaPiFromXi,
+                  cascdata::TOFNSigmaPiPosFromLambdaFromOmega, cascdata::TOFNSigmaPiNegFromLambdaFromOmega, cascdata::TOFNSigmaPiFromOmega,
+                  cascdata::TOFNSigmaKaPosFromLambdaFromXi, cascdata::TOFNSigmaKaNegFromLambdaFromXi, cascdata::TOFNSigmaKaFromXi,
+                  cascdata::TOFNSigmaKaPosFromLambdaFromOmega, cascdata::TOFNSigmaKaNegFromLambdaFromOmega, cascdata::TOFNSigmaKaFromOmega,
+                  cascdata::TOFNSigmaPrPosFromLambdaFromXi, cascdata::TOFNSigmaPrNegFromLambdaFromXi, cascdata::TOFNSigmaPrFromXi,
+                  cascdata::TOFNSigmaPrPosFromLambdaFromOmega, cascdata::TOFNSigmaPrNegFromLambdaFromOmega, cascdata::TOFNSigmaPrFromOmega);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_

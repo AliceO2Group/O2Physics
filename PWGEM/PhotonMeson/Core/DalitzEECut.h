@@ -20,7 +20,6 @@
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)

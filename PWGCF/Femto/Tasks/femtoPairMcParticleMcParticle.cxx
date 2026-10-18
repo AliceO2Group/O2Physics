@@ -19,6 +19,7 @@
 #include "PWGCF/Femto/Core/mcParticleHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
@@ -73,13 +74,14 @@ struct FemtoPairMcParticleMcParticle {
   particlecleaner::ConfMcParticleCleaner2 confMcParticleCleaner2;
   particlecleaner::ParticleCleaner mcParticleCleaner2;
 
-  o2::framework::Partition<FemtoMcParticles> mcParticlesPartition2 = MAKE_MC_PARTICLE_PARTITION(confMcParticleSelection1);
+  o2::framework::Partition<FemtoMcParticles> mcParticlesPartition2 = MAKE_MC_PARTICLE_PARTITION(confMcParticleSelection2);
 
-  o2::framework::Preslice<FemtoMcParticles> perColParticles = o2::aod::femtomcparticle::fMcColId;
+  o2::framework::PresliceUnsorted<FemtoMcParticles> perColParticles = o2::aod::femtomcparticle::fMcColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
   pairhistmanager::ConfPairCuts confPairCuts;
+  paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   closepairrejection::ConfCprTrackTrack confCpr;
 
@@ -96,9 +98,9 @@ struct FemtoPairMcParticleMcParticle {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoMcParticleMcParticle", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -107,9 +109,9 @@ struct FemtoPairMcParticleMcParticle {
   {
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histogram specs
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
@@ -117,12 +119,13 @@ struct FemtoPairMcParticleMcParticle {
     std::map<mcparticlehistmanager::McParticleHist, std::vector<o2::framework::AxisSpec>> mcParticleHistSpec2;
     std::map<pairhistmanager::PairHist, std::vector<o2::framework::AxisSpec>> pairHistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
+    std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
     colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
     mcParticleHistSpec1 = mcparticlehistmanager::makeMcParticleHistSpecMap(confMcParticleBinning1);
     mcParticleHistSpec2 = mcparticlehistmanager::makeMcParticleHistSpecMap(confMcParticleBinning2);
     pairHistSpec = pairhistmanager::makePairMcTruthHistSpecMap(confPairBinning, confMixing);
-    pairMcParticleMcParticleBuilder.init<modes::Mode::kSe_Mc, modes::Mode::kMe_Mc>(&hRegistry, confCollisionBinning, confMcParticleSelection1, confMcParticleSelection2, confMcParticleBinning1, confMcParticleBinning2, confMcParticleCleaner1, confMcParticleCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, mcParticleHistSpec1, mcParticleHistSpec2, pairHistSpec, cprHistSpec);
+    pairMcParticleMcParticleBuilder.init<modes::Mode::kSe_Mc, modes::Mode::kMe_Mc>(&hRegistry, confCollisionBinning, confMcParticleSelection1, confMcParticleSelection2, confMcParticleBinning1, confMcParticleBinning2, confMcParticleCleaner1, confMcParticleCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, mcParticleHistSpec1, mcParticleHistSpec2, pairHistSpec, cprHistSpec, pairCleanerHistSpec);
 
     hRegistry.print();
   };

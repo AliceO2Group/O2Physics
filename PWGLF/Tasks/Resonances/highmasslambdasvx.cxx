@@ -573,7 +573,7 @@ struct highmasslambdasvx {
     histos.fill(HIST("hVtxZ"), collision.posZ());
     histos.fill(HIST("hOccupancy"), occupancy);
     auto firstprimarytrack = 0;
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -611,7 +611,7 @@ struct highmasslambdasvx {
       histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr(), track1.pt());
       auto track1ID = track1.globalIndex();
       auto trackParCovBach = getTrackParCov(track1);
-      for (auto v0 : V0s) {
+      for (const auto& v0 : V0s) {
         if (!SelectionV0(collision, v0)) {
           continue;
         }
@@ -808,7 +808,7 @@ struct highmasslambdasvx {
   /* void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks, AllTrackCandidates const&, ResoV0s const& V0s)
   {
     auto tracksV0sTuple = std::make_tuple(tracks, V0s);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}};
     Pair<EventCandidates, TrackCandidates, ResoV0s, BinningTypeVertexContributor> pairs{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (!collision1.sel8() || !collision2.sel8()) {

@@ -17,11 +17,11 @@
 
 #include <Framework/Logger.h>
 
-#include <Rtypes.h>
+#include <array>
+#include <cstddef>
+#include <string>
 
-ClassImp(PairCut);
-
-const char* PairCut::mCutNames[static_cast<int>(PairCut::PairCuts::kNCuts)] = {"Asym"};
+const std::array<std::string, static_cast<std::size_t>(PairCut::PairCuts::kNCuts)> PairCut::mCutNames = {"Asym"};
 
 void PairCut::SetAsymRange(float min, float max)
 {

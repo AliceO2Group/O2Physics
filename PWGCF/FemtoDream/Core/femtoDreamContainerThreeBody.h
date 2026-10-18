@@ -68,7 +68,7 @@ class FemtoDreamContainerThreeBody
   /// \param femtoObsAxis axis object for the femto observable axis
   /// \param multAxis axis object for the multiplicity axis
   template <typename T>
-  void init_base(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis)
+  void init_base(const std::string& folderName, const std::string& femtoObs, T femtoObsAxis, T multAxis)
   {
 
     mHistogramRegistry->add((folderName + "/relTripletDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxis});
@@ -85,7 +85,7 @@ class FemtoDreamContainerThreeBody
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
-  void init_MC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis)
+  void init_MC(const std::string& folderName, const std::string& femtoObs, T femtoObsAxis, T multAxis)
   {
     mHistogramRegistry->add((folderName + "/relTripletDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxis});
     mHistogramRegistry->add((folderName + "/relTripletQ3Mult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, multAxis});

@@ -41,9 +41,10 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -82,9 +83,6 @@ enum AlphaMesonCutOption {
 template <o2::aod::pwgem::photonmeson::photonpair::PairType pairtype, o2::soa::is_table... Types>
 struct Pi0EtaToGammaGamma {
   o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   o2::framework::Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   o2::framework::Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
 
@@ -100,6 +98,7 @@ struct Pi0EtaToGammaGamma {
   o2::framework::ConfigurableAxis ConfCentBins{"ConfCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   o2::framework::ConfigurableAxis ConfEPBins{"ConfEPBins", {o2::framework::VARIABLE_WIDTH, -o2::constants::math::PIHalf, -o2::constants::math::PIQuarter, 0.0f, +o2::constants::math::PIQuarter, +o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
   o2::framework::ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {o2::framework::VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
+  o2::framework::Configurable<bool> cfgSparseFullAxes{"cfgSparseFullAxes", false, "add event plane, occupancy and z-vertex axes to Pair/same/hs and Pair/mix/hs"};
 
   o2::framework::Configurable<int> cfgAlphaMesonCut{"cfgAlphaMesonCut", 0, "flag for photon energy asymmetry distribution cut: 0: no cut, 1: cut specific value, 2: cut depending on pT"};
   o2::framework::Configurable<float> cfgAlphaMeson{"cfgAlphaMeson", 0.65, "photon energy asymmetry distribution parameter for specific value cut"};
@@ -273,10 +272,10 @@ struct Pi0EtaToGammaGamma {
   //---------------------------------------------------------------------------
   // Preslices and partitions
   o2::framework::SliceCache cache;
-  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived, o2::aod::V0PhotonOmegaMBWeights>>> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
-  o2::framework::PresliceOptional<o2::soa::Join<o2::aod::EmEmcClusters, o2::aod::EMCEMEventIds>> perCollision_emc = o2::aod::emccluster::pmeventId;
-  o2::framework::PresliceOptional<o2::soa::Join<o2::aod::PHOSClusters, o2::aod::PHOSEMEventIds>> perCollision_phos = o2::aod::phoscluster::pmeventId;
-  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>> perCollision_electron = o2::aod::emprimaryelectronda::pmeventId;
+  o2::framework::PresliceOptional<o2::aod::V0KFEMEventIds> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
+  o2::framework::PresliceOptional<o2::aod::EMCEMEventIds> perCollision_emc = o2::aod::emccluster::pmeventId;
+  o2::framework::PresliceOptional<o2::aod::PHOSEMEventIds> perCollision_phos = o2::aod::phoscluster::pmeventId;
+  o2::framework::PresliceOptional<o2::aod::EMPrimaryElectronDaEMEventIds> perCollision_electron = o2::aod::emprimaryelectronda::pmeventId;
 
   o2::framework::PresliceOptional<o2::aod::MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   o2::framework::PresliceOptional<o2::aod::MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
@@ -425,10 +424,13 @@ struct Pi0EtaToGammaGamma {
     emh2 = new o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::photonmeson::utils::EMPhoton>(ndepth);
 
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    std::vector<double> occBinsForHs(occ_bin_edges.begin(), occ_bin_edges.end());
+    std::vector<double> epBinsForHs(ep_bin_edges.begin(), ep_bin_edges.end());
+    std::vector<double> vtxBinsForHs(zvtx_bin_edges.begin(), zvtx_bin_edges.end());
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMDalitzEE) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "ee#gamma");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "ee#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs);
     } else {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "#gamma#gamma");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "#gamma#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs);
     }
     DefineEMEventCut();
     DefinePCMCut();
@@ -454,45 +456,37 @@ struct Pi0EtaToGammaGamma {
     ccdb->setFatalWhenNull(false);
   }
 
-  template <typename TCollision>
+  template <o2::soa::is_iterator TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
       return;
     }
+    mRunNumber = collision.runNumber();
 
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(d_bz) > 1e-5) {                   // o2-linter: disable=magic-number (override value)
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
-      mRunNumber = collision.runNumber();
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
       return;
     }
 
-    auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = nullptr;
-    o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    // o2::base::Propagator::initFieldFromGRP(&collision.grpMagField());
+    // Fetch magnetic field from ccdb for current collision
+    // d_bz = collision.grpMagField().getNominalL3Field();
+
+    auto* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.runNumber());
+    if (grpmag == nullptr) {
+      LOGF(fatal, "Could not retrieve GRPMagField for run %d", collision.runNumber());
     }
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
+    d_bz = grpmag->getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << collision.timestamp() << " with magnetic field of " << d_bz << " kZG";
+
     fV0PhotonCut.SetD_Bz(d_bz);
-    mRunNumber = collision.runNumber();
   }
 
   ~Pi0EtaToGammaGamma()
@@ -670,7 +664,7 @@ struct Pi0EtaToGammaGamma {
   }
 
   /// \brief Calculate background (using rotation background method only for EMCal!)
-  template <typename TPhotons>
+  template <o2::soa::is_table TPhotons>
   void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, float eventWeight)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
@@ -817,6 +811,8 @@ struct Pi0EtaToGammaGamma {
         occbin = static_cast<int>(occ_bin_edges.size()) - 2;
       }
 
+      float occupancy = (cfgOccupancyEstimator == 1) ? static_cast<float>(collision.trackOccupancyInTimeRange()) : collision.ft0cOccupancyInTimeRange();
+
       // LOGF(info, "collision.globalIndex() = %d, collision.posZ() = %f, centrality = %f, ep2 = %f, collision.trackOccupancyInTimeRange() = %d, zbin = %d, centbin = %d, epbin = %d, occbin = %d", collision.globalIndex(), collision.posZ(), centrality, ep2, collision.trackOccupancyInTimeRange(), zbin, centbin, epbin, occbin);
 
       std::tuple<int, int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin, occbin);
@@ -876,7 +872,11 @@ struct Pi0EtaToGammaGamma {
               continue;
             }
 
-            fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt(), weight);
+            if (cfgSparseFullAxes.value) {
+              fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt(), ep2, occupancy, collision.posZ(), weight);
+            } else {
+              fRegistry.fill(HIST("Pair/same/hs"), veeg.M(), veeg.Pt(), weight);
+            }
 
             std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.trackId(), ele2.trackId());
             if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
@@ -970,7 +970,11 @@ struct Pi0EtaToGammaGamma {
             wpair *= g2.omegaMBWeight();
           }
 
-          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), wpair);
+          if (cfgSparseFullAxes.value) {
+            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), ep2, occupancy, collision.posZ(), wpair);
+          } else {
+            fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), wpair);
+          }
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
             auto emphoton1 = o2::aod::pwgem::photonmeson::utils::EMPhoton(g1.pt(), g1.eta(), g1.phi(), 0);
@@ -1003,11 +1007,11 @@ struct Pi0EtaToGammaGamma {
       }
 
       // make a vector of selected photons in this collision.
-      auto selected_photons1_in_this_event = emh1->GetTracksPerCollision(key_df_collision);
-      auto selected_photons2_in_this_event = emh2->GetTracksPerCollision(key_df_collision);
+      const auto& selected_photons1_in_this_event = emh1->GetTracksPerCollision(key_df_collision);
+      const auto& selected_photons2_in_this_event = emh2->GetTracksPerCollision(key_df_collision);
 
-      auto collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
-      auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
+      const auto& collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
+      const auto& collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
       if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPHOSPHOS || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kEMCEMC) { // same kinds pairing
         for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
@@ -1025,7 +1029,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
+          const auto& photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
           for (const auto& g1 : selected_photons1_in_this_event) {
@@ -1064,7 +1068,11 @@ struct Pi0EtaToGammaGamma {
                 continue;
               }
 
-              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), weight);
+              if (cfgSparseFullAxes.value) {
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), ep2, occupancy, collision.posZ(), weight);
+              } else {
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), weight);
+              }
             }
           }
         } // end of loop over mixed event pool
@@ -1085,7 +1093,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
+          const auto& photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
 
           for (const auto& g1 : selected_photons1_in_this_event) {
@@ -1099,7 +1107,11 @@ struct Pi0EtaToGammaGamma {
               if (std::fabs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), weight);
+              if (cfgSparseFullAxes.value) {
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), ep2, occupancy, collision.posZ(), weight);
+              } else {
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), weight);
+              }
             }
           }
         } // end of loop over mixed event pool
@@ -1118,7 +1130,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
+          const auto& photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), nll = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons2_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
           for (const auto& g1 : selected_photons2_in_this_event) {
@@ -1132,7 +1144,11 @@ struct Pi0EtaToGammaGamma {
               if (std::fabs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), weight);
+              if (cfgSparseFullAxes.value) {
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), ep2, occupancy, collision.posZ(), weight);
+              } else {
+                fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), weight);
+              }
             }
           }
         } // end of loop over mixed event pool
@@ -1193,7 +1209,7 @@ struct Pi0EtaToGammaGamma {
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processAnalysis, "process pair analysis", true);
 
   // using FilteredMyCollisionsWithJJMC = o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001>, o2::aod::EMEventsWeight>>;
-  void processAnalysisJJMC(o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001>, o2::aod::EMEventsWeight>> const& collisions, Types const&... args)
+  void processAnalysisJJMC(o2::soa::Filtered<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001, o2::aod::EMEventsWeight>> const& collisions, Types const&... args)
   {
     // LOGF(info, "ndf = %d", ndf);
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM) {

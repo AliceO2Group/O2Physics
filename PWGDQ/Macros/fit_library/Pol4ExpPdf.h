@@ -28,7 +28,7 @@ TString nameParameters[] = {"p0", "p1", "p2", "p3", "p4", "p5", "N_bkg", "N_sig"
 class Pol4ExpPdf : public RooAbsPdf
 {
  public:
-  Pol4ExpPdf(){};
+  Pol4ExpPdf() {}
   Pol4ExpPdf(const char* name, const char* title,
              RooAbsReal& _x,
              RooAbsReal& _P0,

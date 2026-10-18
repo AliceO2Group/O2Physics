@@ -17,9 +17,7 @@
 
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -28,6 +26,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -38,7 +37,6 @@
 #include <THashList.h>
 #include <TString.h>
 
-#include <cstring>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -80,7 +78,7 @@ struct SinglePhotonMC {
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMPhotonEventCut fEMEventCut;
-  static constexpr std::string_view event_types[2] = {"before", "after"};
+  static constexpr std::array<std::string_view, 2> event_types = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputPhoton{"Photon"}; // single photon
@@ -88,8 +86,8 @@ struct SinglePhotonMC {
   THashList* fMainList = new THashList();
 
   std::vector<V0PhotonCut> fPCMCuts;
-  std::vector<PHOSPhotonCut> fPHOSCuts;
-  std::vector<EMCPhotonCut> fEMCCuts;
+  // std::vector<PHOSPhotonCut> fPHOSCuts;
+  // std::vector<EMCPhotonCut> fEMCCuts;
 
   std::vector<std::string> fDetNames;
   void init(InitContext& context)
@@ -103,25 +101,25 @@ struct SinglePhotonMC {
     TString ev_cut_name = fConfigEMEventCut.value;
     fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
-    fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
-    fOutputPhoton.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Photon")));
-    fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
+    fOutputEvent.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Event")));
+    fOutputPhoton.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Photon")));
+    fOutputGen.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
   template <typename TCuts1>
-  void add_photon_histograms(THashList* list_photon, const std::string detname, TCuts1 const& cuts1)
+  void add_photon_histograms(THashList* list_photon, std::string const& detname, TCuts1 const& cuts1)
   {
     for (auto& cut1 : cuts1) {
       std::string cutname1 = cut1.GetName();
 
-      THashList* list_photon_subsys = reinterpret_cast<THashList*>(list_photon->FindObject(detname.data()));
+      auto* list_photon_subsys = dynamic_cast<THashList*>(list_photon->FindObject(detname.data()));
       o2::aod::pwgem::photon::histogram::AddHistClass(list_photon_subsys, cutname1.data());
-      THashList* list_photon_subsys_cut = reinterpret_cast<THashList*>(list_photon_subsys->FindObject(cutname1.data()));
+      auto* list_photon_subsys_cut = dynamic_cast<THashList*>(list_photon_subsys->FindObject(cutname1.data()));
       o2::aod::pwgem::photon::histogram::DefineHistograms(list_photon_subsys_cut, "singlephoton", "mc");
     } // end of cut1 loop
   }
 
-  static constexpr std::string_view detnames[3] = {"PCM", "PHOS", "EMC"};
+  static constexpr std::array<std::string_view, 3> detnames = {"PCM", "PHOS", "EMC"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -129,22 +127,22 @@ struct SinglePhotonMC {
 
     // create sub lists first.
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
-    THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
+    auto* list_ev = dynamic_cast<THashList*>(fMainList->FindObject("Event"));
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Photon");
-    THashList* list_photon = reinterpret_cast<THashList*>(fMainList->FindObject("Photon"));
+    auto* list_photon = dynamic_cast<THashList*>(fMainList->FindObject("Photon"));
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Generated");
-    THashList* list_gen = reinterpret_cast<THashList*>(fMainList->FindObject("Generated"));
+    auto* list_gen = dynamic_cast<THashList*>(fMainList->FindObject("Generated"));
     o2::aod::pwgem::photon::histogram::DefineHistograms(list_gen, "Generated", "Photon");
 
-    for (auto& detname : fDetNames) {
+    for (const auto& detname : fDetNames) {
       LOGF(info, "Enabled detector = %s", detname.data());
 
       o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, detname.data());
-      THashList* list_ev_det = reinterpret_cast<THashList*>(list_ev->FindObject(detname.data()));
+      auto* list_ev_det = dynamic_cast<THashList*>(list_ev->FindObject(detname.data()));
       for (const auto& evtype : event_types) {
-        THashList* list_ev_det_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_det, evtype.data()));
+        THashList* list_ev_det_type = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_det, evtype.data());
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_det_type, "Event", evtype.data());
       }
 
@@ -194,9 +192,9 @@ struct SinglePhotonMC {
   template <EMDetType photontype, typename TEvents, typename TPhotons1, typename TPreslice1, typename TCuts1, typename TV0Legs, typename TMCParticles, typename TMCEvents>
   void FillTruePhoton(TEvents const& collisions, TPhotons1 const& photons1, TPreslice1 const& perCollision1, TCuts1 const& cuts1, TV0Legs const&, TMCParticles const& mcparticles, TMCEvents const&)
   {
-    THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[0].data()));
-    THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[1].data()));
-    THashList* list_photon_det = static_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data()));
+    auto* list_ev_before = dynamic_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[0].data()));
+    auto* list_ev_after = dynamic_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[1].data()));
+    auto* list_photon_det = dynamic_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data()));
 
     for (auto& collision : collisions) {
       if (photontype == EMDetType::kPHOS && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
@@ -206,7 +204,7 @@ struct SinglePhotonMC {
         continue;
       }
 
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      std::array<float, 3> centralities{collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -216,12 +214,12 @@ struct SinglePhotonMC {
         continue;
       }
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_after, "", collision);
-      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
-      reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      dynamic_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      dynamic_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       for (auto& cut : cuts1) {
-        THashList* list_photon_det_cut = static_cast<THashList*>(list_photon_det->FindObject(cut.getName().c_str()));
+        auto* list_photon_det_cut = dynamic_cast<THashList*>(list_photon_det->FindObject(cut.getName().c_str()));
         for (auto& photon : photons1_coll) {
           if (!IsSelected<photontype>(photon, cut)) {
             continue;
@@ -229,9 +227,9 @@ struct SinglePhotonMC {
           if (abs(photon.eta()) > maxY) {
             continue;
           }
-          reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt"))->Fill(photon.pt());
-          reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY"))->Fill(photon.eta());
-          reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi"))->Fill(photon.phi());
+          dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPt"))->Fill(photon.pt());
+          dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hY"))->Fill(photon.eta());
+          dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi"))->Fill(photon.phi());
 
           int photonid = -1;
           if constexpr (photontype == EMDetType::kPCM) {
@@ -256,17 +254,17 @@ struct SinglePhotonMC {
                 continue;
               }
             }
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_Primary"))->Fill(photon.pt());
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_Primary"))->Fill(photon.eta());
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_Primary"))->Fill(photon.phi());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_Primary"))->Fill(photon.pt());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_Primary"))->Fill(photon.eta());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_Primary"))->Fill(photon.phi());
           } else if (IsFromWD(mcphoton.emmcevent(), mcphoton, mcparticles) > 0) {
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_FromWD"))->Fill(photon.pt());
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_FromWD"))->Fill(photon.eta());
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_FromWD"))->Fill(photon.phi());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_FromWD"))->Fill(photon.pt());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_FromWD"))->Fill(photon.eta());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_FromWD"))->Fill(photon.phi());
           } else {
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_hs"))->Fill(photon.pt());
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_hs"))->Fill(photon.eta());
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_hs"))->Fill(photon.phi());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_hs"))->Fill(photon.pt());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_hs"))->Fill(photon.eta());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_hs"))->Fill(photon.phi());
           }
 
         } // end of photon loop
@@ -297,29 +295,29 @@ struct SinglePhotonMC {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
     for (auto& collision : grouped_collisions) {
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      std::array<float, 3> centralities{collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
       auto mccollision = collision.emmcevent();
 
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
       if (!collision.sel8()) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(2.0);
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(2.0);
 
       if (collision.numContrib() < 0.5) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(3.0);
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(3.0);
 
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
 
       auto mctracks_coll = mcparticles.sliceBy(perMcCollision, collision.emmceventId());
       for (auto& mctrack : mctracks_coll) {
@@ -328,9 +326,9 @@ struct SinglePhotonMC {
         }
 
         if (abs(mctrack.pdgCode()) == 22 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
-          reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Photon"))->Fill(mctrack.pt());
-          reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Photon"))->Fill(mctrack.y());
-          reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Photon"))->Fill(mctrack.phi());
+          dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Photon"))->Fill(mctrack.pt());
+          dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Photon"))->Fill(mctrack.y());
+          dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Photon"))->Fill(mctrack.phi());
         }
       }
     }
@@ -344,8 +342,8 @@ struct SinglePhotonMC {
   PROCESS_SWITCH(SinglePhotonMC, processDummy, "Dummy function", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SinglePhotonMC>(cfgc, TaskName{"single-photon-mc"})};
+    adaptAnalysisTask<SinglePhotonMC>(context, TaskName{"single-photon-mc"})};
 }

@@ -101,54 +101,103 @@ struct Alice3MulticharmFinder {
   Configurable<bool> doDCAplots{"doDCAplots", true, "do daughter prong DCA plots for D mesons"};
   Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
 
-  Configurable<float> posMinDCAxy{"posMinDCAxy", 0.005, "min dcaxy for positive"};
-  Configurable<float> negMinDCAxy{"negMinDCAxy", 0.005, "min dcaxy for negative"};
-  Configurable<float> bachMinDCAxy{"bachMinDCAxy", 0.005, "min dcaxy for bachelor"};
+  struct : ConfigurableGroup {
+    std::string prefix = "selVals";
+    Configurable<float> posMinDCAxy{"posMinDCAxy", 0.005, "min dcaxy for positive"};
+    Configurable<float> negMinDCAxy{"negMinDCAxy", 0.005, "min dcaxy for negative"};
+    Configurable<float> bachMinDCAxy{"bachMinDCAxy", 0.005, "min dcaxy for bachelor"};
 
-  Configurable<float> laMinCosPA{"laMinCosPA", 0.998, "Minimum cos(PA)"};
-  Configurable<float> laMinDecayRadius{"laMinDecayRadius", 0.5, "Minimum R2D for la decay (cm)"};
-  Configurable<float> laMassWindow{"laMassWindow", 0.012, "Mass window around La peak (GeV/c^2)"};
-  Configurable<float> laMaxDauDCA{"laMaxDauDCA", 1, "DCA between Xi daughters (cm)"};
+    Configurable<float> laMinCosPA{"laMinCosPA", 0.998, "Minimum cos(PA)"};
+    Configurable<float> laMinDecayRadius{"laMinDecayRadius", 0.5, "Minimum R2D for la decay (cm)"};
+    Configurable<float> laMassWindow{"laMassWindow", 0.012, "Mass window around La peak (GeV/c^2)"};
+    Configurable<float> laMaxDauDCA{"laMaxDauDCA", 1, "DCA between Xi daughters (cm)"};
 
-  Configurable<float> xiMinConstDCAxy{"xiMinConstDCAxy", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> xiMinConstDCAz{"xiMinConstDCAz", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> xiMinPtDepDCAxy{"xiMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> xiMinPtDepDCAz{"xiMinPtDepDCAz", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> xiMinDecayRadius{"xiMinDecayRadius", 0.5, "Minimum R2D for XiC decay (cm)"};
-  Configurable<float> xiMassWindow{"xiMassWindow", 0.005, "Mass window around Xi peak (GeV/c^2)"};
-  Configurable<float> xiMaxDauDCA{"xiMaxDauDCA", 1, "DCA between Xi daughters (cm)"};
-  Configurable<float> xiMaxNormalizedDecayLength{"xiMaxNormalizedDecayLength", 5, "Max cascade nomralized decay length (ctau/<ctau>)"};
-  Configurable<float> xiMinCosPA{"xiMinCosPA", 0.980000019, "Minimum cos(PA)"};
+    Configurable<float> xiMinConstDCAxy{"xiMinConstDCAxy", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> xiMinConstDCAz{"xiMinConstDCAz", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> xiMinPtDepDCAxy{"xiMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> xiMinPtDepDCAz{"xiMinPtDepDCAz", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> xiMinDecayRadius{"xiMinDecayRadius", 0.5, "Minimum R2D for XiC decay (cm)"};
+    Configurable<float> xiMassWindow{"xiMassWindow", 0.005, "Mass window around Xi peak (GeV/c^2)"};
+    Configurable<float> xiMaxDauDCA{"xiMaxDauDCA", 1, "DCA between Xi daughters (cm)"};
+    Configurable<float> xiMaxNormalizedDecayLength{"xiMaxNormalizedDecayLength", 5, "Max cascade nomralized decay length (ctau/<ctau>)"};
+    Configurable<float> xiMinCosPA{"xiMinCosPA", 0.980000019, "Minimum cos(PA)"};
 
-  Configurable<float> picMinConstDCAxy{"picMinConstDCAxy", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> picMinConstDCAz{"picMinConstDCAz", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> picMinPtDepDCAxy{"picMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> picMinPtDepDCAz{"picMinPtDepDCAz", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> picMinPt{"picMinPt", 0.15, "Minimum pT for XiC pions"};
+    Configurable<float> picMinConstDCAxy{"picMinConstDCAxy", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> picMinConstDCAz{"picMinConstDCAz", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> picMinPtDepDCAxy{"picMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> picMinPtDepDCAz{"picMinPtDepDCAz", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> picMinPt{"picMinPt", 0.15, "Minimum pT for XiC pions"};
 
-  Configurable<float> xicMaxDauDCA{"xicMaxDauDCA", 0.005f, "DCA between XiC daughters (cm)"};
-  Configurable<float> xicMaxDCAxy{"xicMaxDCAxy", 0.0005f, "maxDCA"};
-  Configurable<float> xicMaxDCAz{"xicMaxDCAz", 0.0005f, "maxDCA"};
-  Configurable<float> xicMinDecayRadius{"xicMinDecayRadius", -1, "Minimum R2D for XiC decay (cm)"};
-  Configurable<float> xicMinDecayDistanceFromPV{"xicMinDecayDistanceFromPV", -1, "Minimum distance for XiC decay from PV (cm)"};
-  Configurable<float> xicMinProperLength{"xicMinProperLength", 0.002, "Minimum proper length for XiC decay (cm)"};
-  Configurable<float> xicMaxProperLength{"xicMaxProperLength", 0.1, "Minimum proper length for XiC decay (cm)"};
-  Configurable<float> xicMassWindow{"xicMassWindow", 0.012, "Mass window around XiC peak (GeV/c^2)"};
+    Configurable<float> xicMaxDauDCA{"xicMaxDauDCA", 0.005f, "DCA between XiC daughters (cm)"};
+    Configurable<float> xicMinDCAxy{"xicMinDCAxy", 0.0005f, "Minimum DCA"};
+    Configurable<float> xicMinDCAz{"xicMinDCAz", 0.0005f, "Minimum DCA"};
+    Configurable<float> xicMinDecayRadius{"xicMinDecayRadius", -1, "Minimum R2D for XiC decay (cm)"};
+    Configurable<float> xicMinDecayDistanceFromPV{"xicMinDecayDistanceFromPV", -1, "Minimum distance for XiC decay from PV (cm)"};
+    Configurable<float> xicMinProperLength{"xicMinProperLength", 0.002, "Minimum proper length for XiC decay (cm)"};
+    Configurable<float> xicMaxProperLength{"xicMaxProperLength", 0.1, "Minimum proper length for XiC decay (cm)"};
+    Configurable<float> xicMassWindow{"xicMassWindow", 0.012, "Mass window around XiC peak (GeV/c^2)"};
 
-  Configurable<float> piccMinConstDCAxy{"piccMinConstDCAxy", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> piccMinConstDCAz{"piccMinConstDCAz", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> piccMinPtDepDCAxy{"piccMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> piccMinPtDepDCAz{"piccMinPtDepDCAz", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> piccMinPt{"piccMinPt", 0.3, "Minimum pT for XiCC pions"};
+    Configurable<float> piccMinConstDCAxy{"piccMinConstDCAxy", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> piccMinConstDCAz{"piccMinConstDCAz", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> piccMinPtDepDCAxy{"piccMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> piccMinPtDepDCAz{"piccMinPtDepDCAz", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> piccMinPt{"piccMinPt", 0.3, "Minimum pT for XiCC pions"};
 
-  Configurable<float> xiccMaxDauDCA{"xiccMaxDauDCA", 0.005f, "DCA between XiCC daughters (cm)"};
-  Configurable<float> xiccMaxDCAxy{"xiccMaxDCAxy", 0.005f, "maxDCA"};
-  Configurable<float> xiccMaxDCAz{"xiccMaxDCAz", 0.005f, "maxDCA"};
-  Configurable<float> xiccMaxEta{"xiccMaxEta", 1.5, "Max eta"};
-  Configurable<float> xiccMinDecayRadius{"xiccMinDecayRadius", -1, "Minimum R2D for XiCC decay (cm)"};
-  Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for XiCC decay (cm)"};
-  Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 999, "Minimum proper length for XiCC decay (cm)"};
-  Configurable<float> xiccMassWindow{"xiccMassWindow", 0.25, "Mass window around XiCC peak (GeV/c). Make sure that bkg region is included in this window"};
+    Configurable<float> xiccMaxDauDCA{"xiccMaxDauDCA", 0.005f, "DCA between XiCC daughters (cm)"};
+    Configurable<float> xiccMaxDCAxy{"xiccMaxDCAxy", 0.005f, "maxDCA"};
+    Configurable<float> xiccMaxDCAz{"xiccMaxDCAz", 0.005f, "maxDCA"};
+    Configurable<float> xiccMaxEta{"xiccMaxEta", 1.5, "Max eta"};
+    Configurable<float> xiccMinDecayRadius{"xiccMinDecayRadius", -1, "Minimum R2D for XiCC decay (cm)"};
+    Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for XiCC decay (cm)"};
+    Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 999, "Minimum proper length for XiCC decay (cm)"};
+    Configurable<float> xiccMassWindow{"xiccMassWindow", 0.25, "Mass window around XiCC peak (GeV/c). Make sure that bkg region is included in this window"};
+  } selVals;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "selFlags";
+    Configurable<bool> applyPosMinDCAxy{"applyPosMinDCAxy", false, "Apply min dcaxy for positive"};
+    Configurable<bool> applyNegMinDCAxy{"applyNegMinDCAxy", false, "Apply min dcaxy for negative"};
+    Configurable<bool> applyBachMinDCAxy{"applyBachMinDCAxy", false, "Apply min dcaxy for bachelor"};
+
+    Configurable<bool> applyLaMinCosPA{"applyLaMinCosPA", false, "Apply Minimum cos(PA)"};
+    Configurable<bool> applyLaMinDecayRadius{"applyLaMinDecayRadius", false, "Apply Minimum R2D for la decay (cm)"};
+    Configurable<bool> applyLaMassWindow{"applyLaMassWindow", true, "Apply Mass window around La peak (GeV/c^2)"};
+    Configurable<bool> applyLaMaxDauDCA{"applyLaMaxDauDCA", false, "Apply DCA between Xi daughters (cm)"};
+
+    Configurable<bool> applyXiMinDCAxy{"applyXiMinDCAxy", true, "Apply [0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyXiMinDCAz{"applyXiMinDCAz", true, "Apply [0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyXiMinDecayRadius{"applyXiMinDecayRadius", true, "Apply Minimum R2D for XiC decay (cm)"};
+    Configurable<bool> applyXiMassWindow{"applyXiMassWindow", true, "Apply Mass window around Xi peak (GeV/c^2)"};
+    Configurable<bool> applyXiMaxDauDCA{"applyXiMaxDauDCA", false, "Apply DCA between Xi daughters (cm)"};
+    Configurable<bool> applyXiMaxNormalizedDecayLength{"applyXiMaxNormalizedDecayLength", true, "Apply Max cascade nomralized decay length (ctau/<ctau>)"};
+    Configurable<bool> applyXiMinCosPA{"applyXiMinCosPA", false, "Apply Minimum cos(PA)"};
+
+    Configurable<bool> applyPicMinDCAxy{"applyPicMinDCAxy", true, "Apply [0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyPicMinDCAz{"applyPicMinDCAz", true, "Apply [0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyPicMinPt{"applyPicMinPt", true, "Apply Minimum pT for XiC pions"};
+
+    Configurable<bool> applyXicMaxDauDCA{"applyXicMaxDauDCA", true, "Apply DCA between XiC daughters (cm)"};
+    Configurable<bool> applyXicMinDCAxy{"applyXicMinDCAxy", true, "Apply Minimum DCA"};
+    Configurable<bool> applyXicMinDCAz{"applyXicMinDCAz", true, "Apply Minimum DCA"};
+    Configurable<bool> applyXicMinDecayRadius{"applyXicMinDecayRadius", false, "Apply Minimum R2D for XiC decay (cm)"};
+    Configurable<bool> applyXicMinDecayDistanceFromPV{"applyXicMinDecayDistanceFromPV", true, "Apply Minimum distance for XiC decay from PV (cm)"};
+    Configurable<bool> applyXicMinProperLength{"applyXicMinProperLength", false, "Apply Minimum proper length for XiC decay (cm)"};
+    Configurable<bool> applyXicMaxProperLength{"applyXicMaxProperLength", false, "Apply Minimum proper length for XiC decay (cm)"};
+    Configurable<bool> applyXicMassWindow{"applyXicMassWindow", true, "Apply Mass window around XiC peak (GeV/c^2)"};
+
+    Configurable<bool> applyPiccMinDCAxy{"applyPiccMinDCAxy", true, "Apply [0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyPiccMinDCAz{"applyPiccMinDCAz", true, "Apply [0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyPiccMinPt{"applyPiccMinPt", true, "Apply Minimum pT for XiCC pions"};
+
+    Configurable<bool> applyXiccMaxDauDCA{"applyXiccMaxDauDCA", true, "Apply DCA between XiCC daughters (cm)"};
+    Configurable<bool> applyXiccMaxDCAxy{"applyXiccMaxDCAxy", true, "Apply maxDCA"};
+    Configurable<bool> applyXiccMaxDCAz{"applyXiccMaxDCAz", true, "Apply maxDCA"};
+    Configurable<bool> applyXiccMaxEta{"applyXiccMaxEta", true, "Apply Max eta"};
+    Configurable<bool> applyXiccMinDecayRadius{"applyXiccMinDecayRadius", false, "Apply Minimum R2D for XiCC decay (cm)"};
+    Configurable<bool> applyXiccMinProperLength{"applyXiccMinProperLength", false, "Apply Minimum proper length for XiCC decay (cm)"};
+    Configurable<bool> applyXiccMaxProperLength{"applyXiccMaxProperLength", false, "Apply Minimum proper length for XiCC decay (cm)"};
+    Configurable<bool> applyXiccMassWindow{"applyXiccMassWindow", true, "Apply Mass window around XiCC peak (GeV/c). Make sure that bkg region is included in this window"};
+  } selFlags;
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
@@ -190,15 +239,26 @@ struct Alice3MulticharmFinder {
   Partition<aod::McParticles> trueXiC = aod::mcparticle::pdgCode == static_cast<int>(o2::constants::physics::kXiCPlus);
   Partition<aod::McParticles> trueXiCC = aod::mcparticle::pdgCode == static_cast<int>(o2::constants::physics::kXiCCPlusPlus);
 
+  const float picMinConstDCAxy = selFlags.applyPicMinDCAxy ? selVals.picMinConstDCAxy : 0;
+  const float picMinPtDepDCAxy = selFlags.applyPicMinDCAxy ? selVals.picMinPtDepDCAxy : 0;
+  const float picMinConstDCAz = selFlags.applyPicMinDCAz ? selVals.picMinConstDCAz : 0;
+  const float picMinPtDepDCAz = selFlags.applyPicMinDCAz ? selVals.picMinPtDepDCAz : 0;
+  const float piccMinConstDCAxy = selFlags.applyPiccMinDCAxy ? selVals.piccMinConstDCAxy : 0;
+  const float piccMinPtDepDCAxy = selFlags.applyPiccMinDCAxy ? selVals.piccMinPtDepDCAxy : 0;
+  const float piccMinConstDCAz = selFlags.applyPiccMinDCAz ? selVals.piccMinConstDCAz : 0;
+  const float piccMinPtDepDCAz = selFlags.applyPiccMinDCAz ? selVals.piccMinPtDepDCAz : 0;
+
   Partition<Alice3Tracks> picTracks =
-    ((aod::a3DecayMap::decayMap & TrackSelectionPic) == TrackSelectionPic) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > picMinPt&& nabs(aod::track::dcaXY) > picMinConstDCAxy + picMinPtDepDCAxy* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > picMinConstDCAz + picMinPtDepDCAz* nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & TrackSelectionPic) == TrackSelectionPic) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > picMinConstDCAxy + picMinPtDepDCAxy* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > picMinConstDCAz + picMinPtDepDCAz* nabs(aod::track::signed1Pt);
 
   Partition<Alice3Tracks> piccTracks =
-    ((aod::a3DecayMap::decayMap & TrackSelectionPicc) == TrackSelectionPicc) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > piccMinPt&& nabs(aod::track::dcaXY) > piccMinConstDCAxy + piccMinPtDepDCAxy* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > piccMinConstDCAz + piccMinPtDepDCAz* nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & TrackSelectionPicc) == TrackSelectionPicc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > piccMinConstDCAxy + piccMinPtDepDCAxy* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > piccMinConstDCAz + piccMinPtDepDCAz* nabs(aod::track::signed1Pt);
 
   // Helper structs to pass candidate information
   struct {
     float radius{};
+    float pt{};
+    float eta{};
     o2::track::TrackParCov trackParCov;
   } thisXiCandidate;
 
@@ -303,13 +363,13 @@ struct Alice3MulticharmFinder {
 
     // set relevant values
     thisXiccCandidate.dca = std::sqrt(fitter.getChi2AtPCACandidate());
-    if (thisXiccCandidate.dca > xiccMaxDauDCA) {
+    if (selFlags.applyXiccMaxDauDCA && thisXiccCandidate.dca > selVals.xiccMaxDauDCA) {
       return false;
     }
 
     thisXiccCandidate.mass = RecoDecay::m(std::array{std::array{thisXiccCandidate.prong0mom[0], thisXiccCandidate.prong0mom[1], thisXiccCandidate.prong0mom[2]}, std::array{thisXiccCandidate.prong1mom[0], thisXiccCandidate.prong1mom[1], thisXiccCandidate.prong1mom[2]}}, std::array{mass0, mass1});
 
-    if (std::fabs(thisXiccCandidate.mass - o2::constants::physics::MassXiCCPlusPlus) > xiccMassWindow) {
+    if (selFlags.applyXiccMassWindow && std::fabs(thisXiccCandidate.mass - o2::constants::physics::MassXiCCPlusPlus) > selVals.xiccMassWindow) {
       return false;
     }
 
@@ -382,7 +442,7 @@ struct Alice3MulticharmFinder {
 
     // set relevant values
     thisXicCandidate.dca = std::sqrt(fitter3.getChi2AtPCACandidate());
-    if (thisXicCandidate.dca > xicMaxDauDCA) {
+    if (selFlags.applyXicMaxDauDCA && thisXicCandidate.dca > selVals.xicMaxDauDCA) {
       return false;
     }
     thisXicCandidate.mass = RecoDecay::m(std::array{std::array{thisXicCandidate.prong0mom[0], thisXicCandidate.prong0mom[1], thisXicCandidate.prong0mom[2]}, std::array{thisXicCandidate.prong1mom[0], thisXicCandidate.prong1mom[1], thisXicCandidate.prong1mom[2]}, std::array{thisXicCandidate.prong2mom[0], thisXicCandidate.prong2mom[1], thisXicCandidate.prong2mom[2]}}, std::array{p0mass, p1mass, p2mass});
@@ -456,12 +516,13 @@ struct Alice3MulticharmFinder {
     fitter.setBz(cfgMagneticField);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
+    // initialize O2 3-prong fitter (only once)
     fitter3.setPropagateToPCA(cfgFitter.propagateToPCA);
     fitter3.setMaxR(cfgFitter.maxR);
     fitter3.setMinParamChange(cfgFitter.minParamChange);
     fitter3.setMinRelChi2Change(cfgFitter.minRelChi2Change);
     fitter3.setMaxDZIni(cfgFitter.maxDZIni);
-    fitter3.setMaxDZIni(cfgFitter.maxDXYIni);
+    fitter3.setMaxDXYIni(cfgFitter.maxDXYIni);
     fitter3.setMaxChi2(cfgFitter.maxVtxChi2);
     fitter3.setUseAbsDCA(cfgFitter.useAbsDCA);
     fitter3.setWeightedFinalPCA(cfgFitter.useWeightedFinalPCA);
@@ -619,7 +680,7 @@ struct Alice3MulticharmFinder {
         continue;
       }
 
-      if (pi1c.pt() < picMinPt) {
+      if (selFlags.applyPicMinPt && pi1c.pt() < selVals.picMinPt) {
         continue;
       }
 
@@ -637,7 +698,7 @@ struct Alice3MulticharmFinder {
           continue;
         }
 
-        if (pi2c.pt() < picMinPt) {
+        if (selFlags.applyPicMinPt && pi2c.pt() < selVals.picMinPt) {
           continue;
         }
 
@@ -652,7 +713,7 @@ struct Alice3MulticharmFinder {
         }
 
         hist<TH1>("hDCAXiCDaughters")->Fill(thisXicCandidate.dca * ToMicrons);
-        if (std::fabs(thisXicCandidate.mass - o2::constants::physics::MassXiCPlus) > xicMassWindow) {
+        if (selFlags.applyXicMassWindow && std::fabs(thisXicCandidate.mass - o2::constants::physics::MassXiCPlus) > selVals.xicMassWindow) {
           continue;
         }
 
@@ -663,7 +724,7 @@ struct Alice3MulticharmFinder {
 
         o2::track::TrackParCov xicTrack(thisXicCandidate.xyz, momentumC, thisXicCandidate.parentTrackCovMatrix, +1);
         float xicDecayRadius2D = std::hypot(thisXicCandidate.xyz[0], thisXicCandidate.xyz[1]);
-        if (xicDecayRadius2D < xicMinDecayRadius) {
+        if (selFlags.applyXicMinDecayRadius && xicDecayRadius2D < selVals.xicMinDecayRadius) {
           continue;
         }
 
@@ -686,7 +747,11 @@ struct Alice3MulticharmFinder {
           xicdcaZ = dcaInfo.getZ();
         }
 
-        if (std::fabs(xicdcaXY) < xicMaxDCAxy || std::fabs(xicdcaZ) < xicMaxDCAz) {
+        if (selFlags.applyXicMinDCAxy && std::fabs(xicdcaXY) < selVals.xicMinDCAxy) {
+          continue;
+        }
+
+        if (selFlags.applyXicMinDCAz && std::fabs(xicdcaZ) < selVals.xicMinDCAz) {
           continue;
         }
 
@@ -705,7 +770,7 @@ struct Alice3MulticharmFinder {
             continue;
           }
 
-          if (picc.pt() < piccMinPt) {
+          if (selFlags.applyPiccMinPt && picc.pt() < selVals.piccMinPt) {
             continue;
           }
 
@@ -726,7 +791,7 @@ struct Alice3MulticharmFinder {
 
           o2::track::TrackParCov xiccTrack(thisXiccCandidate.xyz, momentumCC, thisXiccCandidate.parentTrackCovMatrix, +2);
           float xiccDecayRadius2D = std::hypot(thisXiccCandidate.xyz[0], thisXiccCandidate.xyz[1]);
-          if (xiccDecayRadius2D < xiccMinDecayRadius) {
+          if (selFlags.applyXiccMinDecayRadius && xiccDecayRadius2D < selVals.xiccMinDecayRadius) {
             continue;
           }
 
@@ -736,8 +801,10 @@ struct Alice3MulticharmFinder {
                                             thisXicCandidate.xyz[1] - thisXiccCandidate.xyz[1],
                                             thisXicCandidate.xyz[2] - thisXiccCandidate.xyz[2]);
           float xicProperLength = decayLengthXiC * thisXicCandidate.mass / totalMomentumC;
-
-          if (xicProperLength < xicMinProperLength || xicProperLength > xicMaxProperLength) {
+          if (selFlags.applyXicMinProperLength && xicProperLength < selVals.xicMinProperLength) {
+            continue;
+          }
+          if (selFlags.applyXicMaxProperLength && xicProperLength > selVals.xicMaxProperLength) {
             continue;
           }
 
@@ -747,7 +814,7 @@ struct Alice3MulticharmFinder {
                                                thisXicCandidate.xyz[1] - collision.posY(),
                                                thisXicCandidate.xyz[2] - collision.posZ());
           float xicDecayDistanceFromPV = xicDistanceFromPV * thisXicCandidate.mass / totalMomentumC;
-          if (xicDecayDistanceFromPV < xicMinDecayDistanceFromPV) {
+          if (selFlags.applyXicMinDecayDistanceFromPV && xicDecayDistanceFromPV < selVals.xicMinDecayDistanceFromPV) {
             continue;
           }
 
@@ -758,7 +825,10 @@ struct Alice3MulticharmFinder {
                                              thisXiccCandidate.xyz[1] - collision.posY(),
                                              thisXiccCandidate.xyz[2] - collision.posZ());
           float xiccProperLength = decayLengthXiCC * thisXiccCandidate.mass / totalMomentumCC;
-          if (xiccProperLength < xiccMinProperLength || xiccProperLength > xiccMaxProperLength) {
+          if (selFlags.applyXiccMinProperLength && xiccProperLength < selVals.xiccMinProperLength) {
+            continue;
+          }
+          if (selFlags.applyXiccMaxProperLength && xiccProperLength > selVals.xiccMaxProperLength) {
             continue;
           }
 
@@ -776,14 +846,17 @@ struct Alice3MulticharmFinder {
             xiccdcaZ = dcaInfo.getZ();
           }
 
-          if (std::fabs(xiccdcaXY) > xiccMaxDCAxy || std::fabs(xiccdcaZ) > xiccMaxDCAz) {
+          if (selFlags.applyXiccMaxDCAxy && std::fabs(xiccdcaXY) > selVals.xiccMaxDCAxy) {
+            continue;
+          }
+          if (selFlags.applyXiccMaxDCAz && std::fabs(xiccdcaZ) > selVals.xiccMaxDCAz) {
             continue;
           }
 
           hist<TH1>("hMultiCharmBuilding")->Fill(7.0f);
           hist<TH1>("hDCAxyXiCC")->Fill(xiccdcaXY * ToMicrons);
           hist<TH1>("hDCAzXiCC")->Fill(xiccdcaZ * ToMicrons);
-          if (std::fabs(thisXiccCandidate.eta) > xiccMaxEta) {
+          if (selFlags.applyXiccMaxEta && std::fabs(thisXiccCandidate.eta) > selVals.xiccMaxEta) {
             continue;
           }
 
@@ -812,6 +885,7 @@ struct Alice3MulticharmFinder {
                            thisXiccCandidate.eta, thisXiccCandidate.dca,
                            thisXicCandidate.mass, thisXicCandidate.pt,
                            thisXicCandidate.eta, thisXicCandidate.dca,
+                           thisXiCandidate.pt, thisXiCandidate.eta,
                            xi.dcaXYCascToPV(), xi.dcaZCascToPV(),
                            xicdcaXY, xicdcaZ,
                            xiccdcaXY, xiccdcaZ,
@@ -863,7 +937,7 @@ struct Alice3MulticharmFinder {
 
     for (const auto& xiCand : cascades) {
       auto xi = xiCand.cascadeTrack_as<Alice3Tracks>();
-      if (std::fabs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > xiMassWindow) {
+      if (selFlags.applyXiMassWindow && std::fabs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > selVals.xiMassWindow) {
         continue;
       }
 
@@ -871,11 +945,15 @@ struct Alice3MulticharmFinder {
         continue;
       }
 
-      if (std::fabs(xi.dcaXY()) < xiMinConstDCAxy || std::fabs(xi.dcaZ()) < xiMinConstDCAz) {
+      if (selFlags.applyXiMinDCAxy && std::fabs(xi.dcaXY()) < selVals.xiMinConstDCAxy) {
         continue;
       }
 
-      if (xiCand.cascRadius() < xiMinDecayRadius) {
+      if (selFlags.applyXiMinDCAz && std::fabs(xi.dcaZ()) < selVals.xiMinConstDCAz) {
+        continue;
+      }
+
+      if (selFlags.applyXiMinDecayRadius && xiCand.cascRadius() < selVals.xiMinDecayRadius) {
         continue;
       }
 
@@ -886,6 +964,8 @@ struct Alice3MulticharmFinder {
       hist<TH1>("hDCAzXi")->Fill(xi.dcaZ() * ToMicrons);
       hist<TH1>("hMinXiDecayRadius")->Fill(xiCand.cascRadius());
       thisXiCandidate.radius = xiCand.cascRadius();
+      thisXiCandidate.pt = xi.pt();
+      thisXiCandidate.eta = xi.eta();
       thisXiCandidate.trackParCov = getTrackParCov(xi);
       processFindXicc(collision, xiCand, picTracksGrouped, piccTracksGrouped);
     }
@@ -905,55 +985,59 @@ struct Alice3MulticharmFinder {
       const float distanceFromPV = std::hypot(xiCand.x() - collision.posX(), xiCand.y() - collision.posY(), xiCand.z() - collision.posZ());
       const float normalizedDecayLength = o2::constants::physics::MassXiMinus * distanceFromPV / (xiCand.p() * CtauXi);
 
-      if (std::abs(positive.dcaXY()) < posMinDCAxy) {
+      if (selFlags.applyPosMinDCAxy && std::abs(positive.dcaXY()) < selVals.posMinDCAxy) {
         continue;
       }
 
-      if (std::abs(negative.dcaXY()) < negMinDCAxy) {
+      if (selFlags.applyNegMinDCAxy && std::abs(negative.dcaXY()) < selVals.negMinDCAxy) {
         continue;
       }
 
-      if (std::abs(bachelor.dcaXY()) < bachMinDCAxy) {
+      if (selFlags.applyBachMinDCAxy && std::abs(bachelor.dcaXY()) < selVals.bachMinDCAxy) {
         continue;
       }
 
-      if (xiCand.dcaV0daughters() > laMaxDauDCA) {
+      if (selFlags.applyLaMaxDauDCA && xiCand.dcaV0daughters() > selVals.laMaxDauDCA) {
         continue;
       }
 
-      if (xiCand.v0radius() < laMinDecayRadius) {
+      if (selFlags.applyLaMinDecayRadius && xiCand.v0radius() < selVals.laMinDecayRadius) {
         continue;
       }
 
-      if (xiCand.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < laMinCosPA) {
+      if (selFlags.applyLaMinCosPA && xiCand.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < selVals.laMinCosPA) {
         continue;
       }
 
-      if (std::abs(xiCand.mLambda() - o2::constants::physics::MassLambda0) > laMassWindow) {
+      if (selFlags.applyLaMassWindow && std::abs(xiCand.mLambda() - o2::constants::physics::MassLambda0) > selVals.laMassWindow) {
         continue;
       }
 
-      if (xiCand.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < xiMinCosPA) {
-        continue; // FIXME: Probably not ok
-      }
-
-      if (xiCand.dcacascdaughters() > xiMaxDauDCA) {
+      if (selFlags.applyXiMinCosPA && xiCand.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < selVals.xiMinCosPA) {
         continue;
       }
 
-      if (normalizedDecayLength > xiMaxNormalizedDecayLength) {
+      if (selFlags.applyXiMaxDauDCA && xiCand.dcacascdaughters() > selVals.xiMaxDauDCA) {
         continue;
       }
 
-      if (std::fabs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > xiMassWindow) {
+      if (selFlags.applyXiMaxNormalizedDecayLength && normalizedDecayLength > selVals.xiMaxNormalizedDecayLength) {
         continue;
       }
 
-      if (std::fabs(xiCand.dcaXYCascToPV()) < xiMinConstDCAxy || std::fabs(xiCand.dcaZCascToPV()) < xiMinConstDCAz) {
+      if (selFlags.applyXiMassWindow && std::fabs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > selVals.xiMassWindow) {
         continue;
       }
 
-      if (xiCand.cascradius() < xiMinDecayRadius) {
+      if (selFlags.applyXiMinDCAxy && std::fabs(xiCand.dcaXYCascToPV()) < selVals.xiMinConstDCAxy) {
+        continue;
+      }
+
+      if (selFlags.applyXiMinDCAz && std::fabs(xiCand.dcaZCascToPV()) < selVals.xiMinConstDCAz) {
+        continue;
+      }
+
+      if (selFlags.applyXiMinDecayRadius && xiCand.cascradius() < selVals.xiMinDecayRadius) {
         continue;
       }
 
@@ -971,6 +1055,8 @@ struct Alice3MulticharmFinder {
       std::array<float, NCovMatElements> cascCovMat{};
       std::copy(xiCand.covMat(), xiCand.covMat() + NCovMatElements, cascCovMat.begin());
       thisXiCandidate.radius = xiCand.cascradius();
+      thisXiCandidate.pt = xiCand.pt();
+      thisXiCandidate.eta = xiCand.eta();
       thisXiCandidate.trackParCov = o2::track::TrackParCov(cascSV, cascP, cascCovMat, chargeCascade);
       processFindXicc(collision, xiCand, picTracksGrouped, piccTracksGrouped);
     }

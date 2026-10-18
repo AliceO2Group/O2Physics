@@ -397,7 +397,7 @@ struct lambdapolarization {
   ROOT::Math::PxPyPzMVector ProtonVec, PionVec, LambdaVec, ProtonBoostedVec, PionBoostedVec;
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(const TCollision& collision)
   {
     if (!collision.sel8()) {
       return 0;

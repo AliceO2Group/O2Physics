@@ -982,7 +982,7 @@ struct K892analysispbpb {
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVtxCent colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxCent colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVtxCent> pairs{colBinning, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -1009,7 +1009,7 @@ struct K892analysispbpb {
   void processMixedEventRun2(Run2Events const& collisions, TrackCandidates const& tracks, BCsWithRun2Info const& bcs)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVtxCentRun2 colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxCentRun2 colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<Run2Events, TrackCandidates, BinningTypeVtxCentRun2> pairs{colBinning, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -1034,7 +1034,7 @@ struct K892analysispbpb {
   void processMixedEventMC(EventCandidatesMCrec const& recCollisions, TrackCandidatesMCrec const& RecTracks, aod::McParticles const&)
   {
     auto tracksTuple = std::make_tuple(RecTracks);
-    BinningTypeVtxCent colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxCent colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<EventCandidatesMCrec, TrackCandidatesMCrec, BinningTypeVtxCent> pairs{colBinning, cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -1059,7 +1059,7 @@ struct K892analysispbpb {
   void processMixedEventMCRun2(EventCandidatesMCrecRun2 const& recCollisions, TrackCandidatesMCrec const& RecTracks, BCsWithRun2Info const& bcs, aod::McParticles const&)
   {
     auto tracksTuple = std::make_tuple(RecTracks);
-    BinningTypeVtxCentRun2 colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxCentRun2 colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<EventCandidatesMCrecRun2, TrackCandidatesMCrec, BinningTypeVtxCentRun2> pairs{colBinning, cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {

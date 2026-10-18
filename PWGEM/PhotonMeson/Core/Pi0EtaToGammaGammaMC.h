@@ -40,7 +40,8 @@
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -78,9 +79,6 @@ enum AlphaMesonCutOption {
 template <o2::aod::pwgem::photonmeson::photonpair::PairType pairtype, o2::soa::is_table... Types>
 struct Pi0EtaToGammaGammaMC {
   o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   o2::framework::Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   o2::framework::Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2"};
@@ -309,45 +307,35 @@ struct Pi0EtaToGammaGammaMC {
     ccdb->setFatalWhenNull(false);
   }
 
-  template <typename TCollision>
+  template <o2::soa::is_iterator TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
       return;
     }
+    mRunNumber = collision.runNumber();
 
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(d_bz) > 1e-5) {                   // o2-linter: disable=magic-number (override value)
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
-      mRunNumber = collision.runNumber();
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
       return;
     }
 
-    auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = nullptr;
-    o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    // o2::base::Propagator::initFieldFromGRP(&collision.grpMagField());
+    // // Fetch magnetic field from ccdb for current collision
+    // d_bz = collision.grpMagField().getNominalL3Field();
+    auto* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.runNumber());
+    if (grpmag == nullptr) {
+      LOGF(fatal, "Could not retrieve GRPMagField for run %d", collision.runNumber());
     }
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
+    d_bz = grpmag->getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << collision.timestamp() << " with magnetic field of " << d_bz << " kZG";
     fV0PhotonCut.SetD_Bz(d_bz);
-    mRunNumber = collision.runNumber();
   }
 
   ~Pi0EtaToGammaGammaMC()
@@ -483,10 +471,10 @@ struct Pi0EtaToGammaGammaMC {
   }
 
   o2::framework::SliceCache cache;
-  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived, o2::aod::V0PhotonOmegaMBWeights>>> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
-  o2::framework::PresliceOptional<o2::soa::Join<o2::aod::SkimEMCClusters, o2::aod::EMEMCClusterMCLabels, o2::aod::EMCEMEventIds>> perCollision_emc = o2::aod::emccluster::pmeventId;
-  o2::framework::PresliceOptional<o2::soa::Join<o2::aod::PHOSClusters, o2::aod::PHOSEMEventIds>> perCollision_phos = o2::aod::phoscluster::pmeventId;
-  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronMCLabels>>> perCollision_electron = o2::aod::emprimaryelectronda::pmeventId;
+  o2::framework::PresliceOptional<o2::aod::V0KFEMEventIds> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
+  o2::framework::PresliceOptional<o2::aod::EMCEMEventIds> perCollision_emc = o2::aod::emccluster::pmeventId;
+  o2::framework::PresliceOptional<o2::aod::PHOSEMEventIds> perCollision_phos = o2::aod::phoscluster::pmeventId;
+  o2::framework::PresliceOptional<o2::aod::EMPrimaryElectronDaEMEventIds> perCollision_electron = o2::aod::emprimaryelectronda::pmeventId;
 
   o2::framework::PresliceOptional<o2::aod::MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   o2::framework::PresliceOptional<o2::aod::MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
@@ -510,7 +498,7 @@ struct Pi0EtaToGammaGammaMC {
       return s.fV0PhotonCut;
     }
 
-    template <typename Self, typename Photon>
+    template <typename Self, o2::soa::is_iterator Photon>
     static bool applyCut(Self& s, Photon const& g)
     {
       return s.fV0PhotonCut.template IsSelected<decltype(g), o2::soa::Join<o2::aod::V0Legs, o2::aod::V0LegMCLabels>>(g);
@@ -544,10 +532,10 @@ struct Pi0EtaToGammaGammaMC {
     }
 
     // EMCal version has optional tables for matched tracks (global and secondaries)
-    template <typename Self, typename Cluster, typename TMatchedTracks = std::nullptr_t, typename TMatchedSecondaries = std::nullptr_t>
-    static bool applyCut(Self& s, Cluster const& c, TMatchedTracks const& emcmatchedtracks = nullptr, TMatchedSecondaries const& secondaries = nullptr)
+    template <typename Self, o2::soa::is_iterator Cluster, typename TMatchedTracks = std::nullptr_t, typename TMatchedSecondaries = std::nullptr_t>
+    static bool applyCut(Self& s, Cluster const& cluster, TMatchedTracks const& emcmatchedtracks = nullptr, TMatchedSecondaries const& secondaries = nullptr)
     {
-      return s.fEMCCut.IsSelected(c, emcmatchedtracks, secondaries);
+      return s.fEMCCut.IsSelected(cluster, emcmatchedtracks, secondaries);
     }
   };
 
@@ -565,10 +553,10 @@ struct Pi0EtaToGammaGammaMC {
       return s.fPHOSCut;
     }
 
-    template <typename Self, typename Cluster>
-    static bool applyCut(Self& s, Cluster const& c)
+    template <typename Self, o2::soa::is_iterator Cluster>
+    static bool applyCut(Self& s, Cluster const& cluster)
     {
-      return s.fPHOSCut.IsSelected(c);
+      return s.fPHOSCut.IsSelected(cluster);
     }
   };
 
@@ -586,7 +574,7 @@ struct Pi0EtaToGammaGammaMC {
     }
 
     // Dalitz version has two tracks as argument + B_z
-    template <typename Self, typename Track1, typename Track2>
+    template <typename Self, o2::soa::is_iterator Track1, o2::soa::is_iterator Track2>
     static bool applyCut(Self& s, Track1 const& track1, Track2 const& track2, float bz)
     {
       return s.fDileptonCut.IsSelected(track1, track2, bz);
@@ -649,7 +637,7 @@ struct Pi0EtaToGammaGammaMC {
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, weight);  // accepted
 
       int photonid1 = -1, photonid2 = -1, pi0id = -1, etaid = -1;
-      if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPHOSPHOS || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kEMCEMC) { // same kinds pairing
+      if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPHOSPHOS || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kEMCEMC || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMEMC) { // same kinds pairing and PCM-EMC
 
         auto photons1_per_collision = photons1.sliceByCached(TDetectorTag1::perCollision(), collision.globalIndex(), cache);
         auto photons2_per_collision = photons2.sliceByCached(TDetectorTag2::perCollision(), collision.globalIndex(), cache);
@@ -664,7 +652,7 @@ struct Pi0EtaToGammaGammaMC {
               continue;
             }
           } else {
-            if (!TDetectorTag1::applyCut(*this, g1) || !TDetectorTag2::applyCut(*this, g2)) {
+            if (!TDetectorTag1::applyCut(*this, g1)) { // g2 is checked below with its own tag (and matched tracks for EMC)
               continue;
             }
           }
@@ -708,6 +696,20 @@ struct Pi0EtaToGammaGammaMC {
 
             photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(cluster1mcparticle, mcparticles, std::vector<int>{111, 221});
             photonid2 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(cluster2mcparticle, mcparticles, std::vector<int>{111, 221});
+          } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMEMC) {
+            // PCM: true conversion as for PCM-PCM
+            auto pos1 = g1.template posTrack_as<TLegs>();
+            auto ele1 = g1.template negTrack_as<TLegs>();
+            auto pos1mc = pos1.template emmcparticle_as<TMCParticles>();
+            auto ele1mc = ele1.template emmcparticle_as<TMCParticles>();
+            photonid1 = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
+
+            // EMC: photon below the pi0/eta of the leading contributor as for EMC-EMC
+            if (g2.emmcparticleIds().empty()) {
+              continue; // noise cluster without MC label
+            }
+            auto cluster2mcparticle = mcparticles.iteratorAt(g2.emmcparticleIds()[0]);
+            photonid2 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(cluster2mcparticle, mcparticles, std::vector<int>{111, 221});
           } else {
             photonid1 = -1;
             photonid2 = -1;
@@ -721,6 +723,10 @@ struct Pi0EtaToGammaGammaMC {
 
           if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM) {
             if (!o2::aod::pwgem::photonmeson::utils::mcutil::IsConversionPointInAcceptance(g1mc, maxRgen, maxY_gen, margin_z_mc, mcparticles) || !o2::aod::pwgem::photonmeson::utils::mcutil::IsConversionPointInAcceptance(g2mc, maxRgen, maxY_gen, margin_z_mc, mcparticles)) {
+              continue;
+            }
+          } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMEMC) {
+            if (!o2::aod::pwgem::photonmeson::utils::mcutil::IsConversionPointInAcceptance(g1mc, maxRgen, maxY_gen, margin_z_mc, mcparticles)) {
               continue;
             }
           }
@@ -969,9 +975,9 @@ struct Pi0EtaToGammaGammaMC {
   }
 
   o2::framework::PresliceUnsorted<o2::aod::EMMCParticles> perMcCollision = o2::aod::emmcparticle::emmceventId;
-  o2::framework::PresliceUnsorted<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMMCEventLabels>> rec_perMcCollision = o2::aod::emmceventlabel::emmceventId;
+  o2::framework::PresliceUnsorted<o2::aod::EMMCEventLabels> rec_perMcCollision = o2::aod::emmceventlabel::emmceventId;
 
-  template <typename TCollisions, typename TMCCollisions, typename TMCParticles>
+  template <o2::soa::is_table TCollisions, o2::soa::is_table TMCCollisions, o2::soa::is_table TMCParticles>
   void runGenInfo(TCollisions const& collisions, TMCCollisions const& mccollisions, TMCParticles const& /*mcparticles*/)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
@@ -1036,19 +1042,17 @@ struct Pi0EtaToGammaGammaMC {
       auto&& [emcclusters, emcMatchedTracks, emcMatchedSecondaries] = std::forward_as_tuple(args...);
       runTruePairing<EMCTag, EMCTag, o2::soa::CombinationsStrictlyUpperIndexPolicy>(collisions, emcclusters, emcclusters, mccollisions, mcparticles, nullptr, emcMatchedTracks, emcMatchedSecondaries);
       runGenInfo(collisions, mccollisions, mcparticles);
+    } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMEMC) {
+      auto&& [v0photons, emcclusters, v0legs, emcMatchedTracks, emcMatchedSecondaries] = std::forward_as_tuple(args...);
+      runTruePairing<PCMTag, EMCTag, o2::soa::CombinationsFullIndexPolicy>(collisions, v0photons, emcclusters, mccollisions, mcparticles, v0legs, emcMatchedTracks, emcMatchedSecondaries);
+      runGenInfo(collisions, mccollisions, mcparticles);
     }
 
     // else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPHOSPHOS) {
     //   auto phosclusters = std::get<0>(std::tie(args...));
     //   runPairing(collisions, phosclusters, phosclusters, nullptr, nullptr, perCollision_phos, perCollision_phos, fPHOSCut, fPHOSCut, nullptr, nullptr);
     // }
-    // else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMEMC) {
-    //   auto v0photons = std::get<0>(std::tie(args...));
-    //   auto v0legs = std::get<1>(std::tie(args...));
-    //   auto emcclusters = std::get<2>(std::tie(args...));
-    //   auto emcmatchedtracks = std::get<3>(std::tie(args...));
-    //   runPairing(collisions, v0photons, emcclusters, v0legs, nullptr, perCollision_pcm, perCollision_emc, fV0PhotonCut, fEMCCut, emcmatchedtracks, nullptr);
-    // } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPHOS) {
+    // else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPHOS) {
     //   auto v0photons = std::get<0>(std::tie(args...));
     //   auto v0legs = std::get<1>(std::tie(args...));
     //   auto phosclusters = std::get<2>(std::tie(args...));
@@ -1058,7 +1062,7 @@ struct Pi0EtaToGammaGammaMC {
   PROCESS_SWITCH(Pi0EtaToGammaGammaMC, processAnalysis, "process pair analysis", true);
 
   // using FilteredMyCollisionsWithJJMC = o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>>;
-  void processAnalysisJJMC(o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>> const& collisions, o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts> const& mccollisions, o2::aod::EMMCParticles const& mcparticles, Types const&... args)
+  void processAnalysisJJMC(o2::soa::Filtered<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMMCEventLabels, o2::aod::EMEventsWeight>> const& collisions, o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts> const& mccollisions, o2::aod::EMMCParticles const& mcparticles, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM) {
       auto&& [v0photons, v0legs] = std::forward_as_tuple(args...);
@@ -1082,19 +1086,17 @@ struct Pi0EtaToGammaGammaMC {
       // runTruePairing(collisions, emcclusters, emcclusters, nullptr, nullptr, perCollision_emc, perCollision_emc, fEMCCut, fEMCCut, mccollisions, mcparticles);
       runTruePairing<EMCTag, EMCTag, o2::soa::CombinationsStrictlyUpperIndexPolicy>(collisions, emcclusters, emcclusters, mccollisions, mcparticles, nullptr, emcMatchedTracks, emcMatchedSecondaries);
       runGenInfo(collisions, mccollisions, mcparticles);
+    } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMEMC) {
+      auto&& [v0photons, emcclusters, v0legs, emcMatchedTracks, emcMatchedSecondaries] = std::forward_as_tuple(args...);
+      runTruePairing<PCMTag, EMCTag, o2::soa::CombinationsFullIndexPolicy>(collisions, v0photons, emcclusters, mccollisions, mcparticles, v0legs, emcMatchedTracks, emcMatchedSecondaries);
+      runGenInfo(collisions, mccollisions, mcparticles);
     }
 
     // else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPHOSPHOS) {
     //   auto phosclusters = std::get<0>(std::tie(args...));
     //   runPairing(collisions, phosclusters, phosclusters, nullptr, nullptr, perCollision_phos, perCollision_phos, fPHOSCut, fPHOSCut, nullptr, nullptr);
     // }
-    // else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMEMC) {
-    //   auto v0photons = std::get<0>(std::tie(args...));
-    //   auto v0legs = std::get<1>(std::tie(args...));
-    //   auto emcclusters = std::get<2>(std::tie(args...));
-    //   auto emcmatchedtracks = std::get<3>(std::tie(args...));
-    //   runPairing(collisions, v0photons, emcclusters, v0legs, nullptr, perCollision_pcm, perCollision_emc, fV0PhotonCut, fEMCCut, emcmatchedtracks, nullptr);
-    // } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPHOS) {
+    // else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPHOS) {
     //   auto v0photons = std::get<0>(std::tie(args...));
     //   auto v0legs = std::get<1>(std::tie(args...));
     //   auto phosclusters = std::get<2>(std::tie(args...));

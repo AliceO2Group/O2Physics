@@ -52,19 +52,19 @@ enum MyTauChannel {
   CH_ENUM_COUNTER = 11
 };
 
-void printLargeMessage(std::string info)
+void printLargeMessage(const std::string& info)
 // Helper to printf info message to terminal
 {
   LOGF(info, "################################### %s ###################################", info);
 }
 
-void printMediumMessage(std::string info)
+void printMediumMessage(const std::string& info)
 // Helper to printf info message to terminal
 {
   LOGF(info, "+++++++++++++ %s +++++++++++++", info);
 }
 
-void printDebugMessage(std::string info)
+void printDebugMessage(const std::string& info)
 // Helper to printf info message to terminal
 {
   LOGF(debug, "X!X!X!X!X!X!X!X!X %s X!X!X!X!X!X!X!X!X", info);

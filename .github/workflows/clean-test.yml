@@ -24,11 +24,6 @@ name: Clean PR checks
         type: boolean
         default: true
 
-      'check_build/O2Physics/o2/macOS':
-        description: build/O2Physics/o2/macOS
-        type: boolean
-        default: true
-
       'check_build/O2Physics/o2':
         description: build/O2Physics/o2
         type: boolean
@@ -36,6 +31,11 @@ name: Clean PR checks
 
       'check_build/O2Physics/staging':
         description: build/O2Physics/staging
+        type: boolean
+        default: true
+
+      'check_build/O2Physics/code-check':
+        description: build/O2Physics/code-check
         type: boolean
         default: true
 

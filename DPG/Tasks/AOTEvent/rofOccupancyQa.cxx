@@ -754,7 +754,7 @@ struct RofOccupancyQaTask {
       // LOGP(info, "#### starting new coll: bc={} bcInTF={} bcInITSROF={} rofId={};  noROFborder={};   rofOffset={} rofLength={}", vFoundGlobalBC[colIndex], bcInTF, bcInITSROF, rofId, bc.selection_bit(kNoITSROFrameBorder), rofOffset, rofLength);
       // LOGP(info, "#### starting new coll: bcInTF={} bcInITSROF={} rofIdInTF={};  noROFborder={},  vZ={} mult={};   rofOffset={} rofLength={}", bcInTF, bcInITSROF, rofIdInTF, bc.selection_bit(kNoITSROFrameBorder), vZ, vTracksITS567perColl[colIndex], rofOffset, rofLength);
 
-      std::vector<int> vAssocToSameROF = vCollsInSameITSROF[colIndex];
+      const std::vector<int>& vAssocToSameROF = vCollsInSameITSROF[colIndex];
       int nITS567tracksForRofVetoStrict = 0;  // to veto events with other collisions in the same ITS ROF
       float nSumAmplFT0CforRofVetoStrict = 0; // to veto events with other collisions in the same ITS ROF
       // int nITS567tracksForRofVetoStandard = 0;           // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
@@ -836,8 +836,8 @@ struct RofOccupancyQaTask {
         vArrNoCollInSameRofWithCloseVz.push_back(vVzCutThisColl);
         continue;
       }
-      std::vector<int> vAssocToThisCol = vCollsInTimeWin[colIndex];
-      std::vector<float> vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
+      const std::vector<int>& vAssocToThisCol = vCollsInTimeWin[colIndex];
+      const std::vector<float>& vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
       int nITS567tracksInFullTimeWindow = 0;
       int sumAmpFT0CInFullTimeWindow = 0;
       int nITS567tracksForVetoNarrow = 0;      // to veto events with nearby collisions (narrower range)

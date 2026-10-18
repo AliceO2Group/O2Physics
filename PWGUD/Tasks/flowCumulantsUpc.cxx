@@ -640,7 +640,7 @@ struct FlowCumulantsUpc {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     registry.fill(HIST("hTrackCount"), 0.5);
     if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
@@ -738,12 +738,12 @@ struct FlowCumulantsUpc {
       registry.fill(HIST("neutronClass"), 0, 0);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
-      neutronClass = 1;
-      registry.fill(HIST("neutronClass"), 0, 1);
-    }
-    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
       neutronClass = 2;
       registry.fill(HIST("neutronClass"), 1, 0);
+    }
+    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
+      neutronClass = 1;
+      registry.fill(HIST("neutronClass"), 0, 1);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
       neutronClass = 3;

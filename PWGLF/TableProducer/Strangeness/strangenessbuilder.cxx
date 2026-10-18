@@ -687,7 +687,7 @@ struct StrangenessBuilder {
     LOGF(info, "Configuring tables to generate");
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
 
-    TString listOfRequestors[nTables];
+    std::array<TString, nTables> listOfRequestors{};
     for (int i = 0; i < nTables; i++) {
       // adjust bookkeeping histogram
       h->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
@@ -1006,7 +1006,7 @@ struct StrangenessBuilder {
                                          AvgPA,                             // 6. Avg Pointing Angle
                                          static_cast<float>(v0zRanks[ic])}; // 7. V0 Vtx z Rank
 
-        float* BDTProbability = deduplication_bdt.evalModel(inputFeatures);
+        const std::vector<float> BDTProbability = deduplication_bdt.evalModel(inputFeatures);
 
         if (BDTProbability[1] > bestMLScore) {
           bestMLScore = BDTProbability[1];

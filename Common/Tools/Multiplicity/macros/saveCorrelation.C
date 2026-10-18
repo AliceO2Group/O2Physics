@@ -26,7 +26,7 @@
 /// @brief function to save Npart x Ncoll correlation to file for glauber fits
 /// @param filename input TGlauberMC ntuple file
 /// @param outputFile output file for Npart x Ncoll correlation TH2D
-void saveCorrelation(TString filename = "gmc-PbPb-snn68.21-md0.40-nd-1.0-rc1-smax99.0.root", TString outputFile = "basehistos.root")
+void saveCorrelation(const TString& filename = "gmc-PbPb-snn68.21-md0.40-nd-1.0-rc1-smax99.0.root", const TString& outputFile = "basehistos.root")
 {
   TFile* fin = new TFile(filename.Data(), "READ");
   TNtuple* ntup = (TNtuple*)fin->Get("nt_Pb_Pb");

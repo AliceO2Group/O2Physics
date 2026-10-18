@@ -42,6 +42,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/ProcessingContext.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Track.h>
@@ -110,6 +111,8 @@ struct NPCascCandidate {
   float pionDCAz;
   float bachDCAxy;
   float bachDCAz;
+  float cascDCADaughters;
+  float v0DCADaughters;
   float casccosPA;
   float v0cosPA;
   double massXi;
@@ -194,6 +197,7 @@ struct NonPromptCascadeTask {
   //
   Produces<o2::aod::NPCollisionTable> NPCollsTable;
   Produces<o2::aod::NPMCChargedTable> NPMCNTable;
+  Produces<o2::aod::NPMCRecoCollisionAssoc> NPMCRecoCollAssocTable;
   Produces<o2::aod::NPRecoChargedCand> NPRecoCandTable;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
@@ -232,6 +236,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMaxMult{"cfgMaxMult", 8000.f, "Upper range of multiplicty histo"};
   Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
   Configurable<std::string> cfgPtEdgesdNdeta{"ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
+  Configurable<int> cfgDownscaleCascTF{"cfgDownscaleCascTF", 1, "Keep one in every N input timeframes for cascade reco and generator output (1 keeps all)"};
   Configurable<int> cfgDownscaleMB{"cfgDownscaleMB", 1, "Downscaling for pile up study sample"};
   Configurable<double> cfgEtaCutdNdeta{"cfgEtaCutdNdeta", 0.8, "Eta cut for charged tracks"};
 
@@ -240,6 +245,8 @@ struct NonPromptCascadeTask {
   SliceCache cache;
 
   Service<o2::ccdb::BasicCCDBManager> mCCDB;
+  uint64_t mTimeframeCount = 0;
+  bool mKeepTimeframe = true;
   int mRunNumber = 0;
   float mBz = 0.f;
   o2::vertexing::DCAFitterN<2> mDCAFitter;
@@ -271,8 +278,21 @@ struct NonPromptCascadeTask {
     }
   }
 
+  // The framework calls run once before all enabled process functions for a timeframe.
+  void run(ProcessingContext&)
+  {
+    mKeepTimeframe = (mTimeframeCount++ % static_cast<uint64_t>(cfgDownscaleCascTF.value)) == 0;
+    mRegistry.fill(HIST("hTimeframeSelection"), mKeepTimeframe ? 1.f : 0.f);
+  }
+
   void init(InitContext& context)
   {
+    if (cfgDownscaleCascTF.value < 1) {
+      LOG(fatal) << "cfgDownscaleCascTF must be at least 1";
+    }
+    auto timeframeSelection = mRegistry.add<TH1>("hTimeframeSelection", ";Timeframe selection;Timeframes", HistType::kTH1D, {{2, -0.5, 1.5}});
+    timeframeSelection->GetXaxis()->SetBinLabel(1, "Skipped");
+    timeframeSelection->GetXaxis()->SetBinLabel(2, "Kept");
     mZorroSummary.setObject(mZorro.getZorroSummary());
     mCCDB->setURL(ccdbUrl);
     mCCDB->setFatalWhenNull(true);
@@ -528,11 +548,14 @@ struct NonPromptCascadeTask {
       o2::math_utils::SVector<double, 3> cascadePos, v0Pos;
 
       float cascCpa = -1, v0Cpa = -1;
+      float cascDCADaughters = -1.f, v0DCADaughters = -1.f;
       o2::track::TrackParCov ntCascadeTrack;
       if (mDCAFitter.process(pionTrkParCov, protonTrkParCov)) {
+        v0DCADaughters = std::sqrt(mDCAFitter.getChi2AtPCACandidate());
         auto trackParCovV0 = mDCAFitter.createParentTrackParCov(0); // V0 track retrieved from p and pi daughters
         v0Pos = mDCAFitter.getPCACandidate();
         if (mDCAFitter.process(trackParCovV0, bachTrkParCov)) {
+          cascDCADaughters = std::sqrt(mDCAFitter.getChi2AtPCACandidate());
           mDCAFitter.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
           mDCAFitter.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
           ntCascadeTrack = mDCAFitter.createParentTrackParCov();
@@ -654,7 +677,7 @@ struct NonPromptCascadeTask {
                                               cascadeLvector.pt(), cascadeLvector.eta(), cascadeLvector.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               motherDCA.getY(), motherDCA.getZ(), protonDCA.getY(), protonDCA.getZ(), pionDCA.getY(), pionDCA.getZ(), bachDCA.getY(), bachDCA.getZ(),
-                                              cascCpa, v0Cpa, massXi, massOmega, v0mass,
+                                              cascDCADaughters, v0DCADaughters, cascCpa, v0Cpa, massXi, massOmega, v0mass,
                                               static_cast<float>(std::hypot(cascadePos[0], cascadePos[1])), static_cast<float>(std::hypot(v0Pos[0], v0Pos[1])), static_cast<float>(std::hypot(cascadePos[0], cascadePos[1], cascadePos[2])), static_cast<float>(std::hypot(v0Pos[0], v0Pos[1], v0Pos[2])),
                                               cascITSclusters, protonTrack.itsNCls(), pionTrack.itsNCls(), bachelor.itsNCls(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachelor.tpcNClsFound(),
                                               protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
@@ -672,7 +695,7 @@ struct NonPromptCascadeTask {
                                   c.cascPt, c.cascEta, c.cascPhi,
                                   c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                                   c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
-                                  c.casccosPA, c.v0cosPA,
+                                  c.cascDCADaughters, c.v0DCADaughters, c.casccosPA, c.v0cosPA,
                                   c.massXi, c.massOmega, c.massV0,
                                   c.cascRadius, c.v0radius, c.cascLength, c.v0length,
                                   c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC,
@@ -711,7 +734,7 @@ struct NonPromptCascadeTask {
                                 c.pvContributors, c.cascPVContribs, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ, c.cascPt, c.cascEta, c.cascPhi,
                                 c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                                 c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
-                                c.casccosPA, c.v0cosPA, c.massXi, c.massOmega, c.massV0, c.cascRadius, c.v0radius, c.cascLength, c.v0length,
+                                c.cascDCADaughters, c.v0DCADaughters, c.casccosPA, c.v0cosPA, c.massXi, c.massOmega, c.massV0, c.cascRadius, c.v0radius, c.cascLength, c.v0length,
                                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC, c.protonTPCNSigma,
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
@@ -747,6 +770,9 @@ struct NonPromptCascadeTask {
                                 aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
                                 aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     fillCandidatesVector<TracksExtMC>(collisions, tracks, trackedCascades, gCandidates);
     fillMCtable<aod::AssignedTrackedCascades>(mcParticles, collisions, gCandidates);
   }
@@ -756,6 +782,9 @@ struct NonPromptCascadeTask {
                          aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
                          aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     fillCandidatesVector<TracksExtMC>(collisions, tracks, cascades, gCandidatesNT);
     fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNT);
     // fillMultHistos<CollisionCandidatesRun3MC>(collisions);
@@ -764,6 +793,9 @@ struct NonPromptCascadeTask {
 
   void processGenParticles(aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     for (const auto& p : mcParticles) {
       auto absCode = std::abs(p.pdgCode());
       if (absCode != 3312 && absCode != 3334) {
@@ -794,6 +826,9 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     mProcessCounter[0]++;
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates);
@@ -805,6 +840,9 @@ struct NonPromptCascadeTask {
                            aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                            aod::BCsWithTimestamps const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     mProcessCounter[1]++;
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
@@ -845,6 +883,7 @@ struct NonPromptCascadeTask {
     static constexpr float MinEtaFT0C = -3.3f;
     static constexpr float MaxEtaFT0C = -2.1f;
     static constexpr float InvalidEta = -999.f;
+    static constexpr int InvalidId = -1;
 
     auto isAcceptedMCParticleFT0 = [&](auto const& mcp) {
       if (!mcp.isPhysicalPrimary()) {
@@ -909,6 +948,9 @@ struct NonPromptCascadeTask {
     // 2) Map aod::Collisions row id -> dense index in 'colls'
     // ------------------------------------------------------------
     int maxCollRowId = -1;
+    for (auto const& col : colls) {
+      maxCollRowId = std::max(maxCollRowId, static_cast<int>(col.globalIndex()));
+    }
     for (auto const& trk : tracks) {
       maxCollRowId = std::max(maxCollRowId, static_cast<int>(trk.collisionId()));
     }
@@ -957,19 +999,6 @@ struct NonPromptCascadeTask {
     // ------------------------------------------------------------
     std::vector<char> isReco(mcParticles.size(), 0);
 
-    // MC collision has a reconstructed collision in 'colls'.
-    // This must be independent of reco-track cuts.
-    std::vector<char> mcCollisionHasRecoCollision(mcCollisions.size(), 0);
-
-    for (auto const& col : colls) {
-      const int mcid = col.mcCollisionId();
-      if (mcid >= 0 && static_cast<size_t>(mcid) < mcCollisionHasRecoCollision.size()) {
-        mcCollisionHasRecoCollision[mcid] = 1;
-      } else {
-        LOG(info) << "4 This should never happen ?";
-      }
-    }
-
     // Downscale output table per MC collision
     std::vector<char> writeMcCollision(mcCollisions.size(), 0);
     int ds = 1;
@@ -993,7 +1022,68 @@ struct NonPromptCascadeTask {
     }
 
     // ------------------------------------------------------------
-    // 5) Matched reconstructed tracks
+    // 5) MC-to-reco collision associations.
+    // Save all associated reconstructed collisions, and keep one
+    // deterministic representative per MC collision for legacy row
+    // columns in NPMCChargedTable.
+    // ------------------------------------------------------------
+    std::vector<char> mcCollisionHasRecoCollision(mcCollisions.size(), 0);
+    std::vector<int> mcCollisionBestRecoCollisionId(mcCollisions.size(), InvalidId);
+    std::vector<int> mcCollisionBestRecoDenseIndex(mcCollisions.size(), InvalidId);
+    std::vector<float> mcCollisionRecoMultFT0M(mcCollisions.size(), InvalidEta);
+    std::vector<float> mcCollisionRecoCentFT0M(mcCollisions.size(), InvalidEta);
+    int nAssocRows = 0;
+
+    denseIdx = 0;
+    for (auto const& col : colls) {
+      const int mcid = col.mcCollisionId();
+      const int recoCollisionId = static_cast<int>(col.globalIndex());
+      if (mcid >= 0 && static_cast<size_t>(mcid) < mcCollisionHasRecoCollision.size()) {
+        mcCollisionHasRecoCollision[mcid] = 1;
+
+        if (writeRecoCollision[denseIdx]) {
+          NPMCRecoCollAssocTable(mcid,
+                                 recoCollisionId,
+                                 recoMultDense[denseIdx],
+                                 mcMult[mcid],
+                                 mcMultFT0[mcid],
+                                 col.multFT0M(),
+                                 col.centFT0M(),
+                                 col.selection_bit(aod::evsel::kNoSameBunchPileup));
+          ++nAssocRows;
+        }
+
+        if (mcCollisionBestRecoDenseIndex[mcid] == InvalidId ||
+            col.multFT0M() > mcCollisionRecoMultFT0M[mcid]) {
+          mcCollisionBestRecoDenseIndex[mcid] = denseIdx;
+          mcCollisionBestRecoCollisionId[mcid] = recoCollisionId;
+          mcCollisionRecoMultFT0M[mcid] = col.multFT0M();
+          mcCollisionRecoCentFT0M[mcid] = col.centFT0M();
+        }
+      } else {
+        LOG(info) << "4 This should never happen ?";
+      }
+      ++denseIdx;
+    }
+
+    for (int mcid = 0; mcid < static_cast<int>(mcCollisions.size()); ++mcid) {
+      if (mcCollisionHasRecoCollision[mcid] || !writeMcCollision[mcid]) {
+        continue;
+      }
+      NPMCRecoCollAssocTable(mcid,
+                             InvalidId,
+                             -1,
+                             mcMult[mcid],
+                             mcMultFT0[mcid],
+                             InvalidEta,
+                             InvalidEta,
+                             false);
+      ++nAssocRows;
+    }
+    LOG(info) << "NPMCRecoCollisionAssoc rows filled: " << nAssocRows;
+
+    // ------------------------------------------------------------
+    // 6) Matched reconstructed tracks
     // ------------------------------------------------------------
     for (auto const& trk : tracks) {
       if (!isAcceptedRecoTrack(trk)) {
@@ -1013,14 +1103,17 @@ struct NonPromptCascadeTask {
       auto col = colls.rawIteratorAt(dIdx);
 
       const int mcCollId = col.mcCollisionId();
+      const int recoCollisionId = static_cast<int>(col.globalIndex());
       const float multReco = recoMultDense[dIdx];
       const float ptReco = trk.pt();
       const float etaReco = trk.eta();
+      const float multFT0M = col.multFT0M();
+      const float centFT0M = col.centFT0M();
 
       if (mcCollId < 0 || static_cast<int64_t>(mcCollId) >= mcCollisions.size()) {
         if (writeRecoCollision[dIdx]) {
           // Fake: accepted reco track whose reconstructed collision has no valid MC collision label.
-          NPMCNTable(-1.f, ptReco, InvalidEta, etaReco, multReco, -1.f, -1.f);
+          NPMCNTable(InvalidId, recoCollisionId, InvalidId, -1.f, ptReco, InvalidEta, etaReco, multReco, -1.f, -1.f, multFT0M, centFT0M);
         }
         continue;
       }
@@ -1029,7 +1122,7 @@ struct NonPromptCascadeTask {
       if (mcPid < 0 || static_cast<int64_t>(mcPid) >= mcParticles.size()) {
         if (writeMcCollision[mcCollId]) {
           // Fake: accepted reco track with invalid or missing MC particle label.
-          NPMCNTable(-2.f, ptReco, InvalidEta, etaReco, multReco, -2.f, mcMultFT0[mcCollId]);
+          NPMCNTable(mcCollId, recoCollisionId, InvalidId, -2.f, ptReco, InvalidEta, etaReco, multReco, -2.f, mcMultFT0[mcCollId], multFT0M, centFT0M);
         }
         continue;
       }
@@ -1040,7 +1133,7 @@ struct NonPromptCascadeTask {
       if (mcParCollId != mcCollId) {
         if (writeMcCollision[mcCollId]) {
           // Fake: reco collision and particle label point to different MC collisions.
-          NPMCNTable(-3.f, ptReco, InvalidEta, etaReco, multReco, -3.f, mcMultFT0[mcCollId]);
+          NPMCNTable(mcCollId, recoCollisionId, mcPid, -3.f, ptReco, InvalidEta, etaReco, multReco, -3.f, mcMultFT0[mcCollId], multFT0M, centFT0M);
         }
         continue;
       }
@@ -1048,7 +1141,7 @@ struct NonPromptCascadeTask {
       if (!isAcceptedMCParticle(mcPar)) {
         if (writeMcCollision[mcCollId]) {
           // Feed-in: accepted reco track matched to truth outside fiducial phase space.
-          NPMCNTable(-4.f, ptReco, mcPar.eta(), etaReco, multReco, -4.f, mcMultFT0[mcCollId]);
+          NPMCNTable(mcCollId, recoCollisionId, mcPid, -4.f, ptReco, mcPar.eta(), etaReco, multReco, -4.f, mcMultFT0[mcCollId], multFT0M, centFT0M);
         }
         continue;
       }
@@ -1067,7 +1160,7 @@ struct NonPromptCascadeTask {
 
       if (writeMcCollision[mcCollId]) {
         // Matched: accepted truth particle reconstructed inside the fiducial reco phase space.
-        NPMCNTable(ptMC, ptReco, etaMC, etaReco, multReco, multMC, mcMultFT0[mcCollId]);
+        NPMCNTable(mcCollId, recoCollisionId, mcPid, ptMC, ptReco, etaMC, etaReco, multReco, multMC, mcMultFT0[mcCollId], multFT0M, centFT0M);
       }
     }
 
@@ -1075,12 +1168,12 @@ struct NonPromptCascadeTask {
     // 6) MC particles with no accepted reco track,
     //    but from MC collisions that have a reconstructed collision
     // ------------------------------------------------------------
-    for (int pid = 0; pid < static_cast<int>(mcParticles.size()); ++pid) {
-      if (isReco[pid]) {
+    for (int mcParticleIndex = 0; mcParticleIndex < static_cast<int>(mcParticles.size()); ++mcParticleIndex) {
+      if (isReco[mcParticleIndex]) {
         continue;
       }
 
-      auto mcp = mcParticles.rawIteratorAt(pid);
+      auto mcp = mcParticles.rawIteratorAt(mcParticleIndex);
 
       if (!isAcceptedMCParticle(mcp)) {
         continue;
@@ -1097,6 +1190,9 @@ struct NonPromptCascadeTask {
 
       const float multMC = mcMult[mcid];
       const float multMCFT0 = mcMultFT0[mcid];
+      const float multFT0M = mcCollisionRecoMultFT0M[mcid];
+      const float centFT0M = mcCollisionRecoCentFT0M[mcid];
+      const int recoCollisionId = mcCollisionBestRecoCollisionId[mcid];
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"),
                            multMC,
@@ -1104,7 +1200,7 @@ struct NonPromptCascadeTask {
 
       if (writeMcCollision[mcid]) {
         // Missed track: accepted truth particle in a reconstructed MC collision, but no accepted reco track.
-        NPMCNTable(mcp.pt(), -1.f, mcp.eta(), InvalidEta, -1.f, multMC, multMCFT0);
+        NPMCNTable(mcid, recoCollisionId, mcParticleIndex, mcp.pt(), -1.f, mcp.eta(), InvalidEta, -1.f, multMC, multMCFT0, multFT0M, centFT0M);
       }
     }
 
@@ -1119,7 +1215,8 @@ struct NonPromptCascadeTask {
       const float multMC = mcMult[mcid];
       const float multMCFT0 = mcMultFT0[mcid];
 
-      for (auto const& mcp : mcParticles) {
+      for (int mcParticleIndex = 0; mcParticleIndex < static_cast<int>(mcParticles.size()); ++mcParticleIndex) {
+        auto mcp = mcParticles.rawIteratorAt(mcParticleIndex);
         if (mcp.mcCollisionId() != mcid) {
           continue;
         }
@@ -1134,7 +1231,7 @@ struct NonPromptCascadeTask {
 
         if (writeMcCollision[mcid]) {
           // Missed collision: accepted truth particle from an MC collision with no reconstructed collision.
-          NPMCNTable(mcp.pt(), -2.f, mcp.eta(), InvalidEta, -2.f, multMC, multMCFT0);
+          NPMCNTable(mcid, InvalidId, mcParticleIndex, mcp.pt(), -2.f, mcp.eta(), InvalidEta, -2.f, multMC, multMCFT0, InvalidEta, InvalidEta);
         }
       }
     }

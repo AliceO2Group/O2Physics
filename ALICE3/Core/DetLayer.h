@@ -108,25 +108,25 @@ struct DetLayer {
   TString mName;
 
   // position variables
-  float mR; // radius in centimeters
-  float mZ; // mZ dimension in centimeters
+  float mR{}; // radius in centimeters
+  float mZ{}; // mZ dimension in centimeters
 
   // material variables
-  float mX0;   // radiation length
-  float mXrho; // density
+  float mX0{};   // radiation length
+  float mXrho{}; // density
 
   // resolution variables for active layers
-  float mResRPhi; // RPhi resolution in centimeters
-  float mResZ;    // Z resolution in centimeters
+  float mResRPhi{}; // RPhi resolution in centimeters
+  float mResZ{};    // Z resolution in centimeters
 
   // efficiency
-  float mEff; // detection efficiency
+  float mEff{1.f}; // detection efficiency
 
   // dead regions in phi (in radians)
   TGraph* mDeadPhiRegions = nullptr;
 
   // layer type
-  int mType; // 0: undefined/inert, 1: silicon, 2: gas/tpc
+  int mType{0}; // 0: undefined/inert, 1: silicon, 2: gas/tpc
 };
 
 } // namespace o2::fastsim

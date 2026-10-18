@@ -151,7 +151,7 @@ struct rho770analysis {
   double massKa = MassKaonCharged;
 
   template <typename TrackType>
-  bool selTrack(const TrackType track)
+  bool selTrack(const TrackType& track)
   {
     if (std::abs(track.pt()) < cfgMinPt)
       return false;
@@ -194,7 +194,7 @@ struct rho770analysis {
   }
 
   template <typename TrackType>
-  bool selPion(const TrackType track)
+  bool selPion(const TrackType& track)
   {
     const auto mode = static_cast<TrackPIDMode>(selectTypeInt.value);
 
@@ -223,7 +223,7 @@ struct rho770analysis {
   }
 
   template <typename TrackType>
-  bool selKaon(const TrackType track)
+  bool selKaon(const TrackType& track)
   {
     const auto mode = static_cast<TrackPIDMode>(selectTypeInt.value);
 

@@ -272,6 +272,7 @@ struct MftReassociationValidation {
     Configurable<bool> fillGeneralHistograms{"fillGeneralHistograms", true, "Fill general reassociation efficiencyhistograms"};
     Configurable<bool> fillSpecificHistograms{"fillSpecificHistograms", true, "Fill specific histograms (DCA, DeltaPos)"};
     Configurable<bool> fillParametersHistograms{"fillParametersHistograms", true, "Fill parameters histograms"};
+    Configurable<bool> fillDcaTemplateFit{"fillDcaTemplateFit", true, "Fill DCA template histograms for primary/secondary fraction fit"};
     Configurable<bool> keepOnlyPhysicalPrimary{"keepOnlyPhysicalPrimary", true, "Keep only physical primary particles"};
     Configurable<bool> keepOnlySecondaries{"keepOnlySecondaries", false, "Keep only secondary particles"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -309,8 +310,6 @@ struct MftReassociationValidation {
     Configurable<bool> cutOrphanTracksExplicitly{"cutOrphanTracksExplicitly", false, "if true, cut orphan tracks explicitly"};
     Configurable<bool> cutOnDcaXY{"cutOnDcaXY", false, "if true, cut on DCA XY"};
     Configurable<bool> cutOnDcaZ{"cutOnDcaZ", false, "if true, cut on DCA Z"};
-    Configurable<float> dcaXYMax{"dcaXYMax", 2.0f, "Maximum value for DCA XY"};
-    Configurable<float> dcaZMax{"dcaZMax", 10.0f, "Maximum value for DCA Z"};
     Configurable<float> etaMftTrackMax{"etaMftTrackMax", -2.4f, "Maximum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks when used in filter"};
@@ -406,6 +405,8 @@ struct MftReassociationValidation {
     ConfigurableAxis axisDcaX{"axisDcaX", {500, -0.1, 2.1}, "DCAx binning (cm)"};
     ConfigurableAxis axisDcaY{"axisDcaY", {500, -0.1, 2.1}, "DCAy binning (cm)"};
     ConfigurableAxis axisDcaZ{"axisDcaZ", {500, -1., 1.}, "DCAz binning (cm)"};
+    ConfigurableAxis axisDcaXYfit{"axisDcaXYfit", {500, 0., 2.}, "DCAxy binning (cm) for the template fit"};
+    ConfigurableAxis axisDcaZfit{"axisDcaZfit", {500, -1., 1.}, "DCAz binning (cm) for the template fit"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
     ConfigurableAxis axisPhi{"axisPhi", {72, 0, TwoPI}, "phi axis for histograms"};
     ConfigurableAxis axisPt{"axisPt", {72, 0, 36}, "pt axis for histograms"};
@@ -578,6 +579,11 @@ struct MftReassociationValidation {
         registry.get<TH1>(HIST("MC/2D/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[iBin].data());
       }
     }
+
+    if (configTask.fillDcaTemplateFit) {
+      registry.add("MC/2D/DcaFit/hPtVsDcaXY_prim", "Primary DCA_{xy} (2D);p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+      registry.add("MC/2D/DcaFit/hPtVsDcaXY_sec", "Secondary DCA_{xy} (2D);p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+    }
   }
 
   void addMftMonteCarloHistograms3D()
@@ -688,6 +694,20 @@ struct MftReassociationValidation {
         registry.get<TH1>(HIST("MC/3D/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[iBin].data());
         registry.get<TH1>(HIST("MC/3D/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[iBin].data());
       }
+    }
+
+    if (configTask.fillDcaTemplateFit) {
+      // 3D reassociated
+      registry.add("MC/3D/DcaFit/hPtVsDcaXY_prim", "Primary DCA_{xy} (3D);p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+      registry.add("MC/3D/DcaFit/hPtVsDcaXY_sec", "Secondary DCA_{xy} (3D);p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+      registry.add("MC/3D/DcaFit/hPtVsDcaZ_prim", "Primary DCA_{z} (3D);p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaZfit});
+      registry.add("MC/3D/DcaFit/hPtVsDcaZ_sec", "Secondary DCA_{z} (3D);p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaZfit});
+
+      // Non-ambiguous
+      registry.add("MC/3D/DcaFit/NonAmb/hPtVsDcaXY_prim", "NonAmb Primary DCA_{xy};p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+      registry.add("MC/3D/DcaFit/NonAmb/hPtVsDcaXY_sec", "NonAmb Secondary DCA_{xy};p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+      registry.add("MC/3D/DcaFit/NonAmb/hPtVsDcaZ_prim", "NonAmb Primary DCA_{z};p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaZfit});
+      registry.add("MC/3D/DcaFit/NonAmb/hPtVsDcaZ_sec", "NonAmb Secondary DCA_{z};p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaZfit});
     }
   }
 
@@ -833,6 +853,10 @@ struct MftReassociationValidation {
 
     if (doprocessData) {
       addMftHistograms<Data, TwoDimensional>();
+
+      if (configTask.fillDcaTemplateFit) {
+        registry.add("Data/2D/DcaFit/hPtVsDcaXY", "Data DCA_{xy} (2D);p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+      }
     }
 
     if (doprocessMcReassociated2d) {
@@ -857,6 +881,18 @@ struct MftReassociationValidation {
       addMftMonteCarloHistograms3D();
     }
 
+    if (doprocessData3d) {
+      addMftHistograms<Data, ThreeDimensional>();
+
+      if (configTask.fillDcaTemplateFit) {
+        registry.add("Data/3D/DcaFit/hPtVsDcaXY", "Data DCA_{xy} (3D);p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+        registry.add("Data/3D/DcaFit/hPtVsDcaZ", "Data DCA_{z} (3D);p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaZfit});
+
+        registry.add("Data/3D/DcaFit/NonAmb/hPtVsDcaXY", "NonAmb Data DCA_{xy};p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaXYfit});
+        registry.add("Data/3D/DcaFit/NonAmb/hPtVsDcaZ", "NonAmb Data DCA_{z};p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {configAxis.axisPt, configAxis.axisDcaZfit});
+      }
+    }
+
   } // End of init() function
 
   // =========================
@@ -864,7 +900,7 @@ struct MftReassociationValidation {
   // =========================
 
   template <typename TCollision>
-  float getMultiplicityEstimator(TCollision collision)
+  float getMultiplicityEstimator(const TCollision& collision)
   {
     switch (configCollision.multiplicityEstimator) {
       case MultiplicityEstimators::MultNTracksPV:
@@ -896,7 +932,7 @@ struct MftReassociationValidation {
   }
 
   template <typename TTrack>
-  bool isTrueCollisionAmongCompatibleCollisions(TTrack track)
+  bool isTrueCollisionAmongCompatibleCollisions(const TTrack& track)
   {
 
     auto const& compatibleIds = track.compatibleCollIds();
@@ -1108,11 +1144,11 @@ struct MftReassociationValidation {
       }
     }
 
-    if (configMft.cutOnDcaXY && std::abs(dcaXY) > configMft.dcaXYMax) {
+    if (configMft.cutOnDcaXY && std::abs(dcaXY) > configMft.mftMaxDCAxy) {
       return false;
     }
     registry.fill(HIST("MC/") + HIST(WhatReassociationMethod[ReassociationMethod]) + HIST("hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterDcaXYCut);
-    if (configMft.cutOnDcaZ && std::abs(dcaZ) > configMft.dcaZMax) {
+    if (configMft.cutOnDcaZ && std::abs(dcaZ) > configMft.mftMaxDCAz) {
       return false;
     }
     registry.fill(HIST("MC/") + HIST(WhatReassociationMethod[ReassociationMethod]) + HIST("hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterDcaZCut);
@@ -1199,30 +1235,76 @@ struct MftReassociationValidation {
 
     for (const auto& reassociated2dMftTrack : reassociated2dMftTracks) {
 
-      registry.fill(HIST("Data/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AllMftTracks);
       auto templatedMftTrack = reassociated2dMftTrack.template mfttrack_as<FilteredMftTracks>();
 
       o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedMftTrack, mZShift);
       std::array<double, 3> dcaInfOrig;
       trackPar.propagateToDCAhelix(bZ, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
-      auto dcaXYoriginal = 999.f;
-      dcaXYoriginal = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
+      // auto dcaXYoriginal = 999.f;
+      // dcaXYoriginal = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
 
-      if (!isAcceptedMftTrack<TwoDimensional>(templatedMftTrack, false, true, dcaXYoriginal, dcaInfOrig[2])) {
+      if (!isAcceptedMftTrack<TwoDimensional>(templatedMftTrack, false, true, reassociated2dMftTrack.bestDCAXY(), dcaInfOrig[2])) {
         continue;
       }
 
-      registry.fill(HIST("Data/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AfterTrackSelection);
-
-      if (isAmbiguousMftTrack<Data, TwoDimensional>(reassociated2dMftTrack, true)) {
-        registry.fill(HIST("Data/hReassociation2dMftTracks"), Reassociation2dMftTracks::NotReassociated2dMftTracks);
+      if (configTask.fillDcaTemplateFit) {
+        registry.fill(HIST("Data/2D/DcaFit/hPtVsDcaXY"), templatedMftTrack.pt(), reassociated2dMftTrack.bestDCAXY());
       }
 
     } // end of loop over reassociated MFT tracks
-
-    // TO-DO the same for reassociated3d (change the histograms)
   }
   PROCESS_SWITCH(MftReassociationValidation, processData, "Process MFT reassociation validation for DATA", false);
+
+  void processData3d(FilteredCollisionsWSelMult::iterator const& collision,
+                     FilteredMftTracks const& /*mftTracks*/,
+                     soa::SmallGroups<aod::BestCollisionsFwd3d> const& reassociated3dMftTracks,
+                     aod::BCsWithTimestamps const&)
+  {
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    if (areCorrectionsLoaded == false) {
+      loadZVertexShiftCorrection(bc);
+      areCorrectionsLoaded = true;
+    }
+
+    if (!isAcceptedCollision<ThreeDimensional>(collision, false)) {
+      return;
+    }
+
+    for (const auto& reassociated3dMftTrack : reassociated3dMftTracks) {
+      auto templatedMftTrack = reassociated3dMftTrack.template mfttrack_as<FilteredMftTracks>();
+
+      // // Compute DCA at original collision for isAcceptedMftTrack
+      // o2::track::TrackParCovFwd trackPar =
+      //   o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedMftTrack, mZShift);
+      // std::array<double, 3> dcaInfOrig;
+      // trackPar.propagateToDCAhelix(
+      //   bZ,
+      //   {collision.posX(), collision.posY(), collision.posZ()},
+      //   dcaInfOrig);
+      // const float dcaXYoriginal =
+      //   std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] +
+      //             dcaInfOrig[1] * dcaInfOrig[1]);
+
+      // Use existing track selection function (unchanged)
+      if (!isAcceptedMftTrack<ThreeDimensional>(templatedMftTrack, false, true, reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ())) {
+        continue;
+      }
+
+      if (configTask.fillDcaTemplateFit) {
+        registry.fill(HIST("Data/3D/DcaFit/hPtVsDcaXY"), templatedMftTrack.pt(), reassociated3dMftTrack.bestDCAXY());
+        registry.fill(HIST("Data/3D/DcaFit/hPtVsDcaZ"), templatedMftTrack.pt(), reassociated3dMftTrack.bestDCAZ());
+      }
+
+      // The same for nonambi only
+      if (reassociated3dMftTrack.ambDegree() == 1) {
+        if (configTask.fillDcaTemplateFit) {
+          registry.fill(HIST("Data/3D/DcaFit/NonAmb/hPtVsDcaXY"), templatedMftTrack.pt(), reassociated3dMftTrack.bestDCAXY());
+          registry.fill(HIST("Data/3D/DcaFit/NonAmb/hPtVsDcaZ"), templatedMftTrack.pt(), reassociated3dMftTrack.bestDCAZ());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(MftReassociationValidation, processData3d, "Process DCA fit histograms for DATA 3D reassociation", false);
 
   void processCreateLookupTable(FilteredCollisionsWSelMultMcLabels const& collisions, soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions)
   {
@@ -1347,6 +1429,15 @@ struct MftReassociationValidation {
         registry.fill(HIST("MC/2D/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::HasMcParticle);
 
         auto particle = templatedTrack.template mcParticle_as<aod::McParticles>();
+
+        if (configTask.fillDcaTemplateFit) {
+          if (particle.isPhysicalPrimary()) {
+            registry.fill(HIST("MC/2D/DcaFit/hPtVsDcaXY_prim"), templatedTrack.pt(), reassociated2dMftTrack.bestDCAXY());
+          } else {
+            registry.fill(HIST("MC/2D/DcaFit/hPtVsDcaXY_sec"), templatedTrack.pt(), reassociated2dMftTrack.bestDCAXY());
+          }
+        }
+
         float deltaX = -999.f;
         float deltaY = -999.f;
         float deltaZ = -999.f;
@@ -1734,6 +1825,25 @@ struct MftReassociationValidation {
         registry.fill(HIST("MC/3D/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::HasMcParticle);
 
         auto particle = templatedTrack.template mcParticle_as<aod::McParticles>();
+
+        if (configTask.fillDcaTemplateFit) {
+          if (particle.isPhysicalPrimary()) {
+            registry.fill(HIST("MC/3D/DcaFit/hPtVsDcaXY_prim"), templatedTrack.pt(), reassociated3dMftTrack.bestDCAXY());
+            registry.fill(HIST("MC/3D/DcaFit/hPtVsDcaZ_prim"), templatedTrack.pt(), reassociated3dMftTrack.bestDCAZ());
+            if (reassociated3dMftTrack.ambDegree() == 1) {
+              registry.fill(HIST("MC/3D/DcaFit/NonAmb/hPtVsDcaXY_prim"), templatedTrack.pt(), reassociated3dMftTrack.bestDCAXY());
+              registry.fill(HIST("MC/3D/DcaFit/NonAmb/hPtVsDcaZ_prim"), templatedTrack.pt(), reassociated3dMftTrack.bestDCAZ());
+            }
+          } else {
+            registry.fill(HIST("MC/3D/DcaFit/hPtVsDcaXY_sec"), templatedTrack.pt(), reassociated3dMftTrack.bestDCAXY());
+            registry.fill(HIST("MC/3D/DcaFit/hPtVsDcaZ_sec"), templatedTrack.pt(), reassociated3dMftTrack.bestDCAZ());
+            if (reassociated3dMftTrack.ambDegree() == 1) {
+              registry.fill(HIST("MC/3D/DcaFit/NonAmb/hPtVsDcaXY_sec"), templatedTrack.pt(), reassociated3dMftTrack.bestDCAXY());
+              registry.fill(HIST("MC/3D/DcaFit/NonAmb/hPtVsDcaZ_sec"), templatedTrack.pt(), reassociated3dMftTrack.bestDCAZ());
+            }
+          }
+        }
+
         float deltaX = -999.f;
         float deltaY = -999.f;
         float deltaZ = -999.f;

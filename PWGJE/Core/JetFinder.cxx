@@ -48,6 +48,11 @@ void JetFinder::setParams()
   jetDef.set_jet_algorithm(algorithm);
   areaDef = fastjet::AreaDefinition(areaType, ghostAreaSpec);
   selJets = fastjet::SelectorPtRange(jetPtMin, jetPtMax) && fastjet::SelectorEtaRange(jetEtaMin, jetEtaMax) && fastjet::SelectorPhiRange(jetPhiMin, jetPhiMax);
+
+  if (phiExclusionMin > -998.0) {
+    // automatically jets around exclusion region
+    selJets = selJets && (!fastjet::SelectorPhiRange(phiExclusionMin - jetR, phiExclusionMax + jetR));
+  }
 }
 
 /// Performs jet finding

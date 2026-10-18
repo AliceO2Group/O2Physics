@@ -784,7 +784,7 @@ struct FlowGfwOmegaXi {
   }
 
   // input shared_ptr<TProfile>
-  void fillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> TProfile, const double& cent)
+  void fillProfile(const GFW::CorrConfig& corrconf, const std::shared_ptr<TProfile>& TProfile, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -889,7 +889,7 @@ struct FlowGfwOmegaXi {
   }
 
   // input shared_ptr<TProfile3D>
-  void fillProfilepTMass(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile3D> TProfile3D, const int& ptbin, const int& PDGCode, const float& cent)
+  void fillProfilepTMass(const GFW::CorrConfig& corrconf, const std::shared_ptr<TProfile3D>& TProfile3D, const int& ptbin, const int& PDGCode, const float& cent)
   {
     int nMassBins = 0;
     int nptbins = 0;
@@ -955,7 +955,7 @@ struct FlowGfwOmegaXi {
   }
 
   template <typename TrackObject>
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz, int ispecies)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, const TrackObject& track, float vtxz, int ispecies)
   {
     float eff = 1.;
     int nspecies = 5;
@@ -979,7 +979,7 @@ struct FlowGfwOmegaXi {
   }
 
   template <typename TrackObject>
-  bool setCurrentLocalDensityWeights(float& weight_loc, TrackObject track, double locDensity, int ispecies)
+  bool setCurrentLocalDensityWeights(float& weight_loc, const TrackObject& track, double locDensity, int ispecies)
   {
     auto cfgLocDenPara = (std::vector<std::vector<double>>){cfgLocDenParaK0s, cfgLocDenParaLambda, cfgLocDenParaXi, cfgLocDenParaOmega};
     int ptbin = fXiPtAxis->FindBin(track.pt());
@@ -997,7 +997,7 @@ struct FlowGfwOmegaXi {
 
   // event selection
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const float centrality, float interactionRate = -1)
+  bool eventSelected(const TCollision& collision, const float centrality, float interactionRate = -1)
   {
     if (evtSeleOpts.cfgDoTVXinTRD.value && collision.alias_bit(kTVXinTRD)) {
       // TRD triggered

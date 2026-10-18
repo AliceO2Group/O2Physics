@@ -567,7 +567,9 @@ DECLARE_SOA_TABLE(FDHfCharm3Prong, "AOD", "FDHFCHARM3PRONG", //! table to store 
                   fdhf::Charge,
                   fdhf::BDTBkg,
                   fdhf::BDTPrompt,
-                  fdhf::BDTFD);
+                  fdhf::BDTFD,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
 
 DECLARE_SOA_TABLE(FDHfCharm2Prong, "AOD", "FDHFCHARM2PRONG", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
@@ -581,7 +583,9 @@ DECLARE_SOA_TABLE(FDHfCharm2Prong, "AOD", "FDHFCHARM2PRONG", //! table to store 
                   fdhf::Charge,
                   fdhf::BDTBkg,
                   fdhf::BDTPrompt,
-                  fdhf::BDTFD);
+                  fdhf::BDTFD,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
 
 DECLARE_SOA_TABLE(FDHfCharmDstar, "AOD", "FDHFCHARMDSTAR", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
@@ -597,7 +601,9 @@ DECLARE_SOA_TABLE(FDHfCharmDstar, "AOD", "FDHFCHARMDSTAR", //! table to store re
                   fdhf::Charge,
                   fdhf::BDTBkg,
                   fdhf::BDTPrompt,
-                  fdhf::BDTFD);
+                  fdhf::BDTFD,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
 
 DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,

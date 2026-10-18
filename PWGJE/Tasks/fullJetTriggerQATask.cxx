@@ -420,7 +420,7 @@ struct JetTriggerQA {
   }
 
   template <typename T, typename U>
-  void check_maxJetPt(T const jet, U& vecMaxJet)
+  void check_maxJetPt(T const& jet, U& vecMaxJet)
   {
     for (unsigned int i = 0; i < vecMaxJet.size(); i++) {
       auto maxJet = vecMaxJet[i];

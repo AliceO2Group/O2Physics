@@ -279,9 +279,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
     ConfigurableAxis mixingBinVztx{"mixingBinVztx", {VARIABLE_WIDTH, -10.0f, -4.f, 0.f, 4.f, 10.f}, "Mixing bins - z-vertex"};
   } AxisBinning;
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -330,9 +330,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
     bool processDstar = doprocessDataDstarV0;
 
     // setup columnpolicy for binning
-    colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}, true};
-    colBinningMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}, true};
-    colBinningMultMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}, true};
+    colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
+    colBinningMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}};
+    colBinningMultMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}};
     eventHisto.init(&registry);
     v0HistoPartOne.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binInvMassV0, AxisBinning.binInvMassV0, isMc, v0Sel.pdgCodeV0, true);
     v0HistoPartOneSelected.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binInvMassV0, AxisBinning.binInvMassV0, isMc, v0Sel.pdgCodeV0, true);
@@ -627,6 +627,13 @@ struct HfTaskCharmHadronsV0FemtoDream {
       registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), part.pt(), invMass);
       timeStamp = part.timeStamp();
 
+      int charmHadMc = 0;
+      int originType = 0;
+      if constexpr (IsMc) {
+        charmHadMc = part.flagMc();
+        originType = part.originMcRec();
+      }
+
       if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
         rowFemtoResultCharm3Prong(
@@ -642,7 +649,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::D0ToPiK) {
         rowFemtoResultCharm2Prong(
           col.globalIndex(),
@@ -656,7 +665,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         float invMassD0 = getCharmHadronMass<Channel>(part, true);
         rowFemtoResultCharmDstar(
@@ -673,7 +684,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       }
     }
 

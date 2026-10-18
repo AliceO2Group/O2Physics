@@ -95,16 +95,6 @@ o2physics_add_dpl_workflow(dielectron-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dielectron-sv
-                    SOURCES dielectronSV.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dielectron-sv-mc
-                    SOURCES dielectronSVMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(dimuon
                     SOURCES dimuon.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
@@ -113,16 +103,6 @@ o2physics_add_dpl_workflow(dimuon
 o2physics_add_dpl_workflow(dimuon-mc
                     SOURCES dimuonMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dimuon-sv
-                    SOURCES dimuonSV.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dimuon-sv-mc
-                    SOURCES dimuonSVMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dimuon-v1
@@ -172,7 +152,7 @@ o2physics_add_dpl_workflow(study-dcafitter
 
 o2physics_add_dpl_workflow(test-pv
                     SOURCES testPV.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(evaluate-acceptance

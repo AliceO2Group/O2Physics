@@ -116,7 +116,7 @@ bool isPhotonAccepted(Photon const& p, emcal::Geometry* emcalGeom = nullptr)
 }
 
 struct Meson {
-  Meson(Photon p1, Photon p2) : p1(p1), p2(p2)
+  Meson(const Photon& p1, const Photon& p2) : p1(p1), p2(p2)
   {
     pMeson = p1.photon + p2.photon;
   }

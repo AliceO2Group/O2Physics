@@ -18,8 +18,7 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
-#ifndef PWGHF_D2H_MACROS_HFINVMASSFITTERLINKDEF_H_
-#define PWGHF_D2H_MACROS_HFINVMASSFITTERLINKDEF_H_
+// NOLINT(build/header_guard)
 
 #ifdef __CINT__
 #pragma link off all globals;
@@ -27,5 +26,3 @@
 #pragma link off all functions;
 #pragma link C++ class HFInvMassFitter + ;
 #endif
-
-#endif // PWGHF_D2H_MACROS_HFINVMASSFITTERLINKDEF_H_

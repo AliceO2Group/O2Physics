@@ -522,6 +522,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from pi0 decays", {prong}, {-1});
     return signal;
   }
+  if (nameStr == "ePrimaryFromPi0") {
+    MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from primary pi0 decays", {prong}, {-1});
+    return signal;
+  }
+  if (nameStr == "eSecondaryFromPi0") {
+    MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, true);
+    signal = new MCSignal(name, "Electrons from secondary pi0 decays", {prong}, {-1});
+    return signal;
+  }
   if (nameStr == "ePrimaryFromPromptPi0") {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -531,6 +543,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (nameStr == "eFromEta") {
     MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from eta decays", {prong}, {-1});
+    return signal;
+  }
+  if (nameStr == "ePrimaryFromEta") {
+    MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from primary eta decays", {prong}, {-1});
+    return signal;
+  }
+  if (nameStr == "eSecondaryFromEta") {
+    MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, true);
+    signal = new MCSignal(name, "Electrons from secondary eta decays", {prong}, {-1});
     return signal;
   }
   if (nameStr == "eFromEtaPrime") {
@@ -885,6 +909,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 
   //_________________________________________________________________________________________________________________________
   // LMEE pair signals for LF, same mother
+  if (nameStr == "eeDuplicated") { // check whether we have two tracks pointing to the same MC particle
+    MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "duplicated electron", {prong, prong}, {0, 0}); // signal at pair level
+    return signal;
+  }
   if (nameStr == "eeFromAnything") {
     MCProng prong(2, {11, MCProng::kPDGCodeNotAssigned}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -897,6 +927,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "ee pairs from pi0 decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
+  if (nameStr == "eeSecondaryFromPi0") {
+    MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, true);
+    signal = new MCSignal(name, "ee secondary pairs from pi0 decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
   if (nameStr == "eePrimaryFromPromptPi0") {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -906,6 +942,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (nameStr == "eeFromEta") {
     MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from eta decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (nameStr == "eeSecondaryFromEta") {
+    MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, true);
     signal = new MCSignal(name, "ee pairs from eta decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
@@ -1769,7 +1811,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Jpsi from Chic2 decays", {prong}, {1});
     return signal;
   }
-  if (nameStr == "JpsiFromChic2") {
+  if (nameStr == "JpsiFromChic") {
     MCProng prong(2, {443, 904}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Jpsi from Chic0, Chic1 or Chic2 decays", {prong}, {1});
@@ -2038,6 +2080,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "anyprimary and electron pair from non-prompt jpsi", {pronge, pronge, prongPrimary}, {1, 1, -1});
     return signal;
   }
+
+  LOGF(warn, "Did not find MC signal %s", nameStr);
   return nullptr;
 }
 
@@ -2080,9 +2124,9 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
     if (!ValidateJSONMCSignal(&signal, sigName)) {
       LOG(fatal) << "MCSignal JSON not properly defined for " << sigName << ". Skipping";
       continue;
-    } else {
-      LOG(debug) << "MCSignal validated";
     }
+
+    LOG(debug) << "MCSignal validated";
 
     // Get the signal title
     const char* title = (signal.HasMember("title") ? signal.FindMember("title")->value.GetString() : "");
@@ -2121,7 +2165,7 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
     // Get the common ancestors array
     std::vector<int8_t> commonAncestors;
     if (signal.HasMember("commonAncestors")) {
-      for (auto& v : signal.FindMember("commonAncestors")->value.GetArray()) {
+      for (const auto& v : signal.FindMember("commonAncestors")->value.GetArray()) {
         commonAncestors.push_back(v.GetInt());
         LOG(debug) << "common ancestor " << v.GetInt();
       }
@@ -2131,7 +2175,7 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
       }
     }
 
-    if (prongs.size() == 0) {
+    if (prongs.empty()) {
       LOG(fatal) << "No prongs were defined for this MCSignal!";
       return signals;
     }
@@ -2196,13 +2240,13 @@ bool o2::aod::dqmcsignals::ValidateJSONMCProng(T prongJSON, const char* prongNam
       return false;
     }
     std::vector<uint32_t> nSourceBits;
-    for (auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
+    for (const auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
       if (!ii.IsArray()) {
         LOG(fatal) << "The sourceBits field should be an array of arrays of MCProng::Source";
         return false;
       }
       nSourceBits.push_back(ii.GetArray().Size());
-      for (auto& iii : ii.GetArray()) {
+      for (const auto& iii : ii.GetArray()) {
         if (MCProng::fgSourceNames.find(iii.GetString()) == MCProng::fgSourceNames.end()) {
           LOG(fatal) << "Source " << iii.GetString() << " not implemented in MCProng";
           return false;
@@ -2215,7 +2259,7 @@ bool o2::aod::dqmcsignals::ValidateJSONMCProng(T prongJSON, const char* prongNam
         return false;
       }
       int iElem = 0;
-      for (auto& ii : prongJSON->FindMember("excludeSource")->value.GetArray()) {
+      for (const auto& ii : prongJSON->FindMember("excludeSource")->value.GetArray()) {
         if (!ii.IsArray()) {
           LOG(fatal) << "The excludeSource field should be an array of arrays of bool";
           return false;
@@ -2293,13 +2337,13 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
   LOG(debug) << "n: " << n;
   // Get the array of PDG codes
   std::vector<int> pdgs;
-  for (auto& pdg : prongJSON->FindMember("pdgs")->value.GetArray()) {
+  for (const auto& pdg : prongJSON->FindMember("pdgs")->value.GetArray()) {
     pdgs.push_back(pdg.GetInt());
     LOG(debug) << "pdgs: " << pdg.GetInt();
   }
   // get the array of booleans for check both charges option
   std::vector<bool> checkBothCharges;
-  for (auto& ii : prongJSON->FindMember("checkBothCharges")->value.GetArray()) {
+  for (const auto& ii : prongJSON->FindMember("checkBothCharges")->value.GetArray()) {
     checkBothCharges.push_back(ii.GetBool());
     LOG(debug) << "check both charges " << ii.GetBool();
   }
@@ -2307,7 +2351,7 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
   // get the array of booleans for the excludePDG option, defaults to false
   std::vector<bool> excludePDG;
   if (prongJSON->HasMember("excludePDG")) {
-    for (auto& ii : prongJSON->FindMember("excludePDG")->value.GetArray()) {
+    for (const auto& ii : prongJSON->FindMember("excludePDG")->value.GetArray()) {
       excludePDG.push_back(ii.GetBool());
       LOG(debug) << "exclude pdg " << ii.GetBool();
     }
@@ -2320,9 +2364,9 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
   // get the source bits, and transform from string to int
   std::vector<std::vector<int>> sourceBitsVec;
   if (prongJSON->HasMember("sourceBits")) {
-    for (auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
+    for (const auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
       std::vector<int> sourceBits;
-      for (auto& iii : ii.GetArray()) {
+      for (const auto& iii : ii.GetArray()) {
         sourceBits.push_back(MCProng::fgSourceNames[iii.GetString()]);
         LOG(debug) << "source bit " << iii.GetString();
       }
@@ -2332,9 +2376,9 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
   // prepare the exclusion source options if specified
   std::vector<std::vector<bool>> excludeSourceVec;
   if (prongJSON->HasMember("excludeSource")) {
-    for (auto& ii : prongJSON->FindMember("excludeSource")->value.GetArray()) {
+    for (const auto& ii : prongJSON->FindMember("excludeSource")->value.GetArray()) {
       std::vector<bool> excludeSource;
-      for (auto& iii : ii.GetArray()) {
+      for (const auto& iii : ii.GetArray()) {
         excludeSource.push_back(iii.GetBool());
         LOG(debug) << "exclude source bit " << iii.GetBool();
       }
@@ -2345,7 +2389,7 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
   // prepare the useANDonSourceBitMap vector, defaults to true for each generation
   std::vector<bool> useANDonSourceBitMap;
   if (prongJSON->HasMember("useANDonSourceBitMap")) {
-    for (auto& ii : prongJSON->FindMember("useANDonSourceBitMap")->value.GetArray()) {
+    for (const auto& ii : prongJSON->FindMember("useANDonSourceBitMap")->value.GetArray()) {
       useANDonSourceBitMap.push_back(ii.GetBool());
       LOG(debug) << "use AND on source map " << ii.GetBool();
     }
@@ -2360,12 +2404,12 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
   int igen = 0;
   std::vector<uint64_t> sBitsVec;
   std::vector<uint64_t> sBitsExcludeVec;
-  for (auto& itgen : sourceBitsVec) {
+  for (const auto& itgen : sourceBitsVec) {
     int is = 0;
     uint64_t sBits = 0;
     uint64_t sBitsExclude = 0;
     auto excludeVec = (hasExclude ? excludeSourceVec[igen] : std::vector<bool>{});
-    for (auto& s : itgen) {
+    for (const auto& s : itgen) {
       bool exclude = (hasExclude ? excludeVec[is] : false);
       if (s != MCProng::kNothing) {
         sBits |= (static_cast<uint64_t>(1) << s);
@@ -2414,7 +2458,7 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
 
   std::vector<int> checkIfPDGInHistory = {};
   if (prongJSON->HasMember("checkIfPDGInHistory")) {
-    for (auto& ii : prongJSON->FindMember("checkIfPDGInHistory")->value.GetArray()) {
+    for (const auto& ii : prongJSON->FindMember("checkIfPDGInHistory")->value.GetArray()) {
       checkIfPDGInHistory.push_back(ii.GetInt());
       LOG(debug) << "checkIfPDGInHistory: " << ii.GetInt();
     }
@@ -2422,7 +2466,7 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
 
   std::vector<bool> excludePDGInHistory = {};
   if (prongJSON->HasMember("excludePDGInHistory")) {
-    for (auto& ii : prongJSON->FindMember("excludePDGInHistory")->value.GetArray()) {
+    for (const auto& ii : prongJSON->FindMember("excludePDGInHistory")->value.GetArray()) {
       excludePDGInHistory.push_back(ii.GetBool());
       LOG(debug) << "excludePDGInHistory: " << ii.GetBool();
     }

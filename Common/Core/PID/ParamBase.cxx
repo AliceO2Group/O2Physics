@@ -17,8 +17,9 @@
 ///        These are the basic storage elements to be kept in the CCDB
 ///
 
+#include "ParamBase.h"
+
 #include <Framework/Logger.h>
-#include <PID/ParamBase.h>
 
 #include <TFile.h>
 #include <TString.h>

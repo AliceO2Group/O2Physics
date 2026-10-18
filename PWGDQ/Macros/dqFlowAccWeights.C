@@ -32,7 +32,7 @@
 using namespace o2;
 using namespace std;
 
-void dqFlowAccWeights(int64_t tmin = 1546300800000, int64_t tmax = 1577833200000, std::string Period = "LHC23zzh_pass2", std::string SubDir = "d-q-event-qvector", std::string FileName = "AnalysisResults.root")
+void dqFlowAccWeights(int64_t tmin = 1546300800000, int64_t tmax = 1577833200000, const std::string& Period = "LHC23zzh_pass2", const std::string& SubDir = "d-q-event-qvector", const std::string& FileName = "AnalysisResults.root")
 {
   if (tmax < tmin) {
     LOG(fatal) << "Wrong validity syntax!";
@@ -64,7 +64,7 @@ void dqFlowAccWeights(int64_t tmin = 1546300800000, int64_t tmax = 1577833200000
   if (!ccdbHost.empty()) {
     LOGP(info, "Storing alignment object on {}/{}", ccdbHost, objectPath);
     o2::ccdb::CcdbApi api;
-    map<string, string> metadata; // can be empty
+    std::map<std::string, std::string> metadata; // can be empty
     metadata.insert(std::pair{"comment", Form("Acceptance weights for %s", Period.c_str())});
     api.init(ccdbHost.c_str());
     try {

@@ -118,7 +118,7 @@ constexpr static uint32_t gkMCEventFillMap = VarManager::ObjTypes::ReducedEventM
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const Configurable<std::string>& configVar); // defines histograms for all tasks
 void SetBinsLinear(std::vector<double>& fBins, const double min, const double max, const unsigned int steps);
 
 struct AnalysisEventSelection {
@@ -324,7 +324,7 @@ struct AnalysisEventQa {
   {
 
     Int_t midrap = 0;
-    for (auto mctrack : groupedMCTracks) {
+    for (const auto& mctrack : groupedMCTracks) {
       if (TMath::Abs(mctrack.eta()) < 0.5 && mctrack.isPhysicalPrimary() && (TMath::Abs(mctrack.pdgCode()) == 211 || mctrack.pdgCode() == 111)) {
         midrap++;
       }
@@ -779,7 +779,7 @@ struct AnalysisTrackSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TEventsMC, typename TTracks, typename TTracksMC, typename TAmbigTracks>
-  void runDataFillMore(TEvents const& events, TEventsMC eventsMC, TTracks const& tracks, TTracksMC const& tracksMC, TAmbigTracks const& ambiTracksMid)
+  void runDataFillMore(TEvents const& events, const TEventsMC& eventsMC, TTracks const& tracks, TTracksMC const& tracksMC, TAmbigTracks const& ambiTracksMid)
   {
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -1043,8 +1043,7 @@ struct AnalysisTrackSelection {
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TEventsMC, typename TTracks, typename TTracksMC, typename TAmbigTracks>
   void runRecTrackMore(TEvents const& events, TEventsMC const& /*eventsMC*/, TTracks const& groupedTracks, TTracksMC const& tracksMC, TAmbigTracks const& ambiTracksMid)
   {
-
-    std::map<uint64_t, int> fRecTrackLabels[fTrackCuts.size() + 1];
+    std::vector<std::map<uint64_t, int>> fRecTrackLabels(fTrackCuts.size() + 1);
 
     uint32_t filterMap = 0;
     trackSel.reserve(groupedTracks.size());
@@ -1052,10 +1051,7 @@ struct AnalysisTrackSelection {
     for (auto& track : groupedTracks) {
 
       // How many time the associated MC track was seen for this cut
-      Int_t fRecCounters[fTrackCuts.size() + 1];
-      for (unsigned int k = 0; k < fTrackCuts.size() + 1; k++) {
-        fRecCounters[k] = 0;
-      }
+      std::vector<Int_t> fRecCounters(fTrackCuts.size() + 1, 0);
 
       filterMap = 0;
       Int_t ambiguousinfo = 0;
@@ -1157,10 +1153,7 @@ struct AnalysisTrackSelection {
       uint32_t mcDecision = 0;
       int isig = 0;
       Int_t mctrackindex = -999;
-      Int_t doublereconstructedtrack[fTrackCuts.size() + 1];
-      for (unsigned int k = 0; k < fTrackCuts.size() + 1; k++) {
-        doublereconstructedtrack[k] = 0;
-      }
+      std::vector<Int_t> doublereconstructedtrack(fTrackCuts.size() + 1, 0);
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if (track.has_mcParticle()) {
@@ -2012,7 +2005,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const Configurable<std::string>& configVar)
 {
   //
   // Define here the histograms for all the classes required in analysis.

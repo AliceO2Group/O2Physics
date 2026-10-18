@@ -34,6 +34,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -59,11 +60,12 @@
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
 #include <TH2.h>
 #include <TPDGCode.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <array>
@@ -103,13 +105,13 @@ enum WrongCollisionType : uint8_t {
   SplitCollision,
 };
 
-std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> partlyRecoDecayMapMuMu = {
+std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> const partlyRecoDecayMapMuMu = {
   {Pdg::kB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::B0ToJpsiXToMuMuX},
   {Pdg::kBPlus, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BplusToJpsiXToMuMuX},
   {Pdg::kBS, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BsToJpsiXToMuMuX},
   {Pdg::kLambdaB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::LbToJpsiXToMuMuX}};
 
-std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> partlyRecoDecayMapEE = {
+std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> const partlyRecoDecayMapEE = {
   {Pdg::kB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::B0ToJpsiXToEEX},
   {Pdg::kBPlus, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BplusToJpsiXToEEX},
   {Pdg::kBS, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BsToJpsiXToEEX},
@@ -127,6 +129,7 @@ struct HfDataCreatorJpsiHadReduced {
   // J/Psi related tables
   Produces<aod::HfRedJpsis> hfJpsi;
   Produces<aod::HfRedJpsiCov> hfRedJpsiCov;
+  Produces<aod::HfRedJpsiDauPid> hfRedJpsiDauPid;
   // Ka bachelor related tables
   Produces<aod::HfRedBach0Bases> hfTrackLfDau0;
   Produces<aod::HfRedBach0Cov> hfTrackCovLfDau0;
@@ -152,6 +155,8 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<double> maxChi2JPsiVtx{"maxChi2JPsiVtx", 1e9, "maximum value of chi2 for JPsi vertex computed with DCAFitter"};
+  Configurable<double> maxChi2BhadVtx{"maxChi2BhadVtx", 0.9, "maximum value of chi2 for B-hadron vertex computed with DCAFitter"};
 
   struct : o2::framework::ConfigurableGroup {
     // TPC PID
@@ -188,10 +193,10 @@ struct HfDataCreatorJpsiHadReduced {
   // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg{};
 
-  using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl>;
+  using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu>;
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
-  using CollisionsWCMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using CollisionsWCMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
   using BCsInfo = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
   Preslice<aod::HfCand2ProngWPid> candsJpsiPerCollision = aod::track_association::collisionId;
@@ -295,27 +300,32 @@ struct HfDataCreatorJpsiHadReduced {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setMaxChi2(maxChi2JPsiVtx);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
     df2.setMatCorrType(noMatCorr);
 
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
-    df3.setMatCorrType(noMatCorr);
-
-    df4.setPropagateToPCA(propagateToPCA);
-    df4.setMaxR(maxR);
-    df4.setMaxDZIni(maxDZIni);
-    df4.setMinParamChange(minParamChange);
-    df4.setMinRelChi2Change(minRelChi2Change);
-    df4.setUseAbsDCA(useAbsDCA);
-    df4.setWeightedFinalPCA(useWeightedFinalPCA);
-    df4.setMatCorrType(noMatCorr);
+    if (doprocessJpsiKData || doprocessJpsiKMc) {
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setMaxChi2(maxChi2BhadVtx);
+      df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
+      df3.setMatCorrType(noMatCorr);
+    } else {
+      df4.setPropagateToPCA(propagateToPCA);
+      df4.setMaxR(maxR);
+      df4.setMaxDZIni(maxDZIni);
+      df4.setMinParamChange(minParamChange);
+      df4.setMinRelChi2Change(minRelChi2Change);
+      df4.setMaxChi2(maxChi2BhadVtx);
+      df4.setUseAbsDCA(useAbsDCA);
+      df4.setWeightedFinalPCA(useWeightedFinalPCA);
+      df4.setMatCorrType(noMatCorr);
+    }
 
     // Configure CCDB access
     ccdb->setURL(ccdbUrl);
@@ -584,7 +594,7 @@ struct HfDataCreatorJpsiHadReduced {
               // check that the other prongs come from the same b-hadron
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index2Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
@@ -684,7 +694,7 @@ struct HfDataCreatorJpsiHadReduced {
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               int const index3Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[3].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index3Mother > -1 && index2Mother == indexRecB && index3Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
@@ -785,7 +795,7 @@ struct HfDataCreatorJpsiHadReduced {
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               int const index3Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[3].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index3Mother > -1 && index2Mother == indexRecB && index3Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
@@ -997,8 +1007,11 @@ struct HfDataCreatorJpsiHadReduced {
       runNumber = bc.runNumber();
     }
     df2.setBz(bz);
-    df3.setBz(bz);
-    df4.setBz(bz);
+    if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
+      df3.setBz(bz);
+    } else {
+      df4.setBz(bz);
+    }
 
     auto thisCollId = collision.globalIndex();
     // looping over 2-prong candidates
@@ -1007,7 +1020,7 @@ struct HfDataCreatorJpsiHadReduced {
       // Apply the selections on the J/Psi candidates
       registry.fill(HIST("hSelectionsJpsi"), 1, candidate.pt());
 
-      if (!(candidate.hfflag() & (1 << aod::hf_cand_2prong::DecayType::JpsiToMuMu))) {
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoSkims, candidate.pt());
@@ -1101,7 +1114,6 @@ struct HfDataCreatorJpsiHadReduced {
           }
           registry.fill(HIST("hFitCandidatesBPlus"), SVFitting::FitOk);
 
-          o2::track::TrackParCov trackParCovBPlus{};
           std::array<float, 3> pVecBPlus{}, pVec0{}, pVec1{}, pVec2{};
 
           auto secondaryVertexBPlus = df3.getPCACandidate();
@@ -1110,8 +1122,6 @@ struct HfDataCreatorJpsiHadReduced {
           df3.getTrack(2).getPxPyPzGlo(pVec2);
           pVecBPlus = RecoDecay::pVec(pVec0, pVec1, pVec2);
           pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
-          trackParCovBPlus = df3.createParentTrackParCov();
-          trackParCovBPlus.setAbsCharge(0); // to be sure
 
           if (!isBSelected(pVecBPlus, secondaryVertexBPlus, collision)) {
             continue;
@@ -1201,7 +1211,6 @@ struct HfDataCreatorJpsiHadReduced {
             }
             registry.fill(HIST("hFitCandidatesB0"), SVFitting::FitOk);
 
-            o2::track::TrackParCov trackParCovB0{};
             std::array<float, 3> pVecB0{}, pVec0{}, pVec1{}, pVecK0Star{};
 
             auto secondaryVertexB0 = df4.getPCACandidate();
@@ -1212,8 +1221,6 @@ struct HfDataCreatorJpsiHadReduced {
             pVecB0 = RecoDecay::pVec(pVec0, pVec1, pVec2, pVec3);
             pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
             pVecK0Star = RecoDecay::pVec(pVec2, pVec3);
-            trackParCovB0 = df4.createParentTrackParCov();
-            trackParCovB0.setAbsCharge(0); // to be sure
 
             if (!isBSelected(pVecB0, secondaryVertexB0, collision)) {
               continue;
@@ -1333,7 +1340,6 @@ struct HfDataCreatorJpsiHadReduced {
             }
             registry.fill(HIST("hFitCandidatesBS"), SVFitting::FitOk);
 
-            o2::track::TrackParCov trackParCovBS{};
             std::array<float, 3> pVecBS{}, pVec0{}, pVec1{}, pVecPhi{};
 
             auto secondaryVertexBS = df4.getPCACandidate();
@@ -1344,8 +1350,6 @@ struct HfDataCreatorJpsiHadReduced {
             pVecBS = RecoDecay::pVec(pVec0, pVec1, pVec2, pVec3);
             pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
             pVecPhi = RecoDecay::pVec(pVec2, pVec3);
-            trackParCovBS = df4.createParentTrackParCov();
-            trackParCovBS.setAbsCharge(0); // to be sure
 
             if (!isBSelected(pVecBS, secondaryVertexBS, collision)) {
               continue;
@@ -1456,6 +1460,10 @@ struct HfDataCreatorJpsiHadReduced {
                      trackPosParCov.getSigma1PtSnp(), trackNegParCov.getSigma1PtSnp(),
                      trackPosParCov.getSigma1PtTgl(), trackNegParCov.getSigma1PtTgl(),
                      trackPosParCov.getSigma1Pt2(), trackNegParCov.getSigma1Pt2());
+        hfRedJpsiDauPid(trackPos.tpcNSigmaMu(), trackNeg.tpcNSigmaMu(),
+                        trackPos.tpcNSigmaEl(), trackNeg.tpcNSigmaEl(),
+                        trackPos.tofNSigmaMu(), trackNeg.tofNSigmaMu(),
+                        trackPos.tofNSigmaEl(), trackNeg.tofNSigmaEl());
         fillHfReducedCollision = true;
       }
     } // candsJpsi loop
@@ -1480,7 +1488,7 @@ struct HfDataCreatorJpsiHadReduced {
     // }
   }
 
-  void processJpsiKData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiKData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                         aod::HfCand2ProngWPid const& candsJpsi,
                         aod::TrackAssoc const& trackIndices,
                         TracksPidWithSel const& tracks,
@@ -1508,7 +1516,7 @@ struct HfDataCreatorJpsiHadReduced {
   }
   PROCESS_SWITCH(HfDataCreatorJpsiHadReduced, processJpsiKData, "Process J/Psi K without MC info", true);
 
-  void processJpsiPhiData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiPhiData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                           aod::HfCand2ProngWPid const& candsJpsi,
                           aod::TrackAssoc const& trackIndices,
                           TracksPidWithSel const& tracks,
@@ -1536,7 +1544,7 @@ struct HfDataCreatorJpsiHadReduced {
   }
   PROCESS_SWITCH(HfDataCreatorJpsiHadReduced, processJpsiPhiData, "Process J/Psi phi without MC info", false);
 
-  void processJpsiK0StarData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiK0StarData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                              aod::HfCand2ProngWPid const& candsJpsi,
                              aod::TrackAssoc const& trackIndices,
                              TracksPidWithSel const& tracks,

@@ -31,6 +31,8 @@ class GFWWeights : public TNamed
  public:
   GFWWeights();
   explicit GFWWeights(const char* name);
+  GFWWeights(const GFWWeights& other);
+  GFWWeights& operator=(const GFWWeights& other);
   ~GFWWeights();
   void init(bool AddData = kTRUE, bool AddM = kTRUE);
   void fill(double phi, double eta, double vz, double pt, double cent, int htype, double weight = 1); // htype: 0 for data, 1 for mc rec, 2 for mc gen
@@ -51,27 +53,27 @@ class GFWWeights : public TNamed
   double getIntegratedEfficiency(double pt);
   void setDataFilled(bool newval) { fDataFilled = newval; }
   void setMCFilled(bool newval) { fMCFilled = newval; }
-  void readAndMerge(TString filelinks, TString listName = "OutputList", bool addData = kTRUE, bool addRec = kTRUE, bool addGen = kTRUE);
+  void readAndMerge(const TString& filelinks, const TString& listName = "OutputList", bool addData = kTRUE, bool addRec = kTRUE, bool addGen = kTRUE);
   void setPtBins(int Nbins, double* bins);
-  Long64_t Merge(TCollection* collist);
+  Long64_t Merge(TCollection* collist); // o2-linter: disable=root/entity,name/function-variable (ROOT Merge requires this signature)
   void rebinNUA(int nX = 1, int nY = 2, int nZ = 5);
   void overwriteNUA();
   TH1D* getdNdPhi();
   TH1D* getEfficiency(double etamin, double etamax, double vzmin, double vzmax);
   void mergeWeights(GFWWeights* other);
-  void setTH3D(TH3D* th3d);
+  void setTH3D(TH3D* th3d); // Stores a clone of the input histogram
 
  private:
   bool fDataFilled;
   bool fMCFilled;
-  TObjArray* fW_data;
-  TObjArray* fW_mcrec;
-  TObjArray* fW_mcgen;
-  TH3D* fEffInt;   //!
-  TH1D* fIntEff;   //!
-  TH3D* fAccInt;   //!
-  int fNbinsPt;    //! do not store
-  double* fbinsPt; //! do not store
+  TObjArray* fW_data;  // o2-linter: disable=name/function-variable (persisted ROOT member name)
+  TObjArray* fW_mcrec; // o2-linter: disable=name/function-variable (persisted ROOT member name)
+  TObjArray* fW_mcgen; // o2-linter: disable=name/function-variable (persisted ROOT member name)
+  TH3D* fEffInt;       //!
+  TH1D* fIntEff;       //!
+  TH3D* fAccInt;       //!
+  int fNbinsPt;        //! do not store
+  double* fbinsPt;     //! do not store
   void addArray(TObjArray* targ, TObjArray* sour);
   const char* getBinName(double /*ptv*/, double /*v0mv*/, const char* pf = "")
   {

@@ -373,7 +373,8 @@ struct HfCandidateCreatorB0 {
                            pVecD[0], pVecD[1], pVecD[2],
                            pVecPion[0], pVecPion[1], pVecPion[2],
                            dcaD.getY(), dcaPion.getY(),
-                           std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
+                           std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
+                           candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex());
 
           rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
         } // pi loop

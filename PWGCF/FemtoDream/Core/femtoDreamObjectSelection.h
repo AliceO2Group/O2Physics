@@ -24,6 +24,8 @@
 
 #include <TH1.h>
 
+#include <fmt/format.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -52,7 +54,11 @@ class FemtoDreamObjectSelection
   void fillSelectionHistogram()
   {
     int nBins = mSelections.size();
-    mQAHistogramRegistry->add((static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", o2::framework::HistType::kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
+    // fmt::format, not std::string + const char*: the longest names here are
+    // exactly 32 characters, so the concatenation crosses std::string's SSO
+    // boundary and GCC 14 reports the constant-folded copy as
+    // -Werror=array-bounds= on a buffer that is never actually used.
+    mQAHistogramRegistry->add(fmt::format("{}/cuthist", o2::aod::femtodreamparticle::ParticleTypeName[part]).c_str(), "; Cut; Value", o2::framework::HistType::kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
     auto hist = mQAHistogramRegistry->get<TH1>(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/cuthist"));
     for (size_t i = 0; i < mSelections.size(); ++i) {
       hist->GetXaxis()->SetBinLabel(i + 1, Form("%u", mSelections.at(i).getSelectionVariable()));

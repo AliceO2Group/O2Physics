@@ -355,7 +355,7 @@ struct f1protonreducedtable {
     return false;
   }
 
-  inline bool passProtonPID(float nsigmaTPC, float nsigmaTOF, float TOFHit, ROOT::Math::PtEtaPhiMVector proton)
+  inline bool passProtonPID(float nsigmaTPC, float nsigmaTOF, float TOFHit, const ROOT::Math::PtEtaPhiMVector& proton)
   {
     // pidMode:
     // 0 = default:  p < thr -> |TPC| < 2.5   ;  p >= thr -> TOF mandatory AND circular(TPC,TOF) < 2.0
@@ -424,8 +424,8 @@ struct f1protonreducedtable {
     return true;
   }
 
-  float getkstar(const ROOT::Math::PtEtaPhiMVector part1,
-                 const ROOT::Math::PtEtaPhiMVector part2)
+  float getkstar(const ROOT::Math::PtEtaPhiMVector& part1,
+                 const ROOT::Math::PtEtaPhiMVector& part2)
   {
     const ROOT::Math::PtEtaPhiMVector trackSum = part1 + part2;
     const float beta = trackSum.Beta();
@@ -444,7 +444,7 @@ struct f1protonreducedtable {
     return 0.5 * trackRelK.P();
   }
 
-  std::vector<double> setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string ccdbPath)
+  std::vector<double> setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string& ccdbPath)
   {
     std::map<std::string, std::string> metadata;
     auto h = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPath, metadata, bunchCrossing.timestamp());

@@ -28,6 +28,8 @@
 #include <TMath.h>
 #include <TPDGCode.h>
 
+#include <fmt/format.h>
+
 #include <cstdlib>
 #include <string>
 #include <string_view>
@@ -55,7 +57,7 @@ class FemtoDreamParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& pTAxis, T& tempFitVarAxis, T& InvMassAxis, T& /*multAxis*/)
+  void init_base(const std::string& folderName, const std::string& tempFitVarAxisTitle, T& pTAxis, T& tempFitVarAxis, T& InvMassAxis, T& /*multAxis*/)
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
     /// Histograms of the kinematic properties
@@ -97,7 +99,7 @@ class FemtoDreamParticleHisto
 
   // comment
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void init_debug(std::string folderName, T& multAxis, T& multPercentileAxis, T& pTAxis, T& etaAxis, T& phiAxis, T& tempFitVarAxis, T& dcazAxis, T& NsigmaTPCAxis, T& NsigmaTOFAxis, T& NsigmaTPCTOFAxis, T& NsigmaITSAxis, T& InvMassCompetingAxis, bool correlatedPlots)
+  void init_debug(const std::string& folderName, T& multAxis, T& multPercentileAxis, T& pTAxis, T& etaAxis, T& phiAxis, T& tempFitVarAxis, T& dcazAxis, T& NsigmaTPCAxis, T& NsigmaTOFAxis, T& NsigmaTPCTOFAxis, T& NsigmaITSAxis, T& InvMassCompetingAxis, bool correlatedPlots)
   {
 
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
@@ -205,7 +207,7 @@ class FemtoDreamParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <typename T>
-  void init_MC(std::string folderName, std::string /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis, T& dcazAxis, T& multAxis, bool isDebug)
+  void init_MC(const std::string& folderName, const std::string& /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis, T& dcazAxis, T& multAxis, bool isDebug)
   {
     /// Particle-type specific histograms
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str();
@@ -340,7 +342,7 @@ class FemtoDreamParticleHisto
       framework::AxisSpec InvMassAxis = {InvMassBins, "M_{inv} (GeV/#it{c}^{2})"};
       framework::AxisSpec InvMassCompetingAxis = {InvMassCompetingBins, "M_{inv} (GeV/#it{c}^{2})"};
 
-      std::string folderName = (static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]).c_str() + static_cast<std::string>(mFolderSuffix[mFolderSuffixType])).c_str();
+      std::string folderName = fmt::format("{}{}", o2::aod::femtodreamparticle::ParticleTypeName[mParticleType], mFolderSuffix[mFolderSuffixType]);
 
       // Fill here the actual histogramms by calling init_base and init_MC
       init_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarAxisTitle, pTAxis, tempFitVarAxis, InvMassAxis, multAxis);

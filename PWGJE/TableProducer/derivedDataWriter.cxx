@@ -22,11 +22,15 @@
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataSelector.h"
+#include "PWGJE/DataModel/JetReducedDataV0.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/V0SelectorTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
@@ -36,6 +40,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/detail/TypeTruncation.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -246,6 +252,12 @@ struct JetDerivedDataWriter {
       Produces<aod::StoredJDielectronMcIds> storedDielectronParticleIdsTable;
     } productsDielectron;
 
+    struct : ProducesGroup {
+      Produces<aod::StoredV0CoresBase> storedV0sTable;
+      Produces<aod::StoredJV0Ids> storedV0IdsTable;
+      Produces<aod::StoredV0SignalFlags> storedV0SignalFlagsTable;
+    } productsV0;
+
   } products;
 
   struct : PresliceGroup {
@@ -415,6 +427,17 @@ struct JetDerivedDataWriter {
     }
   }
 
+  template <typename T>
+  void storeV0(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const&, T const& V0Candidates)
+  {
+    if (collision.isCollisionSelected()) {
+      for (const auto& V0Candidate : V0Candidates) {
+        jetv0utilities::fillV0CandidateTable(V0Candidate, products.productsV0.storedV0sTable, products.productsV0.storedV0SignalFlagsTable);
+        products.productsV0.storedV0IdsTable(collisionMapping[collision.globalIndex()], trackMapping[V0Candidate.posTrackId()], trackMapping[V0Candidate.negTrackId()]);
+      }
+    }
+  }
+
   void processDummyTable(aod::JDummys const&)
   {
     products.storedJDummysTable(1);
@@ -482,7 +505,11 @@ struct JetDerivedDataWriter {
 
     for (auto const& collision : collisions) {
       if (collision.isCollisionSelected()) {
-        products.storedJCollisionsTable(bcMapping[collision.bcId()], collision.posX(), collision.posY(), collision.posZ(), collision.collisionTime(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), collision.centFV0M(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.alias_raw(), collision.eventSel(), collision.rct_raw(), collision.triggerSel());
+        uint16_t eventSelection = collision.eventSel();
+        if (collision.isCollisionSelectedForSignalTriggerTrack()) {
+          SETBIT(eventSelection, jetderiveddatautilities::JCollisionSel::selTriggerTrackSignal);
+        }
+        products.storedJCollisionsTable(bcMapping[collision.bcId()], collision.posX(), collision.posY(), collision.posZ(), collision.collisionTime(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), collision.centFV0M(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.alias_raw(), eventSelection, collision.rct_raw(), collision.triggerSel());
         collisionMapping[collision.globalIndex()] = products.storedJCollisionsTable.lastIndex();
         products.storedJCollisionMcInfosTable(collision.weight(), collision.getSubGeneratorId());
         products.storedJCollisionsParentIndexTable(collision.collisionId());
@@ -515,7 +542,7 @@ struct JetDerivedDataWriter {
         std::copy(amplitudesFT0CSpan.begin(), amplitudesFT0CSpan.end(), std::back_inserter(amplitudesFT0C));
         std::copy(amplitudesFDDASpan.begin(), amplitudesFDDASpan.end(), std::back_inserter(amplitudesFDDA));
         std::copy(amplitudesFDDCSpan.begin(), amplitudesFDDCSpan.end(), std::back_inserter(amplitudesFDDC));
-        products.storedJCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC);
+        products.storedJCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       }
     }
   }
@@ -664,6 +691,12 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processXicToXiPiPiMCD, "write out mcd output tables for XicToXiPiPi", false);
 
+  void processV0Data(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const& tracks, aod::CandidatesV0Data const& V0Candidates)
+  {
+    storeV0(collision, tracks, V0Candidates);
+  }
+  PROCESS_SWITCH(JetDerivedDataWriter, processV0Data, "write out data output tables for V0", false);
+
   void processDielectron(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const&, aod::CollisionsDielectron const& DielectronCollisions, aod::CandidatesDielectronData const& DielectronCandidates)
   {
     if (collision.isCollisionSelected()) {
@@ -685,7 +718,11 @@ struct JetDerivedDataWriter {
     mcCollisionMapping.resize(mcCollisions.size(), -1);
     for (auto const& mcCollision : mcCollisions) {
       if (mcCollision.isMcCollisionSelected()) {
-        products.storedJMcCollisionsTable(bcMapping[mcCollision.bcId()], mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multFV0A(), mcCollision.multFT0A(), mcCollision.multFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), mcCollision.eventSel(), mcCollision.rct_raw(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
+        uint16_t eventSelection = mcCollision.eventSel();
+        if (mcCollision.isMcCollisionSelectedForSignalTriggerTrack()) {
+          SETBIT(eventSelection, jetderiveddatautilities::JCollisionSel::selTriggerTrackSignal);
+        }
+        products.storedJMcCollisionsTable(bcMapping[mcCollision.bcId()], mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multFV0A(), mcCollision.multFT0A(), mcCollision.multFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), eventSelection, mcCollision.rct_raw(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
         products.storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());
         mcCollisionMapping[mcCollision.globalIndex()] = products.storedJMcCollisionsTable.lastIndex();
       }
@@ -703,11 +740,11 @@ struct JetDerivedDataWriter {
 
         const auto particlesPerMcCollision = particles.sliceBy(preslices.ParticlesPerMcCollision, mcCollision.globalIndex());
 
-        for (auto particle : particlesPerMcCollision) {
+        for (const auto& particle : particlesPerMcCollision) {
           particleMapping[particle.globalIndex()] = particleTableIndex;
           particleTableIndex++;
         }
-        for (auto particle : particlesPerMcCollision) {
+        for (const auto& particle : particlesPerMcCollision) {
 
           std::vector<int32_t> mothersIds;
           int daughtersIds[2] = {-1, -1};

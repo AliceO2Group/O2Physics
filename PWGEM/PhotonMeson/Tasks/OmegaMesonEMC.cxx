@@ -8,13 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
+
 /// \file OmegaMesonEMC.cxx
-///
 /// \brief This code loops over collisions to reconstruct heavy mesons (omega or eta') using EMCal clusters
-///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
-///
 
 #include "PWGEM/PhotonMeson/Utils/HNMUtilities.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
@@ -29,6 +26,7 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
@@ -75,7 +73,7 @@ enum TrackCuts { kpT,
 
 const std::vector<std::string> chargedPionMinMaxName{"Min", "Max"};
 const std::vector<std::string> chargedPionCutsName{"pT", "eta", "TPC sigma"};
-const float chargedPionCutsTable[kTrackCuts][2]{{0.35f, 20.f}, {-.8f, .8f}, {-4.f, 4.f}};
+[[maybe_unused]] const std::array<std::array<float, 2>, kTrackCuts> chargedPionCutsTable{{{0.35f, 20.f}, {-.8f, .8f}, {-4.f, 4.f}}};
 
 } // namespace hnm
 
@@ -97,7 +95,7 @@ struct OmegaMesonEMC {
   Configurable<bool> confEvtRequireNoSameBunchPileUp{"confEvtRequireNoSameBunchPileUp", false, "Evt sel: check for no same bunch pile-up"};
 
   // ---> Track selection
-  Configurable<LabeledArray<float>> cfgChargedPionCuts{"cfgChargedPionCuts", {hnm::chargedPionCutsTable[0], 3, 2, hnm::chargedPionCutsName, hnm::chargedPionMinMaxName}, "Charged pion track cuts"};
+  Configurable<LabeledArray<float>> cfgChargedPionCuts{"cfgChargedPionCuts", {hnm::chargedPionCutsTable[0].data(), 3, 2, hnm::chargedPionCutsName, hnm::chargedPionMinMaxName}, "Charged pion track cuts"};
   Configurable<float> cfgTPCNClustersMin{"cfgTPCNClustersMin", 80, "Mininum of TPC Clusters"};
   Configurable<float> cfgTrkTPCfCls{"cfgTrkTPCfCls", 0.83, "Minimum fraction of crossed rows over findable clusters"};
   Configurable<float> cfgTrkTPCcRowsMin{"cfgTrkTPCcRowsMin", 70, "Minimum number of crossed TPC rows"};
@@ -120,8 +118,8 @@ struct OmegaMesonEMC {
   Configurable<int> cfgHNMMassCorrection{"cfgHNMMassCorrection", 1, "Use GG PDG mass to correct HNM mass (0 = off, 1 = subDeltaPi0, 2 = subLambda)"};
 
   // ---> Mass windows for the selection of heavy neutral mesons (also based on mass of their light neutral meson decay daughter)
-  static constexpr float DefaultMassWindows[2] = {0.11, 0.16};
-  Configurable<LabeledArray<float>> cfgMassWindowPi0{"cfgMassWindowPi0", {DefaultMassWindows, 2, {"min", "max"}}, "Mass window for selected decay pi0"};
+  static constexpr std::array<float, 2> DefaultMassWindows{0.11, 0.16};
+  Configurable<LabeledArray<float>> cfgMassWindowPi0{"cfgMassWindowPi0", {DefaultMassWindows.data(), 2, {"min", "max"}}, "Mass window for selected decay pi0"};
 
   Configurable<int32_t> cfgMaxMultiplicity{"cfgMaxMultiplicity", 5000, "Maximum number of tracks in a collision (can be used to increase the S/B -> Very experimental)"};
   Configurable<float> cfgMinGGPtOverHNMPt{"cfgMinGGPtOverHNMPt", 0., "Minimum ratio of the pT of the gamma gamma pair over the pT of the HNM (can be used to increase the S/B)"};
@@ -142,16 +140,21 @@ struct OmegaMesonEMC {
   template <typename T>
   bool isSelectedTrack(T const& track)
   {
-    if (track.tpcNClsFound() < cfgTPCNClustersMin)
+    if (track.tpcNClsFound() < cfgTPCNClustersMin) {
       return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cfgTrkTPCfCls)
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < cfgTrkTPCfCls) {
       return false;
-    if (track.tpcNClsCrossedRows() < cfgTrkTPCcRowsMin)
+    }
+    if (track.tpcNClsCrossedRows() < cfgTrkTPCcRowsMin) {
       return false;
-    if (track.tpcFractionSharedCls() > cfgTrkTPCsClsSharedFrac)
+    }
+    if (track.tpcFractionSharedCls() > cfgTrkTPCsClsSharedFrac) {
       return false;
-    if (track.itsNCls() < cfgTrkITSnclsMin)
+    }
+    if (track.itsNCls() < cfgTrkITSnclsMin) {
       return false;
+    }
     return true;
   }
 
@@ -168,8 +171,9 @@ struct OmegaMesonEMC {
   {
     mHistManager.add("Event/nEMCalEvents", "Number of collisions with a certain combination of EMCal triggers;;#bf{#it{N}_{collisions}}", HistType::kTH1F, {{5, -0.5, 4.5}});
     std::vector<std::string> nEventTitles = {"Cells & kTVXinEMC", "Cells & L0", "Cells & !kTVXinEMC & !L0", "!Cells & kTVXinEMC", "!Cells & L0"};
-    for (size_t iBin = 0; iBin < nEventTitles.size(); iBin++)
+    for (size_t iBin = 0; iBin < nEventTitles.size(); iBin++) {
       mHistManager.get<TH1>(HIST("Event/nEMCalEvents"))->GetXaxis()->SetBinLabel(iBin + 1, nEventTitles[iBin].data());
+    }
     mHistManager.add("Event/fMultiplicity", "Multiplicity after event cuts;#bf{#it{N}_{tracks}};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, 0, 500}});
     mHistManager.add("Event/fZvtx", "Zvtx after event cuts;#bf{z_{vtx} (cm)};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{300, -15, 15}});
 
@@ -177,8 +181,8 @@ struct OmegaMesonEMC {
     mHistManager.add("GG/invMassVsPt_selected", "Invariant mass and pT of gg candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
 
     const int nTrackSpecies = 2; // x2 because of anti particles
-    const char* particleSpecies[nTrackSpecies] = {"Pion", "AntiPion"};
-    const char* particleSpeciesLatex[nTrackSpecies] = {"#pi^{+}", "#pi^{-}"};
+    std::array<const char*, nTrackSpecies> particleSpecies = {"Pion", "AntiPion"};
+    std::array<const char*, nTrackSpecies> particleSpeciesLatex = {"#pi^{+}", "#pi^{-}"};
 
     for (int iParticle = 0; iParticle < nTrackSpecies; iParticle++) {
       mHistManager.add(Form("TrackCuts/%s/fPt", particleSpecies[iParticle]), Form("%s transverse momentum;#bf{#it{p}_{T}^{%s} (GeV/#it{c})};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{500, 0, 10}});
@@ -230,27 +234,37 @@ struct OmegaMesonEMC {
     bool iskTVXinEMC = foundBC.alias_bit(kTVXinEMC);
     bool isL0Triggered = foundBC.alias_bit(kEMC7) || foundBC.alias_bit(kDMC7) || foundBC.alias_bit(kEG1) || foundBC.alias_bit(kEG2);
 
-    if (confEvtRequireSel8 && !collision.sel8())
+    if (confEvtRequireSel8 && !collision.sel8()) {
       return; // Skip this collision if sel8 trigger bit is not set
-    if (confEvtRequirekTVXinEMC && !iskTVXinEMC)
+    }
+    if (confEvtRequirekTVXinEMC && !iskTVXinEMC) {
       return; // Skip this collision if kTVXinEMC trigger bit is not set
-    if (confEvtRequireL0 && !isL0Triggered)
+    }
+    if (confEvtRequireL0 && !isL0Triggered) {
       return; // Skip this collision if L0 trigger bit is not set
-    if (confEvtRequireGoodZVertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (confEvtRequireGoodZVertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return; // Skip this collision if good z-vertex condition is not met
-    if (confEvtRequireNoSameBunchPileUp && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    }
+    if (confEvtRequireNoSameBunchPileUp && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return; // Skip this collision if no same bunch pileup condition is not met
+    }
 
-    if (bcHasEMCCells && iskTVXinEMC)
+    if (bcHasEMCCells && iskTVXinEMC) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 0);
-    if (bcHasEMCCells && isL0Triggered)
+    }
+    if (bcHasEMCCells && isL0Triggered) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 1);
-    if (bcHasEMCCells && !iskTVXinEMC && !isL0Triggered)
+    }
+    if (bcHasEMCCells && !iskTVXinEMC && !isL0Triggered) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 2);
-    if (!bcHasEMCCells && iskTVXinEMC)
+    }
+    if (!bcHasEMCCells && iskTVXinEMC) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 3);
-    if (!bcHasEMCCells && isL0Triggered)
+    }
+    if (!bcHasEMCCells && isL0Triggered) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 4);
+    }
 
     mHistManager.fill(HIST("Event/fMultiplicity"), collision.multNTracksPV());
     mHistManager.fill(HIST("Event/fZvtx"), collision.posZ());
@@ -285,8 +299,9 @@ struct OmegaMesonEMC {
     // - Fill QA histograms for all tracks and per particle species
     // -------------------------------------------------------------------------------------
     for (const auto& track : tracks) {
-      if (!isSelectedTrack(track))
-        continue;             // Skip tracks that do not pass the selection criteria
+      if (!isSelectedTrack(track)) {
+        continue; // Skip tracks that do not pass the selection criteria
+      }
       if (track.sign() > 0) { // Positive charge -> Particles
         pion.emplace_back(track.pt(), track.eta(), track.phi(), constants::physics::MassPionCharged);
 
@@ -355,4 +370,7 @@ struct OmegaMesonEMC {
   }
 };
 
-WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<OmegaMesonEMC>(cfgc, TaskName{"omega-meson-emc"})}; }
+WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
+{
+  return WorkflowSpec{adaptAnalysisTask<OmegaMesonEMC>(context, TaskName{"omega-meson-emc"})};
+}

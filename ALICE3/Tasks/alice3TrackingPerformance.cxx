@@ -34,6 +34,7 @@
 #include <TProfile2D.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -41,36 +42,46 @@
 
 using namespace o2;
 using namespace o2::framework;
-std::shared_ptr<TH1> particlePdgCodes;
-std::map<int, std::shared_ptr<TH1>> particlePtDistribution;
-std::map<int, std::shared_ptr<TH1>> particleEtaDistribution;
-std::map<int, std::shared_ptr<TH1>> ptDistribution;
-std::map<int, std::shared_ptr<TH2>> ptResolutionVsPt;
-std::map<int, std::shared_ptr<TProfile2D>> ptResolutionVsEta;
-std::map<int, std::shared_ptr<TH2>> invPtResolutionVsPt;
-std::map<int, std::shared_ptr<TProfile2D>> invPtResolutionVsEta;
-std::map<int, std::shared_ptr<TH2>> dcaXyResolutionVsPt;
-std::map<int, std::shared_ptr<TH2>> dcaZResolutionVsPt;
-std::map<int, std::shared_ptr<TH2>> covariancePtPtVsPt;
-std::map<int, std::shared_ptr<TH2>> covarianceDcaXyDcaXyVsPt;
-std::map<int, std::shared_ptr<TH2>> covarianceDcaZDcaZVsPt;
 
 struct Alice3TrackingPerformance {
-  Configurable<std::vector<int>> pdgCodes{"pdgCodes", {0, 211}, "List of PDG codes to consider for efficiency calculation. (0 means all)"};
+  Configurable<std::vector<int>> pdgCodes{"pdgCodes", {211}, "List of signed PDG codes to consider for performance evaluation"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   ConfigurableAxis ptAxis{"ptAxis", {500, 0, 100}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis etaAxis{"etaAxis", {100, -5.f, 5.f}, "#eta"};
   ConfigurableAxis invPtDeltaAxis{"invPtDeltaAxis", {1000, -0.1f, 0.1f}, "1./#it{p}_{T}^{gen} - 1./#it{p}_{T}^{reco} (GeV/#it{c})^{-1}"};
 
+  // Histograms
+  std::shared_ptr<TH1> particlePdgCodes;
+  std::map<int, std::shared_ptr<TH1>> particlePtDistribution;
+  std::map<int, std::shared_ptr<TH1>> particleEtaDistribution;
+  std::map<int, std::shared_ptr<TH1>> ptDistribution;
+  std::map<int, std::shared_ptr<TH2>> ptResolutionVsPt;
+  std::map<int, std::shared_ptr<TProfile2D>> ptResolutionVsEta;
+  std::map<int, std::shared_ptr<TH2>> invPtResolutionVsPt;
+  std::map<int, std::shared_ptr<TProfile2D>> invPtResolutionVsEta;
+  std::map<int, std::shared_ptr<TH2>> dcaXyResolutionVsPt;
+  std::map<int, std::shared_ptr<TH2>> dcaZResolutionVsPt;
+  std::map<int, std::shared_ptr<TH2>> covariancePtPtVsPt;
+  std::map<int, std::shared_ptr<TH2>> covarianceDcaXyDcaXyVsPt;
+  std::map<int, std::shared_ptr<TH2>> covarianceDcaZDcaZVsPt;
+
   void init(o2::framework::InitContext&)
   {
+    // Check if pdgCodes has duplicates and remove them
+    std::sort(pdgCodes.value.begin(), pdgCodes.value.end());
+    pdgCodes.value.erase(std::unique(pdgCodes.value.begin(), pdgCodes.value.end()), pdgCodes.value.end());
+    // Add 0 to the list of pdgCodes if it is not already present
+    if (std::find(pdgCodes.value.begin(), pdgCodes.value.end(), 0) == pdgCodes.value.end()) {
+      pdgCodes.value.push_back(0);
+    }
     const AxisSpec axisPtDelta{100, -1, 1, "(#it{p}_{T}^{reco} - #it{p}_{T}^{gen}) / #it{p}_{T}^{gen}"};
     const AxisSpec axisDcaXy{100, -1, 1, "DCA_{xy} (cm)"};
     const AxisSpec axisDcaZ{100, -1, 1, "DCA_{z} (cm)"};
     const AxisSpec axisCovariancePtPt{100, 0, 10, "cov(#it{p}_{T}, #it{p}_{T}) ((GeV/#it{c})^{2})"};
     const AxisSpec axisCovarianceDcaXyDcaXy{100, 0, 1, "cov(DCA_{xy}, DCA_{xy}) (cm^{2})"};
     const AxisSpec axisCovarianceDcaZDcaZ{100, 0, 1, "cov(DCA_{z}, DCA_{z}) (cm^{2})"};
-    particlePdgCodes = histos.add<TH1>("particlePdgCodes", "", kTH1D, {AxisSpec{100, -0.5, 99.5, "PDG Code"}});
+    const int nBinsPdgCodes = static_cast<int>(pdgCodes.value.size());
+    particlePdgCodes = histos.add<TH1>("particlePdgCodes", "", kTH1D, {AxisSpec{nBinsPdgCodes, -0.5, -0.5 + nBinsPdgCodes, "PDG Code"}});
     for (const int& pdg : pdgCodes.value) {
       std::string prefix = Form("%i", pdg);
       if (pdg < 0) {
@@ -78,19 +89,21 @@ struct Alice3TrackingPerformance {
       }
       const std::string tag = "_" + prefix;
       prefix += "/";
-      particlePtDistribution[pdg] = histos.add<TH1>(prefix + "particlePtDistribution" + tag, "", kTH1D, {ptAxis});
-      particleEtaDistribution[pdg] = histos.add<TH1>(prefix + "particleEtaDistribution" + tag, "", kTH1D, {etaAxis});
+      auto histoName = [&](const std::string& name) { return Form("%s%s%s", prefix.c_str(), name.c_str(), tag.c_str()); };
+      particlePtDistribution[pdg] = histos.add<TH1>(histoName("particlePtDistribution"), "", kTH1D, {ptAxis});
+      LOG(info) << "Added histogram: " << histoName("particlePtDistribution");
+      particleEtaDistribution[pdg] = histos.add<TH1>(histoName("particleEtaDistribution"), "", kTH1D, {etaAxis});
 
-      ptDistribution[pdg] = histos.add<TH1>(prefix + "ptDistribution" + tag, "", kTH1D, {ptAxis});
-      ptResolutionVsPt[pdg] = histos.add<TH2>(prefix + "ptResolutionVsPt" + tag, "", kTH2D, {ptAxis, axisPtDelta});
-      ptResolutionVsEta[pdg] = histos.add<TProfile2D>(prefix + "ptResolutionVsEta" + tag, "", kTProfile2D, {ptAxis, etaAxis});
-      invPtResolutionVsPt[pdg] = histos.add<TH2>(prefix + "invPtResolutionVsPt" + tag, "", kTH2D, {ptAxis, invPtDeltaAxis});
-      invPtResolutionVsEta[pdg] = histos.add<TProfile2D>(prefix + "invPtResolutionVsEta" + tag, "", kTProfile2D, {ptAxis, etaAxis});
-      dcaXyResolutionVsPt[pdg] = histos.add<TH2>(prefix + "dcaXyResolutionVsPt" + tag, "", kTH2D, {ptAxis, axisDcaXy});
-      dcaZResolutionVsPt[pdg] = histos.add<TH2>(prefix + "dcaZResolutionVsPt" + tag, "", kTH2D, {ptAxis, axisDcaZ});
-      covariancePtPtVsPt[pdg] = histos.add<TH2>(prefix + "covariancePtPtVsPt" + tag, "", kTH2D, {ptAxis, axisCovariancePtPt});
-      covarianceDcaXyDcaXyVsPt[pdg] = histos.add<TH2>(prefix + "covarianceDcaXyDcaXyVsPt" + tag, "", kTH2D, {ptAxis, axisCovarianceDcaXyDcaXy});
-      covarianceDcaZDcaZVsPt[pdg] = histos.add<TH2>(prefix + "covarianceDcaZDcaZVsPt" + tag, "", kTH2D, {ptAxis, axisCovarianceDcaZDcaZ});
+      ptDistribution[pdg] = histos.add<TH1>(histoName("ptDistribution"), "", kTH1D, {ptAxis});
+      ptResolutionVsPt[pdg] = histos.add<TH2>(histoName("ptResolutionVsPt"), "", kTH2D, {ptAxis, axisPtDelta});
+      ptResolutionVsEta[pdg] = histos.add<TProfile2D>(histoName("ptResolutionVsEta"), "", kTProfile2D, {ptAxis, etaAxis});
+      invPtResolutionVsPt[pdg] = histos.add<TH2>(histoName("invPtResolutionVsPt"), "", kTH2D, {ptAxis, invPtDeltaAxis});
+      invPtResolutionVsEta[pdg] = histos.add<TProfile2D>(histoName("invPtResolutionVsEta"), "", kTProfile2D, {ptAxis, etaAxis});
+      dcaXyResolutionVsPt[pdg] = histos.add<TH2>(histoName("dcaXyResolutionVsPt"), "", kTH2D, {ptAxis, axisDcaXy});
+      dcaZResolutionVsPt[pdg] = histos.add<TH2>(histoName("dcaZResolutionVsPt"), "", kTH2D, {ptAxis, axisDcaZ});
+      covariancePtPtVsPt[pdg] = histos.add<TH2>(histoName("covariancePtPtVsPt"), "", kTH2D, {ptAxis, axisCovariancePtPt});
+      covarianceDcaXyDcaXyVsPt[pdg] = histos.add<TH2>(histoName("covarianceDcaXyDcaXyVsPt"), "", kTH2D, {ptAxis, axisCovarianceDcaXyDcaXy});
+      covarianceDcaZDcaZVsPt[pdg] = histos.add<TH2>(histoName("covarianceDcaZDcaZVsPt"), "", kTH2D, {ptAxis, axisCovarianceDcaZDcaZ});
     }
   }
 
@@ -102,10 +115,7 @@ struct Alice3TrackingPerformance {
         return false;
       }
       const int etaBin = particleEtaDistribution[0]->GetXaxis()->FindBin(p.eta());
-      if (etaBin < 1 || etaBin > particleEtaDistribution[0]->GetXaxis()->GetNbins()) {
-        return false;
-      }
-      return true;
+      return etaBin >= 1 && etaBin <= particleEtaDistribution[0]->GetXaxis()->GetNbins();
     };
 
     for (const auto& mcParticle : mcParticles) {
@@ -115,7 +125,7 @@ struct Alice3TrackingPerformance {
       }
       particlePtDistribution[0]->Fill(mcParticle.pt());
       particleEtaDistribution[0]->Fill(mcParticle.eta());
-      if (particlePtDistribution.find(mcParticle.pdgCode()) == particlePtDistribution.end()) {
+      if (!particlePtDistribution.contains(mcParticle.pdgCode())) {
         continue;
       }
       particlePtDistribution[mcParticle.pdgCode()]->Fill(mcParticle.pt());
@@ -127,7 +137,7 @@ struct Alice3TrackingPerformance {
       }
       const auto& mcParticle = track.mcParticle();
       const float ptResolution = (track.pt() - mcParticle.pt()) / mcParticle.pt();
-      const float invptResolution = 1.f / track.pt() - 1.f / mcParticle.pt();
+      const float invptResolution = (track.pt() > 0.f ? 1.f / track.pt() : 0.f) - (mcParticle.pt() > 0.f ? 1.f / mcParticle.pt() : 0.f);
       const float covariancePtPt = track.sigma1Pt() * track.sigma1Pt() * track.pt() * track.pt() * track.pt() * track.pt();
 
       auto fillResolutionHistograms = [&](const int p) {
@@ -139,8 +149,8 @@ struct Alice3TrackingPerformance {
         dcaXyResolutionVsPt[p]->Fill(mcParticle.pt(), track.dcaXY());
         dcaZResolutionVsPt[p]->Fill(mcParticle.pt(), track.dcaZ());
         covariancePtPtVsPt[p]->Fill(mcParticle.pt(), covariancePtPt);
-        covarianceDcaXyDcaXyVsPt[p]->Fill(mcParticle.pt(), track.sigmaDcaXY2());
-        covarianceDcaZDcaZVsPt[p]->Fill(mcParticle.pt(), track.sigmaDcaZ2());
+        // covarianceDcaXyDcaXyVsPt[p]->Fill(mcParticle.pt(), track.sigmaDcaXY2());
+        // covarianceDcaZDcaZVsPt[p]->Fill(mcParticle.pt(), track.sigmaDcaZ2());
       };
 
       fillResolutionHistograms(0);
@@ -148,7 +158,7 @@ struct Alice3TrackingPerformance {
       if (!isParticleSelected(mcParticle)) {
         continue;
       }
-      if (ptResolutionVsPt.find(mcParticle.pdgCode()) == ptResolutionVsPt.end()) {
+      if (!ptResolutionVsPt.contains(mcParticle.pdgCode())) {
         continue;
       }
       fillResolutionHistograms(mcParticle.pdgCode());

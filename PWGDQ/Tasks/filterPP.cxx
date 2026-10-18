@@ -106,7 +106,7 @@ constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses);
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses);
 
 struct DQEventSelectionTask {
   Produces<aod::DQEventCuts> eventSel;
@@ -521,7 +521,7 @@ struct DQFilterPPTask {
 
     std::vector<int> objCountersBarrel(fNBarrelCuts, 0); // init all counters to zero
     // count the number of barrel tracks fulfilling each cut
-    for (auto track : tracksBarrel) {
+    for (const auto& track : tracksBarrel) {
       for (int i = 0; i < fNBarrelCuts; ++i) {
         if (track.isDQBarrelSelected() & (static_cast<uint32_t>(1) << i)) {
           objCountersBarrel[i] += 1;
@@ -585,7 +585,7 @@ struct DQFilterPPTask {
 
     std::vector<int> objCountersMuon(fNMuonCuts, 0); // init all counters to zero
     // count the number of muon tracks fulfilling each selection
-    for (auto muon : muons) {
+    for (const auto& muon : muons) {
       for (int i = 0; i < fNMuonCuts; ++i) {
         if (muon.isDQMuonSelected() & (static_cast<uint32_t>(1) << i)) {
           objCountersMuon[i] += 1;
@@ -701,7 +701,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<DQFilterPPTask>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses)
 {
   //
   // Define here the histograms for all the classes required in analysis.

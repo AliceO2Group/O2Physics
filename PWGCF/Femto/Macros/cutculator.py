@@ -181,7 +181,77 @@ def ask_user_selection(group):
     return selected_bins
 
 
-def main(rootfile_path, tdir_path="femto-producer"):
+def parse_bitmask(text):
+    """Parse a bitmask given as decimal, hex (0x...) or binary (0b...)."""
+    text = text.strip()
+    try:
+        value = int(text, 0)
+    except ValueError:
+        # int(x, 0) rejects decimals with leading zeros, e.g. "010"
+        value = int(text, 10)
+    if value < 0:
+        raise ValueError("bitmask must be non-negative")
+    return value
+
+
+def is_minimal_bin(b):
+    return b.get("MinimalCut", "0") == "1" and b.get("OptionalCut", "0") == "0"
+
+
+def print_decoded_bitmask(groups, bitmask):
+    """
+    Print all cuts selected by the given bitmask, grouped by selection. Minimal
+    cuts with BitPosition X (always applied) are listed as well for every
+    selection where no stricter minimal bit is set.
+    """
+    print("\n=======================================")
+    print(f"Cuts selected by bitmask {bitmask} ({hex(bitmask)}):")
+    print("=======================================\n")
+
+    known_bits = set()
+    for sel_name, group in groups.items():
+        selected = []
+        has_minimal_bit = False
+        for b in group:
+            pos = b.get("BitPosition", "X")
+            if pos.upper() == "X":
+                continue
+            known_bits.add(int(pos))
+            if bitmask & (1 << int(pos)):
+                selected.append(b)
+                if is_minimal_bin(b):
+                    has_minimal_bit = True
+
+        entries = []
+        if not has_minimal_bit:
+            for b in group:
+                if is_minimal_bin(b) and b.get("BitPosition", "X").upper() == "X":
+                    entries.append(f"{format_value_with_comment(b)} [minimal, no bit]")
+        for b in selected:
+            if is_minimal_bin(b):
+                kind = "minimal"
+            elif b.get("OptionalCut", "0") == "1":
+                kind = "optional"
+            else:
+                kind = "neutral"
+            entries.append(f"{format_value_with_comment(b)} [{kind}, bit {b.get('BitPosition')}]")
+
+        if entries:
+            print(f"  {sel_name}:")
+            for e in entries:
+                print(f"    {e}")
+
+    unknown_bits = [i for i in range(bitmask.bit_length()) if bitmask & (1 << i) and i not in known_bits]
+    if unknown_bits:
+        print(f"\nWarning: bit(s) {', '.join(map(str, unknown_bits))} are set but not defined in this histogram!")
+
+    print("\nBitmask:")
+    print(f"  Decimal: {bitmask}")
+    print(f"  Binary:  {bin(bitmask)}")
+    print(f"  Hex:     {hex(bitmask)}")
+
+
+def main(rootfile_path, tdir_path="femto-producer", decode=False):
     print(f"Opening ROOT file: {rootfile_path}")
     f = ROOT.TFile.Open(rootfile_path)
     if not f:
@@ -243,6 +313,17 @@ def main(rootfile_path, tdir_path="femto-producer"):
         sel_name = b.get("SelectionName", f"unknown_{b['_bin_index']}")
         groups.setdefault(sel_name, []).append(b)
 
+    # decode an existing bitmask instead of building a new one
+    if decode:
+        while True:
+            try:
+                bitmask = parse_bitmask(input("\nEnter bitmask to decode (dec, 0x hex or 0b bin): "))
+                break
+            except ValueError:
+                print("Invalid bitmask.")
+        print_decoded_bitmask(groups, bitmask)
+        return
+
     selected_bins = []
 
     for group in groups.values():
@@ -280,5 +361,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("rootfile", help="Path to ROOT file")
     parser.add_argument("--dir", default="femto-producer", help="TDirectory path in ROOT file")
+    parser.add_argument(
+        "--bitmask",
+        action="store_true",
+        help="Ask for a bitmask after selecting the histogram and print the cuts it selects",
+    )
     args = parser.parse_args()
-    main(args.rootfile, args.dir)
+    main(args.rootfile, args.dir, args.bitmask)

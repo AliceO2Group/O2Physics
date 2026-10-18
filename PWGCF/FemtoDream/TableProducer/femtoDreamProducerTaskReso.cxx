@@ -733,7 +733,7 @@ struct FemtoDreamProducerTaskReso {
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
-  void initCcdbMagTrig(aod::BCsWithTimestamps::iterator bc)
+  void initCcdbMagTrig(const aod::BCsWithTimestamps::iterator& bc)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     // get magnetic field for run
@@ -925,7 +925,7 @@ struct FemtoDreamProducerTaskReso {
           // list of mothers is not empty
         } else if (particleMC.getProcess() == ProcessDirectMother && particleMC.getGenStatusCode() == GenStatusTransport && !motherparticlesMC.empty()) {
           // get direct mother
-          auto motherparticleMC = motherparticlesMC.front();
+          const auto& motherparticleMC = motherparticlesMC.front();
           pdgCodeMother = motherparticleMC.pdgCode();
           trackRegistry.fill(HIST("AnalysisQA/Mother"), pdgCodeMother);
           particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode(), pdgCode);
