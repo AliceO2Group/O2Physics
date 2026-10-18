@@ -1502,7 +1502,7 @@ struct FlowTask {
     if (weffEventWithinGap08) {
       registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgUserIO.cfgUserPtVnEvWeightEnabled ? weffEventWithinGap08 : 1.);
       bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
-    // c22_gap8 * pt_withGap8
+      // c22_gap8 * pt_withGap8
       fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
     }
     // PtVariance
@@ -1610,7 +1610,7 @@ struct FlowTask {
           count_Gap08 += 1.;
         }
         fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 1);
-      }        
+      }
       if (withinPtPOI)
         fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 2);
       if (withinPtPOI && withinPtRef)
