@@ -1722,7 +1722,8 @@ struct Lambdastarproxy {
             static_cast<int>(
               trkD.sign()),
 
-       .tid = static_cast<int>(trkD.globalIndex()),.truth = {}});
+          .tid = static_cast<int>(trkD.globalIndex()),
+          .truth = {}});
       if constexpr (IsMC) {
         proxyCands.back().truth = trackTruth(trkD, collision.mcCollisionId());
       }
@@ -1785,13 +1786,13 @@ struct Lambdastarproxy {
       const float pyP = ptP * std::sin(phiP);
       const float pzP = ptP * std::sinh(etaP);
 
-     protonCands.push_back(ProtonCand{
-     .px = pxP,
-     .py = pyP,
-     .pz = pzP,
-     .charge = static_cast<int>(trkP.sign()),
-     .tid = static_cast<int>(trkP.globalIndex()),
-     .truth = {}});
+      protonCands.push_back(ProtonCand{
+        .px = pxP,
+        .py = pyP,
+        .pz = pzP,
+        .charge = static_cast<int>(trkP.sign()),
+        .tid = static_cast<int>(trkP.globalIndex()),
+        .truth = {}});
       if constexpr (IsMC) {
         protonCands.back().truth = trackTruth(trkP, collision.mcCollisionId());
       }
@@ -1862,13 +1863,13 @@ struct Lambdastarproxy {
       const float pyK = ptK * std::sin(phiK);
       const float pzK = ptK * std::sinh(etaK);
 
-     kaonCands.push_back(KaonCand{
-     .px = pxK,
-     .py = pyK,
-     .pz = pzK,
-     .charge = static_cast<int>(trkK.sign()),
-     .tid = static_cast<int>(trkK.globalIndex()),
-     .truth = {}});
+      kaonCands.push_back(KaonCand{
+        .px = pxK,
+        .py = pyK,
+        .pz = pzK,
+        .charge = static_cast<int>(trkK.sign()),
+        .tid = static_cast<int>(trkK.globalIndex()),
+        .truth = {}});
       if constexpr (IsMC) {
         kaonCands.back().truth = trackTruth(trkK, collision.mcCollisionId());
       }
