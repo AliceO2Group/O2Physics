@@ -14,9 +14,12 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 ///
 /// Mode A (XiK0s): processXiK0s, processXiK0sMC. Mode B (Xi1530K, Xi- pi+ K- with micro tracks):
-/// processXi1530KMicro, processXi1530KMCMicro. Generated parents: processMCTrue.
+/// processXi1530KMicro, processXi1530KMCMicro. Generated parents: processMCTrue. MC truth of reconstructed MC: processMcTruth.
 /// Each candidate is written only to the tables of its own mode (PWGLF/DataModel/LFOmega2012MlTables.h);
 /// the selection is the one of omega2012Analysis.cxx (PWGLF/Core/Omega2012AnalysisCore.h, same JSON keys).
+/// Only collisions with written candidates get an event row. In reconstructed MC the daughter labels of the written
+/// objects and the pruned McParticles rows (Omega(2012) decay trees, ancestry of the labels) carry the truth, so the
+/// output needs no source table.
 
 #include "PWGLF/Core/Omega2012AnalysisCore.h"
 #include "PWGLF/Core/Omega2012MlFeatures.h"
@@ -24,6 +27,7 @@
 #include "PWGLF/DataModel/LFOmega2012MlTables.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -38,13 +42,19 @@
 
 #include <TH1.h>
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <limits>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -59,7 +69,7 @@ static_assert(std::extent_v<aod::omega2012ml::OmXi1530KFeatures::type> == ml::Xi
 
 struct Omega2012TrainingTable {
   using ResoCollisions = aod::ResoCollisions_001;
-  using ResoMCCols = soa::Join<ResoCollisions, aod::ResoMCCollisions_001>;
+  using ResoMCCols = soa::Join<ResoCollisions, aod::ResoMCCollisions_001, aod::ResoMCCollisionIds>;
   using ResoMicroTracks = aod::ResoMicroTracks_001;
   using ResoMCMicroTracks = soa::Join<ResoMicroTracks, aod::ResoMCMicroTracks_001>;
   using ResoMCCascades = soa::Join<aod::ResoCascades, aod::ResoMCCascades>;
@@ -73,6 +83,12 @@ struct Omega2012TrainingTable {
   static constexpr unsigned int BitsPerFloat = 32;
   static constexpr uint32_t ByteMask = 0xffU;
   static constexpr int NBuildStatus = 6;
+  // Pruned McParticles: generations of Omega(2012) descendants and mother steps above a daughter label
+  static constexpr int McTreeDepth = 3;
+  static constexpr int MaxAncestorSteps = 8;
+  static constexpr uint8_t McSelectionTree = 1;
+  static constexpr uint8_t McSelectionAncestry = 2;
+  static constexpr std::size_t NStoredMothers = 2;
 
   Produces<aod::Omega2012MlEvents> mlEvents;
   Produces<aod::Omega2012MlCascades> mlCascades;
@@ -85,6 +101,11 @@ struct Omega2012TrainingTable {
   Produces<aod::Omega2012MlXi1530KInputs> mlXi1530KInputs;
   Produces<aod::Omega2012MlXi1530KTruth> mlXi1530KTruth;
   Produces<aod::Omega2012MlGenAudit> mlGenAudit;
+  Produces<aod::Omega2012MlEventMcs> mlEventMcs;
+  Produces<aod::Omega2012MlCascadeMcs> mlCascadeMcs;
+  Produces<aod::Omega2012MlV0Mcs> mlV0Mcs;
+  Produces<aod::Omega2012MlTrackMcs> mlTrackMcs;
+  Produces<aod::Omega2012MlMcParticles> mlMcParticles;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -103,8 +124,26 @@ struct Omega2012TrainingTable {
   Configurable<int> omega2012MlParityRows{"omega2012MlParityRows", 0, "Log feature hashes of the first N exported candidates of each mode"};
   Configurable<bool> omega2012MlExportWrongSign{"omega2012MlExportWrongSign", false, "Also export the wrong-sign charge-pattern controls of the Xi1530K mode"};
 
+  // Event row written before the first candidate of the collision
+  struct PendingEvent {
+    DecayMode mode = DecayMode::XiK0s;
+    int64_t recoCollision = -1;
+    float posZ = 0.f;
+    float bField = 0.f;
+    float centrality = 0.f;
+    float multiplicity = 0.f;
+    bool recINELgt0 = false;
+    bool isMC = false;
+    int64_t mcCollision = -1;
+  };
+
   Omega2012AnalysisCore core;
+  PendingEvent pendingEvent;
   int64_t mlEventRow = -1;
+  // MC tables of the current DF, set only by the reconstructed-MC process functions
+  aod::McParticles const* mcParticlesDf = nullptr;
+  aod::McTrackLabels const* mcTrackLabelsDf = nullptr;
+  std::unordered_set<int64_t> mlAncestryRows;
   std::unordered_map<int64_t, int64_t> mlCascadeRows;
   std::unordered_map<int64_t, int64_t> mlV0Rows;
   std::unordered_map<int64_t, int64_t> mlTrackRows;
@@ -123,6 +162,9 @@ struct Omega2012TrainingTable {
     }
     if (doprocessMCTrue && !doprocessXiK0sMC && !doprocessXi1530KMCMicro) {
       LOG(fatal) << "processMCTrue requires processXiK0sMC or processXi1530KMCMicro";
+    }
+    if (doprocessMcTruth != (doprocessXiK0sMC || doprocessXi1530KMCMicro)) {
+      LOG(fatal) << "processMcTruth must be enabled exactly when processXiK0sMC or processXi1530KMCMicro is enabled";
     }
     if (omega2012MlParityRows < 0) {
       LOG(fatal) << "omega2012MlParityRows must not be negative";
@@ -176,15 +218,84 @@ struct Omega2012TrainingTable {
   }
 
   template <typename Collision>
-  void writeEvent(Collision const& collision, DecayMode mode)
+  void beginEvent(Collision const& collision, DecayMode mode)
   {
     mlCascadeRows.clear();
     mlV0Rows.clear();
     mlTrackRows.clear();
+    mlEventRow = -1;
     // ResoCollisions_001 carries no run number or BC; the reduced collision row identifies the event within its DF.
-    mlEvents(static_cast<uint8_t>(mode), static_cast<int64_t>(collision.globalIndex()),
-             collision.posZ(), collision.bMagField(), collision.cent(), collision.multiplicity(), collision.isRecINELgt0());
+    pendingEvent = PendingEvent{mode, static_cast<int64_t>(collision.globalIndex()), collision.posZ(), collision.bMagField(),
+                                collision.cent(), collision.multiplicity(), collision.isRecINELgt0(), false, -1};
+    if constexpr (requires { collision.originalMcCollisionId(); }) {
+      pendingEvent.isMC = true;
+      pendingEvent.mcCollision = static_cast<int64_t>(collision.originalMcCollisionId());
+    }
+  }
+
+  void ensureEventRow()
+  {
+    if (mlEventRow >= 0) {
+      return;
+    }
+    mlEvents(static_cast<uint8_t>(pendingEvent.mode), pendingEvent.recoCollision, pendingEvent.posZ, pendingEvent.bField,
+             pendingEvent.centrality, pendingEvent.multiplicity, pendingEvent.recINELgt0);
     mlEventRow = mlEvents.lastIndex();
+    if (pendingEvent.isMC) {
+      mlEventMcs(mlEventRow, pendingEvent.mcCollision);
+    }
+  }
+
+  template <typename Particle>
+  void writeMcParticle(Particle const& particle, uint8_t selection)
+  {
+    const auto mothers = particle.mothersIds();
+    std::array<int, NStoredMothers> motherRows{-1, -1};
+    for (std::size_t i = 0; i < NStoredMothers && i < mothers.size(); ++i) {
+      motherRows[i] = mothers[i];
+    }
+    const auto daughters = particle.daughtersIds();
+    std::array<int, 2> daughterRows{daughters[0], daughters[1]};
+    const auto nMothers = static_cast<uint8_t>(std::min<std::size_t>(mothers.size(), std::numeric_limits<uint8_t>::max()));
+    mlMcParticles(static_cast<int64_t>(particle.globalIndex()), selection, particle.pdgCode(), static_cast<int64_t>(particle.mcCollisionId()),
+                  nMothers, motherRows.data(), daughterRows.data(), particle.px(), particle.py(), particle.pz(), particle.e(), particle.weight());
+  }
+
+  // McParticles row of a source track, -1 without MC tables or label
+  int mcLabel(int64_t trackId) const
+  {
+    if (mcTrackLabelsDf == nullptr) {
+      return -1;
+    }
+    const auto row = trackId - static_cast<int64_t>(mcTrackLabelsDf->offset());
+    if (row < 0 || row >= static_cast<int64_t>(mcTrackLabelsDf->size())) {
+      return -1;
+    }
+    return mcTrackLabelsDf->rawIteratorAt(row).mcParticleId();
+  }
+
+  // Writes the label particle and its first-mother chain, once per DF
+  void writeAncestry(int label)
+  {
+    if (mcParticlesDf == nullptr) {
+      return;
+    }
+    int64_t row = label;
+    for (int step = 0; step <= MaxAncestorSteps; ++step) {
+      const auto local = row - static_cast<int64_t>(mcParticlesDf->offset());
+      if (row < 0 || local < 0 || local >= static_cast<int64_t>(mcParticlesDf->size())) {
+        return;
+      }
+      const auto particle = mcParticlesDf->rawIteratorAt(local);
+      if (mlAncestryRows.insert(row).second) {
+        writeMcParticle(particle, McSelectionAncestry);
+      }
+      const auto mothers = particle.mothersIds();
+      if (mothers.empty()) {
+        return;
+      }
+      row = mothers[0];
+    }
   }
 
   template <typename Cascade>
@@ -209,6 +320,14 @@ struct Omega2012TrainingTable {
                xi.nCrossedRowsPos(), xi.nCrossedRowsNeg(), xi.nCrossedRowsBach(), daughterIds.data());
     const auto row = mlCascades.lastIndex();
     mlCascadeRows.emplace(id, row);
+    if (mcTrackLabelsDf != nullptr) {
+      std::array<int, 3> labels{};
+      for (std::size_t i = 0; i < labels.size(); ++i) {
+        labels[i] = mcLabel(daughterIds[i]);
+        writeAncestry(labels[i]);
+      }
+      mlCascadeMcs(row, labels.data());
+    }
     return row;
   }
 
@@ -231,6 +350,14 @@ struct Omega2012TrainingTable {
           v0.nCrossedRowsPos(), v0.nCrossedRowsNeg(), daughterIds.data());
     const auto row = mlV0s.lastIndex();
     mlV0Rows.emplace(id, row);
+    if (mcTrackLabelsDf != nullptr) {
+      std::array<int, 2> labels{};
+      for (std::size_t i = 0; i < labels.size(); ++i) {
+        labels[i] = mcLabel(daughterIds[i]);
+        writeAncestry(labels[i]);
+      }
+      mlV0Mcs(row, labels.data());
+    }
     return row;
   }
 
@@ -246,6 +373,11 @@ struct Omega2012TrainingTable {
              track.trackSelectionFlags(), track.trackFlags(), track.tpcNClsCrossedRows(), track.itsClusterMap());
     const auto row = mlTracks.lastIndex();
     mlTrackRows.emplace(id, row);
+    if (mcTrackLabelsDf != nullptr) {
+      const auto label = mcLabel(static_cast<int64_t>(track.trackId()));
+      writeAncestry(label);
+      mlTrackMcs(row, label);
+    }
     return row;
   }
 
@@ -267,6 +399,7 @@ struct Omega2012TrainingTable {
            collision.globalIndex(), xi.globalIndex(), v0.globalIndex(), passBits, featureHash(pack.master));
       ++parityLoggedXiK0s;
     }
+    ensureEventRow();
     const auto cascadeRow = writeCascade(xi);
     const auto v0Row = writeV0(v0);
     mlXiK0sCandidates(mlEventRow, cascadeRow, v0Row,
@@ -308,6 +441,7 @@ struct Omega2012TrainingTable {
            values.chargePattern, passBits, featureHash(pack.master));
       ++parityLoggedXi1530K;
     }
+    ensureEventRow();
     const auto cascadeRow = writeCascade(xi);
     const auto pionRow = writeTrack(pion);
     const auto kaonRow = writeTrack(kaon);
@@ -330,7 +464,7 @@ struct Omega2012TrainingTable {
   template <bool IsMC, typename Collision, typename Cascades, typename V0s>
   void exportXiK0s(Collision const& collision, Cascades const& cascades, V0s const& v0s)
   {
-    writeEvent(collision, DecayMode::XiK0s);
+    beginEvent(collision, DecayMode::XiK0s);
     // Selection only: the analysis histograms belong to the Omega(2012) analysis task
     core.forEachXiK0sCandidate<IsMC, false>(histos, collision, collision, cascades, v0s, true, nullptr, nullptr, nullptr,
                                             [&](auto const& coll, auto const& xi, auto const& v0, XiK0sCandidateValues const& values, uint16_t passBits) {
@@ -341,7 +475,7 @@ struct Omega2012TrainingTable {
   template <bool IsMC, typename Collision, typename Cascades, typename Tracks>
   void exportXi1530K(Collision const& collision, Cascades const& cascades, Tracks const& tracks)
   {
-    writeEvent(collision, DecayMode::Xi1530K);
+    beginEvent(collision, DecayMode::Xi1530K);
     core.forEachXi1530KCandidate<IsMC, false, true>(histos, collision, cascades, tracks, nullptr, true, nullptr, nullptr, nullptr,
                                                     [&](auto const& coll, auto const& xi, auto const& pion, auto const& kaon,
                                                         Xi1530KCandidateValues const& values, uint16_t passBits) {
@@ -358,12 +492,19 @@ struct Omega2012TrainingTable {
   }
   PROCESS_SWITCH(Omega2012TrainingTable, processXiK0s, "Write XiK0s-mode candidates from data", true);
 
-  void processXiK0sMC(ResoMCCols::iterator const& collision, ResoMCCascades const& cascades, ResoMCV0s const& v0s)
+  void processXiK0sMC(ResoMCCols::iterator const& collision, ResoMCCascades const& cascades, ResoMCV0s const& v0s,
+                      aod::McParticles const& mcParticles, aod::McTrackLabels const& mcTrackLabels)
   {
     if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
       return;
     }
+    mcParticlesDf = &mcParticles;
+    mcTrackLabelsDf = &mcTrackLabels;
     exportXiK0s<true>(collision, cascades, v0s);
+    // cppcheck-suppress redundantAssignment
+    mcParticlesDf = nullptr;
+    // cppcheck-suppress redundantAssignment
+    mcTrackLabelsDf = nullptr;
   }
   PROCESS_SWITCH(Omega2012TrainingTable, processXiK0sMC, "Write XiK0s-mode candidates with truth from reconstructed MC", false);
 
@@ -376,12 +517,19 @@ struct Omega2012TrainingTable {
   }
   PROCESS_SWITCH(Omega2012TrainingTable, processXi1530KMicro, "Write Xi1530K-mode candidates from data micro v001 tables", false);
 
-  void processXi1530KMCMicro(ResoMCCols::iterator const& collision, ResoMCCascades const& cascades, ResoMCMicroTracks const& tracks)
+  void processXi1530KMCMicro(ResoMCCols::iterator const& collision, ResoMCCascades const& cascades, ResoMCMicroTracks const& tracks,
+                             aod::McParticles const& mcParticles, aod::McTrackLabels const& mcTrackLabels)
   {
     if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
       return;
     }
+    mcParticlesDf = &mcParticles;
+    mcTrackLabelsDf = &mcTrackLabels;
     exportXi1530K<true>(collision, cascades, tracks);
+    // cppcheck-suppress redundantAssignment
+    mcParticlesDf = nullptr;
+    // cppcheck-suppress redundantAssignment
+    mcTrackLabelsDf = nullptr;
   }
   PROCESS_SWITCH(Omega2012TrainingTable, processXi1530KMCMicro, "Write Xi1530K-mode candidates with truth from reconstructed MC micro v001 tables", false);
 
@@ -396,6 +544,41 @@ struct Omega2012TrainingTable {
     });
   }
   PROCESS_SWITCH(Omega2012TrainingTable, processMCTrue, "Write generated Omega(2012) parents of selected reconstructed MC events", false);
+
+  // Once per DF: every Omega(2012) with McTreeDepth generations of descendants. The ancestry set is reset here, so
+  // the result does not depend on the order of this call relative to the per-collision process functions.
+  void processMcTruth(aod::McParticles const& mcParticles)
+  {
+    mlAncestryRows.clear();
+    const auto offset = static_cast<int64_t>(mcParticles.offset());
+    const auto nRows = static_cast<int64_t>(mcParticles.size());
+    std::unordered_set<int64_t> treeRows;
+    std::vector<std::pair<int64_t, int>> stack;
+    for (const auto& parent : mcParticles) {
+      if (std::abs(parent.pdgCode()) != o2::constants::physics::Pdg::kOmega2012Minus) {
+        continue;
+      }
+      stack.assign(1, {static_cast<int64_t>(parent.globalIndex()), 0});
+      while (!stack.empty()) {
+        const auto [row, depth] = stack.back();
+        stack.pop_back();
+        const auto local = row - offset;
+        if (local < 0 || local >= nRows || !treeRows.insert(row).second) {
+          continue;
+        }
+        const auto particle = mcParticles.rawIteratorAt(local);
+        writeMcParticle(particle, McSelectionTree);
+        const auto daughters = particle.daughtersIds();
+        if (depth >= McTreeDepth || daughters[0] < 0 || daughters[1] < daughters[0]) {
+          continue;
+        }
+        for (int64_t daughter = daughters[0]; daughter <= daughters[1]; ++daughter) {
+          stack.emplace_back(daughter, depth + 1);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(Omega2012TrainingTable, processMcTruth, "Write the pruned McParticles rows of the Omega(2012) decay trees; required with the reconstructed-MC process functions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
