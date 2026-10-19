@@ -27,7 +27,7 @@ namespace multi_charm_ml
 {
 
 static constexpr int NBinsPt = 10;
-static constexpr int NClasses = 2;
+static constexpr int NClasses = 1;
 static constexpr std::array<std::array<double, NClasses>, NBinsPt> Cuts = {{{0.5, 0.5},
                                                                             {0.5, 0.5},
                                                                             {0.5, 0.5},
