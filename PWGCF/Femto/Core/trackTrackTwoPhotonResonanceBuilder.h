@@ -58,7 +58,7 @@ struct ConfOmegaMesonFilters : o2::framework::ConfigurableGroup {
 template <auto& Prefix>
 struct ConfOmegaMesonSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 223, "Absolute PDG code of the resonance (omega(782) = 223)"};
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", o2::constants::physics::Pdg::kOmega, "Absolute PDG code of the resonance (pdg[omega(782)]=223)"};
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};
   o2::framework::Configurable<float> ptMax{"ptMax", 10.f, "Maximum pT"};
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
