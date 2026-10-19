@@ -94,6 +94,44 @@
            ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).negDauMaskAboveThres),                                          \
            ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).negDauMaskBelowThres))
 
+// partition for resonances built from two photons (pi0, eta, ...): unlike MAKE_RESONANCE_0/1_PARTITON
+// there is no sign and no momentum-threshold PID switch, and just a single mask check -- both
+// daughters are plain photons with the same selection requirement, so the candidate only stores the
+// AND of both legs' own masks (see femtotwophotonresonances::MaskDau)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_TWOPHOTONRESONANCE_PARTITION(selection)            \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&       \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&     \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&   \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&   \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&   \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&   \
+    (o2::aod::femtobase::stored::mass > (selection).massMin) && \
+    (o2::aod::femtobase::stored::mass < (selection).massMax) && \
+    ncheckbit(o2::aod::femtotwophotonresonances::maskDau, (selection).dauMask)
+
+// partition for resonances built from two tracks and a two-photon resonance (e.g. omega(782) ->
+// pi+ pi- pi0): same pattern as MAKE_RESONANCE_1_PARTITON (daughter masks copied onto the candidate
+// at build time, systematics reselected here), just with 3 daughter masks instead of 2 -- the two
+// charged daughters keep their momentum-threshold PID switch, the neutral daughter does not
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_TRACKTRACKTWOPHOTONRESONANCE_PARTITION(selection)                                                  \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&                                                       \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&                                                     \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                   \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                   \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                   \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                   \
+    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                 \
+    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                 \
+    ifnode(o2::aod::femtotrackstwophotonresonances::posDauHasHighMomentum,                                      \
+           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskPosDau, (selection).posDauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskPosDau, (selection).posDauMaskBelowThres)) && \
+    ifnode(o2::aod::femtotrackstwophotonresonances::negDauHasHighMomentum,                                      \
+           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNegDau, (selection).negDauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNegDau, (selection).negDauMaskBelowThres)) && \
+    ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNeutralDau, (selection).neutralDauMask)
+
 // partition for lambdas
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_LAMBDA_PARTITION(selection)                                                                                                       \
@@ -122,6 +160,18 @@
     (o2::aod::femtobase::stored::mass > (selection).massMin) && \
     (o2::aod::femtobase::stored::mass < (selection).massMax) && \
     ncheckbit(o2::aod::femtov0s::mask, (selection).mask)
+
+// partition for photons (PCM)
+// no sign/mass handling: photons are their own antiparticle and have no mass window
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_PHOTON_PARTITION(selection)                      \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&     \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&   \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) && \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) && \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) && \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) && \
+    ncheckbit(o2::aod::femtophotons::mask, (selection).mask)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_CASCADE_PARTITION(selection)                                                                                                      \

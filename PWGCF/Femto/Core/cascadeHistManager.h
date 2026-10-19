@@ -83,7 +83,7 @@ enum CascadeHist {
   kTruePtVsPt,
   kTrueEtaVsEta,
   kTruePhiVsPhi,
-  // histograms for fraction estimation of v0s
+  // histograms for fraction estimation of cascades
   kNoMcParticle,
   kPrimary,
   kFromWrongCollision,
@@ -120,16 +120,16 @@ struct ConfCascadeQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d Qa histograms"};
   o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "MC ONLY: Plot pt vs cosPa for different particle origins"};
   o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3312, 3334}, "MC ONLY: PDG codes of mothers of secondaries (Max 3 will be considered)"};
-  o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.9, 1}}, "Cosine of poiting angle"};
-  o2::framework::ConfigurableAxis pa{"pa", {{180, 0, 1.f * o2::constants::math::PI}}, "Poiting angle"};
+  o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.9, 1}}, "Cosine of pointing angle"};
+  o2::framework::ConfigurableAxis pa{"pa", {{180, 0, 1.f * o2::constants::math::PI}}, "Pointing angle"};
   o2::framework::ConfigurableAxis dauDcaAtDecay{"dauDcaAtDecay", {{150, 0, 1.5}}, "Daughter DCA at decay vertex"};
   o2::framework::ConfigurableAxis transRadius{"transRadius", {{100, 0, 100}}, "Transverse radius"};
-  o2::framework::ConfigurableAxis massXi{"massXi", {{400, 1.2f, 1.6f}}, "mass for antiparticle hypothesis"};
-  o2::framework::ConfigurableAxis massOmega{"massOmega", {{400, 1.4f, 1.8f}}, "mass for antiparticle hypothesis"};
+  o2::framework::ConfigurableAxis massXi{"massXi", {{400, 1.2f, 1.6f}}, "Mass under the Xi hypothesis"};
+  o2::framework::ConfigurableAxis massOmega{"massOmega", {{400, 1.4f, 1.8f}}, "Mass under the Omega hypothesis"};
   o2::framework::ConfigurableAxis lambdaMass{"lambdaMass", {{200, 1., 1.2}}, "Mass of daughter lambda"};
   o2::framework::ConfigurableAxis lambdaCosPa{"lambdaCosPa", {{100, 0.9, 1}}, "Cosine of pointing angle of daughter lambda"};
   o2::framework::ConfigurableAxis lambdaDauDca{"lambdaDauDca", {{150, 0, 1.0}}, "DCA of lambda daughters at lambda decay vertex"};
-  o2::framework::ConfigurableAxis lambdaTransRadius{"lambdaTransRadius", {{100, 0, 100}}, "DCA of lambda daughters at lambda decay vertex"};
+  o2::framework::ConfigurableAxis lambdaTransRadius{"lambdaTransRadius", {{100, 0, 100}}, "Transverse radius of daughter #Lambda decay vertex"};
   o2::framework::ConfigurableAxis lambdaDcaToPv{"lambdaDcaToPv", {{100, 0, 200}}, "DCA of lambda daughter from primary vertex"};
   o2::framework::ConfigurableAxis strangeTof{"strangeTof", {{500, -5, 5}}, "Strangeness TOF vs TOF Nsigma for bachelor/daughters"};
 };
@@ -156,7 +156,7 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kDecayDauDca, o2::framework::HistType::kTH1F, "hDauDca", "Daughter DCA at decay vertex ; DCA_{Decay vertex} (cm); Entries"},
    {kTransRadius, o2::framework::HistType::kTH1F, "hTransRadius", "Transverse radius ; r_{xy} (cm); Entries"},
    {kLambdaMass, o2::framework::HistType::kTH1F, "hLambdaMass", "Invariant mass of daughter lambda ; m_{#Lambda dau} (GeV/#it{c}^{2}); Entries"},
-   {kLambdaCosPa, o2::framework::HistType::kTH1F, "hLambdaCosPa", "Cosine of poiting angle of daughter lambda ; cos_{#Lambda dau}(#alpha); Entries"},
+   {kLambdaCosPa, o2::framework::HistType::kTH1F, "hLambdaCosPa", "Cosine of pointing angle of daughter lambda ; cos_{#Lambda dau}(#alpha); Entries"},
    {kLambdaDauDca, o2::framework::HistType::kTH1F, "hLambdaDauDca", "Daughter DCA at #Lambda decay vertex ; DCA_{#Lambda dau decay vertex} (cm); Entries"},
    {kLambdaTransRadius, o2::framework::HistType::kTH1F, "hLambdaTransRadius", "Transverse radius of daughter #Lambda ; r_{xy,#Lambda dau} (cm); Entries"},
    {kLambdaDcaToPv, o2::framework::HistType::kTH1F, "hLambdaDcaToPv", "DCA to primary vertex of daughter #Lambda ; DCA_{#Lambda} (cm); Entries"},
@@ -166,8 +166,8 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kPtVsEta, o2::framework::HistType::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
    {kPtVsPhi, o2::framework::HistType::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}) ; #varphi"},
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
-   {kPtVsCosPa, o2::framework::HistType::kTH2F, "hPtVsCosPa", "p_{T} vs Cosine of poiting angle; p_{T} (GeV/#it{c}); cos(#alpha)"},
-   {kPtVsPa, o2::framework::HistType::kTH2F, "hPtVsPa", "p_{T} vs Poiting angle; p_{T} (GeV/#it{c}); #alpha"},
+   {kPtVsCosPa, o2::framework::HistType::kTH2F, "hPtVsCosPa", "p_{T} vs Cosine of pointing angle; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kPtVsPa, o2::framework::HistType::kTH2F, "hPtVsPa", "p_{T} vs Pointing angle; p_{T} (GeV/#it{c}); #alpha"},
    {kPtVsMassXi, o2::framework::HistType::kTH2F, "hPtVsMassXi", "p_{T} vs mass #Xi; p_{T} (GeV/#it{c}); m_{#Lambda#pi} (GeV/#it{c}^{2})"},
    {kPtVsMassOmega, o2::framework::HistType::kTH2F, "hPtVsMassOmega", "p_{T} vs mass #Omega; p_{T} (GeV/#it{c}); m_{#LambdaK} (GeV/#it{c}^{2})"},
    {kPtVsMassLambda, o2::framework::HistType::kTH2F, "hPtVsMassLambda", "p_{T} vs mass daughter #Lambda; p_{T} (GeV/#it{c}); m_{#Lambda dau} (GeV/#it{c}^{2})"},
@@ -176,9 +176,9 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kStrangeTofVsTofPosDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofPosDau", "TOF_{Strange} vs TOF_{Tracking} of positive Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
    {kStrangeTofVsTofNegDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofNegDau", "TOF_{Strange} vs TOF_{Tracking} of negative Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
-   {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed v0; PDG Code; Entries"},
-   {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed v0; PDG Code; Entries"},
-   {kPdgPartonicMother, o2::framework::HistType::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother of reconstructed v0; PDG Code; Entries"},
+   {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed cascade; PDG Code; Entries"},
+   {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed cascade; PDG Code; Entries"},
+   {kPdgPartonicMother, o2::framework::HistType::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother of reconstructed cascade; PDG Code; Entries"},
    {kTruePtVsPt, o2::framework::HistType::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum; p_{T,True} (GeV/#it{c}); p_{T,True} (GeV/#it{c})"},
    {kTrueEtaVsEta, o2::framework::HistType::kTH2F, "hTrueEtaVsEta", "True pseudorapdity vs pseudorapdity; #eta_{True}; #eta"},
    {kTruePhiVsPhi, o2::framework::HistType::kTH2F, "hTruePhiVsPhi", "True azimuthal angle vs azimuthal angle; #varphi_{True}; #varphi"},
@@ -475,7 +475,7 @@ class CascadeHistManager
       this->fillAnalysis(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      this->fillQa(cascadeCandidate, bachelor, negDaughter, posDaughter);
+      this->fillQa(cascadeCandidate, bachelor, posDaughter, negDaughter);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
       this->template fillMc<mode>(cascadeCandidate, col, mcParticles, mcMothers, mcPartonicMothers);
@@ -742,7 +742,7 @@ class CascadeHistManager
               }
               break;
             default:
-              LOG(warn) << "Encounted partilce with unknown origin!";
+              LOG(warn) << "Encountered particle with unknown origin!";
               break;
           }
         }

@@ -197,8 +197,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       } else if (doprocessMixedEventHadHadWCentMix || doprocessMixedEventHadHadWMultMix) {
         registry.add("hSparseCorrelationsMEHadHad", "THn for ME Had-Had correlations", HistType::kTHnSparseF, axes);
       } else {
-        axes.insert(axes.end(), {axisInvMass});
-        // axes.insert(axes.end(), {axisInvMass, axisMlOne, axisMlTwo});
+        // axes.insert(axes.end(), {axisInvMass});
+        axes.insert(axes.end(), {axisInvMass, axisMlOne, axisMlTwo});
         if (doprocessSameEventCharmHadWCentMix || doprocessSameEventCharmHadWMultMix || doprocessSameEventCharmHadWCentMixBase) {
           registry.add("hSparseCorrelationsSECharmHad", "THn for SE Charm-Had correlations", HistType::kTHnSparseF, axes);
         } else if (doprocessMixedEventCharmHadWCentMix || doprocessMixedEventCharmHadWMultMix || doprocessMixedEventCharmHadWCentMixBase) {
@@ -298,7 +298,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     if constexpr (FillSparses) {
       if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
         registry.fill(HIST("hSparseCorrelationsSECharmHad"), poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(),
-                      pair.deltaPhi(), trigCand.invMassTrig()); // , trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
+                      pair.deltaPhi(), trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
       } else {
         registry.fill(HIST("hSparseCorrelationsSEHadHad"), poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(), pair.deltaPhi());
       }
@@ -366,7 +366,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         if constexpr (FillSparses) {
           if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
             registry.fill(HIST("hSparseCorrelationsMECharmHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta,
-                          deltaPhi, trigCand.invMassTrig()); //, trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
+                          deltaPhi, trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
           } else {
             registry.fill(HIST("hSparseCorrelationsMEHadHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta, deltaPhi);
           }
@@ -466,7 +466,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                         aod::HfcRedTrigCharms const&,
                                         aod::HfcRedCorrColls const&)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}, true};
+    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}};
     auto trigCand = pair.template hfcRedTrigCharm_as<aod::HfcRedTrigCharms>();
     if (fillSparses && fillTables) {
       fillSameEvent<true, true>(pair, trigCand, binPolicyPosZMult);
@@ -482,7 +482,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                       aod::HfcRedTrigTracks const&,
                                       aod::HfcRedCorrColls const&)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}, true};
+    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}};
     auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
     if (fillSparses && fillTables) {
       fillSameEvent<true, true>(pair, trigCand, binPolicyPosZMult);
@@ -498,7 +498,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                         aod::HfcRedTrigCharms const&,
                                         aod::HfcRedCorrColls const&)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
     auto trigCand = pair.template hfcRedTrigCharm_as<aod::HfcRedTrigCharms>();
     if (fillSparses && fillTables) {
       fillSameEvent<true, true>(pair, trigCand, binPolicyPosZCent);
@@ -514,7 +514,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                       aod::HfcRedTrigTracks const&,
                                       aod::HfcRedCorrColls const&)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
     auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
     if (fillSparses && fillTables) {
       fillSameEvent<true, true>(pair, trigCand, binPolicyPosZCent);
@@ -530,7 +530,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                          TrigCharmCands const& candidates,
                                          AssocTracks const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
     auto pairsTuple = std::make_tuple(candidates, tracks);
     Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningCentPosZ> const pairs{binPolicyPosZCent, numberEventsMixed, -1, collisions, pairsTuple, &cache};
     if (fillSparses && fillTables) {
@@ -547,7 +547,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                          TrigCharmCands const& candidates,
                                          AssocTracks const& tracks)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}, true};
+    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}};
     auto pairsTuple = std::make_tuple(candidates, tracks);
     Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningMultPosZ> const pairs{binPolicyPosZMult, numberEventsMixed, -1, collisions, pairsTuple, &cache};
     if (fillSparses && fillTables) {
@@ -563,7 +563,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   void processMixedEventHadHadWCentMix(aod::HfcRedCorrColls const& collisions,
                                        AssocTracks const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aod::HfcRedCorrColls, AssocTracks, BinningCentPosZ> const pairs{binPolicyPosZCent, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     if (fillSparses && fillTables) {
@@ -579,7 +579,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   void processMixedEventHadHadWMultMix(aod::HfcRedCorrColls const& collisions,
                                        AssocTracks const& tracks)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}, true};
+    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aod::HfcRedCorrColls, AssocTracks, BinningMultPosZ> const pairs{binPolicyPosZMult, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     if (fillSparses && fillTables) {
@@ -612,7 +612,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                             TrigCharmCands const& candidates,
                                             aod::HfcRedAssBases const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
 
     for (const auto& collision : collisions) {
       if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
@@ -633,7 +633,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                              TrigCharmCands const& candidates,
                                              aod::HfcRedAssBases const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
 
     doCorrelationsMixedEvent<true>(collisions, candidates, tracks, binPolicyPosZCent);
   }

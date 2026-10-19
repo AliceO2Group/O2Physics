@@ -283,6 +283,11 @@ class BaseSelection
   /// \param comments Vector of comment strings, one per selection threshold.
   void addComments(int observableIndex, std::vector<std::string> const& comments) { mSelectionContainers.at(observableIndex).addComments(comments); }
 
+  /// \brief Attach the same comment to every selection threshold of a specific observable.
+  /// \param observableIndex Index of the observable.
+  /// \param comment Comment string applied to all thresholds.
+  void addComments(int observableIndex, std::string const& comment) { mSelectionContainers.at(observableIndex).addComments(comment); }
+
   [[nodiscard]] bool isPassThrough() const { return mPassThrough; }
 
   /// \brief Check whether all required and optional cuts are passed.
@@ -377,7 +382,7 @@ class BaseSelection
 
   /// \brief Print the full configuration of all selections to the log.
   /// \param objectName Name of the object owning this selection (used as label in the log output).
-  void printSelections(const std::string& objectName) const
+  void printSelections(const char* objectName) const
   {
     LOG(info) << "Printing Configuration of " << objectName;
     for (size_t idx = 0; idx < mSelectionContainers.size(); ++idx) {

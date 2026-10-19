@@ -668,7 +668,7 @@ struct f1protoncorrelation {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
-  BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
+  BinningType colBinning{{CfgVtxBins, CfgMultBins}};
   Preslice<aod::F1Tracks> tracksPerCollisionPresliceF1 = aod::f1protondaughter::redF1PEventId;
   Preslice<aod::ProtonTracks> tracksPerCollisionPresliceP = aod::f1protondaughter::redF1PEventId;
   void processME(aod::RedF1PEvents& collisions,

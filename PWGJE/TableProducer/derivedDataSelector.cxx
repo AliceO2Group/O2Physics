@@ -21,6 +21,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataSelector.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>

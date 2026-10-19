@@ -28,6 +28,7 @@
 #include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataSelector.h"
+#include "PWGJE/DataModel/JetReducedDataV0.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/V0SelectorTables.h"
 

@@ -24,6 +24,64 @@
 
 namespace o2::aod
 {
+// Independent mixed-event audit output. IDs are unique only together with the
+// two UUID words identifying the task instance. Not an extension of pair rows.
+namespace hnmediag
+{
+DECLARE_SOA_COLUMN(InstanceHi, instanceHi, uint64_t);
+DECLARE_SOA_COLUMN(InstanceLo, instanceLo, uint64_t);
+DECLARE_SOA_COLUMN(CallId, callId, uint64_t);
+DECLARE_SOA_COLUMN(Timeslice, timeslice, uint64_t);
+DECLARE_SOA_COLUMN(TfCounter, tfCounter, uint32_t);
+DECLARE_SOA_COLUMN(TfRun, tfRun, uint32_t);
+DECLARE_SOA_COLUMN(Kind, kind, uint8_t);
+DECLARE_SOA_COLUMN(Status, status, uint8_t);
+DECLARE_SOA_COLUMN(PoolEpoch, poolEpoch, uint64_t);
+DECLARE_SOA_COLUMN(Run, run, int32_t);
+DECLARE_SOA_COLUMN(PreviousRun, previousRun, int32_t);
+DECLARE_SOA_COLUMN(EventId, eventId, int64_t);
+DECLARE_SOA_COLUMN(PartnerId, partnerId, int64_t);
+DECLARE_SOA_COLUMN(InputCollisionId, inputCollisionId, int64_t);
+DECLARE_SOA_COLUMN(GlobalBc, globalBc, uint64_t);
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(PvMultiplicity, pvMultiplicity, float);
+DECLARE_SOA_COLUMN(NumContrib, numContrib, uint32_t);
+DECLARE_SOA_COLUMN(NNuclei, nNuclei, uint32_t);
+DECLARE_SOA_COLUMN(NHadrons, nHadrons, uint32_t);
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int32_t);
+DECLARE_SOA_COLUMN(PoolBefore, poolBefore, uint32_t);
+DECLARE_SOA_COLUMN(PoolAfter, poolAfter, uint32_t);
+DECLARE_SOA_COLUMN(BufferedEvents, bufferedEvents, uint64_t);
+DECLARE_SOA_COLUMN(OccupiedBins, occupiedBins, uint32_t);
+DECLARE_SOA_COLUMN(ExpectedPairs, expectedPairs, uint64_t);
+DECLARE_SOA_COLUMN(AcceptedPairs, acceptedPairs, uint64_t);
+DECLARE_SOA_COLUMN(RejectedPairs, rejectedPairs, uint64_t);
+DECLARE_SOA_COLUMN(Combinations, combinations, uint64_t);
+DECLARE_SOA_COLUMN(InputCollisions, inputCollisions, uint64_t);
+DECLARE_SOA_COLUMN(PassedEventSelection, passedEventSelection, uint64_t);
+DECLARE_SOA_COLUMN(PassedZorro, passedZorro, uint64_t);
+} // namespace hnmediag
+DECLARE_SOA_TABLE(HadNucleiMEDiag, "AOD", "HNMEDIAG",
+                  hnmediag::InstanceHi, hnmediag::InstanceLo, hnmediag::CallId,
+                  hnmediag::Timeslice, hnmediag::TfCounter, hnmediag::TfRun,
+                  hnmediag::Kind, hnmediag::Status, hnmediag::PoolEpoch,
+                  hnmediag::Run, hnmediag::PreviousRun, hnmediag::EventId,
+                  hnmediag::InputCollisionId, hnmediag::GlobalBc, hnmediag::Timestamp,
+                  hnmediag::ZVertex, hnmediag::Centrality, hnmediag::PvMultiplicity,
+                  hnmediag::NumContrib, hnmediag::NNuclei, hnmediag::NHadrons,
+                  hnmediag::PoolBin, hnmediag::PoolBefore, hnmediag::PoolAfter,
+                  hnmediag::BufferedEvents, hnmediag::OccupiedBins,
+                  hnmediag::ExpectedPairs, hnmediag::AcceptedPairs, hnmediag::RejectedPairs,
+                  hnmediag::Combinations, hnmediag::InputCollisions,
+                  hnmediag::PassedEventSelection, hnmediag::PassedZorro);
+DECLARE_SOA_TABLE(HadNucleiMEDiagLinks, "AOD", "HNMEDIAGLINK",
+                  hnmediag::InstanceHi, hnmediag::InstanceLo, hnmediag::CallId,
+                  hnmediag::PoolEpoch, hnmediag::Run, hnmediag::EventId,
+                  hnmediag::PartnerId, hnmediag::PoolBin,
+                  hnmediag::ExpectedPairs, hnmediag::AcceptedPairs);
+
 namespace hadron_nuclei_tables
 {
 

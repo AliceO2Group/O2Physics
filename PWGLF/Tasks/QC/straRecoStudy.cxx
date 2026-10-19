@@ -45,6 +45,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <numeric>
 #include <vector>
@@ -328,7 +329,7 @@ struct straRecoStudy {
                    kEvSelVtxZ,
                    kEvSelAllSteps };
 
-  std::array<long, kEvSelAllSteps> evselstats;
+  std::array<int64_t, kEvSelAllSteps> evselstats;
 
   void resetCounters()
   {

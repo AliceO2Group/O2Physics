@@ -3060,6 +3060,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "muonEtaCut") {
+    cut->AddCut(GetAnalysisCut("muonEtaCut"));
+    return cut;
+  }
+
   if (nameStr == "muonMinimalCuts") {
     cut->AddCut(GetAnalysisCut("muonMinimalCuts"));
     return cut;
@@ -3652,6 +3657,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (nameStr == "pairX3872Cut3") {
     cut->AddCut(GetAnalysisCut("pairX3872_3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872Minitree")) {
+    cut->AddCut(GetAnalysisCut("pairX3872_minitree"));
     return cut;
   }
 
@@ -6575,6 +6585,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "muonEtaCut") {
+    cut->AddCut(VarManager::kEta, -4.0, -2.5);
+    return cut;
+  }
+
   if (nameStr == "muonMinimalCuts") {
     cut->AddCut(VarManager::kEta, -4.0, -2.5);
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
@@ -7111,6 +7126,19 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kQ, 0.0, 0.5);
     cut->AddCut(VarManager::kDeltaR, 0.0, 5.0);
     cut->AddCut(VarManager::kQuadPt, 0.0, 1000.0);
+    return cut;
+  }
+
+  std::shared_ptr<TF1> fDeltaR2High = std::make_shared<TF1>("fDeltaR2High", "[0]+[1]*x", 0.0, 5.0);
+  fDeltaR2High->SetParameters(3.0, -0.4);
+  if (!nameStr.compare("pairX3872_minitree")) {
+    cut->AddCut(VarManager::kRap, -0.8, 0.8);
+    cut->AddCut(VarManager::kQuadDefaultDileptonMass, 3.0, 5.0);
+    cut->AddCut(VarManager::kDeltaR2, 0.0, 1.0, false, VarManager::kPt, 5.0, 1000.0);
+    cut->AddCut(VarManager::kDeltaR2, 0.0, fDeltaR2High, false, VarManager::kPt, 0.0, 5.0);
+    cut->AddCut(VarManager::kQuadPt, 0.0, 1000.0);
+    cut->AddCut(VarManager::kVertexingProcCode, 0.5, 2.5);
+    cut->AddCut(VarManager::kVertexingQuadProcCode, 0.5, 2.5);
     return cut;
   }
 

@@ -58,7 +58,7 @@ class FastTracker
   /// \param phiEnd End angle of the dead region (in radians)
   void addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd);
   [[nodiscard]] DetLayer getLayer(const int layer) const { return layers[layer]; }
-  [[nodiscard]] std::vector<DetLayer> getLayers() const { return layers; }
+  [[nodiscard]] const std::vector<DetLayer>& getLayers() const { return layers; }
   [[nodiscard]] int getLayerIndex(const std::string& name) const;
   [[nodiscard]] size_t getNLayers() const { return layers.size(); }
   [[nodiscard]] bool isLayerInert(const int layer) const { return layers[layer].isInert(); }
@@ -127,6 +127,8 @@ class FastTracker
   [[nodiscard]] int getNIntercepts() const { return nIntercepts; }
   [[nodiscard]] int getNSiliconPoints() const { return nSiliconPoints; }
   [[nodiscard]] int getNGasPoints() const { return nGasPoints; }
+  [[nodiscard]] float getTrackIU() const { return trackIU; }
+  [[nodiscard]] float getTrackOU() const { return trackOU; }
   [[nodiscard]] float getGoodHitProb(int layer) const
   {
     return (layer >= 0 && static_cast<size_t>(layer) < goodHitProbability.size()) ? goodHitProbability[layer] : 0.0f;
@@ -172,6 +174,8 @@ class FastTracker
   int nIntercepts = 0;    /// found in first outward propagation
   int nSiliconPoints = 0; /// silicon-based space points added to track
   int nGasPoints = 0;     /// tpc-based space points added to track
+  float trackIU = -1.f;   /// innermost update: radius of the innermost active-layer hit added to track
+  float trackOU = -1.f;   /// outermost update: radius of the outermost active-layer hit added to track
   std::vector<float> goodHitProbability;
 
   ClassDef(FastTracker, 1);

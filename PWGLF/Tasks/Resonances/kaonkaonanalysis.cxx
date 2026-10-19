@@ -504,8 +504,8 @@ struct kaonkaonAnalysisRun3 {
   {
     auto tracksTuple = std::make_tuple(tracks);
     //////// currently mixing the event with similar TPC multiplicity ////////
-    BinningTypeVertexContributor1 binningOnPositions1{{axisVertex, axisMultiplicity}, true}; // for pp
-    BinningTypeVertexContributor2 binningOnPositions2{{axisVertex, axisMultiplicity}, true}; // for PbPb
+    BinningTypeVertexContributor1 binningOnPositions1{{axisVertex, axisMultiplicity}}; // for pp
+    BinningTypeVertexContributor2 binningOnPositions2{{axisVertex, axisMultiplicity}}; // for PbPb
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor1> pair1{binningOnPositions1, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor2> pair2{binningOnPositions2, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
 

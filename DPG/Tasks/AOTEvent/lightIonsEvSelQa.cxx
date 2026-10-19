@@ -991,9 +991,9 @@ struct LightIonsEvSelQa {
 
       // vZ diff (FT0 vs by tracks)
       bool badVzDiff = 0;
-      if (confUseDiffVzCutFromEvSel)
+      if (confUseDiffVzCutFromEvSel) {
         badVzDiff = !col.selection_bit(kIsGoodZvtxFT0vsPV);
-      else {                  // tune by hand
+      } else {                // tune by hand
         float meanDiff = 0.0; // cm
         // O-O
         if (lastRunNumber == 564356)

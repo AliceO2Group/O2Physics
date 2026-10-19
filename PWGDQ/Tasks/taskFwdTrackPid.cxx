@@ -131,7 +131,6 @@ struct taskFwdTrackPid {
   template <bool TMatchedOnly, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks>
   void runFwdTrackPid(TEvent const& event, Muons const& muons, MftTracks const& mftTracks)
   {
-    fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
       if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
         auto mftTrack = muon.template matchMFTTrack_as<MyMftTracks>();
@@ -157,7 +156,6 @@ struct taskFwdTrackPid {
   template <bool TMatchedOnly, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks, typename TEventsMC, typename TTracksMC>
   void runFwdTrackPidMC(TEvent const& event, Muons const& muons, MftTracks const& mftTracks, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
-    fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
       if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
         auto mftTrack = muon.template matchMFTTrack_as<MyMftTracksMC>();

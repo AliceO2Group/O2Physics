@@ -202,7 +202,7 @@ struct resonances_tutorial {
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) { // loop over all pairs

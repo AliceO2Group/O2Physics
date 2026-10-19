@@ -209,8 +209,7 @@ struct lambdav2 {
   template <typename T>
   bool SelectionPID(const T& candidate, int PID)
   {
-    if (PID == 0) // pion
-    {
+    if (PID == 0) { // pion
       auto combPIDPi = TMath::Sqrt(TMath::Abs(candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()));
       if (!candidate.hasTOF() && candidate.tpcInnerParam() < 0.6 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
         return true;
@@ -218,8 +217,7 @@ struct lambdav2 {
       if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && combPIDPi < nsigmaCutTOFPi) {
         return true;
       }
-    } else if (PID == 1) // kaon
-    {
+    } else if (PID == 1) { // kaon
       auto combPIDKa = TMath::Sqrt(TMath::Abs(candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()));
       if (!candidate.hasTOF() && candidate.tpcInnerParam() < 0.45 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
         return true;
@@ -227,8 +225,7 @@ struct lambdav2 {
       if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && combPIDKa < nsigmaCutTOFKa) {
         return true;
       }
-    } else // proton
-    {
+    } else { // proton
       auto combPIDPr = TMath::Sqrt(TMath::Abs(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()));
       if (!candidate.hasTOF() && candidate.tpcInnerParam() < 0.6 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCPr) {
         return true;

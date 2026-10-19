@@ -69,6 +69,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <ostream>
 #include <string>
@@ -1584,17 +1585,17 @@ struct StrangenessInJetsIons {
         case kXiMinus:
           if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
             registryMC.fill(HIST("XiNeg_generated_MB"), genMultiplicity, particle.pt());
-            if (hasReco) {
-              registryMC.fill(HIST("XiNeg_generated_w_reco_MB"), genMultiplicity, particle.pt());
-            }
+          }
+          if (particleOfInterestDict[ParticleOfInterest::kCascades] && hasReco) {
+            registryMC.fill(HIST("XiNeg_generated_w_reco_MB"), genMultiplicity, particle.pt());
           }
           break;
         case kXiPlusBar:
           if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
             registryMC.fill(HIST("XiPos_generated_MB"), genMultiplicity, particle.pt());
-            if (hasReco) {
-              registryMC.fill(HIST("XiPos_generated_w_reco_MB"), genMultiplicity, particle.pt());
-            }
+          }
+          if (particleOfInterestDict[ParticleOfInterest::kCascades] && hasReco) {
+            registryMC.fill(HIST("XiPos_generated_w_reco_MB"), genMultiplicity, particle.pt());
           }
           break;
         case kOmegaMinus:
@@ -1775,30 +1776,30 @@ struct StrangenessInJetsIons {
           continue;
         if (std::abs(motherPos.pdgCode()) != kLambda0)
           continue;
-        if (std::abs(motherPos.eta()) > 0.8)
+        if (std::abs(motherBach.eta()) > 0.8)
           continue;
 
         // Xi+
         if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 &&
-            motherPos.pdgCode() == kXiPlusBar &&
+            motherBach.pdgCode() == kXiPlusBar &&
             passedRapidityCut(casc.yXi(), configV0.rapidityMax)) {
           registryMC.fill(HIST("XiPos_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Xi-
         if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 &&
-            motherPos.pdgCode() == kXiMinus &&
+            motherBach.pdgCode() == kXiMinus &&
             passedRapidityCut(casc.yXi(), configV0.rapidityMax)) {
           registryMC.fill(HIST("XiNeg_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Omega+
         if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 &&
-            motherPos.pdgCode() == kOmegaPlusBar &&
+            motherBach.pdgCode() == kOmegaPlusBar &&
             passedRapidityCut(casc.yOmega(), configV0.rapidityMax)) {
           registryMC.fill(HIST("OmegaPos_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Omega-
         if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 &&
-            motherPos.pdgCode() == kOmegaMinus &&
+            motherBach.pdgCode() == kOmegaMinus &&
             passedRapidityCut(casc.yOmega(), configV0.rapidityMax)) {
           registryMC.fill(HIST("OmegaNeg_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
@@ -1807,11 +1808,11 @@ struct StrangenessInJetsIons {
           continue;
 
         // Rapidity generated particle
-        double yGen = motherPos.y();
+        double yGen = motherBach.y();
 
         // Histograms below are filled only for PhysicalPrimary particles
         // Xi+ (primary)
-        if (motherPos.pdgCode() == kXiPlusBar) {
+        if (motherBach.pdgCode() == kXiPlusBar) {
           if (passedRapidityCut(yGen, configV0.rapidityMax)) {
             registryMC.fill(HIST("XiPos_gen_recoEvent_MB"), multiplicity, casc.pt());
           }
@@ -2049,7 +2050,7 @@ struct StrangenessInJetsIons {
       bool isV0 = isK0S || isLambda || isAntiLambda;
       if (!isV0)
         continue;
-      for (long unsigned int i = 0; i < fjTracks.size(); ++i) {
+      for (uint64_t i = 0; i < fjTracks.size(); ++i) {
         if (isV0DaughterTrack(fjTracks[i], v0)) {
           // LOG(info) << "[AddV0sForJetReconstructionData] V0 daughter track found in fjTracks.";
           isTrackReplaced[i] = true;
@@ -2059,7 +2060,7 @@ struct StrangenessInJetsIons {
 
     std::vector<fastjet::PseudoJet> cleanFjInput;
     cleanFjInput.reserve(fjInput.size());
-    for (long unsigned int i = 0; i < fjInput.size(); ++i) {
+    for (uint64_t i = 0; i < fjInput.size(); ++i) {
       if (!isTrackReplaced[i])
         cleanFjInput.push_back(fjInput[i]);
     }
@@ -2147,7 +2148,7 @@ struct StrangenessInJetsIons {
       bool isV0 = isK0S || isLambda || isAntiLambda;
       if (!isV0)
         continue;
-      for (long unsigned int i = 0; i < fjTracks.size(); ++i) {
+      for (uint64_t i = 0; i < fjTracks.size(); ++i) {
         if (isV0DaughterTrack(fjTracks[i], v0)) {
           // LOG(info) << "[AddV0sForJetReconstructionMCD] V0 daughter track found in fjTracks.";
           isTrackReplaced[i] = true;
@@ -2157,7 +2158,7 @@ struct StrangenessInJetsIons {
 
     std::vector<fastjet::PseudoJet> cleanFjInput;
     cleanFjInput.reserve(fjInput.size());
-    for (long unsigned int i = 0; i < fjInput.size(); ++i) {
+    for (uint64_t i = 0; i < fjInput.size(); ++i) {
       if (!isTrackReplaced[i])
         cleanFjInput.push_back(fjInput[i]);
     }
@@ -2205,7 +2206,7 @@ struct StrangenessInJetsIons {
     }
 
     // Remove V0 daughter particles if already in the input list for the jet finder
-    for (long unsigned int i = 0; i < fjParticleObj.size(); ++i) {
+    for (uint64_t i = 0; i < fjParticleObj.size(); ++i) {
       const auto& mcPart = fjParticleObj[i];
       if (!mcPart.has_mothers())
         continue;
@@ -2220,7 +2221,7 @@ struct StrangenessInJetsIons {
 
     std::vector<fastjet::PseudoJet> cleanFjInput;
     cleanFjInput.reserve(fjInput.size());
-    for (long unsigned int i = 0; i < fjInput.size(); ++i) {
+    for (uint64_t i = 0; i < fjInput.size(); ++i) {
       if (!isTrackReplaced[i])
         cleanFjInput.push_back(fjInput[i]);
     }
@@ -2341,7 +2342,7 @@ struct StrangenessInJetsIons {
       double minDeltaR = maxDeltaR;
 
       // Search closest jet RECO in (eta,phi) space
-      for (long unsigned int iReco = 0; iReco < jetsReco.size(); ++iReco) {
+      for (uint64_t iReco = 0; iReco < jetsReco.size(); ++iReco) {
         if (isRecoJetMatched[iReco])
           continue;
 

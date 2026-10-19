@@ -177,6 +177,7 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<double> invMassWindowCharmHadPi{"invMassWindowCharmHadPi", 0.3, "invariant-mass window for CharmHad-Pi pair preselections (GeV/c2)"};
     // MC extra
     Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "flag to enable MC checks on decay type"};
+    Configurable<int> nMcLoops{"nMcLoops", 0, "number of extra loops over generated particles per MC collision"};
   } configs;
   // vertexing
   struct : o2::framework::ConfigurableGroup {
@@ -186,7 +187,8 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
     Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
     Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
-    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old < this"};
+    Configurable<double> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   } vertexConfigurations;
   // selection
   struct : o2::framework::ConfigurableGroup {
@@ -200,6 +202,7 @@ struct HfDataCreatorCharmHadPiReduced {
   struct : o2::framework::ConfigurableGroup {
     Configurable<double> cpaMin{"cpaMin", 0., "Minimum cosine of pointing angle for B candidates"};
     Configurable<double> decLenMin{"decLenMin", 0., "Minimum decay length for B candidates"};
+    Configurable<double> impParProductMax{"impParProductMax", 10., "Maximum product of the impact parameters of the B daughters (cm^2)"};
   } bhadronConfigurations;
   // HF flags
   struct : o2::framework::ConfigurableGroup {
@@ -324,6 +327,7 @@ struct HfDataCreatorCharmHadPiReduced {
     df2.setMinRelChi2Change(vertexConfigurations.minRelChi2Change);
     df2.setUseAbsDCA(vertexConfigurations.useAbsDCA);
     df2.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
+    df2.setMaxChi2(vertexConfigurations.maxChi2);
     df2.setMatCorrType(noMatCorr);
     if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiDataWithQvec || doprocessDplusPiDataWithMlAndQvec || doprocessDplusPiMc || doprocessDplusPiMcWithMl ||
         doprocessDsPiData || doprocessDsPiDataWithMl || doprocessDsPiDataWithQvec || doprocessDsPiDataWithMlAndQvec || doprocessDsPiMc || doprocessDsPiMcWithMl ||
@@ -335,6 +339,7 @@ struct HfDataCreatorCharmHadPiReduced {
       df3.setMinRelChi2Change(vertexConfigurations.minRelChi2Change);
       df3.setUseAbsDCA(vertexConfigurations.useAbsDCA);
       df3.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
+      df3.setMaxChi2(vertexConfigurations.maxChi2);
       df3.setMatCorrType(noMatCorr);
     }
 
@@ -394,6 +399,9 @@ struct HfDataCreatorCharmHadPiReduced {
     hCandidatesLc = registry.add<TH1>("hCandidatesLc", "Lc candidate counter", {HistType::kTH1D, {axisCands}});
     hCandidatesD0FromDstar = registry.add<TH1>("hCandidatesD0FromDstar", "D0 from D* candidate counter", {HistType::kTH1D, {axisCands}});
     hCandidatesBHadron = registry.add<TH1>("hCandidatesBHadron", "B hadron candidate counter", {HistType::kTH1D, {axisCands}});
+    if (configs.nMcLoops > 0) {
+      registry.add("hNMatchedMcLoops", "matches found in extra MC loops;matches per MC collision;entries", {HistType::kTH1D, {{100, -0.5, 99.5}}});
+    }
 
     setLabelHistoCands(hCandidatesD0);
     setLabelHistoCands(hCandidatesDPlus);
@@ -1027,8 +1035,9 @@ struct HfDataCreatorCharmHadPiReduced {
   /// \param momentum is the B meson momentum
   /// \param secondaryVertex is the reconstructed secondary vertex
   /// \param collision is the reconstructed collision
+  /// \param impParProduct is the product of the impact parameters of the B daughters
   template <typename T1, typename T2, typename T3>
-  bool isBHadronSelected(const T1& momentum, const T2& secondaryVertex, const T3& collision)
+  bool isBHadronSelected(const T1& momentum, const T2& secondaryVertex, const T3& collision, const float impParProduct)
   {
     // B candidate CPA
     if (RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, momentum) < bhadronConfigurations.cpaMin) {
@@ -1037,6 +1046,11 @@ struct HfDataCreatorCharmHadPiReduced {
 
     // B candidate decay length
     if (RecoDecay::distance(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex) < bhadronConfigurations.decLenMin) {
+      return false;
+    }
+
+    // B candidate product of daughter impact parameters
+    if (impParProduct > bhadronConfigurations.impParProductMax) {
       return false;
     }
 
@@ -1357,7 +1371,10 @@ struct HfDataCreatorCharmHadPiReduced {
         df2.getTrack(0).getPxPyPzGlo(pVecDHad);
         df2.getTrack(1).getPxPyPzGlo(pVecDau);
         pVecBHad = RecoDecay::pVec(pVecDHad, pVecDau);
-        if (!isBHadronSelected(pVecBHad, secondaryVertexBHad, collision)) {
+        o2::track::TrackParCov trackParCovCharmHadAtPv = trackParCovCharmHad;
+        std::array<float, 2> dcaCharmHad{};
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovCharmHadAtPv, 2.f, noMatCorr, &dcaCharmHad);
+        if (!isBHadronSelected(pVecBHad, secondaryVertexBHad, collision, dcaCharmHad[0] * dcaPion[0])) {
           continue;
         }
         // fill Pion tracks table
@@ -1793,6 +1810,20 @@ struct HfDataCreatorCharmHadPiReduced {
                                    ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
       }
     } // gen
+
+    // extra loops over generated particles (increases CPU time)
+    if (configs.nMcLoops > 0) {
+      int nMatched{0};
+      for (int iLoop = 0; iLoop < configs.nMcLoops; ++iLoop) {
+        for (const auto& particle : mcParticlesPerMcColl) {
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBPlus, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kLambdaB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+        }
+      }
+      registry.fill(HIST("hNMatchedMcLoops"), nMatched);
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -115,8 +115,8 @@ struct FemtoWorldIdenticalPionPair {
   // Configurable<std::vector<float>> CfgVtxBins{"CfgVtxBins",{-10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f},"Mixing bins - z-vertex"};
   // Configurable<std::vector<float>> CfgCentBins{"CfgCentBins",{5.0f,10.0f,20.0f,30.0f,40.0f,50.0f},"Centrality Bins"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::RunCentrality> colBinning2{{CfgVtxBins, CfgCentBinsMixing}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::RunCentrality> colBinning2{{CfgVtxBins, CfgCentBinsMixing}};
 
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};

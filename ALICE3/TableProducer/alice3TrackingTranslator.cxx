@@ -419,7 +419,7 @@ struct Alice3TrackingTranslator {
       // Convert tracks from ACTS to ALICE format
       const size_t nParticlesSim = fileParticlesSim.m_vx->size();
       const size_t nTracks = fileTracksummary.m_ePX_fit->size();
-      std::vector<size_t> idMCparticles;
+      // std::vector<size_t> idMCparticles; // fixme: unused
 
       // local index k within this event -> global AO2D index
       int firstIdxThisEvent = tableStoredMcParticles.lastIndex() + 1;
@@ -438,7 +438,7 @@ struct Alice3TrackingTranslator {
           fileParticlesSim.m_particle->at(iPart),
           fileParticlesSim.m_generation->at(iPart),
           fileParticlesSim.m_sub_particle->at(iPart));
-        barcodeToGlobalIdx[key] = firstIdxThisEvent + (int)iPart;
+        barcodeToGlobalIdx[key] = firstIdxThisEvent + static_cast<int>(iPart);
 
         if (iPart == 0) {
           tableMcCollisions(0,                                // mccollision::BCId,
@@ -486,7 +486,7 @@ struct Alice3TrackingTranslator {
         }
       }
       for (size_t iPart = 0; iPart < nParticlesSim; ++iPart) {
-        int globalIdx = firstIdxThisEvent + (int)iPart;
+        int globalIdx = firstIdxThisEvent + static_cast<int>(iPart);
         int motherIdx = -1;
         if (GlobalIdxToMotherIdx.find(globalIdx) != GlobalIdxToMotherIdx.end()) {
           motherIdx = GlobalIdxToMotherIdx[globalIdx];
@@ -666,7 +666,9 @@ struct Alice3TrackingTranslator {
         tableTracksDCACov(0.0f,  // sigmaDcaXY2
                           0.0f); // sigmaDcaZ2
         // Fill ALICE3 specific tables
-        tableTracksAlice3(true); // isReconstructed
+        tableTracksAlice3(true,  // isReconstructed
+                          -1.f,  // todo: track innermost update
+                          -1.f); // todo: track outermost update
         if (mcParticleIdx > 0)
           tableTracksAlice3Pdg(GlobalIdxToPDGCode[mcParticleIdx]); // PdgCode to the linked MC truth particle
         else

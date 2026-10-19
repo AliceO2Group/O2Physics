@@ -11,7 +11,7 @@
 
 /// \file dndetaHistManager.h
 /// \brief histogram manager for charged-particle pseudorapidity density measurements on femto derived data
-/// \author anton.riedel@tum.de, TU München, anton.riedel@tum.de
+/// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #ifndef PWGCF_FEMTO_CORE_DNDETAHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_DNDETAHISTMANAGER_H_

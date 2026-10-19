@@ -46,7 +46,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -240,7 +239,7 @@ struct zdcvector {
       LOGF(info,
            "Run %d: SOR timestamp = %llu ms",
            currentRunNumber,
-           static_cast<unsigned long long>(sorTimestamp));
+           sorTimestamp);
     }
 
     float timeInMinutes = 0.f;

@@ -217,7 +217,7 @@ struct FemtoUniversePairTaskTrackPhi {
   HistogramRegistry registryDCA{"registryDCA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCpT{"registryMCpT", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confBinsVtx, confBinsMult}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confBinsVtx, confBinsMult}};
 
   HistogramRegistry effCorrRegistry{"EfficiencyCorrection", {}, OutputObjHandlingPolicy::AnalysisObject};
 

@@ -1067,7 +1067,7 @@ struct lambda1520analysispo {
   {
     LOGF(debug, "Event mixing started");
     MixingBinningVtxZAndCentrality mixingBins{
-      {vertexZMixingBins, centralityMixingBins}, true};
+      {vertexZMixingBins, centralityMixingBins}};
     auto trackPool = std::make_tuple(tracks);
     SameKindPair<ResonanceCollisionsWithEP, ResonanceTrackTable,
                  MixingBinningVtxZAndCentrality>
@@ -1131,7 +1131,7 @@ struct lambda1520analysispo {
       LOG(fatal) << "Disable processMix() first when using processMixDF()!";
     LOGF(debug, "Event mixing (DF format) started");
 
-    MixingBinningDF mixingBins{{vertexZMixingBins, centralityMixingBins}, true};
+    MixingBinningDF mixingBins{{vertexZMixingBins, centralityMixingBins}};
     auto trackPool = std::make_tuple(tracks);
     SameKindPair<MergedDFCollisions, MergedDFTracks, MixingBinningDF>
       eventPairs{mixingBins, numberOfEventsToMix, -1,
@@ -1171,7 +1171,7 @@ struct lambda1520analysispo {
     LOGF(debug, "Event-plane-dependent event mixing (DF format) started");
 
     MixingBinningWithEventPlane mixingBins{
-      {vertexZMixingBins, centralityMixingBins, eventPlaneMixingBins}, true};
+      {vertexZMixingBins, centralityMixingBins, eventPlaneMixingBins}};
     auto trackPool = std::make_tuple(tracks);
     SameKindPair<MergedDFCollisions, MergedDFTracks,
                  MixingBinningWithEventPlane>

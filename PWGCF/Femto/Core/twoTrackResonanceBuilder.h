@@ -76,13 +76,13 @@ using ConfKstarFilters = ConfTwoTrackResonanceFilters<PrefixKstarFilters>;
 struct ConfPhiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("PhiSelection");
   TWOTRACKRESONANCE_DEFAULT_SELECTION(333, 0.95f, 1.05f)
-  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatability"};
+  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatibility"};
 };
 
 struct ConfRho0Selection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Rho0Selection");
   TWOTRACKRESONANCE_DEFAULT_SELECTION(113, 0.7f, 0.84f)
-  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatability"};
+  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatibility"};
 };
 
 struct ConfKstar0Selection : o2::framework::ConfigurableGroup {
@@ -106,7 +106,7 @@ struct ConfTwoTrackResonanceTables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TwoTrackResonanceTables");
   o2::framework::Configurable<int> producePhis{"producePhis", -1, "Produce Phis (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producePhiMasks{"producePhiMasks", -1, "Produce PhiMasks (-1: auto; 0 off; 1 on)"};
-  o2::framework::Configurable<int> produceKstar0s{"produceKstar0s", -1, "Produce K0stars (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceKstar0s{"produceKstar0s", -1, "Produce Kstar0s (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceKstar0Masks{"produceKstar0Masks", -1, "Produce Kstar0Masks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceRho0s{"produceRho0s", -1, "Produce Rho0s (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceRho0Masks{"produceRho0Masks", -1, "Produce Rho0Masks (-1: auto; 0 off; 1 on)"};
