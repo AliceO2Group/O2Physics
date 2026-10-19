@@ -320,14 +320,22 @@ class CloseTrackRejection
       swapTracks = (mSwapDist(mRng) == 1);
     }
 
-    auto t1 = swapTracks ? track2 : track1;
-    auto t2 = swapTracks ? track1 : track2;
+    // get kinematics of the particles
+    // if configured, randomly swap particle 1 and particle 2
+    float eta1 = swapTracks ? track2.eta() : track1.eta();
+    float eta2 = swapTracks ? track1.eta() : track2.eta();
+    float phi1 = swapTracks ? track2.phi() : track1.phi();
+    float phi2 = swapTracks ? track1.phi() : track2.phi();
+    float signedPt1 = swapTracks ? track2.signedPt() : track1.signedPt();
+    float signedPt2 = swapTracks ? track1.signedPt() : track2.signedPt();
+    int chargeAbs1 = swapTracks ? mChargeAbsTrack2 : mChargeAbsTrack1;
+    int chargeAbs2 = swapTracks ? mChargeAbsTrack1 : mChargeAbsTrack2;
 
-    mDeta = t1.eta() - t2.eta();
+    mDeta = eta1 - eta2;
 
     for (size_t i = 0; i < TpcRadii.size(); i++) {
-      auto phistar1 = phistar(mMagField, TpcRadii.at(i), mChargeAbsTrack1 * t1.signedPt(), t1.phi());
-      auto phistar2 = phistar(mMagField, TpcRadii.at(i), mChargeAbsTrack2 * t2.signedPt(), t2.phi());
+      auto phistar1 = phistar(mMagField, TpcRadii.at(i), chargeAbs1 * signedPt1, phi1);
+      auto phistar2 = phistar(mMagField, TpcRadii.at(i), chargeAbs2 * signedPt2, phi2);
       if (phistar1 && phistar2) {
         mDphistar.at(i) = RecoDecay::constrainAngle(phistar1.value() - phistar2.value(), -o2::constants::math::PI); // constrain angular difference between -pi and pi
         mDphistarMask.at(i) = true;
@@ -338,14 +346,14 @@ class CloseTrackRejection
     if (count > 0) {
       mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
     } else {
-      mAverageDphistar = 0.f; // if computation at all radii fail, set it 0
+      mAverageDphistar = 0.f; // if computation at all radii failed, set it 0
     }
 
     if (mPlotAngularCorrelation) {
-      mPhi1 = t1.phi();
-      mPhi2 = t2.phi();
-      mEta1 = t1.eta();
-      mEta2 = t2.eta();
+      mPhi1 = phi1;
+      mPhi2 = phi2;
+      mEta1 = eta1;
+      mEta2 = eta2;
     }
   }
 
