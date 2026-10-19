@@ -161,10 +161,10 @@ struct cascadeMLSelectionTreeCreator {
     // Track quality
     cascadeCandidate.posITSCls = posTrackExtra.itsNCls();
     cascadeCandidate.negITSCls = negTrackExtra.itsNCls();
-    cascadeCandidate.bachITSCls = negTrackExtra.itsNCls();
+    cascadeCandidate.bachITSCls = bachTrackExtra.itsNCls();
     cascadeCandidate.posITSClsSizes = posTrackExtra.itsClusterSizes();
     cascadeCandidate.negITSClsSizes = negTrackExtra.itsClusterSizes();
-    cascadeCandidate.bachITSClsSizes = negTrackExtra.itsClusterSizes();
+    cascadeCandidate.bachITSClsSizes = bachTrackExtra.itsClusterSizes();
     cascadeCandidate.posTPCRows = posTrackExtra.tpcCrossedRows();
     cascadeCandidate.negTPCRows = negTrackExtra.tpcCrossedRows();
     cascadeCandidate.bachTPCRows = bachTrackExtra.tpcCrossedRows();
@@ -214,11 +214,14 @@ struct cascadeMLSelectionTreeCreator {
     cascadeCandidate.isOmegaMinus = false;
     cascadeCandidate.isOmegaPlus = false;
 
-    if constexpr (requires { cand.pdgCode(); }) {
-      cascadeCandidate.isXiMinus = (cand.pdgCode() == 3312);
-      cascadeCandidate.isXiPlus = (cand.pdgCode() == -3312);
-      cascadeCandidate.isOmegaMinus = (cand.pdgCode() == 3334);
-      cascadeCandidate.isOmegaPlus = (cand.pdgCode() == -3334);
+    if constexpr (requires { cand.has_cascMCCore(); }) {
+      if (cand.has_cascMCCore()) {
+        auto cascMC = cand.template cascMCCore_as<aod::CascMCCores>();
+        cascadeCandidate.isXiMinus = (cascMC.pdgCode() == 3312);
+        cascadeCandidate.isXiPlus = (cascMC.pdgCode() == -3312);
+        cascadeCandidate.isOmegaMinus = (cascMC.pdgCode() == 3334);
+        cascadeCandidate.isOmegaPlus = (cascMC.pdgCode() == -3334);
+      }
     }
 
     // base topological selections
@@ -228,7 +231,7 @@ struct cascadeMLSelectionTreeCreator {
       return;
     if (cascadeCandidate.dcapostopv < v0setting_dcapostopv)
       return;
-    if (cascadeCandidate.dcapostopv < v0setting_dcanegtopv)
+    if (cascadeCandidate.dcanegtopv < v0setting_dcanegtopv)
       return;
     if (cascadeCandidate.dcabachtopv < cascadesetting_dcabachtopv)
       return;
@@ -327,7 +330,7 @@ struct cascadeMLSelectionTreeCreator {
       processCandidate(coll, casc);
     }
   }
-  void processSimData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascMCDatas, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
+  void processSimData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascCoreMCLabels, aod::CascTOFNSigmas> const& cascades, dauTracks const&, aod::CascMCCores const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     for (auto& casc : cascades) { // looping over lambdas
