@@ -79,6 +79,11 @@ o2physics_add_dpl_workflow(femto-pair-track-two-track-resonance
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-pair-track-two-photon-resonance
+	  SOURCES femtoPairTrackTwoPhotonResonance.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-pair-v0-two-track-resonance
 	  SOURCES femtoPairV0TwoTrackResonance.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
