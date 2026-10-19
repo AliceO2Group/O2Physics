@@ -1234,8 +1234,6 @@ struct DedxPidAnalysis {
         return false;
     }
 
-    const float gammaMass = 2 * MassElectron; // GeV/c^2
-
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionGamma);
 
@@ -1250,7 +1248,7 @@ struct DedxPidAnalysis {
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0RapidityGamma);
 
-    if (std::abs(v0.mGamma() - gammaMass) > invMassCutGamma) // Invarian mass
+    if (std::abs(v0.mGamma() - MassGamma) > invMassCutGamma) // Invarian mass
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::MassCutGamma);
