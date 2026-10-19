@@ -94,9 +94,6 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry,
     fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetYTitle("rapidity |y|");
   } else {
     if (sparseFullAxes) {
-      const o2::framework::AxisSpec axis_occ{occBins, "occupancy"};
-      const o2::framework::AxisSpec axis_ep{epBins, "#Psi_{2} (rad)"};
-      const o2::framework::AxisSpec axis_vtx{vtxBins, "Z_{vtx} (cm)"};
       fRegistry->add("Pair/same/hs", "diphoton",
                      o2::framework::HistType::kTHnSparseD,
                      {axis_mass, axis_pt, axis_ep, axis_occ, axis_vtx}, true);
