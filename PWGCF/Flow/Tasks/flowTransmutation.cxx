@@ -16,7 +16,6 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
-#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -34,7 +33,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
@@ -45,8 +43,6 @@
 
 #include <sys/types.h>
 
-#include <RtypesCore.h>
-
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -55,6 +51,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -129,7 +126,7 @@ struct FlowTransmutation {
   RCTFlagsChecker rctChecker{"CBT"};
   enum TrackSelectionGroup {
     TrkSelNch = 0,
-    TrkSelObs = 1,
+    TrkSelObs,
     TrkCounter
   };
   enum TrackCut {
@@ -261,7 +258,7 @@ struct FlowTransmutation {
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvent, "Filtered event");
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(Sel8, "after sel8");
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(RCTflags, "RCTflags");
-    std::string itsLayersFlag[Count_ITSLayersFlag] = {"ITSLayers-Disabled", "ITSLayersAll", "ITSLayers0123", "ITSLayer3"};
+    std::array<std::string, 4> itsLayersFlag = {"ITSLayers-Disabled", "ITSLayersAll", "ITSLayers0123", "ITSLayer3"};
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(IsGoodITSLayers, Form("kIsGood%s", itsLayersFlag[cfgEventSelection.cfgEvSelkIsGoodITSLayersFlag].c_str()));
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(NoSameBunchPileup, "kNoSameBunchPileup");
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(NoITSROFrameBorder, "kNoITSROFrameBorder");
@@ -283,19 +280,19 @@ struct FlowTransmutation {
       registryQA.addClone("beforeEventSelQA/", "afterEventSelQA/");
     }
     eventSelectionCuts = {
-      EventCut({(cfgEventSelection.cfgEvSelkIsGoodITSLayersFlag != Disabled) ? true : false, IsGoodITSLayers, getCorrectITSLayersFlag(cfgEventSelection.cfgEvSelkIsGoodITSLayersFlag)}),
-      EventCut({cfgEventSelection.cfgEvSelkNoSameBunchPileup, NoSameBunchPileup, o2::aod::evsel::kNoSameBunchPileup}),
-      EventCut({cfgEventSelection.cfgEvSelkNoITSROFrameBorder, NoITSROFrameBorder, o2::aod::evsel::kNoITSROFrameBorder}),
-      EventCut({cfgEventSelection.cfgEvSelkNoTimeFrameBorder, NoTimeFrameBorder, o2::aod::evsel::kNoTimeFrameBorder}),
-      EventCut({cfgEventSelection.cfgEvSelkIsGoodZvtxFT0vsPV, IsGoodZvtxFT0vsPV, o2::aod::evsel::kIsGoodZvtxFT0vsPV}),
-      EventCut({cfgEventSelection.cfgEvSelkNoCollInTimeRangeStandard, NoCollInTimeRangeStandard, o2::aod::evsel::kNoCollInTimeRangeStandard}),
-      EventCut({cfgEventSelection.cfgEvSelkNoCollInRofStandard, NoCollInRofStandard, o2::aod::evsel::kNoCollInRofStandard}),
-      EventCut({cfgEventSelection.cfgEvSelkNoHighMultCollInPrevRof, NoHighMultCollInPrevRof, o2::aod::evsel::kNoHighMultCollInPrevRof})};
+      EventCut({.enabled = (cfgEventSelection.cfgEvSelkIsGoodITSLayersFlag != Disabled), .histBin = IsGoodITSLayers, .flag = getCorrectITSLayersFlag(cfgEventSelection.cfgEvSelkIsGoodITSLayersFlag)}),
+      EventCut({.enabled = cfgEventSelection.cfgEvSelkNoSameBunchPileup, .histBin = NoSameBunchPileup, .flag = o2::aod::evsel::kNoSameBunchPileup}),
+      EventCut({.enabled = cfgEventSelection.cfgEvSelkNoITSROFrameBorder, .histBin = NoITSROFrameBorder, .flag = o2::aod::evsel::kNoITSROFrameBorder}),
+      EventCut({.enabled = cfgEventSelection.cfgEvSelkNoTimeFrameBorder, .histBin = NoTimeFrameBorder, .flag = o2::aod::evsel::kNoTimeFrameBorder}),
+      EventCut({.enabled = cfgEventSelection.cfgEvSelkIsGoodZvtxFT0vsPV, .histBin = IsGoodZvtxFT0vsPV, .flag = o2::aod::evsel::kIsGoodZvtxFT0vsPV}),
+      EventCut({.enabled = cfgEventSelection.cfgEvSelkNoCollInTimeRangeStandard, .histBin = NoCollInTimeRangeStandard, .flag = o2::aod::evsel::kNoCollInTimeRangeStandard}),
+      EventCut({.enabled = cfgEventSelection.cfgEvSelkNoCollInRofStandard, .histBin = NoCollInRofStandard, .flag = o2::aod::evsel::kNoCollInRofStandard}),
+      EventCut({.enabled = cfgEventSelection.cfgEvSelkNoHighMultCollInPrevRof, .histBin = NoHighMultCollInPrevRof, .flag = o2::aod::evsel::kNoHighMultCollInPrevRof})};
     if (cfgEventSelection.cfgEvSelUsage) {
       LOGF(info, "Event selection cuts are enabled");
       LOGF(info, "Sel8 is %senabled", (cfgEventSelection.cfgEvSel8) ? "" : "not ");
       if (!cfgEventSelection.cfgEvSelRCTflags.value.empty()) {
-        rctChecker.init(cfgEventSelection.cfgEvSelRCTflags.value.c_str());
+        rctChecker.init(cfgEventSelection.cfgEvSelRCTflags.value);
         LOGF(info, "RCT is %senabled", (!cfgEventSelection.cfgEvSelRCTflags.value.empty()) ? "" : "not ");
         LOGF(info, "RCT selection flag: %s", cfgEventSelection.cfgEvSelRCTflags.value.c_str());
       }
@@ -381,7 +378,7 @@ struct FlowTransmutation {
     fDCAxyCut[TrkSelObs] = new TF1("pT-DCAxyObs", Form("[0]*%s", cfgCutDCAxy->c_str()), 0.001, 100);
     fDCAxyCut[TrkSelObs]->SetParameter(0, trackSel[DCAxyNsigma][TrkSelObs]);
     LOGF(info, Form("pT-dependent DCAxy cut for Nch : %f*%s", fDCAxyCut[TrkSelObs]->GetParameter(0), cfgCutDCAxy->c_str()));
-    std::string etaGapsFlag[EtaGapCounter] = {"2-sub |#Delta#eta|>0", "2-sub |#Delta#eta|>0.2", "2-sub |#Delta#eta|>0.4", "2-sub |#Delta#eta|>0.6", "2-sub |#Delta#eta|>0.8", "2-sub |#Delta#eta|>1.0", "2-sub |#Delta#eta|>1.2", "2-sub |#Delta#eta|>1.4"};
+    std::array<std::string, 8> etaGapsFlag = {"2-sub |#Delta#eta|>0", "2-sub |#Delta#eta|>0.2", "2-sub |#Delta#eta|>0.4", "2-sub |#Delta#eta|>0.6", "2-sub |#Delta#eta|>0.8", "2-sub |#Delta#eta|>1.0", "2-sub |#Delta#eta|>1.2", "2-sub |#Delta#eta|>1.4"};
     if (cfgGetNumberOfCorr) {
       registryCorr.add("hTwoParticleCorrelations", "2 particle correlations; Nch;", {HistType::kTH2F, {axisNch, {8, -0.5, 7.5}}});
       registryCorr.add("hFourParticleCorrelations", "4 particle correlations; Nch;", {HistType::kTH2F, {axisNch, {8, -0.5, 7.5}}});
@@ -400,35 +397,26 @@ struct FlowTransmutation {
     ccdb->setCreatedNotAfter(now);
   }
   template <typename TCollision>
-  float getCentrality(TCollision const& collision)
+  float getCentrality(const TCollision& collision)
   {
-    float cent;
     switch (cfgEventSelection.cfgCentEstimator) {
       case CentFT0C:
-        cent = collision.centFT0C();
-        break;
+        return collision.centFT0C();
       case CentFT0CVariant1:
-        cent = collision.centFT0CVariant1();
-        break;
+        return collision.centFT0CVariant1();
       case CentFT0M:
-        cent = collision.centFT0M();
-        break;
+        return collision.centFT0M();
       case CentFV0A:
-        cent = collision.centFV0A();
-        break;
+        return collision.centFV0A();
       case CentNTPV:
-        cent = collision.centNTPV();
-        break;
+        return collision.centNTPV();
       case CentNGlobal:
-        cent = collision.centNGlobal();
-        break;
+        return collision.centNGlobal();
       case CentMFT:
-        cent = collision.centMFT();
-        break;
+        return collision.centMFT();
       default:
-        cent = collision.centFT0C();
+        return collision.centFT0C();
     }
-    return cent;
   }
   template <typename TCollision>
   bool selectMultiplicityCorrelation(const TCollision& collision, const int multTrk, const float& centrality)
@@ -545,7 +533,6 @@ struct FlowTransmutation {
         }
       }
     }
-    return;
   }
   double getTimeSinceStartOfFill(uint64_t timestamp, int firstRun)
   {
@@ -561,7 +548,7 @@ struct FlowTransmutation {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
     int nch = 0;
-    std::array<TrackRegion, EtaGapCounter> trackCorr{TrackRegion{0, 0, 0.}, TrackRegion{0, 0, 0.1}, TrackRegion{0, 0, 0.2}, TrackRegion{0, 0, 0.3}, TrackRegion{0, 0, 0.4}, TrackRegion{0, 0, 0.5}, TrackRegion{0, 0, 0.6}, TrackRegion{0, 0, 0.7}};
+    std::array<TrackRegion, 8> trackCorr{TrackRegion{.forward = 0, .backward = 0, .gap = 0.}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.1}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.2}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.3}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.4}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.5}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.6}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.7}};
     registryQA.fill(HIST("hEventCount"), FilteredEvent);
     if (tracks.size() < 1) {
       return;
