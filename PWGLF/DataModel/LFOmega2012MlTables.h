@@ -144,7 +144,7 @@ DECLARE_SOA_TABLE(Omega2012MlEvents, "AOD", "OMMLEVENT",
                   omega2012ml::OmMultiplicity, omega2012ml::OmRecINELgt0);
 namespace omega2012ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlEvent, omega2012MlEvent, int, Omega2012MlEvents, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlEvent, omega2012MlEvent, int, Omega2012MlEvents, "OmmlEvents", "");
 } // namespace omega2012ml
 
 DECLARE_SOA_TABLE(Omega2012MlCascades, "AOD", "OMMLCASCADE",
@@ -186,10 +186,10 @@ DECLARE_SOA_TABLE(Omega2012MlTracks, "AOD", "OMMLTRACK",
                   omega2012ml::OmCrossedRows, omega2012ml::OmItsClusterMap);
 namespace omega2012ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlCascade, omega2012MlCascade, int, Omega2012MlCascades, "");
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlV0, omega2012MlV0, int, Omega2012MlV0s, "");
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlPionTrack, omega2012MlPionTrack, int, Omega2012MlTracks, "_Pion");
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlKaonTrack, omega2012MlKaonTrack, int, Omega2012MlTracks, "_Kaon");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlCascade, omega2012MlCascade, int, Omega2012MlCascades, "OmmlCascades", "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlV0, omega2012MlV0, int, Omega2012MlV0s, "OmmlV0s", "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlPionTrack, omega2012MlPionTrack, int, Omega2012MlTracks, "OmmlTracks", "_Pion");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlKaonTrack, omega2012MlKaonTrack, int, Omega2012MlTracks, "OmmlTracks", "_Kaon");
 } // namespace omega2012ml
 
 // Mode A: Xi K0S
@@ -200,7 +200,7 @@ DECLARE_SOA_TABLE(Omega2012MlXiK0sCandidates, "AOD", "OMMLXIK0SCAND",
                   omega2012ml::OmOpeningAngle, omega2012ml::OmCharge, omega2012ml::OmPassBits);
 namespace omega2012ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlXiK0sCandidate, omega2012MlXiK0sCandidate, int, Omega2012MlXiK0sCandidates, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlXiK0sCandidate, omega2012MlXiK0sCandidate, int, Omega2012MlXiK0sCandidates, "OmmlXiK0sCands", "");
 } // namespace omega2012ml
 DECLARE_SOA_TABLE(Omega2012MlXiK0sInputs, "AOD", "OMMLXIK0SINPUT",
                   o2::soa::Index<>, omega2012ml::Omega2012MlXiK0sCandidateId,
@@ -219,7 +219,7 @@ DECLARE_SOA_TABLE(Omega2012MlXi1530KCandidates, "AOD", "OMMLXI1530KCAND",
                   omega2012ml::OmChargePattern, omega2012ml::OmPassBits);
 namespace omega2012ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlXi1530KCandidate, omega2012MlXi1530KCandidate, int, Omega2012MlXi1530KCandidates, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlXi1530KCandidate, omega2012MlXi1530KCandidate, int, Omega2012MlXi1530KCandidates, "OmmlXi1530KCands", "");
 } // namespace omega2012ml
 DECLARE_SOA_TABLE(Omega2012MlXi1530KInputs, "AOD", "OMMLXI1530KINP",
                   o2::soa::Index<>, omega2012ml::Omega2012MlXi1530KCandidateId,

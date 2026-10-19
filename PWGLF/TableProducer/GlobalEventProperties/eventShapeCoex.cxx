@@ -16,10 +16,12 @@
 /// First O2Physics task of the AliPhysics PWGLF/SPECTRA/MultEvShape analyses.
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -109,6 +111,8 @@ struct Config {
 };
 constexpr int NConfigs = 13;
 constexpr int INominal = 0;
+constexpr int IPairFirst = 1;  // GAP02
+constexpr int IPairSecond = 4; // GAP05, same events and stratum count as GAP02
 constexpr std::array<Config, NConfigs> Configs = {{{.name = "NOM", .etaFirst = 1, .ptEnd = 3, .cond = kCondOwn, .validEtaFirst = 1, .validPtEnd = 3, .evVariant = kV1},
                                                    {.name = "GAP02", .etaFirst = 1, .ptEnd = 3, .cond = kCondAll, .validEtaFirst = 4, .validPtEnd = 3, .evVariant = kV1},
                                                    {.name = "GAP03", .etaFirst = 2, .ptEnd = 3, .cond = kCondAll, .validEtaFirst = 4, .validPtEnd = 3, .evVariant = kV1},
@@ -126,6 +130,7 @@ constexpr std::array<Config, NConfigs> Configs = {{{.name = "NOM", .etaFirst = 1
 constexpr int NCountBins = 64;    // larger counts in the overflow bin
 constexpr int NSubCountBins = 32; // per sub-event
 constexpr int MinTracksValid = 2; // per sub-event
+constexpr int NCovariateQuantities = 7;
 
 // Data halves and subsample groups, defined on blocks of bunch crossings
 constexpr int NHalves = 2;
@@ -133,6 +138,11 @@ constexpr std::array<const char*, NHalves> HalfName = {"A", "B_SEALED"};
 constexpr int HalfBlockShift = 26;  // 2^26 BC = 1.7 s
 constexpr int GroupBlockShift = 20; // 2^20 BC = 26 ms
 constexpr int NGroups = 20;
+
+// MC only: nominal sums split by two hashes of the MC collision (run, globalBC)
+constexpr int NSplitBins = 8;
+constexpr int NSubsamples = 16;
+constexpr uint64_t SplitSalt = 0x6a09e667f3bcc909ULL;
 
 /// splitmix64 finaliser
 constexpr uint64_t mix64(uint64_t z)
@@ -147,6 +157,12 @@ constexpr uint64_t mix64(uint64_t z)
 uint64_t blockHash(int run, uint64_t globalBC, int shift)
 {
   return mix64(mix64(static_cast<uint64_t>(run)) ^ (globalBC >> shift));
+}
+
+/// Per-event hash, independent of the block hashes
+uint64_t eventHash(int run, uint64_t globalBC)
+{
+  return mix64(mix64(static_cast<uint64_t>(run) ^ SplitSalt) ^ globalBC);
 }
 
 struct SubEvent {
@@ -223,11 +239,13 @@ struct Sums {
   std::array<std::shared_ptr<TH3>, NConfigs> config{}; // (N_fwd, stratum count, monomial)
   std::shared_ptr<THn> strata3;                        // (N_fwd, n_F, n_B, first-order monomial)
   std::shared_ptr<TH3> occupancy;                      // (configuration, N_fwd, stratum count)
+  std::shared_ptr<TH3> paired;                         // (N_fwd, stratum count, GAP02 x GAP05 first-order monomials)
 };
 
 /// Nominal-configuration observables of an event
 struct Nominal {
   bool valid = false;
+  double nFwd = 0.;
   int nMid = 0;
   double xF = 0., xB = 0., vF = 0., vB = 0.;
 };
@@ -239,13 +257,16 @@ enum EventFlowBin { kFlowAll = 0,
                     kFlowNominalValid,
                     kFlowHalfA,
                     kFlowHalfB,
+                    kFlowNoMcLabel,
                     NEventFlowBins };
-constexpr std::array<const char*, NEventFlowBins> EventFlowLabels = {"all", "sel8", "|z|", "pile-up V1", "nominal valid", "half A", "half B"};
+constexpr std::array<const char*, NEventFlowBins> EventFlowLabels = {"all", "sel8", "|z|", "pile-up V1", "nominal valid", "half A", "half B", "nominal valid, no MC label"};
 } // namespace
 
 struct EventShapeCoex {
   HistogramRegistry registry{"registry"};
   Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  ctpRateFetcher rateFetcher;
 
   Configurable<float> vtxZCut{"vtxZCut", 10.0f, "Max |PV z| (cm)"};
   Configurable<float> etaFwdAMin{"etaFwdAMin", 3.5f, "FT0-A proxy: lower eta edge (generator level)"};
@@ -255,6 +276,12 @@ struct EventShapeCoex {
   ConfigurableAxis axisNFwd{"axisNFwd", {50, 1., 30000.}, "N_fwd = FT0A + FT0C amplitude (a fixed-width setting is made logarithmic)"};
   ConfigurableAxis axisNFwdGen{"axisNFwdGen", {50, 1., 1000.}, "generator-level N_fwd = charged primaries in the FT0 acceptance (a fixed-width setting is made logarithmic)"};
   ConfigurableAxis axisRun{"axisRun", {60000, 519999.5, 579999.5}, "run number (QA)"};
+  ConfigurableAxis axisOccupancy{"axisOccupancy", {50, 0., 1000.}, "track occupancy in time range (QA; unset in underflow)"};
+  ConfigurableAxis axisVtxZ{"axisVtxZ", {40, -10., 10.}, "PV z (cm, QA)"};
+  ConfigurableAxis axisRate{"axisRate", {100, 0., 1000.}, "interaction rate (kHz, QA; unavailable in underflow)"};
+  Configurable<std::string> irSource{"irSource", "T0VTX", "interaction-rate estimator for QA; empty = not fetched"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "CCDB url"};
+  Configurable<bool> doSplitSums{"doSplitSums", true, "MC: nominal sums split by hashed event bins and subsamples"};
 
   Filter trackFilter = (aod::track::pt > PtMin) && (nabs(aod::track::eta) < EtaMax) && requireGlobalTrackInFilter();
 
@@ -263,8 +290,39 @@ struct EventShapeCoex {
   using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>>;
 
   std::array<Sums, NHalves> sumsReco{};
-  std::array<std::shared_ptr<TH3>, NHalves> designEffect{}; // (N_fwd, group, first-order monomial)
+  std::array<std::shared_ptr<TH3>, NHalves> groupSums{}; // (N_fwd, stratum count, group x first-order monomial)
   Sums sumsGen{};
+
+  /// Nominal sums of MC events split by hashed event bin (full) and by (subsample, event bin) (sub)
+  struct SplitSums {
+    std::shared_ptr<TH3> full; // (N_fwd, stratum count, event bin x monomial)
+    std::shared_ptr<TH3> sub;  // (N_fwd, stratum count, (subsample x event bin) x first-order monomial)
+  };
+  SplitSums splitReco{}, splitGen{};
+
+  void bookSplit(SplitSums& split, const std::string& dir, const AxisSpec& nFwdAxis)
+  {
+    const AxisSpec countAxis{NCountBins, -0.5, NCountBins - 0.5, "stratum count"};
+    split.full = registry.add<TH3>(dir + "/full", "NOM sums per event bin", HistType::kTH3D, {nFwdAxis, countAxis, {NSplitBins * NMono, -0.5, NSplitBins * NMono - 0.5, "event bin x monomial"}});
+    split.sub = registry.add<TH3>(dir + "/sub", "NOM first-order sums per subsample and event bin", HistType::kTH3D, {nFwdAxis, countAxis, {NSubsamples * NSplitBins * NMono1, -0.5, NSubsamples * NSplitBins * NMono1 - 0.5, "(subsample x event bin) x monomial"}});
+    split.full->SetBit(TH1::kIsNotW);
+    split.sub->SetBit(TH1::kIsNotW);
+  }
+
+  void fillSplit(SplitSums& split, const Nominal& nominal, int run, uint64_t globalBC)
+  {
+    const uint64_t h = eventHash(run, globalBC);
+    const int bin = static_cast<int>(h % NSplitBins);
+    const int subsample = static_cast<int>((h >> 32) % NSubsamples);
+    std::array<double, NMono> m{};
+    monomials(nominal.xF, nominal.xB, nominal.vF, nominal.vB, NMono, m);
+    for (int k = 0; k < NMono; ++k) {
+      split.full->Fill(nominal.nFwd, nominal.nMid, bin * NMono + k, m[k]);
+    }
+    for (int k = 0; k < NMono1; ++k) {
+      split.sub->Fill(nominal.nFwd, nominal.nMid, (subsample * NSplitBins + bin) * NMono1 + k, m[k]);
+    }
+  }
 
   /// Books the moment sums of one level under dir/<configuration>/<half>
   void bookSums(Sums& sums, const std::string& dir, const std::string& half, const AxisSpec& nFwdAxis, int nConfigs)
@@ -290,6 +348,17 @@ struct EventShapeCoex {
     }
     sums.strata3 = registry.add<THn>(dir + "/NOM3/" + half, (label + "NOM in (n_F, n_B) strata").c_str(), HistType::kTHnD, {nFwdAxis, subCountAxis, subCountAxis, mono1Axis});
     sums.occupancy = registry.add<TH3>(dir + "/occupancy/" + half, "event counts per configuration", HistType::kTH3D, {configAxis, nFwdAxis, countAxis});
+    if (nConfigs > IPairSecond) {
+      std::string pairName = dir;
+      pairName += "/";
+      pairName += Configs[IPairFirst].name;
+      pairName += "x";
+      pairName += Configs[IPairSecond].name;
+      pairName += "/";
+      pairName += half;
+      sums.paired = registry.add<TH3>(pairName, (label + "cross products of two configurations").c_str(), HistType::kTH3D, {nFwdAxis, countAxis, {NMono1 * NMono1, -0.5, NMono1 * NMono1 - 0.5, "monomial pair"}});
+      sums.paired->SetBit(TH1::kIsNotW);
+    }
   }
 
   void init(InitContext const&)
@@ -303,12 +372,15 @@ struct EventShapeCoex {
       if (nFwdAxis.nBins) {
         nFwdAxis.makeLogarithmic();
       }
-      const AxisSpec groupAxis{NGroups, -0.5, NGroups - 0.5, "group"};
-      const AxisSpec mono1Axis{NMono1, -0.5, NMono1 - 0.5, "monomial"};
+      const AxisSpec countAxis{NCountBins, -0.5, NCountBins - 0.5, "stratum count"};
+      const AxisSpec groupMonoAxis{NGroups * NMono1, -0.5, NGroups * NMono1 - 0.5, "group x monomial"};
       for (int h = 0; h < NHalves; ++h) {
         bookSums(sumsReco[h], "accum", HalfName[h], nFwdAxis, NConfigs);
-        designEffect[h] = registry.add<TH3>(std::string("designEffect/") + HalfName[h], "nominal first-order sums per block group", HistType::kTH3D, {nFwdAxis, groupAxis, mono1Axis});
-        designEffect[h]->SetBit(TH1::kIsNotW);
+        groupSums[h] = registry.add<TH3>(std::string("groups/") + HalfName[h], "nominal first-order sums per block group", HistType::kTH3D, {nFwdAxis, countAxis, groupMonoAxis});
+        groupSums[h]->SetBit(TH1::kIsNotW);
+      }
+      if (doprocessRecoMC && doSplitSums) {
+        bookSplit(splitReco, "split", nFwdAxis);
       }
 
       // QA
@@ -328,6 +400,14 @@ struct EventShapeCoex {
       const AxisSpec quantityAxis{5, -0.5, 4.5, "quantity"};
       registry.add<TH3>("qa/hMarginalSums", "nominal single-side sums", HistType::kTH3D, {nFwdAxis, {NCountBins, -0.5, NCountBins - 0.5, "n_{mid}"}, quantityAxis})->SetBit(TH1::kIsNotW);
       registry.add<TH2>("qa/hRunSums", "nominal single-side sums per run", HistType::kTH2D, {{axisRun, "run"}, quantityAxis})->SetBit(TH1::kIsNotW);
+      // quantities: count, a_F, a_B, a_F^2, a_B^2, v_F, v_B
+      const AxisSpec quantity2Axis{NCovariateQuantities, -0.5, NCovariateQuantities - 0.5, "quantity"};
+      registry.add<TH2>("qa/hOccupancySums", "nominal single-side sums vs occupancy", HistType::kTH2D, {{axisOccupancy, "track occupancy"}, quantity2Axis})->SetBit(TH1::kIsNotW);
+      registry.add<TH2>("qa/hVtxZSums", "nominal single-side sums vs PV z", HistType::kTH2D, {{axisVtxZ, "PV z (cm)"}, quantity2Axis})->SetBit(TH1::kIsNotW);
+      registry.add<TH2>("qa/hRateSums", "nominal single-side sums vs interaction rate", HistType::kTH2D, {{axisRate, "IR (kHz)"}, quantity2Axis})->SetBit(TH1::kIsNotW);
+      ccdb->setURL(ccdbUrl.value);
+      ccdb->setCaching(true);
+      ccdb->setFatalWhenNull(false);
     }
 
     if (doprocessMC) {
@@ -337,6 +417,9 @@ struct EventShapeCoex {
       }
       bookSums(sumsGen, "gen", "all", nFwdGenAxis, 1); // nominal configuration only
       registry.add("gen/hEvents", "generated events", HistType::kTH1D, {{1, -0.5, 0.5}});
+      if (doSplitSums) {
+        bookSplit(splitGen, "gen/split", nFwdGenAxis);
+      }
     }
   }
 
@@ -345,6 +428,8 @@ struct EventShapeCoex {
   {
     Nominal nominal;
     std::array<double, NMono> m{};
+    std::array<double, NMono> mPairFirst{};
+    bool pairFirstValid = false;
     double xF = 0., xB = 0., vF = 0., vB = 0.;
     for (int c = 0; c < nConfigs; ++c) {
       const auto& cfg = Configs[c];
@@ -370,8 +455,18 @@ struct EventShapeCoex {
         sums.config[c]->Fill(nFwd, nCond, k, m[k]);
       }
       sums.occupancy->Fill(c, nFwd, nCond);
+      if (c == IPairFirst) {
+        mPairFirst = m;
+        pairFirstValid = true;
+      } else if (c == IPairSecond && pairFirstValid) {
+        for (int k = 0; k < NMono1; ++k) {
+          for (int l = 0; l < NMono1; ++l) {
+            sums.paired->Fill(nFwd, nCond, k * NMono1 + l, mPairFirst[k] * m[l]);
+          }
+        }
+      }
       if (c == INominal) {
-        nominal = {.valid = true, .nMid = nCond, .xF = xF, .xB = xB, .vF = vF, .vB = vB};
+        nominal = {.valid = true, .nFwd = nFwd, .nMid = nCond, .xF = xF, .xB = xB, .vF = vF, .vB = vB};
       }
     }
 
@@ -392,16 +487,17 @@ struct EventShapeCoex {
     return nominal;
   }
 
+  /// Fills the reconstructed-level sums; returns the nominal observables
   template <typename TCollision>
-  void fillReco(TCollision const& coll, MyTracks const& tracks)
+  Nominal fillReco(TCollision const& coll, MyTracks const& tracks)
   {
     registry.fill(HIST("qa/hEventFlow"), kFlowAll);
     if (!coll.sel8()) {
-      return;
+      return {};
     }
     registry.fill(HIST("qa/hEventFlow"), kFlowSel8);
     if (std::abs(coll.posZ()) > vtxZCut) {
-      return;
+      return {};
     }
     registry.fill(HIST("qa/hEventFlow"), kFlowVtxZ);
 
@@ -424,13 +520,13 @@ struct EventShapeCoex {
       registry.fill(HIST("qa/hTrackPhi"), track.phi());
     }
 
-    const auto& bc = coll.template bc_as<aod::BCs>();
+    const auto& bc = coll.template bc_as<aod::BCsWithTimestamps>();
     const double nFwd = coll.multFT0A() + coll.multFT0C();
     registry.fill(HIST("qa/hNFwd"), nFwd);
     const int half = static_cast<int>(blockHash(bc.runNumber(), bc.globalBC(), HalfBlockShift) & 1u);
     const Nominal nominal = fillSums(sumsReco[half], rings, nFwd, qaBits, NConfigs);
     if (!nominal.valid) {
-      return;
+      return nominal;
     }
     registry.fill(HIST("qa/hEventFlow"), kFlowNominalValid);
     registry.fill(HIST("qa/hEventFlow"), kFlowHalfA + half);
@@ -440,7 +536,7 @@ struct EventShapeCoex {
     std::array<double, NMono> m{};
     monomials(nominal.xF, nominal.xB, nominal.vF, nominal.vB, NMono1, m);
     for (int k = 0; k < NMono1; ++k) {
-      designEffect[half]->Fill(nFwd, group, k, m[k]);
+      groupSums[half]->Fill(nFwd, nominal.nMid, group * NMono1 + k, m[k]);
     }
 
     const std::array<double, 5> quantities = {1., nominal.xF + MeanPtShift, nominal.xB + MeanPtShift, nominal.vF, nominal.vB};
@@ -448,21 +544,38 @@ struct EventShapeCoex {
       registry.fill(HIST("qa/hMarginalSums"), nFwd, nominal.nMid, q, quantities[q]);
       registry.fill(HIST("qa/hRunSums"), bc.runNumber(), q, quantities[q]);
     }
+    const double rate = irSource.value.empty() ? -1. : rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource.value) * 1.e-3;
+    const std::array<double, NCovariateQuantities> covariateQuantities = {1., quantities[1], quantities[2], quantities[1] * quantities[1], quantities[2] * quantities[2], nominal.vF, nominal.vB};
+    for (int q = 0; q < NCovariateQuantities; ++q) {
+      registry.fill(HIST("qa/hOccupancySums"), coll.trackOccupancyInTimeRange(), q, covariateQuantities[q]);
+      registry.fill(HIST("qa/hVtxZSums"), coll.posZ(), q, covariateQuantities[q]);
+      registry.fill(HIST("qa/hRateSums"), rate, q, covariateQuantities[q]);
+    }
+    return nominal;
   }
 
-  void processReco(MyCollisions::iterator const& coll, MyTracks const& tracks, aod::BCs const&)
+  void processReco(MyCollisions::iterator const& coll, MyTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     fillReco(coll, tracks);
   }
   PROCESS_SWITCH(EventShapeCoex, processReco, "Reconstructed-level moment sums", true);
 
-  void processRecoMC(MyCollisionsMc::iterator const& coll, MyTracks const& tracks, aod::BCs const&)
+  void processRecoMC(MyCollisionsMc::iterator const& coll, MyTracks const& tracks, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
-    fillReco(coll, tracks);
+    const Nominal nominal = fillReco(coll, tracks);
+    if (!nominal.valid || !doSplitSums) {
+      return;
+    }
+    if (!coll.has_mcCollision()) {
+      registry.fill(HIST("qa/hEventFlow"), kFlowNoMcLabel);
+      return;
+    }
+    const auto& bc = coll.mcCollision().bc_as<aod::BCsWithTimestamps>();
+    fillSplit(splitReco, nominal, bc.runNumber(), bc.globalBC());
   }
   PROCESS_SWITCH(EventShapeCoex, processRecoMC, "Reconstructed-level moment sums on MC (MC-labelled collisions)", false);
 
-  void processMC(aod::McCollision const&, aod::McParticles const& particles)
+  void processMC(aod::McCollision const& mcCollision, aod::McParticles const& particles, aod::BCs const&)
   {
     static constexpr double ChargeTolerance = 1.e-3;
 
@@ -490,7 +603,11 @@ struct EventShapeCoex {
       }
       rings.add(eta, particle.pt());
     }
-    fillSums(sumsGen, rings, nFwdA + nFwdC, AllQaBits, 1);
+    const Nominal nominal = fillSums(sumsGen, rings, nFwdA + nFwdC, AllQaBits, 1);
+    if (nominal.valid && doSplitSums) {
+      const auto& bc = mcCollision.bc_as<aod::BCs>();
+      fillSplit(splitGen, nominal, bc.runNumber(), bc.globalBC());
+    }
   }
   PROCESS_SWITCH(EventShapeCoex, processMC, "Generator-level moment sums (nominal configuration)", false);
 };

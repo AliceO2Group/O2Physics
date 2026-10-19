@@ -998,6 +998,13 @@ class TrackBuilderDerivedToDerived
     return this->fillTrack(daughter, trackProducts, collisionProducts);
   }
 
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts,
+                           T4& mcBuilder, T5 const& mcCols, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& mcProducts)
+  {
+    return this->fillTrackWithMcLabel(daughter, trackProducts, collisionProducts, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+  }
+
   template <typename T>
   void reset(T const& tracks)
   {

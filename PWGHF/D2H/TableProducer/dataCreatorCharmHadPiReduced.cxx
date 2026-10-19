@@ -202,6 +202,7 @@ struct HfDataCreatorCharmHadPiReduced {
   struct : o2::framework::ConfigurableGroup {
     Configurable<double> cpaMin{"cpaMin", 0., "Minimum cosine of pointing angle for B candidates"};
     Configurable<double> decLenMin{"decLenMin", 0., "Minimum decay length for B candidates"};
+    Configurable<double> impParProductMax{"impParProductMax", 10., "Maximum product of the impact parameters of the B daughters (cm^2)"};
   } bhadronConfigurations;
   // HF flags
   struct : o2::framework::ConfigurableGroup {
@@ -1034,8 +1035,9 @@ struct HfDataCreatorCharmHadPiReduced {
   /// \param momentum is the B meson momentum
   /// \param secondaryVertex is the reconstructed secondary vertex
   /// \param collision is the reconstructed collision
+  /// \param impParProduct is the product of the impact parameters of the B daughters
   template <typename T1, typename T2, typename T3>
-  bool isBHadronSelected(const T1& momentum, const T2& secondaryVertex, const T3& collision)
+  bool isBHadronSelected(const T1& momentum, const T2& secondaryVertex, const T3& collision, const float impParProduct)
   {
     // B candidate CPA
     if (RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, momentum) < bhadronConfigurations.cpaMin) {
@@ -1044,6 +1046,11 @@ struct HfDataCreatorCharmHadPiReduced {
 
     // B candidate decay length
     if (RecoDecay::distance(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex) < bhadronConfigurations.decLenMin) {
+      return false;
+    }
+
+    // B candidate product of daughter impact parameters
+    if (impParProduct > bhadronConfigurations.impParProductMax) {
       return false;
     }
 
@@ -1364,7 +1371,10 @@ struct HfDataCreatorCharmHadPiReduced {
         df2.getTrack(0).getPxPyPzGlo(pVecDHad);
         df2.getTrack(1).getPxPyPzGlo(pVecDau);
         pVecBHad = RecoDecay::pVec(pVecDHad, pVecDau);
-        if (!isBHadronSelected(pVecBHad, secondaryVertexBHad, collision)) {
+        o2::track::TrackParCov trackParCovCharmHadAtPv = trackParCovCharmHad;
+        std::array<float, 2> dcaCharmHad{};
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovCharmHadAtPv, 2.f, noMatCorr, &dcaCharmHad);
+        if (!isBHadronSelected(pVecBHad, secondaryVertexBHad, collision, dcaCharmHad[0] * dcaPion[0])) {
           continue;
         }
         // fill Pion tracks table
