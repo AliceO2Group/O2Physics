@@ -901,10 +901,12 @@ using StoredFPhotonExtras = StoredFPhotonExtras_001;
 
 namespace femtotwophotonresonances
 {
-// columns for daughter (photon) bit masks -- no momentum-threshold bit: photon daughters have no
-// momentum-dependent PID switch the way charged-track daughters do in femtotwotrackresonances
-DECLARE_SOA_COLUMN(MaskDau1, maskDau1, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for first photon daughter
-DECLARE_SOA_COLUMN(MaskDau2, maskDau2, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for second photon daughter
+// column for the daughter (photon) bit mask -- no momentum-threshold bit: photon daughters have no
+// momentum-dependent PID switch the way charged-track daughters do in femtotwotrackresonances. Both
+// legs are plain photons with the same selection requirement, so only the AND of both legs' own
+// masks is stored (not one column per leg): requiring a set of bits in the AND is equivalent to
+// requiring that same set of bits in both legs individually.
+DECLARE_SOA_COLUMN(MaskDau, maskDau, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for the photon daughters (AND of both legs' own masks)
 
 // id columns for the two photon daughters (unordered, no pos/neg distinction)
 DECLARE_SOA_INDEX_COLUMN_FULL(Dau1, dau1, int32_t, FPhotons, "_Dau1"); //! index column for first photon daughter
@@ -928,8 +930,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FPi0s_001, "FPI0", 1, //! femto pi0s
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FPi0s = FPi0s_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FPi0Masks_001, "FPI0MASK", 1, //! mask for pi0s
-                                   femtotwophotonresonances::MaskDau1,
-                                   femtotwophotonresonances::MaskDau2);
+                                   femtotwophotonresonances::MaskDau);
 using FPi0Masks = FPi0Masks_001;
 
 // table for etas (-> gamma gamma)
@@ -949,9 +950,52 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FEtas_001, "FETA", 1, //! femto etas
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FEtas = FEtas_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FEtaMasks_001, "FETAMASK", 1, //! mask for etas
-                                   femtotwophotonresonances::MaskDau1,
-                                   femtotwophotonresonances::MaskDau2);
+                                   femtotwophotonresonances::MaskDau);
 using FEtaMasks = FEtaMasks_001;
+
+namespace femtotrackstwophotonresonances
+{
+// columns for daughter bit masks, copied onto the candidate at build time -- same pattern as
+// femtotwotrackresonances: systematic reselection happens on the candidate itself, not by rejoining
+// the daughter tables. The two charged daughters keep their own momentum-threshold PID switch; the
+// neutral (pi0/eta) daughter has no such switch and no dedicated mask of its own -- it is a direct
+// copy of its FPi0Masks/FEtaMasks maskDau (itself already the AND of its two photon legs).
+DECLARE_SOA_COLUMN(MaskPosDau, maskPosDau, o2::analysis::femto::datatypes::TrackMaskType);          //! Bitmask for positive charged-track daughter
+DECLARE_SOA_COLUMN(PosDauHasHighMomentum, posDauHasHighMomentum, bool);                             //! switch for pid threshold
+DECLARE_SOA_COLUMN(MaskNegDau, maskNegDau, o2::analysis::femto::datatypes::TrackMaskType);          //! Bitmask for negative charged-track daughter
+DECLARE_SOA_COLUMN(NegDauHasHighMomentum, negDauHasHighMomentum, bool);                             //! switch for pid threshold
+DECLARE_SOA_COLUMN(MaskNeutralDau, maskNeutralDau, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for the two-photon-resonance daughter (copy of its own maskDau)
+
+// id columns for the two charged-track daughters and the two-photon-resonance daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau");           //! index column for the positive charged-track daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau");           //! index column for the negative charged-track daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(NeutralDau, neutralDau, int32_t, FPi0s, "_NeutralDau"); //! index column for the two-photon-resonance daughter
+} // namespace femtotrackstwophotonresonances
+
+// table for resonances built from two tracks and a two-photon resonance (e.g. omega(782) -> pi+ pi- pi0)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMesons_001, "FOMEMES", 1, //! femto omega mesons
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::Pt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtotrackstwophotonresonances::PosDauId,
+                                   femtotrackstwophotonresonances::NegDauId,
+                                   femtotrackstwophotonresonances::NeutralDauId,
+                                   femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FOmegaMesons = FOmegaMesons_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMesonMasks_001, "FOMEMESMASK", 1, //! mask for omega mesons
+                                   femtotrackstwophotonresonances::MaskPosDau,
+                                   femtotrackstwophotonresonances::PosDauHasHighMomentum,
+                                   femtotrackstwophotonresonances::MaskNegDau,
+                                   femtotrackstwophotonresonances::NegDauHasHighMomentum,
+                                   femtotrackstwophotonresonances::MaskNeutralDau);
+using FOmegaMesonMasks = FOmegaMesonMasks_001;
 
 namespace femtokinks
 {

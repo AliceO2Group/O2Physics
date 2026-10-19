@@ -56,9 +56,12 @@ constexpr const char PrefixEtaFilters[] = "EtaFilters1";
 using ConfPi0Filters = ConfTwoPhotonResonanceFilters<PrefixPi0Filters>;
 using ConfEtaFilters = ConfTwoPhotonResonanceFilters<PrefixEtaFilters>;
 
-// selection used downstream (QA/pairing) to re-select already produced resonances by mass window + daughter mask.
-// unlike TWOTRACKRESONANCE_DEFAULT_SELECTION there is no pos/neg split and no momentum-threshold PID
-// switch: photon daughters are unordered and have no momentum-dependent PID regime.
+// selection used downstream (QA/pairing) to re-select already produced resonances by mass window +
+// daughter mask. unlike TWOTRACKRESONANCE_DEFAULT_SELECTION there is no pos/neg split and no
+// momentum-threshold PID switch: photon daughters are unordered and have no momentum-dependent PID
+// regime. there is also just a single dauMask (not one per leg): both legs are plain photons with
+// the same selection requirement, so the candidate only ever stores/needs the AND of both legs'
+// masks (see femtotwophotonresonances::MaskDau in FemtoTables.h) -- no per-leg distinction to select on.
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TWOPHOTONRESONANCE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCodeAbs)                                                                                                       \
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                                                                               \
@@ -70,8 +73,7 @@ using ConfEtaFilters = ConfTwoPhotonResonanceFilters<PrefixEtaFilters>;
   o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for the resonance"};                                                                                \
   o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for the resonance"};                                                                                \
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCodeAbs), "Absolute PDG code of the resonance, used to set its mass for kstar/kt/mt (not the reconstructed two-photon mass)"}; \
-  o2::framework::Configurable<datatypes::PhotonMaskType> dau1Mask{"dau1Mask", 0, "Bitmask required for first photon daughter"};                                                                       \
-  o2::framework::Configurable<datatypes::PhotonMaskType> dau2Mask{"dau2Mask", 0, "Bitmask required for second photon daughter"};
+  o2::framework::Configurable<datatypes::PhotonMaskType> dauMask{"dauMask", 0, "Bitmask required for both photon daughters"};
 
 struct ConfPi0Selection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Pi0Selection1");
@@ -199,7 +201,7 @@ class TwoPhotonResonanceBuilder
                                        dau2.globalIndex());
       }
       if (mProducePi0Masks) {
-        resonanceProducts.producedPi0Masks(dau1.mask(), dau2.mask());
+        resonanceProducts.producedPi0Masks(dau1.mask() & dau2.mask());
       }
     }
     if constexpr (modes::isEqual(resoType, modes::TwoPhotonResonance::kEta)) {
@@ -213,7 +215,7 @@ class TwoPhotonResonanceBuilder
                                        dau2.globalIndex());
       }
       if (mProduceEtaMasks) {
-        resonanceProducts.producedEtaMasks(dau1.mask(), dau2.mask());
+        resonanceProducts.producedEtaMasks(dau1.mask() & dau2.mask());
       }
     }
   }

@@ -50,6 +50,9 @@ using TwoTrackResonanceType = uint16_t;
 // datatype for resonances built from two photons (pi0, eta, ...)
 using TwoPhotonResonanceType = uint16_t;
 
+// datatype for resonances built from two tracks and a two-photon resonance (e.g. omega(782) -> pi+ pi- pi0)
+using TrackTrackTwoPhotonResonanceType = uint8_t;
+
 // datatypes for cascades
 using CascadeMaskType = uint32_t;
 using CascadeMaskType001 = uint16_t; // old data type, was too narrow
