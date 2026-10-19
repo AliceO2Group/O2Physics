@@ -535,7 +535,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
     }
 
     // dcaXY v0 daughters to PV cut
-    if (std::abs(candidate.dcaXYToPvV0Dau0()) < cuts->get(pTBin, "dcaXYToPvV0Dau0") || std::abs(candidate.dcaXYToPvV0Dau1()) < cuts->get(pTBin, "dcaXYToPvV0Dau0")) {
+    if (std::abs(candidate.dcaXYToPvV0Dau0()) < cuts->get(pTBin, "dcaXYToPvV0Dau0") || std::abs(candidate.dcaXYToPvV0Dau1()) < cuts->get(pTBin, "dcaXYToPvV0Dau1")) {
       return false;
     }
 
