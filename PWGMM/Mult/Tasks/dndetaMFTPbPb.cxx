@@ -480,7 +480,9 @@ struct DndetaMFTPbPb {
       }
     }
     if (doprocessDataInclusive || doprocessDatawBestTracksInclusive) {
-      registryData.add({"Events/hInteractionRate", "; IR (kHz); occupancy", {HistType::kTH2F, {irAxis, occupancyAxis}}});
+      if (gConf.useIRFromCCDB) {
+        registryData.add({"Events/hInteractionRate", "; IR (kHz); occupancy", {HistType::kTH2F, {irAxis, occupancyAxis}}});
+      }
       registryData.add("Events/DataEvtStatus", "Number of events; Cut; occupancy", {HistType::kTH2F, {{static_cast<int>(DataEvtStatus::nDataEvtStatus), -0.5, +static_cast<int>(DataEvtStatus::nDataEvtStatus) - 0.5}, occupancyAxis}});
       std::array<std::string_view, static_cast<int>(DataEvtStatus::nDataEvtStatus)> labelDataEvtStatus{
         "Data all",
@@ -508,7 +510,9 @@ struct DndetaMFTPbPb {
       registryData.print();
     }
     if (doprocessDataCentFT0C || doprocessDatawBestTracksCentFT0C) {
-      registryData.add({"Events/Centrality/hInteractionRate", "; IR (kHz); centrality; occupancy", {HistType::kTHnSparseF, {irAxis, centralityAxis, occupancyAxis}}});
+      if (gConf.useIRFromCCDB) {
+        registryData.add({"Events/Centrality/hInteractionRate", "; IR (kHz); centrality; occupancy", {HistType::kTHnSparseF, {irAxis, centralityAxis, occupancyAxis}}});
+      }
       registryData.add("Events/Centrality/DataEvtStatus", "Number of events; Cut; centrality; occupancy", {HistType::kTHnSparseF, {{static_cast<int>(DataEvtStatus::nDataEvtStatus), -0.5, +static_cast<int>(DataEvtStatus::nDataEvtStatus) - 0.5}, centralityAxis, occupancyAxis}});
       std::array<std::string_view, static_cast<int>(DataEvtStatus::nDataEvtStatus)> labelDataEvtStatusCent{
         "Data all",
