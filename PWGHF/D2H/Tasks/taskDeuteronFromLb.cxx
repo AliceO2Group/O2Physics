@@ -167,6 +167,10 @@ struct HfTaskDeuteronFromLb {
     qaHistos.add("MCReco/hDCAzVsPtDeFromBminus", "DCAz #bar{d} from B^{-} vs p_{T};p_{T} (GeV/c);DCA_{z} (cm)", {HistType::kTH2D, {ptAxis, dcaZAxis}});
     qaHistos.add("MCReco/hDCAzVsPtDeFromAntiLambdaB", "DCAz #bar{d} from #bar{#Lambda}_{b} vs p_{T};p_{T} (GeV/c);DCA_{z} (cm)", {HistType::kTH2D, {ptAxis, dcaZAxis}});
     qaHistos.add("MCReco/hDCAzVsPtDePrimary", "DCAz #bar{d} primary vs p_{T};p_{T} (GeV/c);DCA_{z} (cm)", {HistType::kTH2D, {ptAxis, dcaZAxis}});
+    qaHistos.add("MCReco/hDCAxyVsPtDeFromBminusSameMC", "DCAxy from B^{-}, same MC collision", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
+    qaHistos.add("MCReco/hDCAxyVsPtDeFromAntiLambdaBSameMC", "DCAxy from anti-Lambda_b, same MC collision", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
+    qaHistos.add("MCReco/hDCAxyVsPtDeFromAntiHypertritonSameMC", "DCAxy from anti-hypertriton, same MC collision", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
+    qaHistos.add("MCReco/hDCAxyVsPtDePrimarySameMC", "DCAxy primary, same MC collision", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
     qaHistos.add("MCReco/ptAntiDeuteronFromBminus", "p_{T} #bar{d} from B^{-} reco/MC anchored;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
     qaHistos.add("MCReco/ptAntiDeuteronFromAntiLambdaB", "p_{T} #bar{d} from #bar{#Lambda}_{b} reco/MC anchored;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
     qaHistos.add("MCReco/ptAntiDeuteronPrimary", "p_{T} #bar{d} primary reco/MC anchored;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
@@ -454,6 +458,7 @@ struct HfTaskDeuteronFromLb {
         }
 
         auto mcParticle = track.mcParticle();
+        const bool isSameMcCollision = collision.has_mcCollision() && (mcParticle.mcCollisionId() == collision.mcCollisionId());
         const bool isTrueDeuteron = (mcParticle.pdgCode() == pdgCodeDaughter);
         const bool isTPCDe = std::abs(track.tpcNSigmaDe()) < cfgTPCNsigma;
         const bool isTOFDe = std::abs(track.tofNSigmaDe()) < cfgTofNsigma;
@@ -539,16 +544,25 @@ struct HfTaskDeuteronFromLb {
           if (passFinalSel) {
             if (motherPdg == pdgCodeBeautyMeson) {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromBminus"), track.pt(), dca[0]);
+              if (isSameMcCollision) {
+                qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromBminusSameMC"), track.pt(), dca[0]);
+              }
               qaHistos.fill(HIST("MCReco/hDCAzVsPtDeFromBminus"), track.pt(), dca[1]);
               qaHistos.fill(HIST("MCReco/hDCAxy-FromBMeson"), dca[0]);
               qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromBminus"), track.pt());
             } else if (motherPdg == pdgCodeBeautyBaryon) {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromAntiLambdaB"), track.pt(), dca[0]);
+              if (isSameMcCollision) {
+                qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromAntiLambdaBSameMC"), track.pt(), dca[0]);
+              }
               qaHistos.fill(HIST("MCReco/hDCAzVsPtDeFromAntiLambdaB"), track.pt(), dca[1]);
               qaHistos.fill(HIST("MCReco/hDCAxy-FromAntiLambdaB"), dca[0]);
               qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromAntiLambdaB"), track.pt());
             } else if (motherPdg == pdgCodeHypertriton) {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromAntiHypertriton"), track.pt(), dca[0]);
+              if (isSameMcCollision) {
+                qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromAntiHypertritonSameMC"), track.pt(), dca[0]);
+              }
               qaHistos.fill(HIST("MCReco/hDCAzVsPtDeFromAntiHypertriton"), track.pt(), dca[1]);
               qaHistos.fill(HIST("MCReco/hDCAxy-FromAntiHypertriton"), dca[0]);
               qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromAntiHypertriton"), track.pt());
@@ -556,6 +570,9 @@ struct HfTaskDeuteronFromLb {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDePrimary"), track.pt(), dca[0]);
               qaHistos.fill(HIST("MCReco/hDCAzVsPtDePrimary"), track.pt(), dca[1]);
               qaHistos.fill(HIST("MCReco/hDCAxy-Primary"), dca[0]);
+              if (isSameMcCollision) {
+                qaHistos.fill(HIST("MCReco/hDCAxyVsPtDePrimarySameMC"), track.pt(), dca[0]);
+              }
               qaHistos.fill(HIST("MCReco/ptAntiDeuteronPrimary"), track.pt());
             }
           }
