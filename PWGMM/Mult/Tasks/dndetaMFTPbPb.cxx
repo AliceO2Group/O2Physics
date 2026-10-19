@@ -174,7 +174,6 @@ enum class EvtLossType {
 enum class DataEvtStatus {
   kDataAll = 0,
   kDataSel,
-  kDataSelGt0,
   kDataRej,
   nDataEvtStatus
 };
@@ -244,6 +243,7 @@ struct DndetaMFTPbPb {
     Configurable<bool> useInelgt0{"useInelgt0", false, "Use INEL > 0 condition"};
     Configurable<bool> useInelgt0wMFT{"useInelgt0wMFT", false, "Use INEL > 0 condition with MFT acceptance"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<bool> fillTrackQaHist{"fillTrackQaHist", false, "fill track QA histograms"};
   } gConf;
 
   struct : ConfigurableGroup {
@@ -480,60 +480,62 @@ struct DndetaMFTPbPb {
       }
     }
     if (doprocessDataInclusive || doprocessDatawBestTracksInclusive) {
-      registryData.add({"Events/hInteractionRate", "; IR (kHz); occupancy", {HistType::kTH2F, {irAxis, occupancyAxis}}});
+      if (gConf.useIRFromCCDB) {
+        registryData.add({"Events/hInteractionRate", "; IR (kHz); occupancy", {HistType::kTH2F, {irAxis, occupancyAxis}}});
+      }
       registryData.add("Events/DataEvtStatus", "Number of events; Cut; occupancy", {HistType::kTH2F, {{static_cast<int>(DataEvtStatus::nDataEvtStatus), -0.5, +static_cast<int>(DataEvtStatus::nDataEvtStatus) - 0.5}, occupancyAxis}});
       std::array<std::string_view, static_cast<int>(DataEvtStatus::nDataEvtStatus)> labelDataEvtStatus{
         "Data all",
         "Data sel",
-        "Data sel gt0",
         "Data rejected"};
       for (int iBin = 0; iBin < static_cast<int>(DataEvtStatus::nDataEvtStatus); iBin++) {
         registryData.get<TH2>(HIST("Events/DataEvtStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelDataEvtStatus[iBin].data());
       }
       registryData.add({"Tracks/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
-      registryData.add({"Tracks/EtaZvtxGt0", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
       registryData.add({"Tracks/PhiEta", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
       registryData.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Chi2Eta", "; #chi^{2}; #eta; occupancy", {HistType::kTHnSparseF, {chiSqAxis, etaAxis, occupancyAxis}}});
-      registryData.add({"Tracks/NclustersEta", "; nClusters; #eta; occupancy", {HistType::kTHnSparseF, {nclsAxis, etaAxis, occupancyAxis}}});
-      registryData.add({"Tracks/TanLambda", "; TanLambda; occupancy", {HistType::kTH2F, {tanLambdaAxis, occupancyAxis}}});
-      registryData.add({"Tracks/InvQPt", "; InvQPt; occupancy", {HistType::kTH2F, {invQPtAxis, occupancyAxis}}});
-
+      if (gConf.fillTrackQaHist) {
+        registryData.add({"Tracks/Chi2Eta", "; #chi^{2}; #eta; occupancy", {HistType::kTH2F, {chiSqAxis, occupancyAxis}}});
+        registryData.add({"Tracks/NclustersEta", "; nClusters; #eta; occupancy", {HistType::kTH2F, {nclsAxis, occupancyAxis}}});
+      }
       if (doprocessDatawBestTracksInclusive) {
-        registryData.add({"Tracks/DCA3d", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, occupancyAxis}}});
-        registryData.add({"Tracks/ReTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
-        registryData.add({"Tracks/ReTracksPhiEta", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
-        registryData.add({"Tracks/TrackAmbDegree", "; N_{coll}^{comp}; occupancy", {HistType::kTH2F, {{51, -0.5, 50.5}, occupancyAxis}}});
+        if (gConf.fillTrackQaHist) {
+          registryData.add({"Tracks/DCA3d", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, occupancyAxis}}});
+          registryData.add({"Tracks/ReTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
+          registryData.add({"Tracks/ReTracksPhiEta", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
+          registryData.add({"Tracks/TrackAmbDegree", "; N_{coll}^{comp}; occupancy", {HistType::kTH2F, {{51, -0.5, 50.5}, occupancyAxis}}});
+        }
       }
       LOG(info) << "doprocessData[BestTrack]Inclusive -> Size of the Data histograms:";
       registryData.print();
     }
     if (doprocessDataCentFT0C || doprocessDatawBestTracksCentFT0C) {
-      registryData.add({"Events/Centrality/hInteractionRate", "; IR (kHz); centrality; occupancy", {HistType::kTHnSparseF, {irAxis, centralityAxis, occupancyAxis}}});
+      if (gConf.useIRFromCCDB) {
+        registryData.add({"Events/Centrality/hInteractionRate", "; IR (kHz); centrality; occupancy", {HistType::kTHnSparseF, {irAxis, centralityAxis, occupancyAxis}}});
+      }
       registryData.add("Events/Centrality/DataEvtStatus", "Number of events; Cut; centrality; occupancy", {HistType::kTHnSparseF, {{static_cast<int>(DataEvtStatus::nDataEvtStatus), -0.5, +static_cast<int>(DataEvtStatus::nDataEvtStatus) - 0.5}, centralityAxis, occupancyAxis}});
       std::array<std::string_view, static_cast<int>(DataEvtStatus::nDataEvtStatus)> labelDataEvtStatusCent{
         "Data all",
         "Data sel",
-        "Data sel gt0",
         "Data rejected"};
       for (int iBin = 0; iBin < static_cast<int>(DataEvtStatus::nDataEvtStatus); iBin++) {
         registryData.get<THnSparse>(HIST("Events/Centrality/DataEvtStatus"))->GetAxis(0)->SetBinLabel(iBin + 1, labelDataEvtStatusCent[iBin].data());
       }
+      registryData.add({"Events/Centrality/hZvtxCent", "; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {zAxis, centralityAxis, occupancyAxis}}});
       registryData.add({"Tracks/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/EtaZvtxGt0", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
       registryData.add({"Tracks/Centrality/PhiEta", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
       registryData.add({"Events/Centrality/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/Chi2Eta", "; #chi^{2}; #eta; centrality; occupancy", {HistType::kTHnSparseF, {chiSqAxis, etaAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/NclustersEta", "; nClusters; #eta; centrality; occupancy", {HistType::kTHnSparseF, {nclsAxis, etaAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/TanLambda", "; TanLambda; centrality; occupancy", {HistType::kTHnSparseF, {tanLambdaAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/InvQPt", "; InvQPt; centrality; occupancy", {HistType::kTHnSparseF, {invQPtAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Events/Centrality/hZvtxCent", "; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {zAxis, centralityAxis, occupancyAxis}}});
-
+      if (gConf.fillTrackQaHist) {
+        registryData.add({"Tracks/Centrality/Chi2Eta", "; #chi^{2}; centrality; occupancy", {HistType::kTHnSparseF, {chiSqAxis, centralityAxis, occupancyAxis}}});
+        registryData.add({"Tracks/Centrality/NclustersEta", "; nClusters; #eta; centrality; occupancy", {HistType::kTHnSparseF, {nclsAxis, centralityAxis, occupancyAxis}}});
+      }
       if (doprocessDatawBestTracksCentFT0C) {
-        registryData.add({"Tracks/Centrality/DCA3d", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis}}});
-        registryData.add({"Tracks/Centrality/ReTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
-        registryData.add({"Tracks/Centrality/ReTracksPhiEta", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
-        registryData.add({"Tracks/Centrality/TrackAmbDegree", "; N_{coll}^{comp}; centrality; occupancy", {HistType::kTHnSparseF, {{51, -0.5, 50.5}, centralityAxis, occupancyAxis}}});
+        if (gConf.fillTrackQaHist) {
+          registryData.add({"Tracks/Centrality/DCA3d", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis}}});
+          registryData.add({"Tracks/Centrality/ReTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
+          registryData.add({"Tracks/Centrality/ReTracksPhiEta", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
+          registryData.add({"Tracks/Centrality/TrackAmbDegree", "; N_{coll}^{comp}; centrality; occupancy", {HistType::kTHnSparseF, {{51, -0.5, 50.5}, centralityAxis, occupancyAxis}}});
+        }
       }
       LOG(info) << "doprocessData[BestTrack]CentFT0C -> Size of the Data histograms:";
       registryData.print();
@@ -1014,44 +1016,38 @@ struct DndetaMFTPbPb {
     return true;
   }
 
-  template <typename C, bool fillHis = false, typename T>
+  template <typename C, typename T>
   int countTracks(T const& tracks, float z, float c, float occ)
   {
     auto nTrk = 0;
     for (auto const& track : tracks) {
-      if (fillHis) {
-        if constexpr (has_reco_cent<C>) {
-          registryData.fill(HIST("Tracks/Centrality/Chi2Eta"), track.chi2(), track.eta(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/NclustersEta"), track.nClusters(), track.eta(), c, occ);
-        } else {
-          registryData.fill(HIST("Tracks/Chi2Eta"), track.chi2(), track.eta(), occ);
-          registryData.fill(HIST("Tracks/NclustersEta"), track.nClusters(), track.eta(), occ);
-        }
-      }
       if (!isTrackSelected(track)) {
         continue;
       }
-      if (fillHis) {
-        float phi = track.phi();
-        o2::math_utils::bringTo02Pi(phi);
+      if (gConf.fillTrackQaHist) {
         if constexpr (has_reco_cent<C>) {
-          registryData.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c, occ);
-          registryData.fill(HIST("Tracks/Centrality/PhiEta"), phi, track.eta(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/TanLambda"), track.tgl(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/InvQPt"), track.signed1Pt(), c, occ);
+          registryData.fill(HIST("Tracks/Centrality/Chi2Eta"), track.chi2(), c, occ);
+          registryData.fill(HIST("Tracks/Centrality/NclustersEta"), track.nClusters(), c, occ);
         } else {
-          registryData.fill(HIST("Tracks/EtaZvtx"), track.eta(), z, occ);
-          registryData.fill(HIST("Tracks/PhiEta"), phi, track.eta(), occ);
-          registryData.fill(HIST("Tracks/TanLambda"), track.tgl(), occ);
-          registryData.fill(HIST("Tracks/InvQPt"), track.signed1Pt(), occ);
+          registryData.fill(HIST("Tracks/Chi2Eta"), track.chi2(), occ);
+          registryData.fill(HIST("Tracks/NclustersEta"), track.nClusters(), occ);
         }
+      }
+      float phi = track.phi();
+      o2::math_utils::bringTo02Pi(phi);
+      if constexpr (has_reco_cent<C>) {
+        registryData.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c, occ);
+        registryData.fill(HIST("Tracks/Centrality/PhiEta"), phi, track.eta(), c, occ);
+      } else {
+        registryData.fill(HIST("Tracks/EtaZvtx"), track.eta(), z, occ);
+        registryData.fill(HIST("Tracks/PhiEta"), phi, track.eta(), occ);
       }
       ++nTrk;
     }
     return nTrk;
   }
 
-  template <typename C, bool fillHis = false, typename T, typename B>
+  template <typename C, typename T, typename B>
   int countBestTracks(T const& /*tracks*/, B const& besttracks, float z, float c, float occ)
   {
     auto nATrk = 0;
@@ -1061,40 +1057,36 @@ struct DndetaMFTPbPb {
       }
       const float bestDcaZ = getDCAz(atrack);
       auto itrack = atrack.template mfttrack_as<T>();
-      if constexpr (has_reco_cent<C>) {
-        registryData.fill(HIST("Tracks/Centrality/Chi2Eta"), itrack.chi2(), itrack.eta(), c, occ);
-        registryData.fill(HIST("Tracks/Centrality/NclustersEta"), itrack.nClusters(), itrack.eta(), c, occ);
-      } else {
-        registryData.fill(HIST("Tracks/Chi2Eta"), itrack.chi2(), itrack.eta(), occ);
-        registryData.fill(HIST("Tracks/NclustersEta"), itrack.nClusters(), itrack.eta(), occ);
-      }
       if (!isTrackSelected(itrack)) {
         continue;
       }
-      ++nATrk;
-      if (fillHis) {
-        float phi = itrack.phi();
-        o2::math_utils::bringTo02Pi(phi);
+      if (gConf.fillTrackQaHist) {
         if constexpr (has_reco_cent<C>) {
-          registryData.fill(HIST("Tracks/Centrality/EtaZvtx"), itrack.eta(), z, c, occ);
-          registryData.fill(HIST("Tracks/Centrality/PhiEta"), phi, itrack.eta(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/TanLambda"), itrack.tgl(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/InvQPt"), itrack.signed1Pt(), c, occ);
+          registryData.fill(HIST("Tracks/Centrality/Chi2Eta"), itrack.chi2(), c, occ);
+          registryData.fill(HIST("Tracks/Centrality/NclustersEta"), itrack.nClusters(), c, occ);
+        } else {
+          registryData.fill(HIST("Tracks/Chi2Eta"), itrack.chi2(), occ);
+          registryData.fill(HIST("Tracks/NclustersEta"), itrack.nClusters(), occ);
+        }
+      }
+      float phi = itrack.phi();
+      o2::math_utils::bringTo02Pi(phi);
+      if constexpr (has_reco_cent<C>) {
+        registryData.fill(HIST("Tracks/Centrality/EtaZvtx"), itrack.eta(), z, c, occ);
+        registryData.fill(HIST("Tracks/Centrality/PhiEta"), phi, itrack.eta(), c, occ);
+      } else {
+        registryData.fill(HIST("Tracks/EtaZvtx"), itrack.eta(), z, occ);
+        registryData.fill(HIST("Tracks/PhiEta"), phi, itrack.eta(), occ);
+      }
+      if (gConf.fillTrackQaHist) {
+        if constexpr (has_reco_cent<C>) {
           registryData.fill(HIST("Tracks/Centrality/DCA3d"), itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, c, occ);
           registryData.fill(HIST("Tracks/Centrality/TrackAmbDegree"), atrack.ambDegree(), c, occ);
         } else {
-          registryData.fill(HIST("Tracks/EtaZvtx"), itrack.eta(), z, occ);
-          registryData.fill(HIST("Tracks/PhiEta"), phi, itrack.eta(), occ);
-          registryData.fill(HIST("Tracks/TanLambda"), itrack.tgl(), occ);
-          registryData.fill(HIST("Tracks/InvQPt"), itrack.signed1Pt(), occ);
           registryData.fill(HIST("Tracks/DCA3d"), itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, occ);
           registryData.fill(HIST("Tracks/TrackAmbDegree"), atrack.ambDegree(), occ);
         }
-      }
-      if (itrack.has_collision() && itrack.collisionId() != atrack.bestCollisionId()) {
-        if (fillHis) {
-          float phi = itrack.phi();
-          o2::math_utils::bringTo02Pi(phi);
+        if (itrack.has_collision() && itrack.collisionId() != atrack.bestCollisionId()) {
           registryQC.fill(HIST("Tracks/hBestTrkSel"), static_cast<int>(TrkBestSel::trkBestSelNumReassoc));
           if constexpr (has_reco_cent<C>) {
             registryData.fill(HIST("Tracks/Centrality/ReTracksEtaZvtx"), itrack.eta(), itrack.template collision_as<C>().posZ(), c, occ);
@@ -1105,6 +1097,7 @@ struct DndetaMFTPbPb {
           }
         }
       }
+      ++nATrk;
     }
     return nATrk;
   }
@@ -1457,23 +1450,11 @@ struct DndetaMFTPbPb {
         registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), occ);
       }
 
-      auto nTrk = countTracks<C, true>(tracks, z, c, occ);
+      auto nTrk = countTracks<C>(tracks, z, c, occ);
 
       if constexpr (has_reco_cent<C>) {
-        if (nTrk > 0) {
-          registryData.fill(HIST("Events/Centrality/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSelGt0), c, occ);
-          for (auto const& track : tracks) {
-            registryData.fill(HIST("Tracks/Centrality/EtaZvtxGt0"), track.eta(), z, c, occ);
-          }
-        }
         registryData.fill(HIST("Events/Centrality/NtrkZvtx"), nTrk, z, c, occ);
       } else {
-        if (nTrk > 0) {
-          registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSelGt0), occ);
-          for (auto const& track : tracks) {
-            registryData.fill(HIST("Tracks/EtaZvtxGt0"), track.eta(), z, occ);
-          }
-        }
         registryData.fill(HIST("Events/NtrkZvtx"), nTrk, z, occ);
       }
     } else {
@@ -1524,37 +1505,11 @@ struct DndetaMFTPbPb {
         registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), occ);
       }
 
-      auto nBestTrks = countBestTracks<C, true>(tracks, besttracks, z, c, occ);
+      auto nBestTrks = countBestTracks<C>(tracks, besttracks, z, c, occ);
 
       if constexpr (has_reco_cent<C>) {
-        if (nBestTrks > 0) {
-          registryData.fill(HIST("Events/Centrality/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSelGt0), c, occ);
-          for (auto const& atrack : besttracks) {
-            if (!isBestTrackSelected(atrack)) {
-              continue;
-            }
-            auto itrack = atrack.mfttrack_as<aod::MFTTracks>();
-            if (!isTrackSelected(itrack)) {
-              continue;
-            }
-            registryData.fill(HIST("Tracks/Centrality/EtaZvtxGt0"), itrack.eta(), z, c, occ);
-          }
-        }
         registryData.fill(HIST("Events/Centrality/NtrkZvtx"), nBestTrks, z, c, occ);
       } else {
-        if (nBestTrks > 0) {
-          registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSelGt0), occ);
-          for (auto const& atrack : besttracks) {
-            if (!isBestTrackSelected(atrack)) {
-              continue;
-            }
-            auto itrack = atrack.mfttrack_as<aod::MFTTracks>();
-            if (!isTrackSelected(itrack)) {
-              continue;
-            }
-            registryData.fill(HIST("Tracks/EtaZvtxGt0"), itrack.eta(), z, occ);
-          }
-        }
         registryData.fill(HIST("Events/NtrkZvtx"), nBestTrks, z, occ);
       }
     } else {
