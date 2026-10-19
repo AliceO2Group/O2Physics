@@ -141,6 +141,12 @@ inline double getPdgMass(int pdgCode)
     case kOmegaMinus:
       mass = o2::constants::physics::MassOmegaMinus;
       break;
+    case kPi0:
+      mass = o2::constants::physics::MassPi0;
+      break;
+    case o2::constants::physics::kEta:
+      mass = o2::constants::physics::MassEta;
+      break;
     default:
       LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
   }

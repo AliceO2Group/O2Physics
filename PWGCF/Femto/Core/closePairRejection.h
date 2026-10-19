@@ -95,6 +95,7 @@ constexpr const char PrefixCprTrackLcPion[] = "CprTrackLcPion";
 constexpr const char PrefixCprD0DaughterD0DaughterPos[] = "CprD0DaughterD0DaughterPos";
 constexpr const char PrefixCprD0DaughterD0DaughterNeg[] = "CprD0DaughterD0DaughterNeg";
 constexpr const char PrefixCprTrackResonanceDaughter[] = "CprTrackResonanceDaughter";
+constexpr const char PrefixCprTrackTwoPhotonResonanceDaughter[] = "CprTrackTwoPhotonResonanceDaughter";
 constexpr const char PrefixCprTrackKinkDaughter[] = "CprTrackKinkDaughter";
 constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0DaughterPos";
 constexpr const char PrefixCprV0DaughterV0DaughterNeg[] = "CprV0DaughterV0DaughterNeg";
@@ -113,6 +114,8 @@ using ConfCprTrackLcPion = ConfCpr<PrefixCprTrackLcPion>;
 using ConfCprD0DaugherD0DaughterPos = ConfCpr<PrefixCprD0DaughterD0DaughterPos>;
 using ConfCprD0DaugherD0DaughterNeg = ConfCpr<PrefixCprD0DaughterD0DaughterNeg>;
 using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
+// no cut by default: CPR is a no-op for two-photon resonances (see ClosePairRejectionTrackTwoPhotonResonance)
+using ConfCprTrackTwoPhotonResonanceDaughter = ConfCpr<PrefixCprTrackTwoPhotonResonanceDaughter, false>;
 using ConfCprTrackKinkDaughter = ConfCpr<PrefixCprTrackKinkDaughter>;
 using ConfCprV0DaugherV0DaughterPos = ConfCpr<PrefixCprV0DaughterV0DaughterPos>;
 using ConfCprV0DaugherV0DaughterNeg = ConfCpr<PrefixCprV0DaughterV0DaughterNeg>;
@@ -152,6 +155,8 @@ constexpr char PrefixV0TwoTrackResonancePosMe[] = "CPR_V0Resonance_PosDau/ME/";
 constexpr char PrefixV0TwoTrackResonanceNegMe[] = "CPR_V0Resonance_NegDau/ME/";
 constexpr char PrefixTrackTwoTrackResonanceSe[] = "CPR_TrackResonanceDau/SE/";
 constexpr char PrefixTrackTwoTrackResonanceMe[] = "CPR_TrackResonanceDau/ME/";
+constexpr char PrefixTrackTwoPhotonResonanceSe[] = "CPR_TrackTwoPhotonResonanceDau/SE/";
+constexpr char PrefixTrackTwoPhotonResonanceMe[] = "CPR_TrackTwoPhotonResonanceDau/ME/";
 constexpr char PrefixTrackCascadeBachelorSe[] = "CPR_TrackCascadeBachelor/SE/";
 constexpr char PrefixTrackCascadeBachelorMe[] = "CPR_TrackCascadeBachelor/ME/";
 constexpr char PrefixTrackKinkSe[] = "CPR_TrackKink/SE/";
@@ -737,6 +742,32 @@ class ClosePairRejectionTrackKink
 
  private:
   CloseTrackRejection<prefix> mCtr;
+};
+
+// PCM photon daughters are, for now, not indexed into the track table (see photonBuilder.h):
+// they are TPC-only tracks, so they cannot be confused for a global track the way two V0
+// daughters or a track and a V0 daughter can -- there is no detector-overlap effect to correct
+// for. This is a no-op placeholder so Track-TwoPhotonResonance pairs can use the same generic
+// pair-building code path.
+template <auto& prefix>
+class ClosePairRejectionTrackTwoPhotonResonance
+{
+ public:
+  template <typename T>
+  void init(o2::framework::HistogramRegistry* /*registry*/,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& /*specs*/,
+            T const& /*confCpr*/,
+            int /*absChargeTrack*/)
+  {
+  }
+
+  void setMagField(float /*magField*/) {}
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& /*track*/, T2 const& /*resonance*/, T3 const& /*photonTable*/, T4 const& /*pairHistManager*/)
+  {
+    return false;
+  }
 };
 
 template <auto& prefix>

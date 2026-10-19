@@ -113,6 +113,7 @@ enum class Particle : o2::analysis::femto::datatypes::ParticleType {
   kKink = 4,
   kCascade = 5,
   kCharmHadron = 6,
+  kTwoPhotonResonance = 7,
 };
 
 enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
