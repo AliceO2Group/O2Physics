@@ -25,21 +25,32 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
-#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TVector2.h>
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -317,12 +328,15 @@ struct K0sK0sFlow {
     auto k0sCutFlow = registry.get<TH1>(HIST("QA/K0s/hCutFlow"));
     auto pairCutFlow = registry.get<TH1>(HIST("QA/K0sK0s/hPairCutFlow"));
     auto pairCutFlowVsCent = registry.get<TH2>(HIST("QA/K0sK0s/hPairCutFlowVsCent"));
-    for (size_t index = 0; index < EventSelectionLabels.size(); ++index)
+    for (size_t index = 0; index < EventSelectionLabels.size(); ++index) {
       eventCutFlow->GetXaxis()->SetBinLabel(index + 1, EventSelectionLabels[index]);
-    for (size_t index = 0; index < TrackSelectionLabels.size(); ++index)
+    }
+    for (size_t index = 0; index < TrackSelectionLabels.size(); ++index) {
       trackCutFlow->GetXaxis()->SetBinLabel(index + 1, TrackSelectionLabels[index]);
-    for (size_t index = 0; index < K0sSelectionLabels.size(); ++index)
+    }
+    for (size_t index = 0; index < K0sSelectionLabels.size(); ++index) {
       k0sCutFlow->GetXaxis()->SetBinLabel(index + 1, K0sSelectionLabels[index]);
+    }
     for (size_t index = 0; index < PairSelectionLabels.size(); ++index) {
       pairCutFlow->GetXaxis()->SetBinLabel(index + 1, PairSelectionLabels[index]);
       pairCutFlowVsCent->GetXaxis()->SetBinLabel(index + 1, PairSelectionLabels[index]);
@@ -331,10 +345,12 @@ struct K0sK0sFlow {
 
   SidebandRegion sidebandRegion(float mass) const
   {
-    if (mass >= k0Cuts.k0sLowerSidebandMin.value && mass < k0Cuts.k0sLowerSidebandMax.value)
+    if (mass >= k0Cuts.k0sLowerSidebandMin.value && mass < k0Cuts.k0sLowerSidebandMax.value) {
       return SidebandRegion::Lower;
-    if (mass >= k0Cuts.k0sUpperSidebandMin.value && mass < k0Cuts.k0sUpperSidebandMax.value)
+    }
+    if (mass >= k0Cuts.k0sUpperSidebandMin.value && mass < k0Cuts.k0sUpperSidebandMax.value) {
       return SidebandRegion::Upper;
+    }
     return SidebandRegion::Outside;
   }
 
@@ -371,28 +387,39 @@ struct K0sK0sFlow {
       registry.fill(HIST("Event/hCentralityBefore"), cent);
       registry.fill(HIST("Event/hEventCutFlow"), enumValue(EventSelectionStep::All));
     }
-    if (std::abs(c.posZ()) > eventCuts.maxAbsZvtx)
+    if (std::abs(c.posZ()) > eventCuts.maxAbsZvtx) {
       return false;
-    if (fill)
+    }
+    if (fill) {
       registry.fill(HIST("Event/hEventCutFlow"), enumValue(EventSelectionStep::Vertex));
-    if (eventCuts.requireSel8 && !c.sel8())
+    }
+    if (eventCuts.requireSel8 && !c.sel8()) {
       return false;
-    if (fill)
+    }
+    if (fill) {
       registry.fill(HIST("Event/hEventCutFlow"), enumValue(EventSelectionStep::Sel8));
-    if (eventCuts.requireNoSameBunchPileup && !c.selection_bit(aod::evsel::kNoSameBunchPileup))
+    }
+    if (eventCuts.requireNoSameBunchPileup && !c.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
-    if (fill)
+    }
+    if (fill) {
       registry.fill(HIST("Event/hEventCutFlow"), enumValue(EventSelectionStep::NoSameBunchPileup));
-    if (eventCuts.requireNoTimeFrameBorder && !c.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    }
+    if (eventCuts.requireNoTimeFrameBorder && !c.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
-    if (fill)
+    }
+    if (fill) {
       registry.fill(HIST("Event/hEventCutFlow"), enumValue(EventSelectionStep::NoTimeFrameBorder));
-    if (eventCuts.requireNoITSROFrameBorder && !c.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    }
+    if (eventCuts.requireNoITSROFrameBorder && !c.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
-    if (fill)
+    }
+    if (fill) {
       registry.fill(HIST("Event/hEventCutFlow"), enumValue(EventSelectionStep::NoItsRofBorder));
-    if (cent < eventCuts.minCentrality || cent >= eventCuts.maxCentrality)
+    }
+    if (cent < eventCuts.minCentrality || cent >= eventCuts.maxCentrality) {
       return false;
+    }
     if (fill) {
       registry.fill(HIST("Event/hEventCutFlow"), enumValue(EventSelectionStep::Centrality));
       registry.fill(HIST("Event/hVertexZAfter"), c.posZ());
@@ -419,31 +446,42 @@ struct K0sK0sFlow {
         registry.fill(HIST("QA/Tracks/BeforeSelection/hTOFNSigmaPiVsP"), t.p(), t.tofNSigmaPi());
       }
     }
-    if (t.pt() < daughterCuts.daughterMinPt || std::abs(t.eta()) > daughterCuts.maxAbsEta)
+    if (t.pt() < daughterCuts.daughterMinPt || std::abs(t.eta()) > daughterCuts.maxAbsEta) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/Tracks/hCutFlow"), enumValue(TrackSelectionStep::Kinematics));
-    if (t.tpcNClsCrossedRows() < daughterCuts.minTPCRows || t.tpcCrossedRowsOverFindableCls() < daughterCuts.minTPCRowsOverFindable)
+    }
+    if (t.tpcNClsCrossedRows() < daughterCuts.minTPCRows || t.tpcCrossedRowsOverFindableCls() < daughterCuts.minTPCRowsOverFindable) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/Tracks/hCutFlow"), enumValue(TrackSelectionStep::TpcClusters));
-    if (t.tpcChi2NCl() > daughterCuts.maxTPCChi2NCl || t.itsChi2NCl() > daughterCuts.maxITSChi2NCl)
+    }
+    if (t.tpcChi2NCl() > daughterCuts.maxTPCChi2NCl || t.itsChi2NCl() > daughterCuts.maxITSChi2NCl) {
       return false;
-    if (daughterCuts.minITSClusters > 0 && t.itsNCls() < daughterCuts.minITSClusters)
+    }
+    if (daughterCuts.minITSClusters > 0 && t.itsNCls() < daughterCuts.minITSClusters) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/Tracks/hCutFlow"), enumValue(TrackSelectionStep::TrackQuality));
-    if (std::abs(t.tpcNSigmaPi()) > daughterCuts.maxTPCNSigmaPi)
+    }
+    if (std::abs(t.tpcNSigmaPi()) > daughterCuts.maxTPCNSigmaPi) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/Tracks/hCutFlow"), enumValue(TrackSelectionStep::TpcPid));
+    }
     const auto pidMode = static_cast<PionPidMode>(daughterCuts.pidMode.value);
     bool requireTOF = pidMode == PionPidMode::TpcAndTof || (pidMode == PionPidMode::TofRequiredAboveMomentum && t.p() >= daughterCuts.tofRequiredAboveP);
     bool useTOF = requireTOF || (pidMode == PionPidMode::TpcWithTofIfAvailable && hasTOF);
-    if (requireTOF && !hasTOF)
+    if (requireTOF && !hasTOF) {
       return false;
-    if (useTOF && std::abs(t.tofNSigmaPi()) > daughterCuts.maxTOFNSigmaPi)
+    }
+    if (useTOF && std::abs(t.tofNSigmaPi()) > daughterCuts.maxTOFNSigmaPi) {
       return false;
+    }
     if (qa) {
       registry.fill(HIST("QA/Tracks/hCutFlow"), enumValue(TrackSelectionStep::TofPid));
       registry.fill(HIST("QA/Tracks/AfterSelection/hPt"), t.pt());
@@ -475,36 +513,51 @@ struct K0sK0sFlow {
     }
     auto pos = v.template posTrack_as<DaughterTracks>();
     auto neg = v.template negTrack_as<DaughterTracks>();
-    if (!selectDaughter(pos, qa))
+    if (!selectDaughter(pos, qa)) {
       return false;
-    if (!selectDaughter(neg, qa))
+    }
+    if (!selectDaughter(neg, qa)) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/K0s/hCutFlow"), enumValue(K0sSelectionStep::Daughters));
-    if (v.pt() < k0Cuts.k0sMinPt || v.pt() >= k0Cuts.k0sMaxPt || std::abs(v.rapidity(0)) >= k0Cuts.k0sMaxAbsY)
+    }
+    if (v.pt() < k0Cuts.k0sMinPt || v.pt() >= k0Cuts.k0sMaxPt || std::abs(v.rapidity(0)) >= k0Cuts.k0sMaxAbsY) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/K0s/hCutFlow"), enumValue(K0sSelectionStep::Kinematics));
-    if (v.v0cosPA() < k0Cuts.minCosPA || v.dcaV0daughters() > k0Cuts.maxDCADaughters)
+    }
+    if (v.v0cosPA() < k0Cuts.minCosPA || v.dcaV0daughters() > k0Cuts.maxDCADaughters) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/K0s/hCutFlow"), enumValue(K0sSelectionStep::Topology));
-    if (std::abs(v.dcapostopv()) < k0Cuts.minDCAPosToPV || std::abs(v.dcanegtopv()) < k0Cuts.minDCANegToPV)
+    }
+    if (std::abs(v.dcapostopv()) < k0Cuts.minDCAPosToPV || std::abs(v.dcanegtopv()) < k0Cuts.minDCANegToPV) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/K0s/hCutFlow"), enumValue(K0sSelectionStep::DaughterDca));
-    if (v.v0radius() < k0Cuts.minRadius || v.v0radius() >= k0Cuts.maxRadius)
+    }
+    if (v.v0radius() < k0Cuts.minRadius || v.v0radius() >= k0Cuts.maxRadius) {
       return false;
-    if (std::abs(ctau) > k0Cuts.maxCtau)
+    }
+    if (std::abs(ctau) > k0Cuts.maxCtau) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/K0s/hCutFlow"), enumValue(K0sSelectionStep::DecayGeometry));
-    if (k0Cuts.useArmenterosCut && v.qtarm() <= k0Cuts.armenterosSlope * std::abs(v.alpha()))
+    }
+    if (k0Cuts.useArmenterosCut && v.qtarm() <= k0Cuts.armenterosSlope * std::abs(v.alpha())) {
       return false;
-    if (qa)
+    }
+    if (qa) {
       registry.fill(HIST("QA/K0s/hCutFlow"), enumValue(K0sSelectionStep::Armenteros));
-    if (k0Cuts.rejectLambda && (std::abs(v.mLambda() - o2::constants::physics::MassLambda0) < k0Cuts.lambdaRejectionWindow || std::abs(v.mAntiLambda() - o2::constants::physics::MassLambda0) < k0Cuts.lambdaRejectionWindow))
+    }
+    if (k0Cuts.rejectLambda && (std::abs(v.mLambda() - o2::constants::physics::MassLambda0) < k0Cuts.lambdaRejectionWindow || std::abs(v.mAntiLambda() - o2::constants::physics::MassLambda0) < k0Cuts.lambdaRejectionWindow)) {
       return false;
+    }
     if (qa) {
       registry.fill(HIST("QA/K0s/hCutFlow"), enumValue(K0sSelectionStep::LambdaRejection));
       registry.fill(HIST("QA/K0s/AfterSelection/hMassVsPt"), v.mK0Short(), v.pt());
@@ -520,12 +573,14 @@ struct K0sK0sFlow {
   bool getQ(C const& c, int det, float& qx, float& qy) const
   {
     const int rawIndex = det * QVectorComponents + flow.correctionStep.value + (flow.harmonic.value - 2) * flow.numberOfDetectors.value * QVectorComponents;
-    if (rawIndex < 0 || det < 0)
+    if (rawIndex < 0 || det < 0) {
       return false;
+    }
     const auto index = static_cast<size_t>(rawIndex);
     const auto detectorIndex = static_cast<size_t>(det);
-    if (index >= c.qvecRe().size() || index >= c.qvecIm().size() || detectorIndex >= c.qvecAmp().size() || c.qvecAmp()[detectorIndex] < flow.minQAmplitude.value)
+    if (index >= c.qvecRe().size() || index >= c.qvecIm().size() || detectorIndex >= c.qvecAmp().size() || c.qvecAmp()[detectorIndex] < flow.minQAmplitude.value) {
       return false;
+    }
     qx = c.qvecRe()[index];
     qy = c.qvecIm()[index];
     return std::isfinite(qx) && std::isfinite(qy);
@@ -536,13 +591,15 @@ struct K0sK0sFlow {
     ROOT::Math::Boost boost{mother.BoostToCM()};
     auto rest = boost(d);
     ROOT::Math::XYZVector z(mother.Px(), mother.Py(), mother.Pz());
-    if (z.R() == 0.)
+    if (z.R() == 0.) {
       z.SetZ(1.);
+    }
     z = z.Unit();
     ROOT::Math::XYZVector beam(0., 0., 1.);
     ROOT::Math::XYZVector y = beam.Cross(z);
-    if (y.R() < VectorTolerance)
+    if (y.R() < VectorTolerance) {
       y.SetY(1.);
+    }
     y = y.Unit();
     ROOT::Math::XYZVector x = y.Cross(z).Unit();
     ROOT::Math::XYZVector k(rest.Px(), rest.Py(), rest.Pz());
@@ -569,7 +626,7 @@ struct K0sK0sFlow {
   }
 
   struct LikeSignCandidate {
-    ROOT::Math::PxPyPzMVector p4{};
+    ROOT::Math::PxPyPzMVector p4;
     uint64_t firstTrackId{};
     uint64_t secondTrackId{};
   };
@@ -585,8 +642,9 @@ struct K0sK0sFlow {
     } catch (std::runtime_error const&) {
       return false;
     }
-    if (nCandidates == 0)
+    if (nCandidates == 0) {
       return false;
+    }
     auto const& vertex = lsFitter.getPCACandidate();
     std::array<float, 3> p1{};
     std::array<float, 3> p2{};
@@ -595,52 +653,62 @@ struct K0sK0sFlow {
     ROOT::Math::PxPyPzMVector pion1(p1[0], p1[1], p1[2], o2::constants::physics::MassPionCharged);
     ROOT::Math::PxPyPzMVector pion2(p2[0], p2[1], p2[2], o2::constants::physics::MassPionCharged);
     auto pair = pion1 + pion2;
-    if (pair.Pt() < k0Cuts.k0sMinPt || pair.Pt() >= k0Cuts.k0sMaxPt || std::abs(pair.Rapidity()) >= k0Cuts.k0sMaxAbsY)
+    if (pair.Pt() < k0Cuts.k0sMinPt || pair.Pt() >= k0Cuts.k0sMaxPt || std::abs(pair.Rapidity()) >= k0Cuts.k0sMaxAbsY) {
       return false;
+    }
     const std::array<float, 3> pv{c.posX(), c.posY(), c.posZ()};
     const std::array<float, 3> sv{static_cast<float>(vertex[0]), static_cast<float>(vertex[1]), static_cast<float>(vertex[2])};
     const std::array<float, 3> momentum{static_cast<float>(pair.Px()), static_cast<float>(pair.Py()), static_cast<float>(pair.Pz())};
     const float cosPA = RecoDecay::cpa(pv, sv, momentum);
     const float dcaDaughters = lsFitter.getChi2AtPCACandidate();
-    if (cosPA < k0Cuts.minCosPA || dcaDaughters > k0Cuts.maxDCADaughters)
+    if (cosPA < k0Cuts.minCosPA || dcaDaughters > k0Cuts.maxDCADaughters) {
       return false;
-    if (std::abs(t1.dcaXY()) < k0Cuts.minDCAPosToPV || std::abs(t2.dcaXY()) < k0Cuts.minDCANegToPV)
+    }
+    if (std::abs(t1.dcaXY()) < k0Cuts.minDCAPosToPV || std::abs(t2.dcaXY()) < k0Cuts.minDCANegToPV) {
       return false;
+    }
     const float radius = std::hypot(vertex[0], vertex[1]);
-    if (radius < k0Cuts.minRadius || radius >= k0Cuts.maxRadius)
+    if (radius < k0Cuts.minRadius || radius >= k0Cuts.maxRadius) {
       return false;
+    }
     const float decayLength = std::sqrt((vertex[0] - c.posX()) * (vertex[0] - c.posX()) + (vertex[1] - c.posY()) * (vertex[1] - c.posY()) + (vertex[2] - c.posZ()) * (vertex[2] - c.posZ()));
     const float ctau = decayLength * o2::constants::physics::MassK0Short / pair.P();
-    if (std::abs(ctau) > k0Cuts.maxCtau)
+    if (std::abs(ctau) > k0Cuts.maxCtau) {
       return false;
+    }
     ROOT::Math::XYZVector total(pair.Px(), pair.Py(), pair.Pz());
-    if (total.R() <= 0.)
+    if (total.R() <= 0.) {
       return false;
+    }
     total = total.Unit();
     ROOT::Math::XYZVector daughter1(p1[0], p1[1], p1[2]);
     ROOT::Math::XYZVector daughter2(p2[0], p2[1], p2[2]);
     const double longitudinal1 = daughter1.Dot(total);
     const double longitudinal2 = daughter2.Dot(total);
     const double denominator = longitudinal1 + longitudinal2;
-    if (std::abs(denominator) < VectorTolerance)
+    if (std::abs(denominator) < VectorTolerance) {
       return false;
+    }
     const double alpha = (longitudinal1 - longitudinal2) / denominator;
     const double qt = (daughter1 - longitudinal1 * total).R();
-    if (k0Cuts.useArmenterosCut && qt <= k0Cuts.armenterosSlope * std::abs(alpha))
+    if (k0Cuts.useArmenterosCut && qt <= k0Cuts.armenterosSlope * std::abs(alpha)) {
       return false;
-    candidate = {pair, static_cast<uint64_t>(t1.globalIndex()), static_cast<uint64_t>(t2.globalIndex())};
+    }
+    candidate = {.p4 = pair, .firstTrackId = static_cast<uint64_t>(t1.globalIndex()), .secondTrackId = static_cast<uint64_t>(t2.globalIndex())};
     return true;
   }
 
   void fillLikeSignPair(LikeSignCandidate const& first, LikeSignCandidate const& second, float cent, LikeSignCategory category)
   {
-    if (first.firstTrackId == second.firstTrackId || first.firstTrackId == second.secondTrackId || first.secondTrackId == second.firstTrackId || first.secondTrackId == second.secondTrackId)
+    if (first.firstTrackId == second.firstTrackId || first.firstTrackId == second.secondTrackId || first.secondTrackId == second.firstTrackId || first.secondTrackId == second.secondTrackId) {
       return;
+    }
     ROOT::Math::PxPyPzMVector d1(first.p4.Px(), first.p4.Py(), first.p4.Pz(), o2::constants::physics::MassK0Short);
     ROOT::Math::PxPyPzMVector d2(second.p4.Px(), second.p4.Py(), second.p4.Pz(), o2::constants::physics::MassK0Short);
     auto pair = d1 + d2;
-    if (std::abs(pair.Rapidity()) >= pairCuts.pairMaxAbsY || pair.Pt() < pairCuts.pairMinPt || pair.Pt() >= pairCuts.pairMaxPt || pair.M() < pairCuts.pairMassMin || pair.M() >= pairCuts.pairMassMax)
+    if (std::abs(pair.Rapidity()) >= pairCuts.pairMaxAbsY || pair.Pt() < pairCuts.pairMinPt || pair.Pt() >= pairCuts.pairMaxPt || pair.M() < pairCuts.pairMassMin || pair.M() >= pairCuts.pairMassMax) {
       return;
+    }
     const auto angles = decayAngles(d1, pair);
     const double cosTheta2 = angles[0] * angles[0];
     const double p2Weight = 0.5 * (3. * cosTheta2 - 1.);
@@ -676,8 +744,9 @@ struct K0sK0sFlow {
     // pairs.  Running the DCA fitter over every track pair scales as N^2 and
     // dominated the processing time in high-multiplicity events.
     for (auto const& track : tracksInCollision) {
-      if (!selectDaughter(track, false))
+      if (!selectDaughter(track, false)) {
         continue;
+      }
       const auto localRow = static_cast<int64_t>(track.globalIndex()) - tracks.offset();
       (track.signed1Pt() > 0.f ? positiveTrackRows : negativeTrackRows).push_back(localRow);
     }
@@ -690,40 +759,51 @@ struct K0sK0sFlow {
         for (size_t j = i + 1; j < selectedRows.size(); ++j) {
           auto track2 = tracks.iteratorAt(selectedRows[j]);
           LikeSignCandidate candidate;
-          if (!buildLikeSignCandidate(c, track1, track2, candidate))
+          if (!buildLikeSignCandidate(c, track1, track2, candidate)) {
             continue;
-          if (positive)
+          }
+          if (positive) {
             registry.fill(HIST("K0s/LikeSign/PP/hCounts"), candidate.p4.M(), candidate.p4.Pt(), c.centFT0C());
-          else
+          } else {
             registry.fill(HIST("K0s/LikeSign/MM/hCounts"), candidate.p4.M(), candidate.p4.Pt(), c.centFT0C());
-          if (candidate.p4.M() >= k0Cuts.k0sMassMin && candidate.p4.M() < k0Cuts.k0sMassMax)
+          }
+          if (candidate.p4.M() >= k0Cuts.k0sMassMin && candidate.p4.M() < k0Cuts.k0sMassMax) {
             candidates.push_back(candidate);
+          }
         }
       }
     };
     buildCandidates(positiveTrackRows, positiveCandidates, true);
     buildCandidates(negativeTrackRows, negativeCandidates, false);
-    for (size_t i = 0; i < positiveCandidates.size(); ++i)
-      for (size_t j = i + 1; j < positiveCandidates.size(); ++j)
+    for (size_t i = 0; i < positiveCandidates.size(); ++i) {
+      for (size_t j = i + 1; j < positiveCandidates.size(); ++j) {
         fillLikeSignPair(positiveCandidates[i], positiveCandidates[j], c.centFT0C(), LikeSignCategory::PositivePositive);
-    for (size_t i = 0; i < negativeCandidates.size(); ++i)
-      for (size_t j = i + 1; j < negativeCandidates.size(); ++j)
+      }
+    }
+    for (size_t i = 0; i < negativeCandidates.size(); ++i) {
+      for (size_t j = i + 1; j < negativeCandidates.size(); ++j) {
         fillLikeSignPair(negativeCandidates[i], negativeCandidates[j], c.centFT0C(), LikeSignCategory::NegativeNegative);
-    for (auto const& positive : positiveCandidates)
-      for (auto const& negative : negativeCandidates)
+      }
+    }
+    for (auto const& positive : positiveCandidates) {
+      for (auto const& negative : negativeCandidates) {
         fillLikeSignPair(positive, negative, c.centFT0C(), LikeSignCategory::PositiveNegative);
+      }
+    }
   }
 
   template <typename C, typename V>
   void fillSame(C const& c, V const& v0s, DaughterTracks const& tracks)
   {
-    float cent = c.centFT0C(), cX, cY, aX, aY, tX, tY;
+    float cent = c.centFT0C(), cX = 0.f, cY = 0.f, aX = 0.f, aY = 0.f, tX = 0.f, tY = 0.f;
     bool qok = getQ(c, flow.ft0cId, cX, cY) && getQ(c, flow.ft0aId, aX, aY) && getQ(c, flow.tpcPosId, tX, tY);
-    if (qok)
+    if (qok) {
       fillResolution(c, cent, cX, cY, aX, aY, tX, tY);
+    }
     for (auto const& v : v0s) {
-      if (!selectK0(c, v, tracks, true))
+      if (!selectK0(c, v, tracks, true)) {
         continue;
+      }
       double phi = v.phi(), psi = qok ? std::atan2(cY, cX) / flow.harmonic : 0.;
       double ux = std::cos(flow.harmonic * phi), uy = std::sin(flow.harmonic * phi);
       registry.fill(HIST("K0s/hCounts"), v.mK0Short(), v.pt(), cent);
@@ -736,31 +816,37 @@ struct K0sK0sFlow {
     for (auto const& [v1, v2] : combinations(CombinationsStrictlyUpperIndexPolicy(v0s, v0s))) {
       registry.fill(HIST("QA/K0sK0s/hPairCutFlow"), enumValue(PairSelectionStep::All));
       registry.fill(HIST("QA/K0sK0s/hPairCutFlowVsCent"), enumValue(PairSelectionStep::All), cent);
-      if (v1.posTrackId() == v2.posTrackId() || v1.posTrackId() == v2.negTrackId() || v1.negTrackId() == v2.posTrackId() || v1.negTrackId() == v2.negTrackId())
+      if (v1.posTrackId() == v2.posTrackId() || v1.posTrackId() == v2.negTrackId() || v1.negTrackId() == v2.posTrackId() || v1.negTrackId() == v2.negTrackId()) {
         continue;
+      }
       registry.fill(HIST("QA/K0sK0s/hPairCutFlow"), enumValue(PairSelectionStep::NoSharedDaughters));
       registry.fill(HIST("QA/K0sK0s/hPairCutFlowVsCent"), enumValue(PairSelectionStep::NoSharedDaughters), cent);
-      if (!selectK0(c, v1, tracks, false) || !selectK0(c, v2, tracks, false))
+      if (!selectK0(c, v1, tracks, false) || !selectK0(c, v2, tracks, false)) {
         continue;
+      }
       registry.fill(HIST("QA/K0sK0s/hPairCutFlow"), enumValue(PairSelectionStep::SelectedK0s));
       registry.fill(HIST("QA/K0sK0s/hPairCutFlowVsCent"), enumValue(PairSelectionStep::SelectedK0s), cent);
       ROOT::Math::PxPyPzMVector d1(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short), d2(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short), m = d1 + d2;
       double dr = std::hypot(v1.eta() - v2.eta(), TVector2::Phi_mpi_pi(v1.phi() - v2.phi()));
-      if (pairCuts.enableClosePairRejection && dr < pairCuts.minDeltaR)
+      if (pairCuts.enableClosePairRejection && dr < pairCuts.minDeltaR) {
         continue;
+      }
       registry.fill(HIST("QA/K0sK0s/hPairCutFlow"), enumValue(PairSelectionStep::ClosePair));
       registry.fill(HIST("QA/K0sK0s/hPairCutFlowVsCent"), enumValue(PairSelectionStep::ClosePair), cent);
-      if (std::abs(m.Rapidity()) >= pairCuts.pairMaxAbsY || m.Pt() < pairCuts.pairMinPt || m.Pt() >= pairCuts.pairMaxPt || m.M() < pairCuts.pairMassMin || m.M() >= pairCuts.pairMassMax)
+      if (std::abs(m.Rapidity()) >= pairCuts.pairMaxAbsY || m.Pt() < pairCuts.pairMinPt || m.Pt() >= pairCuts.pairMaxPt || m.M() < pairCuts.pairMassMin || m.M() >= pairCuts.pairMassMax) {
         continue;
+      }
       registry.fill(HIST("QA/K0sK0s/hPairCutFlow"), enumValue(PairSelectionStep::Kinematics));
       registry.fill(HIST("QA/K0sK0s/hPairCutFlowVsCent"), enumValue(PairSelectionStep::Kinematics), cent);
       const bool signalPair = v1.mK0Short() >= k0Cuts.k0sMassMin && v1.mK0Short() < k0Cuts.k0sMassMax && v2.mK0Short() >= k0Cuts.k0sMassMin && v2.mK0Short() < k0Cuts.k0sMassMax;
       const auto side1 = sidebandRegion(v1.mK0Short());
       const auto side2 = sidebandRegion(v2.mK0Short());
-      if (side1 != SidebandRegion::Outside && side2 != SidebandRegion::Outside)
+      if (side1 != SidebandRegion::Outside && side2 != SidebandRegion::Outside) {
         fillSidebandPair(d1, m, cent, side1, side2);
-      if (!signalPair)
+      }
+      if (!signalPair) {
         continue;
+      }
       registry.fill(HIST("QA/K0sK0s/hPairCutFlow"), enumValue(PairSelectionStep::SignalMass));
       registry.fill(HIST("QA/K0sK0s/hPairCutFlowVsCent"), enumValue(PairSelectionStep::SignalMass), cent);
       registry.fill(HIST("QA/K0sK0s/SameEvent/hMass"), m.M());
@@ -789,8 +875,9 @@ struct K0sK0sFlow {
 
   void processSame(Collisions::iterator const& collision, aod::V0Datas const& v0s, DaughterTracks const& tracks)
   {
-    if (!selectEvent(collision, true))
+    if (!selectEvent(collision, true)) {
       return;
+    }
     fillSame(collision, v0s, tracks);
   }
   PROCESS_SWITCH(K0sK0sFlow, processSame, "same-event K0S-K0S and flow", true);
@@ -799,20 +886,25 @@ struct K0sK0sFlow {
   {
     MixingBinning binning{{axisMixZvtx, axisMixCent}, true};
     for (auto const& [c1, c2] : selfCombinations(binning, pairCuts.mixingDepth, -1, collisions, collisions)) {
-      if (c1.index() == c2.index())
+      if (c1.index() == c2.index()) {
         continue;
-      if (!selectEvent(c1, false) || !selectEvent(c2, false))
+      }
+      if (!selectEvent(c1, false) || !selectEvent(c2, false)) {
         continue;
+      }
       auto s1 = v0s.sliceBy(perCollisionV0, c1.globalIndex());
       auto s2 = v0s.sliceBy(perCollisionV0, c2.globalIndex());
-      if (s1.size() == 0 || s2.size() == 0)
+      if (s1.size() == 0 || s2.size() == 0) {
         continue;
+      }
       for (auto const& [v1, v2] : combinations(CombinationsFullIndexPolicy(s1, s2))) {
-        if (!selectK0(c1, v1, tracks, false) || !selectK0(c2, v2, tracks, false) || v1.mK0Short() < k0Cuts.k0sMassMin || v1.mK0Short() >= k0Cuts.k0sMassMax || v2.mK0Short() < k0Cuts.k0sMassMin || v2.mK0Short() >= k0Cuts.k0sMassMax)
+        if (!selectK0(c1, v1, tracks, false) || !selectK0(c2, v2, tracks, false) || v1.mK0Short() < k0Cuts.k0sMassMin || v1.mK0Short() >= k0Cuts.k0sMassMax || v2.mK0Short() < k0Cuts.k0sMassMin || v2.mK0Short() >= k0Cuts.k0sMassMax) {
           continue;
+        }
         ROOT::Math::PxPyPzMVector d1(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short), d2(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short), m = d1 + d2;
-        if (std::abs(m.Rapidity()) >= pairCuts.pairMaxAbsY || m.Pt() < pairCuts.pairMinPt || m.Pt() >= pairCuts.pairMaxPt || m.M() < pairCuts.pairMassMin || m.M() >= pairCuts.pairMassMax)
+        if (std::abs(m.Rapidity()) >= pairCuts.pairMaxAbsY || m.Pt() < pairCuts.pairMinPt || m.Pt() >= pairCuts.pairMaxPt || m.M() < pairCuts.pairMassMin || m.M() >= pairCuts.pairMassMax) {
           continue;
+        }
         auto ang = decayAngles(d1, m);
         registry.fill(HIST("K0sK0s/MixedEvent/hCounts"), m.M(), m.Pt(), c1.centFT0C(), ang[0], ang[1]);
         const double cosTheta = ang[0];
