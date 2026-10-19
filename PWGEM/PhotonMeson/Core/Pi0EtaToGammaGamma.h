@@ -99,6 +99,8 @@ struct Pi0EtaToGammaGamma {
   o2::framework::ConfigurableAxis ConfEPBins{"ConfEPBins", {o2::framework::VARIABLE_WIDTH, -o2::constants::math::PIHalf, -o2::constants::math::PIQuarter, 0.0f, +o2::constants::math::PIQuarter, +o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
   o2::framework::ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {o2::framework::VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
   o2::framework::Configurable<bool> cfgSparseFullAxes{"cfgSparseFullAxes", false, "add event plane, occupancy and z-vertex axes to Pair/same/hs and Pair/mix/hs"};
+  o2::framework::Configurable<int> cfgNbinsMass{"cfgNbinsMass", 400, "number of bins for the mass axis in same and mixed events"};
+  o2::framework::Configurable<std::vector<double>> cfgMassBinRange{"cfgMassBinRange", {0., 0.8}, "range for the mass-axis in GeV/c2"};
 
   o2::framework::Configurable<int> cfgAlphaMesonCut{"cfgAlphaMesonCut", 0, "flag for photon energy asymmetry distribution cut: 0: no cut, 1: cut specific value, 2: cut depending on pT"};
   o2::framework::Configurable<float> cfgAlphaMeson{"cfgAlphaMeson", 0.65, "photon energy asymmetry distribution parameter for specific value cut"};
@@ -428,9 +430,9 @@ struct Pi0EtaToGammaGamma {
     std::vector<double> epBinsForHs(ep_bin_edges.begin(), ep_bin_edges.end());
     std::vector<double> vtxBinsForHs(zvtx_bin_edges.begin(), zvtx_bin_edges.end());
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMDalitzEE) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "ee#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs);
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "ee#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs, cfgNbinsMass, {cfgMassBinRange->at(0), cfgMassBinRange->at(1)});
     } else {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "#gamma#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs);
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "#gamma#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs, cfgNbinsMass, {cfgMassBinRange->at(0), cfgMassBinRange->at(1)});
     }
     DefineEMEventCut();
     DefinePCMCut();
