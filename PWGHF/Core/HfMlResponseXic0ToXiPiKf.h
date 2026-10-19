@@ -22,7 +22,7 @@
 #include "Tools/ML/MlResponse.h"
 
 #include <cstdint>
-#include <vector>
+#include <vector> // IWYU pragma: keep
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -37,7 +37,7 @@
 // by calling the corresponding GETTER from OBJECT
 #define CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesXic0ToXiPiKf::FEATURE): {    \
-    inputFeatures.emplace_back(OBJECT.GETTER());                      \
+    inputFeatures.emplace_back((OBJECT).GETTER());                    \
     break;                                                            \
   }
 
@@ -61,6 +61,7 @@ namespace o2::analysis
 {
 
 enum class InputFeaturesXic0ToXiPiKf : uint8_t {
+  // Existing feature keys retained for backwards compatibility.
   tpcNSigmaPiFromLambda,
   tpcNSigmaPiFromCasc,
   tpcNSigmaPiFromCharmBaryon,
@@ -75,6 +76,7 @@ enum class InputFeaturesXic0ToXiPiKf : uint8_t {
   chi2TopoCascToXic,
   cosPaCascToXic,
   decayLenXYCasc,
+  // Remaining features used by the local PbPb Transformer.
   decayLenXYXic,
   chi2TopoXicToPv,
   chi2TopoPiFromXicToPv,
