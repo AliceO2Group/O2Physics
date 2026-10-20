@@ -31,6 +31,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
@@ -39,7 +40,7 @@
 #include <TRandom.h>
 #include <TString.h>
 
-#include <RtypesCore.h>
+#include <Rtypes.h>
 
 #include <array>
 #include <cmath>
@@ -611,9 +612,9 @@ struct FactorialMomentsTask {
   PROCESS_SWITCH(FactorialMomentsTask, processRun2, "for RUN2", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FactorialMomentsTask>(cfgc),
+    adaptAnalysisTask<FactorialMomentsTask>(context),
   };
 }
