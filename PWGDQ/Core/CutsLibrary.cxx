@@ -3702,6 +3702,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "pairD0Topology") {
+    cut->AddCut(GetAnalysisCut("pairD0Topology"));
+    return cut;
+  }
+
   if (nameStr == "pairD0HighPt1") {
     cut->AddCut(GetAnalysisCut("pairLxyzProjected3sigma"));
     cut->AddCut(GetAnalysisCut("pairPtLow5"));
@@ -3923,6 +3928,24 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "alice3StandardTrackD0") {
+    cut->AddCut(GetAnalysisCut("alice3StandardKineD0"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    return cut;
+  }
+
+  if (nameStr == "alice3StandardTrackTOFAcceptanceD0") {
+    cut->AddCut(GetAnalysisCut("alice3KineTOFAcceptanceD0"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    return cut;
+  }
+
+  if (nameStr == "alice3StandardTrackRICHAcceptanceD0") {
+    cut->AddCut(GetAnalysisCut("alice3KineRICHAcceptanceD0"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    return cut;
+  }
+
   if (nameStr == "alice3TightDCATrack") {
     cut->AddCut(GetAnalysisCut("alice3StandardKine"));
     cut->AddCut(GetAnalysisCut("alice3TrackQualityTightDCA"));
@@ -4105,6 +4128,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (nameStr == "alice3LambdaCQualityCuts") {
     cut->AddCut(GetAnalysisCut("alice3LambdaCKine"));
     cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    return cut;
+  }
+
+  if (nameStr == "alice3TOFPIDPi") {
+    cut->AddCut(GetAnalysisCut("alice3iTOFPIDPi"));
+    cut->AddCut(GetAnalysisCut("alice3oTOFPIDPi"));
+    return cut;
+  }
+
+  if (nameStr == "alice3TOFPIDKa") {
+    cut->AddCut(GetAnalysisCut("alice3iTOFPIDKa"));
+    cut->AddCut(GetAnalysisCut("alice3oTOFPIDKa"));
     return cut;
   }
 
@@ -7083,6 +7118,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "pairD0Topology") {
+    cut->AddCut(VarManager::kCosPointingAngle, 0.9, 1.0);
+    cut->AddCut(VarManager::kD0DcaDaughters, 0.0, 0.03);
+    cut->AddCut(VarManager::kD0ImpParProduct, -1000.0, 0.0);
+    cut->AddCut(VarManager::kDCAxy1, -0.1, 0.1);
+    cut->AddCut(VarManager::kDCAxy2, -0.1, 0.1);
+    return cut;
+  }
+
   if (nameStr == "pairJpsi") {
     cut->AddCut(VarManager::kMass, 2.8, 3.3);
     return cut;
@@ -7336,6 +7380,24 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (nameStr == "alice3KineRICHAcceptance") {
     cut->AddCut(VarManager::kPt, 0.1, 1000.0);
     cut->AddCut(VarManager::kEta, -0.8, 0.8); // RICH acceptance in v3b geomety
+    return cut;
+  }
+
+  if (nameStr == "alice3StandardKineD0") {
+    cut->AddCut(VarManager::kPt, 0.7, 1000.0);
+    cut->AddCut(VarManager::kEta, -2.5, 2.5); // Total tracker acceptance in v3b geomety
+    return cut;
+  }
+
+  if (nameStr == "alice3KineTOFAcceptanceD0") {
+    cut->AddCut(VarManager::kPt, 0.7, 1000.0);
+    cut->AddCut(VarManager::kEta, -2.0, 2.0); // TOF acceptance in v3b geomety
+    return cut;
+  }
+
+  if (nameStr == "alice3KineRICHAcceptanceD0") {
+    cut->AddCut(VarManager::kPt, 0.7, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.8, 0.8); // TOF acceptance in v3b geomety
     return cut;
   }
 

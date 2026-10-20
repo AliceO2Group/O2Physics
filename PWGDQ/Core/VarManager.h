@@ -874,6 +874,8 @@ class VarManager : public TObject
     kQuadDCAsigXYZ,
     kSignQuadDCAsigXY,
     kCosPointingAngle,
+    kD0ImpParProduct,
+    kD0DcaDaughters,
     kImpParXYJpsi,
     kImpParXYK,
     kDCATrackProd,
@@ -7688,6 +7690,14 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
+
+  if constexpr (pairType == kDecayToKPi) {
+    if constexpr ((fillMap & TrackDCA) > 0 || (fillMap & ReducedTrackBarrel) > 0) {
+      values[kDCAxy1] = t1.dcaXY();
+      values[kDCAxy2] = t2.dcaXY();
+      values[kD0ImpParProduct] = t1.dcaXY() * t2.dcaXY();
+    }
+  }
 }
 
 template <typename M, typename T>
@@ -7792,7 +7802,17 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
         v1 = {trackParVar0.getPt(), trackParVar0.getEta(), trackParVar0.getPhi(), m1};
         v2 = {trackParVar1.getPt(), trackParVar1.getEta(), trackParVar1.getPhi(), m2};
         v12 = v1 + v2;
+
+        const auto pos1 = trackParVar0.getXYZGlo();
+        const auto pos2 = trackParVar1.getXYZGlo();
+
+        const double dx = pos1.X() - pos2.X();
+        const double dy = pos1.Y() - pos2.Y();
+        const double dz = pos1.Z() - pos2.Z();
+
+        values[kD0DcaDaughters] = std::sqrt(dx * dx + dy * dy + dz * dz);
       }
+
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
                                 std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
