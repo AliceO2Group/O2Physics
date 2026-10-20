@@ -31,9 +31,9 @@
 #include <Framework/AlgorithmSpec.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/ControlService.h>
 #include <Framework/DataProcessorSpec.h>
+#include <Framework/ProcessingContext.h>
 #include <Framework/TableBuilder.h>
 #include <Framework/runDataProcessing.h>
 
@@ -114,9 +114,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const&)
 {
   return WorkflowSpec{
     DataProcessorSpec{
-      "jv02-dmeson-toy",
-      Inputs{},
-      Outputs{
+      .name = "jv02-dmeson-toy",
+      .inputs = {},
+      .outputs = {
         OutputForTable<aod::BCs>::spec(),
         OutputForTable<aod::Collisions>::spec(),
         OutputForTable<aod::EvSels>::spec(),
@@ -130,7 +130,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const&)
         OutputSpec{"TFN", "TFNumber"},
         OutputSpec{"TFF", "TFFilename"},
       },
-      AlgorithmSpec{adaptStateless([](ProcessingContext& pc) {
+      .algorithm = AlgorithmSpec{adaptStateless([](ProcessingContext& pc) {
         JV02DmesonToy toy;
         toy.bcs.resetCursor(pc.outputs().make<TableBuilder>(OutputForTable<aod::BCs>::ref()));
         toy.collisions.resetCursor(pc.outputs().make<TableBuilder>(OutputForTable<aod::Collisions>::ref()));

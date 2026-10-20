@@ -38,11 +38,13 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TAxis.h>
 #include <TProfile2D.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <random>
@@ -52,11 +54,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-
-#define V02_FILL_QA(NAME, STEP)                         \
-  for (int qaBin = 1; qaBin <= (STEP); ++qaBin) {       \
-    histos.fill(HIST(NAME), static_cast<float>(qaBin)); \
-  }
 
 struct JV02DmesonAnalysis {
   enum Detector {
@@ -286,7 +283,9 @@ struct JV02DmesonAnalysis {
     float cent = -1.f;
     float xy = 0.f;
     const int step = passedEventStep(collision, cent);
-    V02_FILL_QA("hadron/hEventQa", step);
+    for (int qaBin = 1; qaBin <= step; ++qaBin) {
+      histos.fill(HIST("hadron/hEventQa"), static_cast<float>(qaBin));
+    }
     const int cfId = cfCollisionIndex(refs);
     if (step < StepAccepted || cfId < 0 || !referenceProduct(collision, xy)) {
       return;
@@ -304,7 +303,7 @@ struct JV02DmesonAnalysis {
     histos.fill(HIST("hadron/Prof_XY_sub"), static_cast<float>(sample), cent, xy);
     const int nBins = mHadPtAxis->GetNbins();
     for (int ibin = 1; ibin <= nBins; ++ibin) {
-      const float pt = static_cast<float>(mHadPtAxis->GetBinCenter(ibin));
+      const auto pt = static_cast<float>(mHadPtAxis->GetBinCenter(ibin));
       const float z = mHadCounts[ibin - 1] / nch;
       histos.fill(HIST("hadron/Prof_Z"), cent, pt, z);
       histos.fill(HIST("hadron/Prof_XYZ"), cent, pt, xy * z);
@@ -319,7 +318,9 @@ struct JV02DmesonAnalysis {
     float cent = -1.f;
     float xy = 0.f;
     const int step = passedEventStep(collision, cent);
-    V02_FILL_QA("D0/hEventQa", step);
+    for (int qaBin = 1; qaBin <= step; ++qaBin) {
+      histos.fill(HIST("D0/hEventQa"), static_cast<float>(qaBin));
+    }
     const int cfId = cfCollisionIndex(refs);
     if (step < StepAccepted || cfId < 0 || !referenceProduct(collision, xy)) {
       return;
@@ -343,7 +344,7 @@ struct JV02DmesonAnalysis {
     }
     histos.fill(HIST("D0/hEventQa"), 6.f);
     const int sample = mSampleDist(mRng);
-    const float sampleCoord = static_cast<float>(sample);
+    const auto sampleCoord = static_cast<float>(sample);
     histos.fill(HIST("D0/hEvents"), cent);
     histos.fill(HIST("D0/Prof_XY"), cent, xy);
     histos.fill(HIST("D0/Prof_Nch"), cent, nch);
