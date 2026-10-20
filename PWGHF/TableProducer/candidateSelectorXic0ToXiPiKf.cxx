@@ -128,16 +128,15 @@ struct HfCandidateSelectorXic0ToXiPiKf {
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {&hf_cuts_ml::Cuts[0][0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
-  Configurable<std::vector<std::string>> namesInputFeatures{
-    "namesInputFeatures",
-    std::vector<std::string>{"fDecayLenXYXic", "fXicChi2OverNdf", "fChi2TopoXicToPv", "fDcaCharmBaryonDau",
-                             "fKfDcaXYPiFromXic", "fChi2TopoPiFromXicToPv", "fKfptPiFromXic", "fDecayLenXYCasc",
-                             "fCascChi2OverNdf", "fChi2TopoCascToPv", "fChi2TopoCascToXic", "fCosPaCascToPv",
-                             "fCosPaCascToXic", "fDcaCascDau", "fKfDcaXYCascToPv", "fTpcNSigmaPiFromCasc",
-                             "fDcaXYToPvCascDau", "fDecayLenXYLambda", "fV0Chi2OverNdf", "fChi2TopoV0ToPv",
-                             "fChi2TopoV0ToCasc", "fCosPaV0ToPv", "fCosPaV0ToCasc", "fDcaV0Dau",
-                             "fDcaXYToPvV0Dau0", "fDcaXYToPvV0Dau1", "fTpcNSigmaPrFromLambda", "fTpcNSigmaPiFromLambda"},
-    "Names/order of the 28 local Transformer input features"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures",
+                                                            std::vector<std::string>{"fDecayLenXYXic", "fXicChi2OverNdf", "fChi2TopoXicToPv", "fDcaCharmBaryonDau",
+                                                                                     "fKfDcaXYPiFromXic", "fChi2TopoPiFromXicToPv", "fKfptPiFromXic", "fDecayLenXYCasc",
+                                                                                     "fCascChi2OverNdf", "fChi2TopoCascToPv", "fChi2TopoCascToXic", "fCosPaCascToPv",
+                                                                                     "fCosPaCascToXic", "fDcaCascDau", "fKfDcaXYCascToPv", "fTpcNSigmaPiFromCasc",
+                                                                                     "fDcaXYToPvCascDau", "fDecayLenXYLambda", "fV0Chi2OverNdf", "fChi2TopoV0ToPv",
+                                                                                     "fChi2TopoV0ToCasc", "fCosPaV0ToPv", "fCosPaV0ToCasc", "fDcaV0Dau",
+                                                                                     "fDcaXYToPvV0Dau0", "fDcaXYToPvV0Dau1", "fTpcNSigmaPrFromLambda", "fTpcNSigmaPiFromLambda"},
+                                                            "Names of ML model input features"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};

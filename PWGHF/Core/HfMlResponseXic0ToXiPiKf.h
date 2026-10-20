@@ -22,7 +22,7 @@
 #include "Tools/ML/MlResponse.h"
 
 #include <cstdint>
-#include <vector> // IWYU pragma: keep
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
