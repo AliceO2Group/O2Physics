@@ -40,7 +40,6 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TFile.h>
 #include <TH1.h>
 #include <THn.h>
 #include <TNamed.h>
@@ -147,8 +146,10 @@ struct EnergyFlowGfw {
   Configurable<float> cfgZdcResponseZPC{"cfgZdcResponseZPC", 1.f, "ZPC efficiency/acceptance response factor alpha; corrected energy is E_ZPC/alpha_ZPC"};
   Configurable<float> cfgZdcMaxAbsTimeForQa{"cfgZdcMaxAbsTimeForQa", 100.f, "Maximum absolute ZDC time considered available in QA; excludes missing-time sentinels"};
 
-  Configurable<std::string> efficiencyPath{"efficiencyPath", "", "CCDB path or local ROOT file containing a 4D efficiency-correction THn"};
-  Configurable<bool> efficiencyFromLocalFile{"efficiencyFromLocalFile", false, "Load efficiencyPath from a local ROOT file"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgEfficiencyPath{"cfgEfficiencyPath", "", "CCDB path to efficiency object"};
+    Configurable<bool> cfgUsePIDEfficiencies{"cfgUsePIDEfficiencies", false, "Use separate charged, pion, kaon, and proton efficiencies"};
+  } cfgEfficiency;
   Configurable<std::string> acceptancePath{"acceptancePath", "", "CCDB path to GFW acceptance weights"};
   Configurable<bool> acceptanceRunByRun{"acceptanceRunByRun", false, "Load acceptance weights from the RunByRun subdirectory"};
 
@@ -199,8 +200,9 @@ struct EnergyFlowGfw {
   std::vector<bool> zeroHarmonicConfigs;
   int gfwMask = 0;
 
-  std::unique_ptr<THn> localEfficiency;
-  THn* efficiency = nullptr;
+  TH1* efficiency = nullptr;
+  std::vector<TH1*> pidEfficiencies;
+  bool efficiencyLoaded = false;
   GFWWeights* acceptance = nullptr;
   int acceptanceRunNumber = -1;
 
@@ -640,37 +642,33 @@ struct EnergyFlowGfw {
 
   void loadEfficiency(uint64_t timestamp)
   {
-    if (efficiencyPath.value.empty()) {
-      efficiency = nullptr;
+    if (efficiencyLoaded) {
       return;
     }
-    if (efficiencyFromLocalFile) {
-      if (localEfficiency) {
-        efficiency = localEfficiency.get();
-        return;
-      }
-      std::unique_ptr<TFile> input(TFile::Open(efficiencyPath.value.c_str(), "READ"));
-      if (!input || input->IsZombie()) {
-        LOGF(fatal, "Could not open efficiency file %s", efficiencyPath.value.c_str());
-        return;
-      }
-      auto* source = dynamic_cast<THn*>(input->Get("ccdb_object"));
-      if (!source || source->GetNdimensions() != 4) {
-        LOGF(fatal, "Efficiency object must be a 4D THn with axes eta, pT, centrality, z-vtx");
-      }
-      localEfficiency.reset(dynamic_cast<THn*>(source->Clone("eecEfficiency")));
-      if (!localEfficiency) {
-        LOGF(fatal, "Could not clone the efficiency object from %s", efficiencyPath.value.c_str());
-      }
-      efficiency = localEfficiency.get();
+    if (cfgEfficiency.cfgEfficiencyPath.value.empty()) {
+      efficiencyLoaded = true;
       return;
     }
-    if (!efficiency || !ccdb->isCachedObjectValid(efficiencyPath.value, timestamp)) {
-      efficiency = ccdb->getForTimeStamp<THnT<float>>(efficiencyPath.value, timestamp);
-      if (!efficiency || efficiency->GetNdimensions() != 4) {
-        LOGF(fatal, "Could not load a 4D efficiency correction from %s", efficiencyPath.value.c_str());
+
+    if (!cfgEfficiency.cfgUsePIDEfficiencies) {
+      efficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency.cfgEfficiencyPath.value, timestamp);
+      if (!efficiency) {
+        LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
+    } else {
+      static constexpr std::array<const char*, EfficiencySpeciesCount> EfficiencySpeciesNames{"ch", "pi", "ka", "pr"};
+      pidEfficiencies.reserve(EfficiencySpeciesNames.size());
+      for (const auto& speciesName : EfficiencySpeciesNames) {
+        const std::string path = cfgEfficiency.cfgEfficiencyPath.value + "/" + speciesName;
+        pidEfficiencies.push_back(ccdb->getForTimeStamp<TH1D>(path, timestamp));
+        if (!pidEfficiencies.back()) {
+          LOGF(fatal, "Could not load PID efficiency histogram from %s", path.c_str());
+        }
+        LOGF(info, "Loaded PID efficiency histogram from %s", path.c_str());
       }
     }
+    efficiencyLoaded = true;
   }
 
   void loadAcceptance(uint64_t timestamp, int runNumber)
@@ -696,17 +694,20 @@ struct EnergyFlowGfw {
     acceptanceRunNumber = runNumber;
   }
 
-  double efficiencyWeight(float eta, float pt, float centrality, float posZ) const
+  double getEfficiency(float pt, int pid) const
   {
-    if (!efficiency) {
+    TH1* efficiencyHistogram = efficiency;
+    if (cfgEfficiency.cfgUsePIDEfficiencies.value) {
+      if (pidEfficiencies.empty()) {
+        return 1.;
+      }
+      efficiencyHistogram = pidEfficiencies[pid];
+    } else if (!efficiencyHistogram) {
       return 1.;
     }
-    std::array<int, 4> bins{
-      efficiency->GetAxis(0)->FindBin(eta),
-      efficiency->GetAxis(1)->FindBin(pt),
-      efficiency->GetAxis(2)->FindBin(centrality),
-      efficiency->GetAxis(3)->FindBin(posZ)};
-    return efficiency->GetBinContent(bins.data());
+
+    const double value = efficiencyHistogram->GetBinContent(efficiencyHistogram->FindBin(pt));
+    return value == 0. ? -1. : 1. / value;
   }
 
   template <typename TTrack>
@@ -853,9 +854,10 @@ struct EnergyFlowGfw {
 
     gfw->Clear();
     for (const auto& track : tracks) {
-      const int pid = energy.weightMode.value == PtWeight ? Unidentified : particleId(track);
+      const bool needsParticleId = energy.weightMode.value != PtWeight || cfgEfficiency.cfgUsePIDEfficiencies;
+      const int pid = needsParticleId ? particleId(track) : Unidentified;
       const double et = transverseEnergy(track, pid);
-      const double weff = efficiencyWeight(track.eta(), track.pt(), centrality, collision.posZ());
+      const double weff = getEfficiency(track.pt(), pid);
       const double wacc = acceptance ? acceptance->getNUA(track.phi(), track.eta(), collision.posZ()) : 1.;
       if (!std::isfinite(et) || !std::isfinite(weff) || !std::isfinite(wacc) || et <= 0. || weff <= 0. || wacc <= 0.) {
         continue;
