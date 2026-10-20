@@ -121,15 +121,21 @@ void FlowJSPCAnalysis::calculateCorrelators(const int fCentBin)
     fillHistograms(fCentBin, j, correlationNum, correlationDenom, weightCorrelationNum, weightCorrelationDenom);
   }
 
-  // N_m = Re(Q_{0,1}); weight M_m. 3SPC → fN3, 4SPC → fN4.
+  // Effective multiplicity N_m (arXiv:2606.10258 Eq. IV.2 / manuscript eq:Neff):
+  // 1/N_m^{m-1} = sum_i M_m(N_i) N_i^{-(m-1)} / sum_i M_m(N_i),
+  // with M_m = N(N-1)...(N-m+1) = fCorrelDenoms[m-1] and N = Re(Q_{0,1}).
+  // TProfile stores <N^{-(m-1)}>_comb; invert offline as N_m = content^{-1/(m-1)}.
+  // 3SPC → fN3 (m=3); 4SPC → fN4 (m=4).
   if (mHistRegistry && qvecs) {
     const double nSel = qvecs->QvectorQC[0][1].Re();
     const float centX = static_cast<float>(fCentBin) + 0.5f;
     if (nSel > 0.0 && std::isfinite(nSel)) {
       if (mWhichSPC == 0 && fCorrelDenoms[2] > 0.0) {
-        mHistRegistry->fill(HIST("fN3"), centX, nSel, fCorrelDenoms[2]);
+        const double invN3Pow = 1.0 / (nSel * nSel); // N^{-(3-1)}
+        mHistRegistry->fill(HIST("fN3"), centX, invN3Pow, fCorrelDenoms[2]);
       } else if (mWhichSPC == 1 && fCorrelDenoms[3] > 0.0) {
-        mHistRegistry->fill(HIST("fN4"), centX, nSel, fCorrelDenoms[3]);
+        const double invN4Pow = 1.0 / (nSel * nSel * nSel); // N^{-(4-1)}
+        mHistRegistry->fill(HIST("fN4"), centX, invN4Pow, fCorrelDenoms[3]);
       }
     }
   }
