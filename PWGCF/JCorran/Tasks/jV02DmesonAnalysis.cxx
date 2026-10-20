@@ -53,9 +53,9 @@
 using namespace o2;
 using namespace o2::framework;
 
-#define V02_FILL_QA(NAME, STEP)                            \
-  for (int qaBin = 1; qaBin <= (STEP); ++qaBin) {          \
-    histos.fill(HIST(NAME), static_cast<float>(qaBin));   \
+#define V02_FILL_QA(NAME, STEP)                         \
+  for (int qaBin = 1; qaBin <= (STEP); ++qaBin) {       \
+    histos.fill(HIST(NAME), static_cast<float>(qaBin)); \
   }
 
 struct JV02DmesonAnalysis {
