@@ -180,6 +180,8 @@ DECLARE_SOA_COLUMN(DCACascDaughters, dcaCascDaughters, float);
 DECLARE_SOA_COLUMN(DCAv0topv, dcav0topv, float);
 DECLARE_SOA_COLUMN(V0PA, v0PA, float);
 DECLARE_SOA_COLUMN(CascPA, cascPA, float);
+DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);
+DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float);
 
 DECLARE_SOA_COLUMN(IsXiMinus, isXiMinus, bool);
 DECLARE_SOA_COLUMN(IsXiPlus, isXiPlus, bool);
@@ -231,6 +233,8 @@ DECLARE_SOA_TABLE(CascMLCandidates, "AOD", "CAMLCANDIDATES",
                   cascmlcandidates::DCAv0topv,
                   cascmlcandidates::V0PA,
                   cascmlcandidates::CascPA,
+                  cascmlcandidates::BachBaryonCosPA,
+                  cascmlcandidates::BachBaryonDCAxyToPV,
                   cascmlcandidates::IsXiMinus,
                   cascmlcandidates::IsXiPlus,
                   cascmlcandidates::IsOmegaMinus,
