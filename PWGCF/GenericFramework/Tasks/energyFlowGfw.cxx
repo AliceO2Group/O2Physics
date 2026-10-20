@@ -18,6 +18,7 @@
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -136,6 +137,7 @@ struct EnergyFlowGfw {
   Configurable<float> cfgMaxCentrality{"cfgMaxCentrality", 100.f, "Maximum accepted centrality percentile"};
   Configurable<bool> cfgFillEfficiency{"fillEfficiency", false, "Fill MC tracking efficiency; ignored by data processes"};
   Configurable<bool> cfgFillAcceptance{"fillAcceptance", false, "Fill GFW acceptance weights instead of running the reconstructed analysis"};
+  Configurable<bool> cfgUseRun2EventSelectionWithoutZdc{"cfgUseRun2EventSelectionWithoutZdc", false, "For Run 2 data, require kINT7 and every CCDB-enabled barrel sel7 criterion except the ZDC beam-beam criteria; retain the ZDC beam-gas vetoes"};
 
   Configurable<float> cfgSpectatorEnergyPerNucleon{"cfgSpectatorEnergyPerNucleon", 1.f, "ZDC energy corresponding to one spectator nucleon"};
   Configurable<float> cfgMaxTotalSpectators{"cfgMaxTotalSpectators", 500.f, "Maximum accepted spectator count from ZNA+ZNC+ZPA+ZPC"};
@@ -601,6 +603,41 @@ struct EnergyFlowGfw {
     return true;
   }
 
+  static bool isZdcBeamBeamSelectionFlag(int flag)
+  {
+    return flag == aod::evsel::kIsBBZNA || flag == aod::evsel::kIsBBZNC || flag == aod::evsel::kIsBBZAC;
+  }
+
+  template <typename TBCs, typename TCollision>
+  bool run2EventSelected(TCollision const& collision)
+  {
+    if (!collision.alias_bit(kINT7)) {
+      return false;
+    }
+    if (!cfgUseRun2EventSelectionWithoutZdc) {
+      return collision.sel7();
+    }
+    if (!collision.has_foundBC()) {
+      return false;
+    }
+
+    const auto& bc = collision.template foundBC_as<TBCs>();
+    auto* selectionParameters = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
+    if (!selectionParameters) {
+      LOGF(fatal, "Could not load the Run 2 event-selection parameters");
+    }
+    const bool* enabledSelections = selectionParameters->getSelection(0);
+    for (int flag = 0; flag < aod::evsel::kNsel; ++flag) {
+      if (isZdcBeamBeamSelectionFlag(flag)) {
+        continue;
+      }
+      if (enabledSelections[flag] && !collision.selection_bit(flag)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void loadEfficiency(uint64_t timestamp)
   {
     if (efficiencyPath.value.empty()) {
@@ -868,7 +905,7 @@ struct EnergyFlowGfw {
   void processRun2(CollisionsRun2::iterator const& collision, Tracks const& tracks, BCsRun2 const&, aod::Zdcs const&)
   {
     float spectators = -1.f;
-    if (!eventSelected<BCsRun2>(collision, collision.alias_bit(kINT7) && collision.sel7(), static_cast<float>(tracks.size()), collision.centRun2V0M(), spectators)) {
+    if (!eventSelected<BCsRun2>(collision, run2EventSelected<BCsRun2>(collision), static_cast<float>(tracks.size()), collision.centRun2V0M(), spectators)) {
       return;
     }
     if (cfgFillAcceptance) {
