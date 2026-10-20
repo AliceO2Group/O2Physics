@@ -270,6 +270,19 @@ struct nucleiInJets {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
   TRandom3 randUniform;
+  UInt_t mcClosureSplitSeedEffective = 1;
+
+  bool useTrainingHistForMcCollision(int64_t mcCollisionId)
+  {
+    // Use the MC collision ID as part of the seed, so both process functions
+    // obtain the same decision without storing one entry per collision.
+    UInt_t collisionSeed = mcClosureSplitSeedEffective ^ static_cast<UInt_t>(mcCollisionId);
+    if (collisionSeed == 0U) {
+      collisionSeed = 1U;
+    }
+    TRandom3 collisionRandom(collisionSeed);
+    return collisionRandom.Rndm() < mcClosureTrainingFraction;
+  }
 
   void init(o2::framework::InitContext&)
   {
@@ -281,6 +294,10 @@ struct nucleiInJets {
       LOGP(fatal, "mcClosureTrainingFraction must be between 0 and 1, inclusive");
     }
     randUniform.SetSeed(mcClosureSplitSeed);
+    mcClosureSplitSeedEffective = randUniform.Integer(0xffffffffU);
+    if (mcClosureSplitSeedEffective == 0U) {
+      mcClosureSplitSeedEffective = 1U;
+    }
     jetHist.print();
     // const AxisSpec PtAxis = {100, 0, 10.0};
     const AxisSpec PtJetAxis = {100, 0, 100.0};
@@ -983,31 +1000,33 @@ struct nucleiInJets {
   template <bool IsMC, typename TracksType, typename JetType>
   void fillTrackInfo(const TracksType& trk, const JetType& jets, std::vector<float>& leadingJetPtEtaPhi, float backgroundRho = -1.0f)
   {
-    if (isWithLeadingJet && leadingJetPtEtaPhi.size() >= 3 && isConeAxisAccepted(leadingJetPtEtaPhi[1]) &&
-        backgroundRho > 0.f && leadingJetPtEtaPhi[0] - backgroundRho * M_PI * cfgjetR * cfgjetR > cfgjetPtBkgSubMin &&
-        trk.sign() < 0 && trk.pt() <= cMaxPt && isTrackSelectedWithoutDcaxy(trk) &&
-        (!useRapidityCutForPID || isRapiditySelectedForPID(trk.rapidity(o2::constants::physics::MassProton)))) {
-      const bool tpcPassed = std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr;
-      if (tpcPassed) {
-        const bool tofPassed = trk.hasTOF() && std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF;
-        const double deltaEta = leadingJetPtEtaPhi[1] - trk.eta();
-        const double deltaPhi = TVector2::Phi_mpi_pi(leadingJetPtEtaPhi[2] - trk.phi());
-        if (RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhi) < cfgjetR) {
-          jetHist.fill(HIST("feeddown/antiProton/template/jetCone/TPC/data"), trk.pt(), trk.dcaXY());
-          if (tofPassed)
-            jetHist.fill(HIST("feeddown/antiProton/template/jetCone/TPCTOF/data"), trk.pt(), trk.dcaXY());
-          if (!trk.hasTOF() || tofPassed)
-            jetHist.fill(HIST("feeddown/antiProton/template/jetCone/TPCTOFVeto/data"), trk.pt(), trk.dcaXY());
-        }
-        const auto perpPhi = getPerpendicuarPhi(leadingJetPtEtaPhi[2]);
-        const double deltaPhiPerp1 = TVector2::Phi_mpi_pi(perpPhi[0] - trk.phi());
-        const double deltaPhiPerp2 = TVector2::Phi_mpi_pi(perpPhi[1] - trk.phi());
-        if (RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhiPerp1) < cfgjetR || RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhiPerp2) < cfgjetR) {
-          jetHist.fill(HIST("feeddown/antiProton/template/perpCone/TPC/data"), trk.pt(), trk.dcaXY());
-          if (tofPassed)
-            jetHist.fill(HIST("feeddown/antiProton/template/perpCone/TPCTOF/data"), trk.pt(), trk.dcaXY());
-          if (!trk.hasTOF() || tofPassed)
-            jetHist.fill(HIST("feeddown/antiProton/template/perpCone/TPCTOFVeto/data"), trk.pt(), trk.dcaXY());
+    if constexpr (!IsMC) {
+      if (isWithLeadingJet && leadingJetPtEtaPhi.size() >= 3 && isConeAxisAccepted(leadingJetPtEtaPhi[1]) &&
+          backgroundRho > 0.f && leadingJetPtEtaPhi[0] - backgroundRho * M_PI * cfgjetR * cfgjetR > cfgjetPtBkgSubMin &&
+          trk.sign() < 0 && trk.pt() <= cMaxPt && isTrackSelectedWithoutDcaxy(trk) &&
+          (!useRapidityCutForPID || isRapiditySelectedForPID(trk.rapidity(o2::constants::physics::MassProton)))) {
+        const bool tpcPassed = std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr;
+        if (tpcPassed) {
+          const bool tofPassed = trk.hasTOF() && std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF;
+          const double deltaEta = leadingJetPtEtaPhi[1] - trk.eta();
+          const double deltaPhi = TVector2::Phi_mpi_pi(leadingJetPtEtaPhi[2] - trk.phi());
+          if (RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhi) < cfgjetR) {
+            jetHist.fill(HIST("feeddown/antiProton/template/jetCone/TPC/data"), trk.pt(), trk.dcaXY());
+            if (tofPassed)
+              jetHist.fill(HIST("feeddown/antiProton/template/jetCone/TPCTOF/data"), trk.pt(), trk.dcaXY());
+            if (!trk.hasTOF() || tofPassed)
+              jetHist.fill(HIST("feeddown/antiProton/template/jetCone/TPCTOFVeto/data"), trk.pt(), trk.dcaXY());
+          }
+          const auto perpPhi = getPerpendicuarPhi(leadingJetPtEtaPhi[2]);
+          const double deltaPhiPerp1 = TVector2::Phi_mpi_pi(perpPhi[0] - trk.phi());
+          const double deltaPhiPerp2 = TVector2::Phi_mpi_pi(perpPhi[1] - trk.phi());
+          if (RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhiPerp1) < cfgjetR || RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhiPerp2) < cfgjetR) {
+            jetHist.fill(HIST("feeddown/antiProton/template/perpCone/TPC/data"), trk.pt(), trk.dcaXY());
+            if (tofPassed)
+              jetHist.fill(HIST("feeddown/antiProton/template/perpCone/TPCTOF/data"), trk.pt(), trk.dcaXY());
+            if (!trk.hasTOF() || tofPassed)
+              jetHist.fill(HIST("feeddown/antiProton/template/perpCone/TPCTOFVeto/data"), trk.pt(), trk.dcaXY());
+          }
         }
       }
     }
@@ -2542,7 +2561,7 @@ struct nucleiInJets {
     jetHist.fill(HIST("recmatched/vertexZ"), collision.posZ());
 
     // One random choice is shared by the reconstructed and generated spectra of this event.
-    const bool useTrainingHist = randUniform.Rndm() < mcClosureTrainingFraction;
+    const bool useTrainingHist = useTrainingHistForMcCollision(collision.mcCollision().globalIndex());
     const float backgroundRho = collision.rho();
     if (usebkgSubractionMC && backgroundRho <= 0.f) {
       return;
@@ -3101,7 +3120,7 @@ struct nucleiInJets {
       return;
     jetHist.fill(HIST("genmatched/vertexZ"), collision.posZ());
 
-    const bool useTrainingHist = randUniform.Rndm() < mcClosureTrainingFraction;
+    const bool useTrainingHist = useTrainingHistForMcCollision(collision.globalIndex());
 
     std::vector<double> mcpJetPt{};
     std::vector<double> mcpJetPhi{};
