@@ -1229,7 +1229,6 @@ struct JetSpectraEseTask {
     registry.fill(HIST("mcd/hCentralitySel"), centrality);
     float eventWeight = 1.0f;
     if (cfgUseMCEventWeights) {
-      // The jet weight producer uses the same MC weight, stored as zero for collisions without an MC association.
       eventWeight = collision.has_mcCollision() ? collision.mcCollision_as<aod::JetMcCollisions>().weight() : 0.0f;
     }
     const float pTHat = getPTHat(eventWeight);
