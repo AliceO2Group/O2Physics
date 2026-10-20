@@ -88,7 +88,7 @@ struct JetSpectraEseTask {
   Configurable<bool> cfgUseMCEventWeights{"cfgUseMCEventWeights", false, "Flag for using MC event weights"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
   Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
-  Configurable<bool> checkLeadConstituentMinPtForMcpJets{"checkLeadConstituentMinPtForMcpJets", false, "flag to choose whether particle level jets should have their lead track pt above leadingConstituentPtMin to be accepted; off by default, as leadingConstituentPtMin cut is only applied on MCD jets for the Pb-Pb analysis using pp MC anchored to Pb-Pb for the response matrix"};
+  Configurable<bool> checkLeadConstituentPtForMcpJets{"checkLeadConstituentPtForMcpJets", false, "flag to choose whether particle level jets should have their lead track pt above leadingConstituentPtMin to be accepted; off by default, as leadingConstituentPtMin cut is only applied on MCD jets for the Pb-Pb analysis using pp MC anchored to Pb-Pb for the response matrix"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
@@ -2077,6 +2077,9 @@ struct JetSpectraEseTask {
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
+    if (mcLevelIsParticleLevel && !checkLeadConstituentPtForMcpJets) {
+      checkConstituentPt = false;
+    }
 
     if (checkConstituentPt) {
       bool isMinLeadingConstituent = !checkConstituentMinPt;
@@ -2085,7 +2088,7 @@ struct JetSpectraEseTask {
       for (const auto& constituent : jet.template tracks_as<TTracks>()) {
         double pt = constituent.pt();
 
-        if ((!checkLeadConstituentMinPtForMcpJets && mcLevelIsParticleLevel) || (checkConstituentMinPt && pt >= leadingConstituentPtMin)) { // if the jet is mcp level and checkLeadConstituentMinPtForMcpJets is true, then the pt of the leading track of that jet does not need to be below the defined leadingConstituentPtMin cut
+        if ((checkConstituentMinPt && pt >= leadingConstituentPtMin)) {
           isMinLeadingConstituent = true;
         }
         if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
