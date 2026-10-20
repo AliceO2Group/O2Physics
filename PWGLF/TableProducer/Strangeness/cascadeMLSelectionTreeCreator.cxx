@@ -147,7 +147,7 @@ struct cascadeMLSelectionTreeCreator {
     bool isXiPlus;
     bool isOmegaMinus;
     bool isOmegaPlus;
-  } cascadeCandidate;
+  } cascadeCandidate{};
 
   // Process candidate and store properties in object
   template <typename TCollision, typename TCascObject>
@@ -343,14 +343,14 @@ struct cascadeMLSelectionTreeCreator {
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascBBs, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-    for (auto& casc : cascades) { // looping over cascades
+    for (const auto& casc : cascades) { // looping over cascades
       processCandidate(coll, casc);
     }
   }
   void processSimData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels, aod::CascTOFNSigmas> const& cascades, dauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-    for (auto& casc : cascades) { // looping over cascades
+    for (const auto& casc : cascades) { // looping over cascades
       processCandidate(coll, casc);
     }
   }
