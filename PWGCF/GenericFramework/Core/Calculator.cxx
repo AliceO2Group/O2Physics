@@ -26,6 +26,7 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <regex>
 #include <string>
@@ -83,12 +84,80 @@ void applySignalFractionCorrection(Calculator& calculator, TH1D* totalHist, TH1D
   }
 }
 
+struct DifferentialMoments {
+  double normalization = 0.;
+  double meanPtNumerator = 0.;
+  double zeroth = 0.;
+  double first = 0.;
+  double meanPtVariance = 0.;
+  double firstVariance = 0.;
+};
+
+DifferentialMoments calculateDifferentialMoments(const TH1D& observable, const TH1D& fraction)
+{
+  DifferentialMoments moments;
+  for (int fractionBin = 1; fractionBin <= fraction.GetNbinsX(); ++fractionBin) {
+    const double pt = fraction.GetXaxis()->GetBinCenter(fractionBin);
+    const int observableBin = observable.GetXaxis()->FindFixBin(pt);
+    if (observableBin < 1 || observableBin > observable.GetNbinsX())
+      continue;
+
+    const double n = fraction.GetBinContent(fractionBin);
+    const double nError = fraction.GetBinError(fractionBin);
+    const double value = observable.GetBinContent(observableBin);
+    const double valueError = observable.GetBinError(observableBin);
+    if (!std::isfinite(n) || !std::isfinite(nError) ||
+        !std::isfinite(value) || !std::isfinite(valueError))
+      continue;
+
+    moments.normalization += n;
+    moments.meanPtNumerator += pt * n;
+    moments.zeroth += n * value;
+    moments.first += pt * n * value;
+    moments.meanPtVariance += pt * pt * nError * nError;
+    moments.firstVariance += pt * pt *
+                             (n * n * valueError * valueError +
+                              value * value * nError * nError);
+  }
+  return moments;
+}
+
+double matchedIntegratedObservable(const TH1D& observable, const TH1D& fraction, double* error = nullptr)
+{
+  const DifferentialMoments moments = calculateDifferentialMoments(observable, fraction);
+  if (!std::isfinite(moments.first) ||
+      !std::isfinite(moments.meanPtNumerator) ||
+      std::abs(moments.meanPtNumerator) <= std::numeric_limits<double>::epsilon()) {
+    if (error)
+      *error = 0.;
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+
+  const double value = moments.first / moments.meanPtNumerator;
+  if (error) {
+    const double denominator2 = moments.meanPtNumerator * moments.meanPtNumerator;
+    const double variance = moments.firstVariance / denominator2 +
+                            value * value * moments.meanPtVariance / denominator2;
+    *error = variance > 0. ? std::sqrt(variance) : 0.;
+  }
+  return value;
+}
+
 TH1D* projectFraction(TH2D* histogram, const std::string& species, double min, double max)
 {
-  if (!histogram) {
+  if (!histogram || min >= max) {
     return nullptr;
   }
-  std::unique_ptr<TProfile> profile(histogram->ProfileX(Form("pf_%s_mean_fraction_pt_%.1f_%.1f", species.c_str(), min, max), min, max));
+  TAxis* centralityAxis = histogram->GetYaxis();
+  const int firstBin = centralityAxis->FindFixBin(min + 1.e-6);
+  const int lastBin = centralityAxis->FindFixBin(max - 1.e-6);
+  if (firstBin < 1 || lastBin > centralityAxis->GetNbins() || firstBin > lastBin) {
+    std::cerr << "[projectFraction] Centrality interval " << min << "-" << max
+              << " is outside the fractional-spectrum axis" << std::endl;
+    return nullptr;
+  }
+  std::unique_ptr<TProfile> profile(histogram->ProfileX(
+    Form("pf_%s_mean_fraction_pt_%.1f_%.1f", species.c_str(), min, max), firstBin, lastBin));
   return profile ? profile->ProjectionX(Form("%s_mean_fraction_pt_%.1f_%.1f", species.c_str(), min, max)) : nullptr;
 }
 } // namespace
@@ -398,6 +467,13 @@ TH1D* Calculator::calculateWithLateCentralityRebin(PtDiffFunc func, int i, doubl
   activeFlowContainer = i < 0 ? flowcont : prepared.get();
   activeFlowContainerSample = i;
 
+  // The centrality weights must not depend on pT, the requested observable,
+  // or the bootstrap sample. Use the nominal mean-pT precision as a single
+  // centrality reference for every late-rebinned observable.
+  std::unique_ptr<TH1D> centralityWeightReference;
+  if (useInverseVarianceWeight)
+    centralityWeightReference.reset(getMpt(-1));
+
   TAxis* centralityAxis = flowcont->GetProfile()->GetXaxis();
   const int firstBin = centralityAxis->FindFixBin(min + 1.e-6);
   const int lastBin = centralityAxis->FindFixBin(max - 1.e-6);
@@ -442,16 +518,26 @@ TH1D* Calculator::calculateWithLateCentralityRebin(PtDiffFunc func, int i, doubl
       weightSums.assign(result->GetNbinsX() + 2, 0.);
       errorSquareSums.assign(result->GetNbinsX() + 2, 0.);
     }
+
+    // Use one scalar centrality weight for the complete pT vector. Weighting
+    // every pT bin independently gives every bin a different effective
+    // centrality distribution and does not preserve moment sum rules.
+    double centralityWeight = 1.;
+    if (centralityWeightReference) {
+      const int weightBin = centralityWeightReference->GetXaxis()->FindFixBin(
+        0.5 * (binMin + binMax));
+      const double referenceError = centralityWeightReference->GetBinError(weightBin);
+      if (std::isfinite(referenceError) && referenceError > 0.)
+        centralityWeight = 1. / (referenceError * referenceError);
+    }
     for (int ptBin = 0; ptBin <= fineBinObservable->GetNbinsX() + 1; ++ptBin) {
       const double value = fineBinObservable->GetBinContent(ptBin);
       const double error = fineBinObservable->GetBinError(ptBin);
       if (!std::isfinite(value) || !std::isfinite(error) || error <= 0.)
         continue;
-      const double weight = (useInverseVarianceWeight) ? 1. / (error * error) : 1.;
-      weightedSums[ptBin] += value * weight;
-      weightSums[ptBin] += weight;
-      if (!useInverseVarianceWeight)
-        errorSquareSums[ptBin] += error * error;
+      weightedSums[ptBin] += value * centralityWeight;
+      weightSums[ptBin] += centralityWeight;
+      errorSquareSums[ptBin] += centralityWeight * centralityWeight * error * error;
     }
     delete fineBinObservable;
   }
@@ -467,8 +553,7 @@ TH1D* Calculator::calculateWithLateCentralityRebin(PtDiffFunc func, int i, doubl
     if (weightSums[ptBin] <= 0.)
       continue;
     result->SetBinContent(ptBin, weightedSums[ptBin] / weightSums[ptBin]);
-    result->SetBinError(ptBin, useInverseVarianceWeight ? std::sqrt(1. / weightSums[ptBin])
-                                                        : std::sqrt(errorSquareSums[ptBin]) / weightSums[ptBin]);
+    result->SetBinError(ptBin, std::sqrt(errorSquareSums[ptBin]) / weightSums[ptBin]);
   }
   invMassFitLookupCentMin = previousFitLookupCentMin;
   invMassFitLookupCentMax = previousFitLookupCentMax;
@@ -3122,86 +3207,135 @@ TH1D* Calculator::getV0Lambda(int i, double min, double max)
 // Get integrated and normalized V0(2)
 TH1D* Calculator::getIntegratedV0(int i)
 {
-  TH1D* mu2 = getMu2sub(i);
-  TH1D* mpt = getMpt(i);
-  TH1D* reth = powerHistogram(mu2, 0.5);
-  reth->Divide(mpt);
-  reth->SetTitle("; Centrality (%); v_{0}");
-  return reth;
+  std::unique_ptr<TH1D> centralityTemplate(getMu2sub(i));
+  if (!centralityTemplate)
+    return nullptr;
+  auto result = std::unique_ptr<TH1D>(dynamic_cast<TH1D*>(centralityTemplate->Clone(Form("integratedV0_%d", i))));
+  if (!result)
+    return nullptr;
+  result->Reset("ICES");
+
+  for (int bin = 1; bin <= result->GetNbinsX(); ++bin) {
+    const double min = result->GetXaxis()->GetBinLowEdge(bin);
+    const double max = result->GetXaxis()->GetBinUpEdge(bin);
+    std::unique_ptr<TH1D> differential(getV0Weighted(i, 0, min, max));
+    std::unique_ptr<TH1D> fraction(getFractionForSpecies(i, 0, min, max, FractionScheme::V0, false));
+    if (!differential || !fraction)
+      continue;
+    double error = 0.;
+    const double value = matchedIntegratedObservable(*differential, *fraction, &error);
+    if (!std::isfinite(value))
+      continue;
+    result->SetBinContent(bin, value);
+    result->SetBinError(bin, error);
+  }
+  result->SetTitle("; Centrality (%); v_{0}");
+  return result.release();
 }
 TH1D* Calculator::getIntegratedV02(int i)
 {
-  TH1D* reth = getCVN2pt(2, i);
-  TH1D* v22 = getV22(i);
-  TH1D* mpt = getMpt(i);
-  v22->Multiply(mpt);
-  reth->Divide(v22);
-  reth->SetTitle("; Centrality (%); v_{02}");
-  return reth;
+  std::unique_ptr<TH1D> centralityTemplate(getCNN(2, 2, "ChGap", i));
+  if (!centralityTemplate)
+    return nullptr;
+  auto result = std::unique_ptr<TH1D>(dynamic_cast<TH1D*>(centralityTemplate->Clone(Form("integratedV02_%d", i))));
+  if (!result)
+    return nullptr;
+  result->Reset("ICES");
+
+  for (int bin = 1; bin <= result->GetNbinsX(); ++bin) {
+    const double min = result->GetXaxis()->GetBinLowEdge(bin);
+    const double max = result->GetXaxis()->GetBinUpEdge(bin);
+    std::unique_ptr<TH1D> differential(getV02Weighted(i, 0, min, max));
+    std::unique_ptr<TH1D> fraction(getFractionForSpecies(i, 0, min, max, FractionScheme::V02, false));
+    if (!differential || !fraction)
+      continue;
+    double error = 0.;
+    const double value = matchedIntegratedObservable(*differential, *fraction, &error);
+    if (!std::isfinite(value))
+      continue;
+    result->SetBinContent(bin, value);
+    result->SetBinError(bin, error);
+  }
+  result->SetTitle("; Centrality (%); v_{02}");
+  return result.release();
 }
 
 TH1D* Calculator::getAlpha(int i, double min, double max)
 {
-  // centrality-dependent observables
-  TH1D* v0 = getIntegratedV0(i);
-  TH1D* v02 = getIntegratedV02(i);
-  TH1D* cv22pt = getCV22pt(i);
-  TH1D* varV22 = getVarV22(i);
-  TH1D* c22 = getC22(i);
-  TH1D* getVarPt = getMu2sub(i);
-  TH1D* sigmav22 = powerHistogram(varV22, 0.5);
-  TH1D* sigmapt = powerHistogram(getVarPt, 0.5);
+  // The integrated coefficients in Eqs. (19)--(20) must be moments of the
+  // same differential observables, fractional spectra and eta acceptances.
+  std::unique_ptr<TH1D> v0pt(getV0Weighted(i, 0, min, max));
+  std::unique_ptr<TH1D> v02pt(getV02Weighted(i, 0, min, max));
+  std::unique_ptr<TH1D> nV0(getFractionForSpecies(i, 0, min, max, FractionScheme::V0, false));
+  std::unique_ptr<TH1D> nV02(getFractionForSpecies(i, 0, min, max, FractionScheme::V02, false));
+  if (!v0pt || !v02pt || !nV0 || !nV02)
+    return nullptr;
+  const double v0_const = matchedIntegratedObservable(*v0pt, *nV0);
+  const double v02_const = matchedIntegratedObservable(*v02pt, *nV02);
 
-  // Get constant value in given centrality
-  double v0_const = getIntegratedValue(v0, min, max);
-  double v02_const = getIntegratedValue(v02, min, max);
-  double cv22pt_const = getIntegratedValue(cv22pt, min, max);
-  double varv22_const = getIntegratedValue(varV22, min, max);
-  double c22_const = getIntegratedValue(c22, min, max);
-  double sigmapt_const = getIntegratedValue(sigmapt, min, max);
+  std::unique_ptr<TH1D> cv22pt(getCV22pt(i));
+  std::unique_ptr<TH1D> varV22(getVarV22(i));
+  std::unique_ptr<TH1D> c22(getC22(i));
+  std::unique_ptr<TH1D> varPt(getMu2sub(i));
+  if (!cv22pt || !varV22 || !c22 || !varPt)
+    return nullptr;
+  std::unique_ptr<TH1D> sigmapt(powerHistogram(varPt.get(), 0.5));
+  if (!sigmapt)
+    return nullptr;
 
-  // pt-dependent quantities (Charged-particle only)
-  TH1D* v0pt = getV0Weighted(i, 0, min, max);
-  TH1D* v02pt = getV02Weighted(i, 0, min, max);
+  const double cv22pt_const = getIntegratedValue(cv22pt.get(), min, max);
+  const double varv22_const = getIntegratedValue(varV22.get(), min, max);
+  const double c22_const = getIntegratedValue(c22.get(), min, max);
+  const double sigmapt_const = getIntegratedValue(sigmapt.get(), min, max);
+  const double denominator = sigmapt_const * varv22_const * v0_const -
+                             cv22pt_const * v02_const * c22_const;
+  if (!std::isfinite(denominator) ||
+      std::abs(denominator) <= std::numeric_limits<double>::epsilon())
+    return nullptr;
 
-  double denominator = sigmapt_const * varv22_const * v0_const - cv22pt_const * v02_const * c22_const;
   v0pt->Scale(varv22_const * sigmapt_const / denominator);
   v02pt->Scale(cv22pt_const * c22_const / denominator);
-  TH1D* alpha = (TH1D*)v0pt->Clone(Form("alphapt_%i_%g%g", i, min, max));
-  alpha->Add(v02pt, -1);
+  TH1D* alpha = dynamic_cast<TH1D*>(v0pt->Clone(Form("alphapt_%i_%g%g", i, min, max)));
+  alpha->Add(v02pt.get(), -1);
   alpha->SetTitle("; #it{p}_{T} (GeV/#it{c}); #alpha");
   return alpha;
 }
 
 TH1D* Calculator::getBeta(int i, double min, double max)
 {
-  // centrality-dependent observables
-  TH1D* v0 = getIntegratedV0(i);
-  TH1D* v02 = getIntegratedV02(i);
-  TH1D* cv22pt = getCV22pt(i);
-  TH1D* varV22 = getVarV22(i);
-  TH1D* c22 = getC22(i);
-  TH1D* getVarPt = getMu2sub(i);
-  TH1D* sigmav22 = powerHistogram(varV22, 0.5);
-  TH1D* sigmapt = powerHistogram(getVarPt, 0.5);
+  std::unique_ptr<TH1D> v0pt(getV0Weighted(i, 0, min, max));
+  std::unique_ptr<TH1D> v02pt(getV02Weighted(i, 0, min, max));
+  std::unique_ptr<TH1D> nV0(getFractionForSpecies(i, 0, min, max, FractionScheme::V0, false));
+  std::unique_ptr<TH1D> nV02(getFractionForSpecies(i, 0, min, max, FractionScheme::V02, false));
+  if (!v0pt || !v02pt || !nV0 || !nV02)
+    return nullptr;
+  const double v0_const = matchedIntegratedObservable(*v0pt, *nV0);
+  const double v02_const = matchedIntegratedObservable(*v02pt, *nV02);
 
-  // Get constant value in given centrality
-  double v0_const = getIntegratedValue(v0, min, max);
-  double v02_const = getIntegratedValue(v02, min, max);
-  double cv22pt_const = getIntegratedValue(cv22pt, min, max);
-  double varv22_const = getIntegratedValue(varV22, min, max);
-  double c22_const = getIntegratedValue(c22, min, max);
-  double sigmapt_const = getIntegratedValue(sigmapt, min, max);
+  std::unique_ptr<TH1D> cv22pt(getCV22pt(i));
+  std::unique_ptr<TH1D> varV22(getVarV22(i));
+  std::unique_ptr<TH1D> c22(getC22(i));
+  std::unique_ptr<TH1D> varPt(getMu2sub(i));
+  if (!cv22pt || !varV22 || !c22 || !varPt)
+    return nullptr;
+  std::unique_ptr<TH1D> sigmapt(powerHistogram(varPt.get(), 0.5));
+  if (!sigmapt)
+    return nullptr;
 
-  // pt-dependent quantities (Charged-particle only)
-  TH1D* v0pt = getV0Weighted(i, 0, min, max);
-  TH1D* v02pt = getV02Weighted(i, 0, min, max);
+  const double cv22pt_const = getIntegratedValue(cv22pt.get(), min, max);
+  const double varv22_const = getIntegratedValue(varV22.get(), min, max);
+  const double c22_const = getIntegratedValue(c22.get(), min, max);
+  const double sigmapt_const = getIntegratedValue(sigmapt.get(), min, max);
+  const double denominator = sigmapt_const * varv22_const * v0_const -
+                             cv22pt_const * v02_const * c22_const;
+  if (!std::isfinite(denominator) ||
+      std::abs(denominator) <= std::numeric_limits<double>::epsilon())
+    return nullptr;
 
-  double denominator = sigmapt_const * varv22_const * v0_const - cv22pt_const * v02_const * c22_const;
   v0pt->Scale(sigmapt_const * v02_const * c22_const / denominator);
   v02pt->Scale(sigmapt_const * v0_const * c22_const / denominator);
-  TH1D* beta = (TH1D*)v02pt->Clone(Form("betapt_%i_%g%g", i, min, max));
-  beta->Add(v0pt, -1);
+  TH1D* beta = dynamic_cast<TH1D*>(v02pt->Clone(Form("betapt_%i_%g%g", i, min, max)));
+  beta->Add(v0pt.get(), -1);
   beta->SetTitle("; #it{p}_{T} (GeV/#it{c}); #beta");
   return beta;
 }
