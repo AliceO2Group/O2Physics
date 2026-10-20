@@ -292,6 +292,8 @@ struct UpcRhoAnalysis {
       rQC.add("QC/collisions/all/hPosZ", ";vertex #it{z} (cm);counts", kTH1D, {{400, -20.0, 20.0}});
       rQC.add("QC/collisions/all/hNumContrib", ";number of PV contributors;counts", kTH1D, {{36, -0.5, 35.5}});
       rQC.add("QC/collisions/all/hZdcCommonEnergy", ";ZNA common energy (TeV);ZNC common energy (TeV);counts", kTH2D, {znCommonEnergyAxis, znCommonEnergyAxis});
+      rQC.add("QC/collisions/all/hZnaCommonEnergyPerRun", ";ZNA common energy (TeV);run number;counts", kTH2D, {znCommonEnergyAxis, runNumberAxis});
+      rQC.add("QC/collisions/all/hZncCommonEnergyPerRun", ";ZNC common energy (TeV);run number;counts", kTH2D, {znCommonEnergyAxis, runNumberAxis});
       rQC.add("QC/collisions/all/hZdcTime", ";ZNA time (ns);ZNC time (ns);counts", kTH2D, {znTimeAxis, znTimeAxis});
       rQC.add("QC/collisions/all/hZNTimeVsZNCommonEnergy", ";ZNA/C common energy (TeV);ZNA/C time (ns);counts", kTH2D, {znCommonEnergyAxis, znTimeAxis});
       rQC.add("QC/collisions/all/hTotalFT0AmplitudeA", ";FT0A amplitude;counts", kTH1D, {{160, 0.0, 160.0}});
@@ -483,11 +485,13 @@ struct UpcRhoAnalysis {
   static constexpr std::string_view NeutronClass[5] = {"AnAn/", "0n0n/", "Xn0n/", "0nXn/", "XnXn/"};
 
   template <int cuts, typename C>
-  void fillCollisionQcHistos(const C& collision) // fills collision QC histograms before/after cuts
+  void fillCollisionQcHistos(const C& collision, int runIndex) // fills collision QC histograms before/after cuts
   {
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hPosXY"), collision.posX(), collision.posY());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hPosZ"), collision.posZ());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZdcCommonEnergy"), collision.energyCommonZNA(), collision.energyCommonZNC());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZnaCommonEnergyPerRun"), collision.energyCommonZNA(), runIndex);
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZncCommonEnergyPerRun"), collision.energyCommonZNC(), runIndex);
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZdcTime"), collision.timeZNA(), collision.timeZNC());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZNTimeVsZNCommonEnergy"), collision.energyCommonZNA(), collision.timeZNA());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZNTimeVsZNCommonEnergy"), collision.energyCommonZNC(), collision.timeZNC());
@@ -875,7 +879,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/collisions/hNumContribVsPVTracks"), nPVTracks, collision.numContrib());
     rQC.fill(HIST("QC/collisions/hLocalBC"), collision.globalBC() % o2::constants::lhc::LHCMaxBunches);
 
-    fillCollisionQcHistos<0>(collision);           // fill QC histograms before cuts
+    fillCollisionQcHistos<0>(collision, runIndex);           // fill QC histograms before cuts
     if (!collisionPassesCuts(collision, runIndex)) // apply collision cuts
       return;
 
@@ -978,7 +982,7 @@ struct UpcRhoAnalysis {
       fillTrackQcHistos<1>(cutTrack); // fill QC histograms after cuts
     }
     rQC.fill(HIST("QC/tracks/hTofHitCheck"), leadingTrack.hasTOF(), subleadingTrack.hasTOF());
-    fillCollisionQcHistos<1>(collision); // fill QC histograms after track selections
+    fillCollisionQcHistos<1>(collision, runIndex); // fill QC histograms after track selections
 
     ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracksLVs);
     int totalCharge = tracksTotalCharge(cutTracks);
@@ -1016,7 +1020,7 @@ struct UpcRhoAnalysis {
     // fill histograms for system passing cuts
     switch (totalCharge) {
       case 0:
-        fillCollisionQcHistos<2>(collision);
+        fillCollisionQcHistos<2>(collision, runIndex);
         for (const auto& cutTrack : cutTracks)
           fillTrackQcHistos<2>(cutTrack);
         fillTrack2dHistos<2, 0>(leadingPt, subleadingPt, leadingEta, subleadingEta, leadingPhi, subleadingPhi);
