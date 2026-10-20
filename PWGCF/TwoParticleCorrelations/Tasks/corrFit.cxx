@@ -92,7 +92,7 @@ struct CorrFit {
   O2_DEFINE_CONFIGURABLE(cfgStrictTrackCounter, bool, false, "Strict track counter for multiplicity correlation cut, counts only tracks that pass all cuts and are used in the correlation")
   O2_DEFINE_CONFIGURABLE(cfgUseRefpTCut, bool, false, "Apply upper pT cut on reference tracks")
   O2_DEFINE_CONFIGURABLE(cfgRefpTMax, float, 3.0f, "maximum pT for reference tracks if cfgUseRefpTCut is true")
-  O2_DEFINE_CONFIGURABLE(cfgRefpTMin, float, 3.0f, "minimum pT for reference tracks if cfgUseRefpTCut is true")
+  O2_DEFINE_CONFIGURABLE(cfgRefpTMin, float, 0.2f, "minimum pT for reference tracks if cfgUseRefpTCut is true")
 
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
   O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking (CBT)', 'CBT_hadronPID' ")
@@ -1970,6 +1970,8 @@ struct CorrFit {
     if (cfgEvSel.cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), true)) {
       return;
     }
+
+    registry.fill(HIST("zVtx"), collision.posZ());
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     loadCorrection(bc.timestamp());
