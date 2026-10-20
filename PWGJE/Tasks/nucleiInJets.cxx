@@ -48,7 +48,6 @@
 #include <TH3.h>
 #include <THnSparse.h>
 #include <TMCProcess.h>
-#include <TRandom3.h>
 #include <TVector2.h>
 
 #include <algorithm>
@@ -57,6 +56,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -178,7 +178,7 @@ struct nucleiInJets {
   Configurable<bool> isRequireHitsInITSLayers{"isRequireHitsInITSLayers", true, "true: at least one hit in the its inner layes"};
   Configurable<bool> useMcC{"useMcC", true, "use mcC"};
   Configurable<float> mcClosureTrainingFraction{"mcClosureTrainingFraction", 0.5f, "fraction of events assigned to MC correction training; the rest are data-like"};
-  Configurable<int> mcClosureSplitSeed{"mcClosureSplitSeed", 0, "TRandom3 seed for MC/data-like split (0: ROOT automatic seed)"};
+  Configurable<int> mcClosureSplitSeed{"mcClosureSplitSeed", 1234, "random seed for MC/data-like split (0: automatic seed)"};
   Configurable<bool> usebkgSubractionMC{"usebkgSubractionMC", true, "use rho-area background subtraction for detector-level matched MC jets"};
   Configurable<float> cfgjetPtBkgSubMinMC{"cfgjetPtBkgSubMinMC", 10.0f, "minimum detector-level matched MC jet pT after optional background subtraction"};
   Configurable<bool> useFullConeAcceptance{"useFullConeAcceptance", true, "require jet/perpendicular-cone axes to satisfy |eta_axis| < cfgtrkMaxEta - cfgjetR for jet and efficiency histograms"};
@@ -269,19 +269,16 @@ struct nucleiInJets {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
-  TRandom3 randUniform;
-  UInt_t mcClosureSplitSeedEffective = 1;
+  uint64_t mcClosureSplitSeedEffective = 1;
 
   bool useTrainingHistForMcCollision(int64_t mcCollisionId)
   {
     // Use the MC collision ID as part of the seed, so both process functions
     // obtain the same decision without storing one entry per collision.
-    UInt_t collisionSeed = mcClosureSplitSeedEffective ^ static_cast<UInt_t>(mcCollisionId);
-    if (collisionSeed == 0U) {
-      collisionSeed = 1U;
-    }
-    TRandom3 collisionRandom(collisionSeed);
-    return collisionRandom.Rndm() < mcClosureTrainingFraction;
+    const auto collisionId = static_cast<uint64_t>(mcCollisionId);
+    std::mt19937_64 collisionRandom(mcClosureSplitSeedEffective ^ collisionId);
+    std::uniform_real_distribution<double> uniform(0.0, 1.0);
+    return uniform(collisionRandom) < mcClosureTrainingFraction;
   }
 
   void init(o2::framework::InitContext&)
@@ -293,10 +290,11 @@ struct nucleiInJets {
     if (!(mcClosureTrainingFraction >= 0.f && mcClosureTrainingFraction <= 1.f)) {
       LOGP(fatal, "mcClosureTrainingFraction must be between 0 and 1, inclusive");
     }
-    randUniform.SetSeed(mcClosureSplitSeed);
-    mcClosureSplitSeedEffective = randUniform.Integer(0xffffffffU);
-    if (mcClosureSplitSeedEffective == 0U) {
-      mcClosureSplitSeedEffective = 1U;
+    if (mcClosureSplitSeed == 0) {
+      std::random_device randomDevice;
+      mcClosureSplitSeedEffective = (static_cast<uint64_t>(randomDevice()) << 32) ^ randomDevice();
+    } else {
+      mcClosureSplitSeedEffective = static_cast<uint64_t>(mcClosureSplitSeed);
     }
     jetHist.print();
     // const AxisSpec PtAxis = {100, 0, 10.0};
@@ -2678,7 +2676,8 @@ struct nucleiInJets {
     }
 
     // Fill detector-level DCA templates before the DCAxy selection used by the spectra.
-    const double templateJetPt = mcdJetPt.at(indexJet) - (usebkgSubractionMC ? 0.f : backgroundRho * jetArea);
+    // mcdJetPt is already background-subtracted when usebkgSubractionMC is enabled.
+    const double templateJetPt = mcdJetPt.at(indexJet);
     if (isWithLeadingJet && backgroundRho > 0.f && templateJetPt > cfgjetPtBkgSubMin) {
       const double templateJetEta = mcdJetEta.at(indexJet);
       const double templateJetPhi = mcdJetPhi.at(indexJet);
