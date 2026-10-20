@@ -89,6 +89,9 @@ struct Pi0EtaToGammaGammaMC {
   o2::framework::Configurable<std::string> fd_k0s_to_pi0{"fd_k0s_pi0", "1.0", "feed down correction to pi0"};
   o2::framework::Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
 
+  o2::framework::Configurable<int> cfgNbinsMass{"cfgNbinsMass", 400, "number of bins for the mass axis in same and mixed events"};
+  o2::framework::Configurable<std::vector<double>> cfgMassBinRange{"cfgMassBinRange", {0., 0.8}, "range for the mass-axis in GeV/c2"};
+
   o2::framework::Configurable<int> cfgAlphaMesonCut{"cfgAlphaMesonCut", 0, "flag for photon energy asymmetry distribution cut: 0: no cut, 1: cut specific value, 2: cut depending on pT"};
   o2::framework::Configurable<float> cfgAlphaMeson{"cfgAlphaMeson", 0.65, "photon energy asymmetry distribution parameter for specific value cut"};
   o2::framework::Configurable<float> cfgAlphaMesonA{"cfgAlphaMesonA", 0.65, "photon energy asymmetry distribution parameter A for pT dependent cut (A * tanh(B*pT))"};
@@ -276,9 +279,9 @@ struct Pi0EtaToGammaGammaMC {
   {
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMDalitzEE) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "ee#gamma");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "ee#gamma", false, {}, {}, {}, cfgNbinsMass, {cfgMassBinRange->at(0), cfgMassBinRange->at(1)});
     } else {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#gamma#gamma");
+      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#gamma#gamma", false, {}, {}, {}, cfgNbinsMass, {cfgMassBinRange->at(0), cfgMassBinRange->at(1)});
     }
     DefineEMEventCut();
     DefinePCMCut();
