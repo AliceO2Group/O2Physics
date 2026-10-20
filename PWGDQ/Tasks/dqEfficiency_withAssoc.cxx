@@ -164,8 +164,8 @@ DECLARE_SOA_COLUMN(Etaee, etaee, float);
 DECLARE_SOA_COLUMN(Rapee, rapee, float);
 DECLARE_SOA_COLUMN(Phiee, phiee, float);
 DECLARE_SOA_COLUMN(Ptee, ptee, float);
-DECLARE_SOA_COLUMN(Lxyee, lxyee, float);
-DECLARE_SOA_COLUMN(LxyeePoleMass, lxyeepolemass, float);
+DECLARE_SOA_COLUMN(Lxyee, lxyJPsi2ee, float);
+DECLARE_SOA_COLUMN(LxyeePoleMass, lxyJPsi2eePoleMass, float);
 DECLARE_SOA_COLUMN(Lzee, lzee, float);
 DECLARE_SOA_COLUMN(LxyeePoleMassPVrecomputed, lxyeePoleMassPVrecomputed, float);
 DECLARE_SOA_COLUMN(Vx, vx, float);
@@ -178,10 +178,26 @@ DECLARE_SOA_COLUMN(DcaZ2, dcaZ2, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0A, multiplicityFT0AJPsi2ee, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0CJPsi2ee, float);
 DECLARE_SOA_COLUMN(PercentileFT0M, percentileFT0MJPsi2ee, float);
+DECLARE_SOA_COLUMN(PercentileFT0C, percentileFT0CJPsi2ee, float);
 DECLARE_SOA_COLUMN(MultiplicityNContrib, multiplicityNContribJPsi2ee, float);
 DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
+// Additional columns for prompt-non-prompt JPsi separation (BDT training), identical to tableReader_withAssoc
+DECLARE_SOA_COLUMN(PairFilter, pairFilter, uint32_t);                //! twoTrackFilter (cut bits + ambiguity bits 28-31)
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                //! MC signal bits, 0 in data
+DECLARE_SOA_COLUMN(TauxyeeErr, tauxyeeErr, float);                   //! kVertexingTauxyErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(TauzeeErr, tauzeeErr, float);                     //! kVertexingTauzErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(LxyeeProjected, lxyeeProjected, float);           //! kVertexingLxyProjected
+DECLARE_SOA_COLUMN(LxyeeOverErr, lxyeeOverErr, float);               //! kVertexingLxy / kVertexingLxyErr (computed in the task)
+DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                           //! kVertexingLxyz
+DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);             //! kVertexingLxyz / kVertexingLxyzErr (computed in the task)
+DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);                     //! kVertexingChi2PCA
+DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);                         //! kCosPointingAngle
+DECLARE_SOA_COLUMN(DcaSigXY1, dcaSigXY1, float);                     //! leg-1 DCAxy / sqrt(cYY), computed in the task
+DECLARE_SOA_COLUMN(DcaSigZ1, dcaSigZ1, float);                       //! leg-1 DCAz / sqrt(cZZ), computed in the task
+DECLARE_SOA_COLUMN(DcaSigXY2, dcaSigXY2, float);                     //! leg-2 DCAxy / sqrt(cYY), computed in the task
+DECLARE_SOA_COLUMN(DcaSigZ2, dcaSigZ2, float);                       //! leg-2 DCAz / sqrt(cZZ), computed in the task
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 // Candidate columns efficiency calculation for prompt-non-prompt JPsi separation
@@ -224,10 +240,27 @@ DECLARE_SOA_TABLE(JPsiMuonCandidates, "AOD", "DQJPSIMUONA",
                   dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::Phileg1, dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::Phileg2,
                   dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
+                  // bookkeeping / labels
+                  dqanalysisflags::PairFilter, dqanalysisflags::McDecision,
+                  // pair kinematics
                   dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Etaee, dqanalysisflags::Rapee, dqanalysisflags::Phiee,
+                  // pseudo-proper decay length (Lxyee/Lzee hold kVertexingTauxyProjected/kVertexingTauzProjected)
                   dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::LxyeePoleMassPVrecomputed,
-                  dqanalysisflags::Vx, dqanalysisflags::Vy, dqanalysisflags::Vz, dqanalysisflags::DcaXY1, dqanalysisflags::DcaZ1, dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::TPCnsigmaElleg1, dqanalysisflags::DcaXY2, dqanalysisflags::DcaZ2, dqanalysisflags::ITSClusterMapleg2, dqanalysisflags::TPCnsigmaElleg2,
-                  dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc, dqanalysisflags::MultiplicityFT0A, dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0M, dqanalysisflags::MultiplicityNContrib);
+                  dqanalysisflags::TauxyeeErr, dqanalysisflags::TauzeeErr,
+                  // secondary vertex
+                  dqanalysisflags::LxyeeProjected, dqanalysisflags::LxyeeOverErr, dqanalysisflags::Lxyzee, dqanalysisflags::LxyzeeOverErr,
+                  dqanalysisflags::Chi2PCAee, dqanalysisflags::CosPAee,
+                  // primary vertex
+                  dqanalysisflags::Vx, dqanalysisflags::Vy, dqanalysisflags::Vz,
+                  // leg 1
+                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::DcaXY1, dqanalysisflags::DcaZ1, dqanalysisflags::DcaSigXY1, dqanalysisflags::DcaSigZ1,
+                  dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::ITSChi2leg1,
+                  // leg 2
+                  dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::DcaXY2, dqanalysisflags::DcaZ2, dqanalysisflags::DcaSigXY2, dqanalysisflags::DcaSigZ2,
+                  dqanalysisflags::ITSClusterMapleg2, dqanalysisflags::ITSChi2leg2,
+                  // ambiguity, event
+                  dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc,
+                  dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0C, dqanalysisflags::MultiplicityNContrib);
 DECLARE_SOA_TABLE(OniaMCTruth, "AOD", "MCTRUTHONIA", dqanalysisflags::OniaPt, dqanalysisflags::OniaEta, dqanalysisflags::OniaY, dqanalysisflags::OniaPhi, dqanalysisflags::OniaVz, dqanalysisflags::OniaVtxZ, dqanalysisflags::MultiplicityFT0A, dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0M, dqanalysisflags::MultiplicityNContrib);
 } // namespace o2::aod
 
@@ -2371,6 +2404,50 @@ struct AnalysisSameEventPairing {
               }
             }
           }
+          // flat table for prompt / non-prompt BDT training: one row per MC-matched opposite-sign pair
+          // (not per cut; select cuts offline via PairFilter). Kept identical to tableReader_withAssoc.
+          // Only meaningful with track covariances, the two-prong fitter and an event vertex covariance:
+          constexpr bool eventHasVtxCovForTable = ((TEventFillMap & VarManager::ObjTypes::ReducedEventVtxCov) > 0);
+          if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0 && trackHasCov && TTwoProngFitter && eventHasVtxCovForTable) {
+            // kVertexingProcCode == 0: the fit failed; FillPairVertexing then returns early without updating the
+            // projected / pseudo-proper / pointing-angle variables, so they would be stale -> skip the pair
+            const bool vertexingOK = VarManager::fgValues[VarManager::kVertexingProcCode] > 0;
+            if (t1.sign() * t2.sign() < 0 && mcDecision > 0 && vertexingOK) {
+              const bool ambiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
+              const bool ambiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+
+              // track DCA significances (DCA w.r.t. the collision the track was stored with, as kDCAxy1/kDCAz1)
+              auto dcaSig = [](float dca, float cov) -> float {
+                return cov > 0.f ? dca / std::sqrt(cov) : -999.f;
+              };
+              const float dcaSigXY1 = dcaSig(VarManager::fgValues[VarManager::kDCAxy1], t1.cYY());
+              const float dcaSigZ1 = dcaSig(VarManager::fgValues[VarManager::kDCAz1], t1.cZZ());
+              const float dcaSigXY2 = dcaSig(VarManager::fgValues[VarManager::kDCAxy2], t2.cYY());
+              const float dcaSigZ2 = dcaSig(VarManager::fgValues[VarManager::kDCAz2], t2.cZZ());
+
+              // decay-length significances: kVertexingLxyOverErr / kVertexingLxyzOverErr are only filled in the
+              // KFParticle branch of FillPairVertexing, not with the DCAFitter -> compute them explicitly
+              auto ratio = [](float num, float den) -> float {
+                return den > 0.f ? num / den : -999.f;
+              };
+              const float lxyOverErr = ratio(VarManager::fgValues[VarManager::kVertexingLxy], VarManager::fgValues[VarManager::kVertexingLxyErr]);
+              const float lxyzOverErr = ratio(VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzErr]);
+
+              PromptNonPromptSepTable(twoTrackFilter, mcDecision,
+                                      VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
+                                      VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
+                                      VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kVertexingTauzErr],
+                                      VarManager::fgValues[VarManager::kVertexingLxyProjected], lxyOverErr, VarManager::fgValues[VarManager::kVertexingLxyz], lxyzOverErr,
+                                      VarManager::fgValues[VarManager::kVertexingChi2PCA], VarManager::fgValues[VarManager::kCosPointingAngle],
+                                      VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ],
+                                      t1.pt(), t1.eta(), VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], dcaSigXY1, dcaSigZ1,
+                                      VarManager::fgValues[VarManager::kITSclusterMap1], t1.itsChi2NCl(),
+                                      t2.pt(), t2.eta(), VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], dcaSigXY2, dcaSigZ2,
+                                      VarManager::fgValues[VarManager::kITSclusterMap2], t2.itsChi2NCl(),
+                                      ambiInBunch, ambiOutOfBunch, isCorrectAssoc_leg1 && isCorrectAssoc_leg2,
+                                      VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxNcontribReal]);
+            }
+          }
         }
 
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -2469,11 +2546,6 @@ struct AnalysisSameEventPairing {
         // Fill histograms
         bool isAmbiInBunch = false;
         bool isAmbiOutOfBunch = false;
-        bool isCorrect_pair = false;
-        if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2) {
-          isCorrect_pair = true;
-        }
-
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
@@ -2482,10 +2554,6 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(histNames[icut][0].Data(), dqefficiency_helpers::varValues()); // reconstructed, unmatched
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {                     // loop over MC signals
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-                  PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
-                                          VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
-                                          VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kITSclusterMap1], VarManager::fgValues[VarManager::kTPCnSigmaEl1], VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kITSclusterMap2], VarManager::fgValues[VarManager::kTPCnSigmaEl2],
-                                          isAmbiInBunch, isAmbiOutOfBunch, isCorrect_pair, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
                   fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][0].Data(), dqefficiency_helpers::varValues()); // matched signal
                   if (useMiniTree.fConfigMiniTree) {
                     if constexpr (TPairType == VarManager::kDecayToMuMu) {
