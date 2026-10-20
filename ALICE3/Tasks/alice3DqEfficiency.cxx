@@ -775,7 +775,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
   std::vector<MCSignal*> fGenMCSignals;
 
   std::vector<AnalysisCompositeCut> fPairCuts;
-  AnalysisCompositeCut fMCGenAccCut;
+  AnalysisCompositeCut fMCGenAccCut{};
   bool fUseMCGenAccCut = false;
 
   uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream

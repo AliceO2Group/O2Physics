@@ -765,6 +765,8 @@ struct McBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
 
   o2::framework::Produces<o2::aod::StoredFColLabels> producedCollisionLabels;
   o2::framework::Produces<o2::aod::StoredFTrackLabels> producedTrackLabels;
+  o2::framework::Produces<o2::aod::StoredFSigmaLabels> producedSigmaLabels;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlusLabels> producedSigmaPlusLabels;
 };
 
 struct ConfMcTablesDerivedToDerived : o2::framework::ConfigurableGroup {
@@ -821,6 +823,30 @@ class McBuilderDerivedToDerived
     }
     auto mcParticle = track.template fMcParticle_as<T3>();
     mcProducts.producedTrackLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillSigmaWithLabel(T1 const& sigma, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!sigma.has_fMcParticle()) {
+      mcProducts.producedSigmaLabels(-1);
+      return;
+    }
+    auto mcParticle = sigma.template fMcParticle_as<T3>();
+    mcProducts.producedSigmaLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillSigmaPlusWithLabel(T1 const& sigmaPlus, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!sigmaPlus.has_fMcParticle()) {
+      mcProducts.producedSigmaPlusLabels(-1);
+      return;
+    }
+    auto mcParticle = sigmaPlus.template fMcParticle_as<T3>();
+    mcProducts.producedSigmaPlusLabels(
       this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
   }
 

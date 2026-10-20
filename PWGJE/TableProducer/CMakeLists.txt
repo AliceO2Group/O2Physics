@@ -30,16 +30,19 @@ o2physics_add_dpl_workflow(jet-deriveddata-trigger-producer
 
 o2physics_add_dpl_workflow(jet-deriveddata-selector
                     SOURCES derivedDataSelector.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-writer
                     SOURCES derivedDataWriter.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-luminosity-producer
                     SOURCES luminosityProducer.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -50,16 +53,19 @@ o2physics_add_dpl_workflow(jet-luminosity-calculator
 
 o2physics_add_dpl_workflow(jet-eventweight-mcd
                     SOURCES jetEventWeightMCD.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-eventweight-mcp
                     SOURCES jetEventWeightMCP.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mc-outlier-rejector
                     SOURCES mcOutlierRejector.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -70,31 +76,37 @@ o2physics_add_dpl_workflow(jet-track-derived
 
 o2physics_add_dpl_workflow(jet-hf-definition
                     SOURCES heavyFlavourDefinition.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-taggerhf
                     SOURCES jetTaggerHF.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(estimator-rho
                     SOURCES rhoEstimator.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(subtractor-eventwiseconstituent
                     SOURCES eventwiseConstituentSubtractor.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-sv-reconstruction
                     SOURCES secondaryVertexReconstruction.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(quark-gluon-jets-producer
                     SOURCES quarkGluonJetsProducer.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -113,16 +125,19 @@ o2physics_add_dpl_workflow(emcal-matchedtracks-writer
 
 o2physics_add_dpl_workflow(emcal-cluster-hadronic-correction-task
                     SOURCES emcalClusterHadronicCorrectionTask.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::EMCALBase O2::EMCALReconstruction
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(slim-tables-producer
                     SOURCES slimTablesProducer.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(berkeley-tree-producer
                     SOURCES berkeleyTreeProducer.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

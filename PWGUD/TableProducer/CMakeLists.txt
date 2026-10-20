@@ -13,6 +13,7 @@ add_subdirectory(Converters)
 
 o2physics_add_dpl_workflow(dg-cand-producer
                            SOURCES dgCandProducer.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder  O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
                            COMPONENT_NAME Analysis)
 
@@ -33,21 +34,25 @@ o2physics_add_dpl_workflow(upccand-producer # o2-linter: disable=name/o2-workflo
 
 o2physics_add_dpl_workflow(tau-event-table-producer
                            SOURCES tauEventTableProducer.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(two-tracks-event-table-producer
                            SOURCES twoTracksEventTableProducer.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(two-fwd-tracks-event-table-producer
                            SOURCES twoFwdTracksEventTableProducer.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(fwd-track-propagation
                            SOURCES fwdTrackPropagation.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                            COMPONENT_NAME Analysis)
 
@@ -63,26 +68,31 @@ o2physics_add_dpl_workflow(udmccollisions-to-udcollisions # o2-linter: disable=n
 
 o2physics_add_dpl_workflow(tau-three-prong-event-table-producer
                            SOURCES tauThreeProngEventTableProducer.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upc-cand-producer-muon
                            SOURCES upcCandProducerMuon.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(true-gap-producer
                            SOURCES trueGapProducer.cxx
+                           REUSE_FROM UDTablesPCH
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upc-cand-producer-global-muon
         SOURCES upcCandProducerGlobalMuon.cxx
+        REUSE_FROM UDTablesPCH
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
         COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upc-cand-producer-semi-fwd
         SOURCES upcCandProducerSemiFwd.cxx
+        REUSE_FROM UDTablesPCH
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
         COMPONENT_NAME Analysis)
 

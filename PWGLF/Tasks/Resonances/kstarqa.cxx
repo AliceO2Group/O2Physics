@@ -366,15 +366,19 @@ struct Kstarqa {
       hShift.add("h2D_dpz_vs_pz_KaonFromPhi", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
       hShift.add("h2D_dpt_vs_pt_KaonFromPhi", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h2D_dpx_vs_px_AllKaons", "Kaon from Phi: deta vs eta", kTH2F, {{subAxis}, {etaAxis}});
-      hShift.add("h2D_dpy_vs_py_AllKaons", "Kaon from Phi: dphi vs phi", kTH2F, {{subAxis}, {phiAxis}});
-      hShift.add("h2D_dpz_vs_pz_AllKaons", "Kaon from Phi: dR vs eta", kTH2F, {{subAxis}, {etaAxis}});
-      hShift.add("h2D_dpt_vs_pt_AllKaons", "Kaon from Phi: dR vs phi", kTH2F, {{subAxis}, {phiAxis}});
+      hShift.add("h2D_dpx_vs_px_AllKaons", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpy_vs_py_AllKaons", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpz_vs_pz_AllKaons", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpt_vs_pt_AllKaons", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h2D_dpx_vs_px_Phi", "Pion from Phi: deta vs eta", kTH2F, {{subAxis}, {etaAxis}});
-      hShift.add("h2D_dpy_vs_py_Phi", "Pion from Phi: dphi vs phi", kTH2F, {{subAxis}, {phiAxis}});
-      hShift.add("h2D_dpz_vs_pz_Phi", "Pion from Phi: dR vs eta", kTH2F, {{subAxis}, {etaAxis}});
-      hShift.add("h2D_dpt_vs_pt_Phi", "Pion from Phi: dR vs phi", kTH2F, {{subAxis}, {phiAxis}});
+      hShift.add("h2D_dpx_vs_px_Phi", "Pion from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpy_vs_py_Phi", "Pion from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpz_vs_pz_Phi", "Pion from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpt_vs_pt_Phi", "Pion from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
+
+      hShift.add("h1D_MassPhiGen", "Invariant mass of generated Phi meson", kTH1F, {{300, 1.0, 1.06}});
+      hShift.add("h1D_MassPhiRec", "Invariant mass of reconstructed Phi meson", kTH1F, {{300, 1.0, 1.06}});
+      hShift.add("h2D_pt_massShiftPhi", "pT vs mass shift of Phi meson", kTH2F, {{ptAxis}, {300, -0.1, 0.1}});
     }
 
     // Signal Loss & Event Loss in Light Ion Collisions
@@ -3192,7 +3196,19 @@ struct Kstarqa {
             if (track1.sign() * track2.sign() < 0) {
               daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
               daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+
+              genDaughter1 = ROOT::Math::PxPyPzMVector(mctrack1.px(), mctrack1.py(), mctrack1.pz(), massKa);
+              genDaughter2 = ROOT::Math::PxPyPzMVector(mctrack2.px(), mctrack2.py(), mctrack2.pz(), massKa);
+
               mother = daughter1 + daughter2; // Phi meson
+              genMother = genDaughter1 + genDaughter2; // Phi meson
+
+              recMass = mother.M();
+              genMass = genMother.M();
+
+              hShift.fill(HIST("h1D_MassPhiGen"), genMass);
+              hShift.fill(HIST("h1D_MassPhiRec"), recMass);
+              hShift.fill(HIST("h2D_pt_massShiftPhi"), mother.pt(), genMass - recMass);
 
               auto genpTPhi = mothertrack1.pt();
               auto genEtaPhi = mothertrack1.eta();

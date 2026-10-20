@@ -776,7 +776,7 @@ struct AnalysisTrackSelection {
       // compute quantities which depend on the associated collision, such as DCA
       if (track.collisionId() != event.globalIndex()) {
         VarManager::FillTrackCollision<TTrackFillMap>(track, event);
-      // cout << "Filled track observables for association" << endl;
+        // cout << "Filled track observables for association" << endl;
       }
 
       bool isCorrectAssoc = false;
@@ -1976,9 +1976,9 @@ struct AnalysisSameEventPairing {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
             isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
-            if (sign1 * sign2 < 0) {                                                    // +- pairs
+            if (sign1 * sign2 < 0) {                                                                         // +- pairs
               fHistMan->FillHistClass(histNames[icut][0].Data(), static_cast<float*>(VarManager::fgValues)); // reconstructed, unmatched
-              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {                             // loop over MC signals
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
                                           VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
@@ -3233,7 +3233,7 @@ struct AnalysisDileptonTrackTrack {
   uint32_t fTrackCutBitMap1;
   uint32_t fTrackCutBitMap2;
   bool fIsSameTrackCut = false;
-  AnalysisCompositeCut fDileptonCut;
+  AnalysisCompositeCut fDileptonCut{};
   std::vector<TString> fQuadrupletCutNames;
   std::vector<AnalysisCompositeCut> fQuadrupletCuts;
 
@@ -3320,6 +3320,17 @@ struct AnalysisDileptonTrackTrack {
     TObjArray* cfgTrackSelection_objArrayTrackCuts = nullptr;
     if (!cfgTrackSelection_TrackCuts.empty()) {
       cfgTrackSelection_objArrayTrackCuts = TString(cfgTrackSelection_TrackCuts).Tokenize(",");
+    }
+    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", cfgTrackSelection_TrackCuts, false);
+    if (!cfgTrackSelection_TrackCuts.empty()) {
+      if (cfgTrackSelection_objArrayTrackCuts == nullptr) {
+        cfgTrackSelection_objArrayTrackCuts = new TObjArray();
+      }
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(cfgTrackSelection_TrackCuts.data());
+      for (const auto& t : addTrackCuts) {
+        auto tempObjStr = new TObjString(t->GetName());
+        cfgTrackSelection_objArrayTrackCuts->Add(tempObjStr);
+      }
     }
     for (Int_t icut = 0; icut < cfgTrackSelection_objArrayTrackCuts->GetEntries(); ++icut) {
       TString cutName = cfgTrackSelection_objArrayTrackCuts->At(icut)->GetName();
@@ -3721,7 +3732,7 @@ struct AnalysisDileptonTrackTrack {
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processX3872, "Run X(3872) -> J/psi + pi+ pi- pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processMCGenWithEventSelection, "Loop over MC particle stack and fill generator level histograms with event selection", false);
-  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -3824,6 +3835,10 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
     //   dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_track");
     // }
 
+    if (classStr.Contains("MCTruthGenQuad")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_quad", histName);
+    }
+
     if (classStr.Contains("DileptonsSelected")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
@@ -3846,6 +3861,10 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
 
     if (classStr.Contains("DileptonHadronCorrelation")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
+    }
+
+    if (classStr.Contains("Quadruplet")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-dihadron", histName);
     }
   } // end loop over histogram classes
 }

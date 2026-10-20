@@ -141,6 +141,8 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
   Configurable<float> cutCollPosZMc{"cutCollPosZMc", 10., "max z-vertex position for collision acceptance"};
   Configurable<bool> storeMassAxis{"storeMassAxis", false, "Store Mass axis in THnSparse"};
+  Configurable<bool> storeBMotherInfo{"storeBMotherInfo", false, "Store generated pT(B mother) and phi(D+) - phi(B mother) of non-prompt D+ in MC Rec histograms"};
+  Configurable<std::vector<double>> binsPtBMother{"binsPtBMother", std::vector<double>{0., 2., 4., 6., 8., 12., 16., 24., 36., 50., 99.}, "pT bin limits for the B mother of non-prompt D+"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> associatedEffCcdbPath{"associatedEffCcdbPath", "", "CCDB path for associated efficiency"};
@@ -164,8 +166,9 @@ struct HfTaskCorrelationDplusHadrons {
                        kCandidateStepMcRecoInAcceptance,
                        kCandidateNSteps };
 
-  using DplusHadronPair = soa::Join<aod::DplusHadronPair, aod::DplusHadronRecoInfo, aod::DplusHadronGenInfo>;
+  using DplusHadronPairWithBMother = soa::Join<aod::DplusHadronPair, aod::DplusHadronRecoInfo, aod::DplusHadronGenInfo, aod::BMotherPairInfo>;
   using DplusHadronPairFullWithMl = soa::Join<aod::DplusHadronPair, aod::DplusHadronRecoInfo, aod::DplusHadronGenInfo, aod::DplusHadronMlInfo, aod::TrkRecInfoDplus>;
+  using DplusHadronPairFullWithMlAndBMother = soa::Join<aod::DplusHadronPair, aod::DplusHadronRecoInfo, aod::DplusHadronGenInfo, aod::DplusHadronMlInfo, aod::TrkRecInfoDplus, aod::BMotherPairInfo>;
   using CandDplusMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi, aod::HfCand3ProngMcRec>>;
   using CandDplusMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
   using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, o2::aod::McTrackLabels>>; // trackFilter applied
@@ -179,6 +182,7 @@ struct HfTaskCorrelationDplusHadrons {
   ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
+  ConfigurableAxis binsDeltaPhiBMother{"binsDeltaPhiBMother", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}^{D}-#it{#varphi}^{B}"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -195,6 +199,8 @@ struct HfTaskCorrelationDplusHadrons {
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
     AxisSpec axisDplusPrompt = {2, -0.5, 1.5, "Prompt D+"};
     AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
+    AxisSpec axisPtBMother = {(std::vector<double>)binsPtBMother, "#it{p}_{T}^{B} (GeV/#it{c})"};
+    AxisSpec axisDeltaPhiBMother = {binsDeltaPhiBMother, "#it{#varphi}^{D}-#it{#varphi}^{B} (rad)"};
 
     // Histograms for data analysis
     registry.add("hBdtScorePrompt", "D+ BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
@@ -259,6 +265,17 @@ struct HfTaskCorrelationDplusHadrons {
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandRightMcRec"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMcRec"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"))->Sumw2();
+
+      // beauty-mother information of non-prompt D+ (generated B, reconstructed D+)
+      if (storeBMotherInfo) {
+        registry.add("hMassNonPromptDplusVsPtVsPtBMother", "D+ non prompt candidates mass Vs Pt Vs Pt B mother", {HistType::kTH3F, {{axisMassD}, {axisPtD}, {axisPtBMother}}});
+        registry.add("hDeltaPhiBMotherVsPtVsPtBMother", "D+ non prompt candidates #varphi^{D}-#varphi^{B} Vs Pt Vs Pt B mother", {HistType::kTH3F, {{axisDeltaPhiBMother}, {axisPtD}, {axisPtBMother}}});
+        registry.add("hCorrel2DVsPtNonPromptDplusPhysicalPrimaryMcRecBMother", stringDHadron + "non-prompt D (only true primary particles)" + stringSignal, {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPtBMother}, {axisDeltaPhiBMother}}});
+        registry.add("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRecBMother", stringDHadron + "signal region NonPromptD - NonPrompt Track MC reco", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPtBMother}, {axisDeltaPhiBMother}}});
+
+        registry.get<THnSparse>(HIST("hCorrel2DVsPtNonPromptDplusPhysicalPrimaryMcRecBMother"))->Sumw2();
+        registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRecBMother"))->Sumw2();
+      }
     }
     // Histograms for MC Gen analysis
     if (fillHistoMcGen) {
@@ -274,6 +291,15 @@ struct HfTaskCorrelationDplusHadrons {
       registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGen"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenPrompt"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenNonPrompt"))->Sumw2();
+
+      // beauty-mother information of non-prompt D+, same axes as the MC Rec counterparts to allow Rec/Gen ratios
+      if (storeBMotherInfo) {
+        registry.add("hCorrel2DVsPtMcGenNonPromptBMother", stringDHadron + " NonPrompt MC Gen", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPtBMother}, {axisDeltaPhiBMother}}});
+        registry.add("hCorrel2DVsPtMcGenNonPromptDNonPromptHadronBMother", stringDHadron + " non prompt D non prompt h MC Gen", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPtBMother}, {axisDeltaPhiBMother}}});
+
+        registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenNonPromptBMother"))->Sumw2();
+        registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenNonPromptDNonPromptHadronBMother"))->Sumw2();
+      }
     }
     // Histograms for efficiencies
     registry.add("Efficiency/hPtCandMcRecPrompt", stringMCRecoDPrompt + stringPtD, {HistType::kTH1F, {axisPtD}});
@@ -312,7 +338,7 @@ struct HfTaskCorrelationDplusHadrons {
       }
       LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
     }
-    auto effD = isPromptAnalysis ? mEfficiencyPrompt : mEfficiencyFD;
+    effD = isPromptAnalysis ? mEfficiencyPrompt : mEfficiencyFD;
     idxBdtScore = isPromptAnalysis ? 1 : 2;
 
     if (activateQA) {
@@ -439,8 +465,8 @@ struct HfTaskCorrelationDplusHadrons {
   PROCESS_SWITCH(HfTaskCorrelationDplusHadrons, processData, "Process data", false);
 
   /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
-  void processMcRec(DplusHadronPairFullWithMl const& pairEntries,
-                    soa::Join<aod::DplusRecoInfo, aod::DplusGenInfo> const& candidates)
+  void processMcRec(DplusHadronPairFullWithMlAndBMother const& pairEntries,
+                    soa::Join<aod::DplusRecoInfo, aod::DplusGenInfo, aod::BMotherCandInfo> const& candidates)
   {
     for (const auto& candidate : candidates) {
       float const massD = candidate.mD();
@@ -482,6 +508,10 @@ struct HfTaskCorrelationDplusHadrons {
           registry.fill(HIST("hMassNonPromptDplusVsPt"), massD, ptD, efficiencyWeightD);
           registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
           registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
+          if (storeBMotherInfo) {
+            registry.fill(HIST("hMassNonPromptDplusVsPtVsPtBMother"), massD, ptD, candidate.ptB(), efficiencyWeightD);
+            registry.fill(HIST("hDeltaPhiBMotherVsPtVsPtBMother"), candidate.deltaPhiBtoD(), ptD, candidate.ptB(), efficiencyWeightD);
+          }
         }
       }
     }
@@ -556,6 +586,15 @@ struct HfTaskCorrelationDplusHadrons {
           } else if (!isDplusPrompt && originHadron == RecoDecay::OriginType::NonPrompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
           }
+          // beauty-mother information, only for true non-prompt D+, to study the structures in the MC Closure test
+          if (storeBMotherInfo && pairEntry.signalStatus() && !isDplusPrompt) {
+            float const ptB = pairEntry.ptB();
+            float const deltaPhiBtoD = pairEntry.deltaPhiBtoD();
+            registry.fill(HIST("hCorrel2DVsPtNonPromptDplusPhysicalPrimaryMcRecBMother"), deltaPhi, deltaEta, ptD, ptHadron, ptB, deltaPhiBtoD, efficiencyWeight);
+            if (originHadron == RecoDecay::OriginType::NonPrompt) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRecBMother"), deltaPhi, deltaEta, ptD, ptHadron, ptB, deltaPhiBtoD, efficiencyWeight);
+            }
+          }
         }
       }
       // in sideband left region
@@ -583,7 +622,7 @@ struct HfTaskCorrelationDplusHadrons {
   PROCESS_SWITCH(HfTaskCorrelationDplusHadrons, processMcRec, "Process MC Reco mode", true);
 
   /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(DplusHadronPair const& pairEntries)
+  void processMcGen(DplusHadronPairWithBMother const& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
@@ -607,6 +646,15 @@ struct HfTaskCorrelationDplusHadrons {
         registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         if (originHadron == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
+        }
+        // beauty-mother information
+        if (storeBMotherInfo) {
+          float const ptB = pairEntry.ptB();
+          float const deltaPhiBtoD = pairEntry.deltaPhiBtoD();
+          registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptBMother"), deltaPhi, deltaEta, ptD, ptHadron, ptB, deltaPhiBtoD);
+          if (originHadron == RecoDecay::OriginType::NonPrompt) {
+            registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDNonPromptHadronBMother"), deltaPhi, deltaEta, ptD, ptHadron, ptB, deltaPhiBtoD);
+          }
         }
       }
     }

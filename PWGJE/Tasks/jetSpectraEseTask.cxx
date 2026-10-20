@@ -615,6 +615,12 @@ struct JetSpectraEseTask {
       registry.add("hSTrackPtPhiEtaOcc", ";cent;jpt;phi;eta;occ", {HistType::kTHnSparseF, {{centAxis}, {100, 0, 100}, {phiAxis}, {etaAxis}, {occAxis}}});
       registry.add("hSJetPtPhiEtaOcc", ";cent;jpt;phi;eta;occ", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {phiAxis}, {etaAxis}, {occAxis}}});
     }
+    if (doprocessJetAlignment) {
+      LOGF(info, "JetSpectraEseTask::init() - Jet Alignment Process");
+      registry.add("hCentq2", ";cent;#it{q}_{2};occ", {HistType::kTHnSparseF, {{centAxis}, {100, 0, 100}}});
+      registry.add("hTrackPtPhiEta", ";cent;p_{T,track};#phi;#eta", {HistType::kTHnSparseF, {{centAxis}, {100, 0, 100}, {phiAxis}, {etaAxis}}});
+      registry.add("hJetPtPhiEta", ";cent;p_{T,jet};jet #phi;jet #eta", {HistType::kTHnSparseF, {{centAxis}, {250, -50, 200}, {phiAxis}, {etaAxis}}});
+    }
     if (doprocessMCGenTrack) {
       LOGF(info, "JetSpectraEseTask::init() - MCGen track");
       registry.add("mcgen/h3TrackPtGen", ";#it{p}_{T,track}; vtxZ; #eta", {HistType::kTH3F, {{assocTrackPt}, {vertexZAxis}, {etaAxis}}});
@@ -1083,6 +1089,57 @@ struct JetSpectraEseTask {
     }
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEOccupancy, "process occupancy", false);
+
+  void processJetAlignment(soa::Join<aod::JetCollisions, aod::Qvectors, aod::BkgChargedRhos, aod::QPercentileFT0Cs>::iterator const& collision,
+                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
+  {
+    const auto psi{procEP<PsiFillerFalse>(collision)};
+    if (!psi.isValid) {
+      return;
+    }
+    const auto qPerc{collision.qPERCFT0C()};
+    if (qPerc[0] < 0) {
+      return;
+    }
+
+    std::unique_ptr<TF1> rhoFit{nullptr};
+    if (cfgrhoPhi) {
+      rhoFit = fitRho<false>(collision, psi, tracks, jets);
+      if (!rhoFit) {
+        return;
+      }
+    }
+
+    if (!isVertexSelected(collision)) {
+      return;
+    }
+
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+      return;
+    }
+
+    registry.fill(HIST("hCentq2"), getCentrality(collision), qPerc[0]);
+    auto corrL = [&](const auto& j) { return j.pt() - evalRho(rhoFit.get(), jetR, j.phi(), collision.rho()) * j.area(); };
+
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackCuts.trackEtaMin, trackCuts.trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<soa::Join<aod::JetTracks, aod::JTrackPIs>>(jet)) {
+        continue;
+      }
+      auto vCorrL = cfgrhoPhi ? corrL(jet) : corr(collision, jet);
+      registry.fill(HIST("hJetPtPhiEta"), getCentrality(collision), vCorrL, jet.phi(), jet.eta());
+    }
+
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+      registry.fill(HIST("hTrackPtPhiEta"), getCentrality(collision), track.pt(), track.phi(), track.eta());
+    }
+  }
+  PROCESS_SWITCH(JetSpectraEseTask, processJetAlignment, "process jet+track spectra for QA checking alignment issues", false);
 
   void processMCParticleLevel(soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator const& mcCollision,
                               soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,

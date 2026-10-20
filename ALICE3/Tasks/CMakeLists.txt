@@ -44,6 +44,11 @@ o2physics_add_dpl_workflow(alice3-prefilterdilepton
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-prefilterdimuon
+                    SOURCES alice3-prefilterdimuon.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-taskcorrelationddbar
                     SOURCES alice3-taskcorrelationDDbar.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

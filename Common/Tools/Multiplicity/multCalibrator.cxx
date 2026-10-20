@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <iostream> // FIXME
+#include <vector>
 
 using namespace std;
 
@@ -353,8 +354,8 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, const TString& lHis
     // place squarely at the middle to ensure it's all fine
     lMiddleOfBins[lB - 1] = 0.5 * (lDesiredBoundaries[lB] + lDesiredBoundaries[lB - 1]);
   }
-  Double_t lBounds[lNDesiredBoundaries + 1];
-  Double_t lPrecision[lNDesiredBoundaries + 1];
+  std::vector<Double_t> lBounds(lNDesiredBoundaries + 1);
+  std::vector<Double_t> lPrecision(lNDesiredBoundaries + 1);
 
   if (fAnchorPointValue > 0) {
     lBounds[0] = 0;
@@ -382,7 +383,7 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, const TString& lHis
       cout << histoRaw->GetName() << " boundaries, percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lBounds[lDisplacedii] << "\tprecision = " << lPrecision[ii] << "% " << lPrecisionString.Data() << endl;
     }
   }
-  TH1F* hCalib = new TH1F(lHistoName.Data(), "", fAnchorPointValue < 0 ? lNDesiredBoundaries - 1 : lNDesiredBoundaries, lBounds);
+  TH1F* hCalib = new TH1F(lHistoName.Data(), "", fAnchorPointValue < 0 ? lNDesiredBoundaries - 1 : lNDesiredBoundaries, lBounds.data());
   hCalib->SetDirectory(0);
   hCalib->SetBinContent(0, 100.5);
   hCalib->SetBinContent(1, 100.5);

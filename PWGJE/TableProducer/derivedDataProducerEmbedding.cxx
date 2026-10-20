@@ -13,9 +13,9 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/Core/JetDQUtilities.h"
+// #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetV0Utilities.h"
+// #include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 #include "PWGJE/DataModel/JetReducedData.h"
@@ -23,17 +23,17 @@
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataV0.h"
 //
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
+// #include "PWGDQ/DataModel/ReducedInfoTables.h"
+// #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+// #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGUD/Core/SGCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/RecoDecay.h"
+// #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
@@ -53,6 +53,7 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Vertex.h>
@@ -182,7 +183,6 @@ struct JetDerivedDataEmbeddingProducerTask {
 
     Configurable<bool> includeTriggers{"includeTriggers", false, "fill the collision information with software trigger decisions"};
     Configurable<bool> includeHadronicRate{"includeHadronicRate", true, "fill the collision information with the hadronic rate"};
-    Configurable<bool> includeUpcs{"includeUpcs", true, "include option to identify UPC events"};
     Configurable<bool> v0ChargedDecaysOnly{"v0ChargedDecaysOnly", true, "store V0s (at particle-level) only if they decay to charged particles"};
     Configurable<bool> isMCGenOnly{"isMCGenOnly", false, "analysis is run over mcGen only"};
 
@@ -496,7 +496,7 @@ struct JetDerivedDataEmbeddingProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processMcCollisionLabels, "produces derived MC collision labels table", false);
+  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processMcCollisionLabels, "produces derived MC collision labels table", true);
 
   void processMcCollisions(soa::Join<aod::McCollisionsFrom<o2::aod::Hash<"EMB"_h>>, aod::HepMCXSectionsFrom<o2::aod::Hash<"EMB"_h>>, aod::MultsExtraMCFrom<o2::aod::Hash<"EMB"_h>>, aod::McCentFT0MsFrom<o2::aod::Hash<"EMB"_h>>>::iterator const& mcCollision)
   {
@@ -514,7 +514,7 @@ struct JetDerivedDataEmbeddingProducerTask {
     products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), selDecision, rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
-  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processMcCollisions, "produces derived MC collision table", false);
+  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processMcCollisions, "produces derived MC collision table", true);
 
   void processMcCollisionsWithoutCentralityAndMultiplicity(soa::Join<aod::McCollisionsFrom<o2::aod::Hash<"EMB"_h>>, aod::HepMCXSectionsFrom<o2::aod::Hash<"EMB"_h>>>::iterator const& mcCollision)
   {
@@ -814,12 +814,12 @@ struct JetDerivedDataEmbeddingProducerTask {
     products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.statusCode(), particle.flags(), mothersId, daughtersId);
     products.jParticlesParentIndexTable(particle.globalIndex());
   }
-  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processParticles, "produces derived parrticle table", false);
+  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processParticles, "produces derived parrticle table", true);
 
   void processClusters(aod::Collision const&, aod::EMCALClusters const& clusters, aod::EMCALClusterCells const& cells, aod::Calos const&, aod::EMCALMatchedTracks const& matchedTracks, soa::Join<aod::Tracks, aod::TracksExtra> const&)
   {
 
-    for (auto cluster : clusters) {
+    for (auto const& cluster : clusters) {
 
       auto const clusterCells = cells.sliceBy(preslices.perClusterCells, cluster.globalIndex());
 
