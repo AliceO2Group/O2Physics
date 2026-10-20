@@ -46,7 +46,6 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
-#include <TH2.h>
 #include <THnSparse.h>
 #include <TString.h>
 
@@ -156,7 +155,7 @@ struct HfTaskCorrelationDplusHadrons {
   std::shared_ptr<TH1> mEfficiencyPrompt = nullptr;
   std::shared_ptr<TH1> mEfficiencyFD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
-  std::vector<double> binsPtMlD{}; // pT bin limits for the ML cuts (binsPtMl, or binsPtEfficiencyD if binsPtMl is empty)
+  std::vector<double> binsPtMlD; // pT bin limits for the ML cuts (binsPtMl, or binsPtEfficiencyD if binsPtMl is empty)
 
   enum CandidateStep { kCandidateStepMcGenAll = 0,
                        kCandidateStepMcGenDplusToPiKPi,
