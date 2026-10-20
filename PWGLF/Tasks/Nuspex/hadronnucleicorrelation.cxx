@@ -637,7 +637,7 @@ struct HadronNucleiCorrelation {
           if (!doITSPID.value || isITSPID) {
             return signCheck;
           }
-        } else if (isTPCElRejection || isTOFPID) {
+        } else if (isTOFPID || (isTPCElRejection && (!doITSPID.value || isITSPID))) {
           return signCheck;
         }
       }
@@ -1041,7 +1041,7 @@ struct HadronNucleiCorrelation {
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
             if (!isPr) {
               registryQa.fill(HIST("QA/h3dTPCTOF_De"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (isTPCElRejection || isTOFPID) {
+              if (isTOFPID || (isTPCElRejection && (!doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value))) {
                 registryQa.fill(HIST("QA/h3dTPCTOF_De_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
               }
             }
@@ -1054,7 +1054,7 @@ struct HadronNucleiCorrelation {
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
             if (!isPr) {
               registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (isTPCElRejection || isTOFPID) {
+              if (isTOFPID || (isTPCElRejection && (!doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value))) {
                 registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
               }
             }
