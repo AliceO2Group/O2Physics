@@ -160,12 +160,6 @@ constexpr const char PrefixTrackSelection1[] = "TrackSelection1";
 constexpr const char PrefixTrackSelection2[] = "TrackSelection2";
 constexpr const char PrefixTrackSelection3[] = "TrackSelection3";
 
-// for resonances builder
-constexpr const char PrefixPionPlus[] = "PionPlusSelection";
-constexpr const char PrefixPionMinus[] = "PionMinusSelection";
-constexpr const char PrefixKaonPlus[] = "KaonPlusSelection";
-constexpr const char PrefixKaonMinus[] = "KaonMinusSelection";
-
 // for dN/deta: tracks with TPC (ITS + TPC quality bits) and tracks without TPC (ITS quality bits only)
 // set maskLowMomentum = maskHighMomentum (quality bits only), chargeSign = 0 and the eta/pT range of the measurement
 constexpr const char PrefixTrackSelectionDndetaGlobal[] = "TrackSelectionDndetaGlobal";   // Global = ITS + TPC
@@ -176,13 +170,45 @@ using ConfTrackSelection1 = ConfTrackSelection<PrefixTrackSelection1>;
 using ConfTrackSelection2 = ConfTrackSelection<PrefixTrackSelection2>;
 using ConfTrackSelection3 = ConfTrackSelection<PrefixTrackSelection3>;
 
-using ConfPionPlusSelection = ConfTrackSelection<PrefixPionPlus>;
-using ConfPionMinusSelection = ConfTrackSelection<PrefixPionMinus>;
-using ConfKaonPlusSelection = ConfTrackSelection<PrefixKaonPlus>;
-using ConfKaonMinusSelection = ConfTrackSelection<PrefixKaonMinus>;
-
 using ConfTrackSelectionDndetaGlobal = ConfTrackSelection<PrefixTrackSelectionDndetaGlobal>;
 using ConfTrackSelectionDndetaItsOnly = ConfTrackSelection<PrefixTrackSelectionDndetaItsOnly>;
+
+// Track selection for resonance daughters (pion+/-, kaon+/-). Charge sign and abs charge are fixed
+// by the species itself, so they are compile-time constants rather than configurables. No pdg code
+// here at all: the daughter mass used to reconstruct the resonance is set directly in the resonance
+// builder (e.g. MassPiPlus/MassKMinus), never read from this selection. Used exclusively by the
+// resonance builders via MAKE_RESONANCE_DAUGHTER_PARTITION.
+template <auto& Prefix, int ChargeSign, float PidThresDefault>
+struct ConfResonanceDaughterSelection : public o2::framework::ConfigurableGroup {
+  std::string prefix = Prefix;
+  static constexpr int chargeAbs = 1;
+  static constexpr int chargeSign = ChargeSign;
+  // filters for kinematics
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.0f, "Minimum pT (GeV/c)"};
+  o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
+  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  // track selection masks
+  o2::framework::Configurable<datatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 1ul, "Bitmask for selections below momentum threshold"};
+  o2::framework::Configurable<datatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 2ul, "Bitmask for selections above momentum threshold"};
+  // track rejection masks
+  o2::framework::Configurable<datatypes::TrackMaskType> rejectionMaskLowMomentum{"rejectionMaskLowMomentum", 0ul, "Bitmask for rejections below momentum threshold"};
+  o2::framework::Configurable<datatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
+  // momentum threshold for PID usage
+  o2::framework::Configurable<float> pidThres{"pidThres", PidThresDefault, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
+};
+
+constexpr const char PrefixPionPlus[] = "PionPlusSelection";
+constexpr const char PrefixPionMinus[] = "PionMinusSelection";
+constexpr const char PrefixKaonPlus[] = "KaonPlusSelection";
+constexpr const char PrefixKaonMinus[] = "KaonMinusSelection";
+
+using ConfPionPlusSelection = ConfResonanceDaughterSelection<PrefixPionPlus, 1, 0.5f>;
+using ConfPionMinusSelection = ConfResonanceDaughterSelection<PrefixPionMinus, -1, 0.5f>;
+using ConfKaonPlusSelection = ConfResonanceDaughterSelection<PrefixKaonPlus, 1, 0.4f>;
+using ConfKaonMinusSelection = ConfResonanceDaughterSelection<PrefixKaonMinus, -1, 0.4f>;
 
 /// enum for all track selections
 enum TrackSels {
