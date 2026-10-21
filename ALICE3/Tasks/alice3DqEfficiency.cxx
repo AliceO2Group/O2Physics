@@ -983,7 +983,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     fHistMan->SetUseDefaultVariableNames(true);
     fHistMan->SetDefaultVarNames(dqefficiency_helpers::varNames(), dqefficiency_helpers::varUnits());
 
-    VarManager::SetCollisionSystem((TString)fConfigOptions.syst, fConfigOptions.energy); // set collision system and center of mass energy
+    VarManager::SetCollisionSystem(TString(fConfigOptions.syst), fConfigOptions.energy); // set collision system and center of mass energy
 
     defineHistograms(fHistMan, histNames.Data(), cfgAddSEPHistogram.value.data());     // define all histograms
     dqhistograms::AddHistogramsFromJSON(fHistMan, cfgAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
