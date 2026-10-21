@@ -22,5 +22,11 @@ o2physics_add_dpl_workflow(apply-ml-selection
 
 o2physics_add_dpl_workflow(benchmark-onnx-model
                   SOURCES benchmarkOnnxModel.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2::ML O2::GPUCommon ONNXRuntime::ONNXRuntime ${CMAKE_DL_LIBS}
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2::ML O2::GPUCommon ONNXRuntime::ONNXRuntime
+                  TARGETVARNAME benchmarkOnnxModelTarget
                   COMPONENT_NAME AnalysisTutorial)
+
+# System libraries are linked directly: the workflow helper requires namespaced targets.
+if(CMAKE_DL_LIBS)
+  target_link_libraries(${benchmarkOnnxModelTarget} PRIVATE ${CMAKE_DL_LIBS})
+endif()
