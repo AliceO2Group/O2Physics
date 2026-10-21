@@ -755,8 +755,10 @@ struct HfTreeCreatorXicToXiPiPi {
       if (std::abs(daugh.pdgCode()) == +kPiPlus) {
         if (foundFirstPi) {
           ptPi1 = daugh.pt();
+          etaPi1 = daugh.eta();
         } else {
           ptPi0 = daugh.pt();
+          etaPi0 = daugh.eta();
           foundFirstPi = true;
         }
       } else if (std::abs(daugh.pdgCode()) == +kXiMinus) {
@@ -765,14 +767,17 @@ struct HfTreeCreatorXicToXiPiPi {
           auto daughXi = particles.rawIteratorAt(iProngXi);
           if (std::abs(daughXi.pdgCode()) == +kPiPlus) {
             ptPiBachelor = daughXi.pt();
+            etaPiBachelor = daughXi.eta();
           } else {
             RecoDecay::getDaughters(daughXi, &arrDaughIndex, std::array{+kProton, -kPiPlus}, 1);
             for (const int iProngLambda : arrDaughIndex) {
               auto daughLambda = particles.rawIteratorAt(iProngLambda);
               if (std::abs(daughLambda.pdgCode()) == +kPiPlus) {
                 ptPiFromLambda = daughLambda.pt();
+                etaPiFromLambda = daughLambda.eta();
               } else {
                 ptPrFromLambda = daughLambda.pt();
+                etaPrFromLambda = daughLambda.eta();
               }
             }
           }
