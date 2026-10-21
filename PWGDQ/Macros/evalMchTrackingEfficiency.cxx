@@ -32,8 +32,8 @@
 
 double computeEfficiencyPerChamber(THnF* hnf, int iAxis, int iCh, double binLimits[2]);
 double computeEfficiencyPerChamber(THnF* hnf, const int iAxis[3], int iCh, double binLimits[3][2]);
-double computeStationEfficiency(double effPerChamber[4], int iStation);
-double computeTotalEfficiency(double effPerStation[5]);
+double computeStationEfficiency(double const effPerChamber[4], int iStation);
+double computeTotalEfficiency(double const effPerStation[5]);
 
 void getBinLimits(THnF* hnf, int nBins, int iAxis, std::vector<double>& limits);
 void setHistoMinPt(THnF* hnf, int iAxis, float minPt);
@@ -102,7 +102,6 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
   // as well as the one per station
   // the total integrated value is stored in both histos as last quantity for reference
   TH1F* hEffIntegratedChamber = new TH1F("hEffIntegratedChamber", "integrated efficiency per chamber; ;Efficiency", kChamber + 1, -0.5, kChamber + 0.5);
-  const char* hChNames[kChamber + 1];
   for (int i = 0; i < kChamber; i++) {
     hEffIntegratedChamber->GetXaxis()->SetBinLabel(i + 1, Form("Chamber %d", i));
   }
@@ -110,7 +109,6 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
 
   // Define histogram for integrated efficiency per station
   TH1F* hEffIntegratedStation = new TH1F("hEffIntegratedStation", "integrated efficiency per station; ;Efficiency", kStation, -0.5, kStation + 0.5);
-  const char* hStNames[kStation];
   for (int i = 0; i < 3; i++) {
     hEffIntegratedStation->GetXaxis()->SetBinLabel(i + 1, Form("Station %d", i));
   }
@@ -384,7 +382,7 @@ double computeEfficiencyPerChamber(THnF* hnf, const int iAxis[3], int iCh, doubl
 // Compute the efficiency per station
 // Stations 1, 2, 3:               Eff = 1 - ( 1 - E(i) ) * ( 1 - (E(j) )
 // Stations 4 & 5 together:   Eff = product(i=6...9) E(i) +  sum(i=6...9) [ ( 1 - E(i) )* product(j=6...9, i!=i) E(j) ]
-double computeStationEfficiency(double effPerChamber[4], int iStation)
+double computeStationEfficiency(double const effPerChamber[4], int iStation)
 {
   double effSt = 0.;
   if (iStation < 3) { // Calculation for Station 1, 2, 3
@@ -409,7 +407,7 @@ double computeStationEfficiency(double effPerChamber[4], int iStation)
 }
 
 // Total efficiency corresponds to the product of the efficiency per station
-double computeTotalEfficiency(double effPerStation[5])
+double computeTotalEfficiency(double const effPerStation[5])
 {
   double effTot = 1.;
   for (int i = 0; i < 4; i++) {
