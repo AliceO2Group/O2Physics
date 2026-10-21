@@ -1537,21 +1537,23 @@ struct PiKpRAA {
         bool hasbc{false};
         bool hasft0{false};
         bool hastvx{false};
+        bool hasBcFT0TVX{false};
 
         hasbc = collision.has_foundBC();
         hasft0 = collision.has_foundFT0();
         hastvx = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX);
+        hasBcFT0TVX = (hasbc && hasft0 && hastvx);
 
-        if (hasbc && hasft0 && hastvx) {
+        if (hasBcFT0TVX) {
           // NUMERATOR/DENOMINATOR OF THE EVENT LOSS
           registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX"), nChMCTPCAcc);
-          if (hasbc && hasft0 && hastvx && isBestCollIndex) {
+          if (hasBcFT0TVX && isBestCollIndex) {
             registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX_BestCollIdx"), nChMCTPCAcc);
           }
         }
 
         // TVX-triggered + bestCollisionIndex
-        if (hasbc && hasft0 && hastvx && isBestCollIndex) {
+        if (hasBcFT0TVX && isBestCollIndex) {
           registry.fill(HIST("EventCounterMC"), 4.5);
         }
 
@@ -1600,28 +1602,28 @@ struct PiKpRAA {
 
           // TO COMPUTE SIGNAL LOSS RELATIVE TO THE MC SIGNAL OF EVENTS WITH FT0 INFO + TVX-TRIGGERED
           if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-            if (hasbc && hasft0 && hastvx) {
+            if (hasBcFT0TVX) {
               registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtPiVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-              if (hasbc && hasft0 && hastvx && isBestCollIndex) {
+              if (hasBcFT0TVX && isBestCollIndex) {
                 registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
                 registry.fill(HIST("PtPiVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
               }
             }
           } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-            if (hasbc && hasft0 && hastvx) {
+            if (hasBcFT0TVX) {
               registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtKaVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-              if (hasbc && hasft0 && hastvx && isBestCollIndex) {
+              if (hasBcFT0TVX && isBestCollIndex) {
                 registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
                 registry.fill(HIST("PtKaVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
               }
             }
           } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-            if (hasbc && hasft0 && hastvx) {
+            if (hasBcFT0TVX) {
               registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtPrVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-              if (hasbc && hasft0 && hastvx && isBestCollIndex) {
+              if (hasBcFT0TVX && isBestCollIndex) {
                 registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
                 registry.fill(HIST("PtPrVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
               }
