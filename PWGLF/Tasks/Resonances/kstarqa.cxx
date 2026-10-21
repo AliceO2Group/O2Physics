@@ -355,7 +355,7 @@ struct Kstarqa {
       hInvMass.add("MCcorrections/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParameterGen", "Impact parameter in generated MC", kTH1F, {impactParAxis});
       hInvMass.add("MCcorrections/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
-      hInvMass.add("MCcorrections/MultiplicityGenINEL", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
+      hInvMass.add("MCcorrections/MultiplicityRecINEL", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParametervsMultiplicity", "Impact parameter vs multiplicity in reconstructed MC", kTH2F, {{impactParAxis}, {multiplicityAxis}});
     }
 
@@ -1949,28 +1949,24 @@ struct Kstarqa {
         continue;
 
       if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
-        return false;
+        continue;
 
       if (std::abs(RecCollision.posZ()) > configGp.cutzvertex)
-        return false;
+        continue;
 
       if (configGp.isNoTimeFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        return false;
+        continue;
 
       if (configGp.isNoITSROFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-        return false;
+        continue;
 
       if (configGp.isSel8 && !RecCollision.sel8())
-        return false;
+        continue;
 
       if (rctCut.requireRCTFlagChecker && !rctChecker(RecCollision))
-        return false;
+        continue;
 
       isSelectedEventINEL = true;
-    }
-
-    if (isSelectedEventINEL) {
-      hInvMass.fill(HIST("MCcorrections/MultiplicityGenINEL"), multiplicityGen);
     }
 
     bool isINELgt0true = false;
@@ -1987,6 +1983,10 @@ struct Kstarqa {
     multiplicityGen = mcCollision.centFT0M();
     hInvMass.fill(HIST("MCcorrections/hImpactParameterGen"), impactPar);
     hInvMass.fill(HIST("MCcorrections/MultiplicityGen"), multiplicityGen);
+
+    if (isSelectedEventINEL) {
+      hInvMass.fill(HIST("MCcorrections/MultiplicityRecINEL"), multiplicityGen);
+    }
 
     // Event loss
     if (isSelectedEvent) {
