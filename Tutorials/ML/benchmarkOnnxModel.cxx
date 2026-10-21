@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// Benchmark one dense ONNX input [batch, features] using CPU or AMD MIGraphX.
+/// Benchmark one dense ONNX input [batch, features] using CPU, AMD MIGraphX or NVIDIA CUDA.
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/ControlService.h>
@@ -34,43 +34,55 @@
 
 namespace
 {
-// Optional HIP telemetry without introducing a ROCm build dependency for CPU users.
+// Load GPU telemetry at runtime so CPU builds need no HIP or CUDA headers.
 // Memory is device-wide, not process-local; samples are not a transient peak.
-class HipMemory
+class GpuMemory
 {
  public:
-  explicit HipMemory(int device)
+  explicit GpuMemory(int device, bool cuda)
   {
-    library = dlopen("libamdhip64.so", RTLD_LAZY | RTLD_LOCAL);
-    if (!library) {
-      throw std::runtime_error("GPU telemetry requires libamdhip64.so on LD_LIBRARY_PATH");
+    const std::vector<const char*> libraries = cuda
+                                                 ? std::vector<const char*>{"libcudart.so", "libcudart.so.13", "libcudart.so.12", "libcudart.so.11.0"}
+                                                 : std::vector<const char*>{"libamdhip64.so"};
+    for (auto name : libraries) {
+      library = dlopen(name, RTLD_LAZY | RTLD_LOCAL);
+      if (library) {
+        break;
+      }
     }
-    auto setDevice = reinterpret_cast<int (*)(int)>(dlsym(library, "hipSetDevice"));
-    getMemory = reinterpret_cast<int (*)(size_t*, size_t*)>(dlsym(library, "hipMemGetInfo"));
+    if (!library) {
+      throw std::runtime_error(cuda ? "GPU telemetry requires libcudart.so (CUDA 11/12/13) on LD_LIBRARY_PATH"
+                                    : "GPU telemetry requires libamdhip64.so on LD_LIBRARY_PATH");
+    }
+    auto setDevice = reinterpret_cast<int (*)(int)>(dlsym(library, cuda ? "cudaSetDevice" : "hipSetDevice"));
+    memoryFunction = cuda ? "cudaMemGetInfo" : "hipMemGetInfo";
+    getMemory = reinterpret_cast<int (*)(size_t*, size_t*)>(dlsym(library, memoryFunction));
     if (!setDevice || !getMemory || setDevice(device) != 0) {
       dlclose(library);
       library = nullptr;
-      throw std::runtime_error("Cannot select HIP device or resolve HIP memory API");
+      throw std::runtime_error(cuda ? "Cannot select CUDA device or resolve CUDA memory API"
+                                    : "Cannot select HIP device or resolve HIP memory API");
     }
   }
-  ~HipMemory()
+  ~GpuMemory()
   {
     if (library) {
       dlclose(library);
     }
   }
-  HipMemory(HipMemory const&) = delete;
-  HipMemory& operator=(HipMemory const&) = delete;
+  GpuMemory(GpuMemory const&) = delete;
+  GpuMemory& operator=(GpuMemory const&) = delete;
   uint64_t used() const
   {
     size_t free = 0, total = 0;
     if (getMemory(&free, &total) != 0 || free > total) {
-      throw std::runtime_error("hipMemGetInfo failed");
+      throw std::runtime_error(std::string(memoryFunction) + " failed");
     }
     return total - free;
   }
 
  private:
+  const char* memoryFunction = nullptr;
   void* library = nullptr;
   int (*getMemory)(size_t*, size_t*) = nullptr;
 };
@@ -92,8 +104,8 @@ using namespace o2::framework;
 
 struct BenchmarkOnnxModel {
   Configurable<std::string> modelPath{"model-path", "model.onnx", "Local ONNX model"};
-  Configurable<std::string> provider{"provider", "cpu", "cpu or migraphx"};
-  Configurable<int> gpuId{"gpu-id", 0, "HIP logical device ID (after visibility masking)"};
+  Configurable<std::string> provider{"provider", "cpu", "cpu, migraphx or cuda"};
+  Configurable<int> gpuId{"gpu-id", 0, "HIP/CUDA logical device ID (after visibility masking)"};
   Configurable<bool> fp16{"fp16", false, "Require FP16 input; does not convert model weights"};
   Configurable<int> batchSize{"batch-size", 1024, "Samples per inference"};
   Configurable<int> features{"features", 5, "Features per sample, in model order"};
@@ -114,14 +126,15 @@ struct BenchmarkOnnxModel {
     if (batchSize.value <= 0 || features.value <= 0 || iterations.value <= 0 || warmup.value < 1 || cpuThreads.value <= 0 || gpuId.value < 0) {
       throw std::runtime_error("Require positive batch, features, iterations, warmup, threads and nonnegative GPU ID");
     }
-    bool gpu = provider.value == "migraphx";
+    bool cuda = provider.value == "cuda";
+    bool gpu = cuda || provider.value == "migraphx";
     if (!gpu && provider.value != "cpu") {
-      throw std::runtime_error("provider must be cpu or migraphx");
+      throw std::runtime_error("provider must be cpu, migraphx or cuda");
     }
     if (!gpu && fp16.value) {
       throw std::runtime_error("Use FP32 for the CPU baseline");
     }
-    std::unique_ptr<HipMemory> memory;
+    std::unique_ptr<GpuMemory> memory;
     uint64_t before = 0, afterWarmup = 0, afterRun = 0;
     Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "tutorial-benchmark");
     Ort::SessionOptions options;
@@ -129,18 +142,31 @@ struct BenchmarkOnnxModel {
     options.SetInterOpNumThreads(1);
     options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
     if (gpu) {
+      const std::string providerName = cuda ? "CUDAExecutionProvider" : "MIGraphXExecutionProvider";
       auto providers = Ort::GetAvailableProviders();
-      if (std::find(providers.begin(), providers.end(), "MIGraphXExecutionProvider") == providers.end()) {
-        throw std::runtime_error("This ONNX Runtime has no MIGraphXExecutionProvider");
+      if (std::find(providers.begin(), providers.end(), providerName) == providers.end()) {
+        throw std::runtime_error("This ONNX Runtime has no " + providerName);
       }
-      memory = std::make_unique<HipMemory>(gpuId.value);
+      memory = std::make_unique<GpuMemory>(gpuId.value, cuda);
       before = memory->used();
-      OrtMIGraphXProviderOptions amd{};
-      amd.device_id = gpuId.value;
-      amd.migraphx_mem_limit = std::numeric_limits<size_t>::max();
-      // Keep the supplied model precision; do not automatically quantize FP32.
-      amd.migraphx_fp16_enable = 0;
-      options.AppendExecutionProvider_MIGraphX(amd);
+      if (cuda) {
+        // V2 options allow disabling TF32 for the FP32 comparison.
+        OrtCUDAProviderOptionsV2* raw = nullptr;
+        Ort::ThrowOnError(Ort::GetApi().CreateCUDAProviderOptions(&raw));
+        std::unique_ptr<OrtCUDAProviderOptionsV2, decltype(Ort::GetApi().ReleaseCUDAProviderOptions)> nvidia(raw, Ort::GetApi().ReleaseCUDAProviderOptions);
+        const std::string device = std::to_string(gpuId.value);
+        const char* keys[] = {"device_id", "use_tf32"};
+        const char* values[] = {device.c_str(), "0"};
+        Ort::ThrowOnError(Ort::GetApi().UpdateCUDAProviderOptions(nvidia.get(), keys, values, 2));
+        options.AppendExecutionProvider_CUDA_V2(*nvidia);
+      } else {
+        OrtMIGraphXProviderOptions amd{};
+        amd.device_id = gpuId.value;
+        amd.migraphx_mem_limit = std::numeric_limits<size_t>::max();
+        // Keep the supplied model precision; do not automatically quantize FP32.
+        amd.migraphx_fp16_enable = 0;
+        options.AppendExecutionProvider_MIGraphX(amd);
+      }
       options.AddConfigEntry("session.disable_cpu_ep_fallback", "1");
     }
     Ort::Session session(env, modelPath.value.c_str(), options);

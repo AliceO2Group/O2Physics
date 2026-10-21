@@ -6,20 +6,28 @@ It accepts one dense floating-point input of shape `[batch, features]` and one
 or more outputs. Static dimensions must match the options; symbolic dimensions
 are filled from the options. Output types are left to ONNX Runtime.
 
-## Build and AMD prerequisites
+## Build and GPU prerequisites
 
 Build O2Physics normally after loading its O2 environment. This target links
 `O2::ML`, `O2::GPUCommon`, `ONNXRuntime::ONNXRuntime`, and the platform dynamic
-loader. No HIP headers are required for building the task. The O2 installation
+loader. No HIP or CUDA headers are required for building the task. The O2 installation
 must contain `ML/3rdparty/GPUORTFloat16.h` and its GPUCommon headers.
 
-For GPU runs, ONNX Runtime must contain **MIGraphXExecutionProvider**, and its
+For AMD GPU runs, ONNX Runtime must contain **MIGraphXExecutionProvider**, and its
 MIGraphX/ROCm shared libraries, including `libamdhip64.so`, must be discoverable
 at runtime. The task checks provider availability and disables CPU fallback:
 unsupported graphs fail rather than producing a misleading GPU benchmark.
 No changes to O2's OrtInterface are needed for this task; the current checked-out
 OrtInterface does not attach an AMD execution provider, so this example uses
 ORT directly.
+
+For NVIDIA runs, select `--provider cuda`. ONNX Runtime must contain
+**CUDAExecutionProvider**, with matching CUDA/cuDNN libraries and an NVIDIA
+driver. Telemetry loads `libcudart.so` (also tries `.so.13`, `.so.12`, `.so.11.0`)
+from the library search path. Keep this runtime consistent with the ORT CUDA
+build. CUDA provider options require ORT 1.18 or newer: `use_tf32=0` disables
+TF32 so the FP32 benchmark does not silently use TF32 matrix multiplication.
+Both GPU backends disable CPU fallback and use the same timing/CSV path.
 
 Check the actual hydra driver, ROCm, MIGraphX and ORT combination first. MI100
 (gfx908) and MI50 (gfx906) do not have identical software support. MI50 is absent
@@ -28,6 +36,7 @@ stack or a separately validated build. The old ROCm execution provider was
 removed from ONNX Runtime starting with 1.23; this task uses MIGraphX.
 
 References:
+- https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
 - https://onnxruntime.ai/docs/execution-providers/MIGraphX-ExecutionProvider.html
 - https://onnxruntime.ai/docs/execution-providers/ROCm-ExecutionProvider.html
 - https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html
@@ -52,8 +61,20 @@ o2-analysis-benchmark-onnx-model -b --model-path model-fp16.onnx \
   --warmup 20 --iterations 200 --output-csv gpu-fp16.csv
 ```
 
-`gpu-id` is the HIP logical ID after any `HIP_VISIBLE_DEVICES` or
-`ROCR_VISIBLE_DEVICES` masking. Run one benchmark process at a time on an idle
+For NVIDIA, replace `--provider migraphx` with `--provider cuda`, for example:
+
+```bash
+o2-analysis-benchmark-onnx-model -b --model-path model-fp32.onnx \
+  --provider cuda --gpu-id 0 --fp16 false --batch-size 1024 --features 5 \
+  --warmup 20 --iterations 200 --output-csv cuda-fp32.csv
+
+o2-analysis-benchmark-onnx-model -b --model-path model-fp16.onnx \
+  --provider cuda --gpu-id 0 --fp16 true --batch-size 1024 --features 5 \
+  --warmup 20 --iterations 200 --output-csv cuda-fp16.csv
+```
+
+`gpu-id` is the logical ID after `HIP_VISIBLE_DEVICES` / `ROCR_VISIBLE_DEVICES`
+masking on AMD or `CUDA_VISIBLE_DEVICES` masking on NVIDIA. Run one benchmark process at a time on an idle
 GPU. Repeat with the same batch sizes and CPU thread count, and compare several
 runs. Small batches can be dominated by host overhead and transfers.
 
@@ -71,9 +92,9 @@ tutorial intentionally rejects them. CPU runs require FP32 input.
   warmup, input generation, FP16 conversion, telemetry, and CSV I/O. This is
   host-to-host inference throughput, not GPU kernel-only throughput.
 - GPU memory fields are **device-wide used bytes**, sampled through
-  `hipMemGetInfo` before session creation, after warmup, and after timed runs.
+  `hipMemGetInfo` (AMD) or `cudaMemGetInfo` (NVIDIA) before session creation, after warmup, and after timed runs.
   They include other processes and runtime allocations; they are neither
-  model-only memory nor a transient peak. The baseline follows HIP context
+  model-only memory nor a transient peak. The baseline follows GPU runtime/context
   initialization. CPU runs leave these fields empty. GPU telemetry failures
   fail the run rather than reporting zero usage.
 - Precision labels describe the requested model/input variant, not measured
