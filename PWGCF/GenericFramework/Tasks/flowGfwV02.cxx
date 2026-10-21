@@ -197,7 +197,7 @@ struct FlowGfwV02 {
   Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 5.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}}, "Configuration for binning"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull", "refMid", "piP", "kaP", "prP"}, {-0.8, 0.5, -0.8, -0.4, 0.5, 0.5, 0.5}, {-0.5, 0.8, 0.8, 0.4, 0.8, 0.8, 0.8}, {0, 0, 0, 0, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}}, "Configurations for GFW regions"};
 
-  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "piP {2} refN {-2}", "kaP {2} refN {-2}", "prP {2} refN {-2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}"}, {"ChGap22", "PiGap22", "KaGap22", "PrGap22", "ChFull22", "nchCh", "nchPi", "nchKa", "nchPr", "v02ptCh", "v02ptPi", "v02ptKa", "v02ptPr"}, {0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {15, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
+  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {2 2} refN {-2 -2}", "piP {2} refN {-2}", "kaP {2} refN {-2}", "prP {2} refN {-2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}"}, {"ChGap22", "PiGap22", "KaGap22", "PrGap22", "ChFull22", "nchCh", "nchPi", "nchKa", "nchPr", "v02ptCh", "v02ptPi", "v02ptKa", "v02ptPr"}, {0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {15, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
   Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat.front().data(), 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
 
   struct : ConfigurableGroup {
@@ -439,12 +439,14 @@ struct FlowGfwV02 {
     registry.add("analysis/charged/ptAB", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
     registry.add("analysis/charged/ptC", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
     registry.add("analysis/charged/v22", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+    registry.add("analysis/charged/v24", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
 
     if (cfgUseMultiplicityFracWeights) {
       registry.add("analysis/charged/ptA2pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
       registry.add("analysis/charged/ptB2pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
       registry.add("analysis/charged/ptC3pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
       registry.add("analysis/charged/v223pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+      registry.add("analysis/charged/v224pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -880,11 +882,14 @@ struct FlowGfwV02 {
       double ptFractionMid = 0.;
       double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real(); // V22 weight for AB
       auto valAB = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnxAB;
-      if (std::abs(valAB) > threshold || std::isnan(valAB) || std::isinf(valAB) || dnxAB < minDnxAB) {
+      double dnxABAB = fGFW->Calculate(corrconfigs.at(1), 0, kTRUE).real(); // V22 weight for ABAB
+      auto valABAB = fGFW->Calculate(corrconfigs.at(1), 0, kFALSE).real() / dnxABAB;
+      if (std::abs(valAB) > threshold || std::isnan(valAB) || std::isinf(valAB) || dnxAB < minDnxAB || std::abs(valABAB) > threshold || std::isnan(valABAB) || std::isinf(valABAB) || dnxABAB < minDnxAB) {
         return;
       }
       double v22pt = valAB * ptMeanMid;
       double WeightAB = (cfgUseMultiplicityFlowWeights) ? dnxAB : 1.0;
+      double WeightABAB = (cfgUseMultiplicityFlowWeights) ? dnxABAB : 1.0;
       double WeightC = 1.0;
       // Calculate V02 for each particle type
       for (int pid = 0; pid < PidTotal; pid++) {
@@ -941,9 +946,11 @@ struct FlowGfwV02 {
 
       registry.fill(HIST("analysis/charged/v22pt"), bootstrap, centmult, v22pt, WeightC * WeightAB);
       registry.fill(HIST("analysis/charged/v22"), bootstrap, centmult, valAB, WeightAB);
+      registry.fill(HIST("analysis/charged/v24"), bootstrap, centmult, valABAB, WeightABAB);
       registry.fill(HIST("analysis/charged/ptC"), bootstrap, centmult, ptMeanMid, WeightC);
       if (cfgUseMultiplicityFracWeights) {
         registry.fill(HIST("analysis/charged/v223pc"), bootstrap, centmult, valAB, WeightC * WeightAB);
+        registry.fill(HIST("analysis/charged/v224pc"), bootstrap, centmult, valAB, WeightABAB);
         registry.fill(HIST("analysis/charged/ptC3pc"), bootstrap, centmult, ptMeanMid, WeightC * WeightAB);
       }
     } // End of V02
