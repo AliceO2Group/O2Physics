@@ -338,10 +338,23 @@ struct HStrangeCorrelation {
     //                       see runEventRecoEfficiencyStudy
     Configurable<bool> doStageDiagnostics{"doStageDiagnostics", true, "part 1: fill the PairLossK0 truth-pair reconstruction ladder and its diagnostics"};
     Configurable<bool> doRecComparison{"doRecComparison", false, "part 2: fill the PairLossK0/Comparison cumulative Rec/Truth/Gen/Final ladder (runs the exact reconstructed path internally)"};
+    Configurable<bool> recComparisonBestCollisionOnly{"recComparisonBestCollisionOnly", false, "part 2: run the Rec path of PairLossK0/Comparison only in the best reconstructed collision (most PV contributors) of each MC collision, the one the Gen, Truth and Final stages are selected on. Set false to run it in every reconstructed collision, as the data path does"};
     Configurable<bool> doGenLevelStudy{"doGenLevelStudy", false, "part 3: fill the PairLossK0/GenStudy generated-vs-reconstructed split, using generator-level event selection only"};
     Configurable<bool> doEventRecoEfficiencyStudy{"doEventRecoEfficiencyStudy", false, "fill PairLossK0/EventRecoEfficiency: Nch^gen (charged primaries, |eta| < 1) of all, reconstructed and selected MC collisions, Nch^gen vs multNTracksPVeta1 and multNTracksPVeta1 vs FT0M percentile and amplitude"};
+    Configurable<bool> nchGenResponseBestCollisionOnly{"nchGenResponseBestCollisionOnly", false, "fill PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1 with the best reconstructed collision (most PV contributors) of each MC collision only, instead of with every reconstructed collision; the multNTracksPVeta1 vs FT0M responses stay per reconstructed collision"};
     Configurable<bool> applyINELSelectionAtGenLevel{"applyINELSelectionAtGenLevel", false, "part 2 (pp only): replace the reconstructed INEL cuts by Nch^gen >= 1 of the MC collision in the Rec, Gen, Truth and Final stages (selectINELgtN is ignored) and fill only PairLossK0/Comparison/NchGen (Rec and Gen vs Nch^gen, integrated over vertex z and multiplicity); requires doRecComparison and applyNewMCSelection"};
     ConfigurableAxis axisComparisonNchGen{"axisComparisonNchGen", {VARIABLE_WIDTH, 0.5f, 4.5f, 9.5f, 19.5f, 1000.5f}, "Nch^gen classes (charged primaries in |eta| < 1) of PairLossK0/Comparison/NchGen"};
+    // MC-only event quality cut on the Nch^gen vs multNTracksPVeta1 response
+    // (PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1): a reconstructed collision
+    // is kept only if |multNTracksPVeta1 - mu(Nch^gen)| <= nSigma * max(sigma(Nch^gen), sigmaMin),
+    // with mu a polynomial in Nch^gen and sigma a polynomial in sqrt(Nch^gen), e.g. fits of
+    // the mean and width of each Nch^gen column of that response. It uses the generated
+    // multiplicity, so it has no data counterpart
+    Configurable<bool> applyNchResponseBandCut{"applyNchResponseBandCut", false, "part 2 (MC only): keep only reconstructed collisions inside the mu +- nSigma*sigma band of the Nch^gen vs multNTracksPVeta1 response, in the Rec (every collision), Gen, Truth and Final (best collision) stages of PairLossK0/Comparison"};
+    Configurable<std::vector<double>> nchResponseBandMeanPars{"nchResponseBandMeanPars", {0.0, 0.9}, "mean multNTracksPVeta1 = p0 + p1*x + p2*x^2 + ..., x = Nch^gen"};
+    Configurable<std::vector<double>> nchResponseBandSigmaPars{"nchResponseBandSigmaPars", {0.0, 0.35}, "multNTracksPVeta1 width = p0 + p1*sqrt(x) + p2*x + p3*x^1.5 + ..., x = Nch^gen"};
+    Configurable<float> nchResponseBandNSigma{"nchResponseBandNSigma", 3.0f, "half-width of the band in units of sigma"};
+    Configurable<float> nchResponseBandSigmaMin{"nchResponseBandSigmaMin", 1.0f, "lower bound of sigma, which keeps the band open at low Nch^gen"};
     // Generated charged multiplicity of the MC collision, counted in |eta| < 0.8
     // by mCounter. Plain ConfigurableAxis: unlike the correlation axes it is NOT
     // trimmed by skipUnderOverflowInTHn, so what you configure is what you get.
@@ -2826,6 +2839,10 @@ struct HStrangeCorrelation {
       }
     }
 
+    if (pairLossK0Configurations.applyNchResponseBandCut && !doprocessPairLossK0MC) {
+      LOGF(fatal, "pairLossK0Configurations.applyNchResponseBandCut needs the generated multiplicity; enable processPairLossK0MC");
+    }
+
     if (doprocessPairLossK0MC && pairLossK0Configurations.doEventRecoEfficiencyStudy) {
       // Per MC collision with |vz_gen| <= zVertexCut, each histogram a subset of
       // the previous one: HasRecoColl/All is the MC-collision reconstruction
@@ -2837,10 +2854,21 @@ struct HStrangeCorrelation {
       histos.add("PairLossK0/EventRecoEfficiency/hNchGenEvSel", "best reconstructed collision passes the Rec event selection with reconstructed-level INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
       histos.add("PairLossK0/EventRecoEfficiency/hNchGenVsNRecoColl", "all MC collisions;#it{N}_{ch}^{gen} (|#eta| < 1);reconstructed collisions", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisNRecoCollisions});
       // Per reconstructed collision passing the Rec event selection without INEL
-      // cuts, no |vz_gen| cut: the same collisions the Rec path sees before its INEL cut
-      histos.add("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1", "reconstructed collisions passing the Rec event selection without INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);multNTracksPVeta1", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisNchGen});
+      // cuts, no |vz_gen| cut: the same collisions the Rec path sees before its INEL cut.
+      // With nchGenResponseBestCollisionOnly the Nch^gen response takes only the best
+      // collision, which drops the split and duplicate vertices of the MC collision
+      histos.add("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1",
+                 pairLossK0Configurations.nchGenResponseBestCollisionOnly ? "best reconstructed collision passing the Rec event selection without INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);multNTracksPVeta1"
+                                                                          : "reconstructed collisions passing the Rec event selection without INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);multNTracksPVeta1",
+                 kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisNchGen});
       histos.add("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsCentFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M percentile", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisCentFT0M});
       histos.add("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsMultFT0M", "reconstructed collisions passing the Rec event selection without INEL cuts;multNTracksPVeta1;FT0M amplitude", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisMultFT0M});
+      if (pairLossK0Configurations.applyNchResponseBandCut) {
+        // Checks of applyNchResponseBandCut: the part of the Nch^gen response it keeps,
+        // and hNchGenEvSelNoInelInBand / hNchGenEvSelNoInel, its efficiency vs Nch^gen
+        histos.add("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1InBand", "hNchGenVsNTracksPVeta1 inside the Nch^gen vs multNTracksPVeta1 band;#it{N}_{ch}^{gen} (|#eta| < 1);multNTracksPVeta1", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisNchGen});
+        histos.add("PairLossK0/EventRecoEfficiency/hNchGenEvSelNoInelInBand", "best reconstructed collision passes the Rec event selection without INEL cuts and lies inside the Nch^gen vs multNTracksPVeta1 band;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+      }
     }
 
     if (doprocessSameEventHV0s && masterConfigurations.doMultEstimatorResponse) {
@@ -3436,6 +3464,29 @@ struct HStrangeCorrelation {
   static bool isGenInelGt0(int nChGen)
   {
     return nChGen > 0;
+  }
+
+  // MC-only event quality cut of the PairLoss Comparison stages (applyNchResponseBandCut):
+  // multNTracksPVeta1 inside mu(Nch^gen) +- nSigma * max(sigma(Nch^gen), sigmaMin), with mu
+  // a polynomial in Nch^gen and sigma one in sqrt(Nch^gen). Evaluated here rather than
+  // through TF1 members: the task struct is at the StructToTuple member limit
+  bool isInNchResponseBand(int nChGen, int nTracksPVeta1)
+  {
+    const double sqrtNchGen = std::sqrt(static_cast<double>(std::max(nChGen, 0)));
+    double mean = 0.0;
+    double power = 1.0;
+    for (const double par : pairLossK0Configurations.nchResponseBandMeanPars.value) {
+      mean += par * power;
+      power *= nChGen;
+    }
+    double sigma = 0.0;
+    power = 1.0;
+    for (const double par : pairLossK0Configurations.nchResponseBandSigmaPars.value) {
+      sigma += par * power;
+      power *= sqrtNchGen;
+    }
+    sigma = std::max(sigma, static_cast<double>(pairLossK0Configurations.nchResponseBandSigmaMin));
+    return std::abs(nTracksPVeta1 - mean) <= pairLossK0Configurations.nchResponseBandNSigma * sigma;
   }
 
   // this function allows for all event selections to be done in a modular way
@@ -4667,9 +4718,11 @@ struct HStrangeCorrelation {
                            TracksComplete const& tracks)
   {
     // Nch^gen of this MC collision (charged primaries in |eta| < 1), shared by the
-    // event-reconstruction-efficiency study and the generated-level INEL selection
+    // event-reconstruction-efficiency study, the generated-level INEL selection and
+    // the Nch^gen vs multNTracksPVeta1 band cut
     const bool applyGenInel = pairLossK0Configurations.applyINELSelectionAtGenLevel;
-    const int nChGen = (pairLossK0Configurations.doEventRecoEfficiencyStudy || applyGenInel) ? countNchGenEta1(mcParticles) : -1;
+    const bool applyBandCut = pairLossK0Configurations.applyNchResponseBandCut;
+    const int nChGen = (pairLossK0Configurations.doEventRecoEfficiencyStudy || applyGenInel || applyBandCut) ? countNchGenEta1(mcParticles) : -1;
 
     // Part 3: a self-contained generator-level study. It deliberately touches no
     // reconstructed quantity in its event selection or in any of its axes: the
@@ -4887,10 +4940,12 @@ struct HStrangeCorrelation {
         bestCollisionVtxZ = collision.posZ();
         bestCollisionMultiplicity = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
         // with applyGenInel (pp only) the reconstructed INEL cuts are replaced by
-        // Nch^gen >= 1, as in the Rec and Gen stages
-        pairLossEventSelected = !pairLossK0Configurations.applyRecoEventSelection ||
-                                (masterConfigurations.doPPAnalysis ? isCollisionSelected(collision, !applyGenInel) && (!applyGenInel || isGenInelGt0(nChGen))
-                                                                   : isCollisionSelectedPbPb(collision, false));
+        // Nch^gen >= 1, as in the Rec and Gen stages; the band cut acts on top,
+        // independently of applyRecoEventSelection
+        pairLossEventSelected = (!pairLossK0Configurations.applyRecoEventSelection ||
+                                 (masterConfigurations.doPPAnalysis ? isCollisionSelected(collision, !applyGenInel) && (!applyGenInel || isGenInelGt0(nChGen))
+                                                                    : isCollisionSelectedPbPb(collision, false))) &&
+                                (!applyBandCut || isInNchResponseBand(nChGen, collision.multNTracksPVeta1()));
       }
       if (bestCollisionId < 0) {
         return;
@@ -4999,6 +5054,7 @@ struct HStrangeCorrelation {
       bool genBestCollisionGoodZvtxFT0vsPV = false;
       bool genCollisionSelected = false;
       int genLargestNContributors = -1;
+      int genBestCollisionNTracksPVeta1 = -1;
       uint32_t genBestCollisionTriggerPresenceMap = 0;
       for (auto const& recCollision : recCollisions) {
         if (genLargestNContributors >= recCollision.numContrib()) {
@@ -5008,6 +5064,7 @@ struct HStrangeCorrelation {
         genBestCollisionMultiplicity = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
         // Both branches fill the Gen THn with this vertex position
         genBestCollisionVtxZ = recCollision.posZ();
+        genBestCollisionNTracksPVeta1 = recCollision.multNTracksPVeta1();
         if (masterConfigurations.applyNewMCSelection) {
           genCollisionSelected = (masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision, !applyGenInel)) ||
                                  (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false));
@@ -5033,6 +5090,10 @@ struct HStrangeCorrelation {
                            (!masterConfigurations.requireGoodTriggerTVX || genBestCollisionGoodTriggerTVX) &&
                            (!masterConfigurations.requireGoodZvtxFT0vsPV || genBestCollisionGoodZvtxFT0vsPV) &&
                            genBestCollisionMultiplicity >= axisRanges[5][0] && genBestCollisionMultiplicity <= axisRanges[5][1];
+      }
+      // the band cut acts on top of either Gen event selection, on the best collision
+      if (applyBandCut) {
+        genEventSelected = genEventSelected && isInNchResponseBand(nChGen, genBestCollisionNTracksPVeta1);
       }
 
       if (genEventSelected && masterConfigurations.doCorrelationK0Short && TESTBIT(doCorrelation, IndexK0)) {
@@ -5282,6 +5343,16 @@ struct HStrangeCorrelation {
       pairLossComparison.nChGen = applyGenInel ? nChGen : -1;
       pairLossComparison.active = true;
       for (auto const& recCollision : recCollisions) {
+        // recComparisonBestCollisionOnly: one reconstructed collision per MC collision,
+        // the best one, as in the Gen stage
+        if (pairLossK0Configurations.recComparisonBestCollisionOnly && recCollision.globalIndex() != bestCollisionId) {
+          continue;
+        }
+        // The band cut tests every reconstructed collision against the Nch^gen of
+        // this MC collision, so it also rejects split and duplicate vertices
+        if (applyBandCut && !isInNchResponseBand(nChGen, recCollision.multNTracksPVeta1())) {
+          continue;
+        }
         const auto recTriggerSlice = triggerTracks.sliceBy(collisionSliceTracks, recCollision.globalIndex());
         const auto recV0Slice = associatedV0s.sliceBy(collisionSliceV0s, recCollision.globalIndex());
         const auto recTrackSlice = tracks.sliceBy(pairLossTracksPerCollision, recCollision.globalIndex());
@@ -5306,13 +5377,43 @@ struct HStrangeCorrelation {
     // responses. The event selection is the one runSameEventHV0s applies before
     // its INEL cut: trigger presence + isCollisionSelected (isCollisionSelectedNoInel)
     auto runEventRecoEfficiencyStudy = [&]() {
-      // Responses: one entry per reconstructed collision, as in the Rec path
+      // Best collision: the one with the most PV contributors, as in the Rec comparison
+      int largestNContributors = -1;
+      bool bestCollisionSelectedNoInel = false;
+      bool bestCollisionSelected = false;
+      int bestCollisionNTracksPVeta1 = -1;
+      for (auto const& collision : recCollisions) {
+        if (collision.numContrib() <= largestNContributors) {
+          continue;
+        }
+        largestNContributors = collision.numContrib();
+        bestCollisionSelectedNoInel = isCollisionSelectedNoInel(collision);
+        // reconstructed-level INEL cuts; the Pb-Pb event selection has none
+        bestCollisionSelected = bestCollisionSelectedNoInel && (!masterConfigurations.doPPAnalysis || isCollisionInelSelected(collision));
+        bestCollisionNTracksPVeta1 = collision.multNTracksPVeta1();
+      }
+
+      // Nch^gen response, and with applyNchResponseBandCut the part of it inside the band
+      auto fillNchGenResponse = [&](int nTracksPVeta1) {
+        histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1"), nChGen, nTracksPVeta1);
+        if (applyBandCut && isInNchResponseBand(nChGen, nTracksPVeta1)) {
+          histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1InBand"), nChGen, nTracksPVeta1);
+        }
+      };
+
+      // Responses: one entry per reconstructed collision, as in the Rec path, except
+      // the Nch^gen response with nchGenResponseBestCollisionOnly (best collision only)
       for (auto const& collision : recCollisions) {
         if (isCollisionSelectedNoInel(collision)) {
-          histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1"), nChGen, collision.multNTracksPVeta1());
+          if (!pairLossK0Configurations.nchGenResponseBestCollisionOnly) {
+            fillNchGenResponse(collision.multNTracksPVeta1());
+          }
           histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsCentFT0M"), collision.multNTracksPVeta1(), collision.centFT0M());
           histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNTracksPVeta1VsMultFT0M"), collision.multNTracksPVeta1(), collision.multFT0M());
         }
+      }
+      if (pairLossK0Configurations.nchGenResponseBestCollisionOnly && bestCollisionSelectedNoInel) {
+        fillNchGenResponse(bestCollisionNTracksPVeta1);
       }
 
       // Efficiency: one entry per MC collision, evaluated on the best collision
@@ -5325,20 +5426,11 @@ struct HStrangeCorrelation {
         return;
       }
       histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenHasRecoColl"), nChGen);
-      int largestNContributors = -1;
-      bool bestCollisionSelectedNoInel = false;
-      bool bestCollisionSelected = false;
-      for (auto const& collision : recCollisions) {
-        if (collision.numContrib() <= largestNContributors) {
-          continue;
-        }
-        largestNContributors = collision.numContrib();
-        bestCollisionSelectedNoInel = isCollisionSelectedNoInel(collision);
-        // reconstructed-level INEL cuts; the Pb-Pb event selection has none
-        bestCollisionSelected = bestCollisionSelectedNoInel && (!masterConfigurations.doPPAnalysis || isCollisionInelSelected(collision));
-      }
       if (bestCollisionSelectedNoInel) {
         histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenEvSelNoInel"), nChGen);
+        if (applyBandCut && isInNchResponseBand(nChGen, bestCollisionNTracksPVeta1)) {
+          histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenEvSelNoInelInBand"), nChGen);
+        }
       }
       if (bestCollisionSelected) {
         histos.fill(HIST("PairLossK0/EventRecoEfficiency/hNchGenEvSel"), nChGen);
