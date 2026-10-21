@@ -1229,7 +1229,10 @@ struct JetSpectraEseTask {
     registry.fill(HIST("mcd/hCentralitySel"), centrality);
     float eventWeight = 1.0f;
     if (cfgUseMCEventWeights) {
-      eventWeight = collision.has_mcCollision() ? collision.mcCollision_as<aod::JetMcCollisions>().weight() : 0.0f;
+      eventWeight = collision.has_mcCollision() ? collision.mcCollision_as<aod::JetMcCollisions>().weight() : -1.0f;
+    }
+    if (eventWeight <= 0.0f) {
+      return;
     }
     const float pTHat = getPTHat(eventWeight);
     if (!(pTHat < pTHatAbsoluteMin)) {
