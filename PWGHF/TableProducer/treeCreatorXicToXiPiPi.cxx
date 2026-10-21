@@ -417,7 +417,7 @@ struct HfTreeCreatorXicToXiPiPi {
   using MatchedGenXicToXiPiPi = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandXicMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
-  Filter filterGenXicToXiPiPi = (nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) || nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)));
+  Filter filterGenXicToXiPiPi = (nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) || nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) || fillGenInfoForAcceptance == true);
 
   Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != int8_t(0);
   Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == int8_t(0);
@@ -880,6 +880,9 @@ struct HfTreeCreatorXicToXiPiPi {
         float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
         float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
         if (fillGenInfoForAcceptance) {
+          if (!TESTBIT(particle.flagMcMatchGen(), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && !TESTBIT(particle.flagMcMatchGen(), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
+            continue;
+          }
           getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
         }
         rowCandidateFullParticles(
@@ -949,6 +952,9 @@ struct HfTreeCreatorXicToXiPiPi {
         float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
         float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
         if (fillGenInfoForAcceptance) {
+          if (!TESTBIT(particle.flagMcMatchGen(), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && !TESTBIT(particle.flagMcMatchGen(), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
+            continue;
+          }
           getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
         }
         rowCandidateFullParticles(
@@ -1010,6 +1016,9 @@ struct HfTreeCreatorXicToXiPiPi {
         float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
         float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
         if (fillGenInfoForAcceptance) {
+          if (!TESTBIT(particle.flagMcMatchGen(), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && !TESTBIT(particle.flagMcMatchGen(), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
+            continue;
+          }
           getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
         }
 
