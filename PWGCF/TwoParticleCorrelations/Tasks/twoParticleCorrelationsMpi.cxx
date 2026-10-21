@@ -472,10 +472,10 @@ struct TwoParticleCorrelationsMpi {
     if (doprocessMCDetectorClosure) {
       registry.add("detectorClosure/rawMultiplicityVsTrue", "raw reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{raw,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
       registry.add("detectorClosure/correctedMultiplicityVsTrue", "corrected reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{corr,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
-      registry.add("detectorClosure/triggerResponseRaw", "efficiency-weighted trigger response versus raw reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{raw,reco}"}, {axisPtTrigger, "p_{T,trig}"}, {axisVertex, "z_{vtx}"}}});
-      registry.add("detectorClosure/triggerResponseCorrected", "efficiency-weighted trigger response versus corrected reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{corr,reco}"}, {axisPtTrigger, "p_{T,trig}"}, {axisVertex, "z_{vtx}"}}});
-      registry.add("detectorClosure/pairResponseRaw", "efficiency-weighted pair response versus raw reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{raw,reco}"}, {axisDeltaEta, "#Delta#eta"}, {axisPtAssoc, "p_{T,assoc}"}, {axisPtTrigger, "p_{T,trig}"}, {axisDeltaPhi, "#Delta#varphi"}, {axisVertex, "z_{vtx}"}}});
-      registry.add("detectorClosure/pairResponseCorrected", "efficiency-weighted pair response versus corrected reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{corr,reco}"}, {axisDeltaEta, "#Delta#eta"}, {axisPtAssoc, "p_{T,assoc}"}, {axisPtTrigger, "p_{T,trig}"}, {axisDeltaPhi, "#Delta#varphi"}, {axisVertex, "z_{vtx}"}}});
+      registry.add("detectorClosure/triggerResponseRaw", "efficiency-weighted trigger response versus raw reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{raw,reco}"}, {axisPtTrigger, "p_{T,trig}"}}});
+      registry.add("detectorClosure/triggerResponseCorrected", "efficiency-weighted trigger response versus corrected reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{corr,reco}"}, {axisPtTrigger, "p_{T,trig}"}}});
+      registry.add("detectorClosure/pairResponseRaw", "efficiency-weighted pair response versus raw reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{raw,reco}"}, {axisDeltaEta, "#Delta#eta"}, {axisPtAssoc, "p_{T,assoc}"}, {axisPtTrigger, "p_{T,trig}"}, {axisDeltaPhi, "#Delta#varphi"}}});
+      registry.add("detectorClosure/pairResponseCorrected", "efficiency-weighted pair response versus corrected reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{corr,reco}"}, {axisDeltaEta, "#Delta#eta"}, {axisPtAssoc, "p_{T,assoc}"}, {axisPtTrigger, "p_{T,trig}"}, {axisDeltaPhi, "#Delta#varphi"}}});
       registry.add("detectorClosure/profileCorrectedMultiplicityVsTrue", "mean corrected reconstructed multiplicity versus true multiplicity;N_{ch}^{true};#LT N_{ch}^{corr,reco} #GT", {HistType::kTProfile, {axisMultiplicity}});
       registry.add("detectorClosure/profileTrueMultiplicityVsCorrected", "mean true multiplicity versus corrected reconstructed multiplicity;N_{ch}^{corr,reco};#LT N_{ch}^{true} #GT", {HistType::kTProfile, {axisMultiplicity}});
       registry.add("detectorClosure/recoCollisionsPerMCCollision", "accepted reconstructed collisions per MC collision;N_{coll}^{reco};events", {HistType::kTH1F, {{11, -0.5, 10.5}}});
@@ -1862,8 +1862,8 @@ struct TwoParticleCorrelationsMpi {
           triggerWeight *= getEfficiencyCorrection(cfg.mEfficiencyTrigger, track1.eta(), track1.pt(), efficiencyLookupMultiplicity, posZ);
         }
         if (detectorClosureResponse) {
-          registry.fill(HIST("detectorClosure/triggerResponseRaw"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->rawMultiplicity, track1.pt(), posZ, triggerWeight);
-          registry.fill(HIST("detectorClosure/triggerResponseCorrected"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->correctedMultiplicity, track1.pt(), posZ, triggerWeight);
+          registry.fill(HIST("detectorClosure/triggerResponseRaw"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->rawMultiplicity, track1.pt(), triggerWeight);
+          registry.fill(HIST("detectorClosure/triggerResponseCorrected"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->correctedMultiplicity, track1.pt(), triggerWeight);
         }
       }
 
@@ -1991,8 +1991,8 @@ struct TwoParticleCorrelationsMpi {
 
         if constexpr (step == CorrelationContainer::kCFStepCorrected) {
           if (detectorClosureResponse) {
-            registry.fill(HIST("detectorClosure/pairResponseRaw"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->rawMultiplicity, deltaEta, track2.pt(), track1.pt(), deltaPhi, posZ, associatedWeight);
-            registry.fill(HIST("detectorClosure/pairResponseCorrected"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->correctedMultiplicity, deltaEta, track2.pt(), track1.pt(), deltaPhi, posZ, associatedWeight);
+            registry.fill(HIST("detectorClosure/pairResponseRaw"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->rawMultiplicity, deltaEta, track2.pt(), track1.pt(), deltaPhi, associatedWeight);
+            registry.fill(HIST("detectorClosure/pairResponseCorrected"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->correctedMultiplicity, deltaEta, track2.pt(), track1.pt(), deltaPhi, associatedWeight);
           }
         }
 
