@@ -70,13 +70,20 @@ DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //!
 DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! Transverse momentum of Xi (prong0) (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! Impact parameter of Xi (prong0)
 DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float);   //! Normalised impact parameter of Xi (prong0)
+DECLARE_SOA_COLUMN(EtaBachelorPi, etaBachelorPi, float);                               //! Pseudorapidity of bachelor Pi
 DECLARE_SOA_COLUMN(PPi0, pPi0, float);                                                 //! Momentum of Pi0 (prong1) (GeV/c)
 DECLARE_SOA_COLUMN(PtPi0, ptPi0, float);                                               //! Transverse momentum of Pi0 (prong1) (GeV/c)
+DECLARE_SOA_COLUMN(EtaPi0, etaPi0, float);                                             //! Pseudorapidity of Pi0 (prong1
 DECLARE_SOA_COLUMN(ImpactParameterPi0, impactParameterPi0, float);                     //! Impact parameter of Pi0 (prong1)
 DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi0, impactParameterNormalisedPi0, float); //! Normalised impact parameter of Pi0 (prong1)
 DECLARE_SOA_COLUMN(PPi1, pPi1, float);                                                 //! Momentum of Pi1 (prong2) (GeV/c)
 DECLARE_SOA_COLUMN(PtPi1, ptPi1, float);                                               //! Transverse momentum of Pi1 (prong2) (GeV/c)
-DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                     //! Normalised impact parameter of Pi1 (prong2)
+DECLARE_SOA_COLUMN(EtaPi1, etaPi1, float);                                             //! Pseudorapidity of Pi1 (prong2)
+DECLARE_SOA_COLUMN(PtPiFromLambda, ptPiFromLambda, float);                             //! Transverse momentum of pion from Lambda (GeV/c)
+DECLARE_SOA_COLUMN(EtaPiFromLambda, etaPiFromLambda, float);                           //! Pseudorapidity of pion from Lambda (GeV/c)
+DECLARE_SOA_COLUMN(PtPrFromLambda, ptPrFromLambda, float);                             //! Transverse momentum of proton from Lambda (GeV/c)
+DECLARE_SOA_COLUMN(EtaPrFromLambda, etaPrFromLambda, float);                           //! Pseudorapidity of proton from Lambda (GeV/c)
+DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                     //! Impact parameter of Pi1 (prong2)
 DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi1, impactParameterNormalisedPi1, float); //! Normalised impact parameter of Pi1 (prong2)
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                 //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                                     //! ML score for background class
@@ -367,7 +374,17 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen);
+                  hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen,
+                  full::PtPi0,
+                  full::PtPi1,
+                  hf_cand_xic_to_xi_pi_pi::PtBachelorPi,
+                  full::PtPiFromLambda,
+                  full::PtPrFromLambda,
+                  full::EtaPi0,
+                  full::EtaPi1,
+                  full::EtaBachelorPi,
+                  full::EtaPiFromLambda,
+                  full::EtaPrFromLambda);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -382,6 +399,7 @@ struct HfTreeCreatorXicToXiPiPi {
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   Configurable<bool> fillGenParticleTable{"fillGenParticleTable", false, "Switch to fill table with MC truth for generated particles"};
+  Configurable<bool> fillGenInfoForAcceptance{"fillGenInfoForAcceptance", true, "Enable filling of information for acceptance computation"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
@@ -715,6 +733,54 @@ struct HfTreeCreatorXicToXiPiPi {
     }
   }
 
+  template <typename Parts>
+  void getMcDaughterInformation(Parts const& particles,
+                                Parts::iterator const& particle,
+                                float& ptPi0,
+                                float& ptPi1,
+                                float& ptPiBachelor,
+                                float& ptPiFromLambda,
+                                float& ptPrFromLambda,
+                                float& etaPi0,
+                                float& etaPi1,
+                                float& etaPiBachelor,
+                                float& etaPiFromLambda,
+                                float& etaPrFromLambda)
+  {
+    std::vector<int> arrDaughIndex = {};
+    RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+    bool foundFirstPi{false};
+    for (const int iProng : arrDaughIndex) {
+      auto daugh = particles.rawIteratorAt(iProng);
+      if (std::abs(daugh.pdgCode()) == +kPiPlus) {
+        if (foundFirstPi) {
+          ptPi1 = daugh.pt();
+        } else {
+          ptPi0 = daugh.pt();
+          foundFirstPi = true;
+        }
+      } else if (std::abs(daugh.pdgCode()) == +kXiMinus) {
+        RecoDecay::getDaughters(daugh, &arrDaughIndex, std::array{+kLambda0, -kPiPlus}, 1);
+        for (const int iProngXi : arrDaughIndex) {
+          auto daughXi = particles.rawIteratorAt(iProngXi);
+          if (std::abs(daughXi.pdgCode()) == +kPiPlus) {
+            ptPiBachelor = daughXi.pt();
+          } else {
+            RecoDecay::getDaughters(daughXi, &arrDaughIndex, std::array{+kProton, -kPiPlus}, 1);
+            for (const int iProngLambda : arrDaughIndex) {
+              auto daughLambda = particles.rawIteratorAt(iProngLambda);
+              if (std::abs(daughLambda.pdgCode()) == +kPiPlus) {
+                ptPiFromLambda = daughLambda.pt();
+              } else {
+                ptPrFromLambda = daughLambda.pt();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   void processData(SelectedCandidates const& candidates)
   {
     // Filling candidate properties
@@ -806,6 +872,11 @@ struct HfTreeCreatorXicToXiPiPi {
     if (fillGenParticleTable) {
       rowCandidateFullParticles.reserve(particles.size());
       for (const auto& particle : particles) {
+        float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
+        float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
+        if (fillGenInfoForAcceptance) {
+          getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
+        }
         rowCandidateFullParticles(
           particle.flagMcMatchGen(),
           particle.originMcGen(),
@@ -814,7 +885,17 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
-          particle.decayLengthMcGen());
+          particle.decayLengthMcGen(),
+          ptPi0,
+          ptPi1,
+          ptPiBachelor,
+          ptPiFromLambda,
+          ptPrFromLambda,
+          etaPi0,
+          etaPi1,
+          etaPiBachelor,
+          etaPiFromLambda,
+          etaPrFromLambda);
       }
     }
   }
@@ -860,6 +941,11 @@ struct HfTreeCreatorXicToXiPiPi {
     if (fillGenParticleTable) {
       rowCandidateFullParticles.reserve(particles.size());
       for (const auto& particle : particles) {
+        float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
+        float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
+        if (fillGenInfoForAcceptance) {
+          getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
+        }
         rowCandidateFullParticles(
           particle.flagMcMatchGen(),
           particle.originMcGen(),
@@ -868,7 +954,17 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
-          particle.decayLengthMcGen());
+          particle.decayLengthMcGen(),
+          ptPi0,
+          ptPi1,
+          ptPiBachelor,
+          ptPiFromLambda,
+          ptPrFromLambda,
+          etaPi0,
+          etaPi1,
+          etaPiBachelor,
+          etaPiFromLambda,
+          etaPrFromLambda);
       }
     }
   }
@@ -906,6 +1002,12 @@ struct HfTreeCreatorXicToXiPiPi {
     if (fillGenParticleTable) {
       rowCandidateFullParticles.reserve(particles.size());
       for (const auto& particle : particles) {
+        float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
+        float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
+        if (fillGenInfoForAcceptance) {
+          getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
+        }
+
         rowCandidateFullParticles(
           particle.flagMcMatchGen(),
           particle.originMcGen(),
@@ -914,7 +1016,17 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
-          particle.decayLengthMcGen());
+          particle.decayLengthMcGen(),
+          ptPi0,
+          ptPi1,
+          ptPiBachelor,
+          ptPiFromLambda,
+          ptPrFromLambda,
+          etaPi0,
+          etaPi1,
+          etaPiBachelor,
+          etaPiFromLambda,
+          etaPrFromLambda);
       }
     }
   }
