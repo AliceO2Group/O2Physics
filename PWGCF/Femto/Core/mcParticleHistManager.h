@@ -213,9 +213,10 @@ class McParticleHistManager
     if (mPlotOrigins) {
       // NOTE: kNoMcParticle and kMissidentified are kept here only for enum/histogram
       // symmetry with TrackHist — they describe reco-vs-truth mismatches that cannot
-      // occur for a pure MC-truth particle, so these bins are expected to stay empty
-      // unless the producer assigns those origin codes for some other reason
-      // (e.g. pileup-associated particles tagged as kFromWrongCollision).
+      // occur for a pure MC-truth particle, so these bins are expected to stay empty.
+      // kFromWrongCollision is not handled here at all: mcBuilder.h's getOrigin() never
+      // assigns it (only kPhysicalPrimary/kFromSecondaryDecay/kFromMaterial), so it would
+      // be dead code the same way it was in the per-candidate hist managers.
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
       switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
         case modes::McOrigin::kNoMcParticle:
@@ -223,9 +224,6 @@ class McParticleHistManager
           break;
         case modes::McOrigin::kPhysicalPrimary:
           mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), mcParticle.pt());
-          break;
-        case modes::McOrigin::kFromWrongCollision:
-          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), mcParticle.pt());
           break;
         case modes::McOrigin::kFromMaterial:
           mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), mcParticle.pt());
