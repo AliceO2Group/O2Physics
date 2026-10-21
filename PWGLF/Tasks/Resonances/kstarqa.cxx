@@ -232,11 +232,11 @@ struct Kstarqa {
 
     std::vector<std::string> eveCutLabels = {
       "All Events",
-      "|Vz| < 10",
-      std::string("Sel8") + check(configGp.isSel8.value),
       std::string("kIsTriggerTVX") + check(configGp.isTriggerTVX.value),
+      "|Vz| < 10",
       std::string("NoTimeFrameBorder") + check(configGp.isNoTimeFrameBorder.value),
       std::string("NoITSROFrameBorder") + check(configGp.isNoITSROFrameBorder.value),
+      std::string("Sel8") + check(configGp.isSel8.value),
       std::string("rctChecker") + check(rctCut.requireRCTFlagChecker.value),
       std::string("IsINELgt0") + check(configGp.isINELgt0.value),
       std::string("IsGoodITSLayersAll") + check(configGp.isGoodITSLayersAll.value),
@@ -355,6 +355,7 @@ struct Kstarqa {
       hInvMass.add("MCcorrections/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParameterGen", "Impact parameter in generated MC", kTH1F, {impactParAxis});
       hInvMass.add("MCcorrections/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
+      hInvMass.add("MCcorrections/MultiplicityRecINEL", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParametervsMultiplicity", "Impact parameter vs multiplicity in reconstructed MC", kTH2F, {{impactParAxis}, {multiplicityAxis}});
     }
 
@@ -473,27 +474,27 @@ struct Kstarqa {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 0);
 
-    if (std::abs(collision.posZ()) > configGp.cutzvertex)
+    if (configGp.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 1);
 
-    if (configGp.isSel8 && !collision.sel8())
+    if (std::abs(collision.posZ()) > configGp.cutzvertex)
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 2);
 
-    if (configGp.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
+    if (configGp.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 3);
 
-    if (configGp.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    if (configGp.isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 4);
 
-    if (configGp.isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    if (configGp.isSel8 && !collision.sel8())
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 5);
@@ -1911,6 +1912,7 @@ struct Kstarqa {
   {
     // auto multiplicityRec = -1;
     bool isSelectedEvent = false;
+    bool isSelectedEventINEL = false;
     auto multiplicity1 = -999.;
 
     if (configGp.isINELgt0Gen && !mcCollision.isInelGt0()) {
@@ -1942,6 +1944,31 @@ struct Kstarqa {
       isSelectedEvent = true;
     }
 
+    for (const auto& RecCollision : recCollisions) {
+      if (!RecCollision.has_mcCollision())
+        continue;
+
+      if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
+        continue;
+
+      if (std::abs(RecCollision.posZ()) > configGp.cutzvertex)
+        continue;
+
+      if (configGp.isNoTimeFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        continue;
+
+      if (configGp.isNoITSROFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        continue;
+
+      if (configGp.isSel8 && !RecCollision.sel8())
+        continue;
+
+      if (rctCut.requireRCTFlagChecker && !rctChecker(RecCollision))
+        continue;
+
+      isSelectedEventINEL = true;
+    }
+
     bool isINELgt0true = false;
 
     if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
@@ -1956,6 +1983,10 @@ struct Kstarqa {
     multiplicityGen = mcCollision.centFT0M();
     hInvMass.fill(HIST("MCcorrections/hImpactParameterGen"), impactPar);
     hInvMass.fill(HIST("MCcorrections/MultiplicityGen"), multiplicityGen);
+
+    if (isSelectedEventINEL) {
+      hInvMass.fill(HIST("MCcorrections/MultiplicityRecINEL"), multiplicityGen);
+    }
 
     // Event loss
     if (isSelectedEvent) {
@@ -3200,7 +3231,7 @@ struct Kstarqa {
               genDaughter1 = ROOT::Math::PxPyPzMVector(mctrack1.px(), mctrack1.py(), mctrack1.pz(), massKa);
               genDaughter2 = ROOT::Math::PxPyPzMVector(mctrack2.px(), mctrack2.py(), mctrack2.pz(), massKa);
 
-              mother = daughter1 + daughter2; // Phi meson
+              mother = daughter1 + daughter2;          // Phi meson
               genMother = genDaughter1 + genDaughter2; // Phi meson
 
               recMass = mother.M();
