@@ -17,6 +17,7 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLESQA_H_
 #define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLESQA_H_
 
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -29,7 +30,7 @@
 
 namespace o2::aod
 {
-namespace hf_cand_xic0_omegac0_qa
+namespace hf_cand_casc_bach
 {
 // collision properties
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
@@ -37,7 +38,7 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);
 DECLARE_SOA_INDEX_COLUMN_FULL(CharmBachelor, charmBachelor, int, Tracks, "_charmBachelor");
 // sign of the decay, FIXME: probably can be removed, as it is redundant with the sign of the bachelor track
-DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t);
+// DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t);
 // vertices of decay chain
 DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, float);
 DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, float);
@@ -49,9 +50,9 @@ DECLARE_SOA_COLUMN(XV0Vertex, xV0Vertex, float);
 DECLARE_SOA_COLUMN(YV0Vertex, yV0Vertex, float);
 DECLARE_SOA_COLUMN(ZV0Vertex, zV0Vertex, float);
 // masses, FIXME: check if they are necessary
-DECLARE_SOA_COLUMN(Mass, mass, float);
-DECLARE_SOA_COLUMN(MassCascade, massCascade, float);
-DECLARE_SOA_COLUMN(MassV0, massV0, float);
+// DECLARE_SOA_COLUMN(Mass, mass, float);
+// DECLARE_SOA_COLUMN(MassCascade, massCascade, float);
+// DECLARE_SOA_COLUMN(MassV0, massV0, float);
 // momenta
 DECLARE_SOA_COLUMN(PxCascade, pxCascade, float);
 DECLARE_SOA_COLUMN(PyCascade, pyCascade, float);
@@ -82,10 +83,7 @@ DECLARE_SOA_COLUMN(ImpactParameterCharmBachelorXY, impactParameterCharmBachelorX
 DECLARE_SOA_COLUMN(ImpactParameterCharmBachelorZ, impactParameterCharmBachelorZ, float);
 DECLARE_SOA_COLUMN(ErrorImpactParameterCharmBachelorXY, errorImpactParameterCharmBachelorXY, float);
 DECLARE_SOA_COLUMN(ErrorImpactParameterCharmBachelorZ, errorImpactParameterCharmBachelorZ, float);
-DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterCascadeXYNormalised, impactParameterCascadeXYNormalised, //! Cascade transverse impact parameter divided by its uncertainty
-                           [](float impactParameter, float error) -> float { return impactParameter / error; });
-DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterCharmBachelorXYNormalised, impactParameterCharmBachelorXYNormalised, //! Charm-bachelor transverse impact parameter divided by its uncertainty
-                           [](float impactParameter, float error) -> float { return impactParameter / error; });
+
 DECLARE_SOA_COLUMN(DcaXYCascadeBachelorToPv, dcaXYCascadeBachelorToPv, float);
 DECLARE_SOA_COLUMN(DcaZCascadeBachelorToPv, dcaZCascadeBachelorToPv, float);
 DECLARE_SOA_COLUMN(DcaXYV0PosDaughterToPv, dcaXYV0PosDaughterToPv, float);
@@ -97,11 +95,11 @@ DECLARE_SOA_COLUMN(DcaCascadeDaughters, dcaCascadeDaughters, float);
 DECLARE_SOA_COLUMN(DcaDaughters, dcaDaughters, float);
 
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, float,
-                              1.f * aod::hf_cand_xic0_omegac0_qa::pxCascade + 1.f * aod::hf_cand_xic0_omegac0_qa::pxCharmBachelor);
+                              1.f * aod::hf_cand_casc_bach::pxCascade + 1.f * aod::hf_cand_casc_bach::pxCharmBachelor);
 DECLARE_SOA_EXPRESSION_COLUMN(Py, py, float,
-                              1.f * aod::hf_cand_xic0_omegac0_qa::pyCascade + 1.f * aod::hf_cand_xic0_omegac0_qa::pyCharmBachelor);
+                              1.f * aod::hf_cand_casc_bach::pyCascade + 1.f * aod::hf_cand_casc_bach::pyCharmBachelor);
 DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, float,
-                              1.f * aod::hf_cand_xic0_omegac0_qa::pzCascade + 1.f * aod::hf_cand_xic0_omegac0_qa::pzCharmBachelor);
+                              1.f * aod::hf_cand_casc_bach::pzCascade + 1.f * aod::hf_cand_casc_bach::pzCharmBachelor);
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Transverse momentum of the candidate
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
@@ -213,6 +211,22 @@ DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthXYV0, decayLengthXYV0, //! V0 transverse d
                            [](float pvx, float pvy, float svx, float svy) -> float {
                              return RecoDecay::distanceXY(std::array{pvx, pvy}, std::array{svx, svy});
                            });
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterCascadeXYNormalised, impactParameterCascadeXYNormalised, //! Cascade transverse impact parameter divided by its uncertainty
+                           [](float impactParameter, float error) -> float {
+                             return impactParameter / error;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterCascadeZNormalised, impactParameterCascadeZNormalised, //! Cascade longitudinal impact parameter divided by its uncertainty
+                           [](float impactParameter, float error) -> float {
+                             return impactParameter / error;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterCharmBachelorXYNormalised, impactParameterCharmBachelorXYNormalised, //! Charm-bachelor transverse impact parameter divided by its uncertainty
+                           [](float impactParameter, float error) -> float {
+                             return impactParameter / error;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterCharmBachelorZNormalised, impactParameterCharmBachelorZNormalised, //! Charm-bachelor longitudinal impact parameter divided by its uncertainty
+                           [](float impactParameter, float error) -> float {
+                             return impactParameter / error;
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(CosPA, cosPA, //! Candidate pointing angle from the PV
                            [](float pvx, float pvy, float pvz, float svx, float svy, float svz, float mx, float my, float mz) -> float {
                              return RecoDecay::cpa(std::array{pvx, pvy, pvz}, std::array{svx, svy, svz}, std::array{mx, my, mz});
@@ -266,95 +280,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(CtV0, ctV0, //! V0 proper decay length for the suppli
                              return RecoDecay::ct(std::array{mx, my, mz}, RecoDecay::distance(std::array{pvx, pvy, pvz}, std::array{svx, svy, svz}), mass);
                            });
 
-} // namespace hf_cand_xic0_omegac0_qa
-
-DECLARE_SOA_TABLE(HfCandXic0Omegac0Qa, "AOD", "HFCANDXIC0OMEGAC0QA", //! Common QA candidate table for XiPi, OmegaPi and OmegaK
-                  o2::soa::Index<>,
-                  hf_cand_xic0_omegac0_qa::CollisionId,
-                  collision::PosX, collision::PosY, collision::PosZ,
-                  hf_cand_xic0_omegac0_qa::SignDecay,
-                  hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ZSecondaryVertex,
-                  hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::ZCascadeVertex,
-                  hf_cand_xic0_omegac0_qa::XV0Vertex, hf_cand_xic0_omegac0_qa::YV0Vertex, hf_cand_xic0_omegac0_qa::ZV0Vertex,
-                  hf_cand_xic0_omegac0_qa::ErrorDecayLength, hf_cand_xic0_omegac0_qa::ErrorDecayLengthXY,
-                  hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade, hf_cand_xic0_omegac0_qa::PzCascade,
-                  hf_cand_xic0_omegac0_qa::PxCharmBachelor, hf_cand_xic0_omegac0_qa::PyCharmBachelor, hf_cand_xic0_omegac0_qa::PzCharmBachelor,
-                  hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0, hf_cand_xic0_omegac0_qa::PzV0,
-                  hf_cand_xic0_omegac0_qa::PxCascadeBachelor, hf_cand_xic0_omegac0_qa::PyCascadeBachelor, hf_cand_xic0_omegac0_qa::PzCascadeBachelor,
-                  hf_cand_xic0_omegac0_qa::PxV0PosDaughter, hf_cand_xic0_omegac0_qa::PyV0PosDaughter, hf_cand_xic0_omegac0_qa::PzV0PosDaughter,
-                  hf_cand_xic0_omegac0_qa::PxV0NegDaughter, hf_cand_xic0_omegac0_qa::PyV0NegDaughter, hf_cand_xic0_omegac0_qa::PzV0NegDaughter,
-                  hf_cand_xic0_omegac0_qa::MassV0, hf_cand_xic0_omegac0_qa::MassCascade, hf_cand_xic0_omegac0_qa::Mass,
-                  hf_cand_xic0_omegac0_qa::ImpactParameterCascadeXY, hf_cand_xic0_omegac0_qa::ImpactParameterCascadeZ,
-                  hf_cand_xic0_omegac0_qa::ErrorImpactParameterCascadeXY,
-                  hf_cand_xic0_omegac0_qa::ImpactParameterCharmBachelorXY, hf_cand_xic0_omegac0_qa::ImpactParameterCharmBachelorZ,
-                  hf_cand_xic0_omegac0_qa::ErrorImpactParameterCharmBachelorXY,
-                  hf_cand_xic0_omegac0_qa::DcaXYV0PosDaughterToPv, hf_cand_xic0_omegac0_qa::DcaXYV0NegDaughterToPv, hf_cand_xic0_omegac0_qa::DcaXYCascadeBachelorToPv,
-                  hf_cand_xic0_omegac0_qa::DcaZV0PosDaughterToPv, hf_cand_xic0_omegac0_qa::DcaZV0NegDaughterToPv, hf_cand_xic0_omegac0_qa::DcaZCascadeBachelorToPv,
-                  hf_cand_xic0_omegac0_qa::DcaV0Daughters, hf_cand_xic0_omegac0_qa::DcaCascadeDaughters, hf_cand_xic0_omegac0_qa::DcaDaughters,
-                  hf_cand_xic0_omegac0_qa::CascadeId, hf_cand_xic0_omegac0_qa::CharmBachelorId,
-                  hf_track_index::HFflag,
-                  /* dynamic and expression columns */
-                  hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py, hf_cand_xic0_omegac0_qa::Pz,
-                  hf_cand_xic0_omegac0_qa::Pt<hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py>,
-                  hf_cand_xic0_omegac0_qa::P<hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py, hf_cand_xic0_omegac0_qa::Pz>,
-                  hf_cand_xic0_omegac0_qa::Eta<hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py, hf_cand_xic0_omegac0_qa::Pz>,
-                  hf_cand_xic0_omegac0_qa::Phi<hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py>,
-                  hf_cand_xic0_omegac0_qa::Y<hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py, hf_cand_xic0_omegac0_qa::Pz>,
-                  hf_cand_xic0_omegac0_qa::E<hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py, hf_cand_xic0_omegac0_qa::Pz>,
-                  hf_cand_xic0_omegac0_qa::PtCascade<hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade>,
-                  hf_cand_xic0_omegac0_qa::PCascade<hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade, hf_cand_xic0_omegac0_qa::PzCascade>,
-                  hf_cand_xic0_omegac0_qa::EtaCascade<hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade, hf_cand_xic0_omegac0_qa::PzCascade>,
-                  hf_cand_xic0_omegac0_qa::PhiCascade<hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade>,
-                  hf_cand_xic0_omegac0_qa::PtV0<hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0>,
-                  hf_cand_xic0_omegac0_qa::PV0<hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0, hf_cand_xic0_omegac0_qa::PzV0>,
-                  hf_cand_xic0_omegac0_qa::EtaV0<hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0, hf_cand_xic0_omegac0_qa::PzV0>,
-                  hf_cand_xic0_omegac0_qa::PhiV0<hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0>,
-                  hf_cand_xic0_omegac0_qa::EtaCharmBachelor<hf_cand_xic0_omegac0_qa::PxCharmBachelor, hf_cand_xic0_omegac0_qa::PyCharmBachelor, hf_cand_xic0_omegac0_qa::PzCharmBachelor>,
-                  hf_cand_xic0_omegac0_qa::PtCharmBachelor<hf_cand_xic0_omegac0_qa::PxCharmBachelor, hf_cand_xic0_omegac0_qa::PyCharmBachelor>,
-                  hf_cand_xic0_omegac0_qa::PCharmBachelor<hf_cand_xic0_omegac0_qa::PxCharmBachelor, hf_cand_xic0_omegac0_qa::PyCharmBachelor, hf_cand_xic0_omegac0_qa::PzCharmBachelor>,
-                  hf_cand_xic0_omegac0_qa::PhiCharmBachelor<hf_cand_xic0_omegac0_qa::PxCharmBachelor, hf_cand_xic0_omegac0_qa::PyCharmBachelor>,
-                  hf_cand_xic0_omegac0_qa::EtaCascadeBachelor<hf_cand_xic0_omegac0_qa::PxCascadeBachelor, hf_cand_xic0_omegac0_qa::PyCascadeBachelor, hf_cand_xic0_omegac0_qa::PzCascadeBachelor>,
-                  hf_cand_xic0_omegac0_qa::PtCascadeBachelor<hf_cand_xic0_omegac0_qa::PxCascadeBachelor, hf_cand_xic0_omegac0_qa::PyCascadeBachelor>,
-                  hf_cand_xic0_omegac0_qa::PCascadeBachelor<hf_cand_xic0_omegac0_qa::PxCascadeBachelor, hf_cand_xic0_omegac0_qa::PyCascadeBachelor, hf_cand_xic0_omegac0_qa::PzCascadeBachelor>,
-                  hf_cand_xic0_omegac0_qa::PhiCascadeBachelor<hf_cand_xic0_omegac0_qa::PxCascadeBachelor, hf_cand_xic0_omegac0_qa::PyCascadeBachelor>,
-                  hf_cand_xic0_omegac0_qa::EtaV0PosDaughter<hf_cand_xic0_omegac0_qa::PxV0PosDaughter, hf_cand_xic0_omegac0_qa::PyV0PosDaughter, hf_cand_xic0_omegac0_qa::PzV0PosDaughter>,
-                  hf_cand_xic0_omegac0_qa::PtV0PosDaughter<hf_cand_xic0_omegac0_qa::PxV0PosDaughter, hf_cand_xic0_omegac0_qa::PyV0PosDaughter>,
-                  hf_cand_xic0_omegac0_qa::PV0PosDaughter<hf_cand_xic0_omegac0_qa::PxV0PosDaughter, hf_cand_xic0_omegac0_qa::PyV0PosDaughter, hf_cand_xic0_omegac0_qa::PzV0PosDaughter>,
-                  hf_cand_xic0_omegac0_qa::PhiV0PosDaughter<hf_cand_xic0_omegac0_qa::PxV0PosDaughter, hf_cand_xic0_omegac0_qa::PyV0PosDaughter>,
-                  hf_cand_xic0_omegac0_qa::EtaV0NegDaughter<hf_cand_xic0_omegac0_qa::PxV0NegDaughter, hf_cand_xic0_omegac0_qa::PyV0NegDaughter, hf_cand_xic0_omegac0_qa::PzV0NegDaughter>,
-                  hf_cand_xic0_omegac0_qa::PtV0NegDaughter<hf_cand_xic0_omegac0_qa::PxV0NegDaughter, hf_cand_xic0_omegac0_qa::PyV0NegDaughter>,
-                  hf_cand_xic0_omegac0_qa::PV0NegDaughter<hf_cand_xic0_omegac0_qa::PxV0NegDaughter, hf_cand_xic0_omegac0_qa::PyV0NegDaughter, hf_cand_xic0_omegac0_qa::PzV0NegDaughter>,
-                  hf_cand_xic0_omegac0_qa::PhiV0NegDaughter<hf_cand_xic0_omegac0_qa::PxV0NegDaughter, hf_cand_xic0_omegac0_qa::PyV0NegDaughter>,
-                  hf_cand_xic0_omegac0_qa::MV0<hf_cand_xic0_omegac0_qa::PxV0PosDaughter, hf_cand_xic0_omegac0_qa::PyV0PosDaughter, hf_cand_xic0_omegac0_qa::PzV0PosDaughter, hf_cand_xic0_omegac0_qa::PxV0NegDaughter, hf_cand_xic0_omegac0_qa::PyV0NegDaughter, hf_cand_xic0_omegac0_qa::PzV0NegDaughter>,
-                  hf_cand_xic0_omegac0_qa::MCascade<hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0, hf_cand_xic0_omegac0_qa::PzV0, hf_cand_xic0_omegac0_qa::PxCascadeBachelor, hf_cand_xic0_omegac0_qa::PyCascadeBachelor, hf_cand_xic0_omegac0_qa::PzCascadeBachelor>,
-                  hf_cand_xic0_omegac0_qa::M<hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade, hf_cand_xic0_omegac0_qa::PzCascade, hf_cand_xic0_omegac0_qa::PxCharmBachelor, hf_cand_xic0_omegac0_qa::PyCharmBachelor, hf_cand_xic0_omegac0_qa::PzCharmBachelor>,
-                  hf_cand_xic0_omegac0_qa::CosThetaStarCharmBachelor<hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade, hf_cand_xic0_omegac0_qa::PzCascade, hf_cand_xic0_omegac0_qa::PxCharmBachelor, hf_cand_xic0_omegac0_qa::PyCharmBachelor, hf_cand_xic0_omegac0_qa::PzCharmBachelor>,
-                  hf_cand_xic0_omegac0_qa::DecayLength<collision::PosX, collision::PosY, collision::PosZ, hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ZSecondaryVertex>,
-                  hf_cand_xic0_omegac0_qa::DecayLengthXY<collision::PosX, collision::PosY, hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex>,
-                  hf_cand_xic0_omegac0_qa::DecayLengthCascade<hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ZSecondaryVertex, hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::ZCascadeVertex>,
-                  hf_cand_xic0_omegac0_qa::DecayLengthXYCascade<hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex>,
-                  hf_cand_xic0_omegac0_qa::DecayLengthV0<hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::ZCascadeVertex, hf_cand_xic0_omegac0_qa::XV0Vertex, hf_cand_xic0_omegac0_qa::YV0Vertex, hf_cand_xic0_omegac0_qa::ZV0Vertex>,
-                  hf_cand_xic0_omegac0_qa::DecayLengthXYV0<hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::XV0Vertex, hf_cand_xic0_omegac0_qa::YV0Vertex>,
-                  hf_cand_xic0_omegac0_qa::CosPA<collision::PosX, collision::PosY, collision::PosZ, hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ZSecondaryVertex, hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py, hf_cand_xic0_omegac0_qa::Pz>,
-                  hf_cand_xic0_omegac0_qa::CosPAXY<collision::PosX, collision::PosY, hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py>,
-                  hf_cand_xic0_omegac0_qa::CosPACascadeToPv<collision::PosX, collision::PosY, collision::PosZ, hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::ZCascadeVertex, hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade, hf_cand_xic0_omegac0_qa::PzCascade>,
-                  hf_cand_xic0_omegac0_qa::CosPAXYCascadeToPv<collision::PosX, collision::PosY, hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade>,
-                  hf_cand_xic0_omegac0_qa::CosPAV0ToPv<collision::PosX, collision::PosY, collision::PosZ, hf_cand_xic0_omegac0_qa::XV0Vertex, hf_cand_xic0_omegac0_qa::YV0Vertex, hf_cand_xic0_omegac0_qa::ZV0Vertex, hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0, hf_cand_xic0_omegac0_qa::PzV0>,
-                  hf_cand_xic0_omegac0_qa::CosPAXYV0ToPv<collision::PosX, collision::PosY, hf_cand_xic0_omegac0_qa::XV0Vertex, hf_cand_xic0_omegac0_qa::YV0Vertex, hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0>,
-                  hf_cand_xic0_omegac0_qa::CosPAV0ToCascade<hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::ZCascadeVertex, hf_cand_xic0_omegac0_qa::XV0Vertex, hf_cand_xic0_omegac0_qa::YV0Vertex, hf_cand_xic0_omegac0_qa::ZV0Vertex, hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0, hf_cand_xic0_omegac0_qa::PzV0>,
-                  hf_cand_xic0_omegac0_qa::CosPAXYV0ToCascade<hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::XV0Vertex, hf_cand_xic0_omegac0_qa::YV0Vertex, hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0>,
-                  hf_cand_xic0_omegac0_qa::CosPACascadeToParent<hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ZSecondaryVertex, hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::ZCascadeVertex, hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade, hf_cand_xic0_omegac0_qa::PzCascade>,
-                  hf_cand_xic0_omegac0_qa::CosPAXYCascadeToParent<hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade>,
-                  hf_cand_xic0_omegac0_qa::Ct<collision::PosX, collision::PosY, collision::PosZ, hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ZSecondaryVertex, hf_cand_xic0_omegac0_qa::Px, hf_cand_xic0_omegac0_qa::Py, hf_cand_xic0_omegac0_qa::Pz>,
-                  hf_cand_xic0_omegac0_qa::CtCascade<hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ZSecondaryVertex, hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::ZCascadeVertex, hf_cand_xic0_omegac0_qa::PxCascade, hf_cand_xic0_omegac0_qa::PyCascade, hf_cand_xic0_omegac0_qa::PzCascade>,
-                  hf_cand_xic0_omegac0_qa::CtV0<hf_cand_xic0_omegac0_qa::XCascadeVertex, hf_cand_xic0_omegac0_qa::YCascadeVertex, hf_cand_xic0_omegac0_qa::ZCascadeVertex, hf_cand_xic0_omegac0_qa::XV0Vertex, hf_cand_xic0_omegac0_qa::YV0Vertex, hf_cand_xic0_omegac0_qa::ZV0Vertex, hf_cand_xic0_omegac0_qa::PxV0, hf_cand_xic0_omegac0_qa::PyV0, hf_cand_xic0_omegac0_qa::PzV0>,
-                  hf_cand_xic0_omegac0_qa::DecayLengthNormalised<collision::PosX, collision::PosY, collision::PosZ, hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ZSecondaryVertex, hf_cand_xic0_omegac0_qa::ErrorDecayLength>,
-                  hf_cand_xic0_omegac0_qa::DecayLengthXYNormalised<collision::PosX, collision::PosY, hf_cand_xic0_omegac0_qa::XSecondaryVertex, hf_cand_xic0_omegac0_qa::YSecondaryVertex, hf_cand_xic0_omegac0_qa::ErrorDecayLengthXY>,
-                  hf_cand_xic0_omegac0_qa::ImpactParameterCascadeXYNormalised<hf_cand_xic0_omegac0_qa::ImpactParameterCascadeXY, hf_cand_xic0_omegac0_qa::ErrorImpactParameterCascadeXY>,
-                  hf_cand_xic0_omegac0_qa::ImpactParameterCharmBachelorXYNormalised<hf_cand_xic0_omegac0_qa::ImpactParameterCharmBachelorXY, hf_cand_xic0_omegac0_qa::ErrorImpactParameterCharmBachelorXY>);
-
-namespace hf_cand_xic0_omegac0_qa_kf
-{
+// KFParticle specific columns
 DECLARE_SOA_COLUMN(MassErrorV0, massErrorV0, float);
 DECLARE_SOA_COLUMN(MassCascadeAlternative, massCascadeAlternative, float);
 DECLARE_SOA_COLUMN(MassErrorCascade, massErrorCascade, float);
@@ -419,48 +345,153 @@ DECLARE_SOA_DYNAMIC_COLUMN(Chi2TopoOverNdfCascadeBachelorToCascade, chi2TopoOver
                            [](float chi2, int32_t ndf) -> float { return chi2 / ndf; });
 DECLARE_SOA_DYNAMIC_COLUMN(Chi2TopoOverNdfCharmBachelorToParent, chi2TopoOverNdfCharmBachelorToParent, //! Topological-constraint chi2 per NDF
                            [](float chi2, int32_t ndf) -> float { return chi2 / ndf; });
-} // namespace hf_cand_xic0_omegac0_qa_kf
 
-DECLARE_SOA_TABLE(HfCandXic0Omegac0QaKf, "AOD", "HFCANDXIC0OMEGAC0QAKF", //! Row-aligned KF fit diagnostics for HfCandXic0Omegac0Qa
-                  hf_cand_xic0_omegac0_qa_kf::MassErrorV0,
-                  hf_cand_xic0_omegac0_qa_kf::MassCascadeAlternative,
-                  hf_cand_xic0_omegac0_qa_kf::MassErrorCascade,
-                  hf_cand_xic0_omegac0_qa_kf::MassErrorCascadeAlternative, hf_cand_xic0_omegac0_qa_kf::MassErrorParent,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2GeoV0, hf_cand_xic0_omegac0_qa_kf::NdfGeoV0,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2GeoCascade, hf_cand_xic0_omegac0_qa_kf::NdfGeoCascade,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2GeoParent, hf_cand_xic0_omegac0_qa_kf::NdfGeoParent,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2MassV0, hf_cand_xic0_omegac0_qa_kf::NdfMassV0,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2MassCascade, hf_cand_xic0_omegac0_qa_kf::NdfMassCascade,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoV0ToPv, hf_cand_xic0_omegac0_qa_kf::NdfTopoV0ToPv,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoCascadeToPv, hf_cand_xic0_omegac0_qa_kf::NdfTopoCascadeToPv,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoCharmBachelorToPv, hf_cand_xic0_omegac0_qa_kf::NdfTopoCharmBachelorToPv,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoParentToPv, hf_cand_xic0_omegac0_qa_kf::NdfTopoParentToPv,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoV0ToCascade, hf_cand_xic0_omegac0_qa_kf::NdfTopoV0ToCascade,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoCascadeToParent, hf_cand_xic0_omegac0_qa_kf::NdfTopoCascadeToParent,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoCascadeBachelorToCascade, hf_cand_xic0_omegac0_qa_kf::NdfTopoCascadeBachelorToCascade,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoCharmBachelorToParent, hf_cand_xic0_omegac0_qa_kf::NdfTopoCharmBachelorToParent,
-                  hf_cand_xic0_omegac0_qa_kf::DecayLengthSignificanceV0,
-                  hf_cand_xic0_omegac0_qa_kf::DecayLengthSignificanceCascade,
-                  hf_cand_xic0_omegac0_qa_kf::DecayLengthSignificanceParent,
-                  hf_cand_xic0_omegac0_qa_kf::DcaXYCascadeToPv, hf_cand_xic0_omegac0_qa_kf::DcaXYCharmBachelorToPv,
-                  hf_cand_xic0_omegac0_qa_kf::DeviationCharmBachelorToPv,
+} // namespace hf_cand_casc_bach
+
+DECLARE_SOA_TABLE(HfCandCascBach, "AOD", "HFCANDCASCBACH", //! Common QA candidate table for XiPi, OmegaPi and OmegaK
+                  o2::soa::Index<>,
+                  hf_cand_casc_bach::CollisionId,
+                  collision::PosX, collision::PosY, collision::PosZ,
+                  // hf_cand_casc_bach::SignDecay,
+                  hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ZSecondaryVertex,
+                  hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::ZCascadeVertex,
+                  hf_cand_casc_bach::XV0Vertex, hf_cand_casc_bach::YV0Vertex, hf_cand_casc_bach::ZV0Vertex,
+                  hf_cand_casc_bach::ErrorDecayLength, hf_cand_casc_bach::ErrorDecayLengthXY,
+                  hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade, hf_cand_casc_bach::PzCascade,
+                  hf_cand_casc_bach::PxCharmBachelor, hf_cand_casc_bach::PyCharmBachelor, hf_cand_casc_bach::PzCharmBachelor,
+                  hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0, hf_cand_casc_bach::PzV0,
+                  hf_cand_casc_bach::PxCascadeBachelor, hf_cand_casc_bach::PyCascadeBachelor, hf_cand_casc_bach::PzCascadeBachelor,
+                  hf_cand_casc_bach::PxV0PosDaughter, hf_cand_casc_bach::PyV0PosDaughter, hf_cand_casc_bach::PzV0PosDaughter,
+                  hf_cand_casc_bach::PxV0NegDaughter, hf_cand_casc_bach::PyV0NegDaughter, hf_cand_casc_bach::PzV0NegDaughter,
+                  // hf_cand_casc_bach::MassV0, hf_cand_casc_bach::MassCascade, hf_cand_casc_bach::Mass,
+                  hf_cand_casc_bach::ImpactParameterCascadeXY, hf_cand_casc_bach::ImpactParameterCascadeZ,
+                  hf_cand_casc_bach::ErrorImpactParameterCascadeXY, hf_cand_casc_bach::ErrorImpactParameterCascadeZ,
+                  hf_cand_casc_bach::ImpactParameterCharmBachelorXY, hf_cand_casc_bach::ImpactParameterCharmBachelorZ,
+                  hf_cand_casc_bach::ErrorImpactParameterCharmBachelorXY, hf_cand_casc_bach::ErrorImpactParameterCharmBachelorZ,
+                  hf_cand_casc_bach::DcaXYV0PosDaughterToPv, hf_cand_casc_bach::DcaXYV0NegDaughterToPv, hf_cand_casc_bach::DcaXYCascadeBachelorToPv,
+                  hf_cand_casc_bach::DcaZV0PosDaughterToPv, hf_cand_casc_bach::DcaZV0NegDaughterToPv, hf_cand_casc_bach::DcaZCascadeBachelorToPv,
+                  hf_cand_casc_bach::DcaV0Daughters, hf_cand_casc_bach::DcaCascadeDaughters, hf_cand_casc_bach::DcaDaughters,
+                  hf_cand_casc_bach::CascadeId, hf_cand_casc_bach::CharmBachelorId,
+                  hf_track_index::HFflag,
+                  /* dynamic and expression columns */
+                  hf_cand_casc_bach::Px, hf_cand_casc_bach::Py, hf_cand_casc_bach::Pz,
+                  hf_cand_casc_bach::Pt<hf_cand_casc_bach::Px, hf_cand_casc_bach::Py>,
+                  hf_cand_casc_bach::P<hf_cand_casc_bach::Px, hf_cand_casc_bach::Py, hf_cand_casc_bach::Pz>,
+                  hf_cand_casc_bach::Eta<hf_cand_casc_bach::Px, hf_cand_casc_bach::Py, hf_cand_casc_bach::Pz>,
+                  hf_cand_casc_bach::Phi<hf_cand_casc_bach::Px, hf_cand_casc_bach::Py>,
+                  hf_cand_casc_bach::Y<hf_cand_casc_bach::Px, hf_cand_casc_bach::Py, hf_cand_casc_bach::Pz>,
+                  hf_cand_casc_bach::E<hf_cand_casc_bach::Px, hf_cand_casc_bach::Py, hf_cand_casc_bach::Pz>,
+                  hf_cand_casc_bach::PtCascade<hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade>,
+                  hf_cand_casc_bach::PCascade<hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade, hf_cand_casc_bach::PzCascade>,
+                  hf_cand_casc_bach::EtaCascade<hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade, hf_cand_casc_bach::PzCascade>,
+                  hf_cand_casc_bach::PhiCascade<hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade>,
+                  hf_cand_casc_bach::PtV0<hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0>,
+                  hf_cand_casc_bach::PV0<hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0, hf_cand_casc_bach::PzV0>,
+                  hf_cand_casc_bach::EtaV0<hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0, hf_cand_casc_bach::PzV0>,
+                  hf_cand_casc_bach::PhiV0<hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0>,
+                  hf_cand_casc_bach::EtaCharmBachelor<hf_cand_casc_bach::PxCharmBachelor, hf_cand_casc_bach::PyCharmBachelor, hf_cand_casc_bach::PzCharmBachelor>,
+                  hf_cand_casc_bach::PtCharmBachelor<hf_cand_casc_bach::PxCharmBachelor, hf_cand_casc_bach::PyCharmBachelor>,
+                  hf_cand_casc_bach::PCharmBachelor<hf_cand_casc_bach::PxCharmBachelor, hf_cand_casc_bach::PyCharmBachelor, hf_cand_casc_bach::PzCharmBachelor>,
+                  hf_cand_casc_bach::PhiCharmBachelor<hf_cand_casc_bach::PxCharmBachelor, hf_cand_casc_bach::PyCharmBachelor>,
+                  hf_cand_casc_bach::EtaCascadeBachelor<hf_cand_casc_bach::PxCascadeBachelor, hf_cand_casc_bach::PyCascadeBachelor, hf_cand_casc_bach::PzCascadeBachelor>,
+                  hf_cand_casc_bach::PtCascadeBachelor<hf_cand_casc_bach::PxCascadeBachelor, hf_cand_casc_bach::PyCascadeBachelor>,
+                  hf_cand_casc_bach::PCascadeBachelor<hf_cand_casc_bach::PxCascadeBachelor, hf_cand_casc_bach::PyCascadeBachelor, hf_cand_casc_bach::PzCascadeBachelor>,
+                  hf_cand_casc_bach::PhiCascadeBachelor<hf_cand_casc_bach::PxCascadeBachelor, hf_cand_casc_bach::PyCascadeBachelor>,
+                  hf_cand_casc_bach::EtaV0PosDaughter<hf_cand_casc_bach::PxV0PosDaughter, hf_cand_casc_bach::PyV0PosDaughter, hf_cand_casc_bach::PzV0PosDaughter>,
+                  hf_cand_casc_bach::PtV0PosDaughter<hf_cand_casc_bach::PxV0PosDaughter, hf_cand_casc_bach::PyV0PosDaughter>,
+                  hf_cand_casc_bach::PV0PosDaughter<hf_cand_casc_bach::PxV0PosDaughter, hf_cand_casc_bach::PyV0PosDaughter, hf_cand_casc_bach::PzV0PosDaughter>,
+                  hf_cand_casc_bach::PhiV0PosDaughter<hf_cand_casc_bach::PxV0PosDaughter, hf_cand_casc_bach::PyV0PosDaughter>,
+                  hf_cand_casc_bach::EtaV0NegDaughter<hf_cand_casc_bach::PxV0NegDaughter, hf_cand_casc_bach::PyV0NegDaughter, hf_cand_casc_bach::PzV0NegDaughter>,
+                  hf_cand_casc_bach::PtV0NegDaughter<hf_cand_casc_bach::PxV0NegDaughter, hf_cand_casc_bach::PyV0NegDaughter>,
+                  hf_cand_casc_bach::PV0NegDaughter<hf_cand_casc_bach::PxV0NegDaughter, hf_cand_casc_bach::PyV0NegDaughter, hf_cand_casc_bach::PzV0NegDaughter>,
+                  hf_cand_casc_bach::PhiV0NegDaughter<hf_cand_casc_bach::PxV0NegDaughter, hf_cand_casc_bach::PyV0NegDaughter>,
+                  hf_cand_casc_bach::MV0<hf_cand_casc_bach::PxV0PosDaughter, hf_cand_casc_bach::PyV0PosDaughter, hf_cand_casc_bach::PzV0PosDaughter, hf_cand_casc_bach::PxV0NegDaughter, hf_cand_casc_bach::PyV0NegDaughter, hf_cand_casc_bach::PzV0NegDaughter>,
+                  hf_cand_casc_bach::MCascade<hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0, hf_cand_casc_bach::PzV0, hf_cand_casc_bach::PxCascadeBachelor, hf_cand_casc_bach::PyCascadeBachelor, hf_cand_casc_bach::PzCascadeBachelor>,
+                  hf_cand_casc_bach::M<hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade, hf_cand_casc_bach::PzCascade, hf_cand_casc_bach::PxCharmBachelor, hf_cand_casc_bach::PyCharmBachelor, hf_cand_casc_bach::PzCharmBachelor>,
+                  hf_cand_casc_bach::CosThetaStarCharmBachelor<hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade, hf_cand_casc_bach::PzCascade, hf_cand_casc_bach::PxCharmBachelor, hf_cand_casc_bach::PyCharmBachelor, hf_cand_casc_bach::PzCharmBachelor>,
+                  hf_cand_casc_bach::DecayLength<collision::PosX, collision::PosY, collision::PosZ, hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ZSecondaryVertex>,
+                  hf_cand_casc_bach::DecayLengthXY<collision::PosX, collision::PosY, hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex>,
+                  hf_cand_casc_bach::DecayLengthCascade<hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ZSecondaryVertex, hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::ZCascadeVertex>,
+                  hf_cand_casc_bach::DecayLengthXYCascade<hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex>,
+                  hf_cand_casc_bach::DecayLengthV0<hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::ZCascadeVertex, hf_cand_casc_bach::XV0Vertex, hf_cand_casc_bach::YV0Vertex, hf_cand_casc_bach::ZV0Vertex>,
+                  hf_cand_casc_bach::DecayLengthXYV0<hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::XV0Vertex, hf_cand_casc_bach::YV0Vertex>,
+                  hf_cand_casc_bach::CosPA<collision::PosX, collision::PosY, collision::PosZ, hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ZSecondaryVertex, hf_cand_casc_bach::Px, hf_cand_casc_bach::Py, hf_cand_casc_bach::Pz>,
+                  hf_cand_casc_bach::CosPAXY<collision::PosX, collision::PosY, hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::Px, hf_cand_casc_bach::Py>,
+                  hf_cand_casc_bach::CosPACascadeToPv<collision::PosX, collision::PosY, collision::PosZ, hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::ZCascadeVertex, hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade, hf_cand_casc_bach::PzCascade>,
+                  hf_cand_casc_bach::CosPAXYCascadeToPv<collision::PosX, collision::PosY, hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade>,
+                  hf_cand_casc_bach::CosPAV0ToPv<collision::PosX, collision::PosY, collision::PosZ, hf_cand_casc_bach::XV0Vertex, hf_cand_casc_bach::YV0Vertex, hf_cand_casc_bach::ZV0Vertex, hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0, hf_cand_casc_bach::PzV0>,
+                  hf_cand_casc_bach::CosPAXYV0ToPv<collision::PosX, collision::PosY, hf_cand_casc_bach::XV0Vertex, hf_cand_casc_bach::YV0Vertex, hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0>,
+                  hf_cand_casc_bach::CosPAV0ToCascade<hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::ZCascadeVertex, hf_cand_casc_bach::XV0Vertex, hf_cand_casc_bach::YV0Vertex, hf_cand_casc_bach::ZV0Vertex, hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0, hf_cand_casc_bach::PzV0>,
+                  hf_cand_casc_bach::CosPAXYV0ToCascade<hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::XV0Vertex, hf_cand_casc_bach::YV0Vertex, hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0>,
+                  hf_cand_casc_bach::CosPACascadeToParent<hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ZSecondaryVertex, hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::ZCascadeVertex, hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade, hf_cand_casc_bach::PzCascade>,
+                  hf_cand_casc_bach::CosPAXYCascadeToParent<hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade>,
+                  hf_cand_casc_bach::Ct<collision::PosX, collision::PosY, collision::PosZ, hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ZSecondaryVertex, hf_cand_casc_bach::Px, hf_cand_casc_bach::Py, hf_cand_casc_bach::Pz>,
+                  hf_cand_casc_bach::CtCascade<hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ZSecondaryVertex, hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::ZCascadeVertex, hf_cand_casc_bach::PxCascade, hf_cand_casc_bach::PyCascade, hf_cand_casc_bach::PzCascade>,
+                  hf_cand_casc_bach::CtV0<hf_cand_casc_bach::XCascadeVertex, hf_cand_casc_bach::YCascadeVertex, hf_cand_casc_bach::ZCascadeVertex, hf_cand_casc_bach::XV0Vertex, hf_cand_casc_bach::YV0Vertex, hf_cand_casc_bach::ZV0Vertex, hf_cand_casc_bach::PxV0, hf_cand_casc_bach::PyV0, hf_cand_casc_bach::PzV0>,
+                  hf_cand_casc_bach::DecayLengthNormalised<collision::PosX, collision::PosY, collision::PosZ, hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ZSecondaryVertex, hf_cand_casc_bach::ErrorDecayLength>,
+                  hf_cand_casc_bach::DecayLengthXYNormalised<collision::PosX, collision::PosY, hf_cand_casc_bach::XSecondaryVertex, hf_cand_casc_bach::YSecondaryVertex, hf_cand_casc_bach::ErrorDecayLengthXY>,
+                  hf_cand_casc_bach::ImpactParameterCascadeXYNormalised<hf_cand_casc_bach::ImpactParameterCascadeXY, hf_cand_casc_bach::ErrorImpactParameterCascadeXY>,
+                  hf_cand_casc_bach::ImpactParameterCascadeZNormalised<hf_cand_casc_bach::ImpactParameterCascadeZ, hf_cand_casc_bach::ErrorImpactParameterCascadeZ>,
+                  hf_cand_casc_bach::ImpactParameterCharmBachelorXYNormalised<hf_cand_casc_bach::ImpactParameterCharmBachelorXY, hf_cand_casc_bach::ErrorImpactParameterCharmBachelorXY>,
+                  hf_cand_casc_bach::ImpactParameterCharmBachelorZNormalised<hf_cand_casc_bach::ImpactParameterCharmBachelorZ, hf_cand_casc_bach::ErrorImpactParameterCharmBachelorZ>);
+
+DECLARE_SOA_TABLE(HfCandCascBachKf, "AOD", "HFCANDCASCBACHKF", //! KF specific information for HfCandCascBach
+                  hf_cand_casc_bach::MassErrorV0,
+                  hf_cand_casc_bach::MassCascadeAlternative,
+                  hf_cand_casc_bach::MassErrorCascade,
+                  hf_cand_casc_bach::MassErrorCascadeAlternative, hf_cand_casc_bach::MassErrorParent,
+                  hf_cand_casc_bach::Chi2GeoV0, hf_cand_casc_bach::NdfGeoV0,
+                  hf_cand_casc_bach::Chi2GeoCascade, hf_cand_casc_bach::NdfGeoCascade,
+                  hf_cand_casc_bach::Chi2GeoParent, hf_cand_casc_bach::NdfGeoParent,
+                  hf_cand_casc_bach::Chi2MassV0, hf_cand_casc_bach::NdfMassV0,
+                  hf_cand_casc_bach::Chi2MassCascade, hf_cand_casc_bach::NdfMassCascade,
+                  hf_cand_casc_bach::Chi2TopoV0ToPv, hf_cand_casc_bach::NdfTopoV0ToPv,
+                  hf_cand_casc_bach::Chi2TopoCascadeToPv, hf_cand_casc_bach::NdfTopoCascadeToPv,
+                  hf_cand_casc_bach::Chi2TopoCharmBachelorToPv, hf_cand_casc_bach::NdfTopoCharmBachelorToPv,
+                  hf_cand_casc_bach::Chi2TopoParentToPv, hf_cand_casc_bach::NdfTopoParentToPv,
+                  hf_cand_casc_bach::Chi2TopoV0ToCascade, hf_cand_casc_bach::NdfTopoV0ToCascade,
+                  hf_cand_casc_bach::Chi2TopoCascadeToParent, hf_cand_casc_bach::NdfTopoCascadeToParent,
+                  hf_cand_casc_bach::Chi2TopoCascadeBachelorToCascade, hf_cand_casc_bach::NdfTopoCascadeBachelorToCascade,
+                  hf_cand_casc_bach::Chi2TopoCharmBachelorToParent, hf_cand_casc_bach::NdfTopoCharmBachelorToParent,
+                  hf_cand_casc_bach::DecayLengthSignificanceV0,
+                  hf_cand_casc_bach::DecayLengthSignificanceCascade,
+                  hf_cand_casc_bach::DecayLengthSignificanceParent,
+                  hf_cand_casc_bach::DcaXYCascadeToPv, hf_cand_casc_bach::DcaXYCharmBachelorToPv,
+                  hf_cand_casc_bach::DeviationCharmBachelorToPv,
                   /* derived ratios */
-                  hf_cand_xic0_omegac0_qa_kf::Chi2GeoOverNdfV0<hf_cand_xic0_omegac0_qa_kf::Chi2GeoV0, hf_cand_xic0_omegac0_qa_kf::NdfGeoV0>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2GeoOverNdfCascade<hf_cand_xic0_omegac0_qa_kf::Chi2GeoCascade, hf_cand_xic0_omegac0_qa_kf::NdfGeoCascade>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2GeoOverNdfParent<hf_cand_xic0_omegac0_qa_kf::Chi2GeoParent, hf_cand_xic0_omegac0_qa_kf::NdfGeoParent>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2MassOverNdfV0<hf_cand_xic0_omegac0_qa_kf::Chi2MassV0, hf_cand_xic0_omegac0_qa_kf::NdfMassV0>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2MassOverNdfCascade<hf_cand_xic0_omegac0_qa_kf::Chi2MassCascade, hf_cand_xic0_omegac0_qa_kf::NdfMassCascade>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoOverNdfV0ToPv<hf_cand_xic0_omegac0_qa_kf::Chi2TopoV0ToPv, hf_cand_xic0_omegac0_qa_kf::NdfTopoV0ToPv>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoOverNdfCascadeToPv<hf_cand_xic0_omegac0_qa_kf::Chi2TopoCascadeToPv, hf_cand_xic0_omegac0_qa_kf::NdfTopoCascadeToPv>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoOverNdfCharmBachelorToPv<hf_cand_xic0_omegac0_qa_kf::Chi2TopoCharmBachelorToPv, hf_cand_xic0_omegac0_qa_kf::NdfTopoCharmBachelorToPv>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoOverNdfParentToPv<hf_cand_xic0_omegac0_qa_kf::Chi2TopoParentToPv, hf_cand_xic0_omegac0_qa_kf::NdfTopoParentToPv>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoOverNdfV0ToCascade<hf_cand_xic0_omegac0_qa_kf::Chi2TopoV0ToCascade, hf_cand_xic0_omegac0_qa_kf::NdfTopoV0ToCascade>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoOverNdfCascadeToParent<hf_cand_xic0_omegac0_qa_kf::Chi2TopoCascadeToParent, hf_cand_xic0_omegac0_qa_kf::NdfTopoCascadeToParent>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoOverNdfCascadeBachelorToCascade<hf_cand_xic0_omegac0_qa_kf::Chi2TopoCascadeBachelorToCascade, hf_cand_xic0_omegac0_qa_kf::NdfTopoCascadeBachelorToCascade>,
-                  hf_cand_xic0_omegac0_qa_kf::Chi2TopoOverNdfCharmBachelorToParent<hf_cand_xic0_omegac0_qa_kf::Chi2TopoCharmBachelorToParent, hf_cand_xic0_omegac0_qa_kf::NdfTopoCharmBachelorToParent>);
+                  hf_cand_casc_bach::Chi2GeoOverNdfV0<hf_cand_casc_bach::Chi2GeoV0, hf_cand_casc_bach::NdfGeoV0>,
+                  hf_cand_casc_bach::Chi2GeoOverNdfCascade<hf_cand_casc_bach::Chi2GeoCascade, hf_cand_casc_bach::NdfGeoCascade>,
+                  hf_cand_casc_bach::Chi2GeoOverNdfParent<hf_cand_casc_bach::Chi2GeoParent, hf_cand_casc_bach::NdfGeoParent>,
+                  hf_cand_casc_bach::Chi2MassOverNdfV0<hf_cand_casc_bach::Chi2MassV0, hf_cand_casc_bach::NdfMassV0>,
+                  hf_cand_casc_bach::Chi2MassOverNdfCascade<hf_cand_casc_bach::Chi2MassCascade, hf_cand_casc_bach::NdfMassCascade>,
+                  hf_cand_casc_bach::Chi2TopoOverNdfV0ToPv<hf_cand_casc_bach::Chi2TopoV0ToPv, hf_cand_casc_bach::NdfTopoV0ToPv>,
+                  hf_cand_casc_bach::Chi2TopoOverNdfCascadeToPv<hf_cand_casc_bach::Chi2TopoCascadeToPv, hf_cand_casc_bach::NdfTopoCascadeToPv>,
+                  hf_cand_casc_bach::Chi2TopoOverNdfCharmBachelorToPv<hf_cand_casc_bach::Chi2TopoCharmBachelorToPv, hf_cand_casc_bach::NdfTopoCharmBachelorToPv>,
+                  hf_cand_casc_bach::Chi2TopoOverNdfParentToPv<hf_cand_casc_bach::Chi2TopoParentToPv, hf_cand_casc_bach::NdfTopoParentToPv>,
+                  hf_cand_casc_bach::Chi2TopoOverNdfV0ToCascade<hf_cand_casc_bach::Chi2TopoV0ToCascade, hf_cand_casc_bach::NdfTopoV0ToCascade>,
+                  hf_cand_casc_bach::Chi2TopoOverNdfCascadeToParent<hf_cand_casc_bach::Chi2TopoCascadeToParent, hf_cand_casc_bach::NdfTopoCascadeToParent>,
+                  hf_cand_casc_bach::Chi2TopoOverNdfCascadeBachelorToCascade<hf_cand_casc_bach::Chi2TopoCascadeBachelorToCascade, hf_cand_casc_bach::NdfTopoCascadeBachelorToCascade>,
+                  hf_cand_casc_bach::Chi2TopoOverNdfCharmBachelorToParent<hf_cand_casc_bach::Chi2TopoCharmBachelorToParent, hf_cand_casc_bach::NdfTopoCharmBachelorToParent>);
 
-namespace hf_cand_xic0_omegac0_qa
-{
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfCandCascBachMCRec, "AOD", "HFCANDCASCBACHMCREC", //!
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
+                  hf_cand_mc_flag::NTracksDecayed,
+                  hf_cand_mc_flag::NInteractionsWithMaterial);
+
+// table with results of generator level MC matching
+DECLARE_SOA_TABLE(HfCandCascBachMCGen, "AOD", "HFCANDCASCBACHMCGEN", //!
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen,
+                  hf_cand_mc_flag::IdxBhadMotherPart);
+
+} // namespace o2::aod
+
 struct HfHelperQa {
   template <typename T>
   static auto invMassLambda(const T& candidate)
@@ -588,8 +619,26 @@ struct HfHelperQa {
     return candidate.ctV0(o2::constants::physics::MassLambda0);
   }
 };
-} // namespace hf_cand_xic0_omegac0_qa
 
-} // namespace o2::aod
+namespace o2::hf_decay
+{
+using HfDecayChannel = int8_t;
+
+/// @brief XiC0 and OmegaC0 candidates: main channels
+namespace hf_cand_casc_bach
+{
+enum DecayChannelMain : HfDecayChannel {
+  // XiC0
+  Xic0ToXiPi = 1,   // Xi- π+ → Λ π- π+ → p π- π- π+
+  Xic0ToOmegaK = 2, // Ω- K+ → Λ K- K+ → p π- K- K+
+  // OmegaC0
+  Omegac0ToOmegaPi = 3,         // Ω- π+ → Λ π- π+ → p π- π- π+
+  Omegac0ToOmegaK = 4,          // Ω- K+ → Λ K- K+ → p π- K- K+
+  Omegac0ToXiPi = 5,            // Xi- π+ → Λ π- π+ → p π- π- π+
+  NChannelsMain = Omegac0ToXiPi // last channel
+};
+} // namespace hf_cand_casc_bach
+
+} // namespace o2::hf_decay
 
 #endif // PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLESQA_H_
