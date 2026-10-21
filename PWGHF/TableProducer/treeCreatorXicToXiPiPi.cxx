@@ -748,7 +748,7 @@ struct HfTreeCreatorXicToXiPiPi {
                                 float& etaPrFromLambda)
   {
     std::vector<int> arrDaughIndex = {};
-    RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+    RecoDecay::getDaughters<true>(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
     bool foundFirstPi{false};
     for (const int iProng : arrDaughIndex) {
       auto daugh = particles.rawIteratorAt(iProng);
@@ -762,15 +762,17 @@ struct HfTreeCreatorXicToXiPiPi {
           foundFirstPi = true;
         }
       } else if (std::abs(daugh.pdgCode()) == +kXiMinus) {
-        RecoDecay::getDaughters(daugh, &arrDaughIndex, std::array{+kLambda0, -kPiPlus}, 1);
-        for (const int iProngXi : arrDaughIndex) {
+        std::vector<int> arrDaughIndexXi = {};
+        RecoDecay::getDaughters<true>(daugh, &arrDaughIndexXi, std::array{+kLambda0, -kPiPlus}, 1);
+        for (const int iProngXi : arrDaughIndexXi) {
           auto daughXi = particles.rawIteratorAt(iProngXi);
           if (std::abs(daughXi.pdgCode()) == +kPiPlus) {
             ptPiBachelor = daughXi.pt();
             etaPiBachelor = daughXi.eta();
           } else {
-            RecoDecay::getDaughters(daughXi, &arrDaughIndex, std::array{+kProton, -kPiPlus}, 1);
-            for (const int iProngLambda : arrDaughIndex) {
+            std::vector<int> arrDaughIndexLambda = {};
+            RecoDecay::getDaughters<true>(daughXi, &arrDaughIndexLambda, std::array{+kProton, -kPiPlus}, 1);
+            for (const int iProngLambda : arrDaughIndexLambda) {
               auto daughLambda = particles.rawIteratorAt(iProngLambda);
               if (std::abs(daughLambda.pdgCode()) == +kPiPlus) {
                 ptPiFromLambda = daughLambda.pt();
