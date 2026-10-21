@@ -181,8 +181,8 @@ using ConfTrackSelectionDndetaItsOnly = ConfTrackSelection<PrefixTrackSelectionD
 template <auto& Prefix, int ChargeSign, float PidThresDefault>
 struct ConfResonanceDaughterSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
-  static constexpr int chargeAbs = 1;
-  static constexpr int chargeSign = ChargeSign;
+  static const int chargeAbs = 1;
+  static const int chargeSign = ChargeSign;
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.0f, "Minimum pT (GeV/c)"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
