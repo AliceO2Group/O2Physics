@@ -56,6 +56,24 @@
     (o2::aod::femtobase::stored::mass > (selection).massMin) && \
     (o2::aod::femtobase::stored::mass < (selection).massMax)
 
+// partition for resonance daughters (pion+/-, kaon+/- legs): unlike MAKE_TRACK_PARTITION, chargeSign
+// and chargeAbs are compile-time constants on the selection struct (ConfResonanceDaughterSelection in
+// trackBuilder.h), not runtime Configurables, so the sign comparison is just a comparison to a constant
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_RESONANCE_DAUGHTER_PARTITION(selection)                                                                                               \
+  ((selection).chargeSign > 0 ? o2::aod::femtobase::stored::signedPt > 0.f : o2::aod::femtobase::stored::signedPt < 0.f) &&                        \
+    (nabs((selection).chargeAbs * o2::aod::femtobase::stored::signedPt) > (selection).ptMin) &&                                                    \
+    (nabs((selection).chargeAbs * o2::aod::femtobase::stored::signedPt) < (selection).ptMax) &&                                                    \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                                                      \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                                                      \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                                                      \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                                                      \
+    ifnode(TRACK_MOMENTUM((selection).chargeAbs, o2::aod::femtobase::stored::signedPt, o2::aod::femtobase::stored::eta) <= (selection).pidThres,   \
+           ncheckbit(o2::aod::femtotracks::mask, (selection).maskLowMomentum) &&                                                                   \
+             (o2::aod::femtotracks::mask & (selection).rejectionMaskLowMomentum) == static_cast<o2::analysis::femto::datatypes::TrackMaskType>(0), \
+           ncheckbit(o2::aod::femtotracks::mask, (selection).maskHighMomentum) &&                                                                  \
+             (o2::aod::femtotracks::mask & (selection).rejectionMaskHighMomentum) == static_cast<o2::analysis::femto::datatypes::TrackMaskType>(0))
+
 // partition for phis and rhos, i.e. resonance that are their own antiparticle -- both daughters are
 // the same species, so the selection carries a single dauMask pair applied to both stored columns
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
