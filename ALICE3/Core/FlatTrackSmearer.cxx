@@ -171,7 +171,7 @@ bool TrackSmearer::viewTable(int pdg, const uint8_t* buffer, size_t size, bool f
 
 bool TrackSmearer::viewTable(int pdg, std::span<std::byte> const& span, bool forceReload)
 {
-  return viewTable(pdg, reinterpret_cast<const uint8_t*>(span.data()), span.size_bytes(), forceReload);
+  return viewTable(pdg, reinterpret_cast<const uint8_t*>(span.data()), span.size_bytes(), forceReload); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 }
 
 bool TrackSmearer::hasTable(int pdg) const
