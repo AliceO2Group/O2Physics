@@ -14,11 +14,12 @@
 /// \author Laura Gans-Bartl, laura.gans-bartl@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include  "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
