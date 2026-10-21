@@ -1542,12 +1542,12 @@ struct PiKpRAA {
         hasbc = collision.has_foundBC();
         hasft0 = collision.has_foundFT0();
         hastvx = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX);
-        hasBcFT0TVX = hasbc && hasft0 && hastvx;
+        hasBcFT0TVX = (hasbc && hasft0 && hastvx);
 
         if (hasBcFT0TVX) {
           // NUMERATOR/DENOMINATOR OF THE EVENT LOSS
           registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX"), nChMCTPCAcc);
-          if (hasBcFT0TVX && bestCollisionIndex) {
+          if (hasBcFT0TVX && isBestCollIndex) {
             registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX_BestCollIdx"), nChMCTPCAcc);
           }
         }
