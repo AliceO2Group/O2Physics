@@ -1547,13 +1547,13 @@ struct PiKpRAA {
         if (hasBcFT0TVX) {
           // NUMERATOR/DENOMINATOR OF THE EVENT LOSS
           registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX"), nChMCTPCAcc);
-        }
 
-        // TVX-triggered + bestCollisionIndex
-        if (hasBcFT0TVX && isBestCollIndex) {
-          registry.fill(HIST("EventCounterMC"), 4.5);
-          // NUMERATOR/DENOMINATOR OF THE EVENT LOSS
-          registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX_BestCollIdx"), nChMCTPCAcc);
+          // TVX-triggered + bestCollisionIndex
+          if (isBestCollIndex) {
+            registry.fill(HIST("EventCounterMC"), 4.5);
+            // NUMERATOR/DENOMINATOR OF THE EVENT LOSS
+            registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX_BestCollIdx"), nChMCTPCAcc);
+          }
         }
 
         //---------------------------
@@ -1604,28 +1604,28 @@ struct PiKpRAA {
             if (hasBcFT0TVX) {
               registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtPiVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-            }
-            if (hasBcFT0TVX && isBestCollIndex) {
-              registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
-              registry.fill(HIST("PtPiVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+                registry.fill(HIST("PtPiVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
+              }
             }
           } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
             if (hasBcFT0TVX) {
               registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtKaVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-            }
-            if (hasBcFT0TVX && isBestCollIndex) {
-              registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
-              registry.fill(HIST("PtKaVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+                registry.fill(HIST("PtKaVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
+              }
             }
           } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
             if (hasBcFT0TVX) {
               registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtPrVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-            }
-            if (hasBcFT0TVX && isBestCollIndex) {
-              registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
-              registry.fill(HIST("PtPrVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+                registry.fill(HIST("PtPrVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
+              }
             }
           } else {
             continue;
