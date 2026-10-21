@@ -4083,8 +4083,8 @@ struct HadNucleiFemto {
           const float absPTr = std::abs(track.p());
           const float signedPtTr = track.sign() * track.pt();
           const bool passTPCRejectTr = !(std::abs(track.tpcNSigmaDe()) < tritonPid.settingTPCRejectNsig ||
-                                        std::abs(track.tpcNSigmaPr()) < tritonPid.settingTPCRejectNsig ||
-                                        std::abs(track.tpcNSigmaPi()) < tritonPid.settingTPCRejectNsig);
+                                         std::abs(track.tpcNSigmaPr()) < tritonPid.settingTPCRejectNsig ||
+                                         std::abs(track.tpcNSigmaPi()) < tritonPid.settingTPCRejectNsig);
           o2::aod::ITSResponse itsResponse;
           const float itsNSigmaTr = itsResponse.nSigmaITS<o2::track::PID::Triton>(track.itsClusterSizes(), absPTr, track.eta());
           if (passTPCRejectTr) {
