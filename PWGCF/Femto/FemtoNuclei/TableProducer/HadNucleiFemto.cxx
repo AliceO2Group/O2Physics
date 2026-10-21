@@ -11,7 +11,7 @@
 //
 
 /// \file HadNucleiFemtoDcaPurity.cxx
-/// \brief Nuclei-hadron femtoscopy task
+/// \brief Nuclei-hadron femtoscopy task with DCA-fraction and purity inputs
 /// \author CMY
 /// \date 2025-04-10
 
@@ -428,6 +428,7 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"tritonPid"};
     // Triton track-quality, purity and PID cuts
+    Configurable<int> settingITSNClsMinTr{"settingITSNClsMinTr", 5, "Minimum number of ITS clusters for triton candidates"};
     Configurable<float> settingPIDMomentumSplitTr{"settingPIDMomentumSplitTr", 2.f, "Momentum separating low- and high-momentum triton TPC PID"};
     Configurable<float> settingCutTPCNsigmaLowPTr{"settingCutTPCNsigmaLowPTr", 3.f, "Maximum absolute TPC n-sigma for tritons below the momentum split"};
     Configurable<float> settingCutITSNsigmaLowPTr{"settingCutITSNsigmaLowPTr", 3.f, "Maximum absolute ITS n-sigma for tritons below the momentum split"};
@@ -827,6 +828,7 @@ struct HadNucleiFemto {
      {"h2NsigmaHadKaTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(K)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
 
      // Purity
+     {"purity/h2MassTOFTr_preselection", "Triton TOF mass before mass cut; signed #it{p}_{T} (GeV/#it{c}); m_{TOF} (GeV/#it{c}^{2})", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {280, 0.0f, 7.0f}}}},
      {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {120, -5.0f, 5.0f}}}},
@@ -1254,7 +1256,6 @@ struct HadNucleiFemto {
     constexpr int minTPCCrossedRows = 70;
     constexpr float maxTPCChi2NCl = 5.f;
     constexpr float maxTPCFractionSharedCls = 0.3f;
-    constexpr int minITSNCls = 5;
     constexpr float maxITSChi2NCl = 10.f;
 
     return !(std::abs(candidate.eta()) >= maxAbsEta ||
@@ -1263,7 +1264,7 @@ struct HadNucleiFemto {
              candidate.tpcNClsCrossedRows() < minTPCCrossedRows ||
              candidate.tpcChi2NCl() >= maxTPCChi2NCl ||
              candidate.tpcFractionSharedCls() >= maxTPCFractionSharedCls ||
-             candidate.itsNCls() < minITSNCls ||
+             candidate.itsNCls() < tritonPid.settingITSNClsMinTr ||
              candidate.itsChi2NCl() >= maxITSChi2NCl);
   }
 
@@ -3189,7 +3190,7 @@ struct HadNucleiFemto {
                          std::unordered_map<int, std::deque<HadHyperEvent>>& mixingPools,
                          int& mixingRunNumber)
   {
-    const CentralityBinningType configuredBinningPolicy{{axisVertex, axisCentrality}};
+    const CentralityBinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
     for (const auto& collision : collisions) {
       if (!selectCollision<isMC>(collision, bcs)) {
         continue;
@@ -3344,8 +3345,8 @@ struct HadNucleiFemto {
   void processMixedEvent(const CollisionsFullWithPVMult& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     LOG(debug) << "Processing mixed event";
-    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}};
-    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}};
+    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}, true};
+    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}, true};
 
     for (const auto& collision : collisions) {
       mQaRegistry.fill(HIST("hMixedEventSelections"), 0);
@@ -3478,8 +3479,8 @@ struct HadNucleiFemto {
 
   void processMixedEventDiagnostic(const CollisionsFullWithPVMult& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
-    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}};
-    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}};
+    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}, true};
+    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}, true};
     ++mDiagnosticCall;
     MEDiagnosticRow call;
     call.run = mDiagnosticRun;
@@ -4079,10 +4080,33 @@ struct HadNucleiFemto {
           }
         } else if (passTrackNu && useTritonNucleus()) {
           const float tpcNSigmaTr = track.tpcNSigmaTr();
+          const float absPTr = std::abs(track.p());
+          const float signedPtTr = track.sign() * track.pt();
+          const bool passTPCRejectTr = !(std::abs(track.tpcNSigmaDe()) < tritonPid.settingTPCRejectNsig ||
+                                        std::abs(track.tpcNSigmaPr()) < tritonPid.settingTPCRejectNsig ||
+                                        std::abs(track.tpcNSigmaPi()) < tritonPid.settingTPCRejectNsig);
           o2::aod::ITSResponse itsResponse;
-          const float itsNSigmaTr = itsResponse.nSigmaITS<o2::track::PID::Triton>(track.itsClusterSizes(), std::abs(track.p()), track.eta());
-          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaTr);
-          mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), track.sign() * track.pt(), itsNSigmaTr);
+          const float itsNSigmaTr = itsResponse.nSigmaITS<o2::track::PID::Triton>(track.itsClusterSizes(), absPTr, track.eta());
+          if (passTPCRejectTr) {
+            mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), signedPtTr, itsNSigmaTr);
+          }
+          const bool passITSTr = absPTr >= tritonPid.settingPIDMomentumSplitTr ||
+                                 std::abs(itsNSigmaTr) < tritonPid.settingCutITSNsigmaLowPTr;
+          const bool passTPCTr = absPTr < tritonPid.settingPIDMomentumSplitTr
+                                   ? std::abs(tpcNSigmaTr) < tritonPid.settingCutTPCNsigmaLowPTr
+                                   : tpcNSigmaTr > tritonPid.settingCutTPCNsigmaHighPMinTr &&
+                                       tpcNSigmaTr < tritonPid.settingCutTPCNsigmaHighPMaxTr;
+          // Keep triton TPC PID open, while matching the species-rejection and ITS cuts.
+          if (passTPCRejectTr && passITSTr) {
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), signedPtTr, tpcNSigmaTr);
+            // Apply the triton TPC PID cut but keep TOF mass uncut to retain its sidebands.
+            if (passTPCTr && absPTr > tritonPid.settingTOFMassMomentumMinTr && track.hasTOF()) {
+              const float massTOFTr = computeTOFMass(track);
+              if (std::isfinite(massTOFTr)) {
+                mQaRegistry.fill(HIST("purity/h2MassTOFTr_preselection"), signedPtTr, massTOFTr);
+              }
+            }
+          }
         }
 
         const bool isHadronSelected = passTrackHad && selectionPIDHadron(track);
