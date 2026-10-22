@@ -82,8 +82,6 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
   getBinLimits(hHitsEtaPtPhi, nBinsPt, ptAx, limitsPt);    // these are values!
   getBinLimits(hHitsEtaPtPhi, nBinsPhi, phiAx, limitsPhi); // these are values!
 
-  int nBinMinPt = hHitsEtaPtPhi->GetAxis(ptAx)->FindBin(minPt);
-
   // Define the output file
   TFile* outFile = new TFile(outFileName, "recreate");
 
