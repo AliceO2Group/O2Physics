@@ -83,7 +83,7 @@ struct Alice3SingleParticle {
   struct Range {
     double min = 0.;
     double max = 0.;
-    int bins = 0;
+    long bins = 0;
     bool contains(double value) const { return value >= min && value < max; }
   };
   Range ptRange, etaRange, yRange, prodXYrange, prodZRange;
@@ -91,7 +91,7 @@ struct Alice3SingleParticle {
   static Range getRange(const ConfigurableAxis& axis)
   {
     const AxisSpec spec{axis};
-    return {spec.binEdges.front(), spec.binEdges.back(), spec.nBins};
+    return {spec.binEdges.front(), spec.binEdges.back(), spec.getNbins()};
   }
 
   void init(InitContext&)
