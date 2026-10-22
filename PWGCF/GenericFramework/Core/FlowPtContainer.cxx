@@ -97,16 +97,16 @@ std::optional<std::vector<std::vector<bool>>> replacePtTerms(std::string& expres
     std::vector<bool> groupIsPt;
     while (stream >> token) {
       int harmonic = 0;
-      const bool isPt = token == "pt";
-      if (!isPt && !parseInteger(token, harmonic)) {
+      const bool tokenIsPt = token == "pt";
+      if (!tokenIsPt && !parseInteger(token, harmonic)) {
         LOGF(error, "Invalid pT correlation %s: unknown observable %s", head.c_str(), token.c_str());
         return std::nullopt;
       }
       if (!replacement.empty()) {
         replacement += ' ';
       }
-      replacement += isPt ? "0" : token;
-      groupIsPt.push_back(isPt);
+      replacement += tokenIsPt ? "0" : token;
+      groupIsPt.push_back(tokenIsPt);
     }
     if (groupIsPt.empty()) {
       LOGF(error, "Invalid pT correlation %s: empty observable group", head.c_str());
@@ -247,9 +247,11 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
 }
 void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWRegions& regions, const GFWCorrConfigs& configs, const int& nsub)
 {
-  const int numberOfRegions = regions.GetSize();
-  const int numberOfConfigs = configs.GetSize();
-  if (numberOfRegions < 0 || numberOfConfigs < 0) {
+  const auto numberOfRegions = regions.GetNames().size();
+  const auto numberOfConfigs = configs.GetCorrs().size();
+  if (regions.GetEtaMin().size() != numberOfRegions || regions.GetEtaMax().size() != numberOfRegions ||
+      regions.GetpTDifs().size() != numberOfRegions || regions.GetBitmasks().size() != numberOfRegions ||
+      configs.GetHeads().size() != numberOfConfigs || configs.GetpTDifs().size() != numberOfConfigs) {
     LOGF(error, "Cannot initialize %s: GFW configuration vectors have different sizes", GetName());
     return;
   }
@@ -271,10 +273,10 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
   }
 
   GFW parser;
-  for (int i = 0; i < numberOfRegions; ++i) {
+  for (size_t i = 0; i < numberOfRegions; ++i) {
     parser.AddRegion(regions.GetNames()[i], regions.GetEtaMin()[i], regions.GetEtaMax()[i], regions.GetpTDifs()[i] ? 2 : 1, regions.GetBitmasks()[i]);
   }
-  if (parser.fRegions.size() != static_cast<size_t>(numberOfRegions)) {
+  if (parser.fRegions.size() != numberOfRegions) {
     LOGF(error, "Cannot initialize %s: invalid GFW region", GetName());
     return;
   }
@@ -284,9 +286,9 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
     std::vector<std::vector<bool>> isPt;
     std::vector<std::vector<int>> factors;
     std::vector<std::pair<size_t, size_t>> ptTerms;
-    int ptOrder;
-    bool hasFlow;
-    std::uint64_t allFactors;
+    int ptOrder{};
+    bool hasFlow{};
+    std::uint64_t allFactors{};
   };
 
   std::vector<ParsedPtRequest> requests;
@@ -294,7 +296,7 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
   std::unordered_set<std::string> correlationHeads;
   std::vector<int> regionMaxOrders(numberOfRegions, 0);
   int maxPtOrder = 0;
-  for (int i = 0; i < numberOfConfigs; ++i) {
+  for (size_t i = 0; i < numberOfConfigs; ++i) {
     if (configs.GetpTDifs()[i] != 0) {
       LOGF(error, "Invalid pT correlation %s: differential configurations are not supported", configs.GetHeads()[i].c_str());
       return;
@@ -387,9 +389,9 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
   }
 
   struct NaturalMean {
-    int region;
-    int ptIndex;
-    bool pTDif;
+    int region{};
+    int ptIndex{};
+    bool pTDif{};
     std::string profile;
   };
   std::vector<NaturalMean> naturalMeans;
@@ -549,8 +551,8 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
     fPtRegionMoments.push_back({order, std::vector<double>((order + 1) * (order + 1), 0.)});
   }
   mpar = maxPtOrder;
-  nSubevents = numberOfRegions;
-  LOGF(info, "Container %s initialized with %i pT correlations, %i profiles and %i subsamples", GetName(), numberOfConfigs, profiles->GetEntries(), nsub);
+  nSubevents = static_cast<int>(numberOfRegions);
+  LOGF(info, "Container %s initialized with %zu pT correlations, %i profiles and %i subsamples", GetName(), numberOfConfigs, profiles->GetEntries(), nsub);
 }
 void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
 {

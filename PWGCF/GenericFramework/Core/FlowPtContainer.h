@@ -50,26 +50,26 @@ struct PtProfileConfig {
   GFW::CorrConfig config;
   std::vector<std::vector<bool>> isPt;
   std::vector<std::vector<int>> factors;
-  std::uint64_t activeFactors; // Flow, when present, is bit 0; pT terms follow in expression order.
-  bool usesFullTopology;
+  std::uint64_t activeFactors{}; // Flow, when present, is bit 0; pT terms follow in expression order.
+  bool usesFullTopology{};
 };
 
 struct PtCorrConfig {
   std::string head;
-  std::uint64_t allFactors;
-  bool hasFlow;
+  std::uint64_t allFactors{};
+  bool hasFlow{};
   std::vector<PtProfileConfig> profiles;
   std::vector<std::string> meanProfiles;
 };
 
 struct PtRegionMoments {
-  int maxOrder;
+  int maxOrder{};
   std::vector<double> values;
 };
 
 struct PtMomentGroup {
   std::string region;
-  int order;
+  int order{};
   std::string meanProfile;
   ClassDefNV(PtMomentGroup, 1);
 };
