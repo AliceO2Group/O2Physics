@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -99,14 +100,27 @@ struct TrackEfficiency {
   struct FT0A : ConfigurableGroup {
     std::string prefix = "ft0a";
     Configurable<float> mean{"mean", 3499., "Mean FT0A signal"};
-    Configurable<float> meanMCDetLevel{"meanMCDetLevel", 3499., "Mean FT0A signal at MC detector level"};
+    Configurable<float> meanMCDetLevel{"meanMCDetLevel", 2640., "Mean FT0A signal at MC detector level"};
   } ft0a;
 
   struct FT0C : ConfigurableGroup {
     std::string prefix = "ft0c";
     Configurable<float> mean{"mean", 844.6, "Mean FT0C signal"};
-    Configurable<float> meanMCDetLevel{"meanMCDetLevel", 844.6, "Mean FT0C signal at MC detector level"};
+    Configurable<float> meanMCDetLevel{"meanMCDetLevel", 802.9, "Mean FT0C signal at MC detector level"};
   } ft0c;
+
+  // FT0C event activity thresholds
+  struct Hist : ConfigurableGroup {
+    std::string prefix = "hist";
+
+    // Raw data
+    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.109421, 0.215022, 0.343214, 0.50515, 0.712277, 0.978245, 1.3189, 1.75744, 2.36001, 3.59696, 25.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.130987, 0.237916, 0.36664, 0.528441, 0.734705, 0.996611, 1.32785, 1.74896, 2.31024, 3.37852, 25.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+
+    // MC detector-level data
+    ConfigurableAxis multFT0CThreshMCDetLevel{"multFT0CThreshMCDetLevel", {VARIABLE_WIDTH, 0.0, 0.124992, 0.243769, 0.380291, 0.543998, 0.748078, 1.00424, 1.3237, 1.72648, 2.27373, 3.43144, 25.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0MThreshMCDetLevel{"multFT0MThreshMCDetLevel", {VARIABLE_WIDTH, 0.0, 0.142622, 0.262095, 0.397069, 0.558622, 0.762008, 1.01685, 1.33219, 1.72377, 2.24008, 3.26309, 25.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+  } hist;
 
   // systematics variation - Run 2 guidelines: https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGtoolsTrackSystematicUncertainty
   TrackSelection customTrackSelection;
@@ -218,8 +232,10 @@ struct TrackEfficiency {
       LOGP(fatal, "Configurable acceptSplitCollisions has wrong input value; stopping workflow");
     }
 
-    if (ft0a.mean == 0.f || ft0c.mean == 0.f || ft0a.meanMCDetLevel == 0.f || ft0c.meanMCDetLevel == 0.f) {
-      LOGP(fatal, "FT0A and FT0C means must be non-zero to avoid division by zero; stopping workflow");
+    constexpr float minFT0Mean = std::numeric_limits<float>::epsilon();
+    if (std::fabs(ft0a.mean.value) <= minFT0Mean || std::fabs(ft0c.mean.value) <= minFT0Mean ||
+        std::fabs(ft0a.meanMCDetLevel.value) <= minFT0Mean || std::fabs(ft0c.meanMCDetLevel.value) <= minFT0Mean) {
+      LOGP(fatal, "FT0A and FT0C means must have magnitude greater than {} to avoid near-zero denominators; stopping workflow", minFT0Mean);
     }
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
