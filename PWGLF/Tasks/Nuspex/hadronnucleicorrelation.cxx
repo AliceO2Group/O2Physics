@@ -674,14 +674,13 @@ struct HadronNucleiCorrelation {
     pair->SetPair(&part0, &part1);
     pair->SetIdentical(isIdentical);
     if (isIdentical && pair->IsClosePair(dEta, dPhi, radiusTPC)) {
-      registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
       return;
     }
 
     if (doClosePairRejection && pair->IsClosePair(dEta, dPhi, radiusTPC)) {
-      registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
       return;
     }
+    registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
 
     const float deltaEta = part0.eta() - part1.eta();
     const float deltaPhi = RecoDecay::constrainAngle(part0.phi() - part1.phi(), -1 * o2::constants::math::PIHalf);
