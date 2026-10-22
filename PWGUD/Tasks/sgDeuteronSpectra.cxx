@@ -53,6 +53,8 @@ struct SgDeuteronSpectra {
   Configurable<float> etaCut{"etaCut", 0.9, "Track Pseudorapidity"};
   Configurable<float> ptCut{"ptCut", 0.1, "Track Pt"};
   Configurable<float> nsigmatpcPreselCut{"nsigmatpcPreselCut", 3.0, "nsigma TPC preselection cut for TOF analysis"};
+  Configurable<float> occupancyCut{"occupancyCut", 1000, "Occupancy cut"};
+  Configurable<float> vertexZCut{"vertexZCut", 10, "VertexZ cut"};
 
   // Configurable axis for histograms
   ConfigurableAxis ptAxis{"ptAxis", {200, 0.0, 10.0}, "p_{T}"};
@@ -68,6 +70,7 @@ struct SgDeuteronSpectra {
     const AxisSpec axistof{nSigmaAxis, "n#sigma_{TOF}"};
 
     // Collision histograms
+    registry.add("collisions/VertexZ", "", {HistType::kTH1F, {{800, -20, 20}}});
     registry.add("collisions/GapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("collisions/TrueGapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{4, -1.5, 2.5}}});
     registry.add("tracks/Deut_Pt_TPC_GapA", "", {HistType::kTH2F, {axispt, axistpc}});
@@ -91,12 +94,21 @@ struct SgDeuteronSpectra {
   }
 
   // Define data types
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; // UDCollisions
+  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced; // UDCollisions
   using UDCollisionFull = UDCollisionsFull::iterator;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksPIDExtra, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
 
   void process(UDCollisionFull const& coll, UDTracksFull const& tracks)
   {
+    registry.fill(HIST("collisions/VertexZ"), coll.posZ());
+    // applying event cuts
+    if (std::abs(coll.posZ()) > vertexZCut) {
+      return;
+    }
+    if (coll.occupancyInTime() > occupancyCut) {
+      return;
+    }
+    // fill gapside
     registry.fill(HIST("collisions/GapSide"), coll.gapSide(), 1.);
     std::vector<float> fitCut = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
     int truegapSide = sgSelector.trueGap(coll, fitCut[0], fitCut[1], fitCut[2], zdcCut);
