@@ -50,7 +50,8 @@ enum LimitType { kUpperLimit,            ///< simple upper limit, e.g. p_T < 1 G
                  kAbsLowerFunctionLimit, ///< lower limit on the absolute value given by a function, e.g. |DCA_xy| > f(pt)
                  kEqual,                 ///< value must equal a fixed threshold, e.g. sign == 1
                  kEqualArray,            ///< each element of a value array must equal the corresponding threshold
-                 kRange,                 ///< value must fall within [lower, upper]; either bound can be omitted (open interval)
+                 kInsideRange,           ///< value must fall within [lower, upper]; either bound can be omitted (open interval)
+                 kOutsideRange,          ///< value must fall outside [lower, upper]; fully-open range (both bounds omitted) disables the cut
                  kLimitTypeLast
 };
 
@@ -65,7 +66,8 @@ inline const std::unordered_map<LimitType, std::string> limitTypeAsStrings = {
   {kAbsLowerFunctionLimit, "Absolute Lower Function Limit"},
   {kEqual, "Equal"},
   {kEqualArray, "EqualArray"},
-  {kRange, "Range"},
+  {kInsideRange, "Inside Range"},
+  {kOutsideRange, "Outside Range"},
   {kLimitTypeLast, "Last Limit Type"},
 };
 
@@ -131,22 +133,32 @@ class SelectionContainer
 
   /// \brief Constructor for range-based selections defined as "lower;upper" strings.
   ///        Either bound may be omitted to represent an open interval, e.g. ";1.0" means value < 1.0.
+  ///        A fully-open range (both bounds omitted, i.e. ";") is exempt: for kInsideRange it means
+  ///        "no constraint" (every value is inside); for kOutsideRange it means "no rejection" (every
+  ///        value counts as outside) -- the natural reading breaks down for kOutsideRange otherwise,
+  ///        since an infinitely wide excluded region would reject everything instead of nothing.
   /// \param selectionName Name of the observable this container manages.
   /// \param rangeStrings Vector of range strings, each of the form "lower;upper".
   /// \param skipMostPermissiveBit Whether to skip the most permissive threshold when assembling the bitmask.
   /// \param isMinimalCut Whether this selection is mandatory (candidate is rejected if it fails).
   /// \param isOptionalCut Whether this selection is optional (candidate is accepted if any optional cut passes).
+  /// \param limitType Either kInsideRange (value must fall inside the interval) or kOutsideRange
+  ///                  (value must fall outside it, e.g. rejecting a competing mass hypothesis).
   SelectionContainer(std::string const& selectionName,
                      std::vector<std::string> const& rangeStrings,
                      bool skipMostPermissiveBit,
                      bool isMinimalCut,
-                     bool isOptionalCut)
+                     bool isOptionalCut,
+                     limits::LimitType limitType = limits::kInsideRange)
     : mSelectionName(selectionName),
-      mLimitType(limits::kRange),
+      mLimitType(limitType),
       mSkipMostPermissiveBit(skipMostPermissiveBit),
       mIsMinimalCut(isMinimalCut),
       mIsOptionalCut(isOptionalCut)
   {
+    if (mLimitType != limits::kInsideRange && mLimitType != limits::kOutsideRange) {
+      LOG(fatal) << "Range-string selections only support kInsideRange or kOutsideRange";
+    }
     if (rangeStrings.size() > sizeof(BitmaskType) * CHAR_BIT) {
       LOG(fatal) << "Too many selections for a single observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
     }
@@ -158,7 +170,9 @@ class SelectionContainer
       parseRangeString(rangeStr, lower, upper);
       mSelectionRanges.emplace_back(lower, upper);
     }
-    // ranges are sorted by their lenghts, i.e. from widest range to tightest range
+    // for kInsideRange, ranges are sorted from widest (most permissive) to tightest; for
+    // kOutsideRange it's the opposite -- the narrowest excluded region is the most permissive
+    // (fewer values get rejected)
     // in principle the ranges do not have to include each other, exepct this is configured as minimal cut, check is added at the end
     // to cover both cases, this also means we always check all ranges, when assembling the bit mask
     sortSelections();
@@ -167,15 +181,25 @@ class SelectionContainer
       mSelectionValues.push_back(mSelectionRanges[i].second - mSelectionRanges[i].first);
     }
 
-    // for minimal range cut, ranges must be strictly nested (each range contains all narrower ones)
-    // this is required for the early-exit logic in passesAsMinimalCut() to be correct
+    // for a minimal range cut, ranges must be strictly nested (each range contains all ranges that
+    // sort after it) -- this is required for the single-bit shortcut in passesAsMinimalCut() to be
+    // correct. For kInsideRange (sorted widest-first) that means range[i] must contain range[i+1];
+    // for kOutsideRange (sorted narrowest-first) it's the reverse: range[i] must be contained in
+    // range[i+1]. A fully-open ("reject nothing") entry is the empty interval [max, -max], which is
+    // trivially contained in (or containing, for kInsideRange) anything, so this check already holds
+    // for it without any special-casing.
     if (isMinimalCut) {
       for (std::size_t i = 0; i + 1 < mSelectionRanges.size(); i++) {
-        if (mSelectionRanges[i].first > mSelectionRanges[i + 1].first ||
-            mSelectionRanges[i].second < mSelectionRanges[i + 1].second) {
+        bool const nested = (mLimitType == limits::kOutsideRange)
+                              ? (mSelectionRanges[i].first >= mSelectionRanges[i + 1].first &&
+                                 mSelectionRanges[i].second <= mSelectionRanges[i + 1].second)
+                              : (mSelectionRanges[i].first <= mSelectionRanges[i + 1].first &&
+                                 mSelectionRanges[i].second >= mSelectionRanges[i + 1].second);
+        if (!nested) {
           LOG(fatal) << "Ranges for minimal cut " << selectionName
                      << " are not nested. Range [" << mSelectionRanges[i].first << ";" << mSelectionRanges[i].second
-                     << "] does not contain [" << mSelectionRanges[i + 1].first << ";" << mSelectionRanges[i + 1].second << "]";
+                     << "] is not " << (mLimitType == limits::kOutsideRange ? "contained in" : "containing")
+                     << " [" << mSelectionRanges[i + 1].first << ";" << mSelectionRanges[i + 1].second << "]";
         }
       }
     }
@@ -318,11 +342,23 @@ class SelectionContainer
           }
         }
         break;
-      case (limits::kRange):
+      case (limits::kInsideRange):
         // ranges are sorted widest-first but a narrower range passing does not imply a wider one fails (no check on boundries),
         // so all ranges must be checked explicitly — no early exit
         for (std::size_t i = 0; i < mSelectionRanges.size(); i++) {
           if (value >= mSelectionRanges.at(i).first && value <= mSelectionRanges.at(i).second) {
+            mBitmask.set(i);
+          }
+        }
+        break;
+      case (limits::kOutsideRange):
+        // ranges are sorted narrowest-first (most permissive -- smallest excluded region); same
+        // no-early-exit reasoning as kInsideRange applies, just with the pass condition inverted.
+        // A fully-open range string (";") is parsed as the empty interval [max, -max] (see
+        // parseRangeString()), so this plain check already evaluates true for every value -- no
+        // special-casing needed here to express "reject nothing".
+        for (std::size_t i = 0; i < mSelectionRanges.size(); i++) {
+          if (value < mSelectionRanges.at(i).first || value > mSelectionRanges.at(i).second) {
             mBitmask.set(i);
           }
         }
@@ -384,6 +420,14 @@ class SelectionContainer
   {
     mBitmask = std::bitset<sizeof(BitmaskType) * CHAR_BIT>(bitmask);
   }
+
+  /// \brief Retrieve the raw (unshifted) internal bitmask, including the most-permissive-threshold
+  ///        bit even if mSkipMostPermissiveBit is set. Used when two separate evaluate() calls for
+  ///        the same observable need to be combined externally (e.g. logical AND) before the
+  ///        result is written back via setBitmask() -- unlike getBitmask(), this never shifts, so
+  ///        it stays the correct counterpart to setBitmask() (which also never shifts).
+  /// \return Bitset exactly as currently stored.
+  [[nodiscard]] std::bitset<sizeof(BitmaskType) * CHAR_BIT> const& getRawBitmask() const { return mBitmask; }
 
   /// \brief Reset the internal bitmask to zero.
   void reset() { mBitmask.reset(); }
@@ -458,23 +502,63 @@ class SelectionContainer
   /// \brief Build a histogram bin label string encoding the full configuration of a single threshold.
   /// \param selectionIndex Index of the threshold within this container.
   /// \return Encoded label string.
+  /// \brief Describes an open (sentinel, i.e. omitted-by-the-user) side of a range, if any.
+  /// For kOutsideRange, a single omitted side flips which half of the "value < lower ||
+  /// value > upper" OR-condition stays active, so the resulting satisfied/reject direction
+  /// is spelled out explicitly rather than named generically -- omitting the upper bound
+  /// there means the lower-bound inequality alone remains, i.e. "reject value < lower".
+  /// \param range Lower/upper bound pair for a kInsideRange/kOutsideRange threshold.
+  /// \return A human-readable description of the effective cut, or "" if both sides are bounded.
+  [[nodiscard]] std::string getOpenSideComment(std::pair<T, T> const& range) const
+  {
+    bool const lowerOpen = std::abs(range.first) == std::numeric_limits<T>::max();
+    bool const upperOpen = std::abs(range.second) == std::numeric_limits<T>::max();
+    if (!lowerOpen && !upperOpen) {
+      return "";
+    }
+    if (lowerOpen && upperOpen) {
+      return "no cut";
+    }
+    std::ostringstream oss;
+    if (mLimitType == limits::kInsideRange) {
+      oss << "accept value " << (upperOpen ? ">= " : "<= ") << (upperOpen ? range.first : range.second);
+    } else {
+      oss << "reject value " << (upperOpen ? "< " : "> ") << (upperOpen ? range.first : range.second);
+    }
+    return oss.str();
+  }
+
   [[nodiscard]] std::string getBinLabel(int selectionIndex) const
   {
     std::ostringstream oss;
 
     // Determine value string
     std::string valueStr;
+    std::string autoComment;
 
-    if (mLimitType == limits::kRange) {
-      // Print actual lower;upper interval
+    if (mLimitType == limits::kInsideRange || mLimitType == limits::kOutsideRange) {
+      // Print the actual lower;upper interval -- kept as real, parseable numbers (not a word like
+      // "no cut") since this Value field is read by cutculator.py; an open side (lower and/or
+      // upper bound left at the sentinel, i.e. omitted by the user) is instead flagged via the
+      // Comment field below.
       const auto& range = mSelectionRanges.at(selectionIndex);
       std::ostringstream rangeStream;
       rangeStream << range.first << RangeDelimiter << range.second;
       valueStr = rangeStream.str();
+      autoComment = getOpenSideComment(range);
     } else if (mSelectionFunctions.empty()) {
       valueStr = std::to_string(mSelectionValues.at(selectionIndex));
     } else {
       valueStr = mSelectionFunctions.at(selectionIndex).GetExpFormula().Data();
+    }
+
+    // combine rather than override -- e.g. TOF PID selections attach a "minMomTofX = ..." comment
+    // to every threshold via addComments(), independent of whether a given threshold's range
+    // also happens to be open-sided
+    std::string const userComment = mComments.empty() ? "" : mComments.at(selectionIndex);
+    std::string comment = userComment;
+    if (!autoComment.empty()) {
+      comment = userComment.empty() ? autoComment : autoComment + "; " + userComment;
     }
 
     oss << "SelectionName" << ValueDelimiter << mSelectionName << SectionDelimiter
@@ -486,7 +570,7 @@ class SelectionContainer
         << "Offset" << ValueDelimiter << mOffset << SectionDelimiter
         << "Value" << ValueDelimiter << valueStr << SectionDelimiter
         << "BitPosition" << ValueDelimiter << (mSkipMostPermissiveBit ? (selectionIndex == 0 ? NoValue : std::to_string(mOffset + selectionIndex - 1)) : std::to_string(mOffset + selectionIndex)) << SectionDelimiter
-        << "Comment" << ValueDelimiter << (mComments.empty() ? NoValue : mComments.at(selectionIndex));
+        << "Comment" << ValueDelimiter << (comment.empty() ? NoValue : comment);
     return oss.str();
   }
 
@@ -499,8 +583,16 @@ class SelectionContainer
       return std::string(mSelectionFunctions.at(selectionIndex).GetExpFormula().Data());
     }
     if (!mSelectionRanges.empty()) {
+      const auto& range = mSelectionRanges.at(selectionIndex);
+      bool const lowerOpen = std::abs(range.first) == std::numeric_limits<T>::max();
+      bool const upperOpen = std::abs(range.second) == std::numeric_limits<T>::max();
+      if (lowerOpen && upperOpen) {
+        return std::string{"no cut"};
+      }
       std::ostringstream oss;
-      oss << mSelectionRanges.at(selectionIndex).first << ";" << mSelectionRanges.at(selectionIndex).second;
+      oss << (lowerOpen ? "-inf" : std::to_string(range.first).c_str())
+          << ";"
+          << (upperOpen ? "+inf" : std::to_string(range.second).c_str());
       return oss.str();
     }
     return std::to_string(mSelectionValues.at(selectionIndex));
@@ -559,11 +651,21 @@ class SelectionContainer
       case (limits::kAbsLowerLimit):
         std::sort(mSelectionValues.begin(), mSelectionValues.end(), [](T a, T b) { return a < b; });
         break;
-      case (limits::kRange):
+      case (limits::kInsideRange):
         // sort by range width descending so the most permissive (widest) range comes first
         std::sort(mSelectionRanges.begin(), mSelectionRanges.end(),
                   [](std::pair<T, T> const& a, std::pair<T, T> const& b) {
                     return (a.second - a.first) > (b.second - b.first);
+                  });
+        break;
+      case (limits::kOutsideRange):
+        // opposite of kInsideRange: the most permissive (most likely to be satisfied) exclusion is
+        // the narrowest one, since it rejects the fewest values. A fully-open ("reject nothing")
+        // range parses to the empty interval [max, -max] (see parseRangeString()), whose "width" is
+        // the most negative possible value, so it naturally sorts first without any special-casing.
+        std::sort(mSelectionRanges.begin(), mSelectionRanges.end(),
+                  [](std::pair<T, T> const& a, std::pair<T, T> const& b) {
+                    return (a.second - a.first) < (b.second - b.first);
                   });
         break;
       default:
@@ -591,7 +693,12 @@ class SelectionContainer
 
   /// \brief Parse a range string of the form "lower;upper" into a lower and upper bound.
   ///        Either bound may be omitted (e.g. ";1.0" or "0.5;"), in which case
-  ///        -/+ numeric_limits::max() is used respectively.
+  ///        -/+ numeric_limits::max() is used respectively. For kOutsideRange, a fully-open string
+  ///        (";", both bounds omitted) is the one exception: it is parsed as the empty interval
+  ///        [max, -max] instead of [-max, max] -- every value then trivially fails the normal
+  ///        "value >= lower && value <= upper" check, i.e. every value counts as outside, which is
+  ///        what "reject nothing" needs. [-max, max] would instead mean every value is inside,
+  ///        i.e. nothing is ever outside, which would reject everything -- the opposite intent.
   /// \param rangeStr Input string to parse.
   /// \param lower Output lower bound.
   /// \param upper Output upper bound.
@@ -604,6 +711,18 @@ class SelectionContainer
     std::string lowerStr = rangeStr.substr(0, pos);
     std::string upperStr = rangeStr.substr(pos + 1);
 
+    if (lowerStr.empty() && upperStr.empty() && mLimitType == limits::kOutsideRange) {
+      // kOutsideRange's "value < lower || value > upper" is the negation of kInsideRange's
+      // "value >= lower && value <= upper" -- substituting the same [-max, +max] that makes the
+      // latter trivially true for every value would make the former trivially FALSE for every
+      // value instead (nothing is < -max or > +max), i.e. "reject everything" rather than the
+      // intended "reject nothing". The empty interval [max, -max] is the encoding that keeps the
+      // disjunction trivially true for every value instead, giving the correct "exempt" meaning.
+      lower = std::numeric_limits<T>::max();
+      upper = -std::numeric_limits<T>::max();
+      return;
+    }
+
     lower = lowerStr.empty() ? -std::numeric_limits<T>::max() : static_cast<T>(std::stod(lowerStr));
     upper = upperStr.empty() ? std::numeric_limits<T>::max() : static_cast<T>(std::stod(upperStr));
 
@@ -615,7 +734,7 @@ class SelectionContainer
   std::string mSelectionName;
   std::vector<T> mSelectionValues = {};                      ///< Threshold values, sorted from most permissive to most restrictive
   std::vector<TF1> mSelectionFunctions;                      ///< TF1 threshold functions (empty for static selections)
-  std::vector<std::pair<T, T>> mSelectionRanges = {};        ///< Lower and upper bounds for kRange selections, one pair per threshold
+  std::vector<std::pair<T, T>> mSelectionRanges = {};        ///< Lower and upper bounds for kInsideRange/kOutsideRange selections, one pair per threshold
   limits::LimitType mLimitType = limits::kLimitTypeLast;     ///< Comparison type applied during evaluation
   bool mSkipMostPermissiveBit = false;                       ///< If true, the most permissive threshold does not occupy a bit in the global bitmask
   bool mIsMinimalCut = false;                                ///< If true, this selection is mandatory; failing it rejects the candidate
