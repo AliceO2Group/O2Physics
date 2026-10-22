@@ -18,9 +18,12 @@
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
 
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 
 #include <cstdint>
@@ -100,6 +103,66 @@ inline float getMass(int pdgCode)
       LOG(fatal) << "PDG code is not supported";
   }
   return mass;
+}
+
+/// Identify conventional charm/beauty mesons and baryons from their PDG quark digits.
+inline bool isHeavyFlavorHadron(int pdgCode)
+{
+  constexpr int DigitBase = 10;
+  constexpr int HadronLimit = 10000000;
+  const auto code = std::abs(pdgCode);
+  if (code >= HadronLimit || code % DigitBase == 0) {
+    return false;
+  }
+  const auto quark1 = (code / RecoDecay::PdgDivisorBaryon) % DigitBase;
+  const auto quark2 = (code / RecoDecay::PdgDivisorMeson) % DigitBase;
+  const auto quark3 = (code / DigitBase) % DigitBase;
+  // Quarks, diquarks and generator-specific entries are not hadron decays.
+  if (quark1 > kTop || quark2 < kDown || quark2 > kTop || quark3 < kDown || quark3 > kTop) {
+    return false;
+  }
+  return quark1 == kCharm || quark1 == kBottom || quark2 == kCharm || quark2 == kBottom || quark3 == kCharm || quark3 == kBottom;
+}
+
+template <typename T>
+inline bool hasHeavyFlavorHadronAncestor(T const& particles, typename T::iterator const& particle)
+{
+  auto ancestor = particle;
+  std::vector<int64_t> motherIds;
+  while (ancestor.has_mothers()) {
+    motherIds.clear();
+    RecoDecay::getOrderedMotherIds(ancestor, motherIds);
+    if (motherIds.empty()) {
+      break;
+    }
+    ancestor = particles.rawIteratorAt(motherIds.front() - particles.offset());
+    if (isHeavyFlavorHadron(ancestor.pdgCode())) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Classify true kaons from the correct collision for the DCA templates.
+template <typename T>
+inline int getKaonOrigin(T const& particles, typename T::iterator const& particle)
+{
+  using namespace o2::aod::femtodreamMCparticle;
+  constexpr int GenFromTransport = -1;
+  if (particle.getProcess() == TMCProcess::kPHInhelastic && particle.getGenStatusCode() == GenFromTransport) {
+    return kMaterial;
+  }
+  // HF decay products can be physical primaries. Check their ancestry first.
+  if (hasHeavyFlavorHadronAncestor(particles, particle)) {
+    return kSecondaryFromHF;
+  }
+  if (particle.isPhysicalPrimary()) {
+    return kPrimary;
+  }
+  if (particle.getProcess() == TMCProcess::kPDecay && particle.getGenStatusCode() == GenFromTransport && particle.has_mothers()) {
+    return kSecondaryFromLF;
+  }
+  return kElse;
 }
 
 inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG, int daughterPDG = 0)
