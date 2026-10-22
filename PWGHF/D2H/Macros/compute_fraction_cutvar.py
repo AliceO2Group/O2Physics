@@ -300,7 +300,7 @@ def main(config):
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_rawy.Write()
             if is_save_to_root_file[ObjectToSave.RawYield]:
-                for _, hist in histos_rawy.values():
+                for hist in histos_rawy.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.Rawy]:
                 canv_rawy.SaveAs(f"canv_rawy_{ipt+1}.C")
@@ -311,7 +311,7 @@ def main(config):
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_unc.Write()
             if is_save_to_root_file[ObjectToSave.Uncertainty]:
-                for _, hist in histos_unc.values():
+                for hist in histos_unc.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.Unc]:
                 canv_unc.SaveAs(f"canv_unc_{ipt+1}.C")
@@ -322,7 +322,7 @@ def main(config):
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_rel_unc.Write()
             if is_save_to_root_file[ObjectToSave.Uncertainty]:
-                for _, hist in histos_rel_unc.values():
+                for hist in histos_rel_unc.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.RelUnc]:
                 canv_rel_unc.SaveAs(f"canv_rel_unc_{ipt+1}.C")
@@ -333,7 +333,7 @@ def main(config):
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_eff.Write()
             if is_save_to_root_file[ObjectToSave.Efficiency]:
-                for _, hist in histos_eff.values():
+                for hist in histos_eff.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.Eff]:
                 canv_eff.SaveAs(f"canv_eff_{ipt+1}.C")
@@ -344,7 +344,7 @@ def main(config):
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_frac.Write()
             if is_save_to_root_file[ObjectToSave.Fraction]:
-                for _, hist in histos_frac.values():
+                for hist in histos_frac.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.Frac]:
                 canv_frac.SaveAs(f"canv_frac_{ipt+1}.C")
