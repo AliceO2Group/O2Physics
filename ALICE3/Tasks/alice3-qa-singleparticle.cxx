@@ -86,6 +86,7 @@ struct Alice3SingleParticle {
     double min = 0.;
     double max = 0.;
     int64_t bins = 0;
+    int getBins() const { return static_cast<int>(bins); }
     [[nodiscard]] bool contains(double value) const { return value >= min && value < max; }
   };
   Range ptRange, etaRange, yRange, prodXYrange, prodZRange;
@@ -143,11 +144,11 @@ struct Alice3SingleParticle {
     const AxisSpec axisPz{settingsAxes.axisMomentumComponent, "#it{p}_{z} (GeV/#it{c})"};
     const AxisSpec axisEta{settingsAxes.axisEta, "#it{#eta}"};
     const AxisSpec axisY{settingsAxes.axisY, "#it{y}"};
-    const AxisSpec axisE{etaRange.bins, 0, 1000, "E"};
+    const AxisSpec axisE{etaRange.getBins(), 0, 1000, "E"};
     const AxisSpec axisProdx{settingsAxes.axisProdXY, "Prod. Vertex X (cm)"};
     const AxisSpec axisPrody{settingsAxes.axisProdXY, "Prod. Vertex Y (cm)"};
     const AxisSpec axisProdz{settingsAxes.axisProdZ, "Prod. Vertex Z (cm)"};
-    const AxisSpec axisProdRadius{prodXYrange.bins, 0., 2. * prodXYrange.max, "Prod. Vertex Radius (cm)"};
+    const AxisSpec axisProdRadius{prodXYrange.getBins(), 0., 2. * prodXYrange.max, "Prod. Vertex Radius (cm)"};
     const AxisSpec axisDistx{settingsAxes.distanceAxis, "Distance X (fm)"};
     const AxisSpec axisDisty{settingsAxes.distanceAxis, "Distance Y (fm)"};
     const AxisSpec axisDistz{settingsAxes.distanceAxis, "Distance Z (fm)"};
