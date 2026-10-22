@@ -37,7 +37,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -99,7 +98,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc", std::vector<double>{0.3, 1., 2., 50.}, "pT bin limits for associated particles"};
   Configurable<bool> selCentrality{"selCentrality", false, "Use centrality to select events"};
   Configurable<bool> selMultiplicity{"selMultiplicity", false, "Use multiplicity to select events"};
-  Configurable<bool> countCharmCandsPerCollision{"countCharmCandsPerCollision", false, "Count charm candidates per collision"};
   Configurable<float> centMin{"centMin", 0, "min. centrality"};
   Configurable<float> centMax{"centMax", 10., "max. centrality"};
   Configurable<float> multMin{"multMin", 0, "min. multiplicity"};
@@ -226,9 +224,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
           registry.add("hSparseCorrelationsMECharmHad", "THn for ME Charm-Had correlations", HistType::kTHnSparseF, axes);
         }
         if (doprocessCharmTriggers) {
-          if (countCharmCandsPerCollision) {
-            axesTrigger.push_back({100, -0.5, 99.5, "nCharmCandidates"});
-          }
           registry.add("hSparseTrigCandsCharm", "THn for Charm trigger candidates", HistType::kTHnSparseF, axesTrigger);
         }
       }
@@ -644,12 +639,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                             aod::HfcRedCorrColls const&)
   {
 
-    std::unordered_map<int, int> nCharmCandidatesPerCollision;
-    for (const auto& cand : trigCands) {
-      auto collision = cand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
-      ++nCharmCandidatesPerCollision[collision.globalIndex()];
-    }
-
     for (const auto& trigCand : trigCands) {
       auto collision = trigCand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
       if (!isSelCollision(collision)) {
@@ -658,12 +647,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       if (!isSelBdtScoreCut(trigCand, trigCand.ptTrig())) {
         continue;
       }
-      const auto nCharmCandidates = nCharmCandidatesPerCollision[collision.globalIndex()];
-      if (countCharmCandsPerCollision) {
-        registry.fill(HIST("hSparseTrigCandsCharm"), trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(), nCharmCandidates);
-      } else {
-        registry.fill(HIST("hSparseTrigCandsCharm"), trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
-      }
+      registry.fill(HIST("hSparseTrigCandsCharm"), trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
     }
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processCharmTriggers, "Process charm trigger info", false);
