@@ -107,6 +107,7 @@ struct FlowTransmutation {
   } cfgMultiplicityCorrelationCut;
   O2_DEFINE_CONFIGURABLE(cfgNUAWeightsRunByRun, bool, true, "Fill NUA weights run by run")
   O2_DEFINE_CONFIGURABLE(cfgGetNumberOfCorr, bool, false, "Get histograms with number of correlations")
+  Configurable<std::vector<int>> cfgFirstFillRunsList{"cfgFirstFillRunsList", std::vector<int>{}, "First run of the fill for time-dependent analysis, keep empty to disable"};
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 3.0f, "Maximal pT for poi tracks")
@@ -117,6 +118,7 @@ struct FlowTransmutation {
   Configurable<std::vector<int>> cfgRemovedRunList{"cfgRemovedRunList", std::vector<int>{-1}, "excluded run numbers"};
   Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {LongArrayFloat.front().data(), 7, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAxy (Nsigma)", "DCAz (Nsigma)", "DCAz (cm) override"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
   ConfigurableAxis binningNch{"binningNch", {500, 0, 500}, "binning for N_{ch} histograms"};
+  ConfigurableAxis binningTime{"binningTime", {12, 0, 12}, "binning for time-dependent histograms transmutation QA"};
   ConfigurableAxis binningPt{"binningPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "binning for pT histograms"};
   HistogramRegistry registryQA{"registryQA"};
   HistogramRegistry registryCorr{"registryCorr"};
@@ -215,7 +217,7 @@ struct FlowTransmutation {
   std::array<TF1*, 2> fDCAxyCut{};
   std::vector<int> runNumbers;
   std::map<int, std::shared_ptr<TH3>> th3sPerRun;
-  int lastRun = -1;
+  int firstRunOfFill = -1;
   int getCorrectITSLayersFlag(int flag)
   {
     switch (flag) {
@@ -395,6 +397,10 @@ struct FlowTransmutation {
     ccdb->setCaching(true);
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
+    if (!cfgFirstFillRunsList.value.empty()) {
+      registryQA.add("multT0A_multT0C", "FT0A-C multiplicity correlation;N_{ch}(FT0A);N_{ch}(FT0C);t[h]", {HistType::kTH3D, {axisT0A, axisT0C, binningTime}});
+      firstRunOfFill = *std::min_element(cfgFirstFillRunsList.value.begin(), cfgFirstFillRunsList.value.end());
+    }
   }
   template <typename TCollision>
   float getCentrality(const TCollision& collision)
@@ -561,6 +567,12 @@ struct FlowTransmutation {
     }
     if (cfgEventSelection.cfgEvSelUsage) {
       fillEventQA<AfterSel>(collision, tracks);
+    }
+    if (!cfgFirstFillRunsList.value.empty()) {
+      if (std::find(cfgFirstFillRunsList.value.begin(), cfgFirstFillRunsList.value.end(), run) != cfgFirstFillRunsList.value.end() && firstRunOfFill != run) {
+        firstRunOfFill = run;
+      }
+      registryQA.fill(HIST("multT0A_multT0C"), collision.multFT0A(), collision.multFT0C(), getTimeSinceStartOfFill(bc.timestamp(), firstRunOfFill));
     }
     registryQA.fill(HIST("hVtxZ"), vtxz);
     registryQA.fill(HIST("hCentrality"), cent);

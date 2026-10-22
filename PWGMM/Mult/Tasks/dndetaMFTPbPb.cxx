@@ -36,7 +36,6 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -81,7 +80,6 @@ using namespace o2::aod::rctsel;
 auto static constexpr CminCharge = 3.f;
 auto static constexpr CintZero = 0;
 auto static constexpr CintOne = 1;
-auto static constexpr CfloatFive = 5.f;
 auto static constexpr CInvalid = -999.f;
 
 enum class EvtSel {
@@ -257,7 +255,7 @@ struct DndetaMFTPbPb {
     ConfigurableAxis fv0aMultBins{"fv0aMultBins", {501, -0.5, 500.5}, ""};
     ConfigurableAxis ft0aMultBins{"ft0aMultBins", {501, -0.5, 500.5}, ""};
     ConfigurableAxis ft0cMultBins{"ft0cMultBins", {501, -0.5, 500.5}, ""};
-    ConfigurableAxis ptBins{"ptBins", {101, -0.5, 10.5}, "pT binning (GeV/c)"};
+    ConfigurableAxis ptBins{"ptBins", {11, -0.5, 10.5}, "pT binning (GeV/c)"};
     ConfigurableAxis multBins{"multBins", {1001, -0.5, 1000.5}, "Multiplicity binning"};
     ConfigurableAxis zvtxBins{"zvtxBins", {60, -30., 30.}, "Z-vtx binning (cm)"};
     ConfigurableAxis deltaZBins{"deltaZBins", {800, -10., 10.}, "Delta Z-vtx binning (cm)"};
@@ -762,8 +760,6 @@ struct DndetaMFTPbPb {
     }
   }
 
-  /// Filters - particles
-  Filter primaries = ifnode(nsqrt(aod::mcparticle::vx * aod::mcparticle::vx + aod::mcparticle::vy * aod::mcparticle::vy) > CfloatFive, false, ncheckbit(aod::mcparticle_v2::storedFlags, (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary));
   /// Joined tables
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   using CollBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -781,7 +777,6 @@ struct DndetaMFTPbPb {
   using MftBestTracksLabeled = soa::Join<aod::MFTTracks, aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>;
   /// Particles
   using ParticlesIdx = soa::Join<aod::McParticles, aod::ParticlesToMftTracks>;
-  using FiltParticlesIdx = soa::Filtered<ParticlesIdx>;
 
   template <typename T>
   float getDCAz(const T& track)
@@ -2310,13 +2305,11 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMcEfficiencyBestCentFT0C, "Process tracking efficiency (in FT0 centrality bins, based on BestCollisionsFwd3d)", false);
 
-  // Partition<ParticlesIdx> primariesIdx = ifnode(nsqrt(aod::mcparticle::vx * aod::mcparticle::vx + aod::mcparticle::vy * aod::mcparticle::vy) > 5.f, false, ncheckbit(aod::mcparticle_v2::storedFlags, (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary)) && (aod::mcparticle::eta < trackCuts.maxEta) && (aod::mcparticle::eta > trackCuts.minEta);
-
   /// @brief process template function to calculate tracking efficiency (indexed as particle-to-MFT-tracks)
   template <typename MC, typename C>
   void processEfficiencyIdx(typename MC::iterator const& mcCollision,
                             soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-                            FiltParticlesIdx const& particles,
+                            ParticlesIdx const& particles,
                             MftTracksLabeled const& /*tracks*/)
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
@@ -2360,13 +2353,13 @@ struct DndetaMFTPbPb {
         // MC gen
         if constexpr (has_reco_cent<C>) {
           if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxAll), cGen, occRec);
             }
           }
         } else {
           if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxAll), occRec);
             }
           }
@@ -2387,7 +2380,7 @@ struct DndetaMFTPbPb {
             if constexpr (has_reco_cent<C>) {
               if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                  if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     registryMC.fill(HIST("Tracks/Centrality/hEffIdxRec"), particle.pt(), particle.eta(), static_cast<float>(RecIdxTrkType::kRecIdxPrim), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
                   }
                   iscounted = true;
@@ -2402,7 +2395,7 @@ struct DndetaMFTPbPb {
             } else {
               if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                  if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     registryMC.fill(HIST("Tracks/hEffIdxRec"), particle.pt(), particle.eta(), static_cast<float>(RecIdxTrkType::kRecIdxPrim), occRec);
                   }
                   iscounted = true;
@@ -2433,13 +2426,13 @@ struct DndetaMFTPbPb {
           // MC FAKES
           if constexpr (has_reco_cent<C>) {
             if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-              if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                 registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxFake), cGen, occRec);
               }
             }
           } else {
             if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-              if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                 registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxFake), occRec);
               }
             }
@@ -2451,7 +2444,7 @@ struct DndetaMFTPbPb {
 
   void processMcEfficiencyIdxInlusive(CollsMCExtraMult::iterator const& mccollision,
                                       soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
-                                      FiltParticlesIdx const& particles,
+                                      ParticlesIdx const& particles,
                                       MftTracksLabeled const& tracks)
   {
     processEfficiencyIdx<CollsMCExtraMult, Colls>(mccollision, collisions, particles, tracks);
@@ -2461,7 +2454,7 @@ struct DndetaMFTPbPb {
 
   void processMcEfficiencyIdxCentFT0C(CollsMCExtraMult::iterator const& mccollision,
                                       soa::SmallGroups<soa::Join<CollsCentFT0C, aod::McCollisionLabels>> const& collisions,
-                                      FiltParticlesIdx const& particles,
+                                      ParticlesIdx const& particles,
                                       MftTracksLabeled const& tracks)
   {
     processEfficiencyIdx<CollsMCExtraMult, CollsCentFT0C>(mccollision, collisions, particles, tracks);
@@ -2472,7 +2465,7 @@ struct DndetaMFTPbPb {
   template <typename MC, typename C>
   void processEfficiencyIdxBest(typename MC::iterator const& mcCollision,
                                 soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-                                FiltParticlesIdx const& particles,
+                                ParticlesIdx const& particles,
                                 MftBestTracksLabeled const& /*atracks*/)
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
@@ -2519,13 +2512,13 @@ struct DndetaMFTPbPb {
         // MC gen
         if constexpr (has_reco_cent<C>) {
           if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxAll), cGen, occRec);
             }
           }
         } else {
           if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxAll), occRec);
             }
           }
@@ -2554,7 +2547,7 @@ struct DndetaMFTPbPb {
             if constexpr (has_reco_cent<C>) {
               if (atrack.eta() > trackCuts.minEta && atrack.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                  if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     registryMC.fill(HIST("Tracks/Centrality/hEffIdxRec"), particle.pt(), particle.eta(), static_cast<float>(RecIdxTrkType::kRecIdxPrim), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
                   }
                   iscounted = true;
@@ -2569,7 +2562,7 @@ struct DndetaMFTPbPb {
             } else {
               if (atrack.eta() > trackCuts.minEta && atrack.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                  if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     registryMC.fill(HIST("Tracks/hEffIdxRec"), particle.pt(), particle.eta(), static_cast<float>(RecIdxTrkType::kRecIdxPrim), occRec);
                   }
                   iscounted = true;
@@ -2600,13 +2593,13 @@ struct DndetaMFTPbPb {
           // MC FAKES
           if constexpr (has_reco_cent<C>) {
             if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-              if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                 registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxFake), cGen, occRec);
               }
             }
           } else {
             if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-              if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                 registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxFake), occRec);
               }
             }
@@ -2618,7 +2611,7 @@ struct DndetaMFTPbPb {
 
   void processMcEfficiencyIdxBestInlusive(CollsMCExtraMult::iterator const& mccollision,
                                           soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
-                                          FiltParticlesIdx const& particles,
+                                          ParticlesIdx const& particles,
                                           MftBestTracksLabeled const& atracks)
   {
     processEfficiencyIdxBest<CollsMCExtraMult, Colls>(mccollision, collisions, particles, atracks);
@@ -2628,7 +2621,7 @@ struct DndetaMFTPbPb {
 
   void processMcEfficiencyIdxBestCentFT0C(CollsMCExtraMult::iterator const& mccollision,
                                           soa::SmallGroups<soa::Join<CollsCentFT0C, aod::McCollisionLabels>> const& collisions,
-                                          FiltParticlesIdx const& particles,
+                                          ParticlesIdx const& particles,
                                           MftBestTracksLabeled const& atracks)
   {
     processEfficiencyIdxBest<CollsMCExtraMult, CollsCentFT0C>(mccollision, collisions, particles, atracks);

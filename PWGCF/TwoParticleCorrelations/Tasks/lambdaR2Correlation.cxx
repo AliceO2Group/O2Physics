@@ -363,7 +363,7 @@ struct LambdaTableProducer {
     histos.add("QA/Lambda/DCA/h3f_Dca_vs_pT_cent", "DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
 
     // MC Generated Histograms
-    if (doprocessMCRecoGen || doprocessMCReco) {
+    if (doprocessMCRecoGen || doprocessMCReco || doprocessMCGen) {
       // DCA analysis
       histos.add("QA/Lambda/DCA/h3f_Prm_Dca_vs_pT_cent", "Primary DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
       histos.add("QA/Lambda/DCA/h3f_Scd_Dca_vs_pT_cent", "Weak Decay DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
@@ -923,6 +923,13 @@ struct LambdaTableProducer {
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMCRecoGen, "Process for MC RecoGen", false);
+
+  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    fillLambdaMcGenTables(mcCollision, mcParticles);
+  }
+
+  PROCESS_SWITCH(LambdaTableProducer, processMCGen, "Process for MC Gen", false);
 };
 
 struct LambdaTracksExtProducer {

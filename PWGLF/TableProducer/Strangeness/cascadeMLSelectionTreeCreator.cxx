@@ -139,13 +139,15 @@ struct cascadeMLSelectionTreeCreator {
     float dcav0topv;
     float v0CosPA;
     float cascCosPA;
+    float bachBaryonCosPA;
+    float bachBaryonDCAxyToPV;
 
     // reserved for MC operation
     bool isXiMinus;
     bool isXiPlus;
     bool isOmegaMinus;
     bool isOmegaPlus;
-  } cascadeCandidate;
+  } cascadeCandidate{};
 
   // Process candidate and store properties in object
   template <typename TCollision, typename TCascObject>
@@ -161,10 +163,10 @@ struct cascadeMLSelectionTreeCreator {
     // Track quality
     cascadeCandidate.posITSCls = posTrackExtra.itsNCls();
     cascadeCandidate.negITSCls = negTrackExtra.itsNCls();
-    cascadeCandidate.bachITSCls = negTrackExtra.itsNCls();
+    cascadeCandidate.bachITSCls = bachTrackExtra.itsNCls();
     cascadeCandidate.posITSClsSizes = posTrackExtra.itsClusterSizes();
     cascadeCandidate.negITSClsSizes = negTrackExtra.itsClusterSizes();
-    cascadeCandidate.bachITSClsSizes = negTrackExtra.itsClusterSizes();
+    cascadeCandidate.bachITSClsSizes = bachTrackExtra.itsClusterSizes();
     cascadeCandidate.posTPCRows = posTrackExtra.tpcCrossedRows();
     cascadeCandidate.negTPCRows = negTrackExtra.tpcCrossedRows();
     cascadeCandidate.bachTPCRows = bachTrackExtra.tpcCrossedRows();
@@ -207,6 +209,8 @@ struct cascadeMLSelectionTreeCreator {
     cascadeCandidate.dcav0topv = cand.dcav0topv(coll.posX(), coll.posY(), coll.posZ());
     cascadeCandidate.v0CosPA = cand.v0cosPA(coll.posX(), coll.posY(), coll.posZ());
     cascadeCandidate.cascCosPA = cand.casccosPA(coll.posX(), coll.posY(), coll.posZ());
+    cascadeCandidate.bachBaryonCosPA = cand.bachBaryonCosPA();
+    cascadeCandidate.bachBaryonDCAxyToPV = cand.bachBaryonDCAxyToPV();
 
     // MC flags
     cascadeCandidate.isXiMinus = false;
@@ -214,36 +218,50 @@ struct cascadeMLSelectionTreeCreator {
     cascadeCandidate.isOmegaMinus = false;
     cascadeCandidate.isOmegaPlus = false;
 
-    if constexpr (requires { cand.pdgCode(); }) {
-      cascadeCandidate.isXiMinus = (cand.pdgCode() == 3312);
-      cascadeCandidate.isXiPlus = (cand.pdgCode() == -3312);
-      cascadeCandidate.isOmegaMinus = (cand.pdgCode() == 3334);
-      cascadeCandidate.isOmegaPlus = (cand.pdgCode() == -3334);
+    if constexpr (requires { cand.has_cascMCCore(); }) {
+      if (cand.has_cascMCCore()) {
+        auto cascMC = cand.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
+        cascadeCandidate.isXiMinus = (cascMC.pdgCode() == 3312);
+        cascadeCandidate.isXiPlus = (cascMC.pdgCode() == -3312);
+        cascadeCandidate.isOmegaMinus = (cascMC.pdgCode() == 3334);
+        cascadeCandidate.isOmegaPlus = (cascMC.pdgCode() == -3334);
+      }
     }
 
     // base topological selections
-    if (cascadeCandidate.v0CosPA < v0setting_cospa)
+    if (cascadeCandidate.v0CosPA < v0setting_cospa) {
       return;
-    if (cascadeCandidate.dcaV0Daughters > v0setting_dcav0dau)
+    }
+    if (cascadeCandidate.dcaV0Daughters > v0setting_dcav0dau) {
       return;
-    if (cascadeCandidate.dcapostopv < v0setting_dcapostopv)
+    }
+    if (std::abs(cascadeCandidate.dcapostopv) < v0setting_dcapostopv) {
       return;
-    if (cascadeCandidate.dcapostopv < v0setting_dcanegtopv)
+    }
+    if (std::abs(cascadeCandidate.dcanegtopv) < v0setting_dcanegtopv) {
       return;
-    if (cascadeCandidate.dcabachtopv < cascadesetting_dcabachtopv)
+    }
+    if (std::abs(cascadeCandidate.dcabachtopv) < cascadesetting_dcabachtopv) {
       return;
-    if (cascadeCandidate.v0radius < v0setting_radius)
+    }
+    if (cascadeCandidate.v0radius < v0setting_radius) {
       return;
-    if (cascadeCandidate.cascCosPA < cascadesetting_cospa)
+    }
+    if (cascadeCandidate.cascCosPA < cascadesetting_cospa) {
       return;
-    if (cascadeCandidate.dcaCascDaughters > cascadesetting_dcacascdau)
+    }
+    if (cascadeCandidate.dcaCascDaughters > cascadesetting_dcacascdau) {
       return;
-    if (cascadeCandidate.cascradius < cascadesetting_cascradius)
+    }
+    if (cascadeCandidate.cascradius < cascadesetting_cascradius) {
       return;
-    if (std::abs(cascadeCandidate.mLambdaDaughter - 1.116) > cascadesetting_v0masswindow)
+    }
+    if (std::abs(cascadeCandidate.mLambdaDaughter - 1.116) > cascadesetting_v0masswindow) {
       return;
-    if (cascadeCandidate.dcav0topv < cascadesetting_mindcav0topv)
+    }
+    if (cascadeCandidate.dcav0topv < cascadesetting_mindcav0topv) {
       return;
+    }
 
     // Mass window selections
     cascadeCandidate.massWindows = 0;
@@ -312,6 +330,8 @@ struct cascadeMLSelectionTreeCreator {
       cascadeCandidate.dcav0topv,
       TMath::ACos(cascadeCandidate.v0CosPA),
       TMath::ACos(cascadeCandidate.cascCosPA),
+      cascadeCandidate.bachBaryonCosPA,
+      cascadeCandidate.bachBaryonDCAxyToPV,
 
       // MC identity
       cascadeCandidate.isXiMinus,
@@ -320,17 +340,17 @@ struct cascadeMLSelectionTreeCreator {
       cascadeCandidate.isOmegaPlus);
   }
 
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascBBs, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-    for (auto& casc : cascades) { // looping over lambdas
+    for (const auto& casc : cascades) { // looping over cascades
       processCandidate(coll, casc);
     }
   }
-  void processSimData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascMCDatas, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
+  void processSimData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels, aod::CascTOFNSigmas> const& cascades, dauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-    for (auto& casc : cascades) { // looping over lambdas
+    for (const auto& casc : cascades) { // looping over cascades
       processCandidate(coll, casc);
     }
   }

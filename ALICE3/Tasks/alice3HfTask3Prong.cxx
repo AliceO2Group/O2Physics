@@ -119,7 +119,7 @@ struct Alice3HfTask3Prong {
       registry.add(("MC/gen/nonprompt/" + histoName + "GenNonPrompt").c_str(), ("MC particles (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
     };
 
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = std::vector<double>(binsPt);
 
     /// Reconstructed Histograms
     addHistogramsRec("hMass", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1F, {{600, 1.98, 2.58}}});
