@@ -26,8 +26,10 @@
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/ConversionPointProfile.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+#include "PWGEM/PhotonMeson/Utils/V0DedupUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
@@ -39,9 +41,11 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsTPC/VDriftCorrFact.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
@@ -52,6 +56,7 @@
 #include <Framework/Array2D.h>
 #include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -74,7 +79,9 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <tuple>
@@ -90,9 +97,20 @@ using o2::framework::HistType;
 using o2::framework::kTH1D;
 using o2::framework::kTH1F;
 using o2::framework::kTH2F;
+using o2::framework::kTH3F;
 using o2::framework::kTHnSparseF;
 using o2::framework::Preslice;
 using o2::framework::Produces;
+using o2::pwgem::photonmeson::cpRadiusProfile;
+using o2::pwgem::photonmeson::cpScanLeg;
+using o2::pwgem::photonmeson::FinderCollision;
+using o2::pwgem::photonmeson::FinderCuts;
+using o2::pwgem::photonmeson::FinderLeg;
+using o2::pwgem::photonmeson::FinderStep;
+using o2::pwgem::photonmeson::LegScan;
+using o2::pwgem::photonmeson::qInv;
+using o2::pwgem::photonmeson::RadiusProfile;
+using o2::pwgem::photonmeson::solveConflictGroup;
 // NOLINTEND(google-global-names-in-headers)
 
 using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::PMEvSels, o2::aod::CentFT0Ms, o2::aod::CentFT0As, o2::aod::CentFT0Cs>;
@@ -135,6 +153,12 @@ struct V0CandidateHelper {
   float pxAtPV = 0.f;
   float pyAtPV = 0.f;
   float pzAtPV = 0.f;
+  float svX = 0.f;
+  float svY = 0.f;
+  float svZ = 0.f;
+  float purity = -999.f;
+  float cosPAxy = -2.f; // transverse pointing angle
+  float cosPA3D = -2.f; // 3D pointing angle
 
   V0CandidateHelper() = default;
 
@@ -149,14 +173,42 @@ struct V0CandidateHelper {
 };
 
 // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())
-using CandKey = std::tuple<int64_t, int64_t, int64_t, int64_t>;
+struct CandKey {
+  int64_t v0Id = -1; // SVertexer V0 index, -1 for finder and resolver photons
+  int64_t collisionId = -1;
+  int64_t posId = -1;
+  int64_t eleId = -1;
+  auto operator<=>(const CandKey&) const = default;
+};
 
-// Everything the truth diagnosis need,
+// result of a probe fit (FitOptions::probe): leg pair passed the cuts, and its dedup score
+struct PairFit {
+  bool ok = false;
+  float score = 999.f;
+};
+
+// options for fitting a leg pair that was not built by the S-Vertexer (finder, ambiguity resolver)
+struct FitOptions {
+  bool nonSVertexer = false; // finder PCA cut for mixed legs, side-based TPC drift correction
+  bool relaxAP = false;      // no Armenteros-Podolanski cut
+  bool purityGate = false;   // finder: require purity score > finderMinScore
+  PairFit* probe = nullptr;  // only return the dedup score, do not add a candidate
+};
+
+// one tested pair of stored photons in the ambiguity resolver (also read by the MC diagnostics)
+struct SwapRecord {
+  CandKey keyI{}, keyJ{};
+  float q = -1.f;
+  bool complete = false;
+  bool swapped = false;
+};
+
 struct DedupDiag {
-  std::map<CandKey, std::vector<CandKey>> blockersByKey; // rejected candidate -> ALL candidates that took one of its legs
-  std::vector<V0CandidateHelper> snapshot;               // ALL candidates, before deduplication
-  std::vector<CandKey> stored;                           // the survivors
+  std::map<CandKey, std::vector<CandKey>> blockersByKey; // rejected candidate -> candidates that took one of its legs
+  std::vector<V0CandidateHelper> snapshot;               // all candidates, before deduplication
+  std::vector<CandKey> stored;                           // surviving candidates
   std::map<CandKey, std::pair<int, float>> lossMargin;
+  std::vector<SwapRecord> swaps;
 };
 
 template <o2::soa::is_table TV0PhotonKF, o2::soa::is_table TV0legs, o2::soa::is_table TV0legsXYZ, o2::soa::is_table TV0legsDeDxMC, o2::soa::is_table TV0photonsphivpsi>
@@ -197,7 +249,35 @@ struct PhotonConversionBuilder {
     Configurable<float> deduplicationScoreWeight{"deduplicationScoreWeight", 0.5f, "0.:only pca goes into the score, 1: only cosPA goes itno score, any number in between is a mix of pca and cosPA"};
     Configurable<bool> cfgDedupTruthMaps{"cfgDedupTruthMaps", true, "fill the fine (dEta, dPhi, q) truth maps in MC"};
     Configurable<int> dedupMaxGroupSize{"dedupMaxGroupSize", 12, "group matching (mode 2): conflict groups up to this size are solved exactly, larger ones greedily (capped at 16)"};
+    Configurable<float> groupMatchingScoreThreshold{"groupMatchingScoreThreshold", -1.f, "dedup mode 2, choice of the best leg-disjoint subset of a conflict group. <= 0 (master): most photons first, then lowest summed score. > 0: largest sum of max(threshold - score, 1e-3) over the photons, so a photon with a score near or above the threshold adds almost nothing and two poor candidates cannot outweigh one good one (e.g. 0.4)"};
+    Configurable<float> gapWeight{"gapWeight", 0.f, "dedup score: weight of the helix-circle gap of the legs (0 = off)"};
+    Configurable<float> gapScale{"gapScale", 1.f, "dedup score: scale of the circle gap (cm)"};
+    Configurable<bool> useCosPA3D{"useCosPA3D", false, "use the 3D cosPA instead of the xy cosPA in V0PhotonCandidate"};
+    Configurable<bool> resolveSplitLegs{"resolveSplitLegs", false, "after the dedup, remove photons that share a split track with a better photon - avoids duplicates for photon candidates"};
+    Configurable<float> splitLegMaxDTgl{"splitLegMaxDTgl", 0.03f, "split legs: max |tgl1 - tgl2|"};
+    Configurable<float> splitLegMaxChi2{"splitLegMaxChi2", 15.f, "split legs: max chi2 of two track pieces"};
+    Configurable<bool> cfgExtendedDiag{"cfgExtendedDiag", false, "MC: truth of the stored photons, pairs and swaps"};
   } dedup;
+
+  // recovery finder for not thinned data (step 2) and ambiguity resolver settings (step 5)
+  struct : ConfigurableGroup {
+    std::string prefix = "recovery_group";
+    Configurable<bool> runFinder{"runFinder", false, "photon finder for free legs without ITS, candidates enter the dedup"};
+    Configurable<float> finderMinScore{"finderMinScore", 0.f, "finder: min. purity score (log-likelihood ratio true / fake)"};
+    Configurable<float> finderMaxDeltaTgl{"finderMaxDeltaTgl", 0.15f, "finder: max |tgl+ - tgl-|"};
+    Configurable<float> finderMaxCircleGap{"finderMaxCircleGap", 5.f, "finder: max |circle gap| (cm)"};
+    Configurable<float> finderMinCosXY{"finderMinCosXY", 0.9f, "finder: min. xy pointing at the touching point"};
+    Configurable<float> finderMaxDeltaZ{"finderMaxDeltaZ", 3.f, "finder: max |z+ - z-| at the touching point (cm)"};
+    Configurable<float> finderMaxDz{"finderMaxDz", 4.f, "finder: max |z of the photon line at the beam axis - z_PV| (cm)"};
+    Configurable<float> finderRMargin{"finderRMargin", 5.f, "finder: margin below the min. conversion radius (cm)"};
+    Configurable<float> finderTimeMargin{"finderTimeMargin", 100.f, "finder: margin of the leg time windows (ns)"};
+    Configurable<float> finderTimeMarginFwd{"finderTimeMarginFwd", 3000.f, "finder: extra late margin for TPC-only legs (ns)"};
+    Configurable<float> finderMaxPCAMixed{"finderMaxPCAMixed", -1.f, "finder: max PCA for an ITS and a non-ITS leg (cm), < 0 builder cuts"};
+    Configurable<float> finderFreeCollinearLegs{"finderFreeCollinearLegs", 0.f, "finder: two candidates of one collision with q_inv below this (GeV/c) count as collinear; their legs stay available to the finder (leg pairs already built are not refitted). Recovers true photons next to a close partner photon. 0 = off"};
+    Configurable<bool> runSwapResolver{"runSwapResolver", false, "ambiguity resolver: for close stored photon pairs, fit the crossed leg pairing (no AP cut) and keep the pairing with the lower dedup score"};
+    Configurable<float> swapMaxQ{"swapMaxQ", 0.1f, "swap resolver: max q_inv of the two photons (GeV/c)"};
+    Configurable<float> swapMaxConvDist{"swapMaxConvDist", 20.f, "swap resolver: max distance of the conversion points (cm)"};
+  } recovery;
 
   // event-level skim for derived data
   struct : ConfigurableGroup {
@@ -238,6 +318,7 @@ struct PhotonConversionBuilder {
     Configurable<float> max_dcav0dau_tpc_inner_fc{"max_dcav0dau_tpc_inner_fc", 1.5, "max distance btween 2 legs to V0s with ITS hits on TPC inner FC"};
     Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
     Configurable<float> max_v0radius{"max_v0radius", 90.0, "max v0 radius"};
+    Configurable<int> conversionPointMethod{"conversionPointMethod", 0, "0: helix touching point of the legs (Run 2), 1: radius-profiled pair fit through the material, falls back to 0 without a valid minimum"};
     Configurable<float> margin_r_its{"margin_r_its", 3.0, "margin for r cut in cm"};
     Configurable<float> margin_r_tpc{"margin_r_tpc", 7.0, "margin for r cut in cm"};
     Configurable<float> margin_r_itstpc_tpc{"margin_r_itstpc_tpc", 7.0, "margin for r cut in cm"};
@@ -289,6 +370,8 @@ struct PhotonConversionBuilder {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::aod::common::TPCVDriftManager mVDriftMgr;
+  uint64_t mLastCCDBTimestamp{0};
+  std::set<CandKey> mRelaxedKeys;
 
   o2::framework::HistogramRegistry registry{
     "registry",
@@ -448,12 +531,32 @@ struct PhotonConversionBuilder {
       LOG(warning) << "deduplicationScoreWeight is smaller than zero which is not allowed";
     }
 
+    if (v0cuts.conversionPointMethod == 1) {
+      registry.add("V0/hConvPointProfile", "conversionPointMethod 1;0 fallback to the touching point, 1 profile minimum used;candidates", kTH1F, {{2, -0.5f, 1.5f}});
+      registry.add("V0/hConvPointProfileShift", "conversionPointMethod 1;R_{profile} - R_{touching point} (cm);candidates", kTH1F, {{200, -10.f, 10.f}});
+    }
+    if (recovery.runSwapResolver && dedup.deduplicationMode == V0DeduplicationMode::KeepAll) {
+      LOG(fatal) << "runSwapResolver needs deduplicationMode 0, 1 or 2";
+    }
+    if (dedup.resolveSplitLegs) {
+      registry.add("Dedup/hSplitLegRemoved", "split legs: photons removed per DF;photons;DFs", kTH1F, {{100, -0.5f, 99.5f}});
+    }
+    if (recovery.runFinder) {
+      registry.add("Finder/hSteps", "finder;step passed;pairs", kTH1D, {{FinderStep::kNFindStep, -0.5f, static_cast<float>(FinderStep::kNFindStep) - 0.5f}});
+      registry.add("Finder/hScore", "finder;purity score;pairs", kTH1F, {{100, -20.f, 10.f}});
+      registry.add("Finder/hNAdded", "finder;photons added per DF;DFs", kTH1F, {{200, 0.f, 2000.f}});
+    }
+    if (recovery.runSwapResolver) {
+      registry.add("Swap/hTested", "swap resolver;0 tested, 1 swapped;pairs", kTH1D, {{2, -0.5f, 1.5f}});
+      registry.add("Swap/hQ", "swap resolver;q_{inv} (GeV/c);0 tested, 1 swapped", kTH2F, {{100, 0.f, 0.1f}, {2, -0.5f, 1.5f}});
+    }
+
     if (doprocessMC) {
       const AxisSpec axQ{60, 0.f, 0.3f, "q_{inv}^{true} (GeV/c)"};
       const AxisSpec axDEta{80, -1.6f, 1.6f, "#Delta#eta_{#gamma#gamma}^{true}"};
       const AxisSpec axClass{3, -0.5f, 2.5f, "0 = true, 1 = cross-leg fake, 2 = other fake"};
       // lostByPartnerFake is a subset of lostByCrossFake, and a pair can appear in several of them.
-      for (const auto& nm : {"before", "bothSurvive", "bothSurviveSameColl", "oneLost", "bothLost",
+      for (const auto& nm : {"before", "bothSurvive", "bothSurviveSameColl", "surviveAsCrossedPairing", "halfCrossedStored", "oneLost", "bothLost",
                              "lostByCrossFake", "lostByPartnerFake", "lostByOtherFake", "lostByTrue"}) {
         const std::string dir = std::string("MCDedup/Pairs/") + nm + "/";
         registry.add((dir + "hQ").c_str(), "truth photon pairs with >=1 true V0 candidate before deduplication;q_{inv}^{true} (GeV/c);pairs", kTH1F, {axQ}, true);
@@ -477,6 +580,17 @@ struct PhotonConversionBuilder {
         for (const auto& nm : {"before", "bothSurvive", "bothLost", "lostByPartnerFake"}) {
           registry.add((std::string("MCDedup/Pairs/") + nm + "/hMap").c_str(), "truth photon pairs", kTHnSparseF, {axDEtaFine, axDPhi, axQ}, true);
         }
+      }
+      if (dedup.cfgExtendedDiag) {
+        const AxisSpec axPt{50, 0.f, 5.f, "p_{T,#gamma} (GeV/c)"};
+        const AxisSpec axQrec{50, 0.f, 0.1f, "q_{inv} (GeV/c)"};
+        registry.add("MCDedup/Stored/hClassSource", "stored photons;class;0 SVertexer, 1 finder or swap;p_{T,#gamma} (GeV/c)", kTH3F, {axClass, {2, -0.5f, 1.5f}, axPt});
+        registry.add("MCDedup/Stored/hPairClass", "stored photon pairs, same collision;0 true-true, 1 crossed doublet, 2 other;q_{inv} (GeV/c)", kTH2F, {{3, -0.5f, 2.5f}, axQrec});
+        registry.add("MCDedup/Copies/hChoice", "true photons with a candidate in the dedup sample;collisions with a true candidate;0 = right coll., 1 = wrong (right available), 2 = wrong (no right copy), 3 = lost", kTH2F, {{5, 0.5f, 5.5f}, {4, -0.5f, 3.5f}});
+        registry.add("MCDedup/Copies/hRule", "true photons, >= 2 copies, right copy available;0 = current dedup choice, 1 = smallest |#Deltaz| of the photon line, 2 = largest xy cos(PA) (master), 3 = largest 3D cos(PA);0 = wrong, 1 = right", kTH2F, {{4, -0.5f, 3.5f}, {2, -0.5f, 1.5f}});
+        registry.add("MCDedup/Copies/hPAxy", "copies of true photons with >= 2 copies;0 = wrong coll., 1 = right coll.;transverse pointing angle (rad)", kTH2F, {{2, -0.5f, 1.5f}, {200, 0.f, 0.2f}});
+        registry.add("MCDedup/Copies/hPA3D", "copies of true photons with >= 2 copies;0 = wrong coll., 1 = right coll.;3D pointing angle (rad)", kTH2F, {{2, -0.5f, 1.5f}, {200, 0.f, 0.2f}});
+        registry.add("MCDedup/Swap/hCategory", "swap resolver;3 #times true stored + true crossed;0 kept, 1 swapped;q_{inv} (GeV/c)", kTH3F, {{9, -0.5f, 8.5f}, {2, -0.5f, 1.5f}, axQrec});
       }
     }
 
@@ -523,6 +637,7 @@ struct PhotonConversionBuilder {
     auto timestamp = bc.timestamp();
 
     mVDriftMgr.update(timestamp);
+    mLastCCDBTimestamp = timestamp;
   }
 
   std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
@@ -649,12 +764,40 @@ struct PhotonConversionBuilder {
   template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>
   void fillV0Table(TV0 const& v0, const bool filltable)
   {
-    using namespace o2::pwgem::photonmeson;
-    // Get tracks
     const auto& pos = v0.template posTrack_as<TTracks>();
     const auto& ele = v0.template negTrack_as<TTracks>();
     const auto& collision = v0.template collision_as<TCollisions>(); // collision where this v0 belongs to.
-    // LOGF(info, "v0.collisionId() = %d, pos.collisionId() = %d, ele.collisionId() = %d", v0.collisionId(), pos.collisionId(), ele.collisionId());
+    fitV0Candidate<isMC, TBCs, TCollisions, TTracks>(collision, pos, ele, v0.globalIndex(), filltable);
+  }
+
+  // the purity score (finder LLR tables) is only needed for the finder gate and the split-leg order
+  bool usePurity() const { return recovery.runFinder.value || dedup.resolveSplitLegs.value; }
+
+  template <typename TTrack>
+  static float purityScore(TTrack const& pos, TTrack const& ele, const float cosPA3D, const float pca, const float mee, const float gap, const float psipair)
+  {
+    return o2::pwgem::photonmeson::finderPurityScore({cosPA3D, pca, mee, gap, std::fabs(pos.tgl() - ele.tgl()), psipair,
+                                                      std::max(std::fabs(pos.tpcNSigmaEl()), std::fabs(ele.tpcNSigmaEl())),
+                                                      std::min(std::fabs(pos.tpcNSigmaPi()), std::fabs(ele.tpcNSigmaPi()))});
+  }
+
+  // deduplication score, lower = better: master score (cosPA, PCA) + optional circle-gap term
+  float dedupScore(const float cosPA, const float pca, const float gap)
+  {
+    float score = getScoreV0(cosPA, pca, dedup.deduplicationScoreWeight);
+    if (dedup.gapWeight > 0.f) {
+      score += dedup.gapWeight * std::min(std::fabs(gap) / dedup.gapScale.value, 3.f); // o2-linter: disable=magic-number (cap)
+    }
+    return score;
+  }
+
+  // fit of one leg pair with the V0 cuts; filltable = false adds a dedup candidate,
+  // true writes the tables; opt.probe only returns the score
+  template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TCollision, typename TTrack>
+  void fitV0Candidate(TCollision const& collision, TTrack const& pos, TTrack const& ele, const int64_t v0Id, const bool filltable, FitOptions const& opt = {})
+  {
+    using namespace o2::pwgem::photonmeson;
+    mVDriftMgr.setUseSideBasedCorrection(opt.nonSVertexer || useSideBasedCorrection.value);
 
     if (pos.sign() * ele.sign() > 0) { // reject same sign pair
       return;
@@ -692,7 +835,9 @@ struct PhotonConversionBuilder {
 
     auto pTrack = getTrackParCov(pos);
     if (trackcuts.moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {
-      LOGP(error, "failed correction for positive tpc track");
+      if (opt.probe == nullptr) {
+        LOGP(error, "failed correction for positive tpc track");
+      }
       return;
     }
     auto pTrackC = pTrack;
@@ -718,7 +863,9 @@ struct PhotonConversionBuilder {
 
     auto nTrack = getTrackParCov(ele);
     if (trackcuts.moveTPCTracks && isTPConlyTrack(ele) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, ele, nTrack)) {
-      LOGP(error, "failed correction for negative tpc track");
+      if (opt.probe == nullptr) {
+        LOGP(error, "failed correction for negative tpc track");
+      }
       return;
     }
     auto nTrackC = nTrack;
@@ -744,6 +891,19 @@ struct PhotonConversionBuilder {
 
     std::array<float, 3> xyz = {0.f, 0.f, 0.f};
     Vtx_recalculationParCov(o2::base::Propagator::Instance(), pTrack, nTrack, xyz, matCorr);
+    if (v0cuts.conversionPointMethod == 1) {
+      LegScan scanP, scanN;
+      cpScanLeg(pTrack, d_bz, matCorr, scanP);
+      cpScanLeg(nTrack, d_bz, matCorr, scanN);
+      RadiusProfile prof;
+      cpRadiusProfile(scanP, scanN, pos.hasITS() ? 0.f : 0.25f, ele.hasITS() ? 0.f : 0.25f, prof); // o2-linter: disable=magic-number (0.5 cm extra z for legs without ITS)
+      const bool useProfile = prof.iMin >= 0 && prof.status != 4;                                  // o2-linter: disable=magic-number (profile class: failed)
+      if (useProfile) {
+        registry.fill(HIST("V0/hConvPointProfileShift"), prof.rMin - std::hypot(xyz[0], xyz[1]));
+        xyz = prof.xyz;
+      }
+      registry.fill(HIST("V0/hConvPointProfile"), useProfile ? 1.f : 0.f);
+    }
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
     if (rxy_tmp > trackcuts.maxX + v0cuts.margin_r_tpc) {
       return;
@@ -861,7 +1021,7 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    if (!filltable) {
+    if (!filltable && opt.probe == nullptr) {
       if (isITSTPCTrack(pos) && isITSTPCTrack(ele)) {
         registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSTPC"), std::min(pTrack.getX(), nTrack.getX()), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       } else if (isITSonlyTrack(pos) && isITSonlyTrack(ele)) {
@@ -933,7 +1093,8 @@ struct PhotonConversionBuilder {
     float cospaXYKF = cospaXY_KF(gammaKF_DecayVtx, KFPV);
     float cospaRZKF = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
     auto centType = static_cast<CentType>(mlcuts.centTypePCMMl.value);
-    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, gammaKF_PV, pos, kfp_pos_DecayVtx, ele, kfp_ele_DecayVtx, collision, cospaXYKF, cospaRZKF, cospaXYKF, psipair, phiv, centType, posdcaXY, eledcaXY, posdcaZ, eledcaZ);
+    // cosPA slot of the candidate (dedup score, cosPA cut): xy as in master, or 3D with dedup_group.useCosPA3D
+    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, gammaKF_PV, pos, kfp_pos_DecayVtx, ele, kfp_ele_DecayVtx, collision, dedup.useCosPA3D ? cospa_kf : cospaXYKF, cospaRZKF, cospaXYKF, psipair, phiv, centType, posdcaXY, eledcaXY, posdcaZ, eledcaZ);
 
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (v0cuts.max_r_itsmft_ss < rxy && rxy < trackcuts.maxX + v0cuts.margin_r_tpc) {
@@ -944,6 +1105,10 @@ struct PhotonConversionBuilder {
         if (v0photoncandidate.getPCA() > v0cuts.max_dcav0dau_tpconly) {
           return;
         }
+      }
+    } else if (opt.nonSVertexer && recovery.finderMaxPCAMixed > 0.f && pos.hasITS() != ele.hasITS()) {
+      if (v0photoncandidate.getPCA() > recovery.finderMaxPCAMixed) {
+        return;
       }
     } else { // V0s with ITS hits
       if (rxy < v0cuts.max_r_req_its) {
@@ -973,22 +1138,43 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    if (!checkAP(v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), v0cuts.max_alpha_ap, v0cuts.max_qt_ap)) { // store only photon conversions
+    if (!opt.relaxAP && !checkAP(v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), v0cuts.max_alpha_ap, v0cuts.max_qt_ap)) { // store only photon conversions
       return;
     }
-    pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getPCA();
-    cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getCosPA();
 
     ROOT::Math::PxPyPzMVector vposDedup(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
     ROOT::Math::PxPyPzMVector veleDedup(kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
     const auto meeSV = static_cast<float>((vposDedup + veleDedup).M());
 
-    const auto score = getScoreV0(v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), dedup.deduplicationScoreWeight);
-    V0CandidateHelper v0Helper(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex(),
+    //  passed all cuts: score and dedup candidate
+    const float gap = circleGap(o2::track::TrackAuxPar(pTrack, d_bz), o2::track::TrackAuxPar(nTrack, d_bz));
+    const float score = dedupScore(v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), gap);
+    if (opt.probe != nullptr) {
+      *opt.probe = {true, score};
+      return;
+    }
+    const float purity = usePurity() ? purityScore(pos, ele, cospa_kf, v0photoncandidate.getPCA(), meeSV, gap, v0photoncandidate.getPsiPair()) : -999.f;
+    if (opt.purityGate) {
+      registry.fill(HIST("Finder/hScore"), purity);
+      if (purity <= recovery.finderMinScore) {
+        return;
+      }
+    }
+
+    pca_map[CandKey{v0Id, collision.globalIndex(), pos.globalIndex(), ele.globalIndex()}] = v0photoncandidate.getPCA();
+    cospa_map[CandKey{v0Id, collision.globalIndex(), pos.globalIndex(), ele.globalIndex()}] = v0photoncandidate.getCosPA();
+
+    V0CandidateHelper v0Helper(v0Id, collision.globalIndex(), pos.globalIndex(), ele.globalIndex(),
                                v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), score, meeSV);
     v0Helper.pxAtPV = gammaKF_PV.GetPx();
     v0Helper.pyAtPV = gammaKF_PV.GetPy();
     v0Helper.pzAtPV = gammaKF_PV.GetPz();
+    v0Helper.svX = gammaKF_DecayVtx.GetX();
+    v0Helper.svY = gammaKF_DecayVtx.GetY();
+    v0Helper.svZ = gammaKF_DecayVtx.GetZ();
+    v0Helper.purity = purity;
+    v0Helper.cosPAxy = cospaXYKF;
+    v0Helper.cosPA3D = cospa_kf;
     vecV0Dedup.emplace_back(v0Helper);
 
     if (mlcuts.applyPCMMl) {
@@ -1070,7 +1256,7 @@ struct PhotonConversionBuilder {
       ROOT::Math::PxPyPzMVector v0_sv = vpos_sv + vele_sv;
       registry.fill(HIST("V0/hMeeSV_Rxy"), rxy, v0_sv.M());
 
-      v0photonskf(collision.globalIndex(), v0.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
+      v0photonskf(collision.globalIndex(), v0Id, v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
                   v0_sv.M(), v0photoncandidate.getDcaXYToPV(), v0photoncandidate.getDcaZToPV(),
@@ -1085,17 +1271,654 @@ struct PhotonConversionBuilder {
     } // end of fill table
   }
 
+  //  bookkeeping of candidates and stored photons
+  static CandKey keyOf(V0CandidateHelper const& c)
+  {
+    return CandKey{c.v0ID, c.colID, c.posID, c.eleID};
+  }
+
+  std::map<CandKey, int> candidateIndexByKey() const
+  {
+    std::map<CandKey, int> index;
+    for (int i = 0; i < static_cast<int>(vecV0Dedup.size()); ++i) {
+      index[keyOf(vecV0Dedup[i])] = i;
+    }
+    return index;
+  }
+
+  // replaces the stored photons after the dedup and keeps stored_v0Ids and nv0_map consistent
+  void setStored(std::vector<CandKey> keys)
+  {
+    std::stable_sort(keys.begin(), keys.end(), [](const auto& a, const auto& b) { return a.collisionId < b.collisionId; });
+    stored_fullv0Ids.swap(keys);
+    stored_v0Ids.clear();
+    for (auto& [col, n] : nv0_map) { // o2-linter: disable=const-ref-in-for-loop (counters are reset in place)
+      n = 0;
+    }
+    for (const auto& key : stored_fullv0Ids) {
+      stored_v0Ids.emplace_back(key.posId, key.eleId);
+      nv0_map[key.collisionId]++;
+    }
+  }
+
+  //  photon finder
+  // finder leg: helix circle and the time window in which the track can belong to a collision (TPC-only legs: from the drift-time asymmetry)
+  template <typename TBCs, typename TCollisions, typename TTrack>
+  bool makeFinderLeg(TTrack const& track, TCollisions const& collisions, const int64_t bcRef, FinderLeg& leg)
+  {
+    using namespace o2::pwgem::photonmeson;
+    if (track.collisionId() < 0 || !track.hasTPC()) {
+      return false;
+    }
+    leg.id = track.globalIndex();
+    leg.tgl = track.tgl();
+    leg.noITS = !track.hasITS();
+    leg.movable = isTPConlyTrack(track) && (track.flags() & o2::aod::track::TrackTimeAsym) != 0;
+    const auto bc = collisions.rawIteratorAt(track.collisionId()).template bc_as<TBCs>();
+    leg.t = static_cast<double>(static_cast<int64_t>(bc.globalBC()) - bcRef) * o2::constants::lhc::LHCBunchSpacingNS + track.trackTime();
+    if (leg.movable) {
+      const int side = tpcDriftSide(track);
+      if (side == TPCSideUndetermined) {
+        return false;
+      }
+      leg.side = side;
+      leg.tMin = leg.t - track.tpcDeltaTBwd() - recovery.finderTimeMargin;
+      leg.tMax = leg.t + track.tpcDeltaTFwd() + recovery.finderTimeMarginFwd;
+    } else {
+      constexpr float NSigmaTime = 4.f;
+      const float sigma = std::max(track.trackTimeRes(), 1.f);
+      const float halfWidth = (track.flags() & o2::aod::track::TrackTimeResIsRange) != 0 ? sigma : NSigmaTime * sigma;
+      leg.side = 0;
+      leg.tMin = leg.t - halfWidth - recovery.finderTimeMargin;
+      leg.tMax = leg.t + halfWidth + recovery.finderTimeMargin;
+    }
+    leg.par = getTrackPar(track);
+    leg.circle = o2::track::TrackAuxPar(leg.par, d_bz);
+    return true;
+  }
+
+  // pairs the free legs of the whole DF (not used by any candidate unless finderFreeCollinearLegs, at least one leg without ITS); a pair that passes the geometry
+  // (evalFinderPair) and matches a collision in z is fitted and becomes a dedup candidate with v0Id = -1
+  template <bool isMC, class TBCs, class TCollisions, class TTracks>
+  void runPhotonFinder(TCollisions const& collisions, TTracks const& tracks)
+  {
+    std::set<int64_t> usedLegs;
+    std::set<std::pair<int64_t, int64_t>> builtPairs;
+    // legs of accepted candidates are not free; with finderFreeCollinearLegs, legs of collinear candidate pairs stay free
+    std::vector<bool> collinear(vecV0Dedup.size(), false);
+    if (recovery.finderFreeCollinearLegs > 0.f) {
+      std::map<int, std::vector<size_t>> candsOfColl;
+      for (size_t i = 0; i < vecV0Dedup.size(); ++i) {
+        candsOfColl[vecV0Dedup[i].colID].push_back(i);
+      }
+      for (const auto& [colId, members] : candsOfColl) {
+        for (size_t a = 0; a < members.size(); ++a) {
+          for (size_t b = a + 1; b < members.size(); ++b) {
+            const auto& ci = vecV0Dedup[members[a]];
+            const auto& cj = vecV0Dedup[members[b]];
+            if (ci.posID == cj.posID || ci.eleID == cj.eleID) {
+              continue;
+            }
+            if (qInv(ci.pxAtPV, ci.pyAtPV, ci.pzAtPV, cj.pxAtPV, cj.pyAtPV, cj.pzAtPV) < recovery.finderFreeCollinearLegs) {
+              collinear[members[a]] = true;
+              collinear[members[b]] = true;
+            }
+          }
+        }
+      }
+    }
+    for (size_t i = 0; i < vecV0Dedup.size(); ++i) {
+      const auto& c = vecV0Dedup[i];
+      builtPairs.emplace(c.posID, c.eleID);
+      if (!collinear[i]) {
+        usedLegs.insert(c.posID);
+        usedLegs.insert(c.eleID);
+      }
+    }
+    std::vector<FinderCollision> colls;
+    int64_t bcRef = -1;
+    for (const auto& col : collisions) {
+      if constexpr (isMC) {
+        if (!col.has_mcCollision()) {
+          continue;
+        }
+      }
+      if (!col.isSelected()) {
+        continue;
+      }
+      const auto bc = col.template bc_as<TBCs>();
+      if (bcRef < 0) {
+        bcRef = static_cast<int64_t>(bc.globalBC());
+      }
+      colls.push_back({static_cast<double>(static_cast<int64_t>(bc.globalBC()) - bcRef) * o2::constants::lhc::LHCBunchSpacingNS + col.collisionTime(), col.globalIndex(), col.posX(), col.posY(), col.posZ()});
+    }
+    if (colls.empty()) {
+      return;
+    }
+    std::sort(colls.begin(), colls.end(), [](const FinderCollision& a, const FinderCollision& b) { return a.t < b.t; });
+    const auto* vd = ccdb->getForTimeStamp<o2::tpc::VDriftCorrFact>("TPC/Calib/VDriftTgl", mLastCCDBTimestamp);
+    if (vd == nullptr) {
+      LOG(warning) << "photon finder: no TPC drift velocity for timestamp " << mLastCCDBTimestamp;
+      return;
+    }
+    const double vDrift = vd->refVDrift * vd->corrFact * 1e-3;
+    float xB = 0.f, yB = 0.f;
+    for (const auto& c : colls) {
+      xB += c.x / static_cast<float>(colls.size());
+      yB += c.y / static_cast<float>(colls.size());
+    }
+
+    std::vector<FinderLeg> posLegs, eleLegs;
+    for (const auto& track : tracks) {
+      if (usedLegs.contains(track.globalIndex()) || track.pt() < trackcuts.min_pt_trackiu || !checkV0leg<isMC>(track)) {
+        continue;
+      }
+      FinderLeg leg;
+      if (makeFinderLeg<TBCs>(track, collisions, bcRef, leg)) {
+        (track.sign() > 0 ? posLegs : eleLegs).push_back(leg);
+      }
+    }
+    std::sort(eleLegs.begin(), eleLegs.end(), [](const FinderLeg& a, const FinderLeg& b) { return a.tgl < b.tgl; });
+
+    const FinderCuts cuts{recovery.finderMaxDeltaTgl, recovery.finderMaxCircleGap, v0cuts.min_r_tpconly, v0cuts.max_r_req_its, recovery.finderRMargin,
+                          trackcuts.maxX + v0cuts.margin_r_tpc, recovery.finderMinCosXY, recovery.finderMaxDeltaZ, recovery.finderMaxDz, d_bz};
+    const FitOptions finderFit{.nonSVertexer = true, .purityGate = true};
+    const size_t nBefore = vecV0Dedup.size();
+    for (const auto& p : posLegs) {
+      for (auto itE = std::lower_bound(eleLegs.begin(), eleLegs.end(), p.tgl - recovery.finderMaxDeltaTgl, [](const FinderLeg& c, float v) { return c.tgl < v; });
+           itE != eleLegs.end() && itE->tgl <= p.tgl + recovery.finderMaxDeltaTgl; ++itE) {
+        if ((!p.noITS && !itE->noITS) || builtPairs.contains({p.id, itE->id})) {
+          continue;
+        }
+        int64_t colId = -1;
+        const int step = evalFinderPair(p, *itE, colls, cuts, xB, yB, vDrift, colId);
+        if (step >= 0) {
+          registry.fill(HIST("Finder/hSteps"), static_cast<float>(step));
+        }
+        if (step == FinderStep::kFindCollision) {
+          fitV0Candidate<isMC, TBCs, TCollisions, TTracks>(collisions.rawIteratorAt(colId), tracks.rawIteratorAt(p.id), tracks.rawIteratorAt(itE->id), -1, false, finderFit);
+        }
+      }
+    }
+    registry.fill(HIST("Finder/hNAdded"), static_cast<float>(vecV0Dedup.size() - nBefore));
+  }
+
+  // two stored photons that use two pieces of one track (same tgl, compatible parameters): keep the better one
+  template <class TTracks>
+  void resolveSplitLegConflicts(TTracks const& tracks, DedupDiag* diag)
+  {
+    const auto indexOfKey = candidateIndexByKey();
+    std::vector<std::pair<float, size_t>> order;
+    order.reserve(stored_fullv0Ids.size());
+    for (size_t k = 0; k < stored_fullv0Ids.size(); ++k) {
+      const auto it = indexOfKey.find(stored_fullv0Ids[k]);
+      order.emplace_back(it == indexOfKey.end() ? std::numeric_limits<float>::max() : (usePurity() ? -vecV0Dedup[it->second].purity : vecV0Dedup[it->second].score), k);
+    }
+    std::stable_sort(order.begin(), order.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+    auto samePiece = [&](int64_t idA, int64_t idB) {
+      if (idA == idB) {
+        return false;
+      }
+      const auto trA = tracks.rawIteratorAt(idA);
+      const auto trB = tracks.rawIteratorAt(idB);
+      if (std::fabs(trA.tgl() - trB.tgl()) > dedup.splitLegMaxDTgl) {
+        return false;
+      }
+      const float chi2 = splitPieceChi2(trA, trB, d_bz);
+      return chi2 >= 0.f && chi2 < dedup.splitLegMaxChi2;
+    };
+    std::vector<std::pair<int64_t, size_t>> keptPos, keptEle;
+    std::vector<char> removed(stored_fullv0Ids.size(), 0);
+    int nRemoved = 0;
+    for (const auto& [rank, k] : order) {
+      const auto& key = stored_fullv0Ids[k];
+      int64_t owner = -1;
+      for (size_t m = 0; m < keptPos.size() && owner < 0; ++m) {
+        if (samePiece(key.posId, keptPos[m].first)) {
+          owner = static_cast<int64_t>(keptPos[m].second);
+        }
+      }
+      for (size_t m = 0; m < keptEle.size() && owner < 0; ++m) {
+        if (samePiece(key.eleId, keptEle[m].first)) {
+          owner = static_cast<int64_t>(keptEle[m].second);
+        }
+      }
+      if (owner >= 0) {
+        removed[k] = 1;
+        ++nRemoved;
+        if (diag != nullptr) {
+          diag->blockersByKey[key].push_back(stored_fullv0Ids[owner]);
+        }
+        continue;
+      }
+      keptPos.emplace_back(key.posId, k);
+      keptEle.emplace_back(key.eleId, k);
+    }
+    if (nRemoved > 0) {
+      std::vector<CandKey> kept;
+      kept.reserve(stored_fullv0Ids.size() - nRemoved);
+      for (size_t k = 0; k < stored_fullv0Ids.size(); ++k) {
+        if (removed[k] == 0) {
+          kept.push_back(stored_fullv0Ids[k]);
+        }
+      }
+      setStored(std::move(kept));
+    }
+    registry.fill(HIST("Dedup/hSplitLegRemoved"), static_cast<float>(nRemoved));
+  }
+
+  // ambiguity resolver
+  // two stored photons of one collision, close in q and in space: fit the crossed leg pairing; if both crossed photons pass and
+  // their summed score is lower, swap
+  template <bool isMC, class TBCs, class TCollisions, class TTracks>
+  void runSwapResolver(TCollisions const& collisions, TTracks const& tracks, DedupDiag* diag)
+  {
+    const auto indexOfKey = candidateIndexByKey();
+    std::map<int64_t, std::vector<int>> storedOfColl;
+    for (const auto& key : stored_fullv0Ids) {
+      if (const auto it = indexOfKey.find(key); it != indexOfKey.end()) {
+        storedOfColl[key.collisionId].push_back(it->second);
+      }
+    }
+    // the AP cut is the main reason the true pairing of a crossed group was not built
+    auto fitPair = [&](int64_t colId, int64_t posId, int64_t eleId, PairFit* probe) {
+      fitV0Candidate<isMC, TBCs, TCollisions, TTracks>(collisions.rawIteratorAt(colId), tracks.rawIteratorAt(posId), tracks.rawIteratorAt(eleId), -1, false,
+                                                       FitOptions{.nonSVertexer = true, .relaxAP = true, .probe = probe});
+    };
+    auto probeFit = [&](int64_t colId, int64_t posId, int64_t eleId) {
+      PairFit out;
+      fitPair(colId, posId, eleId, &out);
+      return out;
+    };
+    auto crossedPrefilter = [&](int64_t posId, int64_t eleId) {
+      const auto pos = tracks.rawIteratorAt(posId);
+      const auto ele = tracks.rawIteratorAt(eleId);
+      if (std::fabs(pos.tgl() - ele.tgl()) > recovery.finderMaxDeltaTgl) {
+        return false;
+      }
+      const o2::track::TrackAuxPar cp(getTrackPar(pos), d_bz);
+      const o2::track::TrackAuxPar ce(getTrackPar(ele), d_bz);
+      return std::fabs(circleGap(cp, ce)) < recovery.finderMaxCircleGap;
+    };
+    std::map<int, PairFit> storedFit;
+    auto storedFitOf = [&](int idx) -> const PairFit& {
+      auto it = storedFit.find(idx);
+      if (it == storedFit.end()) {
+        const auto& c = vecV0Dedup[idx];
+        it = storedFit.emplace(idx, probeFit(c.colID, c.posID, c.eleID)).first;
+      }
+      return it->second;
+    };
+
+    //  test all close pairs of stored photons
+    struct Test {
+      SwapRecord rec;
+      float gain = -999.f;
+    };
+    std::vector<SwapRecord> swaps;
+    for (const auto& [colId, members] : storedOfColl) {
+      std::vector<Test> tests;
+      for (size_t a = 0; a < members.size(); ++a) {
+        for (size_t b = a + 1; b < members.size(); ++b) {
+          const auto& ci = vecV0Dedup[members[a]];
+          const auto& cj = vecV0Dedup[members[b]];
+          if (ci.posID == cj.posID || ci.eleID == cj.eleID) {
+            continue;
+          }
+          const float q = qInv(ci.pxAtPV, ci.pyAtPV, ci.pzAtPV, cj.pxAtPV, cj.pyAtPV, cj.pzAtPV);
+          if (q > recovery.swapMaxQ || std::hypot(ci.svX - cj.svX, ci.svY - cj.svY, ci.svZ - cj.svZ) > recovery.swapMaxConvDist) {
+            continue;
+          }
+          const PairFit storedI = storedFitOf(members[a]);
+          const PairFit storedJ = storedFitOf(members[b]);
+          const PairFit crossedI = crossedPrefilter(ci.posID, cj.eleID) ? probeFit(colId, ci.posID, cj.eleID) : PairFit{};
+          const PairFit crossedJ = crossedPrefilter(cj.posID, ci.eleID) ? probeFit(colId, cj.posID, ci.eleID) : PairFit{};
+          Test t;
+          t.rec = {keyOf(ci), keyOf(cj), q, storedI.ok && storedJ.ok && crossedI.ok && crossedJ.ok, false};
+          if (t.rec.complete) { // gain > 0: the crossed pairing has the lower (better) summed dedup score
+            t.gain = (storedI.score + storedJ.score) - (crossedI.score + crossedJ.score);
+          }
+          tests.push_back(t);
+        }
+      }
+      std::vector<int> order(tests.size());
+      std::iota(order.begin(), order.end(), 0);
+      std::sort(order.begin(), order.end(), [&](int x, int y) { return tests[x].gain > tests[y].gain; });
+      std::set<CandKey> used;
+      for (const int& k : order) {
+        auto& t = tests[k];
+        if (t.rec.complete && t.gain > 0.f && !used.contains(t.rec.keyI) && !used.contains(t.rec.keyJ)) {
+          t.rec.swapped = true;
+          used.insert(t.rec.keyI);
+          used.insert(t.rec.keyJ);
+          swaps.push_back(t.rec);
+        }
+        registry.fill(HIST("Swap/hTested"), 0.f);
+        registry.fill(HIST("Swap/hQ"), t.rec.q, t.rec.swapped ? 1.f : 0.f);
+        if (diag != nullptr) {
+          diag->swaps.push_back(t.rec);
+        }
+      }
+    }
+    if (swaps.empty()) {
+      return;
+    }
+
+    //  apply swaps: the crossed photons become candidates and replace the stored pair
+    const std::set<CandKey> storedBefore(stored_fullv0Ids.begin(), stored_fullv0Ids.end());
+    std::set<CandKey> removedKeys;
+    std::vector<CandKey> addedKeys;
+    for (const auto& s : swaps) {
+      const int64_t colId = s.keyI.collisionId;
+      const int64_t posI = s.keyI.posId, eleI = s.keyI.eleId, posJ = s.keyJ.posId, eleJ = s.keyJ.eleId;
+      const CandKey a1 = CandKey{-1, colId, posI, eleJ};
+      const CandKey a2 = CandKey{-1, colId, posJ, eleI};
+      if (storedBefore.contains(a1) || storedBefore.contains(a2)) {
+        continue;
+      }
+      if (!pca_map.contains(a1)) {
+        fitPair(colId, posI, eleJ, nullptr);
+      }
+      if (!pca_map.contains(a2)) {
+        fitPair(colId, posJ, eleI, nullptr);
+      }
+      if (!pca_map.contains(a1) || !pca_map.contains(a2)) {
+        continue;
+      }
+      removedKeys.insert(s.keyI);
+      removedKeys.insert(s.keyJ);
+      addedKeys.push_back(a1);
+      addedKeys.push_back(a2);
+      mRelaxedKeys.insert(a1); // refitted for the table without the AP cut, as in the resolver fit
+      mRelaxedKeys.insert(a2);
+      registry.fill(HIST("Swap/hTested"), 1.f);
+      if (diag != nullptr) {
+        diag->blockersByKey[s.keyI] = {a1, a2};
+        diag->blockersByKey[s.keyJ] = {a1, a2};
+      }
+    }
+    std::vector<CandKey> kept;
+    kept.reserve(stored_fullv0Ids.size());
+    for (const auto& key : stored_fullv0Ids) {
+      if (!removedKeys.contains(key)) {
+        kept.push_back(key);
+      }
+    }
+    kept.insert(kept.end(), addedKeys.begin(), addedKeys.end());
+    setStored(std::move(kept));
+  }
+
+  //  deduplication
   Preslice<o2::aod::V0s> perCollision = o2::aod::v0::collisionId;
-  std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> pca_map;      // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> pca
-  std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> cospa_map;    // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> cospa
-  std::vector<V0CandidateHelper> vecV0Dedup;                                    // vector with all V0Candidates that is used to sort them by score (see struct V0CandidateHelper for more details of content)
-  std::vector<std::pair<int64_t, int64_t>> stored_v0Ids;                        // (pos.globalIndex(), ele.globalIndex())
-  std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t>> stored_fullv0Ids; // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())
-  std::unordered_map<int64_t, int> nv0_map;                                     // map collisionId -> nv0
+  std::map<CandKey, float> pca_map;                      // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> pca
+  std::map<CandKey, float> cospa_map;                    // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> cospa
+  std::vector<V0CandidateHelper> vecV0Dedup;             // vector with all V0Candidates that is used to sort them by score (see struct V0CandidateHelper for more details of content)
+  std::vector<std::pair<int64_t, int64_t>> stored_v0Ids; // (pos.globalIndex(), ele.globalIndex())
+  std::vector<CandKey> stored_fullv0Ids;                 // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())
+  std::unordered_map<int64_t, int> nv0_map;              // map collisionId -> nv0
+
+  // mode 0: a candidate is kept if no other candidate sharing a leg has a smaller PCA and no copy in another collision has a larger cosPA
+  void selectPairwise(DedupDiag* diag)
+  {
+    for (const auto& [key, value] : pca_map) {
+      auto v0Id = key.v0Id;
+      auto collisionId = key.collisionId;
+      auto posId = key.posId;
+      auto eleId = key.eleId;
+      float v0pca = value;
+      float cospa = cospa_map[key];
+      bool is_closest_v0 = true;
+      bool is_most_aligned_v0 = true;
+
+      for (const auto& [key_tmp, value_tmp] : pca_map) {
+        auto collisionId_tmp = key_tmp.collisionId;
+        auto posId_tmp = key_tmp.posId;
+        auto eleId_tmp = key_tmp.eleId;
+        float v0pca_tmp = value_tmp;
+        float cospa_tmp = cospa_map[key_tmp];
+
+        if (key == key_tmp) { // skip exactly the same candidate
+          continue;
+        }
+
+        if (collisionId != collisionId_tmp && eleId == eleId_tmp && posId == posId_tmp && cospa < cospa_tmp) {
+          if (diag != nullptr) {
+            diag->blockersByKey[key].push_back(key_tmp);
+          }
+          is_most_aligned_v0 = false;
+          break;
+        }
+        if ((eleId == eleId_tmp || posId == posId_tmp) && v0pca > v0pca_tmp) {
+          if (diag != nullptr) {
+            diag->blockersByKey[key].push_back(key_tmp);
+          }
+          is_closest_v0 = false;
+          break;
+        }
+      } // end of pca_map tmp loop
+
+      bool is_stored = std::find(stored_v0Ids.begin(), stored_v0Ids.end(), std::make_pair(posId, eleId)) != stored_v0Ids.end();
+      if (is_closest_v0 && is_most_aligned_v0 && !is_stored) {
+        // auto v0 = v0s.rawIteratorAt(v0Id);
+        // auto collision = collisions.rawIteratorAt(collisionId);
+        // auto pos = tracks.rawIteratorAt(posId);
+        // auto ele = tracks.rawIteratorAt(eleId);
+        // LOGF(info, "!accept! | collision id = %d | v0id1 = %d , posid1 = %d , eleid1 = %d , pca1 = %f , cospa = %f", collisionId, v0Id, posId, eleId, v0pca, cospa);
+
+        // fillV0Table<isMC, TCollisions, TTracks>(v0, true);
+        stored_v0Ids.emplace_back(std::make_pair(posId, eleId));
+        stored_fullv0Ids.push_back(CandKey{v0Id, collisionId, posId, eleId});
+        nv0_map[collisionId]++;
+      }
+    } // end of pca_map loop
+    if (recovery.runFinder || recovery.runSwapResolver) {
+      std::stable_sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(), [](const auto& a, const auto& b) { return a.collisionId < b.collisionId; });
+    }
+    // LOGF(info, "pca_map.size() = %d", pca_map.size());
+  }
+
+  // mode 3: every candidate is kept, including all duplicates
+  void keepAll()
+  {
+    // Keep-all: Every candidate that survived the quality cuts is stored, including all duplicates
+    stored_v0Ids.clear();
+    stored_fullv0Ids.clear();
+    nv0_map.clear();
+    for (const auto& v0Cand : vecV0Dedup) {
+      stored_v0Ids.emplace_back(v0Cand.posID, v0Cand.eleID);
+      stored_fullv0Ids.push_back(keyOf(v0Cand));
+      nv0_map[v0Cand.colID]++;
+    }
+    std::sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(),
+              [](const auto& a, const auto& b) {
+                return a.collisionId < b.collisionId;
+              });
+  }
+
+  // mode 2: candidates sharing a leg form a conflict group; per group the best leg-disjoint subset is kept
+  void selectByConflictGroup(DedupDiag* diag)
+  {
+    const int maxEnum = std::min(dedup.dedupMaxGroupSize.value, 16); // o2-linter: disable=magic-number (subset check of photons)
+    const int nCand = static_cast<int>(vecV0Dedup.size());
+    stored_v0Ids.clear();
+    stored_fullv0Ids.clear();
+    nv0_map.clear();
+    int nGreedyFallback = 0;
+
+    //  conflict groups: candidates connected through a shared leg
+    std::vector<int> parent(nCand);
+    for (int i = 0; i < nCand; ++i) {
+      parent[i] = i;
+    }
+    auto findRoot = [&parent](int x) {
+      while (parent[x] != x) {
+        parent[x] = parent[parent[x]]; // path halving
+        x = parent[x];
+      }
+      return x;
+    };
+    std::unordered_map<int, int> firstCandOfTrack;
+    for (int i = 0; i < nCand; ++i) {
+      for (const int& trackId : {vecV0Dedup[i].posID, vecV0Dedup[i].eleID}) {
+        auto [it, inserted] = firstCandOfTrack.try_emplace(trackId, i);
+        if (!inserted) {
+          parent[findRoot(i)] = findRoot(it->second);
+        }
+      }
+    }
+    std::map<int, std::vector<int>> groups;
+    for (int i = 0; i < nCand; ++i) {
+      groups[findRoot(i)].push_back(i);
+    }
+
+    //  decide each group
+    for (auto& [root, members] : groups) { // o2-linter: disable=const-ref-in-for-loop (members is sorted in place below)
+      const int nMembers = static_cast<int>(members.size());
+      std::vector<char> selected(nMembers, 0);
+
+      // Fix the order inside the group: best score first
+      std::sort(members.begin(), members.end(), [this](int a, int b) {
+        if (vecV0Dedup[a].score != vecV0Dedup[b].score) {
+          return vecV0Dedup[a].score < vecV0Dedup[b].score;
+        }
+        if (vecV0Dedup[a].v0ID != vecV0Dedup[b].v0ID) {
+          return vecV0Dedup[a].v0ID < vecV0Dedup[b].v0ID;
+        }
+        return std::tie(vecV0Dedup[a].posID, vecV0Dedup[a].eleID, vecV0Dedup[a].colID) < std::tie(vecV0Dedup[b].posID, vecV0Dedup[b].eleID, vecV0Dedup[b].colID);
+      });
+
+      if (nMembers == 1) {
+        selected[0] = 1;
+      } else if (nMembers <= maxEnum) {
+
+        std::unordered_map<int, int> legBit;
+        std::vector<uint64_t> legMask(nMembers, 0);
+        for (int k = 0; k < nMembers; ++k) {
+          for (const int& trackId : {vecV0Dedup[members[k]].posID, vecV0Dedup[members[k]].eleID}) {
+            const int bit = legBit.try_emplace(trackId, static_cast<int>(legBit.size())).first->second;
+            legMask[k] |= (1ull << bit); // at most 2 * 16 = 32 legs, fits into 64 bit
+          }
+        }
+        std::vector<float> scores(nMembers);
+        for (int k = 0; k < nMembers; ++k) {
+          scores[k] = vecV0Dedup[members[k]].score;
+        }
+        const auto sol = solveConflictGroup(legMask, scores, dedup.groupMatchingScoreThreshold.value, diag != nullptr);
+        for (int k = 0; k < nMembers; ++k) {
+          selected[k] = ((sol.bestMask & (1u << k)) != 0) ? 1 : 0;
+          if (diag != nullptr && selected[k] == 0 && sol.bestWithCount[k] >= 0) {
+            const auto& cand = vecV0Dedup[members[k]];
+            diag->lossMargin[keyOf(cand)] =
+              std::make_pair(sol.bestCount - sol.bestWithCount[k], sol.bestWithScore[k] - sol.bestScore);
+          }
+        }
+      } else {
+        // Too large to enumerate: greedy by score
+        ++nGreedyFallback;
+        std::vector<int> usedTracks;
+        usedTracks.reserve(2 * nMembers);
+        for (int k = 0; k < nMembers; ++k) {
+          const auto& cand = vecV0Dedup[members[k]];
+          if (std::find(usedTracks.begin(), usedTracks.end(), cand.posID) != usedTracks.end() ||
+              std::find(usedTracks.begin(), usedTracks.end(), cand.eleID) != usedTracks.end()) {
+            continue;
+          }
+          usedTracks.push_back(cand.posID);
+          usedTracks.push_back(cand.eleID);
+          selected[k] = 1;
+        }
+      }
+
+      //  store the winners, book the blockers of the losers
+      for (int k = 0; k < nMembers; ++k) {
+        const auto& cand = vecV0Dedup[members[k]];
+        if (selected[k] != 0) {
+          stored_v0Ids.emplace_back(cand.posID, cand.eleID);
+          stored_fullv0Ids.push_back(keyOf(cand));
+          nv0_map[cand.colID]++;
+          continue;
+        }
+        if (diag == nullptr) {
+          continue;
+        }
+        // all winners that took one leg
+        const CandKey victimKey = keyOf(cand);
+        for (int j = 0; j < nMembers; ++j) {
+          if (selected[j] == 0) {
+            continue;
+          }
+          const auto& winner = vecV0Dedup[members[j]];
+          if (winner.posID == cand.posID || winner.eleID == cand.eleID) {
+            diag->blockersByKey[victimKey].push_back(keyOf(winner));
+          }
+        }
+      }
+    }
+
+    if (nGreedyFallback > 0) {
+      LOGF(warning, "group matching: %d conflict group(s) larger than dedupMaxGroupSize = %d were solved greedily", nGreedyFallback, maxEnum);
+    }
+
+    // the table expects candidates ordered by collision
+    std::sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(),
+              [](const auto& a, const auto& b) {
+                return a.collisionId < b.collisionId;
+              });
+  }
+
+  // mode 1: candidates sorted by score (lower = better), a candidate is kept if both legs are still free
+  void selectGreedy(const size_t nTracks, DedupDiag* diag)
+  {
+    // Sort best candidates first, depending on score
+    std::sort(vecV0Dedup.begin(), vecV0Dedup.end());
+    // container to keep track of which electron and positron tracks have already been used
+    std::vector<bool> usedLegs(nTracks, false);
+    std::unordered_map<int, CandKey> ownerOfLeg; // diagnostics only
+    stored_v0Ids.clear();
+    stored_fullv0Ids.clear();
+    nv0_map.clear();
+    for (const auto& v0Cand : vecV0Dedup) {
+      const CandKey candKey = keyOf(v0Cand);
+      if (usedLegs[v0Cand.posID] || usedLegs[v0Cand.eleID]) {
+        if (diag != nullptr) {
+          // both legs, not just the first one found: a cross-leg fake is usually blocked by
+          // two different winners, and that is exactly the case being measured here
+          auto& blockers = diag->blockersByKey[candKey];
+          for (const int& legId : {v0Cand.posID, v0Cand.eleID}) {
+            const auto itOwner = ownerOfLeg.find(legId);
+            if (itOwner == ownerOfLeg.end()) {
+              continue;
+            }
+            if (std::find(blockers.begin(), blockers.end(), itOwner->second) == blockers.end()) {
+              blockers.push_back(itOwner->second); // the same winner may hold both legs
+            }
+          }
+        }
+        continue;
+      }
+      usedLegs[v0Cand.posID] = true;
+      usedLegs[v0Cand.eleID] = true;
+      if (diag != nullptr) {
+        ownerOfLeg[v0Cand.posID] = candKey;
+        ownerOfLeg[v0Cand.eleID] = candKey;
+      }
+      stored_v0Ids.emplace_back(v0Cand.posID, v0Cand.eleID);
+      stored_fullv0Ids.push_back(keyOf(v0Cand));
+      nv0_map[v0Cand.colID]++;
+    }
+
+    // sort accepted candidates by collision ID to be compatible with table
+    std::sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(),
+              [](const auto& a, const auto& b) {
+                return a.collisionId < b.collisionId;
+              });
+  }
 
   template <bool isMC, bool isTriggerAnalysis, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
   void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const&, DedupDiag* diag = nullptr)
   {
+    mRelaxedKeys.clear();
+    // step 1: SVertexer V0s -> dedup candidates
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -1130,293 +1953,36 @@ struct PhotonConversionBuilder {
       } // end of v0 loop
     } // end of collision loop
 
+    // photon finder
+    if (recovery.runFinder) {
+      runPhotonFinder<isMC, TBCs, TCollisions, TTracks>(collisions, tracks);
+    }
+
     stored_v0Ids.reserve(pca_map.size());     // number of photon candidates per DF
     stored_fullv0Ids.reserve(pca_map.size()); // number of photon candidates per DF
 
-    // find minimal pca
-    if (dedup.deduplicationMode == V0DeduplicationMode::Pairwise) {
-      for (const auto& [key, value] : pca_map) {
-        auto v0Id = std::get<0>(key);
-        auto collisionId = std::get<1>(key);
-        auto posId = std::get<2>(key);
-        auto eleId = std::get<3>(key);
-        float v0pca = value;
-        float cospa = cospa_map[key];
-        bool is_closest_v0 = true;
-        bool is_most_aligned_v0 = true;
+    // step 3: deduplication
+    switch (dedup.deduplicationMode.value) {
+      case V0DeduplicationMode::Pairwise:
+        selectPairwise(diag);
+        break;
+      case V0DeduplicationMode::KeepAll:
+        keepAll();
+        break;
+      case V0DeduplicationMode::GroupMatching:
+        selectByConflictGroup(diag);
+        break;
+      default:
+        selectGreedy(tracks.size(), diag);
+        break;
+    }
 
-        for (const auto& [key_tmp, value_tmp] : pca_map) {
-          auto v0Id_tmp = std::get<0>(key_tmp);
-          auto collisionId_tmp = std::get<1>(key_tmp);
-          auto posId_tmp = std::get<2>(key_tmp);
-          auto eleId_tmp = std::get<3>(key_tmp);
-          float v0pca_tmp = value_tmp;
-          float cospa_tmp = cospa_map[key_tmp];
-
-          if (v0Id == v0Id_tmp) { // skip exactly the same v0
-            continue;
-          }
-
-          if (collisionId != collisionId_tmp && eleId == eleId_tmp && posId == posId_tmp && cospa < cospa_tmp) {
-            if (diag != nullptr) {
-              diag->blockersByKey[key].push_back(key_tmp);
-            }
-            is_most_aligned_v0 = false;
-            break;
-          }
-          if ((eleId == eleId_tmp || posId == posId_tmp) && v0pca > v0pca_tmp) {
-            if (diag != nullptr) {
-              diag->blockersByKey[key].push_back(key_tmp);
-            }
-            is_closest_v0 = false;
-            break;
-          }
-        } // end of pca_map tmp loop
-
-        bool is_stored = std::find(stored_v0Ids.begin(), stored_v0Ids.end(), std::make_pair(posId, eleId)) != stored_v0Ids.end();
-        if (is_closest_v0 && is_most_aligned_v0 && !is_stored) {
-          // auto v0 = v0s.rawIteratorAt(v0Id);
-          // auto collision = collisions.rawIteratorAt(collisionId);
-          // auto pos = tracks.rawIteratorAt(posId);
-          // auto ele = tracks.rawIteratorAt(eleId);
-          // LOGF(info, "!accept! | collision id = %d | v0id1 = %d , posid1 = %d , eleid1 = %d , pca1 = %f , cospa = %f", collisionId, v0Id, posId, eleId, v0pca, cospa);
-
-          // fillV0Table<isMC, TCollisions, TTracks>(v0, true);
-          stored_v0Ids.emplace_back(std::make_pair(posId, eleId));
-          stored_fullv0Ids.emplace_back(std::make_tuple(v0Id, collisionId, posId, eleId));
-          nv0_map[collisionId]++;
-        }
-      } // end of pca_map loop
-      // LOGF(info, "pca_map.size() = %d", pca_map.size());
-
-    } else if (dedup.deduplicationMode == V0DeduplicationMode::KeepAll) {
-      // Keep-all: Every candidate that survived the quality cuts is stored, including all duplicates
-      stored_v0Ids.clear();
-      stored_fullv0Ids.clear();
-      nv0_map.clear();
-      for (const auto& v0Cand : vecV0Dedup) {
-        stored_v0Ids.emplace_back(v0Cand.posID, v0Cand.eleID);
-        stored_fullv0Ids.emplace_back(v0Cand.v0ID, v0Cand.colID, v0Cand.posID, v0Cand.eleID);
-        nv0_map[v0Cand.colID]++;
-      }
-      std::sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(),
-                [](const auto& a, const auto& b) {
-                  return std::get<1>(a) < std::get<1>(b);
-                });
-    } else if (dedup.deduplicationMode == V0DeduplicationMode::GroupMatching) {
-      const int maxEnum = std::min(dedup.dedupMaxGroupSize.value, 16); // o2-linter: disable=magic-number (subset check of photons)
-      const int nCand = static_cast<int>(vecV0Dedup.size());
-      stored_v0Ids.clear();
-      stored_fullv0Ids.clear();
-      nv0_map.clear();
-      int nGreedyFallback = 0;
-
-      // ---- conflict groups: candidates connected through a shared leg -----
-      std::vector<int> parent(nCand);
-      for (int i = 0; i < nCand; ++i) {
-        parent[i] = i;
-      }
-      auto findRoot = [&parent](int x) {
-        while (parent[x] != x) {
-          parent[x] = parent[parent[x]]; // path halving
-          x = parent[x];
-        }
-        return x;
-      };
-      std::unordered_map<int, int> firstCandOfTrack;
-      for (int i = 0; i < nCand; ++i) {
-        for (const int& trackId : {vecV0Dedup[i].posID, vecV0Dedup[i].eleID}) {
-          auto [it, inserted] = firstCandOfTrack.try_emplace(trackId, i);
-          if (!inserted) {
-            parent[findRoot(i)] = findRoot(it->second);
-          }
-        }
-      }
-      std::map<int, std::vector<int>> groups;
-      for (int i = 0; i < nCand; ++i) {
-        groups[findRoot(i)].push_back(i);
-      }
-
-      // ---- decide each group on its own ----------------------------------
-      for (auto& [root, members] : groups) { // o2-linter: disable=const-ref-in-for-loop (members is sorted in place below)
-        const int nMembers = static_cast<int>(members.size());
-        std::vector<char> selected(nMembers, 0);
-
-        // Fix the order inside the group: best score first
-        std::sort(members.begin(), members.end(), [this](int a, int b) {
-          if (vecV0Dedup[a].score != vecV0Dedup[b].score) {
-            return vecV0Dedup[a].score < vecV0Dedup[b].score;
-          }
-          return vecV0Dedup[a].v0ID < vecV0Dedup[b].v0ID;
-        });
-
-        if (nMembers == 1) {
-          selected[0] = 1;
-        } else if (nMembers <= maxEnum) {
-
-          std::unordered_map<int, int> legBit;
-          std::vector<uint64_t> legMask(nMembers, 0);
-          for (int k = 0; k < nMembers; ++k) {
-            for (const int& trackId : {vecV0Dedup[members[k]].posID, vecV0Dedup[members[k]].eleID}) {
-              const int bit = legBit.try_emplace(trackId, static_cast<int>(legBit.size())).first->second;
-              legMask[k] |= (1ull << bit); // at most 2 * 16 = 32 legs, fits into 64 bit
-            }
-          }
-          uint32_t bestMask = 0;
-          int bestCount = 0;
-          float bestScore = 0.f;
-
-          std::vector<int> bestWithCount(nMembers, -1);
-          std::vector<float> bestWithScore(nMembers, 0.f);
-          for (uint32_t mask = 1; mask < (1u << nMembers); ++mask) {
-            uint64_t usedLegsLocal = 0;
-            float scoreSum = 0.f;
-            int count = 0;
-            bool disjoint = true;
-            for (int k = 0; k < nMembers; ++k) {
-              if ((mask & (1u << k)) == 0) {
-                continue;
-              }
-              if ((usedLegsLocal & legMask[k]) != 0) {
-                disjoint = false;
-                break;
-              }
-              usedLegsLocal |= legMask[k];
-              scoreSum += vecV0Dedup[members[k]].score;
-              ++count;
-            }
-            if (!disjoint) {
-              continue;
-            }
-
-            if (count > bestCount || (count == bestCount && scoreSum < bestScore)) {
-              bestCount = count;
-              bestScore = scoreSum;
-              bestMask = mask;
-            }
-            if (diag != nullptr) {
-              for (int k = 0; k < nMembers; ++k) {
-                if ((mask & (1u << k)) == 0) {
-                  continue;
-                }
-                if (count > bestWithCount[k] || (count == bestWithCount[k] && scoreSum < bestWithScore[k])) {
-                  bestWithCount[k] = count;
-                  bestWithScore[k] = scoreSum;
-                }
-              }
-            }
-          }
-          for (int k = 0; k < nMembers; ++k) {
-            selected[k] = ((bestMask & (1u << k)) != 0) ? 1 : 0;
-            if (diag != nullptr && selected[k] == 0 && bestWithCount[k] >= 0) {
-              const auto& cand = vecV0Dedup[members[k]];
-              diag->lossMargin[std::make_tuple(static_cast<int64_t>(cand.v0ID), static_cast<int64_t>(cand.colID),
-                                               static_cast<int64_t>(cand.posID), static_cast<int64_t>(cand.eleID))] =
-                std::make_pair(bestCount - bestWithCount[k], bestWithScore[k] - bestScore);
-            }
-          }
-        } else {
-          // Too large to enumerate: greedy by score (members is already sorted that way)
-          ++nGreedyFallback;
-          std::vector<int> usedTracks;
-          usedTracks.reserve(2 * nMembers);
-          for (int k = 0; k < nMembers; ++k) {
-            const auto& cand = vecV0Dedup[members[k]];
-            if (std::find(usedTracks.begin(), usedTracks.end(), cand.posID) != usedTracks.end() ||
-                std::find(usedTracks.begin(), usedTracks.end(), cand.eleID) != usedTracks.end()) {
-              continue;
-            }
-            usedTracks.push_back(cand.posID);
-            usedTracks.push_back(cand.eleID);
-            selected[k] = 1;
-          }
-        }
-
-        // ---- store the winners, book the blockers of the losers ----------
-        for (int k = 0; k < nMembers; ++k) {
-          const auto& cand = vecV0Dedup[members[k]];
-          if (selected[k] != 0) {
-            stored_v0Ids.emplace_back(cand.posID, cand.eleID);
-            stored_fullv0Ids.emplace_back(cand.v0ID, cand.colID, cand.posID, cand.eleID);
-            nv0_map[cand.colID]++;
-            continue;
-          }
-          if (diag == nullptr) {
-            continue;
-          }
-          // all winners that took one leg
-          const CandKey victimKey = std::make_tuple(static_cast<int64_t>(cand.v0ID), static_cast<int64_t>(cand.colID),
-                                                    static_cast<int64_t>(cand.posID), static_cast<int64_t>(cand.eleID));
-          for (int j = 0; j < nMembers; ++j) {
-            if (selected[j] == 0) {
-              continue;
-            }
-            const auto& winner = vecV0Dedup[members[j]];
-            if (winner.posID == cand.posID || winner.eleID == cand.eleID) {
-              diag->blockersByKey[victimKey].emplace_back(static_cast<int64_t>(winner.v0ID), static_cast<int64_t>(winner.colID),
-                                                          static_cast<int64_t>(winner.posID), static_cast<int64_t>(winner.eleID));
-            }
-          }
-        }
-      }
-
-      if (nGreedyFallback > 0) {
-        LOGF(warning, "group matching: %d conflict group(s) larger than dedupMaxGroupSize = %d were solved greedily", nGreedyFallback, maxEnum);
-      }
-
-      // the table expects candidates ordered by collision
-      std::sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(),
-                [](const auto& a, const auto& b) {
-                  return std::get<1>(a) < std::get<1>(b);
-                });
-
-    } else {
-      // Sort best candidates first, depending on score
-      std::sort(vecV0Dedup.begin(), vecV0Dedup.end());
-      // container to keep track of which electron and positron tracks have already been used
-      std::vector<bool> usedLegs(tracks.size(), false);
-      std::unordered_map<int, CandKey> ownerOfLeg; // diagnostics only
-      stored_v0Ids.clear();
-      stored_fullv0Ids.clear();
-      nv0_map.clear();
-      for (const auto& v0Cand : vecV0Dedup) {
-        const CandKey candKey = std::make_tuple(static_cast<int64_t>(v0Cand.v0ID), static_cast<int64_t>(v0Cand.colID),
-                                                static_cast<int64_t>(v0Cand.posID), static_cast<int64_t>(v0Cand.eleID));
-        if (usedLegs[v0Cand.posID] || usedLegs[v0Cand.eleID]) {
-          if (diag != nullptr) {
-            // both legs, not just the first one found: a cross-leg fake is usually blocked by
-            // two different winners, and that is exactly the case being measured here
-            auto& blockers = diag->blockersByKey[candKey];
-            for (const int& legId : {v0Cand.posID, v0Cand.eleID}) {
-              const auto itOwner = ownerOfLeg.find(legId);
-              if (itOwner == ownerOfLeg.end()) {
-                continue;
-              }
-              if (std::find(blockers.begin(), blockers.end(), itOwner->second) == blockers.end()) {
-                blockers.push_back(itOwner->second); // the same winner may hold both legs
-              }
-            }
-          }
-          continue;
-        }
-        usedLegs[v0Cand.posID] = true;
-        usedLegs[v0Cand.eleID] = true;
-        if (diag != nullptr) {
-          ownerOfLeg[v0Cand.posID] = candKey;
-          ownerOfLeg[v0Cand.eleID] = candKey;
-        }
-        stored_v0Ids.emplace_back(v0Cand.posID, v0Cand.eleID);
-        stored_fullv0Ids.emplace_back(v0Cand.v0ID, v0Cand.colID, v0Cand.posID, v0Cand.eleID);
-        nv0_map[v0Cand.colID]++;
-      }
-
-      // sort accepted candidates by collision ID to be compatible with table
-      std::sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(),
-                [](const auto& a, const auto& b) {
-                  return std::get<1>(a) < std::get<1>(b);
-                });
-
-      // End of deduplication
+    // split legs, ambiguity resolver (on the stored photons only)
+    if (dedup.resolveSplitLegs) {
+      resolveSplitLegConflicts(tracks, diag);
+    }
+    if (recovery.runSwapResolver) {
+      runSwapResolver<isMC, TBCs, TCollisions, TTracks>(collisions, tracks, diag);
     }
 
     if (diag != nullptr) {
@@ -1429,8 +1995,7 @@ struct PhotonConversionBuilder {
       const std::set<CandKey> storedSetSkim(stored_fullv0Ids.begin(), stored_fullv0Ids.end());
       std::unordered_map<int64_t, std::vector<const V0CandidateHelper*>> candsPerColl;
       for (const auto& c : vecV0Dedup) {
-        if (storedSetSkim.contains(std::make_tuple(static_cast<int64_t>(c.v0ID), static_cast<int64_t>(c.colID),
-                                                   static_cast<int64_t>(c.posID), static_cast<int64_t>(c.eleID)))) {
+        if (storedSetSkim.contains(keyOf(c))) {
           candsPerColl[c.colID].push_back(&c);
         }
       }
@@ -1458,26 +2023,38 @@ struct PhotonConversionBuilder {
       }
     }
 
+    // refit the stored photons and write the tables (SVertexer V0s through fillV0Table, the others directly)
     for (const auto& fullv0Id : stored_fullv0Ids) {
-      auto v0Id = std::get<0>(fullv0Id);
-      const auto collisionId = std::get<1>(fullv0Id);
+      auto v0Id = fullv0Id.v0Id;
+      const auto collisionId = fullv0Id.collisionId;
       if (skimRejected.contains(collisionId)) {
         continue; // collision failed the skim - do not store its photons/legs
       }
-      // auto posId = std::get<2>(fullv0Id);
-      // auto eleId = std::get<3>(fullv0Id);
+      // auto posId = fullv0Id.posId;
+      // auto eleId = fullv0Id.eleId;
       // LOGF(info, "!accept! | collision id = %d | v0id = %d , posid = %d , eleid = %d", collisionId, v0Id, posId, eleId);
 
-      auto v0 = v0s.rawIteratorAt(v0Id);
+      if (v0Id >= 0) {
+        auto v0 = v0s.rawIteratorAt(v0Id);
+        if constexpr (enableFilter) {
+          auto collision_tmp = v0.template collision_as<TCollisions>();                                               // collision where this v0 belongs.
+          if (!(collision_tmp.neeuls() >= 1 || collision_tmp.neeuls() + nv0_map[collision_tmp.globalIndex()] >= 2)) { // o2-linter: disable=magic-number (nonsensical default value)
+            continue;
+          }
+          // LOGF(info, "collision_tmp.globalIndex() = %d, collision_tmp.neeuls() = %d, nv0_map = %d", collision_tmp.globalIndex(), collision_tmp.neeuls(), nv0_map[collision_tmp.globalIndex()]);
+        }
+
+        fillV0Table<isMC, TBCs, TCollisions, TTracks>(v0, true);
+        continue;
+      }
+      const auto collision = collisions.rawIteratorAt(collisionId);
       if constexpr (enableFilter) {
-        auto collision_tmp = v0.template collision_as<TCollisions>();                                               // collision where this v0 belongs.
-        if (!(collision_tmp.neeuls() >= 1 || collision_tmp.neeuls() + nv0_map[collision_tmp.globalIndex()] >= 2)) { // o2-linter: disable=magic-number (nonsensical default value)
+        if (!(collision.neeuls() >= 1 || collision.neeuls() + nv0_map[collisionId] >= 2)) { // o2-linter: disable=magic-number (nonsensical default value)
           continue;
         }
-        // LOGF(info, "collision_tmp.globalIndex() = %d, collision_tmp.neeuls() = %d, nv0_map = %d", collision_tmp.globalIndex(), collision_tmp.neeuls(), nv0_map[collision_tmp.globalIndex()]);
       }
-
-      fillV0Table<isMC, TBCs, TCollisions, TTracks>(v0, true);
+      fitV0Candidate<isMC, TBCs, TCollisions, TTracks>(collision, tracks.rawIteratorAt(fullv0Id.posId), tracks.rawIteratorAt(fullv0Id.eleId), v0Id, true,
+                                                       FitOptions{.nonSVertexer = true, .relaxAP = mRelaxedKeys.contains(fullv0Id)});
     } // end of fullv0Id loop
 
     // for (const auto& collision : collisions) {
@@ -1576,8 +2153,71 @@ struct PhotonConversionBuilder {
     }
   }
 
-  template <o2::soa::is_table TTracks, o2::soa::is_table TMCParticles>
-  void fillDedupTruthDiagnostics(TTracks const& tracks, TMCParticles const& mcparticles, DedupDiag const& diag)
+  struct PhotonFate {
+    bool alive = false;
+    int best = -1;                // best-score candidate
+    std::vector<int> cands;       // all true candidates of this photon
+    std::set<int64_t> aliveColls; // collisions with a surviving candidate
+  };
+
+  // which collision the copies of a true photon end up in
+  template <o2::soa::is_table TCollisions, o2::soa::is_table TMCParticles>
+  void fillCopyDiagnostics(TCollisions const& collisions, TMCParticles const& mcparticles, DedupDiag const& diag, std::map<int64_t, PhotonFate> const& fate)
+  {
+    auto isRightColl = [&](int64_t colId, int64_t mid) {
+      const auto col = collisions.rawIteratorAt(colId);
+      return col.has_mcCollision() && col.mcCollisionId() == mcparticles.iteratorAt(mid).mcCollisionId();
+    };
+    auto dzPointing = [&](V0CandidateHelper const& c) {
+      const auto col = collisions.rawIteratorAt(c.colID);
+      const float pt = std::hypot(c.pxAtPV, c.pyAtPV);
+      return pt > 0.f ? std::fabs(c.svZ - std::hypot(c.svX - col.posX(), c.svY - col.posY()) * c.pzAtPV / pt - col.posZ()) : 999.f; // o2-linter: disable=magic-number (no direction)
+    };
+    for (const auto& [mid, f] : fate) {
+      std::set<int64_t> copyColls;
+      bool rightAvailable = false;
+      for (const int& ci : f.cands) {
+        copyColls.insert(diag.snapshot[ci].colID);
+        rightAvailable = rightAvailable || isRightColl(diag.snapshot[ci].colID, mid);
+      }
+      int choice = 3; // o2-linter: disable=magic-number (bin 3 = lost)
+      if (f.alive) {
+        const bool storedRight = std::any_of(f.aliveColls.begin(), f.aliveColls.end(), [&](int64_t c) { return isRightColl(c, mid); });
+        choice = storedRight ? 0 : (rightAvailable ? 1 : 2);
+      }
+      const int nCopies = static_cast<int>(copyColls.size());
+      registry.fill(HIST("MCDedup/Copies/hChoice"), static_cast<float>(std::min(nCopies, 5)), static_cast<float>(choice)); // o2-linter: disable=magic-number (last bin)
+      constexpr int MinCopies = 2;
+      if (nCopies < MinCopies || !rightAvailable) {
+        continue;
+      }
+      int bestDz = -1, bestPA = -1, bestPA3D = -1;
+      for (const int& ci : f.cands) {
+        const auto& c = diag.snapshot[ci];
+        const float right = isRightColl(c.colID, mid) ? 1.f : 0.f;
+        registry.fill(HIST("MCDedup/Copies/hPAxy"), right, std::acos(std::clamp(c.cosPAxy, -1.f, 1.f)));
+        registry.fill(HIST("MCDedup/Copies/hPA3D"), right, std::acos(std::clamp(c.cosPA3D, -1.f, 1.f)));
+        if (bestDz < 0 || dzPointing(c) < dzPointing(diag.snapshot[bestDz])) {
+          bestDz = ci;
+        }
+        if (bestPA < 0 || c.cosPAxy > diag.snapshot[bestPA].cosPAxy) {
+          bestPA = ci;
+        }
+        if (bestPA3D < 0 || c.cosPA3D > diag.snapshot[bestPA3D].cosPA3D) {
+          bestPA3D = ci;
+        }
+      }
+      if (f.alive) { // same photons for all rules
+        registry.fill(HIST("MCDedup/Copies/hRule"), 0.f, choice == 0 ? 1.f : 0.f);
+        registry.fill(HIST("MCDedup/Copies/hRule"), 1.f, isRightColl(diag.snapshot[bestDz].colID, mid) ? 1.f : 0.f);
+        registry.fill(HIST("MCDedup/Copies/hRule"), 2.f, isRightColl(diag.snapshot[bestPA].colID, mid) ? 1.f : 0.f);
+        registry.fill(HIST("MCDedup/Copies/hRule"), 3.f, isRightColl(diag.snapshot[bestPA3D].colID, mid) ? 1.f : 0.f);
+      }
+    }
+  }
+
+  template <o2::soa::is_table TCollisions, o2::soa::is_table TTracks, o2::soa::is_table TMCParticles>
+  void fillDedupTruthDiagnostics(TCollisions const& collisions, TTracks const& tracks, TMCParticles const& mcparticles, DedupDiag const& diag)
   {
     const int nCand = static_cast<int>(diag.snapshot.size());
     if (nCand == 0) {
@@ -1591,8 +2231,7 @@ struct PhotonConversionBuilder {
     std::map<CandKey, int> indexOfKey;
     for (int i = 0; i < nCand; ++i) {
       const auto& c = diag.snapshot[i];
-      key[i] = std::make_tuple(static_cast<int64_t>(c.v0ID), static_cast<int64_t>(c.colID),
-                               static_cast<int64_t>(c.posID), static_cast<int64_t>(c.eleID));
+      key[i] = keyOf(c);
       indexOfKey[key[i]] = i;
       cls[i] = static_cast<uint8_t>(classifyV0Truth(tracks.rawIteratorAt(c.posID), tracks.rawIteratorAt(c.eleID),
                                                     mcparticles, motherPos[i], motherEle[i]));
@@ -1602,12 +2241,6 @@ struct PhotonConversionBuilder {
       }
     }
 
-    struct PhotonFate {
-      bool alive = false;
-      int best = -1;                // best-score candidate, only used for the margin plots
-      std::vector<int> cands;       // all true candidates of this photon
-      std::set<int64_t> aliveColls; // collisions with a surviving candidate
-    };
     std::map<int64_t, PhotonFate> fate;
     for (int i = 0; i < nCand; ++i) {
       if (cls[i] != kV0True) {
@@ -1617,7 +2250,7 @@ struct PhotonConversionBuilder {
       f.cands.push_back(i);
       if (storedSet.contains(key[i]) > 0) {
         f.alive = true;
-        f.aliveColls.insert(std::get<1>(key[i]));
+        f.aliveColls.insert(key[i].collisionId);
       }
       if (f.best < 0 || diag.snapshot[i].score < diag.snapshot[f.best].score) {
         f.best = i;
@@ -1683,7 +2316,19 @@ struct PhotonConversionBuilder {
       }
     }
 
-    // ---- truth pairs, grouped by MC collision ----------------------------
+    if (dedup.cfgExtendedDiag) {
+      fillCopyDiagnostics(collisions, mcparticles, diag, fate);
+    }
+
+    // stored cross-leg fakes by collisions
+    std::map<std::pair<int64_t, int64_t>, std::set<int64_t>> storedCrossColl;
+    for (int i = 0; i < nCand; ++i) {
+      if (cls[i] == kV0CrossLegFake && storedSet.contains(key[i])) {
+        storedCrossColl[{motherPos[i], motherEle[i]}].insert(key[i].collisionId);
+      }
+    }
+
+    //  truth pairs, grouped by MC collision
     std::map<int, std::vector<int64_t>> mothersByMcColl;
     for (const auto& [mid, f] : fate) {
       mothersByMcColl[mcparticles.iteratorAt(mid).mcCollisionId()].push_back(mid);
@@ -1719,6 +2364,21 @@ struct PhotonConversionBuilder {
               registry.fill(HIST("MCDedup/Pairs/bothSurviveSameColl/hQ"), qTrue);
             }
             continue;
+          }
+          { // the pair stored as the crossed pairing (A+B-, B+A-) in one collision or one crossed pair only
+            const auto itAB = storedCrossColl.find({mids[a], mids[b]});
+            const auto itBA = storedCrossColl.find({mids[b], mids[a]});
+            bool bothCrossed = false;
+            if (itAB != storedCrossColl.end() && itBA != storedCrossColl.end()) {
+              for (const auto& c : itAB->second) {
+                bothCrossed = bothCrossed || itBA->second.contains(c);
+              }
+            }
+            if (bothCrossed) {
+              registry.fill(HIST("MCDedup/Pairs/surviveAsCrossedPairing/hQ"), qTrue);
+            } else if (itAB != storedCrossColl.end() || itBA != storedCrossColl.end()) {
+              registry.fill(HIST("MCDedup/Pairs/halfCrossedStored/hQ"), qTrue);
+            }
           }
           if (nLost == 1) {
             fillTruthPair(kOneLost, qTrue, dEta);
@@ -1771,6 +2431,64 @@ struct PhotonConversionBuilder {
     }
   }
 
+  // MC, cfgExtendedDiag: class of the stored photons by source, stored photon pairs at low q, outcome of the resolver tests
+  template <o2::soa::is_table TTracks, o2::soa::is_table TMCParticles>
+  void fillExtendedDiagnostics(TTracks const& tracks, TMCParticles const& mcparticles, DedupDiag const& diag)
+  {
+    struct Stored {
+      CandKey key;
+      int cls = 0;
+      int64_t mPos = -1;
+      int64_t mEle = -1;
+      std::array<float, 3> p{};
+    };
+    std::map<CandKey, const V0CandidateHelper*> candOfKey;
+    for (const auto& c : diag.snapshot) {
+      candOfKey[keyOf(c)] = &c;
+    }
+    std::map<int64_t, std::vector<Stored>> storedOfColl;
+    for (const auto& key : diag.stored) {
+      const auto it = candOfKey.find(key);
+      if (it == candOfKey.end()) {
+        continue;
+      }
+      Stored s{key, 0, -1, -1, {it->second->pxAtPV, it->second->pyAtPV, it->second->pzAtPV}};
+      s.cls = classifyV0Truth(tracks.rawIteratorAt(key.posId), tracks.rawIteratorAt(key.eleId), mcparticles, s.mPos, s.mEle);
+      const float pt = std::hypot(s.p[0], s.p[1]);
+      registry.fill(HIST("MCDedup/Stored/hClassSource"), static_cast<float>(s.cls), key.v0Id < 0 ? 1.f : 0.f, pt);
+      storedOfColl[key.collisionId].push_back(s);
+    }
+    constexpr float MaxQ = 0.1f;
+    for (const auto& [col, photons] : storedOfColl) {
+      for (size_t i = 0; i < photons.size(); ++i) {
+        for (size_t j = i + 1; j < photons.size(); ++j) {
+          const auto& a = photons[i];
+          const auto& b = photons[j];
+          const float q = qInv(a.p[0], a.p[1], a.p[2], b.p[0], b.p[1], b.p[2]);
+          if (q > MaxQ) {
+            continue;
+          }
+          int cat = 2;
+          if (a.cls == kV0True && b.cls == kV0True && a.mPos != b.mPos) {
+            cat = 0;
+          } else if (a.cls == kV0CrossLegFake && b.cls == kV0CrossLegFake && a.mPos == b.mEle && a.mEle == b.mPos) {
+            cat = 1;
+          }
+          registry.fill(HIST("MCDedup/Stored/hPairClass"), static_cast<float>(cat), q);
+        }
+      }
+    }
+    for (const auto& s : diag.swaps) {
+      const std::array<std::pair<int64_t, int64_t>, 4> legs = {{{s.keyI.posId, s.keyI.eleId}, {s.keyJ.posId, s.keyJ.eleId}, {s.keyI.posId, s.keyJ.eleId}, {s.keyJ.posId, s.keyI.eleId}}};
+      std::array<int, 4> isTrue{};
+      for (int k = 0; k < 4; ++k) { // o2-linter: disable=magic-number (four leg pairs)
+        int64_t mPos = -1, mEle = -1;
+        isTrue[k] = classifyV0Truth(tracks.rawIteratorAt(legs[k].first), tracks.rawIteratorAt(legs[k].second), mcparticles, mPos, mEle) == kV0True ? 1 : 0;
+      }
+      registry.fill(HIST("MCDedup/Swap/hCategory"), static_cast<float>(3 * (isTrue[0] + isTrue[1]) + isTrue[2] + isTrue[3]), s.swapped ? 1.f : 0.f, s.q);
+    }
+  }
+
   void processRec(MyCollisions const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   {
     build<false, false, false>(collisions, v0s, tracks, bcs);
@@ -1788,7 +2506,10 @@ struct PhotonConversionBuilder {
   {
     DedupDiag diag;
     build<true, false, false>(collisions, v0s, tracks, bcs, &diag);
-    fillDedupTruthDiagnostics(tracks, mcparticles, diag);
+    fillDedupTruthDiagnostics(collisions, tracks, mcparticles, diag);
+    if (dedup.cfgExtendedDiag) {
+      fillExtendedDiagnostics(tracks, mcparticles, diag);
+    }
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 
