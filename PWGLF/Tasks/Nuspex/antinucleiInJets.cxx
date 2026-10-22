@@ -61,10 +61,8 @@
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
-#include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <cstddef>
 #include <random>
 #include <string>
 #include <vector>
@@ -1825,18 +1823,12 @@ struct AntinucleiInJets {
     std::vector<TVector3> protonMomentum;
     std::vector<TVector3> deuteronMomentum;
 
-    // Event counter
-    int eventCounter = 0;
-
     // Jet and area definitions
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
 
     // Loop over all simulated collisions
     for (const auto& collision : collisions) {
-
-      // Increment event counter
-      eventCounter++;
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
@@ -2085,17 +2077,11 @@ struct AntinucleiInJets {
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
 
-    // Event counter
-    int eventCounter = 0;
-
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
 
       // Configuration
       registryMC.fill(HIST("settingMC"), minJetPt.value, rJet.value);
-
-      // Increment event counter
-      eventCounter++;
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
