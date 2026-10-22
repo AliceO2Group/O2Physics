@@ -507,7 +507,7 @@ struct efficiencyQA {
       probe.collIndex = probeTrack.collisionId();
       if (probeTrack.has_collision()) {
         auto collisionIts = probeTrack.template collision_as<SelCollisions>();
-        probe.bcIndex = int64_t(collisionIts.bcId());
+        probe.bcIndex = static_cast<int64_t>(collisionIts.bcId());
       } else {
         continue; // TODO: check ambiguous tracks (?)
       }
@@ -529,7 +529,7 @@ struct efficiencyQA {
               continue;
             }
             auto collisionTpc = tpcTrack.template collision_as<SelCollisions>();
-            auto bcTpc = int64_t(collisionTpc.bcId());
+            auto bcTpc = static_cast<int64_t>(collisionTpc.bcId());
             float tdiff = (bcTpc - probe.bcIndex) * LHCBunchSpacingNS + tpcTrack.trackTime() - probe.time;
             float nsigmaT = tdiff / std::sqrt(std::pow(tpcTrack.trackTimeRes(), 2) + std::pow(probe.timeRes, 2));
             if (nsigmaT > trackTimingCut) {
@@ -707,7 +707,7 @@ struct efficiencyQA {
             histos.fill(HIST("collTpcV0"), tpcTrack.collisionId() - collision.globalIndex());
 
             auto collisionTpc = tpcTrack.template collision_as<SelCollisions>();
-            float tdiff = (int64_t(collisionTpc.bcId()) - probeTrack.bcIndex) * LHCBunchSpacingNS + tpcTrack.trackTime() - probeTrack.time;
+            float tdiff = (static_cast<int64_t>(collisionTpc.bcId()) - probeTrack.bcIndex) * LHCBunchSpacingNS + tpcTrack.trackTime() - probeTrack.time;
             float nsigmaT = tdiff / std::sqrt(std::pow(tpcTrack.trackTimeRes(), 2) + std::pow(probeTrack.timeRes, 2));
             histos.fill(HIST("timeTpcIts"), nsigmaT);
             histos.fill(HIST("timeTpcItsNoNorm"), tdiff);

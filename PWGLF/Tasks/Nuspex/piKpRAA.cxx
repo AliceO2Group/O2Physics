@@ -369,8 +369,8 @@ struct PiKpRAA {
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPtV0s{binsPtV0s, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisCent{binsCent, "Centrality Perc."};
-    const auto latexEta = (std::vector<std::string>)vecLatexEta;
-    const auto endingEta = (std::vector<std::string>)vecEndingEta;
+    const auto latexEta = std::vector<std::string>(vecLatexEta);
+    const auto endingEta = std::vector<std::string>(vecEndingEta);
 
     registry.add("EventCounter", ";;Events", kTH1F, {axisEvent});
     registry.add("HasBCVsFT0VsTVXVsEvSel", "Alls=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;", kTH1F, {{5, 0.5, 5.5}});
@@ -691,8 +691,8 @@ struct PiKpRAA {
       LOG(info) << "\tdcaSelectionsLoaded=" << cfgDCA.dcaSelectionsLoaded;
     }
 
-    auto vecLowEtaSel = (std::vector<double>)vecLowEta;
-    auto vecUpEtaSel = (std::vector<double>)vecUpEta;
+    auto vecLowEtaSel = std::vector<double>(vecLowEta);
+    auto vecUpEtaSel = std::vector<double>(vecUpEta);
     LOGF(info, "vecLowEta: %s", printArray(vecLowEtaSel).c_str());
     LOGF(info, "vecUpEta: %s", printArray(vecUpEtaSel).c_str());
     LOGF(info, "vecEndingEta: %s", printArray(endingEta).c_str());
@@ -705,8 +705,8 @@ struct PiKpRAA {
     // Table's size: " << collisions.tableSize() << "\n";
     // LOG(info) << "Run number: " << foundBC.runNumber() << "\n";
 
-    const auto& kLowEta = (std::vector<double>)vecLowEta;
-    const auto& kHighEta = (std::vector<double>)vecUpEta;
+    const auto& kLowEta = std::vector<double>(vecLowEta);
+    const auto& kHighEta = std::vector<double>(vecUpEta);
 
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     const uint64_t timeStamp{foundBC.timestamp()};
@@ -1297,8 +1297,8 @@ struct PiKpRAA {
   void processSignalLoss(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<ColEvSelsMC> const& collisions, BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TracksMC const& tracksMC)
   {
 
-    const auto& kLowEta = (std::vector<double>)vecLowEta;
-    const auto& kHighEta = (std::vector<double>)vecUpEta;
+    const auto& kLowEta = std::vector<double>(vecLowEta);
+    const auto& kHighEta = std::vector<double>(vecUpEta);
     registry.fill(HIST("EventCounterMC"), 0.5);
 
     //---------------------------

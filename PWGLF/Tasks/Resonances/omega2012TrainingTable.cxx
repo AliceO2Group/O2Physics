@@ -268,7 +268,7 @@ struct Omega2012TrainingTable {
       return -1;
     }
     const auto row = trackId - static_cast<int64_t>(mcTrackLabelsDf->offset());
-    if (row < 0 || row >= static_cast<int64_t>(mcTrackLabelsDf->size())) {
+    if (row < 0 || row >= mcTrackLabelsDf->size()) {
       return -1;
     }
     return mcTrackLabelsDf->rawIteratorAt(row).mcParticleId();
@@ -283,7 +283,7 @@ struct Omega2012TrainingTable {
     int64_t row = label;
     for (int step = 0; step <= MaxAncestorSteps; ++step) {
       const auto local = row - static_cast<int64_t>(mcParticlesDf->offset());
-      if (row < 0 || local < 0 || local >= static_cast<int64_t>(mcParticlesDf->size())) {
+      if (row < 0 || local < 0 || local >= mcParticlesDf->size()) {
         return;
       }
       const auto particle = mcParticlesDf->rawIteratorAt(local);
@@ -551,14 +551,14 @@ struct Omega2012TrainingTable {
   {
     mlAncestryRows.clear();
     const auto offset = static_cast<int64_t>(mcParticles.offset());
-    const auto nRows = static_cast<int64_t>(mcParticles.size());
+    const auto nRows = mcParticles.size();
     std::unordered_set<int64_t> treeRows;
     std::vector<std::pair<int64_t, int>> stack;
     for (const auto& parent : mcParticles) {
       if (std::abs(parent.pdgCode()) != o2::constants::physics::Pdg::kOmega2012Minus) {
         continue;
       }
-      stack.assign(1, {static_cast<int64_t>(parent.globalIndex()), 0});
+      stack.assign(1, {parent.globalIndex(), 0});
       while (!stack.empty()) {
         const auto [row, depth] = stack.back();
         stack.pop_back();

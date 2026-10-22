@@ -2635,8 +2635,8 @@ struct lfNucleiBATask {
     }
 
     tracks.copyIndexBindings(tracksWithITS);
-    auto tpcChi2NclRange = (std::vector<float>)trkqcOptions.tpcChi2NclCuts;
-    auto itsChi2NclRange = (std::vector<float>)trkqcOptions.itsChi2NclCuts;
+    auto tpcChi2NclRange = std::vector<float>(trkqcOptions.tpcChi2NclCuts);
+    auto itsChi2NclRange = std::vector<float>(trkqcOptions.itsChi2NclCuts);
 
     for (auto const& track : tracksWithITS) {
       // Init all temp variables inside the track loop

@@ -136,8 +136,8 @@ struct PhiMesonCandProducer {
 
   void init(InitContext&)
   {
-    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
-    AxisSpec binnedpTPhiAxis{(std::vector<double>)binspTPhi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
+    AxisSpec binnedpTPhiAxis{std::vector<double>(binspTPhi), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massPhiAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
     histos.add("h3PhiCandidatesMass", "Phi candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
@@ -499,10 +499,10 @@ struct V0ReducedCandProducer {
 
   void init(InitContext&)
   {
-    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
-    AxisSpec binnedpTK0SAxis{(std::vector<double>)v0Configs.k0sConfigs.binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTLambdaAxis{(std::vector<double>)v0Configs.lambdaConfigs.binspTLambda, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTXiAxis{(std::vector<double>)binspTXi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
+    AxisSpec binnedpTK0SAxis{std::vector<double>(v0Configs.k0sConfigs.binspTK0S), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTLambdaAxis{std::vector<double>(v0Configs.lambdaConfigs.binspTLambda), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTXiAxis{std::vector<double>(binspTXi), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec massLambdaAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
@@ -816,9 +816,9 @@ struct CascadeReducedCandProducer {
 
   void init(InitContext&)
   {
-    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
-    AxisSpec binnedpTXiAxis{(std::vector<double>)cascadeConfigs.xiConfigs.binspTXi, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTOmegaAxis{(std::vector<double>)cascadeConfigs.omegaConfigs.binspTOmega, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
+    AxisSpec binnedpTXiAxis{std::vector<double>(cascadeConfigs.xiConfigs.binspTXi), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTOmegaAxis{std::vector<double>(cascadeConfigs.omegaConfigs.binspTOmega), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massXiAxis = {200, 1.2f, 1.4f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec massOmegaAxis = {200, 1.6f, 1.8f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
@@ -1075,8 +1075,8 @@ struct PionTrackProducer {
 
   void init(InitContext&)
   {
-    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
-    AxisSpec binnedpTPiAxis{(std::vector<double>)binspTPi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
+    AxisSpec binnedpTPiAxis{std::vector<double>(binspTPi), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec nSigmaPiAxis = {100, -10.0f, 10.0f, "N#sigma #pi"};
 
     histos.add("h3PionTPCnSigma", "Pion TPC nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis});
@@ -1339,7 +1339,7 @@ struct EventSelectionProducer {
     // Defining histogram axes
     AxisSpec vertexZAxis = {100, -cutZVertex, cutZVertex, "vrtx_{Z} [cm]"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
-    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
+    AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
 
     // Booking histograms for event selection QA
     // Number of events per selection in Data

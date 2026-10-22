@@ -60,13 +60,13 @@ struct hyhefouranalysis {
 
   void init(InitContext&)
   {
-    const AxisSpec axisMassHyHe4{(int)400, 3.7f, 4.1f, "Hyperhelium4 Mass Distribution (GeV/c^{2})"};
-    const AxisSpec axisNCandidates{(int)100, -0.5f, 99.5f, "Number of 3-body candidates"};
+    const AxisSpec axisMassHyHe4{400, 3.7f, 4.1f, "Hyperhelium4 Mass Distribution (GeV/c^{2})"};
+    const AxisSpec axisNCandidates{100, -0.5f, 99.5f, "Number of 3-body candidates"};
 
-    const AxisSpec axisEventCounter{(int)1, 0.0f, 1.0f, "Number of events"};
-    const AxisSpec axisPt{(int)1000, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisDCADaughters{(int)1000, 0.0f, 10.0f, "DCA Daughters (cm)"};
-    const AxisSpec axisDCAtoPV{(int)1000, -10.0f, 10.0f, "DCA to PV (cm)"};
+    const AxisSpec axisEventCounter{1, 0.0f, 1.0f, "Number of events"};
+    const AxisSpec axisPt{1000, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisDCADaughters{1000, 0.0f, 10.0f, "DCA Daughters (cm)"};
+    const AxisSpec axisDCAtoPV{1000, -10.0f, 10.0f, "DCA to PV (cm)"};
 
     // Base counters
     histos.add("hNEvents", "hNEvents", kTH1F, {axisEventCounter});
