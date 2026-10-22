@@ -144,6 +144,11 @@ struct TrackEfficiency {
     SplitOkCheckFirstAssocCollOnly // 2
   };
 
+  enum class TrackSample {
+    Data,
+    MCDetLevel
+  };
+
   template <typename TJetTrack>
   bool isAcceptedTrack(TJetTrack const& jetTrack)
   {
@@ -174,9 +179,15 @@ struct TrackEfficiency {
     return std::abs(charge) >= chargeUnit;
   }
 
-  template <typename TCollision, typename TJetTracks>
+  template <TrackSample sample, typename TCollision, typename TJetTracks>
   void fillTrackHistograms(TCollision const& collision, TJetTracks const& jetTracks, float weight = 1.0)
   {
+    const float meanFT0A = sample == TrackSample::Data ? ft0a.mean.value : ft0a.meanMCDetLevel.value;
+    const float meanFT0C = sample == TrackSample::Data ? ft0c.mean.value : ft0c.meanMCDetLevel.value;
+    const auto ft0Metrics = getFT0Metrics(collision, meanFT0A, meanFT0C);
+    const auto scaledFT0C = ft0Metrics.scaledFT0C;
+    const auto scaledFT0M = ft0Metrics.scaledFT0M;
+
     for (auto const& track : jetTracks) {
       if (!isAcceptedTrack(track)) {
         continue;
@@ -190,6 +201,13 @@ struct TrackEfficiency {
       float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
 
       registry.fill(HIST("h2_centrality_track_pt"), centrality, track.pt(), weight);
+      if constexpr (sample == TrackSample::Data) {
+        registry.fill(HIST("hScaledFT0CTrackPt"), scaledFT0C, track.pt(), weight);
+        registry.fill(HIST("hScaledFT0MTrackPt"), scaledFT0M, track.pt(), weight);
+      } else {
+        registry.fill(HIST("hScaledFT0CTrackPt_MCDetLevel"), scaledFT0C, track.pt(), weight);
+        registry.fill(HIST("hScaledFT0MTrackPt_MCDetLevel"), scaledFT0M, track.pt(), weight);
+      }
       registry.fill(HIST("h2_centrality_track_eta"), centrality, track.eta(), weight);
       registry.fill(HIST("h2_centrality_track_phi"), centrality, track.phi(), weight);
       registry.fill(HIST("h2_centrality_track_energy"), centrality, track.energy(), weight);
@@ -287,6 +305,10 @@ struct TrackEfficiency {
     AxisSpec etaAxisEff{etaEffBinning, "#eta"};
     AxisSpec phiAxisEff{phiEffBinning, "#phi"};
     AxisSpec centAxis = {centralityBinning, "centrality (%)"};
+    AxisSpec scaledFT0C{hist.multFT0CThresh, "FT0C / #LT FT0C #GT"};
+    AxisSpec scaledFT0M{hist.multFT0MThresh, "FT0M^{*}"};
+    AxisSpec scaledFT0CMCDetLevel{hist.multFT0CThreshMCDetLevel, "FT0C / #LT FT0C #GT"};
+    AxisSpec scaledFT0MMCDetLevel{hist.multFT0MThreshMCDetLevel, "FT0M^{*}"};
     AxisSpec intRateAxis = {intRateBinning, "int. rate (kHz)"};
     AxisSpec occupancyAxis = {140, -0.5, 13999.5, "occupancy"};
     AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
@@ -379,6 +401,12 @@ struct TrackEfficiency {
       registry.add("h2_track_pt_high_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {10000, 0.0, 1.0}}});
       registry.add("h3_intrate_centrality_track_pt", "interaction rate vs centrality vs track pT; int. rate; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH3F, {intRateAxis, centAxis, {200, 0., 200.}}});
       registry.add("h3_track_pt_track_eta_track_phi", "track pT vs track #eta vs track #varphi; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}; #varphi_{track}", {HistType::kTH3F, {{200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}}});
+
+      // EA analysis
+      registry.add("hScaledFT0CTrackPt", "scaled FT0C vs track pT; FT0C / #LT FT0C #GT; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {scaledFT0C, {200, 0., 200.}}});
+      registry.add("hScaledFT0MTrackPt", "scaled FT0M vs track pT; FT0M^{*}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {scaledFT0M, {200, 0., 200.}}});
+      registry.add("hScaledFT0CTrackPt_MCDetLevel", "MC detector-level scaled FT0C vs track pT; FT0C / #LT FT0C #GT; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {scaledFT0CMCDetLevel, {200, 0., 200.}}});
+      registry.add("hScaledFT0MTrackPt_MCDetLevel", "MC detector-level scaled FT0M vs track pT; FT0M^{*}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {scaledFT0MMCDetLevel, {200, 0., 200.}}});
     }
 
     if (doprocessParticles || doprocessParticlesWeighted) {
@@ -886,7 +914,7 @@ struct TrackEfficiency {
       return;
     }
 
-    fillTrackHistograms(collision, jetTracks);
+    fillTrackHistograms<TrackSample::Data>(collision, jetTracks);
   }
   PROCESS_SWITCH(TrackEfficiency, processTracksFromData, "QA for charged tracks in data", false);
 
@@ -914,7 +942,7 @@ struct TrackEfficiency {
       return;
     }
 
-    fillTrackHistograms(collision, jetTracks);
+    fillTrackHistograms<TrackSample::MCDetLevel>(collision, jetTracks);
   }
   PROCESS_SWITCH(TrackEfficiency, processTracksFromMc, "QA for charged tracks in MC without weights", false);
 
@@ -943,7 +971,7 @@ struct TrackEfficiency {
       return;
     }
 
-    fillTrackHistograms(collision, jetTracks, eventWeight);
+    fillTrackHistograms<TrackSample::MCDetLevel>(collision, jetTracks, eventWeight);
   }
   PROCESS_SWITCH(TrackEfficiency, processTracksFromMcWeighted, "QA for charged tracks in weighted MC", false);
 
