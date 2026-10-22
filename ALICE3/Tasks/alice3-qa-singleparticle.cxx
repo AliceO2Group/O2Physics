@@ -81,17 +81,18 @@ struct Alice3SingleParticle {
 
   // Selection range [min, max) of the particles of interest, taken from an axis so that every selected particle is inside its histograms
   struct Range {
+    Range(double min_, double max_, int64_t bins_) : min(min_), max(max_), bins(bins_) {}
     double min = 0.;
     double max = 0.;
     int64_t bins = 0;
-    bool contains(double value) const { return value >= min && value < max; }
+    [[nodiscard]] bool contains(double value) const { return value >= min && value < max; }
   };
   Range ptRange, etaRange, yRange, prodXYrange, prodZRange;
 
   static Range getRange(const ConfigurableAxis& axis)
   {
     const AxisSpec spec{axis};
-    return {spec.binEdges.front(), spec.binEdges.back(), spec.getNbins()};
+    return Range(spec.binEdges.front(), spec.binEdges.back(), spec.getNbins());
   }
 
   void init(InitContext&)
