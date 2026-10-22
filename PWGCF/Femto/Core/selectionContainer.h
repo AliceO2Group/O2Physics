@@ -427,7 +427,7 @@ class SelectionContainer
   ///        result is written back via setBitmask() -- unlike getBitmask(), this never shifts, so
   ///        it stays the correct counterpart to setBitmask() (which also never shifts).
   /// \return Bitset exactly as currently stored.
-  [[nodiscard]] std::bitset<sizeof(BitmaskType) * CHAR_BIT> getRawBitmask() const { return mBitmask; }
+  [[nodiscard]] std::bitset<sizeof(BitmaskType) * CHAR_BIT> const& getRawBitmask() const { return mBitmask; }
 
   /// \brief Reset the internal bitmask to zero.
   void reset() { mBitmask.reset(); }
