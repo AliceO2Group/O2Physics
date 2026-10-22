@@ -292,7 +292,7 @@ struct Alice3SingleParticle {
     return pdgParticle && pdgParticle->Charge() != 0;
   }
 
-    void fillSignalMultiplicity(const std::vector<int>& nchPerCollision, const std::vector<int>& nSignalPerCollision)
+  void fillSignalMultiplicity(const std::vector<int>& nchPerCollision, const std::vector<int>& nSignalPerCollision)
   {
     for (std::size_t iCollision = 0; iCollision < nchPerCollision.size(); ++iCollision) {
       histos.fill(HIST("event/Nch"), nchPerCollision[iCollision]);
