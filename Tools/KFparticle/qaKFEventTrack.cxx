@@ -247,7 +247,7 @@ struct qaKFEventTrack {
   template <typename T1, typename T2, typename T3, typename T4>
   void writeVarTree(const T1& /*kfpTrackPi*/, const T2& KFPion, const T2& KFPV, const T3& track, const int source, const int pVContrib, const int runNumber, const T4& collision)
   {
-    const double pseudoRndm = track.pt() * 1000. - (int64_t)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < d_DwnSmplFact) {
       if (writeTree) {
         /// Filling the tree
@@ -629,7 +629,7 @@ struct qaKFEvent {
       if (!isSelectedCollision(collisionIndex)) {
         continue;
       }
-      timeColl = uint64_t((bc.globalBC() - bc0) * o2::constants::lhc::LHCBunchSpacingNS) + collisionIndex.collisionTime();
+      timeColl = static_cast<uint64_t>((bc.globalBC() - bc0) * o2::constants::lhc::LHCBunchSpacingNS) + collisionIndex.collisionTime();
       writeVarTreeColl(collisionIndex, timeColl, bc.timestamp(), collisionIndex.collisionTime(), tfID);
     }
   }
