@@ -176,7 +176,7 @@ struct MesonSignalLoss {
     if (multiplicityEstimator == kCentralBarrel) {
       decision = std::abs(eta) < 0.8f; // o2-linter: disable=magic-number (rapidity range of central barrel)
     } else if (multiplicityEstimator == kFT0A) {
-      decision = 3.3f < eta && eta < 5.0f; // o2-linter: disable=magic-number (rapidity range of FT0)
+      decision = 3.5f < eta && eta < 4.9f; // o2-linter: disable=magic-number (rapidity range of FT0)
     } else if (multiplicityEstimator == kFT0C) {
       decision = -3.3f < eta && eta < -2.1f; // o2-linter: disable=magic-number (rapidity range of FT0)
     }
@@ -186,7 +186,7 @@ struct MesonSignalLoss {
   /// \brief Counts charged physical-primary particles in the configured eta range.
   /// \param[in] particles Particles to include in the multiplicity count.
   /// \return Number of charged physical-primary particles in range.
-  template <typename TParticles>
+  template <soa::is_table TParticles>
   int countTrueMultiplicity(TParticles const& particles) const
   {
     int multiplicity = 0;
@@ -210,6 +210,8 @@ struct MesonSignalLoss {
   {
     std::vector<int64_t> particlesToCheck{particle.globalIndex()};
     std::unordered_set<int64_t> checkedParticles;
+    auto currentParticle = mcParticles.begin();
+    auto mother = mcParticles.begin();
 
     while (!particlesToCheck.empty()) {
       const auto particleIndex = particlesToCheck.back();
@@ -218,7 +220,7 @@ struct MesonSignalLoss {
         continue;
       }
 
-      const auto currentParticle = mcParticles.iteratorAt(particleIndex);
+      currentParticle.setCursor(particleIndex);
       const auto process = currentParticle.getProcess();
       const bool fromDecay = currentParticle.producedByGenerator() || process == TMCProcess::kPDecay || process == TMCProcess::kPRadDecay;
       if (!currentParticle.producedByGenerator() && !fromDecay) {
@@ -229,7 +231,7 @@ struct MesonSignalLoss {
         if (motherIndex < 0 || motherIndex >= mcParticles.size()) {
           continue;
         }
-        const auto mother = mcParticles.iteratorAt(motherIndex);
+        mother.setCursor(motherIndex);
         const float decayLength = std::sqrt(std::pow(currentParticle.vx() - mother.vx(), 2) + std::pow(currentParticle.vy() - mother.vy(), 2) + std::pow(currentParticle.vz() - mother.vz(), 2));
         if (fromDecay && decayLength > particleConfig.cfgSecondaryDecayLength.value) {
           return true;
@@ -246,7 +248,7 @@ struct MesonSignalLoss {
   /// \param[in] selectionStage First selection stage to fill.
   /// \param[in] selectionStageMax Last selection stage to fill.
   /// \param[in] trueMultiplicity True charged-particle multiplicity of the collision.
-  template <typename TParticles>
+  template <soa::is_table TParticles>
   void fillGeneratedParticles(TParticles const& particlesInMCCollision, aod::McParticles const& mcParticles, int selectionStage, int selectionStageMax, int trueMultiplicity)
   {
     if (selectionStageMax < selectionStage) {
