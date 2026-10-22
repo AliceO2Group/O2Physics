@@ -383,6 +383,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
     registryPhiMinvBackground.add("InvariantMassKpKp", "; invariant mass K+K+; Counts", kTH1F, {{6000, 0.9, 4.0}});
     registryPhiMinvBackground.add("InvariantMassKmKm", "; invariant mass K-K-; Counts", kTH1F, {{6000, 0.9, 4.0}});
+    registryPhiMinvBackground.add("InvariantMassKpKm", "; invariant mass K+K-; Counts", kTH1F, {{6000, 0.9, 4.0}});
 
     qaRegistry.add("Hadron_pos/nSigmaTPCPr", "; #it{p} (GeV/#it{c}); n#sigma_{TPCPr}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Hadron_pos/nSigmaTOFPr", "; #it{p} (GeV/#it{c}); n#sigma_{TOFPr}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
@@ -405,12 +406,12 @@ struct FemtoUniversePairTaskTrackPhi {
     registryMCtruth.add("MCtruthKp", "MC truth K+;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCtruth.add("MCtruthKpPt", "MC truth kaons positive;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     // K-
-    registryMCtruth.add("MCtruthKm", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCtruth.add("MCtruthKm", "MC truth kaons negative;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCtruth.add("MCtruthKmPt", "MC truth kaons negative;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     // p
     registryMCtruth.add("MCtruthPpos", "MC truth protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCtruth.add("MCtruthPposPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
-    // pbar
+    // p-
     registryMCtruth.add("MCtruthPneg", "MC truth antiprotons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCtruth.add("MCtruthPnegPt", "MC truth antiproton;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     // phi
@@ -423,7 +424,7 @@ struct FemtoUniversePairTaskTrackPhi {
     // p
     registryMCreco.add("MCrecoPpos", "MC reco proton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCreco.add("MCrecoPposPt", "MC reco proton; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{500, 0, 5}});
-    // pbar
+    // p-
     registryMCreco.add("MCrecoPneg", "MC reco antiproton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCreco.add("MCrecoPnegPt", "MC reco antiproton; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{500, 0, 5}});
     // phi
@@ -549,31 +550,39 @@ struct FemtoUniversePairTaskTrackPhi {
       sameEventCont.setPair<isMC>(track, phicandidate, multCol, confUse3D, mWeight);
     }
 
-    // // Used for better fitting of invariant mass background.
+    // Used for better fitting of invariant mass background.
 
-    // TLorentzVector part1Vec;
-    // TLorentzVector part2Vec;
+    TLorentzVector part1Vec;
+    TLorentzVector part2Vec;
 
-    // float mMassOne = o2::constants::physics::MassKPlus;
-    // float mMassTwo = o2::constants::physics::MassKMinus;
+    float mMassOne = o2::constants::physics::MassKPlus;
+    float mMassTwo = o2::constants::physics::MassKMinus;
 
-    // for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsKaons, groupPartsKaons))) {
-    //   if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
-    //     part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
-    //     part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
-    //     TLorentzVector sumVec(part1Vec);
-    //     sumVec += part2Vec;
-    //     registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
-    //   }
-    //   if ((kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
-    //     part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
-    //     part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+    for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsKaons, partsKaons))) {
+      if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
+      }
+      if ((kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
 
-    //     TLorentzVector sumVec(part1Vec);
-    //     sumVec += part2Vec;
-    //     registryPhiMinvBackground.fill(HIST("InvariantMassKmKm"), sumVec.M());
-    //   }
-    // }
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        registryPhiMinvBackground.fill(HIST("InvariantMassKmKm"), sumVec.M());
+      }
+      if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == -1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        registryPhiMinvBackground.fill(HIST("InvariantMassKpKm"), sumVec.M());
+      }
+    }
   }
 
   template <bool isMC, typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
