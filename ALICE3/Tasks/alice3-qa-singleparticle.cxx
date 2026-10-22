@@ -83,7 +83,7 @@ struct Alice3SingleParticle {
   struct Range {
     double min = 0.;
     double max = 0.;
-    long bins = 0;
+    int64_t bins = 0;
     bool contains(double value) const { return value >= min && value < max; }
   };
   Range ptRange, etaRange, yRange, prodXYrange, prodZRange;
