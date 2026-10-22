@@ -95,6 +95,19 @@ struct TrackEfficiency {
 
   Configurable<bool> useTrueTrackWeight{"useTrueTrackWeight", true, "test configurable, should be set to 1 then config removed once well tested"};
 
+  // Normalization FT0 by means
+  struct FT0A : ConfigurableGroup {
+    std::string prefix = "ft0a";
+    Configurable<float> mean{"mean", 3499., "Mean FT0A signal"};
+    Configurable<float> meanMCDetLevel{"meanMCDetLevel", 3499., "Mean FT0A signal at MC detector level"};
+  } ft0a;
+
+  struct FT0C : ConfigurableGroup {
+    std::string prefix = "ft0c";
+    Configurable<float> mean{"mean", 844.6, "Mean FT0C signal"};
+    Configurable<float> meanMCDetLevel{"meanMCDetLevel", 844.6, "Mean FT0C signal at MC detector level"};
+  } ft0c;
+
   // systematics variation - Run 2 guidelines: https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGtoolsTrackSystematicUncertainty
   TrackSelection customTrackSelection;
   Configurable<bool> useCustomTrackSelection{"useCustomTrackSelection", false, "whether to use the custom cuts (used for cut variation for tracking efficiency systematics)"};
@@ -203,6 +216,10 @@ struct TrackEfficiency {
   {
     if (!(acceptSplitCollisions == NonSplitOnly || acceptSplitCollisions == SplitOkCheckAnyAssocColl || acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly)) {
       LOGP(fatal, "Configurable acceptSplitCollisions has wrong input value; stopping workflow");
+    }
+
+    if (ft0a.mean == 0.f || ft0c.mean == 0.f || ft0a.meanMCDetLevel == 0.f || ft0c.meanMCDetLevel == 0.f) {
+      LOGP(fatal, "FT0A and FT0C means must be non-zero to avoid division by zero; stopping workflow");
     }
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
@@ -1711,6 +1728,44 @@ struct TrackEfficiency {
     }
   }
   PROCESS_SWITCH(TrackEfficiency, processQcCheck, "Histograms for QC checks", false);
+
+  // FT0 event activity helpers
+  struct FT0Metrics {
+    float multFT0A = 0.f;
+    float multFT0C = 0.f;
+    float multFT0M = 0.f;
+    float scaledFT0A = 0.f;
+    float scaledFT0C = 0.f;
+    float scaledFT0M = 0.f;
+  };
+
+  float getScaledFT0(const float& multFT0, const float& meanFT0)
+  {
+    return multFT0 / meanFT0;
+  }
+
+  float getScaledFT0M(const float& scaledMultFT0A, const float& scaledMultFT0C)
+  {
+    return 0.5 * (scaledMultFT0A + scaledMultFT0C);
+  }
+
+  FT0Metrics makeFT0Metrics(float multFT0A, float multFT0C, float meanFT0A, float meanFT0C)
+  {
+    FT0Metrics values;
+    values.multFT0A = multFT0A;
+    values.multFT0C = multFT0C;
+    values.multFT0M = multFT0A + multFT0C;
+    values.scaledFT0A = getScaledFT0(values.multFT0A, meanFT0A);
+    values.scaledFT0C = getScaledFT0(values.multFT0C, meanFT0C);
+    values.scaledFT0M = getScaledFT0M(values.scaledFT0A, values.scaledFT0C);
+    return values;
+  }
+
+  template <typename Collision>
+  FT0Metrics getFT0Metrics(const Collision& collision, float meanFT0A, float meanFT0C)
+  {
+    return makeFT0Metrics(collision.multFT0A(), collision.multFT0C(), meanFT0A, meanFT0C);
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
