@@ -81,6 +81,7 @@ struct Alice3SingleParticle {
 
   // Selection range [min, max) of the particles of interest, taken from an axis so that every selected particle is inside its histograms
   struct Range {
+    Range() = default;
     Range(double min_, double max_, int64_t bins_) : min(min_), max(max_), bins(bins_) {}
     double min = 0.;
     double max = 0.;
