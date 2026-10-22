@@ -35,6 +35,7 @@
 #include <TString.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <string>
