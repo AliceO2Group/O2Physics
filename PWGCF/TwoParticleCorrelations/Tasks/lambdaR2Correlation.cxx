@@ -926,7 +926,34 @@ struct LambdaTableProducer {
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
-    fillLambdaMcGenTables(mcCollision, mcParticles);
+    // Fill McGen Collision Table
+    lambdaMCGenCollisionTable(cent, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+
+    // initialize track objects
+    ParticleType partType = kLambda;
+
+    // Loop over MC particles
+    for (auto const& mcpart : mcParticles) {
+      // Check for Primary Lambda/Anti-Lambda
+      if (mcpart.isPhysicalPrimary() && mcpart.pdgCode() == kLambda0) {
+        partType = kLambda;
+      } else if (mcpart.isPhysicalPrimary() && mcpart.pdgCode() == kLambda0Bar) {
+        partType = kAntiLambda;
+      } else {
+        continue;
+      }
+
+      // Kinematic selection
+      if (mcpart.pt() <= cLambdaMinPt || mcpart.pt() >= cLambdaMaxPt || std::abs(mcpart.y()) >= cLambdaRapCut) {
+        continue;
+      }
+
+      histos.fill(HIST("Tracks/h1f_lambda_info"), kGenTotAccLambda);
+
+      // Fill table
+      lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), mcpart.px(), mcpart.py(), mcpart.pz(), RecoDecay::m(mcpart.p(), mcpart.e()),
+                            -1, -1, (int8_t)partType, 1.);
+    }
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMCGen, "Process for MC Gen", false);
