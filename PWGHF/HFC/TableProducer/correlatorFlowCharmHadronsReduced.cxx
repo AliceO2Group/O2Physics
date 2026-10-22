@@ -37,6 +37,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -99,10 +100,10 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Configurable<bool> selCentrality{"selCentrality", false, "Use centrality to select events"};
   Configurable<bool> selMultiplicity{"selMultiplicity", false, "Use multiplicity to select events"};
   Configurable<bool> countCharmCandsPerCollision{"countCharmCandsPerCollision", false, "Count charm candidates per collision"};
-  Configurable<float> centralityMin{"centralityMin", 0, "min. centrality"};
-  Configurable<float> centralityMax{"centralityMax", 10., "max. centrality"};
-  Configurable<float> multiplicityMin{"multiplicityMin", 0, "min. multiplicity"};
-  Configurable<float> multiplicityMax{"multiplicityMax", 10., "max. multiplicity"};
+  Configurable<float> centMin{"centMin", 0, "min. centrality"};
+  Configurable<float> centMax{"centMax", 10., "max. centrality"};
+  Configurable<float> multMin{"multMin", 0, "min. multiplicity"};
+  Configurable<float> multMax{"multMax", 10., "max. multiplicity"};
   Configurable<float> deltaEtaAbsMin{"deltaEtaAbsMin", 0.5, "min. pair delta eta"};
   Configurable<float> deltaEtaAbsMax{"deltaEtaAbsMax", 2., "max. pair delta eta"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. track DCA XY"};
@@ -237,12 +238,13 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   template<typename TColl> 
   bool isSelCollision(const TColl& collision)
   {
+    bool isSel = false;
     if (selCentrality) {
-      return (collision.centrality() >= centralityMin && collision.centrality() <= centralityMax);
+      isSel = (collision.centrality() >= centMin && collision.centrality() <= centMax);
     } else if (selMultiplicity) {
-      return (collision.multiplicity() >= multiplicityMin && collision.multiplicity() <= multiplicityMax);
+      isSel = (collision.multiplicity() >= multMin && collision.multiplicity() <= multMax);
     }
-    return false;
+    return isSel;
   }
 
   /// Get the binning pool associated to the collision
