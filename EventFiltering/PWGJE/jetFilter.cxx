@@ -98,7 +98,7 @@ struct jetFilter {
   void init(o2::framework::InitContext&)
   {
     triggerJetR = TMath::Nint(cfgJetR * 100.0f);
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
 
     spectra.add("fCollZpos", "collision z position", HistType::kTH1F,

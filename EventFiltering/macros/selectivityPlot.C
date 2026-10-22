@@ -45,7 +45,7 @@ void selectivityPlot(int runNumber = 550781, const TString& inputfile = "Analysi
   Canvas_1->SetFrameBorderMode(0);
 
   TFile* file = new TFile(inputfile.Data());
-  TH1D* mFiltered = (TH1D*)file->Get("central-event-filter-task/scalers/mFiltered");
+  TH1D* mFiltered = dynamic_cast<TH1D*>(file->Get("central-event-filter-task/scalers/mFiltered"));
   double nEvents = mFiltered->GetBinContent(1);
   mFiltered->Scale(1. / nEvents);
   mFiltered->SetLineColor(2);
