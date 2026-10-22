@@ -61,7 +61,7 @@ struct Alice3SingleParticle {
 
   // The pT, eta, y and production-vertex-z axes also define the selection of the particles of interest
   struct : ConfigurableGroup {
-    std::string prefix = "axes";
+    std::string prefix = "settingsAxes";
     ConfigurableAxis axisMomentum{"axisMomentum", {500, 0.f, 10.f}, "Binning for p and pT"};
     ConfigurableAxis axisMomentumComponent{"axisMomentumComponent", {500, -10.f, 10.f}, "Binning for px, py and pz"};
     ConfigurableAxis axisEnergy{"axisEnergy", {500, 0.f, 1000.f}, "Binning for the energy"};
@@ -74,7 +74,8 @@ struct Alice3SingleParticle {
     ConfigurableAxis axisProdRadius{"axisProdRadius", {100, 0.f, 2.f}, "Binning for the production vertex radius"};
     ConfigurableAxis axisNch{"axisNch", {150, 0.f, 150.f}, "Charged-particle multiplicity"};
     ConfigurableAxis axisNSignal{"axisNSignal", {20, -0.5f, 19.5f}, "Number of selected particles of interest per collision"};
-  } axes;
+    ConfigurableAxis distanceAxis{"distanceAxis", {1000, 0, 1e-10}, "Distance (cm)"};
+  } settingsAxes;
 
   std::vector<int64_t> particlesOfInterest; // global indices of the MC particles selected in genericProcessParticles, per DF
 
@@ -82,14 +83,15 @@ struct Alice3SingleParticle {
   struct Range {
     double min = 0.;
     double max = 0.;
+    int bins = 0;
     bool contains(double value) const { return value >= min && value < max; }
   };
-  Range ptRange, etaRange, yRange, prodZRange;
+  Range ptRange, etaRange, yRange, prodXYrange, prodZRange;
 
   static Range getRange(const ConfigurableAxis& axis)
   {
     const AxisSpec spec{axis};
-    return {spec.binEdges.front(), spec.binEdges.back()};
+    return {spec.binEdges.front(), spec.binEdges.back(), spec.nBins};
   }
 
   void init(InitContext&)
@@ -120,16 +122,37 @@ struct Alice3SingleParticle {
     pdg->AddParticle("helium4", "helium4", o2::constants::physics::MassAlpha, kTRUE, 0.0, 6, "Nucleus", 1000020040);
     pdg->AddAntiParticle("anti-helium4", -1000020040);
 
-    ptRange = getRange(axes.axisMomentum);
-    etaRange = getRange(axes.axisEta);
-    yRange = getRange(axes.axisY);
-    prodZRange = getRange(axes.axisProdZ);
+    ptRange = getRange(settingsAxes.axisMomentum);
+    etaRange = getRange(settingsAxes.axisEta);
+    yRange = getRange(settingsAxes.axisY);
+    prodXYrange = getRange(settingsAxes.axisProdXY);
+    prodZRange = getRange(settingsAxes.axisProdZ);
     LOG(info) << "Selecting particles of interest in pT [" << ptRange.min << ", " << ptRange.max << "), eta [" << etaRange.min << ", " << etaRange.max
               << "), y [" << yRange.min << ", " << yRange.max << "), production z [" << prodZRange.min << ", " << prodZRange.max << ")";
 
     const TString titlePdgCode = Form("%i", pdgCode.value);
     const AxisSpec axisPDGs{100, 0.f, 100.f, "PDG code"};
     const AxisSpec axisCharge{21, -10.5f, 10.5f, "Charge (e/3)"};
+    const AxisSpec axisP{settingsAxes.axisMomentum, "#it{p} (GeV/#it{c})"};
+    const AxisSpec axisPt{settingsAxes.axisMomentum, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisPtMC{settingsAxes.axisMomentum, "#it{p}_{T}^{MC} (GeV/#it{c})"};
+    const AxisSpec axisPx{settingsAxes.axisMomentumComponent, "#it{p}_{x} (GeV/#it{c})"};
+    const AxisSpec axisPy{settingsAxes.axisMomentumComponent, "#it{p}_{y} (GeV/#it{c})"};
+    const AxisSpec axisPz{settingsAxes.axisMomentumComponent, "#it{p}_{z} (GeV/#it{c})"};
+    const AxisSpec axisEta{settingsAxes.axisEta, "#it{#eta}"};
+    const AxisSpec axisY{settingsAxes.axisY, "#it{y}"};
+    const AxisSpec axisE{etaRange.bins, 0, 1000, "E"};
+    const AxisSpec axisProdx{settingsAxes.axisProdXY, "Prod. Vertex X (cm)"};
+    const AxisSpec axisPrody{settingsAxes.axisProdXY, "Prod. Vertex Y (cm)"};
+    const AxisSpec axisProdz{settingsAxes.axisProdZ, "Prod. Vertex Z (cm)"};
+    const AxisSpec axisProdRadius{prodXYrange.bins, 0., 2. * prodXYrange.max, "Prod. Vertex Radius (cm)"};
+    const AxisSpec axisDistx{settingsAxes.distanceAxis, "Distance X (fm)"};
+    const AxisSpec axisDisty{settingsAxes.distanceAxis, "Distance Y (fm)"};
+    const AxisSpec axisDistz{settingsAxes.distanceAxis, "Distance Z (fm)"};
+    const AxisSpec axisProdDistance{settingsAxes.distanceAxis, "Distance Radius (fm)"};
+    const AxisSpec axisVx{settingsAxes.axisVtxXY, "Vertex X (cm)"};
+    const AxisSpec axisVy{settingsAxes.axisVtxXY, "Vertex Y (cm)"};
+    const AxisSpec axisVz{settingsAxes.axisVtxZ, "Vertex Z (cm)"};
 
     histos.add("AnalysedParticlePdgCode", "Analysed particle PDG code", kTH1D, {{1, -0.5, 0.5}});
     histos.get<TH1>(HIST("AnalysedParticlePdgCode"))->SetBinContent(1, pdgCode);
@@ -138,11 +161,11 @@ struct Alice3SingleParticle {
     histos.add("AnalysedParticleMass", "Analysed particle mass", kTH1D, {{1, -0.5, 0.5}});
     histos.get<TH1>(HIST("AnalysedParticleMass"))->SetBinContent(1, particle ? particle->Mass() : -1.);
 
-    histos.add("event/VtxX", "Vertex X", kTH1D, {axes.axisVtxXY});
-    histos.add("event/VtxY", "Vertex Y", kTH1D, {axes.axisVtxXY});
-    histos.add("event/VtxZ", "Vertex Z", kTH1D, {axes.axisVtxZ});
-    histos.add("event/Nch", "Events;N_{ch};Events", kTH1D, {axes.axisNch});
-    histos.add("particle/NSignalVsNch", "Particles of interest per event " + titlePdgCode + ";N_{ch};N_{signal}", kTH2D, {axes.axisNch, axes.axisNSignal});
+    histos.add("event/VtxX", "Vertex X", kTH1D, {axisVx});
+    histos.add("event/VtxY", "Vertex Y", kTH1D, {axisVy});
+    histos.add("event/VtxZ", "Vertex Z", kTH1D, {axisVz});
+    histos.add("event/Nch", "Events;N_{ch};Events", kTH1D, {settingsAxes.axisNch});
+    histos.add("particle/NSignalVsNch", "Particles of interest per event " + titlePdgCode + ";N_{ch};N_{signal}", kTH2D, {settingsAxes.axisNch, settingsAxes.axisNSignal});
 
     histos.add("particle/PDGs", "Particle PDGs", kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/PDGsPrimaries", "Particle PDGs of Primaries", kTH2D, {axisPDGs, axisCharge});
@@ -151,90 +174,93 @@ struct Alice3SingleParticle {
     for (int i = 0; i < kMaxMCProcess; i++) {
       h->GetXaxis()->SetBinLabel(i + 1, TMCProcessName[i]);
     }
-    histos.add("particle/Pt", "Particle Pt " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("particle/P", "Particle P " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("particle/primariesPt", "Particle Pt (primary) " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("particle/primariesP", "Particle P (primary) " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("particle/secondariesPt", "Particle Pt (secondary) " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("particle/secondariesP", "Particle P (secondary) " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("particle/prodVx", "Particle Prod. Vertex X " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/prodVy", "Particle Prod. Vertex Y " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/prodVz", "Particle Prod. Vertex Z " + titlePdgCode, kTH1D, {axes.axisProdZ});
-    histos.add("particle/prodRadius", "Particle Prod. Vertex Radius " + titlePdgCode, kTH1D, {axes.axisProdRadius});
-    histos.add("particle/prodVxVy", "Particle Prod. Vertex X vs Vertex Y " + titlePdgCode, kTH2D, {axes.axisProdXY, axes.axisProdXY});
-    histos.add("particle/prodVxVyPrm", "Particle Prod. Vertex X vs Vertex Y Primary " + titlePdgCode, kTH2D, {axes.axisProdXY, axes.axisProdXY});
-    histos.add("particle/prodVxVyStr", "Particle Prod. Vertex X vs Vertex Y Decay " + titlePdgCode, kTH2D, {axes.axisProdXY, axes.axisProdXY});
-    histos.add("particle/prodVxVyMat", "Particle Prod. Vertex X vs Vertex Y Material " + titlePdgCode, kTH2D, {axes.axisProdXY, axes.axisProdXY});
-    histos.add("particle/prodVxVsPt", "Particle Prod. Vertex X " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdXY});
-    histos.add("particle/prodVyVsPt", "Particle Prod. Vertex Y " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdXY});
-    histos.add("particle/prodVzVsPt", "Particle Prod. Vertex Z " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdZ});
-    histos.add("particle/prodRadiusVsPt", "Particle Prod. Vertex Radius " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
-    histos.add("particle/prodRadiusVsEta", "Particle Prod. Vertex Radius " + titlePdgCode, kTH2D, {axes.axisEta, axes.axisProdRadius});
-    histos.add("particle/prodRadius3DVsPt", "Particle Prod. Vertex Radius XYZ " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
-    histos.add("particle/Eta", "Particle Eta " + titlePdgCode, kTH1D, {axes.axisEta});
-    histos.add("particle/primariesEta", "Particle Eta (primary) " + titlePdgCode, kTH1D, {axes.axisEta});
-    histos.add("particle/secondariesEta", "Particle Eta (secondary) " + titlePdgCode, kTH1D, {axes.axisEta});
-    histos.add("particle/Y", "Particle Y " + titlePdgCode, kTH1D, {axes.axisY});
-    histos.add("particle/primariesY", "Particle Y (primary)" + titlePdgCode, kTH1D, {axes.axisY});
-    histos.add("particle/secondariesY", "Particle Y (secondary)" + titlePdgCode, kTH1D, {axes.axisY});
-    histos.add("particle/EvsPz", "Particle E vs Pz " + titlePdgCode, kTH2D, {axes.axisEnergy, axes.axisMomentumComponent});
-    histos.add("particle/YvzPz", "Particle Y vs Pz " + titlePdgCode, kTH2D, {axes.axisY, axes.axisMomentumComponent});
-    histos.add("particle/EtavzPz", "Particle Eta vs Pz " + titlePdgCode, kTH2D, {axes.axisEta, axes.axisMomentumComponent});
-    histos.add("particle/PtvzPz", "Particle Pt vs Pz " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisMomentumComponent});
-    histos.add("particle/PvzPz", "Particle P vs Pz " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisMomentumComponent});
-    histos.add("particle/Px", "Particle Px " + titlePdgCode, kTH1D, {axes.axisMomentumComponent});
-    histos.add("particle/Py", "Particle Py " + titlePdgCode, kTH1D, {axes.axisMomentumComponent});
-    histos.add("particle/Pz", "Particle Pz " + titlePdgCode, kTH1D, {axes.axisMomentumComponent});
-    histos.add("particle/decayDistanceX", "Particle decay distance " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/decayDistanceY", "Particle decay distance " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/decayDistanceZ", "Particle decay distance " + titlePdgCode, kTH1D, {axes.axisProdZ});
-    histos.add("particle/decayDistanceVsPt", "Particle decay distance " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
+    histos.add("particle/Pt", "Particle Pt " + titlePdgCode, kTH1D, {axisPt});
+    histos.add("particle/P", "Particle P " + titlePdgCode, kTH1D, {axisP});
+    histos.add("particle/primariesPt", "Particle Pt (primary) " + titlePdgCode, kTH1D, {axisPt});
+    histos.add("particle/primariesP", "Particle P (primary) " + titlePdgCode, kTH1D, {axisP});
+    histos.add("particle/secondariesPt", "Particle Pt (secondary) " + titlePdgCode, kTH1D, {axisPt});
+    histos.add("particle/secondariesP", "Particle P (secondary) " + titlePdgCode, kTH1D, {axisP});
+    histos.add("particle/prodVx", "Particle Prod. Vertex X " + titlePdgCode, kTH1D, {axisProdx});
+    histos.add("particle/prodVy", "Particle Prod. Vertex Y " + titlePdgCode, kTH1D, {axisPrody});
+    histos.add("particle/prodVz", "Particle Prod. Vertex Z " + titlePdgCode, kTH1D, {axisProdz});
+    histos.add("particle/prodRadius", "Particle Prod. Vertex Radius XY " + titlePdgCode, kTH1D, {axisProdRadius});
+    histos.add("particle/prodRadius3D", "Particle Prod. Vertex Radius XYZ " + titlePdgCode, kTH1D, {axisProdRadius});
+    histos.add("particle/prodDistance", "Particle Prod. Vertex Distance XY " + titlePdgCode, kTH1D, {axisProdDistance});
+    histos.add("particle/prodDistance3D", "Particle Prod. Vertex Distance XYZ " + titlePdgCode, kTH1D, {axisProdDistance});
+    histos.add("particle/prodVxVy", "Particle Prod. Vertex X vs Vertex Y " + titlePdgCode, kTH2D, {axisProdx, axisPrody});
+    histos.add("particle/prodVxVyPrm", "Particle Prod. Vertex X vs Vertex Y Primary " + titlePdgCode, kTH2D, {axisProdx, axisPrody});
+    histos.add("particle/prodVxVyStr", "Particle Prod. Vertex X vs Vertex Y Decay " + titlePdgCode, kTH2D, {axisProdx, axisPrody});
+    histos.add("particle/prodVxVyMat", "Particle Prod. Vertex X vs Vertex Y Material " + titlePdgCode, kTH2D, {axisProdx, axisPrody});
+    histos.add("particle/prodVxVsPt", "Particle Prod. Vertex X " + titlePdgCode, kTH2D, {axisPt, axisProdx});
+    histos.add("particle/prodVyVsPt", "Particle Prod. Vertex Y " + titlePdgCode, kTH2D, {axisPt, axisPrody});
+    histos.add("particle/prodVzVsPt", "Particle Prod. Vertex Z " + titlePdgCode, kTH2D, {axisPt, axisProdz});
+    histos.add("particle/prodRadiusVsPt", "Particle Prod. Vertex Radius XY " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
+    histos.add("particle/prodRadiusVsEta", "Particle Prod. Vertex Radius XY " + titlePdgCode, kTH2D, {axisEta, axisProdRadius});
+    histos.add("particle/prodRadius3DVsPt", "Particle Prod. Vertex Radius XYZ " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
+    histos.add("particle/Eta", "Particle Eta " + titlePdgCode, kTH1D, {axisEta});
+    histos.add("particle/primariesEta", "Particle Eta (primary) " + titlePdgCode, kTH1D, {axisEta});
+    histos.add("particle/secondariesEta", "Particle Eta (secondary) " + titlePdgCode, kTH1D, {axisEta});
+    histos.add("particle/Y", "Particle Y " + titlePdgCode, kTH1D, {axisY});
+    histos.add("particle/primariesY", "Particle Y (primary)" + titlePdgCode, kTH1D, {axisY});
+    histos.add("particle/secondariesY", "Particle Y (secondary)" + titlePdgCode, kTH1D, {axisY});
+    histos.add("particle/EvsPz", "Particle E vs Pz " + titlePdgCode, kTH2D, {axisE, axisPz});
+    histos.add("particle/YvzPz", "Particle Y vs Pz " + titlePdgCode, kTH2D, {axisY, axisPz});
+    histos.add("particle/EtavzPz", "Particle Eta vs Pz " + titlePdgCode, kTH2D, {axisEta, axisPz});
+    histos.add("particle/PtvzPz", "Particle Pt vs Pz " + titlePdgCode, kTH2D, {axisPt, axisPz});
+    histos.add("particle/PvzPz", "Particle P vs Pz " + titlePdgCode, kTH2D, {axisP, axisPz});
+    histos.add("particle/Px", "Particle Px " + titlePdgCode, kTH1D, {axisPx});
+    histos.add("particle/Py", "Particle Py " + titlePdgCode, kTH1D, {axisPy});
+    histos.add("particle/Pz", "Particle Pz " + titlePdgCode, kTH1D, {axisPz});
+    histos.add("particle/decayDistanceX", "Particle decay distance " + titlePdgCode, kTH1D, {axisProdx});
+    histos.add("particle/decayDistanceY", "Particle decay distance " + titlePdgCode, kTH1D, {axisPrody});
+    histos.add("particle/decayDistanceZ", "Particle decay distance " + titlePdgCode, kTH1D, {axisProdz});
+    histos.add("particle/decayDistanceVsPt", "Particle decay distance " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
     histos.add("particle/decayCtau", "Particle decay distance " + titlePdgCode, kTH1D, {{1000, 0, 10000, "c#tau (#mum)"}});
 
     histos.add("particle/daughters/Number", "Number of Daughters " + titlePdgCode, kTH1D, {{20, -0.5, 19.5}});
     histos.add("particle/daughters/PDGs", "Daughters PDGs " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/daughters/PDGsPrimaries", "Daughters PDGs Primaries of " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/daughters/PDGsSecondaries", "Daughters PDGs Secondaries of " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
-    histos.add("particle/daughters/prodVx", "Daughters Prod. Vertex X " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/daughters/prodVy", "Daughters Prod. Vertex Y " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/daughters/prodVz", "Daughters Prod. Vertex Z " + titlePdgCode, kTH1D, {axes.axisProdZ});
-    histos.add("particle/daughters/prodRadiusVsPt", "Daughters Prod. Vertex Radius " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
-    histos.add("particle/daughters/prodRadius3DVsPt", "Daughters Prod. Vertex Radius XYZ " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
+    histos.add("particle/daughters/prodVx", "Daughters Prod. Vertex X " + titlePdgCode, kTH1D, {axisProdx});
+    histos.add("particle/daughters/prodVy", "Daughters Prod. Vertex Y " + titlePdgCode, kTH1D, {axisPrody});
+    histos.add("particle/daughters/prodVz", "Daughters Prod. Vertex Z " + titlePdgCode, kTH1D, {axisProdz});
+    histos.add("particle/daughters/prodRadiusVsPt", "Daughters Prod. Vertex Radius " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
+    histos.add("particle/daughters/prodRadius3DVsPt", "Daughters Prod. Vertex Radius XYZ " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
 
     histos.add("particle/mothers/Number", "Number of Mothers " + titlePdgCode, kTH1D, {{20, -0.5, 19.5}});
     histos.add("particle/mothers/PDGs", "Mothers PDGs " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/mothers/PDGsPrimaries", "Mothers PDGs Primaries of " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/mothers/PDGsSecondaries", "Mothers PDGs Secondaries of " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
-    histos.add("particle/mothers/prodVx", "Mothers Prod. Vertex X " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/mothers/prodVy", "Mothers Prod. Vertex Y " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/mothers/prodVz", "Mothers Prod. Vertex Z " + titlePdgCode, kTH1D, {axes.axisProdZ});
-    histos.add("particle/mothers/prodRadiusVsPt", "Mothers Prod. Vertex Radius " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
-    histos.add("particle/mothers/prodRadius3DVsPt", "Mothers Prod. Vertex Radius XYZ " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
+    histos.add("particle/mothers/prodVx", "Mothers Prod. Vertex X " + titlePdgCode, kTH1D, {axisProdx});
+    histos.add("particle/mothers/prodVy", "Mothers Prod. Vertex Y " + titlePdgCode, kTH1D, {axisPrody});
+    histos.add("particle/mothers/prodVz", "Mothers Prod. Vertex Z " + titlePdgCode, kTH1D, {axisProdz});
+    histos.add("particle/mothers/prodRadiusVsPt", "Mothers Prod. Vertex Radius " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
+    histos.add("particle/mothers/prodRadius3DVsPt", "Mothers Prod. Vertex Radius XYZ " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
 
     // Go up one generation
     histos.add("particle/mothers/mothers/Number", "Number of Mothers mothers " + titlePdgCode, kTH1D, {{20, -0.5, 19.5}});
     histos.add("particle/mothers/mothers/PDGs", "Mothers mothers PDGs " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/mothers/mothers/PDGsPrimaries", "Mothers mothers PDGs Primaries of " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
     histos.add("particle/mothers/mothers/PDGsSecondaries", "Mothers mothers PDGs Secondaries of " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
-    histos.add("particle/mothers/mothers/prodVx", "Mothers mothers Prod. Vertex X " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/mothers/mothers/prodVy", "Mothers mothers Prod. Vertex Y " + titlePdgCode, kTH1D, {axes.axisProdXY});
-    histos.add("particle/mothers/mothers/prodVz", "Mothers mothers Prod. Vertex Z " + titlePdgCode, kTH1D, {axes.axisProdZ});
-    histos.add("particle/mothers/mothers/prodRadiusVsPt", "Mothers mothers Prod. Vertex Radius " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
-    histos.add("particle/mothers/mothers/prodRadius3DVsPt", "Mothers mothers Prod. Vertex Radius XYZ " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisProdRadius});
+    histos.add("particle/mothers/mothers/prodVx", "Mothers mothers Prod. Vertex X " + titlePdgCode, kTH1D, {axisProdx});
+    histos.add("particle/mothers/mothers/prodVy", "Mothers mothers Prod. Vertex Y " + titlePdgCode, kTH1D, {axisPrody});
+    histos.add("particle/mothers/mothers/prodVz", "Mothers mothers Prod. Vertex Z " + titlePdgCode, kTH1D, {axisProdz});
+    histos.add("particle/mothers/mothers/prodRadiusVsPt", "Mothers mothers Prod. Vertex Radius " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
+    histos.add("particle/mothers/mothers/prodRadius3DVsPt", "Mothers mothers Prod. Vertex Radius XYZ " + titlePdgCode, kTH2D, {axisPt, axisProdRadius});
 
     if (doprocessParticleOnly) {
       return;
     }
     histos.add("track/PDGs", "Track PDGs", kTH2D, {axisPDGs, axisCharge});
-    histos.add("track/withoutParticle", "Tracks without particles", kTH1D, {axes.axisMomentum});
+    histos.add("track/withoutParticle", "Tracks without particles", kTH1D, {axisPt});
     histos.add("track/tofPDGs", "Track wTOF PDGs", kTH2D, {axisPDGs, axisCharge});
-    histos.add("track/Pt", "Track Pt " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("track/primariesPt", "Track Pt (primary) " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("track/secondariesPt", "Track Pt (secondary) " + titlePdgCode, kTH1D, {axes.axisMomentum});
-    histos.add("track/PtvsMCPt", "Track Pt vs MC Pt " + titlePdgCode, kTH2D, {axes.axisMomentum, axes.axisMomentum});
-    histos.add("track/Eta", "Track Eta " + titlePdgCode, kTH1D, {axes.axisEta});
-    histos.add("track/primariesEta", "Track Eta (primary) " + titlePdgCode, kTH1D, {axes.axisEta});
-    histos.add("track/secondariesEta", "Track Eta (secondary) " + titlePdgCode, kTH1D, {axes.axisEta});
+    histos.add("track/Pt", "Track Pt " + titlePdgCode, kTH1D, {axisPt});
+    histos.add("track/primariesPt", "Track Pt (primary) " + titlePdgCode, kTH1D, {axisPt});
+    histos.add("track/secondariesPt", "Track Pt (secondary) " + titlePdgCode, kTH1D, {axisPt});
+    histos.add("track/PtvsMCPt", "Track Pt vs MC Pt " + titlePdgCode, kTH2D, {axisPt, axisPt});
+    histos.add("track/Eta", "Track Eta " + titlePdgCode, kTH1D, {axisEta});
+    histos.add("track/primariesEta", "Track Eta (primary) " + titlePdgCode, kTH1D, {axisEta});
+    histos.add("track/secondariesEta", "Track Eta (secondary) " + titlePdgCode, kTH1D, {axisEta});
     histos.add("track/primaries", "Source for primaries " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
     histos.add("track/secondaries", "Source for secondaries " + titlePdgCode, kTH2D, {axisPDGs, axisCharge});
   }
@@ -266,14 +292,13 @@ struct Alice3SingleParticle {
     return pdgParticle && pdgParticle->Charge() != 0;
   }
 
-  void fillSignalMultiplicity(const std::vector<int>& nchPerCollision, const std::vector<int>& nSignalPerCollision)
+    void fillSignalMultiplicity(const std::vector<int>& nchPerCollision, const std::vector<int>& nSignalPerCollision)
   {
     for (std::size_t iCollision = 0; iCollision < nchPerCollision.size(); ++iCollision) {
       histos.fill(HIST("event/Nch"), nchPerCollision[iCollision]);
       histos.fill(HIST("particle/NSignalVsNch"), nchPerCollision[iCollision], nSignalPerCollision[iCollision]);
     }
   }
-
   // Track histograms. Must be called after genericProcessParticles, which fills particlesOfInterest.
   template <typename TTracks>
   void genericProcessTracks(const TTracks& tracks)
