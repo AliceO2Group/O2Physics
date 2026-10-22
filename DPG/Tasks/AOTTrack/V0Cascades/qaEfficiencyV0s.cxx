@@ -125,12 +125,12 @@ struct QaEfficiencyV0s {
     }
 
     for (int i = 0; i < nSpecies; i++) {
-      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies))->SetPassedHistogram(*histograms[i][kHistoPtNum].get(), "f");
-      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies))->SetTotalHistogram(*histograms[i][kHistoPtDen].get(), "f");
-      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 1))->SetPassedHistogram(*histogramsPrm[i][kHistoPtNum].get(), "f");
-      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 1))->SetTotalHistogram(*histogramsPrm[i][kHistoPtDen].get(), "f");
-      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 2))->SetPassedHistogram(*histogramsPrmRap[i][kHistoPtNum].get(), "f");
-      static_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 2))->SetTotalHistogram(*histogramsPrmRap[i][kHistoPtDen].get(), "f");
+      dynamic_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies))->SetPassedHistogram(*histograms[i][kHistoPtNum].get(), "f");
+      dynamic_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies))->SetTotalHistogram(*histograms[i][kHistoPtDen].get(), "f");
+      dynamic_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 1))->SetPassedHistogram(*histogramsPrm[i][kHistoPtNum].get(), "f");
+      dynamic_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 1))->SetTotalHistogram(*histogramsPrm[i][kHistoPtDen].get(), "f");
+      dynamic_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 2))->SetPassedHistogram(*histogramsPrmRap[i][kHistoPtNum].get(), "f");
+      dynamic_cast<TEfficiency*>(listEfficiencyMC->At(i * nSpecies + 2))->SetTotalHistogram(*histogramsPrmRap[i][kHistoPtDen].get(), "f");
     }
   }
 };
