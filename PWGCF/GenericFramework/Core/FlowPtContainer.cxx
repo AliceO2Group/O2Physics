@@ -16,6 +16,7 @@
 #include "FlowPtContainer.h"
 
 #include "PWGCF/GenericFramework/Core/BootstrapProfile.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
 
 #include <Framework/HistogramSpec.h>
@@ -45,6 +46,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <unordered_set>
 #include <utility>
 #include <variant>
@@ -54,7 +56,6 @@ using namespace o2::analysis::genericframework;
 using namespace o2::analysis::genericframework::eventweight;
 using o2::analysis::genericframework::flowptcontainer::PtCorrConfig;
 using o2::analysis::genericframework::flowptcontainer::PtMomentConfig;
-using o2::analysis::genericframework::flowptcontainer::PtMomentGroup;
 
 namespace
 {
@@ -79,7 +80,7 @@ std::optional<std::vector<std::vector<bool>>> replacePtTerms(std::string& expres
     if (openBrace == std::string::npos) {
       break;
     }
-    if (openBrace > 0 && !std::isspace(static_cast<unsigned char>(expression[openBrace - 1]))) {
+    if (openBrace > 0 && std::isspace(static_cast<unsigned char>(expression[openBrace - 1])) == 0) {
       expression.insert(openBrace++, 1, ' ');
     }
     const auto closeBrace = expression.find('}', openBrace + 1);
@@ -132,12 +133,12 @@ std::string makeFullTopologyName(const std::string& head, std::uint64_t activeFa
   }
 
   std::string name = head + "_full";
-  if (hasFlow && (activeFactors & std::uint64_t{1})) {
+  if (hasFlow && (activeFactors & std::uint64_t{1}) != 0) {
     name += "_flow";
   }
   const int ptOffset = hasFlow ? 1 : 0;
   for (int i = 0; i < ptOrder; ++i) {
-    if (activeFactors & (std::uint64_t{1} << (ptOffset + i))) {
+    if ((activeFactors & (std::uint64_t{1} << (ptOffset + i))) != 0) {
       name += "_pt" + std::to_string(i + 1);
     }
   }
@@ -274,7 +275,7 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
 
   GFW parser;
   for (size_t i = 0; i < numberOfRegions; ++i) {
-    parser.AddRegion(regions.GetNames()[i], regions.GetEtaMin()[i], regions.GetEtaMax()[i], regions.GetpTDifs()[i] ? 2 : 1, regions.GetBitmasks()[i]);
+    parser.AddRegion(regions.GetNames()[i], regions.GetEtaMin()[i], regions.GetEtaMax()[i], regions.GetpTDifs()[i] != 0 ? 2 : 1, regions.GetBitmasks()[i]);
   }
   if (parser.fRegions.size() != numberOfRegions) {
     LOGF(error, "Cannot initialize %s: invalid GFW region", GetName());
@@ -385,7 +386,13 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
     }
 
     maxPtOrder = std::max(maxPtOrder, ptOrder);
-    requests.push_back({std::move(config), std::move(*isPt), std::move(factors), std::move(ptTerms), ptOrder, hasFlow, allFactors});
+    requests.push_back({.config = std::move(config),
+                        .isPt = std::move(*isPt),
+                        .factors = std::move(factors),
+                        .ptTerms = std::move(ptTerms),
+                        .ptOrder = ptOrder,
+                        .hasFlow = hasFlow,
+                        .allFactors = allFactors});
   }
 
   struct NaturalMean {
@@ -414,7 +421,10 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
       continue;
     }
     const auto group = request.ptTerms.front().first;
-    naturalMeans.push_back({getPtRegion(request, 0), request.config.ptInd[group], request.config.pTDif, request.config.Head});
+    naturalMeans.push_back({.region = getPtRegion(request, 0),
+                            .ptIndex = request.config.ptInd[group],
+                            .pTDif = request.config.pTDif,
+                            .profile = request.config.Head});
   }
 
   std::vector<PtCorrConfig> parsedConfigs;
@@ -423,7 +433,12 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
   momentConfigs.reserve(requests.size());
   for (const auto& request : requests) {
     const int ptOffset = request.hasFlow ? 1 : 0;
-    PtCorrConfig parsed{request.config.Head, request.allFactors, request.hasFlow, {}, std::vector<std::string>(request.ptOrder)};
+    PtCorrConfig parsed{
+      .head = request.config.Head,
+      .allFactors = request.allFactors,
+      .hasFlow = request.hasFlow,
+      .profiles = {},
+      .meanProfiles = std::vector<std::string>(request.ptOrder)};
 
     // Factors in one single-region pT group are exchangeable. Their full-topology
     // terms therefore depend only on how many factors are active.
@@ -456,7 +471,7 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
     // so every subset retains the event weight of the full correlation.
     auto addFullTopologyProfile = [&](std::uint64_t activeFactors) {
       auto profileConfig = request.config;
-      if (request.hasFlow && !(activeFactors & std::uint64_t{1})) {
+      if (request.hasFlow && (activeFactors & std::uint64_t{1}) == 0) {
         for (size_t group = 0; group < request.isPt.size(); ++group) {
           if (!request.isPt[group].front()) {
             std::fill(profileConfig.Hars[group].begin(), profileConfig.Hars[group].end(), 0);
@@ -464,7 +479,11 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
         }
       }
       profileConfig.Head = makeFullTopologyName(request.config.Head, activeFactors, request.allFactors, request.hasFlow, request.ptOrder);
-      parsed.profiles.push_back({std::move(profileConfig), request.isPt, request.factors, activeFactors, true});
+      parsed.profiles.push_back({.config = std::move(profileConfig),
+                                 .isPt = request.isPt,
+                                 .factors = request.factors,
+                                 .activeFactors = activeFactors,
+                                 .usesFullTopology = true});
     };
 
     addFullTopologyProfile(request.allFactors);
@@ -497,17 +516,28 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
       meanConfig.pTDif = request.config.pTDif;
       meanConfig.Head = request.config.Head + "_mean_pt" + std::to_string(ptIndex + 1);
       parsed.meanProfiles[ptIndex] = meanConfig.Head;
-      naturalMeans.push_back({meanConfig.Regs.front().front(), meanConfig.ptInd.front(), meanConfig.pTDif, meanConfig.Head});
-      parsed.profiles.push_back({std::move(meanConfig), {{true}}, {{ptOffset + ptIndex}}, factor, false});
+      naturalMeans.push_back({.region = meanConfig.Regs.front().front(),
+                              .ptIndex = meanConfig.ptInd.front(),
+                              .pTDif = meanConfig.pTDif,
+                              .profile = meanConfig.Head});
+      parsed.profiles.push_back({.config = std::move(meanConfig),
+                                 .isPt = {{true}},
+                                 .factors = {{ptOffset + ptIndex}},
+                                 .activeFactors = factor,
+                                 .usesFullTopology = false});
     }
 
     if (!request.hasFlow) {
-      PtMomentConfig momentConfig{request.config.Head, {}};
+      PtMomentConfig momentConfig{
+        .head = request.config.Head,
+        .groups = {}};
       momentConfig.groups.reserve(request.isPt.size());
       for (size_t group = 0; group < request.isPt.size(); ++group) {
         const int firstFactor = request.factors[group].front();
         const int region = request.config.Regs[group].front();
-        momentConfig.groups.push_back({regions.GetNames()[region], static_cast<int>(request.factors[group].size()), parsed.meanProfiles[firstFactor]});
+        momentConfig.groups.push_back({.region = regions.GetNames()[region],
+                                       .order = static_cast<int>(request.factors[group].size()),
+                                       .meanProfile = parsed.meanProfiles[firstFactor]});
       }
       momentConfigs.push_back(std::move(momentConfig));
     }
@@ -548,7 +578,8 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const GFWR
   fPtRegionMoments.clear();
   fPtRegionMoments.reserve(regionMaxOrders.size());
   for (const int& order : regionMaxOrders) {
-    fPtRegionMoments.push_back({order, std::vector<double>((order + 1) * (order + 1), 0.)});
+    fPtRegionMoments.push_back({.maxOrder = order,
+                                .values = std::vector<double>((order + 1) * (order + 1), 0.)});
   }
   mpar = maxPtOrder;
   nSubevents = static_cast<int>(numberOfRegions);
@@ -1092,8 +1123,9 @@ void FlowPtContainer::fill(const double& eta, const double& w, const double& pt,
 
   for (size_t region = 0; region < fPtRegionMoments.size(); ++region) {
     auto& moments = fPtRegionMoments[region];
-    if (moments.maxOrder == 0 || !(fPtRegions.GetEtaMin()[region] < eta && eta < fPtRegions.GetEtaMax()[region]) ||
-        !(fPtRegions.GetBitmasks()[region] & mask)) {
+    const bool inEtaRange = fPtRegions.GetEtaMin()[region] < eta && eta < fPtRegions.GetEtaMax()[region];
+    const bool maskMatches = (fPtRegions.GetBitmasks()[region] & mask) != 0;
+    if (moments.maxOrder == 0 || !inEtaRange || !maskMatches) {
       continue;
     }
     for (int weightPower = 1; weightPower <= moments.maxOrder; ++weightPower) {
@@ -1253,7 +1285,7 @@ void FlowPtContainer::fillPtProfiles(GFW& gfw, const double& centmult, const dou
           std::vector<int> ptPowers;
           ptPowers.reserve(profileConfig.isPt[group].size());
           for (const int& factor : profileConfig.factors[group]) {
-            ptPowers.push_back((profileConfig.activeFactors & (std::uint64_t{1} << factor)) ? 1 : 0);
+            ptPowers.push_back((profileConfig.activeFactors & (std::uint64_t{1} << factor)) != 0 ? 1 : 0);
           }
           auto denominatorPtPowers = std::vector<int>(ptPowers.size(), 0);
           denominator *= recursivePtCorrelation(poi, ref, overlap, weightPowers, denominatorPtPowers);

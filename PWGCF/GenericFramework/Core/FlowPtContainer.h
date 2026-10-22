@@ -284,7 +284,7 @@ class FlowPtContainer : public TNamed
   std::vector<std::vector<int>> subevents; //!
   void clearPtPostprocessLists();
   void clearPtRegionMoments();
-  double getPtMoment(int region, int weightPower, int ptPower) const;
+  [[nodiscard]] double getPtMoment(int region, int weightPower, int ptPower) const;
   double recursivePtCorrelation(int poi, int ref, int overlap, std::vector<int>& weightPowers, std::vector<int>& ptPowers) const;
   void getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& subevents);
   static constexpr std::array<float, 9> FactorialArray = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
