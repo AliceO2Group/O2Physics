@@ -140,7 +140,7 @@ struct HStrangeCorrelationFilter {
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
 
     // perform P-Lambda correlation analysis
-    Configurable<float> performPLambdacorrelation{"performPLambdacorrelation", 3, "if true, do p-Lambda correlation study"};
+    Configurable<float> performPLambdacorrelation{"performPLambdacorrelation", 3, "do p-Lambda correlation study"};
     Configurable<float> triggerProtonNSigmaTPCFOF{"triggerProtonNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Proton ID"};
   } trackSelections;
   struct : ConfigurableGroup {
