@@ -149,6 +149,7 @@ struct HStrangeCorrelation {
     Configurable<bool> doLocalDensityStudy{"doLocalDensityStudy", false, "if true, create and fill the pt vs eta vs local density spectra of triggers and V0s"};
     Configurable<float> localDensityConeRadius{"localDensityConeRadius", 0.4, "radius of the cone in which the local density is counted"};
     Configurable<bool> doMultEstimatorResponse{"doMultEstimatorResponse", false, "processSameEventHV0s: fill MultEstimatorResponse, multNTracksPVeta1 vs FT0M percentile and amplitude, with the event selection of PairLossK0/EventRecoEfficiency (no INEL cuts)"};
+    Configurable<float> performPLambdacorrelation{"performPLambdacorrelation", 3, "do p-Lambda correlation study"};
   } masterConfigurations;
 
   // master analysis switches
@@ -1538,6 +1539,12 @@ struct HStrangeCorrelation {
           float efficiency = 1.0f;
           float totalEffUncert = 0.0;
           float efficiencyError = 0.0f;
+          if (masterConfigurations.performPLambdacorrelation == 0 && ((Index == 1 && triggSign == 1) || (Index == 2 && triggSign == -1))) {
+            return;
+          }
+          if (masterConfigurations.performPLambdacorrelation == 1 && ((Index == 1 && triggSign == -1) || (Index == 2 && triggSign == 1))) {
+            return;
+          }
           if (efficiencyFlags.applyEfficiencyCorrection) {
             if (efficiencyFlags.applyEffAsFunctionOfMultAndPhi) {
               std::array<double, 4> bin = {ptassoc, assoc.eta(), assoc.phi(), mult};
