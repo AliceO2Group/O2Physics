@@ -93,7 +93,7 @@ struct EffPtMFT {
   }
 
   using Particles = aod::McParticles;
-  expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
+  expressions::Filter primaries = (aod::mcparticle::flags & static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)) == static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary);
 
   void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, soa::Filtered<Particles> const& particles)
   {
@@ -112,7 +112,7 @@ struct EffPtMFT {
         auto p = pdg->GetParticle(particle.pdgCode());
         auto charge = 0;
         if (p != nullptr) {
-          charge = (int)p->Charge();
+          charge = static_cast<int>(p->Charge());
         }
         if (std::abs(charge) < 3.) {
           continue;
@@ -162,7 +162,7 @@ struct EffPtMFT {
   // using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
   using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToMftTracks>;
   // expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
-  Partition<ParticlesI> primariesI = ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+  Partition<ParticlesI> primariesI = ((aod::mcparticle::flags & static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)) == static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary));
 
   void processTrackEfficiencyIndexed(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
                                      aod::McCollisions const&,
