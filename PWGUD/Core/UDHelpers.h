@@ -425,14 +425,14 @@ bool cleanFDD(T& bc, float maxFITtime, float limitA, float limitC)
 //  lims[4]: FDDC
 
 template <typename T>
-bool cleanFIT(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFIT(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFV0(bc, maxFITtime, lims[0]) &&
          cleanFT0(bc, maxFITtime, lims[1], lims[2]) &&
          cleanFDD(bc, maxFITtime, lims[3], lims[4]);
 }
 template <typename T>
-bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> lims)
+bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> const& lims)
 {
   bool isCleanFV0 = true;
   if (col.has_foundFV0()) {
@@ -453,7 +453,7 @@ bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> lims)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFITA(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFITA(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFV0(bc, maxFITtime, lims[0]) &&
          cleanFT0A(bc, maxFITtime, lims[1]) &&
@@ -462,7 +462,7 @@ bool cleanFITA(T& bc, float maxFITtime, std::vector<float> lims)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFITC(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFITC(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFT0C(bc, maxFITtime, lims[2]) &&
          cleanFDDC(bc, maxFITtime, lims[4]);
@@ -506,7 +506,7 @@ bool TCE(T& bc)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool TOR(T& bc, float maxFITtime, std::vector<float> lims)
+bool TOR(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   auto torA = !cleanFT0A(bc, maxFITtime, lims[1]);
   auto torC = !cleanFT0C(bc, maxFITtime, lims[2]);
@@ -565,27 +565,48 @@ inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
   constexpr int kFV0Offset = 208;
 
   auto ampsA = ft0.amplitudeA();
-  const int nA = std::min<int>(ampsA.size(), 96);
+  auto chanA = ft0.channelA();
+  const int nA = std::min<int>(ampsA.size(), chanA.size());
   for (int i = 0; i < nA; ++i) {
     const auto a = ampsA[i];
-    setBit(thr1, kFT0AOffset + i, a >= thr1_FT0A);
-    setBit(thr2, kFT0AOffset + i, a >= thr2_FT0A);
+    const int c = chanA[i];
+
+    if (c < 0 || c >= 96) {
+      continue;
+    }
+
+    setBit(thr1, kFT0AOffset + c, a >= thr1_FT0A);
+    setBit(thr2, kFT0AOffset + c, a >= thr2_FT0A);
   }
 
   auto ampsC = ft0.amplitudeC();
-  const int nC = std::min<int>(ampsC.size(), 112);
+  auto chanC = ft0.channelC();
+  const int nC = std::min<int>(ampsC.size(), chanC.size());
   for (int i = 0; i < nC; ++i) {
     const auto a = ampsC[i];
-    setBit(thr1, kFT0COffset + i, a >= thr1_FT0C);
-    setBit(thr2, kFT0COffset + i, a >= thr2_FT0C);
+    const int c = chanC[i];
+
+    if (c < 0 || c >= 112) {
+      continue;
+    }
+
+    setBit(thr1, kFT0COffset + c, a >= thr1_FT0C);
+    setBit(thr2, kFT0COffset + c, a >= thr2_FT0C);
   }
 
   auto ampsV = fv0a.amplitude();
-  const int nV = std::min<int>(ampsV.size(), 48);
+  auto chanV = fv0a.channel();
+  const int nV = std::min<int>(ampsV.size(), chanV.size());
   for (int i = 0; i < nV; ++i) {
     const auto a = ampsV[i];
-    setBit(thr1, kFV0Offset + i, a >= thr1_FV0A);
-    setBit(thr2, kFV0Offset + i, a >= thr2_FV0A);
+    const int c = chanV[i];
+
+    if (c < 0 || c >= 48) {
+      continue;
+    }
+
+    setBit(thr1, kFV0Offset + c, a >= thr1_FV0A);
+    setBit(thr2, kFV0Offset + c, a >= thr2_FV0A);
   }
 }
 
@@ -777,24 +798,15 @@ template <typename T>
 bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
 // Return true if collision is accepted according to user-chosen rules from event selection task
 {
-  bool accepted = true;
-  std::vector<int> sels = diffCuts.collisionSel();
-  if (sels[0])
-    accepted = accepted && cutNoTimeFrameBorder(coll);
-  if (sels[1])
-    accepted = accepted && cutNoSameBunchPileup(coll);
-  if (sels[2])
-    accepted = accepted && cutNoITSROFrameBorder(coll);
-  if (sels[3])
-    accepted = accepted && cutIsGoodZvtxFT0vsPV(coll);
-  if (sels[4])
-    accepted = accepted && cutIsVertexITSTPC(coll);
-  if (sels[5])
-    accepted = accepted && cutIsVertexTRDmatched(coll);
-  if (sels[6])
-    accepted = accepted && cutIsVertexTOFmatched(coll);
+  auto const sels = diffCuts.collisionSel();
 
-  return accepted;
+  return (!sels[0] || cutNoTimeFrameBorder(coll)) &&
+         (!sels[1] || cutNoSameBunchPileup(coll)) &&
+         (!sels[2] || cutNoITSROFrameBorder(coll)) &&
+         (!sels[3] || cutIsGoodZvtxFT0vsPV(coll)) &&
+         (!sels[4] || cutIsVertexITSTPC(coll)) &&
+         (!sels[5] || cutIsVertexTRDmatched(coll)) &&
+         (!sels[6] || cutIsVertexTOFmatched(coll));
 }
 
 // -----------------------------------------------------------------------------

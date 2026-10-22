@@ -53,7 +53,9 @@
 #include <iterator>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -76,12 +78,8 @@ float displayDeltaPhi(float dPhi)
 // Per-centrality-bin histogram set. Defined at file scope (NOT inside the task struct),
 // otherwise O2's struct reflection in adaptAnalysisTask fails to compile.
 struct CentRho2Set {
-  // eta space (only booked if cFillEtaSpace && cFillCentEtaSpace)
-  std::shared_ptr<TH2> Lp, LAp, ALp, ALAp, pp, pAp, App, ApAp, LL, LAL, ALL, ALAL;
   // y space
   std::shared_ptr<TH2> Lp_y, LAp_y, ALp_y, ALAp_y, pp_y, pAp_y, App_y, ApAp_y, LL_y, LAL_y, ALL_y, ALAL_y;
-  // rho1 eta
-  std::shared_ptr<TH2> rho1_Proton, rho1_AntiProton, rho1_Lambda, rho1_AntiLambda;
   // rho1 y
   std::shared_ptr<TH2> rho1_Proton_y, rho1_AntiProton_y, rho1_Lambda_y, rho1_AntiLambda_y;
   // event counter
@@ -90,7 +88,6 @@ struct CentRho2Set {
 
 struct LambdaProtonBalanceFunction {
   HistogramRegistry registryLambda{"Lambda_invMass", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry registryLambdaExtended{"Lambda_invMassExtended", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryRho{"rho1ANDrho2_LP", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryCent{"rho1ANDrho2_LP_CentralityBased", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryOther{"Other_Hists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -104,19 +101,6 @@ struct LambdaProtonBalanceFunction {
   HistogramRegistry registryProtonVetoQA{"ProtonVetoQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // ════════════════════════════════════════════════════════════════════════
-  // Static compile-time constants (not non-static data members: do not count
-  // toward the O2 StructToTuple arity).
-  // ════════════════════════════════════════════════════════════════════════
-  static constexpr int kExtNyBins = 2;
-  static constexpr int kExtNptBins = 25;
-  static constexpr float kExtYMin = -0.8f;
-  static constexpr float kExtYMax = -0.6f;
-  static constexpr float kExtYStep = 0.1f;
-  static constexpr float kExtPtMin = 0.0f;
-  static constexpr float kExtPtMax = 2.5f;
-  static constexpr float kExtPtStep = 0.1f;
-
-  // ════════════════════════════════════════════════════════════════════════
   // TaskState — ordinary C++ runtime/implementation state.
   // Grouped into ONE nested object so that the number of direct data members of
   // this task struct stays well below the O2 StructToTuple / structured-binding
@@ -124,7 +108,7 @@ struct LambdaProtonBalanceFunction {
   // ConfigurableAxis, Filter, HistogramRegistry): those must remain top-level.
   // ════════════════════════════════════════════════════════════════════════
   struct TaskState {
-    // pT bins 0.6 → 3.6 in steps of 0.2 (used for per-bin rho2 / mass histograms)
+    // pT bins 0.6 → 3.6 in steps of 0.2 (used for per-bin pT-spectra / mass histograms)
     std::vector<float> ptEdges;
 
     // ════════════════════════════════════════════════════════════════════════
@@ -136,43 +120,8 @@ struct LambdaProtonBalanceFunction {
     std::shared_ptr<TH1> hMassAntiLambdaMerged;
 
     // ════════════════════════════════════════════════════════════════════════
-    // SECTION A2— Extended invariant-mass histograms (y × pT grid)
-    //   hMassLambdaExtended[iY][iPt]     → Lambda_invMassExtended/Lambda/
-    //   hMassAntiLambdaExtended[iY][iPt] → Lambda_invMassExtended/AntiLambda/
-    //   Rapidity bins (kExtNyBins = 2): [-0.8,-0.7), [-0.7,-0.6]
-    //   pT bins (kExtNptBins = 25):     [0.0,0.1), [0.1,0.2), ..., [2.4,2.5]
-    // ════════════════════════════════════════════════════════════════════════
-
-    std::vector<std::vector<std::shared_ptr<TH1>>> hMassLambdaExtended;
-    std::vector<std::vector<std::shared_ptr<TH1>>> hMassAntiLambdaExtended;
-
-    // ════════════════════════════════════════════════════════════════════════
-    // SECTION B — rho2 eta-space histograms
-    //   Naming: hRho2_<channel>         = per-pT-bin vector
-    //           hRho2_<channel>_AllPt = merged (full pT range as
-    //           set by the pT cuts: protons 0.5-3.6, Lambdas 0.6-3.6 GeV/c;
-    //           "015" is a legacy name and does NOT reflect the actual lower cut)
-    // ════════════════════════════════════════════════════════════════════════
-    // Lambda–proton family
-    std::shared_ptr<TH2> hRho2_Lp_AllPt;
-    std::shared_ptr<TH2> hRho2_LAp_AllPt;
-    std::shared_ptr<TH2> hRho2_ALp_AllPt;
-    std::shared_ptr<TH2> hRho2_ALAp_AllPt;
-    // Proton–proton family
-    std::shared_ptr<TH2> hRho2_pp_AllPt;
-    std::shared_ptr<TH2> hRho2_pAp_AllPt;
-    std::shared_ptr<TH2> hRho2_App_AllPt;
-    std::shared_ptr<TH2> hRho2_ApAp_AllPt;
-    // Lambda–Lambda family
-    std::shared_ptr<TH2> hRho2_LL_AllPt;
-    std::shared_ptr<TH2> hRho2_LAL_AllPt;
-    std::shared_ptr<TH2> hRho2_ALL_AllPt;
-    std::shared_ptr<TH2> hRho2_ALAL_AllPt;
-
-    // ════════════════════════════════════════════════════════════════════════
-    // SECTION C — rho2 rapidity-space histograms
-    //   Same channels as Section B but filled with unrolledIndexY(y, phi)
-    //   Naming: hRho2_<channel>_y / hRho2_<channel>_y_AllPt
+    // SECTION C — rho2 rapidity-space histograms, filled with unrolledIndexY(y, phi).
+    //   Naming: hRho2_<channel>_y_AllPt.
     // ════════════════════════════════════════════════════════════════════════
     // Lambda–proton family (y)
     std::shared_ptr<TH2> hRho2_Lp_y_AllPt;
@@ -224,13 +173,9 @@ struct LambdaProtonBalanceFunction {
 
     // Runtime copies populated from Configurables in init().
     // Not static, not constexpr — values are known only after O2 delivers the config.
-    int mRhoEtaBins = 0;
     int mRhoPhiBins = 0;
     int mRhoYBins = 0;
-    int mRhoUnrolledBins = 0;  // mRhoEtaBins * mRhoPhiBins
     int mRhoUnrolledBinsY = 0; // mRhoYBins * mRhoPhiBins
-    float mRhoEtaMin = 0.f;
-    float mRhoEtaMax = 0.f;
     float mRhoYMin = 0.f;
     float mRhoYMax = 0.f;
   };
@@ -242,7 +187,6 @@ struct LambdaProtonBalanceFunction {
   // ── Configurables ─────────────────────────────────────────────────────
 
   Configurable<float> cPPandV0ZVertexCut{"cPPandV0ZVertexCut", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<bool> cFillEtaSpace{"cFillEtaSpace", false, "Fill eta-space rho1/rho2 histograms"};
   Configurable<bool> cUseQinvCut{"cUseQinvCut", false, "Apply q_inv > cQinvCutValue pair cut (false = no q_inv rejection)"};
   Configurable<float> cQinvCutValue{"cQinvCutValue", 0.01f, "q_inv cut value (GeV/c)"};
   Configurable<int> cQinvQABins{"cQinvQABins", 6000, "Number of bins for QA q_inv histograms"};
@@ -320,12 +264,9 @@ struct LambdaProtonBalanceFunction {
   Configurable<int> cV0DauMinTpcCrossedRows{"cV0DauMinTpcCrossedRows", 70, "Daughter TPC min crossed rows"};
   // ── Rho1/Rho2 grid — configurable at runtime (Hyperloop-friendly) ────────
   // These replace the former static constexpr k* constants.  Default values
-  // reproduce the original hardcoded grid (eta: 40×72, y: 10×72).
-  Configurable<int> cRhoEtaBins{"cRhoEtaBins", 40, "Number of eta bins for rho1/rho2"};
+  // reproduce the original hardcoded grid (y: 10×72).
   Configurable<int> cRhoPhiBins{"cRhoPhiBins", 72, "Number of phi bins for rho1/rho2"};
   Configurable<int> cRhoYBins{"cRhoYBins", 10, "Number of y bins for rho1/rho2"};
-  Configurable<float> cRhoEtaMin{"cRhoEtaMin", -0.5f, "Min eta for rho1/rho2"};
-  Configurable<float> cRhoEtaMax{"cRhoEtaMax", 0.5f, "Max eta for rho1/rho2"};
   Configurable<float> cRhoYMin{"cRhoYMin", -0.5f, "Min y for rho1/rho2"};
   Configurable<float> cRhoYMax{"cRhoYMax", 0.5f, "Max y for rho1/rho2"};
   // ─────────────────────────────────────────────────────────────────────────
@@ -341,15 +282,6 @@ struct LambdaProtonBalanceFunction {
     }
   }
 
-  int etaBinIndex(float eta) const
-  {
-    if (eta < state.mRhoEtaMin || eta >= state.mRhoEtaMax) {
-      return -1;
-    }
-    const float binWidth = (state.mRhoEtaMax - state.mRhoEtaMin) / state.mRhoEtaBins;
-    return static_cast<int>((eta - state.mRhoEtaMin) / binWidth);
-  }
-
   int phiBinIndex(float phi) const
   {
     constexpr float phiMin = 0.0f;
@@ -359,16 +291,6 @@ struct LambdaProtonBalanceFunction {
     }
     const float binWidth = (phiMax - phiMin) / state.mRhoPhiBins;
     return static_cast<int>((phi - phiMin) / binWidth);
-  }
-
-  int unrolledIndex(float eta, float phi) const
-  {
-    const int iEta = etaBinIndex(eta);
-    const int iPhi = phiBinIndex(phi);
-    if (iEta < 0 || iPhi < 0) {
-      return -1;
-    }
-    return iEta * state.mRhoPhiBins + iPhi;
   }
 
   int yBinIndex(float y) const
@@ -444,6 +366,11 @@ struct LambdaProtonBalanceFunction {
     return cUseQinvCut.value && (qinv <= cQinvCutValue.value);
   }
 
+  // QA-only: true => pair would survive the q_inv cut, regardless of the cUseQinvCut master switch.
+  // Used for ALL "After_qinvCut" QA histograms (PP, pAp, App, ApAp, LP-family, LL-family) so they always show the mathematical effect of the cut.
+  // Physics logic must keep using failsQinvCut().
+  bool passesQinvQA(float qinv) const { return qinv > cQinvCutValue.value; }
+
   // Returns the active centrality estimator's percentile for this collision,
   // selected at runtime via cUseFT0C (false = FT0M, true = FT0C).
   template <typename TCollision>
@@ -467,7 +394,7 @@ struct LambdaProtonBalanceFunction {
   static void fillIdx(std::shared_ptr<TH2> const& h, int a, int b)
   {
     if (h && a >= 0 && b >= 0) {
-      h->Fill(a, b);
+      h->Fill(a + 0.5f, b + 0.5f);
     }
   }
   // ─────────────────────────────────────────────────────────────────────
@@ -491,6 +418,30 @@ struct LambdaProtonBalanceFunction {
     return std::abs(trk.tofNSigmaPr()) < pProtonTOFNsigma.value;
   }
 
+  // Bitmask of contaminant hypotheses that REJECT the track (bit0 = pi, bit1 = K, bit2 = e).
+  // A hypothesis rejects only if the track is inside its veto window AND closer to it than to the proton.
+  // Detector: TOF at/above the TPC/TOF switch momentum when TOF is available, TPC otherwise.
+  template <typename TTrack>
+  int contaminantVetoMask(TTrack const& trk, bool& usedTOF) const
+  {
+    usedTOF = cVetoUseTOF.value && trk.hasTOF() && trk.tpcInnerParam() >= pProtonTPCTOFSwitchP.value;
+    const float nsP = std::abs(usedTOF ? trk.tofNSigmaPr() : trk.tpcNSigmaPr());
+    const float nsPi = std::abs(usedTOF ? trk.tofNSigmaPi() : trk.tpcNSigmaPi());
+    const float nsK = std::abs(usedTOF ? trk.tofNSigmaKa() : trk.tpcNSigmaKa());
+    const float nsE = std::abs(usedTOF ? trk.tofNSigmaEl() : trk.tpcNSigmaEl());
+    int mask = 0;
+    if (nsPi < pProtonVetoPionNsigma.value && nsPi < nsP) {
+      mask |= 1;
+    }
+    if (nsK < pProtonVetoKaonNsigma.value && nsK < nsP) {
+      mask |= 2;
+    }
+    if (nsE < pProtonVetoElectronNsigma.value && nsE < nsP) {
+      mask |= 4;
+    }
+    return mask;
+  }
+
   // true => track survives the pi/K/e contaminant veto
   template <typename TTrack>
   bool passesContaminantVeto(TTrack const& trk) const
@@ -498,19 +449,27 @@ struct LambdaProtonBalanceFunction {
     if (!cUseContaminantVeto.value) {
       return true;
     }
-    if (std::abs(trk.tpcNSigmaPi()) < pProtonVetoPionNsigma.value ||
-        std::abs(trk.tpcNSigmaKa()) < pProtonVetoKaonNsigma.value ||
-        std::abs(trk.tpcNSigmaEl()) < pProtonVetoElectronNsigma.value) {
-      return false;
+    bool usedTOF = false;
+    return contaminantVetoMask(trk, usedTOF) == 0;
+  }
+
+  // 2D cutflow vs pT only (used directly for the veto-reason bins 16-21)
+  template <typename TTrack>
+  void fillCutFlow2D(float stage, TTrack const& trk)
+  {
+    if (trk.sign() > 0) {
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_Proton"), trk.pt(), stage);
+    } else {
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton"), trk.pt(), stage);
     }
-    if (cVetoUseTOF.value && trk.hasTOF()) {
-      if (std::abs(trk.tofNSigmaPi()) < pProtonVetoPionNsigma.value ||
-          std::abs(trk.tofNSigmaKa()) < pProtonVetoKaonNsigma.value ||
-          std::abs(trk.tofNSigmaEl()) < pProtonVetoElectronNsigma.value) {
-        return false;
-      }
-    }
-    return true;
+  }
+
+  // 1D hCutFlow + 2D cutflow (sequential stages 1-15)
+  template <typename TTrack>
+  void fillCutFlow(float stage, TTrack const& trk)
+  {
+    registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), stage);
+    fillCutFlow2D(stage, trk);
   }
   // ─────────────────────────────────────────────────────────────────────
 
@@ -777,6 +736,8 @@ struct LambdaProtonBalanceFunction {
     const float pt = trk.pt();
     const float beta = trk.beta();
     const float nsTOF = trk.tofNSigmaPr();
+    const float nsTPC = trk.tpcNSigmaPr();
+    const float radius = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
     if (stage == ProtonQAStage::RawAfterTrackSel) {
       if constexpr (IsProton) {
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_beta_vs_p"), p, beta);
@@ -787,6 +748,8 @@ struct LambdaProtonBalanceFunction {
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_nsigmaPr_vs_pt"), pt, nsTOF);
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+        registryQaDetector.fill(HIST("Proton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+        registryQaDetector.fill(HIST("Proton/04_TOF_QA/01_RAW_AfterTrackSel/h1f_circular_radius"), radius);
       } else {
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_beta_vs_p"), p, beta);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_beta_vs_pTPC"), pTPC, beta);
@@ -796,6 +759,8 @@ struct LambdaProtonBalanceFunction {
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_nsigmaPr_vs_pt"), pt, nsTOF);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+        registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/01_RAW_AfterTrackSel/h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+        registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/01_RAW_AfterTrackSel/h1f_circular_radius"), radius);
       }
     } else if (stage == ProtonQAStage::TpcPid) {
       if constexpr (IsProton) {
@@ -807,6 +772,8 @@ struct LambdaProtonBalanceFunction {
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/02_TPC_PID/h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/02_TPC_PID/h2f_nsigmaPr_vs_pt"), pt, nsTOF);
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/02_TPC_PID/h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+        registryQaDetector.fill(HIST("Proton/04_TOF_QA/02_TPC_PID/h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+        registryQaDetector.fill(HIST("Proton/04_TOF_QA/02_TPC_PID/h1f_circular_radius"), radius);
       } else {
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/02_TPC_PID/h2f_beta_vs_p"), p, beta);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/02_TPC_PID/h2f_beta_vs_pTPC"), pTPC, beta);
@@ -816,6 +783,8 @@ struct LambdaProtonBalanceFunction {
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/02_TPC_PID/h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/02_TPC_PID/h2f_nsigmaPr_vs_pt"), pt, nsTOF);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/02_TPC_PID/h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+        registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/02_TPC_PID/h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+        registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/02_TPC_PID/h1f_circular_radius"), radius);
       }
     } else if (stage == ProtonQAStage::TpcTofPid) {
       if constexpr (IsProton) {
@@ -827,6 +796,8 @@ struct LambdaProtonBalanceFunction {
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/03_TPC_TOF_PID/h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/03_TPC_TOF_PID/h2f_nsigmaPr_vs_pt"), pt, nsTOF);
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/03_TPC_TOF_PID/h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+        registryQaDetector.fill(HIST("Proton/04_TOF_QA/03_TPC_TOF_PID/h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+        registryQaDetector.fill(HIST("Proton/04_TOF_QA/03_TPC_TOF_PID/h1f_circular_radius"), radius);
       } else {
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/03_TPC_TOF_PID/h2f_beta_vs_p"), p, beta);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/03_TPC_TOF_PID/h2f_beta_vs_pTPC"), pTPC, beta);
@@ -836,6 +807,8 @@ struct LambdaProtonBalanceFunction {
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/03_TPC_TOF_PID/h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/03_TPC_TOF_PID/h2f_nsigmaPr_vs_pt"), pt, nsTOF);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/03_TPC_TOF_PID/h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+        registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/03_TPC_TOF_PID/h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+        registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/03_TPC_TOF_PID/h1f_circular_radius"), radius);
       }
     } else { // FinalSelected
       if constexpr (IsProton) {
@@ -847,6 +820,8 @@ struct LambdaProtonBalanceFunction {
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/04_Final_SelectedProton/h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/04_Final_SelectedProton/h2f_nsigmaPr_vs_pt"), pt, nsTOF);
         registryQaDetector.fill(HIST("Proton/04_TOF_QA/04_Final_SelectedProton/h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+        registryQaDetector.fill(HIST("Proton/04_TOF_QA/04_Final_SelectedProton/h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+        registryQaDetector.fill(HIST("Proton/04_TOF_QA/04_Final_SelectedProton/h1f_circular_radius"), radius);
       } else {
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/04_Final_SelectedProton/h2f_beta_vs_p"), p, beta);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/04_Final_SelectedProton/h2f_beta_vs_pTPC"), pTPC, beta);
@@ -856,6 +831,8 @@ struct LambdaProtonBalanceFunction {
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/04_Final_SelectedProton/h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/04_Final_SelectedProton/h2f_nsigmaPr_vs_pt"), pt, nsTOF);
         registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/04_Final_SelectedProton/h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+        registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/04_Final_SelectedProton/h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+        registryQaDetector.fill(HIST("AntiProton/04_TOF_QA/04_Final_SelectedProton/h1f_circular_radius"), radius);
       }
     }
   }
@@ -1200,8 +1177,7 @@ struct LambdaProtonBalanceFunction {
   struct PartInfo {
     int64_t gid = 0;
     float px = 0.f, py = 0.f, pz = 0.f, E = 0.f;
-    float eta = 0.f, phi = 0.f, y = 0.f, pt = 0.f;
-    int idxEta = -1;
+    float phi = 0.f, y = 0.f, pt = 0.f;
     int idxY = -1;
   };
 
@@ -1214,11 +1190,9 @@ struct LambdaProtonBalanceFunction {
     p.py = t.py();
     p.pz = t.pz();
     p.E = std::sqrt(p.px * p.px + p.py * p.py + p.pz * p.pz + kMassProton * kMassProton);
-    p.eta = t.eta();
     p.phi = t.phi();
     p.pt = t.pt();
     p.y = protonRapidity(t);
-    p.idxEta = unrolledIndex(p.eta, p.phi);
     p.idxY = unrolledIndexY(p.y, p.phi);
     return p;
   }
@@ -1226,14 +1200,10 @@ struct LambdaProtonBalanceFunction {
   void init(InitContext const&)
   {
     // ── Populate rho1/rho2 grid members from Configurables ──────────────────
-    state.mRhoEtaBins = cRhoEtaBins.value;
     state.mRhoPhiBins = cRhoPhiBins.value;
     state.mRhoYBins = cRhoYBins.value;
-    state.mRhoEtaMin = cRhoEtaMin.value;
-    state.mRhoEtaMax = cRhoEtaMax.value;
     state.mRhoYMin = cRhoYMin.value;
     state.mRhoYMax = cRhoYMax.value;
-    state.mRhoUnrolledBins = state.mRhoEtaBins * state.mRhoPhiBins;
     state.mRhoUnrolledBinsY = state.mRhoYBins * state.mRhoPhiBins;
     // ────────────────────────────────────────────────────────────────────────
 
@@ -1260,9 +1230,7 @@ struct LambdaProtonBalanceFunction {
     const std::string centLabel = cUseFT0C.value ? "FT0C" : "FT0M";
     const std::string centAxisTitle = centLabel + " Percentile (%)";
     AxisSpec multAxis = {100, 0.0f, 100.0f, centAxisTitle};
-    AxisSpec etaAxis = {state.mRhoEtaBins, state.mRhoEtaMin, state.mRhoEtaMax, "#eta"};
     AxisSpec phiAxis = {state.mRhoPhiBins, 0.0f, o2::constants::math::TwoPI, "#varphi"};
-    AxisSpec unrolledAxis = {state.mRhoUnrolledBins, 0.0f, static_cast<float>(state.mRhoUnrolledBins), "index(#eta,#varphi)"};
     AxisSpec unrolledAxisY = {state.mRhoUnrolledBinsY, 0.0f, static_cast<float>(state.mRhoUnrolledBinsY), "index(y,#varphi)"};
     AxisSpec rapidityAxis = {state.mRhoYBins, state.mRhoYMin, state.mRhoYMax, "y"};
     AxisSpec yAxis = {state.mRhoYBins, state.mRhoYMin, state.mRhoYMax, "y"};
@@ -1296,6 +1264,27 @@ struct LambdaProtonBalanceFunction {
     registryOther.add("hNPairs_Lambda_PrimAntiProton", "#Lambda-#bar{p} pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
     registryOther.add("hNPairs_AntiLambda_PrimProton", "#bar{#Lambda}-p pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
     registryOther.add("hNPairs_AntiLambda_PrimAntiProton", "#bar{#Lambda}-#bar{p} pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+
+    // ── Shared-daughter (union) cleaning diagnostics for Lambda / AntiLambda ──
+    registryOther.add("h1f_nLambda_beforeClean", "N_{#Lambda} per event before shared-daughter cleaning;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nLambda_rejectedClean", "N_{#Lambda} rejected by shared-daughter cleaning per event;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nLambda_afterClean", "N_{#Lambda} per event after shared-daughter cleaning;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nAntiLambda_beforeClean", "N_{#bar{#Lambda}} per event before shared-daughter cleaning;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nAntiLambda_rejectedClean", "N_{#bar{#Lambda}} rejected by shared-daughter cleaning per event;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nAntiLambda_afterClean", "N_{#bar{#Lambda}} per event after shared-daughter cleaning;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("hSharedDauCleaningSums", "Shared-daughter cleaning: sums over events;Quantity;Sum", {HistType::kTH1D, {{9, 0.5f, 9.5f}}});
+    {
+      auto hSD = registryOther.get<TH1>(HIST("hSharedDauCleaningSums"));
+      hSD->GetXaxis()->SetBinLabel(1, "Sum N_L raw");
+      hSD->GetXaxis()->SetBinLabel(2, "Sum N_L rej");
+      hSD->GetXaxis()->SetBinLabel(3, "Sum N_L clean");
+      hSD->GetXaxis()->SetBinLabel(4, "Sum N_AL raw");
+      hSD->GetXaxis()->SetBinLabel(5, "Sum N_AL rej");
+      hSD->GetXaxis()->SetBinLabel(6, "Sum N_AL clean");
+      hSD->GetXaxis()->SetBinLabel(7, "Sum N_L*(N_L-1)");
+      hSD->GetXaxis()->SetBinLabel(8, "Sum N_AL*(N_AL-1)");
+      hSD->GetXaxis()->SetBinLabel(9, "Sum N_L*N_AL");
+    }
 
     // ══════════════════════════════════════════════════════════════════════════
     // NEW STAGED QA_Detec REGISTRATION
@@ -1344,6 +1333,14 @@ struct LambdaProtonBalanceFunction {
       registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaPr_vs_pTPC", species, stage), "TOF n#sigma_{p} vs p_{TPC};p_{TPC} (GeV/c);n#sigma", {HistType::kTH2F, {axisPTPC, nsigmaAxis}});
       registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaPr_vs_pt", species, stage), "TOF n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma", {HistType::kTH2F, {axisPtProton, nsigmaAxis}});
       registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaPr_vs_pTOF", species, stage), "TOF n#sigma_{p} vs p_{TOF};p_{TOF} (GeV/c);n#sigma", {HistType::kTH2F, {axisPTOF, nsigmaAxis}});
+
+      // --- 2D TPC vs TOF n-sigma and 1D circular radius (competitive-veto vs circle comparison) ---
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaTPC_vs_nsigmaTOF", species, stage),
+                             "TPC vs TOF n#sigma_{p};n#sigma^{TPC}_{p};n#sigma^{TOF}_{p}",
+                             {HistType::kTH2F, {nsigmaAxis, nsigmaAxis}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h1f_circular_radius", species, stage),
+                             "Circular PID Radius;R = #sqrt{(n#sigma^{TPC}_{p})^{2} + (n#sigma^{TOF}_{p})^{2}};Counts",
+                             {HistType::kTH1F, {{100, 0.0f, 10.0f, "R"}}});
     };
 
     static constexpr std::array<const char*, 4> localProtonStages = {
@@ -1465,6 +1462,40 @@ struct LambdaProtonBalanceFunction {
       hCF->GetXaxis()->SetBinLabel(15, "Selected");
     }
 
+    // ── V0 (Lambda / AntiLambda) cutflow histograms ─────────────────────────
+    // Bins 1-3 are filled for every V0 under BOTH hypotheses (PID hypothesis not yet known).
+    // From bin 4 on, each V0 is counted only in the cutflow of the hypothesis chosen by TPC PID.
+    // Bin 10 = survivors of shared-daughter cleaning (the sample entering rho1 / rho2). Bin 11 is spare.
+    registryQaDetector.add("Lambda/hCutFlow", "#Lambda candidate cutflow;Stage;Counts", {HistType::kTH1F, {{11, 0.5f, 11.5f}}});
+    registryQaDetector.add("AntiLambda/hCutFlow", "#bar{#Lambda} candidate cutflow;Stage;Counts", {HistType::kTH1F, {{11, 0.5f, 11.5f}}});
+    {
+      const char* v0CfLabels[10] = {"All V0s", "V0 Type", "Daughter Kinematics", "Unambiguous TPC PID", "Rapidity",
+                                    "pT Acceptance", "Topology & PV DCA", "cTau & K0s Rej", "Mass Window", "Shared-Dau Cleaned"};
+      auto hCFL = registryQaDetector.get<TH1>(HIST("Lambda/hCutFlow"));
+      auto hCFAL = registryQaDetector.get<TH1>(HIST("AntiLambda/hCutFlow"));
+      for (int ib = 0; ib < 10; ++ib) {
+        hCFL->GetXaxis()->SetBinLabel(ib + 1, v0CfLabels[ib]);
+        hCFAL->GetXaxis()->SetBinLabel(ib + 1, v0CfLabels[ib]);
+      }
+    }
+
+    // 2D cutflow vs pT, separate for protons and antiprotons.
+    // y bins 1-15 = sequential stages (same as hCutFlow); 16-21 = veto REASONS (not sequential, a track can fill several)
+    registryQaDetector.add("Selection/TOF_Matching/h2f_CutFlow_vs_pt_Proton", "Proton cutflow vs p_{T};p_{T} (GeV/c);Stage", {HistType::kTH2F, {axisPtProton, {21, 0.5f, 21.5f}}});
+    registryQaDetector.add("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton", "AntiProton cutflow vs p_{T};p_{T} (GeV/c);Stage", {HistType::kTH2F, {axisPtProton, {21, 0.5f, 21.5f}}});
+    {
+      const char* cfLabels2D[21] = {"All tracks", "hasTPC", "TPC crossed rows", "TPC rows/findable", "TPC chi2", "ITS Ncls", "ITS chi2",
+                                    "TPC signal", "p_TPC & pT window", "|y| window", "DCA xy,z", "PID (TPC/TOF)", "pi/K/e veto",
+                                    "V0-daughter veto", "Selected", "veto: TPC pi", "veto: TPC K", "veto: TPC e",
+                                    "veto: TOF pi", "veto: TOF K", "veto: TOF e"};
+      auto hCFp = registryQaDetector.get<TH2>(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_Proton"));
+      auto hCFa = registryQaDetector.get<TH2>(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton"));
+      for (int ib = 0; ib < 21; ++ib) {
+        hCFp->GetYaxis()->SetBinLabel(ib + 1, cfLabels2D[ib]);
+        hCFa->GetYaxis()->SetBinLabel(ib + 1, cfLabels2D[ib]);
+      }
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
     // EXISTING QA_Detec REGISTRATION (Preserved for backward compatibility)
     // ══════════════════════════════════════════════════════════════════════════
@@ -1507,7 +1538,6 @@ struct LambdaProtonBalanceFunction {
       "h1f_fractionRemoved",
       "Proton V0-daughter veto QA: fraction_{removed} = N_{removed}/N_{before} per event;fraction_{removed};Events",
       {HistType::kTH1F, {{110, 0.0f, 1.1f}}});
-    // ─────────────────────────────────────────────────────────────────────
     // ─────────────────────────────────────────────────────────────────────
 
     // ── Item 5: Event-level pileup rejection QA ───────────────────────────
@@ -1554,11 +1584,6 @@ struct LambdaProtonBalanceFunction {
 
     // ── Rho histograms ───────────────────────────────────────────────────
     registryRho.add("hEventCounter", "Events", {HistType::kTH1F, {{1, 0.0, 1.0}}});
-    // eta-based rho1
-    registryRho.add("h2_rho1_Proton", "#rho_{1}(p) in (#eta,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {etaAxis, phiAxis}});
-    registryRho.add("h2_rho1_AntiProton", "#rho_{1}(#bar{p}) in (#eta,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {etaAxis, phiAxis}});
-    registryRho.add("h2_rho1_Lambda", "#rho_{1}(#Lambda) in (#eta,#varphi)", {HistType::kTH2F, {etaAxis, phiAxis}});
-    registryRho.add("h2_rho1_AntiLambda", "#rho_{1}(#bar{#Lambda}) in (#eta,#varphi)", {HistType::kTH2F, {etaAxis, phiAxis}});
     // rapidity-based rho1
     registryRho.add("h2_rho1_Proton_y", "#rho_{1}(p) in (y,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {yAxis, phiAxis}});
     registryRho.add("h2_rho1_AntiProton_y", "#rho_{1}(#bar{p}) in (y,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {yAxis, phiAxis}});
@@ -1862,58 +1887,8 @@ struct LambdaProtonBalanceFunction {
     // ─────────────────────────────────────────────────────────────────────
 
     // ── Merged / AllPt histograms ───────────────────────────────────
-    state.hRho2_Lp_AllPt =
-      registryRho.add<TH2>("h2_rho2_Lp_AllPt",
-                           "#rho_{2}(#Lambda, p) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #Lambda (trigger);index(#eta,#varphi) of p (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_LAp_AllPt =
-      registryRho.add<TH2>("h2_rho2_LAp_AllPt",
-                           "#rho_{2}(#Lambda, #bar{p}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #Lambda (trigger);index(#eta,#varphi) of #bar{p} (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_ALp_AllPt =
-      registryRho.add<TH2>("h2_rho2_ALp_AllPt",
-                           "#rho_{2}(#bar{#Lambda}, p) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{#Lambda} (trigger);index(#eta,#varphi) of p (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_ALAp_AllPt =
-      registryRho.add<TH2>("h2_rho2_ALAp_AllPt",
-                           "#rho_{2}(#bar{#Lambda}, #bar{p}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{#Lambda} (trigger);index(#eta,#varphi) of #bar{p} (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_pp_AllPt =
-      registryRho.add<TH2>("h2_rho2_pp_AllPt",
-                           "#rho_{2}(p, p) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of p (trigger);index(#eta,#varphi) of p (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_pAp_AllPt =
-      registryRho.add<TH2>("h2_rho2_pAp_AllPt",
-                           "#rho_{2}(p, #bar{p}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of p (trigger);index(#eta,#varphi) of #bar{p} (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_App_AllPt =
-      registryRho.add<TH2>("h2_rho2_App_AllPt",
-                           "#rho_{2}(#bar{p}, p) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{p} (trigger);index(#eta,#varphi) of p (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_ApAp_AllPt =
-      registryRho.add<TH2>("h2_rho2_ApAp_AllPt",
-                           "#rho_{2}(#bar{p}, #bar{p}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{p} (trigger);index(#eta,#varphi) of #bar{p} (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_LL_AllPt =
-      registryRho.add<TH2>("h2_rho2_LL_AllPt",
-                           "#rho_{2}(#Lambda, #Lambda) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #Lambda (trigger);index(#eta,#varphi) of #Lambda (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_LAL_AllPt =
-      registryRho.add<TH2>("h2_rho2_LAL_AllPt",
-                           "#rho_{2}(#Lambda, #bar{#Lambda}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #Lambda (trigger);index(#eta,#varphi) of #bar{#Lambda} (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_ALL_AllPt =
-      registryRho.add<TH2>("h2_rho2_ALL_AllPt",
-                           "#rho_{2}(#bar{#Lambda}, #Lambda) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{#Lambda} (trigger);index(#eta,#varphi) of #Lambda (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-    state.hRho2_ALAL_AllPt =
-      registryRho.add<TH2>("h2_rho2_ALAL_AllPt",
-                           "#rho_{2}(#bar{#Lambda}, #bar{#Lambda}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{#Lambda} (trigger);index(#eta,#varphi) of #bar{#Lambda} (associate)",
-                           {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-
     // ── Rapidity merged rho2 histograms ─────────────────────────────────────
     // NOTE: these must use unrolledAxisY (mRhoYBins*mRhoPhiBins bins),
-    // NOT the eta-space unrolledAxis (mRhoEtaBins*mRhoPhiBins bins).
     // GetUnrolledIndexY() below produces indices in [0, mRhoUnrolledBinsY),
     // so the booked axis must match that range or downstream R2/BF code that
     // expects y-space-sized histograms will see a dimension mismatch.
@@ -1970,7 +1945,7 @@ struct LambdaProtonBalanceFunction {
                               {HistType::kTH1F, {lambdaMassAxis}});
     // ─────────────────────────────────────────────────────────────────────
 
-    // ── Per-pT-bin histograms (Lambda pT bins 0.6 → 6.0) ─────────────────
+    // ── Per-pT-bin histograms (Lambda pT bins 0.6 → 3.6) ─────────────────
     state.hMassLambdaPtBins.clear();
     state.hMassAntiLambdaPtBins.clear();
     state.hPtPrimProton_Lambda.clear();
@@ -2013,53 +1988,6 @@ struct LambdaProtonBalanceFunction {
           Form("hMassAntiLambdaNoMassCut_ptBin%02zu", i),
           Form("#bar{#Lambda} mass (all selections except #Lambda mass window), %.1f #leq #it{p}_{T} < %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts", ptLo, ptHi),
           {HistType::kTH1F, {lambdaMassAxis}}));
-    }
-    // ─────────────────────────────────────────────────────────────────────
-
-    // ── Extended y × pT invariant-mass histograms ─────────────────────────
-    // Rapidity bins: 2 bins from -0.8 to -0.6 in steps of 0.1
-    // pT bins:       25 bins from 0.0 to 2.5 in steps of 0.1
-    // Folder structure:
-    //   Lambda_invMassExtended/Lambda/hMassLambda_yBinXX_ptBinYY
-    //   Lambda_invMassExtended/AntiLambda/hMassAntiLambda_yBinXX_ptBinYY
-    state.hMassLambdaExtended.clear();
-    state.hMassAntiLambdaExtended.clear();
-    state.hMassLambdaExtended.resize(kExtNyBins);
-    state.hMassAntiLambdaExtended.resize(kExtNyBins);
-
-    for (int iY = 0; iY < kExtNyBins; ++iY) {
-      const float yLow = kExtYMin + iY * kExtYStep;
-      const float yHigh = yLow + kExtYStep;
-      // Last rapidity bin [-0.7,-0.6] has inclusive upper edge in filling logic
-      const bool lastYBin = (iY == kExtNyBins - 1);
-      const char* yUpBracket = lastYBin ? "<=" : "<";
-
-      state.hMassLambdaExtended[iY].resize(kExtNptBins);
-      state.hMassAntiLambdaExtended[iY].resize(kExtNptBins);
-
-      for (int iPt = 0; iPt < kExtNptBins; ++iPt) {
-        const float ptLow = kExtPtMin + iPt * kExtPtStep;
-        const float ptHigh = ptLow + kExtPtStep;
-        // Last pT bin [2.4,2.5] has inclusive upper edge in filling logic
-        const bool lastPtBin = (iPt == kExtNptBins - 1);
-        const char* ptUpBracket = lastPtBin ? "<=" : "<";
-
-        // Lambda
-        state.hMassLambdaExtended[iY][iPt] =
-          registryLambdaExtended.add<TH1>(
-            Form("Lambda/hMassLambda_yBin%02d_ptBin%02d", iY, iPt),
-            Form("#Lambda mass (no mass-window cut) | %.1f #leq y %s %.1f | %.1f #leq #it{p}_{T} %s %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
-                 yLow, yUpBracket, yHigh, ptLow, ptUpBracket, ptHigh),
-            {HistType::kTH1F, {lambdaMassAxis}});
-
-        // AntiLambda
-        state.hMassAntiLambdaExtended[iY][iPt] =
-          registryLambdaExtended.add<TH1>(
-            Form("AntiLambda/hMassAntiLambda_yBin%02d_ptBin%02d", iY, iPt),
-            Form("#bar{#Lambda} mass (no mass-window cut) | %.1f #leq y %s %.1f | %.1f #leq #it{p}_{T} %s %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
-                 yLow, yUpBracket, yHigh, ptLow, ptUpBracket, ptHigh),
-            {HistType::kTH1F, {lambdaMassAxis}});
-      }
     }
     // ─────────────────────────────────────────────────────────────────────
 
@@ -2125,30 +2053,6 @@ struct LambdaProtonBalanceFunction {
         addY(S.LAL_y, "h2_rho2_LAL_y_AllPt", "#rho_{2}(#Lambda,#bar{#Lambda}) (y,#varphi)");
         addY(S.ALL_y, "h2_rho2_ALL_y_AllPt", "#rho_{2}(#bar{#Lambda},#Lambda) (y,#varphi)");
         addY(S.ALAL_y, "h2_rho2_ALAL_y_AllPt", "#rho_{2}(#bar{#Lambda},#bar{#Lambda}) (y,#varphi)");
-
-        // ── eta space (only if BOTH switches on: memory heavy) ──
-        if (cFillEtaSpace.value) {
-          S.rho1_Proton = registryCent.add<TH2>((dir + "/h2_rho1_Proton").c_str(), ("#rho_{1}(p) in (#eta,#varphi), " + ctag).c_str(), {HistType::kTH2F, {etaAxis, phiAxis}});
-          S.rho1_AntiProton = registryCent.add<TH2>((dir + "/h2_rho1_AntiProton").c_str(), ("#rho_{1}(#bar{p}) in (#eta,#varphi), " + ctag).c_str(), {HistType::kTH2F, {etaAxis, phiAxis}});
-          S.rho1_Lambda = registryCent.add<TH2>((dir + "/h2_rho1_Lambda").c_str(), ("#rho_{1}(#Lambda) in (#eta,#varphi), " + ctag).c_str(), {HistType::kTH2F, {etaAxis, phiAxis}});
-          S.rho1_AntiLambda = registryCent.add<TH2>((dir + "/h2_rho1_AntiLambda").c_str(), ("#rho_{1}(#bar{#Lambda}) in (#eta,#varphi), " + ctag).c_str(), {HistType::kTH2F, {etaAxis, phiAxis}});
-
-          auto addEta = [&](std::shared_ptr<TH2>& h, const char* name, const char* title) {
-            h = registryCent.add<TH2>((dir + "/" + name).c_str(), (std::string(title) + ", " + ctag).c_str(), {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
-          };
-          addEta(S.Lp, "h2_rho2_Lp_AllPt", "#rho_{2}(#Lambda,p) (#eta,#varphi)");
-          addEta(S.LAp, "h2_rho2_LAp_AllPt", "#rho_{2}(#Lambda,#bar{p}) (#eta,#varphi)");
-          addEta(S.ALp, "h2_rho2_ALp_AllPt", "#rho_{2}(#bar{#Lambda},p) (#eta,#varphi)");
-          addEta(S.ALAp, "h2_rho2_ALAp_AllPt", "#rho_{2}(#bar{#Lambda},#bar{p}) (#eta,#varphi)");
-          addEta(S.pp, "h2_rho2_pp_AllPt", "#rho_{2}(p,p) (#eta,#varphi)");
-          addEta(S.pAp, "h2_rho2_pAp_AllPt", "#rho_{2}(p,#bar{p}) (#eta,#varphi)");
-          addEta(S.App, "h2_rho2_App_AllPt", "#rho_{2}(#bar{p},p) (#eta,#varphi)");
-          addEta(S.ApAp, "h2_rho2_ApAp_AllPt", "#rho_{2}(#bar{p},#bar{p}) (#eta,#varphi)");
-          addEta(S.LL, "h2_rho2_LL_AllPt", "#rho_{2}(#Lambda,#Lambda) (#eta,#varphi)");
-          addEta(S.LAL, "h2_rho2_LAL_AllPt", "#rho_{2}(#Lambda,#bar{#Lambda}) (#eta,#varphi)");
-          addEta(S.ALL, "h2_rho2_ALL_AllPt", "#rho_{2}(#bar{#Lambda},#Lambda) (#eta,#varphi)");
-          addEta(S.ALAL, "h2_rho2_ALAL_AllPt", "#rho_{2}(#bar{#Lambda},#bar{#Lambda}) (#eta,#varphi)");
-        }
       }
     }
   }
@@ -2191,9 +2095,7 @@ struct LambdaProtonBalanceFunction {
     // ALAp : trigger=AntiLambda,assoc=antiproton
     // LL/LAL/ALL/ALAL: both V0s from respective selected lists (self-pairs rejected)
     //
-    // Each channel has both eta-space (unrolledIndex) and
-    // rapidity-space (unrolledIndexY) versions filled in the same loop; the
-    // eta-space fills are gated by cFillEtaSpace.
+    // Every channel fills y-space only (unrolledIndexY).
     // ─────────────────────────────────────────────────────────────────────
 
     // ── Event cutflow bin 1 — enters process (after sel8 + posZ filters) ──
@@ -2218,7 +2120,6 @@ struct LambdaProtonBalanceFunction {
     for (auto const& trk : tracks) {
       if (std::abs(trk.eta()) < kMaxInelEta) {
         ++nTracksINEL;
-        continue;
       }
     }
     if (nTracksINEL < 1) {
@@ -2302,6 +2203,10 @@ struct LambdaProtonBalanceFunction {
       const auto& v0PosDauCached = v0.posTrack_as<MyTracks>();
       const auto& v0NegDauCached = v0.negTrack_as<MyTracks>();
 
+      // V0 cutflow bin 1: all V0s (both hypotheses)
+      registryQaDetector.fill(HIST("Lambda/hCutFlow"), 1.0f);
+      registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 1.0f);
+
       // ── TRULY RAW QA Fills — before any V0 selection cut ─────────────
       // Placed here at the very top of the loop: before v0Type, daughter
       // kinematics, TPC PID, rapidity, pT, topology, DCA, CTau, K0S, or
@@ -2335,6 +2240,9 @@ struct LambdaProtonBalanceFunction {
       if (v0.v0Type() != cV0TypeSelection.value) {
         continue;
       }
+      // V0 cutflow bin 2: V0 type (both hypotheses)
+      registryQaDetector.fill(HIST("Lambda/hCutFlow"), 2.0f);
+      registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 2.0f);
       // ─────────────────────────────────────────────────────────────────
 
       const auto& v0PosDau = v0PosDauCached;
@@ -2347,6 +2255,9 @@ struct LambdaProtonBalanceFunction {
           v0NegDau.tpcNClsCrossedRows() <= cV0DauMinTpcCrossedRows.value) {
         continue;
       }
+      // V0 cutflow bin 3: daughter kinematics (both hypotheses)
+      registryQaDetector.fill(HIST("Lambda/hCutFlow"), 3.0f);
+      registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 3.0f);
       // ─────────────────────────────────────────────────────────────────
 
       // ── PID hypothesis ────────────────────────────────────────────────
@@ -2360,6 +2271,12 @@ struct LambdaProtonBalanceFunction {
       // Reject ambiguous or unidentified V0s
       if (v0DauPID_AsLambda == v0DauPID_AsAntiLambda) {
         continue;
+      }
+      // V0 cutflow bin 4: unambiguous TPC PID — from here on, fill only the chosen hypothesis
+      if (v0DauPID_AsLambda) {
+        registryQaDetector.fill(HIST("Lambda/hCutFlow"), 4.0f);
+      } else {
+        registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 4.0f);
       }
       // ─────────────────────────────────────────────────────────────────
 
@@ -2381,6 +2298,12 @@ struct LambdaProtonBalanceFunction {
       if (v0DauPID_AsAntiLambda && std::abs(v0.rapidity(2)) > lambdaV0MaxY.value) {
         continue;
       }
+      // V0 cutflow bin 5: rapidity
+      if (v0DauPID_AsLambda) {
+        registryQaDetector.fill(HIST("Lambda/hCutFlow"), 5.0f);
+      } else {
+        registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 5.0f);
+      }
       // ─────────────────────────────────────────────────────────────────
 
       // ── Eta cuts ──────────────────────────────────────────────────────
@@ -2395,6 +2318,12 @@ struct LambdaProtonBalanceFunction {
           (v0.pt() < lambdaV0MinPt.value || v0.pt() > lambdaV0MaxPt.value)) {
         continue;
       }
+      // V0 cutflow bin 6: pT acceptance
+      if (v0DauPID_AsLambda) {
+        registryQaDetector.fill(HIST("Lambda/hCutFlow"), 6.0f);
+      } else {
+        registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 6.0f);
+      }
       // ─────────────────────────────────────────────────────────────────
 
       // ── DCA of daughters to PV ────────────────────────────────────────
@@ -2403,10 +2332,8 @@ struct LambdaProtonBalanceFunction {
       const float dcaPion = v0DauPID_AsLambda ? std::abs(v0.dcanegtopv())
                                               : std::abs(v0.dcapostopv());
 
-      // ── Lifetime (needed for Final QA fills and CTau cut below) ──────────
+      // ── Lifetime (needed for the CTau cut below; Final QA recomputes ctau/bgctau on the cleaned sample) ──
       const float ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * mLambdaPDG;
-      // FIX-3: compute lab decay length (gamma*c*tau) = ctau * |p| / m
-      const float bgctau = ctau * v0.p() / mLambdaPDG;
 
       // ── (Raw QA fills moved to top of V0 loop — see TRULY RAW block above) ─
 
@@ -2421,6 +2348,12 @@ struct LambdaProtonBalanceFunction {
           dcaPion < lambdaV0DaughterPionMinDCAToPV.value) {
         continue;
       }
+      // V0 cutflow bin 7: topology (passTopoCuts) and daughter DCA-to-PV
+      if (v0DauPID_AsLambda) {
+        registryQaDetector.fill(HIST("Lambda/hCutFlow"), 7.0f);
+      } else {
+        registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 7.0f);
+      }
       // ─────────────────────────────────────────────────────────────────
 
       if (ctau > lambdaV0MaxCTau.value) {
@@ -2429,6 +2362,12 @@ struct LambdaProtonBalanceFunction {
 
       if (std::abs(v0.mK0Short() - mK0PDG) <= lambdaV0KShortRejectMassWindow.value) {
         continue;
+      }
+      // V0 cutflow bin 8: cTau and K0s rejection
+      if (v0DauPID_AsLambda) {
+        registryQaDetector.fill(HIST("Lambda/hCutFlow"), 8.0f);
+      } else {
+        registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 8.0f);
       }
       // ─────────────────────────────────────────────────────────────────
 
@@ -2450,7 +2389,6 @@ struct LambdaProtonBalanceFunction {
       // const float eta = v0.eta();
       // VS Code: commented out unused variable.
       // const float pz  = pt * std::sinh(eta);
-      const float y = v0DauPID_AsLambda ? v0.rapidity(1) : v0.rapidity(2);
       int bin = -1;
       for (size_t i = 0; i < state.ptEdges.size() - 1; ++i) {
         if (pt >= state.ptEdges[i] && pt < state.ptEdges[i + 1]) {
@@ -2476,27 +2414,6 @@ struct LambdaProtonBalanceFunction {
         if (selLambda) {
           registryQaDetector.fill(HIST("Lambda/InvariantMass/MassCut/h2f_mass_vs_pt"), pt, v0.mLambda());
         }
-
-        // ── Extended y × pT Lambda invariant-mass fill ────────────────────
-        // Use the same rapidity variable `y` computed above
-        // and the same pT variable `pt` = v0.pt() already in scope.
-        // Accept only -0.8 <= y <= -0.6 and 0.0 <= pT <= 2.5 GeV/c.
-        if (y >= kExtYMin && y <= kExtYMax && pt >= kExtPtMin && pt <= kExtPtMax) {
-          // Determine rapidity bin index
-          int iYext = static_cast<int>((y - kExtYMin) / kExtYStep);
-          if (iYext >= kExtNyBins) {
-            iYext = kExtNyBins - 1;
-          } // clamp upper edge of last bin
-          // Determine pT bin index
-          int iPtext = static_cast<int>((pt - kExtPtMin) / kExtPtStep);
-          if (iPtext >= kExtNptBins) {
-            iPtext = kExtNptBins - 1;
-          } // clamp upper edge of last bin
-          if (iYext >= 0 && iPtext >= 0) {
-            state.hMassLambdaExtended[iYext][iPtext]->Fill(v0.mLambda());
-          }
-        }
-        // ─────────────────────────────────────────────────────────────────
       }
       if (v0DauPID_AsAntiLambda) {
         if (bin >= 0) {
@@ -2511,25 +2428,6 @@ struct LambdaProtonBalanceFunction {
         if (selAntiLambda) {
           registryQaDetector.fill(HIST("AntiLambda/InvariantMass/MassCut/h2f_mass_vs_pt"), pt, v0.mAntiLambda());
         }
-
-        // ── Extended y × pT AntiLambda invariant-mass fill ────────────────
-        // Use the same rapidity variable `y` computed above
-        // and the same pT variable `pt` = v0.pt() already in scope.
-        // Accept only -0.8 <= y <= -0.6 and 0.0 <= pT <= 2.5 GeV/c.
-        if (y >= kExtYMin && y <= kExtYMax && pt >= kExtPtMin && pt <= kExtPtMax) {
-          int iYext = static_cast<int>((y - kExtYMin) / kExtYStep);
-          if (iYext >= kExtNyBins) {
-            iYext = kExtNyBins - 1;
-          } // clamp upper edge of last bin
-          int iPtext = static_cast<int>((pt - kExtPtMin) / kExtPtStep);
-          if (iPtext >= kExtNptBins) {
-            iPtext = kExtNptBins - 1;
-          } // clamp upper edge of last bin
-          if (iYext >= 0 && iPtext >= 0) {
-            state.hMassAntiLambdaExtended[iYext][iPtext]->Fill(v0.mAntiLambda());
-          }
-        }
-        // ─────────────────────────────────────────────────────────────────
       }
       // ─────────────────────────────────────────────────────────────────
 
@@ -2561,55 +2459,126 @@ struct LambdaProtonBalanceFunction {
 
       // ── Step 3: Selected Lambda — populate veto set + rho1 + pT histos ─
       if (selLambda) {
-        ++nSelLambda;
+        // V0 cutflow bin 9: mass window (pre-cleaning)
+        registryQaDetector.fill(HIST("Lambda/hCutFlow"), 9.0f);
         selectedLambdas.push_back(v0);
         v0DaughterTrackIds.insert(v0.posTrackId());
         v0DaughterTrackIds.insert(v0.negTrackId());
 
-        fillLambdaQA<true>(LambdaQAStage::Final, v0, ctau, bgctau);
-        fillDaughterQA<DaughterParent::Lambda, DaughterType::Proton>(DaughterQAStage::Final, v0PosDau);
-        fillDaughterQA<DaughterParent::Lambda, DaughterType::Pion>(DaughterQAStage::Final, v0NegDau);
-
-        if (cFillEtaSpace.value) {
-          registryRho.fill(HIST("h2_rho1_Lambda"), v0.eta(), v0.phi());
-        }
-        registryRho.fill(HIST("h2_rho1_Lambda_y"), v0.rapidity(1), v0.phi());
-        if (cs) {
-          cs->rho1_Lambda_y->Fill(v0.rapidity(1), v0.phi());
-          if (cs->rho1_Lambda) {
-            cs->rho1_Lambda->Fill(v0.eta(), v0.phi());
-          }
-        }
-        registryOther.fill(HIST("hPtSelLambda"), pt);
-        state.hPtSelLambda_AllPt->Fill(pt);
+        // Final QA, rho1 / pT spectra and nSelLambda are filled after shared-daughter cleaning (below).
       }
 
       if (selAntiLambda) {
-        ++nSelAntiLambda;
+        // V0 cutflow bin 9: mass window (pre-cleaning)
+        registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 9.0f);
         selectedAntiLambdas.push_back(v0);
         v0DaughterTrackIds.insert(v0.posTrackId());
         v0DaughterTrackIds.insert(v0.negTrackId());
 
-        fillLambdaQA<false>(LambdaQAStage::Final, v0, ctau, bgctau);
-        fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiProton>(DaughterQAStage::Final, v0NegDau);
-        fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiPion>(DaughterQAStage::Final, v0PosDau);
-
-        if (cFillEtaSpace.value) {
-          registryRho.fill(HIST("h2_rho1_AntiLambda"), v0.eta(), v0.phi());
-        }
-        registryRho.fill(HIST("h2_rho1_AntiLambda_y"), v0.rapidity(2), v0.phi());
-        if (cs) {
-          cs->rho1_AntiLambda_y->Fill(v0.rapidity(2), v0.phi());
-          if (cs->rho1_AntiLambda) {
-            cs->rho1_AntiLambda->Fill(v0.eta(), v0.phi());
-          }
-        }
-        registryOther.fill(HIST("hPtSelAntiLambda"), pt);
-        state.hPtSelAntiLambda_AllPt->Fill(pt);
+        // Final QA, rho1 / pT spectra and nSelAntiLambda are filled after shared-daughter cleaning (below).
       }
       // ─────────────────────────────────────────────────────────────────
     }
     // ====== End of Step 2+3 V0 validation loop ============================
+
+    // ====== Shared-daughter cleaning (symmetric, over the Lambda ∪ AntiLambda union) ======
+    // Two candidates sharing a positive OR a negative daughter track are BOTH rejected.
+    // v0DaughterTrackIds is intentionally left untouched (conservative primary veto).
+    const int nRawLambda = static_cast<int>(selectedLambdas.size());
+    const int nRawAntiLambda = static_cast<int>(selectedAntiLambdas.size());
+
+    std::unordered_map<int64_t, int> posIdCount;
+    std::unordered_map<int64_t, int> negIdCount;
+    for (const auto& v : selectedLambdas) {
+      ++posIdCount[v.posTrackId()];
+      ++negIdCount[v.negTrackId()];
+    }
+    for (const auto& v : selectedAntiLambdas) {
+      ++posIdCount[v.posTrackId()];
+      ++negIdCount[v.negTrackId()];
+    }
+
+    std::vector<aod::V0Datas::iterator> cleanLambdas;
+    std::vector<aod::V0Datas::iterator> cleanAntiLambdas;
+    for (const auto& v : selectedLambdas) {
+      if (posIdCount[v.posTrackId()] == 1 && negIdCount[v.negTrackId()] == 1) {
+        cleanLambdas.push_back(v);
+      }
+    }
+    for (const auto& v : selectedAntiLambdas) {
+      if (posIdCount[v.posTrackId()] == 1 && negIdCount[v.negTrackId()] == 1) {
+        cleanAntiLambdas.push_back(v);
+      }
+    }
+    selectedLambdas = std::move(cleanLambdas);
+    selectedAntiLambdas = std::move(cleanAntiLambdas);
+
+    // V0 cutflow bin 10: survivors of shared-daughter cleaning
+    for ([[maybe_unused]] const auto& v : selectedLambdas) {
+      registryQaDetector.fill(HIST("Lambda/hCutFlow"), 10.0f);
+    }
+    for ([[maybe_unused]] const auto& v : selectedAntiLambdas) {
+      registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 10.0f);
+    }
+
+    nSelLambda = static_cast<int>(selectedLambdas.size());
+    nSelAntiLambda = static_cast<int>(selectedAntiLambdas.size());
+
+    // Cleaning diagnostics
+    registryOther.fill(HIST("h1f_nLambda_beforeClean"), static_cast<float>(nRawLambda));
+    registryOther.fill(HIST("h1f_nLambda_rejectedClean"), static_cast<float>(nRawLambda - nSelLambda));
+    registryOther.fill(HIST("h1f_nLambda_afterClean"), static_cast<float>(nSelLambda));
+    registryOther.fill(HIST("h1f_nAntiLambda_beforeClean"), static_cast<float>(nRawAntiLambda));
+    registryOther.fill(HIST("h1f_nAntiLambda_rejectedClean"), static_cast<float>(nRawAntiLambda - nSelAntiLambda));
+    registryOther.fill(HIST("h1f_nAntiLambda_afterClean"), static_cast<float>(nSelAntiLambda));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 1.0f, static_cast<double>(nRawLambda));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 2.0f, static_cast<double>(nRawLambda - nSelLambda));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 3.0f, static_cast<double>(nSelLambda));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 4.0f, static_cast<double>(nRawAntiLambda));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 5.0f, static_cast<double>(nRawAntiLambda - nSelAntiLambda));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 6.0f, static_cast<double>(nSelAntiLambda));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 7.0f, static_cast<double>(nSelLambda) * static_cast<double>(nSelLambda - 1));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 8.0f, static_cast<double>(nSelAntiLambda) * static_cast<double>(nSelAntiLambda - 1));
+    registryOther.fill(HIST("hSharedDauCleaningSums"), 9.0f, static_cast<double>(nSelLambda) * static_cast<double>(nSelAntiLambda));
+
+    // rho1 and pT spectra from the cleaned sample (same sample as rho2)
+    for (const auto& v0 : selectedLambdas) {
+      // Final QA on the cleaned sample (same sample as rho1 / rho2)
+      {
+        const float ctauFinal = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * mLambdaPDG;
+        const float bgctauFinal = ctauFinal * v0.p() / mLambdaPDG;
+        const auto& dauPos = v0.posTrack_as<MyTracks>();
+        const auto& dauNeg = v0.negTrack_as<MyTracks>();
+        fillLambdaQA<true>(LambdaQAStage::Final, v0, ctauFinal, bgctauFinal);
+        fillDaughterQA<DaughterParent::Lambda, DaughterType::Proton>(DaughterQAStage::Final, dauPos);
+        fillDaughterQA<DaughterParent::Lambda, DaughterType::Pion>(DaughterQAStage::Final, dauNeg);
+      }
+      registryRho.fill(HIST("h2_rho1_Lambda_y"), v0.rapidity(1), v0.phi());
+      if (cs) {
+        cs->rho1_Lambda_y->Fill(v0.rapidity(1), v0.phi());
+      }
+      registryOther.fill(HIST("hPtSelLambda"), v0.pt());
+      state.hPtSelLambda_AllPt->Fill(v0.pt());
+    }
+    for (const auto& v0 : selectedAntiLambdas) {
+      // Final QA on the cleaned sample (same sample as rho1 / rho2)
+      {
+        const float ctauFinal = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * mLambdaPDG;
+        const float bgctauFinal = ctauFinal * v0.p() / mLambdaPDG;
+        const auto& dauPos = v0.posTrack_as<MyTracks>();
+        const auto& dauNeg = v0.negTrack_as<MyTracks>();
+        fillLambdaQA<false>(LambdaQAStage::Final, v0, ctauFinal, bgctauFinal);
+        fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiProton>(DaughterQAStage::Final, dauNeg);
+        fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiPion>(DaughterQAStage::Final, dauPos);
+      }
+      registryRho.fill(HIST("h2_rho1_AntiLambda_y"), v0.rapidity(2), v0.phi());
+      if (cs) {
+        cs->rho1_AntiLambda_y->Fill(v0.rapidity(2), v0.phi());
+      }
+      registryOther.fill(HIST("hPtSelAntiLambda"), v0.pt());
+      state.hPtSelAntiLambda_AllPt->Fill(v0.pt());
+    }
+    // ====== End of shared-daughter cleaning ===============================
 
     // ── Veto QA event counters (filled once per event) ───────────────────
 
@@ -2639,35 +2608,35 @@ struct LambdaProtonBalanceFunction {
       // ─────────────────────────────────────────────────────────────────
 
       // ── Track quality cuts ────────────────────────────────────────────
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 1.0f);
+      fillCutFlow(1.0f, trk);
       if (!trk.hasTPC()) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 2.0f);
+      fillCutFlow(2.0f, trk);
       if (trk.tpcNClsCrossedRows() < pProtonTPCMinRows.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 3.0f);
+      fillCutFlow(3.0f, trk);
       if (trk.tpcCrossedRowsOverFindableCls() < pProtonTPCMinRowsOverFindable.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 4.0f);
+      fillCutFlow(4.0f, trk);
       if (trk.tpcChi2NCl() > pProtonTPCMaxChi2PerCluster.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 5.0f);
+      fillCutFlow(5.0f, trk);
       if (trk.itsNCls() < pProtonITSMinClusters.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 6.0f);
+      fillCutFlow(6.0f, trk);
       if (trk.itsChi2NCl() > pProtonITSMaxChi2PerCluster.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 7.0f);
+      fillCutFlow(7.0f, trk);
       if (trk.tpcSignal() < cPPMinTpcSignal.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 8.0f);
+      fillCutFlow(8.0f, trk);
       // ─────────────────────────────────────────────────────────────────
 
       // ── p_TPC and pT acceptance cuts ─────────────────────────────────────────────
@@ -2678,7 +2647,7 @@ struct LambdaProtonBalanceFunction {
       if (trk.pt() < pProtonMinPt.value || trk.pt() > pProtonMaxPt.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 9.0f);
+      fillCutFlow(9.0f, trk);
       // ─────────────────────────────────────────────────────────────────
 
       // ── Proton kinematic acceptance ───────────────────────────────────
@@ -2688,7 +2657,7 @@ struct LambdaProtonBalanceFunction {
       if (std::abs(y) > pProtonMaxY.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 10.0f);
+      fillCutFlow(10.0f, trk);
       // ─────────────────────────────────────────────────────────────────
       // ── DCA cuts ─────────────────────────────────────────────────────
       const bool passDCA = (std::abs(trk.dcaXY()) < pProtonMaxDCAxy.value) &&
@@ -2696,7 +2665,7 @@ struct LambdaProtonBalanceFunction {
       if (!passDCA) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 11.0f);
+      fillCutFlow(11.0f, trk);
       // ─────────────────────────────────────────────────────────────────
 
       // FIX-4: ProtonCounts_byPID_Check — protons only (sign > 0 guard added)
@@ -2757,13 +2726,20 @@ struct LambdaProtonBalanceFunction {
       if (!passesPrimProtonPid(trk)) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 12.0f);
+      fillCutFlow(12.0f, trk);
 
       // pi/K/e contaminant veto
       if (!passesContaminantVeto(trk)) {
+        bool vetoUsedTOF = false;
+        const int vetoMask = contaminantVetoMask(trk, vetoUsedTOF);
+        for (int ib = 0; ib < 3; ++ib) {
+          if (vetoMask & (1 << ib)) {
+            fillCutFlow2D((vetoUsedTOF ? 19.0f : 16.0f) + ib, trk);
+          }
+        }
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 13.0f);
+      fillCutFlow(13.0f, trk);
 
       // TOF Matching Fraction check on selected protons
       registryQaDetector.fill(HIST("Selection/TOF_Matching/hTOFMatchedFractionVsPt"), trk.pt(), trk.hasTOF() ? 1.0f : 0.0f);
@@ -2818,11 +2794,11 @@ struct LambdaProtonBalanceFunction {
         }
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 14.0f);
+      fillCutFlow(14.0f, trk);
       // ─────────────────────────────────────────────────────────────────
 
       // ── Classify into proton / antiproton lists ───────────────────────
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 15.0f);
+      fillCutFlow(15.0f, trk);
       // VS Code: commented out unused variables.
       // const float pz = trk.pt() * std::sinh(trk.eta());
       // const float eta = trk.eta();
@@ -2891,31 +2867,19 @@ struct LambdaProtonBalanceFunction {
     }
     // ─────────────────────────────────────────────────────────────────────
 
-    // ── Single-particle density for protons (eta and y) ──────────────────
+    // ── Single-particle density for protons (y) ──────────────────
     for (auto const& primProton : selectedPrimProtons) {
-      if (cFillEtaSpace.value) {
-        registryRho.fill(HIST("h2_rho1_Proton"), primProton.eta(), primProton.phi());
-      }
       const float yp = protonRapidity(primProton);
       registryRho.fill(HIST("h2_rho1_Proton_y"), yp, primProton.phi());
       if (cs) {
         cs->rho1_Proton_y->Fill(yp, primProton.phi());
-        if (cs->rho1_Proton) {
-          cs->rho1_Proton->Fill(primProton.eta(), primProton.phi());
-        }
       }
     }
     for (auto const& primAntiProton : selectedPrimAntiProtons) {
-      if (cFillEtaSpace.value) {
-        registryRho.fill(HIST("h2_rho1_AntiProton"), primAntiProton.eta(), primAntiProton.phi());
-      }
       const float yap = protonRapidity(primAntiProton);
       registryRho.fill(HIST("h2_rho1_AntiProton_y"), yap, primAntiProton.phi());
       if (cs) {
         cs->rho1_AntiProton_y->Fill(yap, primAntiProton.phi());
-        if (cs->rho1_AntiProton) {
-          cs->rho1_AntiProton->Fill(primAntiProton.eta(), primAntiProton.phi());
-        }
       }
     }
     // ─────────────────────────────────────────────────────────────────────
@@ -2935,7 +2899,7 @@ struct LambdaProtonBalanceFunction {
                    std::back_inserter(antiProtonInfo),
                    [this](auto const& t) { return makeProtonInfo(t); });
 
-    // ── pp rho2 fills (eta and y) ───────────────────────────────────────────
+    // ── pp rho2 fills (y) ───────────────────────────────────────────────────
     for (auto const& p1 : selectedPrimProtons) {
       const float y1_pp = protonRapidity(p1);
       for (auto const& p2 : selectedPrimProtons) {
@@ -2963,7 +2927,7 @@ struct LambdaProtonBalanceFunction {
             const float E2 = std::sqrt(p2mag * p2mag + kMassProton * kMassProton);
             const float qinvPP = computeQinv(p1.px(), p1.py(), p1.pz(), E1, p2.px(), p2.py(), p2.pz(), E2);
             registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_PP_Before_qinvCut"), qinvPP);
-            if (!failsQinvCut(qinvPP)) {
+            if (passesQinvQA(qinvPP)) {
               registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_PP_After_qinvCut"), qinvPP);
             }
           }
@@ -2995,20 +2959,14 @@ struct LambdaProtonBalanceFunction {
           }
           registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 4);
         }
-        const int idx1 = unrolledIndex(p1.eta(), p1.phi());
-        const int idx2 = unrolledIndex(p2.eta(), p2.phi());
         const float y2_pp = protonRapidity(p2);
         const int idxY1 = unrolledIndexY(y1_pp, p1.phi());
         const int idxY2 = unrolledIndexY(y2_pp, p2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
-        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
-          state.hRho2_pp_AllPt->Fill(idx1, idx2);
-        }
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_pp_y_AllPt->Fill(idxY1, idxY2);
+          state.hRho2_pp_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->pp, idx1, idx2);
           fillIdx(cs->pp_y, idxY1, idxY2);
         }
       }
@@ -3017,18 +2975,16 @@ struct LambdaProtonBalanceFunction {
       for (auto const& b : antiProtonInfo) {
         const float qinvPAp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_Before_qinvCut"), qinvPAp);
+        if (passesQinvQA(qinvPAp)) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_After_qinvCut"), qinvPAp);
+        }
         if (failsQinvCut(qinvPAp)) {
           continue;
         }
-        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_After_qinvCut"), qinvPAp);
-        if (cFillEtaSpace.value && a.idxEta >= 0 && b.idxEta >= 0) {
-          state.hRho2_pAp_AllPt->Fill(a.idxEta, b.idxEta);
-        }
         if (a.idxY >= 0 && b.idxY >= 0) {
-          state.hRho2_pAp_y_AllPt->Fill(a.idxY, b.idxY);
+          state.hRho2_pAp_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->pAp, a.idxEta, b.idxEta);
           fillIdx(cs->pAp_y, a.idxY, b.idxY);
         }
       }
@@ -3037,18 +2993,16 @@ struct LambdaProtonBalanceFunction {
       for (auto const& b : protonInfo) {
         const float qinvApp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_Before_qinvCut"), qinvApp);
+        if (passesQinvQA(qinvApp)) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_After_qinvCut"), qinvApp);
+        }
         if (failsQinvCut(qinvApp)) {
           continue;
         }
-        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_After_qinvCut"), qinvApp);
-        if (cFillEtaSpace.value && a.idxEta >= 0 && b.idxEta >= 0) {
-          state.hRho2_App_AllPt->Fill(a.idxEta, b.idxEta);
-        }
         if (a.idxY >= 0 && b.idxY >= 0) {
-          state.hRho2_App_y_AllPt->Fill(a.idxY, b.idxY);
+          state.hRho2_App_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->App, a.idxEta, b.idxEta);
           fillIdx(cs->App_y, a.idxY, b.idxY);
         }
       }
@@ -3060,18 +3014,16 @@ struct LambdaProtonBalanceFunction {
         }
         const float qinvApAp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_Before_qinvCut"), qinvApAp);
+        if (passesQinvQA(qinvApAp)) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_After_qinvCut"), qinvApAp);
+        }
         if (failsQinvCut(qinvApAp)) {
           continue;
         }
-        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_After_qinvCut"), qinvApAp);
-        if (cFillEtaSpace.value && a.idxEta >= 0 && b.idxEta >= 0) {
-          state.hRho2_ApAp_AllPt->Fill(a.idxEta, b.idxEta);
-        }
         if (a.idxY >= 0 && b.idxY >= 0) {
-          state.hRho2_ApAp_y_AllPt->Fill(a.idxY, b.idxY);
+          state.hRho2_ApAp_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->ApAp, a.idxEta, b.idxEta);
           fillIdx(cs->ApAp_y, a.idxY, b.idxY);
         }
       }
@@ -3100,15 +3052,15 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted Lambda-proton pair
         float qinvLP = 0.0f;
         {
-          const float dauPmag = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
           const float pprmag = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
-          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
           const float Eppr = std::sqrt(pprmag * pprmag + kMassProton * kMassProton);
-          qinvLP = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau, primProton.px(), primProton.py(), primProton.pz(), Eppr);
+          qinvLP = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primProton.px(), primProton.py(), primProton.pz(), Eppr);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLP);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
-        if (!failsQinvCut(qinvLP)) {
+        if (passesQinvQA(qinvLP)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvLP);
         }
         // QA3/QinvVsAngles: 3D fills for Lambda(V0)-primProton and Lambda dau proton-primProton
@@ -3126,6 +3078,10 @@ struct LambdaProtonBalanceFunction {
           const float pprmag_3d = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
           const float Eppr_3d = std::sqrt(pprmag_3d * pprmag_3d + kMassProton * kMassProton);
           const float qinvLP_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr_3d);
+          // q_inv using Lambda daughter proton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmag_3d = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float Edau_3d = std::sqrt(dauPmag_3d * dauPmag_3d + kMassProton * kMassProton);
+          const float qinvLP_dau = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr_3d);
           // Angular variables w.r.t. Lambda daughter proton
           const float dPhi_dau_p = RecoDecay::constrainAngle((v0PosDau.phi() - primProton.phi()), -PIHalf3D);
           const float dEta_dau_p = v0PosDau.eta() - primProton.eta();
@@ -3133,10 +3089,10 @@ struct LambdaProtonBalanceFunction {
           const float dY_dau_p = yDauP - yPrimP;
           // eta space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp"), qinvLP_V0, dPhi_V0_p, dEta_V0_p);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp_dau"), qinvLP, dPhi_dau_p, dEta_dau_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp_dau"), qinvLP_dau, dPhi_dau_p, dEta_dau_p);
           // y space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp"), qinvLP_V0, dPhi_V0_p, dY_V0_p);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp_dau"), qinvLP, dPhi_dau_p, dY_dau_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp_dau"), qinvLP_dau, dPhi_dau_p, dY_dau_p);
         }
         // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
         {
@@ -3153,8 +3109,6 @@ struct LambdaProtonBalanceFunction {
             registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_sharedClsFraction_t2"), primProton.tpcFractionSharedCls());
           }
         }
-        const int idxLambda = unrolledIndex(v0.eta(), v0.phi());
-        const int idxPrimP = unrolledIndex(primProton.eta(), primProton.phi());
         const float yL = v0.rapidity(1);
         const float yP = protonRapidity(primProton);
         const int idxYL = unrolledIndexY(yL, v0.phi());
@@ -3179,19 +3133,13 @@ struct LambdaProtonBalanceFunction {
         registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_Lp"),
                                    computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
                                                 primProton.px(), primProton.py(), primProton.pz(), kMassProton));
-        if (idxLambda >= 0 && idxPrimP >= 0) {
-          if (bin >= 0) {
-            state.hPtPrimProton_Lambda[bin]->Fill(primProton.pt());
-          }
-          if (cFillEtaSpace.value) {
-            state.hRho2_Lp_AllPt->Fill(idxLambda, idxPrimP);
-          }
+        if (idxYL >= 0 && idxYP >= 0 && bin >= 0) {
+          state.hPtPrimProton_Lambda[bin]->Fill(primProton.pt());
         }
         if (idxYL >= 0 && idxYP >= 0) {
-          state.hRho2_Lp_y_AllPt->Fill(idxYL, idxYP);
+          state.hRho2_Lp_y_AllPt->Fill(idxYL + 0.5f, idxYP + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->Lp, idxLambda, idxPrimP);
           fillIdx(cs->Lp_y, idxYL, idxYP);
         }
         ++nPairs_Lambda_PrimProton;
@@ -3203,15 +3151,15 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted Lambda-antiproton pair
         float qinvLAp = 0.0f;
         {
-          const float dauPmag = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
           const float paprmag = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
-          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
           const float Epapr = std::sqrt(paprmag * paprmag + kMassProton * kMassProton);
-          qinvLAp = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr);
+          qinvLAp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLAp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
-        if (!failsQinvCut(qinvLAp)) {
+        if (passesQinvQA(qinvLAp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvLAp);
         }
         // QA3/QinvVsAngles: 3D fills for Lambda(V0)-primAntiProton and Lambda dau proton-primAntiProton
@@ -3229,6 +3177,10 @@ struct LambdaProtonBalanceFunction {
           const float paprmag_3dL = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
           const float Epapr_3dL = std::sqrt(paprmag_3dL * paprmag_3dL + kMassProton * kMassProton);
           const float qinvLAp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0_3dL, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr_3dL);
+          // q_inv using Lambda daughter proton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmag_3dL = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float Edau_3dL = std::sqrt(dauPmag_3dL * dauPmag_3dL + kMassProton * kMassProton);
+          const float qinvLAp_dau = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau_3dL, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr_3dL);
           // Angular variables w.r.t. Lambda daughter proton
           const float dPhi_dau_ap = RecoDecay::constrainAngle((v0PosDau.phi() - primAntiProton.phi()), -PIHalf3D);
           const float dEta_dau_ap = v0PosDau.eta() - primAntiProton.eta();
@@ -3236,10 +3188,10 @@ struct LambdaProtonBalanceFunction {
           const float dY_dau_ap = yDauPL - yPrimAp;
           // eta space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp"), qinvLAp_V0, dPhi_V0_ap, dEta_V0_ap);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp_dau"), qinvLAp, dPhi_dau_ap, dEta_dau_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp_dau"), qinvLAp_dau, dPhi_dau_ap, dEta_dau_ap);
           // y space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp"), qinvLAp_V0, dPhi_V0_ap, dY_V0_ap);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp_dau"), qinvLAp, dPhi_dau_ap, dY_dau_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp_dau"), qinvLAp_dau, dPhi_dau_ap, dY_dau_ap);
         }
         // QA3/RawPairDensity: Lambda-antiproton → same LP histogram
         {
@@ -3249,8 +3201,6 @@ struct LambdaProtonBalanceFunction {
             v0.eta() - primAntiProton.eta(),
             RecoDecay::constrainAngle((v0.phi() - primAntiProton.phi()), -PIHalf));
         }
-        const int idxLambda = unrolledIndex(v0.eta(), v0.phi());
-        const int idxPrimPbar = unrolledIndex(primAntiProton.eta(), primAntiProton.phi());
         const float yL2 = v0.rapidity(1);
         const float yAp = protonRapidity(primAntiProton);
         const int idxYL2 = unrolledIndexY(yL2, v0.phi());
@@ -3265,19 +3215,13 @@ struct LambdaProtonBalanceFunction {
         registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_LAp"),
                                    computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
                                                 primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), kMassProton));
-        if (idxLambda >= 0 && idxPrimPbar >= 0) {
-          if (bin >= 0) {
-            state.hPtPrimAntiProton_Lambda[bin]->Fill(primAntiProton.pt());
-          }
-          if (cFillEtaSpace.value) {
-            state.hRho2_LAp_AllPt->Fill(idxLambda, idxPrimPbar);
-          }
+        if (idxYL2 >= 0 && idxYAp >= 0 && bin >= 0) {
+          state.hPtPrimAntiProton_Lambda[bin]->Fill(primAntiProton.pt());
         }
         if (idxYL2 >= 0 && idxYAp >= 0) {
-          state.hRho2_LAp_y_AllPt->Fill(idxYL2, idxYAp);
+          state.hRho2_LAp_y_AllPt->Fill(idxYL2 + 0.5f, idxYAp + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->LAp, idxLambda, idxPrimPbar);
           fillIdx(cs->LAp_y, idxYL2, idxYAp);
         }
         ++nPairs_Lambda_PrimAntiProton;
@@ -3361,15 +3305,15 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-proton pair
         float qinvALp = 0.0f;
         {
-          const float dauPmag = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
           const float pprmag3 = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
-          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
           const float Eppr3 = std::sqrt(pprmag3 * pprmag3 + kMassProton * kMassProton);
-          qinvALp = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), Edau, primProton.px(), primProton.py(), primProton.pz(), Eppr3);
+          qinvALp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primProton.px(), primProton.py(), primProton.pz(), Eppr3);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
-        if (!failsQinvCut(qinvALp)) {
+        if (passesQinvQA(qinvALp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvALp);
         }
         // QA3/QinvVsAngles: 3D fills for AntiLambda(V0)-primProton and AntiLambda dau antiproton-primProton
@@ -3387,6 +3331,10 @@ struct LambdaProtonBalanceFunction {
           const float pprmag3_3d = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
           const float Eppr3_3d = std::sqrt(pprmag3_3d * pprmag3_3d + kMassProton * kMassProton);
           const float qinvALp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), EalL_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr3_3d);
+          // q_inv using AntiLambda daughter antiproton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmagAL_3d = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float EdauAL_3d = std::sqrt(dauPmagAL_3d * dauPmagAL_3d + kMassProton * kMassProton);
+          const float qinvALp_dau = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), EdauAL_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr3_3d);
           // Angular variables w.r.t. AntiLambda daughter antiproton
           const float dPhi_dauAL_p = RecoDecay::constrainAngle((v0NegDau.phi() - primProton.phi()), -PIHalf3D);
           const float dEta_dauAL_p = v0NegDau.eta() - primProton.eta();
@@ -3394,10 +3342,10 @@ struct LambdaProtonBalanceFunction {
           const float dY_dauAL_p = yDauAL - yPrimP3;
           // eta space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp"), qinvALp_V0, dPhi_AL_p, dEta_AL_p);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp_dau"), qinvALp, dPhi_dauAL_p, dEta_dauAL_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp_dau"), qinvALp_dau, dPhi_dauAL_p, dEta_dauAL_p);
           // y space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp"), qinvALp_V0, dPhi_AL_p, dY_AL_p);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp_dau"), qinvALp, dPhi_dauAL_p, dY_dauAL_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp_dau"), qinvALp_dau, dPhi_dauAL_p, dY_dauAL_p);
         }
         // QA3/RawPairDensity: AntiLambda-proton → same LP histogram
         {
@@ -3407,8 +3355,6 @@ struct LambdaProtonBalanceFunction {
             v0.eta() - primProton.eta(),
             RecoDecay::constrainAngle((v0.phi() - primProton.phi()), -PIHalf));
         }
-        const int idxAL = unrolledIndex(v0.eta(), v0.phi());
-        const int idxPrimP = unrolledIndex(primProton.eta(), primProton.phi());
         const float yAL = v0.rapidity(2);
         const float yP2 = protonRapidity(primProton);
         const int idxYAL = unrolledIndexY(yAL, v0.phi());
@@ -3423,19 +3369,13 @@ struct LambdaProtonBalanceFunction {
         registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALp"),
                                    computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
                                                 primProton.px(), primProton.py(), primProton.pz(), kMassProton));
-        if (idxAL >= 0 && idxPrimP >= 0) {
-          if (bin >= 0) {
-            state.hPtPrimProton_AntiLambda[bin]->Fill(primProton.pt());
-          }
-          if (cFillEtaSpace.value) {
-            state.hRho2_ALp_AllPt->Fill(idxAL, idxPrimP);
-          }
+        if (idxYAL >= 0 && idxYP2 >= 0 && bin >= 0) {
+          state.hPtPrimProton_AntiLambda[bin]->Fill(primProton.pt());
         }
         if (idxYAL >= 0 && idxYP2 >= 0) {
-          state.hRho2_ALp_y_AllPt->Fill(idxYAL, idxYP2);
+          state.hRho2_ALp_y_AllPt->Fill(idxYAL + 0.5f, idxYP2 + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->ALp, idxAL, idxPrimP);
           fillIdx(cs->ALp_y, idxYAL, idxYP2);
         }
         ++nPairs_AntiLambda_PrimProton;
@@ -3447,15 +3387,15 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-antiproton pair
         float qinvALAp = 0.0f;
         {
-          const float dauPmag = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
           const float paprmag2 = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
-          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
           const float Epapr2 = std::sqrt(paprmag2 * paprmag2 + kMassProton * kMassProton);
-          qinvALAp = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), Edau, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2);
+          qinvALAp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALAp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
-        if (!failsQinvCut(qinvALAp)) {
+        if (passesQinvQA(qinvALAp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvALAp);
         }
         // QA3/QinvVsAngles: 3D fills for AntiLambda(V0)-primAntiProton and AntiLambda dau antiproton-primAntiProton
@@ -3473,6 +3413,10 @@ struct LambdaProtonBalanceFunction {
           const float paprmag2_3d = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
           const float Epapr2_3d = std::sqrt(paprmag2_3d * paprmag2_3d + kMassProton * kMassProton);
           const float qinvALAp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), EalL2_3d, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2_3d);
+          // q_inv using AntiLambda daughter antiproton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmagAL2_3d = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float EdauAL2_3d = std::sqrt(dauPmagAL2_3d * dauPmagAL2_3d + kMassProton * kMassProton);
+          const float qinvALAp_dau = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), EdauAL2_3d, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2_3d);
           // Angular variables w.r.t. AntiLambda daughter antiproton
           const float dPhi_dauAL_ap = RecoDecay::constrainAngle((v0NegDau.phi() - primAntiProton.phi()), -PIHalf3D);
           const float dEta_dauAL_ap = v0NegDau.eta() - primAntiProton.eta();
@@ -3480,10 +3424,10 @@ struct LambdaProtonBalanceFunction {
           const float dY_dauAL_ap = yDauAL2 - yPrimAp2;
           // eta space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp"), qinvALAp_V0, dPhi_AL_ap, dEta_AL_ap);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp_dau"), qinvALAp, dPhi_dauAL_ap, dEta_dauAL_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp_dau"), qinvALAp_dau, dPhi_dauAL_ap, dEta_dauAL_ap);
           // y space
           registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp"), qinvALAp_V0, dPhi_AL_ap, dY_AL_ap);
-          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp_dau"), qinvALAp, dPhi_dauAL_ap, dY_dauAL_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp_dau"), qinvALAp_dau, dPhi_dauAL_ap, dY_dauAL_ap);
         }
         // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
         {
@@ -3500,8 +3444,6 @@ struct LambdaProtonBalanceFunction {
             registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_sharedClsFraction_t2"), primAntiProton.tpcFractionSharedCls());
           }
         }
-        const int idxAL2 = unrolledIndex(v0.eta(), v0.phi());
-        const int idxPrimPb = unrolledIndex(primAntiProton.eta(), primAntiProton.phi());
         const float yAL2 = v0.rapidity(2);
         const float yAp2 = protonRapidity(primAntiProton);
         const int idxYAL2 = unrolledIndexY(yAL2, v0.phi());
@@ -3516,19 +3458,13 @@ struct LambdaProtonBalanceFunction {
         registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALAp"),
                                    computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
                                                 primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), kMassProton));
-        if (idxAL2 >= 0 && idxPrimPb >= 0) {
-          if (bin >= 0) {
-            state.hPtPrimAntiProton_AntiLambda[bin]->Fill(primAntiProton.pt());
-          }
-          if (cFillEtaSpace.value) {
-            state.hRho2_ALAp_AllPt->Fill(idxAL2, idxPrimPb);
-          }
+        if (idxYAL2 >= 0 && idxYAp2 >= 0 && bin >= 0) {
+          state.hPtPrimAntiProton_AntiLambda[bin]->Fill(primAntiProton.pt());
         }
         if (idxYAL2 >= 0 && idxYAp2 >= 0) {
-          state.hRho2_ALAp_y_AllPt->Fill(idxYAL2, idxYAp2);
+          state.hRho2_ALAp_y_AllPt->Fill(idxYAL2 + 0.5f, idxYAp2 + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->ALAp, idxAL2, idxPrimPb);
           fillIdx(cs->ALAp_y, idxYAL2, idxYAp2);
         }
         ++nPairs_AntiLambda_PrimAntiProton;
@@ -3629,24 +3565,20 @@ struct LambdaProtonBalanceFunction {
           const float Ev2 = std::sqrt(v2pmag * v2pmag + kMassLambda * kMassLambda);
           const float qinvLL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1, v2.px(), v2.py(), v2.pz(), Ev2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvLL);
+          if (passesQinvQA(qinvLL)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLL);
+          }
           if (failsQinvCut(qinvLL)) {
             continue;
           }
-          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLL);
         }
-        const int idx1 = unrolledIndex(v1.eta(), v1.phi());
-        const int idx2 = unrolledIndex(v2.eta(), v2.phi());
         const int idxY1 = unrolledIndexY(yv1L, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
-        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
-          state.hRho2_LL_AllPt->Fill(idx1, idx2);
-        }
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_LL_y_AllPt->Fill(idxY1, idxY2);
+          state.hRho2_LL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->LL, idx1, idx2);
           fillIdx(cs->LL_y, idxY1, idxY2);
         }
       }
@@ -3683,24 +3615,20 @@ struct LambdaProtonBalanceFunction {
           const float Ev2L = std::sqrt(v2pmagL * v2pmagL + kMassLambda * kMassLambda);
           const float qinvLAL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1L, v2.px(), v2.py(), v2.pz(), Ev2L);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvLAL);
+          if (passesQinvQA(qinvLAL)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLAL);
+          }
           if (failsQinvCut(qinvLAL)) {
             continue;
           }
-          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLAL);
         }
-        const int idx1 = unrolledIndex(v1.eta(), v1.phi());
-        const int idx2 = unrolledIndex(v2.eta(), v2.phi());
         const int idxY1 = unrolledIndexY(yv1LAL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
-        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
-          state.hRho2_LAL_AllPt->Fill(idx1, idx2);
-        }
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_LAL_y_AllPt->Fill(idxY1, idxY2);
+          state.hRho2_LAL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->LAL, idx1, idx2);
           fillIdx(cs->LAL_y, idxY1, idxY2);
         }
       }
@@ -3737,24 +3665,20 @@ struct LambdaProtonBalanceFunction {
           const float Ev2AL = std::sqrt(v2pmagAL * v2pmagAL + kMassLambda * kMassLambda);
           const float qinvALL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1AL, v2.px(), v2.py(), v2.pz(), Ev2AL);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvALL);
+          if (passesQinvQA(qinvALL)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALL);
+          }
           if (failsQinvCut(qinvALL)) {
             continue;
           }
-          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALL);
         }
-        const int idx1 = unrolledIndex(v1.eta(), v1.phi());
-        const int idx2 = unrolledIndex(v2.eta(), v2.phi());
         const int idxY1 = unrolledIndexY(yv1ALL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
-        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
-          state.hRho2_ALL_AllPt->Fill(idx1, idx2);
-        }
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_ALL_y_AllPt->Fill(idxY1, idxY2);
+          state.hRho2_ALL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->ALL, idx1, idx2);
           fillIdx(cs->ALL_y, idxY1, idxY2);
         }
       }
@@ -3794,24 +3718,20 @@ struct LambdaProtonBalanceFunction {
           const float Ev2AL2 = std::sqrt(v2pmagAL2 * v2pmagAL2 + kMassLambda * kMassLambda);
           const float qinvALAL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1AL2, v2.px(), v2.py(), v2.pz(), Ev2AL2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvALAL);
+          if (passesQinvQA(qinvALAL)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALAL);
+          }
           if (failsQinvCut(qinvALAL)) {
             continue;
           }
-          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALAL);
         }
-        const int idx1 = unrolledIndex(v1.eta(), v1.phi());
-        const int idx2 = unrolledIndex(v2.eta(), v2.phi());
         const int idxY1 = unrolledIndexY(yv1ALAL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
-        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
-          state.hRho2_ALAL_AllPt->Fill(idx1, idx2);
-        }
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_ALAL_y_AllPt->Fill(idxY1, idxY2);
+          state.hRho2_ALAL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
         }
         if (cs) {
-          fillIdx(cs->ALAL, idx1, idx2);
           fillIdx(cs->ALAL_y, idxY1, idxY2);
         }
       }

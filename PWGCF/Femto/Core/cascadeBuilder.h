@@ -33,6 +33,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -63,38 +64,38 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CASCADE_DEFAULT_BITS                                                                                                                                           \
-  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Cascades are passed through. Bits for all selections are stored."};                \
-  o2::framework::Configurable<std::vector<std::string>> cascadeCpaMin{"cascadeCpaMin", {"0.95"}, "Minimum CPA as TFormula, x=pt"};                                     \
-  o2::framework::Configurable<std::vector<std::string>> cascadePaMax{"cascadePaMax", {}, "Maximum pointing angle (rad) as TFormula, x=pt. Empty to disable"};          \
-  o2::framework::Configurable<std::vector<float>> cascadeTransRadMin{"cascadeTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                                  \
-  o2::framework::Configurable<std::vector<float>> cascadeDcaDauMax{"cascadeDcaDauMax", {0.25f}, "Maximum DCA between the daughters at decay vertex (cm)"};             \
-  o2::framework::Configurable<std::vector<float>> lambdaCpaMin{"lambdaCpaMin", {0.78f}, "Minimum cosine of pointing angle"};                                           \
-  o2::framework::Configurable<std::vector<float>> lambdaTransRadMin{"lambdaTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                                    \
-  o2::framework::Configurable<std::vector<float>> lambdaDcaDauMax{"lambdaDcaDauMax", {0.5f}, "Maximum DCA between the daughters at decay vertex (cm)"};                \
-  o2::framework::Configurable<std::vector<float>> lambdaDcaToPvMin{"lambdaDcaToPvMin", {0.3f}, "Minimum DCA between the lambda and primary vertex"};                   \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| of all daughters"};                                              \
-  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum |DCAxy| of the daughters and bachelor from primary vertex (cm)"}; \
-  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};                \
-  o2::framework::Configurable<std::vector<float>> posDauTpc{"posDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for positive daughter tracks"};                      \
-  o2::framework::Configurable<std::vector<float>> negDauTpc{"negDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for negative daughter tracks"};                      \
-  o2::framework::Configurable<std::vector<float>> posDauTof{"posDauTof", {}, "Maximum |nsimga_Pion/Proton| TOF for positive daughter tracks"};                         \
-  o2::framework::Configurable<std::vector<float>> negDauTof{"negDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for negative daughter tracks"};                         \
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};                                                      \
-  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
+#define CASCADE_DEFAULT_BITS                                                                                                                                                                                                                                                            \
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Cascades are passed through. Bits for all selections are stored."};                                                                                                                                 \
+  o2::framework::Configurable<std::vector<std::string>> cascadeCpaMin{"cascadeCpaMin", {"0.95"}, "Minimum CPA as TFormula, x=pt"};                                                                                                                                                      \
+  o2::framework::Configurable<std::vector<std::string>> cascadePaMax{"cascadePaMax", {}, "Maximum pointing angle (rad) as TFormula, x=pt. Empty to disable"};                                                                                                                           \
+  o2::framework::Configurable<std::vector<float>> cascadeTransRadMin{"cascadeTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                                                                                                                                                   \
+  o2::framework::Configurable<std::vector<float>> cascadeDcaDauMax{"cascadeDcaDauMax", {0.25f}, "Maximum DCA between the daughters at decay vertex (cm)"};                                                                                                                              \
+  o2::framework::Configurable<std::vector<float>> lambdaCpaMin{"lambdaCpaMin", {0.78f}, "Minimum cosine of pointing angle"};                                                                                                                                                            \
+  o2::framework::Configurable<std::vector<float>> lambdaTransRadMin{"lambdaTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                                                                                                                                                     \
+  o2::framework::Configurable<std::vector<float>> lambdaDcaDauMax{"lambdaDcaDauMax", {0.5f}, "Maximum DCA between the daughters at decay vertex (cm)"};                                                                                                                                 \
+  o2::framework::Configurable<std::vector<float>> lambdaDcaToPvMin{"lambdaDcaToPvMin", {0.3f}, "Minimum DCA between the lambda and primary vertex"};                                                                                                                                    \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| of all daughters"};                                                                                                                                                               \
+  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum |DCAxy| of the daughters and bachelor from primary vertex (cm)"};                                                                                                                  \
+  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};                                                                                                                                 \
+  o2::framework::Configurable<std::vector<float>> posDauTpc{"posDauTpc", {5.f}, "Maximum |nsigma_Pion/Proton| TPC for positive daughter tracks"};                                                                                                                                       \
+  o2::framework::Configurable<std::vector<float>> negDauTpc{"negDauTpc", {5.f}, "Maximum |nsigma_Pion/Proton| TPC for negative daughter tracks"};                                                                                                                                       \
+  o2::framework::Configurable<std::vector<float>> posDauTof{"posDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for positive daughter tracks"};                                                                                                                                          \
+  o2::framework::Configurable<std::vector<float>> negDauTof{"negDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for negative daughter tracks"};                                                                                                                                          \
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, the TOF PID cut is mandatory. For daughters with a TOF signal, the candidate is rejected on failure. For daughters without a TOF signal, the candidate is rejected unless keepTracksWithoutTof is true"}; \
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, daughters without a TOF signal pass the TOF PID cut unconditionally, overriding requireTof. If false, daughters without a TOF signal fail the TOF cut (and are rejected if requireTof is true)"};
 
 struct ConfXiBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiBits");
   CASCADE_DEFAULT_BITS
-  o2::framework::Configurable<std::vector<float>> bachelorTpcPion{"bachelorTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for bachelor tracks"};
-  o2::framework::Configurable<std::vector<float>> bachelorTofPion{"bachelorTofPion", {}, "Maximum |nsimga_Pion| TOF for bachelor tracks"};
+  o2::framework::Configurable<std::vector<float>> bachelorTpcPion{"bachelorTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for bachelor tracks"};
+  o2::framework::Configurable<std::vector<float>> bachelorTofPion{"bachelorTofPion", {}, "Maximum |nsigma_Pion| TOF for bachelor tracks"};
 };
 
 struct ConfOmegaBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("OmegaBits");
   CASCADE_DEFAULT_BITS
-  o2::framework::Configurable<std::vector<float>> bachelorTpcKaon{"bachelorTpcKaon", {5.f}, "Maximum |nsimga_Kaon| TPC for bachelor tracks"};
-  o2::framework::Configurable<std::vector<float>> bachelorTofKaon{"bachelorTofKaon", {}, "Maximum |nsimga_Kaon| TOF for bachelor tracks"};
+  o2::framework::Configurable<std::vector<float>> bachelorTpcKaon{"bachelorTpcKaon", {5.f}, "Maximum |nsigma_Kaon| TPC for bachelor tracks"};
+  o2::framework::Configurable<std::vector<float>> bachelorTofKaon{"bachelorTofKaon", {}, "Maximum |nsigma_Kaon| TOF for bachelor tracks"};
 };
 
 #undef CASCADE_DEFAULT_BITS
@@ -130,19 +131,19 @@ enum CascadeSels {
   // selections for cascades
   kCascadeCpaMin,      ///< Min. CPA (cosine pointing angle)
   kCascadePaMax,       ///< Max. PA (pointing angle in rad); disabled by default
-  kCascadeDcaDaughMax, ///< Max. DCA of the daughers at decay vertex
+  kCascadeDcaDaughMax, ///< Max. DCA of the daughters at decay vertex
   kCascadeTransRadMin, ///< max. transverse radius
 
   // selection for lambda daughter
   kLambdaCpaMin,      ///< Min. CPA of the lambda
   kLambdaDcaDauMax,   ///< Max. DCA between the lambda daughters at lambda decay vertex
-  kLambdaTransRadMin, ///< Min. tranverse radius of the lambda
+  kLambdaTransRadMin, ///< Min. transverse radius of the lambda
   kLambdaDcaToPvMin,  ///< Min. DCA of the lambda to the primary vertex
 
-  // selection for bachelor/daugthers
+  // selection for bachelor/daughters
   kDauAbsEtaMax,   ///< Max. |eta| of daughter tracks
   kDauTpcClsMin,   ///< Min. number of TPC clusters of daughters/bachelor
-  kDauAbsDcaxyMin, ///< Min. |DCAxy| of the daughers and bachelor from primary vertex
+  kDauAbsDcaxyMin, ///< Min. |DCAxy| of the daughters and bachelor from primary vertex
 
   // PID selection for cascade bachelor
   kBachelorTpcPion, ///< TPC Pion PID for bachelor
@@ -150,7 +151,7 @@ enum CascadeSels {
   kBachelorTofPion, ///< TOF Pion PID for bachelor
   kBachelorTofKaon, ///< TOF Kaon PID for bachelor
                     ///
-  // PID selection for lambda daughers
+  // PID selection for lambda daughters
   kPosDauTpc, ///< TPC PID for positive daughter
   kNegDauTpc, ///< TPC PID for negative daughter
   kPosDauTof, ///< TOF PID for positive daughter
@@ -248,6 +249,7 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
     mLambdaMassMax = filter.massLambdaMax.value;
     mRequireTof = config.requireTof.value;
     mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
+    const std::string tofComment = "requireTof = " + std::to_string(mRequireTof) + "; keepTracksWithoutTof = " + std::to_string(mKeepTracksWithoutTof);
 
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       mXiMassLowerLimit = filter.massXiMin.value;
@@ -256,7 +258,8 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       mOmegaMassLowerLimit = filter.rejectMassOmegaMin.value;
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
       this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kBachelorTofPion, cascadeSelectionNames.at(kBachelorTofPion), config.bachelorTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+      this->addSelection(kBachelorTofPion, cascadeSelectionNames.at(kBachelorTofPion), config.bachelorTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addComments(kBachelorTofPion, tofComment);
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
@@ -265,13 +268,16 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       mXiMassLowerLimit = filter.rejectMassXiMin.value;
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
       this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kBachelorTofKaon, cascadeSelectionNames.at(kBachelorTofKaon), config.bachelorTofKaon.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+      this->addSelection(kBachelorTofKaon, cascadeSelectionNames.at(kBachelorTofKaon), config.bachelorTofKaon.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addComments(kBachelorTofKaon, tofComment);
     }
 
     this->addSelection(kPosDauTpc, cascadeSelectionNames.at(kPosDauTpc), config.posDauTpc.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kNegDauTpc, cascadeSelectionNames.at(kNegDauTpc), config.negDauTpc.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kPosDauTof, cascadeSelectionNames.at(kPosDauTof), config.posDauTof.value, limits::kAbsUpperLimit, true, mRequireTof, false);
-    this->addSelection(kNegDauTof, cascadeSelectionNames.at(kNegDauTof), config.negDauTof.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+    this->addSelection(kPosDauTof, cascadeSelectionNames.at(kPosDauTof), config.posDauTof.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+    this->addSelection(kNegDauTof, cascadeSelectionNames.at(kNegDauTof), config.negDauTof.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+    this->addComments(kPosDauTof, tofComment);
+    this->addComments(kNegDauTof, tofComment);
 
     this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), filter.ptMin.value, filter.ptMax.value, config.cascadeCpaMin.value, limits::kLowerFunctionLimit, true, true, false);
     this->addSelection(kCascadePaMax, cascadeSelectionNames.at(kCascadePaMax), filter.ptMin.value, filter.ptMax.value, config.cascadePaMax.value, limits::kUpperFunctionLimit, true, true, false);
@@ -341,7 +347,9 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
 
     // pid selections
     // TPC nSigma comes from the daughter track, TOF nSigma and the has-TOF flags from the cascade candidate
-    // if a daughter has no TOF signal, feed 0 so the bit passes any limit (opt-in via keepTracksWithoutTof)
+    // if a daughter has no TOF signal: feed 0 so the bit passes any limit if keepTracksWithoutTof is set,
+    // overriding requireTof; otherwise feed a value that fails every limit, so that if requireTof is also
+    // true, the mandatory TOF cut correctly rejects the candidate instead of silently letting it through
     auto evaluatePid = [this](CascadeSels tpcBit, float tpcNSigma,
                               CascadeSels tofBit, float tofNSigma, bool hasTof) {
       this->evaluateObservable(tpcBit, tpcNSigma);
@@ -349,6 +357,8 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
         this->evaluateObservable(tofBit, tofNSigma);
       } else if (mKeepTracksWithoutTof) {
         this->evaluateObservable(tofBit, 0.f);
+      } else {
+        this->evaluateObservable(tofBit, std::numeric_limits<float>::max());
       }
     };
 

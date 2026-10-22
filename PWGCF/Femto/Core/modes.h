@@ -113,6 +113,7 @@ enum class Particle : o2::analysis::femto::datatypes::ParticleType {
   kKink = 4,
   kCascade = 5,
   kCharmHadron = 6,
+  kTwoPhotonResonance = 7,
 };
 
 enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
@@ -238,6 +239,12 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
 enum class TwoPhotonResonance : o2::analysis::femto::datatypes::TwoPhotonResonanceType {
   kPi0,
   kEta
+};
+
+// resonances reconstructed from two tracks and a two-photon resonance, e.g. omega(782) -> pi+ pi- pi0.
+// Named kOmegaMeson (not kOmega) to not collide with Cascade::kOmega, the Omega- baryon.
+enum class TrackTrackTwoPhotonResonance : o2::analysis::femto::datatypes::TrackTrackTwoPhotonResonanceType {
+  kOmegaMeson
 };
 
 enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {

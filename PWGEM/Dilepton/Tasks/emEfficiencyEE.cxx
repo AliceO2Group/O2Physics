@@ -1043,8 +1043,7 @@ struct AnalysisTrackSelection {
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TEventsMC, typename TTracks, typename TTracksMC, typename TAmbigTracks>
   void runRecTrackMore(TEvents const& events, TEventsMC const& /*eventsMC*/, TTracks const& groupedTracks, TTracksMC const& tracksMC, TAmbigTracks const& ambiTracksMid)
   {
-
-    std::map<uint64_t, int> fRecTrackLabels[fTrackCuts.size() + 1];
+    std::vector<std::map<uint64_t, int>> fRecTrackLabels(fTrackCuts.size() + 1);
 
     uint32_t filterMap = 0;
     trackSel.reserve(groupedTracks.size());
@@ -1052,10 +1051,7 @@ struct AnalysisTrackSelection {
     for (auto& track : groupedTracks) {
 
       // How many time the associated MC track was seen for this cut
-      Int_t fRecCounters[fTrackCuts.size() + 1];
-      for (unsigned int k = 0; k < fTrackCuts.size() + 1; k++) {
-        fRecCounters[k] = 0;
-      }
+      std::vector<Int_t> fRecCounters(fTrackCuts.size() + 1, 0);
 
       filterMap = 0;
       Int_t ambiguousinfo = 0;
@@ -1157,10 +1153,7 @@ struct AnalysisTrackSelection {
       uint32_t mcDecision = 0;
       int isig = 0;
       Int_t mctrackindex = -999;
-      Int_t doublereconstructedtrack[fTrackCuts.size() + 1];
-      for (unsigned int k = 0; k < fTrackCuts.size() + 1; k++) {
-        doublereconstructedtrack[k] = 0;
-      }
+      std::vector<Int_t> doublereconstructedtrack(fTrackCuts.size() + 1, 0);
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if (track.has_mcParticle()) {

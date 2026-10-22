@@ -87,7 +87,7 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kCentVsMult, o2::framework::HistType::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
     {kMultVsSphericity, o2::framework::HistType::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
     {kCentVsSphericity, o2::framework::HistType::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
-    {kFT0AvsFT0C, o2::framework::HistType::kTH2F, "hFT0AvsFT0C", "FT0A centrality vs FT0C centrality; Centrality_{FT0A} (%); Centrality_{FT0C}"},
+    {kFT0AvsFT0C, o2::framework::HistType::kTH2F, "hFT0AvsFT0C", "FT0A centrality vs FT0C centrality; Centrality_{FT0A} (%); Centrality_{FT0C} (%)"},
     // event shape
     {kQvector, o2::framework::HistType::kTH1F, "hQvector", "q-vector; q-vector; Entries"},
     {kEventPlaneAngle, o2::framework::HistType::kTH1F, "hEventPlaneAngle", "Event Plane angle; #Psi_{EP}; Entries"},

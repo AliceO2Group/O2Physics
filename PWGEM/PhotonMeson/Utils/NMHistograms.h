@@ -29,16 +29,27 @@
 #include <TPDGCode.h>
 #include <TString.h>
 
+#include <array>
 #include <vector>
 
 namespace o2::aod::pwgem::photonmeson::utils::nmhistogram
 {
-inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool isMC,
+/// \brief Add the pair histograms
+/// \param isMC book the MC truth histograms (only mass and pT axes) instead of the same/mixed event histograms
+/// \param pairname name of the pair used in the axis titles
+/// \param sparseFullAxes data only: add EP, occupancy and z-vertex axes to the same/mixed event histograms
+/// \param occBins data only: occupancy bin edges
+/// \param epBins data only: event plane bin edges
+/// \param vtxBins data only: z-vertex bin edges
+inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry,
+                            bool isMC,
+                            const char* pairname = "#gamma#gamma",
                             bool sparseFullAxes = false,
                             std::vector<double> const& occBins = {0, 500, 1000, 2000, 3000, 5000, 10000},
                             std::vector<double> const& epBins = {-o2::constants::math::PIHalf, -o2::constants::math::PIQuarter, 0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf},
                             std::vector<double> const& vtxBins = {-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10},
-                            const char* pairname = "#gamma#gamma")
+                            const int nBinsMass = 400,
+                            const std::array<double, 2> massBinRange = {0., 0.8})
 {
   // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at skimming.!!
   std::vector<double> ptbins;
@@ -56,7 +67,7 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
     ptbins.emplace_back(1.0 * (i - 61) + 10.0); // from 10 to 20 GeV/c, every 1 GeV/c
   }
   const o2::framework::AxisSpec axis_pt{ptbins, Form("p_{T,%s} (GeV/c)", pairname)};
-  const o2::framework::AxisSpec axis_mass{400, 0, 0.8, Form("m_{%s} (GeV/c^{2})", pairname)};
+  const o2::framework::AxisSpec axis_mass{nBinsMass, massBinRange[0], massBinRange[1], Form("m_{%s} (GeV/c^{2})", pairname)};
   const o2::framework::AxisSpec axis_occ{occBins, "occupancy"};
   const o2::framework::AxisSpec axis_ep{epBins, "#Psi_{2} (rad)"};
   const o2::framework::AxisSpec axis_vtx{vtxBins, "Z_{vtx} (cm)"};

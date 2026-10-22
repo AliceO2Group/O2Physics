@@ -79,9 +79,10 @@ class FlowJSPCAnalysis
       return;
     }
     mHistRegistry->add("FullCentrality", "FullCentrality", o2::framework::HistType::kTH1D, {{100, 0., 100.}}, true);
-    // Effective N_m per centrality class, weighted by M_m (arXiv:2606.10258 c0).
-    mHistRegistry->add("fN3", "Effective N_{3};centrality class;N_{3}", {o2::framework::HistType::kTProfile, {{9, 0., 9.}}}, true);
-    mHistRegistry->add("fN4", "Effective N_{4};centrality class;N_{4}", {o2::framework::HistType::kTProfile, {{9, 0., 9.}}}, true);
+    // Stores <N^{-(m-1)}>_comb = 1/N_m^{m-1} (arXiv:2606.10258 Eq. IV.2).
+    // Invert offline: N_m = content^{-1/(m-1)}. Weight is M_m.
+    mHistRegistry->add("fN3", "1/N_{3}^{2};centrality class;1/N_{3}^{2}", {o2::framework::HistType::kTProfile, {{9, 0., 9.}}}, true);
+    mHistRegistry->add("fN4", "1/N_{4}^{3};centrality class;1/N_{4}^{3}", {o2::framework::HistType::kTProfile, {{9, 0., 9.}}}, true);
     mHistRegistry->add("Centrality_0/fResults", "Numerators and denominators", {o2::framework::HistType::kTProfile, {{24, 0., 24.}}}, true);
     mHistRegistry->add("Centrality_0/fCovResults", "Covariance N*D", {o2::framework::HistType::kTProfile, {{48, 0., 48.}}}, true);
     mHistRegistry->add("Centrality_0/phiBefore", "Phi before", {o2::framework::HistType::kTH1D, {{100, 0., o2::constants::math::TwoPI}}}, true);

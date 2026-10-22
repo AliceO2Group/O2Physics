@@ -9,29 +9,29 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file GFWPowerArray.h/.cxx
+/// \file GFWPowerArray.h
 /// \brief Class to compute necessary powers of Q-vectors based on input correlations
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWPOWERARRAY_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWPOWERARRAY_H_
 
-#include <cmath>
+#include <cstddef>
 #include <vector>
 
 typedef std::vector<int> HarSet;
 class GFWPowerArray
 {
  public:
-  static HarSet GetPowerArray(const std::vector<HarSet>& inHarmonics);
-  static void PowerArrayTest();
+  static HarSet GetPowerArray(const std::vector<HarSet>& inHarmonics); // o2-linter: disable=name/function-variable (preserve existing public API)
+  static void PowerArrayTest();                                        // o2-linter: disable=name/function-variable (preserve existing public API)
 
  private:
   static int getHighestHarmonic(const HarSet& inhar);
-  static HarSet TrimVec(HarSet hars, int ind);
-  static HarSet AddConstant(HarSet hars, int offset);
-  static void FlushVectorToMaster(HarSet& masterVector, HarSet& comVec, const int& MaxPower);
-  static void RecursiveFunction(HarSet& masterVector, HarSet hars, int offset, const int& MaxPower);
-  static void PrintVector(const HarSet& singleSet);
+  static HarSet trimVec(const HarSet& hars, int ind);
+  static HarSet addConstant(const HarSet& hars, int offset);
+  static void flushVectorToMaster(HarSet& masterVector, const HarSet& comVec, int maxPower);
+  static void recursiveFunction(HarSet& masterVector, const HarSet& hars, int offset, int maxPower, std::size_t startIndex);
+  static void printVector(const HarSet& singleSet);
 };
 #endif // PWGCF_GENERICFRAMEWORK_CORE_GFWPOWERARRAY_H_

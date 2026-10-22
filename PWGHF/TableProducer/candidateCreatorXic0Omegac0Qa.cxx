@@ -1290,7 +1290,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                  0.f, 0.f, 0.f, // -> vertexCharmBaryonFromFitter. For KF, this is 0
                                  vertexCasc[0], vertexCasc[1], vertexCasc[2],
                                  vertexV0[0], vertexV0[1], vertexV0[2],
-                                 trackCharmBachelor.sign(),
+                                 bachTrack.sign(),
                                  covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
                                  kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz(),
                                  kfCascToCharmBaryon.GetPx(), kfCascToCharmBaryon.GetPy(), kfCascToCharmBaryon.GetPz(),
@@ -1651,7 +1651,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // bitmask with event selection info
       float centrality{-1.f};
       float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       // monitor the satisfied event selection
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
@@ -1667,7 +1667,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // bitmask with event selection info
       float centrality{-1.f};
       float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       // monitor the satisfied event selection
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);

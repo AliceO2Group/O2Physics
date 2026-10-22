@@ -58,40 +58,60 @@ using ConfPhiFilters = ConfTwoTrackResonanceFilters<PrefixPhiFilters>;
 using ConfKstarFilters = ConfTwoTrackResonanceFilters<PrefixKstarFilters>;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TWOTRACKRESONANCE_DEFAULT_SELECTION(defaultPdgCode, defaultMassMin, defaultMassMax)                                                                                        \
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "Resonance PDG code. Set sign to minus 1 for antiparticle"};                                         \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                                                            \
-  o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};                                                                                                            \
-  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                                                                       \
-  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};                                                                                                        \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                                                                         \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                                                            \
-  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Resonance"};                                                                 \
-  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Resonance"};                                                                 \
-  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> posDauMaskBelowThres{"posDauMaskBelowThres", 0x10u, "Bitmask for positive daughter below threshold"}; \
-  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> posDauMaskAboveThres{"posDauMaskAboveThres", 0x8u, "Bitmask for positive daughter above threshold"};  \
-  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> negDauMaskBelowThres{"negDauMaskBelowThres", 0x2u, "Bitmask for negative daughter below threshold"};  \
-  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> negDauMaskAboveThres{"negDauMaskAboveThres", 0x1u, "Bitmask for negative daughter above threshold"};
+#define TWOTRACKRESONANCE_DEFAULT_SELECTION(defaultPdgCode, defaultMassMin, defaultMassMax)                                                \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "Resonance PDG code. Set sign to minus 1 for antiparticle"}; \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                    \
+  o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};                                                                    \
+  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                               \
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};                                                                \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                                 \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                    \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Resonance"};                         \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Resonance"};
+
+// phi -> K+ K-, rho0 -> pi+ pi-: both daughters are the same species, so a single pair of mask
+// thresholds is enough, applied to both the positive and negative daughter alike
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TWOTRACKRESONANCE_SAME_SPECIES_MASK                                                                                                                               \
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> dauMaskBelowThres{"dauMaskBelowThres", 0x10u, "Bitmask for both daughters below threshold"}; \
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> dauMaskAboveThres{"dauMaskAboveThres", 0x8u, "Bitmask for both daughters above threshold"};
 
 struct ConfPhiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("PhiSelection");
   TWOTRACKRESONANCE_DEFAULT_SELECTION(333, 0.95f, 1.05f)
-  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatability"};
+  TWOTRACKRESONANCE_SAME_SPECIES_MASK
+  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatibility"};
 };
 
 struct ConfRho0Selection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Rho0Selection");
   TWOTRACKRESONANCE_DEFAULT_SELECTION(113, 0.7f, 0.84f)
-  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatability"};
+  TWOTRACKRESONANCE_SAME_SPECIES_MASK
+  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatibility"};
 };
+
+#undef TWOTRACKRESONANCE_SAME_SPECIES_MASK
+
+// K*0 -> K+ pi-, K*0bar -> K- pi+: the physical pos/neg daughter's species flips with the
+// candidate's charge sign, so the masks are named by species (kaon/pion) rather than by charge --
+// MAKE_RESONANCE_1_PARTITON resolves which stored column (maskPosDau/maskNegDau) each applies to
+// from the candidate's own signedPt, so the user never has to reason about pos/neg <-> kaon/pion
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TWOTRACKRESONANCE_KSTAR_MASK                                                                                                                                                 \
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> kaonDauMaskBelowThres{"kaonDauMaskBelowThres", 0x10u, "Bitmask for the kaon daughter below threshold"}; \
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> kaonDauMaskAboveThres{"kaonDauMaskAboveThres", 0x8u, "Bitmask for the kaon daughter above threshold"};  \
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> pionDauMaskBelowThres{"pionDauMaskBelowThres", 0x2u, "Bitmask for the pion daughter below threshold"};  \
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> pionDauMaskAboveThres{"pionDauMaskAboveThres", 0x1u, "Bitmask for the pion daughter above threshold"};
 
 struct ConfKstar0Selection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Kstar0Selection");
   o2::framework::Configurable<int> sign{"sign", 1, "Sign (+1 for Kstar0 and -1 for Kstar0Bar) "};
   TWOTRACKRESONANCE_DEFAULT_SELECTION(313, 0.8f, 1.0f)
+  TWOTRACKRESONANCE_KSTAR_MASK
 };
 
 #undef TWOTRACKRESONANCE_DEFAULT_SELECTION
+#undef TWOTRACKRESONANCE_KSTAR_MASK
 
 struct TwoTrackResonanceBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FPhis> producedPhis;
@@ -106,7 +126,7 @@ struct ConfTwoTrackResonanceTables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TwoTrackResonanceTables");
   o2::framework::Configurable<int> producePhis{"producePhis", -1, "Produce Phis (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producePhiMasks{"producePhiMasks", -1, "Produce PhiMasks (-1: auto; 0 off; 1 on)"};
-  o2::framework::Configurable<int> produceKstar0s{"produceKstar0s", -1, "Produce K0stars (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceKstar0s{"produceKstar0s", -1, "Produce Kstar0s (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceKstar0Masks{"produceKstar0Masks", -1, "Produce Kstar0Masks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceRho0s{"produceRho0s", -1, "Produce Rho0s (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceRho0Masks{"produceRho0Masks", -1, "Produce Rho0Masks (-1: auto; 0 off; 1 on)"};
@@ -182,7 +202,6 @@ class TwoTrackResonanceBuilder
     }
     auto posDaughterSlice = posDaughterPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto negDaughterSlice = negDaughterPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    // LOG(warn) << "Size: " << posDaughterSlice.size() << " " << negDaughterSlice.size();
     for (auto const& [posDaughter, negDaughter] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posDaughterSlice, negDaughterSlice))) {
       this->fillResonance(col, posDaughter, negDaughter, resonanceProducts);
     }

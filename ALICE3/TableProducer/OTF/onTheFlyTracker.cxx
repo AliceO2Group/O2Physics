@@ -299,6 +299,8 @@ struct OnTheFlyTracker {
     int nSiliconHits = 0;         ///< number of silicon hits
     int nTPCHits = 0;             ///< number of TPC hits
     TrackType trackType = TrackType::kNone;
+    float trackIU = -1.f; ///< radius of the innermost hit (-1 if not available)
+    float trackOU = -1.f; ///< radius of the outermost hit (-1 if not available)
   };
 
   // Helper struct to pass cascade information
@@ -1828,7 +1830,7 @@ struct OnTheFlyTracker {
         tableTrackSelection(static_cast<uint8_t>(0), false, false, false, false, false, false);
         tableTrackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
-      tableTracksAlice3(true);
+      tableTracksAlice3(true, trackParCov.trackIU, trackParCov.trackOU);
     }
   }
 
@@ -1949,12 +1951,14 @@ struct OnTheFlyTracker {
 
       bool reconstructed = true;
       int nTrkHits = 0;
+      std::array<float, 2> hitRadii = {-1.f, -1.f}; // {innermost, outermost}
       if (enablePrimarySmearing) {
         if (fastPrimaryTrackerSettings.fastTrackPrimaries && longLivedToBeHandled) {
           o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
           perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
           computeBremsstrahlungLoss(mcParticle, perfectTrackParCov);
           nTrkHits = fastTracker[icfg]->fastTrack(perfectTrackParCov, trackParCov, dNdEta);
+          hitRadii = {fastTracker[icfg]->getTrackIU(), fastTracker[icfg]->getTrackOU()};
           if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
             reconstructed = false;
           }
@@ -1965,6 +1969,7 @@ struct OnTheFlyTracker {
           const std::array<float, 3> decayVtx = decayer.generateDecayVertex(mcParticle, pdgDB);
           const float decayRadius2D = std::hypot(decayVtx[0], decayVtx[1]);
           nTrkHits = fastTracker[icfg]->fastTrack(perfectTrackParCov, trackParCov, dNdEta, decayRadius2D);
+          hitRadii = {fastTracker[icfg]->getTrackIU(), fastTracker[icfg]->getTrackOU()};
           if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
             reconstructed = false;
           }
@@ -2033,8 +2038,12 @@ struct OnTheFlyTracker {
       bool isPVContributor = trackType == TrackType::kRecoPrimary;
       if (reconstructed) {
         recoPrimaries.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), trackTime, TimeResolutionUs, isDecayDaughter, isPVContributor, false, 0, nTrkHits, trackType});
+        recoPrimaries.back().trackIU = hitRadii[0];
+        recoPrimaries.back().trackOU = hitRadii[1];
       } else {
         ghostPrimaries.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), trackTime, TimeResolutionUs, isDecayDaughter, isPVContributor, false, 0, nTrkHits, trackType});
+        ghostPrimaries.back().trackIU = hitRadii[0];
+        ghostPrimaries.back().trackOU = hitRadii[1];
       }
     }
 
@@ -2176,6 +2185,7 @@ struct OnTheFlyTracker {
 
       bool reconstructed = false;
       int nTrkHits = 0;
+      std::array<float, 2> hitRadii = {-1.f, -1.f}; // {innermost, outermost}
       const bool isSecondary = !otfParticle.isPrimary() && otfParticle.checkBit(o2::upgrade::DecayerBits::ProducedByDecayer) && otfParticle.isAlive();
       if (enablePrimarySmearing && longLivedToBeHandled && otfParticle.isPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
@@ -2186,6 +2196,7 @@ struct OnTheFlyTracker {
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         computeBremsstrahlungLoss(mcParticle, perfectTrackParCov);
         nTrkHits = fastTracker[icfg]->fastTrack(perfectTrackParCov, trackParCov, dNdEta, mcParticle.decayRadius());
+        hitRadii = {fastTracker[icfg]->getTrackIU(), fastTracker[icfg]->getTrackOU()};
         getHist<TH2>(histPath + "h2dGenShortLivedParticleRadius")->Fill(mcParticle.decayRadius(), perfectTrackParCov.getPt());
         getHist<TH2>(histPath + "h2dGenRadiusIniVsDecay")->Fill(std::hypot(perfectTrackParCov.getX(), perfectTrackParCov.getY()), mcParticle.decayRadius());
         if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
@@ -2203,6 +2214,7 @@ struct OnTheFlyTracker {
         computeBremsstrahlungLoss(mcParticle, perfectTrackParCov);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         nTrkHits = fastTracker[icfg]->fastTrack(perfectTrackParCov, trackParCov, dNdEta);
+        hitRadii = {fastTracker[icfg]->getTrackIU(), fastTracker[icfg]->getTrackOU()};
         reconstructed = nTrkHits >= fastTrackerSettings.minSiliconHits;
       }
 
@@ -2260,9 +2272,13 @@ struct OnTheFlyTracker {
 
       if (reconstructed) {
         tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, TimeResolutionUs, isSecondary, true, false, 0, nTrkHits, kRecoPrimary});
+        tracksAlice3.back().trackIU = hitRadii[0];
+        tracksAlice3.back().trackOU = hitRadii[1];
         getHist<TH1>(histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
       } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, TimeResolutionUs, isSecondary, false, false, false, 0, nTrkHits, kGhostPrimary});
+        ghostTracksAlice3.back().trackIU = hitRadii[0];
+        ghostTracksAlice3.back().trackOU = hitRadii[1];
       }
     }
 

@@ -236,6 +236,13 @@ class SelectionContainer
     mComments = comments;
   }
 
+  /// \brief Attach the same comment to every threshold of this selection.
+  /// \param comment Comment string applied to all thresholds.
+  void addComments(std::string const& comment)
+  {
+    mComments = std::vector<std::string>(getNSelections(), comment);
+  }
+
   /// \brief Get comments attached to the selection thresholds.
   /// \return Vector of comment strings.
   [[nodiscard]] std::string getComment(int selectionIndex) const
