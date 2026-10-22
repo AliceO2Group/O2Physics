@@ -83,11 +83,11 @@ struct FemtoUniverseDebugTrack {
   FemtoUniverseTrackSelection trackCuts;
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(trackonefilter.confTrackSign)); // && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == static_cast<uint8_t>(trackonefilter.confTrackSign)); // && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
   Preslice<FemtoFullParticles> perColReco = aod::femtouniverseparticle::fdCollisionId;
 
   using FemtoFullParticlesMC = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
-  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(trackonefilter.confTrackSign)); // && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
+  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == static_cast<uint8_t>(trackonefilter.confTrackSign)); // && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
   Preslice<FemtoFullParticlesMC> perColGen = aod::femtouniverseparticle::fdCollisionId;
 
   /// Histogramming for Event

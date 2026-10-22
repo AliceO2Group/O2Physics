@@ -137,12 +137,12 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<bool> confTrackUseRun3PIDforKaons{"confTrackUseRun3PIDforKaons", true, "Use Run3 PID for kaons from Veronika Barbasova's AN (https://alice-notes.web.cern.ch/node/1758). If this is on the other PID methods are ignored for kaons."};
 
   /// Partitions for the track (particle 1)
-  Partition<FilteredFemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) &&
+  Partition<FilteredFemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) &&
                                                      (aod::femtouniverseparticle::sign == confTrackSign) &&
                                                      (aod::femtouniverseparticle::pt > confTrackPtLow) &&
                                                      (aod::femtouniverseparticle::pt < confTrackPtHigh);
 
-  Partition<FemtoRecoParticles> partsTrackMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) &&
+  Partition<FemtoRecoParticles> partsTrackMCReco = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) &&
                                                    (aod::femtouniverseparticle::sign == confTrackSign) &&
                                                    (aod::femtouniverseparticle::pt > confTrackPtLow) &&
                                                    (aod::femtouniverseparticle::pt < confTrackPtHigh);
@@ -154,25 +154,25 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<float> confInvMassUpLimitPhi{"confInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
 
   /// Partitions for the Phi meson (particle 2)
-  Partition<FilteredFemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi)) &&
+  Partition<FilteredFemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kPhi)) &&
                                                    (aod::femtouniverseparticle::pt > confPhiPtLow) &&
                                                    (aod::femtouniverseparticle::pt < confPhiPtHigh) &&
                                                    (aod::femtouniverseparticle::tempFitVar > confInvMassLowLimitPhi) &&
                                                    (aod::femtouniverseparticle::tempFitVar < confInvMassUpLimitPhi);
 
-  Partition<FemtoRecoParticles> partsPhiMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi)) &&
+  Partition<FemtoRecoParticles> partsPhiMCReco = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kPhi)) &&
                                                  (aod::femtouniverseparticle::pt > confPhiPtLow) &&
                                                  (aod::femtouniverseparticle::pt < confPhiPtHigh) &&
                                                  (aod::femtouniverseparticle::tempFitVar > confInvMassLowLimitPhi) &&
                                                  (aod::femtouniverseparticle::tempFitVar < confInvMassUpLimitPhi);
 
   /// Partitions  for Phi daughters kPhiChild
-  Partition<FilteredFemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiDaughMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
+  Partition<FilteredFemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kPhiChild));
+  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiDaughMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kPhiChild));
 
   // Partition for K+K- minv
-  Partition<FilteredFemtoFullParticles> partsKaons = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsKaonsMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
+  Partition<FilteredFemtoFullParticles> partsKaons = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack));
+  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsKaonsMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack));
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartTrack;
@@ -668,7 +668,7 @@ struct FemtoUniversePairTaskTrackPhi {
   void processMCTruth(aod::FDParticles const& parts)
   {
     for (auto const& part : parts) {
-      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
+      if (part.partType() != static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
         continue;
       }
 

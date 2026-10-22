@@ -83,7 +83,7 @@ struct femtoDreamDebugCascade {
   ConfigurableAxis ConfCascadeChildTempFitVarpTBins{"ConfCascadeChildTempFitVarpTBins", {20, 0.5, 4.05}, "Cascade child: pT binning of the pT vs. TempFitVar plot"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) && (ncheckbit(aod::femtodreamparticle::cut, ConfCascade_CutBit));
+  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascade)) && (ncheckbit(aod::femtodreamparticle::cut, ConfCascade_CutBit));
   Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Histogramming
@@ -140,9 +140,9 @@ struct femtoDreamDebugCascade {
         continue;
       }
       // check cuts on V0 children
-      if (posChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeV0Child) &&
-          negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeV0Child) &&
-          bachChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeBachelor)) {
+      if (posChild.partType() == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascadeV0Child) &&
+          negChild.partType() == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascadeV0Child) &&
+          bachChild.partType() == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascadeBachelor)) {
 
         if (ConfUseChildCuts) {
           if (!((posChild.cut() & ConfCascade_ChildPos_CutBit) == ConfCascade_ChildPos_CutBit &&

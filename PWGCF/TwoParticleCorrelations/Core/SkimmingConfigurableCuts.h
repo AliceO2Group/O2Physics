@@ -77,7 +77,7 @@ class CutBrick : public TNamed
   void Arm(bool doit = true) { doit ? mMode = kSELECTED : mMode = kUNSELECTED; }
   /// Setting the value of independent variable for cuts with function levels
   /// The default behavior is to raise a fatal exception
-  virtual void setIndependentFnVar(float)
+  virtual void setIndependentFnVar(float) // NOLINT(readability/casting)
   {
     LOGF(fatal, "CutBrick::setIndependentFnVar(). The brick you are using %s does not accept setting the independent variable value");
   }

@@ -118,7 +118,7 @@ CutBrickLimit<TValueToFilter>::CutBrickLimit()
 /// \param value The limit value
 template <typename TValueToFilter>
 CutBrickLimit<TValueToFilter>::CutBrickLimit(const char* name, const TValueToFilter& value)
-  : CutBrick<TValueToFilter>(name, TString::Format("%s{lim{%f}}", name, float(value))),
+  : CutBrick<TValueToFilter>(name, TString::Format("%s{lim{%f}}", name, static_cast<float>(value))),
     mLimit(value)
 {
 }
@@ -252,7 +252,7 @@ CutBrickThreshold<TValueToFilter>::CutBrickThreshold()
 /// \param value The threshold value
 template <typename TValueToFilter>
 CutBrickThreshold<TValueToFilter>::CutBrickThreshold(const char* name, const TValueToFilter& value)
-  : CutBrick<TValueToFilter>(name, TString::Format("%s{th{%f}}", name, float(value))),
+  : CutBrick<TValueToFilter>(name, TString::Format("%s{th{%f}}", name, static_cast<float>(value))),
     mThreshold(value)
 {
 }
@@ -388,7 +388,7 @@ CutBrickRange<TValueToFilter>::CutBrickRange()
 /// \param high The high value for the cut range
 template <typename TValueToFilter>
 CutBrickRange<TValueToFilter>::CutBrickRange(const char* name, const TValueToFilter& low, const TValueToFilter& high)
-  : CutBrick<TValueToFilter>(name, TString::Format("%s{rg{%f,%f}}", name, float(low), float(high))),
+  : CutBrick<TValueToFilter>(name, TString::Format("%s{rg{%f,%f}}", name, static_cast<float>(low), static_cast<float>(high))),
     mLow(low),
     mUp(high)
 {
@@ -532,7 +532,7 @@ CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange()
 /// \param high The high value for the cut excluded range
 template <typename TValueToFilter>
 CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange(const char* name, const TValueToFilter& low, const TValueToFilter& high)
-  : CutBrick<TValueToFilter>(name, TString::Format("%s{xrg{%f,%f}}", name, float(low), float(high))),
+  : CutBrick<TValueToFilter>(name, TString::Format("%s{xrg{%f,%f}}", name, static_cast<float>(low), static_cast<float>(high))),
     mLow(low),
     mUp(high)
 {
@@ -680,9 +680,9 @@ CutBrickSelectorMultipleRanges<TValueToFilter>::CutBrickSelectorMultipleRanges(c
   for (auto edge : edges) {
     mEdges.push_back(edge);
     if (first) {
-      title += TString::Format("%.2f", float(edge));
+      title += TString::Format("%.2f", static_cast<float>(edge));
     } else {
-      title += TString::Format(",%.2f", float(edge));
+      title += TString::Format(",%.2f", static_cast<float>(edge));
     }
   }
   title += "}";
@@ -951,7 +951,7 @@ std::vector<bool> CutWithVariations<TValueToFilter>::IsArmed()
     int nArmedDefaults = 0;
     int nArmedVariants = 0;
     for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->IsArmed();
+      std::vector<bool> tmp = (dynamic_cast<CutBrick<TValueToFilter>*>(mDefaultBricks.At(i)))->IsArmed();
       res.insert(res.end(), tmp.begin(), tmp.end());
       for (bool iarmed : tmp) {
         if (iarmed) {
@@ -960,7 +960,7 @@ std::vector<bool> CutWithVariations<TValueToFilter>::IsArmed()
       }
     }
     for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->IsArmed();
+      std::vector<bool> tmp = (dynamic_cast<CutBrick<TValueToFilter>*>(mVariationBricks.At(i)))->IsArmed();
       res.insert(res.end(), tmp.begin(), tmp.end());
       for (bool iarmed : tmp) {
         if (iarmed) {
@@ -991,11 +991,11 @@ std::vector<bool> CutWithVariations<TValueToFilter>::Filter(const TValueToFilter
   std::vector<bool> res;
   res.reserve(Length());
   for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-    std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->Filter(value);
+    std::vector<bool> tmp = (dynamic_cast<CutBrick<TValueToFilter>*>(mDefaultBricks.At(i)))->Filter(value);
     res.insert(res.end(), tmp.begin(), tmp.end());
   }
   for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-    std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->Filter(value);
+    std::vector<bool> tmp = (dynamic_cast<CutBrick<TValueToFilter>*>(mVariationBricks.At(i)))->Filter(value);
     res.insert(res.end(), tmp.begin(), tmp.end());
   }
   return res;
@@ -1010,10 +1010,10 @@ int CutWithVariations<TValueToFilter>::Length()
   /* TODO: should a single default cut without variations return zero length? */
   int length = 0;
   for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-    length += ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->Length();
+    length += (dynamic_cast<CutBrick<TValueToFilter>*>(mDefaultBricks.At(i)))->Length();
   }
   for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-    length += ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->Length();
+    length += (dynamic_cast<CutBrick<TValueToFilter>*>(mVariationBricks.At(i)))->Length();
   }
   return length;
 }
@@ -1029,7 +1029,7 @@ int CutWithVariations<TValueToFilter>::getArmedIndex()
       bool found = false;
       for (int i = 0; not found and i < brklst.GetEntries(); ++i) {
         index++;
-        std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)brklst.At(i))->IsArmed();
+        std::vector<bool> tmp = (dynamic_cast<CutBrick<TValueToFilter>*>(brklst.At(i)))->IsArmed();
         for (bool iarmed : tmp) {
           if (iarmed) {
             found = true;

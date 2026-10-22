@@ -161,28 +161,28 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   /// Partition for the first track particle using extended table
-  Partition<FemtoFullParticles> partsTrackOneFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - cascade and track - track correlations
+  Partition<FemtoFullParticles> partsTrackOneFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - cascade and track - track correlations
   /// Partition for MC QA of track using partone configs
-  Partition<FemtoRecoFullParticles> partsTrackOneFullMc = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
+  Partition<FemtoRecoFullParticles> partsTrackOneFullMc = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
   /// Partition for the first track particle using bitmask (without extended table)
-  Partition<aod::FDParticles> partsTrackOneBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
-  Partition<aod::FDParticles> partsTrackOneMCgenBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
+  Partition<aod::FDParticles> partsTrackOneBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
+  Partition<aod::FDParticles> partsTrackOneMCgenBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
 
   /// Partition for the second track particle using extended table
-  Partition<FemtoFullParticles> partsTrackTwoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - track correlations
+  Partition<FemtoFullParticles> partsTrackTwoFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - track correlations
 
   /// Partition for the second track particle using bitmask (without extended table)
-  Partition<aod::FDParticles> partsTrackTwoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
+  Partition<aod::FDParticles> partsTrackTwoBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
 
   /// Partition for cascades using extended table
-  Partition<FemtoFullParticles> partsTwoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
+  Partition<FemtoFullParticles> partsTwoFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
 
   /// Partition for cascades using extended MC reco table
-  Partition<FemtoRecoFullParticles> partsTwoMCrecoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
+  Partition<FemtoRecoFullParticles> partsTwoMCrecoFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
 
   /// Partition for cascades using bitmask (without extended table)
-  Partition<aod::FDParticles> partsTwoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
-  Partition<aod::FDParticles> partsTwoMCgenBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
+  Partition<aod::FDParticles> partsTwoBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
+  Partition<aod::FDParticles> partsTwoMCgenBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
 
   /// Histogramming for track particle
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
@@ -1453,7 +1453,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   void processMCgen(aod::FDParticles const& parts)
   {
     for (const auto& part : parts) {
-      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
+      if (part.partType() != static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
         continue;
 
       int pdgCode = static_cast<int>(part.pidCut());

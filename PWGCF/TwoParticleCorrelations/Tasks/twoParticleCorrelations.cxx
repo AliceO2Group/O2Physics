@@ -879,10 +879,10 @@ struct twoParticleCorrelations {
         int ixDCE = getDCEindex(collision);
         if (!(ixDCE < 0)) {
           if (ccdblst != nullptr && !dataCE[ixDCE]->isCCDBstored()) {
-            dataCE[ixDCE]->storeTrackCorrections(std::vector<TH3*>{static_cast<TH3*>(ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())),
-                                                                   static_cast<TH3*>(ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()))});
-            dataCE[ixDCE]->storePtAverages(std::vector<TH2*>{static_cast<TH2*>(ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())),
-                                                             static_cast<TH2*>(ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()))});
+            dataCE[ixDCE]->storeTrackCorrections(std::vector<TH3*>{dynamic_cast<TH3*>(ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())),
+                                                                   dynamic_cast<TH3*>(ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()))});
+            dataCE[ixDCE]->storePtAverages(std::vector<TH2*>{dynamic_cast<TH2*>(ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())),
+                                                             dynamic_cast<TH2*>(ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()))});
           }
         }
         /* magnetic field equal to zero for the time being */

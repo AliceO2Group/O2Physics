@@ -770,7 +770,7 @@ struct LongRangeDihadronCor {
     if (cfgGeneral.cfgEfficiency.value.empty() == false) {
       if (cfgGeneral.cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgGeneral.cfgEfficiency.value.c_str(), "READ");
-        mEfficiency = reinterpret_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
+        mEfficiency = dynamic_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
         mEfficiency = ccdb->getForTimeStamp<TH3D>(cfgGeneral.cfgEfficiency, timestamp);
       }
