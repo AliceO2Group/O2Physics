@@ -360,7 +360,7 @@ struct Alice3TrackingTranslator {
     if (filesList) {
       TIter next(filesList);
       TSystemFile* file;
-      while ((file = static_cast<TSystemFile*>(next()))) {
+      while ((file = dynamic_cast<TSystemFile*>(next()))) {
         TString fname = file->GetName();
         LOG(debug) << "Found file: " << fname.Data();
         if (!file->IsDirectory() && fname.EndsWith(".root")) {

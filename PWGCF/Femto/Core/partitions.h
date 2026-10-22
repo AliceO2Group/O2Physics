@@ -56,25 +56,47 @@
     (o2::aod::femtobase::stored::mass > (selection).massMin) && \
     (o2::aod::femtobase::stored::mass < (selection).massMax)
 
-// partition for phis and rhos, i.e. resonance that are their own antiparticle
+// partition for resonance daughters (pion+/-, kaon+/- legs): unlike MAKE_TRACK_PARTITION, chargeSign
+// and chargeAbs are compile-time constants on the selection struct (ConfResonanceDaughterSelection in
+// trackBuilder.h), not runtime Configurables, so the sign comparison is just a comparison to a constant
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MAKE_RESONANCE_0_PARTITON(selection)                                                             \
-  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&                                                \
-    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&                                              \
-    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                            \
-    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                            \
-    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                            \
-    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                            \
-    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                          \
-    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                          \
-    ifnode(o2::aod::femtotwotrackresonances::posDauHasHighMomentum,                                      \
-           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).posDauMaskAboveThres),    \
-           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).posDauMaskBelowThres)) && \
-    ifnode(o2::aod::femtotwotrackresonances::negDauHasHighMomentum,                                      \
-           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).negDauMaskAboveThres),    \
-           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).negDauMaskBelowThres))
+#define MAKE_RESONANCE_DAUGHTER_PARTITION(selection)                                                                                               \
+  ((selection).chargeSign > 0 ? o2::aod::femtobase::stored::signedPt > 0.f : o2::aod::femtobase::stored::signedPt < 0.f) &&                        \
+    (nabs((selection).chargeAbs * o2::aod::femtobase::stored::signedPt) > (selection).ptMin) &&                                                    \
+    (nabs((selection).chargeAbs * o2::aod::femtobase::stored::signedPt) < (selection).ptMax) &&                                                    \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                                                      \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                                                      \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                                                      \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                                                      \
+    ifnode(TRACK_MOMENTUM((selection).chargeAbs, o2::aod::femtobase::stored::signedPt, o2::aod::femtobase::stored::eta) <= (selection).pidThres,   \
+           ncheckbit(o2::aod::femtotracks::mask, (selection).maskLowMomentum) &&                                                                   \
+             (o2::aod::femtotracks::mask & (selection).rejectionMaskLowMomentum) == static_cast<o2::analysis::femto::datatypes::TrackMaskType>(0), \
+           ncheckbit(o2::aod::femtotracks::mask, (selection).maskHighMomentum) &&                                                                  \
+             (o2::aod::femtotracks::mask & (selection).rejectionMaskHighMomentum) == static_cast<o2::analysis::femto::datatypes::TrackMaskType>(0))
 
-// partition for kstars, they have distinct antiparticle
+// partition for phis and rhos, i.e. resonance that are their own antiparticle -- both daughters are
+// the same species, so the selection carries a single dauMask pair applied to both stored columns
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_RESONANCE_0_PARTITON(selection)                                                          \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&                                             \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&                                           \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                         \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                         \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                         \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                         \
+    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                       \
+    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                       \
+    ifnode(o2::aod::femtotwotrackresonances::posDauHasHighMomentum,                                   \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).dauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).dauMaskBelowThres)) && \
+    ifnode(o2::aod::femtotwotrackresonances::negDauHasHighMomentum,                                   \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).dauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).dauMaskBelowThres))
+
+// partition for kstars, they have distinct antiparticle -- K*0 (K+ pi-) and K*0bar (K- pi+) swap
+// which physical daughter (pos/neg) is the kaon vs the pion, so the selection carries masks named by
+// species (kaon/pion) and this macro resolves pos/neg <-> kaon/pion from the candidate's own
+// signedPt, the same way it's reconstructed (no need for the user to reason about this downstream)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_RESONANCE_1_PARTITON(selection)                                                                                                   \
   ifnode((selection).sign.node() != 0,                                                                                                         \
@@ -87,12 +109,19 @@
     (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                                                  \
     (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                                                \
     (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
-    ifnode(o2::aod::femtotwotrackresonances::posDauHasHighMomentum,                                                                            \
-           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).posDauMaskAboveThres),                                          \
-           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).posDauMaskBelowThres)) &&                                       \
-    ifnode(o2::aod::femtotwotrackresonances::negDauHasHighMomentum,                                                                            \
-           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).negDauMaskAboveThres),                                          \
-           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).negDauMaskBelowThres))
+    ifnode(o2::aod::femtobase::stored::signedPt > 0.f,                                                                                         \
+           ifnode(o2::aod::femtotwotrackresonances::posDauHasHighMomentum,                                                                     \
+                  ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).kaonDauMaskAboveThres),                                  \
+                  ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).kaonDauMaskBelowThres)) &&                               \
+             ifnode(o2::aod::femtotwotrackresonances::negDauHasHighMomentum,                                                                   \
+                    ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).pionDauMaskAboveThres),                                \
+                    ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).pionDauMaskBelowThres)),                               \
+           ifnode(o2::aod::femtotwotrackresonances::posDauHasHighMomentum,                                                                     \
+                  ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).pionDauMaskAboveThres),                                  \
+                  ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, (selection).pionDauMaskBelowThres)) &&                               \
+             ifnode(o2::aod::femtotwotrackresonances::negDauHasHighMomentum,                                                                   \
+                    ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).kaonDauMaskAboveThres),                                \
+                    ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, (selection).kaonDauMaskBelowThres)))
 
 // partition for resonances built from two photons (pi0, eta, ...): unlike MAKE_RESONANCE_0/1_PARTITON
 // there is no sign and no momentum-threshold PID switch, and just a single mask check -- both
@@ -111,25 +140,25 @@
     ncheckbit(o2::aod::femtotwophotonresonances::maskDau, (selection).dauMask)
 
 // partition for resonances built from two tracks and a two-photon resonance (e.g. omega(782) ->
-// pi+ pi- pi0): same pattern as MAKE_RESONANCE_1_PARTITON (daughter masks copied onto the candidate
-// at build time, systematics reselected here), just with 3 daughter masks instead of 2 -- the two
-// charged daughters keep their momentum-threshold PID switch, the neutral daughter does not
+// pi+ pi- pi0): same pattern as MAKE_RESONANCE_0_PARTITON (both charged daughters are the same
+// species -- pions, just opposite charge, no kstar-style species swap -- so a single dauMask pair
+// covers both), plus a 3rd mask for the neutral daughter (no momentum-threshold split there)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MAKE_TRACKTRACKTWOPHOTONRESONANCE_PARTITION(selection)                                                  \
-  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&                                                       \
-    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&                                                     \
-    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                   \
-    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                   \
-    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                   \
-    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                   \
-    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                 \
-    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                 \
-    ifnode(o2::aod::femtotrackstwophotonresonances::posDauHasHighMomentum,                                      \
-           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskPosDau, (selection).posDauMaskAboveThres),    \
-           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskPosDau, (selection).posDauMaskBelowThres)) && \
-    ifnode(o2::aod::femtotrackstwophotonresonances::negDauHasHighMomentum,                                      \
-           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNegDau, (selection).negDauMaskAboveThres),    \
-           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNegDau, (selection).negDauMaskBelowThres)) && \
+#define MAKE_TRACKTRACKTWOPHOTONRESONANCE_PARTITION(selection)                                                   \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&                                                        \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&                                                      \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                    \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                    \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                    \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                    \
+    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                  \
+    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                  \
+    ifnode(o2::aod::femtotrackstwophotonresonances::posDauHasHighMomentum,                                       \
+           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskPosDau, (selection).pionDauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskPosDau, (selection).pionDauMaskBelowThres)) && \
+    ifnode(o2::aod::femtotrackstwophotonresonances::negDauHasHighMomentum,                                       \
+           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNegDau, (selection).pionDauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNegDau, (selection).pionDauMaskBelowThres)) && \
     ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNeutralDau, (selection).neutralDauMask)
 
 // partition for lambdas
