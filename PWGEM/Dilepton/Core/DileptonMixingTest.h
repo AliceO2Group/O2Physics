@@ -1928,4 +1928,4 @@ struct Dilepton {
   PROCESS_SWITCH(Dilepton, processDummy, "Dummy function", false);
 };
 
-#endif  // PWGEM_DILEPTON_CORE_DILEPTONMIXINGTEST_H_
+#endif // PWGEM_DILEPTON_CORE_DILEPTONMIXINGTEST_H_
