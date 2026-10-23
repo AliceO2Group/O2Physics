@@ -45,6 +45,7 @@ DECLARE_SOA_COLUMN(NSigmaTPCPrKink, nSigmaTPCPrKink, float); //! Number of sigma
 DECLARE_SOA_COLUMN(NSigmaTOFPrKink, nSigmaTOFPrKink, float); //! Number of sigmas for the proton candidate from Sigma kink in TOF
 DECLARE_SOA_COLUMN(DcaKinkDauToPv, dcaKinkDauToPv, float);   //! DCA of the kink daughter to the primary vertex
 DECLARE_SOA_COLUMN(DcaSigmaToPv, dcaSigmaToPv, float);       //! DCA of the sigma to the primary vertex
+DECLARE_SOA_COLUMN(KinkChi2PCA, kinkChi2PCA, float);                 //! Chi2 DCA fitter at the PCA
 DECLARE_SOA_COLUMN(NSigmaTPCPiDau, nSigmaTPCPiDau, float);   //! Number of sigmas for the lambda1405 pion daughter in TPC
 DECLARE_SOA_COLUMN(NSigmaTOFPiDau, nSigmaTOFPiDau, float);   //! Number of sigmas for the lambda1405 pion daughter in TOF
 
@@ -111,7 +112,7 @@ DECLARE_SOA_TABLE(Lambda1405Cands, "AOD", "LAMBDA1405",
                   lambda1405::PtKink,
                   lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
-                  lambda1405::DcaKinkDauToPv,
+                  lambda1405::DcaKinkDauToPv, lambda1405::DcaSigmaToPv, lambda1405::KinkChi2PCA,
                   lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau,
                   lambda1405::ScalarProd,
                   lambda1405::Centrality, lambda1405::Occupancy, lambda1405::PoolBin);
@@ -125,7 +126,7 @@ DECLARE_SOA_TABLE(Lambda1405CandsMC, "AOD", "MCLAMBDA1405",
                   lambda1405::PtKink,
                   lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
-                  lambda1405::DcaKinkDauToPv,
+                  lambda1405::DcaKinkDauToPv, lambda1405::DcaSigmaToPv, lambda1405::KinkChi2PCA,
                   lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau,
                   lambda1405::PtMC, lambda1405::MassMC, lambda1405::SigmaPdgCode, lambda1405::KinkDauPdgCode,
                   lambda1405::Centrality, lambda1405::Occupancy);
@@ -151,7 +152,7 @@ DECLARE_SOA_TABLE(Lambda1405SigmaEffMC, "AOD", "MCL1405SIGEFF",
                   lambda1405::ZKinkVtx, lambda1405::DeltaZKinkVtx,
                   lambda1405::AlphaAPSigma, lambda1405::QtAPSigma,
                   lambda1405::AlphaAPSigmaRecalc, lambda1405::QtAPSigmaRecalc,
-                  lambda1405::DcaKinkDauToPv, lambda1405::DcaSigmaToPv,
+                  lambda1405::DcaKinkDauToPv, lambda1405::DcaSigmaToPv, lambda1405::KinkChi2PCA,
                   lambda1405::SigmaPdgCode, lambda1405::KinkDauPdgCode,
                   lambda1405::Centrality, lambda1405::Occupancy, lambda1405::PvContrib);
 
