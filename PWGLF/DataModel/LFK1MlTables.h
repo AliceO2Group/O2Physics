@@ -69,8 +69,8 @@ DECLARE_SOA_COLUMN(K1TruthStatus, k1TruthStatus, uint8_t);          //! 0 data, 
 DECLARE_SOA_COLUMN(K1TruthChannel, k1TruthChannel, uint8_t);        //! 0 none, 1 rho K, 2 K* pi
 DECLARE_SOA_COLUMN(K1MotherPdg, k1MotherPdg, int32_t);
 DECLARE_SOA_COLUMN(K1MotherId, k1MotherId, int64_t);
-DECLARE_SOA_COLUMN(K1GeneratedPt, k1GeneratedPt, float); //! NaN in K1MlTruth: not filled for reconstructed candidates
-DECLARE_SOA_COLUMN(K1GeneratedY, k1GeneratedY, float);   //! NaN in K1MlTruth: not filled for reconstructed candidates
+DECLARE_SOA_COLUMN(K1GeneratedPt, k1GeneratedPt, float); //! Parent-table pT for a validated reconstructed MC match; NaN otherwise
+DECLARE_SOA_COLUMN(K1GeneratedY, k1GeneratedY, float);   //! Parent-table y for a validated reconstructed MC match; NaN otherwise
 DECLARE_SOA_COLUMN(K1OriginalMcParticleId, k1OriginalMcParticleId, int64_t);
 DECLARE_SOA_COLUMN(K1DaughterPdg1, k1DaughterPdg1, int32_t);
 DECLARE_SOA_COLUMN(K1DaughterPdg2, k1DaughterPdg2, int32_t);
