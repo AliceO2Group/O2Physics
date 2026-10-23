@@ -44,7 +44,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include "Math/Vector4D.h"
+#include "TLorentzVector.h"
 #include <TPDGCode.h>
 
 #include <cmath>
