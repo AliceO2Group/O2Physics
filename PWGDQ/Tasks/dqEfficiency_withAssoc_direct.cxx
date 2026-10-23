@@ -1160,6 +1160,8 @@ struct AnalysisSameEventPairing {
     Configurable<bool> fConfigPseudoRMQA{"cfgPseudoRMQA", false, "If true, fill QA histograms with pseudo-proper decay length analysis with polarization RM"};
     Configurable<bool> fConfigTruthPbPbMIDYHE{"cfgTruthPbPbmidyHE", false, "If true, fill QA histograms with dielectron pairs in helicity frame"};
     Configurable<bool> fConfigTruthPbPbMIDYCS{"cfgTruthPbPbmidyCS", false, "If true, fill QA histograms with dielectron pairs in collion-soper frame"};
+    Configurable<bool> fConfigTruthPbPbMIDYGJB1{"cfgTruthPbPbmidyGJB1", false, "If true, fill QA histograms with dielectron pairs in Gottfried-Jackson frame, beam 1 (+z)"};
+    Configurable<bool> fConfigTruthPbPbMIDYGJB2{"cfgTruthPbPbmidyGJB2", false, "If true, fill QA histograms with dielectron pairs in Gottfried-Jackson frame, beam 2 (-z)"};
     Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
     Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
@@ -1537,6 +1539,12 @@ struct AnalysisSameEventPairing {
         if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
           histNames += Form("MCTruthGenPoldielectronPbPbPairCSSel_%s;", sig->GetName());
         }
+        if (fConfigOptions.fConfigTruthPbPbMIDYGJB1.value) {
+          histNames += Form("MCTruthGenPoldielectronPbPbPairGJB1Sel_%s;", sig->GetName());
+        }
+        if (fConfigOptions.fConfigTruthPbPbMIDYGJB2.value) {
+          histNames += Form("MCTruthGenPoldielectronPbPbPairGJB2Sel_%s;", sig->GetName());
+        }
         fHasTwoProngGenMCsignals = true;
       }
       // for these pair level signals, also add histograms for each MCgenAcc cut if specified
@@ -1559,6 +1567,12 @@ struct AnalysisSameEventPairing {
           }
           if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
             histNames += Form("MCTruthGenPoldielectronPbPbPairCSSel_%s_%s;", sig->GetName(), cut->GetName());
+          }
+          if (fConfigOptions.fConfigTruthPbPbMIDYGJB1.value) {
+            histNames += Form("MCTruthGenPoldielectronPbPbPairGJB1Sel_%s_%s;", sig->GetName(), cut->GetName());
+          }
+          if (fConfigOptions.fConfigTruthPbPbMIDYGJB2.value) {
+            histNames += Form("MCTruthGenPoldielectronPbPbPairGJB2Sel_%s_%s;", sig->GetName(), cut->GetName());
           }
         }
       }
@@ -2239,6 +2253,12 @@ struct AnalysisSameEventPairing {
                 if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
                   fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairCSSel_%s", sig->GetName()), static_cast<float*>(VarManager::fgValues));
                 }
+                if (fConfigOptions.fConfigTruthPbPbMIDYGJB1.value) {
+                  fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairGJB1Sel_%s", sig->GetName()), static_cast<float*>(VarManager::fgValues));
+                }
+                if (fConfigOptions.fConfigTruthPbPbMIDYGJB2.value) {
+                  fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairGJB2Sel_%s", sig->GetName()), static_cast<float*>(VarManager::fgValues));
+                }
 
                 if (fUseMCGenAccCut) {
                   for (const auto& cut : fMCGenAccCuts) {
@@ -2261,6 +2281,12 @@ struct AnalysisSameEventPairing {
                       }
                       if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
                         fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairCSSel_%s_%s", sig->GetName(), cut->GetName()), static_cast<float*>(VarManager::fgValues));
+                      }
+                      if (fConfigOptions.fConfigTruthPbPbMIDYGJB1.value) {
+                        fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairGJB1Sel_%s_%s", sig->GetName(), cut->GetName()), static_cast<float*>(VarManager::fgValues));
+                      }
+                      if (fConfigOptions.fConfigTruthPbPbMIDYGJB2.value) {
+                        fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairGJB2Sel_%s_%s", sig->GetName(), cut->GetName()), static_cast<float*>(VarManager::fgValues));
                       }
                     }
                   }
@@ -3224,14 +3250,14 @@ struct AnalysisDileptonTrackTrack {
 
   Produces<aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
 
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
   // uint32_t fTrackCutBitMap; // track cut bit mask to be used in the selection of tracks associated with dileptons
   // cut name setting
   TString fTrackCutName1;
   TString fTrackCutName2;
   std::vector<TString> fTrackCutNames;
-  uint32_t fTrackCutBitMap1;
-  uint32_t fTrackCutBitMap2;
+  uint32_t fTrackCutBitMap1 = 0;
+  uint32_t fTrackCutBitMap2 = 0;
   bool fIsSameTrackCut = false;
   AnalysisCompositeCut fDileptonCut{};
   std::vector<TString> fQuadrupletCutNames;
@@ -3246,8 +3272,8 @@ struct AnalysisDileptonTrackTrack {
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
-  float* fValuesQuadruplet;
-  HistogramManager* fHistMan;
+  float* fValuesQuadruplet = nullptr;
+  HistogramManager* fHistMan = nullptr;
 
   // o2::analysis::QuadMlResponse<float> fQuadMlResponse;
   // std::vector<float> fOutputMlQuad;
@@ -3447,7 +3473,7 @@ struct AnalysisDileptonTrackTrack {
     }
 
     uint32_t mcDecision = static_cast<uint32_t>(0);
-    size_t isig = 0;
+    // size_t isig = 0;
 
     for (auto dilepton : dileptons) {
       // get full track info of tracks based on the index
@@ -3528,13 +3554,12 @@ struct AnalysisDileptonTrackTrack {
         auto track1MC = track1.mcParticle();
         auto track2MC = track2.mcParticle();
         mcDecision = 0;
-        isig = 0;
-        for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-          if ((*sig)->CheckSignal(true, lepton1MC, lepton2MC, track1MC, track2MC)) {
-            mcDecision |= (static_cast<uint32_t>(1) << isig);
+        // size_t isig = 0;
+        for (size_t iSignal = 0; iSignal < fRecMCSignals.size(); ++iSignal) {
+          if (fRecMCSignals[iSignal]->CheckSignal(true, lepton1MC, lepton2MC, track1MC, track2MC)) {
+            mcDecision |= (static_cast<uint32_t>(1) << iSignal);
           }
         }
-
         int iCut = 0;
         uint32_t CutDecision = 0;
         for (auto cutname = fQuadrupletCutNames.begin(); cutname != fQuadrupletCutNames.end(); cutname++, iCut++) {
@@ -3824,6 +3849,12 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
 
     if (classStr.Contains("MCTruthGenPoldielectronPbPbPairCS")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-dielectron-pbpb-midy-cs-gen", histName);
+    }
+    if (classStr.Contains("MCTruthGenPoldielectronPbPbPairGJB1")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-dielectron-pbpb-midy-gjb1-gen", histName);
+    }
+    if (classStr.Contains("MCTruthGenPoldielectronPbPbPairGJB2")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-dielectron-pbpb-midy-gjb2-gen", histName);
     }
     if (classStr.Contains("MCTruthGenSelBR")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_triple");
