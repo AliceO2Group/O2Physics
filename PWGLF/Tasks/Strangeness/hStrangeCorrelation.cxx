@@ -642,6 +642,34 @@ struct HStrangeCorrelation {
     "Not in table, no cut explains it",
     "In table, but replica would reject"};
 
+  // Breakdown of the Rec variant 0 -> 1 step of PairLossK0/Comparison ("+ truth-trigger
+  // match/acceptance"). Every Rec trigger is counted in the All bin and in exactly one
+  // other bin: Matched if it passes variant 1, otherwise the first condition it fails.
+  // The order follows the variant 1 lookup -- MC label, MC collision of the label, then
+  // the truth-trigger acceptance in the order pairLossTruthTriggerRejection checks it --
+  // so All = Matched + the sum of the rejection bins.
+  enum PairLossTriggerMatchQABin : int {
+    PairLossTriggerMatchAll = 0,
+    PairLossTriggerMatchMatched,
+    PairLossTriggerMatchNoMcLabel,
+    PairLossTriggerMatchOtherMcCollision,
+    PairLossTriggerMatchFailPdg,
+    PairLossTriggerMatchFailEta,
+    PairLossTriggerMatchFailPt,
+    PairLossTriggerMatchFailCharge,
+    PairLossTriggerMatchNBins
+  };
+
+  static constexpr std::array<std::string_view, PairLossTriggerMatchNBins> PairLossTriggerMatchQANames = {
+    "All Rec (variant 0)",
+    "Matched (variant 1)",
+    "No MC label",
+    "Label in another MC collision",
+    "Truth PDG not pi/K/p/e/mu",
+    "|eta truth| > etaSel",
+    "pT truth outside trigger axis",
+    "Truth charge"};
+
   struct PairLossV0Info {
     int64_t globalIndex = -1;
     int64_t positiveTrackId = -1;
@@ -738,6 +766,9 @@ struct HStrangeCorrelation {
     std::unordered_set<PairLossPairKey, PairLossPairKeyHash> finalTruthPairs;
     std::unordered_set<PairLossPairKey, PairLossPairKeyHash> countedPairs;
     std::unordered_set<int64_t> countedTriggers;
+    // PairLossTriggerMatchQABin of the MC particle behind every labelled trigger
+    // track, keyed by MC particle. Only particles of this MC collision are present.
+    std::unordered_map<int64_t, int> triggerTruthRejection;
 
     void clear()
     {
@@ -757,6 +788,7 @@ struct HStrangeCorrelation {
       finalTruthPairs.clear();
       countedPairs.clear();
       countedTriggers.clear();
+      triggerTruthRejection.clear();
     }
   };
   static thread_local PairLossComparisonContext pairLossComparison;
@@ -834,6 +866,48 @@ struct HStrangeCorrelation {
   {
     const int absPdg = std::abs(pdgCode);
     return absPdg == PDG_t::kPiPlus || absPdg == PDG_t::kKPlus || absPdg == PDG_t::kProton || absPdg == PDG_t::kElectron || absPdg == PDG_t::kMuonMinus;
+  }
+
+  // Truth-trigger acceptance of the PairLoss Rec comparison (comparisonTruthTriggers):
+  // species, |eta|, pT and charge, checked in this order. Returns
+  // PairLossTriggerMatchMatched if the generated particle passes all of them, otherwise
+  // the PairLossTriggerMatchQABin of the first one it fails. sign is set to the charge
+  // sign once species, |eta| and pT have passed, and to 0 before.
+  template <typename TMcParticle>
+  int pairLossTruthTriggerRejection(TMcParticle const& mcParticle, int& sign)
+  {
+    sign = 0;
+    if (!isPairLossTriggerPdg(mcParticle.pdgCode())) {
+      return PairLossTriggerMatchFailPdg;
+    }
+    if (std::abs(mcParticle.eta()) > etaSel) {
+      return PairLossTriggerMatchFailEta;
+    }
+    if (mcParticle.pt() < axisRanges[3][0] || mcParticle.pt() > axisRanges[3][1]) {
+      return PairLossTriggerMatchFailPt;
+    }
+    auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+    const double charge = pdgParticle != nullptr ? pdgParticle->Charge() : 0.0;
+    sign = charge > 0.0 ? 1 : (charge < 0.0 ? -1 : 0);
+    if (sign == 0 || (triggerParticleCharge > 0 && sign < 0) || (triggerParticleCharge < 0 && sign > 0)) {
+      return PairLossTriggerMatchFailCharge;
+    }
+    return PairLossTriggerMatchMatched;
+  }
+
+  // PairLossTriggerMatchQABin of a Rec trigger track while the PairLoss Rec comparison
+  // runs: the two lookups of Rec variant 1, resolved into the first one that fails
+  static int pairLossTriggerMatchBin(int64_t trackGlobalIndex)
+  {
+    const auto mcIt = pairLossComparison.trackToMc.find(trackGlobalIndex);
+    if (mcIt == pairLossComparison.trackToMc.end()) {
+      return PairLossTriggerMatchNoMcLabel;
+    }
+    const auto rejectionIt = pairLossComparison.triggerTruthRejection.find(mcIt->second);
+    if (rejectionIt == pairLossComparison.triggerTruthRejection.end()) {
+      return PairLossTriggerMatchOtherMcCollision;
+    }
+    return rejectionIt->second;
   }
 
   template <typename TTrack>
@@ -1376,6 +1450,9 @@ struct HStrangeCorrelation {
           efficiencyTriggError = 0;
         }
       }
+      // PairLossTriggerMatchQABin of this trigger, set only while the PairLoss Rec
+      // comparison fills its variants, and reused for every pair of the trigger
+      int pairLossTriggerMatch = PairLossTriggerMatchAll;
       if (!mixing) {
 
         fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesV0")), trigg.pt(), mult, efficiencyTrigg, efficiencyTriggError, purityTrigg, purityTriggErr);
@@ -1394,6 +1471,9 @@ struct HStrangeCorrelation {
             histos.fill(HIST("PairLossK0/Comparison/TriggerVariants"), variant, fillPtTrigger, fillVtxZ, fillMult, weight);
           };
           fillTriggerVariant(0, trigg.pt(), pvz, mult, triggerWeight);
+          pairLossTriggerMatch = pairLossTriggerMatchBin(trigg.globalIndex());
+          histos.fill(HIST("PairLossK0/Comparison/TriggerMatchQA/hTrigger"), PairLossTriggerMatchAll, trigg.pt(), triggerWeight);
+          histos.fill(HIST("PairLossK0/Comparison/TriggerMatchQA/hTrigger"), pairLossTriggerMatch, trigg.pt(), triggerWeight);
           const auto triggerLadderMcIt = pairLossComparison.trackToMc.find(trigg.globalIndex());
           if (triggerLadderMcIt != pairLossComparison.trackToMc.end()) {
             const auto triggerLadderTruthIt = pairLossComparison.truthTriggers.find(triggerLadderMcIt->second);
@@ -1654,6 +1734,8 @@ struct HStrangeCorrelation {
                 // 0: the exact Rec entry, including reconstructed coordinates
                 // and the ordinary Rec weight.
                 fillWeightedRecVariant(0, deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+                histos.fill(HIST("PairLossK0/Comparison/TriggerMatchQA/hPair"), PairLossTriggerMatchAll, deltaphi, deltaeta, ptassoc, pttrigger, pairWeight);
+                histos.fill(HIST("PairLossK0/Comparison/TriggerMatchQA/hPair"), pairLossTriggerMatch, deltaphi, deltaeta, ptassoc, pttrigger, pairWeight);
 
                 const auto triggerMcIdIt = pairLossComparison.trackToMc.find(trigg.globalIndex());
                 if (triggerMcIdIt != pairLossComparison.trackToMc.end()) {
@@ -2971,6 +3053,21 @@ struct HStrangeCorrelation {
         auto triggerVariants = histos.get<THn>(HIST("PairLossK0/Comparison/TriggerVariants"));
         for (size_t i = 0; i < triggerVariantLabels.size(); ++i) {
           triggerVariants->GetAxis(0)->SetBinLabel(i + 1, triggerVariantLabels[i].data());
+        }
+
+        // Where the Rec triggers lost at the variant 0 -> 1 step fail, per trigger and per
+        // pair, with the weights and reconstructed coordinates of the variants: the All and
+        // Matched bins of hTrigger integrate to TriggerVariants 0 and 1, those of hPair to
+        // RecVariants 0 and 1. hPair keeps the angular axes so that the shape of the lost
+        // pairs (correlated or flat) is visible.
+        const AxisSpec axisPairLossTriggerMatchQA{PairLossTriggerMatchNBins, -0.5, PairLossTriggerMatchNBins - 0.5, "Rec variant 0 #rightarrow 1 trigger match"};
+        histos.add("PairLossK0/Comparison/TriggerMatchQA/hTrigger", "Rec triggers by first failing truth-trigger condition;Rec variant 0 #rightarrow 1 trigger match;#it{p}_{T}^{trigger, reco} (GeV/#it{c})", kTH2D, {axisPairLossTriggerMatchQA, axesConfigurations.axisPtQA});
+        histos.add("PairLossK0/Comparison/TriggerMatchQA/hPair", "Rec peak-window h-K0 pairs by first failing truth-trigger condition of their trigger", kTHnF, {axisPairLossTriggerMatchQA, axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim});
+        auto triggerMatchQATrigger = histos.get<TH2>(HIST("PairLossK0/Comparison/TriggerMatchQA/hTrigger"));
+        auto triggerMatchQAPair = histos.get<THn>(HIST("PairLossK0/Comparison/TriggerMatchQA/hPair"));
+        for (int i = 0; i < PairLossTriggerMatchNBins; ++i) {
+          triggerMatchQATrigger->GetXaxis()->SetBinLabel(i + 1, PairLossTriggerMatchQANames[i].data());
+          triggerMatchQAPair->GetAxis(0)->SetBinLabel(i + 1, PairLossTriggerMatchQANames[i].data());
         }
       }
     }
@@ -4965,20 +5062,16 @@ struct HStrangeCorrelation {
       std::vector<PairLossTruthTrackInfo> comparisonTruthTriggers;
       std::vector<PairLossTruthK0Info> comparisonTruthK0s;
       for (auto const& mcParticle : mcParticles) {
-        if (isPairLossTriggerPdg(mcParticle.pdgCode()) && std::abs(mcParticle.eta()) <= etaSel &&
-            mcParticle.pt() >= axisRanges[3][0] && mcParticle.pt() <= axisRanges[3][1]) {
-          auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
-          const double charge = pdgParticle != nullptr ? pdgParticle->Charge() : 0.0;
-          const int sign = charge > 0.0 ? 1 : (charge < 0.0 ? -1 : 0);
-          if ((triggerParticleCharge <= 0 || sign >= 0) && (triggerParticleCharge >= 0 || sign <= 0) && sign != 0) {
-            comparisonTruthTriggers.push_back(PairLossTruthTrackInfo{
-              .globalIndex = mcParticle.globalIndex(),
-              .pt = mcParticle.pt(),
-              .eta = mcParticle.eta(),
-              .phi = mcParticle.phi(),
-              .sign = sign,
-              .physicalPrimary = mcParticle.isPhysicalPrimary()});
-          }
+        // same acceptance as the TriggerMatchQA rejection bins
+        int sign = 0;
+        if (pairLossTruthTriggerRejection(mcParticle, sign) == PairLossTriggerMatchMatched) {
+          comparisonTruthTriggers.push_back(PairLossTruthTrackInfo{
+            .globalIndex = mcParticle.globalIndex(),
+            .pt = mcParticle.pt(),
+            .eta = mcParticle.eta(),
+            .phi = mcParticle.phi(),
+            .sign = sign,
+            .physicalPrimary = mcParticle.isPhysicalPrimary()});
         }
 
         if (mcParticle.pdgCode() != PDG_t::kK0Short || std::abs(mcParticle.eta()) > etaSel ||
@@ -5321,6 +5414,25 @@ struct HStrangeCorrelation {
           if (v0MC.particleIdMC() >= 0 && v0MC.pdgCode() == PDG_t::kK0Short) {
             pairLossComparison.v0ToMc[v0.globalIndex()] = v0MC.particleIdMC();
           }
+        }
+      }
+      // Truth-trigger rejection bin of the MC particle behind every labelled trigger
+      // track, for PairLossK0/Comparison/TriggerMatchQA. mcParticles holds only the
+      // particles of this MC collision, so a label missing from the map points to
+      // another MC collision.
+      std::unordered_set<int64_t> triggerLabelIds;
+      for (auto const& collision : recCollisions) {
+        for (auto const& triggerEntry : triggerTracks.sliceBy(collisionSliceTracks, collision.globalIndex())) {
+          const auto triggerMcIt = pairLossComparison.trackToMc.find(triggerEntry.trackId());
+          if (triggerMcIt != pairLossComparison.trackToMc.end()) {
+            triggerLabelIds.insert(triggerMcIt->second);
+          }
+        }
+      }
+      for (auto const& mcParticle : mcParticles) {
+        if (triggerLabelIds.contains(mcParticle.globalIndex())) {
+          int sign = 0;
+          pairLossComparison.triggerTruthRejection[mcParticle.globalIndex()] = pairLossTruthTriggerRejection(mcParticle, sign);
         }
       }
       for (auto const& truthTrigger : comparisonTruthTriggers) {
