@@ -439,11 +439,16 @@ void processMixedEvent(T1 const& Collisions,
                        T7 const& depth,
                        T8& PairHistManager,
                        T9& CprManager,
-                       T10& PcManager)
+                       T10& PcManager,
+                       int eventStride = 1)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual anchor windows encountered (not raw collision IDs, which may have gaps from
+  // upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 is fixed across each mixing window, so its track slice is
   // materialized once per window and reused for every mixing partner, instead
@@ -455,13 +460,24 @@ void processMixedEvent(T1 const& Collisions,
 
     // --- new window ---
     if (collision1.globalIndex() != lastCollisionIndex) {
-      if (lastCollisionIndex != -1) {
+      if (lastCollisionIndex != -1 && !skipThisWindow) {
         PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire anchor windows to reduce mixed-event combinatorics without truncating any
+      // single event's particle content -- every anchor that IS processed still gets its full
+      // `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     ++windowSizeRaw;
@@ -551,11 +567,16 @@ void processMixedEvent(T1 const& Collisions,
                        T13& ParticleCleaner1,
                        T14& ParticleCleaner2,
                        T15& CprManager,
-                       T16& PcManager)
+                       T16& PcManager,
+                       int eventStride = 1)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual anchor windows encountered (not raw collision IDs, which may have gaps from
+  // upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 is fixed across each mixing window, so its track slice is
   // materialized once per window and reused for every mixing partner, instead
@@ -565,13 +586,24 @@ void processMixedEvent(T1 const& Collisions,
 
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
     if (collision1.globalIndex() != lastCollisionIndex) {
-      if (lastCollisionIndex != -1) {
+      if (lastCollisionIndex != -1 && !skipThisWindow) {
         PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire anchor windows to reduce mixed-event combinatorics without truncating any
+      // single event's particle content -- every anchor that IS processed still gets its full
+      // `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     ++windowSizeRaw;
@@ -661,24 +693,40 @@ void processMixedEvent(T1 const& Collisions,
                        T11& ParticleCleaner1,
                        T12& ParticleCleaner2,
                        T13& CprManager,
-                       T14& PcManager)
+                       T14& PcManager,
+                       int eventStride = 1)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual anchor windows encountered (not raw collision IDs, which may have gaps from
+  // upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   std::optional<decltype(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
 
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
 
     if (collision1.globalIndex() != lastCollisionIndex) {
-      if (lastCollisionIndex != -1) {
+      if (lastCollisionIndex != -1 && !skipThisWindow) {
         PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
-      sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire anchor windows to reduce mixed-event combinatorics without truncating any
+      // single event's particle content -- every anchor that IS processed still gets its full
+      // `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     ++windowSizeRaw;
