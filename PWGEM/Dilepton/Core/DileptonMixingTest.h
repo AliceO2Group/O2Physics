@@ -66,6 +66,7 @@
 #include <TH2.h>
 #include <TH3.h>
 #include <TList.h>
+#include <TProfile.h>
 #include <TRandom3.h>
 #include <TString.h>
 
@@ -453,6 +454,7 @@ struct Dilepton {
 
     emh_pos = new TEMH(ndepth);
     emh_neg = new TEMH(ndepth);
+    maxBufferedEvents = static_cast<double>(ndepth.value) * (zvtx_bin_edges.size() - 1) * (cent_bin_edges.size() - 1) * (ep_bin_edges.size() - 1) * (occ_bin_edges.size() - 1);
 
     DefineEMEventCut();
     addhistograms();
@@ -467,6 +469,9 @@ struct Dilepton {
     }
 
     fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
+
+    fRegistry.add("Pair/mix/hEventBufferFillLevel", "Event buffer fill level;Number of processed events;Buffered events / maximum buffered events", o2::framework::HistType::kTProfile, {{1500, 0.5, 15000000.5}}, false);
+    fRegistry.get<TProfile>(HIST("Pair/mix/hEventBufferFillLevel"))->SetCanExtend(TH1::kXaxis);
 
     if (doprocessTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value.data());
@@ -1344,6 +1349,18 @@ struct Dilepton {
   std::unordered_map<int, bool> map_best_match_globalmuon;
 
   std::vector<int> used_trackIds_per_col;
+  uint64_t nProcessedEvents = 0;
+  double maxBufferedEvents = 0.;
+
+  void fillEventBufferLevel()
+  {
+    ++nProcessedEvents;
+    if (cfgDoMix && nProcessedEvents % 10000 == 0) {
+      const double fraction = static_cast<double>(map_mixed_eventId_to_globalBC.size()) / maxBufferedEvents;
+      fRegistry.fill(HIST("Pair/mix/hEventBufferFillLevel"), nProcessedEvents, fraction);
+    }
+  }
+
   int ndf = 0;
 
   template <bool isTriggerAnalysis, typename TCollisions, typename TLeptons, typename TPresilce, typename TCut, typename TAllTracks>
@@ -1355,6 +1372,7 @@ struct Dilepton {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       float centrality = centralities[cfgCentEstimator];
       if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
+        fillEventBufferLevel();
         continue;
       }
 
@@ -1395,19 +1413,23 @@ struct Dilepton {
       fRegistry.fill(HIST("Event/before/hEP2_CentFT0C_forMix"), collision.centFT0C(), ep2);
 
       if (!fEMEventCut.IsSelected(collision)) {
+        fillEventBufferLevel();
         continue;
       }
       if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        fillEventBufferLevel();
         continue;
       }
 
       if (nmod > 0 && !isGoodQvector(qvectors)) {
+        fillEventBufferLevel();
         continue;
       }
 
       if constexpr (isTriggerAnalysis) {
         int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(zorroGroup.cfg_swt_name.value);
         if (!collision.triggerMask_bit(emswtId)) {
+          fillEventBufferLevel();
           continue;
         }
 
@@ -1488,6 +1510,7 @@ struct Dilepton {
       used_trackIds_per_col.shrink_to_fit();
 
       if (!cfgDoMix || !(nuls > 0 || nlspp > 0 || nlsmm > 0)) {
+        fillEventBufferLevel();
         continue;
       }
 
@@ -1597,6 +1620,7 @@ struct Dilepton {
 
       } // end of if pair exist
 
+      fillEventBufferLevel();
     } // end of collision loop
 
   } // end of DF
