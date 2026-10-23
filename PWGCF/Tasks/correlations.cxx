@@ -105,6 +105,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCut, float, -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)");
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCutMinRadius, float, 0.8f, "Two track cut: radius in m from which two track cuts are applied");
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = OFF and 1 = ON for local efficiency");
+  O2_DEFINE_CONFIGURABLE(cfgDropStepRECO, bool, false, "choice to drop step RECO if efficiency correction is used");
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
   O2_DEFINE_CONFIGURABLE(cfgRequireRecoCollision, int, 1, "0 = all generated collisions; 1 = only generated collisions with exactly 1 reconstructed collision; 2 = select reconstructed collision with largest number of contributors per generated collision")
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
@@ -161,10 +162,7 @@ struct CorrelationTask {
 
   // Track filters
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
-  // Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ((aod::track::trackType & static_cast<uint8_t>(cfgTrackBitMask)) == static_cast<uint8_t>(cfgTrackBitMask));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
-  // Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt);
-  // Filter cfTrackType = (aod::track::trackType & static_cast<uint8_t>(cfgTrackBitMask)) == static_cast<uint8_t>(cfgTrackBitMask);
 
   // MC filters
   Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
@@ -217,12 +215,15 @@ struct CorrelationTask {
       LOGF(fatal, "Unsupported cfgRequireRecoCollision=%d; use 0 (no reco. collision required), 1 (exactly one reco. collision required), 2 (at least one. reco, and best reco. collision selected)", cfgRequireRecoCollision.value);
     }
     if (doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML || doprocessMCEfficiency2ProngML || doprocessMCReflection2ProngML) {
-      if (cfgPtDepMLbkg->empty() || cfgPtCentDepMLbkgSel->empty())
+      if (cfgPtDepMLbkg->empty() || cfgPtCentDepMLbkgSel->empty()) {
         LOGF(fatal, "cfgPtDepMLbkg or cfgPtCentDepMLbkgSel can not be empty when ML 2-prong selections are used.");
-      if (cfgPtDepMLbkg->size() != cfgPtCentDepMLbkgSel->size())
+      }
+      if (cfgPtDepMLbkg->size() != cfgPtCentDepMLbkgSel->size()) {
         LOGF(fatal, "cfgPtDepMLbkg and cfgPtCentDepMLbkgSel must be same size.");
-      if (!cfgPtCentDepMLpromptSel->empty() && cfgPtCentDepMLpromptSel->size() != cfgPtDepMLbkg->size())
+      }
+      if (!cfgPtCentDepMLpromptSel->empty() && cfgPtCentDepMLpromptSel->size() != cfgPtDepMLbkg->size()) {
         LOGF(fatal, "cfgPtDepMLbkg and cfgPtCentDepMLpromptSel must be same size.");
+      }
       if (!cfgPtCentDepMLnonpromptSel->empty() && cfgPtCentDepMLnonpromptSel->size() != cfgPtDepMLbkg->size())
         LOGF(fatal, "cfgPtDepMLbkg and cfgPtCentDepMLnonpromptSel must be same size.");
       if (cfgPtCentDepMLpromptSel->size() > 0)
@@ -276,9 +277,6 @@ struct CorrelationTask {
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
-    // One-off QA: number of accepted tracks per event, before and after efficiency correction
-    registry.add("trackMultiplicity", "number of accepted tracks per event (before efficiency correction)", {HistType::kTH2F, {{1000, 0, 100, "/multiplicity/centrality"}, {200, 0, 200, "N_{tracks}"}}});
-    registry.add("trackMultiplicityCorrected", "number of accepted tracks per event (after efficiency correction)", {HistType::kTH2F, {{1000, 0, 100, "/multiplicity/centrality"}, {200, 0, 200, "N_{tracks} (efficiency weighted)"}}});
     registry.add("yvspt", "y vs pT", {HistType::kTH2F, {{100, -1, 1, "y"}, {100, 0, 20, "p_{T}"}}}); // y vs pT for all tracks (control histogram)
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
@@ -470,7 +468,7 @@ struct CorrelationTask {
         if (cfg.mEfficiencyTrigger) {
           triggerWeight *= getEfficiencyCorrection(cfg.mEfficiencyTrigger, track1.eta(), track1.pt(), multiplicity, collision.posZ());
         }
-        registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity, posZ); //, triggerWeight);
+        registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity, posZ);
         registry.fill(HIST("invMassCorrected"), track1.invMass(), track1.pt(), multiplicity, posZ, triggerWeight);
         for (const auto& track2 : tracks2) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
@@ -534,22 +532,6 @@ struct CorrelationTask {
       registry.fill(HIST("etaphiTrigger"), multiplicity, track1.eta(), track1.phi());
     }
     fillQA(collision, multiplicity, tracks2);
-  }
-
-  // One-off QA: multiplicity (number of accepted tracks) before and after efficiency correction
-  // The corrected version sums the per-track efficiency (used as fill weight) and fills once per event.
-  template <typename TCollision, typename TTracks>
-  void fillTrackMultiplicity(const TCollision& collision, const TTracks& tracks, float multiplicity)
-  {
-    registry.fill(HIST("trackMultiplicity"), multiplicity, float(tracks.size()));
-    THn* eff = cfg.mEfficiencyAssociated ? cfg.mEfficiencyAssociated : cfg.mEfficiencyTrigger;
-    if (eff) {
-      float correctedMult = 0.0f;
-      for (const auto& track : tracks) {
-        correctedMult += getEfficiencyCorrection(eff, track.eta(), track.pt(), multiplicity, collision.posZ());
-      }
-      registry.fill(HIST("trackMultiplicityCorrected"), multiplicity, correctedMult);
-    }
   }
 
   template <typename TTarget, typename TCollision>
@@ -677,12 +659,6 @@ struct CorrelationTask {
     duplicates.clear();
 
     for (const auto& track1 : tracks1) {
-      /*if constexpr (std::experimental::is_detected<HasTrackType, typename TTracks1::iterator>::value) {
-          //registry.fill(HIST("sameDerivedTrackType"), track1.trackType());
-
-  //if((track1.trackType() & cfgTrackBitMask) == cfgTrackBitMask)
-      LOGF(info, "Track %f | %f | %f  %d", track1.eta(), track1.phi(), track1.pt(), track1.trackType());
-      }*/
       // LOGF(info, "Track %f | %f | %f  %d %d", track1.eta(), track1.phi(), track1.pt(), track1.isGlobalTrack(), track1.isGlobalTrackSDD());
 
       if constexpr (step <= CorrelationContainer::kCFStepTracked && !std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
@@ -999,7 +975,6 @@ struct CorrelationTask {
     if (cfgMultWeight.value.empty() == false) {
       TFile* pf = TFile::Open(cfgMultWeight.value.c_str(), "READ");
       cfg.mMultWeight = reinterpret_cast<TH1*>(pf->Get("hWeight"));
-      //
       LOGF(info, "Loaded multiplicity weight histogram for associated particles from %s (%p)", cfgMultWeight.value.c_str(), (void*)cfg.mMultWeight);
     }
     cfg.efficiencyLoaded = true;
@@ -1035,7 +1010,6 @@ struct CorrelationTask {
     }
     registry.fill(HIST("eventcount_same"), -2);
     fillQA(collision, multiplicity, tracks);
-    fillTrackMultiplicity(collision, tracks, multiplicity);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.runNumber(), bc.timestamp()), 1.0f);
   }
   PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
@@ -1064,12 +1038,16 @@ struct CorrelationTask {
     } else {
       fillQA(collision, multiplicity, tracks1);
     }
-    fillTrackMultiplicity(collision, tracks2, multiplicity);
 
-    same->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f);
+    const bool hasEfficiency = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
+    const bool fillReco = !(cfgDropStepRECO && hasEfficiency);
 
-    if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
+    if (fillReco) {
+      same->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f);
+    }
+
+    if (hasEfficiency) {
       same->fillEvent(multiplicity, CorrelationContainer::kCFStepCorrected);
       fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f);
     }
@@ -1194,19 +1172,28 @@ struct CorrelationTask {
         LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
       }
 
+      bool hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
+      bool fillRecoMixed = !(cfgDropStepRECO && hasEfficiencyMixed);
+
       if (it.isNewWindow()) {
         loadEfficiency(collision1.timestamp());
+        hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
+        fillRecoMixed = !(cfgDropStepRECO && hasEfficiencyMixed);
 
-        mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
+        if (fillRecoMixed) {
+          mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
+        }
       }
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
       registry.fill(HIST("eventcount_mixed"), bin);
       registry.fill(HIST("trackcount_mixed"), bin, tracks1.size(), tracks2.size());
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+      if (fillRecoMixed) {
+        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+      }
 
-      if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
+      if (hasEfficiencyMixed) {
         if (it.isNewWindow()) {
           mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepCorrected);
         }
@@ -1519,8 +1506,7 @@ struct CorrelationTask {
     }
   }
 
-  Preslice<aod::CF2ProngTracks>
-    perCollision2Prong = aod::cftrack::cfCollisionId;
+  Preslice<aod::CF2ProngTracks> perCollision2Prong = aod::cftrack::cfCollisionId;
   void processMCEfficiency2Prong(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Join<aod::CFMcParticles, aod::CF2ProngMcParts> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, aod::CFTracksWithLabel const& tracks, aod::CF2ProngTracks const& p2tracks)
   {
     processMCEfficiency2ProngT<false>(mcCollision, mcParticles, collisions, tracks, p2tracks, perCollision2Prong);
