@@ -422,7 +422,7 @@ struct EmcTmMonitor {
       int supermoduleID = -1;
       try {
         supermoduleID = mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
+      } catch (o2::emcal::InvalidPositionException const& e) {
         // Imprecision of the position at the sector boundaries, mostly due to
         // vertex imprecision. Skip these clusters for the now.
         continue;
@@ -657,7 +657,7 @@ struct EmcTmMonitor {
     for (const auto& cluster : clusters) {
       try {
         mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
+      } catch (o2::emcal::InvalidPositionException const& e) {
         continue; // same as in processCollisions
       }
       const float clusterPt = cluster.energy() / std::cosh(cluster.eta());
@@ -665,17 +665,9 @@ struct EmcTmMonitor {
         continue;
       }
 
-      // leading contributor: largest energy fraction
+      // leading contributor: the labels are ordered by energy fraction (ClusterLabel::orderLabels in the ClusterFactory)
       const auto mcIds = cluster.mcParticleIds();
-      const auto fractions = cluster.amplitudeA();
-      int64_t leadId = -1;
-      float maxFraction = -1.f;
-      for (std::size_t i = 0; i < mcIds.size() && i < fractions.size(); ++i) {
-        if (mcIds[i] >= 0 && fractions[i] > maxFraction) {
-          maxFraction = fractions[i];
-          leadId = mcIds[i];
-        }
-      }
+      const int64_t leadId = mcIds.empty() ? -1 : mcIds[0];
       TmTruthClass truthClass = TmTruthClass::kOther;
       float mcPt = 0.f;
       float convRadius = -1.f;
@@ -820,7 +812,7 @@ struct EmcTmMonitor {
         result.emplace_back(50. + 2.0 * (i - 190));
       } else if (i < 235) { // o2-linter: disable=magic-number (just numbers for binning)
         result.emplace_back(100. + 5.0 * (i - 215));
-      } else if (i < 245) { // o2-linter: disable=magic-number (just numbers for binning)
+      } else {
         result.emplace_back(200. + 10.0 * (i - 235));
       }
     }
