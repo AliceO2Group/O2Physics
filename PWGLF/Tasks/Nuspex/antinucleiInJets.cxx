@@ -2318,9 +2318,8 @@ struct AntinucleiInJets {
             // Calculate weights
             double weightJet = recoJetPtWeight;
             if (applyReweighting) {
-              double pt = mcparticle.pt();
-              if (pt >= antiprotonsInsideJets->GetXaxis()->GetXmin() && pt < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
-                int ipt = antiprotonsInsideJets->FindBin(pt);
+              if (mcparticle.pt() >= antiprotonsInsideJets->GetXaxis()->GetXmin() && mcparticle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
+                int ipt = antiprotonsInsideJets->FindBin(mcparticle.pt());
                 weightJet *= antiprotonsInsideJets->GetBinContent(ipt);
               }
             }
@@ -2361,11 +2360,9 @@ struct AntinucleiInJets {
 
             // Calculate weight
             double weightJetAntid = recoJetPtWeight;
-
             if (applyReweighting) {
-              double pt = mcparticle.pt();
-              if (pt >= antideuteronsInsideJets->GetXaxis()->GetXmin() && pt < antideuteronsInsideJets->GetXaxis()->GetXmax()) {
-                int ipt = antideuteronsInsideJets->FindBin(pt);
+              if (mcparticle.pt() >= antideuteronsInsideJets->GetXaxis()->GetXmin() && mcparticle.pt() < antideuteronsInsideJets->GetXaxis()->GetXmax()) {
+                int ipt = antideuteronsInsideJets->FindBin(mcparticle.pt());
                 weightJetAntid *= antideuteronsInsideJets->GetBinContent(ipt);
               }
             }
@@ -2444,9 +2441,8 @@ struct AntinucleiInJets {
           // Calculate weights
           double weightUe = recoJetPtWeight;
           if (applyReweighting) {
-            double pt = mcparticle.pt();
-            if (pt >= antiprotonsPerpCone->GetXaxis()->GetXmin() && pt < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
-              int ipt = antiprotonsPerpCone->FindBin(pt);
+            if (mcparticle.pt() >= antiprotonsPerpCone->GetXaxis()->GetXmin() && mcparticle.pt() < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsPerpCone->FindBin(mcparticle.pt());
               weightUe *= antiprotonsPerpCone->GetBinContent(ipt);
             }
           }
@@ -2514,10 +2510,12 @@ struct AntinucleiInJets {
             continue;
 
           // Calculate weight
-          double weightUeAntid(1.0);
-          if (applyReweighting && mcparticle.pt() < antideuteronsPerpCone->GetXaxis()->GetXmax()) {
-            int ipt = antideuteronsPerpCone->FindBin(mcparticle.pt());
-            weightUeAntid = antideuteronsPerpCone->GetBinContent(ipt) * recoJetPtWeight;
+          double weightUeAntid = recoJetPtWeight;
+          if (applyReweighting) {
+            if (mcparticle.pt() >= antideuteronsPerpCone->GetXaxis()->GetXmin() && mcparticle.pt() < antideuteronsPerpCone->GetXaxis()->GetXmax()) {
+              int ipt = antideuteronsPerpCone->FindBin(mcparticle.pt());
+              weightUeAntid *= antideuteronsPerpCone->GetBinContent(ipt);
+            }
           }
 
           // Fill histograms (TPC and TOF) only for selected candidates
