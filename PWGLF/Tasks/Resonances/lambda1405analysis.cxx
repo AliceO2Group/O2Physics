@@ -1660,7 +1660,6 @@ struct lambda1405analysis {
             sigmaMomReco[1] *= scale;
             sigmaMomReco[2] *= scale;
 
-            sigmaPt = std::sqrt(sigmaMomReco[0] * sigmaMomReco[0] + sigmaMomReco[1] * sigmaMomReco[1]);
             if (isSigmaMinusKink) {
               rSigmaMinus.fill(HIST("hDeltaPxRecalcSigmaMinus"), sigmaMomReco[0] - sigmaCand.pxMoth(), sigmaCand.pxMoth());
               rSigmaMinus.fill(HIST("hDeltaPyRecalcSigmaMinus"), sigmaMomReco[1] - sigmaCand.pyMoth(), sigmaCand.pyMoth());
