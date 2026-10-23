@@ -193,21 +193,9 @@ struct TrackEfficiency {
         continue;
       }
 
-      float pTHat = simPtRef / (std::pow(weight, 1.0 / pTHatExponent));
-      if (track.pt() > pTHatMaxFractionMCD * pTHat) {
-        continue;
-      }
-
       float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
 
       registry.fill(HIST("h2_centrality_track_pt"), centrality, track.pt(), weight);
-      if constexpr (sample == TrackSample::Data) {
-        registry.fill(HIST("hScaledFT0CTrackPt"), scaledFT0C, track.pt(), weight);
-        registry.fill(HIST("hScaledFT0MTrackPt"), scaledFT0M, track.pt(), weight);
-      } else {
-        registry.fill(HIST("hScaledFT0CTrackPt_MCDetLevel"), scaledFT0C, track.pt(), weight);
-        registry.fill(HIST("hScaledFT0MTrackPt_MCDetLevel"), scaledFT0M, track.pt(), weight);
-      }
       registry.fill(HIST("h2_centrality_track_eta"), centrality, track.eta(), weight);
       registry.fill(HIST("h2_centrality_track_phi"), centrality, track.phi(), weight);
       registry.fill(HIST("h2_centrality_track_energy"), centrality, track.energy(), weight);
@@ -217,6 +205,14 @@ struct TrackEfficiency {
       registry.fill(HIST("h2_track_pt_high_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), weight);
       registry.fill(HIST("h3_intrate_centrality_track_pt"), collision.hadronicRate(), centrality, track.pt(), weight);
       registry.fill(HIST("h3_track_pt_track_eta_track_phi"), track.pt(), track.eta(), track.phi(), weight);
+
+      if constexpr (sample == TrackSample::Data) {
+        registry.fill(HIST("hScaledFT0CTrackPt"), scaledFT0C, track.pt(), weight);
+        registry.fill(HIST("hScaledFT0MTrackPt"), scaledFT0M, track.pt(), weight);
+      } else {
+        registry.fill(HIST("hScaledFT0CTrackPt_MCDetLevel"), scaledFT0C, track.pt(), weight);
+        registry.fill(HIST("hScaledFT0MTrackPt_MCDetLevel"), scaledFT0M, track.pt(), weight);
+      }
     }
   }
 
@@ -946,7 +942,7 @@ struct TrackEfficiency {
   }
   PROCESS_SWITCH(TrackEfficiency, processTracksFromMc, "QA for charged tracks in MC without weights", false);
 
-  void processTracksFromMcWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
+  void processTracksFromMcWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>>::iterator const& collision,
                                    aod::JetMcCollisions const&,
                                    soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
                                    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&)
@@ -954,7 +950,6 @@ struct TrackEfficiency {
     if (!collision.has_mcCollision()) { // the collision is fake and has no associated mc coll; skip as .mccollision() cannot be called
       return;
     }
-    float eventWeight = collision.mcCollision().weight();
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
@@ -966,6 +961,7 @@ struct TrackEfficiency {
       return;
     }
 
+    float eventWeight = collision.mcCollision().weight();
     float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
