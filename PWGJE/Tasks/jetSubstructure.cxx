@@ -130,7 +130,7 @@ struct JetSubstructureTask {
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
     jetReclusterer.ghostRepeatN = 0;
 
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
   }
 
   Preslice<aod::JetTracks> TracksPerCollision = aod::jtrack::collisionId;

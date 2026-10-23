@@ -86,7 +86,7 @@ struct JetShapeTask {
   Configurable<float> tpcNSigmaPiMin{"tpcNSigmaPiMin", -2.0f, "Min value of tpcNsigmaPion"};
   Configurable<float> tpcNSigmaPiMax{"tpcNSigmaPiMax", 2.0f, "Max value of tpcNsigmaPion"};
   Configurable<float> randomConeDeltaPhiMin{"randomConeDeltaPhiMin", static_cast<float>(o2::constants::math::PIThird), "Minimum delta phi used only when randomConeFullAzimuth=false"};
-  Configurable<float> randomConeDeltaPhiMax{"randomConeDeltaPhiMax", static_cast<float>(2.0f * o2::constants::math::PIThird), "Maximum delta phi used only when randomConeFullAzimuth=false"};
+  Configurable<float> randomConeDeltaPhiMax{"randomConeDeltaPhiMax", (2.0f * o2::constants::math::PIThird), "Maximum delta phi used only when randomConeFullAzimuth=false"};
   Configurable<bool> enableRandomCone{"enableRandomCone", true, "Fill one accepted random cone per selected jet"};
   Configurable<bool> randomConeFullAzimuth{"randomConeFullAzimuth", true, "Generate random cones over the full azimuth instead of the old perpendicular-side window"};
   Configurable<int> randomConeMaxAttempts{"randomConeMaxAttempts", 100, "Maximum attempts for each random cone"};
@@ -138,8 +138,8 @@ struct JetShapeTask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     trackSelectionForDca = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelectionsForDca));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
     randomNumber.SetSeed(randomConeSeed);
