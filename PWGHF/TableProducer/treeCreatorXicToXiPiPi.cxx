@@ -32,6 +32,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Rtypes.h>
+#include <TPDGCode.h>
 
 #include <cstdint>
 #include <numeric>
