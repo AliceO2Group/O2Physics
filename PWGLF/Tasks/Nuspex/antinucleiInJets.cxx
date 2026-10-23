@@ -212,6 +212,7 @@ struct AntinucleiInJets {
   TH1F* antiprotonsPerpCone = nullptr;
   TH1F* antideuteronsInsideJets = nullptr;
   TH1F* antideuteronsPerpCone = nullptr;
+  TH1F* recoJetPtReweightingFactor = nullptr;
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -255,7 +256,7 @@ struct AntinucleiInJets {
     rng.seed(12345);
 
     // Load reweighting histograms from CCDB if antinuclei efficiency processing is enabled
-    if (doprocessAntinucleiEfficiency || doprocessJetsMCgen || doprocessJetsMCrec) {
+    if (applyReweighting && (doprocessAntinucleiEfficiency || doprocessJetsMCgen || doprocessJetsMCrec)) {
       ccdb->setURL(urlToCcdb.value);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -567,7 +568,7 @@ struct AntinucleiInJets {
   {
     TList* list = ccdbObj->get<TList>(filepath.Data());
     if (!list) {
-      LOGP(error, "Could not retrieve the list from CCDB");
+      LOGP(fatal, "Could not retrieve the list from CCDB");
       return;
     }
 
@@ -579,21 +580,27 @@ struct AntinucleiInJets {
     primaryAntiOmega = dynamic_cast<TH1F*>(list->FindObject("weightsOmega"));
 
     if (!primaryAntiprotons || !primaryAntiSigma || !primaryAntiLambda || !primaryAntiXi || !primaryAntiOmega) {
-      LOGP(error, "Missing one or more reweighting histograms for primary fraction in CCDB list");
+      LOGP(fatal, "Missing one or more reweighting histograms for primary fraction in CCDB list");
     }
 
     // Get reweighting histograms for antiproton efficiency
     antiprotonsInsideJets = dynamic_cast<TH1F*>(list->FindObject("weightsJet"));
     antiprotonsPerpCone = dynamic_cast<TH1F*>(list->FindObject("weightsUe"));
     if (!antiprotonsInsideJets || !antiprotonsPerpCone) {
-      LOGP(error, "Missing one or more reweighting histograms for antiproton efficiency in CCDB list");
+      LOGP(fatal, "Missing one or more reweighting histograms for antiproton efficiency in CCDB list");
     }
 
     // Get reweighting histograms for antideuteron efficiency
     antideuteronsInsideJets = dynamic_cast<TH1F*>(list->FindObject("weightsAntidJet"));
     antideuteronsPerpCone = dynamic_cast<TH1F*>(list->FindObject("weightsAntidUe"));
     if (!antideuteronsInsideJets || !antideuteronsPerpCone) {
-      LOGP(error, "Missing one or more reweighting histograms for antideuteron efficiency in CCDB list");
+      LOGP(fatal, "Missing one or more reweighting histograms for antideuteron efficiency in CCDB list");
+    }
+
+    // Get reco jet pt reweighting histogram
+    recoJetPtReweightingFactor = dynamic_cast<TH1F*>(list->FindObject("recoJetPtReweightingFactor"));
+    if (!recoJetPtReweightingFactor) {
+      LOGP(fatal, "Missing reco jet pt reweighting histograms in CCDB list");
     }
 
     LOGP(info, "Successfully loaded reweighting histograms from CCDB path");
@@ -2202,6 +2209,16 @@ struct AntinucleiInJets {
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
 
+        // Get reconstructed jet pt reweighting factor
+        double recoJetPtWeight(1.0);
+        if (applyReweighting) {
+          double jetPt = jetMinusBkg.pt();
+          if (jetPt >= recoJetPtReweightingFactor->GetXaxis()->GetXmin() && jetPt < recoJetPtReweightingFactor->GetXaxis()->GetXmax()) {
+            int jetPtBin = recoJetPtReweightingFactor->FindBin(jetPt);
+            recoJetPtWeight = recoJetPtReweightingFactor->GetBinContent(jetPtBin);
+          }
+        }
+
         // Fill jet pt distribution
         registryMC.fill(HIST("jetPtMCreconstructed"), jetMinusBkg.pt());
 
@@ -2289,20 +2306,23 @@ struct AntinucleiInJets {
             }
 
             // Fill inclusive antiproton spectrum
-            registryMC.fill(HIST("antiproton_incl_jet"), pt);
+            registryMC.fill(HIST("antiproton_incl_jet"), pt, recoJetPtWeight);
 
             // Select physical primary antiprotons
             if (!mcparticle.isPhysicalPrimary())
               continue;
 
             // Fill antiproton spectrum for physical primaries
-            registryMC.fill(HIST("antiproton_prim_jet"), pt);
+            registryMC.fill(HIST("antiproton_prim_jet"), pt, recoJetPtWeight);
 
             // Calculate weights
-            double weightJet(1.0);
-            if (applyReweighting && mcparticle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
-              int ipt = antiprotonsInsideJets->FindBin(mcparticle.pt());
-              weightJet = antiprotonsInsideJets->GetBinContent(ipt);
+            double weightJet = recoJetPtWeight;
+            if (applyReweighting) {
+              double pt = mcparticle.pt();
+              if (pt >= antiprotonsInsideJets->GetXaxis()->GetXmin() && pt < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
+                int ipt = antiprotonsInsideJets->FindBin(pt);
+                weightJet *= antiprotonsInsideJets->GetBinContent(ipt);
+              }
             }
 
             // Fill histograms (TPC and TOF) only for selected candidates
@@ -2340,10 +2360,14 @@ struct AntinucleiInJets {
               continue;
 
             // Calculate weight
-            double weightJetAntid(1.0);
-            if (applyReweighting && mcparticle.pt() < antideuteronsInsideJets->GetXaxis()->GetXmax()) {
-              int ipt = antideuteronsInsideJets->FindBin(mcparticle.pt());
-              weightJetAntid = antideuteronsInsideJets->GetBinContent(ipt);
+            double weightJetAntid = recoJetPtWeight;
+
+            if (applyReweighting) {
+              double pt = mcparticle.pt();
+              if (pt >= antideuteronsInsideJets->GetXaxis()->GetXmin() && pt < antideuteronsInsideJets->GetXaxis()->GetXmax()) {
+                int ipt = antideuteronsInsideJets->FindBin(pt);
+                weightJetAntid *= antideuteronsInsideJets->GetBinContent(ipt);
+              }
             }
 
             // Fill histograms (TPC and TOF) only for selected candidates
@@ -2408,20 +2432,23 @@ struct AntinucleiInJets {
           }
 
           // Fill inclusive antiproton spectrum
-          registryMC.fill(HIST("antiproton_incl_ue"), pt);
+          registryMC.fill(HIST("antiproton_incl_ue"), pt, recoJetPtWeight);
 
           // Select physical primary antiprotons
           if (!mcparticle.isPhysicalPrimary())
             continue;
 
           // Fill antiproton spectrum for physical primaries
-          registryMC.fill(HIST("antiproton_prim_ue"), pt);
+          registryMC.fill(HIST("antiproton_prim_ue"), pt, recoJetPtWeight);
 
           // Calculate weights
-          double weightUe(1.0);
-          if (applyReweighting && mcparticle.pt() < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
-            int ipt = antiprotonsPerpCone->FindBin(mcparticle.pt());
-            weightUe = antiprotonsPerpCone->GetBinContent(ipt);
+          double weightUe = recoJetPtWeight;
+          if (applyReweighting) {
+            double pt = mcparticle.pt();
+            if (pt >= antiprotonsPerpCone->GetXaxis()->GetXmin() && pt < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsPerpCone->FindBin(pt);
+              weightUe *= antiprotonsPerpCone->GetBinContent(ipt);
+            }
           }
 
           // Fill histograms (TPC and TOF) only for selected candidates
@@ -2490,7 +2517,7 @@ struct AntinucleiInJets {
           double weightUeAntid(1.0);
           if (applyReweighting && mcparticle.pt() < antideuteronsPerpCone->GetXaxis()->GetXmax()) {
             int ipt = antideuteronsPerpCone->FindBin(mcparticle.pt());
-            weightUeAntid = antideuteronsPerpCone->GetBinContent(ipt);
+            weightUeAntid = antideuteronsPerpCone->GetBinContent(ipt) * recoJetPtWeight;
           }
 
           // Fill histograms (TPC and TOF) only for selected candidates
