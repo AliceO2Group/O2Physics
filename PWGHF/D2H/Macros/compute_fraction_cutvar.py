@@ -289,9 +289,11 @@ def main(config):
                 )
                 print(f"raw yield uncertainties vector elements = {unc_rawy}\n")
             if not (np.all(effp[1:] > effp[:-1]) or np.all(effp[1:] < effp[:-1])):
+                all_vectors_monotonous = MinimisationStatus.MonotonyViolation
                 print("\0\33[33m\nWARNING! the prompt efficiency vector is not monotonous. Check the input.\0\33[0m")
                 print(f"prompt efficiency vector elements = {effp}\n")
             if not (np.all(effnp[1:] > effnp[:-1]) or np.all(effnp[1:] < effnp[:-1])):
+                all_vectors_monotonous = MinimisationStatus.MonotonyViolation
                 print("\0\33[33m\nWARNING! the nonprompt efficiency vector is not monotonous. Check the input.\0\33[0m")
                 print(f"nonprompt efficiency vector elements = {effnp}\n")
 
