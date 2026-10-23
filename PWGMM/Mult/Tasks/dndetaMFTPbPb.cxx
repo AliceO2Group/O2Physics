@@ -1464,9 +1464,9 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processTagging, "Collect event sample stats", true);
 
-  std::vector<int> NtrkPerCol;
-  std::vector<float> CentPerCol;
-  std::vector<float> OccPerCol;
+  std::vector<int> nTrkPerCol;
+  std::vector<float> centPerCol;
+  std::vector<float> occPerCol;
 
   /// @brief process function for counting tracks
   template <typename C>
@@ -1474,9 +1474,9 @@ struct DndetaMFTPbPb {
                    aod::MFTTracks const& tracks,
                    CollBCs const& /*bcs*/)
   {
-    NtrkPerCol.clear();
-    CentPerCol.clear();
-    OccPerCol.clear();
+    nTrkPerCol.clear();
+    centPerCol.clear();
+    occPerCol.clear();
     float c = getRecoCent(collision);
     float occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     auto bc = collision.template foundBC_as<CollBCs>();
@@ -1501,8 +1501,8 @@ struct DndetaMFTPbPb {
     }
     if (!gConf.useEvtSel || isGoodEvent<true>(collision)) {
       auto z = collision.posZ();
-      CentPerCol.emplace_back(c);
-      OccPerCol.emplace_back(occ);
+      centPerCol.emplace_back(c);
+      occPerCol.emplace_back(occ);
       if constexpr (has_reco_cent<C>) {
         registryData.fill(HIST("Events/Centrality/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), c, occ);
         registryData.fill(HIST("Events/Centrality/hZvtxCent"), z, c, occ);
@@ -1510,13 +1510,13 @@ struct DndetaMFTPbPb {
         registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), occ);
       }
       auto nTrk = countTracks<C>(tracks, z, c, occ);
-      NtrkPerCol.emplace_back(nTrk);
+      nTrkPerCol.emplace_back(nTrk);
       if (gConf.fillTrackQaHist) {
-        for (auto i = 0U; i < NtrkPerCol.size(); ++i) {
+        for (auto i = 0U; i < nTrkPerCol.size(); ++i) {
           if constexpr (has_reco_cent<C>) {
-            registryData.fill(HIST("Events/Centrality/NtrkZvtx"), NtrkPerCol[i], z, CentPerCol[i], OccPerCol[i]);
+            registryData.fill(HIST("Events/Centrality/NtrkZvtx"), nTrkPerCol[i], z, centPerCol[i], occPerCol[i]);
           } else {
-            registryData.fill(HIST("Events/NtrkZvtx"), NtrkPerCol[i], z, OccPerCol[i]);
+            registryData.fill(HIST("Events/NtrkZvtx"), nTrkPerCol[i], z, occPerCol[i]);
           }
         }
       }
@@ -1536,9 +1536,9 @@ struct DndetaMFTPbPb {
                               soa::SmallGroups<aod::BestCollisionsFwd3d> const& besttracks,
                               CollBCs const& /*bcs*/)
   {
-    NtrkPerCol.clear();
-    CentPerCol.clear();
-    OccPerCol.clear();
+    nTrkPerCol.clear();
+    centPerCol.clear();
+    occPerCol.clear();
     float c = getRecoCent(collision);
     float occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     auto bc = collision.template foundBC_as<CollBCs>();
@@ -1563,8 +1563,8 @@ struct DndetaMFTPbPb {
     }
     if (!gConf.useEvtSel || isGoodEvent<true>(collision)) {
       auto z = collision.posZ();
-      CentPerCol.emplace_back(c);
-      OccPerCol.emplace_back(occ);
+      centPerCol.emplace_back(c);
+      occPerCol.emplace_back(occ);
       if constexpr (has_reco_cent<C>) {
         registryData.fill(HIST("Events/Centrality/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), c, occ);
         registryData.fill(HIST("Events/Centrality/hZvtxCent"), z, c, occ);
@@ -1572,13 +1572,13 @@ struct DndetaMFTPbPb {
         registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), occ);
       }
       auto nBestTrks = countBestTracks<C>(tracks, besttracks, z, c, occ);
-      NtrkPerCol.emplace_back(nBestTrks);
+      nTrkPerCol.emplace_back(nBestTrks);
       if (gConf.fillTrackQaHist) {
-        for (auto i = 0U; i < NtrkPerCol.size(); ++i) {
+        for (auto i = 0U; i < nTrkPerCol.size(); ++i) {
           if constexpr (has_reco_cent<C>) {
-            registryData.fill(HIST("Events/Centrality/NtrkZvtx"), NtrkPerCol[i], z, CentPerCol[i], OccPerCol[i]);
+            registryData.fill(HIST("Events/Centrality/NtrkZvtx"), nTrkPerCol[i], z, centPerCol[i], occPerCol[i]);
           } else {
-            registryData.fill(HIST("Events/NtrkZvtx"), NtrkPerCol[i], z, OccPerCol[i]);
+            registryData.fill(HIST("Events/NtrkZvtx"), nTrkPerCol[i], z, occPerCol[i]);
           }
         }
       }
@@ -1661,9 +1661,9 @@ struct DndetaMFTPbPb {
   Partition<aod::McParticles> mcSample = (aod::mcparticle::eta < trackCuts.maxEta) && (aod::mcparticle::eta > trackCuts.minEta);
   Preslice<MftTracksLabeled> perColMcFiltTrk = o2::aod::fwdtrack::collisionId;
 
-  std::vector<int> NrecPerCol;
-  std::vector<float> CentRecPerCol;
-  std::vector<float> OccRecPerCol;
+  std::vector<int> nRecPerCol;
+  std::vector<float> centRecPerCol;
+  std::vector<float> occRecPerCol;
 
   template <typename MC, typename C>
   void processMc(typename MC::iterator const& mcCollision,
@@ -1671,9 +1671,9 @@ struct DndetaMFTPbPb {
                  aod::McParticles const& particles,
                  MftTracksLabeled const& tracks)
   {
-    NrecPerCol.clear();
-    CentRecPerCol.clear();
-    OccRecPerCol.clear();
+    nRecPerCol.clear();
+    centRecPerCol.clear();
+    occRecPerCol.clear();
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
     float occGen = -1.;
     for (const auto& collision : collisions) {
@@ -1714,8 +1714,8 @@ struct DndetaMFTPbPb {
         registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), occRec);
       }
       if (!gConf.useEvtSel || isGoodEvent<true>(collision)) {
-        CentRecPerCol.emplace_back(cRec);
-        OccRecPerCol.emplace_back(occRec);
+        centRecPerCol.emplace_back(cRec);
+        occRecPerCol.emplace_back(occRec);
         gtZeroColl = true;
         ++gtOneColl;
         if constexpr (has_reco_cent<C>) {
@@ -1796,18 +1796,18 @@ struct DndetaMFTPbPb {
             }
           }
         }
-        NrecPerCol.emplace_back(nTrkRec);
+        nRecPerCol.emplace_back(nTrkRec);
         if (eventCuts.useZDiffCut) {
           if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
             continue;
           }
         }
         if (gConf.fillTrackQaHist) {
-          for (auto i = 0U; i < NrecPerCol.size(); ++i) {
+          for (auto i = 0U; i < nRecPerCol.size(); ++i) {
             if constexpr (has_reco_cent<C>) {
-              registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen"), NrecPerCol[i], collision.posZ(), CentRecPerCol[i], OccRecPerCol[i]);
+              registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen"), nRecPerCol[i], collision.posZ(), centRecPerCol[i], occRecPerCol[i]);
             } else {
-              registryMC.fill(HIST("Events/NtrkZvtxGen"), NrecPerCol[i], collision.posZ(), OccRecPerCol[i]);
+              registryMC.fill(HIST("Events/NtrkZvtxGen"), nRecPerCol[i], collision.posZ(), occRecPerCol[i]);
             }
           }
           if constexpr (has_reco_cent<C>) {
@@ -1884,9 +1884,9 @@ struct DndetaMFTPbPb {
                      MftTracksLabeled const& /*tracks*/,
                      MftBestTracksLabeled const& besttracks)
   {
-    NrecPerCol.clear();
-    CentRecPerCol.clear();
-    OccRecPerCol.clear();
+    nRecPerCol.clear();
+    centRecPerCol.clear();
+    occRecPerCol.clear();
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
     float occGen = -1.;
     for (const auto& collision : collisions) {
@@ -1929,8 +1929,8 @@ struct DndetaMFTPbPb {
         registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), occRec);
       }
       if (!gConf.useEvtSel || isGoodEvent<true>(collision)) {
-        CentRecPerCol.emplace_back(cRec);
-        OccRecPerCol.emplace_back(occRec);
+        centRecPerCol.emplace_back(cRec);
+        occRecPerCol.emplace_back(occRec);
         gtZeroColl = true;
         ++gtOneColl;
         if constexpr (has_reco_cent<C>) {
@@ -2060,18 +2060,18 @@ struct DndetaMFTPbPb {
             }
           }
         }
-        NrecPerCol.emplace_back(nATrk);
+        nRecPerCol.emplace_back(nATrk);
         if (eventCuts.useZDiffCut) {
           if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
             continue;
           }
         }
         if (gConf.fillTrackQaHist) {
-          for (auto i = 0U; i < NrecPerCol.size(); ++i) {
+          for (auto i = 0U; i < nRecPerCol.size(); ++i) {
             if constexpr (has_reco_cent<C>) {
-              registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen"), NrecPerCol[i], collision.posZ(), CentRecPerCol[i], OccRecPerCol[i]);
+              registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen"), nRecPerCol[i], collision.posZ(), centRecPerCol[i], occRecPerCol[i]);
             } else {
-              registryMC.fill(HIST("Events/NtrkZvtxGen"), NrecPerCol[i], collision.posZ(), OccRecPerCol[i]);
+              registryMC.fill(HIST("Events/NtrkZvtxGen"), nRecPerCol[i], collision.posZ(), occRecPerCol[i]);
             }
           }
           if constexpr (has_reco_cent<C>) {
