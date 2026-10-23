@@ -16,7 +16,6 @@
 #ifndef PWGJE_TASKS_JETFINDERHFQA_H_
 #define PWGJE_TASKS_JETFINDERHFQA_H_
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
