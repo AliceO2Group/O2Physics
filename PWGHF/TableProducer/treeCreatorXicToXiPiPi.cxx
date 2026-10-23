@@ -31,8 +31,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Rtypes.h>
 #include <TPDGCode.h>
+
+#include <Rtypes.h>
 
 #include <cstdint>
 #include <numeric>
