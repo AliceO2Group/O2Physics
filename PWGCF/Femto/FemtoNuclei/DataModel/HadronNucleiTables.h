@@ -183,6 +183,7 @@ DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, uint16_t);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
+DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int32_t);
 
 } // namespace hadron_nuclei_tables
 
@@ -268,7 +269,8 @@ DECLARE_SOA_TABLE(HadronNucleiMult, "AOD", "HADNUCLEIMULT",
                   hadron_nuclei_tables::ZVertex,
                   hadron_nuclei_tables::Multiplicity,
                   hadron_nuclei_tables::CentFT0C,
-                  hadron_nuclei_tables::MultiplicityFT0C)
+                  hadron_nuclei_tables::MultiplicityFT0C,
+                  hadron_nuclei_tables::MultNTracksPV)
 
 // Reduced hadron-hypertriton pair output. Reconstructable quantities such as
 // k*, invariant mass and pointing variables are intentionally derived offline.
