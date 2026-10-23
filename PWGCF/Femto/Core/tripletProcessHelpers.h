@@ -765,12 +765,17 @@ void processMixedEvent(T1 const& Collisions,
                        T8 const& depth,
                        T9& TripletHistManager,
                        T10& CtrManager,
-                       T11& TcManager)
+                       T11& TcManager,
+                       int eventStride = 1)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 stays fixed across the outer mixing window, and collision2 stays fixed across each inner sub-window (it only advances once collision3 wraps
   // back to its start Both slices are therefore materialized once per window/sub-window and reused, instead of being re-sliced, i.e. a fresh arrow Slice + selection copy
@@ -781,14 +786,25 @@ void processMixedEvent(T1 const& Collisions,
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
@@ -892,12 +908,17 @@ void processMixedEvent(T1 const& Collisions,
                        T15& Cleaner2,
                        T16& Cleaner3,
                        T17& CtrManager,
-                       T18& TcManager)
+                       T18& TcManager,
+                       int eventStride = 1)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 stays fixed across the outer mixing window, and collision2 stays fixed across each inner sub-window (it only advances once collision3 wraps
   // back to its start Both slices are therefore materialized once per window/sub-window and reused, instead of being re-sliced, i.e. a fresh arrow Slice + selection copy
@@ -908,14 +929,25 @@ void processMixedEvent(T1 const& Collisions,
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
@@ -1009,12 +1041,17 @@ void processMixedEventMcTruth(T1 const& McCollisions,
                               T13& ParticleCleaner2,
                               T14& ParticleCleaner3,
                               T15& CtrManager,
-                              T16& TcManager)
+                              T16& TcManager,
+                              int eventStride = 1)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   std::optional<decltype(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
   std::optional<decltype(Partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle2;
@@ -1023,14 +1060,25 @@ void processMixedEventMcTruth(T1 const& McCollisions,
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
