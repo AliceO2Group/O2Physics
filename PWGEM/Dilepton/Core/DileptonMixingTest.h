@@ -14,8 +14,8 @@
 // This code runs loop over leptons.
 //    Please write to: daiki.sekihata@cern.ch
 
-#ifndef PWGEM_DILEPTON_CORE_DILEPTON_H_
-#define PWGEM_DILEPTON_CORE_DILEPTON_H_
+#ifndef PWGEM_DILEPTON_CORE_DILEPTONMIXINGTEST_H_
+#define PWGEM_DILEPTON_CORE_DILEPTONMIXINGTEST_H_
 
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
@@ -1928,4 +1928,4 @@ struct Dilepton {
   PROCESS_SWITCH(Dilepton, processDummy, "Dummy function", false);
 };
 
-#endif // PWGEM_DILEPTON_CORE_DILEPTON_H_
+#endif  // PWGEM_DILEPTON_CORE_DILEPTONMIXINGTEST_H_
