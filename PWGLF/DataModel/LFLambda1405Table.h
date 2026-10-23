@@ -45,7 +45,7 @@ DECLARE_SOA_COLUMN(NSigmaTPCPrKink, nSigmaTPCPrKink, float); //! Number of sigma
 DECLARE_SOA_COLUMN(NSigmaTOFPrKink, nSigmaTOFPrKink, float); //! Number of sigmas for the proton candidate from Sigma kink in TOF
 DECLARE_SOA_COLUMN(DcaKinkDauToPv, dcaKinkDauToPv, float);   //! DCA of the kink daughter to the primary vertex
 DECLARE_SOA_COLUMN(DcaSigmaToPv, dcaSigmaToPv, float);       //! DCA of the sigma to the primary vertex
-DECLARE_SOA_COLUMN(KinkChi2PCA, kinkChi2PCA, float);                 //! Chi2 DCA fitter at the PCA
+DECLARE_SOA_COLUMN(KinkChi2PCA, kinkChi2PCA, float);         //! Chi2 DCA fitter at the PCA
 DECLARE_SOA_COLUMN(NSigmaTPCPiDau, nSigmaTPCPiDau, float);   //! Number of sigmas for the lambda1405 pion daughter in TPC
 DECLARE_SOA_COLUMN(NSigmaTOFPiDau, nSigmaTOFPiDau, float);   //! Number of sigmas for the lambda1405 pion daughter in TOF
 

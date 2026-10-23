@@ -102,7 +102,7 @@ struct lambda1405candidate {
   float kinkPrNSigTpc = -1;  // Number of sigmas for the proton candidate from Sigma kink in Tpc
   float kinkPrNSigTof = -1;  // Number of sigmas for the proton candidate from Sigma kink in Tof
   float kinkDcaDauToPv = -1; // DCA of the kink daughter to the primary vertex
-  float chi2KinkPCA = -1;   // Chi2 of the Sigma candidate at the PCA
+  float chi2KinkPCA = -1;    // Chi2 of the Sigma candidate at the PCA
 
   float bachPiPt = -1;      // pT of the pion daughter
   float bachPiNSigTpc = -1; // Number of sigmas for the pion candidate
@@ -1393,11 +1393,11 @@ struct lambda1405analysis {
         auto labelKinkDaug = trackLabelsMC.rawIteratorAt(sigmaCand.trackDaugId());
         if (!labelSigma.has_mcParticle()) {
           rSelections.fill(HIST("hRecoNotMatchedCounter"), 1); // Sigma not matched
-          continue; // Skip if no valid MC association
+          continue;                                            // Skip if no valid MC association
         }
         if (!labelKinkDaug.has_mcParticle()) {
           rSelections.fill(HIST("hRecoNotMatchedCounter"), 2); // Kink daughter not matched
-          continue; // Skip if no valid MC association
+          continue;                                            // Skip if no valid MC association
         }
         auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
         auto genKinkDaug = labelKinkDaug.template mcParticle_as<aod::McParticles>();
