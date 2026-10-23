@@ -3060,7 +3060,7 @@ struct HStrangeCorrelation {
         // Matched bins of hTrigger integrate to TriggerVariants 0 and 1, those of hPair to
         // RecVariants 0 and 1. hPair keeps the angular axes so that the shape of the lost
         // pairs (correlated or flat) is visible.
-        const AxisSpec axisPairLossTriggerMatchQA{PairLossTriggerMatchNBins, -0.5, PairLossTriggerMatchNBins - 0.5, "Rec variant 0 #rightarrow 1 trigger match"};
+        const AxisSpec axisPairLossTriggerMatchQA{PairLossTriggerMatchNBins, -0.5, static_cast<double>(PairLossTriggerMatchNBins) - 0.5, "Rec variant 0 #rightarrow 1 trigger match"};
         histos.add("PairLossK0/Comparison/TriggerMatchQA/hTrigger", "Rec triggers by first failing truth-trigger condition;Rec variant 0 #rightarrow 1 trigger match;#it{p}_{T}^{trigger, reco} (GeV/#it{c})", kTH2D, {axisPairLossTriggerMatchQA, axesConfigurations.axisPtQA});
         histos.add("PairLossK0/Comparison/TriggerMatchQA/hPair", "Rec peak-window h-K0 pairs by first failing truth-trigger condition of their trigger", kTHnF, {axisPairLossTriggerMatchQA, axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim});
         auto triggerMatchQATrigger = histos.get<TH2>(HIST("PairLossK0/Comparison/TriggerMatchQA/hTrigger"));
