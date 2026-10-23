@@ -14,10 +14,10 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 ///
 /// Two decay modes, analysed separately (never merged in any histogram or process function):
-///  - mode A (XiK0s): Omega(2012)- -> Xi- K0S. processData, processMixedEvent, processMC, processMCGenerated.
+///  - mode A (XiK0s): Omega(2012)- -> Xi- K0S. processData, processMixedEvent, processMC, processMCGen, processMCGenerated.
 ///    Histograms: Event/, QAbefore/, QAafter/, omega2012/, MC/ (unchanged).
 ///  - mode B (Xi1530K): Omega(2012)- -> Xi(1530)0 K- -> Xi- pi+ K- with a charged kaon track.
-///    processXi1530KMicro, processXi1530KTracks, processXi1530KMCMicro, processXi1530KMixedMicro.
+///    processXi1530KMicro, processXi1530KTracks, processXi1530KMCMicro, processXi1530KMCGen, processXi1530KMixedMicro.
 ///    Histograms: xi1530K/ (signal charge pattern) and xi1530K_wrongSign/ (charge-pattern controls).
 /// Selection, candidate enumeration and truth classification: PWGLF/Core/Omega2012AnalysisCore.h.
 ///
@@ -49,6 +49,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
+#include <SimulationDataFormat/MCGenProperties.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -56,6 +57,7 @@
 
 #include <cmath>
 #include <tuple>
+#include <unordered_map>
 
 using namespace o2;
 using namespace o2::framework;
@@ -85,7 +87,7 @@ struct Omega2012Analysis {
   Configurable<int> cInvMassBins{"cInvMassBins", 600, "Invariant mass bins"};
 
   // Selection shared with the Omega(2012) training-table task (plain JSON keys; the mode-B track cuts carry "trk.")
-  o2::analysis::resonance::EventCuts eventCuts;
+  o2::analysis::resonance::EventCuts eventCuts = makeOmega2012EventCuts();
   XiCuts xiCuts;
   K0sCuts k0sCuts;
   Xi1530KCuts xi1530KCuts;
@@ -93,6 +95,35 @@ struct Omega2012Analysis {
   PionPidCuts pionPID;
   KaonPidCuts kaonPID;
   CandidateCuts candidateCuts;
+  Configurable<bool> cUseTruthRapidity{"cUseTruthRapidity", true, "Require the matched Omega(2012) truth rapidity inside cfgRapidityCut"};
+  Configurable<bool> cMCInjection{"cMCInjection", false, "Restrict MC numerator and denominator to Omega parents with generator status -11"};
+
+  struct OmegaParentTruth {
+    float pt = 0.f;
+    float y = 0.f;
+    int pdgCode = 0;
+    bool injected = false;
+  };
+  using OmegaParentTruthMap = std::unordered_map<int, OmegaParentTruth>;
+
+  template <typename Parent>
+  static bool isInjectedOmegaParent(const Parent& parent)
+  {
+    constexpr int InjectedGeneratorStatus = -11;
+    return o2::mcgenstatus::getGenStatusCode(parent.statusCode()) == InjectedGeneratorStatus;
+  }
+
+  template <typename Parents>
+  OmegaParentTruthMap omegaParentTruth(const Parents& parents)
+  {
+    OmegaParentTruthMap parentTruth;
+    for (const auto& parent : parents) {
+      if (std::abs(parent.pdgCode()) == kOmega2012Minus) {
+        parentTruth.emplace(parent.originalMcParticleId(), OmegaParentTruth{parent.pt(), parent.y(), parent.pdgCode(), isInjectedOmegaParent(parent)});
+      }
+    }
+    return parentTruth;
+  }
 
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
@@ -217,6 +248,20 @@ struct Omega2012Analysis {
     histos.add("MC/hMCGenOmega2012Y", "MC Generated Omega(2012) rapidity", kTH1F, {rapidityAxis});
     histos.add("MC/hMCRecOmega2012Pt", "MC Reconstructed Omega(2012) pT", kTH1F, {ptAxis});
     histos.add("MC/hMCRecOmega2012PtEta", "MC Reconstructed Omega(2012) pT vs eta", kTH2F, {ptAxis, etaAxis});
+    if (doprocessMCGen) {
+      histos.add("MC/hMCGenSelectedXiK0sPt", "MC generated Omega(2012) #rightarrow #Xi K^{0}_{S} in selected events and rapidity window;p_{T} (GeV/c)", kTH1F, {ptAxis});
+      const AxisSpec truthPtAxis{binsPt, "p_{T}^{truth} (GeV/c)"};
+      const AxisSpec signAxis{2, -1.5, 1.5, "Omega PDG sign (+1 particle, -1 antiparticle)"};
+      histos.add("MC/hMCGenSelectedXiK0sResponse", "Selected-event generated #Omega #rightarrow #Xi K^{0}_{S}", kTHnSparseD,
+                 {truthPtAxis, centAxis, {500, 0., 500., "MC multiplicity"}, signAxis});
+    }
+    if (doprocessMC) {
+      const AxisSpec recoPtAxis{binsPt, "p_{T}^{reco} (GeV/c)"};
+      const AxisSpec truthPtAxis{binsPt, "p_{T}^{truth} (GeV/c)"};
+      const AxisSpec signAxis{2, -1.5, 1.5, "Omega PDG sign (+1 particle, -1 antiparticle)"};
+      histos.add("MC/hMCRecXiK0sResponse", "Truth-matched selected #Omega #rightarrow #Xi K^{0}_{S}", kTHnSparseD,
+                 {recoPtAxis, truthPtAxis, centAxis, {500, 0., 500., "MC multiplicity"}, signAxis});
+    }
 
     // MC truth invariant mass (from MC particles)
     histos.add("MC/hMCTruthInvMassXiK0s", "MC Truth Inv Mass Xi + K^{0}_{S}", kTH1F, {invMassAxis});
@@ -230,7 +275,7 @@ struct Omega2012Analysis {
 
     ProcessModes modes;
     modes.xiK0s = doprocessData || doprocessMixedEvent || doprocessMC;
-    modes.xi1530K = doprocessXi1530KMicro || doprocessXi1530KTracks || doprocessXi1530KMCMicro || doprocessXi1530KMixedMicro;
+    modes.xi1530K = doprocessXi1530KMicro || doprocessXi1530KTracks || doprocessXi1530KMCMicro || doprocessXi1530KMCGen || doprocessXi1530KMixedMicro;
     modes.microTracks = doprocessXi1530KMicro || doprocessXi1530KMCMicro || doprocessXi1530KMixedMicro;
     modes.mcReco = doprocessMC || doprocessXi1530KMCMicro;
     modes.mixing = doprocessMixedEvent || doprocessXi1530KMixedMicro;
@@ -289,6 +334,17 @@ struct Omega2012Analysis {
         histos.add("xi1530K/MC/hMCRecXiPt", "MC reconstructed Xi pT", kTH1F, {ptAxis});
         histos.add("xi1530K/MC/hMCRecPionPt", "MC reconstructed pion pT", kTH1F, {ptAxis});
         histos.add("xi1530K/MC/hMCRecKaonPt", "MC reconstructed kaon pT", kTH1F, {ptAxis});
+        const AxisSpec recoPtAxis{binsPt, "p_{T}^{reco} (GeV/c)"};
+        const AxisSpec truthPtAxis{binsPt, "p_{T}^{truth} (GeV/c)"};
+        const AxisSpec signAxis{2, -1.5, 1.5, "Omega PDG sign (+1 particle, -1 antiparticle)"};
+        histos.add("xi1530K/MC/hMCRecXi1530KResponse", "Truth-matched selected #Omega #rightarrow #Xi(1530) K", kTHnSparseD,
+                   {recoPtAxis, truthPtAxis, centAxis, {500, 0., 500., "MC multiplicity"}, signAxis});
+      }
+      if (doprocessXi1530KMCGen) {
+        const AxisSpec truthPtAxis{binsPt, "p_{T}^{truth} (GeV/c)"};
+        const AxisSpec signAxis{2, -1.5, 1.5, "Omega PDG sign (+1 particle, -1 antiparticle)"};
+        histos.add("xi1530K/MC/hMCGenSelectedXi1530KResponse", "Selected-event generated #Omega #rightarrow #Xi(1530) K", kTHnSparseD,
+                   {truthPtAxis, centAxis, {500, 0., 500., "MC multiplicity"}, signAxis});
       }
     }
 
@@ -449,28 +505,71 @@ struct Omega2012Analysis {
   // MC reconstructed processing: match reconstructed Xi + K0s pairs to a common Omega(2012) mother
   void processMC(ResoMCCollisions::iterator const& collision,
                  ResoMCCascades const& resocasc,
-                 ResoMCV0s const& resov0s)
+                 ResoMCV0s const& resov0s,
+                 aod::ResoMCParents_001 const& resoParents)
   {
     if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
       return;
     }
-    // No kinematic cut in the truth-matched spectra (as before the refactoring)
+    const auto omegaParents = omegaParentTruth(resoParents);
     auto onCandidate = [&](auto const& xi, auto const& v0, XiK0sCandidateValues const& c) {
       if (classifyXiK0sTruth(xi, v0) != XiK0sTruth::Matched) {
         return;
       }
-      if (!c.inRapidity) {
+      const int motherId = xi.motherId();
+      const auto parentIt = omegaParents.find(motherId);
+      if (parentIt == omegaParents.end() || (cMCInjection && !parentIt->second.injected)) {
+        return;
+      }
+      if (cUseTruthRapidity && (!(std::abs(xi.motherRap()) < candidateCuts.cfgRapidityCut.value) || !std::isfinite(xi.motherRap()))) {
+        return;
+      }
+      if ((core.kinCutsEnabled() && !c.passesKinCut) || !c.inRapidity) {
         return;
       }
       histos.fill(HIST("MC/hMCRecOmega2012Pt"), c.omega.Pt());
       histos.fill(HIST("MC/hMCRecOmega2012PtEta"), c.omega.Pt(), c.omega.Eta());
       histos.fill(HIST("MC/hMCRecXiPt"), xi.pt());
       histos.fill(HIST("MC/hMCRecK0sPt"), v0.pt());
+      const double sign = xi.motherPDG() > 0 ? 1. : -1.;
+      histos.fill(HIST("MC/hMCRecXiK0sResponse"), c.omega.Pt(), xi.motherPt(), collision.cent(), collision.mcMultiplicity(), sign);
     };
     core.forEachXiK0sCandidate<true, false>(histos, collision, collision, resocasc, resov0s, false, nullptr, nullptr, onCandidate);
   }
   PROCESS_SWITCH(Omega2012Analysis, processMC, "Process MC with truth matching", false);
 
+  // Acceptance x efficiency denominator, counted per selected reconstructed collision,
+  // as in the Xi(1530) and Xi(1820) tasks. Split collisions repeat the parent set;
+  // this is not a unique-MC-event denominator or a signal-loss correction.
+  void processMCGen(ResoMCCollisions::iterator const& collision,
+                    aod::ResoMCParents_001 const& resoParents)
+  {
+    if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
+      return;
+    }
+    for (const auto& part : resoParents) {
+      if (std::abs(part.pdgCode()) != kOmega2012Minus) {
+        continue;
+      }
+      if (!(std::abs(part.y()) < candidateCuts.cfgRapidityCut.value) || !std::isfinite(part.y())) {
+        continue;
+      }
+      if (cMCInjection && !isInjectedOmegaParent(part)) {
+        continue;
+      }
+      // Require the same immediate Xi + K0S channel as processMCGenerated.
+      if ((std::abs(part.daughterPDG1()) == kXiMinus && part.daughterPDG2() == kK0Short) ||
+          (std::abs(part.daughterPDG2()) == kXiMinus && part.daughterPDG1() == kK0Short)) {
+        histos.fill(HIST("MC/hMCGenSelectedXiK0sPt"), part.pt());
+        const double sign = part.pdgCode() > 0 ? 1. : -1.;
+        histos.fill(HIST("MC/hMCGenSelectedXiK0sResponse"), part.pt(), collision.cent(), collision.mcMultiplicity(), sign);
+      }
+    }
+  }
+  PROCESS_SWITCH(Omega2012Analysis, processMCGen, "Process MC generated XiK0s parents in selected events", false);
+
+  // Inclusive MC-particle QA. The rapidity-limited source histogram is a legacy all-event QA denominator;
+  // selected-event efficiency denominators are filled by processMCGen and processXi1530KMCGen.
   void processMCGenerated(aod::McParticles const& mcParticles)
   {
     // Process MC generated particles (no reconstruction requirement)
@@ -524,7 +623,11 @@ struct Omega2012Analysis {
       if ((std::abs(daughter1PDG) == kXiMinus && daughter2PDG == kK0Short) ||
           (std::abs(daughter2PDG) == kXiMinus && daughter1PDG == kK0Short)) {
         histos.fill(HIST("MC/hMCTruthInvMassXiK0s"), motherM);
-        histos.fill(HIST("MC/hMCTruthMassPtXiK0s"), motherM, motherPt);
+        // Legacy all-event rapidity-limited QA histogram; selected-event efficiency
+        // denominators are written by processMCGen and processXi1530KMCGen.
+        if (std::abs(y) < candidateCuts.cfgRapidityCut.value) {
+          histos.fill(HIST("MC/hMCTruthMassPtXiK0s"), motherM, motherPt);
+        }
 
         const bool isDaughter1Xi = std::abs(daughter1PDG) == kXiMinus;
         const auto& pXiTruth = isDaughter1Xi ? p1 : p2;
@@ -538,7 +641,8 @@ struct Omega2012Analysis {
 
   // Mode B: Xi(1530)0 K- -> Xi- pi+ K- (and charge conjugate) from one collision, or Xi and tracks from two mixed collisions
   template <bool IsMC, bool IsMix, bool IsResoMicrotrack, typename CollisionT, typename CascadesT, typename TracksT, typename TrackIdsT>
-  void fillXi1530K(const CollisionT& collision, float cent, const CascadesT& cascades, const TracksT& tracks, const TrackIdsT& trackIds)
+  void fillXi1530K(const CollisionT& collision, float cent, const CascadesT& cascades, const TracksT& tracks, const TrackIdsT& trackIds,
+                   const OmegaParentTruthMap* omegaParents = nullptr)
   {
     // Input QA: same event only (each object once per collision)
     auto onXi = [&](auto const& xi, bool selected) {
@@ -594,7 +698,7 @@ struct Omega2012Analysis {
     };
 
     const bool fillWrongSign = core.fillWrongSign();
-    auto onCandidate = [&]([[maybe_unused]] auto const& xi, [[maybe_unused]] auto const& pion, [[maybe_unused]] auto const& kaon, Xi1530KCandidateValues const& c) {
+    auto onCandidate = [&](auto const& xi, auto const& pion, auto const& kaon, Xi1530KCandidateValues const& c) {
       if (c.chargePattern != o2::analysis::omega2012ml::kSignalPattern) {
         // Charge-pattern controls: same event only, never in the signal histograms
         if constexpr (!IsMix) {
@@ -623,6 +727,16 @@ struct Omega2012Analysis {
         if (classifyXi1530KTruth(xi, pion, kaon) != Xi1530KTruth::Matched) {
           return;
         }
+        if (!omegaParents) {
+          return;
+        }
+        const auto parentIt = omegaParents->find(kaon.motherId());
+        if (parentIt == omegaParents->end() || (cMCInjection && !parentIt->second.injected)) {
+          return;
+        }
+        if (cUseTruthRapidity && (!std::isfinite(parentIt->second.y) || !(std::abs(parentIt->second.y) < candidateCuts.cfgRapidityCut.value))) {
+          return;
+        }
         histos.fill(HIST("xi1530K/MC/hMCRecOmega2012Pt"), c.omega.Pt());
         histos.fill(HIST("xi1530K/MC/hMCRecOmega2012PtEta"), c.omega.Pt(), c.omega.Eta());
         histos.fill(HIST("xi1530K/MC/hMCRecMass"), c.omega.M());
@@ -630,6 +744,8 @@ struct Omega2012Analysis {
         histos.fill(HIST("xi1530K/MC/hMCRecXiPt"), xi.pt());
         histos.fill(HIST("xi1530K/MC/hMCRecPionPt"), pion.pt());
         histos.fill(HIST("xi1530K/MC/hMCRecKaonPt"), kaon.pt());
+        const double sign = parentIt->second.pdgCode > 0 ? 1. : -1.;
+        histos.fill(HIST("xi1530K/MC/hMCRecXi1530KResponse"), c.omega.Pt(), parentIt->second.pt, cent, collision.mcMultiplicity(), sign);
       }
     };
 
@@ -661,14 +777,39 @@ struct Omega2012Analysis {
 
   void processXi1530KMCMicro(ResoMCCollisions::iterator const& collision,
                              ResoMCCascades const& resocasc,
-                             ResoMCMicroTracks const& resomicrotracks)
+                             ResoMCMicroTracks const& resomicrotracks,
+                             aod::ResoMCParents_001 const& resoParents)
   {
     if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
       return;
     }
-    fillXi1530K<true, false, true>(collision, collision.cent(), resocasc, resomicrotracks, nullptr);
+    const auto omegaParents = omegaParentTruth(resoParents);
+    fillXi1530K<true, false, true>(collision, collision.cent(), resocasc, resomicrotracks, nullptr, &omegaParents);
   }
   PROCESS_SWITCH(Omega2012Analysis, processXi1530KMCMicro, "Process Xi(1530)0 K mode with truth matching (ResoMicroTracks_001)", false);
+
+  // Selected-event generated denominator for Omega -> Xi(1530) K, counted once
+  // per selected reconstructed collision. Split collisions repeat the MC parents.
+  void processXi1530KMCGen(ResoMCCollisions::iterator const& collision,
+                           aod::ResoMCParents_001 const& resoParents)
+  {
+    if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
+      return;
+    }
+    for (const auto& parent : resoParents) {
+      if (std::abs(parent.pdgCode()) != kOmega2012Minus ||
+          !std::isfinite(parent.y()) || !(std::abs(parent.y()) < candidateCuts.cfgRapidityCut.value) ||
+          (cMCInjection && !isInjectedOmegaParent(parent))) {
+        continue;
+      }
+      if (classifyGeneratedOmega2012(parent.pdgCode(), parent.daughterPDG1(), parent.daughterPDG2()) != GeneratedChannel::Xi1530K) {
+        continue;
+      }
+      const double sign = parent.pdgCode() > 0 ? 1. : -1.;
+      histos.fill(HIST("xi1530K/MC/hMCGenSelectedXi1530KResponse"), parent.pt(), collision.cent(), collision.mcMultiplicity(), sign);
+    }
+  }
+  PROCESS_SWITCH(Omega2012Analysis, processXi1530KMCGen, "Process generated Xi(1530) K parents in selected events", false);
 
   // Mixed events: Xi from collision 1, pion and kaon from collision 2
   void processXi1530KMixedMicro(ResoCollisions const& collisions,

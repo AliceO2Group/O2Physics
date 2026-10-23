@@ -17,9 +17,10 @@
 /// processXi1530KMicro, processXi1530KMCMicro. Generated parents: processMCTrue. MC truth of reconstructed MC: processMcTruth.
 /// Each candidate is written only to the tables of its own mode (PWGLF/DataModel/LFOmega2012MlTables.h);
 /// the selection is the one of omega2012Analysis.cxx (PWGLF/Core/Omega2012AnalysisCore.h, same JSON keys).
-/// Only collisions with written candidates get an event row. In reconstructed MC the daughter labels of the written
-/// objects and the pruned McParticles rows (Omega(2012) decay trees, ancestry of the labels) carry the truth, so the
-/// output needs no source table.
+/// Only collisions with written candidates get an event row. Generated Omega(2012) mothers are written separately to
+/// OMMLGENAUDIT for every selected reconstructed MC collision, including collisions with no exported candidates.
+/// In reconstructed MC, daughter labels of written objects and pruned McParticles rows carry candidate truth, so the
+/// candidate output needs no source table.
 
 #include "PWGLF/Core/Omega2012AnalysisCore.h"
 #include "PWGLF/Core/Omega2012MlFeatures.h"
@@ -45,6 +46,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -110,7 +112,7 @@ struct Omega2012TrainingTable {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Selection shared with the Omega(2012) histogram task (same JSON keys)
-  o2::analysis::resonance::EventCuts eventCuts;
+  o2::analysis::resonance::EventCuts eventCuts = makeOmega2012EventCuts();
   XiCuts xiCuts;
   K0sCuts k0sCuts;
   Xi1530KCuts xi1530KCuts;
@@ -123,6 +125,7 @@ struct Omega2012TrainingTable {
   Configurable<bool> omega2012MlLooseAudit{"omega2012MlLooseAudit", true, "Record the loose cut flow and mass/pT/activity spectrum per mode"};
   Configurable<int> omega2012MlParityRows{"omega2012MlParityRows", 0, "Log feature hashes of the first N exported candidates of each mode"};
   Configurable<bool> omega2012MlExportWrongSign{"omega2012MlExportWrongSign", false, "Also export the wrong-sign charge-pattern controls of the Xi1530K mode"};
+  Configurable<float> omega2012MlGenRapidityCut{"omega2012MlGenRapidityCut", 0.5f, "Generated-mother denominator rapidity limit; independent of candidate cfgRapidityCut"};
 
   // Event row written before the first candidate of the collision
   struct PendingEvent {
@@ -168,6 +171,9 @@ struct Omega2012TrainingTable {
     }
     if (omega2012MlParityRows < 0) {
       LOG(fatal) << "omega2012MlParityRows must not be negative";
+    }
+    if (doprocessMCTrue && (!std::isfinite(omega2012MlGenRapidityCut.value) || omega2012MlGenRapidityCut.value <= 0.f)) {
+      LOG(fatal) << "omega2012MlGenRapidityCut must be finite and positive when processMCTrue is enabled";
     }
     if (omega2012MlExportStage.value != "loose" && omega2012MlExportStage.value != "selected") {
       LOG(fatal) << "omega2012MlExportStage must be loose or selected";
@@ -538,7 +544,7 @@ struct Omega2012TrainingTable {
     if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
       return;
     }
-    core.forEachGeneratedOmega2012(histos, resoParents, [&](auto const& part, GeneratedChannel channel) {
+    core.forEachGeneratedOmega2012(histos, resoParents, omega2012MlGenRapidityCut.value, [&](auto const& part, GeneratedChannel channel) {
       mlGenAudit(collision.globalIndex(), static_cast<int64_t>(part.originalMcParticleId()),
                  part.pdgCode(), part.daughterPDG1(), part.daughterPDG2(), static_cast<uint8_t>(channel), part.pt(), part.y());
     });
