@@ -37,8 +37,9 @@ o2physics_add_library(LfStrangenessBuilderModule
     SOURCES strangenessBuilderModule.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle)
 
-o2physics_add_library(LfCascadeMlResponse
-    SOURCES cascadeMlResponse.cxx
+o2physics_add_library(LfMlResponse
+    SOURCES CascadeMlResponse.cxx
+            ResonanceMlResponse.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::MLCore)
 
 # Precompiled header shared across the PWGLF strangeness workflows. Percentages
