@@ -548,8 +548,8 @@ class TrackSelectionBrick : public SpecialCutBrick
         ((mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true) &&
         ((mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true) &&
         FulfillsITSHitRequirements(track.itsClusterMap()) &&
-        (mCheckMaxDcaXY && (abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY))) &&
-        (mCheckMaxDcaZ && (abs(track.dcaZ()) <= mMaxDcaZ))) {
+        (mCheckMaxDcaXY && (std::abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY))) &&
+        (mCheckMaxDcaZ && (std::abs(track.dcaZ()) <= mMaxDcaZ))) {
       this->mState = this->kACTIVE;
       return true;
     } else {
