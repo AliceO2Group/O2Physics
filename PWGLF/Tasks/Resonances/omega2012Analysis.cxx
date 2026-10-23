@@ -698,7 +698,7 @@ struct Omega2012Analysis {
     };
 
     const bool fillWrongSign = core.fillWrongSign();
-    auto onCandidate = [&](auto const& xi, auto const& pion, auto const& kaon, Xi1530KCandidateValues const& c) {
+    auto onCandidate = [&]([[maybe_unused]] auto const& xi, [[maybe_unused]] auto const& pion, [[maybe_unused]] auto const& kaon, Xi1530KCandidateValues const& c) {
       if (c.chargePattern != o2::analysis::omega2012ml::kSignalPattern) {
         // Charge-pattern controls: same event only, never in the signal histograms
         if constexpr (!IsMix) {

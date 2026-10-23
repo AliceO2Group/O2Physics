@@ -274,7 +274,7 @@ struct Omega2012TrainingTable {
       return -1;
     }
     const auto row = trackId - static_cast<int64_t>(mcTrackLabelsDf->offset());
-    if (row < 0 || row >= static_cast<int64_t>(mcTrackLabelsDf->size())) {
+    if (row < 0 || row >= mcTrackLabelsDf->size()) {
       return -1;
     }
     return mcTrackLabelsDf->rawIteratorAt(row).mcParticleId();
@@ -289,7 +289,7 @@ struct Omega2012TrainingTable {
     int64_t row = label;
     for (int step = 0; step <= MaxAncestorSteps; ++step) {
       const auto local = row - static_cast<int64_t>(mcParticlesDf->offset());
-      if (row < 0 || local < 0 || local >= static_cast<int64_t>(mcParticlesDf->size())) {
+      if (row < 0 || local < 0 || local >= mcParticlesDf->size()) {
         return;
       }
       const auto particle = mcParticlesDf->rawIteratorAt(local);
@@ -311,7 +311,7 @@ struct Omega2012TrainingTable {
     if (auto it = mlCascadeRows.find(id); it != mlCascadeRows.end()) {
       return it->second;
     }
-    const auto indices = xi.cascadeIndices();
+    const auto& indices = xi.cascadeIndices();
     const std::array<int, 3> daughterIds{indices[0], indices[1], indices[2]};
     mlCascades(mlEventRow, id, xi.px(), xi.py(), xi.pz(), static_cast<int8_t>(xi.sign()), xi.mXi(), xi.mLambda(),
                xi.v0CosPA(), xi.cascCosPA(), xi.daughDCA(), xi.cascDaughDCA(),
@@ -344,7 +344,7 @@ struct Omega2012TrainingTable {
     if (auto it = mlV0Rows.find(id); it != mlV0Rows.end()) {
       return it->second;
     }
-    const auto indices = v0.indices();
+    const auto& indices = v0.indices();
     const std::array<int, 2> daughterIds{indices[0], indices[1]};
     mlV0s(mlEventRow, id, v0.px(), v0.py(), v0.pz(), v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(),
           v0.v0CosPA(), v0.daughDCA(), v0.dcapostopv(), v0.dcanegtopv(), v0.dcav0topv(), v0.transRadius(),
@@ -557,14 +557,14 @@ struct Omega2012TrainingTable {
   {
     mlAncestryRows.clear();
     const auto offset = static_cast<int64_t>(mcParticles.offset());
-    const auto nRows = static_cast<int64_t>(mcParticles.size());
+    const auto nRows = mcParticles.size();
     std::unordered_set<int64_t> treeRows;
     std::vector<std::pair<int64_t, int>> stack;
     for (const auto& parent : mcParticles) {
       if (std::abs(parent.pdgCode()) != o2::constants::physics::Pdg::kOmega2012Minus) {
         continue;
       }
-      stack.assign(1, {static_cast<int64_t>(parent.globalIndex()), 0});
+      stack.assign(1, {parent.globalIndex(), 0});
       while (!stack.empty()) {
         const auto [row, depth] = stack.back();
         stack.pop_back();
