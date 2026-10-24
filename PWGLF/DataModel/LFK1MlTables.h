@@ -63,14 +63,15 @@ DECLARE_SOA_COLUMN(K1Charge, k1Charge, int8_t);
 // 16 = candidate cuts.
 // Candidates written at the "selected" export stage carry 31.
 DECLARE_SOA_COLUMN(K1BaselinePassBits, k1BaselinePassBits, uint16_t);
+// NOLINTNEXTLINE(modernize-avoid-c-arrays) -- persistent fixed-size AOD column
 DECLARE_SOA_COLUMN(K1MasterFeatures, k1MasterFeatures, float[125]); //! 125 master features of the K1 ML feature contract (PWGLF/Core/K1MlFeatures.h)
 DECLARE_SOA_COLUMN(K1FeatureStatus, k1FeatureStatus, uint8_t);      //! o2::analysis::k1ml::BuildStatus; only Ok (0) rows are written
 DECLARE_SOA_COLUMN(K1TruthStatus, k1TruthStatus, uint8_t);          //! 0 data, 1 matched, 2 unmatched
 DECLARE_SOA_COLUMN(K1TruthChannel, k1TruthChannel, uint8_t);        //! 0 none, 1 rho K, 2 K* pi
 DECLARE_SOA_COLUMN(K1MotherPdg, k1MotherPdg, int32_t);
 DECLARE_SOA_COLUMN(K1MotherId, k1MotherId, int64_t);
-DECLARE_SOA_COLUMN(K1GeneratedPt, k1GeneratedPt, float); //! NaN in K1MlTruth: not filled for reconstructed candidates
-DECLARE_SOA_COLUMN(K1GeneratedY, k1GeneratedY, float);   //! NaN in K1MlTruth: not filled for reconstructed candidates
+DECLARE_SOA_COLUMN(K1GeneratedPt, k1GeneratedPt, float); //! Parent-table pT for a validated reconstructed MC match; NaN otherwise
+DECLARE_SOA_COLUMN(K1GeneratedY, k1GeneratedY, float);   //! Parent-table y for a validated reconstructed MC match; NaN otherwise
 DECLARE_SOA_COLUMN(K1OriginalMcParticleId, k1OriginalMcParticleId, int64_t);
 DECLARE_SOA_COLUMN(K1DaughterPdg1, k1DaughterPdg1, int32_t);
 DECLARE_SOA_COLUMN(K1DaughterPdg2, k1DaughterPdg2, int32_t);

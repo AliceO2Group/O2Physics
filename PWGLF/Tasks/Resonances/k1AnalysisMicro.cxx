@@ -52,6 +52,7 @@ struct HistogramOptions : ConfigurableGroup {
   Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
   Configurable<bool> additionalQAplots{"additionalQAplots", true, "Additional QA plots"};
   Configurable<int> cfgTruthDebug{"cfgTruthDebug", 0, "Maximum logged matched candidates per truth channel"};
+  Configurable<bool> cUseTruthRapidity{"cUseTruthRapidity", true, "Require generated K1 rapidity in the configured window for MC efficiency numerators"};
 };
 
 enum BinAnti : unsigned int {
@@ -231,12 +232,15 @@ struct K1AnalysisMicro {
       AxisSpec channelAxis = {3, -0.5, 2.5, "0: non-K1, 1: rho K, 2: K* pi"};
       histos.add("MCReco/collisions", "Selected reconstructed MC collisions", HistType::kTH1D, {{1, 0, 1}});
       histos.add("MCReco/microTracks", "Input micro tracks in selected MC collisions", HistType::kTH1D, {{1, 0, 1}});
-      histos.add("MCReco/channel", "All selected pi-pi-K combinations by truth channel", HistType::kTH1D, {channelAxis});
+      // These channel and pT histograms are pre-truth-fiducial QA; MCReco/response is the validated numerator.
+      histos.add("MCReco/channel", "Pre-truth-fiducial QA: selected pi-pi-K combinations by truth channel", HistType::kTH1D, {channelAxis});
       histos.add("MCReco/mass", "Reconstructed mass by truth channel", HistType::kTH2D, {channelAxis, invMassAxisReso});
-      histos.add("MCReco/pt", "Reconstructed pT by truth channel", HistType::kTH2D, {channelAxis, ptAxis});
+      histos.add("MCReco/pt", "Pre-truth-fiducial QA: reconstructed pT by truth channel", HistType::kTH2D, {channelAxis, ptAxis});
       histos.add("MCReco/piPiMass", "pi-pi mass by truth channel", HistType::kTH2D, {channelAxis, invMassAxisRho});
       histos.add("MCReco/pi1KMass", "First pion-kaon mass by truth channel", HistType::kTH2D, {channelAxis, invMassAxisK892});
       histos.add("MCReco/pi2KMass", "Second pion-kaon mass by truth channel", HistType::kTH2D, {channelAxis, invMassAxisK892});
+      histos.add("MCReco/response", "Selected MC candidates;reconstructed pT;generated pT;channel;charge;centrality", HistType::kTHnSparseD,
+                 {ptAxis, ptAxis, channelAxis, AxisSpec{2, -1.5, 1.5, "K1 charge"}, centAxis});
       histos.add("k1invmass_MC", "Invariant mass of K1(1270)", HistType::kTH1F, {invMassAxisReso});
       histos.add("k1invmass_MC_noK1", "Invariant mass of K1(1270)", HistType::kTH1F, {invMassAxisReso});
 
@@ -272,6 +276,8 @@ struct K1AnalysisMicro {
       AxisSpec channelAxis = {3, -0.5, 2.5, "0: other/unresolved, 1: rho K, 2: K* pi"};
       histos.add("MCGen/chargeChannel", "K1 parents in selected reconstructed events, inside the K1 rapidity window", HistType::kTH2D, {{2, -1.5, 1.5, "K1 charge"}, channelAxis});
       histos.add("MCGen/ptChannel", "Generated K1 pT by immediate decay channel", HistType::kTH2D, {channelAxis, ptAxis});
+      histos.add("MCGen/response", "Generated K1 parents;generated pT;channel;charge;centrality", HistType::kTHnSparseD,
+                 {ptAxis, channelAxis, AxisSpec{2, -1.5, 1.5, "K1 charge"}, centAxis});
     }
   }
 
@@ -380,7 +386,8 @@ struct K1AnalysisMicro {
   // (or one mixed pair of collisions). The selection itself is the shared K1 core.
   // dTracks1: bachelor kaons, dTracks2: pions.
   template <bool IsMC, bool IsMix, bool IsResoMicrotrack, typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
+  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2,
+                      const K1ParentTruthMap* parentTruth = nullptr)
   {
     const bool fillQA = !IsMix && histogramOptions.additionalQAplots;
     const auto multiplicity = collision.cent();
@@ -474,9 +481,17 @@ struct K1AnalysisMicro {
                pion1.motherPDG(), pion2.motherPDG(), kaon.motherPDG(),
                pion1.siblingIds()[0], pion1.siblingIds()[1], pion2.siblingIds()[0], pion2.siblingIds()[1], kaon.siblingIds()[0], kaon.siblingIds()[1]);
         }
-        typeK1 = kaon.sign() > 0 ? BinType::kK1P_Rec : BinType::kK1N_Rec;
-        histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, c.k1.Pt(), c.k1.M());
-        histos.fill(HIST("k1invmass_MC"), c.k1.M());
+        const int motherId = k1MotherId(channel, kaon, pion1, pion2);
+        const int charge = kaon.pdgCode() > 0 ? 1 : -1;
+        const auto* parent = parentTruth ? findK1ParentTruth(*parentTruth, motherId, channel, charge) : nullptr;
+        const bool truthRapidity = c.isUnlikeSign && parent && (!histogramOptions.cUseTruthRapidity || (parent->y >= candidateCuts.cK1MinRap && parent->y <= candidateCuts.cK1MaxRap));
+        if (truthRapidity) {
+          typeK1 = kaon.sign() > 0 ? BinType::kK1P_Rec : BinType::kK1N_Rec;
+          histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, c.k1.Pt(), c.k1.M());
+          histos.fill(HIST("k1invmass_MC"), c.k1.M());
+          const int parentCharge = parent->pdgCode > 0 ? 1 : -1;
+          histos.fill(HIST("MCReco/response"), c.k1.Pt(), parent->pt, channelBin, parentCharge, multiplicity);
+        }
         histos.fill(HIST("QAMC/K1OA"), c.angle);
         histos.fill(HIST("QAMC/K1PairAsym"), c.pairAsym);
         histos.fill(HIST("QAMC/hInvmassK892_Rho"), c.mass13, c.secondary.M());
@@ -515,17 +530,18 @@ struct K1AnalysisMicro {
   PROCESS_SWITCH(K1AnalysisMicro, processResoMicroTracks, "Process ResoMicroTracks", true);
 
   void processMC(ResoMCCols::iterator const& collision,
-                 ResoMCTracks const& resotracks)
+                 ResoMCTracks const& resotracks, ResoMCParents const& resoParents)
   {
     if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
       return;
     }
     histos.fill(HIST("MCReco/collisions"), 0.5);
-    fillHistograms<true, false, false>(collision, resotracks, resotracks);
+    const auto parentTruth = makeK1ParentTruthMap(resoParents);
+    fillHistograms<true, false, false>(collision, resotracks, resotracks, &parentTruth);
   }
   PROCESS_SWITCH(K1AnalysisMicro, processMC, "Process Event for MC", false);
 
-  void processMCMicro(ResoMCCols::iterator const& collision, ResoMCMicroTracks const& tracks)
+  void processMCMicro(ResoMCCols::iterator const& collision, ResoMCMicroTracks const& tracks, ResoMCParents const& resoParents)
   {
     // The modular producer already selected these reconstructed collisions.
     // Apply precisely the same reconstruction loop as the data baseline.
@@ -534,7 +550,8 @@ struct K1AnalysisMicro {
     }
     histos.fill(HIST("MCReco/collisions"), 0.5);
     histos.fill(HIST("MCReco/microTracks"), 0.5, tracks.size());
-    fillHistograms<true, false, true>(collision, tracks, tracks);
+    const auto parentTruth = makeK1ParentTruthMap(resoParents);
+    fillHistograms<true, false, true>(collision, tracks, tracks, &parentTruth);
   }
   PROCESS_SWITCH(K1AnalysisMicro, processMCMicro, "Process reconstructed MC with micro v001 tables", false);
 
@@ -548,6 +565,9 @@ struct K1AnalysisMicro {
       const int charge = part.pdgCode() > 0 ? 1 : -1;
       histos.fill(HIST("MCGen/chargeChannel"), charge, static_cast<int>(channel));
       histos.fill(HIST("MCGen/ptChannel"), static_cast<int>(channel), part.pt());
+      if (channel != K1TruthChannel::None) {
+        histos.fill(HIST("MCGen/response"), part.pt(), static_cast<int>(channel), charge, collision.cent());
+      }
     });
   }
   PROCESS_SWITCH(K1AnalysisMicro, processMCTrue, "Process generated K1 in selected events with v001 parents", false);
