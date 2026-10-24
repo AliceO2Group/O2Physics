@@ -213,6 +213,7 @@ struct AntinucleiInJets {
   TH1F* antideuteronsInsideJets = nullptr;
   TH1F* antideuteronsPerpCone = nullptr;
   TH1F* recoJetPtReweightingFactor = nullptr;
+  TH1F* genJetPtReweightingFactor = nullptr;
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -599,8 +600,9 @@ struct AntinucleiInJets {
 
     // Get reco jet pt reweighting histogram
     recoJetPtReweightingFactor = dynamic_cast<TH1F*>(list->FindObject("recoJetPtReweightingFactor"));
-    if (!recoJetPtReweightingFactor) {
-      LOGP(fatal, "Missing reco jet pt reweighting histograms in CCDB list");
+    genJetPtReweightingFactor = dynamic_cast<TH1F*>(list->FindObject("genJetPtReweightingFactor"));
+    if (!recoJetPtReweightingFactor || !genJetPtReweightingFactor) {
+      LOGP(fatal, "Missing one of jet pt reweighting histograms in CCDB list");
     }
 
     LOGP(info, "Successfully loaded reweighting histograms from CCDB path");
@@ -1918,6 +1920,16 @@ struct AntinucleiInJets {
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
 
+        // Get generated jet pt reweighting factor
+        double genJetPtWeight(1.0);
+        if (applyReweighting) {
+          double jetPt = jetMinusBkg.pt();
+          if (jetPt >= genJetPtReweightingFactor->GetXaxis()->GetXmin() && jetPt < genJetPtReweightingFactor->GetXaxis()->GetXmax()) {
+            int jetPtBin = genJetPtReweightingFactor->FindBin(jetPt);
+            genJetPtWeight = genJetPtReweightingFactor->GetBinContent(jetPtBin);
+          }
+        }
+
         // Fill jet pt distribution
         registryMC.fill(HIST("jetPtMCgenerated"), jetMinusBkg.pt());
 
@@ -1952,10 +1964,12 @@ struct AntinucleiInJets {
             registryMC.fill(HIST("antiproton_deltay_deltaphi_jet"), particle.eta() - jet.eta(), getDeltaPhi(particle.phi(), jet.phi()));
 
             // Calculate weight
-            double weightJet(1.0);
-            if (applyReweighting && particle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
-              int ipt = antiprotonsInsideJets->FindBin(particle.pt());
-              weightJet = antiprotonsInsideJets->GetBinContent(ipt);
+            double weightJet = genJetPtWeight;
+            if (applyReweighting) {
+              if (particle.pt() >= antiprotonsInsideJets->GetXaxis()->GetXmin() && particle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
+                int ipt = antiprotonsInsideJets->FindBin(particle.pt());
+                weightJet *= antiprotonsInsideJets->GetBinContent(ipt);
+              }
             }
 
             // Fill histogram for generated antiprotons
@@ -1974,10 +1988,12 @@ struct AntinucleiInJets {
 
           // Fill antideuteron spectra
           if (isAntid) {
-            double weightJetAntid(1.0);
-            if (applyReweighting && particle.pt() < antideuteronsInsideJets->GetXaxis()->GetXmax()) {
-              int ipt = antideuteronsInsideJets->FindBin(particle.pt());
-              weightJetAntid = antideuteronsInsideJets->GetBinContent(ipt);
+            double weightJetAntid = genJetPtWeight;
+            if (applyReweighting) {
+              if (particle.pt() >= antideuteronsInsideJets->GetXaxis()->GetXmin() && particle.pt() < antideuteronsInsideJets->GetXaxis()->GetXmax()) {
+                int ipt = antideuteronsInsideJets->FindBin(particle.pt());
+                weightJetAntid *= antideuteronsInsideJets->GetBinContent(ipt);
+              }
             }
 
             registryMC.fill(HIST("antideuteron_gen_jet"), particle.pt(), weightJetAntid);
@@ -2013,10 +2029,12 @@ struct AntinucleiInJets {
           registryMC.fill(HIST("antiproton_deltay_deltaphi_ue"), protonVec.Eta() - ueAxis2.Eta(), getDeltaPhi(protonVec.Phi(), ueAxis2.Phi()));
 
           // Calculate weight
-          double weightUe(1.0);
-          if (applyReweighting && protonVec.Pt() < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
-            int ipt = antiprotonsPerpCone->FindBin(protonVec.Pt());
-            weightUe = antiprotonsPerpCone->GetBinContent(ipt);
+          double weightUe = genJetPtWeight;
+          if (applyReweighting) {
+            if (protonVec.Pt() >= antiprotonsPerpCone->GetXaxis()->GetXmin() && protonVec.Pt() < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsPerpCone->FindBin(protonVec.Pt());
+              weightUe *= antiprotonsPerpCone->GetBinContent(ipt);
+            }
           }
 
           // Fill histogram for antiprotons in the UE
@@ -2049,10 +2067,12 @@ struct AntinucleiInJets {
             continue;
 
           // Calculate weight
-          double weightUeAntid(1.0);
-          if (applyReweighting && deuteronVec.Pt() < antideuteronsPerpCone->GetXaxis()->GetXmax()) {
-            int ipt = antideuteronsPerpCone->FindBin(deuteronVec.Pt());
-            weightUeAntid = antideuteronsPerpCone->GetBinContent(ipt);
+          double weightUeAntid = genJetPtWeight;
+          if (applyReweighting) {
+            if (deuteronVec.Pt() >= antideuteronsPerpCone->GetXaxis()->GetXmin() && deuteronVec.Pt() < antideuteronsPerpCone->GetXaxis()->GetXmax()) {
+              int ipt = antideuteronsPerpCone->FindBin(deuteronVec.Pt());
+              weightUeAntid *= antideuteronsPerpCone->GetBinContent(ipt);
+            }
           }
 
           // Fill histogram for antideuterons in the UE
