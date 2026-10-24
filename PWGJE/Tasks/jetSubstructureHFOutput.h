@@ -139,8 +139,8 @@ struct JetSubstructureHFOutputTask {
 
   void init(o2::framework::InitContext const&)
   {
-    jetRadiiValues = (std::vector<double>)configs.jetRadii;
-    recoilJetRadiiValues = (std::vector<double>)configs.recoilJetRadii;
+    jetRadiiValues = configs.jetRadii.value;
+    recoilJetRadiiValues = configs.recoilJetRadii.value;
   }
 
   struct : o2::framework::PresliceGroup {

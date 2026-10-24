@@ -152,8 +152,8 @@ struct HadronPhotonCorrelation {
     AxisSpec axisEtaAssoc = {etaBinsAssoc, -etaMaxAssoc, etaMaxAssoc, "#eta"};                                                  // Axis for eta distribution
     AxisSpec axisDeltaEta = {etaBinsTrig + etaBinsAssoc, -(etaMaxTrig + etaMaxAssoc), etaMaxTrig + etaMaxAssoc, "#Delta #eta"}; // Axis for Delta eta in correlations
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     // Generated histograms
     registry.add("generated/events/hEventStats", "Event statistics", kTH1F, {axisEventStats});
@@ -298,10 +298,10 @@ struct HadronPhotonCorrelation {
   bool isHardQCDgg2gg(const P& particles)
   {
     for (const auto& particle : particles) {
-      if (std::abs(particle.getGenStatusCode()) == pythiaCodeIncomingHard && (PDG_t)std::abs(particle.pdgCode()) != kGluon) {
+      if (std::abs(particle.getGenStatusCode()) == pythiaCodeIncomingHard && std::abs(particle.pdgCode()) != kGluon) {
         return false;
       }
-      if (std::abs(particle.getGenStatusCode()) == pythiaCodeOutgoingHard && (PDG_t)std::abs(particle.pdgCode()) != kGluon) {
+      if (std::abs(particle.getGenStatusCode()) == pythiaCodeOutgoingHard && std::abs(particle.pdgCode()) != kGluon) {
         return false;
       }
     }
@@ -396,7 +396,7 @@ struct HadronPhotonCorrelation {
       return false;
     }
 
-    if ((PDG_t)std::abs(particle->GetPdgCode()) != kGamma) {
+    if (std::abs(particle->GetPdgCode()) != kGamma) {
       return false;
     }
 
@@ -712,7 +712,7 @@ struct HadronPhotonCorrelation {
       if (!initParticle(track_assoc, false)) {
         continue;
       }
-      if ((PDG_t)std::abs(track_assoc.pdgCode()) != kGamma) {
+      if (std::abs(track_assoc.pdgCode()) != kGamma) {
         continue;
       }
       if (!track_assoc.isPhysicalPrimary() && track_assoc.getGenStatusCode() < 0) {
@@ -722,7 +722,7 @@ struct HadronPhotonCorrelation {
       // Iterate through mother particles until original mother is reached
       auto origPhoton = track_assoc;
       auto mother = track_assoc.mothers_as<JetParticles>().at(0);
-      while ((PDG_t)mother.pdgCode() == kGamma) {
+      while (mother.pdgCode() == kGamma) {
         origPhoton = mother;
         mother = mother.mothers_as<JetParticles>().at(0);
       }
@@ -968,7 +968,7 @@ struct HadronPhotonCorrelation {
       if (!initParticle(track_assoc)) {
         continue;
       }
-      if ((PDG_t)std::abs(track_assoc.pdgCode()) != kPiPlus) {
+      if (std::abs(track_assoc.pdgCode()) != kPiPlus) {
         continue;
       }
 
@@ -1050,7 +1050,7 @@ struct HadronPhotonCorrelation {
       if (!initTrack(track_assoc)) {
         continue;
       }
-      if ((PDG_t)std::abs(track_assoc.mcParticle().pdgCode()) != kPiPlus) {
+      if (std::abs(track_assoc.mcParticle().pdgCode()) != kPiPlus) {
         continue;
       }
 
@@ -1101,7 +1101,7 @@ struct HadronPhotonCorrelation {
       if (pdgParticle->Charge() != 0.) {
         continue;
       } // remove charged particles
-      if (std::abs(track_assoc.pdgCode()) < pidCodeHadronCut || (PDG_t)track_assoc.pdgCode() == kNeutron) {
+      if (std::abs(track_assoc.pdgCode()) < pidCodeHadronCut || track_assoc.pdgCode() == kNeutron) {
         continue;
       } // remove non-hadrons and neutrons
 
@@ -1121,7 +1121,7 @@ struct HadronPhotonCorrelation {
       }
 
       for (const auto& daughter : daughters) {
-        if ((PDG_t)std::abs(daughter.pdgCode()) != kGamma) {
+        if (std::abs(daughter.pdgCode()) != kGamma) {
           continue;
         }
         if (!daughter.isPhysicalPrimary() && daughter.getGenStatusCode() == -1) {
