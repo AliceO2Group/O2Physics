@@ -615,7 +615,7 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
           .z = it->value["z"].GetDouble()};
       }
     } else {
-      LOG(error) << "JSON parse error: " << rapidjson::GetParseErrorFunc(jsonOk.Code()) << " (" << jsonOk.Offset() << ")";
+      LOG(error) << "JSON parse error: " << rapidjson::GetParseErrorFunc(jsonOk.Code()) << " (" << jsonOk.Offset() << ")"; // NOLINT(google-readability-casting)
     }
 
     // two-prong track fitter setup

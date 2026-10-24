@@ -187,7 +187,7 @@ struct tableMakerMuonMchTrkEfficiency {
 
     // define axes to be used
     // and the correspondent histograms
-    auto vbins = (std::vector<double>)binsMuonPt;
+    auto vbins = std::vector<double>(binsMuonPt);
     const AxisSpec axisEta{190, 2.3, 4.2, "|#eta|"};
     const AxisSpec axisEtaRed{nEtaBins, etaMuonMin, etaMuonMax, "|#eta|"};
     const AxisSpec axisEtaGenRed{nEtaBins, etaMuonMin, etaMuonMax, "|#eta| Gen"};
