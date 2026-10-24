@@ -1074,9 +1074,9 @@ struct Kstarqa {
   // Filter posZFilter = (nabs(o2::aod::collision::posZ) < configGp.cutzvertex);
 
   // Filter acceptanceFilter = (nabs(aod::track::eta) < configGp.cfgCutEtaMax && nabs(aod::track::pt) > configGp.cfgCutPT) && (nabs(aod::track::eta) > configGp.cfgCutEtaMin);
-  Filter acceptanceFilter = (nabs(aod::track::eta) < configGp.cfgCutEtaMax && nabs(aod::track::pt) > configGp.cfgCutPT);
+  // Filter acceptanceFilter = (nabs(aod::track::eta) < configGp.cfgCutEtaMax && nabs(aod::track::pt) > configGp.cfgCutPT);
   // Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < configGp.cfgCutDCAxyMax) && (nabs(aod::track::dcaZ) < configGp.cfgCutDCAz) && (nabs(aod::track::dcaXY) > configGp.cfgCutDCAxyMin);
-  Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < configGp.cfgCutDCAxyMax) && (nabs(aod::track::dcaZ) < configGp.cfgCutDCAz);
+  // Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < configGp.cfgCutDCAxyMax) && (nabs(aod::track::dcaZ) < configGp.cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::PVMults>>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
   using EventCandidatesMix = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>>;            // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
