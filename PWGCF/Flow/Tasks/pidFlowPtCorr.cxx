@@ -53,10 +53,9 @@
 #include <TObjArray.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
+#include <TProfile2D.h>
 #include <TRandom3.h>
 #include <TString.h>
-
-#include <sys/types.h>
 
 #include <algorithm>
 #include <array>
@@ -219,8 +218,8 @@ struct PidFlowPtCorr {
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutChi2prTPCcls{"cfgCutChi2prTPCcls", 2.5, "Chi2 per TPC clusters"};
-  Configurable<int> cfgDeltaPhiLocDen{"cfgDeltaPhiLocDen", 3, "Number of delta phi for local density, 200 bins in 2 pi"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A; 4:NTPV; 5:NGlobal; 6:MFT"};
+  Configurable<bool> cfgUseMultiplicity{"cfgUseMultiplicity", false, "Use raw PV-contributor count in |eta| < 0.8 instead of centrality for output axes and NUE lookup; configure axisMultiplicity and disable cfgDoMultPVCut"};
 
   struct : ConfigurableGroup {
     std::string prefix = "trkQualityOpts";
@@ -269,8 +268,6 @@ struct PidFlowPtCorr {
     Configurable<std::string> cfgDCAxy{"cfgDCAxy", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
   } dcaCutOpts;
 
-  Configurable<std::vector<float>> cfgNSigmapid{"cfgNSigmapid", (std::vector<float>{3, 3, 3, 9, 9, 9, 9, 9, 9}), "tpc, tof and its NSigma for Pion Proton Kaon"};
-
   struct : ConfigurableGroup {
     std::string prefix = "correctionPathOpts";
     Configurable<std::vector<std::string>> cfgAcceptancePath{"cfgAcceptancePath", (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object"};
@@ -287,14 +284,13 @@ struct PidFlowPtCorr {
   // switch
   struct : ConfigurableGroup {
     std::string prefix = "switchsOpts";
-    Configurable<bool> cfgDoLocDenCorr{"cfgDoLocDenCorr", false, "do local density corr"};
     Configurable<bool> cfgOutputrunbyrun{"cfgOutputrunbyrun", false, "OPEN IF USE FUNCTION(fillcorrectiongraph) Fill and output NUA weights run by run"};
     Configurable<bool> cfgOutPutMC{"cfgOutPutMC", false, "Fill MC graphs, note that if the processMCgen is open,this MUST be open"};
     Configurable<bool> cfgOutputQA{"cfgOutputQA", false, "OPEN IF USE FUNCTION(detectorPidQa) do QA"};
     Configurable<bool> cfgDebugMyCode{"cfgDebugMyCode", false, "output some graph for code debug"};
     Configurable<bool> cfgOutPutPtSpectra{"cfgOutPutPtSpectra", false, "output pt spectra for data, MC and RECO"};
     Configurable<bool> cfgCheck2MethodDiff{"cfgCheck2MethodDiff", false, "check difference between v2' && v2''"};
-    Configurable<int> cfgClosureTest{"cfgClosureTest", 0, "choose (val) percent particle from charged to pass Pion PID selection"};
+    Configurable<int> cfgClosureTest{"cfgClosureTest", 0, "Nonzero enables extra pion mean-pT weight QA profiles"};
     Configurable<bool> cfgOutPutMC1D{"cfgOutPutMC1D", true, "Fill MC graphs, note that if the processMCgen is open,this MUST be open"};
     Configurable<bool> cfgAddPidResponseMatrixHistograms{"cfgAddPidResponseMatrixHistograms", false, "Add PID response matrix histograms; enable together with processPidResponseMatrix"};
     Configurable<bool> cfgAddC22DeltaPtHistograms{"cfgAddC22DeltaPtHistograms", false, "Add histograms for processDataC22DeltaPt; enable together with processDataC22DeltaPt"};
@@ -313,37 +309,17 @@ struct PidFlowPtCorr {
     Configurable<bool> cfgUseNUAWithPt{"cfgUseNUAWithPt", false, "false: use original GFWWeights (phi,eta,vz) NUA; true: use THnSparse (phi,eta,vz,pt) NUA loaded from cfgAcceptancePathWithPt"};
   } switchsOpts;
 
-  /**
-   * @brief cfg for PID pt range
-   * @details default datas are from run2, note that separate pi-k and k-p needs to use difference pt range
-   */
-  // separate pi and k
+  // TOF momentum ranges used by circle PID.
   struct : ConfigurableGroup {
     std::string prefix = "pidPtRangeOpts";
-    Configurable<float> cfgPtMin4ITSPiKa{"cfgPtMin4ITSPiKa", 0.2, "pt min for ITS to separate pi and k"};
-    Configurable<float> cfgPtMax4ITSPiKa{"cfgPtMax4ITSPiKa", 0.8, "pt max for ITS to separate pi and k"};
     Configurable<float> cfgPtMin4TOFPiKa{"cfgPtMin4TOFPiKa", 0.5, "pt min for TOF to separate pi and k"};
     Configurable<float> cfgPtMax4TOFPiKa{"cfgPtMax4TOFPiKa", 3.0, "pt max for TOF to separate pi and k"};
-    Configurable<float> cfgPtMin4TPCPiKa{"cfgPtMin4TPCPiKa", 0.2, "pt min for TPC to separate pi and k"};
-    Configurable<float> cfgPtMax4TPCPiKa{"cfgPtMax4TPCPiKa", 0.6, "pt max for TPC to separate pi and k"};
-    // end separate pi and k
-
-    // separate k-p
-    Configurable<float> cfgPtMin4ITSKaPr{"cfgPtMin4ITSKaPr", 0.4, "pt min for ITS to separate k and p"};
-    Configurable<float> cfgPtMax4ITSKaPr{"cfgPtMax4ITSKaPr", 1.4, "pt max for ITS to separate k and p"};
     Configurable<float> cfgPtMin4TOFKaPr{"cfgPtMin4TOFKaPr", 0.6, "pt min for TOF to separate k and p"};
     Configurable<float> cfgPtMax4TOFKaPr{"cfgPtMax4TOFKaPr", 3.0, "pt max for TOF to separate k and p"};
-    Configurable<float> cfgPtMin4TPCKaPr{"cfgPtMin4TPCKaPr", 0.2, "pt min for TPC to separate k and p"};
-    Configurable<float> cfgPtMax4TPCKaPr{"cfgPtMax4TPCKaPr", 1.0, "pt max for TPC to separate k and p"};
   } pidPtRangeOpts;
-  // end separate k-p
-  // end cfg for PID pt range
 
   struct : ConfigurableGroup {
     std::string prefix = "circleCutOpts";
-    // Switch to enable/disable circular cut PID
-    Configurable<bool> cfgUseCircleCutPID{"cfgUseCircleCutPID", true, "Enable circular cut PID method"};
-
     // TOF pT threshold: above this pt, TOF signal is required
     Configurable<float> cfgCircleCutTofPtCut{"cfgCircleCutTofPtCut", 0.5, "TOF pT threshold for requiring TOF signal"};
 
@@ -352,11 +328,18 @@ struct PidFlowPtCorr {
     Configurable<float> cfgCircleCutSigmaKa{"cfgCircleCutSigmaKa", 4.0, "Circular cut radius squared for Kaon (TPC+TOF)"};
     Configurable<float> cfgCircleCutSigmaPr{"cfgCircleCutSigmaPr", 4.0, "Circular cut radius squared for Proton (TPC+TOF)"};
 
-    // TPC-only fallback cut values (|nsigma| < cut)
-    Configurable<float> cfgCircleCutTPCPi{"cfgCircleCutTPCPi", 2.0, "TPC-only nsigma cut for Pion"};
-    Configurable<float> cfgCircleCutTPCKa{"cfgCircleCutTPCKa", 2.0, "TPC-only nsigma cut for Kaon"};
-    Configurable<float> cfgCircleCutTPCPr{"cfgCircleCutTPCPr", 2.0, "TPC-only nsigma cut for Proton"};
+    // TPC fallback cuts, combined with ITS below cfgCircleCutITSPtMax.
+    Configurable<float> cfgCircleCutTPCPi{"cfgCircleCutTPCPi", 2.0, "TPC fallback nsigma cut for Pion"};
+    Configurable<float> cfgCircleCutTPCKa{"cfgCircleCutTPCKa", 2.0, "TPC fallback nsigma cut for Kaon"};
+    Configurable<float> cfgCircleCutTPCPr{"cfgCircleCutTPCPr", 2.0, "TPC fallback nsigma cut for Proton"};
+    Configurable<float> cfgCircleCutITSPtMax{"cfgCircleCutITSPtMax", 0.5, "Require ITS PID below this pT (GeV/c); 0 disables"};
+    Configurable<float> cfgCircleCutITSPi{"cfgCircleCutITSPi", 2.0, "Low-pT ITS absolute nsigma cut for Pion"};
+    Configurable<float> cfgCircleCutITSKa{"cfgCircleCutITSKa", 2.0, "Low-pT ITS absolute nsigma cut for Kaon"};
+    Configurable<float> cfgCircleCutITSPr{"cfgCircleCutITSPr", 2.0, "Low-pT ITS absolute nsigma cut for Proton"};
   } circleCutOpts;
+
+  Configurable<std::string> cfgTPCPIDClustersMinFunction{"cfgTPCPIDClustersMinFunction", "0", "Minimum TPC PID clusters as a ROOT formula; x = tpcNClsFound(), numeric coefficients, 0 imposes no lower bound"};
+  std::unique_ptr<TF1> fTPCPIDClustersMin;
 
   struct : ConfigurableGroup {
     std::string prefix = "particleAbundanceOpts";
@@ -375,22 +358,22 @@ struct PidFlowPtCorr {
   ConfigurableAxis cfgaxisTPCDedx{"cfgaxisTPCDedx", {500, 0.0f, 1000.0f}, "d#it{E}/d#it{x} axis for detector-PID QA"};
   ConfigurableAxis cfgaxisTOFDelta{"cfgaxisTOFDelta", {200, -1000.0f, 1000.0f}, "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} axis for detector-PID QA"};
   ConfigurableAxis cfgaxisTOFTime{"cfgaxisTOFTime", {10000, 0.0f, 2.0e6f}, "TOF #it{t} - #it{t}_{ev} (ps) axis for detector-PID QA"};
+  ConfigurableAxis cfgaxisTPCPIDClusters{"cfgaxisTPCPIDClusters", {201, -0.5, 200.5}, "TPC clusters used for PID"};
+  ConfigurableAxis cfgaxisPIDNSigma{"cfgaxisPIDNSigma", {240, -12., 12.}, "Signed TPC n-sigma axis for PID-quality QA"};
+  ConfigurableAxis cfgaxisPIDMomentum{"cfgaxisPIDMomentum", {1000, 0., 10.}, "Total momentum for ITS cluster-size QA (GeV/c)"};
+  ConfigurableAxis cfgaxisITSNSigma{"cfgaxisITSNSigma", {161, -12.075, 12.075}, "Signed ITS n-sigma; zero at bin center"};
+  ConfigurableAxis cfgaxisITSPt{"cfgaxisITSPt", {300, 0., 3.}, "Fine pT axis for ITS response QA (GeV/c)"};
+  ConfigurableAxis cfgaxisITSClusterSize{"cfgaxisITSClusterSize", {101, -0.075, 15.075}, "Truncated mean ITS cluster size divided by cosh(eta)"};
   ConfigurableAxis cfgaxisMeanPt{"cfgaxisMeanPt", {300, 0, 3}, "pt (GeV)"};
   ConfigurableAxis cfgaxisNch{"cfgaxisNch", {3000, 0.5, 3000.5}, "Nch"};
-  ConfigurableAxis cfgaxisLocalDensity{"cfgaxisLocalDensity", {200, 0, 600}, "local density"};
   ConfigurableAxis cfgaxisRun{"cfgaxisRun", {7, 0, 7}, "axis of runs in the data"};
-  Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
-  Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
-  Configurable<std::vector<double>> cfgTrackDensityV2P{"cfgTrackDensityV2P", std::vector<double>{0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10}, "parameter of v2(cent) for track density efficiency correction"};
-  Configurable<std::vector<double>> cfgTrackDensityV3P{"cfgTrackDensityV3P", std::vector<double>{0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09}, "parameter of v2(cent) for track density efficiency correction"};
-  Configurable<std::vector<double>> cfgTrackDensityV4P{"cfgTrackDensityV4P", std::vector<double>{0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10}, "parameter of v2(cent) for track density efficiency correction"};
 
   struct : ConfigurableGroup {
     std::string prefix = "meanptC22GraphOpts";
     ConfigurableAxis cfgaxisBootstrap{"cfgaxisBootstrap", {30, 0, 30}, "cfgaxisBootstrap"};
   } meanptC22GraphOpts;
 
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 80, 90}, "Centrality (%)"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 80, 90}, "Centrality (%) or raw PV multiplicity when cfgUseMultiplicity is enabled"};
 
   // configurable
 
@@ -451,7 +434,6 @@ struct PidFlowPtCorr {
   std::vector<std::string> cfgAcceptanceWithPt;
 
   std::vector<float> cfgMultPVCutPara;
-  std::vector<float> cfgNSigma;
   std::vector<int> runNumbers;
 
   enum MyParticleType {
@@ -541,34 +523,199 @@ struct PidFlowPtCorr {
   TF1* fT0AV0AMean = nullptr;
   TF1* fT0AV0ASigma = nullptr;
 
-  // Declare the pt, mult and phi Axis;
-
-  std::vector<TF1*> funcEff;
-  TH1D* hFindPtBin = nullptr;
-  TF1* funcV2 = nullptr;
-  TF1* funcV3 = nullptr;
-  TF1* funcV4 = nullptr;
-
-  // hists for QA runbyrun
-  struct qaHist {
-    TH1* hPhiRunByRunBefore = nullptr;
-    TH1* hPhiRunByRunAfter = nullptr;
-
-    TH2* hITSnclsVsPhi = nullptr;
-    TH2* hITSChi2VsPhi = nullptr;
-
-    qaHist(TH1* hPhiRunByRunBefore, TH1* hPhiRunByRunAfter, TH2* hITSnclsVsPhi, TH2* hITSChi2VsPhi)
-      : hPhiRunByRunBefore(hPhiRunByRunBefore), hPhiRunByRunAfter(hPhiRunByRunAfter), hITSnclsVsPhi(hITSnclsVsPhi), hITSChi2VsPhi(hITSChi2VsPhi)
-    {
-    }
+  // Index order is pion, kaon, proton; stage 0 is before PID, stage 1 is
+  // after the current unique PID assignment. The registry owns the objects.
+  struct PidQualityQAHists {
+    std::array<TH2*, 2> tpcPIDClustersVsPt{};
+    std::array<THnSparse*, 2> tpcNSigmaVsPIDClusters{};
+    std::array<TH2*, 2> itsNSigmaVsPt{};
+    std::array<THnSparse*, 2> tpcVsITSNSigma{};
+    TH2* itsClusterSizeVsP = nullptr;
+    TH2* itsClusterSizeVsPt = nullptr;
+    TProfile* meanITSClusterSizeVsP = nullptr;
+    TProfile* meanITSClusterSizeVsPt = nullptr;
   };
-  std::vector<qaHist> qaHistVector;
-  // end hists for QA runbyrun
+  std::array<PidQualityQAHists, 3> pidQualityQAHists{};
+
+  const char* getActivityAxisTitle() const
+  {
+    return cfgUseMultiplicity.value ? "N_{tracks}^{PV} (|#eta| < 0.8)" : "Centrality (%)";
+  }
+
+  void initPidQualityQA()
+  {
+    const AxisSpec ptAxis{cfgaxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec itsPtAxis{cfgaxisITSPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec etaAxis{cfgaxisEta, "#eta"};
+    const AxisSpec pAxis{cfgaxisPIDMomentum, "#it{p} (GeV/#it{c})"};
+    const AxisSpec centAxis{axisMultiplicity, getActivityAxisTitle()};
+    const AxisSpec clusterAxis{cfgaxisTPCPIDClusters, "TPC clusters used for PID"};
+    const AxisSpec foundClusterAxis{cfgaxisTPCPIDClusters, "TPC found clusters"};
+    const AxisSpec tpcNSigmaAxis{cfgaxisPIDNSigma, "n#sigma_{TPC}"};
+    const AxisSpec itsNSigmaAxis{cfgaxisITSNSigma, "n#sigma_{ITS}"};
+    const AxisSpec itsSizeAxis{cfgaxisITSClusterSize, "#LTITS cluster size#GT_{trunc}/cosh(#eta)"};
+    registry.add("DetectorPidQA/PIDQuality/tpcPIDClustersAll", "Before PID;#it{p}_{T} (GeV/#it{c});TPC clusters used for PID", {HistType::kTH2F, {ptAxis, clusterAxis}});
+    registry.add("DetectorPidQA/PIDQuality/tpcPIDClustersUnidentified", "PID failed or ambiguous;#it{p}_{T} (GeV/#it{c});TPC clusters used for PID", {HistType::kTH2F, {ptAxis, clusterAxis}});
+    registry.add("DetectorPidQA/PIDQuality/tpcPIDClustersVsFound", "Before PID;TPC found clusters;TPC clusters used for PID", {HistType::kTH2F, {foundClusterAxis, clusterAxis}});
+    registry.add("DetectorPidQA/PIDQuality/itsClusterSizeAll", "Before PID;#it{p} (GeV/#it{c});#LTITS cluster size#GT_{trunc}/cosh(#eta)", {HistType::kTH2F, {pAxis, itsSizeAxis}});
+    registry.add("DetectorPidQA/PIDQuality/itsClusterSizeAllVsPt", "Before PID;#it{p}_{T} (GeV/#it{c});#LTITS cluster size#GT_{trunc}/cosh(#eta)", {HistType::kTH2F, {itsPtAxis, itsSizeAxis}});
+    registry.add("DetectorPidQA/PIDQuality/itsClusterSizeVsPEta", "Before PID: ITS response versus momentum and eta", {HistType::kTHnSparseF, {pAxis, etaAxis, itsSizeAxis}});
+    registry.add("DetectorPidQA/PIDQuality/itsResponseStatus", "ITS QA validity;status;tracks", {HistType::kTH1D, {{4, 0., 4.}}});
+    auto* statusAxis = registry.get<TH1>(HIST("DetectorPidQA/PIDQuality/itsResponseStatus"))->GetXaxis();
+    statusAxis->SetBinLabel(1, "Fewer than 2 cluster sizes");
+    statusAxis->SetBinLabel(2, "Invalid momentum or eta");
+    statusAxis->SetBinLabel(3, "Nonfinite ITS response");
+    statusAxis->SetBinLabel(4, "All ITS hypotheses finite");
+
+    constexpr std::array<const char*, 3> species{"Pi", "Ka", "Pr"};
+    constexpr std::array<const char*, 2> stages{"BeforePID", "AfterPID"};
+    std::array<TProfile*, 3> expectedITSResponse{};
+    for (std::size_t i = 0; i < species.size(); ++i) {
+      auto& h = pidQualityQAHists[i];
+      for (std::size_t stage = 0; stage < stages.size(); ++stage) {
+        const std::string path = std::string("DetectorPidQA/PIDQuality/") + stages[stage] + "/" + species[i] + "/";
+        h.tpcPIDClustersVsPt[stage] = registry.add<TH2>(path + "tpcPIDClustersVsPt", "TPC PID cluster count", HistType::kTH2F, {ptAxis, clusterAxis}).get();
+        h.tpcNSigmaVsPIDClusters[stage] = registry.add<THnSparse>(path + "tpcNSigmaVsPIDClusters", "TPC PID response versus PID cluster count", HistType::kTHnSparseF, {ptAxis, centAxis, clusterAxis, tpcNSigmaAxis}).get();
+        h.itsNSigmaVsPt[stage] = registry.add<TH2>(path + "itsNSigmaVsPt", "ITS response for this mass hypothesis", HistType::kTH2F, {itsPtAxis, itsNSigmaAxis}).get();
+        h.tpcVsITSNSigma[stage] = registry.add<THnSparse>(path + "tpcVsITSNSigma", "TPC versus ITS response for this mass hypothesis", HistType::kTHnSparseF, {ptAxis, centAxis, tpcNSigmaAxis, itsNSigmaAxis}).get();
+      }
+      const std::string path = std::string("DetectorPidQA/PIDQuality/AfterPID/") + species[i] + "/";
+      h.itsClusterSizeVsP = registry.add<TH2>(path + "itsClusterSizeVsP", "ITS cluster size after current PID", HistType::kTH2F, {pAxis, itsSizeAxis}).get();
+      h.itsClusterSizeVsPt = registry.add<TH2>(path + "itsClusterSizeVsPt", "ITS cluster size after current PID", HistType::kTH2F, {itsPtAxis, itsSizeAxis}).get();
+      h.meanITSClusterSizeVsP = registry.add<TProfile>(path + "meanITSClusterSizeVsP", "Measured mean ITS cluster size after current PID;#it{p} (GeV/#it{c});#LTITS signal#GT", HistType::kTProfile, {pAxis}).get();
+      h.meanITSClusterSizeVsPt = registry.add<TProfile>(path + "meanITSClusterSizeVsPt", "Measured mean ITS cluster size after current PID;#it{p}_{T} (GeV/#it{c});#LTITS signal#GT", HistType::kTProfile, {itsPtAxis}).get();
+      const std::string expectedPath = std::string("DetectorPidQA/PIDQuality/Expected/") + species[i] + "/itsClusterSizeVsP";
+      expectedITSResponse[i] = registry.add<TProfile>(expectedPath, "ITS expected mean (model, not measured data)", HistType::kTProfile, {pAxis}).get();
+    }
+    // Identical axes and response parameters preserve model values on merge.
+    // Entries count model samples per worker, not tracks; do not normalize.
+    // Sample bin centers; the response is defined only at positive momentum.
+    for (int bin = 1; bin <= expectedITSResponse[0]->GetNbinsX(); ++bin) {
+      const float p = expectedITSResponse[0]->GetXaxis()->GetBinCenter(bin);
+      if (p <= 0.f) {
+        continue;
+      }
+      const std::array<float, 3> expected{
+        o2::aod::ITSResponse::expSignal<o2::track::PID::Pion>(p),
+        o2::aod::ITSResponse::expSignal<o2::track::PID::Kaon>(p),
+        o2::aod::ITSResponse::expSignal<o2::track::PID::Proton>(p)};
+      for (std::size_t i = 0; i < expected.size(); ++i) {
+        if (std::isfinite(expected[i])) {
+          expectedITSResponse[i]->Fill(p, expected[i]);
+        }
+      }
+    }
+  }
+
+  template <typename TrackObject>
+  void fillPidQualityQA(TrackObject const& track, float cent, int pid)
+  {
+    // Called only by detectorPidQA, once per quality-selected track. All
+    // counts have unit weight; PID decisions come from getPidConfigurable.
+    const float pt = track.pt();
+    const int nPIDClusters = track.tpcNClsPID();
+    registry.fill(HIST("DetectorPidQA/PIDQuality/tpcPIDClustersAll"), pt, nPIDClusters);
+    registry.fill(HIST("DetectorPidQA/PIDQuality/tpcPIDClustersVsFound"), track.tpcNClsFound(), nPIDClusters);
+    if (pid < 0) {
+      registry.fill(HIST("DetectorPidQA/PIDQuality/tpcPIDClustersUnidentified"), pt, nPIDClusters);
+    }
+
+    constexpr std::array<int, 3> species{MyParticleType::kPion, MyParticleType::kKaon, MyParticleType::kProton};
+    const std::array<float, 3> tpcNSigma{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    for (std::size_t i = 0; i < species.size(); ++i) {
+      if (!isWithinPOIPtRange(species[i], pt)) {
+        continue;
+      }
+      for (std::size_t stage = 0; stage < 2; ++stage) {
+        if (stage == 1 && pid != species[i]) {
+          continue;
+        }
+        auto& h = pidQualityQAHists[i];
+        h.tpcPIDClustersVsPt[stage]->Fill(pt, nPIDClusters);
+        if (std::isfinite(tpcNSigma[i])) {
+          const double values[]{pt, cent, static_cast<double>(nPIDClusters), tpcNSigma[i]};
+          h.tpcNSigmaVsPIDClusters[stage]->Fill(values);
+        }
+      }
+    }
+
+    // averageClusterSize removes the largest cluster and divides by N-1.
+    const uint32_t clusterSizes = track.itsClusterSizes();
+    int nSizeLayers = 0;
+    for (int layer = 0; layer < 7; ++layer) {
+      nSizeLayers += ((clusterSizes >> (4 * layer)) & 0xf) != 0;
+    }
+    if (!track.hasITS() || nSizeLayers < 2) {
+      registry.fill(HIST("DetectorPidQA/PIDQuality/itsResponseStatus"), 0.5);
+      return;
+    }
+    const float momentum = track.p();
+    if (!std::isfinite(momentum) || momentum <= 0.f || !std::isfinite(track.eta())) {
+      registry.fill(HIST("DetectorPidQA/PIDQuality/itsResponseStatus"), 1.5);
+      return;
+    }
+    const float clusterSize = o2::aod::ITSResponse::averageClusterSize(clusterSizes) / std::cosh(track.eta());
+    // Reuse the response used by the low-pT ITS PID; do not change
+    // its global parameters or initialize a different data/MC response here.
+    const std::array<float, 3> itsNSigma{
+      o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Pion>(track),
+      o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Kaon>(track),
+      o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Proton>(track)};
+    const bool allFinite = std::isfinite(clusterSize) && std::all_of(itsNSigma.begin(), itsNSigma.end(), [](float value) { return std::isfinite(value); });
+    registry.fill(HIST("DetectorPidQA/PIDQuality/itsResponseStatus"), allFinite ? 3.5 : 2.5);
+    if (std::isfinite(clusterSize)) {
+      registry.fill(HIST("DetectorPidQA/PIDQuality/itsClusterSizeAll"), momentum, clusterSize);
+      registry.fill(HIST("DetectorPidQA/PIDQuality/itsClusterSizeAllVsPt"), pt, clusterSize);
+      registry.fill(HIST("DetectorPidQA/PIDQuality/itsClusterSizeVsPEta"), momentum, track.eta(), clusterSize);
+    }
+    for (std::size_t i = 0; i < species.size(); ++i) {
+      if (!isWithinPOIPtRange(species[i], pt)) {
+        continue;
+      }
+      auto& h = pidQualityQAHists[i];
+      if (pid == species[i] && std::isfinite(clusterSize)) {
+        h.itsClusterSizeVsP->Fill(momentum, clusterSize);
+        h.itsClusterSizeVsPt->Fill(pt, clusterSize);
+        h.meanITSClusterSizeVsP->Fill(momentum, clusterSize);
+        h.meanITSClusterSizeVsPt->Fill(pt, clusterSize);
+      }
+      if (!std::isfinite(itsNSigma[i])) {
+        continue;
+      }
+      for (std::size_t stage = 0; stage < 2; ++stage) {
+        if (stage == 1 && pid != species[i]) {
+          continue;
+        }
+        h.itsNSigmaVsPt[stage]->Fill(pt, itsNSigma[i]);
+        if (std::isfinite(tpcNSigma[i])) {
+          const double values[]{pt, cent, tpcNSigma[i], itsNSigma[i]};
+          h.tpcVsITSNSigma[stage]->Fill(values);
+        }
+      }
+    }
+  }
 
   // others
 
   void init(InitContext const&) // Initialization
   {
+    const AxisSpec activityAxis{axisMultiplicity, getActivityAxisTitle()};
+    // FlowContainer's AxisSpec overload expects a full array of bin edges.
+    // Use its uniform-axis overload for fixed-width axisMultiplicity settings.
+    const auto initializeFlowContainer = [&](auto& container, TObjArray* profiles) {
+      if (activityAxis.nBins.has_value()) {
+        container->Initialize(profiles, activityAxis.nBins.value(), activityAxis.binEdges.front(), activityAxis.binEdges.back(), cfgFlowNbootstrap);
+      } else {
+        container->Initialize(profiles, activityAxis, cfgFlowNbootstrap);
+      }
+      container->GetProfile()->GetXaxis()->SetTitle(getActivityAxisTitle());
+      if (auto* subprofiles = container->GetSubProfiles()) {
+        for (auto* profile : *subprofiles) {
+          static_cast<TProfile2D*>(profile)->GetXaxis()->SetTitle(getActivityAxisTitle());
+        }
+      }
+    };
+
     // init and add lots of graphs according to switch
     ccdb->setURL(cfgurl.value);
     ccdb->setCaching(true);
@@ -577,8 +724,12 @@ struct PidFlowPtCorr {
     cfgAcceptance = correctionPathOpts.cfgAcceptancePath.value;
     cfgAcceptanceWithPt = correctionPathOpts.cfgAcceptancePathWithPt.value;
 
-    cfgNSigma = cfgNSigmapid;
     cfgMultPVCutPara = evtSeleOpts.cfgMultPVCut;
+
+    fTPCPIDClustersMin = std::make_unique<TF1>("pidFlowPtCorrTPCPIDClustersMin", cfgTPCPIDClustersMinFunction.value.c_str(), 0., 256.);
+    if (!fTPCPIDClustersMin->IsValid() || fTPCPIDClustersMin->GetNpar() != 0) {
+      LOGF(fatal, "Invalid cfgTPCPIDClustersMinFunction: use a ROOT formula in x = tpcNClsFound() with numeric coefficients and no free parameters");
+    }
 
     // Set the pt, mult and phi Axis;
 
@@ -605,8 +756,9 @@ struct PidFlowPtCorr {
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {cfgaxisNch}});
     registry.add("hMultTPC", "", {HistType::kTH1D, {cfgaxisNch}});
-    std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
-    registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
+    std::string hCentTitle = cfgUseMultiplicity.value ? "PV multiplicity distribution" : "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
+    const AxisSpec hCentAxis = cfgUseMultiplicity.value ? activityAxis : AxisSpec{90, 0., 90., getActivityAxisTitle()};
+    registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {hCentAxis}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hPtCorr", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hPtPi", "", {HistType::kTH1D, {cfgaxisPt}});
@@ -615,12 +767,13 @@ struct PidFlowPtCorr {
     registry.add("hPtCorrKa", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hPtPr", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hPtCorrPr", "", {HistType::kTH1D, {cfgaxisPt}});
-    registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, axisMultiplicity}});
+    registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, activityAxis}});
 
     registry.add("hNchUnCorrectedVSNchCorrected", "", {HistType::kTH2D, {cfgaxisNch, cfgaxisNch}});
     runNumbers = cfgRunNumbers;
     // Minimal detector-PID performance QA.
     if (switchsOpts.cfgOutputQA.value) {
+      initPidQualityQA();
       registry.add("DetectorPidQA/TPC/dEdxPi", "TPC d#it{E}/d#it{x} (pion)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
       registry.add("DetectorPidQA/TPC/dEdxKa", "TPC d#it{E}/d#it{x} (kaon)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
       registry.add("DetectorPidQA/TPC/dEdxPr", "TPC d#it{E}/d#it{x} (proton)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTPCDedx}});
@@ -630,55 +783,33 @@ struct PidFlowPtCorr {
       registry.add("DetectorPidQA/TOF/deltaKa", "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} (kaon)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFDelta}});
       registry.add("DetectorPidQA/TOF/deltaPr", "TOF #it{t} - #it{t}_{ev} - #it{t}_{exp} (proton)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFDelta}});
       registry.add("DetectorPidQA/TOF/tofTimeAll", "TOF #it{t} - #it{t}_{ev} (all particles)", {HistType::kTH2F, {cfgaxisPt, cfgaxisTOFTime}});
-
-      // run by run QA hists
-      /**
-       * @brief create QA hist for each run
-       * @note include:
-       *        1. hPhi before collision cut
-       *        2. hPhi after collision cut
-       * > graph below are after collision cut <
-       *        3. ITS ncls vs Phi
-       *        4. ITS chi2 vs Phi
-       * @param runNumbers
-       */
-      for (const auto& oneRun : runNumbers) {
-        TH1* hPhiRunByRunBefore = registry.add<TH1>(Form("RunByRunQA%d/hPhiBefore", oneRun), "", {HistType::kTH1D, {cfgaxisPhi}}).get();
-        TH1* hPhiRunByRunAfter = registry.add<TH1>(Form("RunByRunQA%d/hPhiAfter", oneRun), "", {HistType::kTH1D, {cfgaxisPhi}}).get();
-
-        TH2* hITSnclsVsPhi = registry.add<TH2>(Form("RunByRunQA%d/hITSnclsVsPhi", oneRun), "", {HistType::kTH2D, {cfgaxisPhi, {8, 0, 8}}}).get();
-        TH2* hITSChi2VsPhi = registry.add<TH2>(Form("RunByRunQA%d/hITSChi2VsPhi", oneRun), "", {HistType::kTH2D, {cfgaxisPhi, {100, 0, 10}}}).get();
-
-        qaHistVector.emplace_back(qaHist(hPhiRunByRunBefore, hPhiRunByRunAfter, hITSnclsVsPhi, hITSChi2VsPhi));
-      }
-      // end run by run QA hists
     } // cfgoutputqa
 
     if (switchsOpts.cfgOutPutMC.value) {
       // hist for NUE correction
-      registry.add("correction/hPtCentMcRec", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcGen", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcRec", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcGen", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
       // ITS only
 
       // hist for Pi eff
-      registry.add("correction/hPtCentMcRecPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcGenPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcRecPi", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcGenPi", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
       // hist for Ka eff
-      registry.add("correction/hPtCentMcRecKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcGenKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcRecKa", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcGenKa", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
       // hist for Pr eff
-      registry.add("correction/hPtCentMcRecPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcGenPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcRecPr", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcGenPr", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
       // Charged-track reconstruction efficiency split by MC true species.
       // Detector PID is deliberately not used for these numerators.
-      registry.add("correction/hPtCentMcRecTruePi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcRecTrueKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcRecTruePr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcRecTrueOther", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcGenTruePi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcGenTrueKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcGenTruePr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("correction/hPtCentMcGenTrueOther", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcRecTruePi", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcRecTrueKa", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcRecTruePr", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcRecTrueOther", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcGenTruePi", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcGenTrueKa", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcGenTruePr", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("correction/hPtCentMcGenTrueOther", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
     } // cfgoutputMC
 
     if (switchsOpts.cfgOutPutMC1D.value) {
@@ -694,10 +825,10 @@ struct PidFlowPtCorr {
     }
 
     if (switchsOpts.cfgOutPutPtSpectra.value) {
-      registry.add("ptSpectra/hPtCentData", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("ptSpectra/hCentEventCountData", "", {HistType::kTH1D, {axisMultiplicity}});
-      registry.add("ptSpectra/hCentEventCountMcGen", "", {HistType::kTH1D, {axisMultiplicity}});
-      registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {axisMultiplicity}});
+      registry.add("ptSpectra/hPtCentData", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("ptSpectra/hCentEventCountData", "", {HistType::kTH1D, {activityAxis}});
+      registry.add("ptSpectra/hCentEventCountMcGen", "", {HistType::kTH1D, {activityAxis}});
+      registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {activityAxis}});
 
       registry.add("c22PrimeVsc22/Pi", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
       registry.add("c22PrimeVsc22/Ka", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
@@ -727,10 +858,10 @@ struct PidFlowPtCorr {
       registry.add("abundance/hNumOfPrEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundancePr}});
     }
     if (particleAbundanceOpts.cfgOutputAbundanceYields.value) {
-      registry.add("abundance/hPtCentDataPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("abundance/hPtCentDataKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("abundance/hPtCentDataPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      registry.add("abundance/hPtCentDataUnidentified", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("abundance/hPtCentDataPi", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("abundance/hPtCentDataKa", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("abundance/hPtCentDataPr", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
+      registry.add("abundance/hPtCentDataUnidentified", "", {HistType::kTH2D, {cfgaxisPt, activityAxis}});
     }
 
     // set bin label for hEventCount
@@ -770,24 +901,24 @@ struct PidFlowPtCorr {
       // Store the ensemble mean pT required for the offline delta[pT]/<[pT]>
       // transformation. The profile weight is the NUE-corrected particle count.
       if (switchsOpts.cfgOutputCharged.value) {
-        registry.add("c22DeltaPt/c22dmeanptCharged", "Charged c_{2}{2} versus charged event [p_{T}];Centrality (%);[p_{T}]_{ch} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("c22DeltaPt/hMeanPtCharged", "Charged mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{ch} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptCharged", Form("Charged c_{2}{2} versus charged event [p_{T}];%s;[p_{T}]_{ch} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/hMeanPtCharged", Form("Charged mean p_{T};%s;Bootstrap subsample;[p_{T}]_{ch} (GeV/#it{c})", getActivityAxisTitle()), {HistType::kTProfile2D, {activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
       if (switchsOpts.cfgOutputPion.value) {
-        registry.add("c22DeltaPt/hMeanPtPion", "Pion mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{#pi} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("c22DeltaPt/c22dmeanptPionRefRef", "Ref-ref c_{2}{2} versus pion event [p_{T}];Centrality (%);[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/hMeanPtPion", Form("Pion mean p_{T};%s;Bootstrap subsample;[p_{T}]_{#pi} (GeV/#it{c})", getActivityAxisTitle()), {HistType::kTProfile2D, {activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptPionRefRef", Form("Ref-ref c_{2}{2} versus pion event [p_{T}];%s;[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
       if (switchsOpts.cfgOutputKaon.value) {
-        registry.add("c22DeltaPt/hMeanPtKaon", "Kaon mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{K} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("c22DeltaPt/c22dmeanptKaonRefRef", "Ref-ref c_{2}{2} versus kaon event [p_{T}];Centrality (%);[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/hMeanPtKaon", Form("Kaon mean p_{T};%s;Bootstrap subsample;[p_{T}]_{K} (GeV/#it{c})", getActivityAxisTitle()), {HistType::kTProfile2D, {activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptKaonRefRef", Form("Ref-ref c_{2}{2} versus kaon event [p_{T}];%s;[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
       if (switchsOpts.cfgOutputProton.value) {
-        registry.add("c22DeltaPt/hMeanPtProton", "Proton mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{p} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("c22DeltaPt/c22dmeanptProtonRefRef", "Ref-ref c_{2}{2} versus proton event [p_{T}];Centrality (%);[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/hMeanPtProton", Form("Proton mean p_{T};%s;Bootstrap subsample;[p_{T}]_{p} (GeV/#it{c})", getActivityAxisTitle()), {HistType::kTProfile2D, {activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptProtonRefRef", Form("Ref-ref c_{2}{2} versus proton event [p_{T}];%s;[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
       if (switchsOpts.cfgOutputUnidentified.value) {
-        registry.add("c22DeltaPt/hMeanPtUnidentified", "Unidentified mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{unidentified} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("c22DeltaPt/c22dmeanptUnidentifiedRefRef", "Ref-ref c_{2}{2} versus unidentified event [p_{T}];Centrality (%);[p_{T}]_{unidentified} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/hMeanPtUnidentified", Form("Unidentified mean p_{T};%s;Bootstrap subsample;[p_{T}]_{unidentified} (GeV/#it{c})", getActivityAxisTitle()), {HistType::kTProfile2D, {activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptUnidentifiedRefRef", Form("Ref-ref c_{2}{2} versus unidentified event [p_{T}];%s;[p_{T}]_{unidentified} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
 
       // Ref-ref is required in either PID mode: Pure/ref-ref or POI-ref/ref-ref.
@@ -796,30 +927,30 @@ struct PidFlowPtCorr {
       // profiles are neither allocated nor filled.
       if (switchsOpts.cfgC22DeltaPtUsePure.value) {
         if (switchsOpts.cfgOutputPion.value) {
-          registry.add("c22DeltaPt/c22dmeanptPionPure", "Pion POI-POI c_{2}{2} versus pion event [p_{T}];Centrality (%);[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("c22DeltaPt/c22dmeanptPionPure", Form("Pion POI-POI c_{2}{2} versus pion event [p_{T}];%s;[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
         if (switchsOpts.cfgOutputKaon.value) {
-          registry.add("c22DeltaPt/c22dmeanptKaonPure", "Kaon POI-POI c_{2}{2} versus kaon event [p_{T}];Centrality (%);[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("c22DeltaPt/c22dmeanptKaonPure", Form("Kaon POI-POI c_{2}{2} versus kaon event [p_{T}];%s;[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
         if (switchsOpts.cfgOutputProton.value) {
-          registry.add("c22DeltaPt/c22dmeanptProtonPure", "Proton POI-POI c_{2}{2} versus proton event [p_{T}];Centrality (%);[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("c22DeltaPt/c22dmeanptProtonPure", Form("Proton POI-POI c_{2}{2} versus proton event [p_{T}];%s;[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
         if (switchsOpts.cfgOutputUnidentified.value) {
-          registry.add("c22DeltaPt/c22dmeanptUnidentifiedPure", "Unidentified POI-POI c_{2}{2} versus unidentified event [p_{T}];Centrality (%);[p_{T}]_{unidentified} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("c22DeltaPt/c22dmeanptUnidentifiedPure", Form("Unidentified POI-POI c_{2}{2} versus unidentified event [p_{T}];%s;[p_{T}]_{unidentified} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
       } else {
         // For each PID species, compare POI-ref and ref-ref using the same PID mean-pT axis.
         if (switchsOpts.cfgOutputPion.value) {
-          registry.add("c22DeltaPt/c22dmeanptPionPOIRef", "Pion POI-ref c_{2}{2} versus pion event [p_{T}];Centrality (%);[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("c22DeltaPt/c22dmeanptPionPOIRef", Form("Pion POI-ref c_{2}{2} versus pion event [p_{T}];%s;[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
         if (switchsOpts.cfgOutputKaon.value) {
-          registry.add("c22DeltaPt/c22dmeanptKaonPOIRef", "Kaon POI-ref c_{2}{2} versus kaon event [p_{T}];Centrality (%);[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("c22DeltaPt/c22dmeanptKaonPOIRef", Form("Kaon POI-ref c_{2}{2} versus kaon event [p_{T}];%s;[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
         if (switchsOpts.cfgOutputProton.value) {
-          registry.add("c22DeltaPt/c22dmeanptProtonPOIRef", "Proton POI-ref c_{2}{2} versus proton event [p_{T}];Centrality (%);[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("c22DeltaPt/c22dmeanptProtonPOIRef", Form("Proton POI-ref c_{2}{2} versus proton event [p_{T}];%s;[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
         if (switchsOpts.cfgOutputUnidentified.value) {
-          registry.add("c22DeltaPt/c22dmeanptUnidentifiedPOIRef", "Unidentified POI-ref c_{2}{2} versus unidentified event [p_{T}];Centrality (%);[p_{T}]_{unidentified} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("c22DeltaPt/c22dmeanptUnidentifiedPOIRef", Form("Unidentified POI-ref c_{2}{2} versus unidentified event [p_{T}];%s;[p_{T}]_{unidentified} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", getActivityAxisTitle()), {HistType::kTProfile3D, {activityAxis, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
       }
     }
@@ -829,7 +960,7 @@ struct PidFlowPtCorr {
 
     if (switchsOpts.cfgAddPidResponseMatrixHistograms.value) {
       registry.add("pidResponseMatrix/hPidResponseMatrix", "PID response matrix;true PID;reconstructed PID", {HistType::kTH2D, {{4, -0.5, 3.5}, {4, -0.5, 3.5}}});
-      registry.add("pidResponseMatrix/hPidResponseMatrixRecPtCent", "PID response matrix vs reconstructed pT and centrality;true PID;reconstructed PID;p_{T}^{rec} (GeV/#it{c});Centrality (%)", {HistType::kTHnSparseF, {{4, -0.5, 3.5}, {4, -0.5, 3.5}, cfgaxisPt, axisMultiplicity}});
+      registry.add("pidResponseMatrix/hPidResponseMatrixRecPtCent", Form("PID response matrix vs reconstructed pT and event activity;true PID;reconstructed PID;p_{T}^{rec} (GeV/#it{c});%s", getActivityAxisTitle()), {HistType::kTHnSparseF, {{4, -0.5, 3.5}, {4, -0.5, 3.5}, cfgaxisPt, activityAxis}});
 
       auto setPidResponseLabels = [](TAxis* axis, bool includeUnidentified) {
         axis->SetBinLabel(kPidRespPion + 1, "Pion");
@@ -883,7 +1014,7 @@ struct PidFlowPtCorr {
     // init fFCCh
     if (switchsOpts.cfgOutputCharged.value) {
       fFCCh->SetName("FlowContainerCharged");
-      fFCCh->Initialize(oba4Ch, axisMultiplicity, cfgFlowNbootstrap);
+      initializeFlowContainer(fFCCh, oba4Ch);
     }
     // end init fFCCh
 
@@ -900,19 +1031,19 @@ struct PidFlowPtCorr {
 
     if (switchsOpts.cfgOutputPion.value) {
       fFCPi->SetName("FlowContainerPi");
-      fFCPi->Initialize(oba4PID, axisMultiplicity, cfgFlowNbootstrap);
+      initializeFlowContainer(fFCPi, oba4PID);
     }
     if (switchsOpts.cfgOutputKaon.value) {
       fFCKa->SetName("FlowContainerKa");
-      fFCKa->Initialize(oba4PID, axisMultiplicity, cfgFlowNbootstrap);
+      initializeFlowContainer(fFCKa, oba4PID);
     }
     if (switchsOpts.cfgOutputProton.value) {
       fFCPr->SetName("FlowContainerPr");
-      fFCPr->Initialize(oba4PID, axisMultiplicity, cfgFlowNbootstrap);
+      initializeFlowContainer(fFCPr, oba4PID);
     }
     if (switchsOpts.cfgOutputUnidentified.value) {
       fFCUnidentified->SetName("FlowContainerUnidentified");
-      fFCUnidentified->Initialize(oba4PID, axisMultiplicity, cfgFlowNbootstrap);
+      initializeFlowContainer(fFCUnidentified, oba4PID);
     }
     // end init fFCPID
 
@@ -937,43 +1068,43 @@ struct PidFlowPtCorr {
       oba4PidPtCorr->Add(new TNamed("ptKaInKaPrPairs", "ptKaInKaPrPairs"));
       oba4PidPtCorr->Add(new TNamed("ptPrInKaPrPairs", "ptPrInKaPrPairs"));
       fFCPidPtCorr->SetName("FlowContainerPidPtCorr");
-      fFCPidPtCorr->Initialize(oba4PidPtCorr, axisMultiplicity, cfgFlowNbootstrap);
+      initializeFlowContainer(fFCPidPtCorr, oba4PidPtCorr);
     }
 
     if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value) {
       // TProfile3D axes: event mean pT, centrality, and bootstrap subsample.
       if (switchsOpts.cfgOutputCharged.value) {
-        registry.add("meanptCentNbs/hCharged", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hChargedMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hCharged", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
       if (switchsOpts.cfgOutputPion.value) {
-        registry.add("meanptCentNbs/hChargedPionWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hChargedPionFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hPion", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hPionMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedPionWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedPionFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hPion", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hPionMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
         if (switchsOpts.cfgClosureTest.value != 0) {
-          registry.add("meanptCentNbs/hPionMeanptWeightC22pure", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-          registry.add("meanptCentNbs/hPionMeanptWeightMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-          registry.add("meanptCentNbs/hPionMeanptWeightC22prime", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("meanptCentNbs/hPionMeanptWeightC22pure", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("meanptCentNbs/hPionMeanptWeightMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+          registry.add("meanptCentNbs/hPionMeanptWeightC22prime", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
         }
       }
       if (switchsOpts.cfgOutputKaon.value) {
-        registry.add("meanptCentNbs/hChargedKaonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hChargedKaonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hKaon", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hKaonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedKaonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedKaonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hKaon", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hKaonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
       if (switchsOpts.cfgOutputProton.value) {
-        registry.add("meanptCentNbs/hChargedProtonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hChargedProtonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hProton", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hProtonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedProtonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedProtonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hProton", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hProtonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
       if (switchsOpts.cfgOutputUnidentified.value) {
-        registry.add("meanptCentNbs/hChargedUnidentifiedWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hChargedUnidentifiedFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hUnidentified", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-        registry.add("meanptCentNbs/hUnidentifiedMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedUnidentifiedWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hChargedUnidentifiedFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hUnidentified", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hUnidentifiedMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, activityAxis, meanptC22GraphOpts.cfgaxisBootstrap}});
       }
     }
 
@@ -992,10 +1123,10 @@ struct PidFlowPtCorr {
       // end track QA
 
       /// @note evetn QA
-      registry.add("hProcessQA/centVsMult", "cent Vs Mult;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisMultiplicity, cfgaxisNch}});
+      registry.add("hProcessQA/centVsMult", Form("Event activity versus input track count;%s;Input track count", getActivityAxisTitle()), {HistType::kTH2D, {activityAxis, cfgaxisNch}});
       registry.add("hProcessQA/IR", "", {HistType::kTH1D, {{100, 0, 100}}});
       registry.add("hProcessQA/Occupacy", "", {HistType::kTH1D, {{1000, 0, 10000}}});
-      registry.add("hProcessQA/occupancyVsCent", "Track occupancy versus centrality;Centrality (%);Track occupancy in time range", {HistType::kTH2D, {axisMultiplicity, {1000, 0, 10000}}});
+      registry.add("hProcessQA/occupancyVsCent", Form("Track occupancy versus event activity;%s;Track occupancy in time range", getActivityAxisTitle()), {HistType::kTH2D, {activityAxis, {1000, 0, 10000}}});
       // end evetn QA
     }
     // end init QA plot for processQA
@@ -1137,166 +1268,9 @@ struct PidFlowPtCorr {
     fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
     fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
     fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
-
-    std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
-    hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, pTEffBins.data());
-    funcEff.resize(pTEffBins.size() - 1);
-
-    std::vector<double> f1p0 = cfgTrackDensityP0;
-    std::vector<double> f1p1 = cfgTrackDensityP1;
-    for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
-      funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
-      funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc]);
-    }
-    std::vector<double> v2para = cfgTrackDensityV2P;
-    std::vector<double> v3para = cfgTrackDensityV3P;
-    std::vector<double> v4para = cfgTrackDensityV4P;
-    funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-    funcV2->SetParameters(v2para[0], v2para[1], v2para[2], v2para[3], v2para[4]);
-    funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-    funcV3->SetParameters(v3para[0], v3para[1], v3para[2], v3para[3], v3para[4]);
-    funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-    funcV4->SetParameters(v4para[0], v4para[1], v4para[2], v4para[3], v4para[4]);
   }
 
   // pid utils function
-
-  /**
-   * @brief Identify whether the input track is a Pion
-   *
-   * @param track Input track object to be identified
-   * @return true  The track is identified as Pion
-   * @return false The track is NOT identified as Pion
-   * @note The result is the logical AND of valid detector Sigma checks.
-   *       If the track pt is out of a detector's valid range, that detector's check is skipped.
-   */
-  template <typename TrackObject>
-  bool isPion(TrackObject const& track)
-  {
-    if (switchsOpts.cfgClosureTest.value != 0) {
-      float rnd4test = fRndm->Rndm() * 100;
-      if (rnd4test < switchsOpts.cfgClosureTest.value) {
-        return true;
-      }
-    } // closure test
-
-    bool resultPion = true;
-
-    // Declare ITSResponse object internally to get ITS Sigma
-    o2::aod::ITSResponse itsResponse;
-    // Extract sigma values and pt from track
-    const float itsSigma = std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(track));
-    const float tofSigma = std::fabs(track.tofNSigmaPi());
-    const float tpcSigma = std::fabs(track.tpcNSigmaPi());
-    const float pt = track.pt();
-
-    // ITS detector check (pi-k separation pt range)
-    if (pt > pidPtRangeOpts.cfgPtMin4ITSPiKa.value && pt < pidPtRangeOpts.cfgPtMax4ITSPiKa.value) {
-      resultPion &= (itsSigma < cfgNSigma[6]);
-    }
-    // end ITS
-
-    // TOF detector check (pi-k separation pt range)
-    if (pt > pidPtRangeOpts.cfgPtMin4TOFPiKa.value && pt < pidPtRangeOpts.cfgPtMax4TOFPiKa.value) {
-      resultPion &= (tofSigma < cfgNSigma[3]);
-    }
-    // end TOF
-
-    // TPC detector check (pi-k separation pt range)
-    if (pt > pidPtRangeOpts.cfgPtMin4TPCPiKa.value && pt < pidPtRangeOpts.cfgPtMax4TPCPiKa.value) {
-      resultPion &= (tpcSigma < cfgNSigma[0]);
-    }
-    // end TPC
-
-    return resultPion;
-  }
-
-  /**
-   * @brief Identify whether the input track is a Proton
-   *
-   * @param track Input track object to be identified
-   * @return true  The track is identified as Proton
-   * @return false The track is NOT identified as Proton
-   * @note The result is the logical AND of valid detector Sigma checks.
-   *       If the track pt is out of a detector's valid range, that detector's check is skipped.
-   */
-  template <typename TrackObject>
-  bool isProton(TrackObject const& track)
-  {
-    bool resultProton = true;
-
-    // Declare ITSResponse object internally to get ITS Sigma
-    o2::aod::ITSResponse itsResponse;
-    // Extract sigma values and pt from track
-    const float itsSigma = std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
-    const float tofSigma = std::fabs(track.tofNSigmaPr());
-    const float tpcSigma = std::fabs(track.tpcNSigmaPr());
-    const float pt = track.pt();
-
-    // ITS detector check (k-p separation pt range)
-    if (pt > pidPtRangeOpts.cfgPtMin4ITSKaPr.value && pt < pidPtRangeOpts.cfgPtMax4ITSKaPr.value) {
-      resultProton &= (itsSigma < cfgNSigma[7]);
-    }
-    // end ITS
-
-    // TOF detector check (k-p separation pt range)
-    if (pt > pidPtRangeOpts.cfgPtMin4TOFKaPr.value && pt < pidPtRangeOpts.cfgPtMax4TOFKaPr.value) {
-      resultProton &= (tofSigma < cfgNSigma[4]);
-    }
-    // end TOF
-
-    // TPC detector check (k-p separation pt range)
-    if (pt > pidPtRangeOpts.cfgPtMin4TPCKaPr.value && pt < pidPtRangeOpts.cfgPtMax4TPCKaPr.value) {
-      resultProton &= (tpcSigma < cfgNSigma[1]);
-    }
-    // end TPC
-
-    return resultProton;
-  }
-
-  /**
-   * @brief Identify whether the input track is a Kaon (separate from Pion and Proton)
-   *
-   * @param track Input track object (aod::Track) to be identified
-   * @return true  The track is identified as Kaon
-   * @return false The track is NOT identified as Kaon
-   * @note The result is the logical AND of valid detector Sigma checks.
-   *       Only pt range that overlaps with both pi-k and k-p separation ranges is checked.
-   *       If the track pt is out of the overlapping range, that detector's check is skipped.
-   */
-  template <typename TrackObject>
-  bool isKaon(TrackObject const& track)
-  {
-    bool resultKaon = true;
-
-    // Declare ITSResponse object internally to get ITS Sigma
-    o2::aod::ITSResponse itsResponse;
-    // Extract sigma values and pt from track
-    const float itsSigma = std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track));
-    const float tofSigma = std::fabs(track.tofNSigmaKa());
-    const float tpcSigma = std::fabs(track.tpcNSigmaKa());
-    const float pt = track.pt();
-
-    // ITS detector check (overlap of pi-k and k-p separation pt ranges)
-    if (pt > pidPtRangeOpts.cfgPtMin4ITSKaPr.value && pt > pidPtRangeOpts.cfgPtMin4ITSPiKa.value && pt < pidPtRangeOpts.cfgPtMax4ITSKaPr.value && pt < pidPtRangeOpts.cfgPtMax4ITSPiKa.value) {
-      resultKaon &= (itsSigma < cfgNSigma[8]);
-    }
-    // end ITS
-
-    // TOF detector check (overlap of pi-k and k-p separation pt ranges)
-    if (pt > pidPtRangeOpts.cfgPtMin4TOFKaPr.value && pt > pidPtRangeOpts.cfgPtMin4TOFPiKa.value && pt < pidPtRangeOpts.cfgPtMax4TOFKaPr.value && pt < pidPtRangeOpts.cfgPtMax4TOFPiKa.value) {
-      resultKaon &= (tofSigma < cfgNSigma[5]);
-    }
-    // end TOF
-
-    // TPC detector check (overlap of pi-k and k-p separation pt ranges)
-    if (pt > pidPtRangeOpts.cfgPtMin4TPCKaPr.value && pt > pidPtRangeOpts.cfgPtMin4TPCPiKa.value && pt < pidPtRangeOpts.cfgPtMax4TPCKaPr.value && pt < pidPtRangeOpts.cfgPtMax4TPCPiKa.value) {
-      resultKaon &= (tpcSigma < cfgNSigma[2]);
-    }
-    // end TPC
-
-    return resultKaon;
-  }
 
   template <typename TrackObject>
   int getPidWithCircleCut(TrackObject const& track)
@@ -1324,7 +1298,7 @@ struct PidFlowPtCorr {
       if (pt > ptMin && pt < ptMax) {
         isPionBool = std::hypot(tpcNsigma, tofNsigma) < circleCutOpts.cfgCircleCutSigmaPi.value;
       } else {
-        // Fallback: TPC only cut
+        // TPC fallback; the low-pT ITS requirement is applied below.
         isPionBool = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCPi.value;
       }
     }
@@ -1366,6 +1340,24 @@ struct PidFlowPtCorr {
       }
     }
 
+    // Apply ITS to every low-pT candidate before resolving ambiguities.
+    if (pt < circleCutOpts.cfgCircleCutITSPtMax.value) {
+      const uint32_t clusterSizes = track.itsClusterSizes();
+      int nSizeLayers = 0;
+      for (int layer = 0; layer < 7; ++layer) {
+        nSizeLayers += ((clusterSizes >> (4 * layer)) & 0xf) != 0;
+      }
+      if (!track.hasITS() || nSizeLayers < 2 || !std::isfinite(track.p()) || track.p() <= 0.f || !std::isfinite(track.eta())) {
+        return -1;
+      }
+      const auto passesITS = [](float nsigma, float cut) {
+        return std::isfinite(nsigma) && std::fabs(nsigma) < cut;
+      };
+      isPionBool = isPionBool && passesITS(o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Pion>(track), circleCutOpts.cfgCircleCutITSPi.value);
+      isKaonBool = isKaonBool && passesITS(o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Kaon>(track), circleCutOpts.cfgCircleCutITSKa.value);
+      isProtonBool = isProtonBool && passesITS(o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Proton>(track), circleCutOpts.cfgCircleCutITSPr.value);
+    }
+
     // ------------------------------
     // Ambiguity rejection
     // ------------------------------
@@ -1390,7 +1382,7 @@ struct PidFlowPtCorr {
   }
 
   /**
-   * @brief Get the Pid, combine square cut && circle cut
+   * @brief Apply the TPC PID cluster cut, then circle PID with low-pT ITS
    *
    * @tparam TrackObject
    * @param track
@@ -1399,28 +1391,13 @@ struct PidFlowPtCorr {
   template <typename TrackObject>
   int getPidConfigurable(TrackObject const& track)
   {
-    int pid = -1;
-    if (circleCutOpts.cfgUseCircleCutPID.value) {
-      // Use circular cut (already handles ambiguity rejection)
-      pid = getPidWithCircleCut(track);
-    } else {
-      // Use normal cut (with manual ambiguity rejection)
-      bool isPi = isPion(track);
-      bool isKa = isKaon(track);
-      bool isPr = isProton(track);
-      int nCandidates = isPi + isKa + isPr;
-      if (nCandidates == 1) {
-        if (isPi) {
-          pid = MyParticleType::kPion;
-        } else if (isKa) {
-          pid = MyParticleType::kKaon;
-        } else if (isPr) {
-          pid = MyParticleType::kProton;
-        }
-      }
-      // else: pid remains -1 (ambiguous or none)
+    // PID quality changes the species assignment, not charged track selection.
+    const double minPIDClusters = fTPCPIDClustersMin->Eval(track.tpcNClsFound());
+    if (!std::isfinite(minPIDClusters) || track.tpcNClsPID() < minPIDClusters) {
+      return -1;
     }
-    return pid;
+
+    return getPidWithCircleCut(track);
   }
 
   bool isWithinRefPtRange(float pt)
@@ -2353,13 +2330,22 @@ struct PidFlowPtCorr {
   }
 
   /**
-   * @brief get centrality from the configured estimator
-   * @note mirrors flowTask.cxx's getCentrality(), allowing this task to
-   *       switch between different Run 3 centrality estimators via
-   *       cfgCentEstimator instead of always using FT0C.
+   * @brief Get the event activity used for output binning and NUE lookup.
+   * @note Multiplicity mode uses raw PV contributors in |eta| < 0.8.
+   *       It requires matching multiplicity axes and NUE maps; the caller
+   *       must disable the centrality-calibrated cfgDoMultPVCut.
    */
   template <typename TCollision>
   float getCentrality(TCollision const& collision)
+  {
+    if (cfgUseMultiplicity.value) {
+      return collision.multNTracksPV();
+    }
+    return getPercentileCentrality(collision);
+  }
+
+  template <typename TCollision>
+  float getPercentileCentrality(TCollision const& collision)
   {
     float cent = -1;
     switch (cfgCentEstimator) {
@@ -2566,33 +2552,6 @@ struct PidFlowPtCorr {
     registry.fill(HIST("hCent"), cent);
     // end correction
 
-    double psi2Est = 0, psi3Est = 0, psi4Est = 0;
-    float wEPeff = 1;
-    double v2 = 0, v3 = 0, v4 = 0;
-    if (switchsOpts.cfgDoLocDenCorr.value) {
-      double q2x = 0, q2y = 0;
-      double q3x = 0, q3y = 0;
-      double q4x = 0, q4y = 0;
-      for (const auto& track : tracks) {
-        // pt cut
-        bool withinPtRef = isWithinRefPtRange(track.pt());
-        if (withinPtRef) {
-          q2x += std::cos(2 * track.phi());
-          q2y += std::sin(2 * track.phi());
-          q3x += std::cos(3 * track.phi());
-          q3y += std::sin(3 * track.phi());
-          q4x += std::cos(4 * track.phi());
-          q4y += std::sin(4 * track.phi());
-        }
-      }
-      psi2Est = std::atan2(q2y, q2x) / 2.;
-      psi3Est = std::atan2(q3y, q3x) / 3.;
-      psi4Est = std::atan2(q4y, q4x) / 4.;
-      v2 = funcV2->Eval(cent);
-      v3 = funcV3->Eval(cent);
-      v4 = funcV4->Eval(cent);
-    } // cfgDoLocDenCorr
-
     double ptSum = 0;
     double ptSumw2 = 0;
     double nch = 0;
@@ -2719,22 +2678,6 @@ struct PidFlowPtCorr {
       setParticleNUEWeight(weff, track, cent);
       // end do NUE && NUA
 
-      if (switchsOpts.cfgDoLocDenCorr.value) {
-        bool withinPtRef = isWithinRefPtRange(track.pt());
-        if (withinPtRef) {
-          double fphi = v2 * std::cos(2 * (track.phi() - psi2Est)) + v3 * std::cos(3 * (track.phi() - psi3Est)) + v4 * std::cos(4 * (track.phi() - psi4Est));
-          fphi = (1 + 2 * fphi);
-          int pTBinForEff = hFindPtBin->FindBin(track.pt());
-          if (pTBinForEff >= 1 && pTBinForEff <= hFindPtBin->GetNbinsX()) {
-            wEPeff = funcEff[pTBinForEff - 1]->Eval(fphi * tracks.size());
-            if (wEPeff > 0.) {
-              wEPeff = 1. / wEPeff;
-              weff *= wEPeff;
-            }
-          }
-        }
-      } // cfgDoLocDenCorr
-
       // The reference and POI pT ranges are applied independently below.
       if (!trackSelectedForFlow(track)) {
         continue;
@@ -2786,7 +2729,7 @@ struct PidFlowPtCorr {
       }
       if (pid == -1 && withinPtRefGlobal) {
         // Unidentified tracks have no PID-specific correction. Reuse exactly
-        // the charged NUA/NUE (including the optional local-density factor).
+        // the charged NUA/NUE weights.
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, gfwBitMask::unidentified::kPOI);
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, gfwBitMask::unidentified::kOverlap, wacc * weff);
       } else if (isWithinPOIPtRange(pid, track.pt())) {
@@ -3162,41 +3105,7 @@ struct PidFlowPtCorr {
 
     loadCorrections(bc.timestamp());
 
-    /// @note local density corr
     const float vtxz = collision.posZ();
-
-    double psi2Est = 0.;
-    double psi3Est = 0.;
-    double psi4Est = 0.;
-    double v2 = 0.;
-    double v3 = 0.;
-    double v4 = 0.;
-    if (switchsOpts.cfgDoLocDenCorr.value) {
-      double q2x = 0.;
-      double q2y = 0.;
-      double q3x = 0.;
-      double q3y = 0.;
-      double q4x = 0.;
-      double q4y = 0.;
-      for (const auto& track : tracks) {
-        if (!isWithinRefPtRange(track.pt())) {
-          continue;
-        }
-        q2x += std::cos(2. * track.phi());
-        q2y += std::sin(2. * track.phi());
-        q3x += std::cos(3. * track.phi());
-        q3y += std::sin(3. * track.phi());
-        q4x += std::cos(4. * track.phi());
-        q4y += std::sin(4. * track.phi());
-      }
-      psi2Est = std::atan2(q2y, q2x) / 2.;
-      psi3Est = std::atan2(q3y, q3x) / 3.;
-      psi4Est = std::atan2(q4y, q4x) / 4.;
-      v2 = funcV2->Eval(cent);
-      v3 = funcV3->Eval(cent);
-      v4 = funcV4->Eval(cent);
-    }
-    // end local density corr
 
     // Event-wise mean-pT numerators and NUE-corrected particle counts. Charged
     // particles use the reference pT range; each PID species uses its own POI pT range.
@@ -3266,18 +3175,6 @@ struct PidFlowPtCorr {
 
       const bool withinPtRef = isWithinRefPtRange(track.pt());
       if (withinPtRef) {
-        if (switchsOpts.cfgDoLocDenCorr.value) {
-          const double fphi = 1. + 2. * (v2 * std::cos(2. * (track.phi() - psi2Est)) +
-                                         v3 * std::cos(3. * (track.phi() - psi3Est)) +
-                                         v4 * std::cos(4. * (track.phi() - psi4Est)));
-          const int ptBinForEff = hFindPtBin->FindBin(track.pt());
-          if (ptBinForEff >= 1 && ptBinForEff <= hFindPtBin->GetNbinsX()) {
-            const double localDensityEff = funcEff[ptBinForEff - 1]->Eval(fphi * tracks.size());
-            if (localDensityEff > 0.) {
-              weff /= localDensityEff;
-            }
-          }
-        }
         /// @note passed selection: global cut + pt cut
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, gfwBitMask::charged::kReference);
       }
@@ -3490,7 +3387,7 @@ struct PidFlowPtCorr {
 
   /**
    * @brief Run the flow calculation on generated MC particles for a closure test.
-   * @note Reconstructed collisions are only used to obtain the centrality. The selection is
+   * @note Reconstructed collisions only provide centrality or raw PV multiplicity. The selection is
    *       deliberately truth-level: MC vertex filter, physical-primary particles, kinematics,
    *       and PDG PID. No data event, track-quality, detector-PID, NUA, or NUE cuts are applied.
    */
@@ -3970,7 +3867,7 @@ struct PidFlowPtCorr {
   PROCESS_SWITCH(PidFlowPtCorr, processQA, "", true);
 
   /**
-   * @brief Minimal PID-performance QA for TPC dE/dx and TOF time-of-flight.
+   * @brief PID-performance QA for TPC, TOF, PID clusters and ITS response.
    * @note open switch outputQA if use it
    *
    * @param collision
@@ -3989,25 +3886,6 @@ struct PidFlowPtCorr {
     double interactionRate = getInteractionRate(bc.timestamp(), runNumber);
     // end init
 
-    // loop the vector, find the place to put
-    int matchedPosition = -1;
-    for (uint64_t idxPosition = 0; idxPosition < runNumbers.size(); idxPosition++) {
-      if (runNumbers[idxPosition] == runNumber) {
-        matchedPosition = idxPosition;
-        break;
-      }
-    }
-    if (matchedPosition == -1) {
-      return;
-    }
-    // end find place to put run data
-
-    // fill some QA graph before collision cut
-    for (const auto& track : tracks) {
-      qaHistVector[matchedPosition].hPhiRunByRunBefore->Fill(track.phi());
-    }
-    // end fill some QA graph before collision cut
-
     // collision cut
     registry.fill(HIST("hEventCount/detectorPidQA"), 0.5);
     if (nTot < 1) {
@@ -4025,14 +3903,6 @@ struct PidFlowPtCorr {
     // loadCorrections(bc.timestamp());
     // end cut and correction
 
-    // fill some QA graph after collision cut
-    for (const auto& track : tracks) {
-      qaHistVector[matchedPosition].hPhiRunByRunAfter->Fill(track.phi());
-      qaHistVector[matchedPosition].hITSnclsVsPhi->Fill(track.phi(), track.itsNCls());
-      qaHistVector[matchedPosition].hITSChi2VsPhi->Fill(track.phi(), track.itsChi2NCl());
-    }
-    // end fill some QA graph after collision cut
-
     // start filling graphs
     for (const auto& track : tracks) {
       // Use the same track-quality selection as processData, but do not
@@ -4048,9 +3918,10 @@ struct PidFlowPtCorr {
         }
       }
 
-      // The species-dependent histograms additionally require an identified
-      // PID and the corresponding POI pT range.
       const int pid = getPidConfigurable(track);
+      fillPidQualityQA(track, cent, pid);
+      // The existing species-dependent TPC/TOF histograms require the current
+      // unique PID assignment and its corresponding POI pT range.
       if (!isWithinPOIPtRange(pid, pt)) {
         continue;
       }
