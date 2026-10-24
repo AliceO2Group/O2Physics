@@ -90,8 +90,8 @@ class FemtoUniverseSHContainer
 
       fels[il] = el;
       fems[il] = em;
-      felsi[il] = static_cast<int>(el);
-      femsi[il] = static_cast<int>(em);
+      felsi[il] = el;
+      femsi[il] = em;
       em++;
       il++;
       if (em > el) {

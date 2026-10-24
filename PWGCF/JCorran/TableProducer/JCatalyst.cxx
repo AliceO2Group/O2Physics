@@ -65,7 +65,7 @@ struct JCatalyst {
   Filter collisionVertexTypeFilter = (collisionFlags == 0) || ((aod::collision::flags & collisionFlags) == collisionFlags);
 
   Filter trackFilter = (nabs(aod::track::eta) < etamax) && (aod::track::pt > ptmin) && (aod::track::pt < ptmax);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true));
 
   Produces<aod::JTracks> particleTrack;
   Produces<aod::JCollisions> collisionData;
@@ -106,7 +106,7 @@ struct JMultiplicitySelector {
   O2_DEFINE_CONFIGURABLE(etamax, float, 0.9f, "Eta range for tracks")
 
   Filter trackFilter = (nabs(aod::track::eta) < etamax) && (aod::track::pt > ptmin);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true));
 
   void processTracks(aod::Collision const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {

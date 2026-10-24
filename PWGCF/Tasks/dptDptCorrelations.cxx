@@ -1266,7 +1266,7 @@ struct DptDptCorrelations {
         if constexpr (gen) {
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
-            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+            ptavgs[isp] = dynamic_cast<TH2*>(ccdblst->FindObject(
               TString::Format("trueptavgetaphi_%02d-%02d_%s",
                               static_cast<int>(fCentMultMin[ixDCE]),
                               static_cast<int>(fCentMultMax[ixDCE]),
@@ -1278,7 +1278,7 @@ struct DptDptCorrelations {
           std::vector<TH1*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             auto hName = TString::Format("correction%s_%02d-%02d_%s", getDimensionStr(), static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE]), tnames[isp].c_str());
-            corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(hName.Data()));
+            corrs[isp] = dynamic_cast<TH1*>(ccdblst->FindObject(hName.Data()));
             if (corrs[isp] != nullptr) {
               LOGF(info, "Loaded %s", corrs[isp]->GetName());
             } else {
@@ -1288,7 +1288,7 @@ struct DptDptCorrelations {
           storeTrackCorrections(corrs);
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
-            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+            ptavgs[isp] = dynamic_cast<TH2*>(ccdblst->FindObject(
               TString::Format("ptavgetaphi_%02d-%02d_%s",
                               static_cast<int>(fCentMultMin[ixDCE]),
                               static_cast<int>(fCentMultMax[ixDCE]),
@@ -1341,7 +1341,7 @@ struct DptDptCorrelations {
         if constexpr (gen) {
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
-            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+            ptavgs[isp] = dynamic_cast<TH2*>(ccdblst->FindObject(
               TString::Format("trueptavgetaphi_%02d-%02d_%s",
                               static_cast<int>(fCentMultMin[ixDCE]),
                               static_cast<int>(fCentMultMax[ixDCE]),
@@ -1353,7 +1353,7 @@ struct DptDptCorrelations {
           std::vector<TH1*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             auto hName = TString::Format("correction%s_%02d-%02d_%s", getDimensionStr(), static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE]), tnames[isp].c_str());
-            corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(hName.Data()));
+            corrs[isp] = dynamic_cast<TH1*>(ccdblst->FindObject(hName.Data()));
             if (corrs[isp] != nullptr) {
               LOGF(info, "Loaded %s", corrs[isp]->GetName());
             } else {
@@ -1363,7 +1363,7 @@ struct DptDptCorrelations {
           dataCEME[ixDCE]->storeTrackCorrections(corrs);
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
-            ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
+            ptavgs[isp] = dynamic_cast<TH2*>(ccdblst->FindObject(
               TString::Format("ptavgetaphi_%02d-%02d_%s",
                               static_cast<int>(fCentMultMin[ixDCE]),
                               static_cast<int>(fCentMultMax[ixDCE]),
@@ -1396,8 +1396,8 @@ struct DptDptCorrelations {
     }
   }
 
-  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
-  Filter onlyacceptedtracks = (aod::dptdptfilter::trackacceptedid >= int8_t(0));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == static_cast<uint8_t>(true));
+  Filter onlyacceptedtracks = (aod::dptdptfilter::trackacceptedid >= static_cast<int8_t>(0));
 
   void processRecLevel(soa::Filtered<aod::DptDptCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks)
   {

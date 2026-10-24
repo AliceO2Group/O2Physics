@@ -164,10 +164,10 @@ uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
   };
 
   for (int i = 0; i < mTrackSign.GetEntries(); ++i) {
-    filterBrickValue((CutBrick<float>*)mTrackSign.At(i), track.sign());
+    filterBrickValue(dynamic_cast<CutBrick<float>*>(mTrackSign.At(i)), track.sign());
   }
   for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-    filterTrackType((TrackSelectionBrick*)mTrackTypes.At(i), track);
+    filterTrackType(dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)), track);
   }
   if (mNClustersTPC != nullptr) {
     filterBrickValue(mNClustersTPC, track.tpcNClsFound());

@@ -1762,7 +1762,7 @@ struct PIDSpeciesSelection {
     auto storedetectorwithcharge = [&](auto& detectorstore, auto detectorname, auto charge) {
       for (uint isp = 0; isp < spadjnames.size(); ++isp) {
         TString fullhname = TString::Format("%s%s%s_Difference", detectorname, spadjnames[isp].data(), charge);
-        detectorstore[isp] = static_cast<TH1*>(lst->FindObject(fullhname.Data()));
+        detectorstore[isp] = dynamic_cast<TH1*>(lst->FindObject(fullhname.Data()));
       }
     };
     auto reportadjdetectorwithcharge = [&](auto& detectorstore, auto detectorname, auto charge) {

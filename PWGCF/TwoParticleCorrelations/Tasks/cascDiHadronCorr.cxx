@@ -197,7 +197,7 @@ struct CascDiHadronCorr {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   using FilteredTracksWithMCLabels = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>>;
@@ -654,7 +654,7 @@ struct CascDiHadronCorr {
     if (cfgEfficiency.value.empty() == false) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiency.value.c_str(), "READ");
-        mEfficiency = reinterpret_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
+        mEfficiency = dynamic_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
         mEfficiency = ccdb->getForTimeStamp<TH3D>(cfgEfficiency, timestamp);
       }
@@ -666,7 +666,7 @@ struct CascDiHadronCorr {
     if (cfgEfficiencyCasc.value.empty() == false) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyCasc.value.c_str(), "READ");
-        mEfficiencyCasc = reinterpret_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
+        mEfficiencyCasc = dynamic_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
         mEfficiencyCasc = ccdb->getForTimeStamp<TH3D>(cfgEfficiencyCasc, timestamp);
       }
