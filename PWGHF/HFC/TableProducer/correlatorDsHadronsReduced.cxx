@@ -88,8 +88,8 @@ struct HfCorrelatorDsHadronsReduced {
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec axisEta = {binsEta, "#it{#eta}"};
     AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtD), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T} Hadron (GeV/#it{c})"};
 
     // Histograms for data analysis
     if (fillHistoData) {
