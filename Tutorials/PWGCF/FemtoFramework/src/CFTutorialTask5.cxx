@@ -73,9 +73,9 @@ struct CFTutorialTask5 {
   Configurable<float> ConfPIDThresholdPartTwo{"ConfPIDThresholdPartTwo", 0.75, "Particle 2 - Momentum threshold for TPC to TPCTOF PID"};
 
   /// Partitions for particle 1 and particle 2
-  Partition<FilteredFDParts> PartsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) && ifnode(aod::femtodreamparticle::pt < ConfPIDThresholdPartOne, ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCPartOne), ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCTOFPartOne));
+  Partition<FilteredFDParts> PartsOne = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) && ifnode(aod::femtodreamparticle::pt < ConfPIDThresholdPartOne, ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCPartOne), ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCTOFPartOne));
 
-  Partition<FilteredFDParts> PartsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo) && ifnode(aod::femtodreamparticle::pt < ConfPIDThresholdPartTwo, ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCPartTwo), ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCTOFPartTwo));
+  Partition<FilteredFDParts> PartsTwo = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo) && ifnode(aod::femtodreamparticle::pt < ConfPIDThresholdPartTwo, ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCPartTwo), ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCTOFPartTwo));
 
   HistogramRegistry HistRegistry{"FemtoTutorial", {}, OutputObjHandlingPolicy::AnalysisObject};
 
