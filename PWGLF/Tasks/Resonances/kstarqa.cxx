@@ -1071,7 +1071,7 @@ struct Kstarqa {
   // Processed events will be already fulfilling the event selection
   // requirements
   // Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < configGp.cutzvertex);
+  // Filter posZFilter = (nabs(o2::aod::collision::posZ) < configGp.cutzvertex);
 
   // Filter acceptanceFilter = (nabs(aod::track::eta) < configGp.cfgCutEtaMax && nabs(aod::track::pt) > configGp.cfgCutPT) && (nabs(aod::track::eta) > configGp.cfgCutEtaMin);
   Filter acceptanceFilter = (nabs(aod::track::eta) < configGp.cfgCutEtaMax && nabs(aod::track::pt) > configGp.cfgCutPT);
