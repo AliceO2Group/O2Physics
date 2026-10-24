@@ -377,9 +377,9 @@ struct BuilderModule {
   THist* getHist(const char* name)
   {
     if (!this->MCCentralityCalibObjects) {
-      return (THist*)0x0;
+      return nullptr;
     }
-    auto hist = reinterpret_cast<THist*>(this->MCCentralityCalibObjects->FindObject(name));
+    auto hist = dynamic_cast<THist*>(this->MCCentralityCalibObjects->FindObject(name));
     if (!hist) {
       if (this->baseOpts.verbose) {
         this->MCCentralityCalibObjects->ls();
@@ -406,7 +406,7 @@ struct BuilderModule {
       TH2D* h2dMultVsCent_Data = getHist<TH2D>(Form("hMultEta05VsCent%s_Data", estimator.Data()));
       TH2D* h2dMultRecoVsMultGen_MC = getHist<TH2D>(Form("hMultEta05VsGenMult%s", estimator.Data()));
       if (!h2dMultVsCent_Data || !h2dMultRecoVsMultGen_MC) {
-        return (TH1D*)0x0;
+        return static_cast<TH1D*>(nullptr);
       }
 
       // QA of this on-the-fly calibration: mean <N_PV>_{|eta|<0.5} in data/MC per centrality class,

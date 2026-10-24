@@ -254,8 +254,8 @@ struct HyperNucleus {
     }
     return vec;
   };
-  const char* motherName() { return name.Contains("->") ? ((TString)name(0, name.First("-"))).Data() : name.Data(); }
-  const char* daughterNames() { return name.Contains("->") ? ((TString)name(name.First("-") + 2, name.Length())).Data() : ""; }
+  const char* motherName() { return name.Contains("->") ? (TString(name(0, name.First("-")))).Data() : name.Data(); }
+  const char* daughterNames() { return name.Contains("->") ? (TString(name(name.First("-") + 2, name.Length()))).Data() : ""; }
 }; // struct HyperNucleus
 
 struct DaughterKf {

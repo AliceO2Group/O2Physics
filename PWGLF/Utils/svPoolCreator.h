@@ -194,13 +194,13 @@ class svPoolCreator
       const auto& tref = tmap.find(trackCand.globalIndex());
       if (tref != tmap.end()) {
         LOG(debug) << "Track: " << trackCand.globalIndex() << " already processed with other vertex";
-        trackCandPool[tref->second.second][tref->second.first].collBracket.setMax(static_cast<int>(collIdx)); // this track was already processed with other vertex, account the latter
+        trackCandPool[tref->second.second][tref->second.first].collBracket.setMax(collIdx); // this track was already processed with other vertex, account the latter
         continue;
       }
 
       int poolIndex = (1 - isDau0) * 2 + (trackCand.sign() < 0);
       trForpool.Idxtr = trackCand.globalIndex();
-      trForpool.collBracket = {static_cast<int>(collIdx), static_cast<int>(collIdx)};
+      trForpool.collBracket = {collIdx, collIdx};
       // LOG(info) << "Adding track to pool: " << trForpool.Idxtr << " with bracket: " << trForpool.collBracket.getMin() << " " << trForpool.collBracket.getMax() << " and pool index: " << poolIndex;
       trackCandPool[poolIndex].emplace_back(trForpool);
       tmap[trackCand.globalIndex()] = {trackCandPool[poolIndex].size() - 1, poolIndex};

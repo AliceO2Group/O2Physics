@@ -662,7 +662,7 @@ struct NucleiHistTask {
 
     if (enable_pT_shift_tpc_nSigma) {
       Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
-      auto par = (std::vector<float>)parShiftPt;
+      auto par = std::vector<float>(parShiftPt);
       Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
     for (const auto& track : tracks) {
@@ -877,7 +877,7 @@ struct NucleiHistTask {
 
     if (enable_pT_shift_tpc_nSigma) {
       Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
-      auto par = (std::vector<float>)parShiftPt;
+      auto par = std::vector<float>(parShiftPt);
       Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
 
@@ -1212,32 +1212,32 @@ struct NucleiHistTask {
 
     if (enable_pT_shift_pion_tpc_nSigma) {
       Pion_Tpc_nSigma_shift = new TF1("Pion_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
-      auto par = (std::vector<float>)parShiftPtPion;
+      auto par = std::vector<float>(parShiftPtPion);
       Pion_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
     if (enable_pT_shift_proton_tpc_nSigma) {
       Proton_Tpc_nSigma_shift = new TF1("Proton_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
-      auto par = (std::vector<float>)parShiftPtProton;
+      auto par = std::vector<float>(parShiftPtProton);
       Proton_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
     if (enable_pT_shift_deuteron_tpc_nSigma) {
       Deuteron_Tpc_nSigma_shift = new TF1("Deuteron_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
-      auto par = (std::vector<float>)parShiftPtDeuteron;
+      auto par = std::vector<float>(parShiftPtDeuteron);
       Deuteron_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
     if (enable_pT_shift_triton_tpc_nSigma) {
       Triton_Tpc_nSigma_shift = new TF1("Triton_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
-      auto par = (std::vector<float>)parShiftPtTriton;
+      auto par = std::vector<float>(parShiftPtTriton);
       Triton_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
     if (enable_pT_shift_He3_tpc_nSigma) {
       He3_Tpc_nSigma_shift = new TF1("He3_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
-      auto par = (std::vector<float>)parShiftPtHe3;
+      auto par = std::vector<float>(parShiftPtHe3);
       He3_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
     if (enable_pT_shift_He4_tpc_nSigma) {
       He4_Tpc_nSigma_shift = new TF1("He4_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
-      auto par = (std::vector<float>)parShiftPtHe4;
+      auto par = std::vector<float>(parShiftPtHe4);
       He4_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
 
