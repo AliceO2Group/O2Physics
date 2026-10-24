@@ -2076,7 +2076,7 @@ struct PhotonConversionBuilder {
     vecV0Dedup.clear();
   } // end of build
 
-  o2::framework::expressions::Filter v0Filter = o2::aod::v0::v0Type > (uint8_t)0;
+  o2::framework::expressions::Filter v0Filter = o2::aod::v0::v0Type > static_cast<uint8_t>(0);
   using FilteredV0s = o2::soa::Filtered<o2::aod::V0s>;
 
   enum PairFate {

@@ -593,8 +593,8 @@ struct prefilterPhoton {
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  Partition<MyPrimaryElectrons> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0);
-  Partition<MyPrimaryElectrons> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
+  Partition<MyPrimaryElectrons> posTracks = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0);
+  Partition<MyPrimaryElectrons> negTracks = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0);
 
   void processPCMPCM(FilteredMyCollisions const& collisions, MyV0Photons const& v0s, aod::V0Legs const& v0legs)
   {
