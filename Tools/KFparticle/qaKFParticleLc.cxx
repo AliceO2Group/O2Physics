@@ -416,7 +416,7 @@ struct qaKFParticleLc {
     float chi2geo = KFLc.GetChi2() / KFLc.GetNDF();
     float normdecayLength = KFLc_PV.GetDecayLength() / KFLc_PV.GetErrDecayLength();
     float chi2topo = KFLc_PV.GetChi2() / KFLc_PV.GetNDF();
-    const double pseudoRndm = trackKa.pt() * 1000. - (int64_t)(trackKa.pt() * 1000);
+    const double pseudoRndm = trackKa.pt() * 1000. - static_cast<int64_t>(trackKa.pt() * 1000);
     if (pseudoRndm < d_DwnSmplFact) {
       /// Filling the D0 tree
       rowKFLc(runNumber,
