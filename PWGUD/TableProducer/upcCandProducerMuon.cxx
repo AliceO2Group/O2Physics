@@ -88,7 +88,7 @@ struct UpcCandProducerMuon {
 
   void init(InitContext&)
   {
-    fUpcCuts = (UPCCutparHolder)fUpcCutsConf;
+    fUpcCuts = UPCCutparHolder(fUpcCutsConf);
     if (fUpcCuts.getUseFwdCuts()) {
       fCCDB->setURL("http://alice-ccdb.cern.ch");
       fCCDB->setCaching(true);
@@ -520,7 +520,7 @@ struct UpcCandProducerMuon {
                   o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
-    createCandidates(fwdTracks, ambFwdTracks, bcs, collisions, fv0s, zdcs, (o2::aod::McFwdTrackLabels*)nullptr);
+    createCandidates(fwdTracks, ambFwdTracks, bcs, collisions, fv0s, zdcs, nullptr);
   }
 
   void processFwdMC(ForwardTracks const& fwdTracks,
