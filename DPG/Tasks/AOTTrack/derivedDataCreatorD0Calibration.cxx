@@ -152,7 +152,7 @@ struct DerivedDataCreatorD0Calibration {
     ccdb->setLocalObjectValidityChecking();
 
     if (cfgDownsampling.apply) {
-      histDownSampl.setObject(reinterpret_cast<TH1D*>(ccdb->getSpecific<TH1D>(cfgDownsampling.pathCcdbWeights)));
+      histDownSampl.setObject(static_cast<TH1D*>(ccdb->getSpecific<TH1D>(cfgDownsampling.pathCcdbWeights)));
     }
 
     if (cfgMl.apply) {
@@ -537,7 +537,7 @@ struct DerivedDataCreatorD0Calibration {
                       collision.covYZ(),
                       collision.covZZ(),
                       collision.numContrib(),
-                      uint8_t(std::round(collision.centFT0C())),
+                      static_cast<uint8_t>(std::round(collision.centFT0C())),
                       getCompressedOccupancy(collision.trackOccupancyInTimeRange()),
                       getCompressedOccupancy(collision.ft0cOccupancyInTimeRange()),
                       eventIR.orbit,

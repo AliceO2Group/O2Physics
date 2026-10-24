@@ -56,7 +56,7 @@ struct mcSimpleQc {
                McParticles const&)
   {
     // checks on collisions
-    registry.fill(HIST("histRecoOverGenCollisions"), float(collisions.size()) / mcCollisions.size());
+    registry.fill(HIST("histRecoOverGenCollisions"), static_cast<float>(collisions.size()) / mcCollisions.size());
 
     for (const auto& collision : collisions) {
       if (collision.has_mcCollision()) {
@@ -79,7 +79,7 @@ struct mcSimpleQc {
         }
       }
       registry.fill(HIST("histNumGlobalTracks"), nTracks);
-      registry.fill(HIST("histFracAmbiguousTracks"), float(nAmbTracks) / nTracks);
+      registry.fill(HIST("histFracAmbiguousTracks"), static_cast<float>(nAmbTracks) / nTracks);
     }
   }
 };
