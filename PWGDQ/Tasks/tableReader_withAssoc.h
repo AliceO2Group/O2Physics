@@ -1360,6 +1360,7 @@ struct AnalysisSameEventPairing {
   o2::framework::Produces<o2::aod::DileptonsInfo> dileptonInfoList;
   o2::framework::Produces<o2::aod::JPsieeCandidates> PromptNonPromptSepTable;
   o2::framework::Produces<o2::aod::DileptonPolarization> dileptonPolarList;
+  o2::framework::Produces<o2::aod::DileptonA2> dileptonA2List;
   o2::framework::Produces<o2::aod::DileptonsEventInfo> dileptonEventInfoList;
   o2::framework::Produces<o2::aod::DileptonsMiniTree> dileptonMiniTree;
 
@@ -1406,6 +1407,7 @@ struct AnalysisSameEventPairing {
   struct : o2::framework::ConfigurableGroup {
     o2::framework::Configurable<bool> flatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
     o2::framework::Configurable<bool> polarTables{"cfgPolarTables", false, "Produce tables with dilepton polarization information"};
+    o2::framework::Configurable<bool> A2Tables{"cfgA2Tables", false, "Produce tables with coherent jpsi A2 information"};
     o2::framework::Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
     o2::framework::Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
     o2::framework::Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
@@ -1976,6 +1978,10 @@ struct AnalysisSameEventPairing {
     if (useMiniTree.fConfigMiniTree) {
       dileptonMiniTree.reserve(reserveSize);
     }
+    if (fConfigOptions.A2Tables.value) {
+      dileptonA2List.reserve(reserveSize);
+      dileptonEventInfoList.reserve(reserveSize);
+    }
 
     fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
@@ -2091,6 +2097,14 @@ struct AnalysisSameEventPairing {
                               VarManager::fgValues[VarManager::kCosThetaPP], VarManager::fgValues[VarManager::kPhiPP], VarManager::fgValues[VarManager::kPhiTildePP],
                               VarManager::fgValues[VarManager::kCosThetaRM],
                               VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C], VarManager::fgValues[VarManager::kCosThetaStarRandom]);
+            dileptonEventInfoList(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kVtxNcontrib], VarManager::fgValues[VarManager::kRandomPsi2], VarManager::fgValues[VarManager::kPsi2A], VarManager::fgValues[VarManager::kPsi2B], VarManager::fgValues[VarManager::kPsi2C]);
+          }
+          if (fConfigOptions.A2Tables.value) {
+            dileptonA2List(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], t1.sign() + t2.sign(), twoTrackFilter,
+                           VarManager::fgValues[VarManager::kA2EP_TPC], VarManager::fgValues[VarManager::kA2EP_FT0A], VarManager::fgValues[VarManager::kA2EP_FT0C],
+                           VarManager::fgValues[VarManager::kCos2DeltaPhi_TPC], VarManager::fgValues[VarManager::kCos2DeltaPhi_FT0A], VarManager::fgValues[VarManager::kCos2DeltaPhi_FT0C],
+                           VarManager::fgValues[VarManager::kDeltaPhi_TPC], VarManager::fgValues[VarManager::kDeltaPhi_FT0A], VarManager::fgValues[VarManager::kDeltaPhi_FT0C],
+                           VarManager::fgValues[VarManager::kPhiDau]);
             dileptonEventInfoList(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kVtxNcontrib], VarManager::fgValues[VarManager::kRandomPsi2], VarManager::fgValues[VarManager::kPsi2A], VarManager::fgValues[VarManager::kPsi2B], VarManager::fgValues[VarManager::kPsi2C]);
           }
           if constexpr (trackHasCov && TTwoProngFitter) {
