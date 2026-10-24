@@ -50,7 +50,7 @@ void chi2(Int_t& npar, Double_t* gin, Double_t& f, Double_t* par, Int_t flag)
   TMatrixD sigma(2, 2);
   double results = 0.;
 
-  tin = (TTree*)fin->Get("EventInfo_merged");
+  tin = dynamic_cast<TTree*>(fin->Get("EventInfo_merged"));
 
   tin->SetBranchAddress("fTimeStamp", &fTimeStamp);
 
@@ -132,7 +132,7 @@ void non_fac()
       new TH1D(Form("hPreDistPos_%d_%d", i, 2), "", 1000, -100, 100);
   }
 
-  tin = (TTree*)fin->Get("EventInfo_merged");
+  tin = dynamic_cast<TTree*>(fin->Get("EventInfo_merged"));
 
   tin->SetBranchAddress("fTimeStamp", &fTimeStamp);
 
