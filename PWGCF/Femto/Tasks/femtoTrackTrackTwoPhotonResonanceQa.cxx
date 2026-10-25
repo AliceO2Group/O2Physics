@@ -79,8 +79,8 @@ struct FemtoTrackTrackTwoPhotonResonanceQa {
 
   trackstwophotonresonancehistmanager::TrackTrackTwoPhotonResonanceHistManager<
     trackstwophotonresonancehistmanager::PrefixOmegaMeson,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
     trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDau,
     trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDauPhotonDau1,
     trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDauPhotonDau2,

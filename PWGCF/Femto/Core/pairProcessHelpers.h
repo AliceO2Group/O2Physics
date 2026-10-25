@@ -429,7 +429,9 @@ template <modes::Mode mode,
           typename T7,
           typename T8,
           typename T9,
-          typename T10>
+          typename T10,
+          typename T11,
+          typename T12>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -440,7 +442,9 @@ void processMixedEvent(T1 const& Collisions,
                        T8& PairHistManager,
                        T9& CprManager,
                        T10& PcManager,
-                       int eventStride = 1)
+                       int eventStride,
+                       T11& ParticleHistManagerMe1,
+                       T12& ParticleHistManagerMe2)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
@@ -518,6 +522,11 @@ void processMixedEvent(T1 const& Collisions,
         hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
         PairHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event
+        // pair -- filled once per accepted pair (not deduplicated), so a particle contributes
+        // here exactly as often as it actually contributes to the mixed-event pair sample.
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
       }
     }
 
@@ -551,7 +560,9 @@ template <modes::Mode mode,
           typename T13,
           typename T14,
           typename T15,
-          typename T16>
+          typename T16,
+          typename T17,
+          typename T18>
 void processMixedEvent(T1 const& Collisions,
                        T2 const& mcCollisions,
                        T3& Partition1,
@@ -568,7 +579,9 @@ void processMixedEvent(T1 const& Collisions,
                        T14& ParticleCleaner2,
                        T15& CprManager,
                        T16& PcManager,
-                       int eventStride = 1)
+                       int eventStride,
+                       T17& ParticleHistManagerMe1,
+                       T18& ParticleHistManagerMe2)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
@@ -650,6 +663,9 @@ void processMixedEvent(T1 const& Collisions,
         hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
         PairHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event pair
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
       }
     }
 
@@ -679,7 +695,9 @@ template <modes::Mode mode,
           typename T11,
           typename T12,
           typename T13,
-          typename T14>
+          typename T14,
+          typename T15,
+          typename T16>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -694,7 +712,9 @@ void processMixedEvent(T1 const& Collisions,
                        T12& ParticleCleaner2,
                        T13& CprManager,
                        T14& PcManager,
-                       int eventStride = 1)
+                       int eventStride,
+                       T15& ParticleHistManagerMe1,
+                       T16& ParticleHistManagerMe2)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
@@ -766,6 +786,9 @@ void processMixedEvent(T1 const& Collisions,
         hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
         PairHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event pair
+        ParticleHistManagerMe1.fill(p1, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe2.fill(p2, mcMothers, mcPartonicMothers);
       }
     }
 

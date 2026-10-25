@@ -754,7 +754,10 @@ template <modes::Mode mode,
           typename T8,
           typename T9,
           typename T10,
-          typename T11>
+          typename T11,
+          typename T12,
+          typename T13,
+          typename T14>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -766,7 +769,10 @@ void processMixedEvent(T1 const& Collisions,
                        T9& TripletHistManager,
                        T10& CtrManager,
                        T11& TcManager,
-                       int eventStride = 1)
+                       int eventStride,
+                       T12& ParticleHistManagerMe1,
+                       T13& ParticleHistManagerMe2,
+                       T14& ParticleHistManagerMe3)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
@@ -855,6 +861,10 @@ void processMixedEvent(T1 const& Collisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
+        ParticleHistManagerMe3.template fill<mode>(p3, TrackTable);
       }
     }
 
@@ -890,7 +900,10 @@ template <modes::Mode mode,
           typename T15,
           typename T16,
           typename T17,
-          typename T18>
+          typename T18,
+          typename T19,
+          typename T20,
+          typename T21>
 void processMixedEvent(T1 const& Collisions,
                        T2 const& mcCollisions,
                        T3& Partition1,
@@ -909,7 +922,10 @@ void processMixedEvent(T1 const& Collisions,
                        T16& Cleaner3,
                        T17& CtrManager,
                        T18& TcManager,
-                       int eventStride = 1)
+                       int eventStride,
+                       T19& ParticleHistManagerMe1,
+                       T20& ParticleHistManagerMe2,
+                       T21& ParticleHistManagerMe3)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
@@ -1005,6 +1021,10 @@ void processMixedEvent(T1 const& Collisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
+        ParticleHistManagerMe3.template fill<mode>(p3, TrackTable);
       }
     }
 
@@ -1025,7 +1045,8 @@ void processMixedEvent(T1 const& Collisions,
 // mc collisions carry no magnetic field, so there is no magnetic field check here
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8,
-          typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16>
+          typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16,
+          typename T17, typename T18, typename T19>
 void processMixedEventMcTruth(T1 const& McCollisions,
                               T2& Partition1,
                               T3& Partition2,
@@ -1042,7 +1063,10 @@ void processMixedEventMcTruth(T1 const& McCollisions,
                               T14& ParticleCleaner3,
                               T15& CtrManager,
                               T16& TcManager,
-                              int eventStride = 1)
+                              int eventStride,
+                              T17& ParticleHistManagerMe1,
+                              T18& ParticleHistManagerMe2,
+                              T19& ParticleHistManagerMe3)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
@@ -1125,6 +1149,10 @@ void processMixedEventMcTruth(T1 const& McCollisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.fill(p1, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe2.fill(p2, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe3.fill(p3, mcMothers, mcPartonicMothers);
       }
     }
 

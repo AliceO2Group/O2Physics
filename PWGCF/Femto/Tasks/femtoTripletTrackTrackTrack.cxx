@@ -99,9 +99,12 @@ struct FemtoTripletTrackTrackTrack {
   closetripletrejection::ConfCtrTrackTrackTrack confCtr;
 
   tripletbuilder::TripletTrackTrackTrackBuilder<
-    trackhistmanager::PrefixTrack1,
-    trackhistmanager::PrefixTrack2,
-    trackhistmanager::PrefixTrack3,
+    trackhistmanager::PrefixTrack1Se,
+    trackhistmanager::PrefixTrack2Se,
+    trackhistmanager::PrefixTrack3Se,
+    trackhistmanager::PrefixTrack1Me,
+    trackhistmanager::PrefixTrack2Me,
+    trackhistmanager::PrefixTrack3Me,
     triplethistmanager::PrefixTrackTrackTrackSe,
     triplethistmanager::PrefixTrackTrackTrackMe,
     closetripletrejection::PrefixTrack1Track2Se,
