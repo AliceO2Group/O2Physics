@@ -46,6 +46,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -67,6 +68,8 @@
 #include <TProfile2D.h>
 #include <TRandom3.h>
 #include <TString.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <array>
@@ -267,11 +270,11 @@ struct TimeAssociatedChargedTrack : Track {
   {
   }
   float targetPt, targetEta, targetPhi, targetDCAxy, targetDCAz;
-  float pt() const { return targetPt; }
-  float eta() const { return targetEta; }
-  float phi() const { return targetPhi; }
-  float dcaXY() const { return targetDCAxy; }
-  float dcaZ() const { return targetDCAz; }
+  [[nodiscard]] float pt() const { return targetPt; }
+  [[nodiscard]] float eta() const { return targetEta; }
+  [[nodiscard]] float phi() const { return targetPhi; }
+  [[nodiscard]] float dcaXY() const { return targetDCAxy; }
+  [[nodiscard]] float dcaZ() const { return targetDCAz; }
 };
 template <typename T>
 T timeAssociationOption(InitContext& context, std::string const& task, std::string const& option)
@@ -363,22 +366,22 @@ struct PidFlowChargedTimeProducer {
       timeGlobalSelection = getGlobalTrackSelection();
     }
     timeSDDSelection = getGlobalTrackSelectionSDD();
-    const float ptMin = timeAssociationOption<float>(context, "track-selection", "ptMin");
-    const float ptMax = timeAssociationOption<float>(context, "track-selection", "ptMax");
-    const float etaMin = timeAssociationOption<float>(context, "track-selection", "etaMin");
-    const float etaMax = timeAssociationOption<float>(context, "track-selection", "etaMax");
+    const auto ptMin = timeAssociationOption<float>(context, "track-selection", "ptMin");
+    const auto ptMax = timeAssociationOption<float>(context, "track-selection", "ptMax");
+    const auto etaMin = timeAssociationOption<float>(context, "track-selection", "etaMin");
+    const auto etaMax = timeAssociationOption<float>(context, "track-selection", "etaMax");
     for (auto const& selection : {&timeGlobalSelection, &timeSDDSelection}) {
       selection->SetPtRange(ptMin, ptMax);
       selection->SetEtaRange(etaMin, etaMax);
     }
-    std::string metadata = "association=TrackAssoc;table=PidFlowTimeTracks;charged-only;PID=none;local-density=none;source=Tracks;propagation=target-DCA,USEMatCorrNONE;PV=not-refitted;unique=" + std::to_string(cfgRequireUniqueTimeAssociation);
-    metadata += ";isRun3=" + std::to_string(timeIsRun3) + ";itsMatching=" + std::to_string(matching) + ";dcaSetup=" + std::to_string(dcaSetup) + ";compatibilityIU=" + std::to_string(compatibilityIU);
+    std::string metadata = "association=TrackAssoc;table=PidFlowTimeTracks;charged-only;PID=none;local-density=none;source=Tracks;propagation=target-DCA,USEMatCorrNONE;PV=not-refitted;unique=" + std::to_string(static_cast<int>(cfgRequireUniqueTimeAssociation));
+    metadata += ";isRun3=" + std::to_string(static_cast<int>(timeIsRun3)) + ";itsMatching=" + std::to_string(matching) + ";dcaSetup=" + std::to_string(dcaSetup) + ";compatibilityIU=" + std::to_string(static_cast<int>(compatibilityIU));
     metadata += ";pt=" + std::to_string(ptMin) + "," + std::to_string(ptMax) + ";eta=" + std::to_string(etaMin) + "," + std::to_string(etaMax);
     metadata += ";producer.nSigmaForTimeCompat=" + std::to_string(timeAssociationOption<float>(context, "track-to-collision-association", "nSigmaForTimeCompat"));
     metadata += ";producer.timeMargin=" + std::to_string(timeAssociationOption<float>(context, "track-to-collision-association", "timeMargin"));
     metadata += ";producer.bcWindowForOneSigma=" + std::to_string(timeAssociationOption<int>(context, "track-to-collision-association", "bcWindowForOneSigma"));
-    metadata += ";producer.usePVAssociation=" + std::to_string(timeAssociationOption<bool>(context, "track-to-collision-association", "usePVAssociation"));
-    metadata += ";producer.includeUnassigned=" + std::to_string(timeAssociationOption<bool>(context, "track-to-collision-association", "includeUnassigned"));
+    metadata += ";producer.usePVAssociation=" + std::to_string(static_cast<int>(timeAssociationOption<bool>(context, "track-to-collision-association", "usePVAssociation")));
+    metadata += ";producer.includeUnassigned=" + std::to_string(static_cast<int>(timeAssociationOption<bool>(context, "track-to-collision-association", "includeUnassigned")));
     chargedTimeAssociationConfig->SetTitle(metadata.c_str());
     LOG(info) << "Charged time association: " << metadata;
     if (!cfgTimeAssociationQA) {
@@ -453,7 +456,7 @@ struct PidFlowChargedTimeProducer {
 
   template <typename TTracks>
   std::vector<unsigned int> chargedTimeMultiplicity(aod::TrackAssoc const& pairs, TTracks const& tracks,
-                                                    aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs, aod::AmbiguousTracks const& ambiguousTracks)
+                                                  aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs, aod::AmbiguousTracks const& ambiguousTracks)
   {
     std::vector<unsigned int> counts(tracks.size(), 0);
     std::vector<int64_t> lastCollision(tracks.size(), -1);
@@ -937,10 +940,10 @@ struct PidFlowPtCorr {
 
   enum PidResponseBin {
     kPidRespPion = 0,
-    kPidRespKaon,
-    kPidRespProton,
-    kPidRespOther,
-    kPidRespNTrueBins,
+    kPidRespKaon = 1,
+    kPidRespProton = 2,
+    kPidRespOther = 3,
+    kPidRespNTrueBins = 4,
     kPidRespUnidentified = kPidRespOther,
     kPidRespNRecoBins = kPidRespNTrueBins
   };
@@ -1068,8 +1071,8 @@ struct PidFlowPtCorr {
         auto& h = pidQualityQAHists[i];
         h.tpcPIDClustersVsPt[stage]->Fill(pt, nPIDClusters);
         if (std::isfinite(tpcNSigma[i])) {
-          const double values[]{pt, cent, static_cast<double>(nPIDClusters), tpcNSigma[i]};
-          h.tpcNSigmaVsPIDClusters[stage]->Fill(values);
+          const std::array<double, 4> values{pt, cent, static_cast<double>(nPIDClusters), tpcNSigma[i]};
+          h.tpcNSigmaVsPIDClusters[stage]->Fill(values.data());
         }
       }
     }
@@ -1123,8 +1126,8 @@ struct PidFlowPtCorr {
         }
         h.itsNSigmaVsPt[stage]->Fill(pt, itsNSigma[i]);
         if (std::isfinite(tpcNSigma[i])) {
-          const double values[]{pt, cent, tpcNSigma[i], itsNSigma[i]};
-          h.tpcVsITSNSigma[stage]->Fill(values);
+          const std::array<double, 4> values{pt, cent, tpcNSigma[i], itsNSigma[i]};
+          h.tpcVsITSNSigma[stage]->Fill(values.data());
         }
       }
     }
@@ -3671,7 +3674,7 @@ struct PidFlowPtCorr {
     std::vector<unsigned int> originalUses(sources.size(), 0), timeUses(sources.size(), 0);
     const auto sourceIndex = [&](int64_t trackId) {
       const int64_t index = trackId - sources.offset();
-      if (index < 0 || index >= static_cast<int64_t>(sources.size())) {
+      if (index < 0 || index >= sources.size()) {
         LOGF(fatal, "Association comparison track index is outside the full source track table");
       }
       return index;
@@ -3692,7 +3695,7 @@ struct PidFlowPtCorr {
       for (auto const& track : originalTracks) {
         // Reproduce processData's framework filter and final charged cuts,
         // without requiring or evaluating any PID tables.
-        if (!(track.isGlobalTrack() || track.isGlobalTrackSDD()) || !(std::fabs(track.eta()) < trkQualityOpts.cfgCutEta.value) ||
+        if (!(track.isGlobalTrack() || track.isGlobalTrackSDD() != 0) || !(std::fabs(track.eta()) < trkQualityOpts.cfgCutEta.value) ||
             !trackSelectedForFlow(track) || !isWithinRefPtRange(track.pt())) {
           continue;
         }
@@ -3708,7 +3711,7 @@ struct PidFlowPtCorr {
         }
         ++timeUses[sourceIndex(track.trackId())];
         fillKinematics(track, 1);
-        if (originalIds.count(track.trackId()) != 0) {
+        if (originalIds.contains(track.trackId())) {
           ++common;
           fillKinematics(track, 2);
         } else {
@@ -3716,7 +3719,7 @@ struct PidFlowPtCorr {
         }
       }
       for (auto const& track : originalTracks) {
-        if (originalIds.count(track.globalIndex()) != 0 && timeIds.count(track.globalIndex()) == 0) {
+        if (originalIds.contains(track.globalIndex()) && !timeIds.contains(track.globalIndex())) {
           fillKinematics(track, 3);
         }
       }
@@ -3948,7 +3951,7 @@ struct PidFlowPtCorr {
           registry.fill(HIST("timeAssociation/hPtCentMcSelected"), track.pt(), cent);
         }
         const int64_t labelIndex = track.trackId() - labels.offset();
-        if (labelIndex < 0 || labelIndex >= static_cast<int64_t>(labels.size())) {
+        if (labelIndex < 0 || labelIndex >= labels.size()) {
           LOGF(fatal, "Time-associated source track index is outside McTrackLabels");
         }
         auto source = labels.rawIteratorAt(labelIndex);
