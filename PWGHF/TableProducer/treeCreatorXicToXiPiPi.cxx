@@ -884,10 +884,10 @@ struct HfTreeCreatorXicToXiPiPi {
       for (const auto& particle : particles) {
         float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
         float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
-        if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && !TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
-          continue;
-        }
         if (fillGenInfoForAcceptance) {
+          if (std::abs(particle.flagMcMatchGen()) != BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && std::abs(particle.flagMcMatchGen()) != BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
+            continue;
+          }
           getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
         }
         rowCandidateFullParticles(
@@ -956,10 +956,10 @@ struct HfTreeCreatorXicToXiPiPi {
       for (const auto& particle : particles) {
         float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
         float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
-        if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && !TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
-          continue;
-        }
         if (fillGenInfoForAcceptance) {
+          if (std::abs(particle.flagMcMatchGen()) != BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && std::abs(particle.flagMcMatchGen()) != BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
+            continue;
+          }
           getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
         }
         rowCandidateFullParticles(
@@ -1020,10 +1020,10 @@ struct HfTreeCreatorXicToXiPiPi {
       for (const auto& particle : particles) {
         float ptPi0{-1.f}, ptPi1{-1.f}, ptPiBachelor{-1.f}, ptPiFromLambda{-1.f}, ptPrFromLambda{-1.f};
         float etaPi0{-1.f}, etaPi1{-1.f}, etaPiBachelor{-1.f}, etaPiFromLambda{-1.f}, etaPrFromLambda{-1.f};
-        if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && !TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
-          continue;
-        }
         if (fillGenInfoForAcceptance) {
+          if (std::abs(particle.flagMcMatchGen()) != BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) && std::abs(particle.flagMcMatchGen()) != BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) { // we cannot filter, otherwise we have no daughter particles in the filtered table
+            continue;
+          }
           getMcDaughterInformation(particles, particle, ptPi0, ptPi1, ptPiBachelor, ptPiFromLambda, ptPrFromLambda, etaPi0, etaPi1, etaPiBachelor, etaPiFromLambda, etaPrFromLambda);
         }
 
