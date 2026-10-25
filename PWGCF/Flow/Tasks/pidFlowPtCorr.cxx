@@ -277,7 +277,7 @@ template <typename T>
 T timeAssociationOption(InitContext& context, std::string const& task, std::string const& option)
 {
   T value{};
-  if (!getTaskOptionValue(context, task, option, value, false)) {
+  if (!o2::common::core::getTaskOptionValue(context, task, option, value, false)) {
     LOGF(fatal, "Charged time association needs option %s from producer %s", option.c_str(), task.c_str());
   }
   return value;
