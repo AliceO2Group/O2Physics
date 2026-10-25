@@ -351,6 +351,7 @@ struct Kstarqa {
     if (doprocessEvtLossSigLossMC || doprocessEvtLossSigLossMCPhi) {
       hInvMass.add("MCcorrections/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("MCcorrections/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hInvMass.add("MCcorrections/hSignalLossNumeratorINEL", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("MCcorrections/hImpactParameterRec", "Impact parameter in reconstructed MC", kTH1F, {impactParAxis});
       hInvMass.add("MCcorrections/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParameterGen", "Impact parameter in generated MC", kTH1F, {impactParAxis});
@@ -1949,8 +1950,8 @@ struct Kstarqa {
       if (!RecCollision.has_mcCollision())
         continue;
 
-      if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
-        continue;
+      // if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
+      //   continue;
 
       if (std::abs(RecCollision.posZ()) > configGp.cutzvertex)
         continue;
@@ -2004,6 +2005,9 @@ struct Kstarqa {
       hInvMass.fill(HIST("MCcorrections/hSignalLossDenominator"), mcPart.pt(), multiplicityGen);
       if (isSelectedEvent) {
         hInvMass.fill(HIST("MCcorrections/hSignalLossNumerator"), mcPart.pt(), multiplicityGen);
+      }
+      if (isSelectedEventINEL) {
+        hInvMass.fill(HIST("MCcorrections/hSignalLossNumeratorINEL"), mcPart.pt(), multiplicityGen);
       }
     } // end loop on gen particles
   }
