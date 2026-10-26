@@ -239,7 +239,7 @@ struct Alice3TrackingTranslator {
       SETADDRESS("ePY_fit", m_ePY_fit);
       SETADDRESS("ePZ_fit", m_ePZ_fit);
       SETADDRESS("cov_eX_eX", m_cov_eX_eX);
-      // SETADDRESS("cov_eY_eY", m_cov_eY_eY);
+      SETADDRESS("cov_eY_eY", m_cov_eY_eY);
       SETADDRESS("cov_eZ_eZ", m_cov_eZ_eZ);
       SETADDRESS("cov_ePX_ePX", m_cov_ePX_ePX);
       SETADDRESS("cov_ePY_ePY", m_cov_ePY_ePY);
@@ -278,8 +278,8 @@ struct Alice3TrackingTranslator {
     std::vector<float>* m_ePZ_fit = nullptr; // global momentum pz
 
     // covariance matrices for fitted track parameters (if available)
-    std::vector<float>* m_cov_eX_eX = nullptr; // covariance of global position x
-    // std::vector<float>* m_cov_eY_eY = nullptr; // covariance of global position y
+    std::vector<float>* m_cov_eX_eX = nullptr;   // covariance of global position x
+    std::vector<float>* m_cov_eY_eY = nullptr;   // covariance of global position y
     std::vector<float>* m_cov_eZ_eZ = nullptr;   // covariance of global position z
     std::vector<float>* m_cov_ePX_ePX = nullptr; // covariance of global momentum px
     std::vector<float>* m_cov_ePY_ePY = nullptr; // covariance of global momentum py
@@ -326,7 +326,7 @@ struct Alice3TrackingTranslator {
     }
     std::vector<unsigned int>* barcode = nullptr;
   };
-  void addMCParticle(int collIndex, ParticleStruct& fileParticles, int iParticle, uint8_t flags, int firstMother, int firstDaughter, int secondDaughter, int numberOfHits)
+  void addMCParticle(int collIndex, ParticleStruct& fileParticles, int iParticle, uint8_t flags, int firstMother, int firstDaughter, int secondDaughter, int numberOfHits, float secondaryVertexRadius)
   {
     int mothers[2] = {firstMother, firstMother};
     int daughters[2] = {firstDaughter, secondDaughter};
@@ -341,12 +341,13 @@ struct Alice3TrackingTranslator {
                            fileParticles.m_py->at(iParticle),                                              // m_py
                            fileParticles.m_pz->at(iParticle),                                              // m_pz
                            std::hypot(fileParticles.m_p->at(iParticle), fileParticles.m_m->at(iParticle)), // e
-                           fileParticles.m_vx->at(iParticle),                                              // m_vx
-                           fileParticles.m_vy->at(iParticle),                                              // m_vy
-                           fileParticles.m_vz->at(iParticle),                                              // m_vz
-                           fileParticles.m_vt->at(iParticle));                                             // m_vt
+                           fileParticles.m_vx->at(iParticle) * 0.1,                                        // m_vx
+                           fileParticles.m_vy->at(iParticle) * 0.1,                                        // m_vy
+                           fileParticles.m_vz->at(iParticle) * 0.1,                                        // m_vz
+                           fileParticles.m_vt->at(iParticle) * 0.1);                                       // m_vt
     tableMCParticlesExtraA3(numberOfHits,                                                                  // number_of_hits
-                            fileParticles.m_q->at(iParticle));                                             // charge
+                            fileParticles.m_q->at(iParticle),                                              // charge
+                            secondaryVertexRadius);                                                        // secondary_vertex_radius
   };
 
   void process(o2::aod::BCs const&)
@@ -426,11 +427,13 @@ struct Alice3TrackingTranslator {
 
       // barcode -> global AO2D index (used later for track labels)
       std::map<Key, int> barcodeToGlobalIdx;
-      std::map<Key, std::vector<float>> barcodeToVertexPosition;
+      std::map<int, std::vector<float>> globalToVertexPosition;
       std::map<int, int> GlobalIdxToMotherIdx;
+      std::map<int, int> GlobalIdxSecVertexRadiusIncoming;
       std::map<int, int> GlobalIdxToPDGCode;
       std::map<int, int> GlobalToLocalIdx;
       std::map<int, std::vector<int>> GlobalIdxToDaughterIdxs;
+
       for (size_t iPart = 0; iPart < nParticlesSim; ++iPart) {
         Key key = keyOf(
           fileParticlesSim.m_vertex_primary->at(iPart),
@@ -465,6 +468,7 @@ struct Alice3TrackingTranslator {
           auto iteratorMother = barcodeToGlobalIdx.find(kd);
           if (iteratorMother != barcodeToGlobalIdx.end()) {
             int motherIdx = iteratorMother->second;
+            GlobalIdxSecVertexRadiusIncoming[motherIdx] = std::hypot(fileVertices.m_x->at(j) * 0.1, fileVertices.m_y->at(j) * 0.1);
             for (size_t d2 = 0; d2 < (*fileVertices.m_outgoing_particles_vertex_secondary)[j].size(); ++d2) {
               Key kd2 = keyOf(
                 (*fileVertices.m_outgoing_particles_vertex_primary)[j][d2],
@@ -472,12 +476,12 @@ struct Alice3TrackingTranslator {
                 (*fileVertices.m_outgoing_particles_particle)[j][d2],
                 (*fileVertices.m_outgoing_particles_generation)[j][d2],
                 (*fileVertices.m_outgoing_particles_sub_particle)[j][d2]);
-              barcodeToVertexPosition[kd2].push_back(fileVertices.m_x->at(j));
-              barcodeToVertexPosition[kd2].push_back(fileVertices.m_y->at(j));
-              barcodeToVertexPosition[kd2].push_back(fileVertices.m_z->at(j));
               auto iteratorDaughter = barcodeToGlobalIdx.find(kd2);
               if (iteratorDaughter != barcodeToGlobalIdx.end()) {
                 int daughterIdx = iteratorDaughter->second;
+                globalToVertexPosition[daughterIdx].push_back(fileVertices.m_x->at(j));
+                globalToVertexPosition[daughterIdx].push_back(fileVertices.m_y->at(j));
+                globalToVertexPosition[daughterIdx].push_back(fileVertices.m_z->at(j));
                 GlobalIdxToMotherIdx[daughterIdx] = motherIdx;
                 GlobalIdxToDaughterIdxs[motherIdx].push_back(daughterIdx);
               }
@@ -486,7 +490,8 @@ struct Alice3TrackingTranslator {
         }
       }
       for (size_t iPart = 0; iPart < nParticlesSim; ++iPart) {
-        int globalIdx = firstIdxThisEvent + static_cast<int>(iPart);
+        float secondaryVertexRadius = -1.0f;
+        int globalIdx = firstIdxThisEvent + (int)iPart;
         int motherIdx = -1;
         if (GlobalIdxToMotherIdx.find(globalIdx) != GlobalIdxToMotherIdx.end()) {
           motherIdx = GlobalIdxToMotherIdx[globalIdx];
@@ -501,6 +506,13 @@ struct Alice3TrackingTranslator {
           if (daughters.size() > 1) {
             secondDaughter = daughters[1];
           }
+          if (globalToVertexPosition.find(globalIdx) != globalToVertexPosition.end()) {
+            const auto& vertexPos = globalToVertexPosition[globalIdx];
+            secondaryVertexRadius = std::hypot(vertexPos[0] * 0.1, vertexPos[1] * 0.1);
+          }
+          if (secondaryVertexRadius == -1) {
+            secondaryVertexRadius = GlobalIdxSecVertexRadiusIncoming[globalIdx];
+          }
         }
         // Determine flags for the MC particle
         // TODO: For now primary are only those without mother, but all based on PhysicalPrimary definition should be considered.
@@ -513,24 +525,24 @@ struct Alice3TrackingTranslator {
         }
         GlobalIdxToPDGCode[globalIdx] = fileParticlesSim.m_particle_type->at(iPart);
         GlobalToLocalIdx[globalIdx] = iPart;
-        addMCParticle(tableMcCollisions.lastIndex(), fileParticlesSim, iPart, flags, motherIdx, firstDaughter, secondDaughter, fileParticlesSim.m_number_of_hits->at(iPart));
+        addMCParticle(tableMcCollisions.lastIndex(), fileParticlesSim, iPart, flags, motherIdx, firstDaughter, secondDaughter, fileParticlesSim.m_number_of_hits->at(iPart), secondaryVertexRadius);
       }
-
-      tableCollisions(0,          // bcId
-                      collisionX, // posX
-                      collisionY, // posY
-                      collisionZ, // posZ
-                      0.0f,       // covXX
-                      0.0f,       // covXY
-                      0.0f,       // covXZ
-                      0.0f,       // covYY
-                      0.0f,       // covYZ
-                      0.0f,       // covZZ
-                      0,          // flags
-                      0.0f,       // m_chi2Sum
-                      0,          // numContrib
-                      0.0f,       // collisionTime
-                      0.0f);      // collisionTimeRes
+      const float scale = 0.1f;
+      tableCollisions(0,                  // bcId
+                      collisionX * scale, // posX
+                      collisionY * scale, // posY
+                      collisionZ * scale, // posZ
+                      0.0f,               // covXX
+                      0.0f,               // covXY
+                      0.0f,               // covXZ
+                      0.0f,               // covYY
+                      0.0f,               // covYZ
+                      0.0f,               // covZZ
+                      0,                  // flags
+                      0.0f,               // m_chi2Sum
+                      0,                  // numContrib
+                      0.0f,               // collisionTime
+                      0.0f);              // collisionTimeRes
 
       tableMcCollisionLabels(iEvent, // mcCollisionId
                              0);     // mcMask
@@ -585,7 +597,7 @@ struct Alice3TrackingTranslator {
 
         // Fill covariance matrices
         float cxx = fileTracksummary.m_cov_eX_eX->at(iTrack);
-        float cyy = cxx; // fileTracksummary.cov_eY_eY->at(iTrack);
+        float cyy = fileTracksummary.m_cov_eY_eY->at(iTrack);
         float czz = fileTracksummary.m_cov_eZ_eZ->at(iTrack);
         float cxy = fileTracksummary.m_cov_eX_eY->at(iTrack);
         float cxz = fileTracksummary.m_cov_eX_eZ->at(iTrack);
@@ -606,7 +618,8 @@ struct Alice3TrackingTranslator {
         float czpy = fileTracksummary.m_cov_eZ_ePY->at(iTrack);
         float czpz = fileTracksummary.m_cov_eZ_ePZ->at(iTrack);
         // Create TrackParCov object with covariance matrix
-        std::array<float, 3> position = {x, y, z};
+
+        std::array<float, 3> position = {x * scale, y * scale, z * scale};
         std::array<float, 3> momentum = {px, py, pz};
         std::array<float, 21> trackCov = {cxx, cxy, cyy, cxz, cyz, czz, cxpx, cypx, czpx, cpxpx, cxpy, cypy, czpy, cpxpy, cpypy, cxpz, cypz, czpz, cpxpz, cpypz, cpzpz};
         o2::track::TrackParCov trackParCov(position, momentum, trackCov, charge);
@@ -669,15 +682,28 @@ struct Alice3TrackingTranslator {
         tableTracksAlice3(true,  // isReconstructed
                           -1.f,  // todo: track innermost update
                           -1.f); // todo: track outermost update
-        if (mcParticleIdx > 0)
+        if (mcParticleIdx > 0) {
           tableTracksAlice3Pdg(GlobalIdxToPDGCode[mcParticleIdx]); // PdgCode to the linked MC truth particle
-        else
+        } else {
           tableTracksAlice3Pdg(0); // No linked MC truth particle
+        }
 
-        tableTracksExtraA3(m_nMeasurements, // nSiliconHits (using m_nMeasurements as proxy)
-                           0,               // nTPCHits
-                           0,               // trackType
-                           false);          // isPVContributor
+        float secondaryVertexRadius = 0;
+        std::array<float, 3> vertexPos = {0.0, 0.0, 0.0};
+        if (mcParticleIdx > 0) {
+          vertexPos[0] = fileParticlesSim.m_vx->at(GlobalToLocalIdx[mcParticleIdx]) * 0.1;
+          vertexPos[1] = fileParticlesSim.m_vy->at(GlobalToLocalIdx[mcParticleIdx]) * 0.1;
+          vertexPos[2] = fileParticlesSim.m_vz->at(GlobalToLocalIdx[mcParticleIdx]) * 0.1;
+          secondaryVertexRadius = std::hypot(vertexPos[0], vertexPos[1]);
+        }
+        tableTracksExtraA3(m_nMeasurements,       // nSiliconHits (using m_nMeasurements as proxy)
+                           0,                     // nTPCHits
+                           0,                     // trackType
+                           false,                 // isPVContributor
+                           secondaryVertexRadius, // secondaryVertexRadius
+                           vertexPos[0],
+                           vertexPos[1],
+                           vertexPos[2]);
         // Fill extra track info
         tableStoredTracksExtra(0.f,                                 // TPCInnerParam
                                static_cast<uint32_t>(0),            // Flags
