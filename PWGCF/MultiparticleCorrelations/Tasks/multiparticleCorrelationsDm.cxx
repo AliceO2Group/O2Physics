@@ -10,7 +10,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file student-o2physics.cxx
+/// \file multiparticleCorrelationsDm.cxx
 /// \brief Task to calculate multiparticle correlations and related observables
 /// \author Daniel Molnar
 
@@ -22,12 +22,12 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
 
-#include "CommonConstants/MathConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/DataTypes.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,6 +53,9 @@ using TrackSim = aod::McParticles::iterator;
 #include <TList.h>
 #include <TString.h>
 #include <TSystem.h>
+
+#include <string>
+#include <vector>
 
 // *) Define enums:
 enum ERecSim { ERec = 0,
@@ -307,7 +310,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
       // File you want to access is in your home directory in AliEn.
       // In this branch, there is a special code to support file access in that case.
 
-      TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+      const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
       // add #include <TGrid.h> for it to work
 
       if (!alien) {
@@ -458,7 +461,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
     return true; // all particle cuts passed
   }
 
-  //__ Fill all event histograms __	ba = EBefore or EAfter
+  //__ Fill all event histograms __ #ba = EBefore or EAfter
   template <ERecSim rs, typename T1, typename T2>
   void fillEventHistograms(T1 const& collision, T2 const& tracks, EBeforeAfter ba)
   {
@@ -679,47 +682,47 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
 
     // *) Book (pt distribution and azimuthal-angle histograms) + event quantities with binning defined through configurables in the json file:
     std::vector<float> lPtBins = cfPtBins.value; // define local array and initialize it from an array set in the configurables
-    int nBins = (int)lPtBins[0];
+    int nBins = static_cast<int>(lPtBins[0]);
     float min = lPtBins[1];
     float max = lPtBins[2];
 
     std::vector<float> lPhiBins = cfPhiBins.value; // azimuthal angle
-    int nPhiBins = (int)lPhiBins[0];
+    int nPhiBins = static_cast<int>(lPhiBins[0]);
     float phiMin = lPhiBins[1];
     float phiMax = lPhiBins[2];
 
     std::vector<float> lMultBins = cfMultiplicityBins.value; // multiplicity
-    int nMultBins = (int)lMultBins[0];
+    int nMultBins = static_cast<int>(lMultBins[0]);
     float multMin = lMultBins[1];
     float multMax = lMultBins[2];
 
     std::vector<float> lRefmultBins = cfRefmultiplicityBins.value; // reference multiplicity
-    int nRefMultBins = (int)lRefmultBins[0];
+    int nRefMultBins = static_cast<int>(lRefmultBins[0]);
     float refMultMin = lRefmultBins[1];
     float refMultMax = lRefmultBins[2];
 
     std::vector<float> lCentBins = cfCentralityBins.value; // centrality
-    int nCentBins = (int)lCentBins[0];
+    int nCentBins = static_cast<int>(lCentBins[0]);
     float centMin = lCentBins[1];
     float centMax = lCentBins[2];
 
     std::vector<float> lBBins = cfImpactparameterBins.value; // impact parameter
-    int nBBins = (int)lBBins[0];
+    int nBBins = static_cast<int>(lBBins[0]);
     float bMin = lBBins[1];
     float bMax = lBBins[2];
 
     std::vector<float> lVxBins = cfVertexXBins.value; // vertex X
-    int nvxBins = (int)lVxBins[0];
+    int nvxBins = static_cast<int>(lVxBins[0]);
     float vxMin = lVxBins[1];
     float vxMax = lVxBins[2];
 
     std::vector<float> lVyBins = cfVertexYBins.value; // vertex y
-    int nvyBins = (int)lVyBins[0];
+    int nvyBins = static_cast<int>(lVyBins[0]);
     float vyMin = lVyBins[1];
     float vyMax = lVyBins[2];
 
     std::vector<float> lVzBins = cfVertexZBins.value; // vertex z
-    int nvzBins = (int)lVzBins[0];
+    int nvzBins = static_cast<int>(lVzBins[0]);
     float vzMin = lVzBins[1];
     float vzMax = lVzBins[2];
 
