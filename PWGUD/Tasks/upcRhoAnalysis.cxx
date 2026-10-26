@@ -345,6 +345,18 @@ struct UpcRhoAnalysis {
       rQC.add("QC/tracks/all/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
       rQC.add("QC/tracks/all/hTpcSignalVsP", ";|#it{p}| (GeV/#it{c});TPC d#it{E}/d#it{x} signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
       rQC.add("QC/tracks/all/hTpcSignalVsPt", ";#it{p}_{T} (GeV/#it{c});TPC d#it{E}/d#it{x} signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+      rQC.add("QC/tracks/all/hLength", ";track length (cm);counts", kTH1D, {{1000, 0.0, 1000.0}});
+      rQC.add("QC/tracks/all/hTofChi2", ";TOF #it{#chi}^{2};counts", kTH1D, {{100, 0.0, 10.0}});
+      rQC.add("QC/tracks/all/hTofSignalVsP", ";|#it{p}| (GeV/#it{c});TOF signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+      rQC.add("QC/tracks/all/hTofSignalVsPt", ";#it{p}_{T} (GeV/#it{c});TOF signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+      rQC.add("QC/tracks/all/hTofExpMom", ";expected momentum from TOF (GeV/#it{c});counts", kTH1D, {ptAxis});
+      rQC.add("QC/tracks/all/hBeta", ";TOF #it{#beta};counts", kTH1D, {{1000, 0.0, 1.0}});
+      rQC.add("QC/tracks/all/hBetaError", ";TOF #it{#beta} error;counts", kTH1D, {{1000, 0.0, 1.0}});
+      rQC.add("QC/tracks/all/hTofNSigmaPi", ";TOF #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hTofNSigmaEl", ";TOF #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hTofNSigmaKa", ";TOF #it{n#sigma}(K);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hTofNSigmaPr", ";TOF #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hTofNSigmaMu", ";TOF #it{n#sigma}(#mu);counts", kTH1D, {nSigmaAxis});
       // tracks passing selections
       rQC.addClone("QC/tracks/all/", "QC/tracks/trackSelections/");
       rQC.addClone("QC/tracks/all/", "QC/tracks/systemSelections/");
@@ -536,6 +548,18 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNClsCrossedRowsOverNClsFindable"), (static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcSignalVsP"), std::abs(momentum(track.px(), track.py(), track.pz())), track.tpcSignal());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcSignalVsPt"), track.pt(), track.tpcSignal());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hLength"), track.length());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofChi2"), track.tofChi2());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofSignalVsP"), std::abs(momentum(track.px(), track.py(), track.pz())), track.tofSignal());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofSignalVsPt"), track.pt(), track.tofSignal());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofExpMom"), track.tofExpMom());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hBeta"), track.beta());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hBetaError"), track.betaerror());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaPi"), track.tofNSigmaPi());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaEl"), track.tofNSigmaEl());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaKa"), track.tofNSigmaKa());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaPr"), track.tofNSigmaPr());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaMu"), track.tofNSigmaMu());
   }
 
   template <int cuts, int charge>
