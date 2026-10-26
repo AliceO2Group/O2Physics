@@ -4190,6 +4190,16 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "alice3RICHTOFPIDPiRej") {
+    cut->AddCut(GetAnalysisCut("alice3D0PionRICHTOFPID"));
+    return cut;
+  }
+
+  if (nameStr == "alice3RICHTOFPIDKaRej") {
+    cut->AddCut(GetAnalysisCut("alice3D0KaonRICHTOFPID"));
+    return cut;
+  }
+
   delete cut;
   LOGF(fatal, Form("Did not find cut %s. Returning nullptr", cutName));
   return nullptr;
@@ -7457,6 +7467,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (nameStr == "alice3TOFEta") {
+    cut->AddCut(VarManager::kPt, 0.7, 1000.0);
     cut->AddCut(VarManager::kEta, -2.0, 2.0); // Total tracker acceptance in v3b geomety
     return cut;
   }
@@ -7597,6 +7608,38 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
     cut->AddCut(VarManager::kOuterTOFnSigmaKa, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
     cut->AddCut(VarManager::kOuterTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
+    return cut;
+  }
+
+  if (nameStr == "alice3D0KaonRICHTOFPID") {
+    cut->AddCut(VarManager::kInnerTOFnSigmaKa, -3.0, 3.0, false, VarManager::kP, 0.0, 1.5);
+    cut->AddCut(VarManager::kOuterTOFnSigmaKa, -3.0, 3.0, false, VarManager::kP, 0.0, 2.5);
+    cut->AddCut(VarManager::kRICHnSigmaKa, -3.0, 3.0, false, VarManager::kP, 2.0, 1000.0, false, VarManager::kHasRICHSigKa, 0.5, 1.5);
+
+    cut->AddCut(VarManager::kInnerTOFnSigmaPi, -3.0, 3.0, true, VarManager::kP, 0.0, 1.5);
+    cut->AddCut(VarManager::kInnerTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 1.5);
+
+    cut->AddCut(VarManager::kOuterTOFnSigmaPi, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
+
+    cut->AddCut(VarManager::kRICHnSigmaPi, -3.0, 3.0, true, VarManager::kP, 0.57, 1000.0, false, VarManager::kRICHnSigmaPi, 0.5, 1.5);
+    cut->AddCut(VarManager::kRICHnSigmaPr, -3.0, 3.0, true, VarManager::kP, 3.8, 1000.0, false, VarManager::kRICHnSigmaPr, 0.5, 1.5);
+    return cut;
+  }
+
+  if (nameStr == "alice3D0PionRICHTOFPID") {
+    cut->AddCut(VarManager::kInnerTOFnSigmaPi, -3.0, 3.0, false, VarManager::kP, 0.0, 1.5);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPi, -3.0, 3.0, false, VarManager::kP, 0.0, 2.5);
+    cut->AddCut(VarManager::kRICHnSigmaPi, -3.0, 3.0, false, VarManager::kP, 0.57, 1000.0, false, VarManager::kHasRICHSigKa, 0.5, 1.5);
+
+    cut->AddCut(VarManager::kInnerTOFnSigmaKa, -3.0, 3.0, true, VarManager::kP, 0.0, 1.5);
+    cut->AddCut(VarManager::kInnerTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 1.5);
+
+    cut->AddCut(VarManager::kOuterTOFnSigmaKa, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
+
+    cut->AddCut(VarManager::kRICHnSigmaKa, -3.0, 3.0, true, VarManager::kP, 2.0, 1000.0, false, VarManager::kRICHnSigmaPi, 0.5, 1.5);
+    cut->AddCut(VarManager::kRICHnSigmaPr, -3.0, 3.0, true, VarManager::kP, 3.8, 1000.0, false, VarManager::kRICHnSigmaPr, 0.5, 1.5);
     return cut;
   }
 
