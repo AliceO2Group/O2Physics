@@ -344,11 +344,11 @@ struct EnergyFlowGfw {
     registry.add("zdc/energyZnVsNGlobalTracks", "Triggered events with finite ZN energies;N_{global tracks};E_{ZNA}+E_{ZNC}", HistType::kTH2F, {axisZdcTrackMultiplicity, axisZdcTotalEnergy});
     registry.add("zdc/energyZpVsNGlobalTracks", "Triggered events with finite ZP energies;N_{global tracks};E_{ZPA}+E_{ZPC}", HistType::kTH2F, {axisZdcTrackMultiplicity, axisZdcTotalEnergy});
     registry.add("zdc/energyTotalVsNGlobalTracks", "Triggered events with finite common energies;N_{global tracks};#Sigma E_{ZDC}^{common}", HistType::kTH2F, {axisZdcTrackMultiplicity, axisZdcTotalEnergy});
-    registry.add("zdc/spectatorEstimateVsNGlobalTracks", "Triggered events passing current nonnegative-energy requirement;N_{global tracks};current N_{spectators} estimate", HistType::kTH2F, {axisZdcTrackMultiplicity, axisTotalSpectators});
+    registry.add("zdc/spectatorEstimateVsNGlobalTracks", "Triggered events with finite common energies;N_{global tracks};N_{spectators} estimate", HistType::kTH2F, {axisZdcTrackMultiplicity, axisTotalSpectators});
     registry.add("zdc/energyZnVsCentrality", "Triggered events with finite ZN energies;centrality (%);E_{ZNA}+E_{ZNC}", HistType::kTH2F, {axisCentrality, axisZdcTotalEnergy});
     registry.add("zdc/energyZpVsCentrality", "Triggered events with finite ZP energies;centrality (%);E_{ZPA}+E_{ZPC}", HistType::kTH2F, {axisCentrality, axisZdcTotalEnergy});
     registry.add("zdc/energyTotalVsCentrality", "Triggered events with finite common energies;centrality (%);#Sigma E_{ZDC}^{common}", HistType::kTH2F, {axisCentrality, axisZdcTotalEnergy});
-    registry.add("zdc/spectatorEstimateVsCentrality", "Triggered events passing current nonnegative-energy requirement;centrality (%);current N_{spectators} estimate", HistType::kTH2F, {axisCentrality, axisTotalSpectators});
+    registry.add("zdc/spectatorEstimateVsCentrality", "Triggered events with finite common energies;centrality (%);N_{spectators} estimate", HistType::kTH2F, {axisCentrality, axisTotalSpectators});
     registry.add("zdc/meanZNAByNGlobalTracks", "Mean ZNA response;N_{global tracks};#LT E_{ZNA} #GT", HistType::kTProfile, {axisZdcTrackMultiplicity});
     registry.add("zdc/meanZNCByNGlobalTracks", "Mean ZNC response;N_{global tracks};#LT E_{ZNC} #GT", HistType::kTProfile, {axisZdcTrackMultiplicity});
     registry.add("zdc/meanZPAByNGlobalTracks", "Mean ZPA response;N_{global tracks};#LT E_{ZPA} #GT", HistType::kTProfile, {axisZdcTrackMultiplicity});
@@ -398,12 +398,14 @@ struct EnergyFlowGfw {
     float totalEnergy = 0.f;
     for (int index = 0; index < 4; ++index) {
       const float value = energies[index];
-      if (!std::isfinite(value) || value < 0.f) {
+      if (!std::isfinite(value)) {
         return -1.f;
       }
       totalEnergy += value / responseFactors[index];
     }
-    return totalEnergy / cfgSpectatorEnergyPerNucleon.value;
+    const float spectators = totalEnergy / cfgSpectatorEnergyPerNucleon.value;
+    // Preserve signed pedestal fluctuations in the sum, then enforce the physical boundary.
+    return std::isfinite(spectators) ? std::max(0.f, spectators) : -1.f;
   }
 
   template <typename TZdc>
@@ -553,8 +555,8 @@ struct EnergyFlowGfw {
         registry.fill(HIST("zdc/energyTotalVsCentrality"), centrality, totalEnergy);
         registry.fill(HIST("zdc/meanTotalByCentrality"), centrality, totalEnergy);
       }
-      if (allNonnegative) {
-        const float spectators = totalSpectators(zdc);
+      const float spectators = totalSpectators(zdc);
+      if (spectators >= 0.f) {
         registry.fill(HIST("zdc/spectatorEstimateVsNGlobalTracks"), numberOfGlobalTracks, spectators);
         if (validCentrality) {
           registry.fill(HIST("zdc/spectatorEstimateVsCentrality"), centrality, spectators);
