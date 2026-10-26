@@ -310,6 +310,9 @@ struct UpcRhoAnalysis {
       rQC.add("QC/collisions/all/hRecoMode", ";reconstruction mode;counts", kTH1D, {{2, -0.5, 1.5}});
       rQC.add("QC/collisions/hNumContribVsPVTracks", ";number of track.isPVContributor() per collision;collision.numContrib();counts", kTH2D, {{101, -0.5, 100.5}, {101, -0.5, 100.5}});
       rQC.add("QC/collisions/hLocalBC", ";BC ID;counts", kTH1D, {{o2::constants::lhc::LHCMaxBunches, -0.5, static_cast<double>(o2::constants::lhc::LHCMaxBunches) - 0.5}});
+      rQC.add("QC/collisions/all/hkNoCollInTimeRangeStandard", ";kNoCollInTimeRangeStandard;counts", kTH1D, {{2, -0.5, 1.5}});
+      rQC.add("QC/collisions/all/hkNoCollInRofStandard", ";kNoCollInRofStandard;counts", kTH1D, {{2, -0.5, 1.5}});
+      rQC.add("QC/collisions/all/hkNoHighMultCollInPrevRof", ";kNoHighMultCollInPrevRof;counts", kTH1D, {{2, -0.5, 1.5}});
       // events with selected rho candidates
       rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
       rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
@@ -522,6 +525,9 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hTimeFDDC"), collision.timeFDDC());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hOccupancyInTime"), collision.occupancyInTime());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hRecoMode"), collision.flags());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hkNoCollInTimeRangeStandard"), collision.trs());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hkNoCollInRofStandard"), collision.trofs());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hkNoHighMultCollInPrevRof"), collision.hmpr());
   }
 
   template <int cuts, typename T>
