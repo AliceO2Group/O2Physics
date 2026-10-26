@@ -16,7 +16,7 @@
 #include <Framework/ProcessingContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include "ML/3rdparty/GPUORTFloat16.h"
+#include <ML/3rdparty/GPUORTFloat16.h>
 #include <onnxruntime_cxx_api.h>
 
 #include <algorithm>
