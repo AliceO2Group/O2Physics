@@ -86,8 +86,10 @@ struct FemtoPairMcParticleMcParticle {
   closepairrejection::ConfCprTrackTrack confCpr;
 
   pairbuilder::PairMcParticleMcParticleBuilder<
-    mcparticlehistmanager::PrefixMcParticle1,
-    mcparticlehistmanager::PrefixMcParticle2,
+    mcparticlehistmanager::PrefixMcParticle1Se,
+    mcparticlehistmanager::PrefixMcParticle2Se,
+    mcparticlehistmanager::PrefixMcParticle1Me,
+    mcparticlehistmanager::PrefixMcParticle2Me,
     pairhistmanager::PrefixMcParticleMcParticleSe,
     pairhistmanager::PrefixMcParticleMcParticleMe,
     closepairrejection::PrefixMcParticleMcParticleSe,
