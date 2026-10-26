@@ -78,7 +78,7 @@ class BaseSelection
   {
     // check index
     if (static_cast<std::size_t>(observableIndex) >= NumObservables) {
-      LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
+      LOG(fatal) << "Selection '" << selectionName << "': observable is not valid. Observable (index) has to be smaller than " << NumObservables;
     }
     // init selection container for selection at given index
     mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName,
@@ -112,7 +112,7 @@ class BaseSelection
                     bool isOptionalCut)
   {
     if (static_cast<std::size_t>(observableIndex) >= NumObservables) {
-      LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
+      LOG(fatal) << "Selection '" << selectionName << "': observable is not valid. Observable (index) has to be smaller than " << NumObservables;
     }
     mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName,
                                                                                                       lowerLimit,
@@ -146,7 +146,7 @@ class BaseSelection
   {
     // check index
     if (static_cast<std::size_t>(observableIndex) >= NumObservables) {
-      LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
+      LOG(fatal) << "Selection '" << selectionName << "': observable is not valid. Observable (index) has to be smaller than " << NumObservables;
     }
     // init selection container for selection at given index
     mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName,
@@ -191,7 +191,7 @@ class BaseSelection
         mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{1}, limits::LimitType::kEqual, false, false, false);
         break;
       default:
-        LOG(fatal) << "Invalid switch for boolean selection";
+        LOG(fatal) << "Selection '" << selectionName << "': invalid switch for boolean selection";
     }
     addSelection(observableIndex);
   }
@@ -577,7 +577,7 @@ class BaseSelection
     }
 
     if (mNSelectionBits > sizeof(BitmaskType) * CHAR_BIT) {
-      LOG(fatal) << "Too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " number of bits are supported";
+      LOG(fatal) << "Selection '" << mSelectionContainers.at(observableIndex).getSelectionName() << "': too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " number of bits are supported";
     }
   }
 
