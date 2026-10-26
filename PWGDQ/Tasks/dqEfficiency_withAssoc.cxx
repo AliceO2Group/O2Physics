@@ -24,6 +24,7 @@
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/TableHelper.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -309,6 +310,10 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
+  Configurable<bool> cfgUseRCT{"cfgUseRCT", false, "Apply RCT quality selection"};
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT", "RCT selection label"};
+  Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Also check ZDC quality"};
+
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
 
@@ -321,6 +326,10 @@ struct AnalysisEventSelection {
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
   std::map<std::string, std::string> fMetadataRCT, fHeader;
   int fCurrentRun = -1;
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT"};
+  std::map<uint64_t, uint32_t> rctFlags;
+  int rctRun = -1;
 
   void init(o2::framework::InitContext& context)
   {
@@ -378,6 +387,48 @@ struct AnalysisEventSelection {
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     fCCDBApi.init(fConfigCcdbUrl.value);
+
+    if (cfgUseRCT.value) {
+      rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value);
+
+      if (!rctChecker.any()) {
+        LOGF(fatal, "Empty RCT mask: check cfgRCTLabel");
+      }
+    }
+  }
+
+  void loadRCT(int run, uint64_t timestamp)
+  {
+    std::map<std::string, std::string> metadata{{"run", std::to_string(run)}};
+
+    auto* flags = fCCDB->getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", timestamp, metadata);
+    if (flags == nullptr || flags->empty()) {
+      LOGF(fatal, "Missing or empty RCT flags for run " + std::to_string(run));
+    }
+
+    LOG(info) << "Requesting RCT/Flags/RunFlags" << " run=" << run << " timestamp=" << timestamp;
+
+    rctFlags = *flags;
+    rctRun = run;
+  }
+
+  bool passesRCT(int run, uint64_t timestamp)
+  {
+    if (!cfgUseRCT.value) {
+      return true;
+    }
+
+    if (run != rctRun) {
+      loadRCT(run, timestamp);
+    }
+
+    auto iterator = rctFlags.upper_bound(timestamp);
+    if (iterator == rctFlags.begin()) {
+      return false;
+    }
+
+    const uint32_t flags = std::prev(iterator)->second;
+    return (static_cast<uint64_t>(flags) & rctChecker.value()) == 0;
   }
 
   template <uint32_t TEventFillMap, typename TEvents, typename TEventsMC>
@@ -406,7 +457,7 @@ struct AnalysisEventSelection {
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", dqefficiency_helpers::varValues()); // automatically fill all the histograms in the class Event
       }
-      if (fEventCut->IsSelected(dqefficiency_helpers::varValues())) {
+      if (fEventCut->IsSelected(dqefficiency_helpers::varValues()) && passesRCT(event.runNumber(), event.timestamp())) {
         if (fConfigQA) {
           fHistMan->FillHistClass("Event_AfterCuts", dqefficiency_helpers::varValues());
         }
