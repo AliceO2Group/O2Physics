@@ -44,6 +44,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

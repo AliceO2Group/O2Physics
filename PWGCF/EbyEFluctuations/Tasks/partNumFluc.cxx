@@ -15,6 +15,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -72,16 +73,16 @@
 #include <utility>
 #include <vector>
 
-#define C_CS(cs) /* NOLINT(cppcoreguidelines-macro-usage) */                                                  \
-  []<std::size_t... indices>(const std::index_sequence<indices...>) constexpr -> ConstStr<(cs)[indices]...> { \
-    static_assert(std::is_array_v<std::remove_cvref_t<decltype(cs)>> &&                                       \
-                  std::same_as<std::remove_extent_t<std::remove_cvref_t<decltype(cs)>>, char>);               \
-    return ConstStr<(cs)[indices]...>{};                                                                      \
+#define C_CS(cs) /* NOLINT(cppcoreguidelines-macro-usage) */                                                            \
+  []<std::size_t... indices>(const std::index_sequence<indices...>&) constexpr noexcept -> ConstStr<(cs)[indices]...> { \
+    static_assert(std::is_array_v<std::remove_cvref_t<decltype(cs)>> &&                                                 \
+                  std::same_as<std::remove_extent_t<std::remove_cvref_t<decltype(cs)>>, char>);                         \
+    return ConstStr<(cs)[indices]...>{};                                                                                \
   }(std::make_index_sequence<sizeof(cs) - 1>{})
-#define C_SV(sv) /* NOLINT(cppcoreguidelines-macro-usage) */                                                  \
-  []<std::size_t... indices>(const std::index_sequence<indices...>) constexpr -> ConstStr<(sv)[indices]...> { \
-    static_assert(std::same_as<std::remove_cvref_t<decltype(sv)>, std::string_view>);                         \
-    return ConstStr<(sv)[indices]...>{};                                                                      \
+#define C_SV(sv) /* NOLINT(cppcoreguidelines-macro-usage) */                                                            \
+  []<std::size_t... indices>(const std::index_sequence<indices...>&) constexpr noexcept -> ConstStr<(sv)[indices]...> { \
+    static_assert(std::same_as<std::remove_cvref_t<decltype(sv)>, std::string_view>);                                   \
+    return ConstStr<(sv)[indices]...>{};                                                                                \
   }(std::make_index_sequence<(sv).size()>{})
 
 using namespace o2;
@@ -324,31 +325,31 @@ template <typename E>
   requires IsValidEnum<E>
 constexpr std::int32_t NEs{toI(E::N)};
 
-enum class NameKind {
+enum class NameKind : std::int8_t {
   Default = 0,
   Lower,
   Display,
   DisplayLower,
   N
 };
-enum class DataMode {
+enum class DataMode : std::int8_t {
   McMcParticle = 0,
   McTrack,
   RawTrack,
   N
 };
-enum class Selection {
+enum class Selection : std::int8_t {
   Loose = 0,
   Default,
   Tight,
   N
 };
-enum class RangeEdge {
+enum class RangeEdge : std::int8_t {
   Min = 0,
   Max,
   N
 };
-enum class McEventSelection {
+enum class McEventSelection : std::int8_t {
   All = 0,
   Good,
   Inel,
@@ -356,7 +357,7 @@ enum class McEventSelection {
   NRecoCollisions,
   N
 };
-enum class EventSelection {
+enum class EventSelection : std::int8_t {
   All = 0,
   Good,
   Run,
@@ -369,64 +370,64 @@ enum class EventSelection {
   NPvContributors,
   N
 };
-enum class CentralityDefinition {
+enum class CentralityDefinition : std::int8_t {
   Ft0a = 0,
   Ft0c,
   Ft0m,
   N
 };
-enum class DcaMeasure {
+enum class DcaMeasure : std::int8_t {
   Mean = 0,
   Sigma,
   N
 };
-enum class DcaAxis {
+enum class DcaAxis : std::int8_t {
   Xy = 0,
   Z,
   N
 };
-enum class Detector {
+enum class Detector : std::int8_t {
   Tpc = 0,
   Tof,
   N
 };
-enum class PidStrategy {
+enum class PidStrategy : std::int8_t {
   Tpc = 0,
   TpcTof,
   N
 };
-enum class PidStrategyAll {
+enum class PidStrategyAll : std::int8_t {
   Tpc = 0,
   Tof,
   TpcTofSeparated,
   TpcTofCombined,
   N
 };
-enum class ParticleSpecies {
+enum class ParticleSpecies : std::int8_t {
   Pion = 0,
   Kaon,
   Proton,
   N
 };
-enum class ParticleSpeciesAll {
+enum class ParticleSpeciesAll : std::int8_t {
   All = 0,
   Pion,
   Kaon,
   Proton,
   N
 };
-enum class ChargeSpecies {
+enum class ChargeSpecies : std::int8_t {
   Plus = 0,
   Minus,
   N
 };
-enum class ParticleNumber {
+enum class ParticleNumber : std::int8_t {
   Charge = 0,
   Kaon,
   Proton,
   N
 };
-enum class ChargeNumber {
+enum class ChargeNumber : std::int8_t {
   Plus = 0,
   Minus,
   Total,
@@ -783,7 +784,7 @@ template <typename T>
 constexpr std::int32_t nEnabled(const Configurable<LabeledArray<T>>& cfg) noexcept
 {
   const LabeledArray<T>& la{cfg.value};
-  return std::count_if(la[0], la[0] + la.rows() * la.cols(), [](const T x) constexpr -> bool { return x != T{}; });
+  return std::ranges::count_if(std::span<const T>{la[0], static_cast<std::size_t>(la.rows()) * static_cast<std::size_t>(la.cols())}, [](const T input) constexpr noexcept -> bool { return input != T{}; });
 }
 template <typename T>
   requires std::is_arithmetic_v<T>
@@ -794,7 +795,7 @@ constexpr bool isEnabled(const Configurable<LabeledArray<T>>& cfg) noexcept
 
 double interpolate(const TH3* const h, const double x, const double y, const double z)
 {
-  if (!h) {
+  if (h == nullptr) {
     return 0.;
   }
 
@@ -918,18 +919,13 @@ struct PartNumFluc {
       return std::abs(nSigmaPid) < TruncationAbsNSigmaPid && std::abs(nSigmaPidShifted) < TruncationAbsNSigmaPid ? nSigmaPidShifted : -TruncationAbsNSigmaPid;
     }
 
-    [[nodiscard]] double getNSigmaPidCombined(const std::int32_t indexParticleSpecies) const noexcept
-    {
-      return truncateNSigmaPid(std::copysign(std::hypot(nsSigmaPid[toI(Detector::Tpc)][indexParticleSpecies], nsSigmaPid[toI(Detector::Tof)][indexParticleSpecies]), nsSigmaPid[toI(Detector::Tpc)][indexParticleSpecies] + nsSigmaPid[toI(Detector::Tof)][indexParticleSpecies]));
-    }
-
     std::array<double, NEs<DcaAxis>> dcas{};
     std::int32_t sign{};
     double pt{};
     double eta{};
     double phi{};
     std::array<bool, NEs<Detector>> havePid{};
-    std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> nsSigmaPid{[]() consteval -> std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> {
+    std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> nsSigmaPid{[]() consteval noexcept -> std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> {
       std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> result{};
       std::array<double, NEs<ParticleSpecies>> source{};
       source.fill(-TruncationAbsNSigmaPid);
@@ -937,6 +933,10 @@ struct PartNumFluc {
       return result;
     }()};
 
+    [[nodiscard]] double getNSigmaPidCombined(const std::int32_t indexParticleSpecies) const noexcept
+    {
+      return truncateNSigmaPid(std::copysign(std::hypot(nsSigmaPid[toI(Detector::Tpc)][indexParticleSpecies], nsSigmaPid[toI(Detector::Tof)][indexParticleSpecies]), nsSigmaPid[toI(Detector::Tpc)][indexParticleSpecies] + nsSigmaPid[toI(Detector::Tof)][indexParticleSpecies]));
+    }
     constexpr void clear() noexcept { *this = {}; }
   } holderTrack{};
 
@@ -944,7 +944,14 @@ struct PartNumFluc {
     template <std::integral T>
     static constexpr T convert(const double input) noexcept
     {
-      return std::numeric_limits<T>::lowest() <= input && input <= std::numeric_limits<T>::max() ? static_cast<T>(std::rint(input)) : (std::is_signed_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::max());
+      if (std::numeric_limits<T>::lowest() <= input && input <= std::numeric_limits<T>::max()) {
+        return static_cast<T>(std::rint(input));
+      }
+      if constexpr (std::is_signed_v<T>) {
+        return std::numeric_limits<T>::lowest();
+      } else {
+        return std::numeric_limits<T>::max();
+      }
     }
 
     std::array<std::uint16_t, NEs<ChargeSpecies>> nsMcParticles{};
@@ -1039,13 +1046,13 @@ struct PartNumFluc {
     Configurable<LabeledArray<std::int32_t>> cfgCutsMinTpcNCrossedRows{"cfgCutsMinTpcNCrossedRows", {std::array<std::int32_t, NEs<Selection>>{70, 80, 90}.data(), NEs<Selection>, getDisplayNames<Selection>()}, "Minimum numbers of crossed rows TPC"};
     Configurable<double> cfgCutMinTpcNCrossedRowsRatio{"cfgCutMinTpcNCrossedRowsRatio", 0.8, "Minimum ratio of crossed rows over findable clusters TPC"};
     Configurable<bool> cfgFlagRecalibrationDca{"cfgFlagRecalibrationDca", false, "DCA recalibration flag"};
-    Configurable<LabeledArray<double>> cfgCutsMaxAbsNSigmaDca{"cfgCutsMaxAbsNSigmaDca", {std::array<double, NEs<DcaAxis> * NEs<Selection>>{3., 2.5, 2., 3., 2.5, 2.}.data(), NEs<DcaAxis>, NEs<Selection>, getDisplayNames<DcaAxis>(), getDisplayNames<Selection>()}, "Maximum absolute nSigma values of DCA (cm)"};
-    Configurable<LabeledArray<double>> cfgCutsRangePt{"cfgCutsRangePt", {std::array<double, NEs<ParticleSpecies> * NEs<RangeEdge>>{0.2, 2., 0.3, 2., 0.4, 2.}.data(), NEs<ParticleSpecies>, NEs<RangeEdge>, getDisplayNames<ParticleSpecies>(), getDisplayNames<RangeEdge>()}, "pT ranges (GeV/c)"};
+    Configurable<LabeledArray<double>> cfgCutsMaxAbsNSigmaDca{"cfgCutsMaxAbsNSigmaDca", {std::array<double, static_cast<std::size_t>(NEs<DcaAxis>) * static_cast<std::size_t>(NEs<Selection>)>{3., 2.5, 2., 3., 2.5, 2.}.data(), NEs<DcaAxis>, NEs<Selection>, getDisplayNames<DcaAxis>(), getDisplayNames<Selection>()}, "Maximum absolute nSigma values of DCA (cm)"};
+    Configurable<LabeledArray<double>> cfgCutsRangePt{"cfgCutsRangePt", {std::array<double, static_cast<std::size_t>(NEs<ParticleSpecies>) * static_cast<std::size_t>(NEs<RangeEdge>)>{0.2, 2., 0.3, 2., 0.4, 2.}.data(), NEs<ParticleSpecies>, NEs<RangeEdge>, getDisplayNames<ParticleSpecies>(), getDisplayNames<RangeEdge>()}, "pT ranges (GeV/c)"};
     Configurable<double> cfgCutMaxAbsEta{"cfgCutMaxAbsEta", 0.8, "Maximum absolute eta"};
     Configurable<LabeledArray<double>> cfgThresholdsPtTofPid{"cfgThresholdsPtTofPid", {std::array<double, NEs<ParticleSpecies>>{0.4, 0.4, 0.8}.data(), NEs<ParticleSpecies>, getDisplayNames<ParticleSpecies>()}, "pT (GeV/c) thresholds for TOF PID"};
     Configurable<LabeledArray<std::int32_t>> cfgFlagsRecalibrationNSigmaPid{"cfgFlagsRecalibrationNSigmaPid", {std::array<std::int32_t, NEs<ParticleSpecies>>{}.data(), NEs<ParticleSpecies>, getDisplayNames<ParticleSpecies>()}, "nSigma PID recalibration flags"};
     Configurable<bool> cfgFlagRejectionOthers{"cfgFlagRejectionOthers", false, "Other particle species rejection flag"};
-    Configurable<LabeledArray<double>> cfgCutsMaxAbsNSigmaPid{"cfgCutsMaxAbsNSigmaPid", {std::array<double, NEs<ParticleSpecies> * NEs<Selection>>{2.5, 2., 1.5, 2.5, 2., 1.5, 2.5, 2., 1.5}.data(), NEs<ParticleSpecies>, NEs<Selection>, getDisplayNames<ParticleSpecies>(), getDisplayNames<Selection>()}, "Maximum absolute nSigma values for PID"};
+    Configurable<LabeledArray<double>> cfgCutsMaxAbsNSigmaPid{"cfgCutsMaxAbsNSigmaPid", {std::array<double, static_cast<std::size_t>(NEs<ParticleSpecies>) * static_cast<std::size_t>(NEs<Selection>)>{2.5, 2., 1.5, 2.5, 2., 1.5, 2.5, 2., 1.5}.data(), NEs<ParticleSpecies>, NEs<Selection>, getDisplayNames<ParticleSpecies>(), getDisplayNames<Selection>()}, "Maximum absolute nSigma values for PID"};
     Configurable<bool> cfgFlagMcParticlePhysicalPrimary{"cfgFlagMcParticlePhysicalPrimary", true, "Flag of requiring physical primary MC particle"};
     Configurable<bool> cfgFlagMcParticleMomentum{"cfgFlagMcParticleMomentum", true, "Flag of using momentum of MC particle"};
   } cgTrack{};
@@ -1132,12 +1139,12 @@ struct PartNumFluc {
       }
       for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
         for (std::int32_t const& iSelection : std::views::iota(0, NEs<Selection>)) {
-          holderMember.configSelection->cutsMaxAbsNSigmaDca[iDcaAxis][iSelection] = cgTrack.cfgCutsMaxAbsNSigmaDca.value.get(getName<DcaAxis>(iDcaAxis).data(), getName<Selection>(iSelection).data());
+          holderMember.configSelection->cutsMaxAbsNSigmaDca[iDcaAxis][iSelection] = cgTrack.cfgCutsMaxAbsNSigmaDca.value.get(std::string{getName<DcaAxis>(iDcaAxis)}.c_str(), std::string{getName<Selection>(iSelection)}.c_str());
         }
       }
       for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
         for (std::int32_t const& iSelection : std::views::iota(0, NEs<Selection>)) {
-          holderMember.configSelection->cutsMaxAbsNSigmaPid[iParticleSpecies][iSelection] = cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(getName<ParticleSpecies, NameKind::Display>(iParticleSpecies).data(), getName<Selection>(iSelection).data());
+          holderMember.configSelection->cutsMaxAbsNSigmaPid[iParticleSpecies][iSelection] = cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(std::string{getName<ParticleSpecies, NameKind::Display>(iParticleSpecies)}.c_str(), std::string{getName<Selection>(iSelection)}.c_str());
         }
       }
 
@@ -1264,7 +1271,7 @@ struct PartNumFluc {
     if (cgAnalysis.cfgFlagQaRun.value) {
       LOG(info) << "Enabling run QA.";
 
-      const HistogramConfigSpec hcsQaRun{HistType::kTProfile, {{static_cast<std::int32_t>(holderCcdb.runNumbersToIndicesRunAndGroup.size()), -0.5, holderCcdb.runNumbersToIndicesRunAndGroup.size() - 0.5, "Run Index"}}};
+      const HistogramConfigSpec hcsQaRun{HistType::kTProfile, {{static_cast<std::int32_t>(holderCcdb.runNumbersToIndicesRunAndGroup.size()), -0.5, static_cast<double>(holderCcdb.runNumbersToIndicesRunAndGroup.size()) - 0.5, "Run Index"}}};
 
       for (const auto& [name, title, isChargeSpeciesSeparated] : std::to_array<std::tuple<std::string, std::string, bool>>(
              {{"Vx", "#LT#it{V}_{#it{x}}#GT (cm)", false},
@@ -1361,7 +1368,7 @@ struct PartNumFluc {
               {"hPtDcaZ", "", {HistType::kTHnSparseD, {asPt, {250, -0.5, 0.5, "DCA_{#it{z}} (cm)"}}}},
               {"pCentralityPtEtaDcaZ", ";;#LTDCA_{#it{z}}#GT (cm)", hcsQaDcaProfile}})) {
         for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-          hrQaDca.add(std::format("{}_{}", name, getName<ChargeSpecies, NameKind::Lower>(iChargeSpecies)).c_str(), title.data(), hcs);
+          hrQaDca.add(std::format("{}_{}", name, getName<ChargeSpecies, NameKind::Lower>(iChargeSpecies)).c_str(), std::string{title}.c_str(), hcs);
         }
       }
     }
@@ -1375,7 +1382,10 @@ struct PartNumFluc {
 
       for (std::int32_t const& iPidStrategy : std::views::iota(0, NEs<PidStrategy>)) {
         for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-          hrQaAcceptance.add(std::format("h{}Pt_{}Edge{}{}", std::cmp_equal(iParticleSpeciesAll, toI(ParticleSpeciesAll::All)) ? "Eta" : "Rapidity", getName<PidStrategy, NameKind::Lower>(iPidStrategy), getName<ParticleSpeciesAll>(iParticleSpeciesAll), getName<ChargeSpecies>(iChargeSpecies)).c_str(), "", {HistType::kTHnSparseD, {{300, -1.5, 1.5, std::cmp_equal(iParticleSpeciesAll, toI(ParticleSpeciesAll::All)) ? "#it{#eta}" : "#it{y}"}, {250, 0., 2.5, "#it{p}_{T} (GeV/#it{c})"}}});
+          hrQaAcceptance.add(std::format("hEta{}Pt{}_{}Edge{}{}", doProcessMc.value ? "Mc" : "", doProcessMc.value ? "Mc" : "", getName<PidStrategy, NameKind::Lower>(iPidStrategy), getName<ParticleSpeciesAll>(iParticleSpeciesAll), getName<ChargeSpecies>(iChargeSpecies)).c_str(), "", {HistType::kTHnSparseD, {{300, -1.5, 1.5, doProcessMc.value ? "#it{#eta}_{Gen}" : "#it{#eta}"}, {250, 0., 2.5, doProcessMc.value ? "#it{p}_{T}^{Gen} (GeV/#it{c})" : "#it{p}_{T} (GeV/#it{c})"}}});
+          if (!std::cmp_equal(iParticleSpeciesAll, toI(ParticleSpeciesAll::All))) {
+            hrQaAcceptance.add(std::format("hRapidity{}Pt{}_{}Edge{}{}", doProcessMc.value ? "Mc" : "", doProcessMc.value ? "Mc" : "", getName<PidStrategy, NameKind::Lower>(iPidStrategy), getName<ParticleSpeciesAll>(iParticleSpeciesAll), getName<ChargeSpecies>(iChargeSpecies)).c_str(), "", {HistType::kTHnSparseD, {{300, -1.5, 1.5, doProcessMc.value ? "#it{y}_{Gen}" : "#it{y}"}, {250, 0., 2.5, doProcessMc.value ? "#it{p}_{T}^{Gen} (GeV/#it{c})" : "#it{p}_{T} (GeV/#it{c})"}}});
+          }
         }
       }
     }
@@ -1437,19 +1447,17 @@ struct PartNumFluc {
       }
     }
 
-    if (doProcessMc.value) {
-      if (cgAnalysis.cfgFlagQaMc.value) {
-        LOG(info) << "Enabling MC QA.";
+    if (doProcessMc.value && cgAnalysis.cfgFlagQaMc.value) {
+      LOG(info) << "Enabling MC QA.";
 
-        const double maxAbsVz{std::ceil(cgEvent.cfgFlagMcCollisionVz.value ? cgEvent.cfgCutMaxAbsVzMc.value : cgEvent.cfgCutMaxAbsVz.value)};
-        const AxisSpec asCentrality{20, 0., 100., "Centrality (%)"};
+      const double maxAbsVz{std::ceil(cgEvent.cfgFlagMcCollisionVz.value ? cgEvent.cfgCutMaxAbsVzMc.value : cgEvent.cfgCutMaxAbsVz.value)};
+      const AxisSpec asCentrality{20, 0., 100., "Centrality (%)"};
 
-        hrQaMc.add("hNCollisionsPerMcCollision", "", {HistType::kTH1D, {{20, -0.5, 19.5, "No. of collisions per MC collision"}}});
-        hrQaMc.add("hCentralityNTracksPerMcParticle", "", {HistType::kTHnSparseF, {asCentrality, {20, -0.5, 19.5, "No. of tracks per MC particle"}}});
-        hrQaMc.add("hCentralityVzMcDeltaVz", "", {HistType::kTHnSparseF, {asCentrality, {static_cast<std::int32_t>(maxAbsVz) * 20, -maxAbsVz, maxAbsVz, "#it{V}_{#it{z}}^{Gen} (cm)"}, {200, -0.2, 0.2, "#it{V}_{#it{z}}^{Rec}#minus#it{V}_{#it{z}}^{Gen} (cm)"}}});
-        hrQaMc.add("hCentralityPtMcEtaMcDeltaPt", "", {HistType::kTHnSparseF, {asCentrality, {200, 0., 2., "#it{p}_{T}^{Gen} (GeV/#it{c})"}, {24, -1.2, 1.2, "#it{#eta}_{Gen}"}, {320, -0.8, 0.8, "#it{p}_{T}^{Rec}#minus#it{p}_{T}^{Gen} (GeV/#it{c})"}}});
-        hrQaMc.add("hCentralityPtMcEtaMcDeltaEta", "", {HistType::kTHnSparseF, {asCentrality, {20, 0., 2., "#it{p}_{T}^{Gen} (GeV/#it{c})"}, {240, -1.2, 1.2, "#it{#eta}_{Gen}"}, {160, -0.4, 0.4, "#it{#eta}_{Rec}#minus#it{#eta}_{Gen}"}}});
-      }
+      hrQaMc.add("hNCollisionsPerMcCollision", "", {HistType::kTH1D, {{20, -0.5, 19.5, "No. of collisions per MC collision"}}});
+      hrQaMc.add("hCentralityNTracksPerMcParticle", "", {HistType::kTHnSparseF, {asCentrality, {20, -0.5, 19.5, "No. of tracks per MC particle"}}});
+      hrQaMc.add("hCentralityVzMcDeltaVz", "", {HistType::kTHnSparseF, {asCentrality, {static_cast<std::int32_t>(maxAbsVz) * 20, -maxAbsVz, maxAbsVz, "#it{V}_{#it{z}}^{Gen} (cm)"}, {200, -0.2, 0.2, "#it{V}_{#it{z}}^{Rec}#minus#it{V}_{#it{z}}^{Gen} (cm)"}}});
+      hrQaMc.add("hCentralityPtMcEtaMcDeltaPt", "", {HistType::kTHnSparseF, {asCentrality, {200, 0., 2., "#it{p}_{T}^{Gen} (GeV/#it{c})"}, {24, -1.2, 1.2, "#it{#eta}_{Gen}"}, {320, -0.8, 0.8, "#it{p}_{T}^{Rec}#minus#it{p}_{T}^{Gen} (GeV/#it{c})"}}});
+      hrQaMc.add("hCentralityPtMcEtaMcDeltaEta", "", {HistType::kTHnSparseF, {asCentrality, {20, 0., 2., "#it{p}_{T}^{Gen} (GeV/#it{c})"}, {240, -1.2, 1.2, "#it{#eta}_{Gen}"}, {160, -0.4, 0.4, "#it{#eta}_{Rec}#minus#it{#eta}_{Gen}"}}});
     }
 
     for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
@@ -1566,7 +1574,7 @@ struct PartNumFluc {
         LOG(fatal) << "Invalid gRunNumberGroupIndex!";
       }
       for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndex->GetN())) {
-        holderCcdb.runNumbersToIndicesRunAndGroup[static_cast<std::int32_t>(std::rint(gRunNumberGroupIndex->GetX()[iRun]))] = {iRun, static_cast<std::int32_t>(std::rint(gRunNumberGroupIndex->GetY()[iRun]))};
+        holderCcdb.runNumbersToIndicesRunAndGroup[static_cast<std::int32_t>(std::rint(gRunNumberGroupIndex->GetPointX(iRun)))] = {iRun, static_cast<std::int32_t>(std::rint(gRunNumberGroupIndex->GetPointY(iRun)))};
       }
 
       if (cgEvent.cfgFlagRejectionRunBadMc.value) {
@@ -1575,8 +1583,8 @@ struct PartNumFluc {
           LOG(fatal) << "Invalid gRunNumberGroupIndex_mc!";
         }
         for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndexMc->GetN())) {
-          if (std::cmp_less_equal(static_cast<std::int32_t>(std::rint(gRunNumberGroupIndexMc->GetY()[iRun])), 0)) {
-            if (const auto iter{holderCcdb.runNumbersToIndicesRunAndGroup.find(static_cast<std::int32_t>(std::rint(gRunNumberGroupIndexMc->GetX()[iRun])))}; iter != holderCcdb.runNumbersToIndicesRunAndGroup.end() && std::cmp_greater(iter->second.second, 0)) {
+          if (std::cmp_less_equal(static_cast<std::int32_t>(std::rint(gRunNumberGroupIndexMc->GetPointY(iRun))), 0)) {
+            if (const auto iter{holderCcdb.runNumbersToIndicesRunAndGroup.find(static_cast<std::int32_t>(std::rint(gRunNumberGroupIndexMc->GetPointX(iRun))))}; iter != holderCcdb.runNumbersToIndicesRunAndGroup.end() && std::cmp_greater(iter->second.second, 0)) {
               iter->second.second = -iter->second.second;
             }
           }
@@ -1768,7 +1776,7 @@ struct PartNumFluc {
 
   template <ParticleSpeciesAll ParticleSpeciesAllValue, ChargeSpecies ChargeSpeciesValue>
     requires IsValidEnumValue<ParticleSpeciesAllValue, ChargeSpeciesValue>
-  bool isPid() const
+  bool isPid() const noexcept
   {
     if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
       return ChargeSpeciesValue == ChargeSpecies::Plus ? std::cmp_greater(holderMcParticle.charge, 0) : std::cmp_less(holderMcParticle.charge, 0);
@@ -1924,9 +1932,9 @@ struct PartNumFluc {
     fillByDcaAxis.template operator()<DcaAxis::Z>();
   }
 
-  template <ParticleSpeciesAll ParticleSpeciesAllValue, typename T>
-    requires IsValidEnumValue<ParticleSpeciesAllValue>
-  void fillQaAcceptanceByParticleSpeciesAll(const T& track)
+  template <DataMode DataModeValue, ParticleSpeciesAll ParticleSpeciesAllValue>
+    requires IsValidEnumValue<DataModeValue, ParticleSpeciesAllValue> && (DataModeValue == DataMode::McMcParticle || DataModeValue == DataMode::RawTrack)
+  void fillQaAcceptanceByParticleSpeciesAll()
   {
     if (!cgAnalysis.cfgFlagsQaAcceptance.value.get(toI(ParticleSpeciesAllValue))) {
       return;
@@ -1935,13 +1943,29 @@ struct PartNumFluc {
     const auto fillByChargeSpecies{
       [this]<ChargeSpecies ChargeSpeciesValue>
         requires IsValidEnumValue<ChargeSpeciesValue>
-      (const auto& name, const double input) -> void {
+      () -> void {
         const auto fillByPidStrategy{
-          [this, input, &name]<PidStrategy PidStrategyValue>
+          [this]<PidStrategy PidStrategyValue>
             requires IsValidEnumValue<PidStrategyValue>
           () -> void {
-            if (isPid<getValue<PidStrategyAll>(PidStrategyValue), ParticleSpeciesAllValue>(false)) {
-              hrQaAcceptance.fill(C_CS("h") + name + C_CS("Pt_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), input, holderTrack.pt); // NOLINT(clang-analyzer-core.NonNullParamChecker)
+            if constexpr (DataModeValue == DataMode::McMcParticle) {
+              if (!isPid<getValue<PidStrategyAll>(PidStrategyValue), ParticleSpeciesAll::All>(false) || !isPid<ParticleSpeciesAllValue, ChargeSpeciesValue>()) {
+                return;
+              }
+
+              hrQaAcceptance.fill(C_CS("hEtaMcPtMc_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderMcParticle.eta, holderMcParticle.pt);
+              if constexpr (ParticleSpeciesAllValue != ParticleSpeciesAll::All) {
+                hrQaAcceptance.fill(C_CS("hRapidityMcPtMc_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), RecoDecayPtEtaPhi::y(holderMcParticle.pt, holderMcParticle.eta, getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))), holderMcParticle.pt);
+              }
+            } else { // DataModeValue == DataMode::RawTrack
+              if (!isPid<getValue<PidStrategyAll>(PidStrategyValue), ParticleSpeciesAllValue>(false)) {
+                return;
+              }
+
+              hrQaAcceptance.fill(C_CS("hEtaPt_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderTrack.eta, holderTrack.pt);
+              if constexpr (ParticleSpeciesAllValue != ParticleSpeciesAll::All) {
+                hrQaAcceptance.fill(C_CS("hRapidityPt_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), RecoDecayPtEtaPhi::y(holderTrack.pt, holderTrack.eta, getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))), holderTrack.pt);
+              }
             }
           }};
 
@@ -1949,18 +1973,10 @@ struct PartNumFluc {
         fillByPidStrategy.template operator()<PidStrategy::TpcTof>();
       }};
 
-    if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
-      if (std::cmp_greater(holderTrack.sign, 0)) {
-        fillByChargeSpecies.template operator()<ChargeSpecies::Plus>(C_CS("Eta"), holderTrack.eta);
-      } else {
-        fillByChargeSpecies.template operator()<ChargeSpecies::Minus>(C_CS("Eta"), holderTrack.eta);
-      }
+    if (std::cmp_greater(DataModeValue == DataMode::McMcParticle ? holderMcParticle.charge : holderTrack.sign, 0)) {
+      fillByChargeSpecies.template operator()<ChargeSpecies::Plus>();
     } else {
-      if (std::cmp_greater(holderTrack.sign, 0)) {
-        fillByChargeSpecies.template operator()<ChargeSpecies::Plus>(C_CS("Rapidity"), track.rapidity(getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))));
-      } else {
-        fillByChargeSpecies.template operator()<ChargeSpecies::Minus>(C_CS("Rapidity"), track.rapidity(getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))));
-      }
+      fillByChargeSpecies.template operator()<ChargeSpecies::Minus>();
     }
   }
 
@@ -2056,7 +2072,7 @@ struct PartNumFluc {
       return;
     }
 
-    const std::int32_t chargeSign{[](const std::int32_t chargeMcParticle, const std::int32_t signTrack) constexpr -> std::int32_t {
+    const std::int32_t chargeSign{[](const std::int32_t chargeMcParticle, const std::int32_t signTrack) constexpr noexcept -> std::int32_t {
       if constexpr (DataModeValue == DataMode::McMcParticle) {
         return chargeMcParticle;
       } else {
@@ -2190,7 +2206,7 @@ struct PartNumFluc {
       return;
     }
 
-    const std::int32_t chargeSign{[](const std::int32_t chargeMcParticle, const std::int32_t signTrack) constexpr -> std::int32_t {
+    const std::int32_t chargeSign{[](const std::int32_t chargeMcParticle, const std::int32_t signTrack) constexpr noexcept -> std::int32_t {
       if constexpr (DataModeValue == DataMode::McMcParticle) {
         return chargeMcParticle;
       } else {
@@ -2198,7 +2214,7 @@ struct PartNumFluc {
       }
     }(holderMcParticle.charge, holderTrack.sign)};
 
-    const bool doUseMcParticleMomentum{[](const bool flagMcParticleMomentum) constexpr -> bool {
+    const bool doUseMcParticleMomentum{[](const bool flagMcParticleMomentum) constexpr noexcept -> bool {
       if constexpr (DataModeValue == DataMode::McMcParticle) {
         return true;
       } else if constexpr (DataModeValue == DataMode::McTrack) {
@@ -2224,7 +2240,7 @@ struct PartNumFluc {
           return false;
         }
 
-        const bool doUseTofPid{[](const bool doUseMcParticleMomentumValue, const double ptMcParticle, const double ptTrack, const double thresholdPtTofPid) constexpr -> bool {
+        const bool doUseTofPid{[](const bool doUseMcParticleMomentumValue, const double ptMcParticle, const double ptTrack, const double thresholdPtTofPid) constexpr noexcept -> bool {
           if constexpr (DataModeValue == DataMode::McMcParticle) {
             return ptMcParticle >= thresholdPtTofPid;
           } else if constexpr (DataModeValue == DataMode::McTrack) {
@@ -2435,16 +2451,6 @@ struct PartNumFluc {
 
       if (!isGoodDca()) {
         return false;
-      }
-
-      if (holderMember.doQaAcceptance) {
-        const double vz{doProcessMc.value && cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz};
-        if (holderTrack.eta * vz > 0. && std::abs(vz) > (doProcessMc.value && cgEvent.cfgFlagMcCollisionVz.value ? cgEvent.cfgCutMaxAbsVzMc.value : cgEvent.cfgCutMaxAbsVz.value) - 1.) {
-          fillQaAcceptanceByParticleSpeciesAll<ParticleSpeciesAll::All>(track);
-          fillQaAcceptanceByParticleSpeciesAll<ParticleSpeciesAll::Pion>(track);
-          fillQaAcceptanceByParticleSpeciesAll<ParticleSpeciesAll::Kaon>(track);
-          fillQaAcceptanceByParticleSpeciesAll<ParticleSpeciesAll::Proton>(track);
-        }
       }
     }
 
@@ -2834,6 +2840,22 @@ struct PartNumFluc {
 
           const auto& tracksMatched{tracks.sliceBy(psg.tracksPerMcParticle, mcParticle.globalIndex())};
 
+          if (holderMember.doQaAcceptance && mcParticle.isPhysicalPrimary() && std::cmp_equal(tracksMatched.size(), 1)) {
+            const double vz{cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz};
+            if (holderMcParticle.eta * vz > 0. && std::abs(vz) > (cgEvent.cfgFlagMcCollisionVz.value ? cgEvent.cfgCutMaxAbsVzMc.value : cgEvent.cfgCutMaxAbsVz.value) - 1.) {
+              for (const auto& track : tracksMatched) {
+                if (!setTrack<false>(track)) {
+                  continue;
+                }
+
+                fillQaAcceptanceByParticleSpeciesAll<DataMode::McMcParticle, ParticleSpeciesAll::All>();
+                fillQaAcceptanceByParticleSpeciesAll<DataMode::McMcParticle, ParticleSpeciesAll::Pion>();
+                fillQaAcceptanceByParticleSpeciesAll<DataMode::McMcParticle, ParticleSpeciesAll::Kaon>();
+                fillQaAcceptanceByParticleSpeciesAll<DataMode::McMcParticle, ParticleSpeciesAll::Proton>();
+              }
+            }
+          }
+
           if (cgAnalysis.cfgFlagQaMc.value && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
             hrQaMc.fill(C_CS("hCentralityNTracksPerMcParticle"), holderEvent.centralityCalibration, tracksMatched.size());
           }
@@ -2949,6 +2971,13 @@ struct PartNumFluc {
     for (const auto& track : tracks) {
       if (!initTrack<false>(track)) {
         continue;
+      }
+
+      if (holderMember.doQaAcceptance && holderTrack.eta * holderEvent.vz > 0. && std::abs(holderEvent.vz) > cgEvent.cfgCutMaxAbsVz.value - 1.) {
+        fillQaAcceptanceByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::All>();
+        fillQaAcceptanceByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Pion>();
+        fillQaAcceptanceByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Kaon>();
+        fillQaAcceptanceByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Proton>();
       }
 
       if (holderMember.doQaPhi) {

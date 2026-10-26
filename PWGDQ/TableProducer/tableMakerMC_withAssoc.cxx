@@ -66,6 +66,7 @@
 #include <RtypesCore.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <map>
@@ -985,7 +986,7 @@ struct TableMakerMC {
 
         mcflags = 0;
         int isig = 0; // runs over the MC signals
-        int j = 0; // runs over the track cuts
+        int j = 0;    // runs over the track cuts
         // check all the specified signals and fill histograms for MC truth matched tracks
         for (const auto& sig : fMCSignals) {
           if (sig->CheckSignal(true, mctrack)) {
@@ -1239,7 +1240,7 @@ struct TableMakerMC {
 
           mcflags = 0;
           int isig = 0; // runs over the MC signals
-          int j = 0; // runs over the track cuts
+          int j = 0;    // runs over the track cuts
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (const auto& sig : fMCSignals) {
             if (sig->CheckSignal(true, mctrack)) {

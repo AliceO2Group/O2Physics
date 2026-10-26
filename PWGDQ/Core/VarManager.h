@@ -776,6 +776,12 @@ class VarManager : public TObject
     kMCCosThetaCS,
     kMCPhiCS,
     kMCPhiTildeCS,
+    kMCCosThetaGJB1,
+    kMCPhiGJB1,
+    kMCPhiTildeGJB1,
+    kMCCosThetaGJB2,
+    kMCPhiGJB2,
+    kMCPhiTildeGJB2,
     kMCCosThetaPP,
     kMCPhiPP,
     kMCPhiTildePP,
@@ -831,6 +837,12 @@ class VarManager : public TObject
     kCosThetaCS,
     kPhiCS,
     kPhiTildeCS,
+    kCosThetaGJB1,
+    kPhiGJB1,
+    kPhiTildeGJB1,
+    kCosThetaGJB2,
+    kPhiGJB2,
+    kPhiTildeGJB2,
     kCosThetaPP,
     kPhiPP,
     kPhiTildePP,
@@ -1059,6 +1071,7 @@ class VarManager : public TObject
     kDeltaR1,
     kDeltaR2,
     kDeltaR,
+    kVertexingQuadProcCode,
 
     // DQ-HF correlation variables
     kMassCharmHadron,
@@ -3888,10 +3901,12 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   // polarization parameters
   bool useHE = fgUsedVars[kCosThetaHE] || fgUsedVars[kPhiHE]; // helicity frame
   bool useCS = fgUsedVars[kCosThetaCS] || fgUsedVars[kPhiCS]; // Collins-Soper frame
+  bool useGJB1 = fgUsedVars[kCosThetaGJB1] || fgUsedVars[kPhiGJB1]; // Gottfried-Jackson frame, beam 1 (+z)
+  bool useGJB2 = fgUsedVars[kCosThetaGJB2] || fgUsedVars[kPhiGJB2]; // Gottfried-Jackson frame, beam 2 (-z)
   bool usePP = fgUsedVars[kCosThetaPP];                       // production plane frame
   bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
 
-  if (useHE || useCS || usePP || useRM) {
+  if (useHE || useCS || useGJB1 || useGJB2 || usePP || useRM) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
@@ -3943,6 +3958,70 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
           }
         } else {
           values[kPhiTildeCS] = -999; // not computable
+        }
+      }
+    }
+
+    if (useGJB1) {
+      // z-axis: beam direction in the mother rest frame
+      ROOT::Math::XYZVectorF zaxis_GJB1{Beam1_CM.Unit()};
+      // mother momentum in LAB (defines the production plane)
+      ROOT::Math::XYZVectorF motherLab_GJB1{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
+      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
+      ROOT::Math::XYZVectorF yaxis_GJB1{zaxis_GJB1.Cross(motherLab_GJB1)};
+      if (yaxis_GJB1.Mag2() > 1.e-6f) {
+        yaxis_GJB1 = yaxis_GJB1.Unit();
+      } else {
+        yaxis_GJB1 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+      }
+      ROOT::Math::XYZVectorF xaxis_GJB1{(yaxis_GJB1.Cross(zaxis_GJB1)).Unit()};
+      if (fgUsedVars[kCosThetaGJB1]) {
+        values[kCosThetaGJB1] = zaxis_GJB1.Dot(v_CM);
+      }
+      if (fgUsedVars[kPhiGJB1]) {
+        values[kPhiGJB1] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_GJB1.Dot(v_CM), xaxis_GJB1.Dot(v_CM)));
+      }
+      if (fgUsedVars[kPhiTildeGJB1]) {
+        if (fgUsedVars[kCosThetaGJB1] && fgUsedVars[kPhiGJB1]) {
+          if (values[kCosThetaGJB1] > 0) {
+            values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
+          } else {
+            values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
+          }
+        } else {
+          values[kPhiTildeGJB1] = -999; // not computable
+        }
+      }
+    }
+
+    if (useGJB2) {
+      // z-axis: beam direction in the mother rest frame
+      ROOT::Math::XYZVectorF zaxis_GJB2{Beam2_CM.Unit()};
+      // mother momentum in LAB (defines the production plane)
+      ROOT::Math::XYZVectorF motherLab_GJB2{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
+      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
+      ROOT::Math::XYZVectorF yaxis_GJB2{zaxis_GJB2.Cross(motherLab_GJB2)};
+      if (yaxis_GJB2.Mag2() > 1.e-6f) {
+        yaxis_GJB2 = yaxis_GJB2.Unit();
+      } else {
+        yaxis_GJB2 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+      }
+      ROOT::Math::XYZVectorF xaxis_GJB2{(yaxis_GJB2.Cross(zaxis_GJB2)).Unit()};
+      if (fgUsedVars[kCosThetaGJB2]) {
+        values[kCosThetaGJB2] = zaxis_GJB2.Dot(v_CM);
+      }
+      if (fgUsedVars[kPhiGJB2]) {
+        values[kPhiGJB2] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_GJB2.Dot(v_CM), xaxis_GJB2.Dot(v_CM)));
+      }
+      if (fgUsedVars[kPhiTildeGJB2]) {
+        if (fgUsedVars[kCosThetaGJB2] && fgUsedVars[kPhiGJB2]) {
+          if (values[kCosThetaGJB2] > 0) {
+            values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
+          } else {
+            values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
+          }
+        } else {
+          values[kPhiTildeGJB2] = -999; // not computable
         }
       }
     }
@@ -4383,10 +4462,12 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   // polarization parameters
   bool useHE = fgUsedVars[kCosThetaHE] || fgUsedVars[kPhiHE]; // helicity frame
   bool useCS = fgUsedVars[kCosThetaCS] || fgUsedVars[kPhiCS]; // Collins-Soper frame
+  bool useGJB1 = fgUsedVars[kCosThetaGJB1] || fgUsedVars[kPhiGJB1]; // Gottfried-Jackson frame, beam 1 (+z)
+  bool useGJB2 = fgUsedVars[kCosThetaGJB2] || fgUsedVars[kPhiGJB2]; // Gottfried-Jackson frame, beam 2 (-z)
   bool usePP = fgUsedVars[kCosThetaPP];                       // production plane frame
   bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
 
-  if (useHE || useCS || usePP || useRM) {
+  if (useHE || useCS || useGJB1 || useGJB2 || usePP || useRM) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
@@ -4438,6 +4519,70 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
           }
         } else {
           values[kPhiTildeCS] = -999; // not computable
+        }
+      }
+    }
+
+    if (useGJB1) {
+      // z-axis: beam direction in the mother rest frame
+      ROOT::Math::XYZVectorF zaxis_GJB1{Beam1_CM.Unit()};
+      // mother momentum in LAB (defines the production plane)
+      ROOT::Math::XYZVectorF motherLab_GJB1{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
+      // y-axis: normal to the production plane
+      ROOT::Math::XYZVectorF yaxis_GJB1{zaxis_GJB1.Cross(motherLab_GJB1)};
+      if (yaxis_GJB1.Mag2() > 1.e-6f) {
+        yaxis_GJB1 = yaxis_GJB1.Unit();
+      } else {
+        yaxis_GJB1 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+      }
+      ROOT::Math::XYZVectorF xaxis_GJB1{(yaxis_GJB1.Cross(zaxis_GJB1)).Unit()};
+      if (fgUsedVars[kCosThetaGJB1]) {
+        values[kCosThetaGJB1] = zaxis_GJB1.Dot(v_CM);
+      }
+      if (fgUsedVars[kPhiGJB1]) {
+        values[kPhiGJB1] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_GJB1.Dot(v_CM), xaxis_GJB1.Dot(v_CM)));
+      }
+      if (fgUsedVars[kPhiTildeGJB1]) {
+        if (fgUsedVars[kCosThetaGJB1] && fgUsedVars[kPhiGJB1]) {
+          if (values[kCosThetaGJB1] > 0) {
+            values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
+          } else {
+            values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
+          }
+        } else {
+          values[kPhiTildeGJB1] = -999; // not computable
+        }
+      }
+    }
+
+    if (useGJB2) {
+      // z-axis: beam direction in the mother rest frame
+      ROOT::Math::XYZVectorF zaxis_GJB2{Beam2_CM.Unit()};
+      // mother momentum in LAB (defines the production plane)
+      ROOT::Math::XYZVectorF motherLab_GJB2{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
+      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
+      ROOT::Math::XYZVectorF yaxis_GJB2{zaxis_GJB2.Cross(motherLab_GJB2)};
+      if (yaxis_GJB2.Mag2() > 1.e-6f) {
+        yaxis_GJB2 = yaxis_GJB2.Unit();
+      } else {
+        yaxis_GJB2 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+      }
+      ROOT::Math::XYZVectorF xaxis_GJB2{(yaxis_GJB2.Cross(zaxis_GJB2)).Unit()};
+      if (fgUsedVars[kCosThetaGJB2]) {
+        values[kCosThetaGJB2] = zaxis_GJB2.Dot(v_CM);
+      }
+      if (fgUsedVars[kPhiGJB2]) {
+        values[kPhiGJB2] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_GJB2.Dot(v_CM), xaxis_GJB2.Dot(v_CM)));
+      }
+      if (fgUsedVars[kPhiTildeGJB2]) {
+        if (fgUsedVars[kCosThetaGJB2] && fgUsedVars[kPhiGJB2]) {
+          if (values[kCosThetaGJB2] > 0) {
+            values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
+          } else {
+            values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
+          }
+        } else {
+          values[kPhiTildeGJB2] = -999; // not computable
         }
       }
     }
@@ -4745,10 +4890,12 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   // polarization parameters
   bool useHE = fgUsedVars[kMCCosThetaHE] || fgUsedVars[kMCPhiHE]; // helicity frame
   bool useCS = fgUsedVars[kMCCosThetaCS] || fgUsedVars[kMCPhiCS]; // Collins-Soper frame
+  bool useGJB1 = fgUsedVars[kMCCosThetaGJB1] || fgUsedVars[kMCPhiGJB1]; // Gottfried-Jackson frame, beam 1 (+z)
+  bool useGJB2 = fgUsedVars[kMCCosThetaGJB2] || fgUsedVars[kMCPhiGJB2]; // Gottfried-Jackson frame, beam 2 (-z)
   bool usePP = fgUsedVars[kMCCosThetaPP];                         // production plane frame
   bool useRM = fgUsedVars[kMCCosThetaRM];                         // Random frame
 
-  if (useHE || useCS || usePP || useRM) {
+  if (useHE || useCS || useGJB1 || useGJB2 || usePP || useRM) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
@@ -4800,6 +4947,70 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
           }
         } else {
           values[kMCPhiTildeCS] = -999; // not computable
+        }
+      }
+    }
+
+    if (useGJB1) {
+      // z-axis: beam direction in the mother rest frame
+      ROOT::Math::XYZVectorF zaxis_GJB1{Beam1_CM.Unit()};
+      // mother momentum in LAB (defines the production plane)
+      ROOT::Math::XYZVectorF motherLab_GJB1{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
+      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
+      ROOT::Math::XYZVectorF yaxis_GJB1{zaxis_GJB1.Cross(motherLab_GJB1)};
+      if (yaxis_GJB1.Mag2() > 1.e-6f) {
+        yaxis_GJB1 = yaxis_GJB1.Unit();
+      } else {
+        yaxis_GJB1 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+      }
+      ROOT::Math::XYZVectorF xaxis_GJB1{(yaxis_GJB1.Cross(zaxis_GJB1)).Unit()};
+      if (fgUsedVars[kMCCosThetaGJB1]) {
+        values[kMCCosThetaGJB1] = zaxis_GJB1.Dot(v_CM);
+      }
+      if (fgUsedVars[kMCPhiGJB1]) {
+        values[kMCPhiGJB1] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_GJB1.Dot(v_CM), xaxis_GJB1.Dot(v_CM)));
+      }
+      if (fgUsedVars[kMCPhiTildeGJB1]) {
+        if (fgUsedVars[kMCCosThetaGJB1] && fgUsedVars[kMCPhiGJB1]) {
+          if (values[kMCCosThetaGJB1] > 0) {
+            values[kMCPhiTildeGJB1] = RecoDecay::constrainAngle(values[kMCPhiGJB1] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
+          } else {
+            values[kMCPhiTildeGJB1] = RecoDecay::constrainAngle(values[kMCPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
+          }
+        } else {
+          values[kMCPhiTildeGJB1] = -999; // not computable
+        }
+      }
+    }
+
+    if (useGJB2) {
+      // z-axis: beam direction in the mother rest frame
+      ROOT::Math::XYZVectorF zaxis_GJB2{Beam2_CM.Unit()};
+      // mother momentum in LAB (defines the production plane)
+      ROOT::Math::XYZVectorF motherLab_GJB2{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
+      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
+      ROOT::Math::XYZVectorF yaxis_GJB2{zaxis_GJB2.Cross(motherLab_GJB2)};
+      if (yaxis_GJB2.Mag2() > 1.e-6f) {
+        yaxis_GJB2 = yaxis_GJB2.Unit();
+      } else {
+        yaxis_GJB2 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+      }
+      ROOT::Math::XYZVectorF xaxis_GJB2{(yaxis_GJB2.Cross(zaxis_GJB2)).Unit()};
+      if (fgUsedVars[kMCCosThetaGJB2]) {
+        values[kMCCosThetaGJB2] = zaxis_GJB2.Dot(v_CM);
+      }
+      if (fgUsedVars[kMCPhiGJB2]) {
+        values[kMCPhiGJB2] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_GJB2.Dot(v_CM), xaxis_GJB2.Dot(v_CM)));
+      }
+      if (fgUsedVars[kMCPhiTildeGJB2]) {
+        if (fgUsedVars[kMCCosThetaGJB2] && fgUsedVars[kMCPhiGJB2]) {
+          if (values[kMCCosThetaGJB2] > 0) {
+            values[kMCPhiTildeGJB2] = RecoDecay::constrainAngle(values[kMCPhiGJB2] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
+          } else {
+            values[kMCPhiTildeGJB2] = RecoDecay::constrainAngle(values[kMCPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
+          }
+        } else {
+          values[kMCPhiTildeGJB2] = -999; // not computable
         }
       }
     }
@@ -6734,6 +6945,11 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
   float mlepton2 = o2::constants::physics::MassElectron;
   float mtrack1 = o2::constants::physics::MassPionCharged;
   float mtrack2 = o2::constants::physics::MassPionCharged;
+  float mMother = 3.686;
+
+  if constexpr (candidateType == kXtoJpsiPiPi) {
+    mMother = o2::constants::physics::MassX3872;
+  }
 
   ROOT::Math::PtEtaPhiMVector v1(lepton1.pt(), lepton1.eta(), lepton1.phi(), mlepton1);
   ROOT::Math::PtEtaPhiMVector v2(lepton2.pt(), lepton2.eta(), lepton2.phi(), mlepton2);
@@ -6747,35 +6963,41 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
   values[kUsedKF] = static_cast<float>(fgUsedKF);
   if (!fgUsedKF) {
     // create covariance matrix
-    std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
-    std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
-                                         lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
-                                         lepton1.c1PtY(), lepton1.c1PtZ(), lepton1.c1PtSnp(), lepton1.c1PtTgl(), lepton1.c1Pt21Pt2()};
-    o2::track::TrackParCov pars1{lepton1.x(), lepton1.alpha(), lepton1pars, lepton1covs};
-    std::array<float, 5> lepton2pars = {lepton2.y(), lepton2.z(), lepton2.snp(), lepton2.tgl(), lepton2.signed1Pt()};
-    std::array<float, 15> lepton2covs = {lepton2.cYY(), lepton2.cZY(), lepton2.cZZ(), lepton2.cSnpY(), lepton2.cSnpZ(),
-                                         lepton2.cSnpSnp(), lepton2.cTglY(), lepton2.cTglZ(), lepton2.cTglSnp(), lepton2.cTglTgl(),
-                                         lepton2.c1PtY(), lepton2.c1PtZ(), lepton2.c1PtSnp(), lepton2.c1PtTgl(), lepton2.c1Pt21Pt2()};
-    o2::track::TrackParCov pars2{lepton2.x(), lepton2.alpha(), lepton2pars, lepton2covs};
-    std::array<float, 5> track1pars = {track1.y(), track1.z(), track1.snp(), track1.tgl(), track1.signed1Pt()};
-    std::array<float, 15> track1covs = {track1.cYY(), track1.cZY(), track1.cZZ(), track1.cSnpY(), track1.cSnpZ(),
-                                        track1.cSnpSnp(), track1.cTglY(), track1.cTglZ(), track1.cTglSnp(), track1.cTglTgl(),
-                                        track1.c1PtY(), track1.c1PtZ(), track1.c1PtSnp(), track1.c1PtTgl(), track1.c1Pt21Pt2()};
-    o2::track::TrackParCov pars3{track1.x(), track1.alpha(), track1pars, track1covs};
-    std::array<float, 5> track2pars = {track2.y(), track2.z(), track2.snp(), track2.tgl(), track2.signed1Pt()};
-    std::array<float, 15> track2covs = {track2.cYY(), track2.cZY(), track2.cZZ(), track2.cSnpY(), track2.cSnpZ(),
-                                        track2.cSnpSnp(), track2.cTglY(), track2.cTglZ(), track2.cTglSnp(), track2.cTglTgl(),
-                                        track2.c1PtY(), track2.c1PtZ(), track2.c1PtSnp(), track2.c1PtTgl(), track2.c1Pt21Pt2()};
-    o2::track::TrackParCov pars4{track2.x(), track2.alpha(), track2pars, track2covs};
+    o2::track::TrackParCov pars1 = getTrackParCov(lepton1);
+    o2::track::TrackParCov pars2 = getTrackParCov(lepton2);
+    o2::track::TrackParCov pars3 = getTrackParCov(track1);
+    o2::track::TrackParCov pars4 = getTrackParCov(track2);
+    // std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
+    // std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
+    //                                      lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
+    //                                      lepton1.c1PtY(), lepton1.c1PtZ(), lepton1.c1PtSnp(), lepton1.c1PtTgl(), lepton1.c1Pt21Pt2()};
+    // o2::track::TrackParCov pars1{lepton1.x(), lepton1.alpha(), lepton1pars, lepton1covs};
+    // std::array<float, 5> lepton2pars = {lepton2.y(), lepton2.z(), lepton2.snp(), lepton2.tgl(), lepton2.signed1Pt()};
+    // std::array<float, 15> lepton2covs = {lepton2.cYY(), lepton2.cZY(), lepton2.cZZ(), lepton2.cSnpY(), lepton2.cSnpZ(),
+    //                                      lepton2.cSnpSnp(), lepton2.cTglY(), lepton2.cTglZ(), lepton2.cTglSnp(), lepton2.cTglTgl(),
+    //                                      lepton2.c1PtY(), lepton2.c1PtZ(), lepton2.c1PtSnp(), lepton2.c1PtTgl(), lepton2.c1Pt21Pt2()};
+    // o2::track::TrackParCov pars2{lepton2.x(), lepton2.alpha(), lepton2pars, lepton2covs};
+    // std::array<float, 5> track1pars = {track1.y(), track1.z(), track1.snp(), track1.tgl(), track1.signed1Pt()};
+    // std::array<float, 15> track1covs = {track1.cYY(), track1.cZY(), track1.cZZ(), track1.cSnpY(), track1.cSnpZ(),
+    //                                     track1.cSnpSnp(), track1.cTglY(), track1.cTglZ(), track1.cTglSnp(), track1.cTglTgl(),
+    //                                     track1.c1PtY(), track1.c1PtZ(), track1.c1PtSnp(), track1.c1PtTgl(), track1.c1Pt21Pt2()};
+    // o2::track::TrackParCov pars3{track1.x(), track1.alpha(), track1pars, track1covs};
+    // std::array<float, 5> track2pars = {track2.y(), track2.z(), track2.snp(), track2.tgl(), track2.signed1Pt()};
+    // std::array<float, 15> track2covs = {track2.cYY(), track2.cZY(), track2.cZZ(), track2.cSnpY(), track2.cSnpZ(),
+    //                                     track2.cSnpSnp(), track2.cTglY(), track2.cTglZ(), track2.cTglSnp(), track2.cTglTgl(),
+    //                                     track2.c1PtY(), track2.c1PtZ(), track2.c1PtSnp(), track2.c1PtTgl(), track2.c1Pt21Pt2()};
+    // o2::track::TrackParCov pars4{track2.x(), track2.alpha(), track2pars, track2covs};
 
     procCodeDilepton = VarManager::fgFitterTwoProngBarrel.process(pars1, pars2);
     // create dilepton track
     // o2::track::TrackParCov parsDilepton = VarManager::fgFitterTwoProngBarrel.createParentTrackParCov(0);
     // procCodeDileptonTrackTrack = VarManager::fgFitterThreeProngBarrel.process(parsDilepton, pars3, pars4);
     procCodeDileptonTrackTrack = VarManager::fgFitterFourProngBarrel.process(pars1, pars2, pars3, pars4);
+    values[kVertexingProcCode] = procCodeDilepton;
+    values[kVertexingQuadProcCode] = procCodeDileptonTrackTrack;
 
     // fill values
-    if (procCodeDilepton == 0 && procCodeDileptonTrackTrack == 0) {
+    if (procCodeDilepton == 0 || procCodeDileptonTrackTrack == 0) {
       // TODO: set the other variables to appropriate values and return
       values[kVertexingLxy] = -999.;
       values[kVertexingLxyz] = -999.;
@@ -6811,6 +7033,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
                               std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
                                         (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
 
+    values[kVertexingChi2PCA] = fgFitterFourProngBarrel.getChi2AtPCACandidate();
     values[kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
                             (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
     values[kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
@@ -6823,11 +7046,11 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     values[kVertexingLxyErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
     values[kVertexingLzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, 0, theta) + getRotatedCovMatrixXX(covMatrixPCA, 0, theta));
 
-    values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v1234.M() / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-    values[kVertexingTauxy] = values[kVertexingLxy] * v1234.M() / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
+    values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * mMother / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+    values[kVertexingTauxy] = values[kVertexingLxy] * mMother / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
-    values[kVertexingTauzErr] = values[kVertexingLzErr] * v1234.M() / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-    values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v1234.M() / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
+    values[kVertexingTauzErr] = values[kVertexingLzErr] * mMother / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+    values[kVertexingTauxyErr] = values[kVertexingLxyErr] * mMother / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
     values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v1234.Px() +
                                  (secondaryVertex[1] - collision.posY()) * v1234.Py() +
@@ -6841,9 +7064,9 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v1234.Px()) + ((secondaryVertex[1] - collision.posY()) * v1234.Py()) + ((secondaryVertex[2] - collision.posZ()) * v1234.Pz());
     values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v1234.Px() * v1234.Px()) + (v1234.Py() * v1234.Py()) + (v1234.Pz() * v1234.Pz()));
 
-    values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v1234.M() / TMath::Abs(v1234.Pz());
-    values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v1234.M() / (v1234.Pt());
-    values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v1234.M() / (v1234.P());
+    values[kVertexingTauzProjected] = values[kVertexingLzProjected] * mMother / TMath::Abs(v1234.Pz());
+    values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * mMother / (v1234.Pt());
+    values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * mMother / (v1234.P());
   } else {
     KFParticle lepton1KF; // lepton1
     KFParticle lepton2KF; // lepton2
@@ -6983,7 +7206,7 @@ void VarManager::FillQuadMC(T1 const& dilepton, T2 const& track1, T2 const& trac
   double defaultDileptonMass = o2::constants::physics::MassJPsi;
   double hadronMass1 = o2::constants::physics::MassPionCharged;
   double hadronMass2 = o2::constants::physics::MassPionCharged;
-  if (candidateType == kXtoJpsiPiPi) {
+  if (candidateType == kXtoJpsiPiPi || candidateType == kPsi2StoJpsiPiPi) {
     defaultDileptonMass = o2::constants::physics::MassJPsi;
     hadronMass1 = o2::constants::physics::MassPionCharged;
     hadronMass2 = o2::constants::physics::MassPionCharged;
@@ -7546,10 +7769,12 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   // polarization parameters
   bool useHE = fgUsedVars[kCosThetaHE] || fgUsedVars[kPhiHE]; // helicity frame
   bool useCS = fgUsedVars[kCosThetaCS] || fgUsedVars[kPhiCS]; // Collins-Soper frame
+  bool useGJB1 = fgUsedVars[kCosThetaGJB1] || fgUsedVars[kPhiGJB1]; // Gottfried-Jackson frame, beam 1 (+z)
+  bool useGJB2 = fgUsedVars[kCosThetaGJB2] || fgUsedVars[kPhiGJB2]; // Gottfried-Jackson frame, beam 2 (-z)
   bool usePP = fgUsedVars[kCosThetaPP];                       // production plane frame
   bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
 
-  if (useHE || useCS || usePP || useRM) {
+  if (useHE || useCS || useGJB1 || useGJB2 || usePP || useRM) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
@@ -7601,6 +7826,70 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
           }
         } else {
           values[kPhiTildeCS] = -999; // not computable
+        }
+      }
+    }
+
+    if (useGJB1) {
+      // z-axis: beam direction in the mother rest frame
+      ROOT::Math::XYZVectorF zaxis_GJB1{Beam1_CM.Unit()};
+      // mother momentum in LAB (defines the production plane)
+      ROOT::Math::XYZVectorF motherLab_GJB1{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
+      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
+      ROOT::Math::XYZVectorF yaxis_GJB1{zaxis_GJB1.Cross(motherLab_GJB1)};
+      if (yaxis_GJB1.Mag2() > 1.e-6f) {
+        yaxis_GJB1 = yaxis_GJB1.Unit();
+      } else {
+        yaxis_GJB1 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+      }
+      ROOT::Math::XYZVectorF xaxis_GJB1{(yaxis_GJB1.Cross(zaxis_GJB1)).Unit()};
+      if (fgUsedVars[kCosThetaGJB1]) {
+        values[kCosThetaGJB1] = zaxis_GJB1.Dot(v_CM);
+      }
+      if (fgUsedVars[kPhiGJB1]) {
+        values[kPhiGJB1] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_GJB1.Dot(v_CM), xaxis_GJB1.Dot(v_CM)));
+      }
+      if (fgUsedVars[kPhiTildeGJB1]) {
+        if (fgUsedVars[kCosThetaGJB1] && fgUsedVars[kPhiGJB1]) {
+          if (values[kCosThetaGJB1] > 0) {
+            values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
+          } else {
+            values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
+          }
+        } else {
+          values[kPhiTildeGJB1] = -999; // not computable
+        }
+      }
+    }
+
+    if (useGJB2) {
+      // z-axis: beam direction in the mother rest frame
+      ROOT::Math::XYZVectorF zaxis_GJB2{Beam2_CM.Unit()};
+      // mother momentum in LAB (defines the production plane)
+      ROOT::Math::XYZVectorF motherLab_GJB2{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
+      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
+      ROOT::Math::XYZVectorF yaxis_GJB2{zaxis_GJB2.Cross(motherLab_GJB2)};
+      if (yaxis_GJB2.Mag2() > 1.e-6f) {
+        yaxis_GJB2 = yaxis_GJB2.Unit();
+      } else {
+        yaxis_GJB2 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+      }
+      ROOT::Math::XYZVectorF xaxis_GJB2{(yaxis_GJB2.Cross(zaxis_GJB2)).Unit()};
+      if (fgUsedVars[kCosThetaGJB2]) {
+        values[kCosThetaGJB2] = zaxis_GJB2.Dot(v_CM);
+      }
+      if (fgUsedVars[kPhiGJB2]) {
+        values[kPhiGJB2] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_GJB2.Dot(v_CM), xaxis_GJB2.Dot(v_CM)));
+      }
+      if (fgUsedVars[kPhiTildeGJB2]) {
+        if (fgUsedVars[kCosThetaGJB2] && fgUsedVars[kPhiGJB2]) {
+          if (values[kCosThetaGJB2] > 0) {
+            values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
+          } else {
+            values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
+          }
+        } else {
+          values[kPhiTildeGJB2] = -999; // not computable
         }
       }
     }

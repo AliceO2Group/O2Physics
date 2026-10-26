@@ -200,9 +200,9 @@ struct FemtoDreamPairCascadeCascade {
     Configurable<int> depth{"depth", 5, "Number of events for mixing"};
     Configurable<int> binPolicy{"binPolicy", 0, "Binning binPolicy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
   } Mixing;
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.binVztx, Mixing.binMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.binVztx, Mixing.binMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.binVztx, Mixing.binMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.binVztx, Mixing.binMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}};
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascade> pairCleaner;
@@ -216,9 +216,9 @@ struct FemtoDreamPairCascadeCascade {
   void init(InitContext&)
   {
     // setup binnnig binPolicy for mixing
-    colBinningMult = {{Mixing.binVztx, Mixing.binMult}, true};
-    colBinningMultPercentile = {{Mixing.binVztx, Mixing.binMultPercentile}, true};
-    colBinningMultMultPercentile = {{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}, true};
+    colBinningMult = {{Mixing.binVztx, Mixing.binMult}};
+    colBinningMultPercentile = {{Mixing.binVztx, Mixing.binMultPercentile}};
+    colBinningMultMultPercentile = {{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}};
     eventHisto.init(&registry, Option.isMC);
 
     cascHistoPartOne.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTCascade, Option.dummy, Option.dummy, Binning.tempFitVarCascade, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.isMC, Cascade1.pdgCode);

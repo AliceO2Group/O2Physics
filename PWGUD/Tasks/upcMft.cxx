@@ -127,7 +127,7 @@ struct UpcMftRec {
     o2::base::Propagator::initFieldFromGRP(grpmag); // for some reason this is necessary for the next next line
     runNumber = bc.runNumber();
 
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    o2::field::MagneticField* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
 
     Bz = field->getBz(centerMFT); // gives error if the propagator is not initFielded
     LOG(info) << "The field at the center of the MFT is Bz = " << Bz;

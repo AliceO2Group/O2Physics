@@ -88,15 +88,15 @@ enum CharmHadronHist {
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHARMHADRON_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                                                            \
-  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                                                               \
-  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                                                                       \
-  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};                                             \
-  o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"};                                           \
-  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                                                                      \
-  o2::framework::ConfigurableAxis charmHadrons{"charmHadrons", {{8001, -4000.5, 4000.5}}, "MC ONLY: CharmHadrons codes of reconstructed D0s"}; \
-  o2::framework::ConfigurableAxis pt2d{"pt2d", {{240, 0, 6}}, "Pt for 2D QA"};                                                                 \
-  o2::framework::ConfigurableAxis eta2d{"eta2d", {{200, -1.5, 1.5}}, "Eta for 2D QA"};                                                         \
+#define CHARMHADRON_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                                                             \
+  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                                                                \
+  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                                                                        \
+  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};                                              \
+  o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"};                                            \
+  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                                                                       \
+  o2::framework::ConfigurableAxis charmHadrons{"charmHadrons", {{8001, -4000.5, 4000.5}}, "MC ONLY: PDG codes of reconstructed charm hadrons"}; \
+  o2::framework::ConfigurableAxis pt2d{"pt2d", {{240, 0, 6}}, "Pt for 2D QA"};                                                                  \
+  o2::framework::ConfigurableAxis eta2d{"eta2d", {{200, -1.5, 1.5}}, "Eta for 2D QA"};                                                          \
   o2::framework::ConfigurableAxis phi2d{"phi2d", {{200, 0, 1.f * o2::constants::math::TwoPI}}, "Phi for 2D QA"};
 
 template <auto& Prefix>
@@ -291,10 +291,15 @@ auto makeLcMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQ
 #undef LC_HIST_QA_MAP
 
 // prefixes for the output directories in the histogram registry
-constexpr char PrefixD01[] = "D01/";
-constexpr char PrefixD02[] = "D02/";
+// same-event / mixed-event siblings: single-candidate histograms for a given slot, split by
+// whether the candidate came from a same-event or mixed-event pair
+constexpr char PrefixD01Se[] = "D01/SE/";
+constexpr char PrefixD02Se[] = "D02/SE/";
+constexpr char PrefixD01Me[] = "D01/ME/";
+constexpr char PrefixD02Me[] = "D02/ME/";
 constexpr char PrefixD0Qa[] = "D0QA/";
-constexpr char PrefixLc1[] = "Lc1/";
+constexpr char PrefixLc1Se[] = "Lc1/SE/";
+constexpr char PrefixLc1Me[] = "Lc1/ME/";
 constexpr char PrefixLcQa[] = "LcQA/";
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view McDir = "MC/";

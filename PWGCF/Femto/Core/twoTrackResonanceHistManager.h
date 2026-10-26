@@ -122,9 +122,18 @@ auto makeTwoTrackResonanceQaHistSpecMap(const T& confBinningAnalysis)
 #undef TWOTRACKRESONANCE_HIST_ANALYSIS_MAP
 #undef TWOTRACKRESONANCE_HIST_QA_MAP
 
+// used only by the standalone QA task
 constexpr char PrefixRho[] = "Rho0/";
 constexpr char PrefixPhi[] = "Phi/";
 constexpr char PrefixKstar[] = "Kstar0/";
+// same-event siblings, used only by a pair builder's same-event resonance manager
+constexpr char PrefixRhoSe[] = "Rho0Se/";
+constexpr char PrefixPhiSe[] = "PhiSe/";
+constexpr char PrefixKstarSe[] = "Kstar0Se/";
+// mixed-event siblings, used only by a pair builder's mixed-event resonance manager
+constexpr char PrefixRhoMe[] = "Rho0Me/";
+constexpr char PrefixPhiMe[] = "PhiMe/";
+constexpr char PrefixKstarMe[] = "Kstar0Me/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";

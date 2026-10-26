@@ -11,6 +11,7 @@
 
 #include "PWGLF/DataModel/LFDoubleOmegaTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/doubleOmegaBuilderHelper.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
@@ -21,17 +22,18 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -44,20 +46,29 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
+#include <functional>
 #include <iterator>
+#include <set>
 #include <sstream>
 #include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::pwglf::doubleomega;
 
 using CollisionsTable = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs, aod::FT0Mults>;
 using Collisions = CollisionsTable::iterator;
@@ -67,37 +78,6 @@ using FullCascades = aod::CascDataExt;
 // so neither the propagated tracks nor TracksDCA are needed.
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFKa>;
 using TracksFullMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFKa, aod::McTrackLabels>;
-
-struct DoubleOmegaCandidate {
-  float pt = -999.f;
-  float eta = -999.f;
-  float phi = -999.f;
-  float x = -999.f;
-  float y = -999.f;
-  float z = -999.f;
-  float pvX = -999.f;
-  float pvY = -999.f;
-  float pvZ = -999.f;
-  float cosPAOmega = -999.f;
-  float cosPADirectLambda = -999.f;
-  float cosPADoubleOmega = -999.f;
-  float cosPAOmegaToPV = -999.f;
-  float cosPADirectLambdaToPV = -999.f;
-  float dcaXYOmegaToPV = -999.f;
-  float dcaXYDirectLambdaToPV = -999.f;
-  float dcaXYDirectKaonToPV = -999.f;
-  float dcaXYOmegaKaonToPV = -999.f;
-  float dcaXYOmegaProtonToPV = -999.f;
-  float dcaXYOmegaPionToPV = -999.f;
-  float dcaXYDirectProtonToPV = -999.f;
-  float dcaXYDirectPionToPV = -999.f;
-  float tpcNSigmaDirectKaon = -999.f;
-  float tofNSigmaDirectKaon = -999.f;
-  uint32_t daughterDetectorMap = 0;
-  float mass = -999.f;
-  float massOmega = -999.f;
-  float massXi = -999.f;
-};
 
 struct DoubleOmegaMCInfo {
   int64_t motherId = -1;
@@ -111,49 +91,25 @@ struct DoubleOmegaMCInfo {
   std::array<float, 3> genProductionVertex{-999.f, -999.f, -999.f};
   std::array<float, 3> genDecayVertex{-999.f, -999.f, -999.f};
   std::array<float, 3> genOmegaDecayVertex{-999.f, -999.f, -999.f};
-};
-
-struct LambdaCandidate {
-  float px = 0.f;
-  float py = 0.f;
-  float pz = 0.f;
-  float mass = -999.f;
-};
-
-struct BuiltLambdaCandidate {
-  LambdaCandidate candidate;
-  o2::track::TrackParCov parentTrack;
-  std::array<float, 3> decayVertex{};
-  int64_t posTrackId = -1;
-  int64_t negTrackId = -1;
-  uint32_t daughterDetectorMap = 0; // Proton, pion; three detector bits each.
-  float dcaXYProtonToPV = -999.f;
-  float dcaXYPionToPV = -999.f;
-};
-
-struct BuiltOmegaCandidate {
-  float px = 0.f;
-  float py = 0.f;
-  float pz = 0.f;
-  float x = 0.f;
-  float y = 0.f;
-  float z = 0.f;
-  float massOmega = -999.f;
-  float massXi = -999.f;
   int8_t sign = 0;
-  int64_t posTrackId = -1;
-  int64_t negTrackId = -1;
-  int64_t bachelorId = -1;
-  o2::track::TrackParCov parentTrack;
-  uint32_t daughterDetectorMap = 0; // Kaon, proton, pion; three detector bits each.
-  float dcaXYKaonToPV = -999.f;
-  float dcaXYProtonToPV = -999.f;
-  float dcaXYPionToPV = -999.f;
+};
+
+// Same-event double-Omega candidate used as a seed of the candidate-level event mixing. Seeds are
+// kept in a pool across dataframes, so they store copies of their daughters, with the collision and
+// track indices made unique across dataframes (see uniqueIndex).
+struct MixingSeed {
+  int64_t collisionId = -1;
+  std::array<float, 3> primaryVertex{};
+  float bz = 0.f;
+  BuiltOmegaCandidate omega;
+  BuiltLambdaCandidate lambda;
+  BuiltKaonCandidate kaon;
 };
 
 struct doubleOmegaTreeCreator {
   Produces<aod::DoubleOmegaTable> doubleOmegaTable;
   Produces<aod::DoubleOmegaTableMC> doubleOmegaTableMC;
+  Produces<aod::DoubleOmegaMixedTable> doubleOmegaMixedTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   static constexpr int kDoubleOmegaPdg = 1060020020;
@@ -168,16 +124,26 @@ struct doubleOmegaTreeCreator {
     kFindableCascadeAndV0SelectedTracks,
     kNFindabilitySteps
   };
+  enum MixingType : uint8_t {
+    kSameEvent = 0,
+    kMixedOmega,  // Lambda and kaon from the same collision, Omega from another one
+    kMixedLambda, // Omega and kaon from the same collision, Lambda from another one
+    kMixedKaon,   // Omega and Lambda from the same collision, kaon from another one
+    kMixedAll,    // Omega, Lambda and kaon from three different collisions
+    kNMixingTypes
+  };
   std::vector<int64_t> reconstructedDoubleOmegaIds;
 
   Preslice<TracksFullMC> tracksPerCollision = aod::track::collisionId;
   Preslice<aod::Cascades> rawCascadesPerCollision = aod::cascade::collisionId;
   Preslice<aod::V0s> rawV0sPerCollision = aod::v0::collisionId;
+  Preslice<aod::DOmegaTracks> derivedTracksPerCollision = aod::domega::dOmegaCollId;
+  Preslice<aod::DOmegaOmegas> derivedOmegasPerCollision = aod::domega::dOmegaCollId;
+  Preslice<aod::DOmegaLambdas> derivedLambdasPerCollision = aod::domega::dOmegaCollId;
 
   int mRunNumber = 0;
   float mBz = 0.f;
-  o2::vertexing::DCAFitterN<2> fitter;
-  o2::vertexing::DCAFitterN<3> fitter3Body;
+  DoubleOmegaBuilderHelper helper;
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -220,32 +186,25 @@ struct doubleOmegaTreeCreator {
   Configurable<float> minCosPADoubleOmega{"minCosPADoubleOmega", -1.f, "Minimum double-Omega cosPA relative to the primary vertex"};
   Configurable<float> minDoubleOmegaDecayRadius{"minDoubleOmegaDecayRadius", 1.f, "Minimum double-Omega transverse decay radius in cm"};
 
+  struct : ConfigurableGroup {
+    std::string prefix = "mixingOpts";
+    Configurable<int> nMixingCollisions{"nMixingCollisions", 5, "Number of neighbouring collisions in the same bin each collision is mixed with"};
+    Configurable<int> mixingTypes{"mixingTypes", 0b1111, "Bitmask of the mixed backgrounds: 1 Omega, 2 Lambda, 4 kaon from another collision, 8 all from different collisions"};
+    Configurable<float> maxDeltaPVz{"maxDeltaPVz", 1.f, "Maximum difference of the primary-vertex z among the mixed collisions (cm)"};
+    ConfigurableAxis binsVtxZ{"binsVtxZ", {VARIABLE_WIDTH, -10.f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - primary-vertex z (cm)"};
+    ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.f, 20.f, 50.f, 100.f, 200.f, 500.f, 1.e5f}, "Mixing bins - FT0M multiplicity"};
+    // Candidate-level mixing (processDerivedMixingCandidates)
+    Configurable<int> nMixingCandidates{"nMixingCandidates", 10, "Number of same-event candidates from other collisions each candidate is mixed with, per (R, phi, charge) bin"};
+    Configurable<int> poolDepth{"poolDepth", 50, "Number of same-event candidates kept in the mixing pool per (R, phi, charge) bin, across dataframes"};
+    Configurable<int> monitoringInterval{"monitoringInterval", 50, "Log the mixing pool size, memory and timing every this many dataframes (0: never)"};
+    ConfigurableAxis binsRadius{"binsRadius", {VARIABLE_WIDTH, 0.f, 0.25f, 0.5f, 1.f, 2.f, 4.f, 10.f, 40.f}, "Mixing bins - double-Omega decay radius (cm)"};
+    ConfigurableAxis binsPhi{"binsPhi", {VARIABLE_WIDTH, -o2::constants::math::PI, -2.f * o2::constants::math::PI / 3.f, -o2::constants::math::PI / 3.f, 0.f, o2::constants::math::PI / 3.f, 2.f * o2::constants::math::PI / 3.f, o2::constants::math::PI}, "Mixing bins - double-Omega momentum azimuth (rad)"};
+  } mixingOpts;
+
+  using DerivedMixingBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::domega::MultFT0M>;
+  static constexpr float kBzTolerance = 1.e-3f; // kG
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  template <class Track>
-  static uint32_t detectorMap(Track const& track)
-  {
-    return static_cast<uint32_t>(track.hasITS()) |
-           (static_cast<uint32_t>(track.hasTPC()) << 1) |
-           (static_cast<uint32_t>(track.hasTOF()) << 2);
-  }
-
-  template <class T>
-  bool selectTrack(T const& track)
-  {
-    if (std::abs(track.eta()) > etaMax) {
-      return false;
-    }
-    if (track.itsNCls() < minNITSClus ||
-        track.tpcNClsFound() < minNTPCClus ||
-        track.tpcNClsCrossedRows() < minNCrossedRows ||
-        track.tpcNClsCrossedRows() < 0.8f * track.tpcNClsFindable() ||
-        track.tpcNClsShared() > maxNSharedTPCClus) {
-      LOG(debug) << "Track failed selection: itsNCls=" << static_cast<int>(track.itsNCls()) << ", tpcNClsFound=" << track.tpcNClsFound() << ", tpcNClsCrossedRows=" << static_cast<int>(track.tpcNClsCrossedRows()) << ", tpcNClsFindable=" << static_cast<int>(track.tpcNClsFindable()) << ", tpcNClsShared=" << static_cast<int>(track.tpcNClsShared());
-      return false;
-    }
-    return true;
-  }
 
   template <class Bc>
   void initCCDB(Bc const& bc)
@@ -259,8 +218,7 @@ struct doubleOmegaTreeCreator {
     }
     o2::base::Propagator::initFieldFromGRP(grpmag);
     mBz = o2::base::Propagator::Instance()->getNominalBz();
-    fitter.setBz(mBz);
-    fitter3Body.setBz(mBz);
+    helper.setBz(mBz);
 
     if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>("GLO/Param/MatLUT", bc.timestamp()));
@@ -269,8 +227,7 @@ struct doubleOmegaTreeCreator {
       }
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
-    fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value));
-    fitter3Body.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value));
+    helper.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value));
 
     mRunNumber = bc.runNumber();
     if (cfgSkimmedProcessing) {
@@ -331,10 +288,23 @@ struct doubleOmegaTreeCreator {
     printValue(minCosPADirectLambda);
     printValue(minCosPADoubleOmega);
     printValue(minDoubleOmegaDecayRadius);
+    printValue(mixingOpts.nMixingCollisions);
+    printValue(mixingOpts.mixingTypes);
+    printValue(mixingOpts.maxDeltaPVz);
+    printAxis(mixingOpts.binsVtxZ);
+    printAxis(mixingOpts.binsMultiplicity);
+    printValue(mixingOpts.nMixingCandidates);
+    printValue(mixingOpts.poolDepth);
+    printValue(mixingOpts.monitoringInterval);
+    printAxis(mixingOpts.binsRadius);
+    printAxis(mixingOpts.binsPhi);
     printValue(doprocessData);
     printValue(doprocessDataFromCascades);
     printValue(doprocessMC);
     printValue(doprocessFindableTracks);
+    printValue(doprocessDerivedData);
+    printValue(doprocessDerivedMixing);
+    printValue(doprocessDerivedMixingCandidates);
   }
 
   void init(InitContext const&)
@@ -346,19 +316,29 @@ struct doubleOmegaTreeCreator {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMaxDZIni(4.);
-    fitter.setMinParamChange(1.e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setUseAbsDCA(true);
-
-    fitter3Body.setPropagateToPCA(true);
-    fitter3Body.setMaxR(200.);
-    fitter3Body.setMaxDZIni(4.);
-    fitter3Body.setMinParamChange(1.e-3);
-    fitter3Body.setMinRelChi2Change(0.9);
-    fitter3Body.setUseAbsDCA(true);
+    auto& selections = helper.selections;
+    selections.etaMax = etaMax;
+    selections.minNITSClus = minNITSClus;
+    selections.minNTPCClus = minNTPCClus;
+    selections.minNCrossedRows = minNCrossedRows;
+    selections.maxNSharedTPCClus = maxNSharedTPCClus;
+    selections.nSigmaTPCCut = nSigmaTPCCut;
+    selections.dcaBachToPV = dcaBachToPV;
+    selections.dcaKaonToPV = dcaKaonToPV;
+    selections.dcaOmegaToPV = dcaOmegaToPV;
+    selections.dcaDirectLambdaToPV = dcaDirectLambdaToPV;
+    selections.dcaV0DauToPV = dcaV0DauToPV;
+    selections.dcaV0Bach = dcaV0Bach;
+    selections.dcaLambdaDaughters = dcaLambdaDaughters;
+    selections.mOmegaWindow = mOmegaWindow;
+    selections.mLambdaWindow = mLambdaWindow;
+    selections.maxDoubleOmegaMass = maxDoubleOmegaMass;
+    selections.minCosPAOmega = minCosPAOmega;
+    selections.minCosPADirectLambda = minCosPADirectLambda;
+    selections.minCosPADoubleOmega = minCosPADoubleOmega;
+    selections.minDoubleOmegaDecayRadius = minDoubleOmegaDecayRadius;
+    helper.initFitters();
+    helper.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value));
 
     zorroSummary.setObject(zorro.getZorroSummary());
 
@@ -376,301 +356,29 @@ struct doubleOmegaTreeCreator {
     generatedAndFindable->GetXaxis()->SetBinLabel(kFindableSelectedTracks + 1, "Findable, selected tracks");
     generatedAndFindable->GetXaxis()->SetBinLabel(kFindableCascadeAndV0 + 1, "Findable cascade + V0");
     generatedAndFindable->GetXaxis()->SetBinLabel(kFindableCascadeAndV0SelectedTracks + 1, "Findable cascade + V0, selected tracks");
-  }
 
-  template <class Track>
-  bool isSelectedKaon(Track const& track, int8_t charge)
-  {
-    return track.sign() == charge &&
-           selectTrack(track) &&
-           std::abs(track.tpcNSigmaKa()) <= nSigmaTPCCut;
-  }
-
-  static float invariantMass2Body(std::array<float, 3> const& momentum1, float mass1,
-                                  std::array<float, 3> const& momentum2, float mass2)
-  {
-    const float momentum1Squared = momentum1[0] * momentum1[0] + momentum1[1] * momentum1[1] + momentum1[2] * momentum1[2];
-    const float momentum2Squared = momentum2[0] * momentum2[0] + momentum2[1] * momentum2[1] + momentum2[2] * momentum2[2];
-    const float energy = std::sqrt(momentum1Squared + mass1 * mass1) + std::sqrt(momentum2Squared + mass2 * mass2);
-    const std::array<float, 3> totalMomentum{
-      momentum1[0] + momentum2[0], momentum1[1] + momentum2[1], momentum1[2] + momentum2[2]};
-    const float massSquared = energy * energy - totalMomentum[0] * totalMomentum[0] - totalMomentum[1] * totalMomentum[1] - totalMomentum[2] * totalMomentum[2];
-    return std::sqrt(std::max(0.f, massSquared));
-  }
-
-  // Transverse DCA of a track to the collision primary vertex, computed by propagating
-  // a copy of the track parameters. Returns false if the propagation fails.
-  template <class C, class Track>
-  bool dcaXYToPV(C const& collision, Track const& track, float& dcaXY) const
-  {
-    auto trackParCov = getTrackParCov(track);
-    const o2::math_utils::Point3D<float> primaryVertex{collision.posX(), collision.posY(), collision.posZ()};
-    const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
-    std::array<float, 2> dca{};
-    if (!o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCov, 2.f, matCorr, &dca)) {
-      return false;
+    if (doprocessDerivedMixingCandidates) {
+      histos.add("Mixing/hSeedRadiusPhi", ";Double-#Omega decay radius (cm);Double-#Omega #varphi (rad);Same-event candidates", HistType::kTH2F, {mixingOpts.binsRadius, mixingOpts.binsPhi});
+      // Resource monitoring of the candidate-level mixing, one entry per dataframe.
+      histos.add("Mixing/hProcessingTime", ";Processing time per dataframe (ms);Dataframes", HistType::kTH1F, {{500, 0.f, 5000.f}});
+      histos.add("Mixing/hPoolSeeds", ";Seeds in the mixing pool;Dataframes", HistType::kTH1F, {{500, 0.f, 50000.f}});
+      histos.add("Mixing/hPoolMemory", ";Estimated mixing-pool memory (MB);Dataframes", HistType::kTH1F, {{500, 0.f, 50.f}});
+      histos.add("Mixing/hProcessingTimeVsPoolSeeds", ";Seeds in the mixing pool;Processing time per dataframe (ms)", HistType::kTH2F, {{100, 0.f, 50000.f}, {100, 0.f, 5000.f}});
     }
-    dcaXY = dca[0];
-    return true;
-  }
-
-  template <class C, class Track>
-  bool buildLambda(C const& collision, Track const& posTrack, Track const& negTrack, int8_t charge, BuiltLambdaCandidate& builtLambda)
-  {
-    if (posTrack.sign() <= 0 || negTrack.sign() >= 0 ||
-        !selectTrack(posTrack) || !selectTrack(negTrack)) {
-      return false;
+    if (doprocessDerivedMixing || doprocessDerivedMixingCandidates) {
+      histos.add("Mixing/hMixedCollisions", ";;Entries", HistType::kTH1F, {{4, -0.5f, 3.5f}});
+      auto mixedCollisions = histos.get<TH1>(HIST("Mixing/hMixedCollisions"));
+      mixedCollisions->GetXaxis()->SetBinLabel(1, "Pairs");
+      mixedCollisions->GetXaxis()->SetBinLabel(2, "Pairs, #Delta#it{z}_{PV}, same #it{B}");
+      mixedCollisions->GetXaxis()->SetBinLabel(3, "Triples");
+      mixedCollisions->GetXaxis()->SetBinLabel(4, "Triples, #Delta#it{z}_{PV}, same #it{B}");
+      histos.add("Mixing/hMixedCandidates", ";;Entries", HistType::kTH1F, {{kNMixingTypes - 1, 0.5f, static_cast<float>(kNMixingTypes) - 0.5f}});
+      auto mixedCandidates = histos.get<TH1>(HIST("Mixing/hMixedCandidates"));
+      mixedCandidates->GetXaxis()->SetBinLabel(kMixedOmega, "#Omega mixed");
+      mixedCandidates->GetXaxis()->SetBinLabel(kMixedLambda, "#Lambda mixed");
+      mixedCandidates->GetXaxis()->SetBinLabel(kMixedKaon, "K mixed");
+      mixedCandidates->GetXaxis()->SetBinLabel(kMixedAll, "All mixed");
     }
-
-    const bool isMatter = charge < 0;
-    const float protonNSigma = isMatter ? posTrack.tpcNSigmaPr() : negTrack.tpcNSigmaPr();
-    const float pionNSigma = isMatter ? negTrack.tpcNSigmaPi() : posTrack.tpcNSigmaPi();
-    if (std::abs(protonNSigma) > nSigmaTPCCut || std::abs(pionNSigma) > nSigmaTPCCut) {
-      return false;
-    }
-    float dcaXYPos = -999.f;
-    float dcaXYNeg = -999.f;
-    if (!dcaXYToPV(collision, posTrack, dcaXYPos) || !dcaXYToPV(collision, negTrack, dcaXYNeg)) {
-      LOG(debug) << "Propagation to the PV failed for Lambda daughters " << posTrack.globalIndex() << ", " << negTrack.globalIndex();
-      return false;
-    }
-    if (std::abs(dcaXYPos) < dcaV0DauToPV || std::abs(dcaXYNeg) < dcaV0DauToPV) {
-      LOG(debug) << "Lambda dau don't pass selections: " << "nsigmaPR: " << protonNSigma << ", pionNSigma: " << pionNSigma << ", dcaXYPos: " << dcaXYPos << ", dcaXYNeg: " << dcaXYNeg;
-      return false;
-    }
-
-    auto posTrackParCov = getTrackParCov(posTrack);
-    auto negTrackParCov = getTrackParCov(negTrack);
-    int nCandidates = 0;
-    try {
-      nCandidates = fitter.process(posTrackParCov, negTrackParCov);
-    } catch (...) {
-      LOG(error) << "Exception while fitting Lambda daughter tracks " << posTrack.globalIndex() << ", " << negTrack.globalIndex();
-      return false;
-    }
-    if (nCandidates == 0) {
-      return false;
-    }
-
-    std::array<float, 3> posMomentum{};
-    std::array<float, 3> negMomentum{};
-    fitter.getTrack(0).getPxPyPzGlo(posMomentum);
-    fitter.getTrack(1).getPxPyPzGlo(negMomentum);
-    const std::array<float, 3> lambdaMomentum{
-      posMomentum[0] + negMomentum[0],
-      posMomentum[1] + negMomentum[1],
-      posMomentum[2] + negMomentum[2]};
-    const auto& fittedVertex = fitter.getPCACandidate();
-    const std::array<float, 3> decayVertex{
-      static_cast<float>(fittedVertex[0]), static_cast<float>(fittedVertex[1]), static_cast<float>(fittedVertex[2])};
-    const float mass = isMatter ? invariantMass2Body(posMomentum, o2::constants::physics::MassProton,
-                                                     negMomentum, o2::constants::physics::MassPionCharged)
-                                : invariantMass2Body(posMomentum, o2::constants::physics::MassPionCharged,
-                                                     negMomentum, o2::constants::physics::MassProton);
-    const float dcaDaughters = std::sqrt(std::abs(fitter.getChi2AtPCACandidate()));
-    const float eta = etaFromMomentum(lambdaMomentum[0], lambdaMomentum[1], lambdaMomentum[2]);
-    if (std::abs(eta) > etaMax ||
-        dcaDaughters > dcaLambdaDaughters ||
-        std::abs(mass - o2::constants::physics::MassLambda0) > mLambdaWindow) {
-      return false;
-    }
-
-    builtLambda.candidate = {
-      .px = lambdaMomentum[0],
-      .py = lambdaMomentum[1],
-      .pz = lambdaMomentum[2],
-      .mass = mass};
-    builtLambda.parentTrack = fitter.createParentTrackParCov(0);
-    builtLambda.decayVertex = decayVertex;
-    builtLambda.posTrackId = posTrack.globalIndex();
-    builtLambda.negTrackId = negTrack.globalIndex();
-    // Keep particle-role ordering for matter and antimatter alike.
-    builtLambda.daughterDetectorMap = isMatter ? detectorMap(posTrack) | (detectorMap(negTrack) << 3)
-                                               : detectorMap(negTrack) | (detectorMap(posTrack) << 3);
-    builtLambda.dcaXYProtonToPV = isMatter ? dcaXYPos : dcaXYNeg;
-    builtLambda.dcaXYPionToPV = isMatter ? dcaXYNeg : dcaXYPos;
-    return true;
-  }
-
-  template <class C, class Track>
-  bool buildOmega(C const& collision, Track const& posTrack, Track const& negTrack, Track const& bachelor, BuiltOmegaCandidate& builtOmega)
-  {
-    if (bachelor.sign() == 0 ||
-        !selectTrack(bachelor) ||
-        std::abs(bachelor.tpcNSigmaKa()) > nSigmaTPCCut) {
-      return false;
-    }
-    float dcaXYBachelor = -999.f;
-    if (!dcaXYToPV(collision, bachelor, dcaXYBachelor) || std::abs(dcaXYBachelor) < dcaBachToPV) {
-      return false;
-    }
-
-    BuiltLambdaCandidate lambda;
-    if (!buildLambda(collision, posTrack, negTrack, bachelor.sign(), lambda)) {
-      return false;
-    }
-
-    auto v0TrackParCov = lambda.parentTrack;
-    auto bachelorTrackParCov = getTrackParCov(bachelor);
-    int nCandidates = 0;
-    try {
-      nCandidates = fitter.process(v0TrackParCov, bachelorTrackParCov);
-    } catch (...) {
-      LOG(error) << "Exception while fitting Omega daughter tracks " << posTrack.globalIndex() << ", " << negTrack.globalIndex() << ", " << bachelor.globalIndex();
-      return false;
-    }
-    if (nCandidates == 0) {
-      return false;
-    }
-
-    std::array<float, 3> lambdaMomentum{};
-    std::array<float, 3> bachelorMomentum{};
-    fitter.getTrack(0).getPxPyPzGlo(lambdaMomentum);
-    fitter.getTrack(1).getPxPyPzGlo(bachelorMomentum);
-    const std::array<float, 3> omegaMomentum{
-      lambdaMomentum[0] + bachelorMomentum[0],
-      lambdaMomentum[1] + bachelorMomentum[1],
-      lambdaMomentum[2] + bachelorMomentum[2]};
-    const auto& fittedVertex = fitter.getPCACandidate();
-    const std::array<float, 3> decayVertex{
-      static_cast<float>(fittedVertex[0]), static_cast<float>(fittedVertex[1]), static_cast<float>(fittedVertex[2])};
-    const float massOmega = invariantMass2Body(lambdaMomentum, o2::constants::physics::MassLambda0,
-                                               bachelorMomentum, o2::constants::physics::MassKaonCharged);
-    const float massXi = invariantMass2Body(lambdaMomentum, o2::constants::physics::MassLambda0,
-                                            bachelorMomentum, o2::constants::physics::MassPionCharged);
-    const float dcaDaughters = std::sqrt(std::abs(fitter.getChi2AtPCACandidate()));
-    const float eta = etaFromMomentum(omegaMomentum[0], omegaMomentum[1], omegaMomentum[2]);
-    if (dcaDaughters > dcaV0Bach ||
-        std::abs(eta) > etaMax ||
-        std::abs(massOmega - o2::constants::physics::MassOmegaMinus) > mOmegaWindow) {
-      return false;
-    }
-
-    builtOmega = {
-      omegaMomentum[0],
-      omegaMomentum[1],
-      omegaMomentum[2],
-      decayVertex[0],
-      decayVertex[1],
-      decayVertex[2],
-      massOmega,
-      massXi,
-      static_cast<int8_t>(bachelor.sign()),
-      posTrack.globalIndex(),
-      negTrack.globalIndex(),
-      bachelor.globalIndex(),
-      fitter.createParentTrackParCov(),
-      detectorMap(bachelor) | (lambda.daughterDetectorMap << 3),
-      dcaXYBachelor,
-      lambda.dcaXYProtonToPV,
-      lambda.dcaXYPionToPV};
-    return true;
-  }
-
-  static float etaFromMomentum(float px, float py, float pz)
-  {
-    const float pt = std::hypot(px, py);
-    return pt > 0.f ? std::asinh(pz / pt) : 0.f;
-  }
-
-  template <class C, class Kaon>
-  bool buildDoubleOmega(C const& collision, BuiltOmegaCandidate const& omega, BuiltLambdaCandidate const& directLambda, Kaon const& kaon, DoubleOmegaCandidate& cand)
-  {
-    auto omegaTrackParCov = omega.parentTrack;
-    auto lambdaTrackParCov = directLambda.parentTrack;
-    auto kaonTrackParCov = getTrackParCov(kaon);
-    int nCandidates = 0;
-    try {
-      nCandidates = fitter3Body.process(omegaTrackParCov, lambdaTrackParCov, kaonTrackParCov);
-    } catch (...) {
-      LOG(error) << "Exception while fitting the double-Omega candidate";
-      return false;
-    }
-    if (nCandidates == 0) {
-      return false;
-    }
-
-    auto omegaTrackAtVertex = fitter3Body.getTrack(0);
-    auto lambdaTrackAtVertex = fitter3Body.getTrack(1);
-    auto kaonTrackAtVertex = fitter3Body.getTrack(2);
-    std::array<float, 3> omegaMomentum{};
-    std::array<float, 3> lambdaMomentum{};
-    std::array<float, 3> kaonMomentum{};
-    omegaTrackAtVertex.getPxPyPzGlo(omegaMomentum);
-    lambdaTrackAtVertex.getPxPyPzGlo(lambdaMomentum);
-    kaonTrackAtVertex.getPxPyPzGlo(kaonMomentum);
-
-    const std::array<float, 3> totalMomentum{
-      omegaMomentum[0] + lambdaMomentum[0] + kaonMomentum[0],
-      omegaMomentum[1] + lambdaMomentum[1] + kaonMomentum[1],
-      omegaMomentum[2] + lambdaMomentum[2] + kaonMomentum[2]};
-    const auto& fittedVertex = fitter3Body.getPCACandidate();
-    const std::array<float, 3> decayVertex{
-      static_cast<float>(fittedVertex[0]), static_cast<float>(fittedVertex[1]), static_cast<float>(fittedVertex[2])};
-    const std::array<float, 3> primaryVertex{collision.posX(), collision.posY(), collision.posZ()};
-    const o2::math_utils::Point3D<float> primaryVertexPoint{collision.posX(), collision.posY(), collision.posZ()};
-    const std::array<float, 3> omegaDecayVertex{omega.x, omega.y, omega.z};
-
-    std::array<float, 2> dcaOmega{};
-    std::array<float, 2> dcaDirectLambda{};
-    std::array<float, 2> dcaDirectKaon{};
-    const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
-    if (!o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertexPoint, omegaTrackAtVertex, 2.f, matCorr, &dcaOmega) ||
-        !o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertexPoint, lambdaTrackAtVertex, 2.f, matCorr, &dcaDirectLambda) ||
-        !o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertexPoint, kaonTrackAtVertex, 2.f, matCorr, &dcaDirectKaon)) {
-      return false;
-    }
-
-    const auto momentumSquared = [](std::array<float, 3> const& momentum) {
-      return momentum[0] * momentum[0] + momentum[1] * momentum[1] + momentum[2] * momentum[2];
-    };
-    const float energy = std::sqrt(momentumSquared(omegaMomentum) + o2::constants::physics::MassOmegaMinus * o2::constants::physics::MassOmegaMinus) +
-                         std::sqrt(momentumSquared(lambdaMomentum) + o2::constants::physics::MassLambda0 * o2::constants::physics::MassLambda0) +
-                         std::sqrt(momentumSquared(kaonMomentum) + o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged);
-    const float massSquared = energy * energy - totalMomentum[0] * totalMomentum[0] - totalMomentum[1] * totalMomentum[1] - totalMomentum[2] * totalMomentum[2];
-
-    cand.pt = std::hypot(totalMomentum[0], totalMomentum[1]);
-    cand.eta = etaFromMomentum(totalMomentum[0], totalMomentum[1], totalMomentum[2]);
-    cand.phi = std::atan2(totalMomentum[1], totalMomentum[0]);
-    cand.x = decayVertex[0];
-    cand.y = decayVertex[1];
-    cand.z = decayVertex[2];
-    cand.pvX = primaryVertex[0];
-    cand.pvY = primaryVertex[1];
-    cand.pvZ = primaryVertex[2];
-    cand.cosPAOmega = RecoDecay::cpa(decayVertex, omegaDecayVertex, omegaMomentum);
-    cand.cosPADirectLambda = RecoDecay::cpa(decayVertex, directLambda.decayVertex, lambdaMomentum);
-    cand.cosPADoubleOmega = RecoDecay::cpa(primaryVertex, decayVertex, totalMomentum);
-    // PV pointing angles use the daughter momenta at their own decay vertices.
-    cand.cosPAOmegaToPV = RecoDecay::cpa(primaryVertex, omegaDecayVertex, std::array<float, 3>{omega.px, omega.py, omega.pz});
-    cand.cosPADirectLambdaToPV = RecoDecay::cpa(primaryVertex, directLambda.decayVertex, std::array<float, 3>{directLambda.candidate.px, directLambda.candidate.py, directLambda.candidate.pz});
-    cand.dcaXYOmegaToPV = dcaOmega[0];
-    cand.dcaXYDirectLambdaToPV = dcaDirectLambda[0];
-    cand.dcaXYDirectKaonToPV = dcaDirectKaon[0];
-    cand.dcaXYOmegaKaonToPV = omega.dcaXYKaonToPV;
-    cand.dcaXYOmegaProtonToPV = omega.dcaXYProtonToPV;
-    cand.dcaXYOmegaPionToPV = omega.dcaXYPionToPV;
-    cand.dcaXYDirectProtonToPV = directLambda.dcaXYProtonToPV;
-    cand.dcaXYDirectPionToPV = directLambda.dcaXYPionToPV;
-    cand.tpcNSigmaDirectKaon = kaon.hasTPC() ? kaon.tpcNSigmaKa() : -999.f;
-    cand.tofNSigmaDirectKaon = kaon.hasTOF() ? kaon.tofNSigmaKa() : -999.f;
-    cand.daughterDetectorMap = omega.daughterDetectorMap |
-                               (directLambda.daughterDetectorMap << 9) |
-                               (detectorMap(kaon) << 15);
-    cand.mass = std::sqrt(std::max(0.f, massSquared));
-    if (cand.cosPAOmega < minCosPAOmega ||
-        cand.cosPADirectLambda < minCosPADirectLambda ||
-        cand.cosPADoubleOmega < minCosPADoubleOmega ||
-        std::hypot(decayVertex[0], decayVertex[1]) < minDoubleOmegaDecayRadius ||
-        std::abs(cand.dcaXYOmegaToPV) < dcaOmegaToPV ||
-        std::abs(cand.dcaXYDirectLambdaToPV) < dcaDirectLambdaToPV ||
-        std::abs(cand.dcaXYDirectKaonToPV) < dcaKaonToPV ||
-        cand.mass > maxDoubleOmegaMass) {
-      return false;
-    }
-    cand.massOmega = omega.massOmega;
-    cand.massXi = omega.massXi;
-    return true;
   }
 
   template <class Track>
@@ -682,9 +390,9 @@ struct doubleOmegaTreeCreator {
 
     auto mcPosTrack = posTrack.template mcParticle_as<aod::McParticles>();
     auto mcNegTrack = negTrack.template mcParticle_as<aod::McParticles>();
-    const int expectedPosPdg = sign < 0 ? 2212 : 211;
-    const int expectedNegPdg = sign < 0 ? -211 : -2212;
-    const int expectedLambdaPdg = sign < 0 ? 3122 : -3122;
+    const int expectedPosPdg = sign < 0 ? PDG_t::kProton : PDG_t::kPiPlus;
+    const int expectedNegPdg = sign < 0 ? PDG_t::kPiMinus : PDG_t::kProtonBar;
+    const int expectedLambdaPdg = sign < 0 ? PDG_t::kLambda0 : PDG_t::kLambda0Bar;
     if (mcPosTrack.pdgCode() != expectedPosPdg || mcNegTrack.pdgCode() != expectedNegPdg) {
       return -1;
     }
@@ -713,8 +421,8 @@ struct doubleOmegaTreeCreator {
 
     auto mcLambda = mcParticles.rawIteratorAt(lambdaLabel);
     auto mcBachelor = bachelorTrack.template mcParticle_as<aod::McParticles>();
-    const int expectedBachelorPdg = sign < 0 ? -321 : 321;
-    const int expectedOmegaPdg = sign < 0 ? 3334 : -3334;
+    const int expectedBachelorPdg = sign < 0 ? PDG_t::kKMinus : PDG_t::kKPlus;
+    const int expectedOmegaPdg = sign < 0 ? PDG_t::kOmegaMinus : PDG_t::kOmegaPlusBar;
     if (mcBachelor.pdgCode() != expectedBachelorPdg) {
       return -1;
     }
@@ -747,7 +455,7 @@ struct doubleOmegaTreeCreator {
     auto mcOmega = mcParticles.rawIteratorAt(omegaLabel);
     auto mcLambda = mcParticles.rawIteratorAt(lambdaLabel);
     auto mcKaon = directKaonTrack.template mcParticle_as<aod::McParticles>();
-    const int expectedKaonPdg = sign < 0 ? -321 : 321;
+    const int expectedKaonPdg = sign < 0 ? PDG_t::kKMinus : PDG_t::kKPlus;
     const int expectedDoubleOmegaPdg = sign < 0 ? kDoubleOmegaPdg : -kDoubleOmegaPdg;
     if (mcKaon.pdgCode() != expectedKaonPdg) {
       return false;
@@ -771,6 +479,7 @@ struct doubleOmegaTreeCreator {
                                             mcOmega.vy() - omegaMother.vy(),
                                             mcOmega.vz() - omegaMother.vz());
             mcInfo.pdgCode = omegaMother.pdgCode();
+            mcInfo.sign = sign;
             return true;
           }
         }
@@ -787,9 +496,9 @@ struct doubleOmegaTreeCreator {
     }
 
     const bool isMatter = particle.pdgCode() > 0;
-    const int expectedOmegaPdg = isMatter ? 3334 : -3334;
-    const int expectedLambdaPdg = isMatter ? 3122 : -3122;
-    const int expectedKaonPdg = isMatter ? -321 : 321;
+    const int expectedOmegaPdg = isMatter ? PDG_t::kOmegaMinus : PDG_t::kOmegaPlusBar;
+    const int expectedLambdaPdg = isMatter ? PDG_t::kLambda0 : PDG_t::kLambda0Bar;
+    const int expectedKaonPdg = isMatter ? PDG_t::kKMinus : PDG_t::kKPlus;
     bool foundOmega = false;
     bool foundLambda = false;
     bool foundKaon = false;
@@ -826,6 +535,7 @@ struct doubleOmegaTreeCreator {
     info.genProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
     info.genDecayVertex = decayVertex;
     info.genOmegaDecayVertex = omegaDecayVertex;
+    info.sign = isMatter ? -1 : 1;
     return true;
   }
 
@@ -848,7 +558,7 @@ struct doubleOmegaTreeCreator {
 
   void writeDataCandidate(DoubleOmegaCandidate const& cand)
   {
-    doubleOmegaTable(cand.pt,
+    doubleOmegaTable(cand.pt * cand.sign,
                      cand.eta,
                      cand.phi,
                      cand.x,
@@ -878,9 +588,42 @@ struct doubleOmegaTreeCreator {
                      cand.massXi);
   }
 
+  void writeMixedCandidate(DoubleOmegaCandidate const& cand, MixingType mixingType)
+  {
+    doubleOmegaMixedTable(cand.pt * cand.sign,
+                          cand.eta,
+                          cand.phi,
+                          cand.x,
+                          cand.y,
+                          cand.z,
+                          cand.pvX,
+                          cand.pvY,
+                          cand.pvZ,
+                          cand.cosPAOmega,
+                          cand.cosPADirectLambda,
+                          cand.cosPADoubleOmega,
+                          cand.cosPAOmegaToPV,
+                          cand.cosPADirectLambdaToPV,
+                          cand.dcaXYOmegaToPV,
+                          cand.dcaXYDirectLambdaToPV,
+                          cand.dcaXYDirectKaonToPV,
+                          cand.dcaXYOmegaKaonToPV,
+                          cand.dcaXYOmegaProtonToPV,
+                          cand.dcaXYOmegaPionToPV,
+                          cand.dcaXYDirectProtonToPV,
+                          cand.dcaXYDirectPionToPV,
+                          cand.tpcNSigmaDirectKaon,
+                          cand.tofNSigmaDirectKaon,
+                          cand.daughterDetectorMap,
+                          cand.mass,
+                          cand.massOmega,
+                          cand.massXi,
+                          mixingType);
+  }
+
   void writeMCCandidate(DoubleOmegaCandidate const& cand, DoubleOmegaMCInfo const& mcInfo, bool isReco)
   {
-    doubleOmegaTableMC(cand.pt,
+    doubleOmegaTableMC(cand.pt * cand.sign,
                        cand.eta,
                        cand.phi,
                        cand.x,
@@ -908,7 +651,7 @@ struct doubleOmegaTreeCreator {
                        cand.mass,
                        cand.massOmega,
                        cand.massXi,
-                       mcInfo.pt,
+                       mcInfo.pt * mcInfo.sign,
                        mcInfo.eta,
                        mcInfo.phi,
                        mcInfo.decayLength,
@@ -938,66 +681,26 @@ struct doubleOmegaTreeCreator {
     LOG(debug) << "collision " << collision.globalIndex() << " (direct kaon), numContrib = " << collision.numContrib();
   }
 
-  template <bool isMC, class C, class T, class Cascades, class V0s>
-  void fillFromRawTables(C const& collision, T const& tracks, Cascades const& cascades, V0s const& v0s,
-                         aod::McParticles const* mcParticles = nullptr)
+  void fillCandidateQA(CollisionCandidates const& candidates)
   {
-    for (const auto& rawCascade : cascades) {
-      const auto omegaV0 = rawCascade.template v0_as<aod::V0s>();
-      const auto omegaPosTrack = omegaV0.template posTrack_as<T>();
-      const auto omegaNegTrack = omegaV0.template negTrack_as<T>();
-      const auto omegaBachelorTrack = rawCascade.template bachelor_as<T>();
-      BuiltOmegaCandidate omega;
-      if (!buildOmega(collision, omegaPosTrack, omegaNegTrack, omegaBachelorTrack, omega)) {
-        continue;
-      }
+    for (const auto& omega : candidates.omegas) {
       const float omegaPt = std::hypot(omega.px, omega.py);
       histos.fill(HIST("QA/massXi"), omegaPt, omega.massXi);
       histos.fill(HIST("QA/massOmega"), omegaPt, omega.massOmega);
-      const std::array<int64_t, 3> omegaTrackIds{omega.posTrackId, omega.negTrackId, omega.bachelorId};
-
-      for (const auto& rawV0 : v0s) {
-        const auto lambdaPosTrack = rawV0.template posTrack_as<T>();
-        const auto lambdaNegTrack = rawV0.template negTrack_as<T>();
-        BuiltLambdaCandidate lambda;
-        if (!buildLambda(collision, lambdaPosTrack, lambdaNegTrack, omega.sign, lambda)) {
-          continue;
-        }
-        if (std::find(omegaTrackIds.begin(), omegaTrackIds.end(), lambda.posTrackId) != omegaTrackIds.end() ||
-            std::find(omegaTrackIds.begin(), omegaTrackIds.end(), lambda.negTrackId) != omegaTrackIds.end()) {
-          continue;
-        }
+    }
+    for (const auto& lambdas : candidates.lambdas) {
+      for (const auto& lambda : lambdas) {
         histos.fill(HIST("QA/massLambda"), std::hypot(lambda.candidate.px, lambda.candidate.py), lambda.candidate.mass);
-
-        for (const auto& kaon : tracks) {
-          if (!isSelectedKaon(kaon, omega.sign) ||
-              kaon.globalIndex() == lambda.posTrackId ||
-              kaon.globalIndex() == lambda.negTrackId ||
-              std::find(omegaTrackIds.begin(), omegaTrackIds.end(), kaon.globalIndex()) != omegaTrackIds.end()) {
-            continue;
-          }
-          DoubleOmegaCandidate cand;
-          if (!buildDoubleOmega(collision, omega, lambda, kaon, cand)) {
-            continue;
-          }
-          if constexpr (isMC) {
-            if (mcParticles == nullptr) {
-              continue;
-            }
-            DoubleOmegaMCInfo mcInfo;
-            if (getMCInfo(mcInfo,
-                          omegaPosTrack, omegaNegTrack, omegaBachelorTrack,
-                          lambdaPosTrack, lambdaNegTrack, kaon,
-                          omega.sign, *mcParticles)) {
-              reconstructedDoubleOmegaIds.push_back(mcInfo.motherId);
-              writeMCCandidate(cand, mcInfo, true);
-            }
-          } else {
-            writeDataCandidate(cand);
-          }
-        }
       }
     }
+  }
+
+  template <class C, class T, class Cascades, class V0s>
+  CollisionCandidates buildCollisionCandidates(C const& collision, T const& tracks, Cascades const& cascades, V0s const& v0s, bool requireOmega)
+  {
+    auto candidates = helper.buildCollisionCandidates(collision, tracks, cascades, v0s, requireOmega);
+    fillCandidateQA(candidates);
+    return candidates;
   }
 
   template <class C, class T, class Cascades>
@@ -1005,7 +708,7 @@ struct doubleOmegaTreeCreator {
   {
     for (const auto& omegaRow : cascades) {
       BuiltOmegaCandidate omega;
-      if (!buildOmega(collision, omegaRow.template posTrack_as<T>(), omegaRow.template negTrack_as<T>(), omegaRow.template bachelor_as<T>(), omega)) {
+      if (!helper.buildOmega(collision, omegaRow.template posTrack_as<T>(), omegaRow.template negTrack_as<T>(), omegaRow.template bachelor_as<T>(), omega)) {
         continue;
       }
       const float omegaPt = std::hypot(omega.px, omega.py);
@@ -1033,16 +736,16 @@ struct doubleOmegaTreeCreator {
         }
 
         auto kaon = lambdaKaonSource.template bachelor_as<T>();
-        if (!isSelectedKaon(kaon, omega.sign)) {
+        if (!helper.isSelectedKaon(kaon, omega.sign)) {
           continue;
         }
         BuiltLambdaCandidate lambda;
-        if (!buildLambda(collision, lambdaKaonSource.template posTrack_as<T>(), lambdaKaonSource.template negTrack_as<T>(), omega.sign, lambda)) {
+        if (!helper.buildLambda(collision, lambdaKaonSource.template posTrack_as<T>(), lambdaKaonSource.template negTrack_as<T>(), omega.sign, lambda)) {
           continue;
         }
         histos.fill(HIST("QA/massLambda"), std::hypot(lambda.candidate.px, lambda.candidate.py), lambda.candidate.mass);
         DoubleOmegaCandidate cand;
-        if (buildDoubleOmega(collision, omega, lambda, kaon, cand)) {
+        if (helper.buildDoubleOmega({collision.posX(), collision.posY(), collision.posZ()}, omega, lambda, DoubleOmegaBuilderHelper::buildKaon(kaon), cand)) {
           writeDataCandidate(cand);
         }
       }
@@ -1074,7 +777,7 @@ struct doubleOmegaTreeCreator {
     const auto lambdaPosTrack = tracks.rawIteratorAt(daughterTrackIds[isMatter ? 3 : 4]);
     const auto lambdaNegTrack = tracks.rawIteratorAt(daughterTrackIds[isMatter ? 4 : 3]);
     const auto kaon = tracks.rawIteratorAt(daughterTrackIds[5]);
-    if (!isSelectedKaon(kaon, charge)) {
+    if (!helper.isSelectedKaon(kaon, charge)) {
       return false;
     }
     const int64_t collisionId = selectFindableCollision(kaon);
@@ -1086,19 +789,19 @@ struct doubleOmegaTreeCreator {
     initCCDB(bc);
 
     BuiltOmegaCandidate omega;
-    if (!buildOmega(collision, omegaPosTrack, omegaNegTrack, bachelor, omega)) {
+    if (!helper.buildOmega(collision, omegaPosTrack, omegaNegTrack, bachelor, omega)) {
       return false;
     }
     const float omegaPt = std::hypot(omega.px, omega.py);
     histos.fill(HIST("QA/massXi"), omegaPt, omega.massXi);
     histos.fill(HIST("QA/massOmega"), omegaPt, omega.massOmega);
     BuiltLambdaCandidate lambda;
-    if (!buildLambda(collision, lambdaPosTrack, lambdaNegTrack, charge, lambda)) {
+    if (!helper.buildLambda(collision, lambdaPosTrack, lambdaNegTrack, charge, lambda)) {
       return false;
     }
     histos.fill(HIST("QA/massLambda"), std::hypot(lambda.candidate.px, lambda.candidate.py), lambda.candidate.mass);
     DoubleOmegaCandidate cand;
-    if (!buildDoubleOmega(collision, omega, lambda, kaon, cand)) {
+    if (!helper.buildDoubleOmega({collision.posX(), collision.posY(), collision.posZ()}, omega, lambda, DoubleOmegaBuilderHelper::buildKaon(kaon), cand)) {
       return false;
     }
     logVertexComparison(collision, cand, omega, mcInfo);
@@ -1126,15 +829,54 @@ struct doubleOmegaTreeCreator {
     return true;
   }
 
+  void mix(CollisionCandidates const& reference, CollisionCandidates const& omegaSource,
+           CollisionCandidates const& lambdaSource, CollisionCandidates const& kaonSource, MixingType mixingType)
+  {
+    if (!(mixingOpts.mixingTypes & (1 << (mixingType - 1)))) {
+      return;
+    }
+    helper.combine(reference, omegaSource, lambdaSource, kaonSource, [&](DoubleOmegaCandidate const& cand, auto const&...) {
+      histos.fill(HIST("Mixing/hMixedCandidates"), mixingType);
+      writeMixedCandidate(cand, mixingType);
+    });
+  }
+
+  // Two candidates from one collision and one from the other, in both directions. The collision
+  // providing two candidates is the reference one.
+  void mixPair(CollisionCandidates const& candidates0, CollisionCandidates const& candidates1)
+  {
+    mix(candidates0, candidates1, candidates0, candidates0, kMixedOmega);
+    mix(candidates1, candidates0, candidates1, candidates1, kMixedOmega);
+    mix(candidates0, candidates0, candidates1, candidates0, kMixedLambda);
+    mix(candidates1, candidates1, candidates0, candidates1, kMixedLambda);
+    mix(candidates0, candidates0, candidates0, candidates1, kMixedKaon);
+    mix(candidates1, candidates1, candidates1, candidates0, kMixedKaon);
+  }
+
+  // All the assignments of the Omega, Lambda and kaon to three different collisions. The collision
+  // providing the Omega is the reference one.
+  void mixTriple(CollisionCandidates const& candidates0, CollisionCandidates const& candidates1, CollisionCandidates const& candidates2)
+  {
+    const std::array<const CollisionCandidates*, 3> sources{&candidates0, &candidates1, &candidates2};
+    std::array<int, 3> roles{0, 1, 2}; // Sources of the Omega, Lambda and kaon.
+    do {
+      const auto& omegaSource = *sources[roles[0]];
+      mix(omegaSource, omegaSource, *sources[roles[1]], *sources[roles[2]], kMixedAll);
+    } while (std::next_permutation(roles.begin(), roles.end()));
+  }
+
   void processData(Collisions const& collision,
                    TracksFull const& tracks,
                    aod::V0s const& v0s,
                    aod::Cascades const& cascades,
                    aod::BCsWithTimestamps const& bcs)
   {
-    if (acceptCollision(collision, bcs)) {
-      fillFromRawTables<false>(collision, tracks, cascades, v0s);
+    if (!acceptCollision(collision, bcs)) {
+      return;
     }
+    const auto candidates = buildCollisionCandidates(collision, tracks, cascades, v0s, true);
+    helper.combine(candidates, candidates, candidates, candidates,
+                   [&](DoubleOmegaCandidate const& cand, auto const&...) { writeDataCandidate(cand); });
   }
   PROCESS_SWITCH(doubleOmegaTreeCreator, processData, "Reconstruct Omega + Lambda + kaon from raw V0/cascade indices", true);
 
@@ -1170,7 +912,18 @@ struct doubleOmegaTreeCreator {
       v0sThisCollision.bindExternalIndices(&tracks);
       cascadesThisCollision.bindExternalIndices(&tracks);
       cascadesThisCollision.bindExternalIndices(&v0s);
-      fillFromRawTables<true>(collision, tracksThisCollision, cascadesThisCollision, v0sThisCollision, &mcParticles);
+      const auto candidates = buildCollisionCandidates(collision, tracksThisCollision, cascadesThisCollision, v0sThisCollision, true);
+      helper.combine(candidates, candidates, candidates, candidates,
+                     [&](DoubleOmegaCandidate const& cand, BuiltOmegaCandidate const& omega, BuiltLambdaCandidate const& lambda, BuiltKaonCandidate const& kaon) {
+                       DoubleOmegaMCInfo mcInfo;
+                       if (getMCInfo(mcInfo,
+                                     tracks.rawIteratorAt(omega.posTrackId), tracks.rawIteratorAt(omega.negTrackId), tracks.rawIteratorAt(omega.bachelorId),
+                                     tracks.rawIteratorAt(lambda.posTrackId), tracks.rawIteratorAt(lambda.negTrackId), tracks.rawIteratorAt(kaon.trackId),
+                                     omega.sign, mcParticles)) {
+                         reconstructedDoubleOmegaIds.push_back(mcInfo.motherId);
+                         writeMCCandidate(cand, mcInfo, true);
+                       }
+                     });
     }
     for (const auto& mcParticle : mcParticles) {
       DoubleOmegaMCInfo mcInfo;
@@ -1274,7 +1027,7 @@ struct doubleOmegaTreeCreator {
           if (daughterTrackIds[daughterIndex] < 0) {
             daughterTrackIds[daughterIndex] = track.globalIndex();
           }
-          if (selectTrack(track)) {
+          if (helper.selectTrack(track)) {
             selectedReconstructedDaughters[daughterIndex] = true;
             if (selectedTrackIds[daughterIndex] < 0) {
               selectedTrackIds[daughterIndex] = track.globalIndex();
@@ -1380,6 +1133,384 @@ struct doubleOmegaTreeCreator {
     }
   }
   PROCESS_SWITCH(doubleOmegaTreeCreator, processFindableTracks, "Count findable double-Omega decays and reconstruct selected daughter tracks", false);
+
+  // Bin index of value on a ConfigurableAxis (variable or fixed width), -1 outside the axis.
+  static int findBin(std::vector<double> const& axis, double value)
+  {
+    if (axis.size() < 3) {
+      return -1;
+    }
+    if (axis[0] == VARIABLE_WIDTH) {
+      const auto edge = std::upper_bound(axis.begin() + 1, axis.end(), value);
+      if (edge == axis.begin() + 1 || edge == axis.end()) {
+        return -1;
+      }
+      return static_cast<int>(std::distance(axis.begin() + 2, edge));
+    }
+    const int nBins = static_cast<int>(axis[0]);
+    if (value < axis[1] || value >= axis[2]) {
+      return -1;
+    }
+    return static_cast<int>((value - axis[1]) / (axis[2] - axis[1]) * nBins);
+  }
+
+  static int nBins(std::vector<double> const& axis)
+  {
+    return axis[0] == VARIABLE_WIDTH ? static_cast<int>(axis.size()) - 2 : static_cast<int>(axis[0]);
+  }
+
+  // Daughter track indices identifying a combination. Seeds sharing a daughter would produce the same
+  // combination more than once: each combination is written only once.
+  using MixedCombination = std::array<int64_t, 6>;
+
+  // Mixing pool of same-event candidates per (radius, phi, charge) bin, kept across dataframes.
+  std::unordered_map<int, std::deque<MixingSeed>> mSeedPool;
+  std::size_t mPoolSeeds = 0;
+  int64_t mDataframeCounter = 0;
+  double mProcessingTimeSum = 0.;
+
+  // Indices are only unique within a dataframe: the dataframe counter goes in the upper bits.
+  int64_t uniqueIndex(int64_t index) const
+  {
+    return index < 0 ? index : (mDataframeCounter << 32) | index;
+  }
+
+  // The track identifiers read from the derived tables (see trackFingerprint) already identify a track
+  // in any dataframe; the collision index is made unique across dataframes.
+  MixingSeed makeSeed(int64_t collisionId, std::array<float, 3> const& primaryVertex, BuiltOmegaCandidate const& omega,
+                      BuiltLambdaCandidate const& lambda, BuiltKaonCandidate const& kaon) const
+  {
+    return {uniqueIndex(collisionId), primaryVertex, mBz, omega, lambda, kaon};
+  }
+
+  // Builds and writes one mixed candidate, with the primary vertex of the reference seed.
+  void mixSeedDaughters(MixingSeed const& reference, BuiltOmegaCandidate const& omega, BuiltLambdaCandidate const& lambda,
+                        BuiltKaonCandidate const& kaon, MixingType mixingType, std::set<MixedCombination>& written)
+  {
+    if (!(mixingOpts.mixingTypes & (1 << (mixingType - 1)))) {
+      return;
+    }
+    const MixedCombination combination{omega.posTrackId, omega.negTrackId, omega.bachelorId, lambda.posTrackId, lambda.negTrackId, kaon.trackId};
+    if (!written.insert(combination).second || DoubleOmegaBuilderHelper::sharesTracks(omega, lambda, kaon)) {
+      return;
+    }
+    DoubleOmegaCandidate cand;
+    if (!helper.buildDoubleOmega(reference.primaryVertex, omega, lambda, kaon, cand)) {
+      return;
+    }
+    histos.fill(HIST("Mixing/hMixedCandidates"), mixingType);
+    writeMixedCandidate(cand, mixingType);
+  }
+
+  // One daughter of each seed replaced by the corresponding daughter of the other seed. The seed
+  // keeping two of its daughters provides the primary vertex.
+  void mixSeedPair(MixingSeed const& seed0, MixingSeed const& seed1, std::set<MixedCombination>& written)
+  {
+    mixSeedDaughters(seed0, seed1.omega, seed0.lambda, seed0.kaon, kMixedOmega, written);
+    mixSeedDaughters(seed1, seed0.omega, seed1.lambda, seed1.kaon, kMixedOmega, written);
+    mixSeedDaughters(seed0, seed0.omega, seed1.lambda, seed0.kaon, kMixedLambda, written);
+    mixSeedDaughters(seed1, seed1.omega, seed0.lambda, seed1.kaon, kMixedLambda, written);
+    mixSeedDaughters(seed0, seed0.omega, seed0.lambda, seed1.kaon, kMixedKaon, written);
+    mixSeedDaughters(seed1, seed1.omega, seed1.lambda, seed0.kaon, kMixedKaon, written);
+  }
+
+  // Two daughters of a seed replaced by those of two other seeds: Omega, Lambda and kaon from three
+  // different collisions, in all the assignments. The seed providing the Omega is the reference.
+  void mixSeedTriple(MixingSeed const& seed0, MixingSeed const& seed1, MixingSeed const& seed2, std::set<MixedCombination>& written)
+  {
+    const std::array<const MixingSeed*, 3> seeds{&seed0, &seed1, &seed2};
+    std::array<int, 3> roles{0, 1, 2}; // Seeds providing the Omega, Lambda and kaon.
+    do {
+      const auto& omegaSeed = *seeds[roles[0]];
+      mixSeedDaughters(omegaSeed, omegaSeed.omega, seeds[roles[1]]->lambda, seeds[roles[2]]->kaon, kMixedAll, written);
+    } while (std::next_permutation(roles.begin(), roles.end()));
+  }
+
+  // Seeds can be mixed if they come from different collisions with close primary vertices, recorded
+  // with the same magnetic field.
+  bool canMix(MixingSeed const& seed0, MixingSeed const& seed1) const
+  {
+    return seed0.collisionId != seed1.collisionId &&
+           std::abs(seed0.bz - seed1.bz) < 1.e-3f &&
+           std::abs(seed0.primaryVertex[2] - seed1.primaryVertex[2]) <= mixingOpts.maxDeltaPVz.value;
+  }
+
+  // Mixes a new seed with the most recent compatible seeds of its pool bin: pairs with each of them,
+  // triples with each pair of them coming from different collisions.
+  void mixWithPool(MixingSeed const& seed, std::deque<MixingSeed> const& pool, std::set<MixedCombination>& written)
+  {
+    const auto nPartners = static_cast<std::size_t>(mixingOpts.nMixingCandidates.value);
+    std::vector<const MixingSeed*> partners;
+    for (auto partner = pool.rbegin(); partner != pool.rend() && partners.size() < nPartners; ++partner) {
+      histos.fill(HIST("Mixing/hMixedCollisions"), 0);
+      if (!canMix(seed, *partner)) {
+        continue;
+      }
+      histos.fill(HIST("Mixing/hMixedCollisions"), 1);
+      partners.push_back(&*partner);
+      mixSeedPair(seed, *partner, written);
+    }
+    if (!(mixingOpts.mixingTypes & (1 << (kMixedAll - 1)))) {
+      return;
+    }
+    for (std::size_t j = 0; j < partners.size(); ++j) {
+      for (std::size_t k = j + 1; k < partners.size(); ++k) {
+        histos.fill(HIST("Mixing/hMixedCollisions"), 2);
+        if (!canMix(*partners[j], *partners[k])) {
+          continue;
+        }
+        histos.fill(HIST("Mixing/hMixedCollisions"), 3);
+        mixSeedTriple(seed, *partners[j], *partners[k], written);
+      }
+    }
+  }
+
+  // Same-event candidates of a collision become seeds, binned in decay radius, momentum azimuth and
+  // charge (mixingOpts.binsRadius, mixingOpts.binsPhi). The seeds are mixed with the pool first and
+  // added to it afterwards, so seeds of the same collision are never mixed with each other.
+  void mixCollisionSeeds(int64_t collisionId, CollisionCandidates const& candidates, std::set<MixedCombination>& written)
+  {
+    const int nPhiBins = nBins(mixingOpts.binsPhi.value);
+    const auto poolDepth = static_cast<std::size_t>(mixingOpts.poolDepth.value);
+    std::vector<std::pair<int, MixingSeed>> newSeeds;
+    helper.combine(candidates, candidates, candidates, candidates,
+                   [&](DoubleOmegaCandidate const& cand, BuiltOmegaCandidate const& omega, BuiltLambdaCandidate const& lambda, BuiltKaonCandidate const& kaon) {
+                     const float radius = std::hypot(cand.x, cand.y);
+                     const int radiusBin = findBin(mixingOpts.binsRadius.value, radius);
+                     const int phiBin = findBin(mixingOpts.binsPhi.value, cand.phi);
+                     if (radiusBin < 0 || phiBin < 0) {
+                       return;
+                     }
+                     histos.fill(HIST("Mixing/hSeedRadiusPhi"), radius, cand.phi);
+                     const int key = (radiusBin * nPhiBins + phiBin) * 2 + DoubleOmegaBuilderHelper::chargeIndex(cand.sign);
+                     newSeeds.emplace_back(key, makeSeed(collisionId, candidates.primaryVertex, omega, lambda, kaon));
+                   });
+    for (const auto& [key, seed] : newSeeds) {
+      mixWithPool(seed, mSeedPool[key], written);
+    }
+    for (auto& [key, seed] : newSeeds) {
+      auto& pool = mSeedPool[key];
+      pool.push_back(std::move(seed));
+      ++mPoolSeeds;
+      if (pool.size() > poolDepth) {
+        pool.pop_front();
+        --mPoolSeeds;
+      }
+    }
+  }
+
+  void monitorMixing(std::chrono::steady_clock::time_point const& start)
+  {
+    const double processingTime = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    mProcessingTimeSum += processingTime;
+    // Lower bound: deque and hash-map bookkeeping are not included.
+    const double poolMemory = static_cast<double>(mPoolSeeds * sizeof(MixingSeed)) / (1024. * 1024.);
+    histos.fill(HIST("Mixing/hProcessingTime"), processingTime);
+    histos.fill(HIST("Mixing/hPoolSeeds"), mPoolSeeds);
+    histos.fill(HIST("Mixing/hPoolMemory"), poolMemory);
+    histos.fill(HIST("Mixing/hProcessingTimeVsPoolSeeds"), mPoolSeeds, processingTime);
+    if (mixingOpts.monitoringInterval > 0 && mDataframeCounter % mixingOpts.monitoringInterval == 0) {
+      LOGP(info, "Candidate mixing, dataframe {}: {} seeds in {} pool bins ({:.2f} MB), {:.1f} ms in this dataframe, {:.1f} ms on average",
+           mDataframeCounter, mPoolSeeds, mSeedPool.size(), poolMemory, processingTime, mProcessingTimeSum / mDataframeCounter);
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Derived data produced by doubleOmegaBuilder, read on the fly or from saved (merged) derived data.
+
+  // The derived tables store a track once per collision, so the same track can appear in the rows of
+  // different collisions (V0s and cascades can use tracks associated to another collision). Tracks are
+  // identified across collisions by their parameters, which are bitwise identical for the same track.
+  template <class Row>
+  static int64_t trackFingerprint(Row const& row)
+  {
+    std::size_t hash = 0;
+    for (const float value : {row.x(), row.alpha(), row.y(), row.z(), row.snp(), row.tgl(), row.signed1Pt()}) {
+      hash ^= std::hash<float>{}(value) + 0x9e3779b97f4a7c15ULL + (hash << 6) + (hash >> 2);
+    }
+    return static_cast<int64_t>(hash);
+  }
+
+  // Derived collisions store the run number and the magnetic field: the propagator, the material LUT
+  // and the fitters are configured again only when the field changes.
+  void initCCDBForDerived(int runNumber, float bz)
+  {
+    if (mRunNumber != 0 && std::abs(bz - mBz) < kBzTolerance) {
+      return;
+    }
+    auto* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", runNumber);
+    if (!grpmag) {
+      LOG(fatal) << "Could not retrieve GRPMagField for run " << runNumber;
+    }
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    mBz = o2::base::Propagator::Instance()->getNominalBz();
+    helper.setBz(mBz);
+    if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
+      auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForRun<o2::base::MatLayerCylSet>("GLO/Param/MatLUT", runNumber));
+      if (!lut) {
+        LOG(fatal) << "Could not retrieve material LUT for run " << runNumber;
+      }
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
+    mRunNumber = runNumber;
+  }
+
+  // Reads the candidates of a derived collision back, applying again the selections that can be
+  // tightened with respect to the production ones.
+  template <class C>
+  CollisionCandidates readCollisionCandidates(C const& collision, aod::DOmegaTracks const& tracks,
+                                              aod::DOmegaOmegas const& omegas, aod::DOmegaLambdas const& lambdas)
+  {
+    CollisionCandidates candidates;
+    candidates.primaryVertex = {collision.posX(), collision.posY(), collision.posZ()};
+
+    for (const auto& row : omegas.sliceBy(derivedOmegasPerCollision, collision.globalIndex())) {
+      const auto posTrack = tracks.rawIteratorAt(row.posTrackId());
+      const auto negTrack = tracks.rawIteratorAt(row.negTrackId());
+      const auto bachelor = tracks.rawIteratorAt(row.bachelorId());
+      const bool isMatter = row.sign() < 0;
+      const auto& proton = isMatter ? posTrack : negTrack;
+      const auto& pion = isMatter ? negTrack : posTrack;
+      const uint32_t lambdaDetectorMap = static_cast<uint32_t>(proton.detectorMap()) | (static_cast<uint32_t>(pion.detectorMap()) << 3);
+      const BuiltOmegaCandidate omega{row.px(), row.py(), row.pz(),
+                                      row.decayX(), row.decayY(), row.decayZ(),
+                                      row.massOmega(), row.massXi(),
+                                      row.sign(),
+                                      trackFingerprint(posTrack), trackFingerprint(negTrack), trackFingerprint(bachelor),
+                                      getTrackParCov(row),
+                                      static_cast<uint32_t>(bachelor.detectorMap()) | (lambdaDetectorMap << 3),
+                                      bachelor.dcaXYToPV(), proton.dcaXYToPV(), pion.dcaXYToPV(),
+                                      row.dcaDaughters()};
+      if (helper.isSelectedOmega(omega)) {
+        candidates.omegas.push_back(omega);
+      }
+    }
+
+    for (const auto& row : lambdas.sliceBy(derivedLambdasPerCollision, collision.globalIndex())) {
+      const auto posTrack = tracks.rawIteratorAt(row.posTrackId());
+      const auto negTrack = tracks.rawIteratorAt(row.negTrackId());
+      const bool isMatter = row.sign() < 0;
+      const auto& proton = isMatter ? posTrack : negTrack;
+      const auto& pion = isMatter ? negTrack : posTrack;
+      BuiltLambdaCandidate lambda;
+      lambda.candidate = {.px = row.px(), .py = row.py(), .pz = row.pz(), .mass = row.massLambda()};
+      lambda.parentTrack = getTrackParCov(row);
+      lambda.parentTrack.setAbsCharge(0); // Neutral, as created by the V0 fit.
+      lambda.decayVertex = {row.decayX(), row.decayY(), row.decayZ()};
+      lambda.posTrackId = trackFingerprint(posTrack);
+      lambda.negTrackId = trackFingerprint(negTrack);
+      lambda.daughterDetectorMap = static_cast<uint32_t>(proton.detectorMap()) | (static_cast<uint32_t>(pion.detectorMap()) << 3);
+      lambda.dcaXYProtonToPV = proton.dcaXYToPV();
+      lambda.dcaXYPionToPV = pion.dcaXYToPV();
+      lambda.dcaDaughters = row.dcaDaughters();
+      if (helper.isSelectedLambda(lambda)) {
+        candidates.lambdas[DoubleOmegaBuilderHelper::chargeIndex(row.sign())].push_back(lambda);
+      }
+    }
+
+    for (const auto& row : tracks.sliceBy(derivedTracksPerCollision, collision.globalIndex())) {
+      if (!row.isKaon()) {
+        continue;
+      }
+      const BuiltKaonCandidate kaon{getTrackParCov(row),
+                                    trackFingerprint(row),
+                                    static_cast<int8_t>(row.sign()),
+                                    row.tpcNSigmaKa(),
+                                    row.tofNSigmaKa(),
+                                    row.detectorMap()};
+      if (helper.isSelectedKaon(kaon)) {
+        candidates.kaons[DoubleOmegaBuilderHelper::chargeIndex(kaon.sign)].push_back(kaon);
+      }
+    }
+    fillCandidateQA(candidates);
+    return candidates;
+  }
+
+  void processDerivedData(aod::DOmegaColls const& collisions,
+                          aod::DOmegaTracks const& tracks,
+                          aod::DOmegaOmegas const& omegas,
+                          aod::DOmegaLambdas const& lambdas)
+  {
+    for (const auto& collision : collisions) {
+      initCCDBForDerived(collision.runNumber(), collision.bz());
+      histos.fill(HIST("QA/zVtx"), collision.posZ());
+      const auto candidates = readCollisionCandidates(collision, tracks, omegas, lambdas);
+      helper.combine(candidates, candidates, candidates, candidates,
+                     [&](DoubleOmegaCandidate const& cand, auto const&...) { writeDataCandidate(cand); });
+    }
+  }
+  PROCESS_SWITCH(doubleOmegaTreeCreator, processDerivedData, "Same-event Omega + Lambda + kaon from the derived tables of doubleOmegaBuilder", false);
+
+  // Mixed-event background from the derived tables. Saved derived data can be merged into large
+  // dataframes, which provides many more mixing partners than the input AO2D dataframes. Only
+  // collisions recorded with the same magnetic field are mixed.
+  void processDerivedMixing(aod::DOmegaColls const& collisions,
+                            aod::DOmegaTracks const& tracks,
+                            aod::DOmegaOmegas const& omegas,
+                            aod::DOmegaLambdas const& lambdas)
+  {
+    std::unordered_map<int64_t, CollisionCandidates> candidatesPerCollision;
+    for (const auto& collision : collisions) {
+      candidatesPerCollision.emplace(collision.globalIndex(), readCollisionCandidates(collision, tracks, omegas, lambdas));
+    }
+
+    DerivedMixingBinning binning{{mixingOpts.binsVtxZ, mixingOpts.binsMultiplicity}, true};
+    for (const auto& [collision0, collision1] : selfPairCombinations(binning, mixingOpts.nMixingCollisions, -1, collisions)) {
+      histos.fill(HIST("Mixing/hMixedCollisions"), 0);
+      if (std::abs(collision0.posZ() - collision1.posZ()) > mixingOpts.maxDeltaPVz ||
+          std::abs(collision0.bz() - collision1.bz()) > kBzTolerance) {
+        continue;
+      }
+      histos.fill(HIST("Mixing/hMixedCollisions"), 1);
+      initCCDBForDerived(collision0.runNumber(), collision0.bz());
+      mixPair(candidatesPerCollision.at(collision0.globalIndex()), candidatesPerCollision.at(collision1.globalIndex()));
+    }
+
+    if (!(mixingOpts.mixingTypes & (1 << (kMixedAll - 1)))) {
+      return;
+    }
+    for (const auto& [collision0, collision1, collision2] : selfTripleCombinations(binning, mixingOpts.nMixingCollisions, -1, collisions)) {
+      histos.fill(HIST("Mixing/hMixedCollisions"), 2);
+      const auto [minPVz, maxPVz] = std::minmax({collision0.posZ(), collision1.posZ(), collision2.posZ()});
+      if (maxPVz - minPVz > mixingOpts.maxDeltaPVz ||
+          std::abs(collision0.bz() - collision1.bz()) > kBzTolerance ||
+          std::abs(collision0.bz() - collision2.bz()) > kBzTolerance) {
+        continue;
+      }
+      histos.fill(HIST("Mixing/hMixedCollisions"), 3);
+      initCCDBForDerived(collision0.runNumber(), collision0.bz());
+      mixTriple(candidatesPerCollision.at(collision0.globalIndex()), candidatesPerCollision.at(collision1.globalIndex()),
+                candidatesPerCollision.at(collision2.globalIndex()));
+    }
+  }
+  PROCESS_SWITCH(doubleOmegaTreeCreator, processDerivedMixing, "Mixed-event Omega + Lambda + kaon background from the derived tables of doubleOmegaBuilder", false);
+
+  // Candidate-level mixed-event background from the derived tables of doubleOmegaBuilder, as in
+  // decay3bodybuilder. The same-event candidates (seeds) are binned in decay radius, momentum azimuth
+  // and charge, so seeds in the same bin have their decay vertex in the same region of the detector and
+  // point in the same direction. Mixed candidates are built by swapping one (or two) daughters between
+  // seeds of different collisions, which keeps the vertex topology without moving any track. Seeds are
+  // pooled across dataframes.
+  void processDerivedMixingCandidates(aod::DOmegaColls const& collisions,
+                                      aod::DOmegaTracks const& tracks,
+                                      aod::DOmegaOmegas const& omegas,
+                                      aod::DOmegaLambdas const& lambdas)
+  {
+    const auto start = std::chrono::steady_clock::now();
+    ++mDataframeCounter;
+    std::set<MixedCombination> written; // Every combination has a daughter from this dataframe.
+
+    for (const auto& collision : collisions) {
+      // Seeds are mixed only with seeds recorded with the same field (canMix), so the field of the
+      // current collision is the right one for all its mixed candidates.
+      initCCDBForDerived(collision.runNumber(), collision.bz());
+      histos.fill(HIST("QA/zVtx"), collision.posZ());
+      const auto candidates = readCollisionCandidates(collision, tracks, omegas, lambdas);
+      mixCollisionSeeds(collision.globalIndex(), candidates, written);
+    }
+    monitorMixing(start);
+  }
+  PROCESS_SWITCH(doubleOmegaTreeCreator, processDerivedMixingCandidates, "Candidate-level mixed-event background from the derived tables of doubleOmegaBuilder, seeds binned in decay radius and azimuth", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

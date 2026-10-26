@@ -492,7 +492,7 @@ struct k892pmanalysis {
   {
     auto tracksV0sTuple = std::make_tuple(resotracks, resov0s);
     // auto V0sTuple = std::make_tuple(resov0s);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     Pair<aod::ResoCollisions, aod::ResoTracks, aod::ResoV0s, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, resotracks1, collision2, resov0s2] : pairs) {

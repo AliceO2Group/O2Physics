@@ -83,6 +83,7 @@ struct JetSubstructureHFTask {
   o2::framework::Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
   o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   o2::framework::Configurable<float> recoilRegion{"recoilRegion", 0.6, "recoil acceptance in phi"};
+  o2::framework::Configurable<bool> isEmbedding{"isEmbedding", false, "running on an embedded dataset"};
 
   o2::framework::Service<o2::framework::O2DatabasePDG> pdg;
   float candMass;
@@ -356,7 +357,7 @@ struct JetSubstructureHFTask {
       }
 
       if constexpr (!std::is_same_v<std::decay_t<U>, o2::aod::JetParticles>) {
-        if (!jetfindingutilities::isTrackSelected<typename U::iterator, typename U::iterator>(track, trackSelection)) {
+        if (!jetfindingutilities::isTrackSelected<typename U::iterator, typename U::iterator>(track, trackSelection, isEmbedding)) {
           continue;
         }
       }

@@ -53,8 +53,12 @@ DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);     // true phys
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Assoc"); //!
 DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);              // true generated pt
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);                          // pdg code of the MC particle
+// Rapidity under the mass hypothesis of the species this entry was actually
+// selected as (pion or kaon, from isValidAssocTrack<Species>()); -999 for
+// the species-agnostic AssocHadron pool, which has no mass hypothesis to use.
+DECLARE_SOA_COLUMN(Rapidity, rapidity, float);
 } // namespace assocHadrons
-DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::MCPhysicalPrimary, assocHadrons::TrackId, assocHadrons::MCOriginalPt, assocHadrons::PDGCode);
+DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::MCPhysicalPrimary, assocHadrons::TrackId, assocHadrons::MCOriginalPt, assocHadrons::PDGCode, assocHadrons::Rapidity);
 /// _________________________________________
 /// Table for storing assoc track PID
 namespace assocPID
@@ -86,6 +90,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
+DECLARE_SOA_COLUMN(Rapidity, rapidity, float); // phi candidate's own rapidity (kaon-mass-pair system)
 
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackDaughter, posTrackDaughter, int, Tracks, "_PhiPosDaughter");
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackDaughter, negTrackDaughter, int, Tracks, "_PhiNegDaughter");
@@ -104,6 +109,7 @@ DECLARE_SOA_TABLE(
   assocPhis::Eta,
   assocPhis::Phi,
   assocPhis::Mass,
+  assocPhis::Rapidity,
   assocPhis::PosTrackDaughterId,
   assocPhis::NegTrackDaughterId);
 
@@ -127,6 +133,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
+DECLARE_SOA_COLUMN(Rapidity, rapidity, float); // K*0 candidate's own rapidity (kaon+pion system)
 
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackDaughter, posTrackDaughter, int, Tracks, "_KstarPosDaughter");
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackDaughter, negTrackDaughter, int, Tracks, "_KstarNegDaughter");
@@ -145,6 +152,7 @@ DECLARE_SOA_TABLE(
   assocKstars::Eta,
   assocKstars::Phi,
   assocKstars::Mass,
+  assocKstars::Rapidity,
   assocKstars::PosTrackDaughterId,
   assocKstars::NegTrackDaughterId);
 } // namespace o2::aod

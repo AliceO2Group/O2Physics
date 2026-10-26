@@ -383,7 +383,7 @@ struct HfCorrelatorD0Hadrons {
                    SelectedCandidatesDataMl const& candidates,
                    aod::BCsWithTimestamps const&)
   {
-    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}};
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
@@ -605,7 +605,7 @@ struct HfCorrelatorD0Hadrons {
                     aod::McParticles const& mcParticles,
                     aod::BCsWithTimestamps const&)
   {
-    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}};
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
@@ -935,7 +935,7 @@ struct HfCorrelatorD0Hadrons {
   void processMcGen(SelectedCollisionsMcGen::iterator const& mcCollision,
                     SelectedParticlesMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
     int gCollisionId = mcCollision.globalIndex();
     int64_t timeStamp = 0;
@@ -1102,7 +1102,7 @@ struct HfCorrelatorD0Hadrons {
                              SelectedCandidatesDataMl const& candidates,
                              SelectedTracks const& tracks)
   {
-    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}};
     for (const auto& collision : collisions) {
       registry.fill(HIST("hMultFT0M"), collision.multFT0M());
       registry.fill(HIST("hZvtx"), collision.posZ());
@@ -1191,7 +1191,7 @@ struct HfCorrelatorD0Hadrons {
                               SelectedTracksMcRec const& tracks,
                               aod::McParticles const& mcParticles)
   {
-    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}};
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelectedCollisions, SelectedCandidatesMcRecMl, SelectedTracksMcRec, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     bool isD0Prompt = false;
@@ -1326,7 +1326,7 @@ struct HfCorrelatorD0Hadrons {
   void processMcGenMixedEvent(SelectedCollisionsMcGen const& collisions,
                               SelectedParticlesMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}};
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelectedCollisionsMcGen, SelectedParticlesMcGen, SelectedParticlesMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 

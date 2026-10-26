@@ -112,12 +112,18 @@ struct FemtoPairLambdaAntilambda {
   paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairV0V0Builder<
-    v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
-    v0histmanager::PrefixLambda2,
-    trackhistmanager::PrefixV02PosDaughter,
-    trackhistmanager::PrefixV02NegDaughter,
+    v0histmanager::PrefixLambda1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    v0histmanager::PrefixLambda2Se,
+    trackhistmanager::PrefixV02PosDaughterSe,
+    trackhistmanager::PrefixV02NegDaughterSe,
+    v0histmanager::PrefixLambda1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
+    v0histmanager::PrefixLambda2Me,
+    trackhistmanager::PrefixV02PosDaughterMe,
+    trackhistmanager::PrefixV02NegDaughterMe,
     pairhistmanager::PrefixV0V0Se,
     pairhistmanager::PrefixV0V0Me,
     closepairrejection::PrefixV0V0PosSe,
@@ -129,12 +135,18 @@ struct FemtoPairLambdaAntilambda {
     pairLambdaLambdaBuilder;
 
   pairbuilder::PairV0V0Builder<
-    v0histmanager::PrefixK0short1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
-    v0histmanager::PrefixK0short2,
-    trackhistmanager::PrefixV02PosDaughter,
-    trackhistmanager::PrefixV02NegDaughter,
+    v0histmanager::PrefixK0short1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    v0histmanager::PrefixK0short2Se,
+    trackhistmanager::PrefixV02PosDaughterSe,
+    trackhistmanager::PrefixV02NegDaughterSe,
+    v0histmanager::PrefixK0short1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
+    v0histmanager::PrefixK0short2Me,
+    trackhistmanager::PrefixV02PosDaughterMe,
+    trackhistmanager::PrefixV02NegDaughterMe,
     pairhistmanager::PrefixV0V0Se,
     pairhistmanager::PrefixV0V0Me,
     closepairrejection::PrefixV0V0PosSe,
@@ -149,9 +161,9 @@ struct FemtoPairLambdaAntilambda {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoV0V0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -173,9 +185,9 @@ struct FemtoPairLambdaAntilambda {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histograms
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;

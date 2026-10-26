@@ -1253,7 +1253,7 @@ struct Lambda1520pbpb {
   void processMix(ResoCols const& collisions, ResoTracks const& tracks)
   {
     LOGF(debug, "Event Mixing Started");
-    BinningType2 binningPositions2{{cMixVtxBins, cMixMultBins}, true};
+    BinningType2 binningPositions2{{cMixVtxBins, cMixMultBins}};
     auto tracksTuple = std::make_tuple(tracks);
 
     SameKindPair<ResoCols, ResoTracks, BinningType2> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache};
@@ -1295,7 +1295,7 @@ struct Lambda1520pbpb {
       LOG(fatal) << "Disable processMix() first!";
     LOGF(debug, "Event Mixing Started");
 
-    BinningTypeDF binningPositions2{{cMixVtxBins, cMixMultBins}, true};
+    BinningTypeDF binningPositions2{{cMixVtxBins, cMixMultBins}};
     auto tracksTuple = std::make_tuple(tracks);
 
     SameKindPair<ResoColDFs, ResoTrackDFs, BinningTypeDF> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache};
@@ -1320,7 +1320,7 @@ struct Lambda1520pbpb {
     if (doprocessMix || doprocessMixDF)
       LOG(fatal) << "Disable processMix() or processMixDF() first!";
     LOGF(debug, "Event Mixing Started");
-    BinningTypeEP binningPositions2{{cMixVtxBins, cMixMultBins, cMixEPAngle}, true};
+    BinningTypeEP binningPositions2{{cMixVtxBins, cMixMultBins, cMixEPAngle}};
     auto tracksTuple = std::make_tuple(tracks);
 
     SameKindPair<ResoColDFs, ResoTrackDFs, BinningTypeEP> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache};

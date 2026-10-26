@@ -1362,7 +1362,7 @@ struct AnalysisSameEventPairing {
   std::map<int, std::vector<TString>> fTrackMuonHistNames; // for electron-muon pairs: key = iTrack * fNCutsMuon + iMuon
 
   std::vector<AnalysisCompositeCut> fPairCuts;
-  AnalysisCompositeCut fMCGenAccCut;
+  AnalysisCompositeCut fMCGenAccCut{};
   // bool fUseMCGenAccCut = false;
 
   uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
@@ -1861,7 +1861,7 @@ struct AnalysisSameEventPairing {
             for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
               AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
               if (!cut.IsSelected(static_cast<float*>(VarManager::fgValues))) {
-                continue;              // apply pair cuts
+                continue; // apply pair cuts
               }
               if (sign1 * sign2 < 0) { // opposite sign pairs
                 fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][0].Data(), static_cast<float*>(VarManager::fgValues));

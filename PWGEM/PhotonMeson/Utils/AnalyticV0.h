@@ -22,9 +22,10 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <MathUtils/Cartesian.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/Track.h>
+
+#include <GPUROOTCartesianFwd.h>
 
 #include <algorithm>
 #include <array>

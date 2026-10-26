@@ -104,12 +104,18 @@ struct FemtoPairD0D0 {
   paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairD0D0Builder<
-    charmhadronhistmanager::PrefixD01,
-    trackhistmanager::PrefixD01PosDaughter,
-    trackhistmanager::PrefixD01NegDaughter,
-    charmhadronhistmanager::PrefixD02,
-    trackhistmanager::PrefixD02PosDaughter,
-    trackhistmanager::PrefixD02NegDaughter,
+    charmhadronhistmanager::PrefixD01Se,
+    trackhistmanager::PrefixD01PosDaughterSe,
+    trackhistmanager::PrefixD01NegDaughterSe,
+    charmhadronhistmanager::PrefixD02Se,
+    trackhistmanager::PrefixD02PosDaughterSe,
+    trackhistmanager::PrefixD02NegDaughterSe,
+    charmhadronhistmanager::PrefixD01Me,
+    trackhistmanager::PrefixD01PosDaughterMe,
+    trackhistmanager::PrefixD01NegDaughterMe,
+    charmhadronhistmanager::PrefixD02Me,
+    trackhistmanager::PrefixD02PosDaughterMe,
+    trackhistmanager::PrefixD02NegDaughterMe,
     pairhistmanager::PrefixD0D0Se,
     pairhistmanager::PrefixD0D0Me,
     closepairrejection::PrefixD0D0PosSe,
@@ -124,9 +130,9 @@ struct FemtoPairD0D0 {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoD0D0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -149,9 +155,9 @@ struct FemtoPairD0D0 {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histograms
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;

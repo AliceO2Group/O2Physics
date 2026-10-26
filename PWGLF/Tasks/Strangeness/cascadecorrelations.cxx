@@ -932,9 +932,9 @@ struct CascadeCorrelations {
   ConfigurableAxis axisVtxZ{"axisVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   // ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100, 1000}, "Mixing bins - multiplicity"};
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::centFT0M>;
-  // BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+  // BinningType colBinning{{axisVtxZ, axisMult}};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
-  BinningType colBinning{{axisVtxZ}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+  BinningType colBinning{{axisVtxZ}};
 
   void processSameEvent(MyCollisionsMult::iterator const& collision, MyCascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {

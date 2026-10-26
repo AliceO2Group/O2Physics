@@ -360,7 +360,7 @@ struct TwoParticleCorrelationPp {
 
   void processMixed(FullCollisions const& collisions, FullTracks const& tracks)
   {
-    BinningType bindingOnVtx{{vtxBinsEdges}, true};
+    BinningType bindingOnVtx{{vtxBinsEdges}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<FullCollisions,
                  FullTracks,

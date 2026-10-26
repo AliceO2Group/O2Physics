@@ -62,7 +62,6 @@
 
 #include <algorithm>
 #include <array>
-#include <bitset>
 #include <chrono>
 #include <cmath>
 #include <cstdint>

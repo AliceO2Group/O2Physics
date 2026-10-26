@@ -208,9 +208,9 @@ using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
 using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning>;
 using ConfResonanceNegDauBinning = ConfTrackBinning<PrefixResonanceNegDauBinning>;
 using ConfPionPlusBinning = ConfTrackBinning<PrefixPionPlusBinning>;
-using ConfPionMinusBinning = ConfTrackBinning<PrefixPionPlusBinning>;
+using ConfPionMinusBinning = ConfTrackBinning<PrefixPionMinusBinning>;
 using ConfKaonPlusBinning = ConfTrackBinning<PrefixKaonPlusBinning>;
-using ConfKaonMinusBinning = ConfTrackBinning<PrefixKaonPlusBinning>;
+using ConfKaonMinusBinning = ConfTrackBinning<PrefixKaonMinusBinning>;
 
 template <auto& Prefix>
 struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
@@ -338,9 +338,9 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kItsClusterIb, o2::framework::HistType::kTH1F, "hItsClusterIb", "ITS cluster in inner barrel; ITS IB cluster; Entries"},
       {kTpcCrossedRows, o2::framework::HistType::kTH1F, "hTpcCrossedRows", "TPC crossed rows; TPC crossed rows; Entries"},
       {kTpcCluster, o2::framework::HistType::kTH1F, "hTpcCluster", "TPC cluster found; TPC cluster found; Entries"},
-      {kTpcClusterOverCrossedRows, o2::framework::HistType::kTH1F, "hTpcClusterOverCrossedRows", "TPC cluster found  over TPC crossed rows; TPC cluster found / Tpc crossed rows; Entries"},
-      {kTpcClusterShared, o2::framework::HistType::kTH1F, "hTpcClusterShared", "TPC cluster shared; TPC cluster shared ; Entries"},
-      {kTpcClusterFractionShared, o2::framework::HistType::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster shared / TPC cluster found ; Entries"},
+      {kTpcClusterOverCrossedRows, o2::framework::HistType::kTH1F, "hTpcClusterOverCrossedRows", "TPC cluster found over TPC crossed rows; TPC cluster found / TPC crossed rows; Entries"},
+      {kTpcClusterShared, o2::framework::HistType::kTH1F, "hTpcClusterShared", "TPC cluster shared; TPC cluster shared; Entries"},
+      {kTpcClusterFractionShared, o2::framework::HistType::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster shared / TPC cluster found; Entries"},
       {kItsChi2, o2::framework::HistType::kTH1F, "hItsChi2", "ITS #chi^{2} / cluster; #chi^{2}_{ITS} / N_{cls}; Entries"},
       {kTpcChi2, o2::framework::HistType::kTH1F, "hTpcChi2", "TPC #chi^{2} / cluster; #chi^{2}_{TPC} / N_{cls}; Entries"},
       {kTrackType, o2::framework::HistType::kTH1F, "hTrackType", "Type the track row was stored as; Track type; Entries"},
@@ -387,7 +387,7 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kTofDeuteron, o2::framework::HistType::kTH2F, "hTofPidDeuteron", "TOF PID Deuteron; p (GeV/#it{c}) ; n#sigma_{TOF,de}"},
       {kTofTriton, o2::framework::HistType::kTH2F, "hTofPidTriton", "TOF PID Triton; p (GeV/#it{c}) ; n#sigma_{TOF,tr}"},
       {kTofHelium, o2::framework::HistType::kTH2F, "hTofPidHelium", "TOF PID Helium; p (GeV/#it{c}) ; n#sigma_{TOF,he}"},
-      {kTpcitsElectron, o2::framework::HistType::kTH2F, "hTpcitsPidElectron", "TPC+ITS PID Electron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,el}^{2}+n#sigma_{ITS,el}^{2}}"},
+      {kTpcitsElectron, o2::framework::HistType::kTH2F, "hTpcitsPidElectron", "TPC+ITS PID Electron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,el}^{2}+n#sigma_{its,el}^{2}}"},
       {kTpcitsPion, o2::framework::HistType::kTH2F, "hTpcitsPidPion", "TPC+ITS PID Pion; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pi}^{2}+n#sigma_{its,pi}^{2}}"},
       {kTpcitsKaon, o2::framework::HistType::kTH2F, "hTpcitsPidKaon", "TPC+ITS PID Kaon; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,ka}^{2}+n#sigma_{its,ka}^{2}}"},
       {kTpcitsProton, o2::framework::HistType::kTH2F, "hTpcitsPidProton", "TPC+ITS PID Proton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pr}^{2}+n#sigma_{its,pr}^{2}}"},
@@ -414,9 +414,9 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kFromMaterial, o2::framework::HistType::kTHnSparseF, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
       {kMissidentified, o2::framework::HistType::kTHnSparseF, "hMissidentified", "Missidentified particles (fake/wrong PDG code); p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
       {kSecondary1, o2::framework::HistType::kTHnSparseF, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
-      {kSecondary2, o2::framework::HistType::kTHnSparseF, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
-      {kSecondary3, o2::framework::HistType::kTHnSparseF, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
-      {kSecondaryOther, o2::framework::HistType::kTHnSparseF, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondary2, o2::framework::HistType::kTHnSparseF, "hFromSecondary2", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondary3, o2::framework::HistType::kTHnSparseF, "hFromSecondary3", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondaryOther, o2::framework::HistType::kTHnSparseF, "hFromSecondaryOther", "Particles from every other secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -558,47 +558,72 @@ auto makeTrackMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinni
 #undef TRACK_HIST_MC_QA_MAP
 
 constexpr char PrefixTrackQa[] = "TrackQA/";
-constexpr char PrefixTrack1[] = "Track1/";
-constexpr char PrefixTrack2[] = "Track2/";
+// same-event / mixed-event siblings: single-particle histograms for a given track slot, split by
+// whether the particle came from a same-event or mixed-event pair
+constexpr char PrefixTrack1Se[] = "Track1/SE/";
+constexpr char PrefixTrack2Se[] = "Track2/SE/";
+constexpr char PrefixTrack3Se[] = "Track3/SE/";
+constexpr char PrefixTrack1Me[] = "Track1/ME/";
+constexpr char PrefixTrack2Me[] = "Track2/ME/";
+constexpr char PrefixTrack3Me[] = "Track3/ME/";
 // for dN/deta tracks
 constexpr char PrefixDndetaTrackGlobal[] = "DndetaTrackGlobal/";
 constexpr char PrefixDndetaTrackItsOnly[] = "DndetaTrackItsOnly/";
-constexpr char PrefixTrack3[] = "Track3/";
 
-constexpr char PrefixResonancePosDaughter[] = "ResonancePosDau/";
-constexpr char PrefixResonanceNegDaughter[] = "ResonanceNegDau/";
+// daughter-track prefixes below: Se/Me siblings for pair-builder single-particle histograms
+// (split by whether the daughter came from a same-event or mixed-event candidate), plus the
+// original, unsplit Qa variants used by standalone QA tasks (left untouched).
+constexpr char PrefixResonancePosDaughterSe[] = "ResonancePosDau/SE/";
+constexpr char PrefixResonanceNegDaughterSe[] = "ResonanceNegDau/SE/";
+constexpr char PrefixResonancePosDaughterMe[] = "ResonancePosDau/ME/";
+constexpr char PrefixResonanceNegDaughterMe[] = "ResonanceNegDau/ME/";
 constexpr char PrefixResonancePosDaughterQa[] = "ResonancePosDauQa/";
 constexpr char PrefixResonanceNegDaughterQa[] = "ResonanceNegDauQa/";
 
-constexpr char PrefixD01PosDaughter[] = "D01PosDau/";
-constexpr char PrefixD01NegDaughter[] = "D01NegDau/";
-constexpr char PrefixD02PosDaughter[] = "D02PosDau/";
-constexpr char PrefixD02NegDaughter[] = "D02NegDau/";
+constexpr char PrefixD01PosDaughterSe[] = "D01PosDau/SE/";
+constexpr char PrefixD01NegDaughterSe[] = "D01NegDau/SE/";
+constexpr char PrefixD02PosDaughterSe[] = "D02PosDau/SE/";
+constexpr char PrefixD02NegDaughterSe[] = "D02NegDau/SE/";
+constexpr char PrefixD01PosDaughterMe[] = "D01PosDau/ME/";
+constexpr char PrefixD01NegDaughterMe[] = "D01NegDau/ME/";
+constexpr char PrefixD02PosDaughterMe[] = "D02PosDau/ME/";
+constexpr char PrefixD02NegDaughterMe[] = "D02NegDau/ME/";
 constexpr char PrefixD01PosDaughterQa[] = "D01PosDauQa/";
 constexpr char PrefixD01NegDaughterQa[] = "D01NegDauQa/";
 
-constexpr char PrefixLc1ProtonDaughter[] = "Lc1ProtonDau/";
-constexpr char PrefixLc1KaonDaughter[] = "Lc1KaonDau/";
-constexpr char PrefixLc1PionDaughter[] = "Lc1PionDau/";
+constexpr char PrefixLc1ProtonDaughterSe[] = "Lc1ProtonDau/SE/";
+constexpr char PrefixLc1KaonDaughterSe[] = "Lc1KaonDau/SE/";
+constexpr char PrefixLc1PionDaughterSe[] = "Lc1PionDau/SE/";
+constexpr char PrefixLc1ProtonDaughterMe[] = "Lc1ProtonDau/ME/";
+constexpr char PrefixLc1KaonDaughterMe[] = "Lc1KaonDau/ME/";
+constexpr char PrefixLc1PionDaughterMe[] = "Lc1PionDau/ME/";
 constexpr char PrefixLc1ProtonDaughterQa[] = "Lc1ProtonDauQa/";
 constexpr char PrefixLc1KaonDaughterQa[] = "Lc1KaonDauQa/";
 constexpr char PrefixLc1PionDaughterQa[] = "Lc1PionDauQa/";
 
-constexpr char PrefixV01PosDaughter[] = "V01PosDau/";
-constexpr char PrefixV01NegDaughter[] = "V01NegDau/";
-constexpr char PrefixV02PosDaughter[] = "V02PosDau/";
-constexpr char PrefixV02NegDaughter[] = "V02NegDau/";
+constexpr char PrefixV01PosDaughterSe[] = "V01PosDau/SE/";
+constexpr char PrefixV01NegDaughterSe[] = "V01NegDau/SE/";
+constexpr char PrefixV02PosDaughterSe[] = "V02PosDau/SE/";
+constexpr char PrefixV02NegDaughterSe[] = "V02NegDau/SE/";
+constexpr char PrefixV01PosDaughterMe[] = "V01PosDau/ME/";
+constexpr char PrefixV01NegDaughterMe[] = "V01NegDau/ME/";
+constexpr char PrefixV02PosDaughterMe[] = "V02PosDau/ME/";
+constexpr char PrefixV02NegDaughterMe[] = "V02NegDau/ME/";
 constexpr char PrefixV0PosDaughterQa[] = "V0PosDauQa/";
 constexpr char PrefixV0NegDaughterQa[] = "V0NegDauQa/";
 
-constexpr char PrefixCascadePosDaughter[] = "CascadePosDau/";
-constexpr char PrefixCascadeNegDaughter[] = "CascadeNegDau/";
-constexpr char PrefixCascadeBachelor[] = "CascadeBachelor/";
+constexpr char PrefixCascadePosDaughterSe[] = "CascadePosDau/SE/";
+constexpr char PrefixCascadeNegDaughterSe[] = "CascadeNegDau/SE/";
+constexpr char PrefixCascadeBachelorSe[] = "CascadeBachelor/SE/";
+constexpr char PrefixCascadePosDaughterMe[] = "CascadePosDau/ME/";
+constexpr char PrefixCascadeNegDaughterMe[] = "CascadeNegDau/ME/";
+constexpr char PrefixCascadeBachelorMe[] = "CascadeBachelor/ME/";
 constexpr char PrefixCascadePosDaughterQa[] = "CascadePosDauQa/";
 constexpr char PrefixCascadeNegDaughterQa[] = "CascadeNegDauQa/";
 constexpr char PrefixCascadeBachelorQa[] = "CascadeBachelorQa/";
 
-constexpr char PrefixKinkChaDaughter[] = "KinkChaDau/";
+constexpr char PrefixKinkChaDaughterSe[] = "KinkChaDau/SE/";
+constexpr char PrefixKinkChaDaughterMe[] = "KinkChaDau/ME/";
 constexpr char PrefixKinkChaDaughterQa[] = "KinkChaDauQa/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
@@ -1125,7 +1150,7 @@ class TrackHistManager
               }
               break;
             default:
-              LOG(warn) << "Encounted partilce with unknown origin!";
+              LOG(warn) << "Encountered particle with unknown origin!";
               break;
           }
         }
