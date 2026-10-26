@@ -923,8 +923,8 @@ struct nucleiInJets {
   {
     std::array<float, 2> PerpendicularConeAxisPhi = {-999.0f, -999.0f};
     // build 2 perp cones in phi around the leading jet (right and left of the jet)
-    PerpendicularConeAxisPhi[0] = RecoDecay::constrainAngle<float, float>(jetPhi + (o2::constants::math::PIHalf)); // This will contrain the angel between 0-2Pi
-    PerpendicularConeAxisPhi[1] = RecoDecay::constrainAngle<float, float>(jetPhi - (o2::constants::math::PIHalf)); // This will contrain the angel between 0-2Pi
+    PerpendicularConeAxisPhi[0] = RecoDecay::constrainAngle<float, float>(jetPhi + o2::constants::math::PIHalf); // This will contrain the angel between 0-2Pi
+    PerpendicularConeAxisPhi[1] = RecoDecay::constrainAngle<float, float>(jetPhi - o2::constants::math::PIHalf); // This will contrain the angel between 0-2Pi
     return PerpendicularConeAxisPhi;
   }
 
