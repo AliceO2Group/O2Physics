@@ -3707,6 +3707,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "pairD0TopologyTight") {
+    cut->AddCut(GetAnalysisCut("pairD0TopologyTight"));
+    return cut;
+  }
+
   if (nameStr == "pairD0HighPt1") {
     cut->AddCut(GetAnalysisCut("pairLxyzProjected3sigma"));
     cut->AddCut(GetAnalysisCut("pairPtLow5"));
@@ -3934,6 +3939,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "alice3TOFEtaD0") {
+    cut->AddCut(GetAnalysisCut("alice3TOFEta"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    return cut;
+  }
+
+  if (nameStr == "alice3RICHEtaD0") {
+    cut->AddCut(GetAnalysisCut("alice3RICHEta"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    return cut;
+  }
+
   if (nameStr == "alice3StandardTrackTOFAcceptanceD0") {
     cut->AddCut(GetAnalysisCut("alice3KineTOFAcceptanceD0"));
     cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
@@ -4026,6 +4043,32 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("alice3iTOFPIDPr"));
     cut->AddCut(GetAnalysisCut("alice3oTOFPIDPr"));
     return cut;
+  }
+
+  if (nameStr == "alice3EitherTOFPIDPi") {
+    auto* pidCut = new AnalysisCompositeCut(
+      "alice3EitherTOFPIDPi",
+      "iTOF OR oTOF pion PID",
+      kFALSE);
+
+    pidCut->AddCut(GetAnalysisCut("alice3iTOFPIDPi"));
+    pidCut->AddCut(GetAnalysisCut("alice3oTOFPIDPi"));
+
+    delete cut;
+    return pidCut;
+  }
+
+  if (nameStr == "alice3EitherTOFPIDKa") {
+    auto* pidCut = new AnalysisCompositeCut(
+      "alice3EitherTOFPIDKa",
+      "iTOF OR oTOF kaon PID",
+      kFALSE);
+
+    pidCut->AddCut(GetAnalysisCut("alice3iTOFPIDKa"));
+    pidCut->AddCut(GetAnalysisCut("alice3oTOFPIDKa"));
+
+    delete cut;
+    return pidCut;
   }
 
   if (nameStr == "alice3RICHPIDEl") {
@@ -4137,9 +4180,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (nameStr == "alice3TOFPIDKa") {
-    cut->AddCut(GetAnalysisCut("alice3iTOFPIDKa"));
-    cut->AddCut(GetAnalysisCut("alice3oTOFPIDKa"));
+  if (nameStr == "alice3TOFPIDKaRej") {
+    cut->AddCut(GetAnalysisCut("alice3D0KaonTOFPID"));
+    return cut;
+  }
+
+  if (nameStr == "alice3TOFPIDPiRej") {
+    cut->AddCut(GetAnalysisCut("alice3D0PionTOFPID"));
     return cut;
   }
 
@@ -7127,6 +7174,26 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "pairD0TopologyTight") {
+    cut->AddCut(VarManager::kCosPointingAngle, 0.8, 1.0, false, VarManager::kPt, 0.0, 1.0);
+    cut->AddCut(VarManager::kCosPointingAngle, 0.9, 1.0, false, VarManager::kPt, 1.0, 4.0);
+    cut->AddCut(VarManager::kCosPointingAngle, 0.85, 1.0, false, VarManager::kPt, 4.0, 50.0);
+    cut->AddCut(VarManager::kD0DcaDaughters, 0.035, 1000.0, false, VarManager::kPt, 0.0, 1.0);
+    cut->AddCut(VarManager::kD0DcaDaughters, 0.0, 0.03, false, VarManager::kPt, 1.0, 50.0);
+    cut->AddCut(VarManager::kD0ImpParProduct, -1000.0, 0.0);
+    cut->AddCut(VarManager::kDCAxy1, -0.1, 0.1);
+    cut->AddCut(VarManager::kDCAxy2, -0.1, 0.1);
+    cut->AddCut(VarManager::kPt1, 0.5, 100.0, false, VarManager::kPt, 0.0, 1.0);
+    cut->AddCut(VarManager::kPt1, 0.3, 100.0, false, VarManager::kPt, 1.0, 1.5);
+    cut->AddCut(VarManager::kPt1, 0.4, 100.0, false, VarManager::kPt, 1.5, 2.0);
+    cut->AddCut(VarManager::kPt1, 0.7, 100.0, false, VarManager::kPt, 2.0, 50.0);
+    cut->AddCut(VarManager::kPt2, 0.5, 100.0, false, VarManager::kPt, 0.0, 1.0);
+    cut->AddCut(VarManager::kPt2, 0.3, 100.0, false, VarManager::kPt, 1.0, 1.5);
+    cut->AddCut(VarManager::kPt2, 0.4, 100.0, false, VarManager::kPt, 1.5, 2.0);
+    cut->AddCut(VarManager::kPt2, 0.7, 100.0, false, VarManager::kPt, 2.0, 50.0);
+    return cut;
+  }
+
   if (nameStr == "pairJpsi") {
     cut->AddCut(VarManager::kMass, 2.8, 3.3);
     return cut;
@@ -7389,6 +7456,16 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "alice3TOFEta") {
+    cut->AddCut(VarManager::kEta, -2.0, 2.0); // Total tracker acceptance in v3b geomety
+    return cut;
+  }
+
+  if (nameStr == "alice3RICHEta") {
+    cut->AddCut(VarManager::kEta, -0.8, 0.8); // Total tracker acceptance in v3b geomety
+    return cut;
+  }
+
   if (nameStr == "alice3KineTOFAcceptanceD0") {
     cut->AddCut(VarManager::kPt, 0.7, 1000.0);
     cut->AddCut(VarManager::kEta, -2.0, 2.0); // TOF acceptance in v3b geomety
@@ -7460,42 +7537,66 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (nameStr == "alice3iTOFPIDEl") {
-    cut->AddCut(VarManager::kInnerTOFnSigmaEl, -3.0, 3.0);
+    cut->AddCut(VarManager::kInnerTOFnSigmaEl, -3.0, 3.0, false, VarManager::kP, 0.0, 1.5);
     return cut;
   }
 
   if (nameStr == "alice3iTOFPIDPi") {
-    cut->AddCut(VarManager::kInnerTOFnSigmaPi, -3.0, 3.0);
+    cut->AddCut(VarManager::kInnerTOFnSigmaPi, -3.0, 3.0, false, VarManager::kP, 0.0, 1.5);
     return cut;
   }
 
   if (nameStr == "alice3iTOFPIDKa") {
-    cut->AddCut(VarManager::kInnerTOFnSigmaKa, -3.0, 3.0);
+    cut->AddCut(VarManager::kInnerTOFnSigmaKa, -3.0, 3.0, false, VarManager::kP, 0.0, 1.5);
     return cut;
   }
 
   if (nameStr == "alice3iTOFPIDPr") {
-    cut->AddCut(VarManager::kInnerTOFnSigmaPr, -3.0, 3.0);
+    cut->AddCut(VarManager::kInnerTOFnSigmaPr, -3.0, 3.0, false, VarManager::kP, 0.0, 1.5);
     return cut;
   }
 
   if (nameStr == "alice3oTOFPIDEl") {
-    cut->AddCut(VarManager::kOuterTOFnSigmaEl, -3.0, 3.0);
+    cut->AddCut(VarManager::kOuterTOFnSigmaEl, -3.0, 3.0, false, VarManager::kP, 0.0, 2.5);
     return cut;
   }
 
   if (nameStr == "alice3oTOFPIDPi") {
-    cut->AddCut(VarManager::kOuterTOFnSigmaPi, -3.0, 3.0);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPi, -3.0, 3.0, false, VarManager::kP, 0.0, 2.5);
     return cut;
   }
 
   if (nameStr == "alice3oTOFPIDKa") {
-    cut->AddCut(VarManager::kOuterTOFnSigmaKa, -3.0, 3.0);
+    cut->AddCut(VarManager::kOuterTOFnSigmaKa, -3.0, 3.0, false, VarManager::kP, 0.0, 2.5);
     return cut;
   }
 
   if (nameStr == "alice3oTOFPIDPr") {
-    cut->AddCut(VarManager::kOuterTOFnSigmaPr, -3.0, 3.0);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPr, -3.0, 3.0, false, VarManager::kP, 0.0, 2.5);
+    return cut;
+  }
+
+  if (nameStr == "alice3D0KaonTOFPID") {
+    cut->AddCut(VarManager::kInnerTOFnSigmaKa, -3.0, 3.0, false, VarManager::kP, 0.0, 1.5);
+    cut->AddCut(VarManager::kOuterTOFnSigmaKa, -3.0, 3.0, false, VarManager::kP, 0.0, 2.5);
+
+    cut->AddCut(VarManager::kInnerTOFnSigmaPi, -3.0, 3.0, true, VarManager::kP, 0.0, 1.5);
+    cut->AddCut(VarManager::kInnerTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 1.5);
+
+    cut->AddCut(VarManager::kOuterTOFnSigmaPi, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
+    return cut;
+  }
+
+  if (nameStr == "alice3D0PionTOFPID") {
+    cut->AddCut(VarManager::kInnerTOFnSigmaPi, -3.0, 3.0, false, VarManager::kP, 0.0, 1.5);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPi, -3.0, 3.0, false, VarManager::kP, 0.0, 2.5);
+
+    cut->AddCut(VarManager::kInnerTOFnSigmaKa, -3.0, 3.0, true, VarManager::kP, 0.0, 1.5);
+    cut->AddCut(VarManager::kInnerTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 1.5);
+
+    cut->AddCut(VarManager::kOuterTOFnSigmaKa, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPr, -3.0, 3.0, true, VarManager::kP, 0.0, 2.5);
     return cut;
   }
 
