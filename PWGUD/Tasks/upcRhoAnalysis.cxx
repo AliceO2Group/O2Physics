@@ -317,7 +317,7 @@ struct UpcRhoAnalysis {
       rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
       rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
 
-      std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "rapidity gap", "ITS-TPC vertex", "same bunch pile-up", "ITS ROF border", "TF border", "vertex #it{z} position", "number of contributors", "RCT selections", "reco flag selection", "occupancy selection"};
+      std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "rapidity gap", "ITS-TPC vertex", "same bunch pile-up", "ITS ROF border", "TF border", "vertex #it{z} position", "number of contributors", "RCT selections", "occupancy selection"};
       rQC.add("QC/collisions/hSelectionCounter", ";;collisions passing selections", kTH1D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}});
       rQC.add("QC/collisions/hSelectionCounterPerRun", ";;run number;collisions passing selections", kTH2D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
       for (int i = 0; i < static_cast<int>(collisionSelectionCounterLabels.size()); ++i) {
@@ -373,7 +373,6 @@ struct UpcRhoAnalysis {
       // selection counter
       std::vector<std::string> trackSelectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS #it{N}_{cls}", "itsClusterMap check", "ITS #it{#chi}^{2}/#it{N}_{cls}", "TPC hit", "found TPC #it{N}_{cls}", "TPC #it{#chi}^{2}/#it{N}_{cls}", "TPC crossed rows",
                                                               "TPC crossed rows/#it{N}_{cls}",
-                                                              "TOF requirement",
                                                               "#it{p}_{T}", "#it{DCA}", "#it{#eta}", "exactly 2 tracks", "PID"};
       rQC.add("QC/tracks/hSelectionCounter", ";;tracks passing selections", kTH1D, {{static_cast<int>(trackSelectionCounterLabels.size()), -0.5, static_cast<float>(trackSelectionCounterLabels.size()) - 0.5}});
       rQC.add("QC/tracks/hSelectionCounterPerRun", ";;run number;tracks passing selections", kTH2D, {{static_cast<int>(trackSelectionCounterLabels.size()), -0.5, static_cast<float>(trackSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
@@ -686,18 +685,11 @@ struct UpcRhoAnalysis {
       rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 8, runIndex);
     }
 
-    if (useRecoFlag) {
-      if (collision.flags() != cutRecoFlag) // check reconstruction mode
-        return false;
-      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 9);
-      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 9, runIndex);
-    }
-
     if (cutOccupancy) {
       if (collision.occupancyInTime() > occupancyCut)
         return false;
-      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 10);
-      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 10, runIndex);
+      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 9);
+      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 9, runIndex);
     }
 
     // if all selections passed
@@ -760,27 +752,20 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 10);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 10, runIndex);
 
-    if (requireTof) {
-      if (!track.hasTOF())
-        return false;
-      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 11);
-      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 11, runIndex);
-    }
-
     if (track.pt() < tracksMinPtCut)
+      return false;
+    rQC.fill(HIST("QC/tracks/hSelectionCounter"), 11);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 11, runIndex);
+
+    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.1)))
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 12);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 12, runIndex);
 
-    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.1)))
+    if (std::abs(eta(track.px(), track.py(), track.pz())) > pcEtaCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 13);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 13, runIndex);
-
-    if (std::abs(eta(track.px(), track.py(), track.pz())) > pcEtaCut)
-      return false;
-    rQC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
-    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 14, runIndex);
 
     // if all selections passed
     return true;
@@ -959,8 +944,8 @@ struct UpcRhoAnalysis {
     if (static_cast<int>(cutTracks.size()) != nExpectedPions) // further consider only two pion systems
       return;
     for (int i = 0; i < nExpectedPions; i++) {
-      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
-      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 15, runIndex);
+      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
+      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 14, runIndex);
     }
 
     // create a vector of 4-vectors for selected tracks
@@ -1011,8 +996,8 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPi2DAfterCut"), leadingTrack.tpcNSigmaPi(), subleadingTrack.tpcNSigmaPi());
 
     for (const auto& cutTrack : cutTracks) {
-      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 16);
-      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 16, runIndex);
+      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
+      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 15, runIndex);
       fillTrackQcHistos<1>(cutTrack); // fill QC histograms after cuts
     }
     rQC.fill(HIST("QC/tracks/hTofHitCheck"), leadingTrack.hasTOF(), subleadingTrack.hasTOF());
