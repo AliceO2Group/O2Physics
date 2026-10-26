@@ -145,6 +145,17 @@ struct JetTaggerHFTask {
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
 
+  // ParT (Particle Transformer) tagger. Grouped in a ConfigurableGroup because
+  // StructToTuple.h supports at most 99 task members and this task is near the limit.
+  struct ParTCfg : ConfigurableGroup {
+    std::string prefix = "part";
+    Configurable<int64_t> nConstit{"nConstit", 32, "fixed number of constituents fed to the ParT model, must match training"};
+    Configurable<int64_t> nFeat{"nFeat", 10, "number of pf_features channels"};
+    Configurable<int64_t> nVec{"nVec", 4, "number of pf_vectors channels"};
+    Configurable<bool> padWrap{"padWrap", true, "pad short jets by cyclic repetition (weaver 'wrap' mode); set false for zero padding"};
+    Configurable<int> minTracks{"minTracks", 2, "minimum number of selected constituents; training applied jet_nTracks >= 2"};
+  } parTCfg;
+
   o2::analysis::MlResponseHfTagging<float> bMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -277,7 +288,7 @@ struct JetTaggerHFTask {
         }
       }
     }
-    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra) {
+    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra || doprocessAlgorithmParT) {
       if (jet.pt() >= jetpTMin) {
         float dbRange;
         if (scoreML[jet.globalIndex()] < dbMin) {
@@ -525,9 +536,24 @@ struct JetTaggerHFTask {
       bMlResponse.init();
     }
 
+    if (doprocessAlgorithmParT) {
+      bMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        bMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        bMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      bMlResponse.init();
+
+      LOGF(info, "ParT: loaded %s with %d output node(s); %d constituents, %s padding", onnxFileNames.value[0].c_str(), bMlResponse.getOutputNodes(), static_cast<int>(parTCfg.nConstit.value), parTCfg.padWrap.value ? "wrap" : "zero");
+    }
+
     if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra) {
       tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst, tfFuncTypeGNN.value);
+    }
 
+    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra || doprocessAlgorithmParT) {
       registry.add("h2_count_db", "#it{D}_{b} underflow/overflow;Jet flavour;#it{D}_{b} range", {HistType::kTH2F, {{4, 0., 4.}, {3, 0., 3.}}});
       auto h2CountDb = registry.get<TH2>(HIST("h2_count_db"));
       h2CountDb->GetXaxis()->SetBinLabel(1, "b-jet");
@@ -669,6 +695,42 @@ struct JetTaggerHFTask {
     }
   }
 
+  template <typename AnyJets, typename AnyTracks>
+  void analyzeJetAlgorithmParT(AnyJets const& jets, AnyTracks const& tracks)
+  {
+    o2::analysis::ParTBjetAllocator parTTensorAlloc(parTCfg.nConstit.value, parTCfg.nFeat.value, parTCfg.nVec.value, parTCfg.padWrap.value);
+
+    for (const auto& jet : jets) {
+      std::vector<std::vector<float>> featConstit;
+      std::vector<std::vector<float>> vecConstit;
+      jettaggingutilities::analyzeJetTrackInfo4ParT(jet, tracks, featConstit, vecConstit, trackPtMin, trackDcaXYMax, trackDcaZMax);
+
+      // Training applied a jet_nTracks >= 2 selection, so jets below it are out of distribution.
+      if (static_cast<int>(featConstit.size()) < parTCfg.minTracks) {
+        scoreML[jet.globalIndex()] = -999.;
+        LOGF(debug, "doprocessAlgorithmParT, too few selected constituents (%d)", jet.globalIndex());
+        continue;
+      }
+
+      std::vector<float> featData;
+      std::vector<float> vecData;
+      std::vector<float> maskData;
+      std::vector<Ort::Value> parTInput;
+      parTTensorAlloc.getParTInput(featConstit, vecConstit, featData, vecData, maskData, parTInput);
+
+      // The exported graph applies the softmax itself, so the output is already
+      // [p_b, p_c, p_udsg] and must not be passed through getDb(), which would softmax again.
+      auto modelOutput = bMlResponse.getModelOutputMultiInput(parTInput, 0);
+      float db = jettaggingutilities::getDbFromProb(modelOutput, fC);
+      if (!std::isnan(db)) {
+        scoreML[jet.globalIndex()] = db;
+      } else {
+        scoreML[jet.globalIndex()] = 999.;
+        LOGF(debug, "doprocessAlgorithmParT, Db is NaN (%d)", jet.globalIndex());
+      }
+    }
+  }
+
   void processDummy(aod::JetCollisions const&)
   {
   }
@@ -724,6 +786,12 @@ struct JetTaggerHFTask {
     analyzeJetAlgorithmGNN(jets, jtracks);
   }
   PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmGNN, "Fill GNN evaluation score (D_b) for charged jets", false);
+
+  void processAlgorithmParT(JetTable const& jets, JetTracksExt const& jtracks)
+  {
+    analyzeJetAlgorithmParT(jets, jtracks);
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmParT, "Fill ParT evaluation score (D_b) for charged jets", false);
 
   void processFillTables(std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>::iterator const& jet, JetTracksExt const& tracks)
   {
