@@ -36,10 +36,10 @@ stack or a separately validated build. The old ROCm execution provider was
 removed from ONNX Runtime starting with 1.23; this task uses MIGraphX.
 
 References:
-- https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
-- https://onnxruntime.ai/docs/execution-providers/MIGraphX-ExecutionProvider.html
-- https://onnxruntime.ai/docs/execution-providers/ROCm-ExecutionProvider.html
-- https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html
+- <https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html>
+- <https://onnxruntime.ai/docs/execution-providers/MIGraphX-ExecutionProvider.html>
+- <https://onnxruntime.ai/docs/execution-providers/ROCm-ExecutionProvider.html>
+- <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html>
 
 ## Run the three comparisons
 
