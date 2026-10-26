@@ -12,7 +12,7 @@
 
 /// \file multiparticleCorrelationsDm.cxx
 /// \brief Task to calculate multiparticle correlations and related observables
-/// \author Daniel Molnar
+/// \author molnard@tcd.ie
 
 // O2:
 
