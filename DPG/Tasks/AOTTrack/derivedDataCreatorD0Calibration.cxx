@@ -235,7 +235,7 @@ struct DerivedDataCreatorD0Calibration {
       eventIR.setFromLong(bc.globalBC());
 
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
-       // we cache tracks
+      // we cache tracks
       std::vector<SelectedTrack> tracksSelectedPos;
       std::vector<SelectedTrack> tracksSelectedNeg;
       tracksSelectedPos.reserve(groupedTrackIndices.size() / 2);
@@ -276,21 +276,17 @@ struct DerivedDataCreatorD0Calibration {
           pidTrackPion = selectorPion.statusTpcAndTof(track);
         }
         if (track.sign() > 0) { // first positive track
-          tracksSelectedPos.push_back({
-            trackIndex.trackId(),
-            dcaTmp,
-            trackParCov,
-            pidTrackPion,
-            pidTrackKaon
-          });
+          tracksSelectedPos.push_back({trackIndex.trackId(),
+                                       dcaTmp,
+                                       trackParCov,
+                                       pidTrackPion,
+                                       pidTrackKaon});
         } else if (track.sign() < 0) {
-          tracksSelectedNeg.push_back({
-            trackIndex.trackId(),
-            dcaTmp,
-            trackParCov,
-            pidTrackPion,
-            pidTrackKaon
-          });
+          tracksSelectedNeg.push_back({trackIndex.trackId(),
+                                       dcaTmp,
+                                       trackParCov,
+                                       pidTrackPion,
+                                       pidTrackKaon});
         }
       }
 
