@@ -121,7 +121,7 @@ struct SpawnDynamicColumns {
 
   void init(InitContext&)
   {
-    cextable.projectors[0] = (float)factor * aod::track::p * aod::track::p;
+    cextable.projectors[0] = factor.value * aod::track::p * aod::track::p;
   }
 
   void process(aod::Tracks const& tracks)
