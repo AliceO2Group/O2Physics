@@ -117,6 +117,14 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "ml";
   } cfgMl;
 
+  struct SelectedTrack {
+    int globalIndex;
+    o2::dataformats::DCA dca;
+    o2::track::TrackParametrizationWithError<float> trackParCov;
+    int pidPion;
+    int pidKaon;
+  };
+
   using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using TracksWCovExtraTmoPid = soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using TracksWCovExtraTmoPidAndQa = soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
@@ -187,7 +195,7 @@ struct DerivedDataCreatorD0Calibration {
   template <bool withTrackQa, bool withTrackOcc, typename TTrackQa, typename TTracks, typename TTrackMeanOccs>
   void runDataCreation(CollisionsWEvSel const& collisions,
                        aod::TrackAssoc const& trackIndices,
-                       TTracks const&,
+                       TTracks const& tracks,
                        aod::BCsWithTimestamps const&,
                        TTrackMeanOccs const&,
                        TTrackQa const&)
@@ -227,87 +235,69 @@ struct DerivedDataCreatorD0Calibration {
       eventIR.setFromLong(bc.globalBC());
 
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
-      std::vector<o2::dataformats::DCA> dcaNeg; // we cache the negative track, to avoid the same computation for each positive track
-      dcaNeg.resize(groupedTrackIndices.size());
-      std::vector<bool> isSelectedNeg(groupedTrackIndices.size(), true);
-      std::vector<bool> isPropagatedNeg(groupedTrackIndices.size(), false);
-      std::vector<int> pidTrackNegKaon(groupedTrackIndices.size(), -1);
-      std::vector<int> pidTrackNegPion(groupedTrackIndices.size(), -1);
+       // we cache tracks
+      std::vector<SelectedTrack> tracksSelectedPos;
+      std::vector<SelectedTrack> tracksSelectedNeg;
+      tracksSelectedPos.reserve(groupedTrackIndices.size() / 2);
+      tracksSelectedNeg.reserve(groupedTrackIndices.size() / 2);
 
-      for (auto const& trackIndexPos : groupedTrackIndices) {
-        auto trackPos = trackIndexPos.template track_as<TTracks>();
+      // first loop on tracks to find the selected ones
+      for (auto const& trackIndex : groupedTrackIndices) {
+        auto track = trackIndex.template track_as<TTracks>();
         // track selections
-        if (trackPos.sign() < 0) { // first positive track
+        if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-        if (!trackPos.isGlobalTrackWoDCA()) {
+        if (track.pt() < cfgTrackCuts.ptMin) {
           continue;
         }
-        if (trackPos.pt() < cfgTrackCuts.ptMin) {
+        if (std::abs(track.eta()) > cfgTrackCuts.absEtaMax) {
           continue;
         }
-        if (std::abs(trackPos.eta()) > cfgTrackCuts.absEtaMax) {
+        auto trackParCov = getTrackParCov(track);
+        auto dcaTmp = o2::dataformats::DCA(track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ());
+        if (track.collisionId() != collision.globalIndex()) {
+          trackParCov.propagateToDCA(primaryVertex, bz, &dcaTmp);
+        }
+        if (!isSelectedTrackDca(cfgTrackCuts.binsPt, cfgTrackCuts.limitsDca, trackParCov.getPt(), dcaTmp.getY(), dcaTmp.getZ())) {
           continue;
         }
-        auto trackParCovPos = getTrackParCov(trackPos);
-        o2::dataformats::DCA dcaPos(trackPos.dcaXY(), trackPos.dcaZ(), trackPos.cYY(), trackPos.cZY(), trackPos.cZZ());
-        if (trackPos.collisionId() != collision.globalIndex()) {
-          trackParCovPos.propagateToDCA(primaryVertex, bz, &dcaPos);
-        }
-        if (!isSelectedTrackDca(cfgTrackCuts.binsPt, cfgTrackCuts.limitsDca, trackParCovPos.getPt(), dcaPos.getY(), dcaPos.getZ())) {
-          continue;
-        }
-
-        int pidTrackPosKaon{-1};
-        int pidTrackPosPion{-1};
+        int pidTrackKaon{-1};
+        int pidTrackPion{-1};
         if (cfgTrackCuts.usePidTpcOnly) {
           /// kaon TPC PID positive daughter
-          pidTrackPosKaon = selectorKaon.statusTpc(trackPos);
+          pidTrackKaon = selectorKaon.statusTpc(track);
           /// pion TPC PID positive daughter
-          pidTrackPosPion = selectorPion.statusTpc(trackPos);
+          pidTrackPion = selectorPion.statusTpc(track);
         } else {
           /// kaon TPC, TOF PID positive daughter
-          pidTrackPosKaon = selectorKaon.statusTpcAndTof(trackPos);
+          pidTrackKaon = selectorKaon.statusTpcAndTof(track);
           /// pion TPC, TOF PID positive daughter
-          pidTrackPosPion = selectorPion.statusTpcAndTof(trackPos);
+          pidTrackPion = selectorPion.statusTpcAndTof(track);
         }
+        if (track.sign() > 0) { // first positive track
+          tracksSelectedPos.push_back({
+            trackIndex.trackId(),
+            dcaTmp,
+            trackParCov,
+            pidTrackPion,
+            pidTrackKaon
+          });
+        } else if (track.sign() < 0) {
+          tracksSelectedNeg.push_back({
+            trackIndex.trackId(),
+            dcaTmp,
+            trackParCov,
+            pidTrackPion,
+            pidTrackKaon
+          });
+        }
+      }
 
-        int iTrack{-1};
-        for (auto const& trackIndexNeg : groupedTrackIndices) {
-          iTrack++;
-          if (!isSelectedNeg[iTrack]) {
-            continue;
-          }
-          auto trackNeg = trackIndexNeg.template track_as<TTracks>();
-          // track selections
-          if (trackNeg.sign() > 0) { // second negative track
-            isSelectedNeg[iTrack] = false;
-            continue;
-          }
-          if (!trackNeg.isGlobalTrackWoDCA()) {
-            isSelectedNeg[iTrack] = false;
-            continue;
-          }
-          if (trackNeg.pt() < cfgTrackCuts.ptMin) {
-            isSelectedNeg[iTrack] = false;
-            continue;
-          }
-          if (std::abs(trackNeg.eta()) > cfgTrackCuts.absEtaMax) {
-            isSelectedNeg[iTrack] = false;
-            continue;
-          }
-          auto trackParCovNeg = getTrackParCov(trackNeg);
-          if (!isPropagatedNeg[iTrack]) {
-            dcaNeg[iTrack] = o2::dataformats::DCA(trackNeg.dcaXY(), trackNeg.dcaZ(), trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ());
-            if (trackNeg.collisionId() != collision.globalIndex()) {
-              trackParCovNeg.propagateToDCA(primaryVertex, bz, &dcaNeg[iTrack]);
-            }
-            isPropagatedNeg[iTrack] = true;
-          }
-          if (!isSelectedTrackDca(cfgTrackCuts.binsPt, cfgTrackCuts.limitsDca, trackParCovNeg.getPt(), dcaNeg[iTrack].getY(), dcaNeg[iTrack].getZ())) {
-            isSelectedNeg[iTrack] = false;
-            continue;
-          }
+      for (auto const& trackSelPos : tracksSelectedPos) {
+        auto trackPos = tracks.rawIteratorAt(trackSelPos.globalIndex);
+        for (auto const& trackSelNeg : tracksSelectedNeg) {
+          auto trackNeg = tracks.rawIteratorAt(trackSelNeg.globalIndex);
 
           // preselections
           // pt
@@ -337,24 +327,12 @@ struct DerivedDataCreatorD0Calibration {
             }
           }
 
-          if (cfgTrackCuts.usePidTpcOnly) {
-            /// kaon TPC PID negative daughter
-            pidTrackNegKaon[iTrack] = selectorKaon.statusTpc(trackNeg);
-            /// pion TPC PID negative daughter
-            pidTrackNegPion[iTrack] = selectorPion.statusTpc(trackNeg);
-          } else {
-            /// kaon TPC, TOF PID negative daughter
-            pidTrackNegKaon[iTrack] = selectorKaon.statusTpcAndTof(trackNeg);
-            /// pion TPC, TOF PID negative daughter
-            pidTrackNegPion[iTrack] = selectorPion.statusTpcAndTof(trackNeg);
-          }
-
           // PID
           uint8_t massHypo{D0MassHypo::D0AndD0Bar}; // both mass hypotheses a priori
-          if (pidTrackPosPion == TrackSelectorPID::Rejected || pidTrackNegKaon[iTrack] == TrackSelectorPID::Rejected) {
+          if (trackSelPos.pidPion == TrackSelectorPID::Rejected || trackSelNeg.pidKaon == TrackSelectorPID::Rejected) {
             massHypo -= D0MassHypo::D0; // exclude D0
           }
-          if (pidTrackNegPion[iTrack] == TrackSelectorPID::Rejected || pidTrackPosKaon == TrackSelectorPID::Rejected) {
+          if (trackSelNeg.pidPion == TrackSelectorPID::Rejected || trackSelPos.pidKaon == TrackSelectorPID::Rejected) {
             massHypo -= D0MassHypo::D0Bar; // exclude D0Bar
           }
           if (massHypo == 0) {
@@ -362,7 +340,7 @@ struct DerivedDataCreatorD0Calibration {
           }
 
           // d0xd0
-          if (dcaPos.getY() * dcaNeg[iTrack].getY() > cuts->get(ptBinNoVtxD0, CutsIds::MaxD0D0)) {
+          if (trackSelPos.dca.getY() * trackSelNeg.dca.getY() > cuts->get(ptBinNoVtxD0, CutsIds::MaxD0D0)) {
             continue;
           }
 
@@ -384,7 +362,7 @@ struct DerivedDataCreatorD0Calibration {
           }
 
           // reconstruct vertex
-          if (df.process(trackParCovPos, trackParCovNeg) == 0) {
+          if (df.process(trackSelPos.trackParCov, trackSelNeg.trackParCov) == 0) {
             continue;
           }
           const auto& secondaryVertex = df.getPCACandidate();
@@ -411,7 +389,7 @@ struct DerivedDataCreatorD0Calibration {
           }
 
           // d0xd0
-          if (dcaPos.getY() * dcaNeg[iTrack].getY() > cuts->get(ptBinD0, CutsIds::MaxD0D0)) {
+          if (trackSelPos.dca.getY() * trackSelNeg.dca.getY() > cuts->get(ptBinD0, CutsIds::MaxD0D0)) {
             continue;
           }
           // cospa
@@ -476,7 +454,7 @@ struct DerivedDataCreatorD0Calibration {
             } else {
               // apply BDT models
               if (cfgMl.apply) {
-                featuresCandD0 = {dcaPos.getY(), dcaNeg[iTrack].getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg[iTrack].getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
+                featuresCandD0 = {trackSelPos.dca.getY(), trackSelNeg.dca.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, trackSelPos.dca.getY() * trackSelNeg.dca.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
                 if (!mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0)) {
                   massHypo -= D0MassHypo::D0;
                 } else { // selected, we compute cost*
@@ -501,7 +479,7 @@ struct DerivedDataCreatorD0Calibration {
             } else {
               // apply BDT models
               if (cfgMl.apply) {
-                featuresCandD0bar = {dcaPos.getY(), dcaNeg[iTrack].getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg[iTrack].getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
+                featuresCandD0bar = {trackSelPos.dca.getY(), trackSelNeg.dca.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, trackSelPos.dca.getY() * trackSelNeg.dca.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
                 if (!mlResponse.isSelectedMl(featuresCandD0bar, ptD0, bdtScoresD0bar)) {
                   massHypo -= D0MassHypo::D0Bar;
                 } else { // selected, we compute cost*
@@ -694,8 +672,8 @@ struct DerivedDataCreatorD0Calibration {
                        deltaRefGloParamQ2Pt,
                        deltaTOFdX,
                        deltaTOFdZ,
-                       o2::math_utils::detail::truncateFloatFraction(dcaPos.getY(), precisionDcaMask),
-                       o2::math_utils::detail::truncateFloatFraction(dcaPos.getZ(), precisionDcaMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackSelPos.dca.getY(), precisionDcaMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackSelPos.dca.getZ(), precisionDcaMask),
                        getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()),
                        getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()),
                        getCompressedNumSigmaPid(trackPos.tofNSigmaPi()),
@@ -861,8 +839,8 @@ struct DerivedDataCreatorD0Calibration {
                        deltaRefGloParamQ2Pt,
                        deltaTOFdX,
                        deltaTOFdZ,
-                       o2::math_utils::detail::truncateFloatFraction(dcaNeg[iTrack].getY(), precisionDcaMask),
-                       o2::math_utils::detail::truncateFloatFraction(dcaNeg[iTrack].getZ(), precisionDcaMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackSelNeg.dca.getY(), precisionDcaMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackSelNeg.dca.getZ(), precisionDcaMask),
                        getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()),
                        getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()),
                        getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()),
