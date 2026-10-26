@@ -57,7 +57,7 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> sphericityMax{"sphericityMax", 1.f, "Maximum sphericity"};
   o2::framework::Configurable<int> magFieldMin{"magFieldMin", -5, "Minimum magnetic field strength (kG)"};
   o2::framework::Configurable<int> magFieldMax{"magFieldMax", 5, "Maximum magnetic field strength (kG)"};
-  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", 0, "MC ONLY: Sub-generator ID to keep (0 = MB). Only applied if >= 0; set to -1 (default) to disable and keep all sub-generators"};
+  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", -1, "MC ONLY: Sub-generator ID to keep (0 = MB). Only applied if >= 0; set to -1 (default) to disable and keep all sub-generators"};
 };
 
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
