@@ -108,7 +108,7 @@ Bool_t multCalibrator::Calibrate()
   // Step 1: verify if input file contains desired histograms
   TH1D* hRaw[kNCentEstim];
   for (Int_t iv = 0; iv < kNCentEstim; iv++) {
-    hRaw[iv] = reinterpret_cast<TH1D*>(fileInput->Get(Form("multiplicity-qa/multiplicityQa/h%s", fCentEstimName[iv].Data())));
+    hRaw[iv] = dynamic_cast<TH1D*>(fileInput->Get(Form("multiplicity-qa/multiplicityQa/h%s", fCentEstimName[iv].Data())));
     if (!hRaw[iv]) {
       cout << Form("File does not contain histogram h%s, which is necessary for calibration!", fCentEstimName[iv].Data()) << endl;
       return kFALSE;

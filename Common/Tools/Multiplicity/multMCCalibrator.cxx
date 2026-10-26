@@ -91,13 +91,13 @@ Bool_t multMCCalibrator::Calibrate()
   TProfile* hProfSim[multCalibrator::kNCentEstim];
   cout << " * acquiring input profiles..." << endl;
   for (Int_t iv = 0; iv < multCalibrator::kNCentEstim; iv++) {
-    hProfData[iv] = reinterpret_cast<TProfile*>(fileData->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data())));
+    hProfData[iv] = dynamic_cast<TProfile*>(fileData->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data())));
     if (!hProfData[iv]) {
       cout << Form("Data file does not contain histogram h%s, which is necessary for calibration!", multCalibrator::fCentEstimName[iv].Data()) << endl;
       return kFALSE;
     }
     hProfData[iv]->SetName(Form("hProfData_%s", multCalibrator::fCentEstimName[iv].Data()));
-    hProfSim[iv] = reinterpret_cast<TProfile*>(fileSim->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data())));
+    hProfSim[iv] = dynamic_cast<TProfile*>(fileSim->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data())));
     if (!hProfSim[iv]) {
       cout << Form("Sim file does not contain histogram h%s, which is necessary for calibration!", multCalibrator::fCentEstimName[iv].Data()) << endl;
       return kFALSE;
