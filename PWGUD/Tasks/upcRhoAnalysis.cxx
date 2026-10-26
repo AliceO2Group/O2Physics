@@ -332,6 +332,7 @@ struct UpcRhoAnalysis {
       rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaKa", ";TPC #it{n#sigma}(K);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {100, 0.0, 1.0}, {180, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaPr", ";TPC #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
       rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPr", ";TPC #it{n#sigma}(p);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {100, 0.0, 1.0}, {180, -0.9, 0.9}});
+      rQC.add("QC/tracks/all/hTpcNSigmaMu", ";TPC #it{n#sigma}(#mu);counts", kTH1D, {nSigmaAxis});
       rQC.add("QC/tracks/all/hDcaXYZ", ";track #it{DCA}_{z} (cm);track #it{DCA}_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {400, -2.0, 2.0}});
       rQC.add("QC/tracks/all/hItsNCls", ";ITS #it{N}_{cls};counts", kTH1D, {{9, -0.5, 8.5}});
       rQC.add("QC/tracks/all/hItsChi2NCl", ";ITS #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{150, 0.0, 15.0}});
@@ -353,6 +354,7 @@ struct UpcRhoAnalysis {
       rQC.add("QC/tracks/trackSelections/hTpcNSigmaEl2D", ";TPC #it{n#sigma}(e)_{leading};TPC #it{n#sigma}(e)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
       rQC.add("QC/tracks/trackSelections/hTpcNSigmaKa2D", ";TPC #it{n#sigma}(K)_{leading};TPC #it{n#sigma}(K)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
       rQC.add("QC/tracks/trackSelections/hTpcNSigmaPr2D", ";TPC #it{n#sigma}(p)_{leading};TPC #it{n#sigma}(p)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
+      rQC.add("QC/tracks/trackSelections/hTpcNSigmaMu2D", ";TPC #it{n#sigma}(#mu)_{leading};TPC #it{n#sigma}(#mu)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
       // selection counter
       std::vector<std::string> trackSelectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS #it{N}_{cls}", "itsClusterMap check", "ITS #it{#chi}^{2}/#it{N}_{cls}", "TPC hit", "found TPC #it{N}_{cls}", "TPC #it{#chi}^{2}/#it{N}_{cls}", "TPC crossed rows",
                                                               "TPC crossed rows/#it{N}_{cls}",
@@ -524,6 +526,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaKa"), track.tpcNSigmaKa(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPr"), track.tpcNSigmaPr());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPr"), track.tpcNSigmaPr(), track.pt(), eta(track.px(), track.py(), track.pz()));
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaMu"), track.tpcNSigmaMu());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hDcaXYZ"), track.dcaZ(), track.dcaXY());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsNCls"), track.itsNCls());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsChi2NCl"), track.itsChi2NCl());
@@ -944,6 +947,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaEl2D"), leadingTrack.tpcNSigmaEl(), subleadingTrack.tpcNSigmaEl());
     rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaKa2D"), leadingTrack.tpcNSigmaKa(), subleadingTrack.tpcNSigmaKa());
     rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPr2D"), leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr());
+    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaMu2D"), leadingTrack.tpcNSigmaMu(), subleadingTrack.tpcNSigmaMu());
 
     float leadingPt = leadingTrack.pt();
     float subleadingPt = subleadingTrack.pt();
