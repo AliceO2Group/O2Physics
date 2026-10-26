@@ -255,10 +255,12 @@ std::map<KinkHist, std::vector<o2::framework::AxisSpec>> makeKinkMcQaHistSpecMap
 #undef KINK_HIST_MC_QA_MAP
 
 constexpr char PrefixSigmaQa[] = "SigmaQA/";
-constexpr char PrefixSigma1[] = "Sigma1/";
+constexpr char PrefixSigma1Se[] = "Sigma1/SE/";
+constexpr char PrefixSigma1Me[] = "Sigma1/ME/";
 constexpr char PrefixSigma2[] = "Sigma2/";
 constexpr char PrefixSigmaPlusQa[] = "SigmaPlusQA/";
-constexpr char PrefixSigmaPlus1[] = "SigmaPlus1/";
+constexpr char PrefixSigmaPlus1Se[] = "SigmaPlus1/SE/";
+constexpr char PrefixSigmaPlus1Me[] = "SigmaPlus1/ME/";
 constexpr char PrefixSigmaPlus2[] = "SigmaPlus2/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
@@ -598,9 +600,6 @@ class KinkHistManager
           switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
             case modes::McOrigin::kPhysicalPrimary:
               mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-              break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
               break;
             case modes::McOrigin::kFromMaterial:
               mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());

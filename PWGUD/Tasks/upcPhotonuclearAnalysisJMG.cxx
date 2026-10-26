@@ -447,7 +447,7 @@ struct UpcPhotonuclearAnalysisJMG {
         if (useEnergyZN && !((collision.energyCommonZNA() < cutGapAMyEnergyZNA) && (collision.energyCommonZNC() >= cutGapAMyEnergyZNC))) {
           return false;
         } // 0n - A side && Xn - C Side
-        if (useGapSideVariable && collision.gapSide() != uint8_t(0)) {
+        if (useGapSideVariable && collision.gapSide() != static_cast<uint8_t>(0)) {
           return false;
         }
         if (useFV0 && collision.totalFV0AmplitudeA() > cutGapAFV0Amplitude) {
@@ -464,7 +464,7 @@ struct UpcPhotonuclearAnalysisJMG {
         if (useEnergyZN && !((collision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (collision.energyCommonZNC() < cutGapCMyEnergyZNC))) {
           return false;
         } // Xn - A side && 0n - C Side
-        if (useGapSideVariable && collision.gapSide() != uint8_t(1)) {
+        if (useGapSideVariable && collision.gapSide() != static_cast<uint8_t>(1)) {
           return false;
         }
         if (useFT0CGapC && (collision.totalFT0AmplitudeC() > cutGapCMyAmplitudeFT0C)) {
@@ -1007,8 +1007,8 @@ struct UpcPhotonuclearAnalysisJMG {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 11);
-    bool cutGapSideAVariable = useGapSideVariable && reconstructedCollision.gapSide() != uint8_t(0);
-    bool cutGapSideCVariable = useGapSideVariable && reconstructedCollision.gapSide() != uint8_t(1);
+    bool cutGapSideAVariable = useGapSideVariable && reconstructedCollision.gapSide() != static_cast<uint8_t>(0);
+    bool cutGapSideCVariable = useGapSideVariable && reconstructedCollision.gapSide() != static_cast<uint8_t>(1);
     if (cutGapSideAVariable || cutGapSideCVariable) {
       return;
     }

@@ -52,9 +52,10 @@ struct ConfOmegaMesonFilters : o2::framework::ConfigurableGroup {
 };
 
 // selection used downstream (QA/pairing) to re-select already produced resonances by mass window
-// and daughter mask -- same pattern as the two-track resonances (TWOTRACKRESONANCE_DEFAULT_SELECTION),
-// just with a 3rd mask for the neutral daughter (no momentum-threshold split there, same as
-// femtotwophotonresonances' single dauMask)
+// and daughter mask. both charged daughters are pions (just opposite charge, no species swap the
+// way kstar's kaon/pion does), so -- same as TWOTRACKRESONANCE_SAME_SPECIES_MASK for phi/rho0 --
+// a single pair of mask thresholds is applied to both. plus a 3rd mask for the neutral daughter (no
+// momentum-threshold split there, same as femtotwophotonresonances' single dauMask)
 template <auto& Prefix>
 struct ConfOmegaMesonSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
@@ -67,10 +68,8 @@ struct ConfOmegaMesonSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
   o2::framework::Configurable<float> massMin{"massMin", 0.6f, "Minimum invariant mass"};
   o2::framework::Configurable<float> massMax{"massMax", 0.95f, "Maximum invariant mass"};
-  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> posDauMaskBelowThres{"posDauMaskBelowThres", 0x10u, "Bitmask for positive daughter below threshold"};
-  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> posDauMaskAboveThres{"posDauMaskAboveThres", 0x8u, "Bitmask for positive daughter above threshold"};
-  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> negDauMaskBelowThres{"negDauMaskBelowThres", 0x2u, "Bitmask for negative daughter below threshold"};
-  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> negDauMaskAboveThres{"negDauMaskAboveThres", 0x1u, "Bitmask for negative daughter above threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> pionDauMaskBelowThres{"pionDauMaskBelowThres", 0x10u, "Bitmask for both pion daughters below threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> pionDauMaskAboveThres{"pionDauMaskAboveThres", 0x8u, "Bitmask for both pion daughters above threshold"};
   o2::framework::Configurable<o2::analysis::femto::datatypes::PhotonMaskType> neutralDauMask{"neutralDauMask", 0, "Bitmask required for the neutral (two-photon-resonance) daughter"};
 };
 

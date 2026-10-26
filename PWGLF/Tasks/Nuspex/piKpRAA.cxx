@@ -567,9 +567,11 @@ struct PiKpRAA {
       // USED FOR CALCULATING EVENT LOSS AND SIGNAL LOSS AS IN THE DN/DETA ANALYSIS
       registry.add("Centrality_FineBins_WithRecoEvt", "Rec. Coll. Irrespective of the times it was reconstructed + Evt. Sel.;Centrality;Entries", kTH1F, {axisFineCent});
       registry.add("Centrality_FineBins_WithRecoEvt_BestCollIdx", "Rec. Coll. W/best Coll Indx + Evt. Sel.;Centrality;Entries", kTH1F, {axisFineCent});
-      registry.add("NchMC_AllGen_Fwd", "MC Nch of ALL events;Gen. Nch (Forward);Entries", kTH1F, {axisNch});
+      registry.add("NchMC_Fwd_AllGen", "MC Nch of ALL events;Gen. Nch (Forward);Entries", kTH1F, {axisNch});
       registry.add("NchMC_Fwd_WithRecoEvt", "True Nch from MC events W/at leas One Rec. Coll + Evt. Sel.;Gen. Nch (Forward);Entries", kTH1F, {axisNch});
       registry.add("NchMC_Fwd_WithRecoEvt_BestCollIdx", "True Nch from MC events W/best Coll Idx + Evt. Sel.;Gen. Nch (Forward);Entries", kTH1F, {axisNch});
+      registry.add("NchMC_Fwd_WithRecoEvt_HasFT0AndTVX", "Gen Evts W/at leas One Rec. Coll With FT0 Info + TVX;Gen. Nch;Entries", kTH1F, {axisNch});
+      registry.add("NchMC_Fwd_WithRecoEvt_HasFT0AndTVX_BestCollIdx", "Gen Evts W/best Coll Idx With FT0 Info + TVX;Gen Nch;Entries", kTH1F, {axisNch});
 
       // NUMERATOR OF THE SIGNAL LOSS. BASED ONLY ON THE COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS TO PV
       registry.add("PtPiVsNchMCFwd_WithRecoEvt_BestCollIdx", "Gen Evts W/best Coll Idx + Evt. Sel.;;Gen. Nch Forward;", kTH2F, {axisPt, axisNch});
@@ -1456,7 +1458,7 @@ struct PiKpRAA {
     //---------------------------
 
     // DENOMINATOR OF THE EVENT LOSS: ALL THE GENERATED EVENTS
-    registry.fill(HIST("NchMC_AllGen_Fwd"), nChMCForward);
+    registry.fill(HIST("NchMC_Fwd_AllGen"), nChMCForward);
     registry.fill(HIST("NchMC_AllGen"), nChMCTPCAcc);
     registry.fill(HIST("zPosMCAll"), mccollision.posZ());
 
@@ -1542,19 +1544,20 @@ struct PiKpRAA {
         hasbc = collision.has_foundBC();
         hasft0 = collision.has_foundFT0();
         hastvx = collision.selection_bit(o2::aod::evsel::kIsTriggerTVX);
-        hasBcFT0TVX = hasbc && hasft0 && hastvx;
+        hasBcFT0TVX = (hasbc && hasft0 && hastvx);
 
         if (hasBcFT0TVX) {
           // NUMERATOR/DENOMINATOR OF THE EVENT LOSS
           registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX"), nChMCTPCAcc);
-          if (hasBcFT0TVX && bestCollisionIndex) {
-            registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX_BestCollIdx"), nChMCTPCAcc);
-          }
-        }
+          registry.fill(HIST("NchMC_Fwd_WithRecoEvt_HasFT0AndTVX"), nChMCForward);
 
-        // TVX-triggered + bestCollisionIndex
-        if (hasBcFT0TVX && isBestCollIndex) {
-          registry.fill(HIST("EventCounterMC"), 4.5);
+          // TVX-triggered + bestCollisionIndex
+          if (isBestCollIndex) {
+            registry.fill(HIST("EventCounterMC"), 4.5);
+            // NUMERATOR/DENOMINATOR OF THE EVENT LOSS
+            registry.fill(HIST("NchMC_WithRecoEvt_HasFT0AndTVX_BestCollIdx"), nChMCTPCAcc);
+            registry.fill(HIST("NchMC_Fwd_WithRecoEvt_HasFT0AndTVX_BestCollIdx"), nChMCForward);
+          }
         }
 
         //---------------------------
@@ -1605,7 +1608,7 @@ struct PiKpRAA {
             if (hasBcFT0TVX) {
               registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtPiVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-              if (hasBcFT0TVX && isBestCollIndex) {
+              if (isBestCollIndex) {
                 registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
                 registry.fill(HIST("PtPiVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
               }
@@ -1614,7 +1617,7 @@ struct PiKpRAA {
             if (hasBcFT0TVX) {
               registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtKaVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-              if (hasBcFT0TVX && isBestCollIndex) {
+              if (isBestCollIndex) {
                 registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
                 registry.fill(HIST("PtKaVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
               }
@@ -1623,7 +1626,7 @@ struct PiKpRAA {
             if (hasBcFT0TVX) {
               registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
               registry.fill(HIST("PtPrVsNchMCFwd_HasFT0AndTVX"), particle.pt(), nChMCForward);
-              if (hasBcFT0TVX && isBestCollIndex) {
+              if (isBestCollIndex) {
                 registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
                 registry.fill(HIST("PtPrVsNchMCFwd_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCForward);
               }

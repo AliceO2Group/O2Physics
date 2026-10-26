@@ -97,7 +97,7 @@ struct UDQC {
     // initialize global variables
     maxdEdxTPC = 0.;
     maxdEdxTOF = 0.;
-    diffCuts = (DGCutparHolder)DGCuts;
+    diffCuts = DGCutparHolder(DGCuts);
 
     // add histograms for the different process functions
     if (context.mOptions.get<bool>("processMain")) {

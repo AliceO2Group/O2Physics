@@ -309,11 +309,17 @@ std::map<V0Hist, std::vector<o2::framework::AxisSpec>> makeV0McQaHistSpecMap(T1 
 #undef V0_HIST_MC_QA_MAP
 
 constexpr char PrefixLambdaQa[] = "LambdaQA/";
-constexpr char PrefixLambda1[] = "Lambda1/";
-constexpr char PrefixLambda2[] = "Lambda2/";
+// same-event / mixed-event siblings: single-candidate histograms for a given slot, split by
+// whether the candidate came from a same-event or mixed-event pair
+constexpr char PrefixLambda1Se[] = "Lambda1/SE/";
+constexpr char PrefixLambda2Se[] = "Lambda2/SE/";
+constexpr char PrefixLambda1Me[] = "Lambda1/ME/";
+constexpr char PrefixLambda2Me[] = "Lambda2/ME/";
 constexpr char PrefixK0shortQa[] = "K0shortQa/";
-constexpr char PrefixK0short1[] = "K0short1/";
-constexpr char PrefixK0short2[] = "K0short2/";
+constexpr char PrefixK0short1Se[] = "K0short1/SE/";
+constexpr char PrefixK0short2Se[] = "K0short2/SE/";
+constexpr char PrefixK0short1Me[] = "K0short1/ME/";
+constexpr char PrefixK0short2Me[] = "K0short2/ME/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 
@@ -715,9 +721,6 @@ class V0HistManager
           switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
             case modes::McOrigin::kPhysicalPrimary:
               mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-              break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
               break;
             case modes::McOrigin::kFromMaterial:
               mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());

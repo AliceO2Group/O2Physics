@@ -291,10 +291,15 @@ auto makeLcMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQ
 #undef LC_HIST_QA_MAP
 
 // prefixes for the output directories in the histogram registry
-constexpr char PrefixD01[] = "D01/";
-constexpr char PrefixD02[] = "D02/";
+// same-event / mixed-event siblings: single-candidate histograms for a given slot, split by
+// whether the candidate came from a same-event or mixed-event pair
+constexpr char PrefixD01Se[] = "D01/SE/";
+constexpr char PrefixD02Se[] = "D02/SE/";
+constexpr char PrefixD01Me[] = "D01/ME/";
+constexpr char PrefixD02Me[] = "D02/ME/";
 constexpr char PrefixD0Qa[] = "D0QA/";
-constexpr char PrefixLc1[] = "Lc1/";
+constexpr char PrefixLc1Se[] = "Lc1/SE/";
+constexpr char PrefixLc1Me[] = "Lc1/ME/";
 constexpr char PrefixLcQa[] = "LcQA/";
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view McDir = "MC/";

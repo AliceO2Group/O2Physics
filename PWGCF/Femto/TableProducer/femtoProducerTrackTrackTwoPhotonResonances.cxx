@@ -52,14 +52,14 @@ struct FemtoProducerTrackTrackTwoPhotonResonances {
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
 
-  // setup for the two charged (pion) daughters -- plain track selections, same mechanism used for
-  // any other track daughter; sign is configured through these, not hardcoded in the builder
-  trackbuilder::ConfTrackSelection1 posDauSelection;
-  o2::framework::Partition<FemtoTracks> posDauPartition = MAKE_TRACK_PARTITION(posDauSelection);
+  // setup for the two charged (pion) daughters. Dedicated pion-species selections, same ones
+  // femtoProducerResonances.cxx uses for other two track resonances
+  trackbuilder::ConfPionPlusSelection posDauSelection;
+  o2::framework::Partition<FemtoTracks> posDauPartition = MAKE_RESONANCE_DAUGHTER_PARTITION(posDauSelection);
   o2::framework::Preslice<FemtoTracks> perColPosDau = o2::aod::femtobase::stored::fColId;
 
-  trackbuilder::ConfTrackSelection2 negDauSelection;
-  o2::framework::Partition<FemtoTracks> negDauPartition = MAKE_TRACK_PARTITION(negDauSelection);
+  trackbuilder::ConfPionMinusSelection negDauSelection;
+  o2::framework::Partition<FemtoTracks> negDauPartition = MAKE_RESONANCE_DAUGHTER_PARTITION(negDauSelection);
   o2::framework::Preslice<FemtoTracks> perColNegDau = o2::aod::femtobase::stored::fColId;
 
   // setup for the neutral (pi0) daughter

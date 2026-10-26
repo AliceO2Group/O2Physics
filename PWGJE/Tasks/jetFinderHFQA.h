@@ -16,7 +16,6 @@
 #ifndef PWGJE_TASKS_JETFINDERHFQA_H_
 #define PWGJE_TASKS_JETFINDERHFQA_H_
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
@@ -73,7 +72,6 @@ struct JetFinderHFQATask {
   o2::framework::Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
   o2::framework::Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
 
-  HfHelper hfHelper;
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
   std::vector<bool> filledJetR_High;

@@ -228,6 +228,7 @@ struct FemtoProducer {
     if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
          !doprocessTracksV0sCascadesRun3PbPbWithEventShape &&
+         !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape &&
          !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
          !doprocessTracksV0sCascadesRun3ppMc &&
          !doprocessTracksV0sCascadesRun3PbPbMc)) {
@@ -236,13 +237,15 @@ struct FemtoProducer {
     if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
          !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
-         !doprocessTracksV0sCascadesRun3PbPbWithEventShape &&
+         !doprocessTracksV0sCascadesRun3PbPbWithEventShape && !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape &&
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPb && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
          !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if (photonBuilder.fillAnyTable() && (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb && !doprocessTracksV0sCascadesKinksPhotonsRun3pp)) {
+    if (photonBuilder.fillAnyTable() &&
+        (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb &&
+         !doprocessTracksV0sCascadesKinksPhotonsRun3pp && !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape)) {
       LOG(fatal) << "At least one photon table is enabled, but wrong process function is enabled. Breaking...";
     }
     if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) &&
@@ -345,6 +348,7 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksV0sCascadesRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPb) +
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPbWithEventShape) +
+      static_cast<int>(doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape) +
       static_cast<int>(doprocessTracksKinksRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesKinksRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesKinksPhotonsRun3pp) +
@@ -668,6 +672,29 @@ struct FemtoProducer {
     processCascades<modes::System::kPbPb_Run3>(col, tracks, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3PbPbWithEventShape, "Provide tracks, v0s and cascades in PbPb collisions with event shape information", false);
+
+  void processTracksV0sCascadesPhotonsRun3PbPbWithEventShape(rawinputs::Run3PbPbCollisionsWithEventShape::iterator const& col,
+                                                             o2::aod::BCsWithTimestamps const& bcs,
+                                                             rawinputs::Run3FullPidTracks const& tracks,
+                                                             rawinputs::Run3Vzeros const& v0s,
+                                                             rawinputs::Run3Cascades const& cascades,
+                                                             o2::aod::V0PhotonsKF const& photons,
+                                                             o2::aod::V0Legs const& v0legs)
+  {
+    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+    processV0s<modes::System::kPbPb_Run3>(col, tracks, v0s);
+    processCascades<modes::System::kPbPb_Run3>(col, tracks, cascades);
+    // V0PhotonsKF/V0Legs carry a plain CollisionId column (not a framework index column), so they
+    // are not auto-grouped by the DPL binder and must be sliced manually, same as EMPhotonFilter.cxx
+    auto photonsThisCol = photons.sliceBy(perColRecoPCMPhotons, col.globalIndex());
+    processPhotons<modes::System::kPbPb_Run3>(col, photonsThisCol, v0legs);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesPhotonsRun3PbPbWithEventShape, "Provide tracks, v0s, cascades and PCM photons in PbPb collisions with event shape information", false);
 
   void processTracksKinksRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
                                 o2::aod::BCsWithTimestamps const& bcs,

@@ -142,7 +142,7 @@ inline void EventSelectionFilterAndAnalysis::StoreMultiplicities(CollisionToFilt
   /* we require tracks with pT > 0.15 and |eta| < 0.8 and additionally the TPCout flag */
   /* for the time being there is not TPCout flag, we just consider hasTPC              */
   for (auto track : tracks) {
-    if (track.pt() > 0.15 and abs(track.eta()) < 0.8 and track.hasTPC()) {
+    if (track.pt() > 0.15 and std::abs(track.eta()) < 0.8 and track.hasTPC()) {
       ntracksTPCout++;
     }
   }

@@ -266,7 +266,7 @@ void FlatLutWriter::lutWrite(const char* filename, int pdg, float field, size_t 
   setMap(lutHeader.ptmap, mPtBinning);
 
   // Write header to file
-  lutFile.write(reinterpret_cast<char*>(&lutHeader), sizeof(lutHeader_t));
+  lutFile.write(reinterpret_cast<char*>(&lutHeader), sizeof(lutHeader_t)); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
   if (!lutFile.good()) {
     LOGF(error, "Failed to write LUT header to %s", filename);
     lutFile.close();
@@ -361,7 +361,7 @@ void FlatLutWriter::lutWrite(const char* filename, int pdg, float field, size_t 
           diagonalise(lutEntry);
 
           // Write entry to file
-          lutFile.write(reinterpret_cast<char*>(&lutEntry), sizeof(lutEntry_t));
+          lutFile.write(reinterpret_cast<char*>(&lutEntry), sizeof(lutEntry_t)); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
           if (!lutFile.good()) {
             LOGF(error, "Failed to write LUT entry at index [%d,%d,%d,%d]", inch, irad, ieta, ipt);
             lutFile.close();
