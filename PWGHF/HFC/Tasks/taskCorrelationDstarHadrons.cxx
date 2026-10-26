@@ -124,7 +124,7 @@ struct HfTaskCorrelationDstarHadrons {
   void init(InitContext&)
   {
 
-    auto axisPtDstar = (std::vector<double>)binsPtEfficiency;
+    auto axisPtDstar = std::vector<double>(binsPtEfficiency);
     AxisSpec const axisSpecPtDstar = {axisPtDstar};
     AxisSpec const axisSpecDeltaPhi = {nBinsDeltaPhi, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf};
     AxisSpec const axisSpecDeltaEta = {deltaEtaBinEdges};

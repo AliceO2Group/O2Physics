@@ -178,8 +178,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     const AxisSpec axisPosZ = {binsPosZ, "PosZ"};
     const AxisSpec axisEta = {binsEta, "#it{#eta}"};
     const AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
-    const AxisSpec axisPtTrig = {(std::vector<double>)binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
-    const AxisSpec axisPtAssoc = {(std::vector<double>)binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
+    const AxisSpec axisPtTrig = {std::vector<double>(binsPtTrig), "#it{p}_{T} Trig (GeV/#it{c})"};
+    const AxisSpec axisPtAssoc = {std::vector<double>(binsPtAssoc), "#it{p}_{T} Assoc (GeV/#it{c})"};
     const AxisSpec axisDcaXY = {binsDca, "DCA XY (cm)"};
     const AxisSpec axisDcaZ = {binsDca, "DCA Z (cm)"};
 

@@ -185,8 +185,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     const AxisSpec axisPoolBin = {poolBins, 0., static_cast<float>(poolBins), "PoolBin"};
     const AxisSpec axisDeltaEta = {binsDeltaEta, "#Delta#it{#eta}"};
     const AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta#it{#varphi}"};
-    const AxisSpec axisPtTrig = {(std::vector<double>)binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
-    const AxisSpec axisPtAssoc = {(std::vector<double>)binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
+    const AxisSpec axisPtTrig = {std::vector<double>(binsPtTrig), "#it{p}_{T} Trig (GeV/#it{c})"};
+    const AxisSpec axisPtAssoc = {std::vector<double>(binsPtAssoc), "#it{p}_{T} Assoc (GeV/#it{c})"};
     const AxisSpec axisMlOne{binsMlOne, "bdtScore0"};
     const AxisSpec axisMlTwo{binsMlTwo, "bdtScore1"};
 

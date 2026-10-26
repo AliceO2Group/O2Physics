@@ -125,7 +125,7 @@ struct HfTaskXic {
     AxisSpec const axisNSigmaPi = {100, -6.f, 6.f, "n#it{#sigma}_{#pi}"};
     AxisSpec const axisNSigmaKa = {100, -6.f, 6.f, "n#it{#sigma}_{K}"};
 
-    auto vbins = (std::vector<double>)binsPt; // histo in pt bins
+    auto vbins = std::vector<double>(binsPt); // histo in pt bins
     registry.add("Data/hMassVsPt", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 2., 3.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/hDecLength", "3-prong candidates;decay length (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/hDecLengthXY", "3-prong candidates;decay length XY (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -175,8 +175,8 @@ struct HfTaskXic {
     registry.add("Data/hPVsTOFNSigmaKa_Prong2", "3-prong candidates;#it{p} bachelor (GeV/#it{c}) ;n#it{#sigma}_{K} TOF", {HistType::kTH2F, {axisPPid, axisNSigmaKa}});
 
     // MC generated
-    registry.add("MC/generated/hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/hEtaGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/generated/hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/generated/hEtaGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
 
     // MC reconstructed:signal
     registry.add("MC/reconstructed/signal/hMassSig", "Invariant mass (matched);m (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
