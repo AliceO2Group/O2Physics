@@ -442,10 +442,12 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   /// Fill track tables for mixed-event
   /// \param assTrks are the associated tracks
-  /// \param collCentrality is the collision centrality
+  /// \param cent is the collision centrality
+  /// \param mult is the collision multiplicity
   template <typename TAssocTrks>
   void fillTrkMixedEvent(TAssocTrks const& assTrks,
-                         const float collCentrality)
+                         const float cent,
+                         const float mult)
   {
     bool first = true;
     for (const auto& assTrk : assTrks) {
@@ -461,15 +463,17 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       }
       if (!first && downSampleTrksFactor < 1.) { // skip downsampling for the first track to avoid empty tables
         float const pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
-        if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
+        if (assTrkPt < ptMaxForDownSample && cent < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
           continue;
         }
       }
       first = false;
       registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
       registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
-      registry.fill(HIST("hDcaXYVsPtAssoc"), assTrk.dcaXY(), assTrkPt);
-      registry.fill(HIST("hDcaZVsPtAssoc"), assTrk.dcaZ(), assTrkPt);
+      registry.fill(HIST("hDcaXYVsPtVsCentAssoc"), assTrkPt, assTrk.dcaXY(), cent);
+      registry.fill(HIST("hDcaZVsPtVsCentAssoc"), assTrkPt, assTrk.dcaZ(), cent);
+      registry.fill(HIST("hDcaXYVsPtVsMultAssoc"), assTrkPt, assTrk.dcaXY(), mult);
+      registry.fill(HIST("hDcaZVsPtVsMultAssoc"), assTrkPt, assTrk.dcaZ(), mult);
       rowAssocBases(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
       rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }
@@ -506,7 +510,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillCharmMixedEvent<CandidateType::DplusToPiKPi>(candsDplus);
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDplusMixedEvent, "Process Mixed Event for Dplus candidates", false);
 
@@ -547,7 +551,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillCharmMixedEvent<CandidateType::DsToPiKK>(candsDsToPiKK);
     fillCharmMixedEvent<CandidateType::DsToKKPi>(candsDsToKKPi);
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDsMixedEvent, "Process Mixed Event for Ds candidates", false);
 
@@ -588,7 +592,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillCharmMixedEvent<CandidateType::D0ToPiK>(candsD0ToPiK);
     fillCharmMixedEvent<CandidateType::D0ToKPi>(candsD0ToKPi);
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processD0MixedEvent, "Process Mixed Event for D0 candidates", false);
 
@@ -629,7 +633,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillCharmMixedEvent<CandidateType::LcToPKPi>(candsLcToPKPi);
     fillCharmMixedEvent<CandidateType::LcToPiKP>(candsLcToPiKP);
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processLcMixedEvent, "Process Mixed Event for Lc candidates", false);
 
@@ -655,7 +659,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronMixedEvent, "Process Mixed Event for hadron candidates", false);
 };
