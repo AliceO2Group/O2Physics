@@ -21,6 +21,7 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/CollisionAssociation.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -308,7 +309,8 @@ struct PidFlowChargedTimeProducer {
   bool timeUniformField = false;
   bool cfgRequireUniqueTimeAssociation = false;
   bool cfgTimeAssociationQA = true;
-  bool timeUsePVAssociation = true;
+  int timeUsePVAssociation = aod::track_association::PVContrReassocOpt::OnlySameBc;
+  int timeMaxPvContributorsForLowMultReassoc = 10;
   float timeNSigma = 4.f;
   float timeMargin = 0.f;
   float cutEta = 0.8f;
@@ -331,7 +333,8 @@ struct PidFlowChargedTimeProducer {
     }
     cfgRequireUniqueTimeAssociation = timeAssociationOption<bool>(context, "pid-flow-pt-corr", "cfgRequireUniqueTimeAssociation");
     cfgTimeAssociationQA = timeAssociationOption<bool>(context, "pid-flow-pt-corr", "cfgTimeAssociationQA");
-    timeUsePVAssociation = timeAssociationOption<bool>(context, "track-to-collision-association", "usePVAssociation");
+    timeUsePVAssociation = timeAssociationOption<int>(context, "track-to-collision-association", "usePVAssociation");
+    timeMaxPvContributorsForLowMultReassoc = timeAssociationOption<int>(context, "track-to-collision-association", "maxPvContributorsForLowMultReassoc");
     timeNSigma = timeAssociationOption<float>(context, "track-to-collision-association", "nSigmaForTimeCompat");
     timeMargin = timeAssociationOption<float>(context, "track-to-collision-association", "timeMargin");
     cutEta = timeAssociationOption<float>(context, "pid-flow-pt-corr", "trkQualityOpts.cfgCutEta");
@@ -380,7 +383,8 @@ struct PidFlowChargedTimeProducer {
     metadata += ";producer.nSigmaForTimeCompat=" + std::to_string(timeAssociationOption<float>(context, "track-to-collision-association", "nSigmaForTimeCompat"));
     metadata += ";producer.timeMargin=" + std::to_string(timeAssociationOption<float>(context, "track-to-collision-association", "timeMargin"));
     metadata += ";producer.bcWindowForOneSigma=" + std::to_string(timeAssociationOption<int>(context, "track-to-collision-association", "bcWindowForOneSigma"));
-    metadata += ";producer.usePVAssociation=" + std::to_string(static_cast<int>(timeAssociationOption<bool>(context, "track-to-collision-association", "usePVAssociation")));
+    metadata += ";producer.usePVAssociation=" + std::to_string(timeUsePVAssociation);
+    metadata += ";producer.maxPvContributorsForLowMultReassoc=" + std::to_string(timeMaxPvContributorsForLowMultReassoc);
     metadata += ";producer.includeUnassigned=" + std::to_string(static_cast<int>(timeAssociationOption<bool>(context, "track-to-collision-association", "includeUnassigned")));
     chargedTimeAssociationConfig->SetTitle(metadata.c_str());
     LOG(info) << "Charged time association: " << metadata;
@@ -517,7 +521,11 @@ struct PidFlowChargedTimeProducer {
         originalTimeStatus = 5;
         if (collisionIndex >= 0 && collisionIndex < collisions.size()) {
           auto collision = collisions.rawIteratorAt(collisionIndex);
-          const bool usePVTime = timeUsePVAssociation && track.isPVContributor();
+          // Match the public associator's PV-time substitution, including mode 2.
+          const bool usePVTime = track.isPVContributor() &&
+                                 (timeUsePVAssociation == aod::track_association::PVContrReassocOpt::OnlySameBc ||
+                                  (timeUsePVAssociation == aod::track_association::PVContrReassocOpt::SameBcAndLowMult &&
+                                   collision.numContrib() > timeMaxPvContributorsForLowMultReassoc));
           const float trackTime = usePVTime ? collision.collisionTime() : track.trackTime();
           const float trackRes = usePVTime ? o2::constants::lhc::LHCBunchSpacingNS : track.trackTimeRes();
           const float collisionRes = collision.collisionTimeRes();
