@@ -953,6 +953,11 @@ struct TrackEfficiency {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
+
+    if (collision.isOutlier()) {
+      return;
+    }
+
     float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
     if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
       return;
