@@ -17,13 +17,16 @@
 #include <Framework/runDataProcessing.h>
 
 #include <ML/3rdparty/GPUORTFloat16.h>
+#include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
+#include <ios>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -206,10 +209,12 @@ struct BenchmarkOnnxModel {
     auto inputName = session.GetInputNameAllocated(0, allocator);
     const char* inputNames[] = {inputName.get()};
     std::vector<std::string> names;
+    names.reserve(session.GetOutputCount());
     for (size_t i = 0; i < session.GetOutputCount(); ++i) {
       names.emplace_back(session.GetOutputNameAllocated(i, allocator).get());
     }
     std::vector<const char*> outputNames;
+    outputNames.reserve(names.size());
     for (auto const& name : names) {
       outputNames.push_back(name.c_str());
     }
