@@ -1478,7 +1478,7 @@ struct HfMlBasedTrackSelector {
   {
     uint32_t isSelected2ProngCand = BIT(NChannels2Prong) - 1;
     whichHypo2Prong.fill(BIT(NMassHypos) - 1); // 2 bits on, all mass hypotheses alive
-    whichHypo2Prong[NChannels2Prong] = 0; // D0 for D*
+    whichHypo2Prong[NChannels2Prong] = 0;      // D0 for D*
 
     std::array<uint32_t, N2Prongs> isIdentifiedPid{prongPos.mask, prongNeg.mask};
     applyMlRoleSelection(isIdentifiedPid, whichHypo2Prong, isSelected2ProngCand);
