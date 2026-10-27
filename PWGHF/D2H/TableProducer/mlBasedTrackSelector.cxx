@@ -131,23 +131,21 @@ constexpr int NMassHypos = 2; // mass hypotheses per channel, i.e. the two order
 /// The ordering of the channels should strictly follow Channels2Prong
 constexpr TrackMlRole trackRoles2Prongs[NChannels2Prong][NMassHypos][N2Prongs] = {
   {
-    {RolePionD0, RoleKaonD0},  // D0 → π± K∓
-    {RoleKaonD0, RolePionD0}   // D0 → π± K∓
-  }
-};
+    {RolePionD0, RoleKaonD0}, // D0 → π± K∓
+    {RoleKaonD0, RolePionD0}  // D0 → π± K∓
+  }};
 
 /// Role of each track in the candidate, per channel and mass hypothesis.
 /// The ordering of the channels should strictly follow Channels3Prong
 constexpr TrackMlRole trackRoles3Prongs[NChannels3Prong][NMassHypos][N3Prongs] = {
   {
-    {RolePionDplus, RoleKaonDplus, RolePionDplus},  // D± → π± K∓ π±
-    {RolePionDplus, RoleKaonDplus, RolePionDplus}   // D± → π± K∓ π± (swapped, no effect for D+)
+    {RolePionDplus, RoleKaonDplus, RolePionDplus}, // D± → π± K∓ π±
+    {RolePionDplus, RoleKaonDplus, RolePionDplus}  // D± → π± K∓ π± (swapped, no effect for D+)
   },
   {
     {RoleKaonDs, RoleKaonDs, RolePionDs}, // D_s± → K± K∓ π±
     {RolePionDs, RoleKaonDs, RoleKaonDs}  // D_s± → K± K∓ π± (swapped)
-  }
-};
+  }};
 
 constexpr double PtMaxModel = 1.e10;
 
@@ -439,7 +437,7 @@ struct HfTrackSelectorTagSelTracks {
   /// \param features are the input feature names, in the order the model expects
   /// \param thrPion, thrKaon are the score thresholds
   /// \param name is used in the log message
-  template<bool IsBinaryModel = false>
+  template <bool IsBinaryModel = false>
   void configureModel(HfTrackModel& model,
                       std::string const& onnxFile,
                       std::string const& ccdbPath,
@@ -485,15 +483,15 @@ struct HfTrackSelectorTagSelTracks {
 
     if (config.applyMlD0) {
       configureModel<false>(models2Prong[ChannelD0ToPiK], config.onnxFileNameD0, config.mlModelPathCcdbD0, config.inputFeaturesD0,
-                     config.thresholdScorePionD0, config.thresholdScoreKaonD0, "D0 track model");
+                            config.thresholdScorePionD0, config.thresholdScoreKaonD0, "D0 track model");
     }
     if (config.applyMlDplus) {
       configureModel<false>(models3Prong[ChannelDplusToPiKPi], config.onnxFileNameDplus, config.mlModelPathCcdbDplus, config.inputFeaturesDplus,
-                     config.thresholdScorePionDplus, config.thresholdScoreKaonDplus, "D+ track model");
+                            config.thresholdScorePionDplus, config.thresholdScoreKaonDplus, "D+ track model");
     }
     if (config.applyMlDs) {
       configureModel<false>(models3Prong[ChannelDsToKKPi], config.onnxFileNameDs, config.mlModelPathCcdbDs, config.inputFeaturesDs,
-                     config.thresholdScorePionDs, config.thresholdScoreKaonDs, "Ds track model");
+                            config.thresholdScorePionDs, config.thresholdScoreKaonDs, "Ds track model");
     }
     if (config.applyMlDstar) {
       double thresholdScoreKaonDstar = 0; // D* model has no kaon score, but the configureModel() function expects a value
@@ -614,7 +612,7 @@ struct HfTrackSelectorTagSelTracks {
   /// \param scores is filled with (background, pion-role, kaon-role); -1 if not evaluated
   /// \param isSelPion, isSelKaon are filled with the threshold decisions
   /// \return true if the model was actually evaluated
-  template<size_t NClasses>
+  template <size_t NClasses>
   bool evaluateModel(HfTrackModel& model, HfTrackMlFeatures const& features,
                      std::array<float, NClasses>& scores, bool& isSelPion, bool& isSelKaon)
   {
@@ -921,7 +919,7 @@ struct HfMlBasedTrackSelector {
   struct HfProngCandidate {
     o2::track::TrackParCov parCov;
     std::array<float, 3> pVec{};
-    std::array<float, 2> dcaInfo{};   ///< DCA (xy, z) to the primary vertex
+    std::array<float, 2> dcaInfo{}; ///< DCA (xy, z) to the primary vertex
     uint32_t mask{};       ///< aod::HfSelTrack::isIdentifiedPid
     int64_t globalIndex{}; ///< index in the track table, written to the skim
   };
@@ -953,9 +951,9 @@ struct HfMlBasedTrackSelector {
   // filter collisions
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<o2::hf_evsel::HfCollisionRejectionMask>(0));
   // filter track indices
-  Filter filterSelectTrackIds = ( (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u ||
-                                  (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u ||
-                                  (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandDstar))) != 0u );
+  Filter filterSelectTrackIds = ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u ||
+                                 (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u ||
+                                 (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandDstar))) != 0u);
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
 
@@ -1702,7 +1700,7 @@ struct HfMlBasedTrackSelector {
         }
 
         // D* -> D0 pi+ candidates
-         const auto tStartDstar = tickIf(doTiming);
+        const auto tStartDstar = tickIf(doTiming);
         if (storeDstar &&
             lastFilledD0 != rowTrackIndexProng2.lastIndex()) { // we have a new D0 candidate, so we can try to form a D* candidate
 
@@ -1747,8 +1745,12 @@ struct HfMlBasedTrackSelector {
           timing[TimeProcessDstar] += elapsedSeconds(tStartDstar);
         }
 
-        if (!config.do3Prongs) { continue; }
-        if (!canBe3Prong) { continue; }
+        if (!config.do3Prongs) {
+          continue;
+        }
+        if (!canBe3Prong) {
+          continue;
+        }
         if (!isTwoProngVtxGoodFor3Prongs) {
           ++counters[CountPairsRejected2P];
           continue;
@@ -1761,9 +1763,9 @@ struct HfMlBasedTrackSelector {
           }
           ++counters[CountTripletsEnumerated];
           processTriplet(collision, prong1.parCov, prongOpp.parCov, prong2.parCov,
-                        prong1.pVec, prongOpp.pVec, prong2.pVec,
-                        prong1.mask, prongOpp.mask, prong2.mask,
-                        prong1.globalIndex, prongOpp.globalIndex, prong2.globalIndex);
+                         prong1.pVec, prongOpp.pVec, prong2.pVec,
+                         prong1.mask, prongOpp.mask, prong2.mask,
+                         prong1.globalIndex, prongOpp.globalIndex, prong2.globalIndex);
         }
       }
     }
