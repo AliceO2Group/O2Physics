@@ -303,7 +303,7 @@ struct HfTaskBplusToJpsiKReduced {
     const AxisSpec axisImpactPar{200, -0.05, 0.05};
     const AxisSpec axisPtJpsi{100, 0., 50.};
     const AxisSpec axisRapidity{100, -2., 2.};
-    const AxisSpec axisPtB{(std::vector<double>)binsPt, "#it{p}_{T}^{B^{+}} (GeV/#it{c})"};
+    const AxisSpec axisPtB{std::vector<double>(binsPt), "#it{p}_{T}^{B^{+}} (GeV/#it{c})"};
     const AxisSpec axisPtKa{100, 0.f, 10.f};
 
     registry.add("hMass", bPlusCandTitle + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassBplus, axisPtB}});
