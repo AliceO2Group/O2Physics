@@ -44,6 +44,7 @@
 #include <TMath.h>
 #include <TString.h>
 
+#include "TrackTools/TrackGeometry.h"
 #include <sys/types.h>
 
 #include <bitset>
@@ -390,6 +391,9 @@ struct EventSelectionQaTask {
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_StandardDeltaTimeCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_GoodITSLayersAllCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_GoodITSLayersAllCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      // check at R=85 cm (Oct 2026)
+      histos.add("occupancyQA/hNumTracksITS_isValidAt85cm_EtaPtCuts_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksPV_isValidAt85cm_EtaPtSel8VxCuts_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
       // requested by TPC experts: nTPConly tracks vs occupancy
       histos.add("occupancyQA/hNumTracksTPConly_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksTPConlyNoITS_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
@@ -1185,6 +1189,8 @@ struct EventSelectionQaTask {
 
       int nTracksITS = 0;
       int nTracksITSTPC = 0;
+      int nTracksITSValidAt85cmAfterEtaPtCuts = 0;
+      int nContributorsAt85cmAfterEtaPtSel8VxCuts = 0;
 
       bool isTVX = col.selection_bit(kIsTriggerTVX);
 
@@ -1202,11 +1208,27 @@ struct EventSelectionQaTask {
             nTPConlyNoITS++;
         }
 
+        // Oct 2026: test presence of track at 85 cm radius using new tools - https://github.com/AliceO2Group/AliceO2/tree/dev/Common/TrackTools
+        const float bzKG = 5.f;
+        const float radiusOfInterest = 85.f; // cm
+        auto trackParLocal = o2::recohelpers::makeTrackParFromLocalParameters(
+          track.x(),
+          track.alpha(),
+          track.y(),
+          track.z(),
+          track.snp(),
+          track.tgl(),
+          track.signed1Pt());
+        auto trackAt85 = o2::recohelpers::getParametersAtRadiusH(trackParLocal, radiusOfInterest, bzKG);
+        bool isTrackAt85 = trackAt85.valid();
+
         if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2) {
           if (track.hasITS()) {
             nTracksITS++;
             if (track.hasTPC())
               nTracksITSTPC++;
+            if (isTrackAt85)
+              nTracksITSValidAt85cmAfterEtaPtCuts++;
           }
         }
 
@@ -1234,12 +1256,18 @@ struct EventSelectionQaTask {
               histos.fill(HIST("occupancyQA/tpcNCrossedRows_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsFindable() - tpcNClsFindableMinusCrossedRowsCorrected, occupancyByTracks);
             }
           } // end of hasTPC
-          if (col.sel8() && fabs(col.posZ()) < 10 && track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
-            nContributorsAfterEtaTPCCuts++;
-            // ROF border QA
-            histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), localBC, track.itsNCls());
-            histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_counter_ITSTPCtracks"), localBC);
-          }
+          if (col.sel8() && fabs(col.posZ()) < 10) {
+            if (track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
+              nContributorsAfterEtaTPCCuts++;
+              // ROF border QA
+              histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), localBC, track.itsNCls());
+              histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_counter_ITSTPCtracks"), localBC);
+            }
+
+            if (isTrackAt85) {
+              nContributorsAt85cmAfterEtaPtSel8VxCuts++;
+            }
+          } // end of sel8 and vZ cuts
         }
         if (!track.hasTPC())
           histos.fill(HIST("hITStrackBcDiff"), trackBcDiff);
@@ -1268,6 +1296,10 @@ struct EventSelectionQaTask {
           histos.fill(HIST("occupancyQA/hNumTracksPVTPCLooseCuts_vs_V0A_vs_occupancy"), multV0A, nContributorsAfterEtaTPCLooseCuts, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksITS_vs_V0A_vs_occupancy"), multV0A, nTracksITS, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksITSTPC_vs_V0A_vs_occupancy"), multV0A, nTracksITSTPC, occupancyByTracks);
+
+          histos.fill(HIST("occupancyQA/hNumTracksITS_isValidAt85cm_EtaPtCuts_vs_V0A_vs_occupancy"), multV0A, nTracksITSValidAt85cmAfterEtaPtCuts, occupancyByTracks);
+          histos.fill(HIST("occupancyQA/hNumTracksPV_isValidAt85cm_EtaPtSel8VxCuts_vs_V0A_vs_occupancy"), multV0A, nContributorsAt85cmAfterEtaPtSel8VxCuts, occupancyByTracks);
+
           if (col.selection_bit(kNoCollInTimeRangeNarrow)) {
             histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nPV, occupancyByTracks);
             histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);
