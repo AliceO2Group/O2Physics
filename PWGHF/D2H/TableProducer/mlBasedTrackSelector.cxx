@@ -13,6 +13,7 @@
 /// \brief D± → π± K∓ π± and D_s± → K± K∓ π± skimming with track-level ML
 /// TEST ONLY, PLEASE DO NOT USE FOR ANALYSIS
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Universita and INFN Torino
+/// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Turin Polytechnic University and INFN Turin
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfMlResponseHfTracks.h"
@@ -102,7 +103,9 @@ enum Channels3Prong {
   NChannels3Prong
 };
 
-constexpr std::array<int, NChannels3Prong> DecayTypeOfChannel{
+constexpr std::array<int, NChannels2Prong> DecayTypeOfChannel2Prong{
+  hf_cand_2prong::DecayType::D0ToPiK};
+constexpr std::array<int, NChannels3Prong> DecayTypeOfChannel3Prong{
   hf_cand_3prong::DecayType::DplusToPiKPi,
   hf_cand_3prong::DecayType::DsToKKPi};
 
@@ -119,9 +122,6 @@ enum TrackMlRole {
   RoleSoftPiDstar,
   NTrackMlRoles
 };
-
-constexpr std::array<int, NChannels3Prong> RolePionOfChannel{RolePionDplus, RolePionDs};
-constexpr std::array<int, NChannels3Prong> RoleKaonOfChannel{RoleKaonDplus, RoleKaonDs};
 
 constexpr int N2Prongs = 2;   // Number of prongs for 2-prong candidates
 constexpr int N3Prongs = 3;   // Number of prongs for 3-prong candidates
@@ -150,7 +150,7 @@ constexpr TrackMlRole trackRoles3Prongs[NChannels3Prong][NMassHypos][N3Prongs] =
 constexpr double PtMaxModel = 1.e10;
 
 constexpr uint32_t MaskSameSignAny = (1u << RolePionD0) | (1u << RoleKaonD0) | (1u << RolePionDplus) | (1u << RolePionDs) | (1u << RoleKaonDs) | (1u << RoleSoftPiDstar);
-constexpr uint32_t MaskOppSignAny = (1u << RolePionD0) | (1u << RoleKaonD0) | (1u << RoleKaonDplus) | (1u << RoleKaonDs);
+constexpr uint32_t MaskOppSignAny = (1u << RolePionD0) | (1u << RoleKaonD0) | (1u << RoleKaonDplus) | (1u << RoleKaonDs) | (1u << RoleSoftPiDstar);
 
 /// Where the combinatorics spends its time, accumulated in seconds into hTiming.
 enum TimingStep {
@@ -1061,36 +1061,12 @@ struct HfMlBasedTrackSelector {
   /// \param maskSame is the isIdentifiedPid mask of the first same-sign prong
   static void checkCandidateAllowed(const uint32_t maskOpp, const uint32_t maskSame, bool& canBe2Prong, bool& canBe3Prong)
   {
-    canBe2Prong = TESTBIT(maskOpp, RoleKaonD0) && TESTBIT(maskSame, RolePionD0);
+    canBe2Prong = (TESTBIT(maskOpp, RoleKaonD0) && TESTBIT(maskSame, RolePionD0)) || (TESTBIT(maskOpp, RolePionD0) && TESTBIT(maskSame, RoleKaonD0));
     // For D* we check that we can have a D0 and later apply the selection for the soft pion
 
     const bool okDplus = TESTBIT(maskOpp, RoleKaonDplus) && TESTBIT(maskSame, RolePionDplus);
     const bool okDs = TESTBIT(maskOpp, RoleKaonDs) && (TESTBIT(maskSame, RoleKaonDs) || TESTBIT(maskSame, RolePionDs));
     canBe3Prong = okDplus || okDs;
-  }
-
-  /// Check whether the three ML masks can satisfy any mass hypothesis of either channel
-  /// \param maskOpp is the mask of the opposite-sign prong (prong 1)
-  /// \param mask1, mask2 are the masks of the same-sign prongs (prongs 0 and 2)
-  static bool pairRoleOk(const uint32_t maskOpp, const uint32_t maskSame)
-  {
-    const std::array<uint32_t, N2Prongs> masks{maskSame, maskOpp};
-    for (int iChannel = 0; iChannel < NChannels2Prong; iChannel++) {
-      for (int iHypo = 0; iHypo < NMassHypos; iHypo++) {
-        bool isHypoAlive = true;
-        for (int iProng = 0; iProng < N2Prongs; iProng++) {
-          const int role = trackRoles2Prongs[iChannel][iHypo][iProng];
-          if (!TESTBIT(masks[iProng], role)) {
-            isHypoAlive = false;
-            break;
-          }
-        }
-        if (isHypoAlive) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 
   /// Check whether the three ML masks can satisfy any mass hypothesis of either channel
@@ -1307,7 +1283,9 @@ struct HfMlBasedTrackSelector {
     size_t nChannels = is3Prong ? static_cast<size_t>(NChannels3Prong) : static_cast<size_t>(NChannels2Prong);
     for (size_t iChannel = 0; iChannel < nChannels; iChannel++) {
       if (TESTBIT(isSelected, iChannel)) {
-        SETBIT(hfFlag, DecayTypeOfChannel[iChannel]);
+        const int decayType = is3Prong ? DecayTypeOfChannel3Prong[iChannel]
+                                       : DecayTypeOfChannel2Prong[iChannel];
+        SETBIT(hfFlag, decayType);
       }
     }
     return hfFlag;
@@ -1491,16 +1469,18 @@ struct HfMlBasedTrackSelector {
 
   /// Reconstruct and preselect one 2-prong candidate, and fill its table row if it survives.
   /// \param collision is the collision the candidate belongs to
-  /// \param prong0,1 are the track informations
+  /// \param prongPos is the positive track information
+  /// \param prongNeg are the negative track information
   template <typename TProngInfo>
   void processPair(SelectedCollisions::iterator const& collision,
-                   TProngInfo const& prong0, TProngInfo const& prong1,
-                   std::array<int, NChannels2Prong>& whichHypo2Prong)
+                   TProngInfo const& prongPos, TProngInfo const& prongNeg,
+                   std::array<int, NChannels2Prong + 1>& whichHypo2Prong)
   {
     uint32_t isSelected2ProngCand = BIT(NChannels2Prong) - 1;
     whichHypo2Prong.fill(BIT(NMassHypos) - 1); // 2 bits on, all mass hypotheses alive
+    whichHypo2Prong[NChannels2Prong] = 0; // D0 for D*
 
-    std::array<uint32_t, N2Prongs> isIdentifiedPid{prong0.mask, prong1.mask};
+    std::array<uint32_t, N2Prongs> isIdentifiedPid{prongPos.mask, prongNeg.mask};
     applyMlRoleSelection(isIdentifiedPid, whichHypo2Prong, isSelected2ProngCand);
     if (isSelected2ProngCand == 0) {
       return;
@@ -1516,7 +1496,7 @@ struct HfMlBasedTrackSelector {
 
     // 2-prong selections
     const std::array pvCoord{collision.posX(), collision.posY(), collision.posZ()};
-    applySelection2Prong(pVecCandProng2, prong0, prong1, secondaryVertex2, pvCoord, whichHypo2Prong, isSelected2ProngCand);
+    applySelection2Prong(pVecCandProng2, prongPos, prongNeg, secondaryVertex2, pvCoord, whichHypo2Prong, isSelected2ProngCand);
 
     // Only D0 for now
     if (!TESTBIT(isSelected2ProngCand, ChannelD0ToPiK)) {
@@ -1524,7 +1504,7 @@ struct HfMlBasedTrackSelector {
     }
 
     // fill table row
-    rowTrackIndexProng2(collision.globalIndex(), prong0.globalIndex, prong1.globalIndex, hfFlagOfSelection(isSelected2ProngCand, false));
+    rowTrackIndexProng2(collision.globalIndex(), prongPos.globalIndex, prongNeg.globalIndex, hfFlagOfSelection(isSelected2ProngCand, false));
     ++counters[CountPairsWritten];
 
     // fill histograms
@@ -1653,8 +1633,8 @@ struct HfMlBasedTrackSelector {
     for (const int iOpp : oppSignList) { // o2-linter: disable=const-ref-in-for-loop (int elements)
       const auto& prongOpp = oppSignCache.prongs[iOpp];
 
-      for (std::size_t i1 = 0; i1 < sameSignList.size(); ++i1) {
-        const auto& prong1 = sameSignCache.prongs[sameSignList[i1]];
+      for (std::size_t iSame1 = 0; iSame1 < sameSignList.size(); ++iSame1) {
+        const auto& prong1 = sameSignCache.prongs[sameSignList[iSame1]];
         ++counters[CountPairsSeen];
         bool canBe2Prong{false}, canBe3Prong{false};
         bool isTwoProngVtxGoodFor3Prongs{true};
@@ -1687,15 +1667,15 @@ struct HfMlBasedTrackSelector {
             ++counters[CountPairsRejected2P];
             continue;
           }
+          if (useTwoTrackVertex) {
+            isTwoProngVtxGoodFor3Prongs = isTwoTrackVertexSelectedFor3Prongs(df2.getPCACandidate(), pvCoord2Prong, df2);
+          }
           if (store2Prongs || storeDstar) {
             const auto tStartD0 = tickIf(doTiming);
             processPair(collision, prong1, prongOpp, whichHypo2Prong);
             if (doTiming) {
               timing[TimeProcessD0] += elapsedSeconds(tStartD0);
             }
-          }
-          if (useTwoTrackVertex) {
-            isTwoProngVtxGoodFor3Prongs = isTwoTrackVertexSelectedFor3Prongs(df2.getPCACandidate(), pvCoord2Prong, df2);
           }
         }
 
@@ -1710,7 +1690,7 @@ struct HfMlBasedTrackSelector {
             for (std::size_t iSoftPi = 0; iSoftPi < sameSignList.size(); ++iSoftPi) {
               const auto& prongSoftPi = sameSignCache.prongs[sameSignList[iSoftPi]];
 
-              if (iSoftPi == static_cast<std::size_t>(i1)) {
+              if (iSoftPi == static_cast<std::size_t>(iSame1)) {
                 continue; // skip the same track
               }
               if (!TESTBIT(prongSoftPi.mask, RoleSoftPiDstar)) {
@@ -1737,7 +1717,7 @@ struct HfMlBasedTrackSelector {
 
               // Update the index of the last filled D0 candidate
               processDstar(collision, lastFilledD0, prongSoftPi.globalIndex,
-                           prong1.pVec, prongOpp.pVec, prongSoftPi.pVec);
+                           prongOpp.pVec, prong1.pVec, prongSoftPi.pVec);
             }
           }
         }
@@ -1756,8 +1736,8 @@ struct HfMlBasedTrackSelector {
           continue;
         }
         // 3-prong candidates
-        for (std::size_t i2 = i1 + 1; i2 < sameSignList.size(); ++i2) {
-          const auto& prong2 = sameSignCache.prongs[sameSignList[i2]];
+        for (std::size_t iSame2 = iSame1 + 1; iSame2 < sameSignList.size(); ++iSame2) {
+          const auto& prong2 = sameSignCache.prongs[sameSignList[iSame2]];
           if (!tripletRoleOk(prongOpp.mask, prong1.mask, prong2.mask)) {
             continue;
           }
