@@ -552,12 +552,14 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhis_001, "FPHI", 1, //! femto phis
                                    femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FPhis = FPhis_001;
+using StoredFPhis = StoredFPhis_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhiMasks_001, "FPHIMASK", 1, //! mask for phis
                                    femtotwotrackresonances::MaskPosDau,
                                    femtotwotrackresonances::PosDauHasHighMomentum,
                                    femtotwotrackresonances::MaskNegDau,
                                    femtotwotrackresonances::NegDauHasHighMomentum);
 using FPhiMasks = FPhiMasks_001;
+using StoredFPhiMasks = StoredFPhiMasks_001;
 
 // table for kstars
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FKstar0s_001, "FKSTAR0", 1, //! femto k0star
@@ -599,12 +601,14 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FRho0s_001, "FRHO0", 1, //! femto rho0s
                                    femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FRho0s = FRho0s_001;
+using StoredFRho0s = StoredFRho0s_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FRho0Masks_001, "FRHO0MASK", 1, //! rho0s masks
                                    femtotwotrackresonances::MaskPosDau,
                                    femtotwotrackresonances::PosDauHasHighMomentum,
                                    femtotwotrackresonances::MaskNegDau,
                                    femtotwotrackresonances::NegDauHasHighMomentum);
 using FRho0Masks = FRho0Masks_001;
+using StoredFRho0Masks = StoredFRho0Masks_001;
 
 namespace femtov0s
 {

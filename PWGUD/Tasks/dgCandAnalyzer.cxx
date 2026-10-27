@@ -144,7 +144,7 @@ struct DGCandAnalyzer {
     // PDG
     pdg = TDatabasePDG::Instance();
 
-    anaPars = (DGAnaparHolder)DGPars;
+    anaPars = DGAnaparHolder(DGPars);
     pidsel.init(anaPars);
     grsel.init(goodRunsFile);
 

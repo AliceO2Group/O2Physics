@@ -115,9 +115,9 @@ struct FlowLongRangeCorrUpc {
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
   Filter collisionFilter = (cfgGapSideMerge == true)
-                             ? ((aod::udcollision::gapSide == (uint8_t)0 || aod::udcollision::gapSide == (uint8_t)1) &&
+                             ? ((aod::udcollision::gapSide == static_cast<uint8_t>(0) || aod::udcollision::gapSide == static_cast<uint8_t>(1)) &&
                                 (aod::upcservice::truegapside == 0 || aod::upcservice::truegapside == 1))
-                             : ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) &&
+                             : ((aod::udcollision::gapSide == static_cast<uint8_t>(cfgGapSide)) &&
                                 (aod::upcservice::truegapside == cfgGapSide));
 
   using UDTracksFull = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>>;

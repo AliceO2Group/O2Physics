@@ -230,6 +230,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   Configurable<bool> cfCentCutSwitch{"cfCentCutSwitch", true, "centrality cut switch"};
   Configurable<bool> cfNumContribCutSwitch{"cfNumContribCutSwitch", true, "NContribution cut switch"};
   Configurable<bool> cfNumTrackCutSwitch{"cfNumTrackCutSwitch", true, "NTrack cut switch"};
+  Configurable<bool> cfOccupancyCutSwitch{"cfOccupancyCutSwitch", true, "occupancy cut switch"};
   Configurable<bool> cfCentCorrCutSwitch{"cfCentCorrCutSwitch", true, "centrality correlation outlier cut switch"};
   Configurable<bool> cfMultCorrCutSwitch{"cfMultCorrCutSwitch", true, "multiplicity correlation outlier cut switch"};
   Configurable<bool> cfNumContribMultCorrCutSwitch{"cfNumContribMultCorrCutSwitch", true, "NContribution vs. multiplicity correlation outlier cut switch"};
@@ -248,6 +249,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   Configurable<std::vector<float>> cfCentCut{"cfCentCut", {10., 20.}, "centrality range: {min, max}[%]"};
   Configurable<std::vector<float>> cfNumContribCut{"cfNumContribCut", {0, 3000.}, "NContribution range: {min, max}"};
   Configurable<std::vector<float>> cfNumTrackCut{"cfNumTrackCut", {0, 3000.}, "NTrack range: {min, max}"};
+  Configurable<std::vector<float>> cfOccupancyCut{"cfOccupancyCut", {0, 6000.}, "Occupancy range: {min, max}"};
   Configurable<std::vector<float>> cfCentABCorrCut{"cfCentABCorrCut", {1.4, 300., 1.4, 300.}, "parameters of limits in FT0C vs. FT0M centrality 2D histograms, cx+d < y < ax+b: {a,b,c,d}"};
   Configurable<std::vector<float>> cfCentACCorrCut{"cfCentACCorrCut", {1.4, 300., 1.4, 300.}, "parameters of limits in FT0C vs. FT0M centrality 2D histograms, cx+d < y < ax+b: {a,b,c,d}"};
   Configurable<std::vector<float>> cfCentBCCorrCut{"cfCentBCCorrCut", {1.4, 300., 1.4, 300.}, "parameters of limits in FT0C vs. FT0M centrality 2D histograms, cx+d < y < ax+b: {a,b,c,d}"};
@@ -302,6 +304,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     bool fCentCutSwitch = true;
     bool fNumContribCutSwitch = true;
     bool fNumTrackCutSwitch = true;
+    bool fOccupancyCutSwitch = true;
     bool fCentCorrCutSwitch = true;
     bool fMultCorrCutSwitch = true;
     bool fNumContribMultCorrCutSwitch = true;
@@ -318,6 +321,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     std::vector<float> fCentCut = {10., 20.};
     std::vector<float> fNumContribCut = {0, 3000.};
     std::vector<float> fNumTrackCut = {0, 350.};
+    std::vector<float> fOccupancyCut = {0, 6000.};
     std::vector<std::vector<std::vector<float>>> fCentAllCorrCut = {{{0., 0., 0., 0.}, {0., 0., 0., 0.}, {0., 0., 0., 0.}}, {{0., 0., 0., 0.}, {0., 0., 0., 0.}, {0., 0., 0., 0.}}, {{0., 0., 0., 0.}, {0., 0., 0., 0.}, {0., 0., 0., 0.}}};
     std::vector<std::vector<std::vector<float>>> fMultAllCorrCut = {{{0., 0., 0., 0.}, {0., 0., 0., 0.}, {0., 0., 0., 0.}}, {{0., 0., 0., 0.}, {0., 0., 0., 0.}, {0., 0., 0., 0.}}, {{0., 0., 0., 0.}, {0., 0., 0., 0.}, {0., 0., 0., 0.}}};
     std::vector<float> fNumContribMultCorrCut = {0.024, -600., 0.035, 100.};
@@ -455,6 +459,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     bool bSel8Cut = true;
     bool bCentCut = true;
     bool bNumContribCut = true;
+    bool bNumOccupancyCut = true;
     bool bCentCorrCut = true;
     bool bMultCorrCut = true;
     bool bNumContribMultCorrCut = true;
@@ -481,6 +486,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       // *) NumContribCut
       bNumContribCut = ebye.fNumContrib < tc.fNumContribCut[1] &&
                        ebye.fNumContrib > tc.fNumContribCut[0];
+      // *) NumOccupancyCut
+      bNumOccupancyCut = collision.trackOccupancyInTimeRange() < tc.fOccupancyCut[1] &&
+                         collision.trackOccupancyInTimeRange() > tc.fOccupancyCut[0];
       // *) CentCorrCut
       float iCent = 0.;
       float jCent = 0.;
@@ -537,6 +545,9 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
     if (tc.fNumContribCutSwitch) {
       pass &= bNumContribCut;
+    }
+    if (tc.fOccupancyCutSwitch) {
+      pass &= bNumOccupancyCut;
     }
     if (tc.fCentCorrCutSwitch) {
       pass &= bCentCorrCut;
@@ -1405,11 +1416,13 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
               double diffPtMax = (tc.fPtBins[2] - tc.fPtBins[1]) / tc.fPtBins[0];
               if (diffPt < diffPtMax) {
                 wt.fPtMCByRunMap.at(ebye.fRunNumber)->Fill(mcparticle.pt());
-              } else {
-                if (tc.fPrintSwitch) {
-                  LOGF(info, "|RecPt - SimPt| = %e > %e", diffPt, diffPtMax);
-                }
               }
+              // else {
+              //   if (tc.fPrintSwitch) {
+              //     LOGF(info, "|RecPt - SimPt| = %e > %e", diffPt, diffPtMax);
+              //   }
+              // }
+
               // Fill MC particle histograms after cut:
               pc.fParticleHistograms[ePt][eSim][eAfter]->Fill(mcparticle.pt());
               pc.fParticleHistograms[ePhi][eSim][eAfter]->Fill(mcparticle.phi());
@@ -1423,6 +1436,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     ev.fEventHistograms[eNumTrack][eRec][eBefore]->Fill(nTracksBefore);
     ev.fEventHistograms[eNumTrack][eRec][eAfter]->Fill(nTracksAfter);
     bool bNumTrackCut = nTracksAfter > tc.fNumTrackCut[0] && nTracksAfter < tc.fNumTrackCut[1];
+    // LOGF(info, "nTracksAfter = %d", nTracksAfter);
 
     // 2-p correlations:
     for (int i = 0; i < NumTwoPCorrBins; i++) {
@@ -1560,7 +1574,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       double wFourRecursionAfter = mccRecursion(4, harmonicsFourDen, eAfter).Re();
       ebye.fFourParticleCorrelationEbye[eAfter][i] = fourRecursionAfter.Re();
 
-      // LOGF(info, "nTracksAfter = %d", nTracksAfter);
       if (nTracksAfter > k - 1 && wFourRecursionAfter > 0. && bNumTrackCut) {
         // Fill vn^2vm^2 profile and histogram:
         mc.fFourParticleCorrelationProfiles[eAfter]->Fill(mc.fFourParticleCorrelationProfiles[eAfter]->GetXaxis()->GetBinCenter(i + 1), ebye.fFourParticleCorrelationEbye[eAfter][i], wFourRecursionAfter);
@@ -1971,6 +1984,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     tc.fCentCutSwitch = cfCentCutSwitch;
     tc.fNumContribCutSwitch = cfNumContribCutSwitch;
     tc.fNumTrackCutSwitch = cfNumTrackCutSwitch;
+    tc.fOccupancyCutSwitch = cfOccupancyCutSwitch;
     tc.fCentCorrCutSwitch = cfCentCorrCutSwitch;
     tc.fMultCorrCutSwitch = cfMultCorrCutSwitch;
     tc.fNumContribMultCorrCutSwitch = cfNumContribMultCorrCutSwitch;
@@ -1987,6 +2001,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     tc.fCentCut = cfCentCut;
     tc.fNumContribCut = cfNumContribCut;
     tc.fNumTrackCut = cfNumTrackCut;
+    tc.fOccupancyCut = cfOccupancyCut;
     tc.fCentAllCorrCut[0][1] = cfCentABCorrCut;
     tc.fCentAllCorrCut[0][2] = cfCentACCorrCut;
     tc.fCentAllCorrCut[1][2] = cfCentBCCorrCut;

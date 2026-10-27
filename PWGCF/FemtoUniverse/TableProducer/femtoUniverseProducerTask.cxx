@@ -382,7 +382,6 @@ struct FemtoUniverseProducerTask {
     Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle (track) momentum > Confmom"};
   } ConfPIDBitmask;
 
-  HfHelper hfHelper;
   bool isKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < ConfPhiSelection.confMomKaon03) { // 0.0-0.3
@@ -829,17 +828,17 @@ struct FemtoUniverseProducerTask {
                        -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
                        -999.,
-                       hfHelper.yD0(particle), // getter transRadius
-                       particle.mlProbD0()[0], // getter decayVtxX
-                       particle.mlProbD0()[1], // getter decayVtxY
-                       particle.mlProbD0()[2], // getter decayVtxZ
-                       -999.);                 // Additional info for D0/D0bar
+                       HfHelper::yD0(particle), // getter transRadius
+                       particle.mlProbD0()[0],  // getter decayVtxX
+                       particle.mlProbD0()[1],  // getter decayVtxY
+                       particle.mlProbD0()[2],  // getter decayVtxZ
+                       -999.);                  // Additional info for D0/D0bar
     } else if constexpr (isD0barML) {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
                        -999.,
-                       hfHelper.yD0(particle),    // getter transRadius
+                       HfHelper::yD0(particle),   // getter transRadius
                        particle.mlProbD0bar()[0], // getter decayVtxX
                        particle.mlProbD0bar()[1], // getter decayVtxY
                        particle.mlProbD0bar()[2], // getter decayVtxZ
@@ -869,17 +868,17 @@ struct FemtoUniverseProducerTask {
                        -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
                        -999.,
-                       hfHelper.yD0(particle), // getter transRadius
-                       particle.mlProbD0()[0], // getter decayVtxX
-                       particle.mlProbD0()[1], // getter decayVtxY
-                       particle.mlProbD0()[2], // getter decayVtxZ
-                       -999.);                 // Additional info for D0/D0bar
+                       HfHelper::yD0(particle), // getter transRadius
+                       particle.mlProbD0()[0],  // getter decayVtxX
+                       particle.mlProbD0()[1],  // getter decayVtxY
+                       particle.mlProbD0()[2],  // getter decayVtxZ
+                       -999.);                  // Additional info for D0/D0bar
     } else if constexpr (isD0barML) {
       outputDebugParts(particle.flagMcMatchRec(), -999., -999., -999., -999., -999., -999., -999., -999.,
                        originMcReco, -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
                        -999.,
-                       hfHelper.yD0(particle),    // getter transRadius
+                       HfHelper::yD0(particle),   // getter transRadius
                        particle.mlProbD0bar()[0], // getter decayVtxX
                        particle.mlProbD0bar()[1], // getter decayVtxY
                        particle.mlProbD0bar()[2], // getter decayVtxZ
@@ -1719,7 +1718,7 @@ struct FemtoUniverseProducerTask {
         continue;
       }
 
-      if (ConfD0Selection.useYCutD0Cand && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.yD0CandMax) {
+      if (ConfD0Selection.useYCutD0Cand && std::abs(HfHelper::yD0(hfCand)) > ConfD0Selection.yD0CandMax) {
         continue;
       }
 
@@ -1737,18 +1736,18 @@ struct FemtoUniverseProducerTask {
       auto negtrack = hfCand.template prong1_as<TrackType>();
 
       if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
-        invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
+        invMassD0 = HfHelper::invMassD0ToPiK(hfCand);
+        invMassD0bar = -HfHelper::invMassD0barToKPi(hfCand);
         isD0D0bar = true;
         daughFlag = 1;
       } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
-        invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+        invMassD0 = -HfHelper::invMassD0ToPiK(hfCand);
+        invMassD0bar = HfHelper::invMassD0barToKPi(hfCand);
         isD0D0bar = true;
         daughFlag = -1;
       } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
-        invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+        invMassD0 = HfHelper::invMassD0ToPiK(hfCand);
+        invMassD0bar = HfHelper::invMassD0barToKPi(hfCand);
         if (ConfD0Selection.storeD0D0barDoubleMassHypo) {
           isD0D0bar = true;
           daughFlag = 0;
@@ -1842,7 +1841,7 @@ struct FemtoUniverseProducerTask {
         continue;
       }
 
-      if (ConfD0Selection.useYCutD0Cand && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.yD0CandMax) {
+      if (ConfD0Selection.useYCutD0Cand && std::abs(HfHelper::yD0(hfCand)) > ConfD0Selection.yD0CandMax) {
         continue;
       }
 
@@ -1859,18 +1858,18 @@ struct FemtoUniverseProducerTask {
       auto negtrack = hfCand.template prong1_as<TrackType>();
 
       if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
-        invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
+        invMassD0 = HfHelper::invMassD0ToPiK(hfCand);
+        invMassD0bar = -HfHelper::invMassD0barToKPi(hfCand);
         isD0D0bar = true;
         daughFlag = 1;
       } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
-        invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+        invMassD0 = -HfHelper::invMassD0ToPiK(hfCand);
+        invMassD0bar = HfHelper::invMassD0barToKPi(hfCand);
         isD0D0bar = true;
         daughFlag = -1;
       } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
-        invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+        invMassD0 = HfHelper::invMassD0ToPiK(hfCand);
+        invMassD0bar = HfHelper::invMassD0barToKPi(hfCand);
         if (ConfD0Selection.storeD0D0barDoubleMassHypo) {
           isD0D0bar = true;
           daughFlag = 0;
@@ -1974,7 +1973,7 @@ struct FemtoUniverseProducerTask {
         }
       }
 
-      if (ConfD0Selection.useYCutD0Cand && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.yD0CandMax) {
+      if (ConfD0Selection.useYCutD0Cand && std::abs(HfHelper::yD0(hfCand)) > ConfD0Selection.yD0CandMax) {
         continue;
       }
 
@@ -2000,18 +1999,18 @@ struct FemtoUniverseProducerTask {
         childIDs[1] = 0;
 
         if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
-          invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-          invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
+          invMassD0 = HfHelper::invMassD0ToPiK(hfCand);
+          invMassD0bar = -HfHelper::invMassD0barToKPi(hfCand);
           isD0D0bar = true;
           daughFlag = 1;
         } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
-          invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
-          invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+          invMassD0 = -HfHelper::invMassD0ToPiK(hfCand);
+          invMassD0bar = HfHelper::invMassD0barToKPi(hfCand);
           isD0D0bar = true;
           daughFlag = -1;
         } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
-          invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-          invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+          invMassD0 = HfHelper::invMassD0ToPiK(hfCand);
+          invMassD0bar = HfHelper::invMassD0barToKPi(hfCand);
           if (ConfD0Selection.storeD0D0barDoubleMassHypo) {
             isD0D0bar = true;
             daughFlag = 0;

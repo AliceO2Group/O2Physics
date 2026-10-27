@@ -164,8 +164,15 @@ std::map<PhotonHist, std::vector<o2::framework::AxisSpec>> makePhotonQaHistSpecM
 #undef PHOTON_HIST_QA_MAP
 
 constexpr char PrefixPhotonQa[] = "PhotonQA/";
+// used only by the standalone QA task
 constexpr char PrefixTwoPhotonResonanceDau1Qa[] = "TwoPhotonResonanceDau1Qa/";
 constexpr char PrefixTwoPhotonResonanceDau2Qa[] = "TwoPhotonResonanceDau2Qa/";
+// same-event siblings, used only by a pair builder's same-event resonance manager
+constexpr char PrefixTwoPhotonResonanceDau1Se[] = "TwoPhotonResonanceDau1Se/";
+constexpr char PrefixTwoPhotonResonanceDau2Se[] = "TwoPhotonResonanceDau2Se/";
+// mixed-event siblings, used only by a pair builder's mixed-event resonance manager
+constexpr char PrefixTwoPhotonResonanceDau1Me[] = "TwoPhotonResonanceDau1Me/";
+constexpr char PrefixTwoPhotonResonanceDau2Me[] = "TwoPhotonResonanceDau2Me/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";

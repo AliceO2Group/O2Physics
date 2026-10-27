@@ -84,9 +84,12 @@ struct FemtoTripletMcParticleMcParticleMcParticle {
   closetripletrejection::ConfCtrMcParticleMcParticleMcParticle confCtr;
 
   tripletbuilder::TripletMcParticleMcParticleMcParticleBuilder<
-    mcparticlehistmanager::PrefixMcParticle1,
-    mcparticlehistmanager::PrefixMcParticle2,
-    mcparticlehistmanager::PrefixMcParticle3,
+    mcparticlehistmanager::PrefixMcParticle1Se,
+    mcparticlehistmanager::PrefixMcParticle2Se,
+    mcparticlehistmanager::PrefixMcParticle3Se,
+    mcparticlehistmanager::PrefixMcParticle1Me,
+    mcparticlehistmanager::PrefixMcParticle2Me,
+    mcparticlehistmanager::PrefixMcParticle3Me,
     triplethistmanager::PrefixMcParticleMcParticleMcParticleSe,
     triplethistmanager::PrefixMcParticleMcParticleMcParticleMe,
     closetripletrejection::PrefixMcParticle1McParticle2Se,
