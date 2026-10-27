@@ -125,7 +125,7 @@ DECLARE_SOA_COLUMN(ScorePionDzero, scorePionDzero, float); //! ML score, pion-fr
 DECLARE_SOA_COLUMN(ScoreKaonDzero, scoreKaonDzero, float); //! ML score, kaon-from-D0 class
 DECLARE_SOA_COLUMN(IsSelPionDzero, isSelPionDzero, bool);  //! passes the D0 pion-score threshold
 DECLARE_SOA_COLUMN(IsSelKaonDzero, isSelKaonDzero, bool);  //! passes the D0 kaon-score threshold
-                                                          // D+ -> K pi pi model
+                                                           // D+ -> K pi pi model
 DECLARE_SOA_COLUMN(ScoreBkgDplus, scoreBkgDplus, float);   //! ML score, background class
 DECLARE_SOA_COLUMN(ScorePionDplus, scorePionDplus, float); //! ML score, pion-from-D+ class
 DECLARE_SOA_COLUMN(ScoreKaonDplus, scoreKaonDplus, float); //! ML score, kaon-from-D+ class
