@@ -310,9 +310,11 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
-  Configurable<bool> cfgUseRCT{"cfgUseRCT", false, "Apply RCT quality selection"};
-  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT", "RCT selection label"};
-  Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Also check ZDC quality"};
+  o2::framework::Configurable<bool> cfgUseRCT{"cfgUseRCT", false, "Apply RCT quality selection"};
+  o2::framework::Configurable<std::string> cfgRCTPath{"cfgRCTPath", "RCT/Flags/RunFlags", "CCDB path to the RCT run flags"};
+  o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT", "RCT selection label"};
+  o2::framework::Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Also check ZDC quality"};
+  o2::framework::Configurable<std::string> cfgRCTPassName{"cfgRCTPassName", "", "Reconstruction pass; leave empty for run-only lookup"};
 
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
@@ -389,10 +391,14 @@ struct AnalysisEventSelection {
     fCCDBApi.init(fConfigCcdbUrl.value);
 
     if (cfgUseRCT.value) {
+      if (cfgRCTLabel.value != "CBT" && cfgRCTLabel.value != "CBT_hadronPID" && cfgRCTLabel.value != "CBT_electronPID" && cfgRCTLabel.value != "CBT_calo" && cfgRCTLabel.value != "CBT_muon" && cfgRCTLabel.value != "CBT_muon_glo") {
+        LOGF(fatal, "RCT Label \"%s\" is unknown.", cfgRCTLabel.value.c_str());
+      }
+
       rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value);
 
       if (!rctChecker.any()) {
-        LOGF(fatal, "Empty RCT mask: check cfgRCTLabel");
+        LOGF(fatal, "Empty RCT mask: check cfgRCTLabel.");
       }
     }
   }
@@ -401,12 +407,21 @@ struct AnalysisEventSelection {
   {
     std::map<std::string, std::string> metadata{{"run", std::to_string(run)}};
 
-    auto* flags = fCCDB->getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", timestamp, metadata);
-    if (flags == nullptr || flags->empty()) {
-      LOGF(fatal, "Missing or empty RCT flags for run " + std::to_string(run));
+    LOG(info) << "Requesting " << cfgRCTPath.value << " run=" << run << " timestamp=" << timestamp;
+
+    if (!cfgRCTPassName.value.empty()) {
+      metadata["passName"] = cfgRCTPassName.value;
     }
 
-    LOG(info) << "Requesting RCT/Flags/RunFlags" << " run=" << run << " timestamp=" << timestamp;
+    auto* flags = fCCDB->getSpecific<std::map<uint64_t, uint32_t>>(cfgRCTPath.value, timestamp, metadata);
+    if (flags == nullptr && !cfgRCTPassName.value.empty()) {
+      metadata.erase("passName");
+      flags = fCCDB->getSpecific<std::map<uint64_t, uint32_t>>(cfgRCTPath.value, timestamp, metadata);
+    }
+
+    if (flags == nullptr || flags->empty()) {
+      LOGF(fatal, "Missing or empty RCT flags for run %d.", run);
+    }
 
     rctFlags = *flags;
     rctRun = run;
