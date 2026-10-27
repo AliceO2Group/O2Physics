@@ -61,7 +61,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -126,7 +125,7 @@ DECLARE_SOA_COLUMN(ScorePionDzero, scorePionDzero, float); //! ML score, pion-fr
 DECLARE_SOA_COLUMN(ScoreKaonDzero, scoreKaonDzero, float); //! ML score, kaon-from-D0 class
 DECLARE_SOA_COLUMN(IsSelPionDzero, isSelPionDzero, bool);  //! passes the D0 pion-score threshold
 DECLARE_SOA_COLUMN(IsSelKaonDzero, isSelKaonDzero, bool);  //! passes the D0 kaon-score threshold
-  // D+ -> K pi pi model
+                                                          // D+ -> K pi pi model
 DECLARE_SOA_COLUMN(ScoreBkgDplus, scoreBkgDplus, float);   //! ML score, background class
 DECLARE_SOA_COLUMN(ScorePionDplus, scorePionDplus, float); //! ML score, pion-from-D+ class
 DECLARE_SOA_COLUMN(ScoreKaonDplus, scoreKaonDplus, float); //! ML score, kaon-from-D+ class
@@ -145,8 +144,8 @@ DECLARE_SOA_COLUMN(ScoreKaonDstar, scoreKaonDstar, float); //! ML score, kaon-fr
 DECLARE_SOA_COLUMN(IsSelPionDstar, isSelPionDstar, bool);  //! passes the D* pion-score threshold
 DECLARE_SOA_COLUMN(IsSelKaonDstar, isSelKaonDstar, bool);  //! passes the D* kaon-score threshold
 // common
-DECLARE_SOA_COLUMN(IsPositive, isPositive, bool);  //! charge sign of the track
-DECLARE_SOA_COLUMN(IsSelAny, isSelAny, bool);      //! passes at least one of the four selections
+DECLARE_SOA_COLUMN(IsPositive, isPositive, bool); //! charge sign of the track
+DECLARE_SOA_COLUMN(IsSelAny, isSelAny, bool);     //! passes at least one of the four selections
 } // namespace hf_skim_track_sel
 
 DECLARE_SOA_TABLE(HfSkimTrackSels, "AOD", "HFSKIMTRKSEL", //! Track-level ML selection, aligned with aod::TrackAssoc
@@ -176,15 +175,15 @@ DECLARE_SOA_TABLE(HfSkimTrackSels, "AOD", "HFSKIMTRKSEL", //! Track-level ML sel
 namespace hf_skim_track_sel_mask
 {
 DECLARE_SOA_COLUMN(CollIdx, collIdx, int);      //! global index of the collision the association refers to
-DECLARE_SOA_COLUMN(SelMask, selMask, uint16_t);  //! bit0 -> pi(D0)
-                                                 //! bit1 -> K(D0)
-                                                 //! bit2 -> pi(D+)
-                                                 //! bit3 -> K(D+)
-                                                 //! bit4 -> pi(Ds)
-                                                 //! bit5 -> K(Ds)
-                                                 //! bit6 -> pi(D*)
-                                                 //! bit7 -> K(D*)
-                                                 //! bit8 -> positive charge
+DECLARE_SOA_COLUMN(SelMask, selMask, uint16_t); //! bit0 -> pi(D0)
+                                                //! bit1 -> K(D0)
+                                                //! bit2 -> pi(D+)
+                                                //! bit3 -> K(D+)
+                                                //! bit4 -> pi(Ds)
+                                                //! bit5 -> K(Ds)
+                                                //! bit6 -> pi(D*)
+                                                //! bit7 -> K(D*)
+                                                //! bit8 -> positive charge
 } // namespace hf_skim_track_sel_mask
 
 /// One row per *selected* (track, collision) association. This is the smallest object from which
@@ -198,32 +197,32 @@ DECLARE_SOA_TABLE(HfSkimTrackMasks, "AOD", "HFSKIMTRKMASK", //! Compact dump of 
 namespace hf_skim_track_train
 {
 // features
-DECLARE_SOA_COLUMN(Pt, pt, float);                                                     //!
-DECLARE_SOA_COLUMN(Eta, eta, float);                                                   //!
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                                               //!
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                                                 //!
-DECLARE_SOA_COLUMN(SigmaDcaXY, sigmaDcaXY, float);                                     //!
-DECLARE_SOA_COLUMN(SigmaDcaZ, sigmaDcaZ, float);                                       //!
-DECLARE_SOA_COLUMN(NormDcaXY, normDcaXY, float);                                       //!
-DECLARE_SOA_COLUMN(NormDcaZ, normDcaZ, float);                                         //!
-DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);                                       //!
-DECLARE_SOA_COLUMN(Tgl, tgl, float);                                                   //!
-DECLARE_SOA_COLUMN(Sign, sign, float);                                                 //!
-DECLARE_SOA_COLUMN(IsPvContributor, isPvContributor, float);                           //!
-DECLARE_SOA_COLUMN(ItsNCls, itsNCls, float);                                           //!
-DECLARE_SOA_COLUMN(ItsNClsInnerBarrel, itsNClsInnerBarrel, float);                     //!
-DECLARE_SOA_COLUMN(ItsChi2NCl, itsChi2NCl, float);                                     //!
-DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, float);                                 //!
-DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, float);                     //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                       //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //!
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                                                 //!
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                                                   //!
+DECLARE_SOA_COLUMN(SigmaDcaXY, sigmaDcaXY, float);                                       //!
+DECLARE_SOA_COLUMN(SigmaDcaZ, sigmaDcaZ, float);                                         //!
+DECLARE_SOA_COLUMN(NormDcaXY, normDcaXY, float);                                         //!
+DECLARE_SOA_COLUMN(NormDcaZ, normDcaZ, float);                                           //!
+DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);                                         //!
+DECLARE_SOA_COLUMN(Tgl, tgl, float);                                                     //!
+DECLARE_SOA_COLUMN(Sign, sign, float);                                                   //!
+DECLARE_SOA_COLUMN(IsPvContributor, isPvContributor, float);                             //!
+DECLARE_SOA_COLUMN(ItsNCls, itsNCls, float);                                             //!
+DECLARE_SOA_COLUMN(ItsNClsInnerBarrel, itsNClsInnerBarrel, float);                       //!
+DECLARE_SOA_COLUMN(ItsChi2NCl, itsChi2NCl, float);                                       //!
+DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, float);                                   //!
+DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, float);                       //!
 DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float); //!
-DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float);                                     //!
-DECLARE_SOA_COLUMN(TpcFractionSharedCls, tpcFractionSharedCls, float);                 //!
-DECLARE_SOA_COLUMN(TpcNSigmaPi, tpcNSigmaPi, float);                                   //!
-DECLARE_SOA_COLUMN(TpcNSigmaKa, tpcNSigmaKa, float);                                   //!
-DECLARE_SOA_COLUMN(Centrality, centrality, float);                                     //!
+DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float);                                       //!
+DECLARE_SOA_COLUMN(TpcFractionSharedCls, tpcFractionSharedCls, float);                   //!
+DECLARE_SOA_COLUMN(TpcNSigmaPi, tpcNSigmaPi, float);                                     //!
+DECLARE_SOA_COLUMN(TpcNSigmaKa, tpcNSigmaKa, float);                                     //!
+DECLARE_SOA_COLUMN(Centrality, centrality, float);                                       //!
 // labels and auxiliary information, not meant to be used as features
-DECLARE_SOA_COLUMN(TrackIndex, trackIndex, int64_t);                     //! global index of the track: the same track can be associated to several collisions, and therefore appear more than once, so the train/test split has to group by it
-DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);                            //! MC label quality mask (bit 15 = fake track)
+DECLARE_SOA_COLUMN(TrackIndex, trackIndex, int64_t);                      //! global index of the track: the same track can be associated to several collisions, and therefore appear more than once, so the train/test split has to group by it
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);                             //! MC label quality mask (bit 15 = fake track)
 DECLARE_SOA_COLUMN(HasCharmBeautyAncestor, hasCharmBeautyAncestor, bool); //! any charm/beauty hadron in the ancestry
 // Selection outcomes
 DECLARE_SOA_COLUMN(Label, label, int8_t);       //! D+ model: -1 = not usable, 0 = bkg, 1 = pion from D+, 2 = kaon from D+
@@ -291,7 +290,7 @@ constexpr int NPionsDstarToD0Pi = 1;
 /// Resonant sub-channels recorded next to the training label, so that the signal definition can be
 /// narrowed offline without re-running the workflow.
 enum Channels : int {
-  kNone = -1,        ///< no mother found, or mother not in the list of interest
+  kNone = -1, ///< no mother found, or mother not in the list of interest
   kDzeroDirect,
   kDplusDirect,
   kDplusKstar,
@@ -408,11 +407,11 @@ enum HfAncestryWalkOutcome : int {
 /// Counter bins of hf-dplus-combinatorics.
 enum CounterCombinatorics : int {
   CountCollisions = 0,
-  CountTriplets,      ///< triplets whose hypothesis mask is non-empty, i.e. reaching the preselection
-  CountTripletsPresel,///< triplets passing the mass/pT preselection, i.e. reaching the 3-prong fitter
+  CountTriplets,       ///< triplets whose hypothesis mask is non-empty, i.e. reaching the preselection
+  CountTripletsPresel, ///< triplets passing the mass/pT preselection, i.e. reaching the 3-prong fitter
   CountFit2Prong,
   CountFit3Prong,
-  CountRows,          ///< rows written to aod::Hf3Prongs
+  CountRows, ///< rows written to aod::Hf3Prongs
   CountRowsDplus,
   CountRowsDs,
   CountRowsBoth,
@@ -1505,8 +1504,8 @@ struct HfDplusTrackSelMl {
             int pdgMother{-1};
             int8_t isPrompt{-1}, channel{Channels::kNone};
             const int8_t label = getTrainingLabel(
-                          track, mcParticles, pdgMother, keepIfBackground,
-                          pt, isPrompt, channel);
+              track, mcParticles, pdgMother, keepIfBackground,
+              pt, isPrompt, channel);
 
             if (label < 0) { // usable for neither model
               continue;

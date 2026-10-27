@@ -394,24 +394,24 @@ struct HfCandidateCreatorDstar {
           massDstar = RecoDecay::m(std::array{std::array{pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2]},
                                               std::array{pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2]},
                                               std::array{pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]}},
-                                              std::array{constants::physics::MassPiPlus,
-                                                         constants::physics::MassPiPlus,
-                                                         constants::physics::MassKPlus});
+                                   std::array{constants::physics::MassPiPlus,
+                                              constants::physics::MassPiPlus,
+                                              constants::physics::MassKPlus});
           massD0 = RecoDecay::m(std::array{std::array{pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2]},
                                            std::array{pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]}},
-                                           std::array{constants::physics::MassPiPlus,
-                                                      constants::physics::MassKPlus});
+                                std::array{constants::physics::MassPiPlus,
+                                           constants::physics::MassKPlus});
         } else {
           massDstar = RecoDecay::m(std::array{std::array{pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2]},
                                               std::array{pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2]},
                                               std::array{pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]}},
-                                              std::array{constants::physics::MassPiPlus,
-                                                         constants::physics::MassKPlus,
-                                                         constants::physics::MassPiPlus});
+                                   std::array{constants::physics::MassPiPlus,
+                                              constants::physics::MassKPlus,
+                                              constants::physics::MassPiPlus});
           massD0 = RecoDecay::m(std::array{std::array{pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2]},
                                            std::array{pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]}},
-                                           std::array{constants::physics::MassKPlus,
-                                                      constants::physics::MassPiPlus});
+                                std::array{constants::physics::MassKPlus,
+                                           constants::physics::MassPiPlus});
         }
         auto deltaMass = std::abs(massDstar - massD0);
         registry.fill(HIST("QA/hDeltaMassDStar"), deltaMass);
