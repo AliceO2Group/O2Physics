@@ -337,12 +337,22 @@ struct HStrangeCorrelation {
     //                       reconstruction efficiency, Nch^gen vs Nch^reco and
     //                       Nch^reco vs FT0M (percentile and amplitude) responses,
     //                       see runEventRecoEfficiencyStudy
+    //   doPVQualityStudy    PairLossK0/PVQuality: best-collision PV position and
+    //                       reco - MC residuals vs multNTracksPVeta1, and the
+    //                       MC-collision reconstruction and selection stages vs
+    //                       Nch^gen, split by the truth h-K0 content of the event,
+    //                       see runPVQualityStudy
     Configurable<bool> doStageDiagnostics{"doStageDiagnostics", true, "part 1: fill the PairLossK0 truth-pair reconstruction ladder and its diagnostics"};
     Configurable<bool> doRecComparison{"doRecComparison", false, "part 2: fill the PairLossK0/Comparison cumulative Rec/Truth/Gen/Final ladder (runs the exact reconstructed path internally)"};
     Configurable<bool> recComparisonBestCollisionOnly{"recComparisonBestCollisionOnly", false, "part 2: run the Rec path of PairLossK0/Comparison only in the best reconstructed collision (most PV contributors) of each MC collision, the one the Gen, Truth and Final stages are selected on. Set false to run it in every reconstructed collision, as the data path does"};
     Configurable<bool> doGenLevelStudy{"doGenLevelStudy", false, "part 3: fill the PairLossK0/GenStudy generated-vs-reconstructed split, using generator-level event selection only"};
     Configurable<bool> doEventRecoEfficiencyStudy{"doEventRecoEfficiencyStudy", false, "fill PairLossK0/EventRecoEfficiency: Nch^gen (charged primaries, |eta| < 1) of all, reconstructed and selected MC collisions, Nch^gen vs multNTracksPVeta1 and multNTracksPVeta1 vs FT0M percentile and amplitude"};
     Configurable<bool> nchGenResponseBestCollisionOnly{"nchGenResponseBestCollisionOnly", false, "fill PairLossK0/EventRecoEfficiency/hNchGenVsNTracksPVeta1 with the best reconstructed collision (most PV contributors) of each MC collision only, instead of with every reconstructed collision; the multNTracksPVeta1 vs FT0M responses stay per reconstructed collision"};
+    Configurable<bool> doPVQualityStudy{"doPVQualityStudy", false, "fill PairLossK0/PVQuality: best-collision PV x, y and reco - MC residuals vs multNTracksPVeta1, and the MC-collision reconstruction and selection stages vs Nch^gen, split by the truth h-K0 content of the event"};
+    // Coarse on purpose: the PV histograms are dense THnF with a fine position axis
+    ConfigurableAxis axisPVQualityNTracks{"axisPVQualityNTracks", {VARIABLE_WIDTH, -0.5f, 0.5f, 1.5f, 2.5f, 3.5f, 4.5f, 5.5f, 6.5f, 8.5f, 10.5f, 12.5f, 15.5f, 20.5f, 25.5f, 30.5f, 40.5f, 50.5f, 70.5f, 100.5f, 150.5f}, "multNTracksPVeta1 classes of PairLossK0/PVQuality"};
+    ConfigurableAxis axisPVPosition{"axisPVPosition", {400, -0.2f, 0.2f}, "reconstructed PV x and y (cm) of PairLossK0/PVQuality"};
+    ConfigurableAxis axisPVResidual{"axisPVResidual", {200, -0.1f, 0.1f}, "reconstructed minus generated PV x, y and z (cm) of PairLossK0/PVQuality"};
     Configurable<bool> applyINELSelectionAtGenLevel{"applyINELSelectionAtGenLevel", false, "part 2 (pp only): replace the reconstructed INEL cuts by Nch^gen >= 1 of the MC collision in the Rec, Gen, Truth and Final stages (selectINELgtN is ignored) and fill only PairLossK0/Comparison/NchGen (Rec and Gen vs Nch^gen, integrated over vertex z and multiplicity); requires doRecComparison and applyNewMCSelection"};
     ConfigurableAxis axisComparisonNchGen{"axisComparisonNchGen", {VARIABLE_WIDTH, 0.5f, 4.5f, 9.5f, 19.5f, 1000.5f}, "Nch^gen classes (charged primaries in |eta| < 1) of PairLossK0/Comparison/NchGen"};
     // MC-only event quality cut on the Nch^gen vs multNTracksPVeta1 response
@@ -669,6 +679,45 @@ struct HStrangeCorrelation {
     "|eta truth| > etaSel",
     "pT truth outside trigger axis",
     "Truth charge"};
+
+  // Truth content of an MC collision for PairLossK0/PVQuality. Trigger and K0 follow
+  // the acceptance, primary and leading-trigger requirements of PairLossK0/Comparison/Truth,
+  // and a pair excludes a trigger that is one of the K0 daughters. An MC collision enters
+  // every class it belongs to, so the classes overlap and must not be summed:
+  // HasTrigger, HasPair and K0DaughterPVContributor are subsets of All, NearPair and
+  // AwayPair subsets of HasPair, and one MC collision can be both NearPair and AwayPair.
+  // K0DaughterPVContributor needs the best reconstructed collision, so it is empty at the
+  // first stage of hEventStage.
+  enum PairLossPVQualityClass : int {
+    PairLossPVQualityAll = 0,
+    PairLossPVQualityHasTrigger,
+    PairLossPVQualityHasPair,
+    PairLossPVQualityNearPair,
+    PairLossPVQualityAwayPair,
+    PairLossPVQualityK0DaughterPVContributor,
+    PairLossPVQualityNClasses
+  };
+
+  static constexpr std::array<std::string_view, PairLossPVQualityNClasses> PairLossPVQualityClassNames = {
+    "all",
+    "truth trigger",
+    "truth h-K^{0}_{S} pair",
+    "near-side pair (|#Delta#varphi| < #pi/3)",
+    "away-side pair (|#Delta#varphi - #pi| < #pi/3)",
+    "K^{0}_{S} daughter is a PV contributor"};
+
+  // MC-collision stages of PairLossK0/PVQuality/hEventStage, each a subset of the previous one
+  enum PairLossPVQualityStage : int {
+    PairLossPVQualityStageAll = 0,
+    PairLossPVQualityStageHasRecoColl,
+    PairLossPVQualityStageSelected,
+    PairLossPVQualityNStages
+  };
+
+  static constexpr std::array<std::string_view, PairLossPVQualityNStages> PairLossPVQualityStageNames = {
+    "MC collision",
+    "has reconstructed collision",
+    "best collision selected"};
 
   struct PairLossV0Info {
     int64_t globalIndex = -1;
@@ -2960,6 +3009,52 @@ struct HStrangeCorrelation {
       }
     }
 
+    if (doprocessPairLossK0MC && pairLossK0Configurations.doPVQualityStudy) {
+      // One entry per MC collision with |vz_gen| <= zVertexCut, in every truth-content
+      // class it belongs to (PairLossPVQualityClass): the classes overlap.
+      // hEventStage: stages nested as in PairLossK0/EventRecoEfficiency, so
+      // HasRecoColl/All and Selected/HasRecoColl per class give whether events with a
+      // trigger and a K0 lose their PV, or have it rejected, more often.
+      // hPos*: the data-like check -- the beam spot is common to all collisions, so a
+      // broadening or tail of the best-collision x and y towards low multNTracksPVeta1
+      // is a reconstruction effect. hRes*: the same with the generated vertex
+      // subtracted. Selection bin 0 holds every best collision, bin 1 only those passing
+      // the event selection of PairLossK0/Comparison, so bin 1 is a subset of bin 0.
+      const AxisSpec axisPVQualityClass{PairLossPVQualityNClasses, -0.5, static_cast<double>(PairLossPVQualityNClasses) - 0.5, "truth content of the MC collision"};
+      const AxisSpec axisPVQualityStage{PairLossPVQualityNStages, -0.5, static_cast<double>(PairLossPVQualityNStages) - 0.5, "MC-collision stage"};
+      const AxisSpec axisPVQualitySelection{2, -0.5, 1.5, "best collision"};
+      const AxisSpec axisPVQualityNchGen{axesConfigurations.axisNchGen, "#it{N}_{ch}^{gen} (|#eta| < 1)"};
+      const AxisSpec axisPVQualityNTracksPVeta1{pairLossK0Configurations.axisPVQualityNTracks, "multNTracksPVeta1"};
+      const AxisSpec axisPVQualityPosX{pairLossK0Configurations.axisPVPosition, "#it{x}_{PV}^{reco} (cm)"};
+      const AxisSpec axisPVQualityPosY{pairLossK0Configurations.axisPVPosition, "#it{y}_{PV}^{reco} (cm)"};
+      const AxisSpec axisPVQualityResX{pairLossK0Configurations.axisPVResidual, "#it{x}_{PV}^{reco} #minus #it{x}_{PV}^{gen} (cm)"};
+      const AxisSpec axisPVQualityResY{pairLossK0Configurations.axisPVResidual, "#it{y}_{PV}^{reco} #minus #it{y}_{PV}^{gen} (cm)"};
+      const AxisSpec axisPVQualityResZ{pairLossK0Configurations.axisPVResidual, "#it{z}_{PV}^{reco} #minus #it{z}_{PV}^{gen} (cm)"};
+      histos.add("PairLossK0/PVQuality/hEventStage", "MC collisions by truth content and stage", kTH3D, {axisPVQualityClass, axisPVQualityStage, axisPVQualityNchGen});
+      histos.add("PairLossK0/PVQuality/hPosX", "best-collision PV x", kTHnF, {axisPVQualityClass, axisPVQualitySelection, axisPVQualityNTracksPVeta1, axisPVQualityPosX});
+      histos.add("PairLossK0/PVQuality/hPosY", "best-collision PV y", kTHnF, {axisPVQualityClass, axisPVQualitySelection, axisPVQualityNTracksPVeta1, axisPVQualityPosY});
+      histos.add("PairLossK0/PVQuality/hResX", "best-collision PV x residual", kTHnF, {axisPVQualityClass, axisPVQualitySelection, axisPVQualityNTracksPVeta1, axisPVQualityResX});
+      histos.add("PairLossK0/PVQuality/hResY", "best-collision PV y residual", kTHnF, {axisPVQualityClass, axisPVQualitySelection, axisPVQualityNTracksPVeta1, axisPVQualityResY});
+      histos.add("PairLossK0/PVQuality/hResZ", "best-collision PV z residual", kTHnF, {axisPVQualityClass, axisPVQualitySelection, axisPVQualityNTracksPVeta1, axisPVQualityResZ});
+
+      auto eventStage = histos.get<TH3>(HIST("PairLossK0/PVQuality/hEventStage"));
+      for (int i = 0; i < PairLossPVQualityNClasses; ++i) {
+        eventStage->GetXaxis()->SetBinLabel(i + 1, PairLossPVQualityClassNames[i].data());
+      }
+      for (int i = 0; i < PairLossPVQualityNStages; ++i) {
+        eventStage->GetYaxis()->SetBinLabel(i + 1, PairLossPVQualityStageNames[i].data());
+      }
+      for (auto const& pvHistogram : {histos.get<THn>(HIST("PairLossK0/PVQuality/hPosX")), histos.get<THn>(HIST("PairLossK0/PVQuality/hPosY")),
+                                      histos.get<THn>(HIST("PairLossK0/PVQuality/hResX")), histos.get<THn>(HIST("PairLossK0/PVQuality/hResY")),
+                                      histos.get<THn>(HIST("PairLossK0/PVQuality/hResZ"))}) {
+        for (int i = 0; i < PairLossPVQualityNClasses; ++i) {
+          pvHistogram->GetAxis(0)->SetBinLabel(i + 1, PairLossPVQualityClassNames[i].data());
+        }
+        pvHistogram->GetAxis(1)->SetBinLabel(1, "all");
+        pvHistogram->GetAxis(1)->SetBinLabel(2, "event selection");
+      }
+    }
+
     if (doprocessSameEventHV0s && masterConfigurations.doMultEstimatorResponse) {
       // Same histograms and event selection as the multNTracksPVeta1 vs FT0M responses of
       // PairLossK0/EventRecoEfficiency, filled per reconstructed collision in data
@@ -4822,11 +4917,11 @@ struct HStrangeCorrelation {
                            TracksComplete const& tracks)
   {
     // Nch^gen of this MC collision (charged primaries in |eta| < 1), shared by the
-    // event-reconstruction-efficiency study, the generated-level INEL selection and
-    // the Nch^gen vs multNTracksPVeta1 band cut
+    // event-reconstruction-efficiency and PV-quality studies, the generated-level INEL
+    // selection and the Nch^gen vs multNTracksPVeta1 band cut
     const bool applyGenInel = pairLossK0Configurations.applyINELSelectionAtGenLevel;
     const bool applyBandCut = pairLossK0Configurations.applyNchResponseBandCut;
-    const int nChGen = (pairLossK0Configurations.doEventRecoEfficiencyStudy || applyGenInel || applyBandCut) ? countNchGenEta1(mcParticles) : -1;
+    const int nChGen = (pairLossK0Configurations.doEventRecoEfficiencyStudy || pairLossK0Configurations.doPVQualityStudy || applyGenInel || applyBandCut) ? countNchGenEta1(mcParticles) : -1;
 
     // Part 3: a self-contained generator-level study. It deliberately touches no
     // reconstructed quantity in its event selection or in any of its axes: the
@@ -5556,8 +5651,172 @@ struct HStrangeCorrelation {
       }
     };
 
+    // PV quality vs midrapidity multiplicity, split by the truth h-K0 content of the MC
+    // collision (PairLossPVQualityClass). Tests whether PVs built from few tracks are
+    // biased or badly defined, and whether a trigger and a K0 in the event -- whose
+    // displaced daughters can enter the vertex fit -- make it worse: in the PV position
+    // and residuals of the best collision, and in how often that collision is missing
+    // or fails the event selection of PairLossK0/Comparison
+    auto runPVQualityStudy = [&]() {
+      if (std::abs(mcCollision.posZ()) > masterConfigurations.zVertexCut) {
+        return;
+      }
+
+      // Truth triggers and K0s as in PairLossK0/Comparison/Truth: same acceptance,
+      // primary requirements applied before the leading-trigger choice
+      struct PVQualityTrigger {
+        int64_t globalIndex = -1;
+        float pt = 0.0f;
+        float phi = 0.0f;
+      };
+      struct PVQualityK0 {
+        float phi = 0.0f;
+        int64_t positiveDaughterId = -1;
+        int64_t negativeDaughterId = -1;
+      };
+      std::vector<PVQualityTrigger> pvTriggers;
+      std::vector<PVQualityK0> pvK0s;
+      for (auto const& mcParticle : mcParticles) {
+        int sign = 0;
+        if (pairLossTruthTriggerRejection(mcParticle, sign) == PairLossTriggerMatchMatched &&
+            (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary())) {
+          pvTriggers.push_back(PVQualityTrigger{mcParticle.globalIndex(), mcParticle.pt(), mcParticle.phi()});
+        }
+        if (mcParticle.pdgCode() != PDG_t::kK0Short || std::abs(mcParticle.eta()) > etaSel ||
+            mcParticle.pt() < axisRanges[2][0] || mcParticle.pt() > axisRanges[2][1] ||
+            (doAssocPhysicalPrimary && !mcParticle.isPhysicalPrimary())) {
+          continue;
+        }
+        PVQualityK0 pvK0{mcParticle.phi(), -1, -1};
+        for (auto const& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+          if (daughter.pdgCode() == PDG_t::kPiPlus) {
+            pvK0.positiveDaughterId = daughter.globalIndex();
+          } else if (daughter.pdgCode() == -PDG_t::kPiPlus) {
+            pvK0.negativeDaughterId = daughter.globalIndex();
+          }
+        }
+        pvK0s.push_back(pvK0);
+      }
+      if (useTheLeadingParticleAsTrigger && pvTriggers.size() > 1) {
+        const auto leadingTrigger = *std::max_element(pvTriggers.begin(), pvTriggers.end(), [](auto const& lhs, auto const& rhs) { return lhs.pt < rhs.pt; });
+        pvTriggers.assign(1, leadingTrigger);
+      }
+
+      constexpr double PVQualitySideHalfWidth = PI / 3.0;
+      std::array<bool, PairLossPVQualityNClasses> inClass{};
+      inClass[PairLossPVQualityAll] = true;
+      inClass[PairLossPVQualityHasTrigger] = !pvTriggers.empty();
+      for (auto const& trigger : pvTriggers) {
+        for (auto const& k0 : pvK0s) {
+          if (trigger.globalIndex == k0.positiveDaughterId || trigger.globalIndex == k0.negativeDaughterId) {
+            continue;
+          }
+          const double deltaPhi = computeDeltaPhi(trigger.phi, k0.phi);
+          inClass[PairLossPVQualityHasPair] = true;
+          if (std::abs(deltaPhi) < PVQualitySideHalfWidth) {
+            inClass[PairLossPVQualityNearPair] = true;
+          }
+          if (std::abs(deltaPhi - PI) < PVQualitySideHalfWidth) {
+            inClass[PairLossPVQualityAwayPair] = true;
+          }
+        }
+      }
+
+      auto fillEventStage = [&](int stage) {
+        for (int eventClass = 0; eventClass < PairLossPVQualityNClasses; ++eventClass) {
+          if (inClass[eventClass]) {
+            histos.fill(HIST("PairLossK0/PVQuality/hEventStage"), eventClass, stage, nChGen);
+          }
+        }
+      };
+      fillEventStage(PairLossPVQualityStageAll);
+      if (recCollisions.size() == 0) {
+        return;
+      }
+
+      // Best collision: the one with the most PV contributors, as in the Rec comparison
+      int largestNContributors = -1;
+      int64_t bestCollisionId = -1;
+      float bestCollisionVtxX = 0.0f;
+      float bestCollisionVtxY = 0.0f;
+      float bestCollisionVtxZ = 0.0f;
+      int bestCollisionNTracksPVeta1 = -1;
+      bool bestCollisionSelected = false;
+      for (auto const& collision : recCollisions) {
+        if (collision.numContrib() <= largestNContributors) {
+          continue;
+        }
+        largestNContributors = collision.numContrib();
+        bestCollisionId = collision.globalIndex();
+        bestCollisionVtxX = collision.posX();
+        bestCollisionVtxY = collision.posY();
+        bestCollisionVtxZ = collision.posZ();
+        bestCollisionNTracksPVeta1 = collision.multNTracksPVeta1();
+        // same event selection as pairLossEventSelected in runRecComparison
+        bestCollisionSelected = (!pairLossK0Configurations.applyRecoEventSelection ||
+                                 (masterConfigurations.doPPAnalysis ? isCollisionSelected(collision, !applyGenInel) && (!applyGenInel || isGenInelGt0(nChGen))
+                                                                    : isCollisionSelectedPbPb(collision, false))) &&
+                                (!applyBandCut || isInNchResponseBand(nChGen, collision.multNTracksPVeta1()));
+      }
+      if (bestCollisionId < 0) {
+        return;
+      }
+
+      // Direct check of the K0 side of the hypothesis: a daughter of a truth K0 above
+      // was used in the vertex fit of the best collision
+      std::unordered_set<int64_t> pvK0DaughterIds;
+      for (auto const& k0 : pvK0s) {
+        for (const int64_t daughterId : {k0.positiveDaughterId, k0.negativeDaughterId}) {
+          if (daughterId >= 0) {
+            pvK0DaughterIds.insert(daughterId);
+          }
+        }
+      }
+      if (!pvK0DaughterIds.empty()) {
+        const auto trackSlice = tracks.sliceBy(pairLossTracksPerCollision, bestCollisionId);
+        for (auto const& track : trackSlice) {
+          if (!track.isPVContributor()) {
+            continue;
+          }
+          const auto trackLabel = trackLabels.iteratorAt(track.globalIndex());
+          if (trackLabel.has_mcParticle() && pvK0DaughterIds.contains(trackLabel.mcParticleId())) {
+            inClass[PairLossPVQualityK0DaughterPVContributor] = true;
+            break;
+          }
+        }
+      }
+
+      fillEventStage(PairLossPVQualityStageHasRecoColl);
+      if (bestCollisionSelected) {
+        fillEventStage(PairLossPVQualityStageSelected);
+      }
+
+      const float residualX = bestCollisionVtxX - mcCollision.posX();
+      const float residualY = bestCollisionVtxY - mcCollision.posY();
+      const float residualZ = bestCollisionVtxZ - mcCollision.posZ();
+      auto fillBestCollision = [&](int selectionBin) {
+        for (int eventClass = 0; eventClass < PairLossPVQualityNClasses; ++eventClass) {
+          if (!inClass[eventClass]) {
+            continue;
+          }
+          histos.fill(HIST("PairLossK0/PVQuality/hPosX"), eventClass, selectionBin, bestCollisionNTracksPVeta1, bestCollisionVtxX);
+          histos.fill(HIST("PairLossK0/PVQuality/hPosY"), eventClass, selectionBin, bestCollisionNTracksPVeta1, bestCollisionVtxY);
+          histos.fill(HIST("PairLossK0/PVQuality/hResX"), eventClass, selectionBin, bestCollisionNTracksPVeta1, residualX);
+          histos.fill(HIST("PairLossK0/PVQuality/hResY"), eventClass, selectionBin, bestCollisionNTracksPVeta1, residualY);
+          histos.fill(HIST("PairLossK0/PVQuality/hResZ"), eventClass, selectionBin, bestCollisionNTracksPVeta1, residualZ);
+        }
+      };
+      fillBestCollision(0);
+      if (bestCollisionSelected) {
+        fillBestCollision(1);
+      }
+    };
+
     if (pairLossK0Configurations.doEventRecoEfficiencyStudy) {
       runEventRecoEfficiencyStudy();
+    }
+    if (pairLossK0Configurations.doPVQualityStudy) {
+      runPVQualityStudy();
     }
     if (pairLossK0Configurations.doGenLevelStudy) {
       runGenLevelStudy();
