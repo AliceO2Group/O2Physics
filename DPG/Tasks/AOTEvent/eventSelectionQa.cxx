@@ -74,7 +74,8 @@ struct EventSelectionQaTask {
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
   Configurable<bool> fillITSdeadStaveHists{"fillITSdeadStaveHists", 0, "0 - no, 1 - yes"};
   Configurable<bool> fillTPCnClsVsOccupancyHists{"fillTPCnClsVsOccupancyHists", 0, "0 - no, 1 - yes"};
-  Configurable<bool> useTestWithTrackTools{"useTestWithTrackTools", 0, "0 - no, 1 - yes"};
+  Configurable<bool> useTestWithTrackTools{"useTestWithTrackTools", 0, "0 - no, 1 - yes"};                                           // experimental
+  Configurable<int> thresholdNrowsForTrackToolTest{"thresholdNrowsForTrackToolTest", 120, "threshold for Nrows for TrackTool test"}; // minimum number of TPC rows (experimental)
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1234,9 +1235,8 @@ struct EventSelectionQaTask {
             track.signed1Pt());
           auto trackAt85 = o2::recohelpers::getParametersAtRadiusH(trackParLocal, radiusOfInterest, bzKG);
           auto l0 = o2::tpc::recohelpers::sectorEdgeStackLinear(trackParLocal, bzKG, tpcSectorEdgeConfig);
-          const int nRowsThreshold = 120; // minimum number of TPC rows required at 85 cm radius
 
-          isTrackWithNrowsAvailable = (trackAt85.valid() && l0.nRowsAvailable > nRowsThreshold);
+          isTrackWithNrowsAvailable = (trackAt85.valid() && l0.nRowsAvailable > thresholdNrowsForTrackToolTest);
         }
 
         if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2) {
