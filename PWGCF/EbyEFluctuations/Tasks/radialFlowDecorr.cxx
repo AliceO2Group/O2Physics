@@ -1549,13 +1549,9 @@ struct RadialFlowDecorr {
   // ===========================================================================
   // Histogram declarations
   // ===========================================================================
-  void labelFwdAxis(TAxis* ax) const
-  {
-    for (int k = 0; k < nFwd && k < ax->GetNbins(); ++k) {
-      ax->SetBinLabel(k + 1, fwdLabels[k].c_str());
-    }
-  }
-
+  // Bin labels only on TH1/TH2 and THnSparse axes: ROOT merges labelled axes by label, which for
+  // profiles and TH3 extends the axis and sums all bins into a new one, or drops the entries of
+  // bins with zero content. Their bins are named in the axis title instead.
   static void labelAxis(TAxis* ax, const std::vector<const char*>& labels)
   {
     for (std::size_t i = 0; i < labels.size() && static_cast<int>(i) < ax->GetNbins(); ++i) {
@@ -1694,10 +1690,8 @@ struct RadialFlowDecorr {
     if (hists.fwdChannel) {
       return;
     }
-    hists.fwdChannel = histos.add<TProfile2D>("FwdQA/Prof_Channel_qa", ";channel (FT0A 0-95, FT0C 96-207, FV0A 208-255);quantity", kTProfile2D, {{KNChFT0 + KNChFV0, -0.5, KNChFT0 + KNChFV0 - 0.5}, {kNChQA, -0.5, static_cast<double>(kNChQA) - 0.5}});
-    labelAxis(hists.fwdChannel->GetYaxis(), {"amplitude", "gain-equalised amplitude", "#eta (aligned, vs z_{vtx})"});
+    hists.fwdChannel = histos.add<TProfile2D>("FwdQA/Prof_Channel_qa", ";channel (FT0A 0-95, FT0C 96-207, FV0A 208-255);quantity (0 amplitude, 1 gain-equalised amplitude, 2 #eta aligned vs z_{vtx})", kTProfile2D, {{KNChFT0 + KNChFV0, -0.5, KNChFT0 + KNChFV0 - 0.5}, {kNChQA, -0.5, static_cast<double>(kNChQA) - 0.5}});
     hists.fwdEta = histos.add<TProfile>("FwdQA/Prof_Eta_fwdbin", ";forward bin;amplitude-weighted #LT#eta#GT", kTProfile, {fwdAxis});
-    labelFwdAxis(hists.fwdEta->GetXaxis());
   }
 
   void declareEff(uint32_t mask)
@@ -1720,8 +1714,7 @@ struct RadialFlowDecorr {
     histos.add("etaTruthReco", ";#eta^{MC};#eta^{reco}", kTH2F, {{KNbinsEtaRes, -KEtaFineMax, KEtaFineMax}, {KNbinsEtaRes, -KEtaFineMax, KEtaFineMax}});
     histos.add("TruthTracKVz", ";Vz^{MC};Vz^{Reco}", kTH2F, {{KNbinsVz, KVzMin, KVzMax}, {KNbinsVz, KVzMin, KVzMax}});
     histos.add("vzResolution", ";Vz^{MC};(Vz^{reco}-Vz^{MC})/Vz^{MC}", kTH2F, {{KNbinsVz, KVzMin, KVzMax}, {100, -0.1, 0.1}});
-    hists.mcTrackOrigin = histos.add<TH3>("MCQA/Hist3D_Nch_pT_origin", ";N_{ch};p_{T} (GeV/c);origin", kTH3F, {{nchAxisObs}, {KNbinsPtRes, KPtMin, KPtMax}, {kNOrigin, -0.5, static_cast<double>(kNOrigin) - 0.5}});
-    labelAxis(hists.mcTrackOrigin->GetZaxis(), {"primary", "secondary", "other MC collision", "no label"});
+    hists.mcTrackOrigin = histos.add<TH3>("MCQA/Hist3D_Nch_pT_origin", ";N_{ch};p_{T} (GeV/c);origin (0 primary, 1 secondary, 2 other MC collision, 3 no label)", kTH3F, {{nchAxisObs}, {KNbinsPtRes, KPtMin, KPtMax}, {kNOrigin, -0.5, static_cast<double>(kNOrigin) - 0.5}});
   }
 
   // vertex QA of all MC passes
@@ -1761,11 +1754,9 @@ struct RadialFlowDecorr {
       for (int l = 0; l < nLev; ++l) {
         const std::string p = systPrefix(v) + (isMC ? mcDir[l] : std::string{});
         auto& h = hists.mean[v][l];
-        h.mean = r.add<TProfile3D>((p + "Prof_Mean_Nch_etabin_obs").c_str(), ";N_{ch};#eta-bin;observable", kTProfile3D, {{nchAxisOf(v)}, {etaBinAxis}, {kNMeanObs, -0.5, static_cast<double>(kNMeanObs) - 0.5}});
-        labelAxis(h.mean->GetZaxis(), {"#LT[p_{T}]#GT", "#LT N#GT"});
+        h.mean = r.add<TProfile3D>((p + "Prof_Mean_Nch_etabin_obs").c_str(), ";N_{ch};#eta-bin;observable (0 #LT[p_{T}]#GT, 1 #LT N#GT)", kTProfile3D, {{nchAxisOf(v)}, {etaBinAxis}, {kNMeanObs, -0.5, static_cast<double>(kNMeanObs) - 0.5}});
         if (cfgFwdOpt.cfgFwd) {
           h.fwdMean = r.add<TProfile2D>((p + "Prof_FwdAmpMean_Nch_fwdbin").c_str(), ";N_{ch};forward bin;#LT a#GT", kTProfile2D, {{nchAxisOf(v)}, {fwdAxis}});
-          labelFwdAxis(h.fwdMean->GetYaxis());
         }
       }
     }
@@ -1777,8 +1768,7 @@ struct RadialFlowDecorr {
   {
     FlucHists h;
     auto n = [&](const char* name) { return p + name + s; };
-    h.obs = r.add<TProfile3D>(n("Prof_Obs_Nch_etabin_obs").c_str(), ";N_{ch};#eta-bin;observable", kTProfile3D, {{ax}, {etaBinAxis}, {kNFlucObs, -0.5, static_cast<double>(kNFlucObs) - 0.5}});
-    labelAxis(h.obs->GetZaxis(), {"N", "[p_{T}]", "c_{2}", "c_{3}", "C_{2}^{sub} (mirror)", "C_{3}^{sub} (mirror)"});
+    h.obs = r.add<TProfile3D>(n("Prof_Obs_Nch_etabin_obs").c_str(), ";N_{ch};#eta-bin;observable (0 N, 1 [p_{T}], 2 c_{2}, 3 c_{3}, 4 C_{2}^{sub} mirror, 5 C_{3}^{sub} mirror)", kTProfile3D, {{ax}, {etaBinAxis}, {kNFlucObs, -0.5, static_cast<double>(kNFlucObs) - 0.5}});
     h.c2Sub2D = r.add<TProfile3D>(n("Prof_C2Sub2D_Nch_etaA_etaC").c_str(), ";N_{ch};#eta_{A};#eta_{C}", kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
     h.c3Sub2D = r.add<TProfile3D>(n("Prof_C3Sub2D_Nch_etaA_etaC").c_str(), ";N_{ch};#eta_{A} (pair);#eta_{C} (single)", kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
     if (withGapSum) {
@@ -1789,9 +1779,6 @@ struct RadialFlowDecorr {
       h.fwdVar = r.add<TProfile2D>(n("Prof_FwdAmpVar_Nch_fwdbin").c_str(), ";N_{ch};forward bin;#LT #delta a^{2}#GT", kTProfile2D, {{ax}, {fwdAxis}});
       h.covFwdPt = r.add<TProfile3D>(n("Prof_CovFwdAmpMeanpT_Nch_etabin_fwdbin").c_str(), ";N_{ch};#eta-bin;forward bin;#LT #delta[p_{T}] #delta a#GT", kTProfile3D, {{ax}, {etaBinAxis}, {fwdAxis}});
       h.covFwdN = r.add<TProfile3D>(n("Prof_CovFwdAmpNch_Nch_etabin_fwdbin").c_str(), ";N_{ch};#eta-bin;forward bin;#LT #delta N #delta a#GT", kTProfile3D, {{ax}, {etaBinAxis}, {fwdAxis}});
-      labelFwdAxis(h.fwdVar->GetYaxis());
-      labelFwdAxis(h.covFwdPt->GetZaxis());
-      labelFwdAxis(h.covFwdN->GetZaxis());
     }
     return h;
   }
@@ -1842,8 +1829,7 @@ struct RadialFlowDecorr {
       declareFwdQA();
     }
     declareMean(maskAll, true);
-    histos.add("Prof_Weights_pT_type", ";p_{T};weight", kTProfile2D, {{KNbinsPtRes, KPtMin, KPtMax}, {3, -0.5, 2.5}});
-    labelAxis(histos.get<TProfile2D>(HIST("Prof_Weights_pT_type"))->GetYaxis(), {"eff", "fake", "w"});
+    histos.add("Prof_Weights_pT_type", ";p_{T};weight (0 eff, 1 fake, 2 w)", kTProfile2D, {{KNbinsPtRes, KPtMin, KPtMax}, {3, -0.5, 2.5}});
   }
 
   void declareMCFlucHists()
@@ -1870,8 +1856,7 @@ struct RadialFlowDecorr {
       declareFwdQA();
     }
     declareMean(maskAll, false);
-    histos.add("Prof_Weights_pt_eta_type", ";p_{T} (GeV/c);#eta;weight", kTProfile3D, {{KNbinsPtRes, KPtMin, KPtMax}, {KNbinsEtaFine, -KEtaFineMax, KEtaFineMax}, {3, -0.5, 2.5}});
-    labelAxis(histos.get<TProfile3D>(HIST("Prof_Weights_pt_eta_type"))->GetZaxis(), {"eff", "fake", "w_{#phi}"});
+    histos.add("Prof_Weights_pt_eta_type", ";p_{T} (GeV/c);#eta;weight (0 eff, 1 fake, 2 w_{#phi})", kTProfile3D, {{KNbinsPtRes, KPtMin, KPtMax}, {KNbinsEtaFine, -KEtaFineMax, KEtaFineMax}, {3, -0.5, 2.5}});
   }
 
   void declareDataFlucHists()
@@ -2188,6 +2173,11 @@ struct RadialFlowDecorr {
         LOGF(fatal, "%d forward bins exceed KNFwdMax=%d", nFwd, KNFwdMax);
       }
       fwdAxis = AxisSpec{nFwd, -0.5, nFwd - 0.5, "forward bin"};
+      std::string list;
+      for (int k = 0; k < nFwd; ++k) {
+        list += Form("%s%d %s", k > 0 ? ", " : "", k, fwdLabels[k].c_str());
+      }
+      LOGF(info, "RadialFlowDecorr forward bins: %s", list.c_str());
     }
 
     // ---- variations ----
