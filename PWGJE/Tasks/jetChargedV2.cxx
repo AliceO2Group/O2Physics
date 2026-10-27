@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -1837,12 +1838,12 @@ struct JetChargedV2 {
           registry.fill(HIST("h_jet_pt_inclusive_v2"), jet.pt() - (collision.rho() * jet.area()), 1.0);
           registry.fill(HIST("h_jet_pt_inclusive_v2_rho"), jet.pt() - (rholocal * jet.area()), 1.0);
           if (fillTHnSparse && sparseSubsample > 0 && (jet.globalIndex() % sparseSubsample) == 0) {
-            const double qaJet[6] = {jet.pt(), jet.eta(), jet.phi(), jet.area(), static_cast<double>(jet.tracksIds().size()), centrality};
-            hJetQA->Fill(qaJet, 1.0);
-            const double rhoMedianData[6] = {centrality, jet.pt(), collision.rho(), collision.rho() * jet.area(), phiMinusPsi2, jet.area()};
-            hRhoMedian->Fill(rhoMedianData, 1.0);
-            const double rhoLocalData[6] = {centrality, jet.pt(), rholocal, rholocal * jet.area(), phiMinusPsi2, jet.area()};
-            hRhoLocal->Fill(rhoLocalData, 1.0);
+            const std::array<double, 6> qaJet = {jet.pt(), jet.eta(), jet.phi(), jet.area(), static_cast<double>(jet.tracksIds().size()), centrality};
+            hJetQA->Fill(qaJet.data(), 1.0);
+            const std::array<double, 6> rhoMedianData = {centrality, jet.pt(), collision.rho(), collision.rho() * jet.area(), phiMinusPsi2, jet.area()};
+            hRhoMedian->Fill(rhoMedianData.data(), 1.0);
+            const std::array<double, 6> rhoLocalData = {centrality, jet.pt(), rholocal, rholocal * jet.area(), phiMinusPsi2, jet.area()};
+            hRhoLocal->Fill(rhoLocalData.data(), 1.0);
           }
 
           if (jet.pt() > bumpLow && jet.pt() < bumpUp) {
@@ -1957,10 +1958,10 @@ struct JetChargedV2 {
         } else {
           registry.fill(HIST("h2_centrality_deltapT_RandomCornPhi_localrhovsphi_out"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rholocalRC, 1.0);
           if (fillTHnSparse && sparseSubsample > 0 && (collision.globalIndex() % sparseSubsample) == 0) {
-            const double qaFluct[6] = {centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rholocalRC,
-                                       std::fabs(rcPhiPsi2), o2::constants::math::PI * randomConeR * randomConeR, rholocalRC,
-                                       static_cast<double>(nTracksRandomCone)};
-            hFluctQA->Fill(qaFluct, 1.0);
+            const std::array<double, 6> qaFluct = {centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rholocalRC,
+                                                   std::fabs(rcPhiPsi2), o2::constants::math::PI * randomConeR * randomConeR, rholocalRC,
+                                                   static_cast<double>(nTracksRandomCone)};
+            hFluctQA->Fill(qaFluct.data(), 1.0);
           }
         }
         if (checkAbsDeltaPhi) {
@@ -2018,10 +2019,10 @@ struct JetChargedV2 {
           registry.fill(HIST("h2_centrality_deltapT_RandomCornPhi_rhorandomconewithoutleadingjet_out"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho(), 1.0);
         }
         if (fillTHnSparse && sparseSubsample > 0 && (collision.globalIndex() % sparseSubsample) == 0) {
-          const double qaFluctWo[6] = {centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rholocalRC,
-                                       std::fabs(rcPhiPsi2), o2::constants::math::PI * randomConeR * randomConeR, rholocalRC,
-                                       static_cast<double>(nTracksRandomConeWoLeadingJet)};
-          hFluctQAwoLeadingJet->Fill(qaFluctWo, 1.0);
+          const std::array<double, 6> qaFluctWo = {centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rholocalRC,
+                                                   std::fabs(rcPhiPsi2), o2::constants::math::PI * randomConeR * randomConeR, rholocalRC,
+                                                   static_cast<double>(nTracksRandomConeWoLeadingJet)};
+          hFluctQAwoLeadingJet->Fill(qaFluctWo.data(), 1.0);
         }
         if (checkAbsDeltaPhi) {
           if ((absRcPhiPsi2 < o2::constants::math::PIQuarter) || (absRcPhiPsi2 >= evtPlnAngleA * o2::constants::math::PIQuarter) || (absRcPhiPsi2 >= evtPlnAngleB * o2::constants::math::PIQuarter && absRcPhiPsi2 < evtPlnAngleC * o2::constants::math::PIQuarter)) {
