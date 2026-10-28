@@ -1014,6 +1014,11 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! x coordinate of decay v
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! y coordinate of decay vertex (relative to PV)
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! z coordinate of decay vertex (relative to PV)
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse decay radius from PV
+DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float);
+DECLARE_SOA_COLUMN(DauTpcNSigmaPr, dauTpcNSigmaPr, float);
+DECLARE_SOA_COLUMN(DauTpcNSigmaPi, dauTpcNSigmaPi, float);
+DECLARE_SOA_COLUMN(DauTofNSigmaPr, dauTofNSigmaPr, float);
+DECLARE_SOA_COLUMN(PtOriginal, ptOriginal, float);
 
 // id column for charged daughter track
 DECLARE_SOA_INDEX_COLUMN_FULL(ChaDau, chaDau, int32_t, FTracks, "_ChaDau"); //!
@@ -1167,7 +1172,23 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_001, "FSIGMAPLUSEXTRAS", 1,
                                    femtokinks::DecayVtxZ,
                                    femtokinks::TransRadius);
 
-using FSigmaPlusExtras = FSigmaPlusExtras_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_002, "FSIGMAPLUSEXTRAS", 2,
+                                   femtokinks::KinkAngle,
+                                   femtokinks::DcaDaugToPV,
+                                   femtokinks::DcaMothToPV,
+                                   femtokinks::DecayVtxX,
+                                   femtokinks::DecayVtxY,
+                                   femtokinks::DecayVtxZ,
+                                   femtokinks::TransRadius,
+                                   femtokinks::DcaKinkTopo,
+                                   femtokinks::DauTpcNSigmaPr,
+                                   femtokinks::DauTpcNSigmaPi,
+                                   femtokinks::DauTofNSigmaPr,
+                                   femtokinks::PtOriginal,
+                                   femtotracks::ItsClusterSizes);
+
+using FSigmaPlusExtras = FSigmaPlusExtras_002;
+using StoredFSigmaPlusExtras = StoredFSigmaPlusExtras_002;
 
 namespace femtocascades
 {
