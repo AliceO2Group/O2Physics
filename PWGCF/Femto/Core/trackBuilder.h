@@ -129,13 +129,13 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
 };
 
 // define the template structure for TrackSelection
-template <auto& Prefix>
+template <auto& Prefix, int DefaultChargeSign = 1>
 struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 2212, "Absolute value of PDG code. Set sign of charge to -1 for antiparticle."};
   o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3)"};
-  o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Track charge sign: +1 for positive, -1 for negative, 0 for both"};
+  o2::framework::Configurable<int> chargeSign{"chargeSign", DefaultChargeSign, "Track charge sign: +1 for positive, -1 for negative, 0 for both"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.0f, "Minimum pT (GeV/c)"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
@@ -170,8 +170,8 @@ using ConfTrackSelection1 = ConfTrackSelection<PrefixTrackSelection1>;
 using ConfTrackSelection2 = ConfTrackSelection<PrefixTrackSelection2>;
 using ConfTrackSelection3 = ConfTrackSelection<PrefixTrackSelection3>;
 
-using ConfTrackSelectionDndetaGlobal = ConfTrackSelection<PrefixTrackSelectionDndetaGlobal>;
-using ConfTrackSelectionDndetaItsOnly = ConfTrackSelection<PrefixTrackSelectionDndetaItsOnly>;
+using ConfTrackSelectionDndetaGlobal = ConfTrackSelection<PrefixTrackSelectionDndetaGlobal, 0>;
+using ConfTrackSelectionDndetaItsOnly = ConfTrackSelection<PrefixTrackSelectionDndetaItsOnly, 0>;
 
 // Track selection for resonance daughters (pion+/-, kaon+/-). Charge sign and abs charge are fixed
 // by the species itself, so they are compile-time constants rather than configurables. No pdg code
