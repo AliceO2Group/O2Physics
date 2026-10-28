@@ -116,9 +116,12 @@ struct FemtoPairTrackKink {
   paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairTrackKinkBuilder<
-    trackhistmanager::PrefixTrack1,
-    kinkhistmanager::PrefixSigma1,
-    trackhistmanager::PrefixKinkChaDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    kinkhistmanager::PrefixSigma1Se,
+    trackhistmanager::PrefixKinkChaDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    kinkhistmanager::PrefixSigma1Me,
+    trackhistmanager::PrefixKinkChaDaughterMe,
     pairhistmanager::PrefixTrackKinkSe,
     pairhistmanager::PrefixTrackKinkMe,
     closepairrejection::PrefixTrackKinkSe,
@@ -127,9 +130,12 @@ struct FemtoPairTrackKink {
     pairTrackSigmaBuilder;
 
   pairbuilder::PairTrackKinkBuilder<
-    trackhistmanager::PrefixTrack1,
-    kinkhistmanager::PrefixSigmaPlus1,
-    trackhistmanager::PrefixKinkChaDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    kinkhistmanager::PrefixSigmaPlus1Se,
+    trackhistmanager::PrefixKinkChaDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    kinkhistmanager::PrefixSigmaPlus1Me,
+    trackhistmanager::PrefixKinkChaDaughterMe,
     pairhistmanager::PrefixTrackKinkSe,
     pairhistmanager::PrefixTrackKinkMe,
     closepairrejection::PrefixTrackKinkSe,

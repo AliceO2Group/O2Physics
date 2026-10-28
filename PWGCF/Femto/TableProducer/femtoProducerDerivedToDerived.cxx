@@ -19,6 +19,7 @@
 #include "PWGCF/Femto/Core/mcBuilder.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
+#include "PWGCF/Femto/Core/twoTrackResonanceBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
@@ -47,6 +48,8 @@ struct FemtoProducerDerivedToDerived {
   using FemtoTracksWithMass = o2::soa::Join<FemtoTracks, o2::aod::FTrackMass>;
   using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks>;
   using FemtoK0shorts = o2::soa::Join<o2::aod::FK0shorts, o2::aod::FK0shortMasks>;
+  using FemtoRho0s = o2::soa::Join<o2::aod::FRho0s, o2::aod::FRho0Masks>;
+  using FemtoPhis = o2::soa::Join<o2::aod::FPhis, o2::aod::FPhiMasks>;
   using FemtoXis = o2::soa::Join<o2::aod::FXis, o2::aod::FXiMasks>;
   using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks>;
   using FemtoSigma = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks>;
@@ -92,6 +95,19 @@ struct FemtoProducerDerivedToDerived {
   v0builder::ConfK0shortSelection1 k0shortSelection1;
   o2::framework::Partition<FemtoK0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(k0shortSelection1);
   o2::framework::Preslice<FemtoK0shorts> perColK0shorts = o2::aod::femtobase::stored::fColId;
+
+  // two-track resonance builder
+  twotrackresonancebuilder::TwoTrackResonanceBuilderDerivedToDerived resonanceBuilder;
+  twotrackresonancebuilder::TwoTrackResonanceBuilderDerivedToDerivedProducts resonanceBuilderProducts;
+  twotrackresonancebuilder::ConfTwoTrackResonanceTablesDerivedToDerived confResonanceBuilder;
+
+  twotrackresonancebuilder::ConfRho0Selection rho0Selection;
+  o2::framework::Partition<FemtoRho0s> rho0Partition = MAKE_RESONANCE_0_PARTITON(rho0Selection);
+  o2::framework::Preslice<FemtoRho0s> perColRho0s = o2::aod::femtobase::stored::fColId;
+
+  twotrackresonancebuilder::ConfPhiSelection phiSelection;
+  o2::framework::Partition<FemtoPhis> phiPartition = MAKE_RESONANCE_0_PARTITON(phiSelection);
+  o2::framework::Preslice<FemtoPhis> perColPhis = o2::aod::femtobase::stored::fColId;
 
   // kink builder
   kinkbuilder::KinkBuilderDerivedToDerived kinkBuilder;
@@ -143,6 +159,7 @@ struct FemtoProducerDerivedToDerived {
       static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) +
       static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) +
       static_cast<int>(doprocessTracksSigmaPlus) +
+      static_cast<int>(doprocessTracksRho0) + static_cast<int>(doprocessTracksPhi) +
       static_cast<int>(doprocessTracksMc) + static_cast<int>(doprocessTracksSigmaMc) +
       static_cast<int>(doprocessTracksSigmaPlusMc);
     if (activeProcesses != 1) {
@@ -153,6 +170,7 @@ struct FemtoProducerDerivedToDerived {
     v0Builder.init(confV0Builder);
     cascadeBuilder.init(confCascadeBuilder);
     kinkBuilder.init(confKinkBuilder);
+    resonanceBuilder.init(confResonanceBuilder);
     mcBuilder.init(confMcBuilder);
   }
 
@@ -273,6 +291,30 @@ struct FemtoProducerDerivedToDerived {
     kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusPartition, trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlus, "Process sigmaPlus and tracks", false);
+
+  void processTracksRho0(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoRho0s const& rho0s)
+  {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || resonanceBuilder.collisionHasTooFewRho0s(col, rho0s, rho0Partition, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    resonanceBuilder.processRho0s(col, rho0s, tracks, rho0Partition, trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksRho0, "Process rho0 and tracks", false);
+
+  void processTracksPhi(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoPhis const& phis)
+  {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || resonanceBuilder.collisionHasTooFewPhis(col, phis, phiPartition, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    resonanceBuilder.processPhis(col, phis, tracks, phiPartition, trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksPhi, "Process phi and tracks", false);
 
   // mc processing
   //   // NOTE: unlike the other process functions, this one subscribes to the full

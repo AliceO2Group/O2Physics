@@ -116,10 +116,14 @@ struct FemtoPairTrackV0 {
   paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairTrackV0Builder<
-    trackhistmanager::PrefixTrack1,
-    v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    v0histmanager::PrefixLambda1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    v0histmanager::PrefixLambda1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
     pairhistmanager::PrefixTrackV0Se,
     pairhistmanager::PrefixTrackV0Me,
     closepairrejection::PrefixTrackV0DaughterSe,
@@ -128,10 +132,14 @@ struct FemtoPairTrackV0 {
     pairTrackLambdaBuilder;
 
   pairbuilder::PairTrackV0Builder<
-    trackhistmanager::PrefixTrack1,
-    v0histmanager::PrefixK0short1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    v0histmanager::PrefixK0short1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    v0histmanager::PrefixK0short1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
     pairhistmanager::PrefixTrackV0Se,
     pairhistmanager::PrefixTrackV0Me,
     closepairrejection::PrefixTrackV0DaughterSe,

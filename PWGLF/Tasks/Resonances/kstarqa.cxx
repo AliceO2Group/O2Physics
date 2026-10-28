@@ -351,6 +351,7 @@ struct Kstarqa {
     if (doprocessEvtLossSigLossMC || doprocessEvtLossSigLossMCPhi) {
       hInvMass.add("MCcorrections/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("MCcorrections/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hInvMass.add("MCcorrections/hSignalLossNumeratorINEL", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("MCcorrections/hImpactParameterRec", "Impact parameter in reconstructed MC", kTH1F, {impactParAxis});
       hInvMass.add("MCcorrections/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParameterGen", "Impact parameter in generated MC", kTH1F, {impactParAxis});
@@ -1071,21 +1072,22 @@ struct Kstarqa {
   // Processed events will be already fulfilling the event selection
   // requirements
   // Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < configGp.cutzvertex);
+  // Filter posZFilter = (nabs(o2::aod::collision::posZ) < configGp.cutzvertex);
 
-  // Filter acceptanceFilter = (nabs(aod::track::eta) < configGp.cfgCutEtaMax && nabs(aod::track::pt) > configGp.cfgCutPT) && (nabs(aod::track::eta) > configGp.cfgCutEtaMin);
   Filter acceptanceFilter = (nabs(aod::track::eta) < configGp.cfgCutEtaMax && nabs(aod::track::pt) > configGp.cfgCutPT);
-  // Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < configGp.cfgCutDCAxyMax) && (nabs(aod::track::dcaZ) < configGp.cfgCutDCAz) && (nabs(aod::track::dcaXY) > configGp.cfgCutDCAxyMin);
   Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < configGp.cfgCutDCAxyMax) && (nabs(aod::track::dcaZ) < configGp.cfgCutDCAz);
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::PVMults>>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
-  using EventCandidatesMix = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>>;            // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::PVMults>>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+  // using EventCandidatesMix = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>>;            // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::PVMults>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+  using EventCandidatesMix = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>;            // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTOFbeta, aod::TrackSelectionExtension>>;
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::MultZeqs, aod::FT0Mults, aod::PVMults, aod::CentFV0As>;
   // using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults, aod::CentFV0As>>;
 
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::McTrackLabels, aod::pidTOFbeta, aod::TrackSelectionExtension>>;
-  // using EventMCGenerated = soa::Join<aod::McCollisions, aod::MultsExtraMC>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
   using EventMCGenerated = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
 
   using McCollisionMults = soa::Join<aod::McCollisions, aod::MultMCExtras>;
@@ -1948,8 +1950,8 @@ struct Kstarqa {
       if (!RecCollision.has_mcCollision())
         continue;
 
-      if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
-        continue;
+      // if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
+      //   continue;
 
       if (std::abs(RecCollision.posZ()) > configGp.cutzvertex)
         continue;
@@ -2003,6 +2005,9 @@ struct Kstarqa {
       hInvMass.fill(HIST("MCcorrections/hSignalLossDenominator"), mcPart.pt(), multiplicityGen);
       if (isSelectedEvent) {
         hInvMass.fill(HIST("MCcorrections/hSignalLossNumerator"), mcPart.pt(), multiplicityGen);
+      }
+      if (isSelectedEventINEL) {
+        hInvMass.fill(HIST("MCcorrections/hSignalLossNumeratorINEL"), mcPart.pt(), multiplicityGen);
       }
     } // end loop on gen particles
   }

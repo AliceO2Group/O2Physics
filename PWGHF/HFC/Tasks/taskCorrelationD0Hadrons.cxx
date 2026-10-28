@@ -155,8 +155,8 @@ struct HfTaskCorrelationD0Hadrons {
     AxisSpec axisDeltaEta = {binsEta, "#it{#eta}^{Hadron}-#it{#eta}^{D}"};
     AxisSpec const axisEta = {binsEta, "#it{#eta}"};
     AxisSpec axisDeltaPhi = {binsPhi, "#it{#varphi}^{Hadron}-#it{#varphi}^{D} (rad)"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T}^{D} (GeV/#it{c})"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtD), "#it{p}_{T}^{D} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
     AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
     AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};

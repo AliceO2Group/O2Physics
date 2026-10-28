@@ -221,3 +221,7 @@ o2physics_add_dpl_workflow(dilepton-effi-for-dalitz-skimmer
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(meson-signal-loss
+                    SOURCES mesonSignalLoss.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

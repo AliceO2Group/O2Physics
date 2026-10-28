@@ -105,8 +105,10 @@ struct FemtoPairTrackTrack {
   closepairrejection::ConfCprTrackTrack confCpr;
 
   pairbuilder::PairTrackTrackBuilder<
-    trackhistmanager::PrefixTrack1,
-    trackhistmanager::PrefixTrack2,
+    trackhistmanager::PrefixTrack1Se,
+    trackhistmanager::PrefixTrack2Se,
+    trackhistmanager::PrefixTrack1Me,
+    trackhistmanager::PrefixTrack2Me,
     pairhistmanager::PrefixTrackTrackSe,
     pairhistmanager::PrefixTrackTrackMe,
     closepairrejection::PrefixTrackTrackSe,

@@ -228,6 +228,7 @@ struct FemtoProducer {
     if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
          !doprocessTracksV0sCascadesRun3PbPbWithEventShape &&
+         !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape &&
          !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
          !doprocessTracksV0sCascadesRun3ppMc &&
          !doprocessTracksV0sCascadesRun3PbPbMc)) {
@@ -236,13 +237,15 @@ struct FemtoProducer {
     if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
          !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
-         !doprocessTracksV0sCascadesRun3PbPbWithEventShape &&
+         !doprocessTracksV0sCascadesRun3PbPbWithEventShape && !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape &&
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPb && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
          !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if (photonBuilder.fillAnyTable() && (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb && !doprocessTracksV0sCascadesKinksPhotonsRun3pp)) {
+    if (photonBuilder.fillAnyTable() &&
+        (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb &&
+         !doprocessTracksV0sCascadesKinksPhotonsRun3pp && !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape)) {
       LOG(fatal) << "At least one photon table is enabled, but wrong process function is enabled. Breaking...";
     }
     if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) &&
@@ -345,6 +348,7 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksV0sCascadesRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPb) +
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPbWithEventShape) +
+      static_cast<int>(doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape) +
       static_cast<int>(doprocessTracksKinksRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesKinksRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesKinksPhotonsRun3pp) +

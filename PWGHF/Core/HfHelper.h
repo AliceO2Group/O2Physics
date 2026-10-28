@@ -39,6 +39,8 @@ concept IsB0ToDstarPiChannel = requires(T candidate) {
 };
 
 struct HfHelper {
+  HfHelper() = delete; // Prevent instances.
+
   // 2-prong
 
   // D0(bar) → π± K∓

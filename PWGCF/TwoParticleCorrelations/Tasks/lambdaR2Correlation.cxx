@@ -266,9 +266,19 @@ struct LambdaTableProducer {
   Configurable<bool> cSelPrimaryParticle{"cSelPrimaryParticle", false, "Select primary particle"};
   Configurable<bool> cSelTrueParticle{"cSelTrueParticle", false, "Select MC PDG matched particle"};
 
+  // MC Generator
+  Configurable<int> cFwdMult{"cFwdMult", 500, "Fwd multiplicity axis config"};
+  Configurable<float> cFT0AEtaMin{"cFT0AEtaMin", 3.5, "FT0A Eta Min"};
+  Configurable<float> cFT0AEtaMax{"cFT0AEtaMax", 4.9, "FT0A Eta Max"};
+  Configurable<float> cFT0CEtaMin{"cFT0CEtaMin", -3.3, "FT0C Eta Min"};
+  Configurable<float> cFT0CEtaMax{"cFT0CEtaMax", -2.1, "FT0C Eta Max"};
+  Configurable<float> cTPCEtaMin{"cTPCEtaMin", -1., "TPC Eta Min"};
+  Configurable<float> cTPCEtaMax{"cTPCEtaMax", 1., "TPC Eta Max"};
+
   // CCDB
   Configurable<std::string> cUrlCCDB{"cUrlCCDB", "http://alice-ccdb.cern.ch", "ALICE CCDB URL"};
   Configurable<std::string> cPathCCDBRecoEff{"cPathCCDBRecoEff", "Users/y/ypatley/LBF/PP/RecoEfficiency", "Path for ccdb-object for reco efficiency"};
+  Configurable<std::string> cPathCCDBMcCent{"cPathCCDBMcCent", "Users/y/ypatley/LBF/PP/McCent/MultCent", "Path for ccdb-object for MC Gen multiplicity centrality calibration"};
   Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // Initialize CCDB Service
@@ -290,14 +300,23 @@ struct LambdaTableProducer {
   // Initialize Global Variables
   float cent = 0.;
   TList* ccdbObjRecoEff = nullptr;
-  TList* ccdbObjMatchEff = nullptr;
+  TList* ccdbObjMcCent = nullptr;
+  TH1F* hMcFwdMult = nullptr;
   static constexpr auto SubDir = std::array{"QA/Lambda/", "QA/AntiLambda/"};
 
   void init(InitContext const&)
   {
-    // initialize axis specifications
+    // CCDB
+    // Set CCDB url
+    ccdb->setURL(cUrlCCDB.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(nolaterthan.value);
+
+    // Initialize axis specifications
     const AxisSpec axisCols(5, 0.5, 5.5, "");
     const AxisSpec axisTrks(15, 0.5, 15.5, "");
+    const AxisSpec axisFwdMult(cFwdMult, 0, cFwdMult, "N_{ch}^{FWD}");
     const AxisSpec axisEffChecks(3, 0, 3, "");
     const AxisSpec axisCent(100, 0, 100, "Centrality(%)");
     const AxisSpec axisVarCent(cCentBins, "FT0C%");
@@ -363,7 +382,7 @@ struct LambdaTableProducer {
     histos.add("QA/Lambda/DCA/h3f_Dca_vs_pT_cent", "DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
 
     // MC Generated Histograms
-    if (doprocessMCRecoGen || doprocessMCReco || doprocessMCGen) {
+    if (doprocessMCRecoGen || doprocessMCReco) {
       // DCA analysis
       histos.add("QA/Lambda/DCA/h3f_Prm_Dca_vs_pT_cent", "Primary DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
       histos.add("QA/Lambda/DCA/h3f_Scd_Dca_vs_pT_cent", "Weak Decay DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
@@ -400,14 +419,17 @@ struct LambdaTableProducer {
     histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kPassV0TopoSel, "kPassV0TopoSel");
     histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kAllSelPassed, "kAllSelPassed");
 
+    // MC generator histograms
+    if (doprocessMCGen) {
+      histos.add("Events/h1f_fwdmult", "Fwd multiplicity", kTH1F, {axisFwdMult});
+
+      // MC Gen Mult-Cent Calibration
+      ccdbObjMcCent = ccdb->getForTimeStamp<TList>(cPathCCDBMcCent.value, nolaterthan.value);
+      hMcFwdMult = dynamic_cast<TH1F*>(ccdbObjMcCent->FindObject("hFwdMult"));
+    }
+
     // Load correction factor
     if (cGetCorrectionFlag) {
-      // Set CCDB url
-      ccdb->setURL(cUrlCCDB.value);
-      ccdb->setCaching(true);
-      ccdb->setLocalObjectValidityChecking();
-      ccdb->setCreatedNotAfter(nolaterthan.value);
-
       // Get CCDB object
       ccdbObjRecoEff = ccdb->getForTimeStamp<TList>(cPathCCDBRecoEff.value, nolaterthan.value);
 
@@ -659,6 +681,59 @@ struct LambdaTableProducer {
     return effCorrFact;
   }
 
+  // MC generator multiplicity estimator and MB event selection
+  template <typename P>
+  bool multEstimator(P const& particles, int& fwdMult)
+  {
+    int multFT0A = 0, multFT0C = 0, multTPC = 0;
+
+    // Select charged particles
+    for (auto const& particle : particles) {
+      // Primary
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+
+      // FT0C
+      if (particle.eta() > cFT0CEtaMin && particle.eta() < cFT0CEtaMax) {
+        ++multFT0C;
+      }
+
+      // FT0A
+      if (particle.eta() > cFT0AEtaMin && particle.eta() < cFT0AEtaMax) {
+        ++multFT0A;
+      }
+
+      // Central barrel (ITS + TPC)
+      if (particle.eta() > cTPCEtaMin && particle.eta() < cTPCEtaMax) {
+        ++multTPC;
+      }
+    }
+
+    int multFT0M = multFT0A + multFT0C;
+    fwdMult = multFT0M;
+
+    // Minimum bias trigger (1 track in A side, 1 track in C side, 1 track in central barrel)
+    if (multFT0A > 0 && multFT0C > 0 && multTPC > 0) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // MC generator centrality
+  float getMcCentrality(int mult)
+  {
+    float totalArea = hMcFwdMult->Integral();
+    float area = 0.;
+    int nx = hMcFwdMult->GetNbinsX();
+    int bin = hMcFwdMult->GetXaxis()->FindBin(mult + 0.5);
+    for (int i = bin; i <= nx; ++i) {
+      area += hMcFwdMult->GetBinContent(i);
+    }
+    return (area / totalArea) * 100.;
+  }
+
   // Lambda QA
   template <ParticleType part, typename C, typename V, typename T>
   void fillLambdaQAHistos(C const& col, V const& v0, T const&)
@@ -905,11 +980,7 @@ struct LambdaTableProducer {
   void processMCReco(soa::Join<Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, BCsRun3 const& bc,
                      McV0Tracks const& V0s, TracksMC const& tracks, aod::McParticles const&)
   {
-    // check collision
-    if (!selCollision(collision)) {
-      return;
-    }
-    fillLambdaRecoTables<kMC>(collision, bc, V0s, tracks);
+    fillLambdaRecoTables<kData>(collision, bc, V0s, tracks);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMCReco, "Process for McReco DATA", false);
@@ -926,7 +997,49 @@ struct LambdaTableProducer {
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
-    fillLambdaMcGenTables(mcCollision, mcParticles);
+    // Multiplicity estimation
+    int fwdMult = 0;
+    bool eventTrig = multEstimator(mcParticles, fwdMult);
+
+    // MB event selection
+    if (!eventTrig) {
+      return;
+    }
+
+    // Fill fwd multiplicity histogram
+    histos.fill(HIST("Events/h1f_fwdmult"), fwdMult);
+
+    // Get centrality
+    cent = getMcCentrality(fwdMult);
+
+    // Fill McGen Collision Table
+    lambdaMCGenCollisionTable(cent, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+
+    // initialize track objects
+    ParticleType partType = kLambda;
+
+    // Loop over MC particles
+    for (auto const& mcpart : mcParticles) {
+      // Check for Primary Lambda/Anti-Lambda
+      if (mcpart.isPhysicalPrimary() && mcpart.pdgCode() == kLambda0) {
+        partType = kLambda;
+      } else if (mcpart.isPhysicalPrimary() && mcpart.pdgCode() == kLambda0Bar) {
+        partType = kAntiLambda;
+      } else {
+        continue;
+      }
+
+      // Kinematic selection
+      if (mcpart.pt() <= cLambdaMinPt || mcpart.pt() >= cLambdaMaxPt || std::abs(mcpart.y()) >= cLambdaRapCut) {
+        continue;
+      }
+
+      histos.fill(HIST("Tracks/h1f_lambda_info"), kGenTotAccLambda);
+
+      // Fill table
+      lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), mcpart.px(), mcpart.py(), mcpart.pz(), RecoDecay::m(mcpart.p(), mcpart.e()),
+                            -1, -1, (int8_t)partType, 1.);
+    }
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMCGen, "Process for MC Gen", false);

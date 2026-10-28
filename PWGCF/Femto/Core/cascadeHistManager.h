@@ -291,9 +291,11 @@ std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> makeCascadeMcQaHistS
 #undef CASCADE_HIST_MC_QA_MAP
 
 constexpr char PrefixXiQa[] = "XiQA/";
-constexpr char PrefixXi[] = "Xi/";
+constexpr char PrefixXiSe[] = "Xi/SE/";
+constexpr char PrefixXiMe[] = "Xi/ME/";
 constexpr char PrefixOmegaQa[] = "OmegaQa/";
-constexpr char PrefixOmega[] = "Omega/";
+constexpr char PrefixOmegaSe[] = "Omega/SE/";
+constexpr char PrefixOmegaMe[] = "Omega/ME/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 

@@ -89,12 +89,11 @@ using std::array;
 using CollBracket = o2::math_utils::Bracket<int>;
 using HyperCandidates = aod::DataHypCandsWColl;
 using HyperCandidatesMC = aod::MCHypCandsWColl;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
-// The standard Femto producer stores multNTracksPV as its collision
-// multiplicity. Subscribe to PVMults only in the mixed-event process so the
-// same vertex--multiplicity pool definition can optionally be reproduced.
-using CollisionsFullWithPVMult = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
-using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
+// Save the PV-track multiplicity alongside numContrib in the event-info output
+// for both same-event and mixed-event pairs.
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
+using CollisionsFullWithPVMult = CollisionsFull;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
 using HadHyperCollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
 using HadHyperCollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
 using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime>;
@@ -317,6 +316,7 @@ struct BufferedCollision {
   uint16_t numContrib{0u};
   float centFT0C{0.f};
   float multFT0C{0.f};
+  int32_t multNTracksPV{0};
   std::vector<BufferedTrack> nuclei;
   std::vector<BufferedTrack> hadrons;
 };
@@ -403,6 +403,12 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"deuteronPid"};
     // Deuteron purity and PID cuts
+    Configurable<int> settingTPCNClsFoundMinDe{"settingTPCNClsFoundMinDe", 110, "Minimum found TPC clusters for deuterons"};
+    Configurable<int> settingTPCCrossedRowsMinDe{"settingTPCCrossedRowsMinDe", 100, "Minimum crossed TPC rows for deuterons"};
+    Configurable<float> settingDeDCAxyOffset{"settingDeDCAxyOffset", 0.004f, "Deuteron DCAxy cut offset in cm"};
+    Configurable<float> settingDeDCAxyPtCoeff{"settingDeDCAxyPtCoeff", 0.013f, "Deuteron DCAxy inverse-pT cut coefficient"};
+    Configurable<float> settingDeDCAzOffset{"settingDeDCAzOffset", 0.004f, "Deuteron DCAz cut offset in cm"};
+    Configurable<float> settingDeDCAzPtCoeff{"settingDeDCAzPtCoeff", 0.013f, "Deuteron DCAz inverse-pT cut coefficient"};
     Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
     Configurable<float> settingCutDeptMin{"settingCutDeptMin", 0.6f, "Minimum PT cut on De"};
     Configurable<float> settingCutDeptMax{"settingCutDeptMax", 1.6f, "Maximum PT cut on De"};
@@ -1230,16 +1236,14 @@ struct HadNucleiFemto {
       return false;
     }
 
-    constexpr int minTPCNClsFound = 110;
-    constexpr int minTPCNClsCrossedRows = 100;
     constexpr float minTPCCrossedRowsOverFound = 0.f;
     constexpr int maxTPCNClsShared = 160;
     constexpr float maxSharedTPCFraction = 1.f;
     constexpr int minITSNClsInnerBarrel = 1;
     const float tpcCrossedRowsOverFound = candidate.tpcNClsFound() > 0 ? static_cast<float>(candidate.tpcNClsCrossedRows()) / candidate.tpcNClsFound() : 0.f;
 
-    return !(candidate.tpcNClsFound() < minTPCNClsFound ||
-             candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
+    return !(candidate.tpcNClsFound() < deuteronPid.settingTPCNClsFoundMinDe ||
+             candidate.tpcNClsCrossedRows() < deuteronPid.settingTPCCrossedRowsMinDe ||
              tpcCrossedRowsOverFound < minTPCCrossedRowsOverFound ||
              candidate.tpcNClsShared() > maxTPCNClsShared ||
              candidate.tpcFractionSharedCls() > maxSharedTPCFraction ||
@@ -1840,8 +1844,8 @@ struct HadNucleiFemto {
     if (absPt <= 0.f) {
       return false;
     }
-    const float deDCAxyMax = 0.004f + 0.013f / absPt;
-    const float deDCAzMax = 0.004f + 0.013f / absPt;
+    const float deDCAxyMax = deuteronPid.settingDeDCAxyOffset + deuteronPid.settingDeDCAxyPtCoeff / absPt;
+    const float deDCAzMax = deuteronPid.settingDeDCAzOffset + deuteronPid.settingDeDCAzPtCoeff / absPt;
     if (std::abs(candidate.dcaXY()) > deDCAxyMax || std::abs(candidate.dcaZ()) > deDCAzMax) {
       return false;
     }
@@ -2645,7 +2649,8 @@ struct HadNucleiFemto {
         collision.posZ(),
         collision.numContrib(),
         collision.centFT0C(),
-        collision.multFT0C());
+        collision.multFT0C(),
+        collision.multNTracksPV());
     }
   }
 
@@ -2658,7 +2663,8 @@ struct HadNucleiFemto {
         collision.posZ,
         collision.numContrib,
         collision.centFT0C,
-        collision.multFT0C);
+        collision.multFT0C,
+        collision.multNTracksPV);
     }
   }
 
@@ -3371,6 +3377,7 @@ struct HadNucleiFemto {
       currentCollision.numContrib = collision.numContrib();
       currentCollision.centFT0C = collision.centFT0C();
       currentCollision.multFT0C = collision.multFT0C();
+      currentCollision.multNTracksPV = collision.multNTracksPV();
 
       const uint64_t collIdx = collision.globalIndex();
       auto tracksThisCollision = tracks.sliceBy(mPerCol, collIdx);
@@ -3548,6 +3555,7 @@ struct HadNucleiFemto {
       current.numContrib = collision.numContrib();
       current.centFT0C = collision.centFT0C();
       current.multFT0C = collision.multFT0C();
+      current.multNTracksPV = collision.multNTracksPV();
       row.eventId = current.eventId;
       auto tracksThisCollision = tracks.sliceBy(mPerCol, collision.globalIndex());
       tracksThisCollision.bindExternalIndices(&tracks);

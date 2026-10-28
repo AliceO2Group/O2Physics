@@ -170,8 +170,10 @@ struct FemtoDndetaPair {
   closepairrejection::ConfCprTrackV0Daughter confCprTrackV0;
 
   pairbuilder::PairTrackTrackBuilder<
-    trackhistmanager::PrefixTrack1,
-    trackhistmanager::PrefixTrack2,
+    trackhistmanager::PrefixTrack1Se,
+    trackhistmanager::PrefixTrack2Se,
+    trackhistmanager::PrefixTrack1Me,
+    trackhistmanager::PrefixTrack2Me,
     pairhistmanager::PrefixTrackTrackSe,
     pairhistmanager::PrefixTrackTrackMe,
     closepairrejection::PrefixTrackTrackSe,
@@ -179,10 +181,14 @@ struct FemtoDndetaPair {
     pairTrackTrackBuilder;
 
   pairbuilder::PairTrackV0Builder<
-    trackhistmanager::PrefixTrack1,
-    v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    v0histmanager::PrefixLambda1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    v0histmanager::PrefixLambda1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
     pairhistmanager::PrefixTrackV0Se,
     pairhistmanager::PrefixTrackV0Me,
     closepairrejection::PrefixTrackV0DaughterSe,
@@ -191,8 +197,10 @@ struct FemtoDndetaPair {
     pairTrackLambdaBuilder;
 
   pairbuilder::PairMcParticleMcParticleBuilder<
-    mcparticlehistmanager::PrefixMcParticle1,
-    mcparticlehistmanager::PrefixMcParticle2,
+    mcparticlehistmanager::PrefixMcParticle1Se,
+    mcparticlehistmanager::PrefixMcParticle2Se,
+    mcparticlehistmanager::PrefixMcParticle1Me,
+    mcparticlehistmanager::PrefixMcParticle2Me,
     pairhistmanager::PrefixMcParticleMcParticleSe,
     pairhistmanager::PrefixMcParticleMcParticleMe,
     closepairrejection::PrefixMcParticleMcParticleSe,
