@@ -193,6 +193,8 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++                Run list: 559408 <= runNumber && runNumber <= 559456                                                                 +++";
     LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++      [CASE 8]: pp, 13.6 TeV 2025, 2026, CCDB path Users/m/mfaggin/test/inputsTrackTuner/pp2026/pass1/vsPhi                          +++";
     LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++                Run list: (563182 <= runNumber <= 567592 (2025)) || (569945 <= runNumber <= 571787 (2026))                           +++";
+    LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++      [CASE 9]: p-O, 9.62 TeV 2025, CCDB path Users/m/mfaggin/test/inputsTrackTuner/pO                                               +++";
+    LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++                Run list: 564250 <= runNumber <= 564297                                                                              +++";
     LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++";
     LOG(info) << "";
 
@@ -262,6 +264,14 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       pathInputFile = "Users/m/mfaggin/test/inputsTrackTuner/pp2026/pass1/vsPhi";
       LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]:   >>>   pp, 13.6 TeV 2025, 2026, CCDB path " << pathInputFile;
       LOG(info) << "                                                   >>>   Run list: (563182 <= runNumber <= 567592 (2025)) || (569945 <= runNumber <= 571787 (2026)) ";
+    } else if (564250 <= runNumber && runNumber <= 564297) {
+      ///
+      ///   [CASE 9]: p-O, 9.62 TeV 2025, CCDB path Users/m/mfaggin/test/inputsTrackTuner/pO
+      ///             Run list: 564250 <= runNumber <= 564297
+      ///
+      pathInputFile = "Users/m/mfaggin/test/inputsTrackTuner/pO";
+      LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]:   >>>   p-O, 9.62 TeV 2025, CCDB path " << pathInputFile;
+      LOG(info) << "                                                   >>>   Run list: 564250 <= runNumber <= 564297 ";
     } else {
       LOG(fatal) << "runNumber " << runNumber << " not supported for the autodetection. Please switch to manual configuration of the TrackTuner object. Aborting...";
     }
