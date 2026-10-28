@@ -961,7 +961,7 @@ struct FlowGfwV02 {
       double v22npt = 0;
       double ptMeanMid = pidStates.hPtMid[PidCharged]->GetMean();
       double ptFractionMid = 0.;
-      double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real(); // V22 weight for AB
+      double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();   // V22 weight for AB
       double dnxABAB = fGFW->Calculate(corrconfigs.at(1), 0, kTRUE).real(); // V22 weight for ABAB
 
       // Check if the V22 weight is valid
@@ -1380,24 +1380,24 @@ struct FlowGfwV02 {
   {
     // Fill Nsigma QA. The derived tables store PID bits and have no nSigma columns.
     if constexpr (requires { track.tpcNSigmaPi(); track.tofNSigmaPi(); }) {
-    if (!cfgUseItsPID) {
-      if (ft == kBefore) {
-        registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_pions"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
-        registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_kaons"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
-        registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_protons"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
-      } else if (ft == kAfter) {
-        if (pid == PidPions) {
+      if (!cfgUseItsPID) {
+        if (ft == kBefore) {
           registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_pions"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
-        }
-        if (pid == PidKaons) {
           registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_kaons"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
-        }
-        if (pid == PidProtons) {
           registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_protons"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+        } else if (ft == kAfter) {
+          if (pid == PidPions) {
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_pions"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+          }
+          if (pid == PidKaons) {
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_kaons"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+          }
+          if (pid == PidProtons) {
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_protons"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          }
         }
+        fillPidDedxQA<ft>(track, pid);
       }
-      fillPidDedxQA<ft>(track, pid);
-    }
     }
   }
 
