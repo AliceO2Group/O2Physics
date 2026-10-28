@@ -1154,9 +1154,9 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(const TTrack& track)
   {
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && cfgFuncParas.fPtDepDCAxy != nullptr && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
       return false;
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs] && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())))
+    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs] && cfgFuncParas.fPtDepDCAz != nullptr && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())))
       return false;
     return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutObs]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutObs]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutObs]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutObs]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutObs]));
   }
@@ -1164,9 +1164,9 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelectedForNch(const TTrack& track)
   {
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && cfgFuncParas.fPtDepDCAxyForNch != nullptr && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
       return false;
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch] && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())))
+    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch] && cfgFuncParas.fPtDepDCAzForNch != nullptr && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())))
       return false;
     return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutNch]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutNch]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutNch]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutNch]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutNch]));
   }
