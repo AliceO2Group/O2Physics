@@ -36,6 +36,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -65,7 +66,6 @@ struct applyMlSelection {
 
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
 
-  HfHelper hfHelper;
   o2::ccdb::CcdbApi ccdbApi;
   int nCandidates = 0;
 
@@ -107,22 +107,22 @@ struct applyMlSelection {
         continue;
       }
       // Check that the candidate rapidity is within the analysis range
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yDs(candidate)) > yCandRecoMax) {
         continue;
       }
 
       // Fill mass histogram before ML selections
-      registry.fill(HIST("hMassBeforeSel"), hfHelper.invMassDsToPiKK(candidate));
-      registry.fill(HIST("hMassBeforeSel"), hfHelper.invMassDsToKKPi(candidate));
+      registry.fill(HIST("hMassBeforeSel"), HfHelper::invMassDsToPiKK(candidate));
+      registry.fill(HIST("hMassBeforeSel"), HfHelper::invMassDsToKKPi(candidate));
 
       // Perform ML selections for one mass hypothesis (Ds -> PhiPi -> PiKK)
       std::vector<float> inputFeaturesPiKK{candidate.cpa(),
                                            candidate.cpaXY(),
                                            candidate.decayLength(),
                                            candidate.decayLengthXY(),
-                                           static_cast<float>(hfHelper.deltaMassPhiDsToPiKK(candidate)),
+                                           static_cast<float>(HfHelper::deltaMassPhiDsToPiKK(candidate)),
                                            candidate.impactParameterXY(),
-                                           static_cast<float>(hfHelper.cos3PiKDsToPiKK(candidate)),
+                                           static_cast<float>(HfHelper::cos3PiKDsToPiKK(candidate)),
                                            candidate.maxNormalisedDeltaIP()};
 
       // Retrieve model output and selection outcome

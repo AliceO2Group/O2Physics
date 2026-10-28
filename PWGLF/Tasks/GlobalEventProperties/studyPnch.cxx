@@ -253,6 +253,9 @@ struct StudyPnch {
     if (std::abs(track.eta()) >= 1.0f) {
       return false;
     }
+    if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
+      return false;
+    }
     return true;
   }
 

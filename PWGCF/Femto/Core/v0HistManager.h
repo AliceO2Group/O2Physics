@@ -75,6 +75,7 @@ enum V0Hist {
   kK0shortMassVsAntiLambdaMass,
   kStrangeTofVsTofPosDau,
   kStrangeTofVsTofNegDau,
+  kArmenterosQtVsAlpha,
   // mc
   kOrigin,
   kPdg,
@@ -136,15 +137,17 @@ struct ConfV0QaBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Generate various 2D QA plots"};
   o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "MC ONLY: Plot pt vs cosPa for different particle origins"};
   o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3312, 3334}, "MC ONLY: PDG codes of mothers of secondaries (Max 3 will be considered)"};
-  o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.9, 1}}, "Cosine of poiting angle"};
-  o2::framework::ConfigurableAxis pa{"pa", {{180, 0, 1.f * o2::constants::math::PI}}, "Poiting angle"};
+  o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.9, 1}}, "Cosine of pointing angle"};
+  o2::framework::ConfigurableAxis pa{"pa", {{180, 0, 1.f * o2::constants::math::PI}}, "Pointing angle"};
   o2::framework::ConfigurableAxis dauDcaAtDecay{"dauDcaAtDecay", {{150, 0, 1.5}}, "Daughter DCA at decay vertex"};
   o2::framework::ConfigurableAxis decayVertex{"decayVertex", {{100, 0, 100}}, "Decay vertex"};
   o2::framework::ConfigurableAxis transRadius{"transRadius", {{100, 0, 100}}, "Transverse radius"};
-  o2::framework::ConfigurableAxis massLambda{"massLambda", {{200, 1, 1.2}}, "mass for antiparticle hypothesis"};
+  o2::framework::ConfigurableAxis massLambda{"massLambda", {{200, 1, 1.2}}, "mass for particle hypothesis"};
   o2::framework::ConfigurableAxis massAntiLambda{"massAntiLambda", {{100, 1, 1.2}}, "mass for antiparticle hypothesis"};
   o2::framework::ConfigurableAxis massK0short{"massK0short", {{200, 0.45, 0.55}}, "Mass for k0short hypothesis"};
   o2::framework::ConfigurableAxis strangeTof{"strangeTof", {{500, -5, 5}}, "Strangeness TOF vs TOF Nsigma for daughters"};
+  o2::framework::ConfigurableAxis armenterosAlpha{"armenterosAlpha", {{200, -1, 1}}, "Armenteros-Podolanski alpha"};
+  o2::framework::ConfigurableAxis armenterosQt{"armenterosQt", {{150, 0, 0.3}}, "Armenteros-Podolanski qt (GeV/#it{c})"};
 };
 
 constexpr const char PrefixLambdaQaBinning1[] = "LambdaQaBinning1";
@@ -178,8 +181,8 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
    {kPtVsEta, o2::framework::HistType::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
    {kPtVsPhi, o2::framework::HistType::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}) ; #varphi"},
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
-   {kPtVsCosPa, o2::framework::HistType::kTH2F, "hPtVsCosPa", "p_{T} vs Cosine of poiting angle;p_{T} (GeV/#it{c}); cos(#alpha);"},
-   {kPtVsPa, o2::framework::HistType::kTH2F, "hPtVsPa", "p_{T} vs Poiting angle;p_{T} (GeV/#it{c}); #alpha"},
+   {kPtVsCosPa, o2::framework::HistType::kTH2F, "hPtVsCosPa", "p_{T} vs Cosine of pointing angle;p_{T} (GeV/#it{c}); cos(#alpha);"},
+   {kPtVsPa, o2::framework::HistType::kTH2F, "hPtVsPa", "p_{T} vs Pointing angle;p_{T} (GeV/#it{c}); #alpha"},
    {kPtVsLambdaMass, o2::framework::HistType::kTH2F, "hPtVsLambdaMass", "p_{T} vs #Lambda mass; p_{T} (GeV/#it{c}); m_{p#pi^{-}} (GeV/#it{c}^{2})"},
    {kPtVsAntiLambdaMass, o2::framework::HistType::kTH2F, "hPtVsAntiLambdaMass", "p_{T} vs #bar{#Lambda} mass; p_{T} (GeV/#it{c}); m_{#bar{p}#pi^{+}} (GeV/#it{c}^{2})"},
    {kPtVsK0shortMass, o2::framework::HistType::kTH2F, "hPtVsK0shortMass", "p_{T} vs K^{0}_{S} mass; p_{T} (GeV/#it{c}); m_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2})"},
@@ -188,6 +191,7 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
    {kLambdaMassVsAntiLambdaMass, o2::framework::HistType::kTH2F, "hLambdaMassVsAntiLambdaMass", "#Lambda mass vs #bar{#Lambda}; m_{p#pi^{-}} (GeV/#it{c}^{2}); m_{#bar{p}#pi^{+}} (GeV/#it{c}^{2})"},
    {kStrangeTofVsTofPosDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofPosDau", "TOF_{Strange} vs TOF_{Tracking} of positive Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
    {kStrangeTofVsTofNegDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofNegDau", "TOF_{Strange} vs TOF_{Tracking} of negative Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
+   {kArmenterosQtVsAlpha, o2::framework::HistType::kTH2F, "hArmenterosPodolanski", "Armenteros-Podolanski; #alpha; q_{T} (GeV/#it{c})"},
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
    {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed v0; PDG Code; Entries"},
    {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed v0; PDG Code; Entries"},
@@ -251,7 +255,8 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
     {kK0shortMassVsLambdaMass, {(confQa).massK0short, (confQa).massLambda}},         \
     {kK0shortMassVsAntiLambdaMass, {(confQa).massK0short, (confQa).massAntiLambda}}, \
     {kStrangeTofVsTofPosDau, {(confQa).strangeTof, (confQa).strangeTof}},            \
-    {kStrangeTofVsTofNegDau, {(confQa).strangeTof, (confQa).strangeTof}},
+    {kStrangeTofVsTofNegDau, {(confQa).strangeTof, (confQa).strangeTof}},            \
+    {kArmenterosQtVsAlpha, {(confQa).armenterosAlpha, (confQa).armenterosQt}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define V0_HIST_MC_QA_MAP(confAnalysis, confQa)                 \
@@ -304,11 +309,17 @@ std::map<V0Hist, std::vector<o2::framework::AxisSpec>> makeV0McQaHistSpecMap(T1 
 #undef V0_HIST_MC_QA_MAP
 
 constexpr char PrefixLambdaQa[] = "LambdaQA/";
-constexpr char PrefixLambda1[] = "Lambda1/";
-constexpr char PrefixLambda2[] = "Lambda2/";
+// same-event / mixed-event siblings: single-candidate histograms for a given slot, split by
+// whether the candidate came from a same-event or mixed-event pair
+constexpr char PrefixLambda1Se[] = "Lambda1/SE/";
+constexpr char PrefixLambda2Se[] = "Lambda2/SE/";
+constexpr char PrefixLambda1Me[] = "Lambda1/ME/";
+constexpr char PrefixLambda2Me[] = "Lambda2/ME/";
 constexpr char PrefixK0shortQa[] = "K0shortQa/";
-constexpr char PrefixK0short1[] = "K0short1/";
-constexpr char PrefixK0short2[] = "K0short2/";
+constexpr char PrefixK0short1Se[] = "K0short1/SE/";
+constexpr char PrefixK0short2Se[] = "K0short2/SE/";
+constexpr char PrefixK0short1Me[] = "K0short1/ME/";
+constexpr char PrefixK0short2Me[] = "K0short2/ME/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 
@@ -518,6 +529,7 @@ class V0HistManager
       mHistogramRegistry->add(qaDir + getHistNameV2(kK0shortMassVsAntiLambdaMass, HistTable), getHistDesc(kK0shortMassVsAntiLambdaMass, HistTable), getHistType(kK0shortMassVsAntiLambdaMass, HistTable), {V0Specs.at(kK0shortMassVsAntiLambdaMass)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofPosDau, HistTable), getHistDesc(kStrangeTofVsTofPosDau, HistTable), getHistType(kStrangeTofVsTofPosDau, HistTable), {V0Specs.at(kStrangeTofVsTofPosDau)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofNegDau, HistTable), getHistDesc(kStrangeTofVsTofNegDau, HistTable), getHistType(kStrangeTofVsTofNegDau, HistTable), {V0Specs.at(kStrangeTofVsTofNegDau)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kArmenterosQtVsAlpha, HistTable), getHistDesc(kArmenterosQtVsAlpha, HistTable), getHistType(kArmenterosQtVsAlpha, HistTable), {V0Specs.at(kArmenterosQtVsAlpha)});
     }
   }
 
@@ -618,7 +630,7 @@ class V0HistManager
       massLambda = v0candidate.massLambda();
       massAntiLambda = v0candidate.massAntiLambda();
       tofPosDau = posDau.tofNSigmaPi();
-      tofNegDau = posDau.tofNSigmaPi();
+      tofNegDau = negDau.tofNSigmaPi();
     }
 
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), massLambda);
@@ -640,6 +652,7 @@ class V0HistManager
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), massK0short, massAntiLambda);
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofPosDau, HistTable)), v0candidate.strangeTofPosDau(), tofPosDau);
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofNegDau, HistTable)), v0candidate.strangeTofNegDau(), tofNegDau);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kArmenterosQtVsAlpha, HistTable)), v0candidate.alpha(), v0candidate.qtArm());
     }
   }
 
@@ -709,9 +722,6 @@ class V0HistManager
             case modes::McOrigin::kPhysicalPrimary:
               mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
               break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-              break;
             case modes::McOrigin::kFromMaterial:
               mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
               break;
@@ -732,7 +742,7 @@ class V0HistManager
               }
               break;
             default:
-              LOG(warn) << "Encounted partilce with unknown origin!";
+              LOG(warn) << "Encountered particle with unknown origin!";
               break;
           }
         }

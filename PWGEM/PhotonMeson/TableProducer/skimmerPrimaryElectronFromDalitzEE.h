@@ -36,7 +36,6 @@
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -61,12 +60,7 @@
 #include <utility>
 #include <vector>
 
-// using namespace o2;
-// using namespace o2::soa;
-// using namespace o2::framework;
-// using namespace o2::framework::expressions;
-// using namespace o2::constants::physics;
-
+// NOLINTBEGIN(google-global-names-in-headers)
 using o2::framework::AxisSpec;
 using o2::framework::Configurable;
 using o2::framework::ConfigurableGroup;
@@ -77,6 +71,7 @@ using o2::framework::kTH2F;
 using o2::framework::kTHnSparseF;
 using o2::framework::Preslice;
 using o2::framework::Produces;
+// NOLINTEND(google-global-names-in-headers)
 
 using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::PMEvSels>;
 using MyCollisionsWithSWT = o2::soa::Join<MyCollisions, o2::aod::EMSWTriggerBitsTMP>;
@@ -166,6 +161,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store dalitz ee pairs"};
   Configurable<float> minMeegamma{"minMeegamma", 0.3, "min. mee to store eegamma candidates"};
   Configurable<float> maxMeegamma{"maxMeegamma", 0.8, "max. mee to store eegamma candidates"};
+  Configurable<bool> photonsNeeded{"photonsNeeded", true, "require a minimum of one photons per collision"};
   Configurable<bool> fillLS{"fillLS", true, "flag to fill LS histograms for QA"};
   Configurable<int> fillingMode{"fillingMode", 1, "Filling mode| 1: fill tracks without pair selection, 2: fill tracks from selected pairs, 3: fill tracks from selected pairs that can be combined with a photon"};
   Configurable<bool> fillWithEtaMassCut{"fillWithEtaMassCut", true, "only valid for fillingmode 3; true: filling tabled based on eta candidate selection with minMeegamma < M < maxMeegamma, false: fill identical to fillingmode 2"};
@@ -745,6 +741,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
       auto varFillingMode = static_cast<enumFillingMode>(fillingMode.value);
 
       const auto& v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
+      if (photonsNeeded && v0photons_per_coll.size() == 0) {
+        continue;
+      }
+
       const auto& posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       const auto& negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       const auto& slicedTracks = tracks.sliceBy(perTracksCollision, collision.globalIndex());
@@ -927,6 +927,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
       auto varFillingMode = static_cast<enumFillingMode>(fillingMode.value);
 
       const auto& v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
+      if (photonsNeeded && v0photons_per_coll.size() == 0) {
+        continue;
+      }
+
       const auto& posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       const auto& negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       const auto& slicedTracks = tracks.sliceBy(perTracksCollision, collision.globalIndex());

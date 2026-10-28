@@ -41,6 +41,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <numeric>
 #include <tuple>
@@ -1041,6 +1042,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackTimeRes] = "ns";
   fgVariableNames[kTrackTimeResRelative] = "Relative resolution of the track time";
   fgVariableUnits[kTrackTimeResRelative] = "";
+  fgVariableNames[kTrackAssocDeltaTime] = "Track-collision association #Deltat";
+  fgVariableUnits[kTrackAssocDeltaTime] = "ns";
+  fgVariableNames[kTrackAssocTimeThreshold] = "Track-collision association time threshold";
+  fgVariableUnits[kTrackAssocTimeThreshold] = "ns";
+  fgVariableNames[kTrackAssocDeltaTimeNorm] = "|#Deltat| / threshold";
+  fgVariableUnits[kTrackAssocDeltaTimeNorm] = "";
   fgVariableNames[kDetectorMap] = "DetectorMap";
   fgVariableUnits[kDetectorMap] = "";
   fgVariableNames[kHasITS] = "HasITS";
@@ -1266,6 +1273,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCPhiCS] = "rad";
   fgVariableNames[kMCPhiTildeCS] = "MC #tilde{#varphi}_{CS}";
   fgVariableUnits[kMCPhiTildeCS] = "rad";
+  fgVariableNames[kMCCosThetaGJB1] = "MC cos#it{#theta}_{GJ1}";
+  fgVariableUnits[kMCCosThetaGJB1] = "";
+  fgVariableNames[kMCPhiGJB1] = "MC #varphi_{GJ1}";
+  fgVariableUnits[kMCPhiGJB1] = "rad";
+  fgVariableNames[kMCPhiTildeGJB1] = "MC #tilde{#varphi}_{GJ1}";
+  fgVariableUnits[kMCPhiTildeGJB1] = "rad";
+  fgVariableNames[kMCCosThetaGJB2] = "MC cos#it{#theta}_{GJ2}";
+  fgVariableUnits[kMCCosThetaGJB2] = "";
+  fgVariableNames[kMCPhiGJB2] = "MC #varphi_{GJ2}";
+  fgVariableUnits[kMCPhiGJB2] = "rad";
+  fgVariableNames[kMCPhiTildeGJB2] = "MC #tilde{#varphi}_{GJ2}";
+  fgVariableUnits[kMCPhiTildeGJB2] = "rad";
   fgVariableNames[kMCCosThetaPP] = "MC cos(#theta_{PP})";
   fgVariableUnits[kMCCosThetaPP] = "";
   fgVariableNames[kMCPhiPP] = "MC #varphi_{PP}";
@@ -1708,6 +1727,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPhiCS] = "rad.";
   fgVariableNames[kPhiTildeCS] = "#tilde{#varphi}_{CS}";
   fgVariableUnits[kPhiTildeCS] = "rad.";
+  fgVariableNames[kCosThetaGJB1] = "cos#it{#theta}_{GJ1}";
+  fgVariableUnits[kCosThetaGJB1] = "";
+  fgVariableNames[kPhiGJB1] = "#varphi_{GJ1}";
+  fgVariableUnits[kPhiGJB1] = "rad.";
+  fgVariableNames[kPhiTildeGJB1] = "#tilde{#varphi}_{GJ1}";
+  fgVariableUnits[kPhiTildeGJB1] = "rad.";
+  fgVariableNames[kCosThetaGJB2] = "cos#it{#theta}_{GJ2}";
+  fgVariableUnits[kCosThetaGJB2] = "";
+  fgVariableNames[kPhiGJB2] = "#varphi_{GJ2}";
+  fgVariableUnits[kPhiGJB2] = "rad.";
+  fgVariableNames[kPhiTildeGJB2] = "#tilde{#varphi}_{GJ2}";
+  fgVariableUnits[kPhiTildeGJB2] = "rad.";
   fgVariableNames[kCosThetaPP] = "cos#it{#theta}_{PP}";
   fgVariableUnits[kCosThetaPP] = "";
   fgVariableNames[kPhiPP] = "#varphi_{PP}";
@@ -2171,6 +2202,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCEventImpParam"] = kMCEventImpParam;
   fgVarNamesMap["kMCEventPlaneAngle"] = kMCEventPlaneAngle;
   fgVarNamesMap["kMCEventCentrFT0C"] = kMCEventCentrFT0C;
+  fgVarNamesMap["kMultMCNParticlesEta05"] = kMultMCNParticlesEta05;
+  fgVarNamesMap["kMultMCNParticlesEta08"] = kMultMCNParticlesEta08;
+  fgVarNamesMap["kMultMCNParticlesEta10"] = kMultMCNParticlesEta10;
   fgVarNamesMap["kQ1ZNAX"] = kQ1ZNAX;
   fgVarNamesMap["kQ1ZNAY"] = kQ1ZNAY;
   fgVarNamesMap["kQ1ZNCX"] = kQ1ZNCX;
@@ -2369,6 +2403,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTrackTime"] = kTrackTime;
   fgVarNamesMap["kTrackTimeRes"] = kTrackTimeRes;
   fgVarNamesMap["kTrackTimeResRelative"] = kTrackTimeResRelative;
+  fgVarNamesMap["kTrackAssocDeltaTime"] = kTrackAssocDeltaTime;
+  fgVarNamesMap["kTrackAssocTimeThreshold"] = kTrackAssocTimeThreshold;
+  fgVarNamesMap["kTrackAssocDeltaTimeNorm"] = kTrackAssocDeltaTimeNorm;
   fgVarNamesMap["kDetectorMap"] = kDetectorMap;
   fgVarNamesMap["kHasITS"] = kHasITS;
   fgVarNamesMap["kHasTRD"] = kHasTRD;
@@ -2549,6 +2586,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCCosThetaCS"] = kMCCosThetaCS;
   fgVarNamesMap["kMCPhiCS"] = kMCPhiCS;
   fgVarNamesMap["kMCPhiTildeCS"] = kMCPhiTildeCS;
+  fgVarNamesMap["kMCCosThetaGJB1"] = kMCCosThetaGJB1;
+  fgVarNamesMap["kMCPhiGJB1"] = kMCPhiGJB1;
+  fgVarNamesMap["kMCPhiTildeGJB1"] = kMCPhiTildeGJB1;
+  fgVarNamesMap["kMCCosThetaGJB2"] = kMCCosThetaGJB2;
+  fgVarNamesMap["kMCPhiGJB2"] = kMCPhiGJB2;
+  fgVarNamesMap["kMCPhiTildeGJB2"] = kMCPhiTildeGJB2;
   fgVarNamesMap["kMCCosThetaPP"] = kMCCosThetaPP;
   fgVarNamesMap["kMCPhiPP"] = kMCPhiPP;
   fgVarNamesMap["kMCPhiTildePP"] = kMCPhiTildePP;
@@ -2595,6 +2638,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCosThetaCS"] = kCosThetaCS;
   fgVarNamesMap["kPhiCS"] = kPhiCS;
   fgVarNamesMap["kPhiTildeCS"] = kPhiTildeCS;
+  fgVarNamesMap["kCosThetaGJB1"] = kCosThetaGJB1;
+  fgVarNamesMap["kPhiGJB1"] = kPhiGJB1;
+  fgVarNamesMap["kPhiTildeGJB1"] = kPhiTildeGJB1;
+  fgVarNamesMap["kCosThetaGJB2"] = kCosThetaGJB2;
+  fgVarNamesMap["kPhiGJB2"] = kPhiGJB2;
+  fgVarNamesMap["kPhiTildeGJB2"] = kPhiTildeGJB2;
   fgVarNamesMap["kCosThetaPP"] = kCosThetaPP;
   fgVarNamesMap["kPhiPP"] = kPhiPP;
   fgVarNamesMap["kPhiTildePP"] = kPhiTildePP;
@@ -2917,4 +2966,65 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kInnerTOFnSigmaTr"] = kInnerTOFnSigmaTr;
   fgVarNamesMap["kInnerTOFnSigmaHe3"] = kInnerTOFnSigmaHe3;
   fgVarNamesMap["kInnerTOFnSigmaAl"] = kInnerTOFnSigmaAl;
+}
+
+//__________________________________________________________________
+bool VarManager::computeBarrelAssocTimeCompat(float trackTime, float trackTimeRes, bool timeResIsRange, bool isPVContributor,
+                                              int64_t origBC, float origCollTime, int origNumContrib,
+                                              int64_t collBC, float collTime, float collTimeRes,
+                                              float nSigma, float timeMargin, int bcWindowForOneSigma,
+                                              int usePVAssociation, int maxPvContribLowMult, float* values)
+{
+  //
+  // Mirrors the time-based association of Common/Core/CollisionAssociation.h::runAssocWithTime for central barrel tracks.
+  // Every arithmetic step is kept identical to the associator (including the double->int64 truncations),
+  //   so that re-applying it on skimmed associations with a smaller timeMargin reproduces a skim produced directly with that margin.
+  // Only tracks assigned to a collision in the AO2D are handled (this is always the case for tracks written by the DQ table makers).
+  //
+  if (!values) {
+    values = fgValues;
+  }
+  values[kTrackAssocDeltaTime] = -9999.f;
+  values[kTrackAssocTimeThreshold] = 0.f;
+  values[kTrackAssocDeltaTimeNorm] = 9999.f;
+
+  constexpr double BunchSpacingNS = o2::constants::lhc::LHCBunchSpacingNS;
+
+  // (1) BC pre-window (CollisionAssociation.h: trackBCCache, bcOffsetMax, bcOffsetWindow)
+  //     NOTE: the associator uses the raw trackTime here also for PV contributors
+  const int64_t bcOffsetMax = static_cast<int64_t>(bcWindowForOneSigma * nSigma + timeMargin / BunchSpacingNS);
+  const int64_t trackBCCache = static_cast<int64_t>(static_cast<double>(origBC) + static_cast<double>(trackTime) / BunchSpacingNS);
+  if (std::abs(trackBCCache - collBC) > bcOffsetMax) {
+    return false;
+  }
+
+  // (2) PV-contributor handling (usePVAssociation: 0 off, 1 OnlySameBc, 2 SameBcAndLowMult)
+  constexpr int OnlySameBc = 1;
+  constexpr int SameBcAndLowMult = 2;
+  const bool pvMode = (usePVAssociation == OnlySameBc && isPVContributor) ||
+                      (usePVAssociation == SameBcAndLowMult && isPVContributor && origNumContrib > maxPvContribLowMult);
+  float tTrack = trackTime;
+  float tTrackRes = trackTimeRes;
+  if (pvMode) {
+    tTrack = origCollTime;                          // time of the ORIGINAL collision
+    tTrackRes = static_cast<float>(BunchSpacingNS); // 1 BC
+  }
+
+  // (3) time difference and threshold
+  const int64_t bcOffset = origBC - collBC;
+  const float collTimeRes2 = collTimeRes * collTimeRes;
+  const float deltaTime = tTrack - collTime + bcOffset * static_cast<float>(BunchSpacingNS);
+  float threshold = 0.f;
+  if (pvMode) {
+    threshold = tTrackRes; // margin NOT applied
+  } else if (timeResIsRange) {
+    threshold = tTrackRes + nSigma * std::sqrt(collTimeRes2) + timeMargin;
+  } else {
+    threshold = nSigma * std::sqrt(collTimeRes2 + tTrackRes * tTrackRes) + timeMargin;
+  }
+
+  values[kTrackAssocDeltaTime] = deltaTime;
+  values[kTrackAssocTimeThreshold] = threshold;
+  values[kTrackAssocDeltaTimeNorm] = (threshold > 0.f) ? std::abs(deltaTime) / threshold : 9999.f;
+  return std::abs(deltaTime) < threshold;
 }

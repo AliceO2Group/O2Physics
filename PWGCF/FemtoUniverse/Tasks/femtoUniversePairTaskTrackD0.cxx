@@ -249,7 +249,7 @@ struct FemtoUniversePairTaskTrackD0 {
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfBothTracks.confUse3D>> to true in order to use)"};
   ConfigurableAxis confmultBins3D{"confmultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfBothTracks.confUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
   ConfigurableAxis confkstarBins{"confkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "binning kT"};
@@ -314,6 +314,7 @@ struct FemtoUniversePairTaskTrackD0 {
                               {"hEtaD0D0bar", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
                               {"hEtaD0", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
                               {"hEtaD0bar", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
+                              {"hYD0D0bar", ";y ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
                               {"hPtDaughters", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 12.}}}},
                               {"hSignDaughters", ";sign ;counts", {HistType::kTH1F, {{10, -2.5, 2.5}}}}}};
 
@@ -675,6 +676,7 @@ struct FemtoUniversePairTaskTrackD0 {
       registry.fill(HIST("hPtD0D0bar"), d0d0bar.pt());
       registry.fill(HIST("hPhiD0D0bar"), d0d0bar.phi());
       registry.fill(HIST("hEtaD0D0bar"), d0d0bar.eta());
+      registry.fill(HIST("hYD0D0bar"), d0d0bar.transRadius());
       // BDT score classes
       registry.fill(HIST("DebugBdt/hBdtScore0"), d0d0bar.decayVtxX());
       registry.fill(HIST("DebugBdt/hBdtScore1"), d0d0bar.decayVtxY());
@@ -1388,7 +1390,7 @@ struct FemtoUniversePairTaskTrackD0 {
   {
     for (auto const& part : recoParts) {
       // filling the histograms for identified hadrons
-      if ((part.partType() == aod::femtouniverseparticle::ParticleType::kD0) && (part.pt() > ConfDmesons.confMinPtD0D0barReco) && (part.pt() < ConfDmesons.confMaxPtD0D0barReco)) {
+      if ((part.partType() == aod::femtouniverseparticle::ParticleType::kD0) && (part.pt() > ConfDmesons.confMinPtD0D0barReco) && (part.pt() < ConfDmesons.confMaxPtD0D0barReco) && (part.decayVtxZ() < ConfMlProb.confMlProbNonPromptMax)) {
         // getting the efficiency value
         if (doEfficiencyCorr) {
           weight = efficiencyCalculator.getWeight(ParticleNo::TWO, part.pt());

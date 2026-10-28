@@ -9,9 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlatLutEntry.h
+/// \brief Flat LUT data structures and buffer handling for the ALICE3 fast smearing backend.
+
 #ifndef ALICE3_CORE_FLATLUTENTRY_H_
 #define ALICE3_CORE_FLATLUTENTRY_H_
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -19,15 +23,22 @@
 #include <span>
 #include <vector>
 
-#define LUTCOVM_VERSION 20210801
+static constexpr int LUTCOVM_VERSION = 20210801;
 
-namespace o2::delphes
+namespace o2::fastsim
 {
 
+constexpr int kNumCovarianceTerms = 15;
+constexpr int kNumEigenModes = 5;
+typedef std::array<float, kNumCovarianceTerms> CovarianceArray;
+typedef std::array<float, kNumEigenModes> EigenArray;
+typedef std::array<double, kNumEigenModes> EigenArrayDouble;
+typedef std::array<std::array<float, kNumEigenModes>, kNumEigenModes> EigenMatrix;
+
 /**
- * @brief Flat LUT entry structure
+ * @brief Flat LUT entry structure.
  */
-struct lutEntry_t {
+struct LutEntry {
   float nch = 0.f;
   float eta = 0.f;
   float pt = 0.f;
@@ -36,41 +47,46 @@ struct lutEntry_t {
   float eff2 = 0.f;
   float itof = 0.f;
   float otof = 0.f;
-  float covm[15] = {0.f};
-  float eigval[5] = {0.f};
-  float eigvec[5][5] = {{0.f}};
-  float eiginv[5][5] = {{0.f}};
+  CovarianceArray covm = {0.f};
+  EigenArray eigval = {0.f};
+  EigenMatrix eigvec = {{{0.f}}};
+  EigenMatrix eiginv = {{{0.f}}};
 
   void print() const;
 };
 
+using lutEntry_t = LutEntry;
+
 /**
- * @brief Binning map
+ * @brief Binning map.
  */
-struct map_t {
+struct Map {
   int nbins = 1;
   float min = 0.f;
   float max = 1.e6f;
   bool log = false;
 
-  float eval(int bin) const
+  [[nodiscard]] float eval(int bin) const
   {
     float width = (max - min) / nbins;
     float val = min + (bin + 0.5f) * width;
-    if (log)
+    if (log) {
       return std::pow(10.f, val);
+    }
     return val;
   }
 
-  float fracPositionWithinBin(float val) const;
-  int find(float val) const;
+  [[nodiscard]] float fracPositionWithinBin(float val) const;
+  [[nodiscard]] int find(float val) const;
   void print() const;
 };
 
+using map_t = Map;
+
 /**
- * @brief LUT header
+ * @brief LUT header.
  */
-struct lutHeader_t {
+struct LutHeader {
   int version = LUTCOVM_VERSION;
   int pdg = 0;
   float mass = 0.f;
@@ -80,12 +96,14 @@ struct lutHeader_t {
   map_t etamap;
   map_t ptmap;
 
-  bool check_version() const;
+  [[nodiscard]] bool checkVersion() const;
   void print() const;
 };
 
+using lutHeader_t = LutHeader;
+
 /**
- * @brief Flat LUT data container - single contiguous buffer
+ * @brief Flat LUT data container - single contiguous buffer.
  * Memory layout: [header][entry_0][entry_1]...[entry_N]
  *
  * All entries stored sequentially in a single allocation.
@@ -104,7 +122,7 @@ class FlatLutData
    */
   void initialize(const lutHeader_t& header);
 
-  size_t getEntryIndex(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
+  [[nodiscard]] size_t getEntryIndex(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
   {
     // Linear index: nch varies slowest, pt varies fastest
     // idx = nch * (rad*eta*pt) + rad * (eta*pt) + eta * pt + pt
@@ -114,7 +132,7 @@ class FlatLutData
   /**
    * @brief Get LUT entry by bin indices (view)
    */
-  const lutEntry_t* getEntryRef(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
+  [[nodiscard]] const lutEntry_t* getEntryRef(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
 
   /**
    * @brief Get LUT entry by bin indices (owned)
@@ -124,7 +142,7 @@ class FlatLutData
   /**
    * @brief Get LUT header (view)
    */
-  const lutHeader_t& getHeaderRef() const;
+  [[nodiscard]] const lutHeader_t& getHeaderRef() const;
 
   /**
    * @brief Get LUT header (owned)
@@ -134,13 +152,13 @@ class FlatLutData
   /**
    * @brief Get raw data buffer
    */
-  uint8_t* data() { return mData.data(); }                // owned
-  const uint8_t* data() const { return mDataRef.data(); } // view
+  uint8_t* data() { return mData.data(); }                              // owned
+  [[nodiscard]] const uint8_t* data() const { return mDataRef.data(); } // view
 
   /**
    * @brief Total size in bytes
    */
-  size_t bytes() const { return mDataRef.size(); }
+  [[nodiscard]] size_t bytes() const { return mDataRef.size(); }
 
   /**
    * @brief Construct a new FlatLutData from external buffer as a copy
@@ -165,17 +183,17 @@ class FlatLutData
   /**
    * @brief Preview buffer header for version and other compatibility checks
    */
-  static lutHeader_t PreviewHeader(const uint8_t* buffer, size_t size);
+  static lutHeader_t previewHeader(const uint8_t* buffer, size_t size);
 
   /**
    * @brief Preview file-stored header for version and other compatibility checks
    */
-  static lutHeader_t PreviewHeader(std::ifstream& file, const char* filename);
+  static lutHeader_t previewHeader(std::ifstream& file, const char* filename);
 
   /**
    * @brief Check if the LUT is loaded
    */
-  bool isLoaded() const;
+  [[nodiscard]] bool isLoaded() const;
 
   /**
    * @brief Reset LUT to empty
@@ -186,7 +204,7 @@ class FlatLutData
   /**
    * @brief Linear index calculation for entry access
    */
-  size_t getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
+  [[nodiscard]] size_t getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
 
   /**
    * @brief Update dimensions from the current header
@@ -224,6 +242,6 @@ class FlatLutData
   int mPtBins = 0;
 };
 
-} // namespace o2::delphes
+} // namespace o2::fastsim
 
 #endif // ALICE3_CORE_FLATLUTENTRY_H_

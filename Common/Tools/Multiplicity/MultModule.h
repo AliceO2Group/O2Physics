@@ -36,6 +36,7 @@
 #include <TProfile.h>
 #include <TString.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -480,7 +481,7 @@ class MultModule
     LOGF(info, "Metadata information: isMC? %i", metadataInfo.isMC());
     const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
 
-    TString listOfRequestors[nTablesConst];
+    std::array<TString, nTablesConst> listOfRequestors{};
     for (int i = 0; i < nTablesConst; i++) {
       int f = internalOpts.enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
@@ -687,14 +688,14 @@ class MultModule
         }
 
         if (lCalibObjects) {
-          hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
-          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-          hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
-          hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
-          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
-          hVtxZNMFTTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
-          hVtxZNGlobalTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
+          hVtxZFV0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
+          hVtxZFT0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+          hVtxZFDDA = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
+          hVtxZFDDC = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
+          hVtxZNTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+          hVtxZNMFTTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
+          hVtxZNGlobalTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
           lCalibLoaded = true;
           // Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
@@ -1097,11 +1098,11 @@ class MultModule
       Run2CL1Info.mCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
+          TH1* h = dynamic_cast<TH1*>(callst->FindObject(ccdbhname));
           return h;
         };
         auto getformulaccdb = [callst](const char* ccdbhname) {
-          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
+          TFormula* f = dynamic_cast<TFormula*>(callst->FindObject(ccdbhname));
           return f;
         };
 
@@ -1252,8 +1253,8 @@ class MultModule
       if (callst != nullptr) {
         LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
         auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string>& generatorName) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
-          estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+          estimator.mhMultSelCalib = dynamic_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+          estimator.mMCScale = dynamic_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
           if (estimator.mhMultSelCalib != nullptr) {
             if (generatorName->length() != 0) {
               LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());

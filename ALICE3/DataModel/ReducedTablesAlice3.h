@@ -20,6 +20,7 @@
 
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
+#include "ALICE3/DataModel/OTFMID.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
@@ -274,6 +275,14 @@ DECLARE_SOA_TABLE(ReducedA3PIDTOF, "AOD", "REA3PIDTOF",
                                               upgrade_tof::NSigmaTritonOuterTOF,
                                               upgrade_tof::NSigmaHelium3OuterTOF,
                                               upgrade_tof::NSigmaAlphaOuterTOF>);
+
+DECLARE_SOA_TABLE(ReducedA3PIDMID, "AOD", "REA3PIDMID",
+                  upgrade_mid::MIDEventTime,
+                  upgrade_mid::MIDEventTimeErr,
+                  upgrade_mid::MIDTrackPosReco,
+                  upgrade_mid::MIDTrackTimeReco,
+                  upgrade_mid::MIDTrackLengthReco,
+                  upgrade_mid::MIDCandidate);
 
 DECLARE_SOA_TABLE(ReducedA3PIDRich, "AOD", "REA3PIDRICH",
                   upgrade_rich::NSigmaElectronRich,

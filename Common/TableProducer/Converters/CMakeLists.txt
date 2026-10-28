@@ -118,3 +118,8 @@ o2physics_add_dpl_workflow(mult-bcs-converter
                     SOURCES multBCsConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mult-bcs-002-converter
+                    SOURCES multBCs002Converter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

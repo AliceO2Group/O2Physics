@@ -120,10 +120,14 @@ struct FemtoPairTrackCharmHadron {
   paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairTrackD0Builder<
-    trackhistmanager::PrefixTrack1,
-    charmhadronhistmanager::PrefixD01,
-    trackhistmanager::PrefixD01PosDaughter,
-    trackhistmanager::PrefixD01NegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    charmhadronhistmanager::PrefixD01Se,
+    trackhistmanager::PrefixD01PosDaughterSe,
+    trackhistmanager::PrefixD01NegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    charmhadronhistmanager::PrefixD01Me,
+    trackhistmanager::PrefixD01PosDaughterMe,
+    trackhistmanager::PrefixD01NegDaughterMe,
     pairhistmanager::PrefixTrackD0Se,
     pairhistmanager::PrefixTrackD0Me,
     closepairrejection::PrefixTrackD0DaughterSe,
@@ -132,11 +136,16 @@ struct FemtoPairTrackCharmHadron {
     pairTrackD0Builder;
 
   pairbuilder::PairTrackLcBuilder<
-    trackhistmanager::PrefixTrack1,
-    charmhadronhistmanager::PrefixLc1,
-    trackhistmanager::PrefixLc1ProtonDaughter,
-    trackhistmanager::PrefixLc1KaonDaughter,
-    trackhistmanager::PrefixLc1PionDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    charmhadronhistmanager::PrefixLc1Se,
+    trackhistmanager::PrefixLc1ProtonDaughterSe,
+    trackhistmanager::PrefixLc1KaonDaughterSe,
+    trackhistmanager::PrefixLc1PionDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    charmhadronhistmanager::PrefixLc1Me,
+    trackhistmanager::PrefixLc1ProtonDaughterMe,
+    trackhistmanager::PrefixLc1KaonDaughterMe,
+    trackhistmanager::PrefixLc1PionDaughterMe,
     pairhistmanager::PrefixTrackLcSe,
     pairhistmanager::PrefixTrackLcMe,
     closepairrejection::PrefixTrackLcProtonSe,
@@ -152,9 +161,9 @@ struct FemtoPairTrackCharmHadron {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoTrackD0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -180,9 +189,9 @@ struct FemtoPairTrackCharmHadron {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec;

@@ -538,13 +538,13 @@ struct upcQuarkoniaCentralBarrel {
     // Check the number of Protons and antiProtons
     // needs at least 1 of each
     if (!buildSameSignPairs && nProtons >= 1 && nAntiProtons >= 1) {
-      buildProtonAntiProtonPairs(fullTracks, (TObject*)nullptr, selProtonIndices, selAntiProtonIndices, selGapSide);
+      buildProtonAntiProtonPairs(fullTracks, nullptr, selProtonIndices, selAntiProtonIndices, selGapSide);
     }
     if (buildSameSignPairs && nProtons > 1) {
-      buildProtonAntiProtonPairs(fullTracks, (TObject*)nullptr, selProtonIndices, selProtonIndices, selGapSide);
+      buildProtonAntiProtonPairs(fullTracks, nullptr, selProtonIndices, selProtonIndices, selGapSide);
     }
     if (buildSameSignPairs && nAntiProtons > 1) {
-      buildProtonAntiProtonPairs(fullTracks, (TObject*)nullptr, selAntiProtonIndices, selAntiProtonIndices, selGapSide);
+      buildProtonAntiProtonPairs(fullTracks, nullptr, selAntiProtonIndices, selAntiProtonIndices, selGapSide);
     }
   }
 

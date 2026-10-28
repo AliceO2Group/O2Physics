@@ -1335,13 +1335,13 @@ struct HigherMassResonances {
   using BinningTypeFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeFT0M binningOnFT0M{{axisVertex, axisMultiplicity}, true};
-  BinningTypeFT0A binningOnFT0A{{axisVertex, axisMultiplicity}, true};
-  BinningTypeFT0C binningOnFT0C{{axisVertex, axisMultiplicity}, true};
-  BinningTypeFV0A binningOnFV0A{{axisVertex, axisMultiplicity}, true};
+  BinningTypeFT0M binningOnFT0M{{axisVertex, axisMultiplicity}};
+  BinningTypeFT0A binningOnFT0A{{axisVertex, axisMultiplicity}};
+  BinningTypeFT0C binningOnFT0C{{axisVertex, axisMultiplicity}};
+  BinningTypeFV0A binningOnFV0A{{axisVertex, axisMultiplicity}};
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningType colBinning{{axisVertex, axisMultiplicity}, true};                                   // for derived data only
+  BinningType colBinning{{axisVertex, axisMultiplicity}};                                         // for derived data only
   Preslice<V0CandidatesDerivedData> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
 
   void processME(EventCandidates const& collisions, TrackCandidates const& /*tracks*/, V0TrackCandidate const& v0s)

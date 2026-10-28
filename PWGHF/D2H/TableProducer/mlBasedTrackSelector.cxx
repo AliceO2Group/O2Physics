@@ -190,9 +190,9 @@ struct HfTrackSelectorTagSelCollisions {
     }
 
     // set numerical value of the Run 2 trigger class
-    auto* const triggerAlias = std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data());
-    if (triggerAlias != aliasLabels + kNaliases) {
-      hfEvSel.triggerClass.value = std::distance(aliasLabels, triggerAlias);
+    auto* const triggerAlias = std::find(aliasLabels.begin(), aliasLabels.end(), triggerClassName.value.data());
+    if (triggerAlias != aliasLabels.end()) {
+      hfEvSel.triggerClass.value = std::distance(aliasLabels.begin(), triggerAlias);
     }
 
     hfEvSel.init(registry, &zorroSummary); // collision monitoring
@@ -312,6 +312,7 @@ struct HfTrackSelectorTagSelTracks {
     Configurable<bool> testAcknowledgement{"testAcknowledgement", false, "test acknowledgement"};
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
     Configurable<float> ptMinTrack{"ptMinTrack", 0.3f, "min. track pT entering the charm combinatorics"};
+    Configurable<float> etaMaxTrack{"etaMaxTrack", 0.8f, "max. track eta entering the charm combinatorics"};
     Configurable<bool> enableTiming{"enableTiming", false, "fill hTiming with the CPU of the feature building and of each model evaluation (adds two clock reads per call)"};
     // D+ model
     Configurable<bool> applyMlDplus{"applyMlDplus", true, "evaluate the D+ track model"};
@@ -589,7 +590,7 @@ struct HfTrackSelectorTagSelTracks {
         registry.fill(HIST("hPtNoCuts"), track.pt());
       }
 
-      const bool passesQuality = track.pt() >= config.ptMinTrack && track.isGlobalTrackWoDCA();
+      const bool passesQuality = track.pt() >= config.ptMinTrack && std::abs(track.eta()) <= config.etaMaxTrack && track.isGlobalTrackWoDCA();
       if (passesQuality && !scoreCollision && config.fillHistograms) {
         registry.fill(HIST("hPtQualityRejColl"), track.pt());
       }

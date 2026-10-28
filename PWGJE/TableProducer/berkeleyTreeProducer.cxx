@@ -39,6 +39,7 @@ namespace o2::aod
 {
 namespace berkeleytree
 {
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(VtxZ, vtxZ, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(PtHat, ptHat, float);
@@ -63,6 +64,7 @@ DECLARE_SOA_COLUMN(PdgId, pdgId, std::vector<int>);
 } // namespace berkeleytree
 
 DECLARE_SOA_TABLE(BerkeleyTree, "AOD", "BERKELEYTREE",
+                  berkeleytree::RunNumber,
                   berkeleytree::VtxZ,
                   berkeleytree::Weight,
                   berkeleytree::PtHat,
@@ -133,7 +135,7 @@ struct BerkeleyTreeProducer {
   }
 
   using JetParticlesWithOriginal = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
-  void processMCJJ(aod::JetCollisionsMCD::iterator const& collision, aod::JetTracksMCD const& tracks, JetParticlesWithOriginal const& mcParticles, aod::JetMcCollisions const&)
+  void processMCJJ(aod::JetCollisionsMCD::iterator const& collision, aod::JetTracksMCD const& tracks, JetParticlesWithOriginal const& mcParticles, aod::JetMcCollisions const&, aod::JBCs const&)
   {
     // do not do any RCT selections, will be done on analysis level
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, false, "", false, false))
@@ -143,6 +145,7 @@ struct BerkeleyTreeProducer {
 
     float weight = collision.has_mcCollision() ? collision.mcCollision().weight() : 1.f;
     float pthat = collision.has_mcCollision() ? collision.mcCollision().ptHard() : 1.f;
+    int runNumber = collision.bc_as<aod::JBCs>().runNumber();
 
     std::vector<float> detPt, detEta, detPhi;
     std::vector<uint8_t> detTrackSel;
@@ -196,7 +199,7 @@ struct BerkeleyTreeProducer {
       }
     }
 
-    tree(collision.posZ(), weight, pthat, collision.multFT0C(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.rct_raw(), detPt, detEta, detPhi, detTrackSel, detMcId, genPt, genEta, genPhi, genE, genCharge, genMcId, pdgId);
+    tree(runNumber, collision.posZ(), weight, pthat, collision.multFT0C(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.rct_raw(), detPt, detEta, detPhi, detTrackSel, detMcId, genPt, genEta, genPhi, genE, genCharge, genMcId, pdgId);
   }
 
   PROCESS_SWITCH(BerkeleyTreeProducer, processMCJJ, "MC processing for JJ simulations", false);

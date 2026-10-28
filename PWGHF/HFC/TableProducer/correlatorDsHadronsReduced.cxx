@@ -88,8 +88,8 @@ struct HfCorrelatorDsHadronsReduced {
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec axisEta = {binsEta, "#it{#eta}"};
     AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtD), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T} Hadron (GeV/#it{c})"};
 
     // Histograms for data analysis
     if (fillHistoData) {
@@ -110,7 +110,7 @@ struct HfCorrelatorDsHadronsReduced {
                           soa::Join<aod::AssocTrackReds, aod::AssocTrackSels> const& tracks)
   {
 
-    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}};
 
     for (const auto& collision : collisions) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multiplicity()));
@@ -157,7 +157,7 @@ struct HfCorrelatorDsHadronsReduced {
                             aod::AssocTrackReds const& tracks)
   {
 
-    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}};
 
     for (const auto& collision : collisions) {
       int const poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multiplicity()));

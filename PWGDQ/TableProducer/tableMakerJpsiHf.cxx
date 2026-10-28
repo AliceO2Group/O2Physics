@@ -102,8 +102,6 @@ using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 using MyBarrelTracksSelectedWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelInfo>;
 using MyMuonTracksSelectedWithColl = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo>;
 
-HfHelper hfHelper;
-
 struct tableMakerJpsiHf {
   //
   // This task combines dilepton candidates with a open charm hadron
@@ -321,9 +319,9 @@ struct tableMakerJpsiHf {
 
         double rapDmeson = -999.;
         if constexpr (TDmeson == DmesonType::D0) {
-          rapDmeson = hfHelper.yD0(dmeson);
+          rapDmeson = HfHelper::yD0(dmeson);
         } else if constexpr (TDmeson == DmesonType::Dplus) {
-          rapDmeson = hfHelper.yDplus(dmeson);
+          rapDmeson = HfHelper::yDplus(dmeson);
         }
 
         if (yCandDmesonMax >= 0. && std::abs(rapDmeson) > yCandDmesonMax) {
@@ -332,18 +330,18 @@ struct tableMakerJpsiHf {
 
         if constexpr (TDmeson == DmesonType::D0) {
           if (dmeson.isSelD0() >= 1) {
-            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0ToPiK>(dmeson, hfHelper, scores[0], fValuesDileptonCharmHadron);
+            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0ToPiK>(dmeson, scores[0], fValuesDileptonCharmHadron);
             fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
             VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
           if (dmeson.isSelD0bar() >= 1) {
-            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0barToKPi>(dmeson, hfHelper, scores[3], fValuesDileptonCharmHadron);
+            VarManager::FillSingleDileptonCharmHadron<VarManager::kD0barToKPi>(dmeson, scores[3], fValuesDileptonCharmHadron);
             fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
             VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
         } else if constexpr (TDmeson == DmesonType::Dplus) {
           if (dmeson.isSelDplusToPiKPi() >= 1) {
-            VarManager::FillSingleDileptonCharmHadron<VarManager::kDplusToPiKPi>(dmeson, hfHelper, scores_dplus[0], fValuesDileptonCharmHadron);
+            VarManager::FillSingleDileptonCharmHadron<VarManager::kDplusToPiKPi>(dmeson, scores_dplus[0], fValuesDileptonCharmHadron);
             fHistMan->FillHistClass("Dmeson", fValuesDileptonCharmHadron);
             VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
           }
@@ -366,7 +364,7 @@ struct tableMakerJpsiHf {
 
       if (configDebug) {
         float dummyScore{-999.f};
-        VarManager::FillSingleDileptonCharmHadron<VarManager::kJPsi>(dilepton, hfHelper, dummyScore, fValuesDileptonCharmHadron);
+        VarManager::FillSingleDileptonCharmHadron<VarManager::kJPsi>(dilepton, dummyScore, fValuesDileptonCharmHadron);
         fHistMan->FillHistClass("JPsi", fValuesDileptonCharmHadron);
         VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
       }
@@ -391,9 +389,9 @@ struct tableMakerJpsiHf {
 
         double rapDmeson = -999.;
         if constexpr (TDmeson == DmesonType::D0) {
-          rapDmeson = hfHelper.yD0(dmeson);
+          rapDmeson = HfHelper::yD0(dmeson);
         } else if constexpr (TDmeson == DmesonType::Dplus) {
-          rapDmeson = hfHelper.yDplus(dmeson);
+          rapDmeson = HfHelper::yDplus(dmeson);
         }
 
         if (yCandDmesonMax >= 0. && std::abs(rapDmeson) > yCandDmesonMax) {
@@ -471,14 +469,14 @@ struct tableMakerJpsiHf {
 
           if constexpr (TDmeson == DmesonType::D0) {
             if (dmeson.isSelD0() >= 1) {
-              massD0 = hfHelper.invMassD0ToPiK(dmeson);
-              VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, hfHelper, scores[0], fValuesDileptonCharmHadron);
+              massD0 = HfHelper::invMassD0ToPiK(dmeson);
+              VarManager::FillDileptonCharmHadron<VarManager::kD0ToPiK>(dilepton, dmeson, scores[0], fValuesDileptonCharmHadron);
               fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
               VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
             }
             if (dmeson.isSelD0bar() >= 1) {
-              massD0bar = hfHelper.invMassD0barToKPi(dmeson);
-              VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, hfHelper, scores[3], fValuesDileptonCharmHadron);
+              massD0bar = HfHelper::invMassD0barToKPi(dmeson);
+              VarManager::FillDileptonCharmHadron<VarManager::kD0barToKPi>(dilepton, dmeson, scores[3], fValuesDileptonCharmHadron);
               fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
               VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
             }
@@ -487,8 +485,8 @@ struct tableMakerJpsiHf {
             }
           } else if constexpr (TDmeson == DmesonType::Dplus) {
             if (dmeson.isSelDplusToPiKPi() >= 1) {
-              massDplus = hfHelper.invMassDplusToPiKPi(dmeson);
-              VarManager::FillDileptonCharmHadron<VarManager::kDplusToPiKPi>(dilepton, dmeson, hfHelper, scores_dplus[0], fValuesDileptonCharmHadron);
+              massDplus = HfHelper::invMassDplusToPiKPi(dmeson);
+              VarManager::FillDileptonCharmHadron<VarManager::kDplusToPiKPi>(dilepton, dmeson, scores_dplus[0], fValuesDileptonCharmHadron);
               fHistMan->FillHistClass("JPsiDmeson", fValuesDileptonCharmHadron);
               VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
             }

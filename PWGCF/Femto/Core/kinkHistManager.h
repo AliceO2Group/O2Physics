@@ -93,7 +93,7 @@ constexpr std::size_t MaxSecondary = 3;
   o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};   \
   o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"}; \
   o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                            \
-  o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "PDG codes of selected V0s"};
+  o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "PDG codes of selected kinks"};
 
 template <auto& Prefix>
 struct ConfSigmaBinning : o2::framework::ConfigurableGroup {
@@ -157,7 +157,7 @@ constexpr std::array<histmanager::HistInfo<KinkHist>, kKinkHistLast> HistTable =
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
    {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed kinks; PDG Code; Entries"},
    {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed kink; PDG Code; Entries"},
-   {kPdgPartonicMother, o2::framework::HistType::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother reconstructed knik; PDG Code; Entries"},
+   {kPdgPartonicMother, o2::framework::HistType::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother of reconstructed kink; PDG Code; Entries"},
    {kTruePt, o2::framework::HistType::kTH1F, "hTruePt", "True transverse momentum; p_{T} (GeV/#it{c}); Entries"},
    {kTrueEta, o2::framework::HistType::kTH1F, "hTrueEta", "True pseudorapdity; #eta; Entries"},
    {kTruePhi, o2::framework::HistType::kTH1F, "hTruePhi", "True azimuthal angle; #varphi; Entries"},
@@ -167,9 +167,9 @@ constexpr std::array<histmanager::HistInfo<KinkHist>, kKinkHistLast> HistTable =
    {kFromMaterial, o2::framework::HistType::kTH2F, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); kink angle"},
    {kMissidentified, o2::framework::HistType::kTH2F, "hMissidentified", "Missidentified particles (fake/wrong PDG code); p_{T} (GeV/#it{c}); kink angle"},
    {kSecondary1, o2::framework::HistType::kTH2F, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); kink angle"},
-   {kSecondary2, o2::framework::HistType::kTH2F, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); kink angle"},
-   {kSecondary3, o2::framework::HistType::kTH2F, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); kink angle"},
-   {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); kink angle"}}};
+   {kSecondary2, o2::framework::HistType::kTH2F, "hFromSecondary2", "Particles from secondary decay; p_{T} (GeV/#it{c}); kink angle"},
+   {kSecondary3, o2::framework::HistType::kTH2F, "hFromSecondary3", "Particles from secondary decay; p_{T} (GeV/#it{c}); kink angle"},
+   {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other secondary decay; p_{T} (GeV/#it{c}); kink angle"}}};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define KINK_HIST_ANALYSIS_MAP(conf) \
@@ -255,10 +255,12 @@ std::map<KinkHist, std::vector<o2::framework::AxisSpec>> makeKinkMcQaHistSpecMap
 #undef KINK_HIST_MC_QA_MAP
 
 constexpr char PrefixSigmaQa[] = "SigmaQA/";
-constexpr char PrefixSigma1[] = "Sigma1/";
+constexpr char PrefixSigma1Se[] = "Sigma1/SE/";
+constexpr char PrefixSigma1Me[] = "Sigma1/ME/";
 constexpr char PrefixSigma2[] = "Sigma2/";
 constexpr char PrefixSigmaPlusQa[] = "SigmaPlusQA/";
-constexpr char PrefixSigmaPlus1[] = "SigmaPlus1/";
+constexpr char PrefixSigmaPlus1Se[] = "SigmaPlus1/SE/";
+constexpr char PrefixSigmaPlus1Me[] = "SigmaPlus1/ME/";
 constexpr char PrefixSigmaPlus2[] = "SigmaPlus2/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
@@ -284,25 +286,27 @@ class KinkHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs)
   {
     mHistogramRegistry = registry;
-    mPdgCode = std::abs(ConfKinkSelection.pdgCodeAbs.value) * ConfKinkSelection.sign.value;
+    mPdgCode = std::abs(ConfKinkSelection.pdgCodeAbs.value);
 
     int chaDauPdgCodeAbs = 0;
     int chaDauCharge = 0;
     const int absCharge = 1;
 
-    if (std::abs(mPdgCode) == PDG_t::kSigmaMinus) {
+    if (mPdgCode == PDG_t::kSigmaMinus) {
       if (ConfKinkSelection.sign.value < 0) {
         chaDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
         chaDauCharge = -1;
       } else {
+        mPdgCode = -1 * mPdgCode; // anti-Sigma- is positively charged and has negative pdg code
         chaDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
         chaDauCharge = 1;
       }
-    } else if (std::abs(mPdgCode) == PDG_t::kSigmaPlus) {
+    } else if (mPdgCode == PDG_t::kSigmaPlus) {
       if (ConfKinkSelection.sign.value > 0) {
         chaDauPdgCodeAbs = std::abs(PDG_t::kProton);
         chaDauCharge = 1;
       } else {
+        mPdgCode = -1 * mPdgCode; // anti-Sigma+ is negatively charged and has negative pdg code
         chaDauPdgCodeAbs = std::abs(PDG_t::kProtonBar);
         chaDauCharge = -1;
       }
@@ -332,26 +336,28 @@ class KinkHistManager
             T3 const& ConfChaDauBinningQa)
   {
     mHistogramRegistry = registry;
-    mPdgCode = std::abs(ConfKinkSelection.pdgCodeAbs.value) * ConfKinkSelection.sign.value;
+    mPdgCode = std::abs(ConfKinkSelection.pdgCodeAbs.value);
     this->enableOptionalHistograms(ConfKinkBinningQa);
 
     int chaDauPdgCodeAbs = 0;
     int chaDauCharge = 0;
     const int absCharge = 1;
 
-    if (std::abs(mPdgCode) == PDG_t::kSigmaMinus) {
+    if (mPdgCode == PDG_t::kSigmaMinus) {
       if (ConfKinkSelection.sign.value < 0) {
         chaDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
         chaDauCharge = -1;
       } else {
+        mPdgCode = -1 * mPdgCode; // anti-Sigma- is positively charged and has negative pdg code
         chaDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
         chaDauCharge = 1;
       }
-    } else if (std::abs(mPdgCode) == PDG_t::kSigmaPlus) {
+    } else if (mPdgCode == PDG_t::kSigmaPlus) {
       if (ConfKinkSelection.sign.value > 0) {
         chaDauPdgCodeAbs = std::abs(PDG_t::kProton);
         chaDauCharge = 1;
       } else {
+        mPdgCode = -1 * mPdgCode; // anti-Sigma+ is negatively charged and has negative pdg code
         chaDauPdgCodeAbs = std::abs(PDG_t::kProtonBar);
         chaDauCharge = -1;
       }
@@ -595,9 +601,6 @@ class KinkHistManager
             case modes::McOrigin::kPhysicalPrimary:
               mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
               break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-              break;
             case modes::McOrigin::kFromMaterial:
               mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
               break;
@@ -618,7 +621,7 @@ class KinkHistManager
               }
               break;
             default:
-              LOG(warn) << "Encounted partilce with unknown origin!";
+              LOG(warn) << "Encountered particle with unknown origin!";
               break;
           }
         }

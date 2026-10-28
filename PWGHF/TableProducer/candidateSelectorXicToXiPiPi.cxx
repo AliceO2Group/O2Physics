@@ -736,7 +736,7 @@ struct HfCandidateSelectorXicToXiPiPi {
       }
 
       bool isMatchedCandidate = false;
-      if (hfCandXic.flagMcMatchRec() != int8_t(0)) {
+      if (hfCandXic.flagMcMatchRec() != static_cast<int8_t>(0)) {
         isMatchedCandidate = true;
       }
 

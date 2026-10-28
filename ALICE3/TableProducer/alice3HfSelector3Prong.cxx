@@ -93,7 +93,6 @@ struct Alice3HfSelector3Prong {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelperAlice3 hfHelper;
   o2::analysis::HfMlResponse3Prong<float> mlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -114,7 +113,7 @@ struct Alice3HfSelector3Prong {
     labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
     labels[1 + aod::SelectionStep::RecoMl] = "ML selection";
     static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
-    registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
     for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
       registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
@@ -236,7 +235,7 @@ struct Alice3HfSelector3Prong {
   template <CharmHadAlice3 CharmHad, bool SwapHypo, typename TCandidate>
   bool selectionCandidateMass(int const ptBin, const TCandidate& cand)
   {
-    const float massCand = hfHelper.getCandMass<CharmHad, SwapHypo>(cand);
+    const float massCand = HfHelperAlice3::getCandMass<CharmHad, SwapHypo>(cand);
     // cut on mass window
     if (std::abs(massCand - MassReference) > cuts->get(ptBin, "m")) {
       return false;

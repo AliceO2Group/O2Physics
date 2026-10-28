@@ -47,6 +47,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 
 using namespace std;
 using namespace o2;

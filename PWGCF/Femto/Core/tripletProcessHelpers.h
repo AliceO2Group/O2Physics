@@ -35,7 +35,9 @@ enum TripletOrder : uint8_t {
   kOrder123, // no swap
   kOrder213, // swap 1&2: for the case that particle 1 & 2 are the same species, particle 3 is something else
   kOrder132, // swap 2&3
-  kOrder321, // reverse: swap 1&3
+  kOrder231, // swap 1&2 & 1&3
+  kOrder312, // swap 2&3 & 1&3
+  kOrder321, // swap 1&3
 };
 
 // process same event for identical 3 particles
@@ -75,6 +77,12 @@ bool processSameEvent(T1 const& SliceParticle,
         break;
       case kOrder132:
         TripletHistManager.setTriplet(p1, p3, p2, Collision);
+        break;
+      case kOrder231:
+        TripletHistManager.setTriplet(p2, p3, p1, Collision);
+        break;
+      case kOrder312:
+        TripletHistManager.setTriplet(p3, p1, p2, Collision);
         break;
       case kOrder321:
         TripletHistManager.setTriplet(p3, p2, p1, Collision);
@@ -291,6 +299,12 @@ bool processSameEvent(T1 const& SliceParticle,
       case kOrder132:
         TripletHistManager.setTripletMc(p1, p3, p2, mcParticles, Collision, mcCollisions);
         break;
+      case kOrder231:
+        TripletHistManager.setTripletMc(p2, p3, p1, mcParticles, Collision, mcCollisions);
+        break;
+      case kOrder312:
+        TripletHistManager.setTripletMc(p3, p1, p2, mcParticles, Collision, mcCollisions);
+        break;
       case kOrder321:
         TripletHistManager.setTripletMc(p3, p2, p1, mcParticles, Collision, mcCollisions);
         break;
@@ -403,7 +417,6 @@ bool processSameEvent(T1 const& SliceParticle1,
 }
 
 // process same event for 3 different particles with mc information
-// NOTE: added `Cleaner1`, `Cleaner2`, `Cleaner3` (one per species)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -498,13 +511,6 @@ bool processSameEvent(T1 const& SliceParticle1,
 }
 
 // --- mc truth only (kMc without kReco): triplets of generated particles ---------------------------
-// These are named processSameEventMcTruth (not processSameEvent) on purpose: several of the reco
-// overloads have the same number of arguments and every parameter is a template type, so the call
-// would be ambiguous.
-// The particles ARE the truth, so there is no track table, no reco counterpart and no charge rescaling.
-// The close triplet rejection and the triplet cleaner take the table of mc particles where the reco
-// helpers take the track table; both ignore it in the track-track-track case.
-
 // process same event for identical 3 mc particles
 template <modes::Mode mode,
           typename T1,
@@ -548,16 +554,24 @@ bool processSameEventMcTruth(T1 const& SliceParticle,
 
     // Randomize triplet order if enabled, then compute the kinematic (Q3) for this triplet
     switch (tripletOrder) {
+      case kOrder123:
+        TripletHistManager.setTripletMcTruth(p1, p2, p3, Collision);
+        break;
       case kOrder213:
         TripletHistManager.setTripletMcTruth(p2, p1, p3, Collision);
         break;
       case kOrder132:
         TripletHistManager.setTripletMcTruth(p1, p3, p2, Collision);
         break;
+      case kOrder231:
+        TripletHistManager.setTripletMcTruth(p2, p3, p1, Collision);
+        break;
+      case kOrder312:
+        TripletHistManager.setTripletMcTruth(p3, p1, p2, Collision);
+        break;
       case kOrder321:
         TripletHistManager.setTripletMcTruth(p3, p2, p1, Collision);
         break;
-      case kOrder123:
       default:
         TripletHistManager.setTripletMcTruth(p1, p2, p3, Collision);
         break;
@@ -729,7 +743,6 @@ bool processSameEventMcTruth(T1 const& SliceParticle1,
 }
 
 // process mixed event
-// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -741,7 +754,10 @@ template <modes::Mode mode,
           typename T8,
           typename T9,
           typename T10,
-          typename T11>
+          typename T11,
+          typename T12,
+          typename T13,
+          typename T14>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -752,12 +768,20 @@ void processMixedEvent(T1 const& Collisions,
                        T8 const& depth,
                        T9& TripletHistManager,
                        T10& CtrManager,
-                       T11& TcManager)
+                       T11& TcManager,
+                       int eventStride,
+                       T12& ParticleHistManagerMe1,
+                       T13& ParticleHistManagerMe2,
+                       T14& ParticleHistManagerMe3)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 stays fixed across the outer mixing window, and collision2 stays fixed across each inner sub-window (it only advances once collision3 wraps
   // back to its start Both slices are therefore materialized once per window/sub-window and reused, instead of being re-sliced, i.e. a fresh arrow Slice + selection copy
@@ -768,14 +792,25 @@ void processMixedEvent(T1 const& Collisions,
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
@@ -826,6 +861,10 @@ void processMixedEvent(T1 const& Collisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
+        ParticleHistManagerMe3.template fill<mode>(p3, TrackTable);
       }
     }
 
@@ -843,8 +882,6 @@ void processMixedEvent(T1 const& Collisions,
 }
 
 // process mixed event in mc
-// NOTE: added `mcMothers`, `mcPartonicMothers` (missing in the original — mixed-event mc triplets
-// were never mc-cleaned via TcManager) plus `Cleaner1`, `Cleaner2`, `Cleaner3`
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -863,7 +900,10 @@ template <modes::Mode mode,
           typename T15,
           typename T16,
           typename T17,
-          typename T18>
+          typename T18,
+          typename T19,
+          typename T20,
+          typename T21>
 void processMixedEvent(T1 const& Collisions,
                        T2 const& mcCollisions,
                        T3& Partition1,
@@ -881,12 +921,20 @@ void processMixedEvent(T1 const& Collisions,
                        T15& Cleaner2,
                        T16& Cleaner3,
                        T17& CtrManager,
-                       T18& TcManager)
+                       T18& TcManager,
+                       int eventStride,
+                       T19& ParticleHistManagerMe1,
+                       T20& ParticleHistManagerMe2,
+                       T21& ParticleHistManagerMe3)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 stays fixed across the outer mixing window, and collision2 stays fixed across each inner sub-window (it only advances once collision3 wraps
   // back to its start Both slices are therefore materialized once per window/sub-window and reused, instead of being re-sliced, i.e. a fresh arrow Slice + selection copy
@@ -897,14 +945,25 @@ void processMixedEvent(T1 const& Collisions,
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
@@ -962,6 +1021,10 @@ void processMixedEvent(T1 const& Collisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
+        ParticleHistManagerMe3.template fill<mode>(p3, TrackTable);
       }
     }
 
@@ -982,7 +1045,8 @@ void processMixedEvent(T1 const& Collisions,
 // mc collisions carry no magnetic field, so there is no magnetic field check here
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8,
-          typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16>
+          typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16,
+          typename T17, typename T18, typename T19>
 void processMixedEventMcTruth(T1 const& McCollisions,
                               T2& Partition1,
                               T3& Partition2,
@@ -998,39 +1062,58 @@ void processMixedEventMcTruth(T1 const& McCollisions,
                               T13& ParticleCleaner2,
                               T14& ParticleCleaner3,
                               T15& CtrManager,
-                              T16& TcManager)
+                              T16& TcManager,
+                              int eventStride,
+                              T17& ParticleHistManagerMe1,
+                              T18& ParticleHistManagerMe2,
+                              T19& ParticleHistManagerMe3)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
-  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
-  std::optional<decltype(Partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle2;
+  std::optional<decltype(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
+  std::optional<decltype(Partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle2;
 
   for (auto const& [collision1, collision2, collision3] : o2::soa::selfCombinations(policy, depth, -1, McCollisions, McCollisions, McCollisions)) {
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
     if (collision2.globalIndex() != lastCollisionIndex2) {
       lastCollisionIndex2 = collision2.globalIndex();
-      sliceParticle2.emplace(Partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache));
+      sliceParticle2.emplace(Partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
 
-    auto sliceParticle3 = Partition3->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision3.globalIndex(), cache);
+    auto sliceParticle3 = Partition3->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision3.globalIndex(), cache);
 
     TripletHistManager.resetTrackedParticlesPerEvent();
 
@@ -1066,6 +1149,10 @@ void processMixedEventMcTruth(T1 const& McCollisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.fill(p1, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe2.fill(p2, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe3.fill(p3, mcMothers, mcPartonicMothers);
       }
     }
 

@@ -182,9 +182,9 @@ struct HfTaskFlowCharmHadrons {
   using CandXic0Data = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf>>;
   using CandXic0DataWMl = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
-  using CollsWithSPQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::PVMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
-  using CollsWithEsEQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::PVMults, aod::EseQvecPercs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
-  using CollsWithSPEsEQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::PVMults, aod::EseQvecPercs, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
+  using CollsWithSPQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
+  using CollsWithEsEQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::EseQvecPercs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
+  using CollsWithSPEsEQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::EseQvecPercs, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
@@ -621,11 +621,13 @@ struct HfTaskFlowCharmHadrons {
     float const amplRedQVec = qVecRedComps[2];
 
     if (useOnlineResoCorrection) {
+      // Access BC information through the collision's BC index.
+      const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       // Per-run update
-      if (collision.runNumber() != lastRunNumber) {
-        LOG(info) << "Run number changed from " << lastRunNumber << " to " << collision.runNumber() << ". Updating resolution values.";
-        qVecResoHelper.update(ccdb, ccdbResoHistPath, resoTripletPath.value, collision.timestamp(), collision.runNumber());
-        lastRunNumber = collision.runNumber();
+      if (bc.runNumber() != lastRunNumber) {
+        LOG(info) << "Run number changed from " << lastRunNumber << " to " << bc.runNumber() << ". Updating resolution values.";
+        qVecResoHelper.update(ccdb, ccdbResoHistPath, resoTripletPath.value, bc.timestamp(), bc.runNumber());
+        lastRunNumber = bc.runNumber();
       }
       scalarProdReso = qVecResoHelper[static_cast<int>(cent - 0.5f)]; // Cent is given in X.5f format
     }
@@ -840,7 +842,8 @@ struct HfTaskFlowCharmHadrons {
   // Ds with ML
   void processDsMl(CollsWithSPQvecs::iterator const& collision,
                    CandDsDataWMl const&,
-                   TracksWithExtra const& tracks)
+                   TracksWithExtra const& tracks,
+                   aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsDsToKKPiWMl = selectedDsToKKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsDsToPiKKWMl = selectedDsToPiKKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -852,7 +855,8 @@ struct HfTaskFlowCharmHadrons {
   // Ds with ML EsE
   void processDsEsEMl(CollsWithEsEQvecs::iterator const& collision,
                       CandDsDataWMl const& /*candidatesDs*/,
-                      TracksWithExtra const& tracks)
+                      TracksWithExtra const& tracks,
+                      aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsDsToKKPiWMl = selectedDsToKKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsDsToPiKKWMl = selectedDsToPiKKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -864,7 +868,8 @@ struct HfTaskFlowCharmHadrons {
   // Ds with ML EsE and SP
   void processDsSPEsEMl(CollsWithSPEsEQvecs::iterator const& collision,
                         CandDsDataWMl const& /*candidatesDs*/,
-                        TracksWithExtra const& tracks)
+                        TracksWithExtra const& tracks,
+                        aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsDsToKKPiWMl = selectedDsToKKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsDsToPiKKWMl = selectedDsToPiKKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -876,7 +881,8 @@ struct HfTaskFlowCharmHadrons {
   // Dplus with ML
   void processDplusMl(CollsWithSPQvecs::iterator const& collision,
                       CandDplusDataWMl const& candidatesDplus,
-                      TracksWithExtra const& tracks)
+                      TracksWithExtra const& tracks,
+                      aod::BCsWithTimestamps const& /*bcs*/)
   {
     runFlowAnalysis<RunMode::kSP, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
@@ -885,7 +891,8 @@ struct HfTaskFlowCharmHadrons {
   // Dplus with ML EsE
   void processDplusEsEMl(CollsWithEsEQvecs::iterator const& collision,
                          CandDplusDataWMl const& candidatesDplus,
-                         TracksWithExtra const& tracks)
+                         TracksWithExtra const& tracks,
+                         aod::BCsWithTimestamps const& /*bcs*/)
   {
     runFlowAnalysis<RunMode::kEsE, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
@@ -894,7 +901,8 @@ struct HfTaskFlowCharmHadrons {
   // Dplus with ML SP and EsE
   void processDplusSPEsEMl(CollsWithSPEsEQvecs::iterator const& collision,
                            CandDplusDataWMl const& candidatesDplus,
-                           TracksWithExtra const& tracks)
+                           TracksWithExtra const& tracks,
+                           aod::BCsWithTimestamps const& /*bcs*/)
   {
     runFlowAnalysis<RunMode::kSPEsE, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
@@ -903,7 +911,8 @@ struct HfTaskFlowCharmHadrons {
   // D0 with ML
   void processD0Ml(CollsWithSPQvecs::iterator const& collision,
                    CandD0DataWMl const& /*candidatesD0*/,
-                   TracksWithExtra const& tracks)
+                   TracksWithExtra const& tracks,
+                   aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -915,7 +924,8 @@ struct HfTaskFlowCharmHadrons {
   // D0 with ML
   void processD0EsEMl(CollsWithEsEQvecs::iterator const& collision,
                       CandD0DataWMl const& /*candidatesD0*/,
-                      TracksWithExtra const& tracks)
+                      TracksWithExtra const& tracks,
+                      aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -927,7 +937,8 @@ struct HfTaskFlowCharmHadrons {
   // D0 with ML
   void processD0SPEsEMl(CollsWithSPEsEQvecs::iterator const& collision,
                         CandD0DataWMl const& /*candidatesD0*/,
-                        TracksWithExtra const& tracks)
+                        TracksWithExtra const& tracks,
+                        aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -939,7 +950,8 @@ struct HfTaskFlowCharmHadrons {
   // Lc with ML
   void processLcMl(CollsWithSPQvecs::iterator const& collision,
                    CandLcDataWMl const& /*candidatesLc*/,
-                   TracksWithExtra const& tracks)
+                   TracksWithExtra const& tracks,
+                   aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsLcToPKPiWMl = selectedLcToPKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsLcToPiKPWMl = selectedLcToPiKPWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -951,7 +963,8 @@ struct HfTaskFlowCharmHadrons {
   // Xic with ML
   void processXicMl(CollsWithSPQvecs::iterator const& collision,
                     CandXicDataWMl const& /*candidatesXic*/,
-                    TracksWithExtra const& tracks)
+                    TracksWithExtra const& tracks,
+                    aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsXicToPKPiWMl = selectedXicToPKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsXicToPiKPWMl = selectedXicToPiKPWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -963,7 +976,8 @@ struct HfTaskFlowCharmHadrons {
   // Xic0 with ML
   void processXic0Ml(CollsWithSPQvecs::iterator const& collision,
                      CandXic0DataWMl const& /*candidatesXic0*/,
-                     TracksWithExtra const& tracks)
+                     TracksWithExtra const& tracks,
+                     aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsXic0WMl = selectedXic0WMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     runFlowAnalysis<RunMode::kSP, DecayChannel::Xic0ToXiPi>(collision, candsXic0WMl, tracks);
@@ -973,7 +987,8 @@ struct HfTaskFlowCharmHadrons {
   // Xic0
   void processXic0(CollsWithSPQvecs::iterator const& collision,
                    CandXic0Data const& /*candidatesXic0*/,
-                   TracksWithExtra const& tracks)
+                   TracksWithExtra const& tracks,
+                   aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto candsXic0 = selectedXic0->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     runFlowAnalysis<RunMode::kSP, DecayChannel::Xic0ToXiPi>(collision, candsXic0, tracks);

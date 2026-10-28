@@ -239,6 +239,7 @@ struct HfCorrelatorD0Hadrons {
   Configurable<bool> storeAutoCorrelationFlag{"storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its D-meson mother instead of skipping it"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analyses"};
+  Configurable<bool> enableCentralityQA{"enableCentralityQA", false, "Enable FT0M centrality vs multiplicity QA in processData"};
 
   int leadingIndex = 0;
   double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
@@ -249,7 +250,7 @@ struct HfCorrelatorD0Hadrons {
   Filter trackFilter = requireGlobalTrackWoDCAInFilter() && (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   Filter d0Filter = (aod::hf_sel_candidate_d0::isSelD0 >= 1) || (aod::hf_sel_candidate_d0::isSelD0bar >= 1);
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kD0) || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kD0) || ((aod::mcparticle::flags & static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)) == static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary));
 
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
   Preslice<aod::Tracks> perCollisionID = aod::track::collisionId;
@@ -278,8 +279,8 @@ struct HfCorrelatorD0Hadrons {
     AxisSpec const axisEta = {binsEta, "#it{#eta}"};
     AxisSpec const axisPhi = {binsPhi, "#it{#varphi}"};
     AxisSpec const axisRapidity = {100, -5., 5., "Rapidity"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtD), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T} Hadron (GeV/#it{c})"};
     AxisSpec const axisMultiplicity = {binsMultiplicity, "Multiplicity"};
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec const axisPosZ = {binsPosZ, "PosZ"};
@@ -366,6 +367,9 @@ struct HfCorrelatorD0Hadrons {
     registry.get<TH1>(HIST("hTrackCounter"))->GetXaxis()->SetBinLabel(5, "fake tracks");
     registry.add("hZvtx", "z vertex", {HistType::kTH1F, {axisPosZ}});
     registry.add("hMultFT0M", "Multiplicity FT0M", {HistType::kTH1F, {axisMultFT0M}});
+    if (enableCentralityQA) {
+      registry.add("hCentFT0MVsMultFT0M", "Centrality FT0M vs multiplicity FT0M", {HistType::kTH2D, {axisMultFT0M, axisCent}});
+    }
     registry.add("hCollisionPoolBin", "collision pool bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hD0PoolBin", "D0 selected in pool Bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
@@ -379,7 +383,7 @@ struct HfCorrelatorD0Hadrons {
                    SelectedCandidatesDataMl const& candidates,
                    aod::BCsWithTimestamps const&)
   {
-    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}};
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
@@ -398,6 +402,9 @@ struct HfCorrelatorD0Hadrons {
     registry.fill(HIST("hCollisionPoolBin"), poolBin);
     registry.fill(HIST("hZvtx"), collision.posZ());
     registry.fill(HIST("hMultFT0M"), collision.multFT0M());
+    if (enableCentralityQA) {
+      registry.fill(HIST("hCentFT0MVsMultFT0M"), collision.multFT0M(), collision.centFT0M());
+    }
 
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -598,7 +605,7 @@ struct HfCorrelatorD0Hadrons {
                     aod::McParticles const& mcParticles,
                     aod::BCsWithTimestamps const&)
   {
-    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}};
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
@@ -928,7 +935,7 @@ struct HfCorrelatorD0Hadrons {
   void processMcGen(SelectedCollisionsMcGen::iterator const& mcCollision,
                     SelectedParticlesMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
     int gCollisionId = mcCollision.globalIndex();
     int64_t timeStamp = 0;
@@ -1095,7 +1102,7 @@ struct HfCorrelatorD0Hadrons {
                              SelectedCandidatesDataMl const& candidates,
                              SelectedTracks const& tracks)
   {
-    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}};
     for (const auto& collision : collisions) {
       registry.fill(HIST("hMultFT0M"), collision.multFT0M());
       registry.fill(HIST("hZvtx"), collision.posZ());
@@ -1184,7 +1191,7 @@ struct HfCorrelatorD0Hadrons {
                               SelectedTracksMcRec const& tracks,
                               aod::McParticles const& mcParticles)
   {
-    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}};
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelectedCollisions, SelectedCandidatesMcRecMl, SelectedTracksMcRec, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     bool isD0Prompt = false;
@@ -1319,7 +1326,7 @@ struct HfCorrelatorD0Hadrons {
   void processMcGenMixedEvent(SelectedCollisionsMcGen const& collisions,
                               SelectedParticlesMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBinsMcGen}};
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelectedCollisionsMcGen, SelectedParticlesMcGen, SelectedParticlesMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 

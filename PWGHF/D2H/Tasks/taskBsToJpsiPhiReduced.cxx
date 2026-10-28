@@ -146,6 +146,7 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_bstojpsiphi_lite::Y,
                   hf_cand_bstojpsiphi_lite::Cpa,
                   hf_cand_bstojpsiphi_lite::CpaXY,
+                  hf_cand_bstojpsiphi_lite::CpaJpsi,
                   hf_cand::Chi2PCA,
                   hf_cand_bstojpsiphi_lite::DecayLength,
                   hf_cand_bstojpsiphi_lite::DecayLengthXY,
@@ -328,7 +329,7 @@ struct HfTaskBsToJpsiPhiReduced {
     const AxisSpec axisImpactPar{200, -0.05, 0.05};
     const AxisSpec axisPtJpsi{100, 0., 50.};
     const AxisSpec axisRapidity{100, -2., 2.};
-    const AxisSpec axisPtB{(std::vector<double>)binsPt, "#it{p}_{T}^{B_{s}^{0}} (GeV/#it{c})"};
+    const AxisSpec axisPtB{std::vector<double>(binsPt), "#it{p}_{T}^{B_{s}^{0}} (GeV/#it{c})"};
     const AxisSpec axisPtPhi{100, 0.f, 10.f};
 
     registry.add("hMass", bsCandTitle + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
@@ -486,6 +487,7 @@ struct HfTaskBsToJpsiPhiReduced {
         HfHelper::yBs(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
+        candidate.cpaJpsi(),
         candidate.chi2PCA(),
         candidate.decayLength(),
         candidate.decayLengthXY(),

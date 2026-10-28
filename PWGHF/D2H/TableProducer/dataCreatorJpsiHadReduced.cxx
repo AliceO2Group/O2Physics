@@ -60,7 +60,6 @@
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -106,13 +105,13 @@ enum WrongCollisionType : uint8_t {
   SplitCollision,
 };
 
-std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> partlyRecoDecayMapMuMu = {
+std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> const partlyRecoDecayMapMuMu = {
   {Pdg::kB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::B0ToJpsiXToMuMuX},
   {Pdg::kBPlus, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BplusToJpsiXToMuMuX},
   {Pdg::kBS, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BsToJpsiXToMuMuX},
   {Pdg::kLambdaB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::LbToJpsiXToMuMuX}};
 
-std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> partlyRecoDecayMapEE = {
+std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> const partlyRecoDecayMapEE = {
   {Pdg::kB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::B0ToJpsiXToEEX},
   {Pdg::kBPlus, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BplusToJpsiXToEEX},
   {Pdg::kBS, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BsToJpsiXToEEX},
@@ -250,7 +249,7 @@ struct HfDataCreatorJpsiHadReduced {
     labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
     labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
     static const AxisSpec axisSelections = {NumBinsSelections, 0.5, NumBinsSelections + 0.5, ""};
-    registry.add("hSelectionsJpsi", "J/Psi selection;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hSelectionsJpsi", "J/Psi selection;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
     for (int iBin = 0; iBin < NumBinsSelections; ++iBin) {
       registry.get<TH2>(HIST("hSelectionsJpsi"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
@@ -267,7 +266,7 @@ struct HfDataCreatorJpsiHadReduced {
     }
 
     registry.add("hMassJpsi", "J/Psi mass;#it{M}_{#mu#mu} (GeV/#it{c}^{2});Counts", {HistType::kTH1D, {{600, 2.8, 3.4, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtJpsi", "J/Psi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1D, {{(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtJpsi", "J/Psi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1D, {{std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCpaJpsi", "J/Psi cos#theta_{p};J/Psi cos#theta_{p};Counts", {HistType::kTH1D, {{200, -1., 1, "J/Psi cos#theta_{p}"}}});
     std::shared_ptr<TH1> hFitCandidatesJpsi = registry.add<TH1>("hFitCandidatesJpsi", "Jpsi candidate counter", {HistType::kTH1D, {axisCands}});
     std::shared_ptr<TH1> hFitCandidatesBPlus = registry.add<TH1>("hFitCandidatesBPlus", "hFitCandidatesBPlus candidate counter", {HistType::kTH1D, {axisCands}});
@@ -595,7 +594,7 @@ struct HfDataCreatorJpsiHadReduced {
               // check that the other prongs come from the same b-hadron
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index2Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
@@ -695,7 +694,7 @@ struct HfDataCreatorJpsiHadReduced {
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               int const index3Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[3].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index3Mother > -1 && index2Mother == indexRecB && index3Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
@@ -796,7 +795,7 @@ struct HfDataCreatorJpsiHadReduced {
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               int const index3Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[3].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index3Mother > -1 && index2Mother == indexRecB && index3Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
@@ -1115,7 +1114,6 @@ struct HfDataCreatorJpsiHadReduced {
           }
           registry.fill(HIST("hFitCandidatesBPlus"), SVFitting::FitOk);
 
-          o2::track::TrackParCov trackParCovBPlus{};
           std::array<float, 3> pVecBPlus{}, pVec0{}, pVec1{}, pVec2{};
 
           auto secondaryVertexBPlus = df3.getPCACandidate();
@@ -1124,8 +1122,6 @@ struct HfDataCreatorJpsiHadReduced {
           df3.getTrack(2).getPxPyPzGlo(pVec2);
           pVecBPlus = RecoDecay::pVec(pVec0, pVec1, pVec2);
           pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
-          trackParCovBPlus = df3.createParentTrackParCov();
-          trackParCovBPlus.setAbsCharge(0); // to be sure
 
           if (!isBSelected(pVecBPlus, secondaryVertexBPlus, collision)) {
             continue;

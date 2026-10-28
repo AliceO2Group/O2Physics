@@ -80,7 +80,9 @@ struct FemtoDndetaPair {
   dndetahistmanager::ConfDndetaBinning confDndetaBinning;
   dndetabuilder::DndetaBuilder dndetaBuilder;
 
-  o2::framework::Preslice<FemtoMcParticles> perMcColParticles = o2::aod::femtomcparticle::fMcColId;
+  // pass-through mode does not guarantee fMcColId is written in sorted order (reco-driven label
+  // rows can be created out of mc-collision order), so this must be an unsorted grouping
+  o2::framework::PresliceUnsorted<FemtoMcParticles> perMcColParticles = o2::aod::femtomcparticle::fMcColId;
 
   // setup collisions (applied in the dndeta builder, no filter, so the cutflow sees every collision)
   collisionbuilder::ConfCollisionSelection collisionSelection;
@@ -100,6 +102,12 @@ struct FemtoDndetaPair {
 
   o2::framework::Partition<FemtoTracksWithLabel> dndetaTrackWithLabelPartitionGlobal = MAKE_TRACK_PARTITION(confDndetaTracksGlobal);
   o2::framework::Partition<FemtoTracksWithLabel> dndetaTrackWithLabelPartitionItsOnly = MAKE_TRACK_PARTITION(confDndetaTracksItsOnly);
+
+  // the *Mc process functions take the ungrouped tables (no ::iterator first argument), so DPL never
+  // auto-registers the fColId slicing cache for FemtoTracksWithLabel; this unused Preslice is the only
+  // thing that requests/enables it, otherwise sliceByCached() throws "Disabled cache ... is requested"
+  // once the first accepted reco collision actually reaches it
+  o2::framework::Preslice<FemtoTracksWithLabel> perColTracksWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup tracks (trigger)
   trackbuilder::ConfTrackSelection1 confTrackSelection1;
@@ -127,6 +135,8 @@ struct FemtoDndetaPair {
 
   o2::framework::Partition<FemtoLambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
   o2::framework::Partition<FemtoLambdasWithLabel> lambdaWithLabelPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
+  // same reason as perColTracksWithLabel above, needed by processTrackV0Mc
+  o2::framework::Preslice<FemtoLambdasWithLabel> perColLambdasWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup strangeness yields (dedicated selections, independent of the trigger)
   v0builder::ConfLambdaSelectionStrangeness confStrangeLambdaSelection;
@@ -160,8 +170,10 @@ struct FemtoDndetaPair {
   closepairrejection::ConfCprTrackV0Daughter confCprTrackV0;
 
   pairbuilder::PairTrackTrackBuilder<
-    trackhistmanager::PrefixTrack1,
-    trackhistmanager::PrefixTrack2,
+    trackhistmanager::PrefixTrack1Se,
+    trackhistmanager::PrefixTrack2Se,
+    trackhistmanager::PrefixTrack1Me,
+    trackhistmanager::PrefixTrack2Me,
     pairhistmanager::PrefixTrackTrackSe,
     pairhistmanager::PrefixTrackTrackMe,
     closepairrejection::PrefixTrackTrackSe,
@@ -169,10 +181,14 @@ struct FemtoDndetaPair {
     pairTrackTrackBuilder;
 
   pairbuilder::PairTrackV0Builder<
-    trackhistmanager::PrefixTrack1,
-    v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    v0histmanager::PrefixLambda1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    v0histmanager::PrefixLambda1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
     pairhistmanager::PrefixTrackV0Se,
     pairhistmanager::PrefixTrackV0Me,
     closepairrejection::PrefixTrackV0DaughterSe,
@@ -181,8 +197,10 @@ struct FemtoDndetaPair {
     pairTrackLambdaBuilder;
 
   pairbuilder::PairMcParticleMcParticleBuilder<
-    mcparticlehistmanager::PrefixMcParticle1,
-    mcparticlehistmanager::PrefixMcParticle2,
+    mcparticlehistmanager::PrefixMcParticle1Se,
+    mcparticlehistmanager::PrefixMcParticle2Se,
+    mcparticlehistmanager::PrefixMcParticle1Me,
+    mcparticlehistmanager::PrefixMcParticle2Me,
     pairhistmanager::PrefixMcParticleMcParticleSe,
     pairhistmanager::PrefixMcParticleMcParticleMe,
     closepairrejection::PrefixMcParticleMcParticleSe,

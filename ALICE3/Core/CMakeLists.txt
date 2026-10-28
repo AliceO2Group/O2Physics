@@ -11,11 +11,16 @@
 
 o2physics_add_library(ALICE3Core
                       SOURCES TrackUtilities.cxx
+                              ConfigurationParser.cxx
                               FlatLutEntry.cxx
+                              FlatLutRootWriter.cxx
                               FlatTrackSmearer.cxx
                               GeometryContainer.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework
-                                            O2Physics::AnalysisCore)
+                                            O2Physics::AnalysisCore
+                      PRIVATE_LINK_LIBRARIES ROOT::Core
+                                              ROOT::RIO
+                                              ROOT::Tree)
 
 o2physics_target_root_dictionary(ALICE3Core
                       HEADERS TrackUtilities.h

@@ -554,6 +554,10 @@ int tracktype = 1;
 std::vector<DptDptTrackSelection*> trackFilters = {}; // the vector of track selectors
 
 struct DptDptTrackSelection {
+  /* disable copying and assignment explicitly */
+  DptDptTrackSelection(const DptDptTrackSelection&) = delete;
+  DptDptTrackSelection& operator=(const DptDptTrackSelection&) = delete;
+
   DptDptTrackSelection(TrackSelection* stdTs, TList* outputList, const char* name) : stdTrackSelection(stdTs)
   {
     passedHistogram = new TH1F(name, name, ptbins, ptlow, ptup);
@@ -836,7 +840,7 @@ float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
-inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, bool periodInPath = false, const std::string& suffix = "")
+inline TList* getCCDBInput(const auto& ccdb, const char* ccdbpath, const char* ccdbdate, bool periodInPath = false, const std::string& suffix = "")
 {
   std::tm cfgtm = {};
   std::stringstream ss(ccdbdate);
@@ -1107,7 +1111,7 @@ template <typename CollisionObject>
 inline bool triggerSelection(CollisionObject const&)
 {
   LOGF(fatal, "Trigger selection not implemented for this kind of collisions");
-  return false;
+  return true;
 }
 
 /// \brief Trigger selection for reconstructed collision tables without centrality/multiplicity
@@ -1280,7 +1284,7 @@ template <typename CollisionObject>
 inline bool centralitySelection(CollisionObject const&, float&)
 {
   LOGF(fatal, "Centrality selection not implemented for this kind of collisions");
-  return false;
+  return true;
 }
 
 /// \brief Centrality selection for reconstructed and detector level collision tables with centrality/multiplicity information
@@ -1396,7 +1400,7 @@ template <typename CollisionObject>
 inline bool occupancySelection(CollisionObject const&)
 {
   LOGF(fatal, "Occupancy selection not implemented for this kind of collisions");
-  return false;
+  return true;
 }
 
 /// \brief Occupancy selection for reconstructed and detector level collision tables with centrality/multiplicity information
@@ -1561,7 +1565,7 @@ struct TpcExcludeTrack {
     switch (method) {
       case kNOEXCLUSION: {
         return false;
-      } break;
+      }
       case kSTATIC: {
         int phiBinIx = getPhiBinIx(track);
         /* bins multiple of four have got sector border */
@@ -1570,7 +1574,7 @@ struct TpcExcludeTrack {
         } else {
           return true;
         }
-      } break;
+      }
       case kDYNAMIC: {
         float phiInTpcSector = std::fmod(track.phi(), TpcPhiSectorWidth);
         if (track.sign() > 0) {
@@ -1578,7 +1582,7 @@ struct TpcExcludeTrack {
         } else {
           return (phiInTpcSector < negativeUpCut->Eval(track.pt())) && (negativeLowCut->Eval(track.pt()) < phiInTpcSector);
         }
-      } break;
+      }
       default:
         return false;
     }
@@ -1836,14 +1840,14 @@ struct PIDSpeciesSelection {
     /* out debug if needed */
     outnsigmasdebug();
 
-    auto closeTo = [](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
+    auto closeTo = [](const auto& values, const auto& mindet, const auto& maxdet, uint8_t sp) {
       if (mindet[sp] <= values[sp] && values[sp] < maxdet[sp]) {
         return true;
       } else {
         return false;
       }
     };
-    auto awayFrom = [&](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
+    auto awayFrom = [&](const auto& values, const auto& mindet, const auto& maxdet, uint8_t sp) {
       for (size_t ix = 0; ix < pdgcodes.size(); ix++) {
         if (ix != sp) {
           if (mindet[ix] <= values[ix] && values[ix] < maxdet[ix]) {
@@ -1889,7 +1893,7 @@ struct PIDSpeciesSelection {
       }
       return true;
     };
-    auto aboveThreshold = [&](auto& config) {
+    auto aboveThreshold = [&](const auto& config) {
       return ((config->mPThreshold > 0.0) && (config->mPThreshold < track.p()));
     };
     auto isA = [&](auto& config, uint8_t sp) {

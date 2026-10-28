@@ -59,6 +59,7 @@ struct skimmerDalitzEvents {
 
   Configurable<unsigned int> minNElecCand{"minNElecCand", 2, "minimum number of electrons/positron candidates in one event"};
   Configurable<unsigned int> minNGammaCand{"minNGammaCand", 1, "minimum number of V0 photon candidates in one event"};
+  Configurable<bool> accPCMGGAndDalitz{"accPCMGGAndDalitz", false, "set to true if you want to create DD for both PCM-PCM and PCM-Dalitz"};
 
   // ---------- for data ----------
   template <bool isMC, o2::soa::is_table TElectrons, o2::soa::is_table TV0Photons, o2::soa::is_table TV0Legs>
@@ -71,7 +72,7 @@ struct skimmerDalitzEvents {
       auto tracks = emPrimaryElecTmp.sliceBy(perCollisionEl, collision.globalIndex());
 
       // check that there are at least minNElecCand in the collision
-      if (tracks.size() < minNElecCand) {
+      if (!accPCMGGAndDalitz && tracks.size() < minNElecCand) {
         continue;
       }
 
@@ -79,8 +80,14 @@ struct skimmerDalitzEvents {
       auto photonskf = v0photonskfTmp.sliceBy(perCol_pcm, collision.globalIndex());
 
       // check that there are at least minNGammaCand in the collision
-      if (photonskf.size() < minNGammaCand) {
+      if (!accPCMGGAndDalitz && photonskf.size() < minNGammaCand) {
         continue;
+      }
+
+      if (accPCMGGAndDalitz) {
+        if (!(photonskf.size() >= 2 || (tracks.size() >= 2 && photonskf.size() >= 1))) { // o2-linter: disable=magic-number (settings to obtain either two photons in the event or one photon with one dielectron)
+          continue;
+        }
       }
 
       // Write electron tracks

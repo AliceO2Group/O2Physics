@@ -1037,7 +1037,7 @@ struct HfTaskMcValidationRec {
           nITSlayers++;
         }
       }
-      uint const index = uint(track.collisionId() >= 0);
+      uint const index = static_cast<uint>(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         const auto& particle = track.mcParticle(); // get corresponding MC particle to check origin
         const auto& mcCollision = particle.mcCollision_as<aod::McCollisions>();

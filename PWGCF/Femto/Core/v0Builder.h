@@ -33,6 +33,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -50,53 +51,49 @@ struct ConfV0Filters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
   o2::framework::Configurable<float> massMinLambda{"massMinLambda", 1.f, "Minimum mass for Lambda hypothesis"};
   o2::framework::Configurable<float> massMaxLambda{"massMaxLambda", 1.2f, "Maximum mass for Lambda hypothesis"};
-  o2::framework::Configurable<bool> rejectHypothesisK0short{"rejectHypothesisK0short", true, "Rejection of K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMinK0short{"rejectMassMinK0short", 0.475f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMaxK0short{"rejectMassMaxK0short", 0.515f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> massMinK0short{"massMinK0short", 0.45f, "Minimum mass for K0Short hypothesis"};
-  o2::framework::Configurable<float> massMaxK0short{"massMaxK0short", 0.53f, "Maximum mass for K0Short hypothesis"};
-  o2::framework::Configurable<bool> rejectHypothesisLambda{"rejectHypothesisLambda", true, "Rejection of Lambda hypothesis for K0short candidates"};
-  o2::framework::Configurable<float> rejectMassMinLambda{"rejectMassMinLambda", 1.11f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMaxLambda{"rejectMassMaxLambda", 1.12f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<float> massMinK0short{"massMinK0short", 0.485f, "Minimum mass for K0Short hypothesis"};
+  o2::framework::Configurable<float> massMaxK0short{"massMaxK0short", 0.51f, "Maximum mass for K0Short hypothesis"};
 };
 
 // selections bits for all v0s
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define V0_DEFAULT_BITS                                                                                                                                          \
-  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all V0s are passed through. Bits for all selections are stored."};               \
-  o2::framework::Configurable<std::vector<float>> dcaDauMax{"dcaDauMax", {1.5f}, "Maximum DCA between the daughters at V0 decay vertex (cm)"};                   \
-  o2::framework::Configurable<std::vector<float>> cpaMin{"cpaMin", {0.99f}, "Minimum cosine of pointing angle"};                                                 \
-  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                                          \
-  o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                                         \
-  o2::framework::Configurable<std::vector<float>> decayVtxMax{"decayVtxMax", {100.f}, "Maximum distance in x,y,z of the decay vertex from primary vertex (cm)"}; \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| for daughter tracks"};                                     \
-  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum DCAxy of the daughters from primary vertex (cm)"};          \
-  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};          \
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a minimal selection. If false, TOF PID is an optional"};                \
-  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, the bit mask for the TOF selection will be ture for all limits if the daugher track has no TOF"};
+#define V0_DEFAULT_BITS                                                                                                                                                                                                                                                                 \
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all V0s are passed through. Bits for all selections are stored."};                                                                                                                                      \
+  o2::framework::Configurable<std::vector<float>> dcaDauMax{"dcaDauMax", {1.5f}, "Maximum DCA between the daughters at V0 decay vertex (cm)"};                                                                                                                                          \
+  o2::framework::Configurable<std::vector<float>> cpaMin{"cpaMin", {0.99f}, "Minimum cosine of pointing angle"};                                                                                                                                                                        \
+  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                                                                                                                                                                 \
+  o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                                                                                                                                                                \
+  o2::framework::Configurable<std::vector<float>> decayVtxMax{"decayVtxMax", {100.f}, "Maximum distance in x,y,z of the decay vertex from primary vertex (cm)"};                                                                                                                        \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| for daughter tracks"};                                                                                                                                                            \
+  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum DCAxy of the daughters from primary vertex (cm)"};                                                                                                                                 \
+  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};                                                                                                                                 \
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, the TOF PID cut is mandatory. For daughters with a TOF signal, the candidate is rejected on failure. For daughters without a TOF signal, the candidate is rejected unless keepTracksWithoutTof is true"}; \
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, daughters without a TOF signal pass the TOF PID cut unconditionally, overriding requireTof. If false, daughters without a TOF signal fail the TOF cut (and are rejected if requireTof is true)"};
 
 // derived selection bits for lambda
 struct ConfLambdaBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("LambdaBits");
   V0_DEFAULT_BITS
-  o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for positive daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> posDauTpcProton{"posDauTpcProton", {5.f}, "Maximum |nsimga_Proton| TPC for positive daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> negDauTpcProton{"negDauTpcProton", {5.f}, "Maximum |nsimga_Proton| TPC negative for daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTpcProton{"posDauTpcProton", {5.f}, "Maximum |nsigma_Proton| TPC for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTpcProton{"negDauTpcProton", {5.f}, "Maximum |nsigma_Proton| TPC for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofProton{"posDauTofProton", {}, "Maximum |nsigma_Proton| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofProton{"negDauTofProton", {}, "Maximum |nsigma_Proton| TOF for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<std::string>> rejectK0shortMassRanges{"rejectK0shortMassRanges", {"0.475;0.515"}, "K0short mass ranges (lower;upper) to reject -- bit is set if the candidate's mK0Short falls outside the range"};
 };
 
 // derived selection bits for K0Short
 struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("K0shortBits");
   V0_DEFAULT_BITS
-  o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for positive daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<std::string>> rejectLambdaMassRanges{"rejectLambdaMassRanges", {"1.11;1.12"}, "Lambda/AntiLambda mass ranges (lower;upper) to reject -- bit is set if the candidate's mLambda (resp. mAntiLambda) falls outside the range; same range for both since they share the same PDG mass"};
 };
 
 #undef V0_DEFAULT_BITS
@@ -127,8 +124,8 @@ struct ConfLambdaSelection : o2::framework::ConfigurableGroup {
 template <auto& Prefix>
 struct ConfK0shortSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
-  V0_DEFAULT_SELECTIONS(0.47, 0.51, 310)
-  o2::framework::Configurable<int> sign{"sign", 0, "Dummy value. For compatability with Lambda selection"};
+  V0_DEFAULT_SELECTIONS(0.485, 0.51, 310)
+  o2::framework::Configurable<int> sign{"sign", 0, "Dummy value. For compatibility with Lambda selection"};
 };
 
 #undef V0_DEFAULT_SELECTIONS
@@ -173,6 +170,10 @@ enum V0Sels {
   kNegDaughTofPion,   ///< TOF Pion PID for negative daughter
   kNegDaughTofProton, ///< TOF Proton PID for negative daughter
 
+  // rejection of competing mass hypotheses (range-based: bit is set if the candidate is outside the range)
+  kRejectK0shortMass, ///< Lambda/AntiLambda: reject K0short mass hypothesis
+  kRejectLambdaMass,  ///< K0short: reject Lambda/AntiLambda mass hypothesis (single bit, see applySelections())
+
   kV0SelsMax
 };
 
@@ -198,7 +199,9 @@ const std::unordered_map<V0Sels, std::string> v0SelectionNames = {
   {kPosDaughTofPion, "TOF Pion PID for positive daughter"},
   {kPosDaughTofProton, "TOF Proton PID for positive daughter"},
   {kNegDaughTofPion, "TOF Pion PID for negative daughter"},
-  {kNegDaughTofProton, "TOF Proton PID for negative daughter"}};
+  {kNegDaughTofProton, "TOF Proton PID for negative daughter"},
+  {kRejectK0shortMass, "Reject K0short mass hypothesis"},
+  {kRejectLambdaMass, "Reject Lambda/AntiLambda mass hypothesis"}};
 
 // enum for all track filters (loose pre-selection, applied before quality/PID cuts)
 enum V0Filters {
@@ -208,12 +211,8 @@ enum V0Filters {
   kEtaMax,
   kPhiMin,
   kPhiMax,
-  kRejectionK0shortMass,
-  kK0shortMassMin,
-  kK0shortMassMax,
-  kRejectionLambdaMass,
-  kLambdaMassMin,
-  kLambdaMassMax,
+  kMassMin, ///< signal mass window lower bound, for this v0Type's own mass hypothesis
+  kMassMax, ///< signal mass window upper bound, for this v0Type's own mass hypothesis
   kV0FiltersMax
 };
 
@@ -227,12 +226,8 @@ const std::unordered_map<V0Filters, std::string> v0FilterNames = {
   {kEtaMax, "etaMax"},
   {kPhiMin, "phiMin"},
   {kPhiMax, "phiMax"},
-  {kRejectionK0shortMass, "rejectK0short"},
-  {kK0shortMassMin, "k0shortMassMin"},
-  {kK0shortMassMax, "k0shortMassMax"},
-  {kRejectionLambdaMass, "rejectLambda"},
-  {kLambdaMassMin, "lambdaMassMin"},
-  {kLambdaMassMax, "lambdaMassMax"},
+  {kMassMin, "massMin"},
+  {kMassMax, "massMax"},
 };
 
 /// \brief Cut class to contain and execute all cuts applied to v0s
@@ -256,39 +251,44 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     mPhiMax = filter.phiMax.value;
     mRequireTof = config.requireTof.value;
     mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
+    const std::string tofComment = "requireTof = " + std::to_string(mRequireTof) + "; keepTracksWithoutTof = " + std::to_string(mKeepTracksWithoutTof);
 
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       mMassLambdaLowerLimit = filter.massMinLambda.value;
       mMassLambdaUpperLimit = filter.massMaxLambda.value;
-      mRejectK0shortHypothesis = filter.rejectHypothesisK0short.value;
-      mMassK0shortLowerLimit = filter.rejectMassMinK0short.value;
-      mMassK0shortUpperLimit = filter.rejectMassMaxK0short.value;
+
+      this->addSelection(kRejectK0shortMass, v0SelectionNames.at(kRejectK0shortMass), config.rejectK0shortMassRanges.value, true, true, false, limits::kOutsideRange);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         this->addSelection(kPosDaughTpcProton, v0SelectionNames.at(kPosDaughTpcProton), config.posDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, true, mRequireTof, false);
-        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addComments(kPosDaughTofProton, tofComment);
+        this->addComments(kNegDaughTofPion, tofComment);
       }
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
         this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcProton, v0SelectionNames.at(kNegDaughTpcProton), config.negDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
-        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addComments(kPosDaughTofPion, tofComment);
+        this->addComments(kNegDaughTofProton, tofComment);
       }
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
       mMassK0shortLowerLimit = filter.massMinK0short.value;
       mMassK0shortUpperLimit = filter.massMaxK0short.value;
-      mRejectLambdaHypothesis = filter.rejectHypothesisLambda.value;
-      mMassLambdaLowerLimit = filter.rejectMassMinLambda.value;
-      mMassLambdaUpperLimit = filter.rejectMassMaxLambda.value;
+
+      this->addSelection(kRejectLambdaMass, v0SelectionNames.at(kRejectLambdaMass), config.rejectLambdaMassRanges.value, true, true, false, limits::kOutsideRange);
 
       this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
-      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addComments(kPosDaughTofPion, tofComment);
+      this->addComments(kNegDaughTofPion, tofComment);
     }
 
     this->addSelection(kDcaDaughMax, v0SelectionNames.at(kDcaDaughMax), config.dcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
@@ -301,6 +301,10 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     this->addSelection(kDauTpcClsMin, v0SelectionNames.at(kDauTpcClsMin), config.dauTpcClustersMin.value, limits::kLowerLimit, true, true, false);
 
     this->setupSelectionHistogram<SelectionHistName>(registry);
+    // signal mass window bins carry this v0Type's own mass hypothesis only -- otherwise e.g. the
+    // K0short filter histogram would also show Lambda's (irrelevant, default-valued) mass window
+    float const massLowerLimit = modes::isEqual(v0Type, modes::V0::kK0short) ? mMassK0shortLowerLimit : mMassLambdaLowerLimit;
+    float const massUpperLimit = modes::isEqual(v0Type, modes::V0::kK0short) ? mMassK0shortUpperLimit : mMassLambdaUpperLimit;
     this->template setupFilterHistogram<FilterHistName>(
       registry,
       {
@@ -310,12 +314,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
         {v0FilterNames.at(kEtaMax), mEtaMax},
         {v0FilterNames.at(kPhiMin), mPhiMin},
         {v0FilterNames.at(kPhiMax), mPhiMax},
-        {v0FilterNames.at(kRejectionK0shortMass), mRejectK0shortHypothesis ? 1 : 0},
-        {v0FilterNames.at(kK0shortMassMin), mMassK0shortLowerLimit},
-        {v0FilterNames.at(kK0shortMassMax), mMassK0shortUpperLimit},
-        {v0FilterNames.at(kRejectionLambdaMass), mRejectLambdaHypothesis ? 1 : 0},
-        {v0FilterNames.at(kLambdaMassMin), mMassLambdaLowerLimit},
-        {v0FilterNames.at(kLambdaMassMax), mMassLambdaUpperLimit},
+        {v0FilterNames.at(kMassMin), massLowerLimit},
+        {v0FilterNames.at(kMassMax), massUpperLimit},
       });
   }
 
@@ -350,7 +350,9 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
 
     // PID of the daughters under the mass hypothesis of this v0 type
     // TPC nSigma comes from the daughter track, TOF nSigma from the strangeness-tagged v0 candidate
-    // if the daughter has no TOF signal, feed 0 so the bit passes any limit (opt-in via keepTracksWithoutTof)
+    // if the daughter has no TOF signal: feed 0 so the bit passes any limit if keepTracksWithoutTof is set,
+    // overriding requireTof; otherwise feed a value that fails every limit, so that if requireTof is also
+    // true, the mandatory TOF cut correctly rejects the candidate instead of silently letting it through
     auto evaluateDaughterPid = [this](V0Sels tpcBit, float tpcNSigma,
                                       V0Sels tofBit, float tofNSigma, bool hasTof) {
       this->evaluateObservable(tpcBit, tpcNSigma);
@@ -358,6 +360,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
         this->evaluateObservable(tofBit, tofNSigma);
       } else if (mKeepTracksWithoutTof) {
         this->evaluateObservable(tofBit, 0.f);
+      } else {
+        this->evaluateObservable(tofBit, std::numeric_limits<float>::max());
       }
     };
 
@@ -382,6 +386,20 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
                           kPosDaughTofPion, v0candidate.tofNSigmaK0PiPlus(), posHasTof);
       evaluateDaughterPid(kNegDaughTpcPion, negDaughter.tpcNSigmaPi(),
                           kNegDaughTofPion, v0candidate.tofNSigmaK0PiMinus(), negHasTof);
+    }
+
+    // rejection of competing mass hypotheses: bit is set if the candidate falls outside the
+    // configured range(s) -- see kOutsideRange in selectionContainer.h
+    if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
+      this->evaluateObservable(kRejectK0shortMass, v0candidate.mK0Short());
+    }
+    if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
+      // K0short's V0Data carries both mLambda() and mAntiLambda(), but we only want a single
+      // rejection bit -- evaluate both against the configured range(s) and keep only the AND
+      // (bit set if BOTH independently fall outside), without assuming anything about where
+      // the configured range(s) are centered. See the two-value evaluateObservable() overload
+      // in baseSelection.h.
+      this->evaluateObservable(kRejectLambdaMass, v0candidate.mLambda(), v0candidate.mAntiLambda());
     }
 
     this->assembleBitmask<SelectionHistName>();
@@ -418,49 +436,27 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     this->template fillFilter<FilterHistName>(kPhiMax, p);
     pass &= p;
 
-    // mass hypothesis: signal window is a gating AND-cut (two bounds, both must pass);
-    // the competing hypothesis is a rejection OR-cut (pass if outside the window, or if
-    // rejection is disabled) — its own bin records whether the candidate cleared the
-    // rejection, while the min/max bins are diagnostic bounds on where the mass sits.
+    // signal mass window: gating AND-cut (both bounds must pass). The competing hypothesis is no
+    // longer rejected here -- it's a stored bit instead
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       float const mass = modes::isEqual(v0Type, modes::V0::kLambda) ? v0.mLambda() : v0.mAntiLambda();
 
       p = mass > mMassLambdaLowerLimit;
-      this->template fillFilter<FilterHistName>(kLambdaMassMin, p);
+      this->template fillFilter<FilterHistName>(kMassMin, p);
       pass &= p;
 
       p = mass < mMassLambdaUpperLimit;
-      this->template fillFilter<FilterHistName>(kLambdaMassMax, p);
-      pass &= p;
-
-      bool const belowK0s = v0.mK0Short() < mMassK0shortLowerLimit;
-      this->template fillFilter<FilterHistName>(kK0shortMassMin, belowK0s);
-      bool const aboveK0s = v0.mK0Short() > mMassK0shortUpperLimit;
-      this->template fillFilter<FilterHistName>(kK0shortMassMax, aboveK0s);
-
-      p = !mRejectK0shortHypothesis || belowK0s || aboveK0s;
-      this->template fillFilter<FilterHistName>(kRejectionK0shortMass, p);
+      this->template fillFilter<FilterHistName>(kMassMax, p);
       pass &= p;
     }
 
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
       p = v0.mK0Short() > mMassK0shortLowerLimit;
-      this->template fillFilter<FilterHistName>(kK0shortMassMin, p);
+      this->template fillFilter<FilterHistName>(kMassMin, p);
       pass &= p;
 
       p = v0.mK0Short() < mMassK0shortUpperLimit;
-      this->template fillFilter<FilterHistName>(kK0shortMassMax, p);
-      pass &= p;
-
-      bool const belowLambda = v0.mLambda() < mMassLambdaLowerLimit;
-      bool const aboveLambda = v0.mLambda() > mMassLambdaUpperLimit;
-      bool const belowAntiLambda = v0.mAntiLambda() < mMassLambdaLowerLimit;
-      bool const aboveAntiLambda = v0.mAntiLambda() > mMassLambdaUpperLimit;
-      this->template fillFilter<FilterHistName>(kLambdaMassMin, belowLambda && belowAntiLambda);
-      this->template fillFilter<FilterHistName>(kLambdaMassMax, aboveLambda && aboveAntiLambda);
-
-      p = !mRejectLambdaHypothesis || ((belowLambda || aboveLambda) && (belowAntiLambda || aboveAntiLambda));
-      this->template fillFilter<FilterHistName>(kRejectionLambdaMass, p);
+      this->template fillFilter<FilterHistName>(kMassMax, p);
       pass &= p;
     }
 
@@ -470,13 +466,11 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
   }
 
  protected:
-  float mMassK0shortLowerLimit = 0.483f;
-  float mMassK0shortUpperLimit = 0.503f;
-  bool mRejectK0shortHypothesis = false;
+  float mMassK0shortLowerLimit = 0.485f;
+  float mMassK0shortUpperLimit = 0.51f;
 
   float mMassLambdaLowerLimit = 1.105f;
   float mMassLambdaUpperLimit = 1.125f;
-  bool mRejectLambdaHypothesis = false;
 
   // kinematic filters
   float mPtMin = 0.f;
@@ -715,7 +709,9 @@ class V0Builder
         v0.v0radius(),
         v0.x(),
         v0.y(),
-        v0.z());
+        v0.z(),
+        v0.alpha(),
+        v0.qtarm());
     }
   }
 
@@ -754,7 +750,9 @@ class V0Builder
         v0.v0radius(),
         v0.x(),
         v0.y(),
-        v0.z());
+        v0.z(),
+        v0.alpha(),
+        v0.qtarm());
     }
   }
 

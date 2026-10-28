@@ -101,6 +101,7 @@ struct FlowTask {
   Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
   Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {TrackCutArray[0], 7, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAz", "DCAxy Nsigma", "DCAz Nsigma(override)"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
+  std::array<std::array<float, 2>, 7> trackCuts{};
   enum TrackCut {
     // enum for labelledArray track selection
     kChi2prTPCcls = 0, // max chi2 per TPC clusters
@@ -243,6 +244,14 @@ struct FlowTask {
     std::vector<float> nPt; // fraction of particles in each pT bin in one event
     std::vector<std::shared_ptr<TProfile2D>> listNptV2;
     std::vector<std::shared_ptr<TH2>> listPtX;
+    O2_DEFINE_CONFIGURABLE(cfgManualCk, bool, false, "Produce pt-pt variance")
+    O2_DEFINE_CONFIGURABLE(cfgNewPtContainer, bool, false, "Switch to new version of flowPtContainer. This switch will be removed after validation of new container.")
+    Configurable<GFWRegions> cfgNpcRegions{"cfgNpcRegions", {{"refN", "refP", "refMid", "refFull"}, {-0.8, 0.4, -0.4, -0.8}, {-0.4, 0.8, 0.4, 0.8}, {0, 0, 0, 0}, {1, 1, 1, 1}}, "Configurations for GFW regions"};
+    Configurable<GFWCorrConfigs> cfgNpcPtVnCorrConfig{"cfgNpcPtVnCorrConfig", {{"refP {pt} refN {pt}", "refP {2} refMid {pt} refN {-2}", "refP {2} refMid {pt pt} refN {-2}", "refFull {pt}", "refFull {pt pt}", "refFull {pt pt pt}", "refFull {pt pt pt pt}", "refP {pt} refMid {pt} refN {pt}"}, {"ChGapPtPt", "ChGap22pt", "ChGap22ptpt", "ChFullPt", "ChFullPtPt", "ChFullPtPtPt", "ChFullPtPtPtPt", "ChGapPtPtPtABC"}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0}}, "Configurations for vn-pt correlations based on new version flowPtContainer"};
+    Configurable<std::vector<std::string>> cfgNpcGFWCorr{"cfgNpcGFWCorr", std::vector<std::string>{"refN {2} refP {-2}", "refN {3} refP {-3}"}, "GFW corrconfig for new version flowPtContainer"};
+    GFWRegions npcRegions;
+    GFWCorrConfigs npcPtVnCorrConfig;
+    GFW npcGfw;
   } cfgAdditionObs;
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
@@ -287,7 +296,7 @@ struct FlowTask {
   std::vector<GFW::CorrConfig> corrconfigs;
   GFWCorrConfigs gfwConfigs;
   std::vector<GFW::CorrConfig> corrconfigsPtVn;
-  TAxis* fPtAxis;
+  TAxis* fPtAxis = nullptr;
   TRandom3* fRndm = new TRandom3(0);
   std::vector<std::pair<double, double>> etagapsPtPt;
   std::vector<std::vector<std::shared_ptr<TProfile>>> bootstrapArray;
@@ -324,15 +333,15 @@ struct FlowTask {
   double mMinSeconds{-1.};
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
-  TH2* gCurrentHadronicRate;
+  TH2* gCurrentHadronicRate = nullptr;
   RCTFlagsChecker rctChecker{"CBT"};
 
   // phi-EP correction
   std::vector<TF1*> funcEff;
-  TH1D* hFindPtBin;
-  TF1* funcV2;
-  TF1* funcV3;
-  TF1* funcV4;
+  TH1D* hFindPtBin = nullptr;
+  TF1* funcV2 = nullptr;
+  TF1* funcV3 = nullptr;
+  TF1* funcV4 = nullptr;
 
   void init(InitContext const&)
   {
@@ -438,6 +447,13 @@ struct FlowTask {
       registry.add("hPt_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
       registry.add("hPtA_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
       registry.add("hPtB_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
+    }
+    if (cfgAdditionObs.cfgManualCk) {
+      registry.add("ptpt_1sub1_1sub3_2pc", "", {HistType::kTProfile, {axisIndependent}});
+      registry.add("pt_1sub1_1pc", "", {HistType::kTProfile, {axisIndependent}});
+      registry.add("pt_1sub1_2pc", "", {HistType::kTProfile, {axisIndependent}});
+      registry.add("pt_1sub3_1pc", "", {HistType::kTProfile, {axisIndependent}});
+      registry.add("pt_1sub3_2pc", "", {HistType::kTProfile, {axisIndependent}});
     }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -659,14 +675,42 @@ struct FlowTask {
     // Mask 1: vn-[pT], 3: vn-[pT^2], 7: vn-[pT^3], 15: vn-[pT^4]
     gfwConfigs.SetpTCorrMasks(cfgUserPtVnCorrConfig->GetpTCorrMasks());
     gfwConfigs.Print();
-    fFCpt->setUseCentralMoments(cfgUseCentralMoments);
-    fFCpt->setUseGapMethod(true);
     if (!cfgUserIO.cfgUserPtVnEvWeightEnabled)
       fFCpt->setEventWeight(EventWeight::UnityWeight);
     else
       fFCpt->setEventWeight(EventWeight::TupleWeight);
-    fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
-    if (cfgEtaGapPtPtEnabled) {
+    if (cfgAdditionObs.cfgNewPtContainer) {
+      cfgAdditionObs.npcRegions.SetNames(cfgAdditionObs.cfgNpcRegions->GetNames());
+      cfgAdditionObs.npcRegions.SetEtaMin(cfgAdditionObs.cfgNpcRegions->GetEtaMin());
+      cfgAdditionObs.npcRegions.SetEtaMax(cfgAdditionObs.cfgNpcRegions->GetEtaMax());
+      cfgAdditionObs.npcRegions.SetpTDifs(cfgAdditionObs.cfgNpcRegions->GetpTDifs());
+      cfgAdditionObs.npcRegions.SetBitmasks(cfgAdditionObs.cfgNpcRegions->GetBitmasks());
+      cfgAdditionObs.npcPtVnCorrConfig.SetCorrs(cfgAdditionObs.cfgNpcPtVnCorrConfig->GetCorrs());
+      cfgAdditionObs.npcPtVnCorrConfig.SetHeads(cfgAdditionObs.cfgNpcPtVnCorrConfig->GetHeads());
+      cfgAdditionObs.npcPtVnCorrConfig.SetpTDifs(cfgAdditionObs.cfgNpcPtVnCorrConfig->GetpTDifs());
+      cfgAdditionObs.npcPtVnCorrConfig.SetpTCorrMasks(cfgAdditionObs.cfgNpcPtVnCorrConfig->GetpTCorrMasks());
+      cfgAdditionObs.npcRegions.Print();
+      cfgAdditionObs.npcPtVnCorrConfig.Print();
+      fFCpt->initialise(axisIndependent, cfgAdditionObs.npcRegions, cfgAdditionObs.npcPtVnCorrConfig, cfgNbootstrap);
+
+      for (int region = 0; region < cfgAdditionObs.npcRegions.GetSize(); ++region) {
+        cfgAdditionObs.npcGfw.AddRegion(cfgAdditionObs.npcRegions.GetNames()[region], cfgAdditionObs.npcRegions.GetEtaMin()[region],
+                                        cfgAdditionObs.npcRegions.GetEtaMax()[region], 1,
+                                        cfgAdditionObs.npcRegions.GetBitmasks()[region]);
+      }
+      std::vector<std::string> npcGFWCorr = cfgAdditionObs.cfgNpcGFWCorr;
+      if (!npcGFWCorr.empty()) {
+        for (uint i = 0; i < npcGFWCorr.size(); i++) {
+          cfgAdditionObs.npcGfw.GetCorrelatorConfig(npcGFWCorr.at(i).c_str());
+        }
+      }
+      cfgAdditionObs.npcGfw.CreateRegions();
+    } else {
+      fFCpt->setUseCentralMoments(cfgUseCentralMoments);
+      fFCpt->setUseGapMethod(true);
+      fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
+    }
+    if (!cfgAdditionObs.cfgNewPtContainer && cfgEtaGapPtPtEnabled) {
       for (int i = 0; i < 4; ++i) { // o2-linter: disable=magic-number (maximum of 4 subevents)
         if (cfgPtPtGaps->getData()[i][0] < -1. || cfgPtPtGaps->getData()[i][1] < -1.)
           continue;
@@ -748,29 +792,42 @@ struct FlowTask {
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
 
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs]) {
+    readMatrix(cfgTrackCuts->getData(), trackCuts);
+    if (trackCuts[kDCAxyNSigma][kTrCutObs]) {
       cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs]);
-      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs], cfgFuncParas.cfgDCAxyFunc->c_str()));
+      cfgFuncParas.fPtDepDCAxy->SetParameter(0, trackCuts[kDCAxyNSigma][kTrCutObs]);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", trackCuts[kDCAxyNSigma][kTrCutObs], cfgFuncParas.cfgDCAxyFunc->c_str()));
     }
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]) {
+    if (trackCuts[kDCAxyNSigma][kTrCutNch]) {
       cfgFuncParas.fPtDepDCAxyForNch = new TF1("ptDepDCAxyForNch", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]);
-      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch], cfgFuncParas.cfgDCAxyFunc->c_str()));
+      cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, trackCuts[kDCAxyNSigma][kTrCutNch]);
+      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[kDCAxyNSigma][kTrCutNch], cfgFuncParas.cfgDCAxyFunc->c_str()));
     }
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs]) {
+    if (trackCuts[kDCAzNSigma][kTrCutObs]) {
       cfgFuncParas.fPtDepDCAz = new TF1("ptDepDCAz", Form("[0]*%s", cfgFuncParas.cfgDCAzFunc->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAz->SetParameter(0, cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs]);
-      LOGF(info, "DCAz pt-dependence function: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs], cfgFuncParas.cfgDCAzFunc->c_str()));
+      cfgFuncParas.fPtDepDCAz->SetParameter(0, trackCuts[kDCAzNSigma][kTrCutObs]);
+      LOGF(info, "DCAz pt-dependence function: %s", Form("%0.1f * %s", trackCuts[kDCAzNSigma][kTrCutObs], cfgFuncParas.cfgDCAzFunc->c_str()));
     }
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch]) {
+    if (trackCuts[kDCAzNSigma][kTrCutNch]) {
       cfgFuncParas.fPtDepDCAzForNch = new TF1("ptDepDCAzForNch", Form("[0]*%s", cfgFuncParas.cfgDCAzFunc->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAzForNch->SetParameter(0, cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch]);
-      LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch], cfgFuncParas.cfgDCAzFunc->c_str()));
+      cfgFuncParas.fPtDepDCAzForNch->SetParameter(0, trackCuts[kDCAzNSigma][kTrCutNch]);
+      LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[kDCAzNSigma][kTrCutNch], cfgFuncParas.cfgDCAzFunc->c_str()));
     }
     if (!cfgEvSelRCTflags.value.empty()) {
       rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
     }
+  }
+
+  template <typename T, typename P>
+  void readMatrix(Array2D<T> const& mat, P& array)
+  {
+    for (auto i = 0; i < static_cast<int>(mat.rows); ++i) {
+      for (auto j = 0; j < static_cast<int>(mat.cols); ++j) {
+        array[i][j] = mat(i, j);
+      }
+    }
+
+    return;
   }
 
   void createOutputObjectsForRun(int runNumber)
@@ -910,30 +967,30 @@ struct FlowTask {
     if (cfgUserIO.cfgAcceptance.value.empty() == false) {
       mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgUserIO.cfgAcceptance, timestamp);
       if (mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
       else
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
     }
     if (cfgUserIO.cfgEfficiency.value.empty() == false) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgUserIO.cfgEfficiency, timestamp);
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgUserIO.cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     if (cfgUserIO.cfgEfficiencyForNch.value.empty() == false) {
       mEfficiencyForNch = ccdb->getForTimeStamp<TH1D>(cfgUserIO.cfgEfficiencyForNch, timestamp);
       if (mEfficiencyForNch == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgUserIO.cfgEfficiencyForNch.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiencyForNch.value.c_str(), (void*)mEfficiencyForNch);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiencyForNch.value.c_str(), static_cast<void*>(mEfficiencyForNch));
     }
     if (cfgAdditionObs.cfgDptDisEnable && cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.empty() == false) {
       cfgAdditionObs.hEvAvgMeanPt = ccdb->getForTimeStamp<TH1D>(cfgAdditionObs.cfgDptDishEvAvgMeanPt, timestamp);
       if (cfgAdditionObs.hEvAvgMeanPt == nullptr) {
         LOGF(fatal, "Could not load mean pT histogram from %s", cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.c_str());
       }
-      LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgAdditionObs.hEvAvgMeanPt);
+      LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.c_str(), static_cast<void*>(cfgAdditionObs.hEvAvgMeanPt));
     }
     if (cfgAdditionObs.cfgDptDisEnable && cfgAdditionObs.cfgDptDisSelectionSwitch > kNoDptCut) {
       if (cfgAdditionObs.cfgDptDisCutLow.value.empty() == false) {
@@ -941,14 +998,14 @@ struct FlowTask {
         if (cfgAdditionObs.fDptDisCutLow == nullptr) {
           LOGF(fatal, "Could not load dptDis low cut histogram from %s", cfgAdditionObs.cfgDptDisCutLow.value.c_str());
         }
-        LOGF(info, "Loaded dptDis low cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutLow.value.c_str(), (void*)cfgAdditionObs.fDptDisCutLow);
+        LOGF(info, "Loaded dptDis low cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutLow.value.c_str(), static_cast<void*>(cfgAdditionObs.fDptDisCutLow));
       }
       if (cfgAdditionObs.cfgDptDisCutHigh.value.empty() == false) {
         cfgAdditionObs.fDptDisCutHigh = ccdb->getForTimeStamp<TH1D>(cfgAdditionObs.cfgDptDisCutHigh, timestamp);
         if (cfgAdditionObs.fDptDisCutHigh == nullptr) {
           LOGF(fatal, "Could not load dptDis high cut histogram from %s", cfgAdditionObs.cfgDptDisCutHigh.value.c_str());
         }
-        LOGF(info, "Loaded dptDis high cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutHigh.value.c_str(), (void*)cfgAdditionObs.fDptDisCutHigh);
+        LOGF(info, "Loaded dptDis high cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutHigh.value.c_str(), static_cast<void*>(cfgAdditionObs.fDptDisCutHigh));
       }
     }
     correctionsLoaded = true;
@@ -1111,21 +1168,21 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(const TTrack& track)
   {
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+    if (trackCuts[kDCAxyNSigma][kTrCutObs] && cfgFuncParas.fPtDepDCAxy != nullptr && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
       return false;
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs] && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())))
+    if (trackCuts[kDCAzNSigma][kTrCutObs] && cfgFuncParas.fPtDepDCAz != nullptr && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())))
       return false;
-    return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutObs]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutObs]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutObs]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutObs]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutObs]));
+    return ((track.tpcNClsFound() >= trackCuts[kTPCclu][kTrCutObs]) && (track.tpcNClsCrossedRows() >= trackCuts[kTPCCrossedRows][kTrCutObs]) && (track.itsNCls() >= trackCuts[kITSclu][kTrCutObs]) && (track.tpcChi2NCl() < trackCuts[kChi2prTPCcls][kTrCutObs]) && (std::fabs(track.dcaZ()) < trackCuts[kDCAz][kTrCutObs]));
   }
 
   template <typename TTrack>
   bool trackSelectedForNch(const TTrack& track)
   {
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
+    if (trackCuts[kDCAxyNSigma][kTrCutNch] && cfgFuncParas.fPtDepDCAxyForNch != nullptr && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
       return false;
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch] && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())))
+    if (trackCuts[kDCAzNSigma][kTrCutNch] && cfgFuncParas.fPtDepDCAzForNch != nullptr && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())))
       return false;
-    return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutNch]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutNch]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutNch]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutNch]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutNch]));
+    return ((track.tpcNClsFound() >= trackCuts[kTPCclu][kTrCutNch]) && (track.tpcNClsCrossedRows() >= trackCuts[kTPCCrossedRows][kTrCutNch]) && (track.itsNCls() >= trackCuts[kITSclu][kTrCutNch]) && (track.tpcChi2NCl() < trackCuts[kChi2prTPCcls][kTrCutNch]) && (std::fabs(track.dcaZ()) < trackCuts[kDCAz][kTrCutNch]));
   }
 
   template <typename TTrack>
@@ -1256,6 +1313,9 @@ struct FlowTask {
     fGFW->Clear();
     fFCpt->clearVector();
     cfgAdditionObs.nPt.clear();
+    if (cfgAdditionObs.cfgNewPtContainer) {
+      cfgAdditionObs.npcGfw.Clear();
+    }
     if (cfgGetInteractionRate) {
       initHadronicRate(bc);
       double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
@@ -1289,6 +1349,10 @@ struct FlowTask {
     double weffEventWithinGap08 = 0., weffEventSquareWithinGap08 = 0.;
     double sumPtsquareWsquareWithinGap08 = 0., sumPtWsquareWithinGap08 = 0.;
     double nTracksCorrected = 0;
+    double mpt_sub1 = 0;
+    double mpt_sub1_weffEv = 0;
+    double mpt_sub3 = 0;
+    double mpt_sub3_weffEv = 0;
     int magnetfield = 0;
     float independent = cent;
     float nTracksUncorrected = 0;
@@ -1405,6 +1469,16 @@ struct FlowTask {
           weffEventWithinGap08 += weff;
           weffEventSquareWithinGap08 += weff * weff;
         }
+        if (cfgAdditionObs.cfgManualCk) {
+          if (track.eta() >= etagapsPtPt[0].first && track.eta() <= etagapsPtPt[0].second) {
+            mpt_sub1 += weff * track.pt();
+            mpt_sub1_weffEv += weff;
+          }
+          if (track.eta() >= etagapsPtPt[2].first && track.eta() <= etagapsPtPt[2].second) {
+            mpt_sub3 += weff * track.pt();
+            mpt_sub3_weffEv += weff;
+          }
+        }
       }
       if (cfgUserIO.cfgConsistentEventFlag && consistentEventVector.size() == 6) { // o2-linter: disable=magic-number (size match)
         acceptedTracks.nFull += 1;
@@ -1421,10 +1495,20 @@ struct FlowTask {
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
       if (withinPtPOI && withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
-      if (cfgUsePtRef && withinPtRef)
-        fillPtSums<kReco>(track, weff);
-      if (!cfgUsePtRef && withinPtPOI)
-        fillPtSums<kReco>(track, weff);
+      if (cfgAdditionObs.cfgNewPtContainer) {
+        fFCpt->fill(track.eta(), weff, track.pt(), 1);
+        if (withinPtRef)
+          cfgAdditionObs.npcGfw.Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+        if (withinPtPOI)
+          cfgAdditionObs.npcGfw.Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
+        if (withinPtPOI && withinPtRef)
+          cfgAdditionObs.npcGfw.Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
+      } else {
+        if (cfgUsePtRef && withinPtRef)
+          fillPtSums<kReco>(track, weff);
+        if (!cfgUsePtRef && withinPtPOI)
+          fillPtSums<kReco>(track, weff);
+      }
     }
     registry.fill(HIST("hTrackCorrection2d"), nTracksUncorrected, nTracksCorrected);
     if (cfgUseNch && cfgUseNchCorrected) {
@@ -1477,13 +1561,12 @@ struct FlowTask {
     if (weffEvent) {
       registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
     }
-    if (weffEventWithinGap08)
+    if (weffEventWithinGap08) {
       registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgUserIO.cfgUserPtVnEvWeightEnabled ? weffEventWithinGap08 : 1.);
-    if (weffEventWithinGap08)
       bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
-    // c22_gap8 * pt_withGap8
-    if (weffEventWithinGap08)
+      // c22_gap8 * pt_withGap8
       fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
+    }
     // PtVariance
     if (weffEventDiffWithGap08) {
       registry.fill(HIST("PtVariance_partA_WithinGap08"), independent,
@@ -1492,6 +1575,25 @@ struct FlowTask {
       registry.fill(HIST("PtVariance_partB_WithinGap08"), independent,
                     (weffEventWithinGap08 * ptSum_Gap08 - sumPtWsquareWithinGap08) / weffEventDiffWithGap08,
                     weffEventDiffWithGap08);
+    }
+
+    if (cfgAdditionObs.cfgManualCk) {
+      // 2pc event weight:
+      double ev2pc = mpt_sub1_weffEv * mpt_sub3_weffEv;
+      // manual pt-pt variance
+      if (mpt_sub1_weffEv) {
+        mpt_sub1 = mpt_sub1 / mpt_sub1_weffEv;
+        registry.fill(HIST("pt_1sub1_1pc"), independent, mpt_sub1, mpt_sub1_weffEv);
+      }
+      if (mpt_sub3_weffEv) {
+        mpt_sub3 = mpt_sub3 / mpt_sub3_weffEv;
+        registry.fill(HIST("pt_1sub3_1pc"), independent, mpt_sub3, mpt_sub3_weffEv);
+      }
+      if (mpt_sub1_weffEv && mpt_sub3_weffEv) {
+        registry.fill(HIST("ptpt_1sub1_1sub3_2pc"), independent, mpt_sub1 * mpt_sub3, ev2pc);
+        registry.fill(HIST("pt_1sub1_2pc"), independent, mpt_sub1, ev2pc);
+        registry.fill(HIST("pt_1sub3_2pc"), independent, mpt_sub3, ev2pc);
+      }
     }
 
     // v02
@@ -1508,7 +1610,11 @@ struct FlowTask {
       fillFC<kReco>(corrconfigs.at(l_ind), independent, lRandom);
     }
     // Filling pt Container
-    fillPtContainers<kReco>(independent, lRandom);
+    if (cfgAdditionObs.cfgNewPtContainer) {
+      fFCpt->fillPtProfiles(cfgAdditionObs.npcGfw, independent, lRandom);
+    } else {
+      fillPtContainers<kReco>(independent, lRandom);
+    }
   }
   PROCESS_SWITCH(FlowTask, processData, "Process analysis for non-derived data", true);
 
@@ -1569,9 +1675,8 @@ struct FlowTask {
           ptSum_Gap08 += mcParticle.pt();
           count_Gap08 += 1.;
         }
-      }
-      if (withinPtRef)
         fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 1);
+      }
       if (withinPtPOI)
         fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 2);
       if (withinPtPOI && withinPtRef)

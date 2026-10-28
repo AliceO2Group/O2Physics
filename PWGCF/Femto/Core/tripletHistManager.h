@@ -11,7 +11,7 @@
 
 /// \file tripletHistManager.h
 /// \brief histogram manager for triplet tasks
-/// \author anton.riedel@tum.de, TU München, anton.riedel@tum.de
+/// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #ifndef PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_
@@ -111,6 +111,7 @@ struct ConfMixing : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis vtxBins{"vtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   o2::framework::Configurable<int> depth{"depth", 5, "Number of events for mixing"};
   o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: both"};
+  o2::framework::Configurable<int> eventStride{"eventStride", 1, "Only use every Nth collision as a mixing anchor (1 = use every collision). Reduces mixed-event combinatorics roughly 1/eventStride."};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1/2/3 (if they are identical). Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
   o2::framework::Configurable<bool> particle123AreSameSpecies{"particle123AreSameSpecies", false, "Particle 1,2 and 3 are of the same species"};
   o2::framework::Configurable<bool> particle12AreSameSpecies{"particle12AreSameSpecies", false, "Particle 1 and 2 are of the same species"};
@@ -147,12 +148,12 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
 
 struct ConfTripletCuts : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TripletCuts");
-  o2::framework::Configurable<float> q3Max{"q3Max", -1, "Maximal kstar (set to -1 to deactivate)"};
-  o2::framework::Configurable<float> q3Min{"q3Min", -1, "Minimal kstar (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> q3Max{"q3Max", -1, "Maximal Q3 (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> q3Min{"q3Min", -1, "Minimal Q3 (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMax{"mtMax", -1, "Maximal mt (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMin{"mtMin", -1, "Minimal mt (set to -1 to deactivate)"};
-  o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common anchestor (in the same event)"};
-  o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common anchestor (in the same event)"};
+  o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common ancestor (in the same event)"};
+  o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common ancestor (in the same event)"};
   o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
 };
 
