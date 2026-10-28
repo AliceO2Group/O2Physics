@@ -408,6 +408,18 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksPhi, "Process phi and tracks", false);
 
+  void processLambdasXis(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& lambdas, FemtoXis const& xis)
+  {
+    if (v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache) || cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    cascadeBuilder.processXis(col, xis, tracks, xiPartition, trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasXis, "Process lambdas and xis", false);
+  
   // mc processing
   //   // NOTE: unlike the other process functions, this one subscribes to the full
   // collision table and iterates manually. The MC index maps are keyed by source
