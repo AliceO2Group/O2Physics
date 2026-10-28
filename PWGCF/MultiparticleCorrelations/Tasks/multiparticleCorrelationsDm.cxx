@@ -15,7 +15,6 @@
 
 // O2:
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -24,9 +23,29 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/DataTypes.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+
+// *) ROOT and C++ include's:
+
+#include <TCollection.h>
+#include <TFile.h>
+#include <TGrid.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TList.h>
+#include <TObject.h>
+#include <TString.h>
+#include <TSystem.h>
+
+#include <array>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,19 +61,6 @@ using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, ao
 using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>::iterator;
 using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
-
-// *) ROOT and C++ include's:
-#include <TFile.h>
-#include <TGrid.h>
-#include <TH1D.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TList.h>
-#include <TString.h>
-#include <TSystem.h>
-
-#include <string>
-#include <vector>
 
 // *) Define enums:
 enum ERecSim { ERec = 0,
@@ -106,7 +112,7 @@ enum EBeforeAfter {
 };
 
 // *) Main task:
-struct StudentO2Physics { // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
+struct MultiparticleCorrelationsDm { // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 
   // *) Base TList to hold all output objects:
   TString sBaseListName = "Default list name"; // yes, I declare it separately, because I need it also later in BailOut() function
@@ -117,7 +123,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
   // *) CCDB:
   // Service<ccdb::BasicCCDBManager> ccdb; // support for offline callibration data base, not needed for the time being...
   // to be able to use ccdb object in the analysis task
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   // *) Define configurables:
 
@@ -145,52 +151,57 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "{min, max} [GeV]"};
 
   // for weights (efficiency corrections)
-  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/scratch8/go26dek/tutoarials/3/DatasetsO2/weights.root", "path to external ROOT file which holds all particle weights"};
+  Configurable<bool> cfUseWeights{"cfUseWeights", false, "load weights from the file in cfFileWithWeights"};
+  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "", "path to external ROOT file with weights; on Hyperloop only CCDB paths (/alice-ccdb.cern.ch/...) work"};
+
+  Configurable<bool> cfVerbose{"cfVerbose", false, "print \run number, centrality and vertex for each collision"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
   struct TaskConfiguration {
-    bool fProcess[EProcess_N] = {false}; // Set what to process. See enum EProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
-    bool fDryRun = false;                // book all histos and run without filling and calculating anything
-    bool fFillQA = false;                // book and fill QA histos
+    std::array<bool, EProcess_N> fProcess{}; // see enum EProcess
+    bool fDryRun = false;                    // book all histos and run without filling and calculating anything
+    bool fFillQA = false;                    // book and fill QA histos
     bool fUseVertexZCut = true;
     bool fUsePtCut = true;
 
     int fCentralityEstimator = ECentFT0C;
     int fReferenceMultiplicityEstimator = ERefMultTPC;
 
-    float fSigmaInel = 771.;         // sigma inel [fm^2]
-    float fVertexZ[2] = {-10., 10.}; // {min, max} [cm]
-    float fPt[2] = {0.2, 5.0};
-    bool fWeightsLoaded = false; // weights are loaded once, at the first collision
+    float fSigmaInel = 771.;                     // sigma inel [fm^2]
+    std::array<float, 2> fVertexZ = {-10., 10.}; // {min, max} [cm]
+    std::array<float, 2> fPt = {0.2, 5.0};       // {min, max} [GeV]
+    bool fWeightsLoaded = false;                 // weights are loaded once, at the first collision
+    bool fUseWeights = false;                    // load weights from external file
+    bool fVerbose = false;                       // print the values / collision
 
   } tc; // you have to prepend "tc." for all objects name in this group later in the code
 
   // **) Particle histograms:
   struct ParticleHistograms {
-    TList* fParticleHistogramsList = NULL; //!<! list to hold all control particle histograms
+    TList* fParticleHistogramsList = nullptr; //!<! list to hold all control particle histograms
 
-    TH1F* fParticleHistograms[EParticleHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum EParticleHistograms][rec, sim][before, after partic. cuts]
+    std::array<std::array<std::array<TH1F*, EBeforeAfter_N>, 2>, EParticleHistograms_N> fParticleHistograms{}; // [type][rec, sim][before, after]
 
   } pc; // you have to prepend "pc." for all objects name in this group later in the code
 
   // **) Event histograms:
   struct EventHistograms {
-    TList* fEventHistogramsList = NULL;
+    TList* fEventHistogramsList = nullptr;
 
-    TH1F* fEventHistograms[EEventHistograms_N][2][2] = {{{NULL}}}; //! [ type -see enum EEventHistograms][rec, sim][before, after event cuts]
+    std::array<std::array<std::array<TH1F*, EBeforeAfter_N>, 2>, EEventHistograms_N> fEventHistograms{}; // [type][rec, sim][before, after]
 
   } ec; // you have to prepend "ec." for all objects name in this group later in the code
 
   // **) QA histograms (booked and filled only if cfFillQA is true):
 
   struct QAHistograms {
-    TList* fQAHistogramsList = NULL;
-    TH2F* fHistCentralityRecVsSim = NULL; // x = centrality sim (from impact parameter), y = centrality rec
-  } qa;                                   // you have to prepend "qa." for all objects name in this group later in the code
+    TList* fQAHistogramsList = nullptr;
+    TH2F* fHistCentralityRecVsSim = nullptr; // x = centrality sim (from impact parameter), y = centrality rec
+  } qa;                                      // you have to prepend "qa." for all objects name in this group later in the code
 
   // **) Histogram with weights from an external file
-  TH1F* histWeights = NULL;
+  TH1F* histWeights = nullptr;
 
   // *) Define all member functions to be called in the main process* functions:
 
@@ -255,7 +266,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     if (0 == list->GetEntries()) {
-      return NULL;
+      return nullptr;
     }
 
     // The object is in the current base list:
@@ -265,18 +276,19 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
     }
 
     // Otherwise, search for the object recursively in the nested lists:
-    TObject* objectIter; // iterator object in the loop below
+    TObject* objectIter = nullptr; // iterator object in the loop below
     TIter next(list);
     while ((objectIter = next())) // double round braces are to silence the warnings
     {
       if (TString(objectIter->ClassName()).EqualTo("TList")) {
-        objectFinal = getObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);
-        if (objectFinal)
+        objectFinal = getObjectFromList(dynamic_cast<TList*>(objectIter), objectName);
+        if (objectFinal) {
           return objectFinal;
+        }
       }
     } // while(objectIter = next())
 
-    return NULL;
+    return nullptr;
 
   } // TObject* getObjectFromList(...)
 
@@ -285,9 +297,9 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
     // Last update: 20261018
 
     // *) Return value:
-    TH1F* hist = NULL;
-    TList* baseList = NULL;     // base top-level list in the TFile, e.g. named "ccdb_object"
-    TList* listWithRuns = NULL; // nested list with run-wise TList's holding run-specific weights
+    TH1F* hist = nullptr;
+    TList* baseList = nullptr;     // base top-level list in the TFile, e.g. named "ccdb_object"
+    TList* listWithRuns = nullptr; // nested list with run-wise TList's holding run-specific weights
 
     // *) Determine from filePath if the file is on a local machine, or in home dir AliEn, or in CCDB:
 
@@ -329,11 +341,11 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
       // The technical problem here is that it can be nested at any level,
       // to overcome that there is a helper utility function TObject* getObjectFromList(...),
       // whose implementation is discussed and provided separately.
-      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -351,17 +363,17 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
       // Remember that here I do not access the file; instead, I directly access the object in that file.
       // My home dir in CCDB: https://alice-ccdb.cern.ch/browse/Users/a/abilandz/ => adapt for your case
       ccdb->setURL("http://alice-ccdb.cern.ch"); // to be able to use the "ccdb" object in your analysis task
-      baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
+      baseList = dynamic_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
 
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -394,11 +406,11 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           // baseList->ls();
           LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, runNumber); // changed runNumber instead of tc.fRunNumber.Data()
@@ -415,13 +427,13 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
     // listWithRuns->ls();
 
     // get pointer to "hist" from "listWithRuns"
-    hist = reinterpret_cast<TH1F*>(getObjectFromList(listWithRuns, "histWithEfficiencyCorrections_1"));
+    hist = dynamic_cast<TH1F*>(getObjectFromList(listWithRuns, "histWithEfficiencyCorrections_1"));
     if (!hist) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
-    hist->SetDirectory(0);                                    // remove ownerhip from an external file
-    TH1F* histClone = reinterpret_cast<TH1F*>(hist->Clone()); // yes, I have to clone here
+    hist->SetDirectory(nullptr);                          // remove ownerhip from an external file
+    TH1F* histClone = dynamic_cast<TH1F*>(hist->Clone()); // yes, I have to clone here
 
     if (!bFileIsInCCDB) { // not for CCDB, there the CCDB manager owns the object and deletes it itself
       delete baseList;    // release back the memory
@@ -478,7 +490,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
 
       if constexpr (rs == ERecAndSim) {
         if (!collision.has_mcCollision()) {
-          LOGF(warning, "  No MC collision for this collision, skip simulated part...");
+          LOGF(debug, "  No MC collision for this collision, skip simulated part...");
           return;
         }
         auto mcCollision = collision.mcCollision();
@@ -518,7 +530,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
     }
 
     // Load the weights once, at the first collision, because the run number is only known here
-    if (!tc.fWeightsLoaded && !cfFileWithWeights.value.empty()) {
+    if (tc.fUseWeights && !tc.fWeightsLoaded) {
       histWeights = getHistogramWithWeights(cfFileWithWeights.value.c_str(), Form("%d", collision.bc().runNumber()));
       histWeights->SetTitle(cfFileWithWeights.value.c_str()); // book-keeping: title = file path
       // value takes the text as std::string and c_str makes it into a constant char*
@@ -527,14 +539,12 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
       tc.fWeightsLoaded = true;
     }
 
-    // Print current run number:
-    LOGF(info, "Run number: %d", collision.bc().runNumber());
-
-    // Print centrality estimated with "FT0M" estimator:
-    LOGF(info, "Centrality: %f", getCentrality(collision));
-
-    // Print vertex X position:
-    LOGF(info, "Vertex X position: %f", collision.posX());
+    // Print info for each collision, only if switched on in the config:
+    if (tc.fVerbose) {
+      LOGF(info, "Run number: %d", collision.bc().runNumber());
+      LOGF(info, "Centrality: %f", getCentrality(collision));
+      LOGF(info, "Vertex X position: %f", collision.posX());
+    }
 
     // Fill event histograms before event cuts
     fillEventHistograms<rs>(collision, tracks, EBefore);
@@ -570,7 +580,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
             pc.fParticleHistograms[EPt][ESim][EBefore]->Fill(mcparticle.pt());
             pc.fParticleHistograms[EPhi][ESim][EBefore]->Fill(mcparticle.phi());
           } else {
-            LOGF(warning, "  No MC particle for this track...");
+            LOGF(debug, "  No MC particle for this track...");
           }
         }
 
@@ -618,7 +628,13 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
     // *) Configure your task using configurables in the json file:
     tc.fDryRun = cfDryRun;
     tc.fFillQA = cfFillQA;
+    tc.fVerbose = cfVerbose;
     tc.fSigmaInel = cfSigmaInel;
+
+    tc.fUseWeights = cfUseWeights;
+    if (tc.fUseWeights && cfFileWithWeights.value.empty()) {
+      LOGF(fatal, "cfUseWeights is true, but cfFileWithWeights is empty");
+    }
 
     // vertex Z cut copy the swtich and range
     tc.fUseVertexZCut = cfUseVertexZCut;
@@ -726,78 +742,101 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
     float vzMax = lVzBins[2];
 
     // histogram booked before and after cuts
-    const char* baNames[EBeforeAfter_N] = {"before", "after"};
+    std::array<const char*, EBeforeAfter_N> baNames = {"before", "after"};
+    // book rec histograms only if a process with reconstructed data runs, sim histograms only if one with simulated data runs
+    const bool bookRec = doprocessRec || doprocessRecSim;
+    const bool bookSim = doprocessRecSim || doprocessSim;
     for (int ba = 0; ba < EBeforeAfter_N; ba++) {
 
       // par
-      pc.fParticleHistograms[EPt][ERec][ba] = new TH1F(Form("fHistPt[ERec][%s]", baNames[ba]), Form("pt distribution for reconstructed particles (%s cuts)", baNames[ba]), nBins, min, max);
-      pc.fParticleHistograms[EPt][ERec][ba]->GetXaxis()->SetTitle("p_{T}");
-      pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPt][ERec][ba]);
+      if (bookRec) {
+        pc.fParticleHistograms[EPt][ERec][ba] = new TH1F(Form("fHistPt[ERec][%s]", baNames[ba]), Form("pt distribution for reconstructed particles (%s cuts)", baNames[ba]), nBins, min, max);
+        pc.fParticleHistograms[EPt][ERec][ba]->GetXaxis()->SetTitle("p_{T}");
+        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPt][ERec][ba]);
+      }
+      if (bookSim) {
+        pc.fParticleHistograms[EPt][ESim][ba] = new TH1F(Form("fHistPt[ESim][%s]", baNames[ba]), Form("pt distribution for simulated particles (%s cuts)", baNames[ba]), nBins, min, max);
+        pc.fParticleHistograms[EPt][ESim][ba]->GetXaxis()->SetTitle("p_{T}");
+        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPt][ESim][ba]);
+      }
 
-      pc.fParticleHistograms[EPt][ESim][ba] = new TH1F(Form("fHistPt[ESim][%s]", baNames[ba]), Form("pt distribution for simulated particles (%s cuts)", baNames[ba]), nBins, min, max);
-      pc.fParticleHistograms[EPt][ESim][ba]->GetXaxis()->SetTitle("p_{T}");
-      pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPt][ESim][ba]);
-
-      pc.fParticleHistograms[EPhi][ERec][ba] = new TH1F(Form("fHistPhi[ERec][%s]", baNames[ba]), Form("Azimuthal-angle distribution for reconstructed particles (%s cuts)", baNames[ba]), nPhiBins, phiMin, phiMax);
-      pc.fParticleHistograms[EPhi][ERec][ba]->GetXaxis()->SetTitle("#varphi (rad)");
-      pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPhi][ERec][ba]);
-
-      pc.fParticleHistograms[EPhi][ESim][ba] = new TH1F(Form("fHistPhi[ESim][%s]", baNames[ba]), Form("Azimuthal-angle distribution for simulated particles (%s cuts)", baNames[ba]), nPhiBins, phiMin, phiMax);
-      pc.fParticleHistograms[EPhi][ESim][ba]->GetXaxis()->SetTitle("#varphi (rad)");
-      pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPhi][ESim][ba]);
+      if (bookRec) {
+        pc.fParticleHistograms[EPhi][ERec][ba] = new TH1F(Form("fHistPhi[ERec][%s]", baNames[ba]), Form("Azimuthal-angle distribution for reconstructed particles (%s cuts)", baNames[ba]), nPhiBins, phiMin, phiMax);
+        pc.fParticleHistograms[EPhi][ERec][ba]->GetXaxis()->SetTitle("#varphi (rad)");
+        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPhi][ERec][ba]);
+      }
+      if (bookSim) {
+        pc.fParticleHistograms[EPhi][ESim][ba] = new TH1F(Form("fHistPhi[ESim][%s]", baNames[ba]), Form("Azimuthal-angle distribution for simulated particles (%s cuts)", baNames[ba]), nPhiBins, phiMin, phiMax);
+        pc.fParticleHistograms[EPhi][ESim][ba]->GetXaxis()->SetTitle("#varphi (rad)");
+        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPhi][ESim][ba]);
+      }
 
       // ev
-      ec.fEventHistograms[EMultiplicity][ERec][ba] = new TH1F(Form("fHistMultiplicity[ERec][%s]", baNames[ba]), Form("Multiplicity for reconstructed particles (%s cuts)", baNames[ba]), nMultBins, multMin, multMax);
-      ec.fEventHistograms[EMultiplicity][ERec][ba]->GetXaxis()->SetTitle("total number of available particles");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EMultiplicity][ERec][ba]);
-
-      ec.fEventHistograms[EMultiplicity][ESim][ba] = new TH1F(Form("fHistMultiplicity[ESim][%s]", baNames[ba]), Form("Multiplicity for simulated particles (%s cuts)", baNames[ba]), nMultBins, multMin, multMax);
-      ec.fEventHistograms[EMultiplicity][ESim][ba]->GetXaxis()->SetTitle("total number of available particles");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EMultiplicity][ESim][ba]);
+      if (bookRec) {
+        ec.fEventHistograms[EMultiplicity][ERec][ba] = new TH1F(Form("fHistMultiplicity[ERec][%s]", baNames[ba]), Form("Multiplicity for reconstructed particles (%s cuts)", baNames[ba]), nMultBins, multMin, multMax);
+        ec.fEventHistograms[EMultiplicity][ERec][ba]->GetXaxis()->SetTitle("total number of available particles");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EMultiplicity][ERec][ba]);
+      }
+      if (bookSim) {
+        ec.fEventHistograms[EMultiplicity][ESim][ba] = new TH1F(Form("fHistMultiplicity[ESim][%s]", baNames[ba]), Form("Multiplicity for simulated particles (%s cuts)", baNames[ba]), nMultBins, multMin, multMax);
+        ec.fEventHistograms[EMultiplicity][ESim][ba]->GetXaxis()->SetTitle("total number of available particles");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EMultiplicity][ESim][ba]);
+      }
 
       // reference multiplicity, only reconstructed
-      ec.fEventHistograms[EReferenceMultiplicity][ERec][ba] = new TH1F(Form("fHistReferenceMultiplicity[ERec][%s]", baNames[ba]), Form("Reference multiplicity, reconstructed (%s cuts)", baNames[ba]), nRefMultBins, refMultMin, refMultMax);
-      ec.fEventHistograms[EReferenceMultiplicity][ERec][ba]->GetXaxis()->SetTitle("reference multiplicity");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EReferenceMultiplicity][ERec][ba]);
+      if (bookRec) {
+        ec.fEventHistograms[EReferenceMultiplicity][ERec][ba] = new TH1F(Form("fHistReferenceMultiplicity[ERec][%s]", baNames[ba]), Form("Reference multiplicity, reconstructed (%s cuts)", baNames[ba]), nRefMultBins, refMultMin, refMultMax);
+        ec.fEventHistograms[EReferenceMultiplicity][ERec][ba]->GetXaxis()->SetTitle("reference multiplicity");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EReferenceMultiplicity][ERec][ba]);
+      }
 
-      ec.fEventHistograms[ECentrality][ERec][ba] = new TH1F(Form("fHistCentrality[ERec][%s]", baNames[ba]), Form("Centrality for reconstructed particles (%s cuts)", baNames[ba]), nCentBins, centMin, centMax);
-      ec.fEventHistograms[ECentrality][ERec][ba]->GetXaxis()->SetTitle("centrality (%)");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[ECentrality][ERec][ba]);
-
+      if (bookRec) {
+        ec.fEventHistograms[ECentrality][ERec][ba] = new TH1F(Form("fHistCentrality[ERec][%s]", baNames[ba]), Form("Centrality for reconstructed particles (%s cuts)", baNames[ba]), nCentBins, centMin, centMax);
+        ec.fEventHistograms[ECentrality][ERec][ba]->GetXaxis()->SetTitle("centrality (%)");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[ECentrality][ERec][ba]);
+      }
       // sim from impact parameter
-      ec.fEventHistograms[ECentrality][ESim][ba] = new TH1F(Form("fHistCentrality[ESim][%s]", baNames[ba]), Form("Centrality for simulated particles, from impact parameter (%s cuts)", baNames[ba]), nCentBins, centMin, centMax);
-      ec.fEventHistograms[ECentrality][ESim][ba]->GetXaxis()->SetTitle("centrality (%)");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[ECentrality][ESim][ba]);
-
+      if (bookSim) {
+        ec.fEventHistograms[ECentrality][ESim][ba] = new TH1F(Form("fHistCentrality[ESim][%s]", baNames[ba]), Form("Centrality for simulated particles, from impact parameter (%s cuts)", baNames[ba]), nCentBins, centMin, centMax);
+        ec.fEventHistograms[ECentrality][ESim][ba]->GetXaxis()->SetTitle("centrality (%)");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[ECentrality][ESim][ba]);
+      }
       // impact parameter, only simulated
-      ec.fEventHistograms[EImpactParameter][ESim][ba] = new TH1F(Form("fHistImpactParameter[ESim][%s]", baNames[ba]), Form("Impact parameter, simulated (%s cuts)", baNames[ba]), nBBins, bMin, bMax);
-      ec.fEventHistograms[EImpactParameter][ESim][ba]->GetXaxis()->SetTitle("b (fm)");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EImpactParameter][ESim][ba]);
-
-      ec.fEventHistograms[EVertexX][ERec][ba] = new TH1F(Form("fHistVertexX[ERec][%s]", baNames[ba]), Form("Vertex X for reconstructed particles (%s cuts)", baNames[ba]), nvxBins, vxMin, vxMax);
-      ec.fEventHistograms[EVertexX][ERec][ba]->GetXaxis()->SetTitle("vertex X");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexX][ERec][ba]);
-
-      ec.fEventHistograms[EVertexX][ESim][ba] = new TH1F(Form("fHistVertexX[ESim][%s]", baNames[ba]), Form("Vertex X for simulated particles (%s cuts)", baNames[ba]), nvxBins, vxMin, vxMax);
-      ec.fEventHistograms[EVertexX][ESim][ba]->GetXaxis()->SetTitle("vertex X");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexX][ESim][ba]);
-
-      ec.fEventHistograms[EVertexY][ERec][ba] = new TH1F(Form("fHistVertexY[ERec][%s]", baNames[ba]), Form("Vertex Y for reconstructed particles (%s cuts)", baNames[ba]), nvyBins, vyMin, vyMax);
-      ec.fEventHistograms[EVertexY][ERec][ba]->GetXaxis()->SetTitle("vertex Y");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexY][ERec][ba]);
-
-      ec.fEventHistograms[EVertexY][ESim][ba] = new TH1F(Form("fHistVertexY[ESim][%s]", baNames[ba]), Form("Vertex Y for simulated particles (%s cuts)", baNames[ba]), nvyBins, vyMin, vyMax);
-      ec.fEventHistograms[EVertexY][ESim][ba]->GetXaxis()->SetTitle("vertex Y");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexY][ESim][ba]);
-
-      ec.fEventHistograms[EVertexZ][ERec][ba] = new TH1F(Form("fHistVertexZ[ERec][%s]", baNames[ba]), Form("Vertex Z for reconstructed particles (%s cuts)", baNames[ba]), nvzBins, vzMin, vzMax);
-      ec.fEventHistograms[EVertexZ][ERec][ba]->GetXaxis()->SetTitle("vertex Z");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexZ][ERec][ba]);
-
-      ec.fEventHistograms[EVertexZ][ESim][ba] = new TH1F(Form("fHistVertexZ[ESim][%s]", baNames[ba]), Form("Vertex Z for simulated particles (%s cuts)", baNames[ba]), nvzBins, vzMin, vzMax);
-      ec.fEventHistograms[EVertexZ][ESim][ba]->GetXaxis()->SetTitle("vertex Z");
-      ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexZ][ESim][ba]);
-
+      if (bookSim) {
+        ec.fEventHistograms[EImpactParameter][ESim][ba] = new TH1F(Form("fHistImpactParameter[ESim][%s]", baNames[ba]), Form("Impact parameter, simulated (%s cuts)", baNames[ba]), nBBins, bMin, bMax);
+        ec.fEventHistograms[EImpactParameter][ESim][ba]->GetXaxis()->SetTitle("b (fm)");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EImpactParameter][ESim][ba]);
+      }
+      if (bookRec) {
+        ec.fEventHistograms[EVertexX][ERec][ba] = new TH1F(Form("fHistVertexX[ERec][%s]", baNames[ba]), Form("Vertex X for reconstructed particles (%s cuts)", baNames[ba]), nvxBins, vxMin, vxMax);
+        ec.fEventHistograms[EVertexX][ERec][ba]->GetXaxis()->SetTitle("vertex X");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexX][ERec][ba]);
+      }
+      if (bookSim) {
+        ec.fEventHistograms[EVertexX][ESim][ba] = new TH1F(Form("fHistVertexX[ESim][%s]", baNames[ba]), Form("Vertex X for simulated particles (%s cuts)", baNames[ba]), nvxBins, vxMin, vxMax);
+        ec.fEventHistograms[EVertexX][ESim][ba]->GetXaxis()->SetTitle("vertex X");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexX][ESim][ba]);
+      }
+      if (bookRec) {
+        ec.fEventHistograms[EVertexY][ERec][ba] = new TH1F(Form("fHistVertexY[ERec][%s]", baNames[ba]), Form("Vertex Y for reconstructed particles (%s cuts)", baNames[ba]), nvyBins, vyMin, vyMax);
+        ec.fEventHistograms[EVertexY][ERec][ba]->GetXaxis()->SetTitle("vertex Y");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexY][ERec][ba]);
+      }
+      if (bookSim) {
+        ec.fEventHistograms[EVertexY][ESim][ba] = new TH1F(Form("fHistVertexY[ESim][%s]", baNames[ba]), Form("Vertex Y for simulated particles (%s cuts)", baNames[ba]), nvyBins, vyMin, vyMax);
+        ec.fEventHistograms[EVertexY][ESim][ba]->GetXaxis()->SetTitle("vertex Y");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexY][ESim][ba]);
+      }
+      if (bookRec) {
+        ec.fEventHistograms[EVertexZ][ERec][ba] = new TH1F(Form("fHistVertexZ[ERec][%s]", baNames[ba]), Form("Vertex Z for reconstructed particles (%s cuts)", baNames[ba]), nvzBins, vzMin, vzMax);
+        ec.fEventHistograms[EVertexZ][ERec][ba]->GetXaxis()->SetTitle("vertex Z");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexZ][ERec][ba]);
+      }
+      if (bookSim) {
+        ec.fEventHistograms[EVertexZ][ESim][ba] = new TH1F(Form("fHistVertexZ[ESim][%s]", baNames[ba]), Form("Vertex Z for simulated particles (%s cuts)", baNames[ba]), nvzBins, vzMin, vzMax);
+        ec.fEventHistograms[EVertexZ][ESim][ba]->GetXaxis()->SetTitle("vertex Z");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexZ][ESim][ba]);
+      }
     } // end of for (int ba = 0; ba < 2; ba++)
 
     // QA histograms, booked only if cfFillQA is true
@@ -818,7 +857,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
     // *) steer all analysis steps:
     steer<ERec>(collision, tracks);
   }
-  PROCESS_SWITCH(StudentO2Physics, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that there is default running version
+  PROCESS_SWITCH(MultiparticleCorrelationsDm, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that there is default running version
 
   // -------------------------------------------
 
@@ -827,7 +866,7 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
   {
     steer<ERecAndSim>(collision, tracks);
   }
-  PROCESS_SWITCH(StudentO2Physics, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsDm, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
 
   // -------------------------------------------
 
@@ -836,14 +875,14 @@ struct StudentO2Physics { // this name is used in lower-case format to name the 
   {
     // steer<ESim>(collision, tracks); // TBI 20241105 not ready yet, but I do not really need this one urgently, since RecSim is working, and I need that one for efficiencies...
   }
-  PROCESS_SWITCH(StudentO2Physics, processSim, "process only simulated data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsDm, processSim, "process only simulated data", false);
 
-}; // struct StudentO2Physics {
+}; // struct MultiparticleCorrelationsDm {
 
 // *) The final touch:
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<StudentO2Physics>(cfgc),
+    adaptAnalysisTask<MultiparticleCorrelationsDm>(cfgc),
   };
 } // WorkflowSpec...
