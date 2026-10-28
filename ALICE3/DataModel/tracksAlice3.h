@@ -26,7 +26,7 @@ namespace o2::aod
 {
 namespace track_alice3
 {
-<<<<<<< Updated upstream
+
 DECLARE_SOA_COLUMN(IsReconstructed, isReconstructed, bool); //! is reconstructed or not
 DECLARE_SOA_COLUMN(NSiliconHits, nSiliconHits, int);        //! number of silicon hits
 DECLARE_SOA_COLUMN(NTPCHits, nTPCHits, int);                //! number of tpc hits
@@ -35,19 +35,11 @@ DECLARE_SOA_COLUMN(TrackType, trackType, int);              //! Type of the trac
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! Has track contributed to the PV fit?
 DECLARE_SOA_COLUMN(TrackIU, trackIU, float);                //! Innermost update: radius (cm) of the innermost hit assigned to the track
 DECLARE_SOA_COLUMN(TrackOU, trackOU, float);                //! Outermost update: radius (cm) of the outermost hit assigned to the track
-=======
-DECLARE_SOA_COLUMN(IsReconstructed, isReconstructed, bool);              //! is reconstructed or not
-DECLARE_SOA_COLUMN(NSiliconHits, nSiliconHits, int);                     //! number of silicon hits
-DECLARE_SOA_COLUMN(NTPCHits, nTPCHits, int);                             //! number of tpc hits
-DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                               //! PDG code of the linked truth MC particle
-DECLARE_SOA_COLUMN(TrackType, trackType, int);                           //! Type of the track
-DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);              //! Has track contributed to the PV fit?
 DECLARE_SOA_COLUMN(SecondaryVertexRadius, secondaryVertexRadius, float); //! Radius of the secondary vertex associated with the track
 DECLARE_SOA_COLUMN(SecondaryVertexX, secondaryVertexX, float);           //! X position of the secondary vertex associated with the track
 DECLARE_SOA_COLUMN(SecondaryVertexY, secondaryVertexY, float);           //! Y position of the secondary vertex associated with the track
 DECLARE_SOA_COLUMN(SecondaryVertexZ, secondaryVertexZ, float);           //! Z position of the secondary vertex associated with the track
 
->>>>>>> Stashed changes
 } // namespace track_alice3
 DECLARE_SOA_TABLE(TracksAlice3, "AOD", "TRACKSALICE3",
                   track_alice3::IsReconstructed,
@@ -77,17 +69,12 @@ using TracksExtraA3 = TracksExtraA3_001;
 using TrackExtraA3 = TracksExtraA3::iterator;
 namespace mcparticle_alice3
 {
-<<<<<<< Updated upstream
+
 DECLARE_SOA_COLUMN(NHits, nHits, int);                  //! number of silicon hits
 DECLARE_SOA_COLUMN(Charge, charge, float);              //! particle charge
 DECLARE_SOA_COLUMN(DecayRadius, decayRadius, float);    //! Radius for decayed particle produced by decayer (-1 if not decayed)
 DECLARE_SOA_BITMAP_COLUMN(DecayerBits, decayerBits, 8); //! Bit mask for particle produced by the OTF decayer
-=======
-DECLARE_SOA_COLUMN(NHits, nHits, int);                                   //! number of silicon hits
-DECLARE_SOA_COLUMN(Charge, charge, float);                               //! particle charge
-DECLARE_SOA_BITMAP_COLUMN(DecayerBits, decayerBits, 8);                  //! Bit mask for particle produced by the OTF decayer
 DECLARE_SOA_COLUMN(SecondaryVertexRadius, secondaryVertexRadius, float); //! Radius of the secondary vertex associated with the track
->>>>>>> Stashed changes
 } // namespace mcparticle_alice3
 DECLARE_SOA_TABLE(MCParticlesExtraA3, "AOD", "MCParticlesExtraA3",
                   mcparticle_alice3::NHits,
