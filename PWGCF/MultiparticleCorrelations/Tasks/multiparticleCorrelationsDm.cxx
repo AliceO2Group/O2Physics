@@ -748,91 +748,70 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     const bool bookSim = doprocessRecSim || doprocessSim;
     for (int ba = 0; ba < EBeforeAfter_N; ba++) {
 
-      // par
       if (bookRec) {
+        // par
         pc.fParticleHistograms[EPt][ERec][ba] = new TH1F(Form("fHistPt[ERec][%s]", baNames[ba]), Form("pt distribution for reconstructed particles (%s cuts)", baNames[ba]), nBins, min, max);
         pc.fParticleHistograms[EPt][ERec][ba]->GetXaxis()->SetTitle("p_{T}");
         pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPt][ERec][ba]);
-      }
-      if (bookSim) {
-        pc.fParticleHistograms[EPt][ESim][ba] = new TH1F(Form("fHistPt[ESim][%s]", baNames[ba]), Form("pt distribution for simulated particles (%s cuts)", baNames[ba]), nBins, min, max);
-        pc.fParticleHistograms[EPt][ESim][ba]->GetXaxis()->SetTitle("p_{T}");
-        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPt][ESim][ba]);
-      }
 
-      if (bookRec) {
         pc.fParticleHistograms[EPhi][ERec][ba] = new TH1F(Form("fHistPhi[ERec][%s]", baNames[ba]), Form("Azimuthal-angle distribution for reconstructed particles (%s cuts)", baNames[ba]), nPhiBins, phiMin, phiMax);
         pc.fParticleHistograms[EPhi][ERec][ba]->GetXaxis()->SetTitle("#varphi (rad)");
         pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPhi][ERec][ba]);
-      }
-      if (bookSim) {
-        pc.fParticleHistograms[EPhi][ESim][ba] = new TH1F(Form("fHistPhi[ESim][%s]", baNames[ba]), Form("Azimuthal-angle distribution for simulated particles (%s cuts)", baNames[ba]), nPhiBins, phiMin, phiMax);
-        pc.fParticleHistograms[EPhi][ESim][ba]->GetXaxis()->SetTitle("#varphi (rad)");
-        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPhi][ESim][ba]);
-      }
-
-      // ev
-      if (bookRec) {
+        // ev
         ec.fEventHistograms[EMultiplicity][ERec][ba] = new TH1F(Form("fHistMultiplicity[ERec][%s]", baNames[ba]), Form("Multiplicity for reconstructed particles (%s cuts)", baNames[ba]), nMultBins, multMin, multMax);
         ec.fEventHistograms[EMultiplicity][ERec][ba]->GetXaxis()->SetTitle("total number of available particles");
         ec.fEventHistogramsList->Add(ec.fEventHistograms[EMultiplicity][ERec][ba]);
-      }
-      if (bookSim) {
-        ec.fEventHistograms[EMultiplicity][ESim][ba] = new TH1F(Form("fHistMultiplicity[ESim][%s]", baNames[ba]), Form("Multiplicity for simulated particles (%s cuts)", baNames[ba]), nMultBins, multMin, multMax);
-        ec.fEventHistograms[EMultiplicity][ESim][ba]->GetXaxis()->SetTitle("total number of available particles");
-        ec.fEventHistogramsList->Add(ec.fEventHistograms[EMultiplicity][ESim][ba]);
-      }
 
-      // reference multiplicity, only reconstructed
-      if (bookRec) {
+        // reference multiplicity (only reconstructed)
         ec.fEventHistograms[EReferenceMultiplicity][ERec][ba] = new TH1F(Form("fHistReferenceMultiplicity[ERec][%s]", baNames[ba]), Form("Reference multiplicity, reconstructed (%s cuts)", baNames[ba]), nRefMultBins, refMultMin, refMultMax);
         ec.fEventHistograms[EReferenceMultiplicity][ERec][ba]->GetXaxis()->SetTitle("reference multiplicity");
         ec.fEventHistogramsList->Add(ec.fEventHistograms[EReferenceMultiplicity][ERec][ba]);
-      }
 
-      if (bookRec) {
         ec.fEventHistograms[ECentrality][ERec][ba] = new TH1F(Form("fHistCentrality[ERec][%s]", baNames[ba]), Form("Centrality for reconstructed particles (%s cuts)", baNames[ba]), nCentBins, centMin, centMax);
         ec.fEventHistograms[ECentrality][ERec][ba]->GetXaxis()->SetTitle("centrality (%)");
         ec.fEventHistogramsList->Add(ec.fEventHistograms[ECentrality][ERec][ba]);
-      }
-      // sim from impact parameter
-      if (bookSim) {
-        ec.fEventHistograms[ECentrality][ESim][ba] = new TH1F(Form("fHistCentrality[ESim][%s]", baNames[ba]), Form("Centrality for simulated particles, from impact parameter (%s cuts)", baNames[ba]), nCentBins, centMin, centMax);
-        ec.fEventHistograms[ECentrality][ESim][ba]->GetXaxis()->SetTitle("centrality (%)");
-        ec.fEventHistogramsList->Add(ec.fEventHistograms[ECentrality][ESim][ba]);
-      }
-      // impact parameter, only simulated
-      if (bookSim) {
-        ec.fEventHistograms[EImpactParameter][ESim][ba] = new TH1F(Form("fHistImpactParameter[ESim][%s]", baNames[ba]), Form("Impact parameter, simulated (%s cuts)", baNames[ba]), nBBins, bMin, bMax);
-        ec.fEventHistograms[EImpactParameter][ESim][ba]->GetXaxis()->SetTitle("b (fm)");
-        ec.fEventHistogramsList->Add(ec.fEventHistograms[EImpactParameter][ESim][ba]);
-      }
-      if (bookRec) {
+
         ec.fEventHistograms[EVertexX][ERec][ba] = new TH1F(Form("fHistVertexX[ERec][%s]", baNames[ba]), Form("Vertex X for reconstructed particles (%s cuts)", baNames[ba]), nvxBins, vxMin, vxMax);
         ec.fEventHistograms[EVertexX][ERec][ba]->GetXaxis()->SetTitle("vertex X");
         ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexX][ERec][ba]);
-      }
-      if (bookSim) {
-        ec.fEventHistograms[EVertexX][ESim][ba] = new TH1F(Form("fHistVertexX[ESim][%s]", baNames[ba]), Form("Vertex X for simulated particles (%s cuts)", baNames[ba]), nvxBins, vxMin, vxMax);
-        ec.fEventHistograms[EVertexX][ESim][ba]->GetXaxis()->SetTitle("vertex X");
-        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexX][ESim][ba]);
-      }
-      if (bookRec) {
+
         ec.fEventHistograms[EVertexY][ERec][ba] = new TH1F(Form("fHistVertexY[ERec][%s]", baNames[ba]), Form("Vertex Y for reconstructed particles (%s cuts)", baNames[ba]), nvyBins, vyMin, vyMax);
         ec.fEventHistograms[EVertexY][ERec][ba]->GetXaxis()->SetTitle("vertex Y");
         ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexY][ERec][ba]);
-      }
-      if (bookSim) {
-        ec.fEventHistograms[EVertexY][ESim][ba] = new TH1F(Form("fHistVertexY[ESim][%s]", baNames[ba]), Form("Vertex Y for simulated particles (%s cuts)", baNames[ba]), nvyBins, vyMin, vyMax);
-        ec.fEventHistograms[EVertexY][ESim][ba]->GetXaxis()->SetTitle("vertex Y");
-        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexY][ESim][ba]);
-      }
-      if (bookRec) {
+
         ec.fEventHistograms[EVertexZ][ERec][ba] = new TH1F(Form("fHistVertexZ[ERec][%s]", baNames[ba]), Form("Vertex Z for reconstructed particles (%s cuts)", baNames[ba]), nvzBins, vzMin, vzMax);
         ec.fEventHistograms[EVertexZ][ERec][ba]->GetXaxis()->SetTitle("vertex Z");
         ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexZ][ERec][ba]);
       }
       if (bookSim) {
+        pc.fParticleHistograms[EPt][ESim][ba] = new TH1F(Form("fHistPt[ESim][%s]", baNames[ba]), Form("pt distribution for simulated particles (%s cuts)", baNames[ba]), nBins, min, max);
+        pc.fParticleHistograms[EPt][ESim][ba]->GetXaxis()->SetTitle("p_{T}");
+        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPt][ESim][ba]);
+
+        pc.fParticleHistograms[EPhi][ESim][ba] = new TH1F(Form("fHistPhi[ESim][%s]", baNames[ba]), Form("Azimuthal-angle distribution for simulated particles (%s cuts)", baNames[ba]), nPhiBins, phiMin, phiMax);
+        pc.fParticleHistograms[EPhi][ESim][ba]->GetXaxis()->SetTitle("#varphi (rad)");
+        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EPhi][ESim][ba]);
+        // ev
+        ec.fEventHistograms[EMultiplicity][ESim][ba] = new TH1F(Form("fHistMultiplicity[ESim][%s]", baNames[ba]), Form("Multiplicity for simulated particles (%s cuts)", baNames[ba]), nMultBins, multMin, multMax);
+        ec.fEventHistograms[EMultiplicity][ESim][ba]->GetXaxis()->SetTitle("total number of available particles");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EMultiplicity][ESim][ba]);
+        // sim from impact parameter
+        ec.fEventHistograms[ECentrality][ESim][ba] = new TH1F(Form("fHistCentrality[ESim][%s]", baNames[ba]), Form("Centrality for simulated particles, from impact parameter (%s cuts)", baNames[ba]), nCentBins, centMin, centMax);
+        ec.fEventHistograms[ECentrality][ESim][ba]->GetXaxis()->SetTitle("centrality (%)");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[ECentrality][ESim][ba]);
+        // impact parameter, only simulated
+        ec.fEventHistograms[EImpactParameter][ESim][ba] = new TH1F(Form("fHistImpactParameter[ESim][%s]", baNames[ba]), Form("Impact parameter, simulated (%s cuts)", baNames[ba]), nBBins, bMin, bMax);
+        ec.fEventHistograms[EImpactParameter][ESim][ba]->GetXaxis()->SetTitle("b (fm)");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EImpactParameter][ESim][ba]);
+
+        ec.fEventHistograms[EVertexX][ESim][ba] = new TH1F(Form("fHistVertexX[ESim][%s]", baNames[ba]), Form("Vertex X for simulated particles (%s cuts)", baNames[ba]), nvxBins, vxMin, vxMax);
+        ec.fEventHistograms[EVertexX][ESim][ba]->GetXaxis()->SetTitle("vertex X");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexX][ESim][ba]);
+
+        ec.fEventHistograms[EVertexY][ESim][ba] = new TH1F(Form("fHistVertexY[ESim][%s]", baNames[ba]), Form("Vertex Y for simulated particles (%s cuts)", baNames[ba]), nvyBins, vyMin, vyMax);
+        ec.fEventHistograms[EVertexY][ESim][ba]->GetXaxis()->SetTitle("vertex Y");
+        ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexY][ESim][ba]);
+
         ec.fEventHistograms[EVertexZ][ESim][ba] = new TH1F(Form("fHistVertexZ[ESim][%s]", baNames[ba]), Form("Vertex Z for simulated particles (%s cuts)", baNames[ba]), nvzBins, vzMin, vzMax);
         ec.fEventHistograms[EVertexZ][ESim][ba]->GetXaxis()->SetTitle("vertex Z");
         ec.fEventHistogramsList->Add(ec.fEventHistograms[EVertexZ][ESim][ba]);
