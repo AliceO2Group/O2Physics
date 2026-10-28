@@ -20,9 +20,8 @@
 #endif
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/DataModel/AliasTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -85,22 +84,12 @@ using namespace o2::constants::physics;
 using namespace o2::hf_evsel;
 
 struct HfCandidateCreatorXic0Omegac0Qa {
-
-  // Cursor to fill tables
-  struct : ProducesGroup {
-    // Candidates created with DCAFitter
-    Produces<aod::HfCandToXiPi> rowCandToXiPi;
-    Produces<aod::HfCandToOmegaPi> rowCandToOmegaPi;
-    Produces<aod::HfCandToOmegaK> rowCandToOmegaKa;
-    // Candidate created with KFParticle
-    Produces<aod::HfCandToXiPiKf> rowCandToXiPiKf;
-    Produces<aod::HfOmegacKf> rowCandToOmegaPiKf;
-    Produces<aod::HfCandToOmegaKaKf> rowCandToOmegaKaKf;
-  } cursors;
+  Produces<aod::HfCandCascBachQa> rowCandCascBatch;
+  // Additional information for candidates created with KFParticle
+  Produces<aod::HfCandCascBachKfQa> rowCandCascBatchKf;
 
   // Configurables
   struct : ConfigurableGroup {
-
     // Options for internal cascade building - DCAFitter settings
     // ...Initial vaules taken from PWGLF/Utils/strangenessBuilderHelper
     // ----------------------------------------------------------------
@@ -114,7 +103,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<bool> useAbsDCALF{"useAbsDCALF", true, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCALF{"useWeightedFinalPCALF", false, "Recalculate vertex position using track covariance, effective only if useAbsDCA is true"};
     Configurable<bool> refitWithMaterialCorrectionLF{"refitWithMaterialCorrectionLF", false, "Do refit after material correction applied"};
-
     // Options for internal V0 building
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
     // ...Modified according to the configurable in core wagon
@@ -126,7 +114,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<float> dcav0dauFromLF{"dcav0dauFromLF", 1.0, "DCA V0 Daughters"};
     Configurable<float> v0radiusFromLF{"v0radiusFromLF", 0.9, "v0radius"};
     Configurable<float> maxDaughterEtaFromLF{"maxDaughterEtaFromLF", 5.0, "Maximun daughter eta (in abs value)"};
-
     // Options for internal cascade building
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
     // ...Modified according to the configurable in core wagon
@@ -136,7 +123,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<float> casccospaFromLF{"casccospaFromLF", 0.95, "Cascade CosPA"};
     Configurable<float> dcacascdauFromLF{"dcacascdauFromLF", 1.0, "DCA cascade daughters"};
     Configurable<float> lambdaMassWindowFromLF{"lambdaMassWindowFromLF", 0.01, "Distance from Lambda mass(does not apply to KF path)"};
-
     // Options for internal cascade building - KF Building specifics
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
     // --------------------------------------------------------------------
@@ -148,15 +134,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<bool> kfDoDCAFitterPreMinimCascFromLF{"kfDoDCAFitterPreMinimCascFromLF", false, "KF : do DCAFitter pre-optimization before KF fit to include material correction for Xi"};
   } LFConfigs;
 
-  // For cascade building using LF strangeness builder
-  o2::pwglf::strangenessBuilderHelper straHelper;
-
-  // Configurables
   struct : ConfigurableGroup {
     // Switch for filling histograms
     // -----------------------------
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill validation plots"};
-
     // Magnetic field setting from CCDB
     // --------------------------------
     Configurable<bool> isRun2{"isRun2", false, "enable Run2 or Run3 GRP objects for magnetic field"};
@@ -164,7 +145,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parameterization"};
     Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "path of the group file (Run2)"};
     Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run3)"};
-
     // Cascade pre selection
     // ---------------------
     Configurable<bool> doCascadePreselection{"doCascadePreselection", true, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
@@ -172,7 +152,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<float> dcaXYToPVCascadeMax{"dcaXYToPVCascadeMax", 3, "Max cascade DCA to PV in XY plane"};
     Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0, "Max DCA of V0 daughter"};
     Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 1.0, "Max DCA of cascade daughter"};
-
     // Options for DCAFitter
     // ---------------------
     Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
@@ -184,7 +163,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<double> maxChi2{"maxChi2", 100, "Discard vertices with Chi2/Nprongs > this(or sum {DCAi^2}/Nprongs for abs. distance minimization)"};
     Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariance, effective only if useAbsDCA is true"};
-
     // Options for KFParticle
     // ----------------------
     // V0 cuts
@@ -193,7 +171,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct method"};
     Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", false, "KF: Use lambda mass constraint"};
     Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: Use lambda mass constraint"};
-
     // Options for QA histogram binning
     // -----------------------------
     // For Cascade
@@ -203,7 +180,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<int> nBinPtCasc{"nBinPtCasc", 100, "nBinPtXi"};
     Configurable<float> minPtCasc{"minPtCasc", 0.0, "minimun value of cascade"};
     Configurable<float> maxPtCasc{"maxPtCasc", 20.0, "maximum value of cascade"};
-
     // For Prong0
     Configurable<int> nBinMassProng0{"nBinMassProng0", 100, "nBinMassPi"};
     Configurable<float> minMassProng0{"minMassProng0", 0.0, "ptPiMin"};
@@ -211,7 +187,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<int> nBinPtProng0{"nBinPtProng0", 100, "nBinPtProng0"};
     Configurable<float> minPtProng0{"minPtProng0", 0.0, "ptPiMin"};
     Configurable<float> maxPtProng0{"maxPtProng0", 20.0, "ptPiMax"};
-
     // For Charm Baryon
     Configurable<int> nBinMassCharmBaryon{"nBinMassCharmBaryon", 3000, "nBinXic0Mass"};
     Configurable<float> minMassCharmBaryon{"minMassCharmBaryon", 1.0, "xic0MassMin"};
@@ -219,7 +194,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<int> nBinPtCharmBaryon{"nBinPtCharmBaryon", 100, "nBinXic0Pt"};
     Configurable<float> minPtCharmBaryon{"minPtCharmBaryon", 0.0, "xic0PtMin"};
     Configurable<float> maxPtCharmBaryon{"maxPtCharmBaryon", 20.0, "xic0PtMax"};
-
     // Etc
     Configurable<int> nBinCpa2Prong{"nBinCpa2Prong", 240, "nBinCpa2Prong"};
     Configurable<float> cpa2ProngMin{"cpa2ProngMin", -1.2, "cpa2ProngMin"};
@@ -237,6 +211,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
+  // For cascade building using LF strangeness builder
+  o2::pwglf::strangenessBuilderHelper straHelper;
   // DCAFitter
   o2::vertexing::DCAFitterN<2> df;
 
@@ -605,19 +581,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       }
 
       //------------------------------Info of V0 and cascade------------------------------
-      // V0 quantities from LF strangeness builder
-      std::array<float, 3> vertexV0 = {straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2]};
-      std::array<float, 3> pVecV0DauPos = {straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2]};
-      std::array<float, 3> pVecV0DauNeg = {straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2]};
-      std::array<float, 3> pVecV0 = {pVecV0DauPos[0] + pVecV0DauNeg[0], pVecV0DauPos[1] + pVecV0DauNeg[1], pVecV0DauPos[2] + pVecV0DauNeg[2]};
-
-      // pseudo rapidity - V0 daughters
-      // float pseudorapV0Dau0 = RecoDecay::eta(pVecV0DauPos);
-      // float pseudorapV0Dau1 = RecoDecay::eta(pVecV0DauNeg);
-
       // Cascade quantities from LF strangeness builder
-      std::array<float, 3> vertexCasc = {straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2]};
-      std::array<float, 3> const pVecCasc = {straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2]};
+      // TODO: check if this is necessary or the covariance matrix can be directly used from straHelper.cascade.covariance
       std::array<float, 21> covCasc = {0.};
       constexpr int NumCovElement = 6;
       constexpr int MomInd[NumCovElement] = {9, 13, 14, 18, 19, 20};
@@ -626,16 +591,12 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         covCasc[i] = straHelper.cascade.covariance[i];
       }
 
-      // pseudo rapidity - cascade bachelor
-      // float pseudorapCascBachelor = RecoDecay::eta(straHelper.cascade.bachelorMomentum);
-
       //------------------------------Create cascade track------------------------------
-
       o2::track::TrackParCov trackCasc;
       if (bachTrack.sign() < 0) { // Xi- or Omega-
-        trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, -1, true);
+        trackCasc = o2::track::TrackParCov(straHelper.cascade.cascadePosition, straHelper.cascade.cascadeMomentum, covCasc, -1, true);
       } else if (bachTrack.sign() > 0) { // Xi+ or Omega+
-        trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
+        trackCasc = o2::track::TrackParCov(straHelper.cascade.cascadePosition, straHelper.cascade.cascadeMomentum, covCasc, 1, true);
       } else {
         continue;
       }
@@ -644,8 +605,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       trackCasc.setPID(trackPidOfCascade);
 
       //------------------------------Fit SV & Create Charm Baryon track------------------------------
-
-      // Perform secondary vertex fitting
       auto trackCharmBachelor = tracks.rawIteratorAt(cand.prong0Id());
       auto trackParCovCharmBachelor = getTrackParCov(trackCharmBachelor);
       try {
@@ -662,14 +621,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       }
 
       //------------------------------Calculate physical properties-----------------------------
-
       // get track momenta
-      std::array<float, 3> pVecCascAsD, pVecCharmBachAsD;
-      df.getTrack(0).getPxPyPzGlo(pVecCascAsD);
-      df.getTrack(1).getPxPyPzGlo(pVecCharmBachAsD);
-
-      std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecCharmBachAsD[0], pVecCascAsD[1] + pVecCharmBachAsD[1], pVecCascAsD[2] + pVecCharmBachAsD[2]};
-      std::array<float, 3> pVecBach = {straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2]};
+      std::array<float, 3> pVecCasc, pVecCharmBach;
+      df.getTrack(0).getPxPyPzGlo(pVecCasc);
+      df.getTrack(1).getPxPyPzGlo(pVecCharmBach);
 
       // get PV Properties
       auto primaryVertex = getPrimaryVertex(collision);
@@ -679,172 +634,72 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // get SV Properties
       auto const& secondaryVertex = df.getPCACandidate();
       auto covMatrixSV = df.calcPCACovMatrixFlat();
+      std::array<float, 3> svCoord = {secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]};
 
-      // DCAxy and DCAz. Computed with propagatToDCABxByBz method
-      auto trackParCovV0DauPos = getTrackParCov(posTrack);
-      auto trackParCovV0DauNeg = getTrackParCov(negTrack);
-      auto trackParCovBach = getTrackParCov(bachTrack);
-
-      o2::dataformats::DCA impactParameterV0DauPos, impactParameterV0DauNeg, impactParameterBach;
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovBach, 2.f, matCorr, &impactParameterBach);
-
-      float dcaxyV0DauPos = impactParameterV0DauPos.getY();
-      float dcaxyV0DauNeg = impactParameterV0DauNeg.getY();
-      float dcaxyBach = impactParameterBach.getY();
-      float dcazV0DauPos = impactParameterV0DauPos.getZ();
-      float dcazV0DauNeg = impactParameterV0DauNeg.getZ();
-      float dcazBach = impactParameterBach.getZ();
-
-      // get impact parameter. Compute with propagateToDCABxByBz method
-      o2::dataformats::DCA impactParameterCasc, impactParameterCharmBach;
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCharmBachelor, 2.f, matCorr, &impactParameterCharmBach);
-      // float impactParCharmBachFromCharmBayonXY = impactParameterCharmBach.getY();
-      // float impactParCharmBachFromCharmBayonZ = impactParameterCharmBach.getZ();
-
-      // get v0 invariant mass - from LF Table
-      float mLambda = RecoDecay::m(std::array{pVecV0DauPos, pVecV0DauNeg}, (straHelper.cascade.charge < 0) ? std::array{massOfV0DauPos, massOfV0DauNeg} : std::array{massOfV0DauNeg, massOfV0DauPos});
-
-      // get Casc mass - from LF Table
-      float mCasc = (decayChannel != hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) ? straHelper.cascade.massOmega : straHelper.cascade.massXi;
-
-      // get Charm baryon invariant mass
-      float massCharmBaryonCand = RecoDecay::m(std::array{pVecCascAsD, pVecCharmBachAsD}, std::array{massOfCascade, massOfCharmBach});
-      if (configs.fillHistograms) {
-        hInvMassCharmBaryon->Fill(massCharmBaryonCand);
-      }
-
-      // calculate cosine of pointing angle
-      std::array<float, 3> vtxCoordCharmBaryon = df.getPCACandidatePos();
-      float cpaV0 = RecoDecay::cpa(pvCoord, vertexV0, pVecV0);
-      float cpaCasc = RecoDecay::cpa(pvCoord, vertexCasc, pVecCasc);
-      float cpaCharmBaryon = RecoDecay::cpa(pvCoord, vtxCoordCharmBaryon, pVecCharmBaryon);
-      float cpaxyV0 = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
-      float cpaxyCasc = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
-      float cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, vtxCoordCharmBaryon, pVecCharmBaryon);
-
-      // calculate decay length
-      float decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
-      float decLenCasc = RecoDecay::distance(vtxCoordCharmBaryon, vertexCasc);
-      float decLenCharmBaryon = RecoDecay::distance(pvCoord, vtxCoordCharmBaryon);
       float phi, theta;
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
-      // calcuate ctau
-      float ctV0 = RecoDecay::ct(pVecV0, decLenV0, MassLambda0);
-      float ctCasc = RecoDecay::ct(pVecCasc, decLenCasc, massOfCascade);
-      float ctOmegac0 = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, MassOmegaC0);
-      float ctXic0 = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, MassXiC0);
+      // Impact parameters computed with propagatToDCABxByBz method
+      auto trackParCovV0DauPos = getTrackParCov(posTrack);
+      auto trackParCovV0DauNeg = getTrackParCov(negTrack);
+      auto trackParCovBach = getTrackParCov(bachTrack);
 
-      // get eta
-      float etaV0DauPos = posTrack.eta();
-      float etaV0DauNeg = negTrack.eta();
-      float etaBach = bachTrack.eta();
-      float etaCharmBach = trackCharmBachelor.eta();
-      float etaV0 = RecoDecay::eta(pVecV0);
-      float etaCasc = RecoDecay::eta(pVecCasc);
-      float etaCharmBaryon = RecoDecay::eta(pVecCharmBaryon);
+      o2::dataformats::DCA impactParameterV0DauPos, impactParameterV0DauNeg, impactParameterCascBach;
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovBach, 2.f, matCorr, &impactParameterCascBach);
 
-      // DCA between daughters
-      float dcaV0Dau = straHelper.cascade.v0DaughterDCA;
-      float dcaCascDau = straHelper.cascade.cascadeDaughterDCA;
-      float dcaCharmBaryonDau = std::sqrt(df.getChi2AtPCACandidate());
+      o2::dataformats::DCA impactParameterCasc, impactParameterCharmBach;
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackCasc, 2.f, matCorr, &impactParameterCasc);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCharmBachelor, 2.f, matCorr, &impactParameterCharmBach);
 
-      //------------------------------Fill QA histograms-----------------------------
+      // get Casc and Lambda invariant mass - from LF Table
+      float mCasc = (decayChannel != hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) ? straHelper.cascade.massOmega : straHelper.cascade.massXi;
+      float mLambda = (straHelper.cascade.charge < 0) ? straHelper.v0.massLambda : straHelper.v0.massAntiLambda;
+
+      // calculate quantities related to cascade and v0
+      float cpaCasc = RecoDecay::cpa(pvCoord, straHelper.cascade.cascadePosition, straHelper.cascade.cascadeMomentum);
+      float cpaxyCasc = RecoDecay::cpaXY(pvCoord, straHelper.cascade.cascadePosition, straHelper.cascade.cascadeMomentum);
+      float cpaV0 = RecoDecay::cpa(pvCoord, straHelper.cascade.v0Position, straHelper.cascade.v0Momentum);
+      float cpaxyV0 = RecoDecay::cpaXY(pvCoord, straHelper.cascade.v0Position, straHelper.cascade.v0Momentum);
+      float cpaCascToCharmHadron = RecoDecay::cpa(svCoord, straHelper.cascade.cascadePosition, straHelper.cascade.cascadeMomentum);
+      float cpaxyCascToCharmHadron = RecoDecay::cpaXY(svCoord, straHelper.cascade.cascadePosition, straHelper.cascade.cascadeMomentum);
+      float cpaV0ToCascade = RecoDecay::cpa(straHelper.cascade.cascadePosition, straHelper.cascade.v0Position, straHelper.cascade.v0Momentum);
+      float cpaxyV0ToCascade = RecoDecay::cpaXY(straHelper.cascade.cascadePosition, straHelper.cascade.v0Position, straHelper.cascade.v0Momentum);
+
+      float etaCasc = RecoDecay::eta(straHelper.cascade.cascadeMomentum);
+      float etaV0 = RecoDecay::eta(straHelper.cascade.v0Momentum);
+
+      // fill control histogram
+      if (configs.fillHistograms) {
+        float massCharmBaryonCand = RecoDecay::m(std::array{pVecCasc, pVecCharmBach}, std::array{massOfCascade, massOfCharmBach});
+        hInvMassCharmBaryon->Fill(massCharmBaryonCand);
+      }
 
       //------------------------------Fill the table-----------------------------
-      if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
-        cursors.rowCandToXiPi(collision.globalIndex(),
-                              pvCoord[0], pvCoord[1], pvCoord[2],
-                              secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                              vertexCasc[0], vertexCasc[1], vertexCasc[2],
-                              vertexV0[0], vertexV0[1], vertexV0[2],
-                              bachTrack.sign(),
-                              covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5],
-                              pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
-                              pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],
-                              pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],
-                              pVecV0[0], pVecV0[1], pVecV0[2],
-                              pVecBach[0], pVecBach[1], pVecBach[2],
-                              pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
-                              pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
-                              impactParameterCasc.getY(), impactParameterCharmBach.getY(),
-                              impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
-                              std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
-                              cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                              cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
-                              mLambda, mCasc, massCharmBaryonCand,
-                              cpaV0, cpaCharmBaryon, cpaCasc,
-                              cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
-                              ctOmegac0, ctCasc, ctV0, ctXic0,
-                              etaV0DauPos, etaV0DauNeg, etaBach, etaCharmBach, etaCharmBaryon, etaCasc, etaV0,
-                              dcaxyV0DauPos, dcaxyV0DauNeg, dcaxyBach,
-                              dcazV0DauPos, dcazV0DauNeg, dcazBach,
-                              dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
-                              decLenCharmBaryon, decLenCasc, decLenV0, errorDecayLength, errorDecayLengthXY);
-      } else if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
-        cursors.rowCandToOmegaPi(collision.globalIndex(),
-                                 pvCoord[0], pvCoord[1], pvCoord[2],
-                                 secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                                 vertexCasc[0], vertexCasc[1], vertexCasc[2],
-                                 vertexV0[0], vertexV0[1], vertexV0[2],
-                                 bachTrack.sign(),
-                                 covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5],
-                                 pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
-                                 pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],
-                                 pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],
-                                 pVecV0[0], pVecV0[1], pVecV0[2],
-                                 pVecBach[0], pVecBach[1], pVecBach[2],
-                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
-                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
-                                 impactParameterCasc.getY(), impactParameterCharmBach.getY(),
-                                 impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
-                                 std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
-                                 cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
-                                 mLambda, mCasc, massCharmBaryonCand,
-                                 cpaV0, cpaCharmBaryon, cpaCasc,
-                                 cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
-                                 ctOmegac0, ctCasc, ctV0,
-                                 etaV0DauPos, etaV0DauNeg, etaBach, etaCharmBach, etaCharmBaryon, etaCasc, etaV0,
-                                 dcaxyV0DauPos, dcaxyV0DauNeg, dcaxyBach,
-                                 dcazV0DauPos, dcazV0DauNeg, dcazBach,
-                                 dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
-                                 decLenCharmBaryon, decLenCasc, decLenV0, errorDecayLength, errorDecayLengthXY, cand.hfflag());
-      } else {
-        cursors.rowCandToOmegaKa(collision.globalIndex(),
-                                 pvCoord[0], pvCoord[1], pvCoord[2],
-                                 secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                                 vertexCasc[0], vertexCasc[1], vertexCasc[2],
-                                 vertexV0[0], vertexV0[1], vertexV0[2],
-                                 bachTrack.sign(),
-                                 covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5],
-                                 pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
-                                 pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],
-                                 pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],
-                                 pVecV0[0], pVecV0[1], pVecV0[2],
-                                 pVecBach[0], pVecBach[1], pVecBach[2],
-                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
-                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
-                                 impactParameterCasc.getY(), impactParameterCharmBach.getY(),
-                                 impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
-                                 std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
-                                 cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
-                                 mLambda, mCasc, massCharmBaryonCand,
-                                 cpaV0, cpaCharmBaryon, cpaCasc,
-                                 cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
-                                 ctOmegac0, ctCasc, ctV0,
-                                 etaV0DauPos, etaV0DauNeg, etaBach, etaCharmBach, etaCharmBaryon, etaCasc, etaV0,
-                                 dcaxyV0DauPos, dcaxyV0DauNeg, dcaxyBach,
-                                 dcazV0DauPos, dcazV0DauNeg, dcazBach,
-                                 dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
-                                 decLenCharmBaryon, decLenCasc, decLenV0, errorDecayLength, errorDecayLengthXY);
-      }
+      rowCandCascBatch(collision.globalIndex(),
+                       primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                       secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                       straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
+                       straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
+                       errorDecayLength, errorDecayLengthXY,
+                       pVecCasc[0], pVecCasc[1], pVecCasc[2],
+                       pVecCharmBach[0], pVecCharmBach[1], pVecCharmBach[2],
+                       impactParameterCasc.getY(), impactParameterCharmBach.getY(),
+                       std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
+                       impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
+                       std::sqrt(impactParameterCasc.getSigmaZ2()), std::sqrt(impactParameterCharmBach.getSigmaZ2()),
+                       impactParameterV0DauPos.getY(), impactParameterV0DauNeg.getY(), impactParameterCascBach.getY(),
+                       impactParameterV0DauPos.getZ(), impactParameterV0DauNeg.getZ(), impactParameterCascBach.getZ(),
+                       std::sqrt(df.getChi2AtPCACandidate()), straHelper.cascade.cascadeDaughterDCA, straHelper.cascade.v0DaughterDCA,
+                       cpaCasc, cpaxyCasc, cpaV0, cpaxyV0,
+                       cpaCascToCharmHadron, cpaxyCascToCharmHadron, cpaV0ToCascade, cpaxyV0ToCascade,
+                       mCasc, mLambda,
+                       etaCasc, etaV0,
+                       trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
+                       cand.hfflag());
     } // candidate loop
   } // end of run function
 
@@ -956,8 +811,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         }
       }
 
-      //----------Create charm bayron as KF Partible object starting from V0----------
-
+      //----------Create charm bayron as KF Particle object starting from V0----------
       // Create KFParticle object of V0 Daughter & Bachelor
       const KFPTrack kfTrack0 = createKFPTrackFromTrack(posTrack);
       const KFPTrack kfTrack1 = createKFPTrackFromTrack(negTrack);
@@ -996,10 +850,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       }
 
       // Set mass constraint to lambda
-      KFParticle kfV0MassConstrained = kfV0;
-      kfV0MassConstrained.SetNonlinearMassConstraint(massOfV0);
       if (configs.kfUseV0MassConstraint) {
-        kfV0 = kfV0MassConstrained;
+        kfV0.SetNonlinearMassConstraint(massOfV0);
       }
       kfV0.TransportToDecayVertex();
       kfV0.SetPDG(pdgIdOfV0);
@@ -1046,10 +898,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       }
 
       // Set mass constraint to cascade
-      KFParticle kfCascMassConstrained = kfCasc;
-      kfCascMassConstrained.SetNonlinearMassConstraint(massOfCascade);
       if (configs.kfUseCascadeMassConstraint) {
-        kfCasc = kfCascMassConstrained;
+        kfCasc.SetNonlinearMassConstraint(massOfCascade);
       }
       kfCasc.TransportToDecayVertex();
 
@@ -1076,19 +926,19 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       if (kfCharmBaryon.GetNDF() <= 0 || kfCharmBaryon.GetChi2() <= 0) {
         continue;
       }
+
+      kfCharmBaryon.SetPDG(pdgIdOfCharmBaryon);
       kfCharmBaryon.TransportToDecayVertex();
+
       if (configs.fillHistograms) {
         hCandCounter->Fill(VertexFit);
         hInvMassCharmBaryon->Fill(massCharmBaryon);
       }
-      kfCharmBaryon.SetPDG(pdgIdOfCharmBaryon);
 
       // Set production vertex
       // PV
       const KFPVertex kfVertex = createKFPVertexFromCollision(collision);
       const KFParticle kfPv(kfVertex);
-      const KFParticle kfPosOrigin = kfPos;
-      const KFParticle kfNegOrigin = kfNeg;
 
       // To V0
       kfPos.SetProductionVertex(kfV0);
@@ -1116,7 +966,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfCharmBachToPv.SetProductionVertex(kfPv);
       kfCharmBaryonToPv.SetProductionVertex(kfPv);
 
-      //----------Reconstruct information after vertex fit----------
+      //----------Calculate physical quantities -------------
       auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, convertPDGIntoPID(kfPos.GetPDG()), 1);
       auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, convertPDGIntoPID(kfNeg.GetPDG()), -1);
       auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, convertPDGIntoPID(kfBachToCasc.GetPDG()), bachCharge);
@@ -1129,235 +979,78 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       trackParCovCharmBach.setAbsCharge(1);
       trackParCovCasc.setAbsCharge(1);
 
-      std::array<float, 3> vertexV0 = {kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()};
-      std::array<float, 3> vertexCasc = {kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()};
-
-      std::array<float, 3> pVecV0DauPos = {kfPos.GetPx(), kfPos.GetPy(), kfPos.GetPz()};
-      std::array<float, 3> pVecV0DauNeg = {kfNeg.GetPx(), kfNeg.GetPy(), kfNeg.GetPz()};
-      std::array<float, 3> pVecV0 = {kfV0.GetPx(), kfV0.GetPy(), kfV0.GetPz()};
-      std::array<float, 3> pVecBach = {kfBachToCasc.GetPx(), kfBachToCasc.GetPy(), kfBachToCasc.GetPz()};
-      std::array<float, 3> pVecCharmBachelorAsD = {kfCharmBachToCharmBaryon.GetPx(), kfCharmBachToCharmBaryon.GetPy(), kfCharmBachToCharmBaryon.GetPz()};
-      std::array<float, 3> pVecCharmBaryon = {kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz()};
-
-      auto* covVtxCharmBaryon = kfCharmBaryon.CovarianceMatrix();
-      float covMatrixPv[6];
-      kfVertex.GetCovarianceMatrix(covMatrixPv);
-
-      std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
-
-      //----------Calculate physical quantities and fill candidate table----------
-
-      // impact parameters
-      std::array<float, 2> impactParameterV0DauPos;
-      std::array<float, 2> impactParameterV0DauNeg;
-      std::array<float, 2> impactParameterBach;
+      // TODO: check if the impact parameter can be calculated from KFParticle directly
+      auto primaryVertex = getPrimaryVertex(collision);
+      o2::dataformats::DCA impactParameterV0DauPos, impactParameterV0DauNeg, impactParameterCascBach;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovBach, 2.f, matCorr, &impactParameterBach);
-      float dcaxyV0DauPos = impactParameterV0DauPos[0];
-      float dcaxyV0DauNeg = impactParameterV0DauNeg[0];
-      float dcaxyBach = impactParameterBach[0];
-      float dcazV0DauPos = impactParameterV0DauPos[1];
-      float dcazV0DauNeg = impactParameterV0DauNeg[1];
-      float dcazBach = impactParameterBach[1];
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovBach, 2.f, matCorr, &impactParameterCascBach);
 
-      o2::dataformats::DCA impactParameterCasc, impactParameterCharmBachelor;
-      auto primaryVertex = getPrimaryVertex(collision);
+      o2::dataformats::DCA impactParameterCasc, impactParameterCharmBach;
       o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCasc, 2.f, matCorr, &impactParameterCasc);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCharmBach, 2.f, matCorr, &impactParameterCharmBachelor);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCharmBach, 2.f, matCorr, &impactParameterCharmBach);
 
-      // get Chi2Topo/NDF
-      float chi2NdfTopoV0ToPv = kfV0ToPv.GetChi2() / kfV0ToPv.GetNDF();
-      float chi2NdfTopoCascToPv = kfCascToPv.GetChi2() / kfCascToPv.GetNDF();
-      float chi2NdfTopoCharmBachToPv = kfCharmBachToPv.GetChi2() / kfCharmBachToPv.GetNDF();
-      float chi2NdfTopoCharmBaryonToPv = kfCharmBaryonToPv.GetChi2() / kfCharmBaryonToPv.GetNDF();
-      float chi2NdfTopoBachToCasc = kfBachToCasc.GetChi2() / kfBachToCasc.GetNDF();
-      float chi2NdfTopoV0ToCasc = kfV0ToCasc.GetChi2() / kfV0ToCasc.GetNDF();
-      float chi2NdfTopoCharmBachToCharmBaryon = kfCharmBachToCharmBaryon.GetChi2() / kfCharmBachToCharmBaryon.GetNDF();
-      float chi2NdfTopoCascToCharmBaryon = kfCascToCharmBaryon.GetChi2() / kfCascToCharmBaryon.GetNDF();
-
-      // get ldl
-      float ldlV0 = ldlFromKF(kfV0, kfPv);
-      float ldlCasc = ldlFromKF(kfCasc, kfPv);
-      float ldlCharmBaryon = ldlFromKF(kfCharmBaryon, kfPv);
-
-      // get DCAs
       float kfDcaV0Daughters = kfNeg.GetDistanceFromParticle(kfPos);
       float kfDcaCascDaughters = kfBachToCasc.GetDistanceFromParticle(kfV0ToCasc);
       float kfDcaCharmBaryonDaughters = kfCharmBachToCharmBaryon.GetDistanceFromParticle(kfCascToCharmBaryon);
-      float kfDcaXYCharmBachelorToPv = kfCharmBachToCharmBaryon.GetDistanceFromVertexXY(kfPv);
-      float kfDcaXYCascToPv = kfCascToCharmBaryon.GetDistanceFromVertexXY(kfPv);
 
-      // get decay length - In XY
-      float decayLXYV0, errDecayLXYV0;
-      kfV0ToCasc.GetDecayLengthXY(decayLXYV0, errDecayLXYV0);
+      float dlV0, errDlV0;
+      kfV0ToPv.GetDecayLength(dlV0, errDlV0);
 
-      float decayLXYCasc, errDecayLXYCasc;
-      kfCascToCharmBaryon.GetDecayLengthXY(decayLXYCasc, errDecayLXYCasc);
+      float dlCasc, errDlCasc;
+      kfCascToPv.GetDecayLength(dlCasc, errDlCasc);
 
-      float decayLXYCharmBaryon, errDecayLXYCharmBaryon;
-      kfCharmBaryonToPv.GetDecayLengthXY(decayLXYCharmBaryon, errDecayLXYCharmBaryon);
+      float dlCharmBaryon, dlXYCharmBaryon, errDlCharmBaryon, errDlXYCharmBaryon;
+      kfCharmBaryonToPv.GetDecayLength(dlCharmBaryon, errDlCharmBaryon);
+      kfCharmBaryonToPv.GetDecayLengthXY(dlXYCharmBaryon, errDlXYCharmBaryon);
 
-      // get decay length - In XYZ
-      float decayLV0 = RecoDecay::distance(std::array<float, 3>{kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()}, std::array<float, 3>{kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()});
-      float decayLCasc = RecoDecay::distance(std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, std::array<float, 3>{kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()});
-      float decayLCharmBaryon = RecoDecay::distance(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()});
+      std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
+      std::array<float, 3> svCoord = {kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()};
+      std::array<float, 3> vertexV0 = {kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()};
+      std::array<float, 3> vertexCasc = {kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()};
+      std::array<float, 3> pVecV0 = {kfV0.GetPx(), kfV0.GetPy(), kfV0.GetPz()};
+      std::array<float, 3> pVecCasc = {kfCasc.GetPx(), kfCasc.GetPy(), kfCasc.GetPz()};
 
-      double phiCharmBaryon, thetaCharmBaryon;
-      getPointDirection(std::array<float, 3>{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, phiCharmBaryon, thetaCharmBaryon);
-      float errDecayLCharmBaryon = std::sqrt(getRotatedCovMatrixXX(covMatrixPv, phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
-
-      // get cosine of pointing angle
-      float cosPaV0ToPv = cpaFromKF(kfV0, kfPv);
-      float cosPaCascToPv = cpaFromKF(kfCasc, kfPv);
-      float cosPaCharmBaryonToPv = cpaFromKF(kfCharmBaryon, kfPv);
-
+      float cosPaCascToPv = RecoDecay::cpa(pvCoord, vertexCasc, pVecCasc);
+      float cosPaXYCascToPv = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
+      float cosPaV0ToPv = RecoDecay::cpa(pvCoord, vertexV0, pVecV0);
       float cosPaXYV0ToPv = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
-      float cosPaXYCascToPv = cpaXYFromKF(kfCasc, kfPv);
-      float cosPaXYCharmBaryonToPv = cpaXYFromKF(kfCharmBaryon, kfPv);
 
-      float cosPaV0ToCasc = cpaFromKF(kfV0, kfCasc);
-      float cosPaCascToCharmBaryon = cpaFromKF(kfCasc, kfCharmBaryon);
+      float cosPaCascToCharmBaryon = RecoDecay::cpa(svCoord, vertexCasc, pVecCasc);
+      float cosPaXYCascToCharmBaryon = RecoDecay::cpaXY(svCoord, vertexCasc, pVecCasc);
+      float cosPaV0ToCasc = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
       float cosPaXYV0ToCasc = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
-      float cosPaXYCascToCharmBaryon = cpaXYFromKF(kfCasc, kfCharmBaryon);
-
-      float deviationCharmBachToPv = kfCalculateChi2ToPrimaryVertex(kfCharmBaryon, kfPv); // -> For Omegac0
-
-      // KF pT, eta
-      float ptCasc = kfCascToCharmBaryon.GetPt();
-      float ptCharmBachelor = kfCharmBachToCharmBaryon.GetPt();
-      float ptCharmBaryon = kfCharmBaryon.GetPt();
-      float yCharmBaryon = kfCharmBaryon.GetRapidity();
-
-      // get KF cosThetaStar
-      float cosThetaStarCharmBachelor = -99.0;
-      float cosThetaStarKaFromOmegac0 = -99.0;
-      float cosThetaStarKaFromXic0 = -99.0;
-
-      if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
-        cosThetaStarCharmBachelor = cosThetaStarFromKF(0, pdgIdOfCharmBaryon, pdgIdOfCharmBach, pdgIdOfCascade, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
-      }
-      if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) { // -> Only requeted to be calculated and filled for Xic0/Omegac0 -> Omega K
-        cosThetaStarKaFromOmegac0 = cosThetaStarFromKF(0, 4332, 321, 3334, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
-        cosThetaStarKaFromXic0 = cosThetaStarFromKF(0, 4132, 321, 3334, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
-      }
-
-      // KF ct
-      float ctV0 = kfV0ToCasc.GetLifeTime();
-      float ctCasc = kfCascToCharmBaryon.GetLifeTime();
-      float ctCharmBaryon = kfCharmBaryonToPv.GetLifeTime();
-
-      //------------------------------Calculate physical quantities and fill candidate table------------------------------
 
       //------------------------------Fill the table------------------------------
-      if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
-        cursors.rowCandToXiPiKf(collision.globalIndex(),                     // Global index of collision
-                                pvCoord[0], pvCoord[1], pvCoord[2],          // coordination of PV
-                                vertexCasc[0], vertexCasc[1], vertexCasc[2], // Decay position of kfCasc
-                                vertexV0[0], vertexV0[1], vertexV0[2],
-                                bachTrack.sign(),
-                                covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
-                                pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2], // x, y, z momentum of charm baryon
-                                kfCascToCharmBaryon.GetPx(), kfCascToCharmBaryon.GetPy(), kfCascToCharmBaryon.GetPz(),
-                                pVecCharmBachelorAsD[0], pVecCharmBachelorAsD[1], pVecCharmBachelorAsD[2],
-                                pVecV0[0], pVecV0[1], pVecV0[2],
-                                pVecBach[0], pVecBach[1], pVecBach[2],
-                                pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
-                                pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
-                                cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
-                                massLam, massCasc, massCharmBaryon,
-                                cosPaV0ToPv, cosPaCascToPv,
-                                ctCasc, ctV0, ctCharmBaryon,
-                                kfPos.GetEta(), kfNeg.GetEta(), kfBach.GetEta(), kfCharmBachToCharmBaryon.GetEta(),
-                                kfCharmBaryon.GetEta(), kfCasc.GetEta(), kfV0.GetEta(),
-                                dcaxyV0DauPos, dcaxyV0DauNeg, dcaxyBach,
-                                kfDcaCascDaughters, kfDcaV0Daughters, kfDcaCharmBaryonDaughters,
-                                kfDcaXYCharmBachelorToPv, kfDcaXYCascToPv,
-                                kfV0.GetChi2(), kfCasc.GetChi2(), kfCharmBaryon.GetChi2(), kfV0MassConstrained.GetChi2(), kfCascMassConstrained.GetChi2(),
-                                ldlV0, ldlCasc, // ldlCharmBaryon,
-                                chi2NdfTopoV0ToPv, chi2NdfTopoCascToPv, chi2NdfTopoCharmBachToPv, chi2NdfTopoCharmBaryonToPv,
-                                chi2NdfTopoV0ToCasc, chi2NdfTopoCascToCharmBaryon,
-                                decayLXYV0, decayLXYCasc, decayLXYCharmBaryon,
-                                cosPaV0ToCasc, cosPaCascToCharmBaryon, // cosPaXYV0ToCasc, cosPaXYCascToCharmBaryon,
-                                yCharmBaryon,                          // ptCharmBachelor, ptCharmBaryon,
-                                cosThetaStarCharmBachelor,
-                                kfV0.GetNDF(), kfCasc.GetNDF(), kfCharmBaryon.GetNDF(), kfV0MassConstrained.GetNDF(), kfCascMassConstrained.GetNDF(),
-                                kfV0.GetChi2() / kfV0.GetNDF(), kfCasc.GetChi2() / kfCasc.GetNDF(), kfCharmBaryon.GetChi2() / kfCharmBaryon.GetNDF(), kfV0MassConstrained.GetChi2() / kfV0MassConstrained.GetNDF(), kfCascMassConstrained.GetChi2() / kfCascMassConstrained.GetNDF());
-      } else if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
-        cursors.rowCandToOmegaPi(collision.globalIndex(),
-                                 pvCoord[0], pvCoord[1], pvCoord[2],
-                                 0.f, 0.f, 0.f, // -> vertexCharmBaryonFromFitter. For KF, this is 0
-                                 vertexCasc[0], vertexCasc[1], vertexCasc[2],
-                                 vertexV0[0], vertexV0[1], vertexV0[2],
-                                 bachTrack.sign(),
-                                 covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
-                                 kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz(),
-                                 kfCascToCharmBaryon.GetPx(), kfCascToCharmBaryon.GetPy(), kfCascToCharmBaryon.GetPz(),
-                                 kfCharmBachToCharmBaryon.GetPx(), kfCharmBachToCharmBaryon.GetPy(), kfCharmBachToCharmBaryon.GetPz(),
-                                 pVecV0[0], pVecV0[1], pVecV0[2],
-                                 pVecBach[0], pVecBach[1], pVecBach[2],
-                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
-                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
-                                 impactParameterCasc.getY(), impactParameterCharmBachelor.getY(),
-                                 impactParameterCasc.getZ(), impactParameterCharmBachelor.getZ(),
-                                 std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
-                                 cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
-                                 massLam, massCasc, massCharmBaryon,
-                                 cosPaV0ToPv, cosPaCharmBaryonToPv, cosPaCascToPv, cosPaXYV0ToPv, cosPaXYCharmBaryonToPv, cosPaXYCascToPv,
-                                 ctCharmBaryon, ctCasc, ctV0,
-                                 kfPos.GetEta(), kfNeg.GetEta(), kfBach.GetEta(), kfCharmBachToCharmBaryon.GetEta(),
-                                 kfCharmBaryon.GetEta(), kfCasc.GetEta(), kfV0.GetEta(),
-                                 dcaxyV0DauPos, dcaxyV0DauNeg, dcaxyBach,
-                                 dcazV0DauPos, dcazV0DauNeg, dcazBach,
-                                 kfDcaCascDaughters, straHelper.cascade.v0DaughterDCA, kfDcaCharmBaryonDaughters,
-                                 decayLCharmBaryon, decayLCasc, decayLV0, errDecayLCharmBaryon, errDecayLXYCharmBaryon, cand.hfflag());
+      rowCandCascBatch(collision.globalIndex(),
+                       primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                       kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ(),
+                       kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ(),
+                       kfV0.GetX(), kfV0.GetY(), kfV0.GetZ(),
+                       errDlCharmBaryon, errDlXYCharmBaryon,
+                       kfCascToCharmBaryon.GetPx(), kfCascToCharmBaryon.GetPy(), kfCascToCharmBaryon.GetPz(),
+                       kfCharmBachToCharmBaryon.GetPx(), kfCharmBachToCharmBaryon.GetPy(), kfCharmBachToCharmBaryon.GetPz(),
+                       impactParameterCasc.getY(), impactParameterCharmBach.getY(),
+                       std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
+                       impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
+                       std::sqrt(impactParameterCasc.getSigmaZ2()), std::sqrt(impactParameterCharmBach.getSigmaZ2()),
+                       impactParameterV0DauPos.getY(), impactParameterV0DauNeg.getY(), impactParameterCascBach.getY(),
+                       impactParameterV0DauPos.getZ(), impactParameterV0DauNeg.getZ(), impactParameterCascBach.getZ(),
+                       kfDcaCharmBaryonDaughters, kfDcaCascDaughters, kfDcaV0Daughters,
+                       cosPaCascToPv, cosPaXYCascToPv, cosPaV0ToPv, cosPaXYV0ToPv,
+                       cosPaCascToCharmBaryon, cosPaXYCascToCharmBaryon, cosPaV0ToCasc, cosPaXYV0ToCasc,
+                       massCasc, massLam,
+                       kfCasc.GetEta(), kfV0.GetEta(),
+                       trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
+                       cand.hfflag());
 
-        cursors.rowCandToOmegaPiKf(kfDcaXYCharmBachelorToPv, kfDcaXYCascToPv,
-                                   kfV0.GetChi2(), kfCasc.GetChi2(), kfCharmBaryon.GetChi2(), kfV0MassConstrained.GetChi2(), kfCascMassConstrained.GetChi2(),
-                                   ldlV0, ldlCasc, ldlCharmBaryon,
-                                   chi2NdfTopoV0ToPv, chi2NdfTopoCascToPv, chi2NdfTopoCharmBachToPv, chi2NdfTopoCharmBaryonToPv, deviationCharmBachToPv,
-                                   chi2NdfTopoV0ToCasc, chi2NdfTopoCascToCharmBaryon,
-                                   decayLXYV0, decayLXYCasc, decayLXYCharmBaryon,
-                                   cosPaV0ToCasc, cosPaCascToCharmBaryon, cosPaXYV0ToCasc, cosPaXYCascToCharmBaryon,
-                                   kfCharmBaryon.GetRapidity(), ptCharmBachelor, ptCharmBaryon,
-                                   cosThetaStarKaFromOmegac0,
-                                   kfV0.GetNDF(), kfCasc.GetNDF(), kfCharmBaryon.GetNDF(), kfV0MassConstrained.GetNDF(), kfCascMassConstrained.GetNDF(),
-                                   kfV0.GetChi2() / kfV0.GetNDF(), kfCasc.Chi2() / kfCasc.GetNDF(), kfCharmBaryon.GetChi2() / kfCharmBaryon.GetNDF(),
-                                   kfV0MassConstrained.GetChi2() / kfV0.GetNDF(), kfCascMassConstrained.Chi2() / kfCasc.GetNDF(),
-                                   massCascRej);
-
-      } else {
-        cursors.rowCandToOmegaKaKf(collision.globalIndex(),
-                                   collision.posX(), collision.posY(), collision.posZ(),
-                                   kfPv.GetX(), kfPv.GetY(), kfPv.GetZ(),
-                                   straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
-                                   straHelper.cascade.v0Momentum[0], straHelper.cascade.v0Momentum[1], straHelper.cascade.v0Momentum[2],
-                                   straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
-                                   straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
-                                   kfV0.GetX(), kfV0.GetY(), kfV0.GetZ(),
-                                   kfV0.GetPx(), kfV0.GetPy(), kfV0.GetPz(),
-                                   kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ(),
-                                   kfCasc.GetPx(), kfCasc.GetPy(), kfCasc.GetPz(),
-                                   kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ(),
-                                   kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz(),
-                                   straHelper.cascade.charge,
-                                   kfPos.GetEta(), kfNeg.GetEta(), kfBach.GetEta(), kfCharmBach.GetEta(), kfV0.GetEta(), kfCasc.GetEta(), kfCharmBaryon.GetEta(), kfCharmBaryon.GetRapidity(),
-                                   impactParameterCharmBachelor.getY(), std::sqrt(impactParameterCharmBachelor.getSigmaY2()), impactParameterCasc.getY(), std::sqrt(impactParameterCasc.getSigmaY2()),
-                                   kfDcaV0Daughters, kfDcaCascDaughters, kfDcaCharmBaryonDaughters,
-                                   cosPaV0ToPv, cosPaCascToPv, cosPaCharmBaryonToPv, cosPaXYV0ToPv, cosPaXYCascToPv, cosPaXYCharmBaryonToPv, cosPaV0ToCasc, cosPaCascToCharmBaryon, cosPaXYV0ToCasc, cosPaXYCascToCharmBaryon,
-                                   kfV0.GetChi2() / kfV0.GetNDF(), kfCasc.GetChi2() / kfCasc.GetNDF(), kfCharmBaryon.GetChi2() / kfCharmBaryon.GetNDF(),
-                                   kfV0MassConstrained.GetChi2() / kfV0MassConstrained.GetNDF(), kfCascMassConstrained.GetChi2() / kfCascMassConstrained.GetNDF(),
-                                   chi2NdfTopoV0ToCasc, chi2NdfTopoBachToCasc, chi2NdfTopoCharmBachToCharmBaryon, chi2NdfTopoCascToCharmBaryon, // Topological constraints to mother
-                                   chi2NdfTopoV0ToPv, chi2NdfTopoCascToPv, chi2NdfTopoCharmBachToPv, chi2NdfTopoCharmBaryonToPv,                // Topological constraints to PV
-                                   ldlV0, ldlCasc, ldlCharmBaryon,
-                                   decayLXYV0, decayLXYCasc, decayLXYCharmBaryon,
-                                   massLam, sigMassLam, massCasc, sigMassCasc, massCascRej, sigMassCascRej, massCharmBaryon, sigMassCharmBaryon,
-                                   ptCharmBaryon, ptCharmBachelor, ptCasc,
-                                   cosThetaStarKaFromOmegac0, cosThetaStarKaFromXic0, ctV0, ctCasc, ctCharmBaryon,
-                                   cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(), cand.cascadeId(), cascAodElement.bachelorId(), trackCharmBachelor.globalIndex());
-      }
+      rowCandCascBatchKf(kfCharmBaryon.Chi2(), kfCasc.Chi2(), kfV0.Chi2(),
+                         kfCharmBaryon.GetNDF(), kfCasc.GetNDF(), kfV0.GetNDF(),
+                         dlCharmBaryon / errDlCharmBaryon, dlCasc / errDlCasc, dlV0 / errDlV0,
+                         kfCharmBaryonToPv.GetChi2(), kfCascToPv.GetChi2(), kfV0ToPv.GetChi2(),
+                         kfCharmBaryonToPv.GetNDF(), kfCascToPv.GetNDF(), kfV0ToPv.GetNDF(),
+                         kfCascToCharmBaryon.GetChi2(), kfV0ToCasc.GetChi2(),
+                         kfCascToCharmBaryon.GetNDF(), kfV0ToCasc.GetNDF());
     } // end candidate loop
   } // end of runCreator
 
