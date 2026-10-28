@@ -214,7 +214,7 @@ struct F0980pbpbanalysis {
   double eventPlaneRefA = 0.;
   double eventPlaneRefB = 0.;
 
-  float centrality =. 1.;
+  float centrality = 1.;
 
   double angle = -1.;
   double relPhi = -1.;
