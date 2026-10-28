@@ -30,6 +30,7 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
@@ -339,6 +340,12 @@ struct AnalysisEventSelection {
   o2::framework::Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
   o2::framework::Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
+  o2::framework::Configurable<bool> cfgUseRCT{"cfgUseRCT", false, "Apply RCT quality selection"};
+  o2::framework::Configurable<std::string> cfgRCTPath{"cfgRCTPath", "RCT/Flags/RunFlags", "CCDB path to the RCT run flags"};
+  o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT", "RCT selection label"};
+  o2::framework::Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Also check ZDC quality"};
+  o2::framework::Configurable<std::string> cfgRCTPassName{"cfgRCTPassName", "", "Reconstruction pass; leave empty for run-only lookup"};
+
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
   AnalysisCompositeCut* fEventCut = nullptr;
@@ -351,9 +358,12 @@ struct AnalysisEventSelection {
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
   int fCurrentRun = -1;
 
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT"};
+  std::map<uint64_t, uint32_t> rctFlags;
+  int rctRun = -1;
+
   void init(o2::framework::InitContext& context)
   {
-
     bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr") || context.mOptions.get<bool>("processSkimmedWithQvectorCentrMerge");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
@@ -424,6 +434,61 @@ struct AnalysisEventSelection {
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     fCCDBApi.init(fConfigCcdbUrl.value);
+
+    if (cfgUseRCT.value) {
+      if (cfgRCTLabel.value != "CBT" && cfgRCTLabel.value != "CBT_hadronPID" && cfgRCTLabel.value != "CBT_electronPID" && cfgRCTLabel.value != "CBT_calo" && cfgRCTLabel.value != "CBT_muon" && cfgRCTLabel.value != "CBT_muon_glo") {
+        LOGF(fatal, "RCT Label \"%s\" is unknown.", cfgRCTLabel.value.c_str());
+      }
+
+      rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value);
+
+      if (!rctChecker.any()) {
+        LOGF(fatal, "Empty RCT mask: check cfgRCTLabel.");
+      }
+    }
+  }
+
+  void loadRCT(int run, uint64_t timestamp)
+  {
+    std::map<std::string, std::string> metadata{{"run", std::to_string(run)}};
+
+    LOG(info) << "Requesting " << cfgRCTPath.value << " run=" << run << " timestamp=" << timestamp;
+
+    if (!cfgRCTPassName.value.empty()) {
+      metadata["passName"] = cfgRCTPassName.value;
+    }
+
+    auto* flags = fCCDB->getSpecific<std::map<uint64_t, uint32_t>>(cfgRCTPath.value, timestamp, metadata);
+    if (flags == nullptr && !cfgRCTPassName.value.empty()) {
+      metadata.erase("passName");
+      flags = fCCDB->getSpecific<std::map<uint64_t, uint32_t>>(cfgRCTPath.value, timestamp, metadata);
+    }
+
+    if (flags == nullptr || flags->empty()) {
+      LOGF(fatal, "Missing or empty RCT flags for run %d.", run);
+    }
+
+    rctFlags = *flags;
+    rctRun = run;
+  }
+
+  bool passesRCT(int run, uint64_t timestamp)
+  {
+    if (!cfgUseRCT.value) {
+      return true;
+    }
+
+    if (run != rctRun) {
+      loadRCT(run, timestamp);
+    }
+
+    auto iterator = rctFlags.upper_bound(timestamp);
+    if (iterator == rctFlags.begin()) {
+      return false;
+    }
+
+    const uint32_t flags = std::prev(iterator)->second;
+    return (static_cast<uint64_t>(flags) & rctChecker.value()) == 0;
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
@@ -463,7 +528,7 @@ struct AnalysisEventSelection {
       }
 
       // Apply event cuts and fill histograms after selection
-      if (fEventCut->IsSelected(dqtablereader_helpers::varValues())) {
+      if (fEventCut->IsSelected(dqtablereader_helpers::varValues()) && passesRCT(event.runNumber(), event.timestamp())) {
         if (fConfigRunZorro) {
           if (event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
             if (fConfigQA) {
