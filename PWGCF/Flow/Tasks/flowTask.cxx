@@ -245,8 +245,8 @@ struct FlowTask {
     std::vector<std::shared_ptr<TH2>> listPtX;
     O2_DEFINE_CONFIGURABLE(cfgManualCk, bool, false, "Produce pt-pt variance")
     O2_DEFINE_CONFIGURABLE(cfgNewPtContainer, bool, false, "Switch to new version of flowPtContainer. This switch will be removed after validation of new container.")
-    Configurable<GFWRegions> cfgNpcRegions{"cfgNpcRegions", {{"refN", "refP", "refMid", "refFull"}, {-0.8, 0.4, -0.4, -0.8},{-0.4, 0.8, 0.4, 0.8},{0, 0, 0, 0},{1, 1, 1, 1}}, "Configurations for GFW regions"};
-    Configurable<GFWCorrConfigs> cfgNpcPtVnCorrConfig{"cfgNpcPtVnCorrConfig", {{"refP {pt} refN {pt}", "refP {2} refMid {pt} refN {-2}", "refP {2} refMid {pt pt} refN {-2}", "refFull {pt}", "refFull {pt pt}", "refFull {pt pt pt}", "refFull {pt pt pt pt}", "refP {pt} refMid {pt} refN {pt}"}, {"ChGapPtPt", "ChGap22pt", "ChGap22ptpt", "ChFullPt", "ChFullPtPt", "ChFullPtPtPt", "ChFullPtPtPtPt", "ChGapPtPtPtABC"},{0, 0, 0, 0, 0, 0, 0, 0},{0, 0, 0, 0, 0, 0, 0, 0}}, "Configurations for vn-pt correlations based on new version flowPtContainer"};
+    Configurable<GFWRegions> cfgNpcRegions{"cfgNpcRegions", {{"refN", "refP", "refMid", "refFull"}, {-0.8, 0.4, -0.4, -0.8}, {-0.4, 0.8, 0.4, 0.8}, {0, 0, 0, 0}, {1, 1, 1, 1}}, "Configurations for GFW regions"};
+    Configurable<GFWCorrConfigs> cfgNpcPtVnCorrConfig{"cfgNpcPtVnCorrConfig", {{"refP {pt} refN {pt}", "refP {2} refMid {pt} refN {-2}", "refP {2} refMid {pt pt} refN {-2}", "refFull {pt}", "refFull {pt pt}", "refFull {pt pt pt}", "refFull {pt pt pt pt}", "refP {pt} refMid {pt} refN {pt}"}, {"ChGapPtPt", "ChGap22pt", "ChGap22ptpt", "ChFullPt", "ChFullPtPt", "ChFullPtPtPt", "ChFullPtPtPtPt", "ChGapPtPtPtABC"}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0}}, "Configurations for vn-pt correlations based on new version flowPtContainer"};
     Configurable<std::vector<std::string>> cfgNpcGFWCorr{"cfgNpcGFWCorr", std::vector<std::string>{"refN {2} refP {-2}", "refN {3} refP {-3}"}, "GFW corrconfig for new version flowPtContainer"};
     GFWRegions npcRegions;
     GFWCorrConfigs npcPtVnCorrConfig;
@@ -694,8 +694,8 @@ struct FlowTask {
 
       for (int region = 0; region < cfgAdditionObs.npcRegions.GetSize(); ++region) {
         cfgAdditionObs.npcGfw.AddRegion(cfgAdditionObs.npcRegions.GetNames()[region], cfgAdditionObs.npcRegions.GetEtaMin()[region],
-                      cfgAdditionObs.npcRegions.GetEtaMax()[region], 1,
-                      cfgAdditionObs.npcRegions.GetBitmasks()[region]);
+                                        cfgAdditionObs.npcRegions.GetEtaMax()[region], 1,
+                                        cfgAdditionObs.npcRegions.GetBitmasks()[region]);
       }
       std::vector<std::string> npcGFWCorr = cfgAdditionObs.cfgNpcGFWCorr;
       if (!npcGFWCorr.empty()) {
