@@ -24,6 +24,7 @@
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+
 #include <Rtypes.h>
 
 #include <cstdint>
@@ -70,11 +71,11 @@ using GfwCollision = GfwCollisions::iterator;
 namespace gfwtrack
 {
 DECLARE_SOA_INDEX_COLUMN(GfwCollision, gfwCollision); //! Parent derived collision
-DECLARE_SOA_COLUMN(Pt, pt, float);                   //! pT (GeV/c)
-DECLARE_SOA_COLUMN(Eta, eta, float);                 //! Pseudorapidity
-DECLARE_SOA_COLUMN(Phi, phi, float);                 //! Azimuthal angle
-DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);         //! Track has a TOF match
-DECLARE_SOA_COLUMN(TrackSel, trackSel, uint32_t); //! Track and PID bitmask, see TrackSelection
+DECLARE_SOA_COLUMN(Pt, pt, float);                    //! pT (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);                  //! Pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);                  //! Azimuthal angle
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);             //! Track has a TOF match
+DECLARE_SOA_COLUMN(TrackSel, trackSel, uint32_t);     //! Track and PID bitmask, see TrackSelection
 
 /// Track-quality bits occupy 0-13. TPC PID bits occupy 14-22 and TOF PID bits occupy 23-31.
 /// Global-track, ITS-cluster, and ITS-chi2 requirements are applied by the producer and are not stored.
