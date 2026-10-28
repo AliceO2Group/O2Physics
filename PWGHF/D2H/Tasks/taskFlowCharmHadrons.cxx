@@ -120,7 +120,8 @@ enum DecayChannel { DplusToPiKPi = 0,
                     LcToPiKP,
                     XicToPKPi,
                     XicToPiKP,
-                    Xic0ToXiPi
+                    Xic0ToXiPi,
+                    DstarToD0Pi
 };
 
 enum RunMode {
@@ -182,6 +183,7 @@ struct HfTaskFlowCharmHadrons {
   using CandXic0Data = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf>>;
   using CandXic0DataWMl = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
+  using CandDstarDataWMl = soa::Filtered<soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
   using CollsWithSPQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using CollsWithEsEQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::EseQvecPercs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using CollsWithSPEsEQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::EseQvecPercs, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
@@ -190,6 +192,7 @@ struct HfTaskFlowCharmHadrons {
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+  Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
   Filter filterSelectLcCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
   Filter filterSelectXicCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlag || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlag;
   Filter filterSelectXic0Candidates = aod::hf_sel_toxipi::resultSelections == true;
@@ -198,6 +201,7 @@ struct HfTaskFlowCharmHadrons {
   Partition<CandDsDataWMl> selectedDsToPiKKWMl = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+  Partition<CandDstarDataWMl> selectedDstarToD0PiWMl = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
   Partition<CandLcDataWMl> selectedLcToPKPiWMl = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag;
   Partition<CandLcDataWMl> selectedLcToPiKPWMl = aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
   Partition<CandXicDataWMl> selectedXicToPKPiWMl = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlag;
@@ -418,8 +422,10 @@ struct HfTaskFlowCharmHadrons {
     addProngIfInSubevent(cand.pxProng0(), cand.pyProng0(), cand.pzProng0());
     addProngIfInSubevent(cand.pxProng1(), cand.pyProng1(), cand.pzProng1());
 
-    // 3-prong channels
-    if constexpr (Channel != DecayChannel::D0ToPiK && Channel != DecayChannel::D0ToKPi) {
+    if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      addProngIfInSubevent(cand.pxSoftPi(), cand.pySoftPi(), cand.pzSoftPi());
+    } else if constexpr (Channel != DecayChannel::D0ToPiK && Channel != DecayChannel::D0ToKPi) {
+      // Other 3-prong channels
       addProngIfInSubevent(cand.pxProng2(), cand.pyProng2(), cand.pzProng2());
     }
   }
@@ -690,6 +696,13 @@ struct HfTaskFlowCharmHadrons {
           default:
             break;
         }
+      } else if constexpr (std::is_same_v<T1, CandDstarDataWMl>) {
+        // Use the soft-pion charge to select the D0 or D0bar mass hypothesis.
+        signCand = candidate.signSoftPi();
+        massCand = signCand > 0 ? candidate.invMassDstar() - candidate.invMassD0() : candidate.invMassAntiDstar() - candidate.invMassD0Bar();
+        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+          outputMl[iclass] = candidate.mlProbDstarToD0Pi()[classMl->at(iclass)];
+        }
       } else if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
         switch (Channel) {
           case DecayChannel::LcToPKPi:
@@ -946,6 +959,15 @@ struct HfTaskFlowCharmHadrons {
     runFlowAnalysis<RunMode::kSPEsE, DecayChannel::D0ToKPi>(collision, candsD0ToKPiWMl, tracks);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0SPEsEMl, "Process D0 candidates with ML for SP and EsE information", false);
+
+  // Dstar with ML
+  void processDstarMl(CollsWithSPQvecs::iterator const& collision,
+                      CandDstarDataWMl const& candidatesDstar,
+                      TracksWithExtra const& tracks)
+  {
+    runFlowAnalysis<RunMode::kSP, DecayChannel::DstarToD0Pi>(collision, candidatesDstar, tracks);
+  }
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDstarMl, "Process Dstar candidates with ML", false);
 
   // Lc with ML
   void processLcMl(CollsWithSPQvecs::iterator const& collision,
