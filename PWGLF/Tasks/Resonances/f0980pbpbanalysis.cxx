@@ -283,7 +283,7 @@ struct F0980pbpbanalysis {
     }
     if (name.value == "TPCneg") {
       return 5;
-    } 
+    }
     return 0;
   }
 
