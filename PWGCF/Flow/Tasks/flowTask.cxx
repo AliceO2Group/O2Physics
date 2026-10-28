@@ -101,6 +101,7 @@ struct FlowTask {
   Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
   Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {TrackCutArray[0], 7, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAz", "DCAxy Nsigma", "DCAz Nsigma(override)"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
+  std::array<std::array<float, 2>, 7> trackCuts{};
   enum TrackCut {
     // enum for labelledArray track selection
     kChi2prTPCcls = 0, // max chi2 per TPC clusters
@@ -791,29 +792,42 @@ struct FlowTask {
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
 
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs]) {
+    readMatrix(cfgTrackCuts->getData(), trackCuts);
+    if (trackCuts[kDCAxyNSigma][kTrCutObs]) {
       cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs]);
-      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs], cfgFuncParas.cfgDCAxyFunc->c_str()));
+      cfgFuncParas.fPtDepDCAxy->SetParameter(0, trackCuts[kDCAxyNSigma][kTrCutObs]);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", trackCuts[kDCAxyNSigma][kTrCutObs], cfgFuncParas.cfgDCAxyFunc->c_str()));
     }
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]) {
+    if (trackCuts[kDCAxyNSigma][kTrCutNch]) {
       cfgFuncParas.fPtDepDCAxyForNch = new TF1("ptDepDCAxyForNch", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]);
-      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch], cfgFuncParas.cfgDCAxyFunc->c_str()));
+      cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, trackCuts[kDCAxyNSigma][kTrCutNch]);
+      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[kDCAxyNSigma][kTrCutNch], cfgFuncParas.cfgDCAxyFunc->c_str()));
     }
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs]) {
+    if (trackCuts[kDCAzNSigma][kTrCutObs]) {
       cfgFuncParas.fPtDepDCAz = new TF1("ptDepDCAz", Form("[0]*%s", cfgFuncParas.cfgDCAzFunc->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAz->SetParameter(0, cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs]);
-      LOGF(info, "DCAz pt-dependence function: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs], cfgFuncParas.cfgDCAzFunc->c_str()));
+      cfgFuncParas.fPtDepDCAz->SetParameter(0, trackCuts[kDCAzNSigma][kTrCutObs]);
+      LOGF(info, "DCAz pt-dependence function: %s", Form("%0.1f * %s", trackCuts[kDCAzNSigma][kTrCutObs], cfgFuncParas.cfgDCAzFunc->c_str()));
     }
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch]) {
+    if (trackCuts[kDCAzNSigma][kTrCutNch]) {
       cfgFuncParas.fPtDepDCAzForNch = new TF1("ptDepDCAzForNch", Form("[0]*%s", cfgFuncParas.cfgDCAzFunc->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAzForNch->SetParameter(0, cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch]);
-      LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch], cfgFuncParas.cfgDCAzFunc->c_str()));
+      cfgFuncParas.fPtDepDCAzForNch->SetParameter(0, trackCuts[kDCAzNSigma][kTrCutNch]);
+      LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[kDCAzNSigma][kTrCutNch], cfgFuncParas.cfgDCAzFunc->c_str()));
     }
     if (!cfgEvSelRCTflags.value.empty()) {
       rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
     }
+  }
+
+  template <typename T, typename P>
+  void readMatrix(Array2D<T> const& mat, P& array)
+  {
+    for (auto i = 0; i < static_cast<int>(mat.rows); ++i) {
+      for (auto j = 0; j < static_cast<int>(mat.cols); ++j) {
+        array[i][j] = mat(i, j);
+      }
+    }
+
+    return;
   }
 
   void createOutputObjectsForRun(int runNumber)
@@ -1154,21 +1168,21 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(const TTrack& track)
   {
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && cfgFuncParas.fPtDepDCAxy != nullptr && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+    if (trackCuts[kDCAxyNSigma][kTrCutObs] && cfgFuncParas.fPtDepDCAxy != nullptr && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
       return false;
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutObs] && cfgFuncParas.fPtDepDCAz != nullptr && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())))
+    if (trackCuts[kDCAzNSigma][kTrCutObs] && cfgFuncParas.fPtDepDCAz != nullptr && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())))
       return false;
-    return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutObs]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutObs]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutObs]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutObs]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutObs]));
+    return ((track.tpcNClsFound() >= trackCuts[kTPCclu][kTrCutObs]) && (track.tpcNClsCrossedRows() >= trackCuts[kTPCCrossedRows][kTrCutObs]) && (track.itsNCls() >= trackCuts[kITSclu][kTrCutObs]) && (track.tpcChi2NCl() < trackCuts[kChi2prTPCcls][kTrCutObs]) && (std::fabs(track.dcaZ()) < trackCuts[kDCAz][kTrCutObs]));
   }
 
   template <typename TTrack>
   bool trackSelectedForNch(const TTrack& track)
   {
-    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && cfgFuncParas.fPtDepDCAxyForNch != nullptr && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
+    if (trackCuts[kDCAxyNSigma][kTrCutNch] && cfgFuncParas.fPtDepDCAxyForNch != nullptr && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
       return false;
-    if (cfgTrackCuts->getData()[kDCAzNSigma][kTrCutNch] && cfgFuncParas.fPtDepDCAzForNch != nullptr && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())))
+    if (trackCuts[kDCAzNSigma][kTrCutNch] && cfgFuncParas.fPtDepDCAzForNch != nullptr && (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())))
       return false;
-    return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutNch]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutNch]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutNch]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutNch]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutNch]));
+    return ((track.tpcNClsFound() >= trackCuts[kTPCclu][kTrCutNch]) && (track.tpcNClsCrossedRows() >= trackCuts[kTPCCrossedRows][kTrCutNch]) && (track.itsNCls() >= trackCuts[kITSclu][kTrCutNch]) && (track.tpcChi2NCl() < trackCuts[kChi2prTPCcls][kTrCutNch]) && (std::fabs(track.dcaZ()) < trackCuts[kDCAz][kTrCutNch]));
   }
 
   template <typename TTrack>
