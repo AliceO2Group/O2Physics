@@ -17,9 +17,9 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -202,27 +202,27 @@ struct F0980pbpbanalysis {
   int nmode = FlowConfig.cfgQvecNMods;
   static constexpr double QvecAmpMin = 1e-4;
 
-  int detId;
-  int refAId;
-  int refBId;
+  int detId = 0;
+  int refAId = 4;
+  int refBId = 5;
 
-  int qVecDetInd;
-  int qVecRefAInd;
-  int qVecRefBInd;
+  int qVecDetInd = 0;
+  int qVecRefAInd = 0;
+  int qVecRefBInd = 0;
 
-  double eventPlaneDet;
-  double eventPlaneRefA;
-  double eventPlaneRefB;
+  double eventPlaneDet = 0.;
+  double eventPlaneRefA = 0.;
+  double eventPlaneRefB = 0.;
 
-  float centrality;
+  float centrality =. 1.;
 
-  double angle;
-  double relPhi;
-  double relPhiRot;
-  double relPhiMix;
+  double angle = -1.;
+  double relPhi = -1.;
+  double relPhiRot = -1.;
+  double relPhiMix = -1.;
 
   // double massPi = o2::constants::physics::MassPionCharged;
-  double massPtl;
+  double massPtl = 0.;
 
   int nTotalEvents = 0;
 
@@ -597,15 +597,15 @@ struct F0980pbpbanalysis {
   template <typename TrackType1, typename TrackType2>
   bool pairAngleSelection(const TrackType1& track1, const TrackType2& track2)
   {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
+    double pt1, pt2, pz1, pz2, p1, p2, angle12;
     pt1 = track1.pt();
     pt2 = track2.pt();
     pz1 = track1.pz();
     pz2 = track2.pz();
     p1 = track1.p();
     p2 = track2.p();
-    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (PhiTestConfig.cfgPhiDeepAngleSel && angle < PhiTestConfig.cfgPhiDeepAngle) {
+    angle12 = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    if (PhiTestConfig.cfgPhiDeepAngleSel && angle12 < PhiTestConfig.cfgPhiDeepAngle) {
       return 0;
     }
     return 1;
@@ -736,7 +736,7 @@ struct F0980pbpbanalysis {
       if (c1.bcId() == c2.bcId()) {
         continue;
       }
-      double eventPlaneDet = std::atan2(c1.qvecIm()[qVecDetInd], c1.qvecRe()[qVecDetInd]) / static_cast<float>(nmode);
+      eventPlaneDet = std::atan2(c1.qvecIm()[qVecDetInd], c1.qvecRe()[qVecDetInd]) / static_cast<float>(nmode);
 
       for (const auto& trk1 : t1) {
         if (!trackSelected(trk1, false)) {
