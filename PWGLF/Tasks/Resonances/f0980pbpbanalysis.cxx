@@ -19,6 +19,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -70,6 +71,7 @@ struct F0980pbpbanalysis {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
+  o2::aod::ITSResponse itsResponse;
 
   Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
@@ -130,6 +132,8 @@ struct F0980pbpbanalysis {
     Configurable<double> cfgPIDMaxTPCnSigmaPion{"cfgPIDMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
     Configurable<double> cfgPIDMaxTPCnSigmaPionS{"cfgPIDMaxTPCnSigmaPionS", 3.0, "TPC nSigma cut for Pion as a standalone"};
     Configurable<double> cfgPIDMaxTiednSigmaPion{"cfgPIDMaxTiednSigmaPion", 3.0, "Combined nSigma cut for Pion"};
+    Configurable<bool> cfgPIDITSFlag{"cfgPIDITSFlag", true, "PID ITS flag"};
+    Configurable<double> cfgPIDMaxITSnSigmaPion{"cfgPIDMaxITSnSigmaPion", 3.0, "ITS nSigma selection"};
   } PIDConfig;
 
   // Flow Configurables
@@ -231,6 +235,7 @@ struct F0980pbpbanalysis {
     PIDRun3 = 0,
     PIDRun2 = 1,
     PIDTest = 2,
+    PIDAddITS = 3,
   };
 
   enum PtlList {
@@ -570,6 +575,16 @@ struct F0980pbpbanalysis {
         if (std::abs(getTpcNSigma(track)) > PIDConfig.cfgPIDMaxTPCnSigmaPionS) {
           return 0;
         }
+      }
+    } else if (cfgListPID == PIDList::PIDAddITS) {
+      if (!track.hasTOF()) {
+        return 0;
+      }
+      if ((getTpcNSigma(track) * getTpcNSigma(track) + getTofNSigma(track) * getTofNSigma(track)) > (PIDConfig.cfgPIDMaxTiednSigmaPion * PIDConfig.cfgPIDMaxTiednSigmaPion)) {
+        return 0;
+      }
+      if (!PIDConfig.cfgPIDITSFlag || std::abs(itsResponse.nSigmaITS<o2::track::PID::Pion>(track)) > PIDConfig.cfgPIDMaxITSnSigmaPion) {
+        return 0;
       }
     }
     if (QAConfig.cfgQATrackFlowCut && QA) {
