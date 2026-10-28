@@ -215,9 +215,9 @@ struct FlowGfwV02 {
   // // The analysis assumes the data has been subjected to a QA of its selection,
   // // and thus only the final distributions of the data for analysis are saved.
   // Derived-data bit masks. Every listed track bit is required; see gfwcollision::EventSel and gfwtrack::TrackSelection.
-  O2_DEFINE_CONFIGURABLE(cfgEventBitMask, uint16_t, o2::aod::gfwcollision::DefaultEventMask, "Required event-selection bits for GFW derived data");
+  O2_DEFINE_CONFIGURABLE(cfgEventBitMask, uint16_t, static_cast<uint16_t>(o2::aod::gfwcollision::DefaultEventMask), "Required event-selection bits for GFW derived data");
   Configurable<std::vector<int>> cfgBitmaskSelections{"cfgBitmaskSelections", {0, 3, 6, 9, 12}, "Enabled TrackSelection bit indices for GFW derived data. DCA 0-5, TPC track 6-13, TPC PID 14-22, TOF PID 23-31. The default is the nominal quality selection"};
-  O2_DEFINE_CONFIGURABLE(cfgPidWindow, int, o2::aod::gfwtrack::PidWindowNominal, "PID nSigma window for GFW derived data: 0 nominal, 1 tight, 2 loose");
+  O2_DEFINE_CONFIGURABLE(cfgPidWindow, int, static_cast<int>(o2::aod::gfwtrack::PidWindowNominal), "PID nSigma window for GFW derived data: 0 nominal, 1 tight, 2 loose");
 
   o2::framework::expressions::Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
   o2::framework::expressions::Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
@@ -637,7 +637,7 @@ struct FlowGfwV02 {
       isTofPion = (trackSel & (static_cast<uint32_t>(aod::gfwtrack::kTofPi) << shift)) != 0;
       isTofKaon = (trackSel & (static_cast<uint32_t>(aod::gfwtrack::kTofKa) << shift)) != 0;
       isTofProton = (trackSel & (static_cast<uint32_t>(aod::gfwtrack::kTofPr) << shift)) != 0;
-    } else {
+    } else if constexpr (requires { track.tpcNSigmaPi(); track.tofNSigmaPi(); }) {
       const std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
       const std::array<float, 3> nSigmaTOF = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
       constexpr bool HasItsResponse = requires {
@@ -672,19 +672,25 @@ struct FlowGfwV02 {
       isTofPion = nSigmaTOF[IndPionUp] < pidStates.tofNsigmaCut[IndPionUp] && nSigmaTOF[IndPionUp] > pidStates.tofNsigmaCut[IndPionLow];
       isTofKaon = nSigmaTOF[IndKaonUp] < pidStates.tofNsigmaCut[IndKaonUp] && nSigmaTOF[IndKaonUp] > pidStates.tofNsigmaCut[IndKaonLow];
       isTofProton = nSigmaTOF[IndProtonUp] < pidStates.tofNsigmaCut[IndProtonUp] && nSigmaTOF[IndProtonUp] > pidStates.tofNsigmaCut[IndProtonLow];
-    }
-
-    if (track.pt() > cfgTofPtCut && !track.hasTOF()) {
+    } else {
       return -1;
     }
-    if (track.pt() > cfgTofPtCut && track.hasTOF()) {
-      isPion = isTofPion && isDetectedPion;
-      isKaon = isTofKaon && isDetectedKaon;
-      isProton = isTofProton && isDetectedProton;
+
+    if constexpr (requires { track.hasTOF(); }) {
+      if (track.pt() > cfgTofPtCut && !track.hasTOF()) {
+        return -1;
+      }
+      if (track.pt() > cfgTofPtCut && track.hasTOF()) {
+        isPion = isTofPion && isDetectedPion;
+        isKaon = isTofKaon && isDetectedKaon;
+        isProton = isTofProton && isDetectedProton;
+      } else {
+        isPion = isDetectedPion;
+        isKaon = isDetectedKaon;
+        isProton = isDetectedProton;
+      }
     } else {
-      isPion = isDetectedPion;
-      isKaon = isDetectedKaon;
-      isProton = isDetectedProton;
+      return -1;
     }
 
     if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
@@ -748,12 +754,15 @@ struct FlowGfwV02 {
     cfg.correctionsLoaded = true;
   }
 
+  // JWeights, filled by jflucWeightsLoader from a local file or CCDB, stores the same
+  // correction used by flowJSPCAnalysis: acceptance is 1/weightNUA and efficiency is weightEff.
   template <typename TTrack>
   double getJTrackAcceptance(TTrack const& track)
   {
     double wacc = 1;
     if constexpr (requires { track.weightNUA(); }) {
-      wacc = 1. / track.weightNUA();
+      const double nua = track.weightNUA();
+      wacc = (nua == 0.) ? 1. : 1. / nua;
     }
     return wacc;
   }
@@ -771,24 +780,36 @@ struct FlowGfwV02 {
   template <typename TTrack>
   double getAcceptance(TTrack const& track, const double& vtxz)
   {
-    double wacc = 1;
-    if (cfg.mAcceptance) {
-      wacc = cfg.mAcceptance->getNUA(track.phi(), track.eta(), vtxz);
+    if constexpr (requires { track.weightNUA(); }) {
+      return getJTrackAcceptance(track);
+    } else {
+      double wacc = 1;
+      if (cfg.mAcceptance) {
+        wacc = cfg.mAcceptance->getNUA(track.phi(), track.eta(), vtxz);
+      }
+      return wacc;
     }
-    return wacc;
   }
 
   template <typename TTrack>
   double getEfficiency(TTrack const& track, const int& pid = PidCharged)
   {
-    double eff = 1.;
-    if (cfg.mEfficiency[pid]) {
-      eff = cfg.mEfficiency[pid]->GetBinContent(cfg.mEfficiency[pid]->FindBin(track.pt()));
+    if constexpr (requires { track.weightEff(); }) {
+      const double eff = getJTrackEfficiency(track);
+      if (eff == 0.) {
+        return -1.;
+      }
+      return eff;
+    } else {
+      double eff = 1.;
+      if (cfg.mEfficiency[pid]) {
+        eff = cfg.mEfficiency[pid]->GetBinContent(cfg.mEfficiency[pid]->FindBin(track.pt()));
+      }
+      if (eff == 0) {
+        return -1.;
+      }
+      return 1. / eff;
     }
-    if (eff == 0) {
-      return -1.;
-    }
-    return 1. / eff;
   }
 
   template <typename TCollision>
@@ -1002,21 +1023,21 @@ struct FlowGfwV02 {
             }
           }
         }
-      }
 
-      // Calculate NCv22pt
-      if (cfgUseMultiplicityFracWeights) {
-        weightC = pidStates.hPtMid[PidCharged]->Integral();
-      }
+        // Calculate NCv22pt
+        if (cfgUseMultiplicityFracWeights) {
+          weightC = pidStates.hPtMid[PidCharged]->Integral();
+        }
 
-      registry.fill(HIST("analysis/charged/v22pt"), bootstrap, centmult, v22pt, weightC * weightAB);
-      registry.fill(HIST("analysis/charged/v22"), bootstrap, centmult, valAB, weightAB);
-      registry.fill(HIST("analysis/charged/v24"), bootstrap, centmult, valABAB, weightABAB);
-      registry.fill(HIST("analysis/charged/ptC"), bootstrap, centmult, ptMeanMid, weightC);
-      if (cfgUseMultiplicityFracWeights) {
-        registry.fill(HIST("analysis/charged/v223pc"), bootstrap, centmult, valAB, weightC * weightAB);
-        registry.fill(HIST("analysis/charged/v224pc"), bootstrap, centmult, valAB, weightABAB);
-        registry.fill(HIST("analysis/charged/ptC3pc"), bootstrap, centmult, ptMeanMid, weightC * weightAB);
+        registry.fill(HIST("analysis/charged/v22pt"), bootstrap, centmult, v22pt, weightC * weightAB);
+        registry.fill(HIST("analysis/charged/v22"), bootstrap, centmult, valAB, weightAB);
+        registry.fill(HIST("analysis/charged/v24"), bootstrap, centmult, valABAB, weightABAB);
+        registry.fill(HIST("analysis/charged/ptC"), bootstrap, centmult, ptMeanMid, weightC);
+        if (cfgUseMultiplicityFracWeights) {
+          registry.fill(HIST("analysis/charged/v223pc"), bootstrap, centmult, valAB, weightC * weightAB);
+          registry.fill(HIST("analysis/charged/v224pc"), bootstrap, centmult, valAB, weightABAB);
+          registry.fill(HIST("analysis/charged/ptC3pc"), bootstrap, centmult, ptMeanMid, weightC * weightAB);
+        }
       }
     } // End of V02
 
@@ -1230,11 +1251,13 @@ struct FlowGfwV02 {
     if constexpr (requires { track.trackSel(); }) {
       const uint32_t mask = trackBitMask;
       return (track.trackSel() & mask) == mask;
-    } else {
+    } else if constexpr (requires { track.dcaXY(); track.tpcNClsCrossedRows(); track.tpcNClsFound(); track.itsNCls(); }) {
       if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt()))) {
         return false;
       }
       return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCCls) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSCls));
+    } else {
+      return true;
     }
   }
 
@@ -1484,9 +1507,9 @@ struct FlowGfwV02 {
     const XAxis xaxis{.centrality = collision.multiplicity(), .multiplicity = tracks.size()};
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
-    // processCollision<kReco>(collision, tracks, xaxis);
+    processCollision<kReco>(collision, tracks, xaxis);
   }
-  PROCESS_SWITCH(FlowGfwV02, processCFDerivedCorrected, "Process analysis for CF derived data with corrections", false);
+  PROCESS_SWITCH(FlowGfwV02, processCFDerivedCorrected, "Process CF derived data with JWeights acceptance and efficiency corrections", false);
 
   void processDerived(aod::GfwCollision const& collision, soa::Filtered<aod::GfwTracks> const& tracks)
   {
@@ -1511,6 +1534,29 @@ struct FlowGfwV02 {
     processCollision<kReco>(collision, tracks, xaxis);
   }
   PROCESS_SWITCH(FlowGfwV02, processDerived, "Process analysis for GFW derived data", false);
+
+  void processDerivedCorrected(aod::GfwCollision const& collision, soa::Filtered<soa::Join<aod::GfwTracks, aod::JWeights>> const& tracks)
+  {
+    int run = collision.runNumber();
+    if (run != lastRun) {
+      lastRun = run;
+      LOGF(info, "run = %d", run);
+    }
+
+    const uint16_t eventMask = cfgEventBitMask;
+    if ((collision.eventSel() & eventMask) != eventMask) {
+      return;
+    }
+    if (std::abs(collision.posZ()) > cfgEventCuts.cfgZvtxMax) {
+      return;
+    }
+
+    const XAxis xaxis{.centrality = static_cast<float>(cfgCentralityFactor * collision.centrality()), .multiplicity = static_cast<int64_t>(collision.multiplicity())};
+    registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
+    registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
+    processCollision<kReco>(collision, tracks, xaxis);
+  }
+  PROCESS_SWITCH(FlowGfwV02, processDerivedCorrected, "Process GFW derived data with JWeights acceptance and efficiency corrections", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
