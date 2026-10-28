@@ -1209,6 +1209,19 @@ struct Derivedcascadeanalysis {
       }
     });
   }
+  void fillHistOccupancyCheckMC(double pt, double mass, float occup, float centrality, bool isPos)
+  {
+    static_for<0, 9>([&](auto i) {
+      constexpr int In = i.value;
+      if (centrality < CentralityIntervals[In + 1] && centrality > CentralityIntervals[In]) {
+        if (isPos) {
+          histos.fill(HIST("InvMassAfterSelCent") + HIST(CentIndex[In]) + HIST("/hPositiveCascadeMCTruth"), pt, mass, occup);
+        } else {
+          histos.fill(HIST("InvMassAfterSelCent") + HIST(CentIndex[In]) + HIST("/hNegativeCascadeMCTruth"), pt, mass, occup);
+        }
+      }
+    });
+  }
   void fillHistPtDepSelectionStudy(double pt, double mass, double sel, uint64_t selectionCheckMask, bool isPos)
   {
     static_for<0, 11>([&](auto i) {
@@ -1625,6 +1638,9 @@ struct Derivedcascadeanalysis {
 
       if (qaFlags.doOccupancyCheck) {
         fillHistOccupancyCheck(recoPt, invmass, occupancy, centrality, isPositive);
+        if (isTrueMCCascadeDecay) {
+          fillHistOccupancyCheckMC(ptmc, invmass, occupancy, centrality, isPositive);
+        }
       }
       if (isPositive) {
         histos.fill(HIST("InvMassAfterSel/hPositiveCascade"), recoPt, invmass, centrality);
