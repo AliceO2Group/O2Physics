@@ -154,7 +154,7 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<float> confInvMassLowLimitPhi{"confInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
   Configurable<float> confInvMassUpLimitPhi{"confInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
   Configurable<bool> confFillMinvBackground{"confFillMinvBackground", false, "Fill background histograms for Phi invariant mass."};
-  
+
   /// Partitions for the Phi meson (particle 2)
   Partition<FilteredFemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi)) &&
                                                    (aod::femtouniverseparticle::pt > confPhiPtLow) &&
