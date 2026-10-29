@@ -1471,6 +1471,8 @@ struct AnalysisSameEventPairing {
   bool fEnableBarrelMuonHistos = false;
   bool fEnableBarrelMuonMixingHistos = false;
 
+  bool fSplitCheckEnabled = false;
+
   o2::framework::NoBinningPolicy<o2::aod::dqanalysisflags::MixingHash> hashBin;
 
   o2::framework::Preslice<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter>> trackAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
@@ -1817,13 +1819,15 @@ struct AnalysisSameEventPairing {
       }
     }
 
+    o2::common::core::getTaskOptionValue<bool>(context, "analysis-event-selection", "cfgCheckSplitCollisions", fSplitCheckEnabled, false);
+
     if (fConfigQA) {
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(true);
       fHistMan->SetDefaultVarNames(dqtablereader_helpers::varNames(), dqtablereader_helpers::varUnits());
       VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
-      if (fConfigCuts.event.value) {
-        DefineHistograms(fHistMan, "EventafterSplitCollisionRemoval", fConfigAddEventHistogram.value.data()); // define event histograms after removing collision splitting candidates
+      if (fConfigCuts.event.value && fSplitCheckEnabled) {
+        DefineHistograms(fHistMan, "Event_AfterSplitVeto", fConfigAddEventHistogram.value.data()); // define event histograms after removing collision splitting candidates
         o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONEventHistograms.value.c_str());
       }
       DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data()); // define all histograms
@@ -2007,8 +2011,8 @@ struct AnalysisSameEventPairing {
       VarManager::FillEvent<TEventFillMap>(event, dqtablereader_helpers::varValues());
 
       // fill the event histograms
-      if (fConfigQA && fConfigCuts.event) {
-        fHistMan->FillHistClass("EventafterSplitCollisionRemoval", dqtablereader_helpers::varValues());
+      if (fConfigQA && fConfigCuts.event && fSplitCheckEnabled) {
+        fHistMan->FillHistClass("Event_AfterSplitVeto", dqtablereader_helpers::varValues());
       }
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
@@ -2563,20 +2567,6 @@ struct AnalysisSameEventPairing {
                   }
                 }
               }
-              if (fConfigTRPairs) {
-                // mixing event track should be rotated, so second parameter
-                if (fConfigNRotations.value != 1 && fConfigNRotations.value != 3) {
-                  LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
-                }
-                for (int irot = 1; irot <= fConfigNRotations.value; ++irot) {
-                  VarManager::FillPairRotation_ME(t2, t1, irot);
-                  for (int icut = 0; icut < ncuts; icut++) {
-                    if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                      fHistMan->FillHistClass(Form("PairsBarrelTR_MEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-                    }
-                  }
-                }
-              }
             }
             // run ++ pairing
             for (auto const& t2 : poolEvent.tracks1) {
@@ -2608,19 +2598,6 @@ struct AnalysisSameEventPairing {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
                   if (fConfigQA) {
                     fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-                  }
-                }
-              }
-              if (fConfigTRPairs) {
-                if (fConfigNRotations.value != 1 && fConfigNRotations.value != 3) {
-                  LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
-                }
-                for (int irot = 1; irot <= fConfigNRotations.value; ++irot) {
-                  VarManager::FillPairRotation_ME(t2, t1, irot);
-                  for (int icut = 0; icut < ncuts; icut++) {
-                    if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                      fHistMan->FillHistClass(Form("PairsBarrelTR_MEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-                    }
                   }
                 }
               }
@@ -2903,6 +2880,11 @@ struct AnalysisSameEventPairing {
 
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, dqtablereader_helpers::varValues());
+
+      // fill the event histograms
+      if (fConfigQA && fConfigCuts.event && fSplitCheckEnabled) {
+        fHistMan->FillHistClass("Event_AfterSplitVeto", dqtablereader_helpers::varValues());
+      }
 
       auto groupedAssocs1 = assocs1.sliceBy(preslice1, event.globalIndex());
       if (groupedAssocs1.size() == 0) {
