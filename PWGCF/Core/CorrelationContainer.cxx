@@ -29,9 +29,6 @@
 #include <TH3D.h>
 #include <THn.h>
 #include <THnSparse.h>
-#include <TList.h>
-#include <TMath.h>
-#include <THn.h>
 #include <TIterator.h>
 #include <TList.h>
 #include <TMath.h>
