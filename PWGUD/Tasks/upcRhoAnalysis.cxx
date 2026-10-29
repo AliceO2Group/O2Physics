@@ -197,7 +197,7 @@ DECLARE_SOA_COLUMN(SubleadingRecoTofHit, subleadingRecoTofHit, int);
 } // namespace resolution_tree
 DECLARE_SOA_TABLE(ResolutionTree, "AOD", "RESOLUTIONTREE",
                   resolution_tree::GenGlobalBC, resolution_tree::GenLocalBC,
-                  resolution_tree::RecoRunNumber, 
+                  resolution_tree::RecoRunNumber,
                   resolution_tree::RecoGlobalBC, resolution_tree::RecoLocalBC,
                   resolution_tree::GenPosX, resolution_tree::GenPosY, resolution_tree::GenPosZ,
                   resolution_tree::RecoPosX, resolution_tree::RecoPosY, resolution_tree::RecoPosZ,
@@ -216,7 +216,7 @@ struct UpcRhoAnalysis {
 
   SGSelector sgSelector;
 
-  const float pcEtaCut = 0.9; // physics coordination recommendation
+  const float pcEtaCut = 0.9;   // physics coordination recommendation
   const int nExpectedPions = 2; // only study dipion final states
   const std::vector<int> runNumbers = {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047, 545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295, 545296, 545312};
   AxisSpec runNumberAxis = {static_cast<int>(runNumbers.size()), 0.5, static_cast<double>(runNumbers.size()) + 0.5, "run number"};
@@ -328,13 +328,9 @@ struct UpcRhoAnalysis {
         rQC.get<TH2>(HIST("QC/collisions/hSelectionCounterPerRun"))->GetYaxis()->SetBinLabel(i + 1, std::to_string(runNumbers[i]).c_str());
       // tracks
       rQC.add("QC/tracks/all/hTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {100, 0.0, 1.0}, {180, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaEl", ";TPC #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaEl", ";TPC #it{n#sigma}(e);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {100, 0.0, 1.0}, {180, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaKa", ";TPC #it{n#sigma}(K);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaKa", ";TPC #it{n#sigma}(K);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {100, 0.0, 1.0}, {180, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaPr", ";TPC #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPr", ";TPC #it{n#sigma}(p);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {100, 0.0, 1.0}, {180, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaMu", ";TPC #it{n#sigma}(#mu);counts", kTH1D, {nSigmaAxis});
       rQC.add("QC/tracks/all/hDcaXYZ", ";track #it{DCA}_{z} (cm);track #it{DCA}_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {400, -2.0, 2.0}});
       rQC.add("QC/tracks/all/hItsNCls", ";ITS #it{N}_{cls};counts", kTH1D, {{9, -0.5, 8.5}});
@@ -536,13 +532,9 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hEta"), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPhi"), phi(track.px(), track.py()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPi"), track.tpcNSigmaPi());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPi"), track.tpcNSigmaPi(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaEl"), track.tpcNSigmaEl());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaEl"), track.tpcNSigmaEl(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaKa"), track.tpcNSigmaKa());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaKa"), track.tpcNSigmaKa(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPr"), track.tpcNSigmaPr());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPr"), track.tpcNSigmaPr(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaMu"), track.tpcNSigmaMu());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hDcaXYZ"), track.dcaZ(), track.dcaXY());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsNCls"), track.itsNCls());
@@ -897,7 +889,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/collisions/hNumContribVsPVTracks"), nPVTracks, collision.numContrib());
     rQC.fill(HIST("QC/collisions/hLocalBC"), collision.globalBC() % o2::constants::lhc::LHCMaxBunches);
 
-    fillCollisionQcHistos<0>(collision, runIndex);           // fill QC histograms before cuts
+    fillCollisionQcHistos<0>(collision, runIndex); // fill QC histograms before cuts
     if (!collisionPassesCuts(collision, runIndex)) // apply collision cuts
       return;
 
@@ -1298,7 +1290,7 @@ struct UpcRhoAnalysis {
     auto subleadingRecoPion = (leadingRecoPion == recoTracks[0]) ? recoTracks[1] : recoTracks[0];
 
     resolutionTree(mcCollision.globalBC(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
-                   collision.runNumber(), 
+                   collision.runNumber(),
                    collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
                    mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                    collision.posX(), collision.posY(), collision.posZ(),
@@ -1343,7 +1335,7 @@ struct UpcRhoAnalysis {
     auto subleadingRecoPion = (leadingRecoPion == recoTracks[0]) ? recoTracks[1] : recoTracks[0];
 
     resolutionTree(mcCollision.globalBC(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
-                   collision.runNumber(), 
+                   collision.runNumber(),
                    collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
                    mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                    collision.posX(), collision.posY(), collision.posZ(),
