@@ -98,6 +98,7 @@ struct MeanPtFlucId {
   Configurable<float> cfgP1corr{"cfgP1corr", 0.0001, "p_{1} for corrected N_{TPC} "};
   Configurable<float> cfgP2corr{"cfgP2corr", 0.0001, "p_{2} for corrected N_{TPC} "};
   Configurable<bool> cfgSel8{"cfgSel8", true, "Sel8 trigger"};
+  Configurable<bool> cfgCentFT0C{"cfgCentFT0C", false, "Use FT0C for centrality instead of FT0M"};
   Configurable<bool> cfgNoSameBunchPileup{"cfgNoSameBunchPileup", true, "kNoSameBunchPileup"};
   Configurable<bool> cfgIsVertexITSTPC{"cfgIsVertexITSTPC", true, "kIsVertexITSTPC"};
   Configurable<bool> cfgLightIonCuts{"cfgLightIonCuts", false, "Light Ion Cuts"};
@@ -599,8 +600,11 @@ struct MeanPtFlucId {
   template <typename T>
   bool selRun3Col(T const& col)
   {
-
-    centFT0M = col.centFT0M();
+    if (cfgCentFT0C) {
+      centFT0M = col.centFT0C();
+    } else {
+      centFT0M = col.centFT0M();
+    }
     nTPC = col.multNTracksHasTPC();
     nFT0M = col.multFT0M();
     hist.fill(HIST("QA/after/h_counts_evSelCuts"), kBeforeSelCol);
@@ -1447,8 +1451,8 @@ struct MeanPtFlucId {
                                 aod::pidTOFFullPi, aod::pidTPCFullPi, aod::pidTOFFullPr, aod::pidTPCFullPr,
                                 aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullEl, aod::pidTPCFullEl,
                                 aod::pidTOFbeta, aod::pidTOFmass>;
-  using MyRun3Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Ms>;
-  using MyRun3MCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Ms, aod::McCollisionLabels>;
+  using MyRun3Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using MyRun3MCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Ms, aod::CentFT0Cs, aod::McCollisionLabels>;
   using MyMCTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA,
                                aod::pidTOFFullPi, aod::pidTPCFullPi, aod::pidTOFFullPr, aod::pidTPCFullPr,
                                aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullEl, aod::pidTPCFullEl,
