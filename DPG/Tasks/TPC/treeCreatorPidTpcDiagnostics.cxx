@@ -223,7 +223,8 @@ struct TreeCreatorPidTpcDiagnostics {
       isFirstCollision = false;
       const float ft0Occ = collision.ft0cOccupancyInTimeRange();
       const float multTPC = collision.multTPC() / MultiplicityNorm;
-      const auto hadronicRate = !irSource.empty() ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo : 0.;
+      const int runnumber = bc.runNumber();
+      const auto hadronicRate = !irSource.empty() ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo : 0.;
 
       const auto tracksFromCollision = tracks.sliceBy(perCollisionTracks, static_cast<int>(collision.globalIndex()));
 
@@ -279,7 +280,7 @@ struct TreeCreatorPidTpcDiagnostics {
           nSigmaTof = o2::aod::pidutils::tofNSigma<ParticleId>(track);
         }
 
-        rowPidTpcDiagnostics(isGoodRctEvent, ParticleId, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
+        rowPidTpcDiagnostics(isGoodRctEvent, ParticleId, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, runnumber, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
       } // tracksFromCollision
     } // collisions
     ++mProcessedParticles;
