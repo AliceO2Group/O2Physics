@@ -554,7 +554,7 @@ class KinkBuilder
       mProduceSigmaPlus = utils::enableTable("FSigmaPlus_001", table.produceSigmaPlus.value, initContext);
       mProduceLiteSigmaPlus = utils::enableTable("FLiteSigmaPlus_001", table.produceLiteSigmaPlus.value, initContext);
       mProduceSigmaPlusMasks = utils::enableTable("FSigmaPlusMasks_001", table.produceSigmaPlusMasks.value, initContext);
-      mProduceSigmaPlusExtras = utils::enableTable("FSigmaPlusExtras_001", table.produceSigmaPlusExtras.value, initContext);
+      mProduceSigmaPlusExtras = utils::enableTable("FSigmaPlusExtras_002", table.produceSigmaPlusExtras.value, initContext);
 
       if (mProduceSigmaPlus && mProduceLiteSigmaPlus) {
         LOG(fatal) << "FSigmaPlus and FLiteSigmaPlus are mutually exclusive -- enable only one. "
@@ -615,7 +615,8 @@ class KinkBuilder
         fillSigma(collisionBuilder, kinkProducts, kink, daughterIndex);
       }
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
-        fillSigmaPlus(collisionBuilder, kinkProducts, kink, daughterIndex);
+        auto mother = kink.template trackMoth_as<T7>();
+        fillSigmaPlus(collisionBuilder, kinkProducts, kink, daughter, mother, daughterIndex);
       }
     }
   }
@@ -651,7 +652,8 @@ class KinkBuilder
         mcBuilder.template fillMcSigmaWithLabel<system>(daughter, mcParticles, mcCols, mcProducts);
       }
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
-        fillSigmaPlus(collisionBuilder, kinkProducts, kink, daughterIndex);
+        auto mother = kink.template trackMoth_as<T8>();
+        fillSigmaPlus(collisionBuilder, kinkProducts, kink, daughter, mother, daughterIndex);
         mcBuilder.template fillMcSigmaPlusWithLabel<system>(daughter, mcParticles, mcCols, mcProducts);
       }
     }
@@ -695,8 +697,8 @@ class KinkBuilder
     }
   }
 
-  template <typename T1, typename T2, typename T3>
-  void fillSigmaPlus(T1& collisionBuilder, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillSigmaPlus(T1& collisionBuilder, T2& kinkProducts, T3 const& kink, T4 const& daughter, T5 const& mother, int64_t daughterIndex)
   {
     // Mass is calculated from original momentum components stored in kink table
     float mass = kink.mSigmaPlus();
@@ -728,7 +730,13 @@ class KinkBuilder
         kink.xDecVtx(),
         kink.yDecVtx(),
         kink.zDecVtx(),
-        mKinkSelection.getKinkTransRadius());
+        mKinkSelection.getKinkTransRadius(),
+        kink.dcaKinkTopo(),
+        daughter.tpcNSigmaPr(),
+        daughter.tpcNSigmaPi(),
+        daughter.tofNSigmaPr(),
+        kink.ptMoth(),
+        mother.itsClusterSizes());
     }
   }
 
@@ -759,6 +767,7 @@ struct KinkBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFSigmaMasks> producedSigmaMasks;
   o2::framework::Produces<o2::aod::StoredFSigmaPlus> producedSigmaPluses;
   o2::framework::Produces<o2::aod::StoredFSigmaPlusMasks> producedSigmaPlusMasks;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlusExtras> producedSigmaPlusExtras;
 };
 
 class KinkBuilderDerivedToDerived
@@ -843,6 +852,7 @@ class KinkBuilderDerivedToDerived
                                             sigmaPlus.mass(),
                                             chaDaughterIndex);
       newSigmaPlusTable.producedSigmaPlusMasks(sigmaPlus.mask());
+      fillSigmaPlusExtensions(sigmaPlus, newSigmaPlusTable);
     }
   }
 
@@ -894,11 +904,32 @@ class KinkBuilderDerivedToDerived
                                             sigmaPlus.mass(),
                                             chaDaughterIndex);
       newSigmaPlusTable.producedSigmaPlusMasks(sigmaPlus.mask());
+      fillSigmaPlusExtensions(sigmaPlus, newSigmaPlusTable);
       mcBuilder.fillSigmaPlusWithLabel(sigmaPlus, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
     }
   }
 
  private:
+  template <typename T1, typename T2>
+  void fillSigmaPlusExtensions(T1 const& sigmaPlus, T2& newSigmaPlusTable)
+  {
+    if constexpr (requires(T1 t) { t.transRadius(); }) {
+      newSigmaPlusTable.producedSigmaPlusExtras(sigmaPlus.kinkAngle(),
+                                                sigmaPlus.dcaDaugToPV(),
+                                                sigmaPlus.dcaMothToPV(),
+                                                sigmaPlus.decayVtxX(),
+                                                sigmaPlus.decayVtxY(),
+                                                sigmaPlus.decayVtxZ(),
+                                                sigmaPlus.transRadius(),
+                                                sigmaPlus.dcaKinkTopo(),
+                                                sigmaPlus.dauTpcNSigmaPr(),
+                                                sigmaPlus.dauTpcNSigmaPi(),
+                                                sigmaPlus.dauTofNSigmaPr(),
+                                                sigmaPlus.ptOriginal(),
+                                                sigmaPlus.itsClusterSizes());
+    }
+  }
+
   int mLimitSigma = 0;
   int mLimitSigmaPlus = 0;
 };

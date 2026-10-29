@@ -26,6 +26,7 @@
 #include <climits>
 #include <cmath>
 #include <cstddef>
+#include <exception>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -122,10 +123,10 @@ class SelectionContainer
       mIsOptionalCut(isOptionalCut)
   {
     if (mSelectionValues.size() > sizeof(BitmaskType) * CHAR_BIT) {
-      LOG(fatal) << "Too many selections for single a observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
+      LOG(fatal) << "Selection '" << mSelectionName << "': too many selections for a single observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
     }
     if (isMinimalCut && isOptionalCut) {
-      LOG(fatal) << "A selection cannot be both minimal and optional";
+      LOG(fatal) << "Selection '" << mSelectionName << "': a selection cannot be both minimal and optional";
     }
     // values for selection are not necessarily ordered correctly
     sortSelections();
@@ -157,13 +158,13 @@ class SelectionContainer
       mIsOptionalCut(isOptionalCut)
   {
     if (mLimitType != limits::kInsideRange && mLimitType != limits::kOutsideRange) {
-      LOG(fatal) << "Range-string selections only support kInsideRange or kOutsideRange";
+      LOG(fatal) << "Selection '" << mSelectionName << "': range-string selections only support kInsideRange or kOutsideRange";
     }
     if (rangeStrings.size() > sizeof(BitmaskType) * CHAR_BIT) {
-      LOG(fatal) << "Too many selections for a single observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
+      LOG(fatal) << "Selection '" << mSelectionName << "': too many selections for a single observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
     }
     if (isMinimalCut && isOptionalCut) {
-      LOG(fatal) << "A selection cannot be both minimal and optional";
+      LOG(fatal) << "Selection '" << mSelectionName << "': a selection cannot be both minimal and optional";
     }
     for (auto const& rangeStr : rangeStrings) {
       T lower, upper;
@@ -196,7 +197,7 @@ class SelectionContainer
                               : (mSelectionRanges[i].first <= mSelectionRanges[i + 1].first &&
                                  mSelectionRanges[i].second >= mSelectionRanges[i + 1].second);
         if (!nested) {
-          LOG(fatal) << "Ranges for minimal cut " << selectionName
+          LOG(fatal) << "Selection '" << selectionName << "': ranges for minimal cut"
                      << " are not nested. Range [" << mSelectionRanges[i].first << ";" << mSelectionRanges[i].second
                      << "] is not " << (mLimitType == limits::kOutsideRange ? "contained in" : "containing")
                      << " [" << mSelectionRanges[i + 1].first << ";" << mSelectionRanges[i + 1].second << "]";
@@ -229,10 +230,10 @@ class SelectionContainer
       mIsOptionalCut(isOptionalCut)
   {
     if (functions.size() > sizeof(BitmaskType) * CHAR_BIT) {
-      LOG(fatal) << "Too many selections for single a observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
+      LOG(fatal) << "Selection '" << mSelectionName << "': too many selections for a single observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
     }
     if (isMinimalCut && isOptionalCut) {
-      LOG(fatal) << "A selection cannot be both minimal and optional";
+      LOG(fatal) << "Selection '" << mSelectionName << "': a selection cannot be both minimal and optional";
     }
     for (std::size_t i = 0; i < functions.size(); i++) {
       mSelectionFunctions.emplace_back((mSelectionName + std::to_string(i)).c_str(), functions.at(i).c_str(), lowerLimit, upperLimit);
@@ -255,7 +256,7 @@ class SelectionContainer
     // note: threshold values may be reordered by sortSelections() or sortFunctions(),
     // so comments must be provided in the already-sorted order
     if (comments.size() != getNSelections()) {
-      LOG(fatal) << "Number of comments and number of selections are inconsistent";
+      LOG(fatal) << "Selection '" << mSelectionName << "': number of comments and number of selections are inconsistent";
     }
     mComments = comments;
   }
@@ -382,7 +383,7 @@ class SelectionContainer
   void evaluate(std::vector<T> const& values)
   {
     if (values.size() != mSelectionValues.size()) {
-      LOG(fatal) << "Wrong number of values have been passed";
+      LOG(fatal) << "Selection '" << mSelectionName << "': wrong number of values have been passed";
     }
     // reset the bitmask before evaluating
     mBitmask.reset();
@@ -462,7 +463,7 @@ class SelectionContainer
   T getLoosestSelection() const
   {
     if (mSelectionValues.empty()) {
-      LOG(fatal) << "No selections configured";
+      LOG(fatal) << "Selection '" << mSelectionName << "': no selections configured";
     }
     return mSelectionValues.at(0);
   }
@@ -605,7 +606,7 @@ class SelectionContainer
   [[nodiscard]] int getBitPosition(int selectionIndex) const
   {
     if (selectionIndex == 0 && mSkipMostPermissiveBit) {
-      LOG(fatal) << "Trying to accessed the bit position of a skipped selection. Breaking...";
+      LOG(fatal) << "Selection '" << mSelectionName << "': trying to access the bit position of a skipped selection. Breaking...";
       return -1;
     }
     if (mSkipMostPermissiveBit) {
@@ -706,7 +707,10 @@ class SelectionContainer
   {
     auto pos = rangeStr.find(';');
     if (pos == std::string::npos) {
-      LOG(fatal) << "Range string '" << rangeStr << "' is missing ';' separator. Expected format: 'lower;upper'";
+      LOG(fatal) << "Selection '" << mSelectionName << "': range string '" << rangeStr << "' is missing ';' separator. Expected format: 'lower;upper'";
+    }
+    if (rangeStr.find(';', pos + 1) != std::string::npos) {
+      LOG(fatal) << "Selection '" << mSelectionName << "': range string '" << rangeStr << "' has more than one ';' separator. Expected format: 'lower;upper'";
     }
     std::string lowerStr = rangeStr.substr(0, pos);
     std::string upperStr = rangeStr.substr(pos + 1);
@@ -723,12 +727,34 @@ class SelectionContainer
       return;
     }
 
-    lower = lowerStr.empty() ? -std::numeric_limits<T>::max() : static_cast<T>(std::stod(lowerStr));
-    upper = upperStr.empty() ? std::numeric_limits<T>::max() : static_cast<T>(std::stod(upperStr));
+    lower = lowerStr.empty() ? -std::numeric_limits<T>::max() : parseBound(rangeStr, lowerStr);
+    upper = upperStr.empty() ? std::numeric_limits<T>::max() : parseBound(rangeStr, upperStr);
 
     if (lower >= upper) {
-      LOG(fatal) << "Range string '" << rangeStr << "' has lower bound >= upper bound";
+      LOG(fatal) << "Selection '" << mSelectionName << "': range string '" << rangeStr << "' has lower bound >= upper bound";
     }
+  }
+
+  /// \brief Parse a single range bound and make sure the whole string was consumed, so that
+  ///        malformed input such as "3;5" (extra ';') or "-3,5" (comma used as decimal
+  ///        separator) is rejected instead of silently truncated by std::stod (which happily
+  ///        parses just the numeric prefix "3" or "-3" and ignores the rest).
+  /// \param rangeStr Full "lower;upper" string, only used for the error message.
+  /// \param boundStr The individual bound substring (lower or upper) to parse.
+  T parseBound(std::string const& rangeStr, std::string const& boundStr) const
+  {
+    std::size_t idx = 0;
+    double value = 0.;
+    try {
+      value = std::stod(boundStr, &idx);
+    } catch (std::exception const& e) {
+      LOG(fatal) << "Selection '" << mSelectionName << "': range string '" << rangeStr << "' contains bound '" << boundStr << "' that is not a valid number (" << e.what() << ")";
+    }
+    if (idx != boundStr.size()) {
+      LOG(fatal) << "Selection '" << mSelectionName << "': range string '" << rangeStr << "' contains bound '" << boundStr
+                 << "' with trailing characters ('" << boundStr.substr(idx) << "') that could not be parsed";
+    }
+    return static_cast<T>(value);
   }
 
   std::string mSelectionName;

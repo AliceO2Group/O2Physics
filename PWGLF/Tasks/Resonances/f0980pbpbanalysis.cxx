@@ -17,6 +17,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
@@ -38,6 +39,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -68,8 +70,9 @@ struct F0980pbpbanalysis {
     {},
     OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
+  o2::aod::ITSResponse itsResponse;
 
   Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
@@ -130,6 +133,8 @@ struct F0980pbpbanalysis {
     Configurable<double> cfgPIDMaxTPCnSigmaPion{"cfgPIDMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
     Configurable<double> cfgPIDMaxTPCnSigmaPionS{"cfgPIDMaxTPCnSigmaPionS", 3.0, "TPC nSigma cut for Pion as a standalone"};
     Configurable<double> cfgPIDMaxTiednSigmaPion{"cfgPIDMaxTiednSigmaPion", 3.0, "Combined nSigma cut for Pion"};
+    Configurable<bool> cfgPIDITSFlag{"cfgPIDITSFlag", true, "PID ITS flag"};
+    Configurable<double> cfgPIDMaxITSnSigmaPion{"cfgPIDMaxITSnSigmaPion", 3.0, "ITS nSigma selection"};
   } PIDConfig;
 
   // Flow Configurables
@@ -198,27 +203,27 @@ struct F0980pbpbanalysis {
   int nmode = FlowConfig.cfgQvecNMods;
   static constexpr double QvecAmpMin = 1e-4;
 
-  int detId;
-  int refAId;
-  int refBId;
+  int detId = 0;
+  int refAId = 4;
+  int refBId = 5;
 
-  int qVecDetInd;
-  int qVecRefAInd;
-  int qVecRefBInd;
+  int qVecDetInd = 0;
+  int qVecRefAInd = 0;
+  int qVecRefBInd = 0;
 
-  double eventPlaneDet;
-  double eventPlaneRefA;
-  double eventPlaneRefB;
+  double eventPlaneDet = 0.;
+  double eventPlaneRefA = 0.;
+  double eventPlaneRefB = 0.;
 
-  float centrality;
+  float centrality = 1.;
 
-  double angle;
-  double relPhi;
-  double relPhiRot;
-  double relPhiMix;
+  double angle = -1.;
+  double relPhi = -1.;
+  double relPhiRot = -1.;
+  double relPhiMix = -1.;
 
   // double massPi = o2::constants::physics::MassPionCharged;
-  double massPtl;
+  double massPtl = 0.;
 
   int nTotalEvents = 0;
 
@@ -231,6 +236,7 @@ struct F0980pbpbanalysis {
     PIDRun3 = 0,
     PIDRun2 = 1,
     PIDTest = 2,
+    PIDAddITS = 3,
   };
 
   enum PtlList {
@@ -262,19 +268,23 @@ struct F0980pbpbanalysis {
   {
     if (name.value == "FT0C") {
       return 0;
-    } else if (name.value == "FT0A") {
-      return 1;
-    } else if (name.value == "FT0M") {
-      return 2;
-    } else if (name.value == "FV0A") {
-      return 3;
-    } else if (name.value == "TPCpos") {
-      return 4;
-    } else if (name.value == "TPCneg") {
-      return 5;
-    } else {
-      return 0;
     }
+    if (name.value == "FT0A") {
+      return 1;
+    }
+    if (name.value == "FT0M") {
+      return 2;
+    }
+    if (name.value == "FV0A") {
+      return 3;
+    }
+    if (name.value == "TPCpos") {
+      return 4;
+    }
+    if (name.value == "TPCneg") {
+      return 5;
+    }
+    return 0;
   }
 
   template <typename objType>
@@ -372,45 +382,45 @@ struct F0980pbpbanalysis {
     if (std::abs(collision.posZ()) > EventConfig.cfgEventCutVertex) {
       return 0;
     }
-    if (QAConfig.cfgQAEventFlowCut && QA)
+    if (QAConfig.cfgQAEventFlowCut && QA) {
       histos.fill(HIST("EventQA/hnEvents"), 1); // Vertex cut
-
+    }
     if (!collision.sel8()) {
       return 0;
     }
-    if (QAConfig.cfgQAEventFlowCut && QA)
+    if (QAConfig.cfgQAEventFlowCut && QA) {
       histos.fill(HIST("EventQA/hnEvents"), 2); // sel8 cut
-
+    }
     if (EventConfig.cfgEventGoodZvtxSel && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return 0;
     }
-    if (QAConfig.cfgQAEventFlowCut && QA)
+    if (QAConfig.cfgQAEventFlowCut && QA) {
       histos.fill(HIST("EventQA/hnEvents"), 3); // Good Zvtx cut
-
+    }
     if (EventConfig.cfgEventNSamePileupSel && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    if (QAConfig.cfgQAEventFlowCut && QA)
+    if (QAConfig.cfgQAEventFlowCut && QA) {
       histos.fill(HIST("EventQA/hnEvents"), 4); // Same bunch pileup cut
-
+    }
     if (EventConfig.cfgEventNCollinTRSel && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return 0;
     }
-    if (QAConfig.cfgQAEventFlowCut && QA)
+    if (QAConfig.cfgQAEventFlowCut && QA) {
       histos.fill(HIST("EventQA/hnEvents"), 5); // Collision time range standard cut
-
+    }
     if (EventConfig.cfgEventQvecSel && (collision.qvecAmp()[detId] < QvecAmpMin || collision.qvecAmp()[refAId] < QvecAmpMin || collision.qvecAmp()[refBId] < QvecAmpMin)) {
       return 0;
     }
-    if (QAConfig.cfgQAEventFlowCut && QA)
+    if (QAConfig.cfgQAEventFlowCut && QA) {
       histos.fill(HIST("EventQA/hnEvents"), 6); // Qvector cut
-
+    }
     if (EventConfig.cfgEventOccupancySel && (collision.trackOccupancyInTimeRange() > EventConfig.cfgEventOccupancyMax || collision.trackOccupancyInTimeRange() < EventConfig.cfgEventOccupancyMin)) {
       return 0;
     }
-    if (QAConfig.cfgQAEventFlowCut && QA)
+    if (QAConfig.cfgQAEventFlowCut && QA) {
       histos.fill(HIST("EventQA/hnEvents"), 7); // Occupancy cut
-
+    }
     if (EventConfig.cfgEventCentMax < centrality) {
       return 0;
     }
@@ -423,9 +433,9 @@ struct F0980pbpbanalysis {
           return 0;
         }
     */
-    if (QAConfig.cfgQAEventFlowCut && QA)
+    if (QAConfig.cfgQAEventFlowCut && QA) {
       histos.fill(HIST("EventQA/hnEvents"), 8); // Centrality cut
-
+    }
     if (EventConfig.cfgEventPVSel && std::abs(collision.posZ()) > EventConfig.cfgEventPV) {
       return 0;
     }
@@ -440,27 +450,31 @@ struct F0980pbpbanalysis {
   template <typename TrackType>
   bool trackSelected(const TrackType& track, const bool QA)
   {
-    if (QAConfig.cfgQATrackCut && QA)
+    if (QAConfig.cfgQATrackCut && QA) {
       fillQA(false, track, 3);
-    if (QAConfig.cfgQATrackFlowCut && QA)
+    }
+    if (QAConfig.cfgQATrackFlowCut && QA) {
       histos.fill(HIST("TrackQA/hnTracks"), 0); // All passed
     //
     // Kinematic
+    }
     if (std::abs(track.pt()) < TrackConfig.cfgTrackPtMin) {
       return 0;
     }
     if (std::abs(track.eta()) > TrackConfig.cfgTrackEtaMax) {
       return 0;
     }
-    if (QAConfig.cfgQATrackFlowCut && QA)
+    if (QAConfig.cfgQATrackFlowCut && QA) {
       histos.fill(HIST("TrackQA/hnTracks"), 1); // Kinematic
     // Primary Vertex(PV) Contributing to the PV fit
+    }
     if (TrackConfig.cfgTrackIsPVContributor && !track.isPVContributor()) {
       return 0;
     }
-    if (QAConfig.cfgQATrackFlowCut && QA)
+    if (QAConfig.cfgQATrackFlowCut && QA) {
       histos.fill(HIST("TrackQA/hnTracks"), 2); // PV Contributor
     // Global Track without DCA
+    }
     if (TrackConfig.cfgTrackIsGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
       return 0;
     }
@@ -476,9 +490,10 @@ struct F0980pbpbanalysis {
     if (TrackConfig.cfgTrackITSChi2 > 0 && track.itsChi2NCl() > TrackConfig.cfgTrackITSChi2) {
       return 0;
     }
-    if (QAConfig.cfgQATrackFlowCut && QA)
+    if (QAConfig.cfgQATrackFlowCut && QA) {
       histos.fill(HIST("TrackQA/hnTracks"), 4); // GlobalWoDCATrack
     // DCA cuts
+    }
     if (TrackConfig.cfgTrackDCArDepPTSel) {
       if (std::abs(track.dcaXY()) > (TrackConfig.cfgTrackDCArDepPTP0 + (TrackConfig.cfgTrackDCArDepPTExp / track.pt()))) {
         return 0;
@@ -571,6 +586,16 @@ struct F0980pbpbanalysis {
           return 0;
         }
       }
+    } else if (cfgListPID == PIDList::PIDAddITS) {
+      if (!track.hasTOF()) {
+        return 0;
+      }
+      if ((getTpcNSigma(track) * getTpcNSigma(track) + getTofNSigma(track) * getTofNSigma(track)) > (PIDConfig.cfgPIDMaxTiednSigmaPion * PIDConfig.cfgPIDMaxTiednSigmaPion)) {
+        return 0;
+      }
+      if (!PIDConfig.cfgPIDITSFlag || std::abs(itsResponse.nSigmaITS<o2::track::PID::Pion>(track)) > PIDConfig.cfgPIDMaxITSnSigmaPion) {
+        return 0;
+      }
     }
     if (QAConfig.cfgQATrackFlowCut && QA) {
       histos.fill(HIST("TrackQA/hnTracks"), 8); // PID
@@ -582,15 +607,22 @@ struct F0980pbpbanalysis {
   template <typename TrackType1, typename TrackType2>
   bool pairAngleSelection(const TrackType1& track1, const TrackType2& track2)
   {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
+    double pt1 = 0.;
+    double pt2 = 0.;
+    double pz1 = 0.;
+    double pz2 = 0.;
+    double p1 = 0.;
+    double p2 = 0.;
+    double angle12 = 0.;
+
     pt1 = track1.pt();
     pt2 = track2.pt();
     pz1 = track1.pz();
     pz2 = track2.pz();
     p1 = track1.p();
     p2 = track2.p();
-    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (PhiTestConfig.cfgPhiDeepAngleSel && angle < PhiTestConfig.cfgPhiDeepAngle) {
+    angle12 = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    if (PhiTestConfig.cfgPhiDeepAngleSel && angle12 < PhiTestConfig.cfgPhiDeepAngle) {
       return 0;
     }
     return 1;
@@ -601,9 +633,8 @@ struct F0980pbpbanalysis {
   {
     if (cfgListPtl == PtlList::PtlPion) {
       return track.tpcNSigmaPi();
-    } else {
-      return track.tpcNSigmaKa();
     }
+    return track.tpcNSigmaKa();
   }
 
   template <typename TrackType>
@@ -611,9 +642,8 @@ struct F0980pbpbanalysis {
   {
     if (cfgListPtl == PtlList::PtlPion) {
       return track.tofNSigmaPi();
-    } else {
-      return track.tofNSigmaKa();
     }
+    return track.tofNSigmaKa();
   }
 
   template <bool IsMC, typename CollisionType, typename TracksType>
@@ -634,9 +664,9 @@ struct F0980pbpbanalysis {
       if (!trackSelected(trk1, true)) {
         continue;
       }
-      if (QAConfig.cfgQATrackCut)
+      if (QAConfig.cfgQATrackCut) {
         fillQA(true, trk1, 3);
-
+      }
       if (!selectionPID(trk1, true)) {
         continue;
       }
@@ -721,7 +751,7 @@ struct F0980pbpbanalysis {
       if (c1.bcId() == c2.bcId()) {
         continue;
       }
-      double eventPlaneDet = std::atan2(c1.qvecIm()[qVecDetInd], c1.qvecRe()[qVecDetInd]) / static_cast<float>(nmode);
+      eventPlaneDet = std::atan2(c1.qvecIm()[qVecDetInd], c1.qvecRe()[qVecDetInd]) / static_cast<float>(nmode);
 
       for (const auto& trk1 : t1) {
         if (!trackSelected(trk1, false)) {

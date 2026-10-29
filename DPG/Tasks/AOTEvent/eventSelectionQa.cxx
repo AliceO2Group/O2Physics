@@ -44,6 +44,7 @@
 #include <TMath.h>
 #include <TString.h>
 
+#include <TrackTools/TrackGeometry.h>
 #include <sys/types.h>
 
 #include <bitset>
@@ -73,6 +74,8 @@ struct EventSelectionQaTask {
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
   Configurable<bool> fillITSdeadStaveHists{"fillITSdeadStaveHists", 0, "0 - no, 1 - yes"};
   Configurable<bool> fillTPCnClsVsOccupancyHists{"fillTPCnClsVsOccupancyHists", 0, "0 - no, 1 - yes"};
+  Configurable<bool> useTestWithTrackTools{"useTestWithTrackTools", 0, "0 - no, 1 - yes"};                                           // experimental
+  Configurable<int> thresholdNrowsForTrackToolTest{"thresholdNrowsForTrackToolTest", 120, "threshold for Nrows for TrackTool test"}; // minimum number of TPC rows (experimental)
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -90,6 +93,8 @@ struct EventSelectionQaTask {
   std::string strLPMProductionTag = ""; // MC production tag to be retrieved from AO2D metadata
   std::string strPassName = "";         // RecoPassName (for data) or AnchorPassName (for MC) from metadata
   bool isMC = false;
+
+  o2::tpc::recohelpers::TPCSectorEdgeConfig tpcSectorEdgeConfig; // for special selection of tracks within TPC
 
   std::bitset<nBCsPerOrbit> bcPatternA;
   std::bitset<nBCsPerOrbit> bcPatternC;
@@ -120,6 +125,12 @@ struct EventSelectionQaTask {
     isMC = metadataInfo.isMC();
     strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
     strPassName = metadataInfo.get(isMC ? "AnchorPassName" : "RecoPassName");
+
+    // for special selection of tracks within TPC (Oct 2026)
+    tpcSectorEdgeConfig.guardLowerCm = 0.5f;
+    tpcSectorEdgeConfig.guardUpperCm = 0.5f;
+    tpcSectorEdgeConfig.zMaxCm = 250.f;
+    tpcSectorEdgeConfig.maxSnp = 0.9f;
 
     const AxisSpec axisMultV0M{1000, 0., 40000., "V0M multiplicity"};
     const AxisSpec axisMultV0A{1000, 0., isLowFlux ? 40000. : 200000., "V0A multiplicity"};
@@ -390,6 +401,11 @@ struct EventSelectionQaTask {
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_StandardDeltaTimeCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_GoodITSLayersAllCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_GoodITSLayersAllCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      // requested by TPC experts: check with tracks at given NrowsThreshold
+      if (useTestWithTrackTools) {
+        histos.add("occupancyQA/hNumTracksITS_isValidAtNrowsThreshold_EtaPtCuts_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+        histos.add("occupancyQA/hNumTracksPV_isValidAtNrowsThreshold_EtaPtSel8VxCuts_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      }
       // requested by TPC experts: nTPConly tracks vs occupancy
       histos.add("occupancyQA/hNumTracksTPConly_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksTPConlyNoITS_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
@@ -412,7 +428,7 @@ struct EventSelectionQaTask {
 
       histos.add("occupancyQA/dEdx_vs_centr_vs_occup_narrow_p_win", "dE/dx", kTH3F, {{20, 0, 4000, "n PV tracks"}, {60, 0, 15000, "occupancy"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
     }
-  }
+  } // end of init()
 
   void processRun2(
     ColEvSels const& cols,
@@ -1185,6 +1201,8 @@ struct EventSelectionQaTask {
 
       int nTracksITS = 0;
       int nTracksITSTPC = 0;
+      int nTracksITSValidAtNrowsThresholdAfterEtaPtCuts = 0;
+      int nContributorsAtNrowsThresholdAfterEtaPtSel8VxCuts = 0;
 
       bool isTVX = col.selection_bit(kIsTriggerTVX);
 
@@ -1202,11 +1220,33 @@ struct EventSelectionQaTask {
             nTPConlyNoITS++;
         }
 
+        // Oct 2026: test presence of track at 85 cm radius using new tools - https://github.com/AliceO2Group/AliceO2/tree/dev/Common/TrackTools
+        bool isTrackWithNrowsAvailable = false;
+        if (useTestWithTrackTools) {
+          const float bzKG = 5.f;
+          const float radiusOfInterest = 85.f; // cm
+          auto trackParLocal = o2::recohelpers::makeTrackParFromLocalParameters(
+            track.x(),
+            track.alpha(),
+            track.y(),
+            track.z(),
+            track.snp(),
+            track.tgl(),
+            track.signed1Pt());
+          auto trackAt85 = o2::recohelpers::getParametersAtRadiusH(trackParLocal, radiusOfInterest, bzKG);
+          auto l0 = o2::tpc::recohelpers::sectorEdgeStackLinear(trackParLocal, bzKG, tpcSectorEdgeConfig);
+
+          isTrackWithNrowsAvailable = (trackAt85.valid() && l0.nRowsAvailable > thresholdNrowsForTrackToolTest);
+        }
+
         if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2) {
           if (track.hasITS()) {
             nTracksITS++;
             if (track.hasTPC())
               nTracksITSTPC++;
+            if (useTestWithTrackTools && isTrackWithNrowsAvailable) {
+              nTracksITSValidAtNrowsThresholdAfterEtaPtCuts++;
+            }
           }
         }
 
@@ -1234,12 +1274,18 @@ struct EventSelectionQaTask {
               histos.fill(HIST("occupancyQA/tpcNCrossedRows_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsFindable() - tpcNClsFindableMinusCrossedRowsCorrected, occupancyByTracks);
             }
           } // end of hasTPC
-          if (col.sel8() && fabs(col.posZ()) < 10 && track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
-            nContributorsAfterEtaTPCCuts++;
-            // ROF border QA
-            histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), localBC, track.itsNCls());
-            histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_counter_ITSTPCtracks"), localBC);
-          }
+          if (col.sel8() && fabs(col.posZ()) < 10) {
+            if (track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
+              nContributorsAfterEtaTPCCuts++;
+              // ROF border QA
+              histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), localBC, track.itsNCls());
+              histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_counter_ITSTPCtracks"), localBC);
+            }
+
+            if (useTestWithTrackTools && isTrackWithNrowsAvailable) {
+              nContributorsAtNrowsThresholdAfterEtaPtSel8VxCuts++;
+            }
+          } // end of sel8 and vZ cuts
         }
         if (!track.hasTPC())
           histos.fill(HIST("hITStrackBcDiff"), trackBcDiff);
@@ -1268,6 +1314,12 @@ struct EventSelectionQaTask {
           histos.fill(HIST("occupancyQA/hNumTracksPVTPCLooseCuts_vs_V0A_vs_occupancy"), multV0A, nContributorsAfterEtaTPCLooseCuts, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksITS_vs_V0A_vs_occupancy"), multV0A, nTracksITS, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksITSTPC_vs_V0A_vs_occupancy"), multV0A, nTracksITSTPC, occupancyByTracks);
+
+          if (useTestWithTrackTools) {
+            histos.fill(HIST("occupancyQA/hNumTracksITS_isValidAtNrowsThreshold_EtaPtCuts_vs_V0A_vs_occupancy"), multV0A, nTracksITSValidAtNrowsThresholdAfterEtaPtCuts, occupancyByTracks);
+            histos.fill(HIST("occupancyQA/hNumTracksPV_isValidAtNrowsThreshold_EtaPtSel8VxCuts_vs_V0A_vs_occupancy"), multV0A, nContributorsAtNrowsThresholdAfterEtaPtSel8VxCuts, occupancyByTracks);
+          }
+
           if (col.selection_bit(kNoCollInTimeRangeNarrow)) {
             histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nPV, occupancyByTracks);
             histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);

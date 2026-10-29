@@ -55,6 +55,8 @@ struct SgDeuteronSpectra {
   Configurable<float> nsigmatpcPreselCut{"nsigmatpcPreselCut", 3.0, "nsigma TPC preselection cut for TOF analysis"};
   Configurable<float> occupancyCut{"occupancyCut", 1000, "Occupancy cut"};
   Configurable<float> vertexZCut{"vertexZCut", 10, "VertexZ cut"};
+  Configurable<float> maxTracks{"maxTracks", 100, "Maximum number of tracks in the event"};
+  Configurable<bool> useVtxFT0Cut{"useVtxFT0Cut", true, "Use zVtxFT0vPV cut in event selection"};
 
   // Configurable axis for histograms
   ConfigurableAxis ptAxis{"ptAxis", {200, 0.0, 10.0}, "p_{T}"};
@@ -70,6 +72,7 @@ struct SgDeuteronSpectra {
     const AxisSpec axistof{nSigmaAxis, "n#sigma_{TOF}"};
 
     // Collision histograms
+    registry.add("collisions/selectionCuts", "", {HistType::kTH1F, {{8, -0.5, 7.5}}});
     registry.add("collisions/VertexZ", "", {HistType::kTH1F, {{800, -20, 20}}});
     registry.add("collisions/GapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("collisions/TrueGapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{4, -1.5, 2.5}}});
@@ -101,13 +104,44 @@ struct SgDeuteronSpectra {
   void process(UDCollisionFull const& coll, UDTracksFull const& tracks)
   {
     registry.fill(HIST("collisions/VertexZ"), coll.posZ());
+    registry.fill(HIST("collisions/selectionCuts"), 0);
     // applying event cuts
+    if (!coll.tfb()) {
+      return;
+    }
+    registry.fill(HIST("collisions/selectionCuts"), 1);
+    if (!coll.itsROFb()) {
+      return;
+    }
+    registry.fill(HIST("collisions/selectionCuts"), 2);
+    if (!coll.sbp()) {
+      return;
+    }
+    registry.fill(HIST("collisions/selectionCuts"), 3);
+    if (useVtxFT0Cut) {
+      if (!coll.zVtxFT0vPV()) {
+        return;
+      }
+      registry.fill(HIST("collisions/selectionCuts"), 4);
+    } else {
+      registry.fill(HIST("collisions/selectionCuts"), 4);
+    }
+    if (!coll.vtxITSTPC()) {
+      return;
+    }
+    registry.fill(HIST("collisions/selectionCuts"), 5);
     if (std::abs(coll.posZ()) > vertexZCut) {
       return;
     }
+    registry.fill(HIST("collisions/selectionCuts"), 6);
     if (coll.occupancyInTime() > occupancyCut) {
       return;
     }
+    registry.fill(HIST("collisions/selectionCuts"), 7);
+    if (tracks.size() > maxTracks) {
+      return;
+    }
+    registry.fill(HIST("collisions/selectionCuts"), 8);
     // fill gapside
     registry.fill(HIST("collisions/GapSide"), coll.gapSide(), 1.);
     std::vector<float> fitCut = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};

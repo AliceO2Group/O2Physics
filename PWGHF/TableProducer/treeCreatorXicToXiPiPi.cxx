@@ -374,6 +374,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   hf_cand_mc_flag::OriginMcGen,
                   hf_cand_mc_flag::PdgBhadMotherPart,
                   full::Pt,
+                  full::M,
                   full::Eta,
                   full::Phi,
                   full::Y,
@@ -422,10 +423,10 @@ struct HfTreeCreatorXicToXiPiPi {
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
   Filter filterGenXicToXiPiPi = (nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) || nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) || fillGenInfoForAcceptance == true);
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != int8_t(0);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == int8_t(0);
-  Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != int8_t(0);
-  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == int8_t(0);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(0);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(0);
+  Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(0);
+  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(0);
 
   void init(InitContext const&)
   {
@@ -895,6 +896,7 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.originMcGen(),
           particle.pdgBhadMotherPart(),
           particle.pt(),
+          particle.massMcGen(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
@@ -967,6 +969,7 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.originMcGen(),
           particle.pdgBhadMotherPart(),
           particle.pt(),
+          particle.massMcGen(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
@@ -993,14 +996,14 @@ struct HfTreeCreatorXicToXiPiPi {
     rowCandidateLiteMl.reserve(candidates.size());
     if (fillOnlySignal) {
       for (const auto& candidate : candidates) {
-        if (candidate.flagMcMatchRec() == int8_t(0)) {
+        if (candidate.flagMcMatchRec() == static_cast<int8_t>(0)) {
           continue;
         }
         fillCandidateTable<true, false, true>(candidate);
       }
     } else if (fillOnlyBackground) {
       for (const auto& candidate : candidates) {
-        if (candidate.flagMcMatchRec() != int8_t(0)) {
+        if (candidate.flagMcMatchRec() != static_cast<int8_t>(0)) {
           continue;
         }
         float const pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
@@ -1032,6 +1035,7 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.originMcGen(),
           particle.pdgBhadMotherPart(),
           particle.pt(),
+          particle.massMcGen(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),

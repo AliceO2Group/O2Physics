@@ -195,7 +195,7 @@ struct Kstarpbpb {
     std::string prefix = "closure";
     Configurable<bool> injectPolarization{"injectPolarization", false, "Reweight the true K*/phi with W(cos theta*) so that the sample has rho00 = rho00Inj"};
     Configurable<float> rho00Inj{"rho00Inj", 1.0f / 3.0f, "Injected rho00, in [0,1] (1/3 = unpolarized)"};
-    Configurable<bool> useTrueEP{"useTrueEP", true, "Use the MC true event plane angle as Psi (false: Psi = 0, fixed axis as in processMC)"};
+    Configurable<bool> useTrueEP{"useTrueEP", true, "Use the MC true event plane angle as Psi (false: Psi = 0, fixed axis as in processMC with mcEffEP.psiSource = 0)"};
     Configurable<bool> splitSample{"splitSample", true, "Even MC events build Acc x Eff, odd MC events are the test sample (false: same events for both)"};
     Configurable<bool> fillRotBkg{"fillRotBkg", false, "Fill the rotated-pair background (weight 1), cross-check of the ME background"};
     Configurable<bool> genAcceptanceCut{"genAcceptanceCut", false, "Daughter pT/eta cut on the generated K*/phi (false: denominator is the full |y| < cut sample, so the correction is the full Acc x Eff in cos theta*)"};
@@ -203,6 +203,19 @@ struct Kstarpbpb {
     Configurable<bool> meRequireSingleReco{"meRequireSingleReco", true, "ME: both events must come from an MC collision with exactly one reco collision, as required in the SE (processMCClosure / processMCClosurePhi)"};
     ConfigurableAxis axisCosThetaStar{"axisCosThetaStar", {10, -1.0, 1.0}, "cos(#vartheta*)"};
   } closure;
+
+  // Psi of the EP-frame MC efficiency (processMC, processMCPhi). In data the axis follows Psi_FT0C, which is flat in the lab;
+  // with a fixed Psi = 0 the axis is fixed in the lab, so azimuthal holes of the detector enter Acc x Eff(cos theta*).
+  // psiSource = 1 follows the thesis (S. Kundu, App. B.10.4): Psi2 from the generated tracks in the forward EP-detector acceptance
+  // (V0C there, FT0C here), one Psi per MC event, for both the generated and the reconstructed K*/phi.
+  struct : ConfigurableGroup {
+    std::string prefix = "mcEffEP";
+    Configurable<int> psiSource{"psiSource", 1, "Psi of the EP-frame MC efficiency: 0 = fixed Psi = 0 (old: axis -y for K*, in-plane x for phi), 1 = Psi2 from generated charged primaries in [etaMin, etaMax] (thesis), 2 = MC true event plane (mcCollision.eventPlaneAngle())"};
+    Configurable<float> etaMin{"etaMin", -3.3f, "eta min of the generated-track Q2 vector (FT0C acceptance)"};
+    Configurable<float> etaMax{"etaMax", -2.1f, "eta max of the generated-track Q2 vector (FT0C acceptance)"};
+    Configurable<bool> fillPhiVMinusPsi{"fillPhiVMinusPsi", false, "Fill gen/rec Acc x Eff maps vs pT, cos theta* and phi_V - Psi (thesis Fig. B.69 / Table B.1 check)"};
+    ConfigurableAxis axisPhiVMinusPsi{"axisPhiVMinusPsi", {6, 0.0, o2::constants::math::PI}, "#varphi_{V} - #Psi"};
+  } mcEffEP;
   Configurable<float> cfgMinTrackPt{"cfgMinTrackPt", 0.15f,
                                     "Minimum track pT"};
 
@@ -321,6 +334,12 @@ struct Kstarpbpb {
       histos.add("hSparseKstarMCGenCosThetaStar_effy", "hSparseKstarMCGenCosThetaStar_effy", HistType::kTHnSparseD, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality});
       histos.add("hSparseKstarMCRecSA", "hSparseKstarMCRecSA", HistType::kTHnSparseD, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality});
       histos.add("hSparseKstarMCRecCosThetaStar_effy", "hSparseKstarMCRecCosThetaStar_effy", HistType::kTHnSparseD, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality});
+      histos.add("hMCEffPsi", "Psi of the MC efficiency;centrality (%);#Psi", kTH2F, {configThnAxisCentrality, {36, -o2::constants::math::PI, o2::constants::math::PI}});
+      if (mcEffEP.fillPhiVMinusPsi) {
+        const AxisSpec phiVMinusPsiAxis{mcEffEP.axisPhiVMinusPsi, "#varphi_{V} - #Psi"};
+        histos.add("hSparseKstarMCGenCosThetaStarPhiVPsi", "Generated K*: p_{T}, cos#theta*, #varphi_{V} - #Psi, centrality", HistType::kTHnSparseD, {configThnAxisPt, configThnAxisV2, phiVMinusPsiAxis, configThnAxisCentrality});
+        histos.add("hSparseKstarMCRecCosThetaStarPhiVPsi", "Reconstructed K*: p_{T}, cos#theta*, #varphi_{V} - #Psi, centrality", HistType::kTHnSparseD, {configThnAxisPt, configThnAxisV2, phiVMinusPsiAxis, configThnAxisCentrality});
+      }
     }
 
     if (doClosureTest) {
@@ -463,6 +482,12 @@ struct Kstarpbpb {
         histos.add("phi/hSparseV2MCGenCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
         histos.add("phi/hSparseV2MCRecSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
         histos.add("phi/hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hMCEffPsi", "Psi of the MC efficiency;centrality (%);#Psi", kTH2F, {thnAxisCentralityPhi, {36, -o2::constants::math::PI, o2::constants::math::PI}});
+        if (mcEffEP.fillPhiVMinusPsi) {
+          const AxisSpec phiVMinusPsiAxis{mcEffEP.axisPhiVMinusPsi, "#varphi_{V} - #Psi"};
+          histos.add("phi/hSparseV2MCGenCosThetaStarPhiVPsi", "Generated #phi: p_{T}, cos#theta*, #varphi_{V} - #Psi, centrality", HistType::kTHnSparseF, {thnAxisPtPhi, thnAxisCosThetaStarPhi, phiVMinusPsiAxis, thnAxisCentralityPhi});
+          histos.add("phi/hSparseV2MCRecCosThetaStarPhiVPsi", "Reconstructed #phi: p_{T}, cos#theta*, #varphi_{V} - #Psi, centrality", HistType::kTHnSparseF, {thnAxisPtPhi, thnAxisCosThetaStarPhi, phiVMinusPsiAxis, thnAxisCentralityPhi});
+        }
       }
     }
 
@@ -881,12 +906,45 @@ struct Kstarpbpb {
   }
 
   // phipbpb.cxx builds the EP-frame MC efficiency with the in-plane vector at Psi = 0 (x axis); kept for identical results
+  // with mcEffEP.psiSource = 0 only. With an event-by-event Psi the axis must be the plane normal, as in data (getSAAxis).
   ROOT::Math::XYZVector getSAAxisPhiMC(const ROOT::Math::PxPyPzMVector& mother, double psiSA)
   {
-    if (cfgSAFrame.value == kEventPlane) {
+    if (cfgSAFrame.value == kEventPlane && mcEffEP.psiSource == 0) {
       return {std::cos(2.0 * psiSA), std::sin(2.0 * psiSA), 0.};
     }
     return getSAAxis(mother, psiSA);
+  }
+
+  // Psi2 = atan2(Q2y, Q2x) / 2 from the generated charged physical primaries in [etaMin, etaMax] (thesis Eq. B.16, unit weights)
+  template <typename TParticles>
+  double getGenPsi2(TParticles const& particles)
+  {
+    double qx = 0., qy = 0.;
+    for (const auto& particle : particles) {
+      if (!particle.isPhysicalPrimary() || particle.eta() < mcEffEP.etaMin || particle.eta() > mcEffEP.etaMax) {
+        continue;
+      }
+      const int absPdg = std::abs(particle.pdgCode());
+      if (absPdg != PDG_t::kPiPlus && absPdg != PDG_t::kKPlus && absPdg != PDG_t::kProton && absPdg != PDG_t::kElectron && absPdg != PDG_t::kMuonMinus) {
+        continue;
+      }
+      qx += std::cos(2.0 * particle.phi());
+      qy += std::sin(2.0 * particle.phi());
+    }
+    return 0.5 * std::atan2(qy, qx);
+  }
+
+  // Psi of the EP-frame MC efficiency, one per MC event (see mcEffEP)
+  template <typename TMcCollision, typename TParticles>
+  double getMCEffPsi(TMcCollision const& mcCollision, TParticles const& particles)
+  {
+    if (mcEffEP.psiSource == 1) {
+      return getGenPsi2(particles);
+    }
+    if (mcEffEP.psiSource == 2) {
+      return mcCollision.eventPlaneAngle();
+    }
+    return 0.0;
   }
 
   template <typename T>
@@ -1258,7 +1316,7 @@ struct Kstarpbpb {
   }
   PROCESS_SWITCH(Kstarpbpb, processMixedEvent, "Process Mixed event", true);
 
-  void processMC(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMC(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     // scratch vectors: local to this call, never carry state across particles
     ROOT::Math::PxPyPzMVector kstarMother, kaonPlus, pionMinus;
@@ -1274,7 +1332,7 @@ struct Kstarpbpb {
       return;
     }
     for (const auto& RecCollision : RecCollisions) {
-      auto psiFT0C = 0.0;
+      auto psiFT0C = getMCEffPsi(TrueCollision, GenParticles); // one Psi per MC event (mcEffEP.psiSource; 0 = old fixed Psi = 0)
       histos.fill(HIST("hMC"), 3);
       if (!RecCollision.sel8()) {
         histos.fill(HIST("hMC"), 4);
@@ -1292,6 +1350,7 @@ struct Kstarpbpb {
       auto centrality = RecCollision.centFT0C();
       histos.fill(HIST("CentPercentileMCRecHist"), centrality);
       auto psiSA = getSAEventAngle(psiFT0C); // same angle for rec and gen of this event
+      histos.fill(HIST("hMCEffPsi"), centrality, psiSA);
       auto oldindex = -999;
       auto rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
@@ -1399,6 +1458,9 @@ struct Kstarpbpb {
 
                 histos.fill(HIST("hSparseKstarMCRecSA"), kstarMother.M(), kstarMother.Pt(), saRec, std::abs(kstarMother.Rapidity()), centrality);
                 histos.fill(HIST("hSparseKstarMCRecCosThetaStar_effy"), kstarMother.M(), kstarMother.Pt(), cosThetaStarRec, std::abs(kstarMother.Rapidity()), centrality);
+                if (mcEffEP.fillPhiVMinusPsi) {
+                  histos.fill(HIST("hSparseKstarMCRecCosThetaStarPhiVPsi"), kstarMother.Pt(), cosThetaStarRec, getPhiInRange(kstarMother.Phi() - psiSA), centrality);
+                }
                 if (doClosureTest) {
                   histos.fill(HIST("closure/KstarMCRecTrueCosThetaStar"), kstarMother.M(), kstarMother.Pt(), cosThetaStarRec, std::abs(kstarMother.Rapidity()), centrality);
                 }
@@ -1471,6 +1533,9 @@ struct Kstarpbpb {
 
             histos.fill(HIST("hSparseKstarMCGenSA"), kstarMother.M(), kstarMother.Pt(), saGen, std::abs(kstarMother.Rapidity()), centrality);
             histos.fill(HIST("hSparseKstarMCGenCosThetaStar_effy"), kstarMother.M(), kstarMother.Pt(), cosThetaStarGen, std::abs(kstarMother.Rapidity()), centrality);
+            if (mcEffEP.fillPhiVMinusPsi) {
+              histos.fill(HIST("hSparseKstarMCGenCosThetaStarPhiVPsi"), kstarMother.Pt(), cosThetaStarGen, getPhiInRange(kstarMother.Phi() - psiSA), centrality);
+            }
             if (doClosureTest) {
               histos.fill(HIST("closure/KstarMCGenCosThetaStar"), kstarMother.M(), kstarMother.Pt(), cosThetaStarGen, std::abs(kstarMother.Rapidity()), centrality);
             }
@@ -1826,7 +1891,7 @@ struct Kstarpbpb {
   }
   PROCESS_SWITCH(Kstarpbpb, processMEPhi, "Process mixed event phi(1020) spin alignment", false);
 
-  void processMCPhi(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMCPhi(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     histos.fill(HIST("phi/hMC"), 0);
     if (RecCollisions.size() == 0) {
@@ -1839,7 +1904,7 @@ struct Kstarpbpb {
     }
     ROOT::Math::PxPyPzMVector kaonPlusPhi, kaonMinusPhi, phiMother;
     for (const auto& RecCollision : RecCollisions) {
-      auto psiFT0C = 0.0;
+      auto psiFT0C = getMCEffPsi(TrueCollision, GenParticles); // one Psi per MC event (mcEffEP.psiSource; 0 = old fixed Psi = 0)
       histos.fill(HIST("phi/hMC"), 3);
       if (!RecCollision.sel8()) {
         histos.fill(HIST("phi/hMC"), 4);
@@ -1857,6 +1922,7 @@ struct Kstarpbpb {
       auto centrality = RecCollision.centFT0C();
       histos.fill(HIST("phi/CentPercentileMCRecHist"), centrality);
       auto psiSA = getSAEventAngle(psiFT0C); // same angle for rec and gen of this event
+      histos.fill(HIST("phi/hMCEffPsi"), centrality, psiSA);
       auto oldindex = -999;
       auto rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
@@ -1932,6 +1998,9 @@ struct Kstarpbpb {
               }
               auto [cosThetaStar, sa] = getSAValuesPhi(phiMother, kaonMinusPhi, getSAAxisPhiMC(phiMother, psiSA), psiSA);
               histos.fill(HIST("phi/hSparseV2MCRecCosThetaStar_effy"), phiMother.M(), phiMother.Pt(), cosThetaStar, std::abs(phiMother.Rapidity()), centrality);
+              if (mcEffEP.fillPhiVMinusPsi) {
+                histos.fill(HIST("phi/hSparseV2MCRecCosThetaStarPhiVPsi"), phiMother.Pt(), cosThetaStar, getPhiInRange(phiMother.Phi() - psiSA), centrality);
+              }
               if (doClosureTest) {
                 histos.fill(HIST("closure/PhiMCRecTrueCosThetaStar"), phiMother.M(), phiMother.Pt(), cosThetaStar, std::abs(phiMother.Rapidity()), centrality);
               }
@@ -1972,6 +2041,9 @@ struct Kstarpbpb {
           phiMother = kaonPlusPhi + kaonMinusPhi;
           auto [cosThetaStar, sa] = getSAValuesPhi(phiMother, kaonMinusPhi, getSAAxisPhiMC(phiMother, psiSA), psiSA);
           histos.fill(HIST("phi/hSparseV2MCGenCosThetaStar_effy"), phiMother.M(), phiMother.Pt(), cosThetaStar, std::abs(phiMother.Rapidity()), centrality);
+          if (mcEffEP.fillPhiVMinusPsi) {
+            histos.fill(HIST("phi/hSparseV2MCGenCosThetaStarPhiVPsi"), phiMother.Pt(), cosThetaStar, getPhiInRange(phiMother.Phi() - psiSA), centrality);
+          }
           if (doClosureTest) {
             histos.fill(HIST("closure/PhiMCGenCosThetaStar"), phiMother.M(), phiMother.Pt(), cosThetaStar, std::abs(phiMother.Rapidity()), centrality);
           }

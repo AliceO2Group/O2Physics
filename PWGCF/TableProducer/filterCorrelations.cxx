@@ -437,6 +437,9 @@ struct FilterCF {
   template <class T>
   using HasMultTables = decltype(std::declval<T&>().multNTracksPV());
 
+  template <class T>
+  using HasNMPI = decltype(std::declval<T&>().nMPI());
+
   /// \brief Templetized process data for a given collision and its associated tracks
   /// \param collision The collision object containing information about the collision
   /// \param tracks The collection of tracks associated with the collision
@@ -634,7 +637,9 @@ struct FilterCF {
         }
       }
       outputMcCollisions(mcCollision.posZ(), multiplicity);
-      outputMcCollisionExtras(mcCollision.nMPI());
+      if constexpr (std::experimental::is_detected<HasNMPI, typename MCs::iterator>::value) {
+        outputMcCollisionExtras(mcCollision.nMPI());
+      }
     }
 
     // PASS 2 on collisions: store collisions and tracks
@@ -707,7 +712,7 @@ struct FilterCF {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   using McCollisionsWithHepMC = soa::Join<aod::McCollisions, aod::HepMCXSections>;
-  void processMC(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
+  void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
                  soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                  aod::BCsWithTimestamps const& bcs)
@@ -716,8 +721,17 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
 
+  void processMCWithHepMC(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
+                          soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
+                          soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                          aod::BCsWithTimestamps const& bcs)
+  {
+    processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
+  }
+  PROCESS_SWITCH(FilterCF, processMCWithHepMC, "Process MC with HepMC cross-section (nMPI)", false);
+
   // NOTE not filtering collisions here because in that case there can be tracks referring to MC particles which are not part of the selected MC collisions
-  void processMCPid(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
+  void processMCPid(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
                     soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
                     soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks,
                     aod::BCsWithTimestamps const& bcs)
@@ -726,7 +740,16 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processMCPid, "Process MC with PID", false);
 
-  void processMCMults(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
+  void processMCPidWithHepMC(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
+                             soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
+                             soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks,
+                             aod::BCsWithTimestamps const& bcs)
+  {
+    processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
+  }
+  PROCESS_SWITCH(FilterCF, processMCPidWithHepMC, "Process MC with PID and HepMC cross-section (nMPI)", false);
+
+  void processMCMults(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
                       soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal> const& allCollisions,
                       soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                       aod::BCsWithTimestamps const& bcs)
@@ -736,7 +759,18 @@ struct FilterCF {
 
   PROCESS_SWITCH(FilterCF, processMCMults, "Process MC with multiplicity sets", false);
 
-  void processMCGen(McCollisionsWithHepMC::iterator const& mcCollision, aod::McParticles const& particles)
+  void processMCMultsWithHepMC(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
+                               soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal> const& allCollisions,
+                               soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                               aod::BCsWithTimestamps const& bcs)
+  {
+    processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
+  }
+  PROCESS_SWITCH(FilterCF, processMCMultsWithHepMC, "Process MC with multiplicity sets and HepMC cross-section (nMPI)", false);
+
+  /// \brief Templated MCGen processing; stores nMPI only when the MC collision carries the HepMC cross-section table
+  template <typename TMC>
+  void processMCGenT(const TMC& mcCollision, aod::McParticles const& particles)
   {
     float multiplicity = 0.0f;
     for (const auto& particle : particles) {
@@ -756,9 +790,22 @@ struct FilterCF {
                         sign, particle.pdgCode(), particle.flags());
     }
     outputMcCollisions(mcCollision.posZ(), multiplicity);
-    outputMcCollisionExtras(mcCollision.nMPI());
+    if constexpr (std::experimental::is_detected<HasNMPI, TMC>::value) {
+      outputMcCollisionExtras(mcCollision.nMPI());
+    }
+  }
+
+  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles)
+  {
+    processMCGenT(mcCollision, particles);
   }
   PROCESS_SWITCH(FilterCF, processMCGen, "Process MCGen", false);
+
+  void processMCGenWithHepMC(McCollisionsWithHepMC::iterator const& mcCollision, aod::McParticles const& particles)
+  {
+    processMCGenT(mcCollision, particles);
+  }
+  PROCESS_SWITCH(FilterCF, processMCGenWithHepMC, "Process MCGen with HepMC cross-section (nMPI)", false);
 };
 
 struct MultiplicitySelector {

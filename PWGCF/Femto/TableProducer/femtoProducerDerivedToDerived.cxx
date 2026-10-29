@@ -19,6 +19,7 @@
 #include "PWGCF/Femto/Core/mcBuilder.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
+#include "PWGCF/Femto/Core/twoTrackResonanceBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
@@ -47,14 +48,18 @@ struct FemtoProducerDerivedToDerived {
   using FemtoTracksWithMass = o2::soa::Join<FemtoTracks, o2::aod::FTrackMass>;
   using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks>;
   using FemtoK0shorts = o2::soa::Join<o2::aod::FK0shorts, o2::aod::FK0shortMasks>;
+  using FemtoRho0s = o2::soa::Join<o2::aod::FRho0s, o2::aod::FRho0Masks>;
+  using FemtoPhis = o2::soa::Join<o2::aod::FPhis, o2::aod::FPhiMasks>;
   using FemtoXis = o2::soa::Join<o2::aod::FXis, o2::aod::FXiMasks>;
   using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks>;
   using FemtoSigma = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks>;
   using FemtoSigmaPlus = o2::soa::Join<o2::aod::FSigmaPlus, o2::aod::FSigmaPlusMasks>;
+  using FemtoSigmaPlusExtended = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusExtras>;
 
   using FemtoMcTracks = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
   using FemtoMcSigma = o2::soa::Join<FemtoSigma, o2::aod::FSigmaLabels>;
   using FemtoMcSigmaPlus = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusLabels>;
+  using FemtoMcSigmaPlusExtended = o2::soa::Join<FemtoSigmaPlusExtended, o2::aod::FSigmaPlusLabels>;
   using FemtoMcParticles = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
   o2::framework::SliceCache cache;
@@ -93,6 +98,19 @@ struct FemtoProducerDerivedToDerived {
   o2::framework::Partition<FemtoK0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(k0shortSelection1);
   o2::framework::Preslice<FemtoK0shorts> perColK0shorts = o2::aod::femtobase::stored::fColId;
 
+  // two-track resonance builder
+  twotrackresonancebuilder::TwoTrackResonanceBuilderDerivedToDerived resonanceBuilder;
+  twotrackresonancebuilder::TwoTrackResonanceBuilderDerivedToDerivedProducts resonanceBuilderProducts;
+  twotrackresonancebuilder::ConfTwoTrackResonanceTablesDerivedToDerived confResonanceBuilder;
+
+  twotrackresonancebuilder::ConfRho0Selection rho0Selection;
+  o2::framework::Partition<FemtoRho0s> rho0Partition = MAKE_RESONANCE_0_PARTITON(rho0Selection);
+  o2::framework::Preslice<FemtoRho0s> perColRho0s = o2::aod::femtobase::stored::fColId;
+
+  twotrackresonancebuilder::ConfPhiSelection phiSelection;
+  o2::framework::Partition<FemtoPhis> phiPartition = MAKE_RESONANCE_0_PARTITON(phiSelection);
+  o2::framework::Preslice<FemtoPhis> perColPhis = o2::aod::femtobase::stored::fColId;
+
   // kink builder
   kinkbuilder::KinkBuilderDerivedToDerived kinkBuilder;
   kinkbuilder::KinkBuilderDerivedToDerivedProducts kinkBuilderProducts;
@@ -105,6 +123,8 @@ struct FemtoProducerDerivedToDerived {
   kinkbuilder::ConfSigmaPlusSelection1 sigmaPlusSelection1;
   o2::framework::Partition<FemtoSigmaPlus> sigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection1);
   o2::framework::Preslice<FemtoSigmaPlus> perColSigmaPlus = o2::aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoSigmaPlusExtended> sigmaPlusExtendedPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection1);
+  o2::framework::Preslice<FemtoSigmaPlusExtended> perColSigmaPlusExtended = o2::aod::femtobase::stored::fColId;
 
   // cascade builder
   cascadebuilder::CascadeBuilderDerivedToDerived cascadeBuilder;
@@ -133,6 +153,8 @@ struct FemtoProducerDerivedToDerived {
 
   o2::framework::Partition<FemtoMcSigmaPlus> mcSigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection1);
   o2::framework::Preslice<FemtoMcSigmaPlus> perColMcSigmaPlus = o2::aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoMcSigmaPlusExtended> mcSigmaPlusExtendedPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection1);
+  o2::framework::Preslice<FemtoMcSigmaPlusExtended> perColMcSigmaPlusExtended = o2::aod::femtobase::stored::fColId;
 
   void init(o2::framework::InitContext& /*context*/)
   {
@@ -142,9 +164,10 @@ struct FemtoProducerDerivedToDerived {
       static_cast<int>(doprocessLambdas) +
       static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) +
       static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) +
-      static_cast<int>(doprocessTracksSigmaPlus) +
+      static_cast<int>(doprocessTracksSigmaPlus) + static_cast<int>(doprocessTracksSigmaPlusExtended) +
+      static_cast<int>(doprocessTracksRho0) + static_cast<int>(doprocessTracksPhi) +
       static_cast<int>(doprocessTracksMc) + static_cast<int>(doprocessTracksSigmaMc) +
-      static_cast<int>(doprocessTracksSigmaPlusMc);
+      static_cast<int>(doprocessTracksSigmaPlusMc) + static_cast<int>(doprocessTracksSigmaPlusExtendedMc);
     if (activeProcesses != 1) {
       LOG(fatal) << "Exactly one process function must be activated (got " << activeProcesses << ").";
     }
@@ -153,6 +176,7 @@ struct FemtoProducerDerivedToDerived {
     v0Builder.init(confV0Builder);
     cascadeBuilder.init(confCascadeBuilder);
     kinkBuilder.init(confKinkBuilder);
+    resonanceBuilder.init(confResonanceBuilder);
     mcBuilder.init(confMcBuilder);
   }
 
@@ -274,6 +298,42 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlus, "Process sigmaPlus and tracks", false);
 
+  void processTracksSigmaPlusExtended(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoSigmaPlusExtended const& sigmaplus)
+  {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, sigmaPlusExtendedPartition, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusExtendedPartition, trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusExtended, "Process sigmaPlus (with SigmaPlusExtras) and tracks", false);
+
+  void processTracksRho0(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoRho0s const& rho0s)
+  {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || resonanceBuilder.collisionHasTooFewRho0s(col, rho0s, rho0Partition, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    resonanceBuilder.processRho0s(col, rho0s, tracks, rho0Partition, trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksRho0, "Process rho0 and tracks", false);
+
+  void processTracksPhi(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoPhis const& phis)
+  {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || resonanceBuilder.collisionHasTooFewPhis(col, phis, phiPartition, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    resonanceBuilder.processPhis(col, phis, tracks, phiPartition, trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksPhi, "Process phi and tracks", false);
+
   // mc processing
   //   // NOTE: unlike the other process functions, this one subscribes to the full
   // collision table and iterates manually. The MC index maps are keyed by source
@@ -354,6 +414,32 @@ struct FemtoProducerDerivedToDerived {
     }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusMc, "Process sigmaPlus and tracks with MC information", false);
+
+  void processTracksSigmaPlusExtendedMc(FilteredFemtoMcCollisions const& cols,
+                                        FemtoMcTracks const& tracks,
+                                        FemtoMcSigmaPlusExtended const& sigmaplus,
+                                        o2::aod::FMcCols const& mcCols,
+                                        FemtoMcParticles const& mcParticles,
+                                        o2::aod::FMcMothers const& mcMothers,
+                                        o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    mcBuilder.reset(mcCols, mcParticles);
+
+    for (auto const& col : cols) {
+      if (trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, mcSigmaPlusExtendedPartition, cache)) {
+        continue;
+      }
+      trackBuilder.reset(tracks);
+      collisionBuilder.processCollision(col, collisionBuilderProducts);
+      mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
+      trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
+                                       trackBuilderProducts, collisionBuilderProducts,
+                                       mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+      kinkBuilder.processSigmaPlusWithMc(col, sigmaplus, tracks, mcSigmaPlusExtendedPartition, trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts,
+                                         mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusExtendedMc, "Process sigmaPlus (with SigmaPlusExtras) and tracks with MC information", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
