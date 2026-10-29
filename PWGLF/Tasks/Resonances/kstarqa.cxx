@@ -365,6 +365,7 @@ struct Kstarqa {
 
     if (doprocessEvtLossSigLossMC || doprocessEvtLossSigLossMCPhi) {
       hInvMass.add("MCcorrections/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hInvMass.add("MCcorrections/hSignalLossDenominatorRec", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("MCcorrections/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("MCcorrections/hSignalLossNumeratorINEL", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("MCcorrections/hImpactParameterRec", "Impact parameter in reconstructed MC", kTH1F, {impactParAxis});
@@ -1929,6 +1930,7 @@ struct Kstarqa {
   {
     // auto multiplicityRec = -1;
     bool isSelectedEvent = false;
+    bool isRecCollision = false;
     bool isSelectedEventINEL = false;
     auto multiplicity1 = -999.;
 
@@ -1942,6 +1944,8 @@ struct Kstarqa {
     for (const auto& RecCollision : recCollisions) {
       if (!RecCollision.has_mcCollision())
         continue;
+      isRecCollision = true;
+
       if (!selectionEvent(RecCollision, false)) // don't fill event cut histogram
         continue;
 
@@ -2047,6 +2051,10 @@ struct Kstarqa {
         continue;
 
       hInvMass.fill(HIST("MCcorrections/hSignalLossDenominator"), mcPart.pt(), multiplicityGen);
+      if (isRecCollision) {
+        hInvMass.fill(HIST("MCcorrections/hSignalLossDenominatorRec"), mcPart.pt(), multiplicityGen);
+      }
+
       if (isSelectedEvent) {
         hInvMass.fill(HIST("MCcorrections/hSignalLossNumerator"), mcPart.pt(), multiplicityGen);
       }
