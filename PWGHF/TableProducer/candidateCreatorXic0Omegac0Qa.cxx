@@ -1148,7 +1148,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                              TracksWCovIU const& lfTracks,
                                              aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascades, v0s, tracks, lfTracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaPi);
+    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascades, v0s, tracks, lfTracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithDCAFitterCentFT0M, "Charm candidate reconstruction with Omega Pi via DcaFitter method, centrality selection on FT0M", false);
 
@@ -1187,7 +1187,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                              TracksWCovIU const& lfTracks,
                                              aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascades, v0s, tracks, lfTracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaPi);
+    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascades, v0s, tracks, lfTracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithDCAFitterCentFT0M, "Charm candidate reconstruction with Omega Ka via DcaFitter method, centrality selection on FT0M", false);
 
@@ -1370,44 +1370,25 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 };
 
 struct HfCandidateCreatorXic0Omegac0QaMc {
-
-  // Cursor to fill tables
-  struct : ProducesGroup {
-
-    Produces<aod::HfXicToXiPiMCRec> rowMcMatchRecXicToXiPi;
-    Produces<aod::HfXicToXiPiMCGen> rowMcMatchGenXicToXiPi;
-    Produces<aod::HfOmegacToXiPiMCRec> rowMcMatchRecOmegacToXiPi;
-    Produces<aod::HfOmegacToXiPiMCGen> rowMcMatchGenOmegacToXiPi;
-    Produces<aod::HfToOmegaPiMCRec> rowMcMatchRecToOmegaPi;
-    Produces<aod::HfToOmegaPiMCGen> rowMcMatchGenToOmegaPi;
-    Produces<aod::HfToOmegaKMCRec> rowMcMatchRecToOmegaKa;
-    Produces<aod::HfToOmegaKMCGen> rowMcMatchGenToOmegaKa;
-
-  } cursors;
+  Produces<aod::HfCandCascBachMCRecQa> rowMcMatchRecCascBach;
+  Produces<aod::HfCandCascBachMCGenQa> rowMcMatchGenCascBach;
 
   // Configurables
   struct : ConfigurableGroup {
-
     Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"}; // -> Used for only Xic0
     Configurable<bool> acceptTrackInteractionWithMaterial{"acceptTrackInteractionWithMaterial", false, "Accept candidates with final daughters interacting with materials"};
-    Configurable<bool> fillMcHistograms{"fillMcHistograms", true, "Fill validation plots"};
-    Configurable<bool> fillResidualTable{"fillResidualTable", true, "Fill table contaning residuals and pulls of PV and SV"};
     // Configurable<bool> matchDecayedPions{"matchedDecayedPions", true, "Match also candidates with daughter pion tracks that decay with kinked toploogy"};
-
   } configs;
-
-  enum McMatchFlag : uint8_t {
-    None = 0,
-    CharmBaryonUnmatched,
-    CascUnmatched,
-    V0Unmatched,
-    NumberMcMatchFlag
-  };
 
   std::array<int, 4> pdgOfCharmBaryon{+kXiC0, +kOmegaC0, +kOmegaC0, +kOmegaC0};
   std::array<int, 4> pdgOfCascade{+kXiMinus, +kXiMinus, +kOmegaMinus, +kOmegaMinus};
   std::array<int, 4> pdgOfCharmBachelor{+kPiPlus, +kPiPlus, +kPiPlus, +kKPlus};
   std::array<int, 4> pdgOfBachelor{+kPiMinus, +kPiMinus, +kKMinus, +kKMinus};
+
+  std::array<int8_t, 4> newDecayChannel{hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToXiPi,
+                                        hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToXiPi,
+                                        hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi,
+                                        hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaKa};
 
   // Table aliases
   using TracksWMcIU = soa::Join<aod::TracksIU, McTrackLabels>;
@@ -1434,56 +1415,6 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
         break;
       }
     }
-
-    // Add histograms for QA
-    if (configs.fillMcHistograms) {
-      registry.add("hGenCharmBaryonPtRapidityTight", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
-      registry.add("hGenCharmBaryonPtRapidityLoose", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
-    }
-  }
-
-  // Helper function to fill in table for MC Rec
-  ///@brief decay Channel is the chosen reconstruction channel
-  ///@brief flag
-  ///@brief debug
-  ///@brief origin
-  ///@brief collisionMatched
-  ///@brief pt
-  ///@brief pdgcode
-  template <int decayChannel>
-  void fillRecoMcTableByDecayChannel(int8_t flag, int8_t debug, int8_t origin, bool collisionMatched, float pt, int pdgCode)
-  {
-    if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-      cursors.rowMcMatchRecXicToXiPi(flag, debug, origin, collisionMatched, pt, pdgCode);
-    } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
-      cursors.rowMcMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, pt, pdgCode);
-    } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
-      cursors.rowMcMatchRecToOmegaPi(flag, debug, origin, collisionMatched, pt, pdgCode);
-    } else {
-      cursors.rowMcMatchRecToOmegaKa(flag, debug, origin, collisionMatched, pt, pdgCode);
-    }
-  }
-
-  // Helper function to fill in table for MC Gen
-  ///@brief decay Channel is the chosen reconstruction channel
-  ///@brief flag
-  ///@brief debug
-  ///@brief origin
-  ///@brief collisionMatched
-  ///@brief pt
-  ///@brief pdgcode
-  template <int decayChannel>
-  void fillGenMcTableByDecayChannel(int8_t flag, int8_t debugGenCharmBaryon, int8_t debugGenCascade, int8_t debugGenLambda, float ptCharmBaryon, float yCharmBaryon, int8_t origin, int idxMother)
-  {
-    if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-      cursors.rowMcMatchGenXicToXiPi(flag, debugGenCharmBaryon, debugGenCascade, debugGenLambda, ptCharmBaryon, yCharmBaryon, origin, idxMother);
-    } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
-      cursors.rowMcMatchGenOmegacToXiPi(flag, debugGenCharmBaryon, debugGenCascade, debugGenLambda, ptCharmBaryon, yCharmBaryon, origin, idxMother);
-    } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
-      cursors.rowMcMatchGenToOmegaPi(flag, debugGenCharmBaryon, debugGenCascade, debugGenLambda, ptCharmBaryon, yCharmBaryon, origin, idxMother);
-    } else {
-      cursors.rowMcMatchGenToOmegaKa(flag, debugGenCharmBaryon, debugGenCascade, debugGenLambda, ptCharmBaryon, yCharmBaryon, origin, idxMother);
-    }
   }
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename TRecoCand, typename Colls, typename McCollisions>
@@ -1494,31 +1425,20 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
                         McCollisions const& mcCollisions,
                         BCsInfo const&)
   {
-    int indexRec{-1};
-    int indexRecCharmBaryon{-1};
-    int8_t sign{-9};
-    int8_t signCasc{-9};
-    int8_t signV0{-9};
-    int8_t flag{0};
-    int8_t origin{0};
-    int8_t debug{0};
-    int8_t debugGenCharmBaryon{0};
-    int8_t debugGenCasc{0};
-    int8_t debugGenV0{0};
-    bool collisionMatched = false;
-    float ptCharmBaryonGen = -999.;
-    float yCharmBaryonGen = -999.;
-
-    ////////////////////////////////////
     // Match reconstructed candidates //
-    ////////////////////////////////////
-
     for (const auto& candidate : candidates) {
+      int indexRecCharmBaryon = -1;
+      int indexRecCascade = -1;
+      int indexRecV0 = -1;
+      int8_t sign = 0;
+      int8_t signCasc = 0;
+      int8_t signV0 = 0;
+      int8_t flagChannelMain = 0;
+      int8_t flagChannelResonant = 0; // TODO: Implement resonant channel matching
+      int8_t origin = 0;
+      int8_t nKinkedTracks = 0;             // TODO: Implement kinked track matching
+      int8_t nInteractionsWithMaterial = 0; // TODO: Implement interaction with material matching
 
-      flag = 0;
-      origin = RecoDecay::OriginType::None;
-      debug = McMatchFlag::None;
-      collisionMatched = false;
       std::vector<int> idxBhadMothers{};
 
       auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<TracksWMcIU>(),
@@ -1544,57 +1464,42 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
           }
         }
         if (fromBkg) {
-          // fill the tables
-          fillRecoMcTableByDecayChannel<decayChannel>(flag, debug, origin, collisionMatched, -1.f, 0);
+          rowMcMatchRecCascBach(flagChannelMain, origin, flagChannelResonant, -1.f, 0, 0, 0);
           continue;
         }
       }
 
       // CharmBaryon -> Charm bachelor + Cascade
-      indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCharmBachelor[decayChannel], pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &sign, 3);
-      indexRecCharmBaryon = indexRec;
-      if (indexRec == -1) { // Xic0 not reconstructed
-        debug = McMatchFlag::CharmBaryonUnmatched;
-      }
-      if (indexRec > -1) {
+      indexRecCharmBaryon = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCharmBachelor[decayChannel], pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &sign, 3);
+
+      if (indexRecCharmBaryon > -1) {
         // Cascade -> Bachelor + V0
-        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgOfCascade[decayChannel], std::array{pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &signCasc, 2);
-        if (indexRec == -1) { // Xi- not reconstructed
-          debug = McMatchFlag::CascUnmatched;
-        }
-        if (indexRec > -1) {
+        indexRecCascade = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgOfCascade[decayChannel], std::array{pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &signCasc, 2);
+
+        if (indexRecCascade > -1) {
           // V0 -> Pos + Neg
-          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
-          if (indexRec == -1) { // V0 not reconstructed
-            debug = McMatchFlag::V0Unmatched;
-          }
-          if (indexRec > -1) {
-            flag = sign * (1 << decayChannel);
-            collisionMatched = candidate.template collision_as<Colls>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+          indexRecV0 = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
+
+          if (indexRecV0 > -1) {
+            flagChannelMain = sign * newDecayChannel[decayChannel];
           }
         }
       }
 
       // Check if charm baryon is from b-hadron decay(prompt vs non-prompt)
-      if (flag != 0) {
+      if (flagChannelMain != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        fillRecoMcTableByDecayChannel<decayChannel>(flag, debug, origin, collisionMatched, bHadMother.pt(), bHadMother.pdgCode());
+        rowMcMatchRecCascBach(flagChannelMain, origin, flagChannelResonant, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        fillRecoMcTableByDecayChannel<decayChannel>(flag, debug, origin, collisionMatched, -1.f, 0);
-      }
-      if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
-        LOGF(info, "WARNING: Charm baryon decays in the expected final state but the condition on the intermediate states are not fullfilled");
+        rowMcMatchRecCascBach(flagChannelMain, origin, flagChannelResonant, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     } // candidate loop
 
-    ///////////////////////////////
-    // Match generated particles //
-    ///////////////////////////////
-
+    // Match generated particles
     for (const auto& mcCollision : mcCollisions) {
 
       const auto& mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
@@ -1621,44 +1526,35 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
       if (rejectionMask != 0) { // At least one event selection not satisfied --> Reject all particles from this event
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          fillGenMcTableByDecayChannel<decayChannel>(0, 0, 0, 0, -999., -999., RecoDecay::OriginType::None, -1);
+          rowMcMatchGenCascBach(0, 0, 0, -1);
         }
         continue;
       }
 
       // Match generated particles
       for (auto const& particle : mcParticlesPerMcColl) {
-        ptCharmBaryonGen = -999.;
-        yCharmBaryonGen = -999.;
-        flag = 0;
-        sign = -9;
-        debugGenCharmBaryon = 0;
-        debugGenCasc = 0;
-        debugGenV0 = 0;
-        origin = RecoDecay::OriginType::None;
+        int8_t flagChannelMain = 0;
+        int8_t flagChannelResonant = 0; // TODO: Implement resonant channel matching
+        int8_t origin = RecoDecay::OriginType::None;
+        int8_t sign = 0;
+
         std::vector<int> idxBhadMothers{};
-        const float kYCutTight = 0.5;
-        const float kYCutLoose = 0.8;
 
         // Reject particles from background events
         if (particle.fromBackgroundEvent() && configs.rejectBackground) {
-          fillGenMcTableByDecayChannel<decayChannel>(flag, debugGenCharmBaryon, debugGenCasc, debugGenV0, ptCharmBaryonGen, yCharmBaryonGen, origin, -1);
+          rowMcMatchGenCascBach(flagChannelMain, origin, flagChannelResonant, -1);
           continue;
         }
 
         // Charm Baryon -> Cascade + Charm bachelor
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCascade[decayChannel], pdgOfCharmBachelor[decayChannel]}, true, &sign)) {
-          debugGenCharmBaryon = 1;
-          ptCharmBaryonGen = particle.pt();
-          yCharmBaryonGen = particle.y();
-
           for (auto const& daughterCharm : particle.template daughters_as<aod::McParticles>()) {
             if (std::abs(daughterCharm.pdgCode()) != pdgOfCascade[decayChannel]) {
               continue;
             }
-            // Xi -> Lambda + pi
+
+            // Cascade -> Lambda + pi
             if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgOfCascade[decayChannel], std::array{+kLambda0, pdgOfBachelor[decayChannel]}, true)) {
-              debugGenCasc = 1; // -> Matched Xi-
               for (auto const& daughterCascade : daughterCharm.template daughters_as<aod::McParticles>()) {
                 if (std::abs(daughterCascade.pdgCode()) != +kLambda0) {
                   continue;
@@ -1666,35 +1562,26 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
                 // Lambda -> p + pi
                 if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
-                  debugGenV0 = 1; // -> Matched Lambda0
-                  flag = sign * (1 << decayChannel);
+                  flagChannelMain = sign * newDecayChannel[decayChannel];
+                  ;
                 }
               } // V0 daughter loop
             } // cascade daughter loop
-          }
-        } // charm daughter loop
-
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-          if (std::abs(yCharmBaryonGen) < kYCutTight) {
-            registry.fill(HIST("hGenCharmBaryonPtRapidityTight"), ptCharmBaryonGen);
-          }
-          if (std::abs(yCharmBaryonGen) < kYCutLoose) {
-            registry.fill(HIST("hGenCharmBaryonPtRapidityLoose"), ptCharmBaryonGen);
-          }
+          } // charm daughter loop
         }
 
         // Check if charm is prompt or non-prompt
+        if (flagChannelMain != 0) {
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+        }
         if (origin == RecoDecay::OriginType::NonPrompt) {
-          fillGenMcTableByDecayChannel<decayChannel>(flag, debugGenCharmBaryon, debugGenCasc, debugGenV0, ptCharmBaryonGen, yCharmBaryonGen, origin, idxBhadMothers[0]);
+          rowMcMatchGenCascBach(flagChannelMain, origin, flagChannelResonant, idxBhadMothers[0]);
         } else {
-          fillGenMcTableByDecayChannel<decayChannel>(flag, debugGenCharmBaryon, debugGenCasc, debugGenV0, ptCharmBaryonGen, yCharmBaryonGen, origin, -1);
+          rowMcMatchGenCascBach(flagChannelMain, origin, flagChannelResonant, -1);
         }
 
       } // particle loop
-
     } // end of collision loop
-
   } // template run function
 
   void processMcEmpty(aod::Collisions const&)
