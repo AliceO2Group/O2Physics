@@ -654,7 +654,7 @@ class TrackBuilder
 
     if (mProduceItsPurity || mProduceTpcPurity || mProduceTofPurity) {
       // assign each active species (requirePidXxx == true) to the next free slot (0-3), in
-      // canonical order (kPuritySpeciesName); species with requirePidXxx == false get no slot.
+      // canonical order (PuritySpeciesName); species with requirePidXxx == false get no slot.
       const std::array<bool, PuritySpeciesLast> requirePid = {
         config.requirePidElectron.value, config.requirePidPion.value, config.requirePidKaon.value,
         config.requirePidProton.value, config.requirePidDeuteron.value, config.requirePidTriton.value, config.requirePidHelium.value};
@@ -685,7 +685,7 @@ class TrackBuilder
       for (int i = 0; i < PuritySpeciesLast; i++) {
         std::string bitPosition = mPuritySlot[i] >= 0 ? std::to_string(mPuritySlot[i]) : "X";
         std::string value = mPuritySlot[i] >= 0 ? ("Slot " + std::to_string(mPuritySlot[i])) : "Not configured";
-        std::string label = std::string("SelectionName___") + kPuritySpeciesName[i] +
+        std::string label = std::string("SelectionName___") + PuritySpeciesName[i] +
                             ":::MinimalCut___0:::OptionalCut___0:::BitPosition___" + bitPosition +
                             ":::Value___" + value;
         hSlotAssignment->GetXaxis()->SetBinLabel(i + 1, label.c_str());
@@ -854,14 +854,12 @@ class TrackBuilder
       // unused slots (species without a requirePidXxx flag, or not covered by this track
       // type) stay at the 0 placeholder, same contract as the missing-Tof case
       std::array<float, PuritySpeciesLast> itsNSigma = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
-      std::array<float, PuritySpeciesLast> tpcNSigma = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
-      std::array<float, PuritySpeciesLast> tofNSigma = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+      std::array<float, PuritySpeciesLast> tpcNSigma = {track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
+      std::array<float, PuritySpeciesLast> tofNSigma = {track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
 
       if constexpr (requires(T1 t) { t.itsNSigmaEl(); }) {
         itsNSigma = {track.itsNSigmaEl(), track.itsNSigmaPi(), track.itsNSigmaKa(), track.itsNSigmaPr(), track.itsNSigmaDe(), track.itsNSigmaTr(), track.itsNSigmaHe()};
       }
-      tpcNSigma = {track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
-      tofNSigma = {track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
 
       std::array<float, utils::PurityNSlots> itsSlots = {0.f, 0.f, 0.f, 0.f};
       std::array<float, utils::PurityNSlots> tpcSlots = {0.f, 0.f, 0.f, 0.f};
@@ -989,7 +987,7 @@ class TrackBuilder
   // init() for how requirePidXxx flags map onto slots 0-3)
   static constexpr int PuritySpeciesLast = 7;
   static constexpr std::array<const char*, PuritySpeciesLast> PuritySpeciesName = {"Electron", "Pion", "Kaon", "Proton", "Deuteron", "Triton", "Helium"};
-  // mPuritySlot[i] = assigned slot (0-3) for species i (kPuritySpeciesName order), or -1 if not assigned
+  // mPuritySlot[i] = assigned slot (0-3) for species i (PuritySpeciesName order), or -1 if not assigned
   std::array<int, PuritySpeciesLast> mPuritySlot = {-1, -1, -1, -1, -1, -1, -1};
 
   std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughters of lambdas, cascades and resonances ...
