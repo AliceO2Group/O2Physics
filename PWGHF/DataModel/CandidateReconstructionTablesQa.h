@@ -40,6 +40,8 @@ DECLARE_SOA_COLUMN(YV0Vertex, yV0Vertex, float);
 DECLARE_SOA_COLUMN(ZV0Vertex, zV0Vertex, float);
 DECLARE_SOA_COLUMN(MassCascade, massCascade, float);
 DECLARE_SOA_COLUMN(MassLambda, massLambda, float);
+DECLARE_SOA_COLUMN(EtaCascade, etaCascade, float);
+DECLARE_SOA_COLUMN(EtaV0, etaV0, float);
 DECLARE_SOA_COLUMN(CpaCascade, cpaCascade, float);
 DECLARE_SOA_COLUMN(CpaXYCascade, cpaXYCascade, float);
 DECLARE_SOA_COLUMN(CpaV0, cpaV0, float);
@@ -117,7 +119,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Chi2TopoOverNdfV0ToCascade, chi2TopoOverNdfV0ToCascad
 
 // Common QA candidate table for XiPi, OmegaPi and OmegaK
 // Convention: Prong0 is the Cascade, Prong1 is the bachelor track
-DECLARE_SOA_TABLE(HfCandCascBachBaseQa, "AOD", "HFCANDCASCBACHBASEQA",
+DECLARE_SOA_TABLE(HfCandCascBachBaseQa, "AOD", "HFCASCBACHBASE",
                   o2::soa::Index<>,
                   hf_cand::CollisionId,
                   collision::PosX, collision::PosY, collision::PosZ,
@@ -171,13 +173,13 @@ DECLARE_SOA_TABLE(HfCandCascBachBaseQa, "AOD", "HFCANDCASCBACHBASEQA",
                   hf_cand::ImpactParameterZNormalised1<hf_cand::ImpactParameterZ1, hf_cand::ErrorImpactParameterZ1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(HfCandCascBachExtQa, HfCandCascBachBaseQa, "HFCANDCASCBACHEXTQA",
+DECLARE_SOA_EXTENDED_TABLE_USER(HfCandCascBachExtQa, HfCandCascBachBaseQa, "HFCASCBACHEXT",
                                 hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
 
 using HfCandCascBachQa = HfCandCascBachExtQa;
 
 // KF specific information for HfCandCascBach
-DECLARE_SOA_TABLE(HfCandCascBachKfQa, "AOD", "HFCANDCASCBACHKFQA",
+DECLARE_SOA_TABLE(HfCandCascBachKfQa, "AOD", "HFCASCBACHKF",
                   hf_cand_casc_bach_qa::Chi2Geo, hf_cand_casc_bach_qa::Chi2GeoCascade, hf_cand_casc_bach_qa::Chi2GeoV0,
                   hf_cand_casc_bach_qa::NdfGeo, hf_cand_casc_bach_qa::NdfGeoCascade, hf_cand_casc_bach_qa::NdfGeoV0,
                   hf_cand_casc_bach_qa::DecayLengthNormKf, hf_cand_casc_bach_qa::DecayLengthNormKfCascade, hf_cand_casc_bach_qa::DecayLengthNormKfV0,
@@ -196,7 +198,7 @@ DECLARE_SOA_TABLE(HfCandCascBachKfQa, "AOD", "HFCANDCASCBACHKFQA",
                   hf_cand_casc_bach_qa::Chi2TopoOverNdfV0ToCascade<hf_cand_casc_bach_qa::Chi2TopoV0ToCascade, hf_cand_casc_bach_qa::NdfTopoV0ToCascade>);
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfCandCascBachMCRecQa, "AOD", "HFCANDCASCBACHMCRECQA", //!
+DECLARE_SOA_TABLE(HfCandCascBachMCRecQa, "AOD", "HFCASCBACHMCREC", //!
                   hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec,
@@ -206,7 +208,7 @@ DECLARE_SOA_TABLE(HfCandCascBachMCRecQa, "AOD", "HFCANDCASCBACHMCRECQA", //!
                   hf_cand_mc_flag::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
-DECLARE_SOA_TABLE(HfCandCascBachMCGenQa, "AOD", "HFCANDCASCBACHMCGENQA", //!
+DECLARE_SOA_TABLE(HfCandCascBachMCGenQa, "AOD", "HFCASCBACHMCGEN", //!
                   hf_cand_mc_flag::FlagMcMatchGen,
                   hf_cand_mc_flag::OriginMcGen,
                   hf_cand_mc_flag::FlagMcDecayChanGen,
@@ -320,5 +322,21 @@ enum DecayChannelMain : HfDecayChannel {
 } // namespace hf_cand_casc_bach_qa
 
 } // namespace o2::hf_decay
+
+// TODO: remove once the candidate creator is updated
+namespace o2::aod
+{
+namespace hf_cand_xic0_omegac0
+{
+enum DecayType {
+  XiczeroToXiPi = 0,
+  OmegaczeroToXiPi,
+  OmegaczeroToOmegaPi,
+  OmegaczeroToOmegaK,
+  OmegaczeroToOmegaPiOneMu,
+  XiczeroToOmegaK
+};
+} // namespace hf_cand_xic0_omegac0
+} // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLESQA_H_

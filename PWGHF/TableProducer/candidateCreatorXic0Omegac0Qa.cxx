@@ -84,7 +84,7 @@ using namespace o2::constants::physics;
 using namespace o2::hf_evsel;
 
 struct HfCandidateCreatorXic0Omegac0Qa {
-  Produces<aod::HfCandCascBachQa> rowCandCascBatch;
+  Produces<aod::HfCandCascBachBaseQa> rowCandCascBatch;
   // Additional information for candidates created with KFParticle
   Produces<aod::HfCandCascBachKfQa> rowCandCascBatchKf;
 
@@ -634,7 +634,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // get SV Properties
       auto const& secondaryVertex = df.getPCACandidate();
       auto covMatrixSV = df.calcPCACovMatrixFlat();
-      std::array<float, 3> svCoord = {secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]};
+      std::array<float, 3> svCoord = {static_cast<float>(secondaryVertex[0]),
+                                      static_cast<float>(secondaryVertex[1]),
+                                      static_cast<float>(secondaryVertex[2])};
 
       float phi, theta;
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
@@ -982,9 +984,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // TODO: check if the impact parameter can be calculated from KFParticle directly
       auto primaryVertex = getPrimaryVertex(collision);
       o2::dataformats::DCA impactParameterV0DauPos, impactParameterV0DauNeg, impactParameterCascBach;
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovBach, 2.f, matCorr, &impactParameterCascBach);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovBach, 2.f, matCorr, &impactParameterCascBach);
 
       o2::dataformats::DCA impactParameterCasc, impactParameterCharmBach;
       o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCasc, 2.f, matCorr, &impactParameterCasc);
@@ -1385,10 +1387,10 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
   std::array<int, 4> pdgOfCharmBachelor{+kPiPlus, +kPiPlus, +kPiPlus, +kKPlus};
   std::array<int, 4> pdgOfBachelor{+kPiMinus, +kPiMinus, +kKMinus, +kKMinus};
 
-  std::array<int8_t, 4> newDecayChannel{hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToXiPi,
-                                        hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToXiPi,
-                                        hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi,
-                                        hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaKa};
+  std::array<int8_t, 4> newDecayChannel{o2::hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToXiPi,
+                                        o2::hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToXiPi,
+                                        o2::hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi,
+                                        o2::hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaK};
 
   // Table aliases
   using TracksWMcIU = soa::Join<aod::TracksIU, McTrackLabels>;
@@ -1425,7 +1427,7 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
                         McCollisions const& mcCollisions,
                         BCsInfo const&)
   {
-    // Match reconstructed candidates //
+    // Match reconstructed candidates
     for (const auto& candidate : candidates) {
       int indexRecCharmBaryon = -1;
       int indexRecCascade = -1;
