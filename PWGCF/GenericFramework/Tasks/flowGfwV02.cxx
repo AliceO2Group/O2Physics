@@ -1013,7 +1013,7 @@ struct FlowGfwV02 {
       double v22npt = 0;
       double ptMeanMid = pidStates.hPtMid[PidCharged]->GetMean();
       double ptFractionMid = 0.;
-      double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real(); // V22 weight for AB
+      double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();   // V22 weight for AB
       double dnxABAB = fGFW->Calculate(corrconfigs.at(1), 0, kTRUE).real(); // V22 weight for ABAB
 
       // Check if the V22 weight is valid
