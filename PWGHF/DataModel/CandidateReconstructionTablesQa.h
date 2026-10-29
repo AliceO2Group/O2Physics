@@ -163,6 +163,7 @@ DECLARE_SOA_TABLE(HfCandCascBachBaseQa, "AOD", "HFCASCBACHBASE",
                   hf_cand::ImpactParameterXY<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::Cpa<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::CpaXY<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_2prong::Px, hf_cand_2prong::Py>,
+                  // TODO: investigate if these decay lenghts should not be computed w.r.t. the primary vertex
                   hf_cand_casc_bach_qa::DecayLengthCascade<collision::PosX, collision::PosY, collision::PosZ, hf_cand_casc_bach_qa::XCascadeVertex, hf_cand_casc_bach_qa::YCascadeVertex, hf_cand_casc_bach_qa::ZCascadeVertex>,
                   hf_cand_casc_bach_qa::DecayLengthXYCascade<collision::PosX, collision::PosY, hf_cand_casc_bach_qa::XCascadeVertex, hf_cand_casc_bach_qa::YCascadeVertex>,
                   hf_cand_casc_bach_qa::DecayLengthV0<collision::PosX, collision::PosY, collision::PosZ, hf_cand_casc_bach_qa::XV0Vertex, hf_cand_casc_bach_qa::YV0Vertex, hf_cand_casc_bach_qa::ZV0Vertex>,

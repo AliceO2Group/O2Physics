@@ -18,7 +18,7 @@
 #include "PWGHF/Core/HfMlResponseOmegacToOmegaPiQa.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
@@ -70,9 +70,9 @@ enum {
 /// Struct for applying Omegac0 -> Omega pi selection cuts
 struct HfCandidateSelectorToOmegaPiQa {
   // DCAFitter and KFParticle
-  Produces<aod::HfSelToOmegaPi> hfSelToOmegaPi;
+  Produces<HfSelToOmegaPi> hfSelToOmegaPi;
   // ML selection - filled for both DCAFitter and KFParticle
-  Produces<aod::HfMlSelOmegacToOmegaPi> hfMlSelToOmegaPi;
+  Produces<HfMlSelOmegacToOmegaPi> hfMlSelToOmegaPi;
 
   // cuts from SelectorCuts.h  - pT dependent cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_omegac_to_omega_pi::vecBinsPt}, "pT bin limits"};
@@ -376,13 +376,12 @@ struct HfCandidateSelectorToOmegaPiQa {
   template <int svReco, typename T>
   bool selectOnLf(const T& candidate)
   {
-
     registry.fill(HIST("hSelStatusLf"), 0.0);
 
     // Eta selection of V0, Cascade daughters
-    double etaV0PosDau = candidate.etaV0PosDau();
-    double etaV0NegDau = candidate.etaV0NegDau();
-    double etaKaFromCasc = candidate.etaBachFromCasc();
+    double etaV0PosDau = candidate.posTrack_as<TracksSelLf>().eta();
+    double etaV0NegDau = candidate.negTrack_as<TracksSelLf>().eta();
+    double etaKaFromCasc = candidate.bachelor_as<TracksSelLf>().eta();
 
     if (std::abs(etaV0PosDau) > etaTrackLFDauMax) {
       return false;
@@ -400,8 +399,8 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusLf"), 3.0);
 
     // Minimum radius cut
-    double radiusV0 = RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxV0(), candidate.yDecayVtxV0());
-    double radiusCasc = RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxCascade(), candidate.yDecayVtxCascade());
+    double radiusV0 = RecoDecay::sqrtSumOfSquares(candidate.xV0Vertex(), candidate.yV0Vertex());
+    double radiusCasc = RecoDecay::sqrtSumOfSquares(candidate.xCascadeVertex(), candidate.yCascadeVertex());
 
     if (radiusV0 < radiusV0Min) {
       return false;
@@ -413,43 +412,43 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusLf"), 5.0);
 
     // Cosine of pointing angle
-    if (candidate.cosPAV0() < cosPAV0Min) {
+    if (candidate.cpaV0() < cosPAV0Min) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 6.0);
-    if (candidate.cosPACasc() < cosPACascMin) {
+    if (candidate.cpaCasc() < cosPACascMin) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 7.0);
 
     // Distance of Closest Approach(DCA)
-    if (candidate.dcaV0Dau() > dcaV0DauMax) {
+    if (candidate.dcaV0Daughters() > dcaV0DauMax) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 8.0);
 
-    if (candidate.dcaCascDau() > dcaCascDauMax) {
+    if (candidate.dcaCascadeDaughters() > dcaCascDauMax) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 9.0);
 
-    if (std::abs(candidate.dcaXYToPvV0Dau0()) < dcaPosToPvMin) {
+    if (std::abs(candidate.impactParameterXYV0PosDau()) < dcaPosToPvMin) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 10.0);
 
-    if (std::abs(candidate.dcaXYToPvV0Dau1()) < dcaNegToPvMin) {
+    if (std::abs(candidate.impactParameterXYV0NegDau()) < dcaNegToPvMin) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 11.0);
 
-    if (std::abs(candidate.dcaXYToPvCascDau()) < dcaBachToPvMin) {
+    if (std::abs(candidate.impactParameterXYCascadeBach()) < dcaBachToPvMin) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 12.0);
 
     // pT: Bachelor
-    double ptKaFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
+    double ptKaFromCasc = candidate.bachelor_as<TracksSelLf>().pt();
     if (std::abs(ptKaFromCasc) < ptKaFromCascMin) {
       return false;
     }
@@ -459,69 +458,71 @@ struct HfCandidateSelectorToOmegaPiQa {
     if constexpr (svReco == doKfParticle) {
       if (kfConfigurableGroup.applyKFpreselections) {
         // Cosine of Pointing angle
-        if (candidate.cosPaV0ToCasc() < kfConfigurableGroup.cosPaV0ToCascMin) {
+        if (candidate.cpaV0ToCascade() < kfConfigurableGroup.cosPaV0ToCascMin) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 14.0);
 
         // Chi2
-        if (candidate.v0Chi2OverNdf() < 0 || candidate.v0Chi2OverNdf() > kfConfigurableGroup.v0Chi2OverNdfMax) {
+        if (candidate.chi2GeoOverNdfV0() < 0 || candidate.chi2GeoOverNdfV0() > kfConfigurableGroup.v0Chi2OverNdfMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 15.0);
-        if (candidate.cascChi2OverNdf() < 0 || candidate.cascChi2OverNdf() > kfConfigurableGroup.cascChi2OverNdfMax) {
+        if (candidate.chi2GeoOverNdfCascade() < 0 || candidate.chi2GeoOverNdfCascade() > kfConfigurableGroup.cascChi2OverNdfMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 16.0);
-        if (candidate.chi2TopoCascToPv() < 0 || candidate.chi2TopoCascToPv() > kfConfigurableGroup.chi2TopoCascToPvMax) {
+        if (candidate.chi2TopoCascadeToPv() < 0 || candidate.chi2TopoCascadeToPv() > kfConfigurableGroup.chi2TopoCascToPvMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 17.0);
-        if (candidate.chi2TopoV0ToCasc() < 0 || candidate.chi2TopoV0ToCasc() > kfConfigurableGroup.chi2TopoV0ToCascMax) {
+        if (candidate.chi2TopoV0ToCascade() < 0 || candidate.chi2TopoV0ToCascade() > kfConfigurableGroup.chi2TopoV0ToCascMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 18.0);
 
         // ldl
-        if (candidate.v0ldl() < kfConfigurableGroup.v0LdlMin) {
+        if (candidate.decayLengthNormKfV0() < kfConfigurableGroup.v0LdlMin) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 19.0);
-        if (candidate.cascldl() < kfConfigurableGroup.cascLdlMin) {
+        if (candidate.decayLengthNormKfCascade() < kfConfigurableGroup.cascLdlMin) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 20.0);
 
         // Decay length
-        if (std::abs(candidate.decayLenXYLambda()) < kfConfigurableGroup.decayLenXYLambdaMin) {
+        if (std::abs(candidate.decayLengthXYV0()) < kfConfigurableGroup.decayLenXYLambdaMin) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 21.0);
-        if (std::abs(candidate.decayLenXYCasc()) < kfConfigurableGroup.decayLenXYCascMin) {
+        if (std::abs(candidate.decayLengthXYCascade()) < kfConfigurableGroup.decayLenXYCascMin) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 22.0);
 
+        // TODO: fix cascRejectInvmass variable needed not available in the current table
+
         // Competing Xi rejection
-        if (kfConfigurableGroup.applyCompetingCascRejection) {
-          const auto invMassXiHypothesis = candidate.cascRejectInvmass();
-
-          if (std::abs(invMassXiHypothesis - o2::constants::physics::MassXiMinus) < kfConfigurableGroup.cascadeRejMassWindow) {
-            registry.fill(HIST("hSelCompetingCasc"), 0.0);
-            return false;
-          }
-
-          registry.fill(HIST("hSelCompetingCasc"), 1.0);
-          registry.fill(HIST("hInvMassXiMinus_rej_cut"), invMassXiHypothesis);
-        }
+        // if (kfConfigurableGroup.applyCompetingCascRejection) {
+        //  const auto invMassXiHypothesis = candidate.cascRejectInvmass();
+        //
+        //  if (std::abs(invMassXiHypothesis - o2::constants::physics::MassXiMinus) < kfConfigurableGroup.cascadeRejMassWindow) {
+        //    registry.fill(HIST("hSelCompetingCasc"), 0.0);
+        //    return false;
+        //  }
+        //
+        //  registry.fill(HIST("hSelCompetingCasc"), 1.0);
+        //  registry.fill(HIST("hInvMassXiMinus_rej_cut"), invMassXiHypothesis);
+        //}
       }
     } else {
       // Impact parameter
-      if (std::abs(candidate.impactParCascXY()) < impactParameterXYCascMin || std::abs(candidate.impactParCascXY()) > impactParameterXYCascMax) {
+      if (std::abs(candidate.impactParameter0()) < impactParameterXYCascMin || std::abs(candidate.impactParameter0()) > impactParameterXYCascMax) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 14.0);
-      if (std::abs(candidate.impactParCascZ()) < impactParameterZCascMin || std::abs(candidate.impactParCascZ()) > impactParameterZCascMax) {
+      if (std::abs(candidate.impactParameterZ0()) < impactParameterZCascMin || std::abs(candidate.impactParameterZ0()) > impactParameterZCascMax) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 15.0);
@@ -540,19 +541,18 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusHf"), 0.0);
 
     // eta selection on charm bayron bachelor
-    if (std::abs(candidate.etaBachFromCharmBaryon()) > etaTrackCharmBachMax) {
+    if (std::abs(candidate.prong1_as<TracksSel>().eta()) > etaTrackCharmBachMax) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 1.0);
     // Distance of Closest Approach(DCA)
-    if (candidate.dcaCharmBaryonDau() > dcaCharmBaryonDauMax) {
+    if (candidate.dcaDaughters() > dcaCharmBaryonDauMax) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 2.0);
 
     // pT: Charm Bachelor
-    double ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
-    if (inputPtBin < 0 || ptPiFromCharmBaryon < cuts->get(inputPtBin, "pT pi from Omegac")) {
+    if (inputPtBin < 0 || candidate.pt() < cuts->get(inputPtBin, "pT pi from Omegac")) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 3.0);
@@ -561,56 +561,56 @@ struct HfCandidateSelectorToOmegaPiQa {
     if constexpr (svReco == doKfParticle) {
       if (kfConfigurableGroup.applyKFpreselections) {
         // Omegac Pt selection
-        if (std::abs(candidate.kfptOmegac()) <= ptCandMin || std::abs(candidate.kfptOmegac()) >= ptCandMax) {
+        if (std::abs(candidate.pt()) <= ptCandMin || std::abs(candidate.pt()) >= ptCandMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 4.0);
 
         // Cosine of pointing angle
-        if (candidate.cosPaCascToOmegac() < kfConfigurableGroup.cosPaCascToOmegacMin) {
+        if (candidate.cpaCascadeToCharmHadron() < kfConfigurableGroup.cosPaCascToOmegacMin) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 5.0);
 
         // Chi2
-        if (candidate.omegacChi2OverNdf() < 0 || candidate.omegacChi2OverNdf() > kfConfigurableGroup.omegacChi2OverNdfMax) {
+        if (candidate.chi2GeoOverNdfCascade() < 0 || candidate.chi2GeoOverNdfCascade() > kfConfigurableGroup.omegacChi2OverNdfMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 6.0);
-        if (candidate.chi2TopoOmegacToPv() < 0 || candidate.chi2TopoOmegacToPv() > kfConfigurableGroup.chi2TopoOmegacToPvMax) {
+        if (candidate.chi2TopoCascadeToPv() < 0 || candidate.chi2TopoCascadeToPv() > kfConfigurableGroup.chi2TopoOmegacToPvMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 7.0);
-        if (candidate.chi2TopoCascToOmegac() < 0 || candidate.chi2TopoCascToOmegac() > kfConfigurableGroup.chi2TopoCascToOmegacMax) {
+        if (candidate.chi2TopoCascadeToCharmHadron() < 0 || candidate.chi2TopoCascadeToCharmHadron() > kfConfigurableGroup.chi2TopoCascToOmegacMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 8.0);
 
         // Decay Length
-        if (std::abs(candidate.decayLenXYOmegac()) > kfConfigurableGroup.decayLenXYOmegacMax) {
+        if (std::abs(candidate.decayLengthXY()) > kfConfigurableGroup.decayLenXYOmegacMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 9.0);
 
         // ctau
-        if (std::abs(candidate.cTauOmegac()) > kfConfigurableGroup.cTauOmegacMax) {
+        if (std::abs(HfHelperQa::ctOmegaczero(candidate)) > kfConfigurableGroup.cTauOmegacMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 10.0);
 
         // Omegac l/dl
-        if (candidate.omegacldl() > kfConfigurableGroup.omegacLdlMax) {
+        if (candidate.decayLengthNormKf() > kfConfigurableGroup.omegacLdlMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 11.0);
       }
     } else {
       // Impact parameter
-      if ((std::abs(candidate.impactParBachFromCharmBaryonXY()) < impactParameterXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonXY()) > impactParameterXYPiFromCharmBaryonMax)) {
+      if ((std::abs(candidate.impactParameter1()) < impactParameterXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParameter1()) > impactParameterXYPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 4.0);
-      if ((std::abs(candidate.impactParBachFromCharmBaryonZ()) < impactParameterZPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonZ()) > impactParameterZPiFromCharmBaryonMax)) {
+      if ((std::abs(candidate.impactParameterz1()) < impactParameterZPiFromCharmBaryonMin) || (std::abs(candidate.impactParameterz1()) > impactParameterZPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 5.0);
@@ -634,14 +634,12 @@ struct HfCandidateSelectorToOmegaPiQa {
       auto trackV0PosDau = lfTracks.rawIteratorAt(candidate.posTrackId());
       auto trackV0NegDau = lfTracks.rawIteratorAt(candidate.negTrackId());
       auto trackKaFromCasc = lfTracks.rawIteratorAt(candidate.bachelorId());
-      auto trackPiFromCharm = tracks.rawIteratorAt(candidate.bachelorFromCharmBaryonId());
+      auto trackPiFromCharm = tracks.rawIteratorAt(candidate.prong1Id());
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int8_t const signDecay = candidate.signDecay(); // sign of pi <- cascade
-
-      if (signDecay > 0) {
+      if (trackPiFromCharm.sign() < 0) {
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
         registry.fill(HIST("hSelSignDec"), 1); // anti-particle decay
@@ -650,7 +648,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       }
 
       // pT selection
-      auto ptCandOmegac = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+      auto ptCandOmegac = candidate.pt();
 
       if (ptCandOmegac < ptCandMin || ptCandOmegac > ptCandMax) {
         resultSelections = false;
@@ -786,9 +784,9 @@ struct HfCandidateSelectorToOmegaPiQa {
       bool statusInvMassCascade = false;
       bool statusInvMassCharmBaryon = false;
 
-      double const invMassLambda = candidate.invMassLambda();
-      double const invMassCascade = candidate.invMassCascade();
-      double const invMassCharmBaryon = candidate.invMassCharmBaryon();
+      double const invMassLambda = candidate.massLambda();
+      double const invMassCascade = candidate.massCascade();
+      double const invMassCharmBaryon = HFHelperQa::invMassOmegaczeroToOmegaPi(candidate);
 
       if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
         statusInvMassLambda = true;
@@ -847,7 +845,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && statusInvMassCharmBaryon && resultSelections) {
         registry.fill(HIST("hInvMassCharmBaryon"), invMassCharmBaryon);
         if constexpr (svReco == doKfParticle) {
-          registry.fill(HIST("hPtCharmBaryon"), candidate.kfptOmegac());
+          registry.fill(HIST("hPtCharmBaryon"), candidate.pt());
         } else {
           registry.fill(HIST("hPtCharmBaryon"), ptCandOmegac);
         }
@@ -859,7 +857,7 @@ struct HfCandidateSelectorToOmegaPiQa {
   ///////////////////////////////////
   ///    Process with DCAFitter    //
   ///////////////////////////////////
-  void processOmegac0SelectorWithDCAFitter(aod::HfCandToOmegaPi const& candidates,
+  void processOmegac0SelectorWithDCAFitter(HfCandCascBachQa const& candidates,
                                            TracksSel const& tracks,
                                            TracksSelLf const& lfTracks)
   {
@@ -870,7 +868,7 @@ struct HfCandidateSelectorToOmegaPiQa {
   ////////////////////////////////////
   ///    Process with KFParticle    //
   ////////////////////////////////////
-  void processOmegac0SelectorWithKFParticle(soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf> const& candidates,
+  void processOmegac0SelectorWithKFParticle(soa::Join<HfCandCascBachQa, HfCandCascBachKfQa> const& candidates,
                                             TracksSel const& tracks,
                                             TracksSelLf const& lfTracks)
   {
