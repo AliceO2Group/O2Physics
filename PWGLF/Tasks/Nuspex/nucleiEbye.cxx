@@ -9,21 +9,30 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include <utility>
-#include <random>
-#include <iostream>
-#include <memory>
-#include <algorithm>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
 #include "PWGLF/DataModel/LFEbyeTables.h"
 
-#include "TDatabasePDG.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THnSparse.h>
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <random>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -180,7 +189,7 @@ struct nucleiEbye {
     return true;
   }
 
-  void fillHistoN(std::shared_ptr<THnSparse> hFull, std::shared_ptr<TH2> const& hTmp, int const subsample, int const centrality)
+  void fillHistoN(const std::shared_ptr<THnSparse>& hFull, std::shared_ptr<TH2> const& hTmp, int const subsample, int const centrality)
   {
     for (int iEta{1}; iEta < hTmp->GetNbinsX() + 1; ++iEta) {
       for (int iPt{1}; iPt < hTmp->GetNbinsY() + 1; ++iPt) {
@@ -193,7 +202,7 @@ struct nucleiEbye {
     }
   }
 
-  void fillHistoN(std::shared_ptr<THnSparse> hFull, std::shared_ptr<TH2> const& hTmpA, std::shared_ptr<TH2> const& hTmpB, int const subsample, int const centrality)
+  void fillHistoN(const std::shared_ptr<THnSparse>& hFull, std::shared_ptr<TH2> const& hTmpA, std::shared_ptr<TH2> const& hTmpB, int const subsample, int const centrality)
   {
     for (int iEta{1}; iEta < hTmpA->GetNbinsX() + 1; ++iEta) {
       auto eta = hTmpA->GetXaxis()->GetBinCenter(iEta);
@@ -491,6 +500,10 @@ struct nucleiEbye {
       CandidateV0 candV0;
       candV0.pt = -999.f;
       candV0.eta = -999.f;
+      candV0.mass = -999.f;
+      candV0.cpa = -999.f;
+      candV0.dcav0daugh = -999.f;
+      candV0.dcav0pv = -999.f;
       candV0.globalIndexPos = -999;
       candV0.globalIndexNeg = -999;
       candidateV0s.push_back(candV0);

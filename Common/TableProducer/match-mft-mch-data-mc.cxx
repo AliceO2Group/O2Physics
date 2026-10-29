@@ -503,7 +503,7 @@ struct match_mft_mch_data_mc {
   };
 
   template <typename MUON>
-  bool isGoodMuonQuality(MUON muontrack)
+  bool isGoodMuonQuality(const MUON& muontrack)
   {
     if (!muontrack.has_collision())
       return false;
@@ -521,7 +521,7 @@ struct match_mft_mch_data_mc {
   }
 
   template <typename MUON>
-  bool isGoodMuonKine(MUON muontrack)
+  bool isGoodMuonKine(const MUON& muontrack)
   {
     if (fEtaMchLow > muontrack.getEta() || muontrack.getEta() > fEtaMchUp)
       return false;
@@ -529,7 +529,7 @@ struct match_mft_mch_data_mc {
   }
 
   template <typename MFT>
-  bool isGoodMFTQuality(MFT mfttrack)
+  bool isGoodMFTQuality(const MFT& mfttrack)
   {
     if (!mfttrack.has_collision())
       return false;
@@ -541,7 +541,7 @@ struct match_mft_mch_data_mc {
   }
 
   template <typename MFT>
-  bool isGoodMFTKine(MFT mfttrack)
+  bool isGoodMFTKine(const MFT& mfttrack)
   {
     if (fEtaMftLow > mfttrack.getEta() || mfttrack.getEta() > fEtaMftUp)
       return false;
@@ -556,7 +556,7 @@ struct match_mft_mch_data_mc {
   template <typename MUONs, typename Collisions>
   void setMUONs(MUONs const& muontracks, Collisions const& collisions)
   {
-    for (auto muontrack : muontracks) {
+    for (const auto& muontrack : muontracks) {
       if (!isGoodMuonQuality(muontrack))
         continue;
       o2::dataformats::GlobalFwdTrack muontrack_at_pv = propagateMUONtoPV(muontrack, collisions);
@@ -595,7 +595,7 @@ struct match_mft_mch_data_mc {
   template <typename MFTs, typename Collisions>
   void setMFTs(MFTs const& mfttracks, Collisions const& collisions, o2::field::MagneticField* field)
   {
-    for (auto mfttrack : mfttracks) {
+    for (const auto& mfttrack : mfttracks) {
       if (!isGoodMFTQuality(mfttrack))
         continue;
 
@@ -643,7 +643,7 @@ struct match_mft_mch_data_mc {
       ccdbManager->get<TGeoManager>(geoPath);
     }
     o2::mch::TrackExtrap::setField();
-    fieldB = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    fieldB = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
   }
 
   void init(o2::framework::InitContext&)
@@ -703,7 +703,7 @@ struct match_mft_mch_data_mc {
 
           tableMatchingParams(matching.getGMPtAtDCA(),
                               matching.getGMEtaAtDCA(),
-                              static_cast<int16_t>(matching.getGMQ()),
+                              matching.getGMQ(),
                               matching.getDpt(),
                               matching.getDx(),
                               matching.getDy(),
@@ -732,7 +732,7 @@ struct match_mft_mch_data_mc {
 
             tableMixMatchingParams(matching.getGMPtAtDCA(),
                                    matching.getGMEtaAtDCA(),
-                                   static_cast<int16_t>(matching.getGMQ()),
+                                   matching.getGMQ(),
                                    matching.getDpt(),
                                    matching.getDx(),
                                    matching.getDy(),

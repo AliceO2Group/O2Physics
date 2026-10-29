@@ -60,12 +60,12 @@ class EventPlaneHelper
   }
 
   // Methods to calculate the azimuthal angles for each part of FIT, given the channel number.
-  double GetPhiFT0(int chno, o2::ft0::Geometry ft0geom);
+  double GetPhiFT0(int chno, const o2::ft0::Geometry& ft0geom);
   double GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom);
 
   // Method to get the Q-vector and sum of amplitudes for any channel in FIT, given
   // the detector and amplitude.
-  void SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum, o2::ft0::Geometry ft0geom, o2::fv0::Geometry* fv0geom);
+  void SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum, const o2::ft0::Geometry& ft0geom, o2::fv0::Geometry* fv0geom);
 
   // Method to get the bin corresponding to a centrality percentile, according to the
   // centClasses[] array defined in Tasks/qVectorsQA.cxx.
@@ -81,13 +81,13 @@ class EventPlaneHelper
   void DoRescale(float& qx, float& qy, float ap, float am);
 
   // Method to get the recentering correction on the Qx-Qy distribution.
-  void GetCorrRecentering(const std::shared_ptr<TH2> histQ, float& meanX, float& meanY);
+  void GetCorrRecentering(const std::shared_ptr<TH2>& histQ, float& meanX, float& meanY);
 
   // Method to get the std. deviation on the Qx-Qy distribution.
-  void GetCorrWidth(const std::shared_ptr<TH2> histQ, float& stdX, float& stdY);
+  void GetCorrWidth(const std::shared_ptr<TH2>& histQ, float& stdX, float& stdY);
 
   // Method to get the twist and rescale correction on the Qx-Qy distribution.
-  void GetCorrTwistRecale(const std::shared_ptr<TH2> histQ,
+  void GetCorrTwistRecale(const std::shared_ptr<TH2>& histQ,
                           float& aPlus, float& aMinus,
                           float& lambdaPlus, float& lambdaMinus);
 

@@ -16,30 +16,48 @@
 #ifndef PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 #define PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 
-// simple checkers, but ensure 8 bit integers
-#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
-
-#include "TableHelper.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h" // IWYU pragma: keep
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
 
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
+#include <Framework/Concepts.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataSpecUtils.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+
+#include <TH1.h>
+#include <TMCProcess.h>
+#include <TMath.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
-#include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
+
+// simple checkers, but ensure 8 bit integers
+#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
 
 //__________________________________________
 // strangeness builder module
@@ -175,15 +193,51 @@ enum tableIndex { kV0Indices = 0,
                   kCascFoundTags,
                   nTables };
 
+// statics necessary for the configurables in this namespace
+static constexpr int nPreselectParameters = 1;
+static const std::vector<std::string> preselectParticleNames{
+  "Photon",
+  "K0s",
+  "Lambda",
+  "AntiLambda",
+  "XiMinus",
+  "XiPlus",
+  "OmegaMinus",
+  "OmegaPlus"};
+
+static constexpr int nPreselectParticles = 8;
+static const int defaultPreselectParameters[nPreselectParticles][nPreselectParameters]{
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0}};
+
+// table index : match order above
+enum preselectParticleIndex { kGamma = 0,
+                              kK0Short,
+                              kLambda,
+                              kAntiLambda,
+                              kXiMinus,
+                              kXiPlus,
+                              kOmegaMinus,
+                              kOmegaPlus,
+                              nPartTypes };
+
 enum V0PreSelection : uint8_t { selGamma = 0,
                                 selK0Short,
                                 selLambda,
-                                selAntiLambda };
+                                selAntiLambda,
+                                nSelV0Types };
 
 enum CascPreSelection : uint8_t { selXiMinus = 0,
                                   selXiPlus,
                                   selOmegaMinus,
-                                  selOmegaPlus };
+                                  selOmegaPlus,
+                                  nSelCascTypes };
 
 static constexpr float defaultK0MassWindowParameters[1][4] = {{2.81882e-03, 1.14057e-03, 1.72138e-03, 5.00262e-01}};
 static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
@@ -281,6 +335,9 @@ struct coreConfigurables : o2::framework::ConfigurableGroup {
 
   // test the possibility of refitting with material corrections (DCA Fitter option)
   o2::framework::Configurable<bool> refitWithMaterialCorrection{"refitWithMaterialCorrection", false, "do refit after material corrections were applied"};
+
+  // enable old convariance matrix calculation until this has been fully tested
+  o2::framework::Configurable<bool> useOldModeDCAFitter{"useOldModeDCAFitter", true, "Use old mode for DCA fitter?"};
 };
 
 // strangenessBuilder: V0 building options
@@ -288,6 +345,7 @@ struct v0Configurables : o2::framework::ConfigurableGroup {
   std::string prefix = "v0BuilderOpts";
   o2::framework::Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
   o2::framework::Configurable<bool> moveTPCOnlyTracks{"moveTPCOnlyTracks", true, "if dealing with TPC-only tracks, move them according to TPC drift / time info"};
+  o2::framework::Configurable<bool> useSideBasedCorrection{"useSideBasedCorrection", false, "when moving TPC-only tracks, use TPC side flags (with legacy fallback) instead of tgl sign"};
 
   // baseline conditionals of V0 building
   o2::framework::Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
@@ -350,9 +408,11 @@ struct cascadeConfigurables : o2::framework::ConfigurableGroup {
 // preselection options
 struct preSelectOpts : o2::framework::ConfigurableGroup {
   std::string prefix = "preSelectOpts";
-  o2::framework::Configurable<bool> preselectOnlyDesiredV0s{"preselectOnlyDesiredV0s", false, "preselect only V0s with compatible TPC PID and mass info"};
-  o2::framework::Configurable<bool> preselectOnlyDesiredCascades{"preselectOnlyDesiredCascades", false, "preselect only Cascades with compatible TPC PID and mass info"};
+  o2::framework::Configurable<o2::framework::LabeledArray<int>> preselectedSpecies{"preselectedSpecies",
+                                                                                   {defaultPreselectParameters[0], nPreselectParticles, nPreselectParameters, preselectParticleNames, parameterNames},
+                                                                                   "Preselect this species with compatible TPC PID and mass info: 0/1 is false/true"};
 
+  std::vector<int> mEnabledPreselectedSpecies; // Vector of enabled preselected particle species
   // lifetime preselection options
   // apply lifetime cuts to V0 and cascade candidates
   // unit of measurement: centimeters
@@ -375,12 +435,59 @@ struct preSelectOpts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> maxTPCpidNsigma{"maxTPCpidNsigma", 5.0, "Maximum TPC PID N sigma (in abs value)"};
 };
 
+// collision preselection options
+struct eventSelectOpts : o2::framework::ConfigurableGroup {
+  std::string prefix = "eventSelectOpts"; // JSON group name
+  o2::framework::Configurable<bool> fillOnlySelectedCollisions{"fillOnlySelectedCollisions", false, "Fill only tables for selected collisions"};
+  o2::framework::Configurable<bool> requireTriggerTVX{"requireTriggerTVX", false, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level  (Run 3 only)"};
+  o2::framework::Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", false, "reject events at ITS ROF border (Run 3 only)"};
+  o2::framework::Configurable<bool> rejectTFBorder{"rejectTFBorder", false, "reject events at TF border (Run 3 only)"};
+  o2::framework::Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions in case of pileup with another collision in the same foundBC (Run 3 only)"};
+  o2::framework::Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
+
+  o2::framework::Configurable<bool> cfgApplyRCTrequirement{"cfgApplyRCTrequirement", false, "Apply RCT requirement?"};
+  o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+  o2::framework::Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Include ZDC flags in the bit selection (for Pb-Pb only)"};
+  o2::framework::Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+};
+
 class BuilderModule
 {
  public:
   BuilderModule()
   {
     // constructor
+  }
+
+  template <typename TCollision>
+  bool isCollisionAccepted(TCollision collision)
+  // check whether the collision passes our collision selections
+  {
+    if (eventSelectOpts.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+
+    if (eventSelectOpts.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+
+    if (eventSelectOpts.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
+    if (std::abs(collision.posZ()) > eventSelectOpts.maxZVtxPosition) {
+      return false;
+    }
+
+    if (eventSelectOpts.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+
+    if (!eventSelectOpts.cfgApplyRCTrequirement && !rctFlagsChecker(collision)) {
+      return false;
+    }
+
+    return true;
   }
 
   // mass windows
@@ -514,9 +621,12 @@ class BuilderModule
   o2::pwglf::strangenessbuilder::v0Configurables v0BuilderOpts;
   o2::pwglf::strangenessbuilder::cascadeConfigurables cascadeBuilderOpts;
   o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
+  o2::pwglf::strangenessbuilder::eventSelectOpts eventSelectOpts;
 
-  template <typename TBaseConfigurables, typename TV0Configurables, typename TCascadeConfigurables, typename TPreSelOpts, typename THistoRegistry, typename TInitContext>
-  void init(TBaseConfigurables const& inputBaseOpts, TV0Configurables const& inputV0BuilderOpts, TCascadeConfigurables const& inputCascadeBuilderOpts, TPreSelOpts const& inputPreSelectOpts, THistoRegistry& histos, TInitContext& context)
+  o2::aod::rctsel::RCTFlagsChecker rctFlagsChecker;
+
+  template <typename TBaseConfigurables, typename TV0Configurables, typename TCascadeConfigurables, typename TPreSelOpts, typename TPreEventSelOpts, typename THistoRegistry, typename TInitContext>
+  void init(TBaseConfigurables const& inputBaseOpts, TV0Configurables const& inputV0BuilderOpts, TCascadeConfigurables const& inputCascadeBuilderOpts, TPreSelOpts const& inputPreSelectOpts, TPreEventSelOpts const& inputEventSelectOpts, THistoRegistry& histos, TInitContext& context)
   {
     // read in configurations from the task where it's used
     // could be grouped even further, but should work
@@ -524,6 +634,7 @@ class BuilderModule
     v0BuilderOpts = inputV0BuilderOpts;
     cascadeBuilderOpts = inputCascadeBuilderOpts;
     preSelectOpts = inputPreSelectOpts;
+    eventSelectOpts = inputEventSelectOpts;
 
     baseOpts.mEnabledTables.resize(nTables, 0);
 
@@ -539,6 +650,7 @@ class BuilderModule
       if (f == 1) {
         baseOpts.mEnabledTables[i] = 1;
         listOfRequestors[i] = "manual enabling";
+        nEnabledTables++;
       }
       if (f == -1) {
         // autodetect this table in other devices
@@ -552,6 +664,8 @@ class BuilderModule
                 tableNameWithVersion += Form("_%03d", version);
               }
               if (input.matcher.binding == tableNameWithVersion) {
+                if (device.name == "strangenesstofpid")
+                  continue;
                 LOGF(info, "Device %s has subscribed to %s (version %i)", device.name, tableNames[i], version);
                 listOfRequestors[i].Append(Form("%s ", device.name.c_str()));
                 baseOpts.mEnabledTables[i] = 1;
@@ -569,18 +683,27 @@ class BuilderModule
     }
 
     // setup bookkeeping histogram
-    auto h = histos.template add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
-    auto h2 = histos.template add<TH1>("hInputStatistics", "hInputStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h = histos.template add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", o2::framework::HistType::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h2 = histos.template add<TH1>("hInputStatistics", "hInputStatistics", o2::framework::HistType::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
     h2->SetTitle("Input table sizes");
 
     if (v0BuilderOpts.generatePhotonCandidates.value == true) {
-      auto hDeduplicationStatistics = histos.template add<TH1>("hDeduplicationStatistics", "hDeduplicationStatistics", o2::framework::kTH1D, {{2, -0.5f, 1.5f}});
+      auto hDeduplicationStatistics = histos.template add<TH1>("hDeduplicationStatistics", "hDeduplicationStatistics", o2::framework::HistType::kTH1D, {{2, -0.5f, 1.5f}});
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(1, "AO2D V0s");
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(2, "Deduplicated V0s");
     }
 
-    if (preSelectOpts.preselectOnlyDesiredV0s.value == true) {
-      auto hPreselectionV0s = histos.template add<TH1>("hPreselectionV0s", "hPreselectionV0s", o2::framework::kTH1D, {{16, -0.5f, 15.5f}});
+    preSelectOpts.mEnabledPreselectedSpecies.resize(nPreselectParticles, 0);
+    LOGF(info, "Checking if preselections on V0s and cascades are required");
+    for (int i = 0; i < nPreselectParticles; i++) {
+      if (preSelectOpts.preselectedSpecies->get(preselectParticleNames[i].c_str(), "enable")) {
+        preSelectOpts.mEnabledPreselectedSpecies[i] = 1;
+        LOGF(info, " ---> Preselection of %s enabled", preselectParticleNames[i]);
+      }
+    }
+
+    if (preSelectOpts.mEnabledPreselectedSpecies[kGamma] || preSelectOpts.mEnabledPreselectedSpecies[kK0Short] || preSelectOpts.mEnabledPreselectedSpecies[kLambda] || preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda]) {
+      auto hPreselectionV0s = histos.template add<TH1>("hPreselectionV0s", "hPreselectionV0s", o2::framework::HistType::kTH1D, {{16, -0.5f, 15.5f}});
       hPreselectionV0s->GetXaxis()->SetBinLabel(1, "Not preselected");
       hPreselectionV0s->GetXaxis()->SetBinLabel(2, "#gamma");
       hPreselectionV0s->GetXaxis()->SetBinLabel(3, "K^{0}_{S}");
@@ -599,8 +722,8 @@ class BuilderModule
       hPreselectionV0s->GetXaxis()->SetBinLabel(16, "#gamma, K^{0}_{S}, #Lambda, #bar{#Lambda}");
     }
 
-    if (preSelectOpts.preselectOnlyDesiredCascades.value == true) {
-      auto hPreselectionCascades = histos.template add<TH1>("hPreselectionCascades", "hPreselectionCascades", o2::framework::kTH1D, {{16, -0.5f, 15.5f}});
+    if (preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] || preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus]) {
+      auto hPreselectionCascades = histos.template add<TH1>("hPreselectionCascades", "hPreselectionCascades", o2::framework::HistType::kTH1D, {{16, -0.5f, 15.5f}});
       hPreselectionCascades->GetXaxis()->SetBinLabel(1, "Not preselected");
       hPreselectionCascades->GetXaxis()->SetBinLabel(2, "#Xi^{-}");
       hPreselectionCascades->GetXaxis()->SetBinLabel(3, "#Xi^{+}");
@@ -621,7 +744,7 @@ class BuilderModule
 
     if (baseOpts.mc_findableMode.value > 0) {
       // save statistics of findable candidate processing
-      auto hFindable = histos.template add<TH1>("hFindableStatistics", "hFindableStatistics", o2::framework::kTH1D, {{6, -0.5f, 5.5f}});
+      auto hFindable = histos.template add<TH1>("hFindableStatistics", "hFindableStatistics", o2::framework::HistType::kTH1D, {{6, -0.5f, 5.5f}});
       hFindable->SetTitle(Form("Findable mode: %i", static_cast<int>(baseOpts.mc_findableMode.value)));
       hFindable->GetXaxis()->SetBinLabel(1, "AO2D V0s");
       hFindable->GetXaxis()->SetBinLabel(2, "V0s to be built");
@@ -631,7 +754,7 @@ class BuilderModule
       hFindable->GetXaxis()->SetBinLabel(6, "Cascades with collId -1");
     }
 
-    auto hPrimaryV0s = histos.template add<TH1>("hPrimaryV0s", "hPrimaryV0s", o2::framework::kTH1D, {{2, -0.5f, 1.5f}});
+    auto hPrimaryV0s = histos.template add<TH1>("hPrimaryV0s", "hPrimaryV0s", o2::framework::HistType::kTH1D, {{2, -0.5f, 1.5f}});
     hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
     hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
 
@@ -705,6 +828,16 @@ class BuilderModule
 
     // Set option to refit with material corrections
     straHelper.fitter.setRefitWithMatCorr(baseOpts.refitWithMaterialCorrection.value);
+
+    // set option to enabled the old mode
+    straHelper.fitter.setOldMode(baseOpts.useOldModeDCAFitter.value);
+
+    // Initialise the RCTFlagsChecker
+    if (eventSelectOpts.cfgApplyRCTrequirement) {
+      rctFlagsChecker.init(eventSelectOpts.cfgRCTLabel.value, eventSelectOpts.cfgCheckZDC, eventSelectOpts.cfgTreatLimitedAcceptanceAsBad);
+    }
+
+    mVDriftMgr.setUseSideBasedCorrection(v0BuilderOpts.useSideBasedCorrection.value);
   }
 
   // for sorting
@@ -721,10 +854,34 @@ class BuilderModule
     return idx;
   }
 
-  template <typename TCollisions, typename TCCDB>
-  bool initCCDB(TCCDB& ccdb, aod::BCsWithTimestamps const& bcs, TCollisions const& collisions)
+  // Feed the V-drift manager from the aod::TpcCalibCCDBObjects column when the BC table
+  // carries it, else fall back to a CCDB query. Lets migrated and un-migrated tasks share
+  // this module unchanged.
+  template <typename TBCs, typename TCollision>
+  void updateVDrift(TCollision const& collision)
   {
-    auto bc = collisions.size() ? collisions.begin().template bc_as<aod::BCsWithTimestamps>() : bcs.begin();
+    auto const& bc = collision.template bc_as<TBCs>();
+    if constexpr (requires { bc.vdriftTgl(); }) {
+      mVDriftMgr.update(bc.vdriftTgl());
+    } else {
+      mVDriftMgr.update(bc.timestamp());
+    }
+  }
+
+  // Overload for tasks whose BC table carries the V-drift CCDB column: nothing in here
+  // needs a CCDB manager any more, so they need not own one.
+  template <typename TCollisions, typename TBCs>
+  bool initCCDB(TBCs const& bcs, TCollisions const& collisions)
+  {
+    static_assert(requires(typename TBCs::iterator bc) { bc.vdriftTgl(); }, "initCCDB without a CCDB manager needs a BC table joined with aod::TpcCalibCCDBObjects");
+    std::nullptr_t noCCDB{};
+    return initCCDB<TCollisions>(noCCDB, bcs, collisions);
+  }
+
+  template <typename TCollisions, typename TCCDB, typename TBCs>
+  bool initCCDB(TCCDB& ccdb, TBCs const& bcs, TCollisions const& collisions)
+  {
+    auto bc = collisions.size() ? collisions.begin().template bc_as<TBCs>() : bcs.begin();
     if (!bcs.size()) {
       LOGF(warn, "No BC found, skipping this DF.");
       return false; // signal to skip this DF
@@ -749,8 +906,12 @@ class BuilderModule
 
     if (v0BuilderOpts.generatePhotonCandidates.value && v0BuilderOpts.moveTPCOnlyTracks.value) {
       // initialize only if needed, avoid unnecessary CCDB calls
-      mVDriftMgr.init(&ccdb->instance());
-      mVDriftMgr.update(timestamp);
+      if constexpr (requires { bc.vdriftTgl(); }) {
+        mVDriftMgr.update(bc.vdriftTgl());
+      } else {
+        mVDriftMgr.init(&ccdb->instance());
+        mVDriftMgr.update(timestamp);
+      }
     }
 
     return true;
@@ -897,6 +1058,9 @@ class BuilderModule
 
             // handle TPC-only tracks properly (photon conversions)
             if (v0BuilderOpts.moveTPCOnlyTracks) {
+              if (collision.has_bc()) {
+                updateVDrift<TBCs>(collision);
+              }
               if (isPosTPCOnly) {
                 // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate
                 posTrackPar.setPID(o2::track::PID::Electron);
@@ -1101,7 +1265,7 @@ class BuilderModule
     sorted_v0 = sort_indices(v0List, (baseOpts.mc_findableMode.value > 0));
 
     // Cascade part if cores are requested, skip otherwise
-    if (baseOpts.mEnabledTables[kStoredCascCores] || baseOpts.mEnabledTables[kStoredKFCascCores]) {
+    if (baseOpts.mEnabledTables[kStoredCascCores] || baseOpts.mEnabledTables[kStoredKFCascCores] || baseOpts.mEnabledTables[kStoredTraCascCores]) {
       if (baseOpts.mc_findableMode.value < 2) {
         // simple passthrough: copy existing cascades to build list
         for (const auto& cascade : cascades) {
@@ -1368,6 +1532,12 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (eventSelectOpts.fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+          continue;
+        }
+        if (v0BuilderOpts.generatePhotonCandidates && v0BuilderOpts.moveTPCOnlyTracks && collision.has_bc()) {
+          updateVDrift<TBCs>(collision);
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(v0.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(v0.negTrackId);
@@ -1384,7 +1554,8 @@ class BuilderModule
           negTrackPar.setPID(o2::track::PID::Electron);
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
+          // if track cannot be uniquely identified with a collision or cannot be assigned to a collision at all (collisionId = -1), do not attempt to move the TPC track and move on
+          if (!posTrack.has_collision() || !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
             products.v0dataLink(-1, -1);
             continue;
           }
@@ -1397,10 +1568,54 @@ class BuilderModule
           negTrackPar.setPID(o2::track::PID::Electron);
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
+          // if track cannot be uniquely identified with a collision or cannot be assigned to a collision at all (collisionId = -1), do not attempt to move the TPC track and move on
+          if (!negTrack.has_collision() || !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
             products.v0dataLink(-1, -1);
             continue;
           }
+        }
+      }
+
+      std::vector<int> preSelectedPIDV0s;
+      if (preSelectOpts.mEnabledPreselectedSpecies[kGamma] || preSelectOpts.mEnabledPreselectedSpecies[kK0Short] || preSelectOpts.mEnabledPreselectedSpecies[kLambda] || preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda]) {
+        if constexpr (requires { posTrack.tpcNSigmaEl(); }) { // check PID for each particle species and mark which one passes the check
+          preSelectedPIDV0s.resize(nSelV0Types, 0);
+          if ( // photon PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kGamma] &&
+            std::abs(posTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDV0s[kGamma] = 1;
+          }
+
+          if ( // K0Short PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kK0Short] &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDV0s[kK0Short] = 1;
+          }
+
+          if ( // Lambda PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kLambda] &&
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDV0s[kLambda] = 1;
+          }
+
+          if ( // antiLambda PID, mass, lifetime selection
+            preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda] &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDV0s[kAntiLambda] = 1;
+          }
+
+          // if particle species pass the PID selections, move onto the next candidates
+          if (!preSelectedPIDV0s[kGamma] && !preSelectedPIDV0s[kK0Short] && !preSelectedPIDV0s[kLambda] && !preSelectedPIDV0s[kAntiLambda]) {
+            histos.fill(HIST("hPreselectionV0s"), 0);
+            products.v0dataLink(-1, -1);
+            continue;
+          }
+        } else { // if no PID information is available, do not cut on it and mark all PID checks as true
+          preSelectedPIDV0s.resize(nSelV0Types, 1);
         }
       }
 
@@ -1408,61 +1623,55 @@ class BuilderModule
         products.v0dataLink(-1, -1);
         continue;
       }
-      if constexpr (requires { posTrack.tpcNSigmaEl(); }) {
-        if (preSelectOpts.preselectOnlyDesiredV0s) {
-          float lPt = RecoDecay::sqrtSumOfSquares(
-            straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
-            straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1]);
+      if (preSelectOpts.mEnabledPreselectedSpecies[kGamma] || preSelectOpts.mEnabledPreselectedSpecies[kK0Short] || preSelectOpts.mEnabledPreselectedSpecies[kLambda] || preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda]) {
+        float lPt = RecoDecay::sqrtSumOfSquares(
+          straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
+          straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1]);
 
-          float lPtot = RecoDecay::sqrtSumOfSquares(
-            straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
-            straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1],
-            straHelper.v0.positiveMomentum[2] + straHelper.v0.negativeMomentum[2]);
+        float lPtot = RecoDecay::sqrtSumOfSquares(
+          straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
+          straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1],
+          straHelper.v0.positiveMomentum[2] + straHelper.v0.negativeMomentum[2]);
 
-          float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
-            straHelper.v0.position[0] - pvX,
-            straHelper.v0.position[1] - pvY,
-            straHelper.v0.position[2] - pvZ);
+        float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
+          straHelper.v0.position[0] - pvX,
+          straHelper.v0.position[1] - pvY,
+          straHelper.v0.position[2] - pvZ);
 
-          uint8_t maskV0Preselection = 0;
+        uint8_t maskV0Preselection = 0;
 
-          if ( // photon PID, mass, lifetime selection
-            std::abs(posTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(straHelper.v0.massGamma) < preSelectOpts.massCutPhoton) {
-            BITSET(maskV0Preselection, selGamma);
-          }
+        if ( // photon PID, mass, lifetime selection
+          preSelectOpts.mEnabledPreselectedSpecies[kGamma] && preSelectedPIDV0s[kGamma] &&
+          std::abs(straHelper.v0.massGamma) < preSelectOpts.massCutPhoton) {
+          BITSET(maskV0Preselection, selGamma);
+        }
 
-          if ( // K0Short PID, mass, lifetime selection
-            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassKaonNeutral * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutK0S") &&
-            std::abs(straHelper.v0.massK0Short - o2::constants::physics::MassKaonNeutral) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskV0Preselection, selK0Short);
-          }
+        if ( // K0Short PID, mass, lifetime selection
+          preSelectOpts.mEnabledPreselectedSpecies[kK0Short] && preSelectedPIDV0s[kK0Short] &&
+          o2::constants::physics::MassKaonNeutral * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutK0S") &&
+          std::abs(straHelper.v0.massK0Short - o2::constants::physics::MassKaonNeutral) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskV0Preselection, selK0Short);
+        }
 
-          if ( // Lambda PID, mass, lifetime selection
-            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            std::abs(straHelper.v0.massLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskV0Preselection, selLambda);
-          }
+        if ( // Lambda PID, mass, lifetime selection
+          preSelectOpts.mEnabledPreselectedSpecies[kLambda] && preSelectedPIDV0s[kLambda] &&
+          o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          std::abs(straHelper.v0.massLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskV0Preselection, selLambda);
+        }
 
-          if ( // antiLambda PID, mass, lifetime selection
-            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            std::abs(straHelper.v0.massAntiLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskV0Preselection, selAntiLambda);
-          }
+        if ( // antiLambda PID, mass, lifetime selection
+          preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda] && preSelectedPIDV0s[kAntiLambda] &&
+          o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          std::abs(straHelper.v0.massAntiLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskV0Preselection, selAntiLambda);
+        }
 
-          histos.fill(HIST("hPreselectionV0s"), maskV0Preselection);
+        histos.fill(HIST("hPreselectionV0s"), maskV0Preselection);
 
-          if (maskV0Preselection == 0) {
-            products.v0dataLink(-1, -1);
-            continue;
-          }
+        if (maskV0Preselection == 0) {
+          products.v0dataLink(-1, -1);
+          continue;
         }
       }
       if (v0Map[iv0] == -1 && baseOpts.useV0BufferForCascades) {
@@ -1634,7 +1843,7 @@ class BuilderModule
               //      code that is agnostic with respect to the joinability of
               //      V0Cores and V0MCCores (always dereference -> safe)
               if (baseOpts.mEnabledTables[kV0CoreMCLabels]) {
-                products.v0CoreMCLabels(iv0); // interlink index
+                products.v0CoreMCLabels(products.v0mccores.lastIndex()); // interlink index
                 histos.fill(HIST("hTableBuildingStatistics"), kV0CoreMCLabels);
               }
             }
@@ -1721,11 +1930,31 @@ class BuilderModule
             if (mcParticle.has_daughters()) {
               auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
 
+              // For the K0s (main channel of interest):
+              // K0s --> pi+ pi- (69.20%)
+              // K0s --> pi0 pi0 (30.69%)
+              // For the Lambda (main channel of interest):
+              // Lambda --> p pi- (64.1%)
+              // Lambda --> n pi0 (35.9%)
               for (const auto& dau : daughters) {
                 if (dau.getProcess() != TMCProcess::kPDecay)
                   continue;
 
+                // proton, neutron, pi+, e+, pi0
                 if (dau.pdgCode() > 0) {
+                  // special treatment of Lambda --> neutron pi0 (both PDG codes > 0)
+                  //                  and K0s --> pi0 pi0 (both PDG codes > 0)
+                  // take neutron as positive daughter and pi0 as negative daughter
+                  // if the first daughter was the pi0 (already assigned as positive),
+                  // then transfer the information to the negative and fill the information
+                  // of the positive daughter with those of the neutrons
+                  if (thisInfo.pdgCodePositive > -1 && thisInfo.pdgCodePositive == PDG_t::kPi0) {
+                    thisInfo.pdgCodeNegative = thisInfo.pdgCodePositive;
+                    thisInfo.processNegative = thisInfo.processPositive;
+                    thisInfo.negP[0] = thisInfo.posP[0];
+                    thisInfo.negP[1] = thisInfo.posP[1];
+                    thisInfo.negP[2] = thisInfo.posP[2];
+                  }
                   thisInfo.pdgCodePositive = dau.pdgCode();
                   thisInfo.processPositive = dau.getProcess();
                   thisInfo.posP[0] = dau.px();
@@ -1735,6 +1964,7 @@ class BuilderModule
                   thisInfo.xyz[1] = dau.vy();
                   thisInfo.xyz[2] = dau.vz();
                 }
+                // antiproton, antineutron, pi-, e- (pi0 cannot have negative PDG code)
                 if (dau.pdgCode() < 0) {
                   thisInfo.pdgCodeNegative = dau.pdgCode();
                   thisInfo.processNegative = dau.getProcess();
@@ -1900,10 +2130,64 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (eventSelectOpts.fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+          products.cascdataLink(-1);
+          interlinks.cascadeToCascCores.push_back(-1);
+          continue;
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
       auto const& bachTrack = tracks.rawIteratorAt(cascade.bachTrackId);
+
+      std::vector<int> preSelectedPIDCascades;
+      if (preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] || preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus]) {
+        if constexpr (requires { posTrack.tpcNSigmaEl(); }) { // check PID for each particle species and mark which one passes the check
+          preSelectedPIDCascades.resize(nPartTypes, 0);
+          if ( // XiMinus PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] &&
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDCascades[kXiMinus] = 1;
+          }
+
+          if ( // XiPlus PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDCascades[kXiPlus] = 1;
+          }
+
+          if ( // OmegaMinus PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] &&
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDCascades[kOmegaMinus] = 1;
+          }
+
+          if ( // OmegaPlus PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus] &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDCascades[kOmegaPlus] = 1;
+          }
+
+          // if particle species pass the PID selections, move onto the next candidates
+          if (!preSelectedPIDCascades[kXiMinus] && !preSelectedPIDCascades[kXiPlus] && !preSelectedPIDCascades[kOmegaMinus] && !preSelectedPIDCascades[kOmegaPlus]) {
+            histos.fill(HIST("hPreselectionCascades"), 0);
+            products.cascdataLink(-1);
+            interlinks.cascadeToCascCores.push_back(-1);
+            continue;
+          }
+        } else { // if no PID information is available, do not cut on it and mark all PID checks as true
+          preSelectedPIDCascades.resize(nPartTypes, 1);
+        }
+      }
+
       if (baseOpts.useV0BufferForCascades) {
         // this processing path uses a buffer of V0s so that no
         // additional minimization step is redone. It consumes less
@@ -1947,85 +2231,71 @@ class BuilderModule
       }
       nCascades++;
 
-      if constexpr (requires { posTrack.tpcNSigmaEl(); }) {
-        if (preSelectOpts.preselectOnlyDesiredCascades) {
-          float lPt = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
-            straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1]);
+      if (preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] || preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus]) {
+        float lPt = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
+          straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1]);
 
-          float lPtot = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
-            straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
-            straHelper.cascade.bachelorMomentum[2] + straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
+        float lPtot = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
+          straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
+          straHelper.cascade.bachelorMomentum[2] + straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
 
-          float lV0Ptot = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
-            straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
-            straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
+        float lV0Ptot = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
+          straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
+          straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
 
-          float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.cascadePosition[0] - pvX,
-            straHelper.cascade.cascadePosition[1] - pvY,
-            straHelper.cascade.cascadePosition[2] - pvZ);
+        float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.cascadePosition[0] - pvX,
+          straHelper.cascade.cascadePosition[1] - pvY,
+          straHelper.cascade.cascadePosition[2] - pvZ);
 
-          float lV0LengthTraveled = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.v0Position[0] - straHelper.cascade.cascadePosition[0],
-            straHelper.cascade.v0Position[1] - straHelper.cascade.cascadePosition[1],
-            straHelper.cascade.v0Position[2] - straHelper.cascade.cascadePosition[2]);
+        float lV0LengthTraveled = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.v0Position[0] - straHelper.cascade.cascadePosition[0],
+          straHelper.cascade.v0Position[1] - straHelper.cascade.cascadePosition[1],
+          straHelper.cascade.v0Position[2] - straHelper.cascade.cascadePosition[2]);
 
-          uint8_t maskCascadePreselection = 0;
+        uint8_t maskCascadePreselection = 0;
 
-          if ( // XiMinus PID and mass selection
-            straHelper.cascade.charge < 0 &&
-            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
-            std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskCascadePreselection, selXiMinus);
-          }
+        if ( // XiMinus PID and mass selection
+          preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] && straHelper.cascade.charge < 0 && preSelectedPIDCascades[kXiMinus] &&
+          o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
+          std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskCascadePreselection, selXiMinus);
+        }
 
-          if ( // XiPlus PID and mass selection
-            straHelper.cascade.charge > 0 &&
-            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
-            std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskCascadePreselection, selXiPlus);
-          }
+        if ( // XiPlus PID and mass selection
+          preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] && straHelper.cascade.charge > 0 && preSelectedPIDCascades[kXiPlus] &&
+          o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
+          std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskCascadePreselection, selXiPlus);
+        }
 
-          if ( // OmegaMinus PID and mass selection
-            straHelper.cascade.charge < 0 &&
-            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
-            std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskCascadePreselection, selOmegaMinus);
-          }
+        if ( // OmegaMinus PID and mass selection
+          preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] && straHelper.cascade.charge < 0 && preSelectedPIDCascades[kOmegaMinus] &&
+          o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
+          std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskCascadePreselection, selOmegaMinus);
+        }
 
-          if ( // OmegaPlus PID and mass selection
-            straHelper.cascade.charge > 0 &&
-            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
-            std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskCascadePreselection, selOmegaPlus);
-          }
+        if ( // OmegaPlus PID and mass selection
+          preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus] && straHelper.cascade.charge > 0 && preSelectedPIDCascades[kOmegaPlus] &&
+          o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
+          std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskCascadePreselection, selOmegaPlus);
+        }
 
-          histos.fill(HIST("hPreselectionCascades"), maskCascadePreselection);
+        histos.fill(HIST("hPreselectionCascades"), maskCascadePreselection);
 
-          if (maskCascadePreselection == 0) {
-            products.cascdataLink(-1);
-            interlinks.cascadeToCascCores.push_back(-1);
-            continue;
-          }
+        if (maskCascadePreselection == 0) {
+          products.cascdataLink(-1);
+          interlinks.cascadeToCascCores.push_back(-1);
+          continue;
         }
       }
 
@@ -2231,7 +2501,16 @@ class BuilderModule
                   if (dau.getProcess() != TMCProcess::kPDecay) // check whether the daughter comes from a decay
                     continue;
 
-                  if (std::abs(dau.pdgCode()) == PDG_t::kPiPlus || std::abs(dau.pdgCode()) == PDG_t::kKPlus) {
+                  // Dominant decay channels for charged Xi and Omega are:
+                  // Xi- --> Lambda pi- ; Xi+ --> Lambda pi+ (99.887%) --> recover information of all daughters
+                  // Omega- --> Lambda K- ; Omega+ --> Lambda K+ (67.7%) --> recover information of all daughters
+                  // Omega- --> Xi0 pi- ; Omega+ --> Xi0 pi+ (24.3%) --> recover information of only Xi0 and pions
+                  // Omega- --> Xi- pi0 ; Omega+ --> Xi+ pi0 (8.55%) --> recover information of only Xi and pions
+                  //
+                  // For the Lambda (main channel of interest):
+                  // Lambda --> p pi- (64.1%)
+                  // Lambda --> n pi0 (35.9%)
+                  if (std::abs(dau.pdgCode()) == PDG_t::kPiPlus || std::abs(dau.pdgCode()) == PDG_t::kPi0 || std::abs(dau.pdgCode()) == PDG_t::kKPlus) {
                     thisCascInfo.pdgCodeBachelor = dau.pdgCode();
                     thisCascInfo.bachP[0] = dau.px();
                     thisCascInfo.bachP[1] = dau.py();
@@ -2241,14 +2520,29 @@ class BuilderModule
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
-                  if (std::abs(dau.pdgCode()) == PDG_t::kProton) {
+                  // Treatment of Lambda --> p pi ; Lambda --> n pi
+                  if (std::abs(dau.pdgCode()) == PDG_t::kLambda0) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
                     for (const auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
                       if (v0Dau.getProcess() != TMCProcess::kPDecay)
                         continue;
 
+                      // proton, neutron, pi+, pi0
                       if (v0Dau.pdgCode() > 0) {
+                        // special treatment of Lambda --> neutron pi0 (both PDG codes > 0)
+                        // take neutron as positive daughter and pi0 as negative daughter
+                        // if the first daughter was the pi0 (already assigned as positive),
+                        // then transfer the information to the negative and fill the information
+                        // of the positive daughter with those of the neutrons
+                        if (thisCascInfo.pdgCodePositive > -1 && thisCascInfo.pdgCodePositive == PDG_t::kPi0) {
+                          thisCascInfo.pdgCodeNegative = thisCascInfo.pdgCodePositive;
+                          thisCascInfo.processNegative = thisCascInfo.processPositive;
+                          thisCascInfo.negP[0] = thisCascInfo.posP[0];
+                          thisCascInfo.negP[1] = thisCascInfo.posP[1];
+                          thisCascInfo.negP[2] = thisCascInfo.posP[2];
+                          thisCascInfo.mcParticleNegative = thisCascInfo.mcParticlePositive;
+                        }
                         thisCascInfo.pdgCodePositive = v0Dau.pdgCode();
                         thisCascInfo.processPositive = v0Dau.getProcess();
                         thisCascInfo.posP[0] = v0Dau.px();
@@ -2259,6 +2553,7 @@ class BuilderModule
                         thisCascInfo.lxyz[2] = v0Dau.vz();
                         thisCascInfo.mcParticlePositive = v0Dau.globalIndex();
                       }
+                      // antiproton, antineutron, pi- (pi0 cannot have negative PDG code)
                       if (v0Dau.pdgCode() < 0) {
                         thisCascInfo.pdgCodeNegative = v0Dau.pdgCode();
                         thisCascInfo.processNegative = v0Dau.getProcess();
@@ -2266,6 +2561,37 @@ class BuilderModule
                         thisCascInfo.negP[1] = v0Dau.py();
                         thisCascInfo.negP[2] = v0Dau.pz();
                         thisCascInfo.mcParticleNegative = v0Dau.globalIndex();
+                      }
+                    }
+                  }
+                  // Special treatment of Xi0 and Xi from Omega --> Xi0 pi ; Omega --> Xi pi0
+                  if (std::abs(dau.pdgCode()) == PDG_t::kXiMinus || std::abs(dau.pdgCode()) == o2::constants::physics::Pdg::kXi0) {
+                    thisCascInfo.pdgCodeV0 = dau.pdgCode();
+
+                    for (const auto& xiDau : dau.template daughters_as<aod::McParticles>()) {
+                      if (xiDau.getProcess() != TMCProcess::kPDecay)
+                        continue;
+
+                      // always put the Lambda in the positive
+                      if (std::abs(xiDau.pdgCode()) == PDG_t::kLambda0) {
+                        thisCascInfo.pdgCodePositive = xiDau.pdgCode();
+                        thisCascInfo.processPositive = xiDau.getProcess();
+                        thisCascInfo.posP[0] = xiDau.px();
+                        thisCascInfo.posP[1] = xiDau.py();
+                        thisCascInfo.posP[2] = xiDau.pz();
+                        thisCascInfo.lxyz[0] = xiDau.vx();
+                        thisCascInfo.lxyz[1] = xiDau.vy();
+                        thisCascInfo.lxyz[2] = xiDau.vz();
+                        thisCascInfo.mcParticlePositive = xiDau.globalIndex();
+                      }
+                      // always put the bachelor or the photon or the pi0 in the negative
+                      if (std::abs(xiDau.pdgCode()) == PDG_t::kPiPlus || std::abs(xiDau.pdgCode()) == PDG_t::kPi0 || std::abs(xiDau.pdgCode()) == PDG_t::kGamma) {
+                        thisCascInfo.pdgCodeNegative = xiDau.pdgCode();
+                        thisCascInfo.processNegative = xiDau.getProcess();
+                        thisCascInfo.negP[0] = xiDau.px();
+                        thisCascInfo.negP[1] = xiDau.py();
+                        thisCascInfo.negP[2] = xiDau.pz();
+                        thisCascInfo.mcParticleNegative = xiDau.globalIndex();
                       }
                     }
                   }
@@ -2323,6 +2649,11 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (eventSelectOpts.fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+          products.kfcascdataLink(-1);
+          interlinks.cascadeToKFCascCores.push_back(-1);
+          continue;
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
@@ -2422,6 +2753,9 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (eventSelectOpts.fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+          continue;
+        }
       }
       auto const& cascade = cascadeTrack.cascade();
       auto const& v0 = cascade.v0();
@@ -2476,7 +2810,7 @@ class BuilderModule
         // interlink always produced if base core table generated
         traCascIndices[cascade.globalIndex()] = products.tracascdata.lastIndex();
       }
-      if (baseOpts.mEnabledTables[kCascCovs]) {
+      if (baseOpts.mEnabledTables[kTraCascCovs]) {
         std::array<float, o2::track::kLabCovMatSize> traCovMat = {0.};
         strangeTrackParCov.getCovXYZPxPyPzGlo(traCovMat);
         float traCovMatArray[o2::track::kLabCovMatSize];
@@ -2484,7 +2818,7 @@ class BuilderModule
           traCovMatArray[ii] = traCovMat[ii];
         }
         products.tracasccovs(traCovMatArray);
-        histos.fill(HIST("hTableBuildingStatistics"), kCascCovs);
+        histos.fill(HIST("hTableBuildingStatistics"), kTraCascCovs);
       }
 
       //_________________________________________________________
@@ -2536,6 +2870,16 @@ class BuilderModule
       }
     }
     return returnValue;
+  }
+
+  //__________________________________________________
+  // Overload for tasks sourcing every conditions object from CCDB columns; see initCCDB above.
+  template <typename THistoRegistry, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles, typename TProducts>
+  void dataProcess(THistoRegistry& histos, TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles, TProducts& products)
+  {
+    static_assert(requires(typename TBCs::iterator bc) { bc.vdriftTgl(); }, "dataProcess without a CCDB manager needs a BC table joined with aod::TpcCalibCCDBObjects");
+    std::nullptr_t noCCDB{};
+    dataProcess(noCCDB, histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
   }
 
   //__________________________________________________

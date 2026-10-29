@@ -69,7 +69,7 @@ struct HfTaskMcEfficiency {
   Configurable<float> mcAcceptancePt{"mcAcceptancePt", 0.1, "MC Acceptance: lower pt limit"};
   Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   enum HFStep { kHFStepMC = 0,
                 kHFStepMcInRapidity,        // MC mothers in rapidity |y| < 0.5
@@ -118,7 +118,7 @@ struct HfTaskMcEfficiency {
   }
 
   template <typename T>
-  bool checkTrack(T track)
+  bool checkTrack(const T& track)
   {
     // TODO configurable?
     return track.isGlobalTrackWoDCA();
@@ -424,7 +424,7 @@ struct HfTaskMcEfficiency {
   }
 
   template <typename C>
-  void candidate2ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, std::vector<int> pdgCodes)
+  void candidate2ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, const std::vector<int>& pdgCodes)
   {
     candidate2ProngLoop<true>(candidates, tracks, mcParticles, pdgCodes);
 
@@ -537,7 +537,7 @@ struct HfTaskMcEfficiency {
   /// 3-prong analyses
 
   template <bool HasDplus, bool HasDs, bool HasLc, bool HasXicPlus, typename C>
-  void candidate3ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, std::vector<int> pdgCodes)
+  void candidate3ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, const std::vector<int>& pdgCodes)
   {
     candidate3ProngLoop<true, HasDplus, HasDs, HasLc, HasXicPlus>(candidates, tracks, mcParticles, pdgCodes);
 

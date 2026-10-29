@@ -12,27 +12,34 @@
 #ifndef PWGLF_UTILS_STRANGENESSBUILDERHELPER_H_
 #define PWGLF_UTILS_STRANGENESSBUILDERHELPER_H_
 
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
 
-/// includes KFParticle
-#include "KFParticle.h"
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TMath.h> // IWYU pragma: keep
+
+#include <KFPVertex.h>
+#include <KFParticle.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <numeric>
+#include <stdexcept>
+#include <vector>
 
 namespace o2
 {
@@ -246,6 +253,7 @@ class strangenessBuilderHelper
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
+    fitter.setOldMode(true); // enable old convariance matrix calculation until this has been fully tested
 
     v0selections.minCrossedRows = -1;
     v0selections.dcanegtopv = -1.0f;
@@ -1052,6 +1060,11 @@ class strangenessBuilderHelper
       return false;
     }
 
+    // Calculate V0 mass before mass constraint
+    float MLambda, SigmaLambda;
+    KFV0.GetMass(MLambda, SigmaLambda);
+    cascade.kfMLambda = MLambda;
+
     if (kfUseV0MassConstraint) {
       KFV0.SetNonlinearMassConstraint(o2::constants::physics::MassLambda);
     }
@@ -1110,9 +1123,20 @@ class strangenessBuilderHelper
       cascade = {};
       return false;
     }
+
+    // Calculate masses a priori before potentially applying mass constraint
+    // --> this is the invariant mass of the decay products, not the mass-constrained value
+    float MXi, SigmaXi, MOmega, SigmaOmega;
+    KFXi.GetMass(MXi, SigmaXi);
+    KFOmega.GetMass(MOmega, SigmaOmega);
+    cascade.massXi = MXi;
+    cascade.massOmega = MOmega;
+
     if (kfUseCascadeMassConstraint) {
       // set mass constraint if requested
       // WARNING: this is only adequate for decay chains, i.e. XiC -> Xi or OmegaC -> Omega
+      // WARNING: be aware of the fact that if enabled, the stored particle momentum and covariance matrix will be mass-constrained
+      // while the stored mass will be the invariant mass of the decay products (i.e. not mass-constrained)
       KFXi.SetNonlinearMassConstraint(o2::constants::physics::MassXiMinus);
       KFOmega.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus);
     }
@@ -1207,15 +1231,6 @@ class strangenessBuilderHelper
       return false;
     }
     cascade.pointingAngle = TMath::ACos(cosPA);
-
-    // Calculate masses a priori
-    float MLambda, SigmaLambda, MXi, SigmaXi, MOmega, SigmaOmega;
-    KFV0.GetMass(MLambda, SigmaLambda);
-    KFXi.GetMass(MXi, SigmaXi);
-    KFOmega.GetMass(MOmega, SigmaOmega);
-    cascade.kfMLambda = MLambda;
-    cascade.massXi = MXi;
-    cascade.massOmega = MOmega;
 
     // KF Cascade covariance matrix
     std::array<float, 21> covCascKF;

@@ -1,0 +1,255 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+///
+/// \file onTheFlyDecayer.cxx
+/// \brief pre-processing for on-the-fly analysis
+/// \author Jesper Karlsson Gumprecht <jesper.gumprecht@cern.ch>
+///
+
+#include "ALICE3/Core/Decayer.h"
+#include "ALICE3/Core/OTFParticle.h"
+#include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StringHelpers.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+
+static constexpr int NumDecays = 13;
+static constexpr int NumParameters = 1;
+static constexpr std::array<std::array<int, NumParameters>, NumDecays> DefaultParameters{{{1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}}};
+static const std::vector<std::string> parameterNames{"enable"};
+static const std::vector<std::string> particleNames{"K0s",
+                                                    "Lambda",
+                                                    "Anti-Lambda",
+                                                    "SigmaPlus",
+                                                    "Anti-SigmaPlus",
+                                                    "SigmaMinus",
+                                                    "Anti-SigmaMinus",
+                                                    "Xi0",
+                                                    "Anti-Xi0",
+                                                    "Xi",
+                                                    "Anti-Xi",
+                                                    "Omega",
+                                                    "Anti-Omega"};
+
+static const std::vector<int> pdgCodes{PDG_t::kK0Short,
+                                       PDG_t::kLambda0,
+                                       PDG_t::kLambda0Bar,
+                                       PDG_t::kSigmaPlus,
+                                       PDG_t::kSigmaBarMinus,
+                                       PDG_t::kSigmaMinus,
+                                       PDG_t::kSigmaBarPlus,
+                                       o2::constants::physics::kXi0,
+                                       -o2::constants::physics::kXi0,
+                                       PDG_t::kXiMinus,
+                                       PDG_t::kXiPlusBar,
+                                       PDG_t::kOmegaMinus,
+                                       PDG_t::kOmegaPlusBar};
+
+namespace o2::aod
+{
+O2ORIGIN("TMP");
+}
+
+struct OnTheFlyDecayer {
+  Produces<aod::McCollisions_001> tableMcCollisions;
+  Produces<aod::StoredMcParticles_001> tableMcParticles;
+  Produces<aod::OTFParticleExtras> tableOTFParticleExtras;
+
+  o2::upgrade::Decayer decayer;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
+  Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
+  Configurable<std::string> decayTable{"decayTable", "", "Decay table overriding the TDatabasePDG decay channels of the listed particles (local path or ccdb:<path>), empty to disable"};
+  Configurable<LabeledArray<int>> enabledDecays{"enabledDecays",
+                                                {DefaultParameters[0].data(), NumDecays, NumParameters, particleNames, parameterNames},
+                                                "Enable option for particle to be decayed: 0 - no, 1 - yes"};
+
+  std::size_t indexOffset = 0;
+  std::size_t particlesInDataframe = 0;
+  static constexpr float PicoToNano = 1.e-3f;
+  std::vector<int> mEnabledDecays;
+  void init(o2::framework::InitContext&)
+  {
+    LOG(info) << " --- Initializing on-the-fly-decayer.";
+    LOG(info) << " --- Using seed: " << seed;
+    LOG(info) << " --- Using magnetic field: " << magneticField;
+    decayer.setSeed(seed);
+    decayer.setBField(magneticField);
+    if (!decayTable.value.empty()) {
+      LOG(info) << " --- Using decay table: " << decayTable.value;
+      decayer.loadDecayTable(decayTable.value, pdgDB, ccdb.operator->());
+    }
+    for (int i = 0; i < NumDecays; ++i) {
+      if (enabledDecays->get(particleNames[i].c_str(), "enable") != 0) {
+        LOG(info) << " --- Decay enabled: " << pdgCodes[i];
+        mEnabledDecays.push_back(pdgCodes[i]);
+      }
+    }
+
+    auto hNaNBookkeeping = histos.add<TH1>("hNaNBookkeeping", "hNaNBookkeeping", kTH1D, {{2, -0.5, 1.5}});
+    hNaNBookkeeping->GetXaxis()->SetBinLabel(1, "OK");
+    hNaNBookkeeping->GetXaxis()->SetBinLabel(2, "NaN");
+  }
+
+  bool canDecay(const o2::upgrade::OTFParticle& particle)
+  {
+    if (particle.hasDaughters()) {
+      return false;
+    }
+
+    return std::find(mEnabledDecays.begin(), mEnabledDecays.end(), particle.pdgCode()) != mEnabledDecays.end();
+  }
+
+  std::vector<o2::upgrade::OTFParticle> allParticles;
+  void decayParticles(const int start, const int stop)
+  {
+    if (start >= stop) {
+      return;
+    }
+
+    int ndau = 0;
+    for (int i = start; i < stop; ++i) {
+      o2::upgrade::OTFParticle& particle = allParticles[i];
+      if (particle.isFromMcParticles()) {
+        particle.setBitOn(o2::upgrade::DecayerBits::IsPrimary);
+        particle.setBitOn(o2::upgrade::DecayerBits::IsAlive);
+      }
+
+      if (!canDecay(particle)) {
+        continue;
+      }
+
+      particle.setBitOff(o2::upgrade::DecayerBits::IsAlive);
+      std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(particle, pdgDB);
+      if (decayStack.empty()) {
+        continue;
+      }
+
+      const float decayRadius = decayer.getDecayRadius();
+      const float trackVelocity = o2::upgrade::computeParticleVelocity(particle.p(), pdgDB->GetParticle(particle.pdgCode())->Mass());
+      const int charge = static_cast<int>(pdgDB->GetParticle(particle.pdgCode())->Charge() / 3);
+      float trackLength{-1.f};
+      if (charge == 0) {
+        const float dx = particle.vx() - decayer.getSecondaryVertexX();
+        const float dy = particle.vy() - decayer.getSecondaryVertexY();
+        const float dz = particle.vz() - decayer.getSecondaryVertexZ();
+        trackLength = std::hypot(dx, dy, dz);
+      } else {
+        o2::track::TrackParCov o2track;
+        o2::upgrade::convertOTFParticleToO2Track(particle, o2track, pdgDB);
+        trackLength = o2::upgrade::computeTrackLength(o2track, decayRadius, magneticField);
+      }
+
+      particle.setDecayRadius(std::hypot(decayer.getSecondaryVertexX(), decayer.getSecondaryVertexY()));
+      const float trackTimeNS = trackLength / trackVelocity * PicoToNano;
+      particle.setIndicesDaughter(particlesInDataframe - indexOffset + allParticles.size(), particlesInDataframe - indexOffset + allParticles.size() + (decayStack.size() - 1));
+      for (auto& daughter : decayStack) {
+        daughter.setIndicesMother(particlesInDataframe - indexOffset + i, particlesInDataframe - indexOffset + i);
+        daughter.setCollisionId(particle.collisionId());
+        daughter.setBitOn(o2::upgrade::DecayerBits::ProducedByDecayer);
+        daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
+        daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
+        daughter.setProductionTime(particle.vt() + trackTimeNS);
+        allParticles.push_back(daughter);
+      }
+      ndau += decayStack.size();
+    }
+
+    decayParticles(stop, stop + ndau);
+  }
+
+  void process(aod::McCollisions_001From<aod::Hash<"TMP"_h>>::iterator const& collision, aod::McParticles_001From<aod::Hash<"TMP"_h>> const& mcParticles)
+  {
+    allParticles.clear();
+    allParticles.reserve(mcParticles.size() * 2);
+    if (collision.globalIndex() == 0) {
+      particlesInDataframe = 0;
+      indexOffset = 0;
+    }
+
+    // Reproduce collision table to have AOD origin
+    tableMcCollisions(collision.bcId(), collision.generatorsID(),
+                      collision.posX(), collision.posY(), collision.posZ(), collision.t(),
+                      collision.weight(), collision.impactParameter(), collision.eventPlaneAngle());
+
+    // First we copy the particles from the table into a vector that is extendable
+    for (const auto& particle : mcParticles) {
+      allParticles.emplace_back(o2::upgrade::OTFParticle{particle});
+    }
+
+    // Do all decays
+    decayParticles(0, allParticles.size());
+
+    // Fill output table
+    for (auto& otfParticle : allParticles) {
+      otfParticle.setIndexOffset(indexOffset);
+      if (otfParticle.hasNaN()) {
+        histos.fill(HIST("hNaNBookkeeping"), 1);
+      } else {
+        histos.fill(HIST("hNaNBookkeeping"), 0);
+      }
+
+      tableOTFParticleExtras(otfParticle.getBitsValue(), otfParticle.decayRadius());
+      tableMcParticles(tableMcCollisions.lastIndex(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
+                       otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
+                       otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),
+                       otfParticle.vx(), otfParticle.vy(), otfParticle.vz(), otfParticle.vt());
+    }
+
+    // Particles for later collisions in df's needs to have thier mother
+    // and daughter indices adjusted since their global index will be
+    // shifted due to the appending of decay products
+    indexOffset += (allParticles.size() - mcParticles.size());
+    particlesInDataframe += allParticles.size();
+  }
+};
+
+struct OnTheFlyDecayerExtensionSpawner {
+  Spawns<aod::McParticles_001Extension> spawnMcParticlesExtensions;
+  void init(o2::framework::InitContext&) {}
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc),
+                      adaptAnalysisTask<OnTheFlyDecayerExtensionSpawner>(cfgc)};
+}

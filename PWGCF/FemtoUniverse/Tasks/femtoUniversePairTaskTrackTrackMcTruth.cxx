@@ -18,19 +18,25 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include <random>
+#include <cstdint>
 #include <vector>
 
 using namespace o2;
@@ -51,7 +57,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> confEtaMax{"confEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
 
   /// Particle 1
-  Configurable<int32_t> confPDGCodePartOne{"confPDGCodePartOne", 2212, "Particle 1 - PDG code"};
+  Configurable<int> confPDGCodePartOne{"confPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<bool> confNoPDGPartOne{"confNoPDGPartOne", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> confPtLowPart1{"confPtLowPart1", 0.2, "Lower limit for Pt for the first particle"};
   Configurable<float> confPtHighPart1{"confPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
@@ -65,7 +71,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
 
   /// Particle 2
   Configurable<bool> confIsSame{"confIsSame", false, "Pairs of the same particle"};
-  Configurable<int32_t> confPDGCodePartTwo{"confPDGCodePartTwo", 333, "Particle 2 - PDG code"};
+  Configurable<int> confPDGCodePartTwo{"confPDGCodePartTwo", 333, "Particle 2 - PDG code"};
   Configurable<bool> confNoPDGPartTwo{"confNoPDGPartTwo", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> confPtLowPart2{"confPtLowPart2", 0.2, "Lower limit for Pt for the second particle"};
   Configurable<float> confPtHighPart2{"confPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
@@ -100,7 +106,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
   ConfigurableAxis confkstarBins{"confkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "binning kT"};
@@ -142,7 +148,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     mixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
     eventHisto.fillQA(col);
@@ -159,7 +165,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float /*magFieldTesla*/, int multCol)
+  void doSameEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartType& parts, float /*magFieldTesla*/, int multCol)
   {
     bool swpart = fNeventsProcessed % 2;
     fNeventsProcessed++;
@@ -194,13 +200,15 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if ((!confNoPDGPartOne && p2.tempFitVar() != confPDGCodePartOne) || (!confNoPDGPartTwo && p1.tempFitVar() != confPDGCodePartTwo)) {
+        if ((!confNoPDGPartOne && static_cast<int>(p1.tempFitVar()) != confPDGCodePartOne) || (!confNoPDGPartTwo && static_cast<int>(p2.tempFitVar()) != confPDGCodePartTwo)) {
           continue;
         }
-        if (swpart)
+
+        if (swpart) {
           sameEventCont.setPair<isMC>(p1, p2, multCol, confUse3D);
-        else
+        } else {
           sameEventCont.setPair<isMC>(p2, p1, multCol, confUse3D);
+        }
 
         swpart = !swpart;
       }
@@ -249,13 +257,13 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType /*parts*/, float /*magFieldTesla*/, int multCol)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartType& /*parts*/, float /*magFieldTesla*/, int multCol)
   {
     bool swpart = fNeventsProcessed % 2;
     fNeventsProcessed++;
 
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      if ((!confNoPDGPartOne && p2.tempFitVar() != confPDGCodePartOne) || (!confNoPDGPartTwo && p1.tempFitVar() != confPDGCodePartTwo)) {
+      if ((!confNoPDGPartOne && static_cast<int>(p1.tempFitVar()) != confPDGCodePartOne) || (!confNoPDGPartTwo && static_cast<int>(p2.tempFitVar()) != confPDGCodePartTwo)) {
         continue;
       }
       if (swpart)

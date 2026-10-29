@@ -16,12 +16,14 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonDataFormat/BunchFilling.h>
 #include <CommonDataFormat/TimeStamp.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -35,7 +37,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ITSMFTBase/DPLAlpideParam.h>
 #include <ITSMFTReconstruction/ChipMappingITS.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
@@ -43,6 +44,7 @@
 #include <TMath.h>
 #include <TString.h>
 
+#include <TrackTools/TrackGeometry.h>
 #include <sys/types.h>
 
 #include <bitset>
@@ -59,6 +61,8 @@ using namespace o2::framework;
 using namespace o2;
 using namespace o2::aod::evsel;
 
+o2::common::core::MetadataHelper metadataInfo;
+
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
@@ -66,11 +70,12 @@ using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 using FullTracksIUwithLabels = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
 struct EventSelectionQaTask {
-  Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int32_t> nGlobalBCs{"nGlobalBCs", 100000, "number of global bcs for detailed monitoring"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
   Configurable<bool> fillITSdeadStaveHists{"fillITSdeadStaveHists", 0, "0 - no, 1 - yes"};
   Configurable<bool> fillTPCnClsVsOccupancyHists{"fillTPCnClsVsOccupancyHists", 0, "0 - no, 1 - yes"};
+  Configurable<bool> useTestWithTrackTools{"useTestWithTrackTools", 0, "0 - no, 1 - yes"};                                           // experimental
+  Configurable<int> thresholdNrowsForTrackToolTest{"thresholdNrowsForTrackToolTest", 120, "threshold for Nrows for TrackTool test"}; // minimum number of TPC rows (experimental)
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -84,6 +89,12 @@ struct EventSelectionQaTask {
   int64_t nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit; // duration of TF in bcs
   int rofOffset = -1;                              // ITS ROF offset, in bc
   int rofLength = -1;                              // ITS ROF length, in bc
+
+  std::string strLPMProductionTag = ""; // MC production tag to be retrieved from AO2D metadata
+  std::string strPassName = "";         // RecoPassName (for data) or AnchorPassName (for MC) from metadata
+  bool isMC = false;
+
+  o2::tpc::recohelpers::TPCSectorEdgeConfig tpcSectorEdgeConfig; // for special selection of tracks within TPC
 
   std::bitset<nBCsPerOrbit> bcPatternA;
   std::bitset<nBCsPerOrbit> bcPatternC;
@@ -111,9 +122,19 @@ struct EventSelectionQaTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    const AxisSpec axisMultV0M{1000, 0., isLowFlux ? 40000. : 40000., "V0M multiplicity"};
+    isMC = metadataInfo.isMC();
+    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
+    strPassName = metadataInfo.get(isMC ? "AnchorPassName" : "RecoPassName");
+
+    // for special selection of tracks within TPC (Oct 2026)
+    tpcSectorEdgeConfig.guardLowerCm = 0.5f;
+    tpcSectorEdgeConfig.guardUpperCm = 0.5f;
+    tpcSectorEdgeConfig.zMaxCm = 250.f;
+    tpcSectorEdgeConfig.maxSnp = 0.9f;
+
+    const AxisSpec axisMultV0M{1000, 0., 40000., "V0M multiplicity"};
     const AxisSpec axisMultV0A{1000, 0., isLowFlux ? 40000. : 200000., "V0A multiplicity"};
-    const AxisSpec axisMultV0C{1000, 0., isLowFlux ? 30000. : 30000., "V0C multiplicity"};
+    const AxisSpec axisMultV0C{1000, 0., 30000., "V0C multiplicity"};
     const AxisSpec axisMultT0A{1000, 0., isLowFlux ? 10000. : 200000., "T0A multiplicity"};
     const AxisSpec axisMultT0C{1000, 0., isLowFlux ? 2000. : 70000., "T0C multiplicity"};
     const AxisSpec axisMultT0M{1000, 0., isLowFlux ? 12000. : 270000., "T0M multiplicity"};
@@ -380,6 +401,11 @@ struct EventSelectionQaTask {
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_StandardDeltaTimeCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_GoodITSLayersAllCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_GoodITSLayersAllCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      // requested by TPC experts: check with tracks at given NrowsThreshold
+      if (useTestWithTrackTools) {
+        histos.add("occupancyQA/hNumTracksITS_isValidAtNrowsThreshold_EtaPtCuts_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+        histos.add("occupancyQA/hNumTracksPV_isValidAtNrowsThreshold_EtaPtSel8VxCuts_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      }
       // requested by TPC experts: nTPConly tracks vs occupancy
       histos.add("occupancyQA/hNumTracksTPConly_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksTPConlyNoITS_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
@@ -402,7 +428,7 @@ struct EventSelectionQaTask {
 
       histos.add("occupancyQA/dEdx_vs_centr_vs_occup_narrow_p_win", "dE/dx", kTH3F, {{20, 0, 4000, "n PV tracks"}, {60, 0, 15000, "occupancy"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
     }
-  }
+  } // end of init()
 
   void processRun2(
     ColEvSels const& cols,
@@ -568,9 +594,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hV0C012vsTklCol"), nTracklets, multRingV0C012);
 
       // filling plots for accepted events
-      bool accepted = 0;
-      accepted |= !isINT1period & col.sel7();
-      accepted |= isINT1period & sel1;
+      bool accepted = (!isINT1period && col.sel7()) || (isINT1period && sel1);
       if (!accepted) {
         continue;
       }
@@ -622,8 +646,13 @@ struct EventSelectionQaTask {
       lastRun = run;
       int64_t tsSOR = 0; // dummy start-of-run timestamp for unanchored MC
       int64_t tsEOR = 1; // dummy end-of-run timestamp for unanchored MC
-      if (run >= 500000) {
-        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+      const int run3min = 500000;
+      if (run >= run3min) {
+        auto runInfo = (!isMC) ? o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run)
+                               : o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+        LOGP(info, "eventSelectionQA: isMC = {}, NumberOfOrbitsPerTF extracted from AggregatedRunInfo = {}", isMC, runInfo.orbitsPerTF);
+        LOGP(info, "eventSelectionQA: strLPMProductionTag = {}, strPassName = {}", strLPMProductionTag, strPassName);
+
         // first bc of the first orbit
         bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
         // number of orbits per TF
@@ -786,13 +815,13 @@ struct EventSelectionQaTask {
         const auto& bcPast = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
         deltaBC = globalBC - bcPast.globalBC();
         if (deltaBC < maxDeltaBC) {
-          pastActivityFT0 |= bcPast.has_ft0();
-          pastActivityFV0 |= bcPast.has_fv0a();
-          pastActivityFDD |= bcPast.has_fdd();
+          pastActivityFT0 = pastActivityFT0 || bcPast.has_ft0();
+          pastActivityFV0 = pastActivityFV0 || bcPast.has_fv0a();
+          pastActivityFDD = pastActivityFDD || bcPast.has_fdd();
         }
       }
 
-      bool pastActivity = pastActivityFT0 | pastActivityFV0 | pastActivityFDD;
+      bool pastActivity = pastActivityFT0 || pastActivityFV0 || pastActivityFDD;
 
       int localBC = bc.globalBC() % nBCsPerOrbit;
       float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
@@ -1009,8 +1038,12 @@ struct EventSelectionQaTask {
 
       // special check to avoid crashes (in particular, on some MC Pb-Pb datasets)
       // (related to shifts in ambiguous tracks association to bc slices (off by 1) - see https://mattermost.web.cern.ch/alice/pl/g9yaaf3tn3g4pgn7c1yex9copy
-      if (ambTrId >= 0 && (ambTracks.iteratorAt(ambTrId).bcIds()[0] >= bcs.size()))
-        continue;
+      // an empty slice (-1, -1) passes the upper check, so test it as well
+      if (ambTrId >= 0) {
+        const auto& ambTrack = ambTracks.iteratorAt(ambTrId);
+        if (!ambTrack.has_bc() || ambTrack.bcIds()[0] >= bcs.size() || ambTrack.bcIds()[1] >= bcs.size())
+          continue;
+      }
 
       int indexBc = ambTrId < 0 ? track.collision_as<ColEvSels>().bc_as<BCsRun3>().globalIndex() : ambTracks.iteratorAt(ambTrId).bc_as<BCsRun3>().begin().globalIndex();
       auto bc = bcs.iteratorAt(indexBc);
@@ -1168,6 +1201,8 @@ struct EventSelectionQaTask {
 
       int nTracksITS = 0;
       int nTracksITSTPC = 0;
+      int nTracksITSValidAtNrowsThresholdAfterEtaPtCuts = 0;
+      int nContributorsAtNrowsThresholdAfterEtaPtSel8VxCuts = 0;
 
       bool isTVX = col.selection_bit(kIsTriggerTVX);
 
@@ -1185,11 +1220,33 @@ struct EventSelectionQaTask {
             nTPConlyNoITS++;
         }
 
+        // Oct 2026: test presence of track at 85 cm radius using new tools - https://github.com/AliceO2Group/AliceO2/tree/dev/Common/TrackTools
+        bool isTrackWithNrowsAvailable = false;
+        if (useTestWithTrackTools) {
+          const float bzKG = 5.f;
+          const float radiusOfInterest = 85.f; // cm
+          auto trackParLocal = o2::recohelpers::makeTrackParFromLocalParameters(
+            track.x(),
+            track.alpha(),
+            track.y(),
+            track.z(),
+            track.snp(),
+            track.tgl(),
+            track.signed1Pt());
+          auto trackAt85 = o2::recohelpers::getParametersAtRadiusH(trackParLocal, radiusOfInterest, bzKG);
+          auto l0 = o2::tpc::recohelpers::sectorEdgeStackLinear(trackParLocal, bzKG, tpcSectorEdgeConfig);
+
+          isTrackWithNrowsAvailable = (trackAt85.valid() && l0.nRowsAvailable > thresholdNrowsForTrackToolTest);
+        }
+
         if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2) {
           if (track.hasITS()) {
             nTracksITS++;
             if (track.hasTPC())
               nTracksITSTPC++;
+            if (useTestWithTrackTools && isTrackWithNrowsAvailable) {
+              nTracksITSValidAtNrowsThresholdAfterEtaPtCuts++;
+            }
           }
         }
 
@@ -1217,12 +1274,18 @@ struct EventSelectionQaTask {
               histos.fill(HIST("occupancyQA/tpcNCrossedRows_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsFindable() - tpcNClsFindableMinusCrossedRowsCorrected, occupancyByTracks);
             }
           } // end of hasTPC
-          if (col.sel8() && fabs(col.posZ()) < 10 && track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
-            nContributorsAfterEtaTPCCuts++;
-            // ROF border QA
-            histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), localBC, track.itsNCls());
-            histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_counter_ITSTPCtracks"), localBC);
-          }
+          if (col.sel8() && fabs(col.posZ()) < 10) {
+            if (track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
+              nContributorsAfterEtaTPCCuts++;
+              // ROF border QA
+              histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), localBC, track.itsNCls());
+              histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_counter_ITSTPCtracks"), localBC);
+            }
+
+            if (useTestWithTrackTools && isTrackWithNrowsAvailable) {
+              nContributorsAtNrowsThresholdAfterEtaPtSel8VxCuts++;
+            }
+          } // end of sel8 and vZ cuts
         }
         if (!track.hasTPC())
           histos.fill(HIST("hITStrackBcDiff"), trackBcDiff);
@@ -1251,6 +1314,12 @@ struct EventSelectionQaTask {
           histos.fill(HIST("occupancyQA/hNumTracksPVTPCLooseCuts_vs_V0A_vs_occupancy"), multV0A, nContributorsAfterEtaTPCLooseCuts, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksITS_vs_V0A_vs_occupancy"), multV0A, nTracksITS, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksITSTPC_vs_V0A_vs_occupancy"), multV0A, nTracksITSTPC, occupancyByTracks);
+
+          if (useTestWithTrackTools) {
+            histos.fill(HIST("occupancyQA/hNumTracksITS_isValidAtNrowsThreshold_EtaPtCuts_vs_V0A_vs_occupancy"), multV0A, nTracksITSValidAtNrowsThresholdAfterEtaPtCuts, occupancyByTracks);
+            histos.fill(HIST("occupancyQA/hNumTracksPV_isValidAtNrowsThreshold_EtaPtSel8VxCuts_vs_V0A_vs_occupancy"), multV0A, nContributorsAtNrowsThresholdAfterEtaPtSel8VxCuts, occupancyByTracks);
+          }
+
           if (col.selection_bit(kNoCollInTimeRangeNarrow)) {
             histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nPV, occupancyByTracks);
             histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);
@@ -1415,7 +1484,7 @@ struct EventSelectionQaTask {
         bool isVertexUPC = flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode; // is vertex with UPC settings
 
         // the second collision in ROF
-        std::vector<int> vAssocToSameROF = vCollsInSameITSROF[colIndex];
+        const std::vector<int>& vAssocToSameROF = vCollsInSameITSROF[colIndex];
         int thisColIndex = vAssocToSameROF[0];
         float vZassoc = vCollVz[thisColIndex];               // vZ of the second collision in the same ROF
         float nPVassoc = vTracksITS567perColl[thisColIndex]; // n PV tracks of the second collision in the same ROF
@@ -1504,6 +1573,7 @@ struct EventSelectionQaTask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{
     adaptAnalysisTask<EventSelectionQaTask>(cfgc)};
 }

@@ -15,23 +15,37 @@
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 /// \author Deependra Sharma, IITB, deependra.sharma@cern.ch
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "TDatabasePDG.h"
-
-#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldParticleHisto.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldEventHisto.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldPairCleaner.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldContainer.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldDetaDphiStar.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldUtils.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldEventHisto.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldPairCleaner.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldPairWithCentrality.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldParticleHisto.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
+
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TDatabasePDG.h>
+#include <TMath.h>
+#include <TMathBase.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
@@ -101,8 +115,8 @@ struct FemtoWorldIdenticalPionPair {
   // Configurable<std::vector<float>> CfgVtxBins{"CfgVtxBins",{-10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f},"Mixing bins - z-vertex"};
   // Configurable<std::vector<float>> CfgCentBins{"CfgCentBins",{5.0f,10.0f,20.0f,30.0f,40.0f,50.0f},"Centrality Bins"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::RunCentrality> colBinning2{{CfgVtxBins, CfgCentBinsMixing}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::RunCentrality> colBinning2{{CfgVtxBins, CfgCentBinsMixing}};
 
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};

@@ -13,11 +13,15 @@
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 /// \since 11/10/2024
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -59,7 +63,7 @@ struct resonances_tutorial {
 
   // MC particle selection
   template <typename ParticleType>
-  bool ptCut(const ParticleType resoParents)
+  bool ptCut(const ParticleType& resoParents)
   {
     // basic pt cuts
     if (std::abs(resoParents.pt()) < cMinPtcut)

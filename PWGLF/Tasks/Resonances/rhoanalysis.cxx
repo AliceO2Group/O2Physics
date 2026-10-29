@@ -15,8 +15,6 @@
 ///
 /// \author Nasir Mehdi Malik
 
-#include "RecoDecay.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -25,16 +23,24 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataProcessorSpec.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TPDGCode.h>
 
 #include <array>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -261,7 +267,7 @@ struct rhoanalysis {
   void processMixedEvent(Event const& events, TrackPi const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
+    BinningType binningOnPositions{{axisVertex, axisMultiplicity}};
     SameKindPair<Event, TrackPi, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, events, tracksTuple, &cache};
     float massPiplus = Ipdg->Mass(kPiPlus);
     float massPiminus = Ipdg->Mass(kPiMinus);
@@ -299,11 +305,11 @@ struct rhoanalysis {
     if (std::abs(events.mcCollision().posZ()) > cfgCutVertex) {
       return;
     }
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       histos.fill(HIST("hNsigmaPionTPCvspT"), track1.pt(), track1.tpcNSigmaPi());
       if (abs(track1.tpcNSigmaPi()) > nsigmaCutCombined)
         continue;
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
 
         if (abs(track2.tpcNSigmaPi()) > nsigmaCutCombined)
           continue;
@@ -361,7 +367,7 @@ struct rhoanalysis {
       if (kDaughters.size() != 2)
         continue;
 
-      for (auto kCurrentDaughter : kDaughters) {
+      for (const auto& kCurrentDaughter : kDaughters) {
 
         if (!kCurrentDaughter.isPhysicalPrimary())
           continue;

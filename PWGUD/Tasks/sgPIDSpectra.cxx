@@ -15,15 +15,21 @@
 
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TVector3.h"
+#include <TMathBase.h>
+#include <TTree.h>
+
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -147,7 +153,7 @@ struct SGPIDSpectra {
     // select PV contributors
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // check rho0 signals
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (trackselector(t, parameters) && t.hasTPC()) {
         if (truegapSide == 0) {
           if (t.sign() > 0) {

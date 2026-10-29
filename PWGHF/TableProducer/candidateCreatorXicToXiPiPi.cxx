@@ -32,9 +32,11 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -66,6 +68,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -106,16 +109,26 @@ struct HfCandidateCreatorXicToXiPiPi {
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   //  KFParticle
-  Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi"};
+  Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi. WARNING: Only disable if you know what you are doing!"};
   Configurable<bool> constrainXicPlusToPv{"constrainXicPlusToPv", false, "Constrain XicPlus to PV"};
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "Construct method of XicPlus: 0 fast mathematics without constraint of fixed daughter particle masses, 2 daughter particle masses stay fixed in construction process"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions (effective only for KFParticle w/o derived data)"};
+  // configurables for software trigger selections
+  struct : ConfigurableGroup {
+    std::string prefix = "softtrig";
+    Configurable<bool> applySoftwareTrigSelections{"applySoftwareTrigSelections", false, "Enable application of software trigger selections"};
+    Configurable<float> minDecayLength{"minDecayLength", 0.015, "Minimum decay length (computed with DCAFitter)"};
+    Configurable<float> minCosPA{"minCosPA", 0.9, "Minimum coine of pointing angle (computed with DCAFitter)"};
+    Configurable<float> maxChi2Pca{"maxChi2Pca", 3., "Maximum chi2 PCA (computed with DCAFitter)"};
+    Configurable<float> maxNsigmaXiDaus{"maxNsigmaXiDaus", 3., "Maximum PID Nsigma values for Xi daughters (both TPC and TOF)"};
+  } softTrigCuts;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   o2::vertexing::DCAFitterN<3> df;
+  o2::vertexing::DCAFitterN<2> df2Prong;
 
   HfEventSelection hfEvSel;
 
@@ -133,10 +146,10 @@ struct HfCandidateCreatorXicToXiPiPi {
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
   using KFCascFull = soa::Join<aod::KFCascDatas, aod::KFCascCovs>;
-  using TracksWCovDcaPidPrPi = soa::Join<aod::TracksWCovDca, aod::TracksPidPr, aod::TracksPidPi>;
   using TracksWCovExtraPidPrPi = soa::Join<aod::TracksWCovExtra, aod::TracksPidPr, aod::TracksPidPi>;
 
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext const&)
   {
@@ -184,7 +197,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     runNumber = 0;
 
     // initialize HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, &zorroSummary);
 
     // initialize 3-prong vertex fitter
     df.setPropagateToPCA(propagateToPCA);
@@ -194,6 +207,99 @@ struct HfCandidateCreatorXicToXiPiPi {
     df.setMinRelChi2Change(minRelChi2Change);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    if (softTrigCuts.applySoftwareTrigSelections) {
+      float maxRadSoftTrig = 200.;
+      float maxDZIniSoftTrig = 1.e9;
+      float maxDXYIniSoftTrig = 4.;
+      float minParamChangeSoftTrig = 1.e-3;
+      float maxChi2SoftTrig = 0.9;
+      float minRelChi2ChangeSoftTrig = 0.9;
+      df2Prong.setPropagateToPCA(true);
+      df2Prong.setMaxR(maxRadSoftTrig);
+      df2Prong.setMaxDZIni(maxDZIniSoftTrig);
+      df2Prong.setMaxDXYIni(maxDXYIniSoftTrig);
+      df2Prong.setMinParamChange(minParamChangeSoftTrig);
+      df2Prong.setMinRelChi2Change(minRelChi2ChangeSoftTrig);
+      df2Prong.setMaxChi2(maxChi2SoftTrig);
+      df2Prong.setUseAbsDCA(false);
+      df2Prong.setWeightedFinalPCA(false);
+    }
+  }
+
+  /// Method that reapplies the selections applied in the software trigger
+  /// \param pVecCascade is the cascade momentum vector
+  /// \param trackParBachelor is the array with two bachelor track parametrisations
+  /// \param collision is the collision containing the candidate
+  /// \param nSigTpcBachelorPi is the TPC n-sigma for the Xi bachelor track with pion hypothesis
+  /// \param nSigTofBachelorPi is the TOF n-sigma for the Xi bachelor track with pion hypothesis
+  /// \param nSigTpcPiFromLambda is the TPC n-sigma for the pion track from the Lambda decay with pion hypothesis
+  /// \param nSigTofPiFromLambda is the TOF n-sigma for the pion track from the Lambda decay with pion hypothesis
+  /// \param nSigTpcPrFromLambda is the TPC n-sigma for the proton track from the Lambda decay with proton hypothesis
+  /// \param nSigTofPrFromLambda is the TOF n-sigma for the proton track from the Lambda decay with proton hypothesis
+  /// \param hasTofBachelorPi is true if the Xi bachelor track has TOF information, otherwise false
+  /// \param hasTofPiFromLambda is true if the pion track from the Lambda decay has TOF information, otherwise false
+  /// \param hasTofPrFromLambda is true if the proton track from the Lambda decay has TOF information, otherwise false
+  /// \param nClsTpc is the array with the number of TPC clusters for each track
+  /// \param nCrossedRowsTpc is the array with the number of crossed rows in the TPC for each track
+  /// \param crossedRowsOverFindableClsTpc is the array with the ratio of crossed rows over findable clusters in the TPC for each track
+  /// \return true if the candidate passes the software trigger selections, otherwise false
+  template <typename TTrackParCov, typename Coll>
+  bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision, float nSigTpcBachelorPi, float nSigTofBachelorPi, float nSigTpcPiFromLambda, float nSigTofPiFromLambda, float nSigTpcPrFromLambda, float nSigTofPrFromLambda, bool hasTofBachelorPi, bool hasTofPiFromLambda, bool hasTofPrFromLambda, const std::array<int16_t, 3>& nClsTpc, const std::array<int16_t, 3>& nCrossedRowsTpc, const std::array<float, 3>& crossedRowsOverFindableClsTpc)
+  {
+    constexpr int16_t NumClsTpcMin = 70;
+    constexpr int16_t NumCrossedRowsTpcMin = 70;
+    constexpr float CrossedRowsOverFindableClsTpcMin = 0.8f;
+    constexpr int NumTracks = 3;
+    for (int iTrack{0}; iTrack < NumTracks; ++iTrack) {
+      if (nClsTpc[iTrack] < NumClsTpcMin || nCrossedRowsTpc[iTrack] < NumCrossedRowsTpcMin || crossedRowsOverFindableClsTpc[iTrack] < CrossedRowsOverFindableClsTpcMin) {
+        return false;
+      }
+    }
+
+    if (std::abs(nSigTpcBachelorPi) > softTrigCuts.maxNsigmaXiDaus || (hasTofBachelorPi && std::abs(nSigTofBachelorPi) > softTrigCuts.maxNsigmaXiDaus)) {
+      return false;
+    }
+    if (std::abs(nSigTpcPiFromLambda) > softTrigCuts.maxNsigmaXiDaus || (hasTofPiFromLambda && std::abs(nSigTofPiFromLambda) > softTrigCuts.maxNsigmaXiDaus)) {
+      return false;
+    }
+    if (std::abs(nSigTpcPrFromLambda) > softTrigCuts.maxNsigmaXiDaus || (hasTofPrFromLambda && std::abs(nSigTofPrFromLambda) > softTrigCuts.maxNsigmaXiDaus)) {
+      return false;
+    }
+
+    int nCand{0};
+    try {
+      nCand = df2Prong.process(trackParBachelor[0], trackParBachelor[1]);
+    } catch (...) {
+      LOG(error) << "Exception caught in DCA fitter process call for bachelor + bachelor in software trigger selection function!";
+      return false;
+    }
+    if (nCand == 0) {
+      return false;
+    }
+
+    const auto& vtx = df2Prong.getPCACandidate();
+    if (df2Prong.getChi2AtPCACandidate() > softTrigCuts.maxChi2Pca) {
+      return false;
+    }
+
+    std::array<float, 3> pVecBachFirst{}, pVecBachSecond{};
+    const auto& trackBachFirstProp = df2Prong.getTrack(0);
+    const auto& trackBachSecondProp = df2Prong.getTrack(1);
+    trackBachFirstProp.getPxPyPzGlo(pVecBachFirst);
+    trackBachSecondProp.getPxPyPzGlo(pVecBachSecond);
+    auto momXiBachBach = RecoDecay::pVec(pVecCascade, pVecBachFirst, pVecBachSecond);
+
+    std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    if (RecoDecay::cpa(primVtx, std::array{vtx[0], vtx[1], vtx[2]}, momXiBachBach) < softTrigCuts.minCosPA) {
+      return false;
+    }
+
+    if (RecoDecay::distance(primVtx, vtx) < softTrigCuts.minDecayLength) {
+      return false;
+    }
+
+    return true;
   }
 
   template <o2::hf_centrality::CentralityEstimator CentEstimator, typename Collision>
@@ -201,7 +307,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                                       aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                       CascadesLinked const&,
                                       CascFull const&,
-                                      TracksWCovDcaPidPrPi const&,
+                                      TracksWCovExtraPidPrPi const&,
                                       aod::BCsWithTimestamps const&)
   {
     // loop over triplets of track indices
@@ -224,8 +330,8 @@ struct HfCandidateCreatorXicToXiPiPi {
         continue;
       }
       auto casc = cascAodElement.cascData_as<CascFull>();
-      auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovDcaPidPrPi>();
-      auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovDcaPidPrPi>();
+      auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
+      auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
 
       // preselect cascade candidates
       if (doCascadePreselection) {
@@ -276,9 +382,50 @@ struct HfCandidateCreatorXicToXiPiPi {
       trackCasc.setAbsCharge(1);
       trackCasc.setPID(o2::track::PID::XiMinus);
 
+      //----------------------------calculate physical properties-----------------------
+      // Charge of charm baryon
+      int8_t const signXic = casc.sign() < 0 ? +1 : -1;
+
       //----------------------------fit SV and create XicPlus track------------------
       auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
       auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
+
+      // if enabled, apply selections of software trigger
+      float pPiFromLambda{}, pPrFromLambda{}, pPionFromXi{}, ptPionFromXi{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
+      if (softTrigCuts.applySoftwareTrigSelections) {
+        // get PID information already here
+        auto const& trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
+        auto const& trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
+        auto const& trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
+        nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
+        nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+        pPionFromXi = trackPionFromXi.p();
+        ptPionFromXi = trackPionFromXi.pt();
+        bool hasTofBachelorPi = trackPionFromXi.hasTOF();
+        bool hasTofPiFromLambda = false;
+        bool hasTofPrFromLambda = false;
+        if (signXic == +1) {
+          pPiFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
+        } else {
+          pPiFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+        }
+        std::array<int16_t, 3> const nClsTpc = {trackPionFromXi.tpcNClsFound(), trackPosLambdaDaughter.tpcNClsFound(), trackNegLambdaDaughter.tpcNClsFound()};
+        std::array<int16_t, 3> const nCrossedRowsTpc = {trackPionFromXi.tpcNClsCrossedRows(), trackPosLambdaDaughter.tpcNClsCrossedRows(), trackNegLambdaDaughter.tpcNClsCrossedRows()};
+        std::array<float, 3> const crossedRowsOverFindableClsTpc = {trackPionFromXi.tpcCrossedRowsOverFindableCls(), trackPosLambdaDaughter.tpcCrossedRowsOverFindableCls(), trackNegLambdaDaughter.tpcCrossedRowsOverFindableCls()};
+        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision, nSigTpcBachelorPi, nSigTofBachelorPi, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda, hasTofBachelorPi, hasTofPiFromLambda, hasTofPrFromLambda, nClsTpc, nCrossedRowsTpc, crossedRowsOverFindableClsTpc)) {
+          continue;
+        }
+      }
 
       // reconstruct the 3-prong secondary vertex
       try {
@@ -290,10 +437,6 @@ struct HfCandidateCreatorXicToXiPiPi {
         continue;
       }
       registry.fill(HIST("hCandCounter"), VertexFit);
-
-      //----------------------------calculate physical properties-----------------------
-      // Charge of charm baryon
-      int8_t const signXic = casc.sign() < 0 ? +1 : -1;
 
       // get SV properties
       const auto& secondaryVertex = df.getPCACandidate();
@@ -336,6 +479,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
       float const cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
 
+      // calculate Lambda radius
+      float const radiusLambda = std::hypot(vertexV0[0], vertexV0[1]);
+
       // get invariant mass of Xi-pi pairs
       auto arrayMomentaXiPi0 = std::array{pVecXi, pVecPi0};
       massXiPi0 = RecoDecay::m(arrayMomentaXiPi0, std::array{MassXiMinus, MassPiPlus});
@@ -343,7 +489,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       massXiPi1 = RecoDecay::m(arrayMomentaXiPi1, std::array{MassXiMinus, MassPiPlus});
 
       // get uncertainty of the decay length
-      float phi, theta;
+      float phi{}, theta{};
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
@@ -353,28 +499,31 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const nSigTofPiFromXicPlus0 = trackCharmBachelor0.tofNSigmaPi();
       float const nSigTpcPiFromXicPlus1 = trackCharmBachelor1.tpcNSigmaPi();
       float const nSigTofPiFromXicPlus1 = trackCharmBachelor1.tofNSigmaPi();
-      // Bachelor pion
-      auto trackPionFromXi = casc.bachelor_as<TracksWCovDcaPidPrPi>();
-      float const nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
-      float const nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
-      // Lambda daughters
-      auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaPidPrPi>();
-      auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaPidPrPi>();
-      float pPiFromLambda, pPrFromLambda, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda;
-      if (signXic == +1) {
-        pPiFromLambda = trackNegLambdaDaughter.p();
-        nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
-        nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
-        pPrFromLambda = trackPosLambdaDaughter.p();
-        nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
-        nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
-      } else {
-        pPiFromLambda = trackPosLambdaDaughter.p();
-        nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
-        nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
-        pPrFromLambda = trackNegLambdaDaughter.p();
-        nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
-        nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+      if (!softTrigCuts.applySoftwareTrigSelections) {
+        // Bachelor pion
+        auto trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
+        nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
+        nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+        pPionFromXi = trackPionFromXi.p();
+        ptPionFromXi = trackPionFromXi.pt();
+        // Lambda daughters
+        auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
+        auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
+        if (signXic == +1) {
+          pPiFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
+        } else {
+          pPiFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+        }
       }
 
       //--------------------------------------------fill histograms----------------------------------------------------------------
@@ -417,9 +566,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        impactParameterCasc.getY(), impactParameter0.getY(), impactParameter1.getY(),
                        std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
                        /*cascade specific columns*/
-                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
+                       pPionFromXi, pPiFromLambda, pPrFromLambda, ptPionFromXi,
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
                        casc.mXi(), casc.mLambda(), massXiPi0, massXiPi1,
+                       radiusLambda,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
                        casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
@@ -457,8 +607,56 @@ struct HfCandidateCreatorXicToXiPiPi {
         continue;
       }
       auto casc = cascAodElement.kfCascData_as<KFCascFull>();
-      auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
-      auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
+
+      auto const& trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
+      auto const& trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
+
+      // sign of charm baryon
+      int8_t const signXic = casc.sign() < 0 ? +1 : -1;
+
+      // if enabled, apply selections of software trigger
+      float pPiFromLambda{}, pPrFromLambda{}, pPionFromXi{}, ptPionFromXi{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
+      if (softTrigCuts.applySoftwareTrigSelections) {
+        // get PID information already here
+        auto const& trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
+        auto const& trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
+        auto const& trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
+        nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
+        nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+        pPionFromXi = trackPionFromXi.p();
+        ptPionFromXi = trackPionFromXi.pt();
+        bool hasTofBachelorPi = trackPionFromXi.hasTOF();
+        bool hasTofPiFromLambda = false;
+        bool hasTofPrFromLambda = false;
+        if (signXic == +1) {
+          pPiFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
+          hasTofPiFromLambda = trackNegLambdaDaughter.hasTOF();
+          pPrFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
+          hasTofPrFromLambda = trackPosLambdaDaughter.hasTOF();
+        } else {
+          pPiFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
+          hasTofPiFromLambda = trackPosLambdaDaughter.hasTOF();
+          pPrFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+          hasTofPrFromLambda = trackNegLambdaDaughter.hasTOF();
+        }
+        auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
+        auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
+        std::array<float, 3> const pVecCasc = {casc.px(), casc.py(), casc.pz()};
+        std::array<int16_t, 3> const nClsTpc = {trackPionFromXi.tpcNClsFound(), trackPosLambdaDaughter.tpcNClsFound(), trackNegLambdaDaughter.tpcNClsFound()};
+        std::array<int16_t, 3> const nCrossedRowsTpc = {trackPionFromXi.tpcNClsCrossedRows(), trackPosLambdaDaughter.tpcNClsCrossedRows(), trackNegLambdaDaughter.tpcNClsCrossedRows()};
+        std::array<float, 3> const crossedRowsOverFindableClsTpc = {trackPionFromXi.tpcCrossedRowsOverFindableCls(), trackPosLambdaDaughter.tpcCrossedRowsOverFindableCls(), trackNegLambdaDaughter.tpcCrossedRowsOverFindableCls()};
+        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision, nSigTpcBachelorPi, nSigTofBachelorPi, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda, hasTofBachelorPi, hasTofPiFromLambda, hasTofPrFromLambda, nClsTpc, nCrossedRowsTpc, crossedRowsOverFindableClsTpc)) {
+          continue;
+        }
+      }
 
       //-------------------preselect cascade candidates--------------------------------------
       if (doCascadePreselection) {
@@ -509,6 +707,10 @@ struct HfCandidateCreatorXicToXiPiPi {
       float parPosMom[NElementsStateVector];
       std::copy(xyzpxpypz.begin(), xyzpxpypz.end(), parPosMom);
       // create KFParticle
+      // README: The Xi KFParticle in this case is constructed from the parameters stored in the LF cascade table.
+      // The LF strangenessbuilder should in this case be run WITHOUT the mass constraint on the Xi to consistently store the unconstrained parameters and invariant mass of the Xi.
+      // The mass constraint on the Xi is applied here only after the KFParticle object was created from the unconstrained parameters and covariance matrix of the Xi.
+      // WARNING: If the Xi gets already constrained in the LF strangenessbuilder, the parameters and cov matrix passed to the KFParticle.Create() function will be constrained while the mass won't be. The stored energy, mass, and momentum will not be correctly related anymore!
       KFParticle kfXi;
       float const massXi = casc.mXi();
       kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), massXi);
@@ -545,9 +747,6 @@ struct HfCandidateCreatorXicToXiPiPi {
       }
 
       //---------------------calculate physical parameters of XicPlus candidate----------------------
-      // sign of charm baryon
-      int8_t const signXic = casc.sign() < 0 ? +1 : -1;
-
       // transport XicPlus daughters to XicPlus decay vertex (secondary vertex)
       float secondaryVertex[3] = {0.};
       secondaryVertex[0] = kfXicPlus.GetX();
@@ -574,6 +773,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
       float const cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
 
+      // calculate Lambda radius
+      float const radiusLambda = std::hypot(vertexV0[0], vertexV0[1]);
+
       // get chi2 deviation of Pi0-Pi1, Pi0-Xi, Pi1-Xi
       float chi2DevPi0Pi1 = kfCharmBachelor0.GetDeviationFromParticle(kfCharmBachelor1);
       float chi2DevPi0Xi = kfCharmBachelor0.GetDeviationFromParticle(kfXi);
@@ -589,7 +791,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // mass of Xi-Pi0 pair
       KFParticle kfXiPi0;
-      float errMassXiPi0;
+      float errMassXiPi0{};
       const KFParticle* kfXiResonanceDaughtersPi0[2] = {&kfXi, &kfCharmBachelor0};
       kfXiPi0.SetConstructMethod(kfConstructMethod);
       try {
@@ -601,7 +803,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // mass of Xi-Pi1 pair
       KFParticle kfXiPi1;
-      float errMassXiPi1;
+      float errMassXiPi1{};
       const KFParticle* kfXiResonanceDaughtersPi1[2] = {&kfXi, &kfCharmBachelor1};
       kfXiPi1.SetConstructMethod(kfConstructMethod);
       try {
@@ -612,7 +814,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       kfXiPi1.GetMass(massXiPi1, errMassXiPi1);
 
       // get invariant mass of Xic candidate
-      float errMassXiPiPi;
+      float errMassXiPiPi{};
       kfXicPlus.GetMass(massXiPiPi, errMassXiPiPi);
 
       // decay length of XicPlus
@@ -628,28 +830,31 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const nSigTofPiFromXicPlus0 = trackCharmBachelor0.tofNSigmaPi();
       float const nSigTpcPiFromXicPlus1 = trackCharmBachelor1.tpcNSigmaPi();
       float const nSigTofPiFromXicPlus1 = trackCharmBachelor1.tofNSigmaPi();
-      // Bachelor pion
-      auto trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
-      float const nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
-      float const nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
-      // Lambda daughters
-      auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
-      auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
-      float pPiFromLambda, pPrFromLambda, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda;
-      if (signXic == +1) {
-        pPiFromLambda = trackNegLambdaDaughter.p();
-        nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
-        nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
-        pPrFromLambda = trackPosLambdaDaughter.p();
-        nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
-        nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
-      } else {
-        pPiFromLambda = trackPosLambdaDaughter.p();
-        nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
-        nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
-        pPrFromLambda = trackNegLambdaDaughter.p();
-        nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
-        nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+      if (!softTrigCuts.applySoftwareTrigSelections) {
+        // Bachelor pion
+        auto trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
+        nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
+        nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+        pPionFromXi = trackPionFromXi.p();
+        ptPionFromXi = trackPionFromXi.pt();
+        // Lambda daughters
+        auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
+        auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
+        if (signXic == +1) {
+          pPiFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
+        } else {
+          pPiFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+        }
       }
 
       //-------------------------------fill histograms--------------------------------------------
@@ -690,9 +895,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        impactParameterXiXY, impactParameterPi0XY, impactParameterPi1XY,
                        errImpactParameterXiXY, errImpactParameterPi0XY, errImpactParameterPi1XY,
                        /*cascade specific columns*/
-                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
+                       pPionFromXi, pPiFromLambda, pPrFromLambda, ptPionFromXi,
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
                        massXi, casc.mLambda(), massXiPi0, massXiPi1,
+                       radiusLambda,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
                        casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
@@ -715,33 +921,33 @@ struct HfCandidateCreatorXicToXiPiPi {
   ///                                                     ///
   ///////////////////////////////////////////////////////////
 
-  void processNoCentXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                          aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                          CascadesLinked const& cascadesLinked,
                                          CascFull const& cascadesFull,
-                                         TracksWCovDcaPidPrPi const& tracks,
+                                         TracksWCovExtraPidPrPi const& tracks,
                                          aod::BCsWithTimestamps const& bcs)
   {
     runXicplusCreatorWithDcaFitter<o2::hf_centrality::CentralityEstimator::None>(collisions, rowsTrackIndexXicPlus, cascadesLinked, cascadesFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processNoCentXicplusWithDcaFitter, "Run candidate creator with DCAFitter without centrality selection.", true);
 
-  void processCentFT0CXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0CXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                            aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                            CascadesLinked const& cascadesLinked,
                                            CascFull const& cascadesFull,
-                                           TracksWCovDcaPidPrPi const& tracks,
+                                           TracksWCovExtraPidPrPi const& tracks,
                                            aod::BCsWithTimestamps const& bcs)
   {
     runXicplusCreatorWithDcaFitter<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, rowsTrackIndexXicPlus, cascadesLinked, cascadesFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCentFT0CXicplusWithDcaFitter, "Run candidate creator with DCAFitter with centrality selection on FT0C.", false);
 
-  void processCentFT0MXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                            aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                            CascadesLinked const& cascadesLinked,
                                            CascFull const& cascadesFull,
-                                           TracksWCovDcaPidPrPi const& tracks,
+                                           TracksWCovExtraPidPrPi const& tracks,
                                            aod::BCsWithTimestamps const& bcs)
   {
     runXicplusCreatorWithDcaFitter<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, rowsTrackIndexXicPlus, cascadesLinked, cascadesFull, tracks, bcs);
@@ -754,7 +960,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   ///                                                     ///
   ///////////////////////////////////////////////////////////
 
-  void processNoCentXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                           aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                           KFCascadesLinked const& kfCascadesLinked,
                                           KFCascFull const& kfCascadesFull,
@@ -765,7 +971,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processNoCentXicplusWithKFParticle, "Run candidate creator with KFParticle without centrality selection.", false);
 
-  void processCentFT0CXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0CXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                             aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                             KFCascadesLinked const& kfCascadesLinked,
                                             KFCascFull const& kfCascadesFull,
@@ -776,7 +982,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCentFT0CXicplusWithKFParticle, "Run candidate creator with KFParticle with centrality selection on FT0C.", false);
 
-  void processCentFT0MXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                             aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                             KFCascadesLinked const& kfCascadesLinked,
                                             KFCascFull const& kfCascadesFull,
@@ -793,7 +999,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   ///                                                     ///
   ///////////////////////////////////////////////////////////
 
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions, aod::BCsWithTimestamps const&)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -802,15 +1008,16 @@ struct HfCandidateCreatorXicToXiPiPi {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCollisions, "Collision monitoring - no centrality", false);
 
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const&)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const&)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -819,15 +1026,16 @@ struct HfCandidateCreatorXicToXiPiPi {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const&)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const&)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -836,9 +1044,10 @@ struct HfCandidateCreatorXicToXiPiPi {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -864,9 +1073,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
                   XiToPiPPi,
                   LambdaToPPi };
 
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
-  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
@@ -884,6 +1093,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       registry.add("hDecayedPions", "hDecayedPions", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("hInteractionsWithMaterial", "hInteractionsWithMaterial", {HistType::kTH1F, {{6, -0.5, 5.5}}});
       registry.add("hDebugRec", "hDebugRec", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+      registry.add("hy_pt_gen", "Generated MC", {HistType::kTH2F, {{20, -1.0, 1.0}, {200, 0, 20}}});
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + TotalRec, "total");
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + XicToFinalState, "#Xi^{+}_{c} #rightarrow #pi^{#plus} #pi^{#plus} #pi^{#minus} p #pi^{#minus}");
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + XiToPiPPi, "#Xi^{#minus} #rightarrow #pi^{#minus} p #pi^{#minus}");
@@ -1091,12 +1301,13 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          rowMcMatchGen(-99, -99, -99, decayLengthGen);
+          rowMcMatchGen(-99, -99, -99, decayLengthGen, -1.f);
         }
         continue;
       }
 
       for (const auto& particle : mcParticlesPerMcColl) {
+        const float massGen = RecoDecay::m(particle.pVector(), particle.e());
         sign = 0;
         flag = 0;
         origin = RecoDecay::OriginType::None;
@@ -1136,6 +1347,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
+          // fill inclusive generated Xic+
+          registry.fill(HIST("hy_pt_gen"), particle.y(), particle.pt());
+
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
           // Calculate the decay length of the generated particle
           auto dau0 = particle.template daughters_as<aod::McParticles>().begin();
@@ -1146,9 +1360,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         // Fill table
         if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-          rowMcMatchGen(flag, origin, bHadMother.pdgCode(), decayLengthGen);
+          rowMcMatchGen(flag, origin, bHadMother.pdgCode(), decayLengthGen, massGen);
         } else {
-          rowMcMatchGen(flag, origin, 0, decayLengthGen);
+          rowMcMatchGen(flag, origin, 0, decayLengthGen, massGen);
         }
       } // close loop over generated particles
     } // close loop over McCollisions

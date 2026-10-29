@@ -14,15 +14,45 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  30.09.2022
 
-#include <algorithm>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "PWGUD/DataModel/UDTables.h"
+#include "DGBCCandProducer.h"
+
+#include "PWGUD/Core/DGCutparHolder.h"
+#include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/Core/DGSelector.h"
-#include "DGBCCandProducer.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/TimeStamp.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <TH1.h>
+#include <TH2.h>
+
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -101,8 +131,8 @@ struct tracksWGTInBCs {
           // compute the BC closest in time
           auto firstCompatibleBC = ambTracksSlice.begin().bc().begin().globalBC();
           LOGF(debug, "First compatible BC %d Track time %f", firstCompatibleBC, track.trackTime());
-          closestBC = (uint64_t)(firstCompatibleBC +
-                                 (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+          closestBC = static_cast<uint64_t>(firstCompatibleBC +
+                                            (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
           if (!track.has_collision()) {
@@ -117,7 +147,7 @@ struct tracksWGTInBCs {
 
         // update tracksInBCList
         LOGF(debug, "Updating tracksInBCList with %d", closestBC);
-        tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
+        tracksInBCList[closestBC].emplace_back(static_cast<int32_t>(track.globalIndex()));
       }
     }
 
@@ -185,8 +215,8 @@ struct tracksWGTInBCs {
 
           // compute the BC closest in time
           auto firstCompatibleBC = ambFwdTracksSlice.begin().bc().begin().globalBC();
-          closestBC = (uint64_t)(firstCompatibleBC +
-                                 (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+          closestBC = static_cast<uint64_t>(firstCompatibleBC +
+                                            (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
           if (!fwdTrack.has_collision()) {
@@ -201,7 +231,7 @@ struct tracksWGTInBCs {
 
         // update tracksInBCList
         LOGF(debug, "Updating fwdTracksInBCList with %d", closestBC);
-        fwdTracksInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
+        fwdTracksInBCList[closestBC].emplace_back(static_cast<int32_t>(fwdTrack.globalIndex()));
       }
     }
 
@@ -355,7 +385,7 @@ struct DGBCCandProducer {
 
   void init(InitContext& context)
   {
-    diffCuts = (DGCutparHolder)DGCuts;
+    diffCuts = DGCutparHolder(DGCuts);
 
     if (context.mOptions.get<bool>("processTinBCs")) {
       registry.add("table/candCase", "#candCase", {HistType::kTH1F, {{4, -0.5, 3.5}}});
@@ -438,11 +468,11 @@ struct DGBCCandProducer {
             auto fwdTracksArray = ftibcSlice.begin().fwdtrack_as<FTCs>();
             isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           } else {
-            auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+            auto fwdTracksArray = fwdtracks.emptySlice();
             isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           }
         } else {
-          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+          auto fwdTracksArray = fwdtracks.emptySlice();
           isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
 
@@ -484,11 +514,11 @@ struct DGBCCandProducer {
           auto fwdTracksArray = ftibcPart.begin().fwdtrack_as<FTCs>();
           isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
-          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+          auto fwdTracksArray = fwdtracks.emptySlice();
           isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
       } else {
-        auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+        auto fwdTracksArray = fwdtracks.emptySlice();
         isDG = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
       }
 
@@ -653,11 +683,11 @@ struct DGBCCandProducer {
               auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
               isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
             } else {
-              auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+              auto fwdTracksArray = fwdtracks.emptySlice();
               isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
             }
           } else {
-            auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+            auto fwdTracksArray = fwdtracks.emptySlice();
             isDG2 = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
           }
 

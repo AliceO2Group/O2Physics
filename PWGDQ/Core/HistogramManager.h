@@ -17,17 +17,20 @@
 #ifndef PWGDQ_CORE_HISTOGRAMMANAGER_H_
 #define PWGDQ_CORE_HISTOGRAMMANAGER_H_
 
-#include <TString.h>
-#include <TNamed.h>
-#include <TList.h>
-#include <THashList.h>
-#include <TAxis.h>
 #include <TArrayD.h>
+#include <TAxis.h>
+#include <THashList.h>
+#include <TNamed.h>
+#include <TString.h>
 
-#include <string>
-#include <map>
-#include <vector>
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <cstdint>
 #include <list>
+#include <map>
+#include <string>
+#include <vector>
 
 class HistogramManager : public TNamed
 {
@@ -43,9 +46,7 @@ class HistogramManager : public TNamed
 
   void SetMainHistogramList(THashList* list)
   {
-    if (fMainList) {
-      delete fMainList;
-    }
+    delete fMainList;
     fMainList = list;
   }
 
@@ -88,11 +89,11 @@ class HistogramManager : public TNamed
 
   void SetUseDefaultVariableNames(bool flag) { fUseDefaultVariableNames = flag; }
   void SetDefaultVarNames(TString* vars, TString* units);
-  const bool* GetUsedVars() const { return fUsedVars; }
+  [[nodiscard]] const bool* GetUsedVars() const { return fUsedVars; }
 
   THashList* GetMainHistogramList() { return fMainList; } // get a histogram list
 
-  uint64_t GetAllocatedBins() const { return fBinsAllocated; }
+  [[nodiscard]] uint64_t GetAllocatedBins() const { return fBinsAllocated; }
   void Print(Option_t*) const override;
 
  private:
@@ -103,17 +104,15 @@ class HistogramManager : public TNamed
   std::map<std::string, std::list<std::vector<int>>> fVariablesMap; //!  map holding identifiers for all variables needed by histograms
 
   // various
-  bool fUseDefaultVariableNames;    //! toggle the usage of default variable names and units
-  uint64_t fBinsAllocated;          //! number of allocated bins
-  TString* fVariableNames;          //! variable names
-  TString* fVariableUnits;          //! variable units
+  bool fUseDefaultVariableNames; //! toggle the usage of default variable names and units
+  uint64_t fBinsAllocated;       //! number of allocated bins
+  std::vector<TString> fVariableNames; //! variable names
+  std::vector<TString> fVariableUnits; //! variable units
 
   void MakeAxisLabels(TAxis* ax, const char* labels);
 
   HistogramManager& operator=(const HistogramManager& c);
   HistogramManager(const HistogramManager& c);
-
-  ClassDef(HistogramManager, 2)
 };
 
 #endif // PWGDQ_CORE_HISTOGRAMMANAGER_H_

@@ -21,21 +21,17 @@
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEANGULARCONTAINER_H_
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Common/Core/RecoDecay.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
-#include "Framework/HistogramRegistry.h"
-#include <Framework/Logger.h>
-
-#include "Math/Vector4D.h"
-#include "TDatabasePDG.h"
-#include "TMath.h"
+#include <TDatabasePDG.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
-
-using namespace o2::framework;
 
 namespace o2::analysis::femto_universe
 {
@@ -75,9 +71,9 @@ class FemtoUniverseAngularContainer
   /// \param kTAxis axis object for the kT axis
   /// \param mTAxis axis object for the mT axis
   template <typename T>
-  void initBase(std::string folderName, std::string /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*kTAxis*/, T /*mTAxis*/, T /*multAxis3D*/, T /*mTAxis3D*/, T etaAxis, T phiAxis, bool use3dplots)
+  void initBase(const std::string& folderName, const std::string& /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*kTAxis*/, T /*mTAxis*/, T /*multAxis3D*/, T /*mTAxis3D*/, T etaAxis, T phiAxis, bool use3dplots)
   {
-    mHistogramRegistry->add((folderName + "/DeltaEtaDeltaPhi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", kTH2F, {phiAxis, etaAxis});
+    mHistogramRegistry->add((folderName + "/DeltaEtaDeltaPhi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", o2::framework::HistType::kTH2F, {phiAxis, etaAxis});
     if (use3dplots) {
       // use 3d plots
     }
@@ -89,7 +85,7 @@ class FemtoUniverseAngularContainer
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
-  void initMC(std::string /*folderName*/, std::string /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*mTAxis*/)
+  void initMC(const std::string& /*folderName*/, const std::string& /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*mTAxis*/)
   {
   }
 
@@ -106,7 +102,7 @@ class FemtoUniverseAngularContainer
   /// \param phiBins phi binning for the histograms
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T, typename P>
-  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, P& etaBins, P& phiBins, bool isMC, bool use3dplots)
+  void init(o2::framework::HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, P& etaBins, P& phiBins, bool isMC, bool use3dplots)
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -232,7 +228,7 @@ class FemtoUniverseAngularContainer
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry = nullptr;                                 ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;                  ///< For QA output
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to EventType
   static constexpr femto_universe_angular_container::Observable FemtoObs = obs;    ///< Femtoscopic observable to be computed (according to femto_universe_angular_container::Observable)
   static constexpr int EventType = eventType;                                      ///< Type of the event (same/mixed, according to femto_universe_angular_container::EventType)

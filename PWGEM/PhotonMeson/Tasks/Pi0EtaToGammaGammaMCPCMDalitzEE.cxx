@@ -17,7 +17,7 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
-#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 
@@ -28,11 +28,11 @@ using namespace o2::aod::pwgem::photonmeson::photonpair;
 
 using MyV0Photons = soa::Filtered<soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::V0PhotonsKFPrefilterBitDerived>>;
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
-using MyMCElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived, aod::EMPrimaryElectronMCLabels>>;
+using MyMCElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronDaEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived, aod::EMPrimaryElectronMCLabels>>;
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGammaMC<PairType::kPCMDalitzEE, MyV0Photons, MyMCV0Legs, MyMCElectrons>>(cfgc, TaskName{"pi0eta-to-gammagamma-mc-pcmdalitzee"}),
+    adaptAnalysisTask<Pi0EtaToGammaGammaMC<PairType::kPCMDalitzEE, MyV0Photons, MyMCV0Legs, MyMCElectrons>>(context, TaskName{"pi0eta-to-gammagamma-mc-pcmdalitzee"}),
   };
 }

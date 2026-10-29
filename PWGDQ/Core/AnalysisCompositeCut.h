@@ -14,17 +14,20 @@
 // Cut class manipulating groups of cuts
 //
 
-#ifndef AnalysisCompositeCut_H
-#define AnalysisCompositeCut_H
+#ifndef PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_
+#define PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_
 
 #include "PWGDQ/Core/AnalysisCut.h"
+
+#include <RtypesCore.h>
+
 #include <vector>
 
 //_________________________________________________________________________
 class AnalysisCompositeCut : public AnalysisCut
 {
  public:
-  AnalysisCompositeCut(bool useAND = kTRUE);
+  explicit AnalysisCompositeCut(bool useAND = kTRUE);
   AnalysisCompositeCut(const char* name, const char* title, bool useAND = kTRUE);
   AnalysisCompositeCut(const AnalysisCompositeCut& c);
   AnalysisCompositeCut& operator=(const AnalysisCompositeCut& c);
@@ -32,8 +35,8 @@ class AnalysisCompositeCut : public AnalysisCut
 
   void AddCut(AnalysisCut* cut)
   {
-    if (cut->IsA() == AnalysisCompositeCut::Class()) {
-      fCompositeCutList.push_back(*(AnalysisCompositeCut*)cut);
+    if (auto* composite = dynamic_cast<AnalysisCompositeCut*>(cut)) {
+      fCompositeCutList.push_back(*composite);
     } else {
       fCutList.push_back(*cut);
     }
@@ -48,8 +51,6 @@ class AnalysisCompositeCut : public AnalysisCut
   bool fOptionUseAND;                                  // true (default): apply AND on all cuts; false: use OR
   std::vector<AnalysisCut> fCutList;                   // list of cuts
   std::vector<AnalysisCompositeCut> fCompositeCutList; // list of composite cuts
-
-  ClassDef(AnalysisCompositeCut, 2);
 };
 
-#endif
+#endif // PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_

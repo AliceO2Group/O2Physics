@@ -47,6 +47,12 @@ struct HfPidCreator {
   Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
   Produces<aod::PidTpcTofFullDe> trackPidFullDe;
   Produces<aod::PidTpcTofTinyDe> trackPidTinyDe;
+  Produces<aod::PidTpcTofFullTr> trackPidFullTr;
+  Produces<aod::PidTpcTofTinyTr> trackPidTinyTr;
+  Produces<aod::PidTpcTofFullHe> trackPidFullHe;
+  Produces<aod::PidTpcTofTinyHe> trackPidTinyHe;
+  Produces<aod::PidTpcTofFullAl> trackPidFullAl;
+  Produces<aod::PidTpcTofTinyAl> trackPidTinyAl;
 
   /// Function to check whether the process function flag matches the need for filling the table
   /// \param initContext  workflow context (argument of the init function)
@@ -55,7 +61,7 @@ struct HfPidCreator {
   template <typename TFlag>
   void checkTableSwitch(InitContext& initContext, const std::string& table, TFlag& doprocess)
   {
-    auto isNeeded = isTableRequiredInWorkflow(initContext, table);
+    auto isNeeded = o2::common::core::isTableRequiredInWorkflow(initContext, table);
     if (isNeeded && !doprocess.value) {
       LOGF(fatal, "Table %s is needed but not requested. Enable the corresponding process function!", table);
     }
@@ -81,6 +87,12 @@ struct HfPidCreator {
     checkTableSwitch(initContext, "PidTpcTofTinyPr", doprocessTinyPr);
     checkTableSwitch(initContext, "PidTpcTofFullDe", doprocessFullDe);
     checkTableSwitch(initContext, "PidTpcTofTinyDe", doprocessTinyDe);
+    checkTableSwitch(initContext, "PidTpcTofFullTr", doprocessFullTr);
+    checkTableSwitch(initContext, "PidTpcTofTinyTr", doprocessTinyTr);
+    checkTableSwitch(initContext, "PidTpcTofFullHe", doprocessFullHe);
+    checkTableSwitch(initContext, "PidTpcTofTinyHe", doprocessTinyHe);
+    checkTableSwitch(initContext, "PidTpcTofFullAl", doprocessFullAl);
+    checkTableSwitch(initContext, "PidTpcTofTinyAl", doprocessTinyAl);
   }
 
   void processDummy(aod::Collisions const&) {}
@@ -111,6 +123,9 @@ struct HfPidCreator {
   PROCESS_PID(Ka)
   PROCESS_PID(Pr)
   PROCESS_PID(De)
+  PROCESS_PID(Tr)
+  PROCESS_PID(He)
+  PROCESS_PID(Al)
 
 #undef PROCESS_PID
 };

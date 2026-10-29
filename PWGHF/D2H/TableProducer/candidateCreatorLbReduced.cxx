@@ -64,6 +64,7 @@ struct HfCandidateCreatorLbReduced {
   Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any Lb is smaller than this"};
   Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   // selection
   Configurable<float> invMassWindowLcPiTolerance{"invMassWindowLcPiTolerance", 0.01, "invariant-mass window tolerance for LcPi pair preselections (GeV/c2)"};
 
@@ -96,6 +97,7 @@ struct HfCandidateCreatorLbReduced {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
+    df2.setMaxChi2(maxChi2);
 
     // histograms
     registry.add("hMassLambdaB0ToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
@@ -189,8 +191,7 @@ struct HfCandidateCreatorLbReduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate Lc and Pi to the Lb vertex
-        df2.propagateTracksToVertex();
+        // get Lc and Pi tracks (propagated to the Lb vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df2.getTrack(0).getPxPyPzGlo(pVecLc);   // momentum of Lc at the Lb vertex
         df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Lb vertex
@@ -204,7 +205,7 @@ struct HfCandidateCreatorLbReduced {
         trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
 
         // get uncertainty of the decay length
-        float phi, theta;
+        float phi{}, theta{};
         // getPointDirection modifies phi and theta
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexLb, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));

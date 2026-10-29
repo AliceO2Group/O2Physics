@@ -16,36 +16,30 @@
 
 #include "../filterTables.h"
 
-#include "PWGLF/DataModel/ReducedDoublePhiTables.h"
-
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/MathConstants.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
-#include <TDatabasePDG.h> // FIXME
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 #include <TMath.h>
-#include <TPDGCode.h> // FIXME
 
-#include <fairlogger/Logger.h>
-
-#include <iostream>
+#include <cstdint>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -194,7 +188,7 @@ struct filterdoublephi {
     if (collision.sel8()) {
       auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      for (auto track1 : posThisColl) {
+      for (const auto& track1 : posThisColl) {
         // track selection
         if (!selectionTrack(track1)) {
           continue;
@@ -215,7 +209,7 @@ struct filterdoublephi {
           qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track1.tofNSigmaKa(), track1.pt());
         }
         auto track1ID = track1.globalIndex();
-        for (auto track2 : negThisColl) {
+        for (const auto& track2 : negThisColl) {
           // track selection
           if (!selectionTrack(track2)) {
             continue;

@@ -13,19 +13,14 @@
 /// \brief PID flow for resonances using the generic framework
 /// \author Preet Bhanjan Pati <preet.bhanjan.pati@cern.ch>
 
-#include "PWGCF/GenericFramework/Core/FlowContainer.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
-#include "PWGCF/GenericFramework/Core/GFWCumulant.h"
-#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
-#include "PWGCF/GenericFramework/Core/GFWWeightsList.h"
-#include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -34,28 +29,43 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StringHelpers.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TF1.h>
+#include <TH1.h>
+#include <TH3.h>
 #include <TProfile.h>
+#include <TProfile3D.h>
 #include <TRandom3.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -231,7 +241,7 @@ struct ResonancesGfwFlow {
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -565,7 +575,7 @@ struct ResonancesGfwFlow {
     return nIndex;
   }
 
-  void fillProfileBoot(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> profile, const double& cent)
+  void fillProfileBoot(const GFW::CorrConfig& corrconf, const std::shared_ptr<TProfile>& profile, const double& cent)
   {
     double dnx, val;
     if (!corrconf.pTDif) {
@@ -580,7 +590,7 @@ struct ResonancesGfwFlow {
     return;
   }
 
-  void fillProfileBoot3D(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile3D> profile, const double& cent, TAxis* partaxis)
+  void fillProfileBoot3D(const GFW::CorrConfig& corrconf, const std::shared_ptr<TProfile3D>& profile, const double& cent, TAxis* partaxis)
   {
     double dnx, val;
     for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
@@ -662,7 +672,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TTrack>
-  int getNsigmaPIDTpcTof(TTrack track)
+  int getNsigmaPIDTpcTof(const TTrack& track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -693,7 +703,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TTrack>
-  int getNsigmaPIDAssymmetric(TTrack track)
+  int getNsigmaPIDAssymmetric(const TTrack& track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -786,7 +796,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TTrack, typename TCollision>
-  double getAcceptance(TTrack track, const TCollision collision, int pid_index_reso)
+  double getAcceptance(const TTrack& track, const TCollision& collision, int pid_index_reso)
   { // 0 = k0, 1 = lambda, 2 = phi, 3 = anti-lambda, 4 = ref
     if (pid_index_reso < 0 || pid_index_reso >= kCount_OutputSpecies) {
       return 1;
@@ -815,7 +825,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename vector, typename TCollision>
-  double getAcceptancePhi(vector mom, const TCollision collision, int pid_index_reso)
+  double getAcceptancePhi(const vector& mom, const TCollision& collision, int pid_index_reso)
   { // 0 = k0, 1 = lambda, 2 = phi, 3 = anti-lambda, 4 = ref
     if (pid_index_reso < 0 || pid_index_reso >= kCount_OutputSpecies) {
       return 1;
@@ -846,7 +856,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TTrack, typename TCollision>
-  void fillWeights(const TTrack track, const TCollision collision, const int& pid_index_reso)
+  void fillWeights(const TTrack& track, const TCollision& collision, const int& pid_index_reso)
   {
     double cent = collision.centFT0C();
     double vtxz = collision.posZ();
@@ -912,7 +922,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TTrack, typename vector, char... chars, typename TCollision>
-  void resurrectPhi(TTrack trackplus, TTrack trackminus, const TCollision collision, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist)
+  void resurrectPhi(const TTrack& trackplus, const TTrack& trackminus, const TCollision& collision, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist)
   {
     for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(trackplus, trackminus))) {
       histos.fill(HIST("hPhiCount"), 0.5);
@@ -972,7 +982,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TTrack, char... chars, typename TCollision>
-  void likeSignPhi(TTrack track, const TCollision collision, double plusmass, const ConstStr<chars...>& hist)
+  void likeSignPhi(const TTrack& track, const TCollision& collision, double plusmass, const ConstStr<chars...>& hist)
   {
     ROOT::Math::PxPyPzMVector daug1, daug2, mom;
     for (auto const& [part1, part2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(track, track))) {
@@ -1178,7 +1188,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TCollision>
-  bool selectionEvent(TCollision collision, const int mult, const float cent)
+  bool selectionEvent(const TCollision& collision, const int mult, const float cent)
   {
     histos.fill(HIST("hEventCount"), kFilteredEvents);
     if (!collision.sel8()) {

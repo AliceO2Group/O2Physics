@@ -1,5 +1,7 @@
 {
     "IsMC": false,
+    "WriteSignalPar": true,
+    "_WriteSignalPar": "write signal parameter values on mass canvas",
     "InFileName": "hMasses.root",
     "_InFileName": "download example file here https://cernbox.cern.ch/s/uoWicuRAVGArDsV",
     "ReflFileName": "",
@@ -11,19 +13,19 @@
         "hMass_T_0.70_0.90",
         "hMass_T_0.90_1.60"
     ],
-    "PromptHistoName": [
+    "_PromptHistoName": [
         "MC prompt histogram name array"
     ],
-    "FDHistoName": [
+    "_FDHistoName": [
         "MC FD histogram name array"
     ],
-    "ReflHistoName": [
+    "_ReflHistoName": [
         "MC reflection histogram name array"
     ],
-    "PromptSecPeakHistoName": [
+    "_PromptSecPeakHistoName": [
         "MC prompt second peak histogram name array"
     ],
-    "FDSecPeakHistoName": [
+    "_FDSecPeakHistoName": [
         "MC FD second peak histogram name array"
     ],
     "Particle": "LcToPKPi",
@@ -35,6 +37,8 @@
         "Dstar",
         "XicToXiPiPi"
     ],
+    "CollisionSystem": "pp #sqrt{#it{s}} = 13.6 TeV",
+    "_CollisionSystems": "Label for mass canvases",
     "EnableRefl": false,
     "FixSigma": false,
     "SigmaFile": "",
@@ -57,7 +61,7 @@
         0,
         0
     ],
-    "_FixMeanManual": "fix mean mannually",
+    "_FixMeanManual": "fix mean manually",
     "FixSecondSigma": false,
     "SecondSigmaFile": "",
     "_SecondSigmaFile": "fix second sigma for double gauss from file",
@@ -69,6 +73,17 @@
         0
     ],
     "_FixSecondSigmaManual": "fix second sigma for double gauss manually",
+    "FixFracDoubleGaus": false,
+    "FracDoubleGausFile": "",
+    "_FracDoubleGausFile": "fix fraction of sigmas for double gauss from file",
+    "FixFracDoubleGausManual": [
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "_FixFracDoubleGausManual": "fix fraction of sigmas for double gauss manually",
     "SliceVarName": "T",
     "SliceVarUnit": "ps",
     "_SliceVarName, _SliceVarUnit": "e.g. pT, GeV/c or something else depending on user's needs",
@@ -86,21 +101,24 @@
         0.9,
         1.6
     ],
-    "MassMin": [
+    "MassMin": 2.12,
+    "_MassMin": [
         2.12,
         2.12,
         2.12,
         2.12,
         2.12
     ],
-    "MassMax": [
+    "MassMax": 2.42,
+    "_MassMax": [
         2.42,
         2.42,
         2.42,
         2.42,
         2.42
     ],
-    "Rebin": [
+    "Rebin": 4,
+    "_Rebin": [
         4,
         4,
         4,
@@ -108,12 +126,13 @@
         4
     ],
     "InclSecPeak": false,
-    "UseLikelihood": false,
+    "UseLikelihood": true,
     "_UseLikelihood": [
         "true: likelihood fit",
         "false: chi2 fit"
     ],
-    "BkgFunc": [
+    "BkgFunc": 2,
+    "_BkgFunc": [
         2,
         2,
         2,
@@ -129,7 +148,8 @@
         "5 for Poly3",
         "6 for NoBkg"
     ],
-    "SgnFunc": [
+    "SgnFunc": 0,
+    "_SgnFunc": [
         0,
         0,
         0,
@@ -140,8 +160,12 @@
         "0 for SingleGaus",
         "1 for DoubleGaus",
         "2 for DoubleGausSigmaRatioPar",
-        "3 for GausSec"
+        "3 for GausSec",
+        "4 for DoubleSidedCrystalBall"
     ],
-    "drawBgPrefit": true,
-    "highlightPeakRegion": true
+    "NSigmaForSideband": 3,
+    "NSigmaForSignal": 3,
+    "DrawBgPrefit": true,
+    "HighlightPeakRegion": true,
+    "RandomSeed": -1
 }

@@ -18,6 +18,7 @@
 
 #include "pidTOFBase.h"
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
@@ -31,7 +32,6 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/Variant.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TGraph.h>
@@ -95,31 +95,31 @@ struct tofPidFull {
   void init(o2::framework::InitContext& initContext)
   {
     if (inheritFromBaseTask.value) { // Inheriting from base task
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
         LOG(fatal) << "Could not get ccdb-url from tof-signal task";
       }
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
         LOG(fatal) << "Could not get ccdb-timestamp from tof-signal task";
       }
-      if (!getTaskOptionValue(initContext, "tof-event-time", "paramFileName", paramFileName.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-event-time", "paramFileName", paramFileName.value, true)) {
         LOG(fatal) << "Could not get paramFileName from tof-event-time task";
       }
-      if (!getTaskOptionValue(initContext, "tof-event-time", "parametrizationPath", parametrizationPath.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-event-time", "parametrizationPath", parametrizationPath.value, true)) {
         LOG(fatal) << "Could not get parametrizationPath from tof-event-time task";
       }
-      if (!getTaskOptionValue(initContext, "tof-event-time", "passName", passName.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-event-time", "passName", passName.value, true)) {
         LOG(fatal) << "Could not get passName from tof-event-time task";
       }
-      if (!getTaskOptionValue(initContext, "tof-signal", "timeShiftCCDBPath", timeShiftCCDBPath.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-signal", "timeShiftCCDBPath", timeShiftCCDBPath.value, true)) {
         LOG(fatal) << "Could not get timeShiftCCDBPath from tof-signal task";
       }
-      if (!getTaskOptionValue(initContext, "tof-event-time", "loadResponseFromCCDB", loadResponseFromCCDB.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-event-time", "loadResponseFromCCDB", loadResponseFromCCDB.value, true)) {
         LOG(fatal) << "Could not get loadResponseFromCCDB from tof-event-time task";
       }
-      if (!getTaskOptionValue(initContext, "tof-event-time", "enableTimeDependentResponse", enableTimeDependentResponse.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-event-time", "enableTimeDependentResponse", enableTimeDependentResponse.value, true)) {
         LOG(fatal) << "Could not get enableTimeDependentResponse from tof-event-time task";
       }
-      if (!getTaskOptionValue(initContext, "tof-event-time", "fatalOnPassNotAvailable", fatalOnPassNotAvailable.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-event-time", "fatalOnPassNotAvailable", fatalOnPassNotAvailable.value, true)) {
         LOG(fatal) << "Could not get fatalOnPassNotAvailable from tof-event-time task";
       }
     }
@@ -133,7 +133,7 @@ struct tofPidFull {
     // Checking the tables are requested in the workflow and enabling them
     for (int i = 0; i < nSpecies; i++) {
       int f = enableParticle->get(particleNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
+      o2::common::core::enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
       if (f == 1) {
         mEnabledParticles.push_back(i);
       }
@@ -286,7 +286,7 @@ struct tofPidFull {
   Preslice<Trks> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void processWSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWSlice(Trks const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -302,10 +302,10 @@ struct tofPidFull {
       reserveTable(pidId, tracks.size());
     }
 
-    int lastCollisionId = -1;          // Last collision ID analysed
-    float resolution = 1.f;            // Last resolution assigned
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+    int lastCollisionId = -1;                                 // Last collision ID analysed
+    float resolution = 1.f;                                   // Last resolution assigned
+    for (auto const& track : tracks) {                        // Loop on all tracks
+      if (!track.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId);
         }
@@ -392,7 +392,7 @@ struct tofPidFull {
   using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   template <o2::track::PID::ID pid>
   using ResponseImplementationIU = o2::pid::tof::ExpTimes<TrksIU::iterator, pid>;
-  void processWoSlice(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWoSlice(TrksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementationIU<PID::Electron>();
     constexpr auto responseMu = ResponseImplementationIU<PID::Muon>();
@@ -407,9 +407,9 @@ struct tofPidFull {
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size());
     }
-    float resolution = 1.f;            // Last resolution assigned
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+    float resolution = 1.f;                                   // Last resolution assigned
+    for (auto const& track : tracks) {                        // Loop on all tracks
+      if (!track.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId);
         }

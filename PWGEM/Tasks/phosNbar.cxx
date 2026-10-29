@@ -8,30 +8,46 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CaloClusters.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "PHOSBase/Geometry.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonUtils/NameConf.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
-#include "TRandom.h"
+#include <TH2.h>
+#include <TH3.h>
+#include <TMath.h>
+#include <TRandom.h>
 
-#include <queue>
+#include <sys/types.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <deque>
+#include <memory>
+#include <utility>
+#include <vector>
 
 /// \struct phosNbar
 /// \brief account Nbar who's clusters appeared within PHOS
@@ -232,7 +248,7 @@ struct phosNbar {
     if constexpr (isMC) {
       // check current collision Id for clusters
       int cluMcBCId = -1;
-      for (auto clu : clusters) {
+      for (const auto& clu : clusters) {
         auto mcList = clu.labels(); // const std::vector<int>
         int nParents = mcList.size();
         for (int iParent = 0; iParent < nParents; iParent++) { // Not found nbar parent yiet
@@ -249,7 +265,7 @@ struct phosNbar {
       }
       // Scan MC particles in current MC event
       if (mcParticles->begin() != mcParticles->end()) {
-        for (auto part : *mcParticles) {
+        for (const auto& part : *mcParticles) {
           if (part.mcCollision().bcId() != cluMcBCId) {
             continue;
             if (part.pdgCode() == -3112) { // Sigma+
@@ -368,7 +384,7 @@ struct phosNbar {
       return; // do not fill Mixed, do not update stack of events
     }
     for (auto tr : piEvent) {
-      for (auto nbarMixEv : mixNbarEvts[mixIndex]) {
+      for (const auto& nbarMixEv : mixNbarEvts[mixIndex]) {
         for (auto nbar : nbarMixEv) {
           double dca = 999.;
           switch (mPairingMethod) {
@@ -401,7 +417,7 @@ struct phosNbar {
         }
       }
     }
-    for (auto trMixEvent : mixTrackEvts[mixIndex]) {
+    for (const auto& trMixEvent : mixTrackEvts[mixIndex]) {
       for (auto tr : trMixEvent) {
         for (auto nbar : nbarEvent) {
           double dca = 999.;

@@ -24,6 +24,7 @@
 /// o2-analysis-pid-tpc-full,  o2-analysis-trackextension,
 /// o2-analysis-pid-tof-full, o2-analysis-id-raa
 
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -32,7 +33,21 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/Variant.h>
+
+#include <array>
+#include <cstddef>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -44,7 +59,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   std::vector<ConfigParamSpec> options{{"MC", VariantType::Int, 0, {"1 for MC, 0 for data"}}};
   std::swap(workflowOptions, options);
 }
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 struct identifiedraaTask {
   TrackSelection globalTrackswoPrim; // Track without cut for primaries
@@ -222,6 +237,7 @@ struct identifiedraaTask {
   template <std::size_t i, typename T>
   void fillHistogramsData(T const& tracks)
   {
+    static_assert(i < 6, "Index i out of bounds");
     for (auto& track : tracks) {
       if (std::abs(track.eta()) > 0.8) {
         continue;
@@ -235,10 +251,8 @@ struct identifiedraaTask {
           continue;
         }
       }
-      float mass;
-      if constexpr ((i == 0) || (i == 1)) {
-        mass = 0.13957; // pion mass
-      } else if constexpr ((i == 2) || (i == 3)) {
+      float mass{0.13957};
+      if constexpr ((i == 2) || (i == 3)) {
         mass = 0.49367; // kaon mass
       } else if constexpr ((i == 4) || (i == 5)) {
         mass = 0.93827; // proton mass

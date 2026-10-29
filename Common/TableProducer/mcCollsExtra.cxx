@@ -34,7 +34,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 
 using FullCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>;
 
@@ -51,7 +50,7 @@ struct mcCollisionExtra {
   Configurable<float> poiEtaWindow{"poiEtaWindow", 0.8, "PDG code requirement within this eta window"};
 
   // For manual sliceBy
-  Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   template <typename T>
   std::vector<std::size_t> sort_indices(const std::vector<T>& v)

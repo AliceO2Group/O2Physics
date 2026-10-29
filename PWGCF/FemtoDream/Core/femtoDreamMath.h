@@ -16,12 +16,14 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_
 
-#include <iostream>
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TMathBase.h>
+#include <TVector2.h>
 
-#include "Math/Vector4D.h"
-#include "Math/Boost.h"
-#include "TLorentzVector.h"
-#include "TMath.h"
+#include <cmath>
+#include <vector>
 
 namespace o2::analysis::femtoDream
 {
@@ -138,6 +140,18 @@ class FemtoDreamMath
   }
 
   template <typename T1>
+  static float calcInvMassV0(const T1& trackpos, const float masspos, const T1& trackneg, const float massneg)
+  {
+    // calculate the invariant mass
+    const ROOT::Math::PtEtaPhiMVector posDaug(trackpos.pt(), trackpos.eta(), trackpos.phi(), masspos);
+    const ROOT::Math::PtEtaPhiMVector negDaug(trackneg.pt(), trackneg.eta(), trackneg.phi(), massneg);
+    // const ROOT::Math::PxPyPzMVector v0 = negDaug + posDaug;
+    const ROOT::Math::PtEtaPhiMVector v0 = negDaug + posDaug;
+
+    return v0.M();
+  }
+
+  template <typename T1>
   static float getInvMassCascade(const T1& trackpos, const float masspos, const T1& trackneg, const float massneg, const T1& trackbach, const float massbach, const float massv0)
   {
     // calculate the invariant mass
@@ -148,6 +162,239 @@ class FemtoDreamMath
     const ROOT::Math::PxPyPzMVector casc = v0 + bachDaug;
 
     return casc.M();
+  }
+
+  /// Compute the 3d components of the pair momentum in LCMS and PRF
+  /// Copy from femto universe
+  /// \tparam T type of tracks
+  /// \param part1 Particle 1
+  /// \param mass1 Mass of particle 1
+  /// \param part2 Particle 2
+  /// \param mass2 Mass of particle 2
+  /// \param isiden Identical or non-identical particle pair
+  template <typename T>
+  static std::vector<double> newpairfunc(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden)
+  {
+    const double e1 = std::sqrt(std::pow(part1.px(), 2) + std::pow(part1.py(), 2) + std::pow(part1.pz(), 2) + std::pow(mass1, 2));
+    const double e2 = std::sqrt(std::pow(part2.px(), 2) + std::pow(part2.py(), 2) + std::pow(part2.pz(), 2) + std::pow(mass2, 2));
+
+    const ROOT::Math::PxPyPzEVector vecpart1(part1.px(), part1.py(), part1.pz(), e1);
+    const ROOT::Math::PxPyPzEVector vecpart2(part2.px(), part2.py(), part2.pz(), e2);
+    const ROOT::Math::PxPyPzEVector trackSum = vecpart1 + vecpart2;
+
+    std::vector<double> vect;
+
+    const double tPx = trackSum.px();
+    const double tPy = trackSum.py();
+    const double tPz = trackSum.pz();
+    const double tE = trackSum.E();
+
+    const double tPtSq = (tPx * tPx + tPy * tPy);
+    const double tMtSq = (tE * tE - tPz * tPz);
+    const double tM = std::sqrt(tMtSq - tPtSq);
+    const double tMt = std::sqrt(tMtSq);
+    const double tPt = std::sqrt(tPtSq);
+
+    // Boost to LCMS
+
+    const double beta_LCMS = tPz / tE;
+    const double gamma_LCMS = tE / tMt;
+
+    const double fDKOut = (part1.px() * tPx + part1.py() * tPy) / tPt;
+    const double fDKSide = (-part1.px() * tPy + part1.py() * tPx) / tPt;
+    const double fDKLong = gamma_LCMS * (part1.pz() - beta_LCMS * e1);
+    const double fDE = gamma_LCMS * (e1 - beta_LCMS * part1.pz());
+
+    const double px1LCMS = fDKOut;
+    const double py1LCMS = fDKSide;
+    const double pz1LCMS = fDKLong;
+    const double pE1LCMS = fDE;
+
+    const double px2LCMS = (part2.px() * tPx + part2.py() * tPy) / tPt;
+    const double py2LCMS = (part2.py() * tPx - part2.px() * tPy) / tPt;
+    const double pz2LCMS = gamma_LCMS * (part2.pz() - beta_LCMS * e2);
+    const double pE2LCMS = gamma_LCMS * (e2 - beta_LCMS * part2.pz());
+
+    const double fDKOutLCMS = px1LCMS - px2LCMS;
+    const double fDKSideLCMS = py1LCMS - py2LCMS;
+    const double fDKLongLCMS = pz1LCMS - pz2LCMS;
+
+    // Boost to PRF
+
+    const double betaOut = tPt / tMt;
+    const double gammaOut = tMt / tM;
+
+    const double fDKOutPRF = gammaOut * (fDKOutLCMS - betaOut * (pE1LCMS - pE2LCMS));
+    const double fDKSidePRF = fDKSideLCMS;
+    const double fDKLongPRF = fDKLongLCMS;
+    const double fKOut = gammaOut * (fDKOut - betaOut * fDE);
+
+    const double qlcms = std::sqrt(fDKOutLCMS * fDKOutLCMS + fDKSideLCMS * fDKSideLCMS + fDKLongLCMS * fDKLongLCMS);
+    const double qinv = std::sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);
+    const double kstar = std::sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
+
+    if (isiden) {
+      vect.push_back(qinv);
+      vect.push_back(fDKOutLCMS);
+      vect.push_back(fDKSideLCMS);
+      vect.push_back(fDKLongLCMS);
+      vect.push_back(qlcms);
+    } else {
+      vect.push_back(kstar);
+      vect.push_back(fDKOut);
+      vect.push_back(fDKSide);
+      vect.push_back(fDKLong);
+    }
+    return vect;
+  }
+
+  /// Compute the 3d components of the pair momentum in LCMS and PRF
+  /// Copy from femto universe
+  /// \tparam T type of tracks
+  /// \param part1 Particle 1
+  /// \param mass1 Mass of particle 1
+  /// \param part2 Particle 2
+  /// \param mass2 Mass of particle 2
+  /// \param isiden Identical or non-identical particle pair
+  template <typename T>
+  static std::vector<double> newpairfuncMC(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden)
+  {
+    const double trkPx1 = part1.pt() * std::cos(part1.phi());
+    const double trkPy1 = part1.pt() * std::sin(part1.phi());
+    const double trkPz1 = part1.pt() * std::sinh(part1.eta());
+
+    const double trkPx2 = part2.pt() * std::cos(part2.phi());
+    const double trkPy2 = part2.pt() * std::sin(part2.phi());
+    const double trkPz2 = part2.pt() * std::sinh(part2.eta());
+
+    const double e1 = std::sqrt(std::pow(trkPx1, 2) + std::pow(trkPy1, 2) + std::pow(trkPz1, 2) + std::pow(mass1, 2));
+    const double e2 = std::sqrt(std::pow(trkPx2, 2) + std::pow(trkPy2, 2) + std::pow(trkPz2, 2) + std::pow(mass2, 2));
+
+    const ROOT::Math::PxPyPzEVector vecpart1(trkPx1, trkPy1, trkPz1, e1);
+    const ROOT::Math::PxPyPzEVector vecpart2(trkPx2, trkPy2, trkPz2, e2);
+    const ROOT::Math::PxPyPzEVector trackSum = vecpart1 + vecpart2;
+
+    std::vector<double> vect;
+
+    const double tPx = trackSum.px();
+    const double tPy = trackSum.py();
+    const double tPz = trackSum.pz();
+    const double tE = trackSum.E();
+
+    const double tPtSq = (tPx * tPx + tPy * tPy);
+    const double tMtSq = (tE * tE - tPz * tPz);
+    const double tM = std::sqrt(tMtSq - tPtSq);
+    const double tMt = std::sqrt(tMtSq);
+    const double tPt = std::sqrt(tPtSq);
+
+    // Boost to LCMS
+
+    const double beta_LCMS = tPz / tE;
+    const double gamma_LCMS = tE / tMt;
+
+    const double fDKOut = (trkPx1 * tPx + trkPy1 * tPy) / tPt;
+    const double fDKSide = (-trkPx1 * tPy + trkPy1 * tPx) / tPt;
+    const double fDKLong = gamma_LCMS * (trkPz1 - beta_LCMS * e1);
+    const double fDE = gamma_LCMS * (e1 - beta_LCMS * trkPz1);
+
+    const double px1LCMS = fDKOut;
+    const double py1LCMS = fDKSide;
+    const double pz1LCMS = fDKLong;
+    const double pE1LCMS = fDE;
+
+    const double px2LCMS = (trkPx2 * tPx + trkPy2 * tPy) / tPt;
+    const double py2LCMS = (trkPy2 * tPx - trkPx2 * tPy) / tPt;
+    const double pz2LCMS = gamma_LCMS * (trkPz2 - beta_LCMS * e2);
+    const double pE2LCMS = gamma_LCMS * (e2 - beta_LCMS * trkPz2);
+
+    const double fDKOutLCMS = px1LCMS - px2LCMS;
+    const double fDKSideLCMS = py1LCMS - py2LCMS;
+    const double fDKLongLCMS = pz1LCMS - pz2LCMS;
+
+    // Boost to PRF
+
+    const double betaOut = tPt / tMt;
+    const double gammaOut = tMt / tM;
+
+    const double fDKOutPRF = gammaOut * (fDKOutLCMS - betaOut * (pE1LCMS - pE2LCMS));
+    const double fDKSidePRF = fDKSideLCMS;
+    const double fDKLongPRF = fDKLongLCMS;
+    const double fKOut = gammaOut * (fDKOut - betaOut * fDE);
+
+    const double qlcms = std::sqrt(fDKOutLCMS * fDKOutLCMS + fDKSideLCMS * fDKSideLCMS + fDKLongLCMS * fDKLongLCMS);
+    const double qinv = std::sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);
+    const double kstar = std::sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
+
+    if (isiden) {
+      vect.push_back(qinv);
+      vect.push_back(fDKOutLCMS);
+      vect.push_back(fDKSideLCMS);
+      vect.push_back(fDKLongLCMS);
+      vect.push_back(qlcms);
+    } else {
+      vect.push_back(kstar);
+      vect.push_back(fDKOut);
+      vect.push_back(fDKSide);
+      vect.push_back(fDKLong);
+    }
+    return vect;
+  }
+
+  /// Compute the phi angular of a pair with respect to the event plane
+  /// \tparam T type of tracks
+  /// \param part1 Particle 1
+  /// \param mass1 Mass of particle 1
+  /// \param part2 Particle 2
+  /// \param mass2 Mass of particle 2
+  template <typename T1, typename T2>
+  static float getPairPhiEP(const T1& part1, const float mass1, const T2& part2, const float mass2, const float Psi_ep)
+  {
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
+    float phi_pair_onPsi = TVector2::Phi_mpi_pi(trackSum.Phi() - Psi_ep);
+    phi_pair_onPsi = TMath::Abs(phi_pair_onPsi);
+    return phi_pair_onPsi;
+  }
+
+  /// Compute the phi angular of a pair according to plane-calibarated second particle
+  template <typename T1, typename T2>
+  static float getPairPhiEP(const T1& part1, const float mass1, const T2& part2, const float mass2, const float Psi_ep1, const float Psi_ep2)
+  {
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const float psidiff = Psi_ep2 - Psi_ep1;
+    // rotate phi of part2
+    const float newPhi2 = TVector2::Phi_mpi_pi(vecpart2.Phi() - psidiff);
+    const ROOT::Math::PtEtaPhiMVector vecpart2_calibd(vecpart2.Pt(), vecpart2.Eta(), newPhi2, vecpart2.M());
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2_calibd;
+    // reCalibrate part2 phi with respect to part1 event plane
+    float phi_pair_onPsi = TVector2::Phi_mpi_pi(trackSum.Phi() - Psi_ep1);
+    phi_pair_onPsi = TMath::Abs(phi_pair_onPsi);
+    return phi_pair_onPsi;
+  }
+
+  /// Signed φ_pair − Ψ_EP (same as getPairPhiEP without the final |·|); used as the B-frame rotation angle.
+  template <typename T1, typename T2>
+  static float getPairPhiEPSigned(const T1& part1, const float mass1, const T2& part2, const float mass2, const float Psi_ep)
+  {
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
+    return TVector2::Phi_mpi_pi(trackSum.Phi() - Psi_ep);
+  }
+
+  /// Signed counterpart of the plane-calibrated (two-event-plane) getPairPhiEP.
+  template <typename T1, typename T2>
+  static float getPairPhiEPSigned(const T1& part1, const float mass1, const T2& part2, const float mass2, const float Psi_ep1, const float Psi_ep2)
+  {
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const float psidiff = Psi_ep2 - Psi_ep1;
+    const float newPhi2 = TVector2::Phi_mpi_pi(vecpart2.Phi() - psidiff);
+    const ROOT::Math::PtEtaPhiMVector vecpart2_calibd(vecpart2.Pt(), vecpart2.Eta(), newPhi2, vecpart2.M());
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2_calibd;
+    return TVector2::Phi_mpi_pi(trackSum.Phi() - Psi_ep1);
   }
 };
 

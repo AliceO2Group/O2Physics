@@ -82,6 +82,7 @@ enum class InputFeaturesLcToK0sP : uint8_t {
   v0MK0Short,
   v0MGamma,
   ctV0,
+  decayLengthV0,
   dcaV0daughters,
   ptV0Pos,
   dcaPosToPV,
@@ -136,6 +137,7 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LC_FULL(candidate, v0MGamma, mGamma);
         CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, ctV0, ctV0K0s);
         // CHECK_AND_FILL_VEC_LC_HFHELPER(candidate, ctV0, ctV0Lambda);
+        CHECK_AND_FILL_VEC_LC(decayLengthV0);
         CHECK_AND_FILL_VEC_LC(dcaV0daughters);
         CHECK_AND_FILL_VEC_LC(ptV0Pos);
         CHECK_AND_FILL_VEC_LC_FULL(candidate, dcaPosToPV, dcapostopv);
@@ -180,6 +182,7 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LC(v0MK0Short),
       FILL_MAP_LC(v0MGamma),
       FILL_MAP_LC(ctV0),
+      FILL_MAP_LC(decayLengthV0),
       FILL_MAP_LC(dcaV0daughters),
       FILL_MAP_LC(ptV0Pos),
       FILL_MAP_LC(dcaPosToPV),

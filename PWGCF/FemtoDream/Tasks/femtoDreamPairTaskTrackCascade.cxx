@@ -11,23 +11,31 @@
 /// \file femtoDreamPairTaskTrackTrack.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-#include <sys/stat.h>
-#include <cstdint>
-#include <vector>
-#include <string>
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/Expressions.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::soa;
@@ -62,14 +70,19 @@ struct femtoDreamPairTaskTrackCascade {
     Configurable<float> MultPercentileMin{"MultPercentileMin", 0, "Minimum Multiplicity Percentile"};
     Configurable<float> MultPercentileMax{"MultPercentileMax", 100, "Maximum Multiplicity Percentile"};
   } EventSel;
-  // Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
-  // Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
+
+  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
+  Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
-  // using FilteredCollisions = soa::Filtered<FDCollisions>;
-  using FilteredCollisions = FDCollisions;
+  // using FilteredCollisions = FDCollisions;
+  // using FilteredMCCollisions = soa::Join<aod::FDCollisions, aod::FDMCCollLabels>;
+  using FilteredCollisions = soa::Filtered<FDCollisions>;
+  using FilteredMCCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDMCCollLabels>>;
   using FilteredCollision = FilteredCollisions::iterator;
-  using FDMCParts = soa::Join<aod::FDParticles, aod::FDMCLabels>;
+  using FilteredMCCollision = FilteredMCCollisions::iterator;
+
+  using FDMCParts = soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>;
   using FDMCPart = FDMCParts::iterator;
   femtodreamcollision::BitMaskType BitMask = 1;
   /// Particle 1 (track)
@@ -99,6 +112,18 @@ struct femtoDreamPairTaskTrackCascade {
                                          ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
                                                 ((aod::femtodreamparticle::tempFitVar >= Track1.TempFitVarMin) &&
                                                  (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
+
+  Partition<FDMCParts> PartitionMCTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+                                         (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
+                                         ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
+                                         (aod::femtodreamparticle::pt > Track1.PtMin) &&
+                                         (aod::femtodreamparticle::pt < Track1.PtMax) &&
+                                         (aod::femtodreamparticle::eta > Track1.EtaMin) &&
+                                         (aod::femtodreamparticle::eta < Track1.EtaMax) &&
+                                         ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+                                                ((aod::femtodreamparticle::tempFitVar >= Track1.TempFitVarMin) &&
+                                                 (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
+
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
   /// Particle 2 (Cascade)
@@ -112,6 +137,9 @@ struct femtoDreamPairTaskTrackCascade {
     Configurable<femtodreamparticle::cutContainerType> ChildNeg_TPCBit{"ChildNeg_TPCBit", 4096, "PID TPC bit for negative child of Cascade"};
     Configurable<femtodreamparticle::cutContainerType> ChildBach_CutBit{"ChildBach_CutBit", 277, "Selection bit for negative child of Cascade"};
     Configurable<femtodreamparticle::cutContainerType> ChildBach_TPCBit{"ChildBach_TPCBit", 64, "PID TPC bit for bachelor child of Cascade"};
+    Configurable<float> ChildPos_MinpT{"ChildPos_MinpT", 0.1f, "Minimum transverse momentum of the positive child of Cascade"};
+    Configurable<float> ChildNeg_MinpT{"ChildNeg_MinpT", 0.1f, "Minimum transverse momentum of the negative child of Cascade"};
+    Configurable<float> ChildBach_MinpT{"ChildBach_MinpT", 0.1f, "Minimum transverse momentum of the bachelor child of Cascade"};
     Configurable<float> InvMassMin{"InvMassMin", 1.2, "Minimum invariant mass of Partricle 2 (particle) (Cascade)"};
     Configurable<float> InvMassMax{"InvMassMax", 1.4, "Maximum invariant mass of Partricle 2 (particle) (Cascade)"};
     Configurable<float> InvMassV0DaughMin{"InvMassV0DaugMin", 0., "Minimum invariant mass of the V0 Daughter"};
@@ -134,6 +162,18 @@ struct femtoDreamPairTaskTrackCascade {
                                              (aod::femtodreamparticle::mLambda < Cascade2.InvMassMax) &&
                                              (aod::femtodreamparticle::mAntiLambda > Cascade2.InvMassV0DaughMin) &&
                                              (aod::femtodreamparticle::mAntiLambda < Cascade2.InvMassV0DaughMax);
+
+  Partition<FDMCParts> PartitionMCCascade2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
+                                             ((aod::femtodreamparticle::cut & Cascade2.CutBit) == Cascade2.CutBit) &&
+                                             (aod::femtodreamparticle::pt > Cascade2.PtMin) &&
+                                             (aod::femtodreamparticle::pt < Cascade2.PtMax) &&
+                                             (aod::femtodreamparticle::eta > Cascade2.EtaMin) &&
+                                             (aod::femtodreamparticle::eta < Cascade2.EtaMax) &&
+                                             (aod::femtodreamparticle::mLambda > Cascade2.InvMassMin) &&
+                                             (aod::femtodreamparticle::mLambda < Cascade2.InvMassMax) &&
+                                             (aod::femtodreamparticle::mAntiLambda > Cascade2.InvMassV0DaughMin) &&
+                                             (aod::femtodreamparticle::mAntiLambda < Cascade2.InvMassV0DaughMax);
+
   /// Histogramming for particle 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCascade, 2> trackHistoPartTwo;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCascadeV0Child, 3> posChildHistos;
@@ -171,9 +211,9 @@ struct femtoDreamPairTaskTrackCascade {
     Configurable<int> Depth{"Depth", 5, "Number of events for mixing"};
     Configurable<int> Policy{"BinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
   } Mixing;
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.BinVztx, Mixing.BinMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.BinVztx, Mixing.BinMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.BinVztx, Mixing.BinMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.BinVztx, Mixing.BinMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}};
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCascade> pairCleaner;
@@ -187,9 +227,9 @@ struct femtoDreamPairTaskTrackCascade {
   void init(InitContext&)
   {
     // setup binnnig policy for mixing
-    colBinningMult = {{Mixing.BinVztx, Mixing.BinMult}, true};
-    colBinningMultPercentile = {{Mixing.BinVztx, Mixing.BinMultPercentile}, true};
-    colBinningMultMultPercentile = {{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}, true};
+    colBinningMult = {{Mixing.BinVztx, Mixing.BinMult}};
+    colBinningMultPercentile = {{Mixing.BinVztx, Mixing.BinMultPercentile}};
+    colBinningMultMultPercentile = {{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}};
     eventHisto.init(&Registry, Option.IsMC);
     trackHistoPartOne.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTTrack, Option.Dummy, Option.Dummy, Binning.TempFitVarTrack, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
     trackHistoPartTwo.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascade, Option.Dummy, Option.Dummy, Binning.TempFitVarCascade, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Binning.InvMass, Option.Dummy, Option.IsMC, Cascade2.PDGCode);
@@ -221,6 +261,31 @@ struct femtoDreamPairTaskTrackCascade {
     }
   }
 
+  template <typename PartType>
+  bool checkChildCuts(const PartType& posChild, const PartType& negChild, const PartType& bachChild)
+  {
+
+    bool passCuts = true;
+    if (Cascade2.UseChildCuts) {
+      if (!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
+            ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
+            ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit) &&
+            posChild.pt() > Cascade2.ChildPos_MinpT &&
+            negChild.pt() > Cascade2.ChildNeg_MinpT &&
+            bachChild.pt() > Cascade2.ChildBach_MinpT)) {
+        passCuts = false;
+      }
+    }
+    if (Cascade2.UseChildPIDCuts) {
+      if (!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
+            ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
+            ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
+        passCuts = false;
+      }
+    }
+    return passCuts;
+  }
+
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMC, typename PartitionType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& SliceTrk1, PartitionType& SliceCascade2, TableTracks const& parts, Collision const& col)
@@ -240,20 +305,10 @@ struct femtoDreamPairTaskTrackCascade {
       // auto posChild = v0.template children_as<S>().front();
       // auto negChild = v0.template children_as<S>().back();
       // check cuts on V0 children
-      if (Cascade2.UseChildCuts) {
-        if (!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
-              ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
-              ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))) {
-          continue;
-        }
+      if (!checkChildCuts(posChild, negChild, bachChild)) {
+        continue;
       }
-      if (Cascade2.UseChildPIDCuts) {
-        if (!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
-              ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
-              ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
-          continue;
-        }
-      }
+
       trackHistoPartTwo.fillQA<isMC, false>(casc, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
       posChildHistos.fillQA<false, false>(posChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
       negChildHistos.fillQA<false, false>(negChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
@@ -266,27 +321,17 @@ struct femtoDreamPairTaskTrackCascade {
       const auto& bachChild = parts.iteratorAt(p2.index() - 1);
 
       // cuts on Cascade children still need to be applied
-      if (Cascade2.UseChildCuts) {
-        if (!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
-              ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
-              ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))) {
-          continue;
-        }
+      if (!checkChildCuts(posChild, negChild, bachChild)) {
+        continue;
       }
-      if (Cascade2.UseChildPIDCuts) {
-        if (!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
-              ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
-              ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
-          continue;
-        }
-      }
+
       if (Option.CPROn.value) {
         if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
           if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
             continue;
           }
         } else {
-          if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
+          if (pairCloseRejectionSE.isClosePair(p1, negChild, parts, col.magField())) {
             continue;
           }
         }
@@ -298,6 +343,7 @@ struct femtoDreamPairTaskTrackCascade {
       sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin);
     }
   }
+
   void processSameEvent(FilteredCollision const& col, FDParticles const& parts)
   {
     // if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
@@ -310,8 +356,26 @@ struct femtoDreamPairTaskTrackCascade {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackCascade, processSameEvent, "Enable processing same event", true);
 
+  void processSameEventMC(FilteredMCCollision const& col,
+                          o2::aod::FDMCCollisions&,
+                          FDMCParts const& parts,
+                          o2::aod::FDMCParticles&)
+  {
+    // if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
+    //   return;
+    // }
+    eventHisto.fillQA<true>(col);
+    auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto SliceMCCascade2 = PartitionMCCascade2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    if (SliceMCTrk1.size() == 0 && SliceMCCascade2.size() == 0) {
+      return;
+    }
+    doSameEvent<true>(SliceMCTrk1, SliceMCCascade2, parts, col);
+  }
+  PROCESS_SWITCH(femtoDreamPairTaskTrackCascade, processSameEventMC, "Enable processing same event with Monte Carlo", false);
+
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, const BinningType& policy)
   {
     // Partition<CollisionType> PartitionMaskedCol = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask);// && aod::femtodreamcollision::downsample == true;
     // PartitionMaskedCol.bindTable(cols);
@@ -327,23 +391,13 @@ struct femtoDreamPairTaskTrackCascade {
       auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto SliceCasc2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceCasc2))) {
-        const auto& posChild = parts.iteratorAt(p2.index() - 3);
-        const auto& negChild = parts.iteratorAt(p2.index() - 2);
-        const auto& bachChild = parts.iteratorAt(p2.index() - 1);
-        // check cuts on Cascade children
-        if (Cascade2.UseChildCuts) {
-          if (!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
-                ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
-                ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))) {
-            continue;
-          }
-        }
-        if (Cascade2.UseChildPIDCuts) {
-          if (!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
-                ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
-                ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
-            continue;
-          }
+        const auto& posChild = parts.iteratorAt(p2.globalIndex() - 3);
+        const auto& negChild = parts.iteratorAt(p2.globalIndex() - 2);
+        const auto& bachChild = parts.iteratorAt(p2.globalIndex() - 1);
+
+        // Cuts on Cascade children still need to be applied
+        if (!checkChildCuts(posChild, negChild, bachChild)) {
+          continue;
         }
 
         if (Option.CPROn.value) {
@@ -384,6 +438,24 @@ struct femtoDreamPairTaskTrackCascade {
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackCascade, processMixedEvent, "Enable processing mixed events", true);
+
+  void processMixedEventMC(FilteredMCCollisions& cols, o2::aod::FDMCCollisions&, FDMCParts& parts, o2::aod::FDMCParticles&)
+  {
+    switch (Mixing.Policy.value) {
+      case femtodreamcollision::kMult:
+        doMixedEvent<true>(cols, parts, PartitionMCTrk1, PartitionMCCascade2, colBinningMult);
+        break;
+      case femtodreamcollision::kMultPercentile:
+        doMixedEvent<true>(cols, parts, PartitionMCTrk1, PartitionMCCascade2, colBinningMultPercentile);
+        break;
+      case femtodreamcollision::kMultMultPercentile:
+        doMixedEvent<true>(cols, parts, PartitionMCTrk1, PartitionMCCascade2, colBinningMultMultPercentile);
+        break;
+      default:
+        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    }
+  }
+  PROCESS_SWITCH(femtoDreamPairTaskTrackCascade, processMixedEventMC, "Enable processing mixed events with MC", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

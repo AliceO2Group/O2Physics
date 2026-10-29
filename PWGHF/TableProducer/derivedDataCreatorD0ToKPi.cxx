@@ -83,12 +83,14 @@ struct HfDerivedDataCreatorD0ToKPi {
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
+  Configurable<bool> acceptCorrelatedBkgs{"acceptCorrelatedBkgs", false, "Accept correlated background candidates in MC processing"};
   // Parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   SliceCache cache;
   static constexpr double Mass{o2::constants::physics::MassD0};
+  static constexpr int NHypothesesCand{2}; // Number of possible selection hypotheses per candidate.
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
@@ -105,7 +107,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Filter filterMcGenMatching = (nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) || (acceptCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchGen != 0);
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesKf> candidatesKfPerCollision = aod::hf_cand::collisionId;
@@ -127,14 +129,14 @@ struct HfDerivedDataCreatorD0ToKPi {
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
   Partition<SelectedCandidatesMcKfMl> candidatesMcKfMlAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMcKf> candidatesMcKfSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMcKf> candidatesMcKfBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMcKfMl> candidatesMcKfMlSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMcKfMl> candidatesMcKfMlBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Partition<SelectedCandidatesMc> candidatesMcSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) || (acceptCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchRec != 0);
+  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Partition<SelectedCandidatesMcKf> candidatesMcKfSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) || (acceptCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchRec != 0);
+  Partition<SelectedCandidatesMcKf> candidatesMcKfBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) || (acceptCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchRec != 0);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Partition<SelectedCandidatesMcKfMl> candidatesMcKfMlSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) || (acceptCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchRec != 0);
+  Partition<SelectedCandidatesMcKfMl> candidatesMcKfMlBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
 
   void init(InitContext const&)
   {
@@ -150,6 +152,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   void fillTablesCandidate(const T& candidate, int candFlag, double invMass, double cosThetaStar, double topoChi2,
                            double ct, double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
   {
+    LOGF(debug, "Filling candidate at derived index %d", rowsCommon.rowCandidateBase.lastIndex() + 1);
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       std::array<std::array<std::array<float, 3>, 2>, 2> sigmas{}; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
@@ -248,20 +251,30 @@ struct HfDerivedDataCreatorD0ToKPi {
         rowsCommon.matchedCollisions.clear();
       }
     }
-    auto sizeTableColl = collisions.size();
-    rowsCommon.reserveTablesColl(sizeTableColl);
+    // const auto sizeTableColl = collisions.size();
+    // rowsCommon.reserveTablesColl(sizeTableColl);
+    const auto sizeTableCand = candidates.size() * NHypothesesCand;
+    rowsCommon.reserveTablesCandidates(sizeTableCand);
+    reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
+    reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
+    reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
+    reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
+    reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
+    if constexpr (IsMc) {
+      reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
+    }
     for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
-      auto sizeTableCand = candidatesThisColl.size();
-      LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCand);
+      const auto thisCollId = collision.globalIndex();
+      const auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
+      const auto sizeTableCandThisColl = candidatesThisColl.size();
+      LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCandThisColl);
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
       if constexpr (IsMc) {
         mcCollisionHasMcParticles = confDerData.fillMcRCollId && collision.has_mcCollision() && rowsCommon.hasMcParticles[collision.mcCollisionId()];
         LOGF(debug, "Rec. collision %d has MC collision %d with MC particles? %s", thisCollId, collision.mcCollisionId(), mcCollisionHasMcParticles ? "yes" : "no");
       }
-      if (sizeTableCand == 0 && (!confDerData.fillMcRCollId || !mcCollisionHasMcParticles)) {
+      if (sizeTableCandThisColl == 0 && (!confDerData.fillMcRCollId || !mcCollisionHasMcParticles)) {
         LOGF(debug, "Skipping rec. collision %d", thisCollId);
         continue;
       }
@@ -269,15 +282,6 @@ struct HfDerivedDataCreatorD0ToKPi {
       rowsCommon.fillTablesCollision<IsMc>(collision);
 
       // Fill candidate properties
-      rowsCommon.reserveTablesCandidates(sizeTableCand);
-      reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
-      reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
-      reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
-      reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
-      reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
-      if constexpr (IsMc) {
-        reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
-      }
       int8_t flagMcRec = 0, origin = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (IsMc) {
@@ -295,7 +299,7 @@ struct HfDerivedDataCreatorD0ToKPi {
             }
           }
           if constexpr (OnlySig) {
-            if (std::abs(flagMcRec) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+            if (!acceptCorrelatedBkgs && (std::abs(flagMcRec) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
               continue;
             }
           }
@@ -310,7 +314,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
         double const ct = HfHelper::ctD0(candidate);
         double const y = HfHelper::yD0(candidate);
-        float massD0, massD0bar;
+        float massD0{}, massD0bar{};
         float topolChi2PerNdf = -999.;
         if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
           massD0 = candidate.kfGeoMassD0();

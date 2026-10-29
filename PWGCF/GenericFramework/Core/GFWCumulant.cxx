@@ -11,6 +11,9 @@
 
 #include "GFWCumulant.h"
 
+#include <cmath>
+#include <complex>
+#include <utility>
 #include <vector>
 
 using std::complex;
@@ -101,7 +104,7 @@ void GFWCumulant::CreateComplexVectorArrayVarPower(int N, vector<int> PowVec, in
   fPow = 0;
   fPt = Pt;
   fFilledPts = new bool[Pt];
-  fPowVec = PowVec;
+  fPowVec = std::move(PowVec);
   fQvector = new complex<double>**[fPt];
   for (int i = 0; i < fPt; i++) {
     fQvector[i] = new complex<double>*[fN];

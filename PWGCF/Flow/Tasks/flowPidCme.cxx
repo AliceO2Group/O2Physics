@@ -11,26 +11,10 @@
 
 /// \author ZhengqingWang(zhengqing.wang@cern.ch), KegangXiong(kxiong@cern.ch)
 /// \file   flowPidCme.cxx
-/// \brief  task to calculate the pikp cme signal and bacground.
-// C++/ROOT includes.
-#include <CCDB/BasicCCDBManager.h>
+/// \brief  task to calculate the pikp cme signal and background.
 
-#include <TComplex.h>
-#include <TF1.h>
-#include <TH1F.h>
-#include <TH2D.h>
-#include <TMath.h>
-#include <TVector2.h>
-
-#include <chrono>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-
-// o2Physics includes.
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -40,17 +24,32 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-// o2 includes.
+#include <TF1.h>
+#include <TH1.h>
+#include <TH3.h>
+#include <TProfile.h>
+#include <TString.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -231,14 +230,14 @@ struct FillPIDcolums {
   };
 
   template <typename TrackType>
-  bool selTrackPid(const TrackType track)
+  bool selTrackPid(const TrackType& track)
   {
     if ((track.pt() < cfgMinPtPID) || (track.pt() > cfgMaxPtPID))
       return false;
     if (std::abs(track.eta()) > cfgMaxEtaPID)
       return false;
     if (cfgRequireGlobalTrack) {
-      if (!(track.isGlobalTrackSDD() == (uint8_t) true))
+      if (!(track.isGlobalTrackSDD() == (uint8_t)true))
         return false;
     }
     if (cfgUseCostomTrackCuts) {
@@ -2625,7 +2624,7 @@ struct FlowPidCme {
   }
 
   template <typename TrackType>
-  bool selTrack(const TrackType track, float centrality)
+  bool selTrack(const TrackType& track, float centrality)
   {
     if (cfgkOpenDebugPIDCME) {
       LOGF(info, "====================Entering track selection=============================");

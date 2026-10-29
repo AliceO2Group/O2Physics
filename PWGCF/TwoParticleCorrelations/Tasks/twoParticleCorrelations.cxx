@@ -9,25 +9,48 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
+#include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/TrackSelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPObject.h>
-#include <cmath>
-#include <TROOT.h>
-#include <TDatabasePDG.h>
-#include <TParameter.h>
-#include <TList.h>
-#include <TDirectory.h>
-#include <TFolder.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-#include <TProfile3D.h>
+#include <TList.h>
+#include <TObjArray.h>
+#include <TParameter.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
-#include "PWGCF/Core/PairCuts.h"
+#include <sys/types.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -212,14 +235,14 @@ struct twoParticleCorrelations {
       return fhN2_vsDEtaDPhi[0][0]->GetBin(deltaeta_ix + 1, deltaphi_ix + 1);
     }
 
-    void storeTrackCorrections(std::vector<TH3*> corrs)
+    void storeTrackCorrections(const std::vector<TH3*>& corrs)
     {
       LOGF(info, "Stored NUA&NUE corrections for %d track species", corrs.size());
       fhNuaNue_vsZEtaPhiPt = corrs;
       ccdbstored = true;
     }
 
-    void storePtAverages(std::vector<TH2*> ptavgs)
+    void storePtAverages(const std::vector<TH2*>& ptavgs)
     {
       LOGF(info, "Stored pT average for %d track species", ptavgs.size());
       fhPtAvg_vsEtaPhi = ptavgs;
@@ -392,7 +415,7 @@ struct twoParticleCorrelations {
       }
     }
 
-    void init(TList* fOutputList, std::vector<std::string> idnames)
+    void init(TList* fOutputList, const std::vector<std::string>& idnames)
     {
       LOGF(info, "Correlations processing engine::init()");
       using namespace twopcorrelations;
@@ -402,7 +425,7 @@ struct twoParticleCorrelations {
       TH1::AddDirectory(kFALSE);
 
       /* load the species names */
-      for (auto id : idnames) {
+      for (const auto& id : idnames) {
         LOGF(info, "Adding particle species %s", id.c_str());
         tname.push_back(std::string(id.c_str()));
       }
@@ -576,7 +599,7 @@ struct twoParticleCorrelations {
   }; // DataCollectingEngine
 
 /* the skimming configuration */
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -754,7 +777,7 @@ struct twoParticleCorrelations {
     LOGF(info, "twoParticleCorrelationsFilter::init(), collision selection masks 0x%016lx, %s, and 0x%016lx and multiplicity index %d", collisionmask, fFilterFramework->printCollisionOptionalMasks().Data(), collisionmask_forced, fMultiplicityIndex);
     LOGF(info, "twoParticleCorrelationsFilter::init(), track selection masks 0x%016lx, %s, and 0x%016lx ", trackmask, fFilterFramework->printTrackOptionalMasks().Data(), trackmask_forced);
     LOGF(info, "twoParticleCorrelationsFilter::init(), PID selection masks 0x%016lx, %s, and 0x%016lx ", pidmask, fFilterFramework->printPIDOptionalMasks().Data(), pidmask_forced);
-    if (collisionmask == uint64_t(0) || trackmask == uint64_t(0)) {
+    if (collisionmask == static_cast<uint64_t>(0) || trackmask == static_cast<uint64_t>(0)) {
       LOGF(fatal, "twoParticleCorrelationsFilter::init() null masks, selecting everything!!!");
     }
 
@@ -764,7 +787,7 @@ struct twoParticleCorrelations {
 
   /// \brief Get the data collecting engine index corresponding to the passed collision
   template <typename FilteredCollision>
-  int getDCEindex(FilteredCollision collision)
+  int getDCEindex(const FilteredCollision& collision)
   {
     int ixDCE = -1;
     float cm = collision.centmult()[fMultiplicityIndex];
@@ -814,7 +837,7 @@ struct twoParticleCorrelations {
   {
     using namespace twopcorrelations;
     LOGF(TWOPCORRLOGCOLLISIONS, "Received collision with mask 0x%016lx and %ld tracks", collision.selflags(), tracks.size());
-    auto passOptions = [](auto options, auto mask) {
+    auto passOptions = [](const auto& options, auto mask) {
       bool all = true;
       for (auto option : options) {
         all = all && ((option & mask) != 0UL);

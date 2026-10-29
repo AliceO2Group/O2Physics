@@ -19,7 +19,9 @@
 
 #include "Tools/ML/MlResponse.h"
 
-#include <map>
+#include <Framework/Logger.h>
+
+#include <cstdint>
 #include <string>
 #include <vector>
 

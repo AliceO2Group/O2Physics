@@ -20,7 +20,9 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <SimulationDataFormat/MCGenProperties.h>
 
 #include <cmath>
 #include <cstdint>
@@ -51,10 +53,10 @@ DECLARE_SOA_TABLE_STAGED(JV0CollisionIds, "JV0COLLID",
 DECLARE_SOA_TABLE_STAGED(JV0McCollisionIds, "JV0MCCOLLID",
                          jv0indices::JMcCollisionId);
 
-DECLARE_SOA_TABLE(JV0Ids, "AOD", "JV0ID",
-                  jv0indices::JCollisionId,
-                  jv0indices::PosTrackId,
-                  jv0indices::NegTrackId);
+DECLARE_SOA_TABLE_STAGED(JV0Ids, "JV0ID",
+                         jv0indices::JCollisionId,
+                         jv0indices::PosTrackId,
+                         jv0indices::NegTrackId);
 
 namespace jv0mc
 {

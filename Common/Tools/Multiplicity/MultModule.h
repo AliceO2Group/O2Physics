@@ -11,7 +11,7 @@
 
 /// \file MultModule.h
 /// \brief combined multiplicity + centrality module with autodetect features
-/// \author ALICE
+/// \author ALICE Collaboration
 
 #ifndef COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
 #define COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
@@ -36,11 +36,13 @@
 #include <TProfile.h>
 #include <TString.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 //__________________________________________
@@ -58,7 +60,7 @@ static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
   // multiplicity subcomponent
   "FV0Mults",
-  "FV0AOuterMults",
+  "FITExtraMults",
   "FT0Mults",
   "FDDMults",
   "ZDCMults",
@@ -97,12 +99,17 @@ static const std::vector<std::string> tableNames{
   "CentMFTs",
   "BCCentFT0Ms",
   "BCCentFT0As",
-  "BCCentFT0Cs"};
+  "BCCentFT0Cs",
+  "CentFT0MAnchorCols",
+  "CentFT0MAnchorBCs",
+  "CentFT0MOuterAs"};
 
-static constexpr int nTablesConst = 39;
-
+static constexpr int nTablesConst = 42;
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
+  {-1},
+  {-1},
+  {-1},
   {-1},
   {-1},
   {-1},
@@ -145,7 +152,7 @@ static const int defaultParameters[nTablesConst][nParameters]{
 
 // table index : match order above
 enum tableIndex { kFV0Mults,       // standard
-                  kFV0AOuterMults, // standard
+                  kFITExtraMults,  // standard
                   kFT0Mults,       // standard
                   kFDDMults,       // standard
                   kZDCMults,       // standard
@@ -166,32 +173,36 @@ enum tableIndex { kFV0Mults,       // standard
                   kMultsGlobal,    // requires track selection task
 
                   // centrality subcomponent
-                  kCentRun2V0Ms,      // Run 2
-                  kCentRun2V0As,      // Run 2
-                  kCentRun2SPDTrks,   // Run 2
-                  kCentRun2SPDClss,   // Run 2
-                  kCentRun2CL0s,      // Run 2
-                  kCentRun2CL1s,      // Run 2
-                  kCentFV0As,         // standard Run 3
-                  kCentFT0Ms,         // standard Run 3
-                  kCentFT0As,         // standard Run 3
-                  kCentFT0Cs,         // standard Run 3
-                  kCentFT0CVariant1s, // standard Run 3
-                  kCentFT0CVariant2s, // standard Run 3
-                  kCentFDDMs,         // standard Run 3
-                  kCentNTPVs,         // standard Run 3
-                  kCentNGlobals,      // requires track selection task
-                  kCentMFTs,          // requires MFT task
-                  kBCCentFT0Ms,       // bc centrality
-                  kBCCentFT0As,       // bc centrality
-                  kBCCentFT0Cs,       // bc centrality
+                  kCentRun2V0Ms,       // Run 2
+                  kCentRun2V0As,       // Run 2
+                  kCentRun2SPDTrks,    // Run 2
+                  kCentRun2SPDClss,    // Run 2
+                  kCentRun2CL0s,       // Run 2
+                  kCentRun2CL1s,       // Run 2
+                  kCentFV0As,          // standard Run 3
+                  kCentFT0Ms,          // standard Run 3
+                  kCentFT0As,          // standard Run 3
+                  kCentFT0Cs,          // standard Run 3
+                  kCentFT0CVariant1s,  // standard Run 3
+                  kCentFT0CVariant2s,  // standard Run 3
+                  kCentFDDMs,          // standard Run 3
+                  kCentNTPVs,          // standard Run 3
+                  kCentNGlobals,       // requires track selection task
+                  kCentMFTs,           // requires MFT task
+                  kBCCentFT0Ms,        // bc centrality
+                  kBCCentFT0As,        // bc centrality
+                  kBCCentFT0Cs,        // bc centrality
+                  kCentFT0MAnchorCols, // standard Run 3
+                  kCentFT0MAnchorBCs,  // standard Run 3
+                  kCentFT0MOuterAs,    // standard Run 3
                   kNTables };
 
 struct products : o2::framework::ProducesGroup {
   //__________________________________________________
   // multiplicity tables
   o2::framework::Produces<aod::FV0Mults> tableFV0;
-  o2::framework::Produces<aod::FV0AOuterMults> tableFV0AOuter;
+  o2::framework::Produces<aod::FITExtraMults> tableFITExtraMults;
+  o2::framework::Produces<aod::FV0AOuterMults> tableFV0AOuterMults;
   o2::framework::Produces<aod::FT0Mults> tableFT0;
   o2::framework::Produces<aod::FDDMults> tableFDD;
   o2::framework::Produces<aod::ZDCMults> tableZDC;
@@ -221,6 +232,7 @@ struct products : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::CentRun2CL1s> centRun2CL1;
   o2::framework::Produces<aod::CentFV0As> centFV0A;
   o2::framework::Produces<aod::CentFT0Ms> centFT0M;
+  o2::framework::Produces<aod::CentFT0MOuterAs> centFT0MOuterA;
   o2::framework::Produces<aod::CentFT0As> centFT0A;
   o2::framework::Produces<aod::CentFT0Cs> centFT0C;
   o2::framework::Produces<aod::CentFT0CVariant1s> centFT0CVariant1;
@@ -232,6 +244,8 @@ struct products : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::BCCentFT0As> bcCentFT0A;
   o2::framework::Produces<aod::BCCentFT0Cs> bcCentFT0C;
   o2::framework::Produces<aod::BCCentFT0Ms> bcCentFT0M;
+  o2::framework::Produces<aod::CentFT0MAnchorCols> centFT0MAnchorCol;
+  o2::framework::Produces<aod::CentFT0MAnchorBCs> centFT0MAnchorBC;
 
   //__________________________________________________
   // centrality tables per BC
@@ -246,6 +260,7 @@ struct multEntry {
   float multFV0C = 0.0f;
   float multFV0AOuter = 0.0f;
   float multFT0A = 0.0f;
+  float multFT0AOuter = 0.0f;
   float multFT0C = 0.0f;
   float multFDDA = 0.0f;
   float multFDDC = 0.0f;
@@ -256,6 +271,7 @@ struct multEntry {
   float multZPA = 0.0f;
   float multZPC = 0.0f;
   int multTracklets = 0;
+  uint8_t fitTriggerMask{};
 
   int multNContribs = 0;        // PVMult 0.8
   int multNContribsEta1 = 0;    // PVMult 1.0
@@ -274,6 +290,7 @@ struct multEntry {
   float multFV0AZeq = -999.0f;
   float multFV0CZeq = -999.0f;
   float multFT0AZeq = -999.0f;
+  float multFT0AOuterZeq = -999.0f;
   float multFT0CZeq = -999.0f;
   float multFDDAZeq = -999.0f;
   float multFDDCZeq = -999.0f;
@@ -306,6 +323,8 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   // Autoconfigure process functions
   o2::framework::Configurable<bool> autoConfigureProcess{"autoConfigureProcess", false, "if true, will configure process function switches based on metadata"};
 
+  o2::framework::Configurable<bool> doNTrackStudies{"doNTrackStudies", true, "if true, will fill Ntracks in MultsExtra"};
+
   // do vertex-Z equalized or not
   o2::framework::Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
 
@@ -314,6 +333,12 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> maxPtGlobalTrack{"maxPtGlobalTrack", 1e+10, "max. pT for global tracks"};
   o2::framework::Configurable<int> minNclsITSGlobalTrack{"minNclsITSGlobalTrack", 5, "min. number of ITS clusters for global tracks"};
   o2::framework::Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
+
+  // MFT track counter configurables
+  o2::framework::Configurable<int> minNclsMFTTrack{"minNclsMFTTrack", 5, "min. number of MFT clusters for MFT tracks"};
+  o2::framework::Configurable<float> maxDCAxyToPVMFTTrack{"maxDCAxyToPVMFTTrack", 2.0f, "max DCAxy to PV for MFT tracks (cm)"};
+  o2::framework::Configurable<float> minEtaMFTTrack{"minEtaMFTTrack", -3.9f, "min. pseudorapidity for MFT tracks (nominal: -3.6)"};
+  o2::framework::Configurable<float> maxEtaMFTTrack{"maxEtaMFTTrack", -2.0f, "max. pseudorapidity for MFT tracks (nominal: -2.45)"};
 
   // ccdb information
   o2::framework::Configurable<std::string> ccdbPathVtxZ{"ccdbPathVtxZ", "Centrality/Calibration", "The CCDB path for vertex-Z calibration"};
@@ -406,7 +431,7 @@ class MultModule
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
     explicit CalibrationInfo(std::string name)
-      : name(name),
+      : name(std::move(name)),
         mCalibrationStored(false),
         mhMultSelCalib(nullptr),
         mMCScalePars{0.0},
@@ -433,6 +458,9 @@ class MultModule
 
   CalibrationInfo fv0aInfo = CalibrationInfo("FV0");
   CalibrationInfo ft0mInfo = CalibrationInfo("FT0");
+  CalibrationInfo ft0mColInfo = CalibrationInfo("FT0AnchorCol");
+  CalibrationInfo ft0mBcInfo = CalibrationInfo("FT0AnchorBc");
+  CalibrationInfo FT0MOuterAInfo = CalibrationInfo("FT0MOuterA");
   CalibrationInfo ft0aInfo = CalibrationInfo("FT0A");
   CalibrationInfo ft0cInfo = CalibrationInfo("FT0C");
   CalibrationInfo ft0cVariant1Info = CalibrationInfo("FT0Cvar1");
@@ -453,7 +481,7 @@ class MultModule
     LOGF(info, "Metadata information: isMC? %i", metadataInfo.isMC());
     const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
 
-    TString listOfRequestors[nTablesConst];
+    std::array<TString, nTablesConst> listOfRequestors{};
     for (int i = 0; i < nTablesConst; i++) {
       int f = internalOpts.enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
@@ -660,14 +688,14 @@ class MultModule
         }
 
         if (lCalibObjects) {
-          hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
-          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-          hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
-          hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
-          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
-          hVtxZNMFTTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
-          hVtxZNGlobalTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
+          hVtxZFV0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
+          hVtxZFT0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+          hVtxZFDDA = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
+          hVtxZFDDC = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
+          hVtxZNTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+          hVtxZNMFTTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
+          hVtxZNGlobalTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
           lCalibLoaded = true;
           // Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
@@ -695,7 +723,7 @@ class MultModule
         auto amplitude = fv0.amplitude()[ii];
         auto channel = fv0.channel()[ii];
         mults.multFV0A += amplitude;
-        if (channel > 7) {
+        if (channel > 7) { // Outer ring only
           mults.multFV0AOuter += amplitude;
         }
       }
@@ -705,8 +733,12 @@ class MultModule
     }
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
-      for (const auto& amplitude : ft0.amplitudeA()) {
-        mults.multFT0A += amplitude;
+      mults.fitTriggerMask = ft0.triggerMask();
+      for (size_t ii = 0; ii < ft0.amplitudeA().size(); ii++) {
+        mults.multFT0A += ft0.amplitudeA()[ii];
+        if (ft0.channelA()[ii] > 31) { // Outer ring only
+          mults.multFT0AOuter += ft0.amplitudeA()[ii];
+        }
       }
       for (const auto& amplitude : ft0.amplitudeC()) {
         mults.multFT0C += amplitude;
@@ -714,6 +746,7 @@ class MultModule
     } else {
       mults.multFT0A = -999.f;
       mults.multFT0C = -999.f;
+      mults.multFT0AOuter = -999.f;
     }
     if (collision.has_foundFDD()) {
       const auto& fdd = collision.foundFDD();
@@ -750,8 +783,9 @@ class MultModule
     if (internalOpts.mEnabledTables[kFV0Mults]) {
       cursors.tableFV0(mults.multFV0A, mults.multFV0C);
     }
-    if (internalOpts.mEnabledTables[kFV0AOuterMults]) {
-      cursors.tableFV0AOuter(mults.multFV0AOuter);
+    if (internalOpts.mEnabledTables[kFITExtraMults]) {
+      cursors.tableFITExtraMults(mults.multFV0AOuter, mults.multFT0AOuter, mults.fitTriggerMask);
+      cursors.tableFV0AOuterMults(mults.multFV0AOuter); // Keep for backwards compatibility
     }
     if (internalOpts.mEnabledTables[kFT0Mults]) {
       cursors.tableFT0(mults.multFT0A, mults.multFT0C);
@@ -784,6 +818,11 @@ class MultModule
         mults.multFT0AZeq = hVtxZFT0A->Interpolate(0.0) * mults.multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
       } else {
         mults.multFT0AZeq = 0.0f;
+      }
+      if (mults.multFT0AOuter > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+        mults.multFT0AOuterZeq = hVtxZFT0A->Interpolate(0.0) * mults.multFT0AOuter / hVtxZFT0A->Interpolate(collision.posZ());
+      } else {
+        mults.multFT0AOuterZeq = 0.0f;
       }
       if (mults.multFT0C > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
         mults.multFT0CZeq = hVtxZFT0C->Interpolate(0.0) * mults.multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
@@ -899,9 +938,15 @@ class MultModule
     if (internalOpts.mEnabledTables[kMultsExtra]) {
       cursors.tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                          bc.runNumber(), collision.posZ(), collision.sel8(),
-                         mults.multHasITS, mults.multHasTPC, mults.multHasTOF, mults.multHasTRD,
-                         mults.multITSOnly, mults.multTPCOnly, mults.multITSTPC,
-                         mults.multAllTracksTPCOnly, mults.multAllTracksITSTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasITS,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTOF,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multHasTRD,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multITSOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multTPCOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multITSTPC,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multAllTracksTPCOnly,
+                         static_cast<int>(internalOpts.doNTrackStudies) * mults.multAllTracksITSTPC,
                          collision.trackOccupancyInTimeRange(),
                          collision.ft0cOccupancyInTimeRange(),
                          collision.flags());
@@ -976,7 +1021,7 @@ class MultModule
     int nTracks = 0;
 
     for (const auto& track : mfttracks) {
-      if (track.nClusters() >= 5) { // hardcoded for now
+      if (track.nClusters() >= internalOpts.minNclsMFTTrack.value) {
         nAllTracks++;
       }
     }
@@ -984,13 +1029,13 @@ class MultModule
     if (retracks.size() > 0) {
       for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
-        if (track.nClusters() < 5) {
+        if (track.nClusters() < internalOpts.minNclsMFTTrack.value) {
           continue; // min cluster requirement
         }
-        if ((track.eta() > -2.0f) && (track.eta() < -3.9f)) {
+        if (track.eta() > internalOpts.maxEtaMFTTrack.value || track.eta() < internalOpts.minEtaMFTTrack.value) {
           continue; // too far to be of true interest
         }
-        if (std::abs(retrack.bestDCAXY()) > 2.0f) {
+        if (std::abs(retrack.bestDCAXY()) > internalOpts.maxDCAxyToPVMFTTrack.value) {
           continue; // does not point to PV properly
         }
         nTracks++;
@@ -1053,11 +1098,11 @@ class MultModule
       Run2CL1Info.mCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
+          TH1* h = dynamic_cast<TH1*>(callst->FindObject(ccdbhname));
           return h;
         };
         auto getformulaccdb = [callst](const char* ccdbhname) {
-          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
+          TFormula* f = dynamic_cast<TFormula*>(callst->FindObject(ccdbhname));
           return f;
         };
 
@@ -1155,13 +1200,13 @@ class MultModule
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
 
       // capture the need for PYTHIA calibration in Pb-Pb runs
-      if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367) {
+      if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367 && internalOpts.generatorName.value.empty()) {
         LOGF(info, "This is MC for Pb-Pb. Setting generatorName automatically to PYTHIA");
         internalOpts.generatorName.value = "PYTHIA";
       }
 
       // capture the need for PYTHIA calibration in light ion runs automatically
-      if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472) {
+      if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472 && internalOpts.generatorName.value.empty()) {
         LOGF(info, "This is MC for light ion runs. Setting generatorName automatically to PYTHIA");
         internalOpts.generatorName.value = "PYTHIA";
       }
@@ -1194,6 +1239,9 @@ class MultModule
 
       fv0aInfo.mCalibrationStored = false;
       ft0mInfo.mCalibrationStored = false;
+      ft0mColInfo.mCalibrationStored = false;
+      ft0mBcInfo.mCalibrationStored = false;
+      FT0MOuterAInfo.mCalibrationStored = false;
       ft0aInfo.mCalibrationStored = false;
       ft0cInfo.mCalibrationStored = false;
       ft0cVariant1Info.mCalibrationStored = false;
@@ -1204,9 +1252,9 @@ class MultModule
       mftInfo.mCalibrationStored = false;
       if (callst != nullptr) {
         LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-        auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
-          estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+        auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string>& generatorName) { // TODO: to consider the name inside the estimator structure
+          estimator.mhMultSelCalib = dynamic_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+          estimator.mMCScale = dynamic_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
           if (estimator.mhMultSelCalib != nullptr) {
             if (generatorName->length() != 0) {
               LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
@@ -1229,11 +1277,17 @@ class MultModule
         // invoke loading only for requested centralities
         if (internalOpts.mEnabledTables[kCentFV0As])
           getccdb(fv0aInfo, internalOpts.generatorName);
-        if (internalOpts.mEnabledTables[kCentFT0Ms])
+        if (internalOpts.mEnabledTables[kCentFT0Ms] || internalOpts.mEnabledTables[kBCCentFT0Ms])
           getccdb(ft0mInfo, internalOpts.generatorName);
-        if (internalOpts.mEnabledTables[kCentFT0As])
+        if (internalOpts.mEnabledTables[kCentFT0MAnchorCols])
+          getccdb(ft0mColInfo, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFT0MAnchorBCs])
+          getccdb(ft0mBcInfo, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFT0MOuterAs])
+          getccdb(FT0MOuterAInfo, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0As])
           getccdb(ft0aInfo, internalOpts.generatorName);
-        if (internalOpts.mEnabledTables[kCentFT0Cs])
+        if (internalOpts.mEnabledTables[kCentFT0Cs] || internalOpts.mEnabledTables[kBCCentFT0Cs])
           getccdb(ft0cInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0CVariant1s])
           getccdb(ft0cVariant1Info, internalOpts.generatorName);
@@ -1268,7 +1322,8 @@ class MultModule
       internalOpts.mEnabledTables[kCentFDDMs] ||
       internalOpts.mEnabledTables[kCentNTPVs] || internalOpts.mEnabledTables[kCentNGlobals] ||
       internalOpts.mEnabledTables[kCentMFTs] || internalOpts.mEnabledTables[kBCCentFT0Ms] ||
-      internalOpts.mEnabledTables[kBCCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0Cs]) {
+      internalOpts.mEnabledTables[kBCCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0Cs] ||
+      internalOpts.mEnabledTables[kCentFT0MAnchorCols] || internalOpts.mEnabledTables[kCentFT0MAnchorBCs]) {
       // check and update centrality calibration objects for Run 3
       const auto& firstbc = bcs.begin();
       ConfigureCentralityRun3(ccdb, metadataInfo, firstbc);
@@ -1314,6 +1369,12 @@ class MultModule
           populateTable(cursors.centFV0A, fv0aInfo, mults[iEv].multFV0AZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0Ms])
           populateTable(cursors.centFT0M, ft0mInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0Ms])
+          populateTable(cursors.centFT0MAnchorCol, ft0mColInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0Ms])
+          populateTable(cursors.centFT0MAnchorBC, ft0mBcInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0MOuterAs])
+          populateTable(cursors.centFT0MOuterA, FT0MOuterAInfo, mults[iEv].multFT0AOuterZeq + mults[iEv].multFT0CZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0As])
           populateTable(cursors.centFT0A, ft0aInfo, mults[iEv].multFT0AZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0Cs])

@@ -13,11 +13,18 @@
 /// \author Hirak Kumar Koley
 /// \since 11/10/2024
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -73,7 +80,7 @@ struct resonances_tutorial {
 
   // Track selection
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -106,7 +113,7 @@ struct resonances_tutorial {
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& /* collision */, const TracksType& dTracks)
   {
-    for (auto track : dTracks) { // loop over all dTracks
+    for (const auto& track : dTracks) { // loop over all dTracks
       if (!trackCut(track) || !selectionPID(track)) {
         continue; // track selection and PID selection
       }

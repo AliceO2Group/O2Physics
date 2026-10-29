@@ -30,42 +30,41 @@
 /// \since  May 22, 2024
 ///
 
-#include "TableHelper.h"
+#include "GeometryContainer.h"
 
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/Core/FlatTrackSmearer.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include <CommonConstants/GeomConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <CommonUtils/NameConf.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
+#include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <TPDGCode.h>
 #include <TRandom3.h>
-#include <TString.h>
 #include <TVector3.h>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -79,12 +78,9 @@ struct OnTheFlyRichPid {
   Produces<aod::UpgradeRichSignal> upgradeRichSignal;
 
   // necessary for particle charges
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase{};
   // Necessary for LUTs
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-
-  // master setting: magnetic field
-  Configurable<float> magneticField{"magneticField", 0, "magnetic field (kilogauss) if 0, taken from the tracker task"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // add rich-specific configurables here
   Configurable<int> bRichNumberOfSectors{"bRichNumberOfSectors", 21, "barrel RICH number of sectors"};
@@ -135,8 +131,8 @@ struct OnTheFlyRichPid {
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  // Track smearer (here used to get relative pt and eta uncertainties)
-  o2::delphes::DelphesO2TrackSmearer mSmearer;
+  // Track smearer array, one per geometry
+  std::vector<std::unique_ptr<o2::fastsim::TrackSmearer>> mSmearer;
 
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
@@ -286,40 +282,68 @@ struct OnTheFlyRichPid {
     // std::cout << std::endl << std::endl;
   }
 
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
   void init(o2::framework::InitContext& initContext)
   {
+    mGeoContainer.setCcdbManager(ccdb.operator->());
+    mGeoContainer.init(initContext);
+
+    const int nGeometries = mGeoContainer.getNumberOfConfigurations();
     pRandomNumberGenerator.SetSeed(0); // fully randomize
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
 
-    if (magneticField.value < o2::constants::math::Epsilon) {
-      LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
-      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", magneticField, false)) {
-        LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
+    if (flagRICHLoadDelphesLUTs) {
+      for (int icfg = 0; icfg < nGeometries; ++icfg) {
+        mSmearer.emplace_back(std::make_unique<o2::fastsim::TrackSmearer>());
+        mSmearer[icfg]->setCcdbManager(ccdb.operator->());
+        std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
+        for (const auto& entry : globalConfiguration) {
+          int pdg = 0;
+          if (!entry.first.starts_with("lut")) {
+            continue;
+          }
+          if (entry.first.find("lutEl") != std::string::npos) {
+            pdg = kElectron;
+          } else if (entry.first.find("lutMu") != std::string::npos) {
+            pdg = kMuonMinus;
+          } else if (entry.first.find("lutPi") != std::string::npos) {
+            pdg = kPiPlus;
+          } else if (entry.first.find("lutKa") != std::string::npos) {
+            pdg = kKPlus;
+          } else if (entry.first.find("lutPr") != std::string::npos) {
+            pdg = kProton;
+          } else if (entry.first.find("lutDe") != std::string::npos) {
+            pdg = o2::constants::physics::kDeuteron;
+          } else if (entry.first.find("lutTr") != std::string::npos) {
+            pdg = o2::constants::physics::kTriton;
+          } else if (entry.first.find("lutHe3") != std::string::npos) {
+            pdg = o2::constants::physics::kHelium3;
+          } else if (entry.first.find("lutAl") != std::string::npos) {
+            pdg = o2::constants::physics::kAlpha;
+          }
+
+          std::string filename = entry.second;
+          if (pdg == 0) {
+            LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
+          }
+          LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
+          if (filename.empty()) {
+            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          }
+          // strip from leading/trailing spaces
+          filename.erase(0, filename.find_first_not_of(" "));
+          filename.erase(filename.find_last_not_of(" ") + 1);
+          if (filename.empty()) {
+            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          }
+          bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
+          if (!success) {
+            LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
+          }
+        }
       }
-      LOG(info) << "Bz = " << magneticField.value << " T";
-    }
-
-    // Load LUT for pt and eta smearing
-    if (flagIncludeTrackAngularRes && flagRICHLoadDelphesLUTs) {
-      mSmearer.setCcdbManager(ccdb.operator->());
-      auto loadLUT = [&](int pdg, const std::string& cfgNameToInherit) {
-        std::string lut = "none";
-        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", cfgNameToInherit, lut, false)) {
-          LOG(fatal) << "Could not get " << cfgNameToInherit << " from on-the-fly-tracker task";
-        }
-        bool success = mSmearer.loadTable(pdg, lut.c_str());
-        if (!success && !lut.empty()) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lut;
-        }
-      };
-      loadLUT(11, "lutEl");
-      loadLUT(13, "lutMu");
-      loadLUT(211, "lutPi");
-      loadLUT(321, "lutKa");
-      loadLUT(2212, "lutPr");
-      loadLUT(1000010020, "lutDe");
-      loadLUT(1000010030, "lutTr");
-      loadLUT(1000020030, "lutHe3");
-      loadLUT(1000020040, "lutAl");
     }
 
     if (doQAplots) {
@@ -335,11 +359,11 @@ struct OnTheFlyRichPid {
       histos.add("hSectorID", "hSectorID", kTH1F, {axisSector});
 
       const int kNspec = 9; // electron, muon, pion, kaon, proton, deuteron, triton, helium3, alpha
-      std::string particleNames1[kNspec] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "^{3}He", "#it{#alpha}"};
-      std::string particleNames2[kNspec] = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
+      const std::array<std::string, kNspec> particleNames1 = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "^{3}He", "#it{#alpha}"};
+      const std::array<std::string, kNspec> particleNames2 = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
       for (int iTrue = 0; iTrue < kNspec; iTrue++) {
-        std::string nameTitleBarrelTrackRes = "h2dBarrelAngularResTrack" + particleNames2[iTrue] + "VsP";
-        std::string nameTitleBarrelTotalRes = "h2dBarrelAngularResTotal" + particleNames2[iTrue] + "VsP";
+        const std::string nameTitleBarrelTrackRes = "h2dBarrelAngularResTrack" + particleNames2[iTrue] + "VsP";
+        const std::string nameTitleBarrelTotalRes = "h2dBarrelAngularResTotal" + particleNames2[iTrue] + "VsP";
         const AxisSpec axisTrackAngularRes{static_cast<int>(nBinsAngularRes), 0.0f, +5.0f, "Track angular resolution - " + particleNames1[iTrue] + " (mrad)"};
         const AxisSpec axisTotalAngularRes{static_cast<int>(nBinsAngularRes), 0.0f, +5.0f, "Total angular resolution - " + particleNames1[iTrue] + " (mrad)"};
         histos.add(nameTitleBarrelTrackRes.c_str(), nameTitleBarrelTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackAngularRes});
@@ -347,7 +371,7 @@ struct OnTheFlyRichPid {
       }
       for (int iTrue = 0; iTrue < kNspec; iTrue++) {
         for (int iHyp = 0; iHyp < kNspec; iHyp++) {
-          std::string nameTitle = "h2dBarrelNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          const std::string nameTitle = "h2dBarrelNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
           if (iTrue == iHyp) {
             const AxisSpec axisNsigmaCorrect{static_cast<int>(nBinsNsigmaCorrectSpecies), -10.0f, +10.0f, "N#sigma - True " + particleNames1[iTrue] + " vs " + particleNames1[iHyp] + " hypothesis"};
             histos.add(nameTitle.c_str(), nameTitle.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
@@ -413,18 +437,14 @@ struct OnTheFlyRichPid {
   bool checkMagfieldLimit(o2::track::TrackParCov track, const float radius, const float magneticField)
   {
     o2::math_utils::CircleXYf_t trcCircle;
-    float sna, csa;
+    float sna = NAN, csa = NAN;
     track.getCircleParams(magneticField, trcCircle, sna, csa);
 
     // distance between circle centers (one circle is at origin -> easy)
     float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
 
     // condition of circles touching - if not satisfied returned value if false
-    if (centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius)) {
-      return true;
-    } else {
-      return false;
-    }
+    return centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius);
   }
 
   /// returns sector hit by the track (if any), -1 otherwise
@@ -452,9 +472,8 @@ struct OnTheFlyRichPid {
       const float rSecRichSquared = rSecRich * rSecRich;
       const float zSecRichSquared = zSecRich * zSecRich;
       return (rSecRichSquared + zSecRichSquared) / (rSecRich + zSecRich / std::tan(polar));
-    } else {
-      return kErrorValue;
     }
+    return kErrorValue;
   }
 
   /// returns Cherenkov angle in rad (above threshold) or bad flag (below threshold)
@@ -492,10 +511,7 @@ struct OnTheFlyRichPid {
 
     // Require at least 3 photons on average for real angle reconstruction
     static constexpr float kMinPhotons = 3.f;
-    if (meanNumberofDetectedPhotons <= kMinPhotons) {
-      return false;
-    }
-    return true;
+    return meanNumberofDetectedPhotons > kMinPhotons;
   }
 
   /// returns linear interpolation
@@ -528,15 +544,13 @@ struct OnTheFlyRichPid {
         float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithAbsWalls[lowerIndex], kResRingSamplingWithAbsWalls[upperIndex]);
         // std::cout << "Interpolated y value: " << interpolatedY << std::endl;
         return interpolatedResRing;
-      } else {
-        float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithoutAbsWalls[lowerIndex], kResRingSamplingWithoutAbsWalls[upperIndex]);
-        // std::cout << "Interpolated y value: " << interpolatedY << std::endl;
-        return interpolatedResRing;
       }
-    } else {
-      // std::cout << "Unable to interpolate. Target x value is outside the range of available data." << std::endl;
-      return kErrorValue;
-    }
+      float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithoutAbsWalls[lowerIndex], kResRingSamplingWithoutAbsWalls[upperIndex]);
+      // std::cout << "Interpolated y value: " << interpolatedY << std::endl;
+      return interpolatedResRing;
+
+    } // std::cout << "Unable to interpolate. Target x value is outside the range of available data." << std::endl;
+    return kErrorValue;
   }
 
   /// To account border effects in bRICH
@@ -555,7 +569,7 @@ struct OnTheFlyRichPid {
         iSecor = jSector;
       }
     }
-    if (flagSector == false) {
+    if (!flagSector) {
       return kErrorValue; // <-- Returning negative value
     }
     float rSecRich = radCenters[iSecor].X();
@@ -564,9 +578,9 @@ struct OnTheFlyRichPid {
     // float zSecTof = detCenters[iSecor].Z();
     const float rSecRichSquared = rSecRich * rSecRich;
     const float zSecRichSquared = zSecRich * zSecRich;
-    const float radiusRipple = (rSecRichSquared + zSecRichSquared) / (rSecRich + zSecRich / std::tan(polar));
-    const float zRipple = radiusRipple / std::tan(polar);
-    const float absZ = std::hypot(radiusRipple - rSecRich, zRipple - zSecRich);
+    const float radRipple = (rSecRichSquared + zSecRichSquared) / (rSecRich + zSecRich / std::tan(polar));
+    const float zRipple = radRipple / std::tan(polar);
+    const float absZ = std::hypot(radRipple - rSecRich, zRipple - zSecRich);
     float fraction = 1.;
     if (tileZlength / 2. - absZ < radius) {
       fraction = fraction - (1. / o2::constants::math::PI) * std::acos((tileZlength / 2. - absZ) / radius);
@@ -589,8 +603,9 @@ struct OnTheFlyRichPid {
   float extractRingAngularResolution(const float eta, const float n, const float nGas, const float thicknessRad, const float thicknessGas, const float pixelSize, const float thetaCherenkov, const float tileZlength)
   {
     // Check if input angle is error value
-    if (thetaCherenkov <= kErrorValue + 1)
+    if (thetaCherenkov <= kErrorValue + 1) {
       return kErrorValue;
+    }
     // Parametrization variables (notation from https://doi.org/10.1016/0168-9002(94)90532-0)
     const float phiC = 0.;
     const float thetaP = 0.;
@@ -662,8 +677,9 @@ struct OnTheFlyRichPid {
     // float nPhotons = (tileZlength / 2.0 > radius) ? n0Photons * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength)) : n0Photons * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength) - (2.0/(tileZlength*o2::constants::math::PI))*(-(tileZlength/(2.0))*std::acos(tileZlength/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tileZlength/(2.0*radius),2.0))));
     // Considering "exact" resolution (eta by eta)
     const float nPhotons = n0Photons * multiplicitySpectrumFactor * fractionPhotonsProjectiveRICH(eta, tileZlength, radius);
-    if (nPhotons <= kErrorValue + 1)
+    if (nPhotons <= kErrorValue + 1) {
       return kErrorValue;
+    }
     // Ring angular resolution
     const float ringAngularResolution = singlePhotonAngularResolution / std::sqrt(nPhotons);
     return ringAngularResolution;
@@ -680,7 +696,7 @@ struct OnTheFlyRichPid {
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
-    const double a0 = mass * mass;
+    const double a0 = 1.0 * mass * mass;
     const double a1 = refractiveIndex;
     const double a1Squared = a1 * a1;
     const float ptCoshEta = pt * std::cosh(eta);
@@ -691,7 +707,7 @@ struct OnTheFlyRichPid {
     return trackAngularResolution;
   }
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::OTFLUTConfigId>::iterator const& collision,
                soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks,
                aod::McParticles const&,
                aod::McCollisions const&)
@@ -711,9 +727,10 @@ struct OnTheFlyRichPid {
     // First we compute the number of charged particles in the event
     float dNdEta = 0.f;
     if (flagRICHLoadDelphesLUTs) {
-      for (const auto& track : tracks) {
-        if (!track.has_mcParticle())
+      for (const auto& track : tracks) { // We first compute the number of charged particles in the event
+        if (!track.has_mcParticle()) {
           continue;
+        }
         auto mcParticle = track.mcParticle();
         if (std::abs(mcParticle.eta()) > multiplicityEtaRange) {
           continue;
@@ -721,7 +738,7 @@ struct OnTheFlyRichPid {
         if (mcParticle.has_daughters()) {
           continue;
         }
-        const auto& pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+        const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
         if (!pdgInfo) {
           // LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
           continue;
@@ -734,7 +751,6 @@ struct OnTheFlyRichPid {
     }
 
     for (const auto& track : tracks) {
-
       auto fillDummyValues = [&](bool gasRich = false) {
         upgradeRich(kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue);
         upgradeRichSignal(false, false, false, false, false, false, false, false, false, false, gasRich);
@@ -748,15 +764,15 @@ struct OnTheFlyRichPid {
       }
 
       const auto& mcParticle = track.mcParticle();
-      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
+      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDatabase);
 
       // float xPv = kErrorValue;
-      if (o2track.propagateToDCA(mcPvVtx, magneticField)) {
+      if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
         // xPv = o2track.getX();
       }
 
       // get particle to calculate Cherenkov angle and resolution
-      auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (pdgInfo == nullptr) {
         fillDummyValues();
         continue;
@@ -781,7 +797,7 @@ struct OnTheFlyRichPid {
       const float projectiveRadiatorRadius = radiusRipple(o2track.getEta(), iSecor);
       bool flagReachesRadiator = false;
       if (projectiveRadiatorRadius > kErrorValue + 1.) {
-        flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, magneticField);
+        flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, mMagneticField);
       }
       /// DISCLAIMER: Exact extrapolation of angular resolution would require track propagation
       ///             to the RICH radiator (accounting sector inclination) in terms of (R,z).
@@ -794,7 +810,7 @@ struct OnTheFlyRichPid {
       // Now we calculate the expected Cherenkov angle following certain mass hypotheses
       // and the (imperfect!) reconstructed track parametrizations
       auto recoTrack = getTrackParCov(track);
-      if (recoTrack.propagateToDCA(pvVtx, magneticField)) {
+      if (recoTrack.propagateToDCA(pvVtx, mMagneticField)) {
         // xPv = recoTrack.getX();
       }
 
@@ -844,9 +860,9 @@ struct OnTheFlyRichPid {
           double ptResolution = transverseMomentum * transverseMomentum * std::sqrt(recoTrack.getSigma1Pt2());
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-recoTrack.getEta())))) * std::sqrt(recoTrack.getSigmaTgl2());
           if (flagRICHLoadDelphesLUTs) {
-            if (mSmearer.hasTable(kParticlePdgs[ii])) {
-              ptResolution = mSmearer.getAbsPtRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
-              etaResolution = mSmearer.getAbsEtaRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+            if (mSmearer[collision.lutConfigId()]->hasTable(kParticlePdgs[ii])) {
+              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
             }
           }
           // cout << endl <<  "Pt resolution: " << ptResolution << ", Eta resolution: " << etaResolution << endl << endl;

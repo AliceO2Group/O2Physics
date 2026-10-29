@@ -16,15 +16,26 @@
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
 
 #include <array>
+#include <cmath>
 #include <random>
 #include <vector>
 
@@ -442,8 +453,8 @@ struct Phi1020SpherocityAnalysis {
   void processMix(ResoCols const& collisions, ResoTracks const& tracks)
   {
     LOGF(debug, "Event Mixing Started");
-    BinningType1 binningPositions1{{mixVtxBins, mixMultBins, mixSphBins}, true};
-    BinningType2 binningPositions2{{mixVtxBins, mixMultBins}, true};
+    BinningType1 binningPositions1{{mixVtxBins, mixMultBins, mixSphBins}};
+    BinningType2 binningPositions2{{mixVtxBins, mixMultBins}};
     auto tracksTuple = std::make_tuple(tracks);
     if (mixSph) {
       SameKindPair<ResoCols, ResoTracks, BinningType1> pairs{binningPositions1, numMixEv, -1, collisions, tracksTuple, &cache};

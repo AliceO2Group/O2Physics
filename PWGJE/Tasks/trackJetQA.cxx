@@ -24,11 +24,11 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
@@ -350,7 +350,7 @@ struct TrackJetQa {
     histos.fill(HIST("TPC/tpcChi2NCl"), track.pt(), track.sigma1Pt() * track.pt(), track.tpcChi2NCl(), collision.centFT0A(), collision.centFT0C());
   }
 
-  Preslice<aod::Track> trackPerColl = aod::track::collisionId;
+  Preslice<aod::Tracks> trackPerColl = aod::track::collisionId;
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
 

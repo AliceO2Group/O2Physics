@@ -9,24 +9,16 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(skimmer-gamma-conversion
-                    SOURCES skimmerGammaConversion.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(skimmer-gamma-conversion-truthonlymc
-                    SOURCES skimmerGammaConversionTruthOnlyMc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+add_subdirectory(Converters)
 
 o2physics_add_dpl_workflow(photon-conversion-builder
                     SOURCES photonconversionbuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::TPCDriftManager
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore KFParticle::KFParticle O2Physics::TPCDriftManager
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(create-pcm
-                    SOURCES createPCM.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(photon-conversion-builder-tmptable
+                    SOURCES photonconversionbuilderTmpTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore KFParticle::KFParticle O2Physics::TPCDriftManager
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(create-emevent-photon
@@ -59,7 +51,32 @@ o2physics_add_dpl_workflow(skimmer-primary-electron-from-dalitzee
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(skimmer-dalitz-ee
-                    SOURCES skimmerDalitzEE.cxx
+o2physics_add_dpl_workflow(skimmer-primary-electron-from-dalitzee-tmptable
+                    SOURCES skimmerPrimaryElectronFromDalitzEETmpTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmer-dalitz-events
+                    SOURCES skimmerDalitzEvents.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(non-lin-producer
+                    SOURCES nonLinProducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pm-qvector-dummy-otf
+                    SOURCES pmQvectorDummyOtf.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(material-budget-weights
+                    SOURCES materialBudgetWeights.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::CCDB ROOT::Hist ROOT::Core
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(event-selection-photon
+                    SOURCES eventSelection.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

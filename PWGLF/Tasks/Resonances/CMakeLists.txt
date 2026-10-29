@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(cksspinalignder
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(phiflowder
+    SOURCES phiflowder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(k892analysis
     SOURCES k892analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -74,6 +79,11 @@ o2physics_add_dpl_workflow(k1analysismicro
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(k1-training-table
+    SOURCES k1TrainingTable.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phianalysisrun3
     SOURCES phianalysisrun3.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -89,13 +99,18 @@ o2physics_add_dpl_workflow(f0980pbpbanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(f0980-flow-sp
+    SOURCES f0980FlowSP.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lambda1520spherocityanalysis
     SOURCES lambda1520SpherocityAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(delta-analysis
-    SOURCES deltaanalysis.cxx
+o2physics_add_dpl_workflow(deltaanalysis
+    SOURCES deltaAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -119,13 +134,18 @@ o2physics_add_dpl_workflow(chargedkstaranalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambda1520-pbpb
-    SOURCES lambda1520_PbPb.cxx
+o2physics_add_dpl_workflow(lambda1520pbpb
+    SOURCES lambda1520pbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(kshortkshort
     SOURCES higherMassResonances.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(k0s-k0s-flow
+    SOURCES k0sK0sFlow.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -135,7 +155,7 @@ o2physics_add_dpl_workflow(phipbpb
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(phianalysisrun3pbpb
-    SOURCES phianalysisrun3_PbPb.cxx
+    SOURCES phianalysisrun3pbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -176,6 +196,11 @@ o2physics_add_dpl_workflow(xi1530analysisqa
 
 o2physics_add_dpl_workflow(omega2012analysis
     SOURCES omega2012Analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(omega2012-training-table
+    SOURCES omega2012TrainingTable.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -249,13 +274,23 @@ o2physics_add_dpl_workflow(double-resonance-scan
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(kstarinoo
-    SOURCES kstarInOO.cxx
+o2physics_add_dpl_workflow(kstarinjets
+    SOURCES kstarInJets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(phioo
-    SOURCES phiOO.cxx
+o2physics_add_dpl_workflow(kstar0analysis
+    SOURCES kstar0analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phi1020analysis
+    SOURCES phi1020analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(kstar892-light-ion
+    SOURCES kstar892LightIon.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -263,27 +298,78 @@ o2physics_add_dpl_workflow(phispectrapbpbqa
     SOURCES phispectrapbpbqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phi-1020-spherocity-analysis
     SOURCES phi1020SpherocityAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phitutorial
     SOURCES phitutorial.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(phitutorial-step0
+
+o2physics_add_dpl_workflow(phitutorial-step0
     SOURCES phitutorial_step0.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phitutorial-step1
     SOURCES phitutorial_step1.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phitutorial-step2
     SOURCES phitutorial_step2.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phitutorial-step3
     SOURCES phitutorial_step3.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(k892hadronphoton
+    SOURCES k892hadronphoton.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(k892hadronphotonbkg
+    SOURCES k892hadronphotonBkg.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::MLCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(chk892li
+    SOURCES chk892LI.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambda1520-analysis-po
+    SOURCES lambda1520analysispo.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cha01710analysis
+    SOURCES cha01710analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(xi1530kaoncorrelation
+    SOURCES xi1530kaoncorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f0phiproxy
+    SOURCES f0phiproxy.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdastarproxy
+    SOURCES lambdastarproxy.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hresonancecorrelation
+    SOURCES hResonanceCorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)

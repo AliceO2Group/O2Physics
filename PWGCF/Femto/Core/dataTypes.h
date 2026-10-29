@@ -18,9 +18,7 @@
 
 #include <cstdint>
 
-namespace o2::aod
-{
-namespace femtodatatypes
+namespace o2::analysis::femto::datatypes
 {
 // Note: Length of the bitmask is the limit of how many selections can be configured
 
@@ -33,8 +31,12 @@ using TrackMaskType = uint64_t;
 using TrackType = uint16_t;
 
 // datatypes for v0s
-using V0MaskType = uint16_t;
+using V0MaskType = uint32_t;
+using V0MaskType001 = uint16_t; // old data type, was too narrow
 using V0Type = uint16_t;
+
+// datatypes for photons
+using PhotonMaskType = uint16_t;
 
 // datatypes for kinks
 using KinkMaskType = uint32_t;
@@ -45,9 +47,19 @@ using TwoTrackResonanceMaskType = uint32_t;
 // two track resonance types
 using TwoTrackResonanceType = uint16_t;
 
+// datatype for resonances built from two photons (pi0, eta, ...)
+using TwoPhotonResonanceType = uint16_t;
+
+// datatype for resonances built from two tracks and a two-photon resonance (e.g. omega(782) -> pi+ pi- pi0)
+using TrackTrackTwoPhotonResonanceType = uint8_t;
+
 // datatypes for cascades
-using CascadeMaskType = uint16_t;
+using CascadeMaskType = uint32_t;
+using CascadeMaskType001 = uint16_t; // old data type, was too narrow
 using CascadeType = uint16_t;
+
+// datatype for origin of mc particle
+using McOriginType = uint8_t;
 
 // datatype for particles
 using ParticleType = uint16_t;
@@ -56,8 +68,17 @@ using ParticleType = uint16_t;
 using MomentumType = uint16_t;
 using TransverseMassType = uint16_t;
 
-} // namespace femtodatatypes
+// datatype for charm hadrons
+using CharmHadronMaskType = uint32_t;
+using CharmHadronType = uint16_t;
 
-} // namespace o2::aod
+// datatypes for event shape enums
+using EventShapeDetectorType = uint8_t;
+using QvecHarmonicType = uint8_t;
+
+// datatype for kinematic variable
+using KinematicVariableType = uint8_t;
+
+} // namespace o2::analysis::femto::datatypes
 
 #endif // PWGCF_FEMTO_CORE_DATATYPES_H_

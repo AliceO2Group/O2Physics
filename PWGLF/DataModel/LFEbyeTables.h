@@ -9,11 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
 #ifndef PWGLF_DATAMODEL_LFEBYETABLES_H_
 #define PWGLF_DATAMODEL_LFEBYETABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -159,6 +160,25 @@ DECLARE_SOA_TABLE(McMiniTrkTables, "AOD", "MCMINITRKTABLE",
                   LFEbyeTable::GenEtaMask,
                   LFEbyeTable::IsReco);
 using McMiniTrkTable = McMiniTrkTables::iterator;
+
+DECLARE_SOA_TABLE(MiniChTables, "AOD", "MINICHTABLE",
+                  o2::soa::Index<>,
+                  LFEbyeTable::MiniCollTableId,
+                  LFEbyeTable::Pt,
+                  LFEbyeTable::EtaMask,
+                  LFEbyeTable::SelMask);
+using MiniChTable = MiniChTables::iterator;
+
+DECLARE_SOA_TABLE(McMiniChTables, "AOD", "MCMINICHTABLE",
+                  o2::soa::Index<>,
+                  LFEbyeTable::MiniCollTableId,
+                  LFEbyeTable::Pt,
+                  LFEbyeTable::EtaMask,
+                  LFEbyeTable::SelMask,
+                  LFEbyeTable::GenPt,
+                  LFEbyeTable::GenEtaMask,
+                  LFEbyeTable::IsReco);
+using McMiniChTable = McMiniChTables::iterator;
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFEBYETABLES_H_

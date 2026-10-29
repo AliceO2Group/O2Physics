@@ -9,20 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for dilepton Cut
-//
+/// \file EMCPhotonCut.cxx
+/// \brief header of class for dalitz ee cuts.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
+#include "DalitzEECut.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
 
+#include <cstdint>
+#include <functional>
 #include <set>
 #include <utility>
 
-ClassImp(DalitzEECut);
-
-// const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairRapidityRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
+// std::array<std::string, static_cast<std::size_t>(DalitzEECut::DalitzEECuts::kNCuts)> DalitzEECut::mCutNames = {"Mee", "PairPtRange", "PairRapidityRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
 
 const std::pair<int8_t, std::set<uint8_t>> DalitzEECut::its_ib_any_Requirement = {1, {0, 1, 2}}; // hits on any ITS ib layers.
 const std::pair<int8_t, std::set<uint8_t>> DalitzEECut::its_ib_1st_Requirement = {1, {0}};       // hit on 1st ITS ib layers.
@@ -45,7 +45,7 @@ void DalitzEECut::SetMeeRange(float min, float max)
   mMaxMee = max;
   LOG(info) << "DalitzEE Cut, set mee range: " << mMinMee << " - " << mMaxMee;
 }
-void DalitzEECut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
+void DalitzEECut::SetMaxPhivPairMeeDep(const std::function<float(float)>& meeDepCut)
 {
   mMaxPhivPairMeeDep = meeDepCut;
   LOG(info) << "DalitzEE Cut, set max phiv pair mee dep: " << mMaxPhivPairMeeDep(0.02);
@@ -129,7 +129,7 @@ void DalitzEECut::SetMaxDcaZ(float maxDcaZ)
   LOG(info) << "DalitzEE Cut, set max DCA z: " << mMaxDcaZ;
 }
 
-void DalitzEECut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
+void DalitzEECut::SetMaxDcaXYPtDep(const std::function<float(float)>& ptDepCut)
 {
   mMaxDcaXYPtDep = ptDepCut;
   LOG(info) << "DalitzEE Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
@@ -178,7 +178,7 @@ void DalitzEECut::SetChi2TOF(float min, float max)
 void DalitzEECut::SetPIDScheme(int scheme)
 {
   mPIDScheme = scheme;
-  LOG(info) << "DalitzEE Cut, PID scheme: " << static_cast<int>(mPIDScheme);
+  LOG(info) << "DalitzEE Cut, PID scheme: " << mPIDScheme;
 }
 void DalitzEECut::IncludeITSsa(bool flag, float max)
 {

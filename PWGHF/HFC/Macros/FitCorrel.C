@@ -54,18 +54,18 @@ void readArray(const Value& jsonArray, vector<ValueType>& output)
   }
 }
 
-void setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
+void setTH1HistoStyle(TH1D*& histo, const TString& hTitle, const TString& hXaxisTitle, const TString& hYaxisTitle,
                       Style_t markerStyle, Color_t markerColor, Double_t markerSize,
                       Color_t lineColor, Int_t lineWidth, Float_t hTitleXaxisOffset = 1.3, Float_t hTitleYaxisOffset = 1.3,
                       Float_t hTitleXaxisSize = 0.045, Float_t hTitleYaxisSize = 0.045, Float_t hLabelXaxisSize = 0.045, Float_t hLabelYaxisSize = 0.045,
                       Bool_t centerXaxisTitle = false, Bool_t centerYaxisTitle = false);
-void setTH1HistoStyle(TH1F*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
+void setTH1HistoStyle(TH1F*& histo, const TString& hTitle, const TString& hXaxisTitle, const TString& hYaxisTitle,
                       Style_t markerStyle, Color_t markerColor, Double_t markerSize,
                       Color_t lineColor, Int_t lineWidth, Float_t hTitleXaxisOffset = 1.3, Float_t hTitleYaxisOffset = 1.3,
                       Float_t hTitleXaxisSize = 0.045, Float_t hTitleYaxisSize = 0.045, Float_t hLabelXaxisSize = 0.045, Float_t hLabelYaxisSize = 0.045,
                       Bool_t centerXaxisTitle = false, Bool_t centerYaxisTitle = false);
 
-void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
+void fitCorrelDs(const TString& cfgFileName = "config_CorrAnalysis.json")
 {
   gStyle->SetOptStat(0);
   gStyle->SetPadLeftMargin(0.2);
@@ -110,10 +110,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   const int nBinsPtCand = binsPtCandIntervalsVec.size() - 1;
   const int nBinsPtHad = binsPtHadIntervals.size() - 1;
 
-  double binsPtCandIntervals[nBinsPtCand + 1];
-  for (int i = 0; i < nBinsPtCand + 1; i++) {
-    binsPtCandIntervals[i] = binsPtCandIntervalsVec[i];
-  }
+  std::vector<double> binsPtCandIntervals{binsPtCandIntervalsVec};
 
   const Value& fitFuncValue = config["FitFunction"];
   readArray(fitFuncValue, fitFunc);
@@ -122,17 +119,14 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   int const fixMean = config["FixMean"].GetInt();
 
   int const nBaselinePoints = config["nBaselinePoints"].GetInt();
-  vector<int> pointsForBaselineVec;
+  std::vector<int> pointsForBaselineVec;
   const Value& pointsForBaselineValue = config["binsForBaseline"];
   readArray(pointsForBaselineValue, pointsForBaselineVec);
   if (pointsForBaselineVec.size() != nBaselinePoints) {
     cout << "ERROR: size of the vector pointsForBaseline is different from the number of nBaselinePoints" << endl;
     return;
   }
-  int pointsForBaseline[nBaselinePoints];
-  for (int i = 0; i < nBaselinePoints; i++) {
-    pointsForBaseline[i] = pointsForBaselineVec[i];
-  }
+  std::vector<int> pointsForBaseline{pointsForBaselineVec};
 
   std::cout << "=========================== " << std::endl;
   std::cout << "Input variables from config" << std::endl;
@@ -193,16 +187,16 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
       if (isReflected) {
-        hCorrPhi[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1D*>(inFile->Get(Form("hCorrectedCorrReflected_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1])));
+        hCorrPhi[iBinPtCand][iBinPtHad] = dynamic_cast<TH1D*>(inFile->Get(Form("hCorrectedCorrReflected_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1])));
       } else {
-        hCorrPhi[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1D*>(inFile->Get(Form("hCorrectedCorr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1])));
+        hCorrPhi[iBinPtCand][iBinPtHad] = dynamic_cast<TH1D*>(inFile->Get(Form("hCorrectedCorr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1])));
       }
 
-      corrFitter[iBinPtHad][iBinPtCand] = new DhCorrelationFitter(reinterpret_cast<TH1F*>(hCorrPhi[iBinPtCand][iBinPtHad]), fMin, fMax);
+      corrFitter[iBinPtHad][iBinPtCand] = new DhCorrelationFitter(dynamic_cast<TH1F*>(hCorrPhi[iBinPtCand][iBinPtHad]), fMin, fMax); // FIXME: invalid cast
       corrFitter[iBinPtHad][iBinPtCand]->setHistoIsReflected(refl);
       corrFitter[iBinPtHad][iBinPtCand]->setFixBaseline(fixBase);
       corrFitter[iBinPtHad][iBinPtCand]->setBaselineUpOrDown(shiftBaseUp, shiftBaseDown);
-      corrFitter[iBinPtHad][iBinPtCand]->setPointsForBaseline(nBaselinePoints, pointsForBaseline);
+      corrFitter[iBinPtHad][iBinPtCand]->setPointsForBaseline(nBaselinePoints, pointsForBaseline.data());
       corrFitter[iBinPtHad][iBinPtCand]->setv2(v2AssocPart[iBinPtCand], v2Dmeson[iBinPtCand]);
       corrFitter[iBinPtHad][iBinPtCand]->setReflectedCorrHisto(isReflected);
 
@@ -222,14 +216,14 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       canvasCorrPhi[iBinPtHad]->Divide(3, 2);
     }
     // histograms with fir parameters
-    hBaselin[iBinPtHad] = new TH1D(Form("hBaselin_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals);
-    hNSYield[iBinPtHad] = new TH1D(Form("hNSYield_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals);
-    hNSSigma[iBinPtHad] = new TH1D(Form("hNSSigma_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals);
-    hASYield[iBinPtHad] = new TH1D(Form("hASYield_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals);
-    hASSigma[iBinPtHad] = new TH1D(Form("hASSigma_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals);
-    hBeta[iBinPtHad] = new TH1D(Form("hBeta_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals);
-    hNSYieldBinCount[iBinPtHad] = new TH1D(Form("hNSYieldBinCount_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals);
-    hASYieldBinCount[iBinPtHad] = new TH1D(Form("hASYieldBinCount_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals);
+    hBaselin[iBinPtHad] = new TH1D(Form("hBaselin_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals.data());
+    hNSYield[iBinPtHad] = new TH1D(Form("hNSYield_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals.data());
+    hNSSigma[iBinPtHad] = new TH1D(Form("hNSSigma_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals.data());
+    hASYield[iBinPtHad] = new TH1D(Form("hASYield_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals.data());
+    hASSigma[iBinPtHad] = new TH1D(Form("hASSigma_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals.data());
+    hBeta[iBinPtHad] = new TH1D(Form("hBeta_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals.data());
+    hNSYieldBinCount[iBinPtHad] = new TH1D(Form("hNSYieldBinCount_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals.data());
+    hASYieldBinCount[iBinPtHad] = new TH1D(Form("hASYieldBinCount_PtBinAssoc%d", iBinPtHad + 1), "", nBinsPtCand, binsPtCandIntervals.data());
 
     for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
       setTH1HistoStyle(hCorrPhi[iBinPtCand][iBinPtHad], "", "#Delta#phi [rad]", "#frac{1}{N_{D_{s}}}#frac{dN^{assoc}}{d#Delta#phi} [rad^{-1}]", kFullCircle, kRed + 1, 1.4, kRed + 1, 3);
@@ -244,8 +238,8 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       // draw systematic errors
       int const nBinsPhi = hCorrPhi[iBinPtCand][iBinPtHad]->GetNbinsX();
       if (drawSystematicErrors) {
-        hSystematicErrors[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1F*>(inFileSystematicErrors->Get(Form("hSystematicErrorsMerged_PtBin%d_PtBinAssoc%d", iBinPtCand + 1, iBinPtHad + 1)));
-        hSystematicErrorsPlot[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1D*>(hCorrPhi[iBinPtCand][iBinPtHad]->Clone(Form("hSystematicErrorsPlot_PtBin%d_PtBinAssoc%d", iBinPtCand + 1, iBinPtHad + 1)));
+        hSystematicErrors[iBinPtCand][iBinPtHad] = dynamic_cast<TH1F*>(inFileSystematicErrors->Get(Form("hSystematicErrorsMerged_PtBin%d_PtBinAssoc%d", iBinPtCand + 1, iBinPtHad + 1)));
+        hSystematicErrorsPlot[iBinPtCand][iBinPtHad] = dynamic_cast<TH1D*>(hCorrPhi[iBinPtCand][iBinPtHad]->Clone(Form("hSystematicErrorsPlot_PtBin%d_PtBinAssoc%d", iBinPtCand + 1, iBinPtHad + 1)));
         for (int iPhi = 0; iPhi < nBinsPhi; iPhi++) {
           if (sameSystematics) {
             hSystematicErrorsPlot[iBinPtCand][iBinPtHad]->SetBinError(iPhi + 1, hSystematicErrors[iBinPtCand][iBinPtHad]->GetBinContent(1) * hCorrPhi[iBinPtCand][iBinPtHad]->GetBinContent(iPhi + 1));
@@ -397,11 +391,11 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
     hBaselin[iBinPtHad]->Draw();
 
     if (drawSystematicErrors) {
-      TH1F* hBaselinSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsBaselinMerged_PtBinAssoc%d", iBinPtHad + 1)));
-      TH1F* hNSYieldSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsNSYieldMerged_PtBinAssoc%d", iBinPtHad + 1)));
-      TH1F* hNSSigmaSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsNSSigmaMerged_PtBinAssoc%d", iBinPtHad + 1)));
-      TH1F* hASYieldSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsASYieldMerged_PtBinAssoc%d", iBinPtHad + 1)));
-      TH1F* hASSigmaSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsASSigmaMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hBaselinSyst = dynamic_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsBaselinMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hNSYieldSyst = dynamic_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsNSYieldMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hNSSigmaSyst = dynamic_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsNSSigmaMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hASYieldSyst = dynamic_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsASYieldMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hASSigmaSyst = dynamic_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsASSigmaMerged_PtBinAssoc%d", iBinPtHad + 1)));
 
       for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
         hBaselinSyst->SetBinError(iBinPtCand + 1, hBaselinSyst->GetBinContent(iBinPtCand + 1) * hBaselin[iBinPtHad]->GetBinContent(iBinPtCand + 1));
@@ -456,7 +450,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   }
 }
 
-void setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
+void setTH1HistoStyle(TH1D*& histo, const TString& hTitle, const TString& hXaxisTitle, const TString& hYaxisTitle,
                       Style_t markerStyle, Color_t markerColor, Double_t markerSize,
                       Color_t lineColor, Int_t lineWidth, Float_t hTitleXaxisOffset, Float_t hTitleYaxisOffset,
                       Float_t hTitleXaxisSize, Float_t hTitleYaxisSize, Float_t hLabelXaxisSize, Float_t hLabelYaxisSize,
@@ -481,7 +475,7 @@ void setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString
   histo->GetYaxis()->CenterTitle(centerYaxisTitle);
 }
 
-void setTH1HistoStyle(TH1F*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
+void setTH1HistoStyle(TH1F*& histo, const TString& hTitle, const TString& hXaxisTitle, const TString& hYaxisTitle,
                       Style_t markerStyle, Color_t markerColor, Double_t markerSize,
                       Color_t lineColor, Int_t lineWidth, Float_t hTitleXaxisOffset, Float_t hTitleYaxisOffset,
                       Float_t hTitleXaxisSize, Float_t hTitleYaxisSize, Float_t hLabelXaxisSize, Float_t hLabelYaxisSize,

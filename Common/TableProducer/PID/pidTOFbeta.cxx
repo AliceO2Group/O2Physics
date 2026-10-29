@@ -15,6 +15,7 @@
 /// \brief  Task to produce TOF beta and TOF mass tables
 ///
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
@@ -27,7 +28,6 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/Variant.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <chrono>
@@ -69,10 +69,10 @@ struct tofPidBeta {
   bool enableTableMass = false;
   void init(o2::framework::InitContext& initContext)
   {
-    if (isTableRequiredInWorkflow(initContext, "pidTOFbeta")) {
+    if (o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFbeta")) {
       enableTableBeta = true;
     }
-    if (isTableRequiredInWorkflow(initContext, "pidTOFmass")) {
+    if (o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFmass")) {
       enableTableMass = true;
     }
     responseBeta.mExpectedResolution = expreso.value;

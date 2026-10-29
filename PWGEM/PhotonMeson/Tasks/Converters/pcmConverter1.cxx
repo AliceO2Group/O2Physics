@@ -16,9 +16,9 @@
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -32,6 +32,7 @@ struct pcmConverter1 {
 
   void process(aod::V0PhotonsKF_000 const& v0s, aod::V0Legs_000 const& v0legs)
   {
+    v0photon_001.reserve(v0s.size());
     for (auto& v0 : v0s) {
       v0photon_001(
         v0.collisionId(),
@@ -56,6 +57,7 @@ struct pcmConverter1 {
         v0.chiSquareNDF());
     } // end of v0 loop
 
+    v0leg_001.reserve(v0legs.size());
     for (auto& v0leg : v0legs) {
       v0leg_001(
         v0leg.collisionId(),

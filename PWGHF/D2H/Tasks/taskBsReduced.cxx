@@ -79,12 +79,18 @@ DECLARE_SOA_COLUMN(TpcChi2NClDmesProngMax, tpcChi2NClDmesProngMax, float);      
 DECLARE_SOA_COLUMN(NSigTpcPiDmesProng0, nSigTpcPiDmesProng0, float);                     //! TPC Nsigma separation for D-meson prong0 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPiDmesProng0, nSigTofPiDmesProng0, float);                     //! TOF Nsigma separation for D-meson prong0 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofPiDmesProng0, nSigTpcTofPiDmesProng0, float);               //! Combined TPC and TOF Nsigma separation for D-meson prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKaDmesProng0, nSigTpcKaDmesProng0, float);                     //! TPC Nsigma separation for D-meson prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKaDmesProng0, nSigTofKaDmesProng0, float);                     //! TOF Nsigma separation for D-meson prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKaDmesProng0, nSigTpcTofKaDmesProng0, float);               //! Combined TPC and TOF Nsigma separation for D-meson prong0 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcKaDmesProng1, nSigTpcKaDmesProng1, float);                     //! TPC Nsigma separation for D-meson prong1 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofKaDmesProng1, nSigTofKaDmesProng1, float);                     //! TOF Nsigma separation for D-meson prong1 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofKaDmesProng1, nSigTpcTofKaDmesProng1, float);               //! Combined TPC and TOF Nsigma separation for D-meson prong1 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcPiDmesProng2, nSigTpcPiDmesProng2, float);                     //! TPC Nsigma separation for D-meson prong2 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPiDmesProng2, nSigTofPiDmesProng2, float);                     //! TOF Nsigma separation for D-meson prong2 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofPiDmesProng2, nSigTpcTofPiDmesProng2, float);               //! Combined TPC and TOF Nsigma separation for D-meson prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPiDmesProng2, nSigTpcTofPiDmesProng2, float);               //! Combined TPC and TOF Nsigma separation for D-meson prong2 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKaDmesProng2, nSigTpcKaDmesProng2, float);                     //! TPC Nsigma separation for D-meson prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKaDmesProng2, nSigTofKaDmesProng2, float);                     //! TOF Nsigma separation for D-meson prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKaDmesProng2, nSigTpcTofKaDmesProng2, float);               //! Combined TPC and TOF Nsigma separation for D-meson prong2 with kaon mass hypothesis
 // pion features
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                               //! Transverse momentum of prong1 (GeV/c)
 DECLARE_SOA_COLUMN(AbsEtaProng1, absEtaProng1, float);                       //! Absolute pseudorapidity of Prong1
@@ -135,12 +141,18 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_bs_lite::NSigTpcPiDmesProng0,
                   hf_cand_bs_lite::NSigTofPiDmesProng0,
                   hf_cand_bs_lite::NSigTpcTofPiDmesProng0,
+                  hf_cand_bs_lite::NSigTpcKaDmesProng0,
+                  hf_cand_bs_lite::NSigTofKaDmesProng0,
+                  hf_cand_bs_lite::NSigTpcTofKaDmesProng0,
                   hf_cand_bs_lite::NSigTpcKaDmesProng1,
                   hf_cand_bs_lite::NSigTofKaDmesProng1,
                   hf_cand_bs_lite::NSigTpcTofKaDmesProng1,
                   hf_cand_bs_lite::NSigTpcPiDmesProng2,
                   hf_cand_bs_lite::NSigTofPiDmesProng2,
                   hf_cand_bs_lite::NSigTpcTofPiDmesProng2,
+                  hf_cand_bs_lite::NSigTpcKaDmesProng2,
+                  hf_cand_bs_lite::NSigTofKaDmesProng2,
+                  hf_cand_bs_lite::NSigTpcTofKaDmesProng2,
                   hf_cand_bs_reduced::Prong0MlScoreBkg,
                   hf_cand_bs_reduced::Prong0MlScorePrompt,
                   hf_cand_bs_reduced::Prong0MlScoreNonprompt,
@@ -155,13 +167,13 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_bs_lite::NSigTofPiProng1,
                   hf_cand_bs_lite::NSigTpcTofPiProng1,
                   // MC truth
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   hf_cand_bs_lite::FlagWrongCollision,
                   hf_cand_bs_lite::PtGen);
 
 DECLARE_SOA_TABLE(HfRedBsMcCheck, "AOD", "HFREDBSMCCHECK", //! Table with MC decay type check
-                  hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_bs_lite::FlagWrongCollision,
                   hf_cand_bs_lite::MProng0,
                   hf_cand_bs_lite::PtProng0,
@@ -596,9 +608,15 @@ struct HfTaskBsReduced {
           candDs.tpcNSigmaPiProng0(),
           candDs.tofNSigmaPiProng0(),
           candDs.tpcTofNSigmaPiProng0(),
+          candDs.tpcNSigmaKaProng0(),
+          candDs.tofNSigmaKaProng0(),
+          candDs.tpcTofNSigmaKaProng0(),
           candDs.tpcNSigmaKaProng1(),
           candDs.tofNSigmaKaProng1(),
           candDs.tpcTofNSigmaKaProng1(),
+          candDs.tpcNSigmaPiProng2(),
+          candDs.tofNSigmaPiProng2(),
+          candDs.tpcTofNSigmaPiProng2(),
           candDs.tpcNSigmaKaProng2(),
           candDs.tofNSigmaKaProng2(),
           candDs.tpcTofNSigmaKaProng2(),

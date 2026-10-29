@@ -24,21 +24,6 @@ o2physics_add_dpl_workflow(alice3-lutmaker
                     PUBLIC_LINK_LIBRARIES O2::Framework FairRoot::Base O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(alice3-pid-rich-qa
-                    SOURCES pidRICHqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(alice3-ecal-qa
-                    SOURCES ECALqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(alice3-pid-ftof-qa
-                    SOURCES pidFTOFqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(alice3-pid-separation-power
                     SOURCES alice3SeparationPower.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -54,13 +39,28 @@ o2physics_add_dpl_workflow(alice3-dilepton
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-prefilterdilepton
+                    SOURCES alice3-prefilterdilepton.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-prefilterdimuon
+                    SOURCES alice3-prefilterdimuon.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-taskcorrelationddbar
                     SOURCES alice3-taskcorrelationDDbar.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-multicharm
-                    SOURCES alice3-multicharm.cxx
+                    SOURCES alice3Multicharm.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-hf-task-3prong
+                    SOURCES alice3HfTask3Prong.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
@@ -76,5 +76,20 @@ o2physics_add_dpl_workflow(alice3-tracking-performance
 
 o2physics_add_dpl_workflow(alice3-pid-evaluation
                     SOURCES alice3PidEvaluation.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3strangeness
+                    SOURCES alice3Strangeness.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-dq-efficiency
+                    SOURCES alice3DqEfficiency.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-decayer-qa
+                    SOURCES alice3DecayerQa.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

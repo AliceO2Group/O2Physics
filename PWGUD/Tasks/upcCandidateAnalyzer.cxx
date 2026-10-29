@@ -9,12 +9,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "TLorentzVector.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TLorentzVector.h>
+
+#include <cstdint>
+#include <cstdlib>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -597,7 +608,7 @@ struct UpcCandAnalyzer {
       const auto& cand = eventCandidates.iteratorAt(candID);
       const auto& tr1 = fwdTracks.iteratorAt(trId1);
       const auto& tr2 = fwdTracks.iteratorAt(trId2);
-      processCandidate<0>(cand, tr1, tr2, &mcParticles, (o2::aod::UDMcTrackLabels*)nullptr, &mcFwdTrackLabels);
+      processCandidate<0>(cand, tr1, tr2, &mcParticles, nullptr, &mcFwdTrackLabels);
     }
   }
 
@@ -618,7 +629,7 @@ struct UpcCandAnalyzer {
       const auto& cand = eventCandidates.iteratorAt(candID);
       const auto& tr1 = fwdTracks.iteratorAt(trId1);
       const auto& tr2 = fwdTracks.iteratorAt(trId2);
-      processCandidate<0>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
+      processCandidate<0>(cand, tr1, tr2, nullptr, nullptr, nullptr);
     }
   }
 
@@ -676,7 +687,7 @@ struct UpcCandAnalyzer {
       const auto& cand = eventCandidates.iteratorAt(candID);
       const auto& tr1 = fwdTracks.iteratorAt(trId1);
       const auto& tr2 = barTracks.iteratorAt(trId2);
-      processCandidate<1>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
+      processCandidate<1>(cand, tr1, tr2, nullptr, nullptr, nullptr);
     }
   }
 
@@ -702,7 +713,7 @@ struct UpcCandAnalyzer {
       const auto& cand = eventCandidates.iteratorAt(candID);
       const auto& tr1 = barTracks.iteratorAt(trId1);
       const auto& tr2 = barTracks.iteratorAt(trId2);
-      processCandidate<2>(cand, tr1, tr2, &mcParticles, &mcTrackLabels, (o2::aod::UDMcFwdTrackLabels*)nullptr);
+      processCandidate<2>(cand, tr1, tr2, &mcParticles, &mcTrackLabels, nullptr);
     }
   }
 
@@ -723,7 +734,7 @@ struct UpcCandAnalyzer {
       const auto& cand = eventCandidates.iteratorAt(candID);
       const auto& tr1 = barTracks.iteratorAt(trId1);
       const auto& tr2 = barTracks.iteratorAt(trId2);
-      processCandidate<2>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
+      processCandidate<2>(cand, tr1, tr2, nullptr, nullptr, nullptr);
     }
   }
 

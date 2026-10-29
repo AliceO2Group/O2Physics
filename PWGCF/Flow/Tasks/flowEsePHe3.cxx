@@ -12,25 +12,9 @@
 /// \author ZhengqingWang(zhengqing.wang@cern.ch)
 /// \file   flowEsePHe3.cxx
 /// \brief  task to calculate the P He3 flow correlation.
-// C++/ROOT includes.
-#include <CCDB/BasicCCDBManager.h>
 
-#include <TComplex.h>
-#include <TF1.h>
-#include <TH1F.h>
-#include <TH2D.h>
-#include <TMath.h>
-#include <TVector2.h>
-
-#include <chrono>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-
-// o2Physics includes.
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -40,16 +24,34 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TF1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THnSparse.h>
+#include <TProfile3D.h>
+#include <TString.h>
+
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -430,7 +432,7 @@ struct FlowEsePHe3 {
   Produces<o2::aod::ESETable> eseTable;
 
   template <typename TrackType>
-  float getNSigmaTPCSelfBB(const TrackType track, uint8_t POI)
+  float getNSigmaTPCSelfBB(const TrackType& track, uint8_t POI)
   {
     bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
@@ -438,35 +440,35 @@ struct FlowEsePHe3 {
     switch (POI) {
       case ese_parameters::kProton: {
         const double bgScaling[2]{ese_parameters::Charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / ese_parameters::Masses[0], ese_parameters::Charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / ese_parameters::Masses[0]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(0u, 0u), cfgBetheBlochParams->get(0u, 1u), cfgBetheBlochParams->get(0u, 2u), cfgBetheBlochParams->get(0u, 3u), cfgBetheBlochParams->get(0u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(0u, 0u), cfgBetheBlochParams->get(0u, 1u), cfgBetheBlochParams->get(0u, 2u), cfgBetheBlochParams->get(0u, 3u), cfgBetheBlochParams->get(0u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(0u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kDeuteron: {
         const double bgScaling[2]{ese_parameters::Charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / ese_parameters::Masses[1], ese_parameters::Charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / ese_parameters::Masses[1]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(1u, 0u), cfgBetheBlochParams->get(1u, 1u), cfgBetheBlochParams->get(1u, 2u), cfgBetheBlochParams->get(1u, 3u), cfgBetheBlochParams->get(1u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(1u, 0u), cfgBetheBlochParams->get(1u, 1u), cfgBetheBlochParams->get(1u, 2u), cfgBetheBlochParams->get(1u, 3u), cfgBetheBlochParams->get(1u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(1u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kTriton: {
         const double bgScaling[2]{ese_parameters::Charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / ese_parameters::Masses[2], ese_parameters::Charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / ese_parameters::Masses[2]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(2u, 0u), cfgBetheBlochParams->get(2u, 1u), cfgBetheBlochParams->get(2u, 2u), cfgBetheBlochParams->get(2u, 3u), cfgBetheBlochParams->get(2u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(2u, 0u), cfgBetheBlochParams->get(2u, 1u), cfgBetheBlochParams->get(2u, 2u), cfgBetheBlochParams->get(2u, 3u), cfgBetheBlochParams->get(2u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(2u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kHe3: {
         const double bgScaling[2]{ese_parameters::Charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / ese_parameters::Masses[3], ese_parameters::Charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / ese_parameters::Masses[3]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(3u, 0u), cfgBetheBlochParams->get(3u, 1u), cfgBetheBlochParams->get(3u, 2u), cfgBetheBlochParams->get(3u, 3u), cfgBetheBlochParams->get(3u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(3u, 0u), cfgBetheBlochParams->get(3u, 1u), cfgBetheBlochParams->get(3u, 2u), cfgBetheBlochParams->get(3u, 3u), cfgBetheBlochParams->get(3u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(3u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kAlpha: {
         const double bgScaling[2]{ese_parameters::Charges[4] * cfgMomentumScalingBetheBloch->get(4u, 0u) / ese_parameters::Masses[4], ese_parameters::Charges[4] * cfgMomentumScalingBetheBloch->get(4u, 1u) / ese_parameters::Masses[4]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(4u, 0u), cfgBetheBlochParams->get(4u, 1u), cfgBetheBlochParams->get(4u, 2u), cfgBetheBlochParams->get(4u, 3u), cfgBetheBlochParams->get(4u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(4u, 0u), cfgBetheBlochParams->get(4u, 1u), cfgBetheBlochParams->get(4u, 2u), cfgBetheBlochParams->get(4u, 3u), cfgBetheBlochParams->get(4u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(4u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
@@ -477,7 +479,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  float getNSigmaTPC(const TrackType track, uint8_t POI)
+  float getNSigmaTPC(const TrackType& track, uint8_t POI)
   {
     switch (POI) {
       case ese_parameters::kProton: {
@@ -516,7 +518,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  float getNSigmaTOF(const TrackType track, uint8_t POI)
+  float getNSigmaTOF(const TrackType& track, uint8_t POI)
   {
     switch (POI) {
       case ese_parameters::kProton: {
@@ -546,7 +548,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  float getNSigmaITS(const TrackType track, uint8_t POI)
+  float getNSigmaITS(const TrackType& track, uint8_t POI)
   {
     switch (POI) {
       case ese_parameters::kProton: {
@@ -718,7 +720,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  bool trackSelBasic(const TrackType track)
+  bool trackSelBasic(const TrackType& track)
   {
     if ((track.pt() < cfgMinPtPID) || (track.pt() > cfgMaxPtPID))
       return false;
@@ -773,7 +775,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename CollType>
-  void fillEventQAhistBe(const CollType collision, const int multTrk, const float centrality)
+  void fillEventQAhistBe(const CollType& collision, const int multTrk, const float centrality)
   {
     histsESE.fill(HIST("EventQA/hist_globalTracks_centT0C_before"), centrality, multTrk);
     histsESE.fill(HIST("EventQA/hist_PVTracks_centT0C_before"), centrality, collision.multNTracksPV());
@@ -785,7 +787,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename CollType>
-  void fillEventQAhistAf(const CollType collision, const int multTrk, const float centrality)
+  void fillEventQAhistAf(const CollType& collision, const int multTrk, const float centrality)
   {
     histsESE.fill(HIST("EventQA/hist_globalTracks_centT0C_after"), centrality, multTrk);
     histsESE.fill(HIST("EventQA/hist_PVTracks_centT0C_after"), centrality, collision.multNTracksPV());
@@ -797,7 +799,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  void fillTrackQAhist(const TrackType track)
+  void fillTrackQAhist(const TrackType& track)
   {
     bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();

@@ -12,14 +12,19 @@
 #ifndef PWGUD_CORE_DGSELECTOR_H_
 #define PWGUD_CORE_DGSELECTOR_H_
 
-#include <vector>
-
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
-#include "Framework/Logger.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/DGCutparHolder.h"
+#include "PWGUD/Core/UDHelpers.h"
+
+#include <Framework/Logger.h>
+
+#include <TDatabasePDG.h>
+#include <TLorentzVector.h>
+#include <TParticlePDG.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <vector>
 
 // -----------------------------------------------------------------------------
 // add here Selectors for different types of diffractive events
@@ -32,7 +37,7 @@ class DGSelector
   ~DGSelector() { delete fPDG; }
 
   template <typename CC, typename BCs, typename TCs, typename FWs>
-  int Print(DGCutparHolder /*diffCuts*/, CC& collision, BCs& /*bcRange*/, TCs& /*tracks*/, FWs& /*fwdtracks*/)
+  int Print(const DGCutparHolder& /*diffCuts*/, CC& collision, BCs& /*bcRange*/, TCs& /*tracks*/, FWs& /*fwdtracks*/)
   {
     LOGF(info, "Size of array %i", collision.size());
     return 1;

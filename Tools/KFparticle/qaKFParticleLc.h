@@ -15,9 +15,9 @@
 #ifndef TOOLS_KFPARTICLE_QAKFPARTICLELC_H_
 #define TOOLS_KFPARTICLE_QAKFPARTICLELC_H_
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/Core/trackUtilities.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <Rtypes.h>
 
 enum Source {
   kPrompt = BIT(0),

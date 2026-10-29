@@ -14,7 +14,6 @@
 ///
 /// \author Martin Voelkl <martin.andreas.volkl@cern.ch>, University of Birmingham
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -38,7 +37,6 @@
 
 using namespace o2;
 using namespace o2::aod;
-using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -65,7 +63,7 @@ struct HfTreeCreatorElectronDCA {
   Configurable<float> etaRange{"etaRange", 0.5, "pseudorapidity range"};
   Configurable<float> pTMin{"pTMin", 0.5, "min pT"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::TracksPidKa>;
   using TracksWExtMc = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::TracksPidKa, McTrackLabels>;

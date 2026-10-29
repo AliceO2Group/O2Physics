@@ -450,7 +450,7 @@ struct HfCandidateCreatorCharmResoReduced {
           registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
         }
       } else if constexpr (DType == DMesonType::Dstar) {
-        float invMassD0;
+        float invMassD0{};
         if (candD.sign() > 0) {
           invMassD = candD.invMassDstar();
           invMassD0 = candD.invMassD0();
@@ -765,7 +765,7 @@ struct HfCandidateCreatorCharmResoReduced {
                                       V0TrRedTable const& candsV0Tr)
   {
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
-    BinningType const corrBinning{{cfgMixedEvent.zPoolBins, cfgMixedEvent.multPoolBins}, true};
+    BinningType const corrBinning{{cfgMixedEvent.zPoolBins, cfgMixedEvent.multPoolBins}};
     auto bachTuple = std::make_tuple(candsD, candsV0Tr);
     Pair<Coll, DRedTable, V0TrRedTable, BinningType> const pairs{corrBinning, cfgMixedEvent.numberEventsMixed, cfgMixedEvent.numberEventsToSkip, collisions, bachTuple, &cache};
     for (const auto& [collision1, bachDs, collision2, bachV0Trs] : pairs) {

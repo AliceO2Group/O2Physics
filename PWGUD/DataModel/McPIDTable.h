@@ -8,10 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_UDDIFFMCSCAN_H
-#define O2_ANALYSIS_UDDIFFMCSCAN_H
 
-#include "Framework/AnalysisDataModel.h"
+#ifndef PWGUD_DATAMODEL_MCPIDTABLE_H_
+#define PWGUD_DATAMODEL_MCPIDTABLE_H_
+
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {
@@ -33,4 +34,4 @@ DECLARE_SOA_TABLE(UDnSigmas, "AOD", "UDNSIGMAS", //! MCTruth of particle PID and
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_UDDIFFMCSCAN_H
+#endif // PWGUD_DATAMODEL_MCPIDTABLE_H_

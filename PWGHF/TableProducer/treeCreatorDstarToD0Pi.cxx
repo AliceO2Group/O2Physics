@@ -153,8 +153,8 @@ DECLARE_SOA_TABLE(HfCandDstLites, "AOD", "HFCANDDSTLITE",
                   full::Phi,
                   full::Y,
                   full::CandidateSelFlag,
-                  hf_cand_dstar::FlagMcMatchRec,
-                  hf_cand_dstar::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   full::PtBhadMother)
 
 DECLARE_SOA_TABLE(HfCandDstFulls, "AOD", "HFCANDDSTFULL",
@@ -226,8 +226,8 @@ DECLARE_SOA_TABLE(HfCandDstFulls, "AOD", "HFCANDDSTFULL",
                   full::Y,
                   full::E,
                   full::CandidateSelFlag,
-                  hf_cand_dstar::FlagMcMatchRec,
-                  hf_cand_dstar::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   full::PtBhadMother);
 
 DECLARE_SOA_TABLE(HfCandDstFullEvs, "AOD", "HFCANDDSTFULLEV",
@@ -245,8 +245,8 @@ DECLARE_SOA_TABLE(HfCandDstFullPs, "AOD", "HFCANDDSTFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_dstar::FlagMcMatchGen,
-                  hf_cand_dstar::OriginMcGen,
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
                   full::PtBhadMother);
 
 } // namespace o2::aod
@@ -272,10 +272,10 @@ struct HfTreeCreatorDstarToD0Pi {
   using CandDstarMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandDstarMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_dstar::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
+  Filter filterMcGenMatching = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
 
-  Partition<CandDstarWSelFlagMcRec> reconstructedCandSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
-  Partition<CandDstarWSelFlagMcRec> reconstructedCandBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
+  Partition<CandDstarWSelFlagMcRec> reconstructedCandSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
+  Partition<CandDstarWSelFlagMcRec> reconstructedCandBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
 
   void init(InitContext const&)
   {

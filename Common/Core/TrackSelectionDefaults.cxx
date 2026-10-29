@@ -39,7 +39,7 @@ TrackSelection getGlobalTrackSelection()
   selectedTracks.SetMaxChi2PerClusterTPC(4.f);
   selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
   selectedTracks.SetMaxChi2PerClusterITS(36.f);
-  selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+  selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
   selectedTracks.SetMaxDcaZ(2.f);
   return selectedTracks;
 }
@@ -115,7 +115,7 @@ TrackSelection getGlobalTrackSelectionRun3HF()
   selectedTracks.SetMaxChi2PerClusterTPC(4.f);
   selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
   selectedTracks.SetMaxChi2PerClusterITS(36.f);
-  // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+  // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
   selectedTracks.SetMaxDcaZ(2.f);
   selectedTracks.SetMaxDcaXY(0.25);
 

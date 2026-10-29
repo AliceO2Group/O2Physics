@@ -16,27 +16,39 @@
 /// \brief  Task to produce the PID information for the TPC for the purpose of the Light flavor PWG
 ///
 
-// ROOT includes
-#include "TFile.h"
-#include "TSystem.h"
-#include "TF1.h"
-#include "TGraph.h"
-#include "TList.h"
-
-// O2 includes
-#include "CCDB/BasicCCDBManager.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/CcdbApi.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "TableHelper.h"
+
+#include "Common/Core/TableHelper.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TF1.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TList.h>
+#include <TObject.h>
+#include <TString.h>
+
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -51,34 +63,34 @@ static const std::vector<std::string> parameterNames{"Use default tiny",
                                                      "Set parameters",
                                                      "bb1", "bb2", "bb3", "bb4", "bb5",
                                                      "MIP value", "Charge exponent", "Resolution"};
-static constexpr float defaultParameters[nSpecies][nParameters]{{2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                                                                {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}};
+static constexpr std::array<std::array<float, nParameters>, nSpecies> defaultParameters{{{2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+                                                                                         {2.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}}};
 static constexpr int nOptions = 4;
 static const std::vector<std::string> optionNames{"Bethe Bloch path",      // If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://
                                                   "Post calibration path", // If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://
                                                   "Simple Bethe Bloch",    // (true/false)
                                                   "RequirePostCalib"};     // (true/false)
-const std::string defaultOptions[nSpecies][nOptions]{{"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"},
-                                                     {"", "", "false", "false"}};
+const std::array<std::array<std::string, nOptions>, nSpecies> defaultOptions{{{"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"},
+                                                                              {"", "", "false", "false"}}};
 
 // Structure to hold the parameters
 struct bbParams {
   const std::string name;
-  bbParams(const std::string& n) : name(n) {}
+  explicit bbParams(const std::string& n) : name(n) {}
   // Parameters for the Bethe-Bloch parametrization
   float bb1 = 0.03209809958934784f;    // Aleph Bethe Bloch parameter 1
   float bb2 = 19.9768009185791f;       // Aleph Bethe Bloch parameter 2
@@ -461,15 +473,15 @@ struct lfTpcPid {
 
   // Parameters setting from json
   Configurable<LabeledArray<float>> bbParameters{"bbParameters",
-                                                 {defaultParameters[0], nSpecies, nParameters, particleNames, parameterNames},
+                                                 {defaultParameters.front().data(), nSpecies, nParameters, particleNames, parameterNames},
                                                  "Bethe Bloch parameters"};
   // Parameter setting from input file (including the ccdb)
   Configurable<LabeledArray<std::string>> fileParamBbPositive{"fileParamBbPositive",
-                                                              {defaultOptions[0], nSpecies, nOptions, particleNames, optionNames},
+                                                              {defaultOptions.front().data(), nSpecies, nOptions, particleNames, optionNames},
                                                               "Input for the parametrization for positive particles. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
 
   Configurable<LabeledArray<std::string>> fileParamBbNegative{"fileParamBbNegative",
-                                                              {defaultOptions[0], nSpecies, nOptions, particleNames, optionNames},
+                                                              {defaultOptions.front().data(), nSpecies, nOptions, particleNames, optionNames},
                                                               "Input for the parametrization for negative particles. If empty using the default/json values. Can be a CCDB path if the string starts with ccdb://"};
 
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -510,9 +522,9 @@ struct lfTpcPid {
       corr = params.postCorrectionFun->Eval(track.tpcInnerParam());
     }
     if (params.isSimple) {
-      return o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) + corr;
+      return o2::common::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) + corr;
     }
-    return params.mip * o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) * std::pow(charge, params.exp) + corr;
+    return params.mip * o2::common::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) * std::pow(charge, params.exp) + corr;
   }
 
   template <o2::track::PID::ID id, typename T>
@@ -580,43 +592,43 @@ struct lfTpcPid {
       ccdb->setFatalWhenNull(false);
     }
 
-#define InitPerParticle(Particle)                                                                          \
-  if (doprocess##Particle || doprocessFull##Particle) {                                                    \
-    LOG(info) << "Enabling " << #Particle;                                                                 \
-    bbPos##Particle.init(#Particle, bbParameters, fileParamBbPositive, ccdb);                              \
-    auto h = histos.add<TH1>(Form("%s", #Particle), "", kTH1F, {{10, 0, 10}});                             \
-    h->SetBit(TH1::kIsAverage);                                                                            \
-    h->SetBinContent(1, bbPos##Particle.bb1);                                                              \
-    h->SetBinContent(2, bbPos##Particle.bb2);                                                              \
-    h->SetBinContent(3, bbPos##Particle.bb3);                                                              \
-    h->SetBinContent(4, bbPos##Particle.bb4);                                                              \
-    h->SetBinContent(5, bbPos##Particle.bb5);                                                              \
-    h->SetBinContent(6, bbPos##Particle.mip);                                                              \
-    h->SetBinContent(7, bbPos##Particle.exp);                                                              \
-    h->SetBinContent(8, bbPos##Particle.res);                                                              \
-    h->SetBinContent(9, 1.f);                                                                              \
-    bbNeg##Particle.init(#Particle, bbParameters, fileParamBbNegative, ccdb);                              \
-    h = histos.add<TH1>(Form("Neg%s", #Particle), "", kTH1F, {{10, 0, 10}});                               \
-    h->SetBit(TH1::kIsAverage);                                                                            \
-    h->SetBinContent(1, bbNeg##Particle.bb1);                                                              \
-    h->SetBinContent(2, bbNeg##Particle.bb2);                                                              \
-    h->SetBinContent(3, bbNeg##Particle.bb3);                                                              \
-    h->SetBinContent(4, bbNeg##Particle.bb4);                                                              \
-    h->SetBinContent(5, bbNeg##Particle.bb5);                                                              \
-    h->SetBinContent(6, bbNeg##Particle.mip);                                                              \
-    h->SetBinContent(7, bbNeg##Particle.exp);                                                              \
-    h->SetBinContent(8, bbNeg##Particle.res);                                                              \
-    h->SetBinContent(9, 1.f);                                                                              \
-  } else {                                                                                                 \
-    LOG(info) << "Skipping " << #Particle;                                                                 \
-    const bool requireTiny = isTableRequiredInWorkflow(initContext, Form("pidTPCLf%s", #Particle));        \
-    const bool requireFull = isTableRequiredInWorkflow(initContext, Form("pidTPCLfFull%s", #Particle));    \
-    if (requireTiny || requireFull) {                                                                      \
-      LOG(fatal) << "Requested "                                                                           \
-                 << #Particle << " table but not enabled in configuration: pidTPCLf" << #Particle          \
-                 << " -> " << requireTiny << " (" << doprocess##Particle << "), pidTPCLfFull" << #Particle \
-                 << " -> " << requireFull << " (" << doprocessFull##Particle << ")";                       \
-    }                                                                                                      \
+#define InitPerParticle(Particle)                                                                                         \
+  if (doprocess##Particle || doprocessFull##Particle) {                                                                   \
+    LOG(info) << "Enabling " << #Particle;                                                                                \
+    bbPos##Particle.init(#Particle, bbParameters, fileParamBbPositive, ccdb);                                             \
+    auto h = histos.add<TH1>(Form("%s", #Particle), "", kTH1F, {{10, 0, 10}});                                            \
+    h->SetBit(TH1::kIsAverage);                                                                                           \
+    h->SetBinContent(1, bbPos##Particle.bb1);                                                                             \
+    h->SetBinContent(2, bbPos##Particle.bb2);                                                                             \
+    h->SetBinContent(3, bbPos##Particle.bb3);                                                                             \
+    h->SetBinContent(4, bbPos##Particle.bb4);                                                                             \
+    h->SetBinContent(5, bbPos##Particle.bb5);                                                                             \
+    h->SetBinContent(6, bbPos##Particle.mip);                                                                             \
+    h->SetBinContent(7, bbPos##Particle.exp);                                                                             \
+    h->SetBinContent(8, bbPos##Particle.res);                                                                             \
+    h->SetBinContent(9, 1.f);                                                                                             \
+    bbNeg##Particle.init(#Particle, bbParameters, fileParamBbNegative, ccdb);                                             \
+    h = histos.add<TH1>(Form("Neg%s", #Particle), "", kTH1F, {{10, 0, 10}});                                              \
+    h->SetBit(TH1::kIsAverage);                                                                                           \
+    h->SetBinContent(1, bbNeg##Particle.bb1);                                                                             \
+    h->SetBinContent(2, bbNeg##Particle.bb2);                                                                             \
+    h->SetBinContent(3, bbNeg##Particle.bb3);                                                                             \
+    h->SetBinContent(4, bbNeg##Particle.bb4);                                                                             \
+    h->SetBinContent(5, bbNeg##Particle.bb5);                                                                             \
+    h->SetBinContent(6, bbNeg##Particle.mip);                                                                             \
+    h->SetBinContent(7, bbNeg##Particle.exp);                                                                             \
+    h->SetBinContent(8, bbNeg##Particle.res);                                                                             \
+    h->SetBinContent(9, 1.f);                                                                                             \
+  } else {                                                                                                                \
+    LOG(info) << "Skipping " << #Particle;                                                                                \
+    const bool requireTiny = o2::common::core::isTableRequiredInWorkflow(initContext, Form("pidTPCLf%s", #Particle));     \
+    const bool requireFull = o2::common::core::isTableRequiredInWorkflow(initContext, Form("pidTPCLfFull%s", #Particle)); \
+    if (requireTiny || requireFull) {                                                                                     \
+      LOG(fatal) << "Requested "                                                                                          \
+                 << #Particle << " table but not enabled in configuration: pidTPCLf" << #Particle                         \
+                 << " -> " << requireTiny << " (" << doprocess##Particle << "), pidTPCLfFull" << #Particle                \
+                 << " -> " << requireFull << " (" << doprocessFull##Particle << ")";                                      \
+    }                                                                                                                     \
   }
 
     if (doprocessStandalone) { // If in standalone mode we enable the configuration of tables of interest

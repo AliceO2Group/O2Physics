@@ -9,27 +9,24 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for v0 photon selection
-//
+/// \file PHOSPhotonCut.h
+/// \brief Header of class for phos photon selection.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
-#include "Rtypes.h"
-#include "TNamed.h"
+#include <Framework/Concepts.h>
 
-class PHOSPhotonCut : public TNamed
+#include <array>
+#include <cmath>
+#include <string>
+
+class PHOSPhotonCut
 {
  public:
   PHOSPhotonCut() = default;
-  PHOSPhotonCut(const char* name, const char* title) : TNamed(name, title) {}
+  PHOSPhotonCut(const char* name, const char* title) : name(name), title(title) {}
 
   enum class PHOSPhotonCuts : int {
     kEnergy = 0,
@@ -38,10 +35,13 @@ class PHOSPhotonCut : public TNamed
     kNCuts
   };
 
-  static const char* mCutNames[static_cast<int>(PHOSPhotonCuts::kNCuts)];
+  [[nodiscard]] const std::string& getName() const { return name; }
+  [[nodiscard]] const std::string& getTitle() const { return title; }
+
+  static const std::array<std::string, static_cast<int>(PHOSPhotonCuts::kNCuts)> mCutNames;
 
   // Temporary function to check if track passes selection criteria. To be replaced by framework filters.
-  template <typename T, typename Cluster>
+  template <o2::soa::is_iterator Cluster>
   bool IsSelected(Cluster const& cluster) const
   {
     // auto track = cluster.template MatchedTrack_as<T>(); //please implement a column to point matched track index (DECLARE_SOA_ARRAY_INDEX_COLUMN) in SkimPHOSClusters table.
@@ -56,10 +56,10 @@ class PHOSPhotonCut : public TNamed
     }
 
     // only temporary solution to avoid noisy channels.
-    if (-1.20 + 10.2 * sqrt(cluster.e()) < cluster.nCells()) {
+    if (-1.20 + 10.2 * std::sqrt(cluster.e()) < cluster.nCells()) {
       return false;
     }
-    if (cluster.nCells() < -3.04 + 3.14 * sqrt(cluster.e())) {
+    if (cluster.nCells() < -3.04 + 3.14 * std::sqrt(cluster.e())) {
       return false;
     }
 
@@ -74,7 +74,7 @@ class PHOSPhotonCut : public TNamed
   }
 
   // Temporary function to check if track passes a given selection criteria. To be replaced by framework filters.
-  template <typename Cluster>
+  template <o2::soa::is_iterator Cluster>
   bool IsSelectedCluster(Cluster const& cls, const PHOSPhotonCuts& cut) const
   {
     switch (cut) {
@@ -82,8 +82,6 @@ class PHOSPhotonCut : public TNamed
         return cls.e() >= mMinEnergy && cls.e() <= mMaxEnergy;
 
       case PHOSPhotonCuts::kDispersion:
-        return true;
-
       case PHOSPhotonCuts::kCPV:
         return true;
 
@@ -99,9 +97,9 @@ class PHOSPhotonCut : public TNamed
   void print() const;
 
  private:
+  std::string name;
+  std::string title;
   float mMinEnergy{0.1f}, mMaxEnergy{1e+10f};
-
-  ClassDef(PHOSPhotonCut, 1);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_

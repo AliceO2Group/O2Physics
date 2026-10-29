@@ -9,18 +9,35 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-#include <vector>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include <iostream>
-#include "PWGUD/DataModel/UDTables.h"
-#include <TString.h>
-#include <TTree.h>
-#include "TLorentzVector.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH2.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TString.h>
+#include <TTree.h>
+#include <TVector3.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <vector>
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
@@ -68,9 +85,9 @@ struct UPCPionAnalysis {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   //_____________________________________________________________________________________________
-  Double_t CosThetaHelicityFrame(TLorentzVector pionPositive,
-                                 TLorentzVector pionNegative,
-                                 TLorentzVector possibleRhoZero)
+  Double_t CosThetaHelicityFrame(const TLorentzVector& pionPositive,
+                                 const TLorentzVector& pionNegative,
+                                 const TLorentzVector& possibleRhoZero)
   {
 
     Double_t HalfSqrtSnn = 2680.;
@@ -97,7 +114,7 @@ struct UPCPionAnalysis {
     return CosThetaHE;
   }
   //------------------------------------------------------------------------------------------------------
-  Double_t PhiHelicityFrame(TLorentzVector piPositive, TLorentzVector piNegative, TLorentzVector possibleRho)
+  Double_t PhiHelicityFrame(const TLorentzVector& piPositive, const TLorentzVector& piNegative, const TLorentzVector& possibleRho)
   {
 
     // Half of the energy per pair of the colliding nucleons.
@@ -264,7 +281,7 @@ struct UPCPionAnalysis {
     return q;
   }
 
-  double DeltaPhi(TLorentzVector lv1, TLorentzVector lv2)
+  double DeltaPhi(const TLorentzVector& lv1, const TLorentzVector& lv2)
   {
     TLorentzVector lv_sum = lv1 + lv2;
     TLorentzVector lv_diff = lv1 - lv2;
@@ -475,7 +492,7 @@ struct UPCPionAnalysis {
         return;
       registry.fill(HIST("hSelectionCounter"), 5);
 
-      for (auto t : tracks) {
+      for (const auto& t : tracks) {
 
         /*if (!t.isPVContributor()) {
           continue;
@@ -510,7 +527,7 @@ struct UPCPionAnalysis {
       registry.fill(HIST("hTracksPions"), onlyPionTracks.size());
       //_____________________________________
       // Creating rhos
-      for (auto pion : onlyPionTracks) {
+      for (const auto& pion : onlyPionTracks) {
         p += pion;
       }
       //_____________________________________
@@ -541,7 +558,7 @@ struct UPCPionAnalysis {
 
           int sign = 0;
           TLorentzVector piplus, piminus;
-          for (auto rawPion : rawPionTracks) {
+          for (const auto& rawPion : rawPionTracks) {
             sign += rawPion.sign();
             if (rawPion.sign() > 0) {
               piplus = onlyPionTracks[0];
@@ -583,7 +600,7 @@ struct UPCPionAnalysis {
                 registry.fill(HIST("hRap4Pion"), p.Rapidity());
                 registry.fill(HIST("hEta4Pion"), p.Eta());
               }
-              for (auto pion : onlyPionTracks) {
+              for (const auto& pion : onlyPionTracks) {
                 registry.fill(HIST("hPhiEtaFourPionsRightSign"), pion.Phi(), pion.Eta());
               }
             }
@@ -597,7 +614,7 @@ struct UPCPionAnalysis {
 
           int sign = 0;
           TLorentzVector piplus, piminus;
-          for (auto rawPion : rawPionTracks) {
+          for (const auto& rawPion : rawPionTracks) {
             sign += rawPion.sign();
             if (rawPion.sign() > 0) {
               piplus = onlyPionTracks[0];
@@ -638,7 +655,7 @@ struct UPCPionAnalysis {
               registry.fill(HIST("hRap6Pion"), p.Rapidity());
               registry.fill(HIST("hEta6Pion"), p.Eta());
               registry.fill(HIST("hPt6PionRightSign"), p.Pt());
-              for (auto pion : onlyPionTracks) {
+              for (const auto& pion : onlyPionTracks) {
                 registry.fill(HIST("hPhiEtaSixPionsRightSign"), pion.Phi(), pion.Eta());
               }
             }
@@ -651,7 +668,7 @@ struct UPCPionAnalysis {
         if ((rawPionTracks.size() == 8) && (onlyPionTracks.size() == 8)) {
           TLorentzVector piplus, piminus;
           int sign = 0;
-          for (auto rawPion : rawPionTracks) {
+          for (const auto& rawPion : rawPionTracks) {
             sign += rawPion.sign();
 
             if (rawPion.sign() > 0) {
@@ -696,7 +713,7 @@ struct UPCPionAnalysis {
               registry.fill(HIST("hMPt3"), p.M(), p.Pt());
               registry.fill(HIST("hRap8pion"), p.Rapidity());
               registry.fill(HIST("hEta8Pion"), p.Eta());
-              for (auto pion : onlyPionTracks) {
+              for (const auto& pion : onlyPionTracks) {
                 registry.fill(HIST("hPhiEta8PionsRightSign"), pion.Phi(), pion.Eta());
               }
             }

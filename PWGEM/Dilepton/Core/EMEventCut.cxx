@@ -15,7 +15,9 @@
 
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
+
+#include <Rtypes.h>
 
 ClassImp(EMEventCut);
 

@@ -10,46 +10,35 @@
 // or submit itself to any jurisdiction.
 
 /// \file cksspinalignder.cxx
-/// \brief Analysis task for ChargedKStar spin alignment
+/// \brief Derived task for charged KStar spin alignment using reduced K0s and pion tables
 ///
 /// \author prottay.das@cern.ch
 
 #include "PWGLF/DataModel/LFCKSSpinalignmentTables.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/BinningPolicy.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
-#include <TMath.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
-#include <fairlogger/Logger.h>
-
-#include <cmath> // for std::fabs
-#include <deque>
-// #include <iostream>
-#include <iterator>
-#include <set> // <<< CHANGED: for dedup sets
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <string>
-#include <tuple>
-#include <type_traits>
-#include <unordered_map> // <<< CHANGED: for seenMap
-#include <utility>
-#include <vector>
-
-// o2 includes.
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,221 +47,387 @@ using namespace o2::soa;
 
 struct cksspinalignder {
 
-  struct : ConfigurableGroup {
-    Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
-  } cfgCcdbParam;
+  // Event selection
+  Configurable<float> centMin{"centMin", 0.0f, "Minimum centrality"};
+  Configurable<float> centMax{"centMax", 80.0f, "Maximum centrality"};
 
-  // event sel/////////
-  Configurable<float> centMin{"centMin", 0, "Minimum Centrality"};
-  Configurable<float> centMax{"centMax", 80, "Maximum Centrality"};
-  // V0 selection ////////////
-  Configurable<float> cosPA{"cosPA", 0.995, "Cosine Pointing Angle"};
-  Configurable<float> radiusMin{"radiusMin", 1.2, "Minimum V0 radius"};
-  Configurable<float> radiusMax{"radiusMax", 100, "Maximum V0 radius"};
-  Configurable<float> dcaPion{"dcaPion", 0.1, "DCA Pion"};
-  Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
-  Configurable<float> lifetimeMax{"lifetimeMax", 20, "Maximum V0 lifetime"};
-  Configurable<float> ptMin{"ptMin", 0.5, "V0 Pt minimum"};
-  Configurable<float> ptMax{"ptMax", 10.0, "V0 Pt maximum"};
-  Configurable<float> v0eta{"v0eta", 0.8, "Eta cut on lambda"};
-  // pion sel/////////
-  Configurable<float> nsigmaCutTPC{"nsigmaCutTPC", 3.0, "N sigma TPC cut for bachelor pions"};
-  Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3.0, "N sigma TOF cut for bachelor pions"};
-  Configurable<bool> usePID{"usePID", false, "Flag for using PID selection"};
+  // K0s selection from stored reduced table
+  Configurable<bool> applyK0sSelection{"applyK0sSelection", true, "Apply additional K0s selection in derived task"};
+  Configurable<float> cosPA{"cosPA", 0.995f, "Minimum V0 cosine pointing angle"};
+  Configurable<float> radiusMin{"radiusMin", 1.2f, "Minimum V0 radius"};
+  Configurable<float> radiusMax{"radiusMax", 100.0f, "Maximum V0 radius"};
+  Configurable<float> dcaPion{"dcaPion", 0.1f, "Minimum V0 daughter DCA to PV"};
+  // Configurable<float> dcaDaughters{"dcaDaughters", 1.0f, "Maximum DCA between V0 daughters"};
+  Configurable<float> k0sPtMin{"k0sPtMin", 0.0f, "Minimum K0s pT"};
+  Configurable<float> k0sPtMax{"k0sPtMax", 10.0f, "Maximum K0s pT"};
+  Configurable<float> k0sEtaMax{"k0sEtaMax", 0.8f, "Maximum K0s eta"};
+  Configurable<float> k0sMassMin{"k0sMassMin", 0.45f, "Minimum K0s mass"};
+  Configurable<float> k0sMassMax{"k0sMassMax", 0.55f, "Maximum K0s mass"};
 
-  // Event Mixing
-  Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
-  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
-  ConfigurableAxis cfgMultBins{"cfgMultBins", {8, 0.0, 80}, "Mixing bins - centrality"};
+  // Bachelor pion PID
+  Configurable<bool> usePID{"usePID", true, "Apply bachelor pion PID using stored bitmask"};
+  Configurable<int> pidChoice{"pidChoice", 4, "PID choice: 1, 2, 3, or 4"};
+  Configurable<bool> pidExclusive{"pidExclusive", false, "If true require only selected PID bit. If false require selected bit among possible bits"};
 
-  // THnsparse bining
-  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {50, 1.09, 1.14}, "#it{M} (GeV/#it{c}^{2})"};
-  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.0}, "#it{p}_{T}"};
-  ConfigurableAxis configThnAxisSA{"configThnAxisSA", {20, -1.0, 1.0}, "cos#it{#theta *}"};
-  ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0.0, 80.0}, "Centrality"};
+  // Charge selection
+  Configurable<int> chargeSelection{"chargeSelection", 0, "Bachelor pion charge selection: 0 = both, +1 = K*+, -1 = K*-"};
 
-  // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
+  // Event-plane choice
+  Configurable<int> epChoice{"epChoice", 0, "Event plane: 0 = FT0C, 1 = FT0A, 2 = TPC"};
+
+  // Event mixing
+  Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of mixed events"};
+  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {10, -10.0f, 10.0f}, "Mixing bins in z vertex"};
+  ConfigurableAxis cfgCentBins{"cfgCentBins", {8, 0.0f, 80.0f}, "Mixing bins in centrality"};
+
+  // Sparse axes
+  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {150, 0.75f, 1.05f}, "#it{M}_{K^{0}_{S}#pi} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0f, 10.0f}, "#it{p}_{T}^{K^{0}_{S}#pi} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisSA{"configThnAxisSA", {20, -1.0f, 1.0f}, "cos#it{#theta}^{*}"};
+  ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0.0f, 80.0f}, "Centrality (%)"};
+  ConfigurableAxis configThnAxisCharge{"configThnAxisCharge", {2, -1.5f, 1.5f}, "Bachelor pion charge"};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
+    histos.add("hCentrality", "Centrality distribution;Centrality (%);Events", kTH1F, {{80, 0.0f, 80.0f}});
+    histos.add("hKShortMass", "K^{0}_{S} mass;M_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2});Counts", kTH1F, {{200, 0.4f, 0.6f}});
 
-    histos.add("hCentrality", "Centrality distribution", kTH1F, {{80, 0, 80}});
-    histos.add("hKShortMass", "hKShortMass", kTH1F, {{100, 0.45, 0.55}});
+    histos.add("hSparsesame",
+               "Same-event K^{0}_{S}#pi;M_{K^{0}_{S}#pi};p_{T};cos#theta^{*};centrality;charge",
+               kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisPt, configThnAxisSA, configThnAxisCentrality, configThnAxisCharge});
 
-    histos.add("hSparsesame", "hSparsesame", kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisSA, configThnAxisCentrality});
-    histos.add("hSparsemix", "hSparsemix", kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisSA, configThnAxisCentrality});
-
-    ccdb->setURL(cfgCcdbParam.cfgURL);
-    ccdbApi.init("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    histos.add("hSparsemix",
+               "Mixed-event K^{0}_{S}#pi;M_{K^{0}_{S}#pi};p_{T};cos#theta^{*};centrality;charge",
+               kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisPt, configThnAxisSA, configThnAxisCentrality, configThnAxisCharge});
   }
 
-  template <typename T>
-  bool selectionV0(T const& candidate)
-  {
-    auto kshortPt = std::sqrt(candidate.kShortPx() * candidate.kShortPx() + candidate.kShortPy() * candidate.kShortPy());
-    auto px = candidate.kShortPx();
-    auto py = candidate.kShortPy();
-    auto pz = candidate.kShortPz();
-    auto p = std::sqrt(px * px + py * py + pz * pz);
-    auto kshortEta = 0.5 * std::log((p + pz) / (p - pz));
+  // PID bit mapping from producer
+  static constexpr uint8_t kPID1 = 1u << 0;
+  static constexpr uint8_t kPID2 = 1u << 1;
+  static constexpr uint8_t kPID3 = 1u << 2;
+  static constexpr uint8_t kPID4 = 1u << 3;
 
-    if (std::abs(kshortEta) > v0eta) {
+  uint8_t requiredPidBit() const
+  {
+    switch (pidChoice.value) {
+      case 1:
+        return kPID1;
+      case 2:
+        return kPID2;
+      case 3:
+        return kPID3;
+      case 4:
+        return kPID4;
+      default:
+        LOGF(warn, "pidChoice=%d is invalid. Using PID4.", pidChoice.value);
+        return kPID4;
+    }
+  }
+
+  template <typename TPion>
+  bool passSelectedPID(const TPion& pion) const
+  {
+    if (!usePID.value) {
+      return true;
+    }
+
+    const uint8_t mask = pion.pionPidMask();
+    const uint8_t bit = requiredPidBit();
+
+    if (pidExclusive.value) {
+      return mask == bit;
+    }
+
+    return (mask & bit) != 0;
+  }
+
+  template <typename TPion>
+  bool passChargeSelection(const TPion& pion) const
+  {
+    const int charge = static_cast<int>(pion.charge());
+
+    if (charge == 0) {
       return false;
     }
-    if (candidate.v0Cospa() < cosPA) {
+
+    if (chargeSelection.value == 0) {
+      return true;
+    }
+
+    return charge == chargeSelection.value;
+  }
+
+  template <typename TK0s>
+  bool selectionV0(const TK0s& candidate) const
+  {
+    if (!applyK0sSelection.value) {
+      return true;
+    }
+
+    ROOT::Math::PxPyPzMVector k0s(candidate.kShortPx(),
+                                  candidate.kShortPy(),
+                                  candidate.kShortPz(),
+                                  candidate.kShortMass());
+
+    const float k0sPt = k0s.Pt();
+    const float k0sEta = k0s.Eta();
+
+    if (std::abs(k0sEta) > k0sEtaMax.value) {
       return false;
     }
-    if (candidate.v0Radius() > radiusMax) {
+
+    if (candidate.kShortMass() < k0sMassMin.value ||
+        candidate.kShortMass() > k0sMassMax.value) {
       return false;
     }
-    if (candidate.v0Radius() < radiusMin) {
+
+    if (candidate.v0Cospa() < cosPA.value) {
       return false;
     }
-    if (candidate.dcaBetweenDaughter() > dcaDaughters) {
+
+    if (candidate.v0Radius() < radiusMin.value ||
+        candidate.v0Radius() > radiusMax.value) {
       return false;
     }
-    if (std::abs(candidate.dcaPositive()) < dcaPion && std::abs(candidate.dcaNegative()) < dcaPion) {
+    /*
+    if (candidate.dcaBetweenDaughter() > dcaDaughters.value) {
       return false;
     }
-    if (candidate.v0Lifetime() > lifetimeMax) {
+    */
+    if (candidate.dcaPositive() < dcaPion.value ||
+        candidate.dcaNegative() < dcaPion.value) {
       return false;
     }
-    if (kshortPt < ptMin) {
+
+    if (k0sPt < k0sPtMin.value ||
+        k0sPt > k0sPtMax.value) {
       return false;
     }
-    if (kshortPt > ptMax) {
-      return false;
-    }
+
     return true;
   }
 
-  template <typename T>
-  bool selectionPID(const T& candidate)
+  template <typename TK0s, typename TCollision>
+  bool k0sBelongsToEvent(const TK0s& k0s, const TCollision& collision) const
   {
-    auto px = candidate.pionBachPx();
-    auto py = candidate.pionBachPy();
-    auto pz = candidate.pionBachPz();
-    auto p = std::sqrt(px * px + py * py + pz * pz);
-    float lowmom = 0.5;
-    if (p < lowmom) {
-      if (!candidate.pionBachTOFHit() && std::abs(candidate.pionBachTPC()) < nsigmaCutTPC) {
-        return true;
-      } else if (candidate.pionBachTOFHit() && std::sqrt(candidate.pionBachTPC() * candidate.pionBachTPC() + candidate.pionBachTOF() * candidate.pionBachTOF()) < nsigmaCutTOF) {
-        return true;
-      }
-    } else if (candidate.pionBachTOFHit() && std::sqrt(candidate.pionBachTPC() * candidate.pionBachTPC() + candidate.pionBachTOF() * candidate.pionBachTOF()) < nsigmaCutTOF) {
-      return true;
+    return k0s.kshortpioneventId() == collision.globalIndex();
+  }
+
+  template <typename TPion, typename TCollision>
+  bool pionBelongsToEvent(const TPion& pion, const TCollision& collision) const
+  {
+    return pion.kshortpioneventId() == collision.globalIndex();
+  }
+
+  template <typename TCollision>
+  float getEventPlane(const TCollision& collision) const
+  {
+    switch (epChoice.value) {
+      case 0:
+        return collision.psiFT0C();
+      case 1:
+        return collision.psiFT0C();
+      case 2:
+        return collision.psiFT0C();
+      default:
+        LOGF(warn, "epChoice=%d is invalid. Using FT0C.", epChoice.value);
+        return collision.psiFT0C();
     }
-    return false;
   }
 
-  std::tuple<float, float, float> computePtEtaPhi(float px, float py, float pz)
+  bool computeCosThetaStar(const ROOT::Math::PxPyPzMVector& k0s,
+                           const ROOT::Math::PxPyPzMVector& kstar,
+                           float psi,
+                           float& cosThetaStar) const
   {
-    float pt = std::sqrt(px * px + py * py);
-    float p = std::sqrt(px * px + py * py + pz * pz);
-    float eta = (p != std::abs(pz)) ? 0.5 * std::log((p + pz) / (p - pz)) : 0.0f; // avoid division by zero
-    float phi = RecoDecay::constrainAngle(std::atan2(py, px));
-    return {pt, eta, phi};
+    ROOT::Math::Boost boost{kstar.BoostToCM()};
+    ROOT::Math::PxPyPzMVector k0sCM = boost(k0s);
+    ROOT::Math::XYZVector k0sCMVec = k0sCM.Vect();
+
+    ROOT::Math::XYZVector eventPlaneVector(std::sin(2.0f * psi),
+                                           -std::cos(2.0f * psi),
+                                           0.0f);
+
+    const double denom =
+      std::sqrt(k0sCMVec.Mag2()) *
+      std::sqrt(eventPlaneVector.Mag2());
+
+    if (denom <= 0.0 || !std::isfinite(denom)) {
+      return false;
+    }
+
+    cosThetaStar =
+      static_cast<float>(eventPlaneVector.Dot(k0sCMVec) / denom);
+
+    cosThetaStar = std::clamp(cosThetaStar, -1.0f, 1.0f);
+
+    return true;
   }
 
-  ROOT::Math::PtEtaPhiMVector kshort, pion, chkstar;
-  ROOT::Math::PtEtaPhiMVector kshortmix, pionmix, chkstarmix;
-  ROOT::Math::PxPyPzMVector fourVecDauCM, fourVecDauCMmix;
-  ROOT::Math::XYZVector threeVecDauCM, eventplaneVecNorm, threeVecDauCMmix, eventplaneVecNormmix;
+  template <typename TK0s, typename TPion, typename TCollision>
+  bool fillKstarPair(const TK0s& k0sCand,
+                     const TPion& pionCand,
+                     const TCollision& collision,
+                     bool isMixed)
+  {
+    if (!selectionV0(k0sCand)) {
+      return false;
+    }
 
-  Filter centralityFilter = (nabs(aod::kshortpionevent::cent) < centMax && nabs(aod::kshortpionevent::cent) > centMin);
+    if (!passSelectedPID(pionCand)) {
+      return false;
+    }
+
+    if (!passChargeSelection(pionCand)) {
+      return false;
+    }
+
+    // Same-event self-combination rejection:
+    // bachelor pion must not be one of the K0s daughters.
+    if (!isMixed) {
+      if (pionCand.pionBachIndex() == k0sCand.pionIndex1() ||
+          pionCand.pionBachIndex() == k0sCand.pionIndex2()) {
+        return false;
+      }
+    }
+
+    ROOT::Math::PxPyPzMVector k0s(k0sCand.kShortPx(),
+                                  k0sCand.kShortPy(),
+                                  k0sCand.kShortPz(),
+                                  k0sCand.kShortMass());
+
+    ROOT::Math::PxPyPzMVector pion(pionCand.pionBachPx(),
+                                   pionCand.pionBachPy(),
+                                   pionCand.pionBachPz(),
+                                   o2::constants::physics::MassPionCharged);
+
+    const auto kstar = k0s + pion;
+
+    const float mass = kstar.M();
+    const float pt = kstar.Pt();
+    const float centrality = collision.cent();
+    const float charge = static_cast<float>(pionCand.charge());
+    const float psi = getEventPlane(collision);
+
+    float cosThetaStar = 0.0f;
+
+    if (!computeCosThetaStar(k0s, kstar, psi, cosThetaStar)) {
+      return false;
+    }
+
+    if (isMixed) {
+      histos.fill(HIST("hSparsemix"), mass, pt, cosThetaStar, centrality, charge);
+    } else {
+      histos.fill(HIST("hSparsesame"), mass, pt, cosThetaStar, centrality, charge);
+    }
+
+    return true;
+  }
+
+  Filter centralityFilter =
+    (aod::kshortpionevent::cent >= centMin) &&
+    (aod::kshortpionevent::cent < centMax);
 
   using EventCandidates = soa::Filtered<aod::KShortpionEvents>;
 
-  void processSameData(EventCandidates::iterator const& collision, aod::KShortTracks const& V0s, aod::PionTracks const& piontracks)
+  void processSameData(EventCandidates::iterator const& collision,
+                       aod::KShortTracks const& k0sTracks,
+                       aod::PionTracks const& pionTracks)
   {
-    auto centrality = collision.cent();
+    const float centrality = collision.cent();
+
     histos.fill(HIST("hCentrality"), centrality);
 
-    auto psiFT0C = collision.psiFT0C();
-
-    for (const auto& v0 : V0s) {
-      if (!selectionV0(v0)) {
+    for (const auto& k0sCand : k0sTracks) {
+      if (!k0sBelongsToEvent(k0sCand, collision)) {
         continue;
       }
-      auto [kshortPt, kshortEta, kshortPhi] = computePtEtaPhi(v0.kShortPx(), v0.kShortPy(), v0.kShortPz());
-      kshort = ROOT::Math::PtEtaPhiMVector(kshortPt, kshortEta, kshortPhi, v0.kShortMass());
-      histos.fill(HIST("hKShortMass"), kshort.M());
 
-      for (const auto& piontrack : piontracks) {
-        auto [pionPt, pionEta, pionPhi] = computePtEtaPhi(piontrack.pionBachPx(), piontrack.pionBachPy(), piontrack.pionBachPz());
-        pion = ROOT::Math::PtEtaPhiMVector(pionPt, pionEta, pionPhi, o2::constants::physics::MassPionCharged);
+      if (!selectionV0(k0sCand)) {
+        continue;
+      }
 
-        if (piontrack.pionBachIndex() == v0.pionIndex1() || piontrack.pionBachIndex() == v0.pionIndex2())
-          continue; // checking if bachelor pion is khort daughter or not -> skip further processing if such is the case
+      histos.fill(HIST("hKShortMass"), k0sCand.kShortMass());
 
-        if (usePID && !selectionPID(piontrack))
-          continue; // checking PID
+      for (const auto& pionCand : pionTracks) {
+        if (!pionBelongsToEvent(pionCand, collision)) {
+          continue;
+        }
 
-        chkstar = kshort + pion;
-
-        ROOT::Math::Boost boost{chkstar.BoostToCM()};
-        fourVecDauCM = boost(kshort);
-        threeVecDauCM = fourVecDauCM.Vect();
-        eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
-        auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
-
-        histos.fill(HIST("hSparsesame"), chkstar.M(), chkstar.Pt(), cosThetaStar, centrality);
+        fillKstarPair(k0sCand, pionCand, collision, false);
       }
     }
   }
-  PROCESS_SWITCH(cksspinalignder, processSameData, "Process same data", true);
 
-  // Processing Event Mixing
+  PROCESS_SWITCH(cksspinalignder, processSameData, "Process same-event charged KStar", true);
+
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::kshortpionevent::Posz, aod::kshortpionevent::Cent>;
-  BinningType colBinning{{cfgVtxBins, cfgMultBins}, true};
-  Preslice<aod::KShortTracks> tracksPerCollisionV0 = aod::kshortpionpair::kshortpioneventId;
-  Preslice<aod::PionTracks> tracksPerCollisionBach = aod::kshortpionpair::kshortpioneventId;
 
-  void processMixedData(EventCandidates const& collisions, aod::KShortTracks const& V0s, aod::PionTracks const& piontracks)
+  template <typename TK0sGroup, typename TPionGroup, typename TCollision>
+  void fillMixedPairs(const TK0sGroup& k0sGroup,
+                      const TPionGroup& pionGroup,
+                      const TCollision& referenceCollision)
   {
-    for (const auto& [collision1, collision2] : selfCombinations(colBinning, nEvtMixing, -1, collisions, collisions)) {
-      if (collision1.index() == collision2.index()) {
-        continue;
-      }
-      auto centrality = collision1.cent();
-      auto psiFT0Cmix = collision1.psiFT0C();
-
-      auto groupV0 = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
-      auto groupPion = piontracks.sliceBy(tracksPerCollisionBach, collision2.index());
-      for (const auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV0, groupPion))) {
-        if (!selectionV0(t1))
-          continue;
-        auto [kshortPtmix, kshortEtamix, kshortPhimix] = computePtEtaPhi(t1.kShortPx(), t1.kShortPy(), t1.kShortPz());
-        kshortmix = ROOT::Math::PtEtaPhiMVector(kshortPtmix, kshortEtamix, kshortPhimix, t1.kShortMass());
-
-        auto [pionPtmix, pionEtamix, pionPhimix] = computePtEtaPhi(t2.pionBachPx(), t2.pionBachPy(), t2.pionBachPz());
-        if (usePID && !selectionPID(t2))
-          continue; // checking PID
-        pionmix = ROOT::Math::PtEtaPhiMVector(pionPtmix, pionEtamix, pionPhimix, o2::constants::physics::MassPionCharged);
-
-        chkstarmix = kshortmix + pionmix;
-
-        ROOT::Math::Boost boost{chkstarmix.BoostToCM()};
-        fourVecDauCMmix = boost(kshortmix);
-        threeVecDauCMmix = fourVecDauCMmix.Vect();
-        eventplaneVecNormmix = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0Cmix), -std::cos(2.0 * psiFT0Cmix), 0);
-        auto cosThetaStarmix = eventplaneVecNormmix.Dot(threeVecDauCMmix) / std::sqrt(threeVecDauCMmix.Mag2()) / std::sqrt(eventplaneVecNormmix.Mag2());
-
-        histos.fill(HIST("hSparsemix"), chkstarmix.M(), chkstarmix.Pt(), cosThetaStarmix, centrality);
+    for (const auto& k0sCand : k0sGroup) {
+      for (const auto& pionCand : pionGroup) {
+        fillKstarPair(k0sCand, pionCand, referenceCollision, true);
       }
     }
   }
-  PROCESS_SWITCH(cksspinalignder, processMixedData, "Process mixed data", true);
+
+  void processMixedData(EventCandidates const& collisions,
+                        aod::KShortTracks const& k0sTracks,
+                        aod::PionTracks const& pionTracks)
+  {
+    BinningType colBinning{{cfgVtxBins, cfgCentBins}};
+
+    for (const auto& [collision1, collision2] :
+         selfCombinations(colBinning, nEvtMixing.value, -1, collisions, collisions)) {
+
+      if (collision1.globalIndex() == collision2.globalIndex()) {
+        continue;
+      }
+
+      // Direction 1: K0s from event 1 + pion from event 2.
+      for (const auto& k0sCand : k0sTracks) {
+        if (!k0sBelongsToEvent(k0sCand, collision1)) {
+          continue;
+        }
+
+        for (const auto& pionCand : pionTracks) {
+          if (!pionBelongsToEvent(pionCand, collision2)) {
+            continue;
+          }
+
+          fillKstarPair(k0sCand, pionCand, collision1, true);
+        }
+      }
+
+      // Direction 2: K0s from event 2 + pion from event 1.
+      for (const auto& k0sCand : k0sTracks) {
+        if (!k0sBelongsToEvent(k0sCand, collision2)) {
+          continue;
+        }
+
+        for (const auto& pionCand : pionTracks) {
+          if (!pionBelongsToEvent(pionCand, collision1)) {
+            continue;
+          }
+
+          fillKstarPair(k0sCand, pionCand, collision2, true);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(cksspinalignder, processMixedData, "Process mixed-event charged KStar", true);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<cksspinalignder>(cfgc)};

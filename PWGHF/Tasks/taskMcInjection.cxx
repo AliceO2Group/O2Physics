@@ -142,19 +142,23 @@ struct HfTaskMcInjection {
 
   bool isCharm(int pdg)
   {
-    if (std::abs(pdg) / 1000 == PDG_t::kCharm) // o2-linter: disable=magic-number (get thousands digit)
+    if (std::abs(pdg) / 1000 == PDG_t::kCharm) { // o2-linter: disable=magic-number (get thousands digit)
       return true;
-    if (std::abs(pdg) / 100 == PDG_t::kCharm) // o2-linter: disable=magic-number (get hundreds digit)
+    }
+    if (std::abs(pdg) / 100 == PDG_t::kCharm) { // o2-linter: disable=magic-number (get hundreds digit)
       return true;
+    }
     return false;
   }
 
   bool isBeauty(int pdg) // if needed in the future
   {
-    if (std::abs(pdg) / 1000 == PDG_t::kBottom) // o2-linter: disable=magic-number (get thousands digit)
+    if (std::abs(pdg) / 1000 == PDG_t::kBottom) { // o2-linter: disable=magic-number (get thousands digit)
       return true;
-    if (std::abs(pdg) / 100 == PDG_t::kBottom) // o2-linter: disable=magic-number (get hundreds digit)
+    }
+    if (std::abs(pdg) / 100 == PDG_t::kBottom) { // o2-linter: disable=magic-number (get hundreds digit)
       return true;
+    }
     return false;
   }
 

@@ -15,23 +15,29 @@
 /// \brief  Task to analyse the DCA distributions in the MC according to PDG code and status
 ///
 
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
 
-// ROOT includes
-#include "TPDGCode.h"
-#include "TEfficiency.h"
-#include "THashList.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TEfficiency.h>
+#include <TH3.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <array>
+#include <cstdlib>
+#include <memory>
 
 using namespace o2::framework;
 

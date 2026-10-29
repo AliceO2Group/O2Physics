@@ -84,6 +84,11 @@ o2physics_add_dpl_workflow(centrality-study
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(centrality-study-pp
+                    SOURCES centralityStudypp.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(flow-test
                     SOURCES flowTest.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -92,4 +97,14 @@ o2physics_add_dpl_workflow(flow-test
 o2physics_add_dpl_workflow(muon-qa
                     SOURCES qaMuon.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::Field O2::DetectorsBase O2::DetectorsCommonDataFormats O2::MathUtils O2::MCHTracking O2::DataFormatsMCH O2::GlobalTracking O2::MCHBase O2::MCHGeometryTransformer O2::CommonUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(zdc-table-reader
+                    SOURCES zdcTableReader.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(zdc-extra-table-reader
+                    SOURCES zdcExtraTableReader.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

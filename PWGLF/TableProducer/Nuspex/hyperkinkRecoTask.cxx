@@ -18,6 +18,9 @@
 #include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
 #include "PWGLF/Utils/pidTOFGeneric.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -25,18 +28,31 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
+#include <TH1.h>
+#include <TH2.h>
+#include <TPDGCode.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -1146,7 +1162,7 @@ struct HyperkinkQa {
 
   // QA for mother track selection
   template <typename TTrack>
-  bool motherTrackCheck(const TTrack& track, const std::shared_ptr<TH1> hist)
+  bool motherTrackCheck(const TTrack& track, const std::shared_ptr<TH1>& hist)
   {
     hist->Fill(1);
 
@@ -1190,7 +1206,7 @@ struct HyperkinkQa {
 
   // qa for daughter track selection
   template <typename TTrack>
-  bool daughterTrackCheck(const TTrack& track, const std::shared_ptr<TH1> hist, float tpcNSigma)
+  bool daughterTrackCheck(const TTrack& track, const std::shared_ptr<TH1>& hist, float tpcNSigma)
   {
     hist->Fill(1);
 

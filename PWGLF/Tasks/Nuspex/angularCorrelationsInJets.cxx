@@ -17,28 +17,35 @@
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetUtilities.h"
 
-#include "Common/Core/PID/PIDTOF.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TPDGCode.h"
-#include "TVector3.h"
+#include <TPDGCode.h>
+#include <TVector3.h>
 
-#include "fastjet/AreaDefinition.hh"
-#include "fastjet/ClusterSequenceArea.hh"
-#include "fastjet/GhostedAreaSpec.hh"
-#include "fastjet/PseudoJet.hh"
+#include <fastjet/AreaDefinition.hh>
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
 
 #include <algorithm>
 #include <map>
@@ -611,7 +618,7 @@ struct AngularCorrelationsInJets {
     }
   }
 
-  void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType, const TVector3 jetAxis) // correlate tracks from current event with tracks from buffer, i.e. other events
+  void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType, const TVector3& jetAxis) // correlate tracks from current event with tracks from buffer, i.e. other events
   {
     if (buffer.size() == 0)
       return;
@@ -673,7 +680,7 @@ struct AngularCorrelationsInJets {
     } // for (int i = 0; i < static_cast<int>(buffer.size()); i++)
   }
 
-  void doCorrelations(const auto& particleVector, const auto& buffer, auto& tempBuffer, int particleType, const TVector3 jetAxis)
+  void doCorrelations(const auto& particleVector, const auto& buffer, auto& tempBuffer, int particleType, const TVector3& jetAxis)
   {
     if (std::isnan(jetAxis.Phi()))
       return;
@@ -736,7 +743,7 @@ struct AngularCorrelationsInJets {
     } // for (int i = 0; i < static_cast<int>(particleVector.size()); i++)
   }
 
-  void doCorrelationsAnti(const auto& particleVector, const auto& particleVectorAnti, const auto& bufferAnti, auto& tempBuffer, const TVector3 jetAxis) // correlations between proton/antiproton - same story as doCorrelations but different track vectors are correlated
+  void doCorrelationsAnti(const auto& particleVector, const auto& particleVectorAnti, const auto& bufferAnti, auto& tempBuffer, const TVector3& jetAxis) // correlations between proton/antiproton - same story as doCorrelations but different track vectors are correlated
   {
     if (std::isnan(jetAxis.Phi()))
       return;
@@ -768,7 +775,7 @@ struct AngularCorrelationsInJets {
     }
   }
 
-  void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
+  void getPerpendicularAxis(const TVector3& p, TVector3& u, double sign)
   {
     // Initialization
     double ux(0), uy(0), uz(0);
@@ -815,7 +822,7 @@ struct AngularCorrelationsInJets {
     return;
   }
 
-  int analyseJet(int jetCounter, fastjet::PseudoJet jet, const auto& particles, auto& jetProtons, auto& jetAntiprotons, auto& jetPiPlus, auto& jetPiMinus, auto& jetAll, double rhoPerp, double rhoMPerp)
+  int analyseJet(int jetCounter, const fastjet::PseudoJet& jet, const auto& particles, auto& jetProtons, auto& jetAntiprotons, auto& jetPiPlus, auto& jetPiMinus, auto& jetAll, double rhoPerp, double rhoMPerp)
   {
     if (!jet.has_constituents())
       return jetCounter;

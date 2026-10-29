@@ -9,7 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-void selectivityPlot(int runNumber = 550781, TString inputfile = "AnalysisResults_550781.root", TString outputfolder = "")
+#include <TArrow.h>
+#include <TCanvas.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TLatex.h>
+#include <TLine.h>
+#include <TROOT.h>
+#include <TString.h>
+#include <TStyle.h>
+
+#include <RtypesCore.h>
+
+#include <string>
+
+void selectivityPlot(int runNumber = 550781, const TString& inputfile = "AnalysisResults_550781.root", const TString& outputfolder = "")
 {
   TCanvas* Canvas_1 = new TCanvas("Canvas_1", "Canvas_1", 928, 592);
   gStyle->SetOptFit(0);

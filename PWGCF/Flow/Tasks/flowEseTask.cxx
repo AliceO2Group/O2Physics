@@ -9,55 +9,64 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \author Junlee Kim (jikim1290@gmail.com)
+/// \author Junlee Kim (jikim1290@gmail.com) & Shiqi Wang(shiqi.wang@cern.ch)
 /// \file flowEseTask.cxx
 /// \brief Task for flow and event shape engineering correlation with other observation.
 /// \since 2023-05-15
 /// \version 1.0
 
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TF1.h"
-#include "TRandom3.h"
-#include "TVector2.h"
-#include <TMath.h>
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <THnSparse.h>
+#include <TObject.h>
+#include <TProfile2D.h>
+#include <TProfile3D.h>
+#include <TRandom3.h>
+#include <TString.h>
+#include <TVector2.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -68,7 +77,7 @@ using namespace o2::constants::physics;
 
 struct FlowEseTask {
   //  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::QvectorFT0CVecs>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::QvectorFT0CVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QvectorTPCallVecs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::TrackSelectionExtension>;
   using V0TrackCandidate = aod::V0Datas;
 
@@ -82,7 +91,7 @@ struct FlowEseTask {
                                      "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
     Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
 
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
@@ -120,6 +129,7 @@ struct FlowEseTask {
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
   Configurable<int> cfgNQvec{"cfgNQvec", 7, "The number of total Qvectors for looping over the task"};
+  Configurable<int> cfgEseHarmonic{"cfgEseHarmonic", 2, "Harmonic used only for ESE analysis (2 or 3)"};
 
   Configurable<std::string> cfgQvecDetName{"cfgQvecDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "TPCpos", "The name of detector for reference A"};
@@ -139,85 +149,219 @@ struct FlowEseTask {
   Configurable<bool> cfgAccCor{"cfgAccCor", false, "flag to apply acceptance correction"};
   Configurable<std::string> cfgAccCorPath{"cfgAccCorPath", "", "path for pseudo acceptance correction"};
 
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgGfwEffCor{"cfgGfwEffCor", false, "flag to apply charged-track efficiency correction for GFW"};
+    Configurable<std::string> cfgGfwEffCorPath{"cfgGfwEffCorPath", "", "CCDB path to charged-track efficiency correction for GFW"};
+    Configurable<bool> cfgGfwAccCor{"cfgGfwAccCor", false, "flag to apply charged-track acceptance correction for GFW"};
+    Configurable<std::string> cfgGfwAccCorPath{"cfgGfwAccCorPath", "", "CCDB path to charged-track acceptance correction for GFW"};
+  } cfgGfwParam;
+
   Configurable<bool> cfgCalcCum{"cfgCalcCum", false, "flag to calculate cumulants of cossin"};
   Configurable<bool> cfgCalcCum1{"cfgCalcCum1", false, "flag to calculate cumulants of coscos"};
 
   Configurable<bool> cfgRapidityDep{"cfgRapidityDep", false, "flag for rapidity dependent study"};
   Configurable<bool> cfgAccAzimuth{"cfgAccAzimuth", false, "flag for azimuth closure study"};
 
+  Configurable<bool> cfgFullCheck{"cfgFullCheck", true, "flag for full hist"};
+  Configurable<bool> cfgMultCor{"cfgMultCor", false, "flag for different Mult choice"};
+  Configurable<std::vector<float>> cfgQ2PercentileCuts{"cfgQ2PercentileCuts",
+                                                       {63.633132f, 92.417875f, 116.584440f, 139.217742f, 161.810257f, 185.609391f, 212.240958f, 244.765093f, 292.045106f,
+                                                        57.593461f, 82.544764f, 102.874824f, 121.420485f, 139.519402f, 158.204340f, 178.728019f, 203.334468f, 238.370537f,
+                                                        49.132498f, 70.010553f, 86.825107f, 102.036480f, 116.776740f, 131.910217f, 148.447115f, 168.145964f, 195.993568f,
+                                                        38.966476f, 55.866796f, 69.630500f, 82.179489f, 94.412155f, 107.016988f, 120.821718f, 137.304969f, 160.612468f,
+                                                        29.476997f, 42.628632f, 53.544991f, 63.651863f, 73.628370f, 84.009092f, 95.488749f, 109.295584f, 128.965135f,
+                                                        21.658770f, 31.478901f, 39.740751f, 47.485032f, 55.216668f, 63.362554f, 72.466583f, 83.551694f, 99.548536f,
+                                                        15.370223f, 22.386745f, 28.322567f, 33.920535f, 39.547603f, 45.520061f, 52.251446f, 60.535625f, 72.660540f,
+                                                        10.351031f, 15.094899f, 19.114684f, 22.915848f, 26.751668f, 30.837985f, 35.471803f, 41.208444f, 49.696178f},
+                                                       "p10-p90 q2 cuts in each 10% centrality interval from 0 to 80%"};
+  Configurable<std::vector<float>> cfgQ3PercentileCuts{"cfgQ3PercentileCuts", {}, "p10-p90 q3 cuts in each 10% centrality interval from 0 to 80%"};
+
   ConfigurableAxis massAxis{"massAxis", {30, 1.1, 1.13}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
-  ConfigurableAxis ptFullAxis{"ptFullAxis", {VARIABLE_WIDTH, -5.0, -4.0, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, -0.2, 0, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0}, "Transverse momentum bins"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
   ConfigurableAxis cosAxis{"cosAxis", {110, -1.05, 1.05}, "Cosine axis"};
   ConfigurableAxis rapAxis{"rapAxis", {10, -0.5, 0.5}, "Rapidity axis"};
   ConfigurableAxis qqAxis{"qqAxis", {100, -0.1, 0.1}, "qq axis"};
-  ConfigurableAxis lowerQAxis{"lowerQAxis", {800, 0, 800}, "result of q2"};
-  ConfigurableAxis multNumAxis{"multNumAxis", {300, 0, 2700}, "mult num"};
-  ConfigurableAxis qvecAxis{"qvecAxis", {300, -1, 1}, "range of Qvector component"};
-  ConfigurableAxis qvec2Axis{"qvec2Axis", {600, 0, 600}, "range of Qvector Module"};
+  ConfigurableAxis multAxis{"multAxis", {300, 0, 2700}, "multiplicity"};
+  ConfigurableAxis q2QaAxis{"q2QaAxis", {8000, 0.0, 800.0}, "q2 axis for QA"};
 
-  static constexpr float kMinAmplitudeThreshold = 1e-5f;
-  static constexpr int kShiftLevel = 10;
-  static constexpr int kLambdaId = 3122;
-  static constexpr std::array<int, 4> kCorrLevel = {2, 3, 4, 1};
-  static constexpr std::array<float, 10> kCentBoundaries = {0.0f, 3.49f, 4.93f, 6.98f, 8.55f, 9.87f, 11.0f, 12.1f, 13.1f, 14.0f};
-  static constexpr std::array<float, 9> kCentValues = {2.5f, 7.5f, 15.0f, 25.0f, 35.0f, 45.0f, 55.0f, 65.0f, 75.0f};
-  static constexpr std::array<std::array<double, 2>, 8> kLowQvec = {{{121, 196}, {110, 172}, {93, 143}, {74, 117}, {58, 92}, {43, 70}, {31, 50}, {21, 34}}};
-  static constexpr float kEtaAcceptance = 0.8f;
-  static constexpr float kCentUpperLimit = 80.0f;
+  static constexpr float MinAmplitudeThreshold = 1e-5f;
+  static constexpr int ShiftLevel = 10;
+  static constexpr int LambdaId = 3122;
+  static constexpr int SecondHarmonic = 2;
+  static constexpr int ThirdHarmonic = 3;
+  static constexpr std::array<int, 4> CorrLevel = {2, 3, 4, 1};
+  static constexpr std::array<float, 10> CentBoundaries = {0.0f, 3.49f, 4.93f, 6.98f, 8.55f, 9.87f, 11.0f, 12.1f, 13.1f, 14.0f};
+  static constexpr std::array<float, 9> CentValues = {2.5f, 7.5f, 15.0f, 25.0f, 35.0f, 45.0f, 55.0f, 65.0f, 75.0f};
+  static constexpr float EtaAcceptance = 0.8f;
+  static constexpr float CentUpperLimit = 80.0f;
+  static constexpr int NEseCentBins = 8;
+  static constexpr int NEseGroups = 10;
+  static constexpr int NEseCutsPerCentBin = NEseGroups - 1;
+  static constexpr int GFWRefMask = 1;
+  static constexpr int GFWPoiMask = 2;
+  static constexpr float EseCentMin = 0.0f;
+  static constexpr float EseCentMax = 80.0f;
+  static constexpr float EseCentBinWidth = 10.0f;
+
+  TH2* histEventCountEseGroup = nullptr;
+  std::unordered_map<std::string, TObject*> histEse;
 
   EventPlaneHelper helperEP;
 
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
-  int detId;
-  int refAId;
-  int refBId;
+  int detId = -1;
+  int refAId = -1;
+  int refBId = -1;
 
-  int qvecDetInd;
-  int qvecRefAInd;
-  int qvecRefBInd;
+  int qvecDetInd = -1;
+  int qvecRefAInd = -1;
+  int qvecRefBInd = -1;
 
-  float centrality;
+  float centrality = -1.0f;
 
-  double angle;
-  double psi;
-  double relphi;
+  double angle = 0.0;
+  double psi = 0.0;
+  double relphi = 0.0;
+  double productPhi = 0.0;
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  std::vector<TProfile3D*> shiftprofile{};
+  std::vector<TProfile3D*> shiftprofile;
   TProfile2D* effMap = nullptr;
   TProfile2D* accMap = nullptr;
+  struct {
+    int lastGfwCorrectionRunNumber = -999;
+    TH1D* gfwEffMap = nullptr;
+    GFWWeights* gfwAccWeights = nullptr;
+    TProfile2D* histRefQn = nullptr;
+    TProfile3D* histPoiNQn = nullptr;
+    TProfile3D* histPoiPQn = nullptr;
+    GFW* fGFW = new GFW();
+    GFW::CorrConfig corrRef22;
+    GFW::CorrConfig corrPoiN22;
+    GFW::CorrConfig corrPoiP22;
+    GFW::CorrConfig corrRef32;
+    GFW::CorrConfig corrPoiN32;
+    GFW::CorrConfig corrPoiP32;
+  } gfwState;
 
   std::string fullCCDBShiftCorrPath;
 
   template <typename T>
   int getDetId(const T& name)
   {
-    if (name.value == "FT0C") {
-      return 0;
-    } else if (name.value == "FT0A") {
+    if (name.value == "FT0A") {
       return 1;
-    } else if (name.value == "FT0M") {
-      return 2;
-    } else if (name.value == "FV0A") {
-      return 3;
-    } else if (name.value == "TPCpos") {
-      return 4;
-    } else if (name.value == "TPCneg") {
-      return 5;
-    } else if (name.value == "TPCall") {
-      return 6;
-    } else {
-      return 0;
     }
+    if (name.value == "FT0M") {
+      return 2;
+    }
+    if (name.value == "FV0A") {
+      return 3;
+    }
+    if (name.value == "TPCpos") {
+      return 4;
+    }
+    if (name.value == "TPCneg") {
+      return 5;
+    }
+    if (name.value == "TPCall") {
+      return 6;
+    }
+    return 0;
+  }
+
+  int eseCentBin(float cent) const
+  {
+    if (cent < EseCentMin || cent >= EseCentMax) {
+      return -1;
+    }
+    return static_cast<int>(cent / EseCentBinWidth);
+  }
+
+  std::string eseGroupSuffix(int group) const
+  {
+    if (group < 0 || group >= NEseGroups) {
+      return {};
+    }
+    return Form("q%dp%02d_%02d", cfgEseHarmonic.value, group * 10, (group + 1) * 10);
+  }
+
+  const std::vector<float>& esePercentileCuts() const
+  {
+    return cfgEseHarmonic.value == SecondHarmonic ? cfgQ2PercentileCuts.value : cfgQ3PercentileCuts.value;
+  }
+
+  template <typename T>
+  void addEseHistogram(const std::string& name, HistType type, const std::vector<AxisSpec>& axes)
+  {
+    histEse[name] = histos.add<T>(name, "", type, axes).get();
+  }
+
+  template <typename T>
+  T* getEseHistogram(const std::string& name)
+  {
+    const auto histogram = histEse.find(name);
+    if (histogram == histEse.end()) {
+      LOGF(fatal, "Could not find ESE histogram %s", name.c_str());
+      return nullptr;
+    }
+    return static_cast<T*>(histogram->second);
+  }
+
+  int eseGroup(float cent, double qn) const
+  {
+    const int centBin = eseCentBin(cent);
+    if (centBin < 0 || !std::isfinite(qn)) {
+      return -1;
+    }
+    const auto& cuts = esePercentileCuts();
+    const int offset = centBin * NEseCutsPerCentBin;
+    for (int iCut = 0; iCut < NEseCutsPerCentBin; ++iCut) {
+      if (qn < cuts.at(offset + iCut)) {
+        return iCut;
+      }
+    }
+    return NEseGroups - 1;
+  }
+
+  template <typename TCollision>
+  double getEseQ(TCollision const& collision)
+  {
+    const int harmonicIndex = cfgEseHarmonic.value - SecondHarmonic;
+    if (collision.qvecFT0CReVec().size() <= static_cast<std::size_t>(harmonicIndex) || collision.qvecFT0CImVec().size() <= static_cast<std::size_t>(harmonicIndex)) {
+      LOGF(fatal, "FT0C Q-vector table does not contain harmonic %d", cfgEseHarmonic.value);
+    }
+    const double qx = collision.qvecFT0CReVec()[harmonicIndex];
+    const double qy = collision.qvecFT0CImVec()[harmonicIndex];
+    if (cfgMultCor) {
+      return std::sqrt(qx * qx + qy * qy) * collision.sumAmplFT0C() / std::sqrt(collision.multFT0C());
+    }
+    return std::sqrt(qx * qx + qy * qy) * std::sqrt(collision.sumAmplFT0C());
   }
 
   void init(o2::framework::InitContext&)
   {
+    if (cfgEseHarmonic.value != SecondHarmonic && cfgEseHarmonic.value != ThirdHarmonic) {
+      LOGF(fatal, "cfgEseHarmonic must be 2 or 3, got %d", cfgEseHarmonic.value);
+    }
+    const auto& eseCuts = esePercentileCuts();
+    if (eseCuts.size() != NEseCentBins * NEseCutsPerCentBin) {
+      LOGF(fatal, "cfgQ%dPercentileCuts must contain %d values, got %d", cfgEseHarmonic.value, NEseCentBins * NEseCutsPerCentBin, static_cast<int>(eseCuts.size()));
+    }
+    for (int iCent = 0; iCent < NEseCentBins; ++iCent) {
+      const int offset = iCent * NEseCutsPerCentBin;
+      for (int iCut = 0; iCut < NEseCutsPerCentBin; ++iCut) {
+        const float cut = eseCuts.at(offset + iCut);
+        if (!std::isfinite(cut) || (iCut > 0 && cut <= eseCuts.at(offset + iCut - 1))) {
+          LOGF(fatal, "Invalid q%d percentile cut at centrality bin %d, cut %d", cfgEseHarmonic.value, iCent, iCut);
+        }
+      }
+    }
+
     AxisSpec centQaAxis = {80, 0.0, 80.0};
     AxisSpec pVzQaAxis = {300, -15.0, 15.0};
     AxisSpec epAxis = {6, 0.0, o2::constants::math::TwoPI};
@@ -228,25 +372,38 @@ struct FlowEseTask {
 
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
     AxisSpec basisAxis = {20, 0, 20, "basis"};
+    AxisSpec eseGroupAxis = {10, 0.0, 10.0, Form("q_{%d} percentile group", cfgEseHarmonic.value)};
 
-    histos.add(Form("histQvecV2"), "", {HistType::kTH3F, {qvecAxis, qvecAxis, centAxis}});
-    histos.add(Form("histMult_Cent"), "", {HistType::kTH2F, {multNumAxis, centAxis}});
-    histos.add(Form("histQvecCent"), "", {HistType::kTH2F, {lowerQAxis, centAxis}});
-    histos.add(Form("histPrPtCent"), "", {HistType::kTHnSparseF, {ptFullAxis, ptFullAxis, ptFullAxis, centAxis}});
-    histos.add(Form("histPiPtCent"), "", {HistType::kTHnSparseF, {ptFullAxis, ptFullAxis, ptFullAxis, centAxis}});
-    histos.add(Form("histPrBoostedPtCent"), "", {HistType::kTHnSparseF, {ptFullAxis, ptFullAxis, ptFullAxis, centAxis}});
+    histos.add("histQvecCent", "", {HistType::kTH2F, {q2QaAxis, centQaAxis}});
+    histEventCountEseGroup = histos.add<TH2>(Form("histEventCountQ%dGroup", cfgEseHarmonic.value), "", HistType::kTH2F, {centQaAxis, eseGroupAxis}).get();
     histos.add(Form("histVertex"), "", {HistType::kTHnSparseF, {vertexAxis, vertexAxis, vertexAxis, centAxis}});
-    histos.add(Form("histV2"), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis, qvec2Axis}});
-    histos.add(Form("histV2_lambda"), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis, qvec2Axis, massAxis}});
-    histos.add(Form("histV2_alambda"), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis, qvec2Axis, massAxis}});
+    for (int iGroup = 0; iGroup < NEseGroups; ++iGroup) {
+      const auto suffix = eseGroupSuffix(iGroup);
+      addEseHistogram<THnSparse>(Form("histV%d_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis});
+      addEseHistogram<THnSparse>(Form("psi%d/h_lambda_cos_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
+      addEseHistogram<THnSparse>(Form("psi%d/h_alambda_cos_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
+      addEseHistogram<THnSparse>(Form("psi%d/h_lambda_cos2_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
+      addEseHistogram<THnSparse>(Form("psi%d/h_alambda_cos2_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
+      addEseHistogram<THnSparse>(Form("psi%d/h_lambda_cossin_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
+      addEseHistogram<THnSparse>(Form("psi%d/h_alambda_cossin_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
+    }
+    histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
+    histos.add("QA/PVzDist", "", {HistType::kTH1F, {pVzQaAxis}});
+    histos.add("psi2/h_Ref03Gap22", "", {HistType::kTProfile, {centAxis}});
+    histos.add("psi2/h_PoiN03Gap22", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    histos.add("psi2/h_PoiP03Gap22", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    histos.add("psi3/h_Ref03Gap32", "", {HistType::kTProfile, {centAxis}});
+    histos.add("psi3/h_PoiN03Gap32", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    histos.add("psi3/h_PoiP03Gap32", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    gfwState.histRefQn = histos.add<TProfile2D>(Form("psi%d/h_Ref03Gap%d2VsQ%d", cfgEseHarmonic.value, cfgEseHarmonic.value, cfgEseHarmonic.value), "", HistType::kTProfile2D, {centAxis, eseGroupAxis}).get();
+    gfwState.histPoiNQn = histos.add<TProfile3D>(Form("psi%d/h_PoiN03Gap%d2VsQ%d", cfgEseHarmonic.value, cfgEseHarmonic.value, cfgEseHarmonic.value), "", HistType::kTProfile3D, {ptAxis, centAxis, eseGroupAxis}).get();
+    gfwState.histPoiPQn = histos.add<TProfile3D>(Form("psi%d/h_PoiP03Gap%d2VsQ%d", cfgEseHarmonic.value, cfgEseHarmonic.value, cfgEseHarmonic.value), "", HistType::kTProfile3D, {ptAxis, centAxis, eseGroupAxis}).get();
+
     for (auto i = 2; i < cfgnMods + 2; i++) {
       histos.add(Form("psi%d/h_lambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
       histos.add(Form("psi%d/h_alambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
       histos.add(Form("psi%d/h_lambda_cos2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
       histos.add(Form("psi%d/h_alambda_cos2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
-      histos.add(Form("psi%d/h_lambda_cos2_q2", i), "", {HistType::kTH3F, {centAxis, qvec2Axis, cosAxis}});
-      histos.add(Form("psi%d/h_alambda_cos2_q2", i), "", {HistType::kTH3F, {centAxis, qvec2Axis, cosAxis}});
-
       if (cfgRapidityDep) {
         histos.add(Form("psi%d/h_lambda_cos2_rap", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, rapAxis}});
         histos.add(Form("psi%d/h_alambda_cos2_rap", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, rapAxis}});
@@ -254,11 +411,8 @@ struct FlowEseTask {
 
       histos.add(Form("psi%d/h_lambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add(Form("psi%d/h_alambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
-
-      histos.add(Form("psi%d/h_lambda_cossin_q2", i), "", {HistType::kTH3F, {centAxis, qvec2Axis, cosAxis}});
-      histos.add(Form("psi%d/h_alambda_cossin_q2", i), "", {HistType::kTH3F, {centAxis, qvec2Axis, cosAxis}});
-      histos.add(Form("psi%d/h_lambda_cossin_cov", i), "", {HistType::kTHnSparseF, {ptAxis, cosAxis, centAxis}});
-      histos.add(Form("psi%d/h_alambda_cossin_cov", i), "", {HistType::kTHnSparseF, {ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_lambda_cossin_SP", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_alambda_cossin_SP", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
 
       if (cfgAccAzimuth) {
         histos.add(Form("psi%d/h_lambda_coscos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
@@ -342,8 +496,6 @@ struct FlowEseTask {
     }
 
     if (cfgQAv0) {
-      histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
-      histos.add("QA/PVzDist", "", {HistType::kTH1F, {pVzQaAxis}});
 
       histos.add("QA/nsigma_tpc_pt_ppr", "", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA/nsigma_tpc_pt_ppi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
@@ -366,7 +518,6 @@ struct FlowEseTask {
         histos.add(Form("psi%d/QA/EPRes_Det_RefA", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_Det_RefB", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_RefA_RefB", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-
         histos.add(Form("psi%d/QA/EP_FT0C_shifted", i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
         histos.add(Form("psi%d/QA/EP_FT0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
         histos.add(Form("psi%d/QA/EP_FV0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
@@ -374,9 +525,12 @@ struct FlowEseTask {
         histos.add(Form("psi%d/QA/EPRes_FT0C_FT0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_FT0C_FV0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_FT0A_FV0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-
-        histos.add(Form("psi%d/QA/EPRes_RefARefB_cov", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-        histos.add(Form("psi%d/QA/EPRes_RefARefBRefC_cov", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+      }
+      for (int iGroup = 0; iGroup < NEseGroups; ++iGroup) {
+        const auto suffix = eseGroupSuffix(iGroup);
+        addEseHistogram<TH2>(Form("psi%d/QA/EPRes_Det_RefA_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTH2F, {centQaAxis, cosAxis});
+        addEseHistogram<TH2>(Form("psi%d/QA/EPRes_Det_RefB_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTH2F, {centQaAxis, cosAxis});
+        addEseHistogram<TH2>(Form("psi%d/QA/EPRes_RefA_RefB_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTH2F, {centQaAxis, cosAxis});
       }
     }
 
@@ -393,6 +547,9 @@ struct FlowEseTask {
     if (cfgShiftCorrDef) {
       for (auto i = 2; i < cfgnMods + 2; i++) {
         histos.add(Form("psi%d/ShiftFIT", i), "", kTProfile3D, {centQaAxis, basisAxis, shiftAxis});
+      }
+      if (cfgEseHarmonic.value >= cfgnMods.value + 2) {
+        histos.add(Form("psi%d/ShiftFIT", cfgEseHarmonic.value), "", kTProfile3D, {centQaAxis, basisAxis, shiftAxis});
       }
     }
 
@@ -412,6 +569,21 @@ struct FlowEseTask {
     fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
 
+    const int nPtBins = histos.get<TProfile2D>(HIST("psi2/h_PoiN03Gap22"))->GetXaxis()->GetNbins();
+    gfwState.fGFW->AddRegion("refN03", -0.8, -0.15, 1, GFWRefMask);
+    gfwState.fGFW->AddRegion("refP03", 0.15, 0.8, 1, GFWRefMask);
+    gfwState.fGFW->AddRegion("poiN03", -0.8, -0.15, nPtBins + 1, GFWPoiMask);
+    gfwState.fGFW->AddRegion("poiP03", 0.15, 0.8, nPtBins + 1, GFWPoiMask);
+
+    gfwState.corrRef22 = gfwState.fGFW->GetCorrelatorConfig("refN03 {2} refP03 {-2}", "Ref03Gap22", false);
+    gfwState.corrPoiN22 = gfwState.fGFW->GetCorrelatorConfig("poiN03 {2} refP03 {-2}", "PoiN03Gap22", true);
+    gfwState.corrPoiP22 = gfwState.fGFW->GetCorrelatorConfig("poiP03 {2} refN03 {-2}", "PoiP03Gap22", true);
+    gfwState.corrRef32 = gfwState.fGFW->GetCorrelatorConfig("refN03 {3} refP03 {-3}", "Ref03Gap32", false);
+    gfwState.corrPoiN32 = gfwState.fGFW->GetCorrelatorConfig("poiN03 {3} refP03 {-3}", "PoiN03Gap32", true);
+    gfwState.corrPoiP32 = gfwState.fGFW->GetCorrelatorConfig("poiP03 {3} refN03 {-3}", "PoiP03Gap32", true);
+
+    gfwState.fGFW->CreateRegions();
+
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -426,7 +598,7 @@ struct FlowEseTask {
   ROOT::Math::PxPyPzMVector protonVec, pionVec, LambdaVec, protonBoostedVec, pionBoostedVec;
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(TCollision const& collision)
   {
     if (!collision.sel8()) {
       return 0;
@@ -466,31 +638,42 @@ struct FlowEseTask {
   template <typename TCollision, typename V0>
   bool selectionV0(TCollision const& collision, V0 const& candidate, int lambdaTag)
   {
-    if (candidate.v0radius() < cfgv0radiusMin)
+    if (candidate.v0radius() < cfgv0radiusMin) {
       return false;
-    if (lambdaTag) {
-      if (std::abs(candidate.dcapostopv()) < cfgDCAPrToPVMin)
-        return false;
-      if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin)
-        return false;
-    } else if (!lambdaTag) {
-      if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin)
-        return false;
-      if (std::abs(candidate.dcanegtopv()) < cfgDCAPrToPVMin)
-        return false;
     }
-    if (candidate.v0cosPA() < cfgv0CosPA)
+    if (lambdaTag) {
+      if (std::abs(candidate.dcapostopv()) < cfgDCAPrToPVMin) {
+        return false;
+      }
+      if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin) {
+        return false;
+      }
+    } else {
+      if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin) {
+        return false;
+      }
+      if (std::abs(candidate.dcanegtopv()) < cfgDCAPrToPVMin) {
+        return false;
+      }
+    }
+    if (candidate.v0cosPA() < cfgv0CosPA) {
       return false;
-    if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau)
+    }
+    if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau) {
       return false;
-    if (candidate.pt() < cfgV0PtMin)
+    }
+    if (candidate.pt() < cfgV0PtMin) {
       return false;
-    if (candidate.yLambda() < cfgV0EtaMin)
+    }
+    if (candidate.yLambda() < cfgV0EtaMin) {
       return false;
-    if (candidate.yLambda() > cfgV0EtaMax)
+    }
+    if (candidate.yLambda() > cfgV0EtaMax) {
       return false;
-    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0LifeTime)
+    }
+    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0LifeTime) {
       return false;
+    }
 
     return true;
   }
@@ -498,57 +681,75 @@ struct FlowEseTask {
   template <typename T>
   bool isSelectedV0Daughter(T const& track, int pid) // pid 0: proton, pid 1: pion
   {
-    if (track.tpcNClsFound() < cfgDaughTPCnclsMin)
+    if (track.tpcNClsFound() < cfgDaughTPCnclsMin) {
       return false;
-    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > cfgDaughPIDCutsTPCPr)
+    }
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > cfgDaughPIDCutsTPCPr) {
       return false;
-    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > cfgDaughPIDCutsTPCPi)
+    }
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > cfgDaughPIDCutsTPCPi) {
       return false;
-    if (track.eta() > cfgDaughEtaMax)
+    }
+    if (track.eta() > cfgDaughEtaMax) {
       return false;
-    if (track.eta() < cfgDaughEtaMin)
+    }
+    if (track.eta() < cfgDaughEtaMin) {
       return false;
-    if (pid == 0 && track.pt() < cfgDaughPrPt)
+    }
+    if (pid == 0 && track.pt() < cfgDaughPrPt) {
       return false;
-    if (pid == 1 && track.pt() < cfgDaughPiPt)
+    }
+    if (pid == 1 && track.pt() < cfgDaughPiPt) {
       return false;
+    }
 
     return true;
   }
 
   double safeATan2(double y, double x)
   {
-    if (x != 0)
+    if (x != 0) {
       return std::atan2(y, x);
-    if (y == 0)
+    }
+    if (y == 0) {
       return 0;
-    if (y > 0)
+    }
+    if (y > 0) {
       return o2::constants::math::PIHalf;
-    else
-      return -o2::constants::math::PIHalf;
+    }
+    return -o2::constants::math::PIHalf;
   }
 
   template <typename TrackType>
   bool selectionTrack(TrackType const& track)
   {
-    if (track.pt() < cfgMinPt)
+    if (track.pt() < cfgMinPt) {
       return false;
-    if (std::abs(track.eta()) > cfgMaxEta)
+    }
+    if (std::abs(track.eta()) > cfgMaxEta) {
       return false;
-    if (!track.passedITSNCls())
+    }
+    if (!track.passedITSNCls()) {
       return false;
-    if (!track.passedITSChi2NDF())
+    }
+    if (!track.passedITSChi2NDF()) {
       return false;
-    if (!track.passedITSHits())
+    }
+    if (!track.passedITSHits()) {
       return false;
-    if (!track.passedTPCCrossedRowsOverNCls())
+    }
+    if (!track.passedTPCCrossedRowsOverNCls()) {
       return false;
-    if (!track.passedTPCChi2NDF())
+    }
+    if (!track.passedTPCChi2NDF()) {
       return false;
-    if (!track.passedDCAxy())
+    }
+    if (!track.passedDCAxy()) {
       return false;
-    if (!track.passedDCAz())
+    }
+    if (!track.passedDCAz()) {
       return false;
+    }
 
     return true;
   }
@@ -560,8 +761,8 @@ struct FlowEseTask {
     qvecRefAInd = refAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     qvecRefBInd = refBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
 
-    for (int ishift = 1; ishift <= kShiftLevel; ishift++) {
-      if (nmode == kCorrLevel[0]) {
+    for (int ishift = 1; ishift <= ShiftLevel; ishift++) {
+      if (nmode == CorrLevel[0]) {
         histos.fill(HIST("psi2/ShiftFIT"), centrality, 0.5, ishift - 0.5, std::sin(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode)));
         histos.fill(HIST("psi2/ShiftFIT"), centrality, 1.5, ishift - 0.5, std::cos(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode)));
 
@@ -570,7 +771,7 @@ struct FlowEseTask {
 
         histos.fill(HIST("psi2/ShiftFIT"), centrality, 4.5, ishift - 0.5, std::sin(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode)));
         histos.fill(HIST("psi2/ShiftFIT"), centrality, 5.5, ishift - 0.5, std::cos(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode)));
-      } else if (nmode == kCorrLevel[1]) {
+      } else if (nmode == CorrLevel[1]) {
         histos.fill(HIST("psi3/ShiftFIT"), centrality, 0.5, ishift - 0.5, std::sin(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode)));
         histos.fill(HIST("psi3/ShiftFIT"), centrality, 1.5, ishift - 0.5, std::cos(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode)));
 
@@ -579,7 +780,7 @@ struct FlowEseTask {
 
         histos.fill(HIST("psi3/ShiftFIT"), centrality, 4.5, ishift - 0.5, std::sin(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode)));
         histos.fill(HIST("psi3/ShiftFIT"), centrality, 5.5, ishift - 0.5, std::cos(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode)));
-      } else if (nmode == kCorrLevel[2]) {
+      } else if (nmode == CorrLevel[2]) {
         histos.fill(HIST("psi4/ShiftFIT"), centrality, 0.5, ishift - 0.5, std::sin(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode)));
         histos.fill(HIST("psi4/ShiftFIT"), centrality, 1.5, ishift - 0.5, std::cos(ishift * static_cast<float>(nmode) * std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode)));
 
@@ -599,10 +800,11 @@ struct FlowEseTask {
     qvecRefAInd = refAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     qvecRefBInd = refBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
 
-    if (collision.qvecAmp()[detId] < kMinAmplitudeThreshold || collision.qvecAmp()[refAId] < kMinAmplitudeThreshold || collision.qvecAmp()[refBId] < kMinAmplitudeThreshold)
+    if (collision.qvecAmp()[detId] < MinAmplitudeThreshold || collision.qvecAmp()[refAId] < MinAmplitudeThreshold || collision.qvecAmp()[refBId] < MinAmplitudeThreshold) {
       return;
+    }
 
-    if (nmode == kCorrLevel[0]) {
+    if (nmode == CorrLevel[0]) {
       histos.fill(HIST("psi2/QA/EP_Det"), centrality, std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode));
       histos.fill(HIST("psi2/QA/EP_RefA"), centrality, std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) / static_cast<float>(nmode));
       histos.fill(HIST("psi2/QA/EP_RefB"), centrality, std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode));
@@ -618,7 +820,7 @@ struct FlowEseTask {
       histos.fill(HIST("psi2/QA/EPRes_Det_RefA"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) - std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd])));
       histos.fill(HIST("psi2/QA/EPRes_Det_RefB"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) - std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd])));
       histos.fill(HIST("psi2/QA/EPRes_RefA_RefB"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) - std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd])));
-    } else if (nmode == kCorrLevel[1]) {
+    } else if (nmode == CorrLevel[1]) {
       histos.fill(HIST("psi3/QA/EP_Det"), centrality, std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode));
       histos.fill(HIST("psi3/QA/EP_RefA"), centrality, std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) / static_cast<float>(nmode));
       histos.fill(HIST("psi3/QA/EP_RefB"), centrality, std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode));
@@ -634,7 +836,7 @@ struct FlowEseTask {
       histos.fill(HIST("psi3/QA/EPRes_Det_RefA"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) - std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd])));
       histos.fill(HIST("psi3/QA/EPRes_Det_RefB"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) - std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd])));
       histos.fill(HIST("psi3/QA/EPRes_RefA_RefB"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) - std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd])));
-    } else if (nmode == kCorrLevel[2]) {
+    } else if (nmode == CorrLevel[2]) {
       histos.fill(HIST("psi4/QA/EP_Det"), centrality, std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode));
       histos.fill(HIST("psi4/QA/EP_RefA"), centrality, std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) / static_cast<float>(nmode));
       histos.fill(HIST("psi4/QA/EP_RefB"), centrality, std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode));
@@ -660,7 +862,7 @@ struct FlowEseTask {
       auto psidefFT0C = std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode);
       auto psidefFT0A = std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) / static_cast<float>(nmode);
       auto psidefFV0A = std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode);
-      for (int ishift = 1; ishift <= kShiftLevel; ishift++) {
+      for (int ishift = 1; ishift <= ShiftLevel; ishift++) {
         auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
         auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
         auto coeffshiftxFT0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 2.5, ishift - 0.5));
@@ -672,7 +874,7 @@ struct FlowEseTask {
         deltapsiFT0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * std::cos(ishift * static_cast<float>(nmode) * psidefFT0A) + coeffshiftyFT0A * std::sin(ishift * static_cast<float>(nmode) * psidefFT0A)));
         deltapsiFV0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFV0A * std::cos(ishift * static_cast<float>(nmode) * psidefFV0A) + coeffshiftyFV0A * std::sin(ishift * static_cast<float>(nmode) * psidefFV0A)));
       }
-      if (nmode == kCorrLevel[0]) {
+      if (nmode == CorrLevel[0]) {
         histos.fill(HIST("psi2/QA/EP_FT0C_shifted"), centrality, psidefFT0C + deltapsiFT0C);
         histos.fill(HIST("psi2/QA/EP_FT0A_shifted"), centrality, psidefFT0A + deltapsiFT0A);
         histos.fill(HIST("psi2/QA/EP_FV0A_shifted"), centrality, psidefFV0A + deltapsiFV0A);
@@ -680,10 +882,7 @@ struct FlowEseTask {
         histos.fill(HIST("psi2/QA/EPRes_FT0C_FT0A_shifted"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)));
         histos.fill(HIST("psi2/QA/EPRes_FT0C_FV0A_shifted"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)));
         histos.fill(HIST("psi2/QA/EPRes_FT0A_FV0A_shifted"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0A + deltapsiFT0A - psidefFV0A - deltapsiFV0A)));
-
-        histos.fill(HIST("psi2/QA/EPRes_RefARefB_cov"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)) * std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)));
-        histos.fill(HIST("psi2/QA/EPRes_RefARefBRefC_cov"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)) * std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)) * std::cos(static_cast<float>(nmode) * (psidefFT0A + deltapsiFT0A - psidefFV0A - deltapsiFV0A)));
-      } else if (nmode == kCorrLevel[1]) {
+      } else if (nmode == CorrLevel[1]) {
         histos.fill(HIST("psi3/QA/EP_FT0C_shifted"), centrality, psidefFT0C + deltapsiFT0C);
         histos.fill(HIST("psi3/QA/EP_FT0A_shifted"), centrality, psidefFT0A + deltapsiFT0A);
         histos.fill(HIST("psi3/QA/EP_FV0A_shifted"), centrality, psidefFV0A + deltapsiFV0A);
@@ -691,7 +890,7 @@ struct FlowEseTask {
         histos.fill(HIST("psi3/QA/EPRes_FT0C_FT0A_shifted"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)));
         histos.fill(HIST("psi3/QA/EPRes_FT0C_FV0A_shifted"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)));
         histos.fill(HIST("psi3/QA/EPRes_FT0A_FV0A_shifted"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0A + deltapsiFT0A - psidefFV0A - deltapsiFV0A)));
-      } else if (nmode == kCorrLevel[2]) {
+      } else if (nmode == CorrLevel[2]) {
         histos.fill(HIST("psi4/QA/EP_FT0C_shifted"), centrality, psidefFT0C + deltapsiFT0C);
         histos.fill(HIST("psi4/QA/EP_FT0A_shifted"), centrality, psidefFT0A + deltapsiFT0A);
         histos.fill(HIST("psi4/QA/EP_FV0A_shifted"), centrality, psidefFV0A + deltapsiFV0A);
@@ -703,28 +902,174 @@ struct FlowEseTask {
     }
   }
 
+  template <typename TCollision>
+  void fillEseEPQA(TCollision const& collision, int eseGroupIndex)
+  {
+    if (eseGroupIndex < 0 || !cfgQAv0) {
+      return;
+    }
+    const int nmode = cfgEseHarmonic.value;
+    const int detIndex = detId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    const int refAIndex = refAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    const int refBIndex = refBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    if (collision.qvecAmp()[detId] < MinAmplitudeThreshold || collision.qvecAmp()[refAId] < MinAmplitudeThreshold || collision.qvecAmp()[refBId] < MinAmplitudeThreshold) {
+      return;
+    }
+
+    const double detPhase = std::atan2(collision.qvecIm()[detIndex], collision.qvecRe()[detIndex]);
+    const double refAPhase = std::atan2(collision.qvecIm()[refAIndex], collision.qvecRe()[refAIndex]);
+    const double refBPhase = std::atan2(collision.qvecIm()[refBIndex], collision.qvecRe()[refBIndex]);
+    const auto suffix = eseGroupSuffix(eseGroupIndex);
+    auto* histEseEPResDetRefA = getEseHistogram<TH2>(Form("psi%d/QA/EPRes_Det_RefA_%s", cfgEseHarmonic.value, suffix.c_str()));
+    auto* histEseEPResDetRefB = getEseHistogram<TH2>(Form("psi%d/QA/EPRes_Det_RefB_%s", cfgEseHarmonic.value, suffix.c_str()));
+    auto* histEseEPResRefARefB = getEseHistogram<TH2>(Form("psi%d/QA/EPRes_RefA_RefB_%s", cfgEseHarmonic.value, suffix.c_str()));
+    histEseEPResDetRefA->Fill(centrality, std::cos(detPhase - refAPhase));
+    histEseEPResDetRefB->Fill(centrality, std::cos(detPhase - refBPhase));
+    histEseEPResRefARefB->Fill(centrality, std::cos(refAPhase - refBPhase));
+  }
+
   template <typename TCollision, typename V0, typename TrackType>
-  void fillHistograms(TCollision const& collision, V0 const& V0s, TrackType const& track, int nmode)
+  void fillHistograms(TCollision const& collision, V0 const& V0s, TrackType const& track, int nmode, int eseGroupIndex = -1, bool fillRegular = true, bool fillGfw = false)
   {
     qvecDetInd = detId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     qvecRefAInd = refAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     qvecRefBInd = refBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    const bool fillEse = eseGroupIndex >= 0 && nmode == cfgEseHarmonic.value;
 
-    for (const auto& trk : track) {
-      if (!selectionTrack(trk)) {
-        continue;
-      }
-      if (nmode == kCorrLevel[0]) {
-        histos.fill(HIST("histV2"), collision.centFT0C(), trk.pt(),
-                    std::cos(static_cast<float>(nmode) * (trk.phi() - helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode))),
-                    std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C()));
+    THnSparse* histEseVn = nullptr;
+    double esePlane = 0.0;
+    if (fillEse) {
+      const auto suffix = eseGroupSuffix(eseGroupIndex);
+      histEseVn = getEseHistogram<THnSparse>(Form("histV%d_%s", cfgEseHarmonic.value, suffix.c_str()));
+      const int harmonicIndex = nmode - 2;
+      esePlane = helperEP.GetEventPlane(collision.qvecFT0CReVec()[harmonicIndex], collision.qvecFT0CImVec()[harmonicIndex], nmode);
+    }
+
+    TProfile2D* histPoiN22 = nullptr;
+    if (fillGfw) {
+      gfwState.fGFW->Clear();
+      histPoiN22 = histos.get<TProfile2D>(HIST("psi2/h_PoiN03Gap22")).get();
+    }
+    if (fillEse || fillGfw) {
+      for (const auto& trk : track) {
+        if (!selectionTrack(trk)) {
+          continue;
+        }
+        if (fillEse) {
+          const std::array<double, 3> values = {centrality, trk.pt(), std::cos(static_cast<float>(nmode) * (trk.phi() - esePlane))};
+          histEseVn->Fill(values.data());
+        }
+        if (!fillGfw) {
+          continue;
+        }
+        double weff = 1.0;
+        double wacc = 1.0;
+        if (cfgGfwParam.cfgGfwEffCor && gfwState.gfwEffMap != nullptr) {
+          const double efficiency = gfwState.gfwEffMap->GetBinContent(gfwState.gfwEffMap->FindBin(trk.pt()));
+          if (efficiency <= 0.0) {
+            continue;
+          }
+          weff = 1.0 / efficiency;
+        }
+        if (cfgGfwParam.cfgGfwAccCor && gfwState.gfwAccWeights != nullptr) {
+          wacc = gfwState.gfwAccWeights->getNUA(trk.phi(), trk.eta(), collision.posZ());
+        }
+        const double trackWeight = weff * wacc;
+        const int ptBin = histPoiN22->GetXaxis()->FindBin(trk.pt()) - 1;
+        gfwState.fGFW->Fill(trk.eta(), ptBin, trk.phi(), trackWeight, GFWRefMask);
+        gfwState.fGFW->Fill(trk.eta(), ptBin, trk.phi(), trackWeight, GFWPoiMask);
       }
     }
 
-    histos.fill(HIST("histQvecCent"), std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C()), centrality);
-    histos.fill(HIST("histQvecV2"), collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.centFT0C());
-    histos.fill(HIST("histMult_Cent"), collision.sumAmplFT0C(), collision.centFT0C());
-    histos.fill(HIST("histVertex"), collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C());
+    if (fillGfw) {
+      double denominator = gfwState.fGFW->Calculate(gfwState.corrRef22, 0, true).real();
+      if (denominator > 0.0) {
+        const double correlation = gfwState.fGFW->Calculate(gfwState.corrRef22, 0, false).real() / denominator;
+        if (std::abs(correlation) < 1.0) {
+          histos.fill(HIST("psi2/h_Ref03Gap22"), centrality, correlation, denominator);
+          if (fillEse && cfgEseHarmonic.value == SecondHarmonic) {
+            gfwState.histRefQn->Fill(centrality, eseGroupIndex + 0.5, correlation, denominator);
+          }
+        }
+      }
+      denominator = gfwState.fGFW->Calculate(gfwState.corrRef32, 0, true).real();
+      if (denominator > 0.0) {
+        const double correlation = gfwState.fGFW->Calculate(gfwState.corrRef32, 0, false).real() / denominator;
+        if (std::abs(correlation) < 1.0) {
+          histos.fill(HIST("psi3/h_Ref03Gap32"), centrality, correlation, denominator);
+          if (fillEse && cfgEseHarmonic.value == ThirdHarmonic) {
+            gfwState.histRefQn->Fill(centrality, eseGroupIndex + 0.5, correlation, denominator);
+          }
+        }
+      }
+
+      for (int iPt = 1; iPt <= histPoiN22->GetXaxis()->GetNbins(); ++iPt) {
+        const double pt = histPoiN22->GetXaxis()->GetBinCenter(iPt);
+        denominator = gfwState.fGFW->Calculate(gfwState.corrPoiN22, iPt - 1, true).real();
+        if (denominator > 0.0) {
+          const double correlation = gfwState.fGFW->Calculate(gfwState.corrPoiN22, iPt - 1, false).real() / denominator;
+          if (std::abs(correlation) < 1.0) {
+            histos.fill(HIST("psi2/h_PoiN03Gap22"), pt, centrality, correlation, denominator);
+            if (fillEse && cfgEseHarmonic.value == SecondHarmonic) {
+              gfwState.histPoiNQn->Fill(pt, centrality, eseGroupIndex + 0.5, correlation, denominator);
+            }
+          }
+        }
+        denominator = gfwState.fGFW->Calculate(gfwState.corrPoiP22, iPt - 1, true).real();
+        if (denominator > 0.0) {
+          const double correlation = gfwState.fGFW->Calculate(gfwState.corrPoiP22, iPt - 1, false).real() / denominator;
+          if (std::abs(correlation) < 1.0) {
+            histos.fill(HIST("psi2/h_PoiP03Gap22"), pt, centrality, correlation, denominator);
+            if (fillEse && cfgEseHarmonic.value == SecondHarmonic) {
+              gfwState.histPoiPQn->Fill(pt, centrality, eseGroupIndex + 0.5, correlation, denominator);
+            }
+          }
+        }
+        denominator = gfwState.fGFW->Calculate(gfwState.corrPoiN32, iPt - 1, true).real();
+        if (denominator > 0.0) {
+          const double correlation = gfwState.fGFW->Calculate(gfwState.corrPoiN32, iPt - 1, false).real() / denominator;
+          if (std::abs(correlation) < 1.0) {
+            histos.fill(HIST("psi3/h_PoiN03Gap32"), pt, centrality, correlation, denominator);
+            if (fillEse && cfgEseHarmonic.value == ThirdHarmonic) {
+              gfwState.histPoiNQn->Fill(pt, centrality, eseGroupIndex + 0.5, correlation, denominator);
+            }
+          }
+        }
+        denominator = gfwState.fGFW->Calculate(gfwState.corrPoiP32, iPt - 1, true).real();
+        if (denominator > 0.0) {
+          const double correlation = gfwState.fGFW->Calculate(gfwState.corrPoiP32, iPt - 1, false).real() / denominator;
+          if (std::abs(correlation) < 1.0) {
+            histos.fill(HIST("psi3/h_PoiP03Gap32"), pt, centrality, correlation, denominator);
+            if (fillEse && cfgEseHarmonic.value == ThirdHarmonic) {
+              gfwState.histPoiPQn->Fill(pt, centrality, eseGroupIndex + 0.5, correlation, denominator);
+            }
+          }
+        }
+      }
+    }
+
+    if (!fillRegular && !cfgFullCheck) {
+      return;
+    }
+    if (fillRegular) {
+      histos.fill(HIST("histVertex"), collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C());
+    }
+
+    THnSparse* histEseLambdaCos = nullptr;
+    THnSparse* histEseAntiLambdaCos = nullptr;
+    THnSparse* histEseLambdaCos2 = nullptr;
+    THnSparse* histEseAntiLambdaCos2 = nullptr;
+    THnSparse* histEseLambdaCosSin = nullptr;
+    THnSparse* histEseAntiLambdaCosSin = nullptr;
+    if (fillEse && cfgFullCheck) {
+      const auto suffix = eseGroupSuffix(eseGroupIndex);
+      histEseLambdaCos = getEseHistogram<THnSparse>(Form("psi%d/h_lambda_cos_%s", cfgEseHarmonic.value, suffix.c_str()));
+      histEseAntiLambdaCos = getEseHistogram<THnSparse>(Form("psi%d/h_alambda_cos_%s", cfgEseHarmonic.value, suffix.c_str()));
+      histEseLambdaCos2 = getEseHistogram<THnSparse>(Form("psi%d/h_lambda_cos2_%s", cfgEseHarmonic.value, suffix.c_str()));
+      histEseAntiLambdaCos2 = getEseHistogram<THnSparse>(Form("psi%d/h_alambda_cos2_%s", cfgEseHarmonic.value, suffix.c_str()));
+      histEseLambdaCosSin = getEseHistogram<THnSparse>(Form("psi%d/h_lambda_cossin_%s", cfgEseHarmonic.value, suffix.c_str()));
+      histEseAntiLambdaCosSin = getEseHistogram<THnSparse>(Form("psi%d/h_alambda_cossin_%s", cfgEseHarmonic.value, suffix.c_str()));
+    }
 
     for (const auto& v0 : V0s) {
       auto postrack = v0.template posTrack_as<TrackCandidates>();
@@ -736,7 +1081,7 @@ struct FlowEseTask {
       double nTPCSigmaNegPr = negtrack.tpcNSigmaPr();
       double nTPCSigmaPosPi = postrack.tpcNSigmaPi();
 
-      if (cfgQAv0 && nmode == kCorrLevel[0]) {
+      if (fillRegular && cfgQAv0 && nmode == CorrLevel[0]) {
         histos.fill(HIST("QA/nsigma_tpc_pt_ppr"), postrack.pt(), nTPCSigmaPosPr);
         histos.fill(HIST("QA/nsigma_tpc_pt_ppi"), postrack.pt(), nTPCSigmaPosPi);
 
@@ -754,27 +1099,21 @@ struct FlowEseTask {
         aLambdaTag = 1;
       }
 
-      if (lambdaTag == aLambdaTag)
+      if (lambdaTag == aLambdaTag) {
         continue;
+      }
 
-      if (!selectionV0(collision, v0, lambdaTag))
+      if (!selectionV0(collision, v0, lambdaTag)) {
         continue;
+      }
 
       if (lambdaTag) {
         protonVec = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
         pionVec = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
-        histos.fill(HIST("histV2_lambda"), collision.centFT0C(), v0.pt(),
-                    std::cos(static_cast<float>(nmode) * (v0.phi() - helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode))),
-                    std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C()),
-                    v0.mLambda());
       }
       if (aLambdaTag) {
         protonVec = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
         pionVec = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
-        histos.fill(HIST("histV2_alambda"), collision.centFT0C(), v0.pt(),
-                    std::cos(static_cast<float>(nmode) * (v0.phi() - helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode))),
-                    std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C()),
-                    v0.mAntiLambda());
       }
       LambdaVec = protonVec + pionVec;
       LambdaVec.SetM(massLambda);
@@ -785,10 +1124,8 @@ struct FlowEseTask {
       angle = protonBoostedVec.Pz() / protonBoostedVec.P();
       psi = safeATan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode);
       relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psi));
-
-      histos.fill(HIST("histPrPtCent"), protonVec.Px(), protonVec.Py(), protonVec.Pz(), collision.centFT0C());
-      histos.fill(HIST("histPiPtCent"), pionVec.Px(), pionVec.Py(), pionVec.Pz(), collision.centFT0C());
-      histos.fill(HIST("histPrBoostedPtCent"), protonBoostedVec.Px(), protonBoostedVec.Py(), protonBoostedVec.Pz(), collision.centFT0C());
+      productPhi = std::sin(static_cast<float>(nmode) * LambdaVec.Phi()) * collision.qvecRe()[qvecDetInd] -
+                   std::cos(static_cast<float>(nmode) * LambdaVec.Phi()) * collision.qvecIm()[qvecDetInd];
 
       if (cfgShiftCorr) {
         auto deltapsiFT0C = 0.0;
@@ -798,7 +1135,7 @@ struct FlowEseTask {
         auto psidefFT0C = std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode);
         auto psidefFT0A = std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) / static_cast<float>(nmode);
         auto psidefFV0A = std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]) / static_cast<float>(nmode);
-        for (int ishift = 1; ishift <= kShiftLevel; ishift++) {
+        for (int ishift = 1; ishift <= ShiftLevel; ishift++) {
           auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
           auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
           auto coeffshiftxFT0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 2.5, ishift - 0.5));
@@ -818,41 +1155,58 @@ struct FlowEseTask {
         continue;
       }
 
-      if (lambdaTag) {
-        histos.fill(HIST("QA/ptspec_l"), v0.mLambda(), v0.pt(), centrality);
-        if (cfgEffCor) {
-          histos.fill(HIST("QA/ptspecCor_l"), v0.mLambda(), v0.pt(), centrality,
-                      1.0 / effMap->GetBinContent(effMap->GetXaxis()->FindBin(v0.pt()), effMap->GetYaxis()->FindBin(centrality)));
+      if (fillRegular) {
+        if (lambdaTag) {
+          histos.fill(HIST("QA/ptspec_l"), v0.mLambda(), v0.pt(), centrality);
+          if (cfgEffCor) {
+            histos.fill(HIST("QA/ptspecCor_l"), v0.mLambda(), v0.pt(), centrality,
+                        1.0 / effMap->GetBinContent(effMap->GetXaxis()->FindBin(v0.pt()), effMap->GetYaxis()->FindBin(centrality)));
+          }
         }
-      }
-      if (aLambdaTag) {
-        histos.fill(HIST("QA/ptspec_al"), v0.mAntiLambda(), v0.pt(), centrality);
-        if (cfgEffCor) {
-          histos.fill(HIST("QA/ptspecCor_al"), v0.mAntiLambda(), v0.pt(), centrality,
-                      1.0 / effMap->GetBinContent(effMap->GetXaxis()->FindBin(v0.pt()), effMap->GetYaxis()->FindBin(centrality)));
+        if (aLambdaTag) {
+          histos.fill(HIST("QA/ptspec_al"), v0.mAntiLambda(), v0.pt(), centrality);
+          if (cfgEffCor) {
+            histos.fill(HIST("QA/ptspecCor_al"), v0.mAntiLambda(), v0.pt(), centrality,
+                        1.0 / effMap->GetBinContent(effMap->GetXaxis()->FindBin(v0.pt()), effMap->GetYaxis()->FindBin(centrality)));
+          }
         }
       }
       double weight = 1.0;
       weight *= cfgEffCor ? 1.0 / effMap->GetBinContent(effMap->GetXaxis()->FindBin(v0.pt()), effMap->GetYaxis()->FindBin(centrality)) : 1.;
       weight *= cfgAccCor ? 1.0 / accMap->GetBinContent(accMap->GetXaxis()->FindBin(v0.pt()), accMap->GetYaxis()->FindBin(v0.yLambda())) : 1.;
 
-      double qvecMag = 1.0;
-      if (cfgUSESP)
-        qvecMag *= std::sqrt(std::pow(collision.qvecIm()[3 + (nmode - 2) * 28], 2) + std::pow(collision.qvecRe()[3 + (nmode - 2) * 28], 2));
+      if (fillEse && cfgFullCheck) {
+        const double mass = lambdaTag ? v0.mLambda() : v0.mAntiLambda();
+        const std::array<double, 4> cosValues = {mass, v0.pt(), angle * weight, centrality};
+        const std::array<double, 4> cos2Values = {mass, v0.pt(), angle * angle, centrality};
+        const std::array<double, 4> cosSinValues = {mass, v0.pt(), angle * std::sin(relphi) * weight, centrality};
+        if (lambdaTag) {
+          histEseLambdaCos->Fill(cosValues.data());
+          histEseLambdaCos2->Fill(cos2Values.data());
+          histEseLambdaCosSin->Fill(cosSinValues.data());
+        } else {
+          histEseAntiLambdaCos->Fill(cosValues.data());
+          histEseAntiLambdaCos2->Fill(cos2Values.data());
+          histEseAntiLambdaCosSin->Fill(cosSinValues.data());
+        }
+      }
+      if (!fillRegular) {
+        continue;
+      }
 
-      if (nmode == kCorrLevel[0]) { ////////////
-        double q2 = std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C());
+      double qvecMag = 1.0;
+      if (cfgUSESP) {
+        qvecMag *= std::sqrt(std::pow(collision.qvecIm()[3 + (nmode - 2) * 28], 2) + std::pow(collision.qvecRe()[3 + (nmode - 2) * 28], 2));
+      }
+
+      if (nmode == CorrLevel[0] && cfgFullCheck) { ////////////
         if (lambdaTag) {
           histos.fill(HIST("psi2/h_lambda_cos"), v0.mLambda(), v0.pt(), angle * weight, centrality, relphi);
           histos.fill(HIST("psi2/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
           histos.fill(HIST("psi2/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * std::sin(relphi) * weight, centrality);
+          histos.fill(HIST("psi2/h_lambda_cossin_SP"), v0.mLambda(), v0.pt(), angle * productPhi * weight, centrality);
           histos.fill(HIST("psi2/h_lambda_vncos"), v0.mLambda(), v0.pt(), qvecMag * std::cos(relphi) * weight, centrality);
           histos.fill(HIST("psi2/h_lambda_vnsin"), v0.mLambda(), v0.pt(), std::sin(relphi), centrality);
-
-          histos.fill(HIST("psi2/h_lambda_cos2_q2"), centrality, q2, angle * angle);
-          histos.fill(HIST("psi2/h_lambda_cossin_q2"), centrality, q2, angle * std::sin(relphi) * weight);
-
-          histos.fill(HIST("psi2/h_lambda_cossin_cov"), v0.pt(), angle * angle * angle * std::sin(relphi) * weight, centrality);
 
           if (cfgRapidityDep) {
             histos.fill(HIST("psi2/h_lambda_cos2_rap"), v0.mLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
@@ -900,13 +1254,10 @@ struct FlowEseTask {
           histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle * weight, centrality, relphi);
           histos.fill(HIST("psi2/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
           histos.fill(HIST("psi2/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * std::sin(relphi) * weight, centrality);
+          histos.fill(HIST("psi2/h_alambda_cossin_SP"), v0.mAntiLambda(), v0.pt(), angle * productPhi * weight, centrality);
           histos.fill(HIST("psi2/h_alambda_vncos"), v0.mAntiLambda(), v0.pt(), qvecMag * std::cos(relphi) * weight, centrality);
           histos.fill(HIST("psi2/h_alambda_vnsin"), v0.mAntiLambda(), v0.pt(), std::sin(relphi), centrality);
 
-          histos.fill(HIST("psi2/h_alambda_cos2_q2"), centrality, q2, angle * angle);
-          histos.fill(HIST("psi2/h_alambda_cossin_q2"), centrality, q2, angle * std::sin(relphi) * weight);
-
-          histos.fill(HIST("psi2/h_alambda_cossin_cov"), v0.pt(), angle * angle * angle * std::sin(relphi) * weight, centrality);
           if (cfgRapidityDep) {
             histos.fill(HIST("psi2/h_alambda_cos2_rap"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
           }
@@ -949,7 +1300,7 @@ struct FlowEseTask {
             histos.fill(HIST("psi2/QA/sinPhi_al"), v0.mAntiLambda(), v0.pt(), std::sin(v0.phi() * 2.0), centrality);
           }
         }
-      } else if (nmode == kCorrLevel[1]) {
+      } else if (nmode == CorrLevel[1]) {
         if (lambdaTag) {
           histos.fill(HIST("psi3/h_lambda_cos"), v0.mLambda(), v0.pt(), angle * weight, centrality, relphi);
           histos.fill(HIST("psi3/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
@@ -980,7 +1331,7 @@ struct FlowEseTask {
             histos.fill(HIST("psi3/h_alambda_coscos"), v0.mAntiLambda(), v0.pt(), angle * std::cos(relphi), centrality, weight);
           }
         }
-      } else if (nmode == kCorrLevel[2]) {
+      } else if (nmode == CorrLevel[2]) {
         if (lambdaTag) {
           histos.fill(HIST("psi4/h_lambda_cos"), v0.mLambda(), v0.pt(), angle * weight, centrality, relphi);
           histos.fill(HIST("psi4/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
@@ -1019,13 +1370,21 @@ struct FlowEseTask {
                    TrackCandidates const& tracks, aod::V0Datas const& V0s,
                    aod::BCsWithTimestamps const&)
   {
-    if (cfgCentEst == kCorrLevel[3]) {
+    if (cfgCentEst == CorrLevel[3]) {
       centrality = collision.centFT0C();
-    } else if (cfgCentEst == kCorrLevel[0]) {
+    } else if (cfgCentEst == CorrLevel[0]) {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision)) {
       return;
+    }
+    histos.fill(HIST("QA/CentDist"), centrality, 1.0);
+    histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
+    const double eseQ = getEseQ(collision);
+    histos.fill(HIST("histQvecCent"), eseQ, centrality);
+    const int eseGroupIndex = eseGroup(centrality, eseQ);
+    if (eseGroupIndex >= 0) {
+      histEventCountEseGroup->Fill(centrality, eseGroupIndex + 0.5);
     }
 
     if (cfgShiftCorr) {
@@ -1033,7 +1392,8 @@ struct FlowEseTask {
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
         shiftprofile.clear();
-        for (int i = 2; i < cfgnMods + 2; i++) {
+        const int maxShiftHarmonic = std::max(cfgnMods.value + 1, cfgEseHarmonic.value);
+        for (int i = 2; i <= maxShiftHarmonic; i++) {
           fullCCDBShiftCorrPath = cfgShiftPath;
           fullCCDBShiftCorrPath += "/v";
           fullCCDBShiftCorrPath += std::to_string(i);
@@ -1050,6 +1410,29 @@ struct FlowEseTask {
     if (cfgAccCor) {
       accMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
     }
+    if (bc.runNumber() != gfwState.lastGfwCorrectionRunNumber) {
+      if (cfgGfwParam.cfgGfwEffCor && !cfgGfwParam.cfgGfwEffCorPath.value.empty()) {
+        gfwState.gfwEffMap = ccdb->getForTimeStamp<TH1D>(cfgGfwParam.cfgGfwEffCorPath.value, bc.timestamp());
+        if (gfwState.gfwEffMap == nullptr) {
+          LOGF(fatal, "Could not load charged-track efficiency histogram from %s", cfgGfwParam.cfgGfwEffCorPath.value.c_str());
+        }
+      }
+      if (cfgGfwParam.cfgGfwAccCor && !cfgGfwParam.cfgGfwAccCorPath.value.empty()) {
+        gfwState.gfwAccWeights = ccdb->getForTimeStamp<GFWWeights>(cfgGfwParam.cfgGfwAccCorPath.value, bc.timestamp());
+        if (gfwState.gfwAccWeights == nullptr) {
+          LOGF(fatal, "Could not load charged-track acceptance weights from %s", cfgGfwParam.cfgGfwAccCorPath.value.c_str());
+        }
+      }
+      gfwState.lastGfwCorrectionRunNumber = bc.runNumber();
+    }
+
+    fillEseEPQA(collision, eseGroupIndex);
+    if (cfgShiftCorrDef && cfgEseHarmonic.value >= cfgnMods.value + 2) {
+      fillShiftCorrection(collision, cfgEseHarmonic.value);
+    }
+    if (eseGroupIndex >= 0 && cfgEseHarmonic.value >= cfgnMods.value + 2) {
+      fillHistograms(collision, V0s, tracks, cfgEseHarmonic.value, eseGroupIndex, false, true);
+    }
     for (int i = 2; i < cfgnMods + 2; i++) {
       if (cfgShiftCorrDef) {
         fillShiftCorrection(collision, i);
@@ -1057,7 +1440,8 @@ struct FlowEseTask {
       if (cfgQAv0) {
         fillEPQA(collision, i);
       }
-      fillHistograms(collision, V0s, tracks, i);
+      const bool fillGfw = eseGroupIndex >= 0 ? i == cfgEseHarmonic.value : i == SecondHarmonic;
+      fillHistograms(collision, V0s, tracks, i, i == cfgEseHarmonic.value ? eseGroupIndex : -1, true, fillGfw);
     } // FIXME: need to fill different histograms for different harmonic
   }
   PROCESS_SWITCH(FlowEseTask, processData, "Process Event for data", true);
@@ -1068,37 +1452,37 @@ struct FlowEseTask {
     float imp = mcCollision.impactParameter();
     float evPhi = mcCollision.eventPlaneAngle() / 2.0;
     float centclass = -999;
-    if (imp >= kCentBoundaries[0] && imp < kCentBoundaries[1]) {
-      centclass = kCentValues[0];
+    if (imp >= CentBoundaries[0] && imp < CentBoundaries[1]) {
+      centclass = CentValues[0];
     }
-    if (imp >= kCentBoundaries[1] && imp < kCentBoundaries[2]) {
-      centclass = kCentValues[1];
+    if (imp >= CentBoundaries[1] && imp < CentBoundaries[2]) {
+      centclass = CentValues[1];
     }
-    if (imp >= kCentBoundaries[2] && imp < kCentBoundaries[3]) {
-      centclass = kCentValues[2];
+    if (imp >= CentBoundaries[2] && imp < CentBoundaries[3]) {
+      centclass = CentValues[2];
     }
-    if (imp >= kCentBoundaries[3] && imp < kCentBoundaries[4]) {
-      centclass = kCentValues[3];
+    if (imp >= CentBoundaries[3] && imp < CentBoundaries[4]) {
+      centclass = CentValues[3];
     }
-    if (imp >= kCentBoundaries[4] && imp < kCentBoundaries[5]) {
-      centclass = kCentValues[4];
+    if (imp >= CentBoundaries[4] && imp < CentBoundaries[5]) {
+      centclass = CentValues[4];
     }
-    if (imp >= kCentBoundaries[5] && imp < kCentBoundaries[6]) {
-      centclass = kCentValues[5];
+    if (imp >= CentBoundaries[5] && imp < CentBoundaries[6]) {
+      centclass = CentValues[5];
     }
-    if (imp >= kCentBoundaries[6] && imp < kCentBoundaries[7]) {
-      centclass = kCentValues[6];
+    if (imp >= CentBoundaries[6] && imp < CentBoundaries[7]) {
+      centclass = CentValues[6];
     }
-    if (imp >= kCentBoundaries[7] && imp < kCentBoundaries[8]) {
-      centclass = kCentValues[7];
+    if (imp >= CentBoundaries[7] && imp < CentBoundaries[8]) {
+      centclass = CentValues[7];
     }
-    if (imp >= kCentBoundaries[8] && imp < kCentBoundaries[9]) {
-      centclass = kCentValues[8];
+    if (imp >= CentBoundaries[8] && imp < CentBoundaries[9]) {
+      centclass = CentValues[8];
     }
 
     int nCh = 0;
 
-    if (centclass > 0 && centclass < kCentUpperLimit) {
+    if (centclass > 0 && centclass < CentUpperLimit) {
       // event within range
       histos.fill(HIST("hImpactParameter"), imp);
       histos.fill(HIST("hEventPlaneAngle"), evPhi);
@@ -1106,12 +1490,15 @@ struct FlowEseTask {
         float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
         // focus on bulk: e, mu, pi, k, p
         int pdgCode = std::abs(mcParticle.pdgCode());
-        if (pdgCode != kLambdaId)
+        if (pdgCode != LambdaId) {
           continue;
-        if (!mcParticle.isPhysicalPrimary())
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
           continue;
-        if (std::abs(mcParticle.eta()) > kEtaAcceptance) // main acceptance
+        }
+        if (std::abs(mcParticle.eta()) > EtaAcceptance) { // main acceptance
           continue;
+        }
         histos.fill(HIST("hSparseMCGenWeight"), centclass, RecoDecay::constrainAngle(deltaPhi, 0, 2), std::pow(std::cos(2.0 * RecoDecay::constrainAngle(deltaPhi, 0, 2)), 2.0), mcParticle.pt(), mcParticle.eta());
         nCh++;
         bool validGlobal = false;

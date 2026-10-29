@@ -19,16 +19,21 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-
-#include <sys/stat.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <cstdint>
 #include <string>
@@ -195,9 +200,9 @@ struct FemtoDreamPairCascadeCascade {
     Configurable<int> depth{"depth", 5, "Number of events for mixing"};
     Configurable<int> binPolicy{"binPolicy", 0, "Binning binPolicy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
   } Mixing;
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.binVztx, Mixing.binMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.binVztx, Mixing.binMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.binVztx, Mixing.binMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.binVztx, Mixing.binMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}};
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascade> pairCleaner;
@@ -211,9 +216,9 @@ struct FemtoDreamPairCascadeCascade {
   void init(InitContext&)
   {
     // setup binnnig binPolicy for mixing
-    colBinningMult = {{Mixing.binVztx, Mixing.binMult}, true};
-    colBinningMultPercentile = {{Mixing.binVztx, Mixing.binMultPercentile}, true};
-    colBinningMultMultPercentile = {{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}, true};
+    colBinningMult = {{Mixing.binVztx, Mixing.binMult}};
+    colBinningMultPercentile = {{Mixing.binVztx, Mixing.binMultPercentile}};
+    colBinningMultMultPercentile = {{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}};
     eventHisto.init(&registry, Option.isMC);
 
     cascHistoPartOne.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTCascade, Option.dummy, Option.dummy, Binning.tempFitVarCascade, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.isMC, Cascade1.pdgCode);
@@ -368,7 +373,7 @@ struct FemtoDreamPairCascadeCascade {
 
   // Mixed events
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType binPolicy)
+  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, const BinningType& binPolicy)
   {
     for (auto const& [collision1, collision2] : soa::selfCombinations(binPolicy, Mixing.depth.value, -1, cols, cols)) {
       // make sure that tracks in same events are not mixed

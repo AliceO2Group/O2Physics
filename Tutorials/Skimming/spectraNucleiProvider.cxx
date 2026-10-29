@@ -10,26 +10,30 @@
 // or submit itself to any jurisdiction.
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 
-// O2 includes
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "MathUtils/Utils.h"
 #include "DataModel/LFDerived.h"
 
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/detail/TypeTruncation.h>
 
 #include <TLorentzVector.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::math_utils::detail;
-
-#include "Framework/runDataProcessing.h"
 
 struct NucleiSpectraProviderTask {
 
@@ -78,7 +82,7 @@ struct NucleiSpectraProviderTask {
       outputCollisions(collision.posZ());
       uint32_t pNsigma = 0xFFFFFF00; // 15 bit precision for Nsigma - does this respect the sign?
       outputTracks.reserve(tracks.size());
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(),
                      // truncateFloatFraction(track.tpcNSigmaEl(), pNsigma), truncateFloatFraction(track.tpcNSigmaMu(), pNsigma),
                      truncateFloatFraction(track.tpcNSigmaPi(), pNsigma), truncateFloatFraction(track.tpcNSigmaKa(), pNsigma),

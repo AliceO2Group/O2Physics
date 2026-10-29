@@ -17,20 +17,28 @@
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/inelGt.h"
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TF1.h"
-#include "TRandom3.h"
+#include <TF1.h>
 #include <TLorentzVector.h>
+#include <TRandom.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -312,7 +320,7 @@ struct K892analysis {
   double massPi = MassPionCharged;
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const float& centrality)
+  bool eventSelected(const TCollision& collision, const float& centrality)
   {
     // if (collision.alias_bit(kTVXinTRD)) {
     //   // TRD triggered
@@ -334,7 +342,7 @@ struct K892analysis {
   }
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -854,7 +862,7 @@ struct K892analysis {
   void processMELight(o2::aod::ResoCollisions const& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {

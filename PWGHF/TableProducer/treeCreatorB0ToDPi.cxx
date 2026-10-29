@@ -96,8 +96,8 @@ DECLARE_SOA_TABLE(HfCandB0Lites, "AOD", "HFCANDB0LITE",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandB0Fulls, "AOD", "HFCANDB0FULL",
                   collision::BCId,
@@ -146,8 +146,8 @@ DECLARE_SOA_TABLE(HfCandB0Fulls, "AOD", "HFCANDB0FULL",
                   full::Phi,
                   full::Y,
                   full::E,
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandB0FullEvs, "AOD", "HFCANDB0FULLEV",
                   collision::BCId,
@@ -164,8 +164,8 @@ DECLARE_SOA_TABLE(HfCandB0FullPs, "AOD", "HFCANDB0FULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcGen);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcGen);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -188,8 +188,8 @@ struct HfTreeCreatorB0ToDPi {
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_b0::flagMcMatchRec) == static_cast<int8_t>(DecayChannelMain::B0ToDminusPi);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_b0::flagMcMatchRec) != static_cast<int8_t>(DecayChannelMain::B0ToDminusPi);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(DecayChannelMain::B0ToDminusPi);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(DecayChannelMain::B0ToDminusPi);
 
   void init(InitContext const&)
   {

@@ -17,13 +17,7 @@
 // The skimming can optionally produce just the barrel, muon, or both barrel and muon tracks
 // The event filtering (filterPP), centrality, and V0Bits (from v0-selector) can be switched on/off by selecting one
 //  of the process functions
-// C++ includes
-#include <iostream>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-// other includes
+
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
@@ -44,32 +38,37 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DataFormatsGlobalTracking/RecoContainer.h"
-#include "DataFormatsGlobalTracking/RecoContainerCreateTracksVariadic.h"
-#include "DataFormatsITSMFT/ROFRecord.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsVertexing/PVertexerParams.h"
-#include "DetectorsVertexing/VertexTrackMatcher.h"
-#include "Field/MagneticField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/Primitive2D.h"
-#include "ReconstructionDataFormats/PrimaryVertex.h"
-#include "ReconstructionDataFormats/VtxTrackIndex.h"
-#include "ReconstructionDataFormats/VtxTrackRef.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsGlobalTracking/RecoContainerCreateTracksVariadic.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include "TGeoGlobalMagField.h"
+#include <TH2.h>
+#include <THashList.h>
+#include <TList.h>
+#include <TObjArray.h>
+#include <TString.h>
 
-using std::cout;
-using std::endl;
+#include <RtypesCore.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -203,7 +202,7 @@ struct TableMaker {
   struct : ConfigurableGroup {
     Configurable<std::string> fConfigCcdbUrl{"useCCDBConfigurations.ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> fConfigCcdbPathTPC{"useCCDBConfigurations.ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
-    Configurable<std::string> fConfigCcdbPathZorro{"useCCDBConfigurations.ccdb-path-zorro", "/Users/m/mpuccio/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
+    Configurable<std::string> fConfigCcdbPathZorro{"useCCDBConfigurations.ccdb-path-zorro", "EventFiltering/Zorro/", "base path to the ccdb object for zorro"};
   } useCCDBConfigurations;
 
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -1247,7 +1246,7 @@ struct TableMaker {
     } // end if constexpr (TMuonFillMap)
   } // end fullSkimming()
 
-  void DefineHistograms(TString histClasses)
+  void DefineHistograms(const TString& histClasses)
   {
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
     for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {

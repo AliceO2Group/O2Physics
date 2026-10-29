@@ -12,8 +12,10 @@
 #ifndef DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPID_H_
 #define DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPID_H_
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <vector>
 
 namespace o2::aod
 {
@@ -22,9 +24,8 @@ inline constexpr int kDimPhotonsCharge = 10;
 
 namespace variables_table
 {
+
 DECLARE_SOA_COLUMN(ChAngle, chAngle, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(MomentumHmpid, momentumHmpid, float);
 DECLARE_SOA_COLUMN(MomentumTrack, momentumTrack, float);
 DECLARE_SOA_COLUMN(XTrack, xTrack, float);
@@ -35,23 +36,19 @@ DECLARE_SOA_COLUMN(NPhotons, nPhotons, float);
 DECLARE_SOA_COLUMN(ChargeMip, chargeMip, float);
 DECLARE_SOA_COLUMN(ClusterSize, clusterSize, float);
 DECLARE_SOA_COLUMN(Chamber, chamber, float);
-DECLARE_SOA_COLUMN(PhotonsCharge, photonsCharge, float[kDimPhotonsCharge]);
-
+DECLARE_SOA_COLUMN(PhotonsCharge, photonsCharge, std::vector<float>);
 DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);
 DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);
 DECLARE_SOA_COLUMN(Px, px, float);
 DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
-
 DECLARE_SOA_COLUMN(ItsNCluster, itsNCluster, float);
 DECLARE_SOA_COLUMN(TpcNCluster, tpcNCluster, float);
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, float);
 DECLARE_SOA_COLUMN(TpcChi2, tpcChi2, float);
 DECLARE_SOA_COLUMN(ItsChi2, itsChi2, float);
-
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
-
 DECLARE_SOA_COLUMN(TpcNSigmaPi, tpcNSigmaPi, float);
 DECLARE_SOA_COLUMN(TofNSigmaPi, tofNSigmaPi, float);
 DECLARE_SOA_COLUMN(TpcNSigmaKa, tpcNSigmaKa, float);
@@ -60,15 +57,11 @@ DECLARE_SOA_COLUMN(TpcNSigmaPr, tpcNSigmaPr, float);
 DECLARE_SOA_COLUMN(TofNSigmaPr, tofNSigmaPr, float);
 DECLARE_SOA_COLUMN(TpcNSigmaDe, tpcNSigmaDe, float);
 DECLARE_SOA_COLUMN(TofNSigmaDe, tofNSigmaDe, float);
-
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-
 } // namespace variables_table
 
 DECLARE_SOA_TABLE(HmpidAnalysis, "AOD", "HMPIDANALYSIS",
                   variables_table::ChAngle,
-                  variables_table::Phi,
-                  variables_table::Eta,
                   variables_table::MomentumHmpid,
                   variables_table::MomentumTrack,
                   variables_table::XTrack,
@@ -101,6 +94,30 @@ DECLARE_SOA_TABLE(HmpidAnalysis, "AOD", "HMPIDANALYSIS",
                   variables_table::TpcNSigmaDe,
                   variables_table::TofNSigmaDe,
                   variables_table::Centrality);
+
+// -----------------------------------------------------------------------
+// MC truth table
+// -----------------------------------------------------------------------
+namespace hmpid_mc
+{
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
+DECLARE_SOA_COLUMN(McVx, mcVx, float);
+DECLARE_SOA_COLUMN(McVy, mcVy, float);
+DECLARE_SOA_COLUMN(McVz, mcVz, float);
+DECLARE_SOA_COLUMN(IsPhysPrimary, isPhysPrimary, bool);
+DECLARE_SOA_COLUMN(ProcessCode, processCode, int);
+DECLARE_SOA_COLUMN(HasInteractedInAbsorber, hasInteractedInAbsorber, bool);
+
+} // namespace hmpid_mc
+
+DECLARE_SOA_TABLE(HmpidAnalysisMC, "AOD", "HMPIDANALYSISMC",
+                  hmpid_mc::PdgCode,
+                  hmpid_mc::McVx,
+                  hmpid_mc::McVy,
+                  hmpid_mc::McVz,
+                  hmpid_mc::IsPhysPrimary,
+                  hmpid_mc::ProcessCode,
+                  hmpid_mc::HasInteractedInAbsorber);
 
 } // namespace o2::aod
 

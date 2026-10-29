@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_TWOPARTCORRLINKDEF_H_
-#define PWGCF_TWOPARTICLECORRELATIONS_CORE_TWOPARTCORRLINKDEF_H_
+
+// NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -50,5 +50,4 @@
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::PileUpRejBrick + ;
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis + ;
 #pragma link C++ class o2::analysis::PWGCF::FilterAndAnalysisFramework + ;
-
-#endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_TWOPARTCORRLINKDEF_H_
+#pragma link C++ class DihadronContainer + ;

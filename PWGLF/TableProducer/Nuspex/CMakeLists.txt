@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(decay3bodybuilder
     SOURCES decay3bodybuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2::TOFBase O2::DetectorsVertexing
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2::TOFBase O2::DetectorsVertexing O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hyhefour-builder
@@ -21,7 +21,17 @@ o2physics_add_dpl_workflow(hyhefour-builder
 
 o2physics_add_dpl_workflow(hypertriton-reco-task
     SOURCES hyperRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tracked-hypertriton-reco-task
+    SOURCES trackedHypertritonRecoTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2::TOFBase O2::DetectorsVertexing O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-three-body-builder
+    SOURCES nucleiThreeBodyBuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lnn-reco-task
@@ -30,18 +40,28 @@ o2physics_add_dpl_workflow(lnn-reco-task
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nucleustreecreator
-    SOURCES LFTreeCreatorNuclei.cxx
+    SOURCES lfTreeCreatorNuclei.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(he3hadronfemto
     SOURCES he3HadronFemto.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pi-hypertriton-femto
+    SOURCES piHypertritonFemto.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-spectra
     SOURCES nucleiSpectra.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(deuteron-in-triggered-events
+    SOURCES deuteronInTriggeredEvents.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2::DetectorsBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(spectra-derived
@@ -86,12 +106,12 @@ o2physics_add_dpl_workflow(tr-he-analysis
 
 o2physics_add_dpl_workflow(reduced3body-creator
     SOURCES reduced3bodyCreator.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::TOFBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::TOFBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-flow-trees
     SOURCES nucleiFlowTree.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hyperkink-reco-task
@@ -101,7 +121,7 @@ o2physics_add_dpl_workflow(hyperkink-reco-task
 
 o2physics_add_dpl_workflow(he3-lambda-analysis
     SOURCES he3LambdaAnalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-antineutron-cex
@@ -112,4 +132,14 @@ o2physics_add_dpl_workflow(nuclei-antineutron-cex
 o2physics_add_dpl_workflow(particle-composition-correction
     SOURCES particleCompositionCorrection.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(photon-deuteron
+    SOURCES photonDeuteron.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(coalescence-tree-producer
+    SOURCES coalescenceTreeProducer.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

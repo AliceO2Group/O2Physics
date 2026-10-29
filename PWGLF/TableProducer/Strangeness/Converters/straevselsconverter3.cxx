@@ -10,10 +10,11 @@
 // or submit itself to any jurisdiction.
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -24,6 +25,7 @@ struct straevselsconverter3 {
 
   void process(aod::StraEvSels_002 const& straEvSels_002)
   {
+    straEvSels_003.reserve(straEvSels_002.size());
     for (auto& values : straEvSels_002) {
       straEvSels_003(values.sel8(),
                      values.selection_raw(),

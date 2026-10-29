@@ -16,8 +16,6 @@
 /// \author Hanseo Park <hanseo.park@cern.ch>
 /// \author Hadi Hassan <hadi.hassan@cern.ch>, University of Jyväskylä
 
-#include "MlResponse.h"
-
 #include "PWGJE/Core/JetTaggingUtilities.h"
 #include "PWGJE/Core/MlResponseHfTagging.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -25,12 +23,13 @@
 #include "PWGJE/DataModel/JetTagging.h"
 
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -42,6 +41,7 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 
 #include <onnxruntime_cxx_api.h>
 
@@ -94,6 +94,7 @@ struct JetTaggerHFTask {
   Configurable<float> minSignImpXYSig{"minSignImpXYSig", -40.0, "minimum of signed impact parameter significance"};
   Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
   Configurable<float> tagPointForIPxyz{"tagPointForIPxyz", 2.5, "tagging working point for IP xyz"};
+  Configurable<int64_t> timestampCCDBForIP{"timestampCCDBForIP", -1, "timestamp of the resolution function file for IP method used to query in CCDB"};
   // configuration about SV method
   Configurable<float> tagPointForSV{"tagPointForSV", 40, "tagging working point for SV"};
   Configurable<float> tagPointForSVxyz{"tagPointForSVxyz", 40, "tagging working point for SV xyz"};
@@ -138,10 +139,22 @@ struct JetTaggerHFTask {
   Configurable<std::vector<float>> transformFeatureTrkStdev{"transformFeatureTrkStdev",
                                                             std::vector<float>{-999},
                                                             "Stdev values for each GNN input feature (track)"};
+  Configurable<std::string> tfFuncTypeGNN{"tfFuncTypeGNN", "linear", "Transformation function type for GNN"};
 
   // axis spec
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
+
+  // ParT (Particle Transformer) tagger. Grouped in a ConfigurableGroup because
+  // StructToTuple.h supports at most 99 task members and this task is near the limit.
+  struct ParTCfg : ConfigurableGroup {
+    std::string prefix = "part";
+    Configurable<int64_t> nConstit{"nConstit", 32, "fixed number of constituents fed to the ParT model, must match training"};
+    Configurable<int64_t> nFeat{"nFeat", 10, "number of pf_features channels"};
+    Configurable<int64_t> nVec{"nVec", 4, "number of pf_vectors channels"};
+    Configurable<bool> padWrap{"padWrap", true, "pad short jets by cyclic repetition (weaver 'wrap' mode); set false for zero padding"};
+    Configurable<int> minTracks{"minTracks", 2, "minimum number of selected constituents; training applied jet_nTracks >= 2"};
+  } parTCfg;
 
   o2::analysis::MlResponseHfTagging<float> bMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
@@ -275,7 +288,7 @@ struct JetTaggerHFTask {
         }
       }
     }
-    if (doprocessAlgorithmGNN) {
+    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra || doprocessAlgorithmParT) {
       if (jet.pt() >= jetpTMin) {
         float dbRange;
         if (scoreML[jet.globalIndex()] < dbMin) {
@@ -341,7 +354,7 @@ struct JetTaggerHFTask {
         return;
       }
       for (int i = 0; i < mIPmethodResolutionFunctionSize; i++) {
-        targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, -1));
+        targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, timestampCCDBForIP));
       }
     };
 
@@ -511,7 +524,7 @@ struct JetTaggerHFTask {
       }
     }
 
-    if (doprocessAlgorithmML || doprocessAlgorithmGNN) {
+    if (doprocessAlgorithmML || doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra) {
       bMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
@@ -523,9 +536,24 @@ struct JetTaggerHFTask {
       bMlResponse.init();
     }
 
-    if (doprocessAlgorithmGNN) {
-      tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst);
+    if (doprocessAlgorithmParT) {
+      bMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        bMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        bMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      bMlResponse.init();
 
+      LOGF(info, "ParT: loaded %s with %d output node(s); %d constituents, %s padding", onnxFileNames.value[0].c_str(), bMlResponse.getOutputNodes(), static_cast<int>(parTCfg.nConstit.value), parTCfg.padWrap.value ? "wrap" : "zero");
+    }
+
+    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra) {
+      tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst, tfFuncTypeGNN.value);
+    }
+
+    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra || doprocessAlgorithmParT) {
       registry.add("h2_count_db", "#it{D}_{b} underflow/overflow;Jet flavour;#it{D}_{b} range", {HistType::kTH2F, {{4, 0., 4.}, {3, 0., 3.}}});
       auto h2CountDb = registry.get<TH2>(HIST("h2_count_db"));
       h2CountDb->GetXaxis()->SetBinLabel(1, "b-jet");
@@ -536,10 +564,10 @@ struct JetTaggerHFTask {
       h2CountDb->GetYaxis()->SetBinLabel(2, "in range");
       h2CountDb->GetYaxis()->SetBinLabel(3, "overflow");
 
-      registry.add("h_db_b", "#it{D}_{b} b-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
-      registry.add("h_db_c", "#it{D}_{b} c-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
-      registry.add("h_db_lf", "#it{D}_{b} lf-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
-      registry.add("h2_pt_db", "#it{p}_{T} vs. #it{D}_{b};#it{p}_{T}^{ch jet} (GeV/#it{c}^{2});#it{D}_{b}", {HistType::kTH2F, {{100, 0., 200.}, {50, -10., 35.}}});
+      registry.add("h_db_b", "#it{D}_{b} b-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -20., 30.}}});
+      registry.add("h_db_c", "#it{D}_{b} c-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -20., 30.}}});
+      registry.add("h_db_lf", "#it{D}_{b} lf-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -20., 30.}}});
+      registry.add("h2_pt_db", "#it{p}_{T} vs. #it{D}_{b};#it{p}_{T}^{ch jet} (GeV/#it{c}^{2});#it{D}_{b}", {HistType::kTH2F, {{100, 0., 200.}, {50, -20., 30.}}});
     }
   }
 
@@ -610,11 +638,11 @@ struct JetTaggerHFTask {
   }
 
   template <typename AnyJets, typename AnyTracks, typename AnyOriginalTracks>
-  void analyzeJetAlgorithmGNN(AnyJets const& jets, AnyTracks const& tracks, AnyOriginalTracks const& origTracks)
+  void analyzeJetAlgorithmGNNwExtra(AnyJets const& jets, AnyTracks const& tracks, AnyOriginalTracks const& origTracks)
   {
     for (const auto& jet : jets) {
       std::vector<std::vector<float>> trkFeat;
-      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, origTracks, trkFeat, trackPtMin, nJetConst);
+      jettaggingutilities::analyzeJetTrackInfo4GNNwExtra(jet, tracks, origTracks, trkFeat, trackPtMin, trackDcaXYMax, trackDcaZMax, nJetConst);
 
       std::vector<float> jetFeat{jet.pt(), jet.phi(), jet.eta(), jet.mass()};
 
@@ -624,10 +652,81 @@ struct JetTaggerHFTask {
         tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
         auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
-        scoreML[jet.globalIndex()] = jettaggingutilities::getDb(modelOutput, fC);
+        float db = jettaggingutilities::getDb(modelOutput, fC);
+        if (!std::isnan(db)) {
+          scoreML[jet.globalIndex()] = db;
+        } else {
+          scoreML[jet.globalIndex()] = 999.;
+          LOGF(debug, "doprocessAlgorithmGNNwExtra, Db is NaN (%d)", jet.globalIndex());
+        }
+      } else {
+        scoreML[jet.globalIndex()] = -999.;
+        LOGF(debug, "doprocessAlgorithmGNNwExtra, trkFeat.size() <= 0 (%d)", jet.globalIndex());
+      }
+    }
+  }
+
+  template <typename AnyJets, typename AnyTracks>
+  void analyzeJetAlgorithmGNN(AnyJets const& jets, AnyTracks const& tracks)
+  {
+    for (const auto& jet : jets) {
+      std::vector<std::vector<float>> trkFeat;
+      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, trkFeat, trackPtMin, trackDcaXYMax, trackDcaZMax, nJetConst);
+
+      std::vector<float> jetFeat{jet.pt(), jet.phi(), jet.eta(), jet.mass()};
+
+      if (trkFeat.size() > 0) {
+        std::vector<float> feat;
+        std::vector<Ort::Value> gnnInput;
+        tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
+
+        auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
+        float db = jettaggingutilities::getDb(modelOutput, fC);
+        if (!std::isnan(db)) {
+          scoreML[jet.globalIndex()] = db;
+        } else {
+          scoreML[jet.globalIndex()] = 999.;
+          LOGF(debug, "doprocessAlgorithmGNN, Db is NaN (%d)", jet.globalIndex());
+        }
       } else {
         scoreML[jet.globalIndex()] = -999.;
         LOGF(debug, "doprocessAlgorithmGNN, trkFeat.size() <= 0 (%d)", jet.globalIndex());
+      }
+    }
+  }
+
+  template <typename AnyJets, typename AnyTracks>
+  void analyzeJetAlgorithmParT(AnyJets const& jets, AnyTracks const& tracks)
+  {
+    o2::analysis::ParTBjetAllocator parTTensorAlloc(parTCfg.nConstit.value, parTCfg.nFeat.value, parTCfg.nVec.value, parTCfg.padWrap.value);
+
+    for (const auto& jet : jets) {
+      std::vector<std::vector<float>> featConstit;
+      std::vector<std::vector<float>> vecConstit;
+      jettaggingutilities::analyzeJetTrackInfo4ParT(jet, tracks, featConstit, vecConstit, trackPtMin, trackDcaXYMax, trackDcaZMax);
+
+      // Training applied a jet_nTracks >= 2 selection, so jets below it are out of distribution.
+      if (static_cast<int>(featConstit.size()) < parTCfg.minTracks) {
+        scoreML[jet.globalIndex()] = -999.;
+        LOGF(debug, "doprocessAlgorithmParT, too few selected constituents (%d)", jet.globalIndex());
+        continue;
+      }
+
+      std::vector<float> featData;
+      std::vector<float> vecData;
+      std::vector<float> maskData;
+      std::vector<Ort::Value> parTInput;
+      parTTensorAlloc.getParTInput(featConstit, vecConstit, featData, vecData, maskData, parTInput);
+
+      // The exported graph applies the softmax itself, so the output is already
+      // [p_b, p_c, p_udsg] and must not be passed through getDb(), which would softmax again.
+      auto modelOutput = bMlResponse.getModelOutputMultiInput(parTInput, 0);
+      float db = jettaggingutilities::getDbFromProb(modelOutput, fC);
+      if (!std::isnan(db)) {
+        scoreML[jet.globalIndex()] = db;
+      } else {
+        scoreML[jet.globalIndex()] = 999.;
+        LOGF(debug, "doprocessAlgorithmParT, Db is NaN (%d)", jet.globalIndex());
       }
     }
   }
@@ -676,11 +775,23 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmMLnoSV, "Fill ML evaluation score for charged jets but without using SVs", false);
 
-  void processAlgorithmGNN(JetTable const& jets, JetTracksExt const& jtracks, OriginalTracks const& origTracks)
+  void processAlgorithmGNNwExtra(JetTable const& jets, JetTracksExt const& jtracks, OriginalTracks const& origTracks)
   {
-    analyzeJetAlgorithmGNN(jets, jtracks, origTracks);
+    analyzeJetAlgorithmGNNwExtra(jets, jtracks, origTracks);
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmGNNwExtra, "Fill GNN evaluation score (D_b) for charged jets with extra input features", false);
+
+  void processAlgorithmGNN(JetTable const& jets, JetTracksExt const& jtracks)
+  {
+    analyzeJetAlgorithmGNN(jets, jtracks);
   }
   PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmGNN, "Fill GNN evaluation score (D_b) for charged jets", false);
+
+  void processAlgorithmParT(JetTable const& jets, JetTracksExt const& jtracks)
+  {
+    analyzeJetAlgorithmParT(jets, jtracks);
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmParT, "Fill ParT evaluation score (D_b) for charged jets", false);
 
   void processFillTables(std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>::iterator const& jet, JetTracksExt const& tracks)
   {
@@ -689,13 +800,15 @@ struct JetTaggerHFTask {
   PROCESS_SWITCH(JetTaggerHFTask, processFillTables, "Fill Tables for tagging decision, jet probability, and ML score on charged jets", false);
 };
 
-using JetTaggerhfDataCharged = JetTaggerHFTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::DataSecondaryVertex3ProngIndices, aod::DataSecondaryVertex3Prongs, aod::ChargedJetTags>;
-using JetTaggerhfMCDCharged = JetTaggerHFTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::MCDSecondaryVertex3ProngIndices, aod::MCDSecondaryVertex3Prongs, aod::ChargedMCDetectorLevelJetTags>;
+using JetTaggerhfDataCharged = JetTaggerHFTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::DataSecondaryVertexNProngIndices, aod::DataSecondaryVertexNProngs, aod::ChargedJetTags>;
+using JetTaggerhfMcdCharged = JetTaggerHFTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::MCDSecondaryVertexNProngIndices, aod::MCDSecondaryVertexNProngs, aod::ChargedMCDetectorLevelJetTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
   return WorkflowSpec{
-    adaptAnalysisTask<JetTaggerhfDataCharged>(cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-data-charged"}), // o2-linter: disable=name/o2-task
-    adaptAnalysisTask<JetTaggerhfMCDCharged>(cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-mcd-charged"})};  // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<JetTaggerhfDataCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetTaggerhfMcdCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-mcd-charged"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
 }

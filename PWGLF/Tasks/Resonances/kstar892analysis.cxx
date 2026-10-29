@@ -19,18 +19,29 @@
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TF1.h"
 #include <TLorentzVector.h>
 
+#include <array>
+#include <cstdlib>
 #include <vector>
 
 using namespace o2;
@@ -320,7 +331,7 @@ struct kstar892analysis {
   float massPi = MassPionCharged;
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // TPC
     if (track.tpcNClsFound() < cfgTPCcluster)
@@ -875,7 +886,7 @@ struct kstar892analysis {
   void processMELight(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -893,7 +904,7 @@ struct kstar892analysis {
   void processMELightWithTof(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -911,7 +922,7 @@ struct kstar892analysis {
   void processMELightTPCLowPt(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -929,7 +940,7 @@ struct kstar892analysis {
   void processMELightTOFHighPt(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {

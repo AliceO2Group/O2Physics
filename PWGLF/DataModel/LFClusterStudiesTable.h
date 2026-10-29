@@ -11,11 +11,12 @@
 //
 // Author: Giorgio Alberto Lucia
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-
 #ifndef PWGLF_DATAMODEL_LFCLUSTERSTUDIESTABLE_H_
 #define PWGLF_DATAMODEL_LFCLUSTERSTUDIESTABLE_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

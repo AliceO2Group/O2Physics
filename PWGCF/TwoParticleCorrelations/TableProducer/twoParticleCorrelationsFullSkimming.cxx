@@ -9,7 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
+#include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/TrackSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
 
 #include "Common/DataModel/Centrality.h"
@@ -18,12 +22,25 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <memory>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,7 +66,7 @@ PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
 
 using namespace cfskim;
 
-void setEventCutsLabels(std::shared_ptr<TH1> h)
+void setEventCutsLabels(const std::shared_ptr<TH1>& h)
 {
   using namespace aod::run2;
 
@@ -81,7 +98,7 @@ void setEventCutsLabels(std::shared_ptr<TH1> h)
   }
 }
 
-void reportEventCuts(std::shared_ptr<TH1> h, uint32_t eventcuts)
+void reportEventCuts(const std::shared_ptr<TH1>& h, uint32_t eventcuts)
 {
   using namespace aod::run2;
   auto entries = h->GetEntries();
@@ -103,14 +120,14 @@ struct TwoParticleCorrelationsSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
   int nReportedTracks;
   int runNumber = 0;
   int bfield = 0;
   HistogramRegistry historeg;
 
-  int getMagneticField(std::string ccdbpath, uint64_t timestamp)
+  int getMagneticField(const std::string& ccdbpath, uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     static o2::parameters::GRPObject* grpo = nullptr;

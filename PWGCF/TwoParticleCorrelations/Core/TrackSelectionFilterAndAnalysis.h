@@ -8,18 +8,23 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef TRACKSELECTIONFILTERANDANALYSIS_H
-#define TRACKSELECTIONFILTERANDANALYSIS_H
+
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_
+
+#include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+
+#include <TList.h>
+#include <TObject.h>
+#include <TString.h>
 
 #include <Rtypes.h>
-#include <TString.h>
-#include <TObject.h>
-#include <TNamed.h>
-#include <TList.h>
 
-#include <fairlogger/Logger.h>
-#include "SkimmingConfigurableCuts.h"
-#include "SelectionFilterAndAnalysis.h"
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace o2
 {
@@ -47,20 +52,20 @@ class TrackSelectionConfigurable
                              std::string dcaz = "",
                              std::string ptrange = "",
                              std::string etarange = "")
-    : mTrackTypes{ttype},
-      mNClustersTPC{nclstpc},
-      mNCrossedRowsTPC{nxrtpc},
-      mNClustersITS{nclsits},
-      mMaxChi2PerClusterTPC{chi2clustpc},
-      mMaxChi2PerClusterITS{chi2clusits},
-      mMinNCrossedRowsOverFindableClustersTPC{xrofctpc},
-      mMaxDcaXY{dcaxy},
-      mMaxDcaZ{dcaz},
-      mPtRange{ptrange},
-      mEtaRange{etarange}
+    : mTrackTypes{std::move(ttype)},
+      mNClustersTPC{std::move(nclstpc)},
+      mNCrossedRowsTPC{std::move(nxrtpc)},
+      mNClustersITS{std::move(nclsits)},
+      mMaxChi2PerClusterTPC{std::move(chi2clustpc)},
+      mMaxChi2PerClusterITS{std::move(chi2clusits)},
+      mMinNCrossedRowsOverFindableClustersTPC{std::move(xrofctpc)},
+      mMaxDcaXY{std::move(dcaxy)},
+      mMaxDcaZ{std::move(dcaz)},
+      mPtRange{std::move(ptrange)},
+      mEtaRange{std::move(etarange)}
   {
   }
-  TrackSelectionConfigurable(std::vector<std::string> ttype,
+  TrackSelectionConfigurable(const std::vector<std::string>& ttype,
                              std::vector<std::string> nclstpc,
                              std::vector<std::string> nxrtpc,
                              std::vector<std::string> nclsits,
@@ -205,4 +210,4 @@ uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
 } // namespace analysis
 } // namespace o2
 
-#endif // TRACKSELECTIONFILTERANDANALYSIS_H
+#endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_

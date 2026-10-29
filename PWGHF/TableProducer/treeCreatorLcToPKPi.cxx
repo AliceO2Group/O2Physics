@@ -144,8 +144,8 @@ DECLARE_SOA_COLUMN(Chi2Topo, chi2Topo, float);                           //! chi
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                     //! decay length, cm
 DECLARE_SOA_COLUMN(DecayLengthError, decayLengthError, float);           //! decay length error
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float); //! decay length over its error
-DECLARE_SOA_COLUMN(T, t, float);                                         //! proper lifetime, ps
-DECLARE_SOA_COLUMN(ErrT, errT, float);                                   //! lifetime error
+DECLARE_SOA_COLUMN(T, t, float);                                         //! proper decay time, ps
+DECLARE_SOA_COLUMN(ErrT, errT, float);                                   //! decay time error
 DECLARE_SOA_COLUMN(MassInv, massInv, float);                             //! invariant mass
 DECLARE_SOA_COLUMN(P, p, float);                                         //! momentum
 DECLARE_SOA_COLUMN(Pt, pt, float);                                       //! transverse momentum
@@ -183,7 +183,7 @@ DECLARE_SOA_COLUMN(XDecay, xDecay, float); //! Secondary (decay) vertex X coordi
 DECLARE_SOA_COLUMN(YDecay, yDecay, float); //! Secondary (decay) vertex Y coordinate, cm
 DECLARE_SOA_COLUMN(ZDecay, zDecay, float); //! Secondary (decay) vertex Z coordinate, cm
 DECLARE_SOA_COLUMN(LDecay, lDecay, float); //! Decay length, cm (distance between PV and SV, curvature is neglected)
-DECLARE_SOA_COLUMN(TDecay, tDecay, float); //! Proper lifetime, ps
+DECLARE_SOA_COLUMN(TDecay, tDecay, float); //! Proper decay time, ps
 DECLARE_SOA_COLUMN(XEvent, xEvent, float); //! Primary (event) vertex X coordinate, cm
 DECLARE_SOA_COLUMN(YEvent, yEvent, float); //! Primary (event) vertex Y coordinate, cm
 DECLARE_SOA_COLUMN(ZEvent, zEvent, float); //! Primary (event) vertex Z coordinate, cm
@@ -262,7 +262,8 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   full::MassKPi,
                   full::MlScoreFirstClass,
                   full::MlScoreSecondClass,
-                  full::MlScoreThirdClass);
+                  full::MlScoreThirdClass,
+                  full::CentFT0C);
 
 DECLARE_SOA_TABLE(HfCollIdLCLite, "AOD", "HFCOLLIDLCLITE",
                   full::CollisionId);
@@ -343,7 +344,8 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::MassKPi,
                   full::MlScoreFirstClass,
                   full::MlScoreSecondClass,
-                  full::MlScoreThirdClass);
+                  full::MlScoreThirdClass,
+                  full::CentFT0C);
 
 DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   full::CollisionId,
@@ -410,7 +412,6 @@ struct HfTreeCreatorLcToPKPi {
 
   constexpr static float UndefValueFloat = -999.f;
   constexpr static int UndefValueInt = -999;
-  constexpr static float NanoToPico = 1000.f;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
@@ -418,9 +419,9 @@ struct HfTreeCreatorLcToPKPi {
   // number showing MC status of the candidate (signal or background, prompt or non-prompt etc.)
   enum SigBgStatus : int {
     Background = 0, // combinatorial background, at least one of the prongs do not originate from the Lc decay
-    Prompt,         // signal with Lc produced directly in the event
-    NonPrompt,      // signal with Lc produced aftewards the event, e.g. during decay of beauty particle
-    WrongOrder,     // all the prongs are from Lc decay, but proton and pion hypothesis are swapped
+    Prompt = 1,     // signal with Lc produced directly in the event
+    NonPrompt = 2,  // signal with Lc produced aftewards the event, e.g. during decay of beauty particle
+    WrongOrder = 3, // all the prongs are from Lc decay, but proton and pion hypothesis are swapped
     Default = -1    // impossible, should not be the case, to catch logical error if any
   };
 
@@ -475,6 +476,21 @@ struct HfTreeCreatorLcToPKPi {
     }
     if ((std::accumulate(processes.begin(), processes.begin() + 4, 0) != 0) && fillCandidateMcTable) {
       LOGP(fatal, "fillCandidateMcTable can be activated only in case of MC processing.");
+    }
+  }
+
+  /// \brief function to check when applyMl == true if the HfMlLcToPKPi size is equal to that of the table with candidates
+  /// \param candidates Lc->pKpi candidate table
+  /// \param candidateMlScores ML scores table
+  template <typename CandType>
+  void checkHfMlLcToPKPiSize(CandType const& candidates, aod::HfMlLcToPKPi const& candidateMlScores)
+  {
+    if (applyMl) {
+      const auto candidatesSize = candidates.size();
+      const auto candidateMlScoresSize = candidateMlScores.size();
+      if (candidatesSize != candidateMlScoresSize) {
+        LOG(fatal) << "Tables with candidates and ML scores have different sizes (" << candidatesSize << " vs " << candidateMlScoresSize << ") while applyMl == true. Check if applyMl is enabled in the candidateSelectorLc";
+      }
     }
   }
 
@@ -544,15 +560,14 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidatesSize size of the candidates table
   /// \param isMc boolean flag whether MC or data is processed
   template <int ReconstructionType>
-  void reserveTables(size_t candidatesSize, bool isMc)
+  void reserveTables(int64_t candidatesSize, bool isMc)
   {
-    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidatesSize * 2);
-      } else {
-        rowCandidateFull.reserve(candidatesSize * 2);
-      }
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidatesSize * 2);
     } else {
+      rowCandidateFull.reserve(candidatesSize * 2);
+    }
+    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
       rowCandidateKF.reserve(candidatesSize * 2);
     }
     if (fillCollIdTable) {
@@ -608,8 +623,8 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidate candidate instance
   /// \param candidateMlScore instance of handler of vectors with ML scores associated with the current candidate
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <bool IsMc, typename CandType>
-  void fillLiteTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
+  template <bool UseCentrality, bool IsMc, typename CandType, typename CollType>
+  void fillLiteTable(CandType const& candidate, CollType const& collision, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMassesDCAFitter(candidate, candFlag);
     const float functionCt = HfHelper::ctLc(candidate);
@@ -633,6 +648,11 @@ struct HfTreeCreatorLcToPKPi {
 
     if (applyMl) {
       assignMlScores(candidateMlScore, mlScoreFirstClass, mlScoreSecondClass, mlScoreThirdClass, candFlag);
+    }
+
+    float centFT0C = -1.f;
+    if constexpr (UseCentrality) {
+      centFT0C = collision.centFT0C();
     }
 
     rowCandidateLite(
@@ -682,7 +702,8 @@ struct HfTreeCreatorLcToPKPi {
       functionInvMassKPi,
       mlScoreFirstClass,
       mlScoreSecondClass,
-      mlScoreThirdClass);
+      mlScoreThirdClass,
+      centFT0C);
 
     if (fillCollIdTable) {
       /// save also candidate collision indices
@@ -694,8 +715,8 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidate candidate instance
   /// \param candidateMlScore instance of handler of vectors with ML scores associated with the current candidate
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <bool IsMc, typename CandType>
-  void fillFullTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
+  template <bool UseCentrality, bool IsMc, typename CandType, typename CollType>
+  void fillFullTable(CandType const& candidate, CollType const& collision, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMassesDCAFitter(candidate, candFlag);
     const float functionCt = HfHelper::ctLc(candidate);
@@ -720,6 +741,11 @@ struct HfTreeCreatorLcToPKPi {
 
     if (applyMl) {
       assignMlScores(candidateMlScore, mlScoreFirstClass, mlScoreSecondClass, mlScoreThirdClass, candFlag);
+    }
+
+    float centFT0C = -1.f;
+    if constexpr (UseCentrality) {
+      centFT0C = collision.centFT0C();
     }
 
     rowCandidateFull(
@@ -798,7 +824,8 @@ struct HfTreeCreatorLcToPKPi {
       functionInvMassKPi,
       mlScoreFirstClass,
       mlScoreSecondClass,
-      mlScoreThirdClass);
+      mlScoreThirdClass,
+      centFT0C);
   }
 
   /// \brief function to fill lite table
@@ -814,22 +841,22 @@ struct HfTreeCreatorLcToPKPi {
                    int functionSelection,
                    int sigbgstatus)
   {
-    float chi2primProton;
-    float chi2primPion;
-    float dcaProtonKaon;
-    float dcaPionKaon;
-    float chi2GeoProtonKaon;
-    float chi2GeoPionKaon;
-    float mass;
-    float valueTpcNSigmaPr;
+    float chi2primProton{};
+    float chi2primPion{};
+    float dcaProtonKaon{};
+    float dcaPionKaon{};
+    float chi2GeoProtonKaon{};
+    float chi2GeoPionKaon{};
+    float mass{};
+    float valueTpcNSigmaPr{};
     const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
-    float valueTpcNSigmaPi;
-    float valueTofNSigmaPr;
+    float valueTpcNSigmaPi{};
+    float valueTofNSigmaPr{};
     const float valueTofNSigmaKa = candidate.nSigTofKa1();
-    float valueTofNSigmaPi;
-    float valueTpcTofNSigmaPr;
+    float valueTofNSigmaPi{};
+    float valueTpcTofNSigmaPr{};
     const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
-    float valueTpcTofNSigmaPi;
+    float valueTpcTofNSigmaPi{};
     if (candFlag == 0) {
       chi2primProton = candidate.kfChi2PrimProng0();
       chi2primPion = candidate.kfChi2PrimProng2();
@@ -875,23 +902,23 @@ struct HfTreeCreatorLcToPKPi {
     const float chi2Topo = candidate.kfChi2Topo();
     const float decayLength = candidate.kfDecayLength();
     const float dl = candidate.kfDecayLengthError();
-    const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
+    const float pt = std::hypot(candidate.kfPx(), candidate.kfPy());
     const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
                                     candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
                           pt;
-    const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
+    const float p = std::hypot(pt, candidate.kfPz());
     const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
                                    candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
                          p;
-    const float lifetime = decayLength * MassLambdaCPlus / LightSpeedCm2PS / p;
-    const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
+    const float decayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
+    const float deltaT = dl * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
     rowCandidateKF(
       svX, svY, svZ, svErrX, svErrY, svErrZ,
       pvErrX, pvErrY, pvErrZ,
       chi2primProton, chi2primKaon, chi2primPion,
       dcaProtonKaon, dcaProtonPion, dcaPionKaon,
       chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
-      chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, lifetime, deltaT,
+      chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, decayTime, deltaT,
       mass, p, pt, deltaP, deltaPt,
       functionSelection, sigbgstatus,
       collision.multNTracksPV(),
@@ -919,22 +946,23 @@ struct HfTreeCreatorLcToPKPi {
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                     soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
   {
+    checkHfMlLcToPKPiSize(candidates, candidateMlScores);
 
     constexpr bool IsMc = true;
 
     fillEventProperties<UseCentrality, IsMc>(collisions);
 
-    const size_t candidatesSize = candidates.size();
+    const auto candidatesSize = static_cast<int64_t>(candidates.size());
     reserveTables<ReconstructionType>(candidatesSize, IsMc);
 
     int iCand{0};
     for (const auto& candidate : candidates) {
-      auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
+      const auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
       ++iCand;
-      float ptProng0 = candidate.ptProng0();
-      auto collision = candidate.template collision_as<Colls>();
+      const float ptProng0 = candidate.ptProng0();
+      const auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double const pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
+        double const pseudoRndm = ptProng0 * 1000. - static_cast<double>(static_cast<int64_t>(ptProng0 * 1000));
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         const int sigbgstatus = determineSignalBgStatus(candidate, candFlag);
         const bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
@@ -945,16 +973,16 @@ struct HfTreeCreatorLcToPKPi {
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepSignalMc && isMcCandidateSignal) || (keepBkgMc && !isMcCandidateSignal) || (keepCorrBkgMC && isCorrBkg))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<IsMc>(candidate, candidateMlScore, candFlag);
+            fillLiteTable<UseCentrality, IsMc>(candidate, collision, candidateMlScore, candFlag);
           } else {
-            fillFullTable<IsMc>(candidate, candidateMlScore, candFlag);
+            fillFullTable<UseCentrality, IsMc>(candidate, collision, candidateMlScore, candFlag);
           }
 
           if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
             fillKFTable(candidate, collision, candFlag, functionSelection, sigbgstatus);
           }
           if (fillCandidateMcTable) {
-            float p, pt, svX, svY, svZ, pvX, pvY, pvZ, decayLength, lifetime;
+            float p{}, pt{}, svX{}, svY{}, svZ{}, pvX{}, pvY{}, pvZ{}, decayLength{}, decayTime{};
             if (!isMcCandidateSignal) {
               p = UndefValueFloat;
               pt = UndefValueFloat;
@@ -965,28 +993,26 @@ struct HfTreeCreatorLcToPKPi {
               pvY = UndefValueFloat;
               pvZ = UndefValueFloat;
               decayLength = UndefValueFloat;
-              lifetime = UndefValueFloat;
+              decayTime = UndefValueFloat;
             } else {
-              auto mcParticleProng0 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
-              auto indexMother = RecoDecay::getMother(particles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
-              auto particleMother = particles.rawIteratorAt(indexMother);
-              auto mcCollision = particleMother.template mcCollision_as<aod::McCollisions>();
+              const auto mcParticleProng0 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+              const auto indexMother = RecoDecay::getMother(particles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
+              const auto particleMother = particles.rawIteratorAt(indexMother);
+              const auto mcCollision = particleMother.template mcCollision_as<aod::McCollisions>();
               p = particleMother.p();
               pt = particleMother.pt();
-              const float p2m = p / MassLambdaCPlus;
-              const float gamma = std::sqrt(1 + p2m * p2m); // mother's particle Lorentz factor
               pvX = mcCollision.posX();
               pvY = mcCollision.posY();
               pvZ = mcCollision.posZ();
               svX = mcParticleProng0.vx();
               svY = mcParticleProng0.vy();
               svZ = mcParticleProng0.vz();
-              decayLength = RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ});
-              lifetime = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+              decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
+              decayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
             }
             rowCandidateMC(
               p, pt,
-              svX, svY, svZ, decayLength, lifetime,
+              svX, svY, svZ, decayLength, decayTime,
               pvX, pvY, pvZ);
           }
         }
@@ -1000,19 +1026,17 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
-        auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
-        auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
-        auto p = particle.p();
-        const float p2m = p / MassLambdaCPlus;
-        const float gamma = std::sqrt(1 + p2m * p2m); // mother's particle Lorentz factor
+        const auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
+        const auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
+        const auto p = particle.p();
         const float pvX = mcCollision.posX();
         const float pvY = mcCollision.posY();
         const float pvZ = mcCollision.posZ();
         const float svX = mcDaughter0.vx();
         const float svY = mcDaughter0.vy();
         const float svZ = mcDaughter0.vz();
-        const float l = RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ});
-        const float t = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+        const float decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
+        const float decayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
         rowCandidateFullParticles(
           particle.pt(),
           particle.eta(),
@@ -1021,7 +1045,7 @@ struct HfTreeCreatorLcToPKPi {
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           p,
-          svX, svY, svZ, l, t,
+          svX, svY, svZ, decayLength, decayTime,
           pvX, pvY, pvZ);
       }
     }
@@ -1106,30 +1130,31 @@ struct HfTreeCreatorLcToPKPi {
                       aod::HfMlLcToPKPi const& candidateMlScores,
                       TracksWPid const&, aod::BCs const&)
   {
+    checkHfMlLcToPKPiSize(candidates, candidateMlScores);
 
     constexpr bool IsMc = false;
 
     fillEventProperties<UseCentrality, IsMc>(collisions);
 
-    const size_t candidatesSize = candidates.size();
+    const size_t candidatesSize = static_cast<int64_t>(candidates.size());
     reserveTables<ReconstructionType>(candidatesSize, IsMc);
 
     // Filling candidate properties
 
     int iCand{0};
     for (const auto& candidate : candidates) {
-      auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
+      const auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
       ++iCand;
-      float ptProng0 = candidate.ptProng0();
-      auto collision = candidate.template collision_as<Colls>();
+      const float ptProng0 = candidate.ptProng0();
+      const auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double const pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
+        double const pseudoRndm = ptProng0 * 1000. - static_cast<double>(static_cast<int64_t>(ptProng0 * 1000));
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<IsMc>(candidate, candidateMlScore, candFlag);
+            fillLiteTable<UseCentrality, IsMc>(candidate, collision, candidateMlScore, candFlag);
           } else {
-            fillFullTable<IsMc>(candidate, candidateMlScore, candFlag);
+            fillFullTable<UseCentrality, IsMc>(candidate, collision, candidateMlScore, candFlag);
           }
 
           if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {

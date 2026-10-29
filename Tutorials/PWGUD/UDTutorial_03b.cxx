@@ -13,15 +13,31 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  October 2023
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/Core/UDHelpers.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TDatabasePDG.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TLorentzVector.h>
+#include <TParticlePDG.h>
+
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -100,7 +116,7 @@ struct UDTutorial03b {
   }
 
   // check if a reconstructed track represents a muon candidate
-  bool isMuonCandidate_rec(TC track)
+  bool isMuonCandidate_rec(const TC& track)
   {
     if (abs(track.tpcNSigmaMu()) > 3.) {
       return false;
@@ -124,7 +140,7 @@ struct UDTutorial03b {
 
   // find the McParticles belongin to given tracks
   template <typename MCTrack>
-  std::vector<int64_t> getDaughterParts_rec(TCs const& tracks, std::vector<int64_t> trackIds, MCTrack const& /*parts*/)
+  std::vector<int64_t> getDaughterParts_rec(TCs const& tracks, const std::vector<int64_t>& trackIds, MCTrack const& /*parts*/)
   {
     std::vector<int64_t> emptySelection;
     std::vector<int64_t> selectedParts;
@@ -142,7 +158,7 @@ struct UDTutorial03b {
 
   // retrieve the reconstructed tracks which are associated with the given McParticles
   template <typename McPart>
-  std::vector<int64_t> getDaughterTracks_gen(McPart const& parts, std::vector<int64_t> partIds, TCs const& tracks)
+  std::vector<int64_t> getDaughterTracks_gen(McPart const& parts, const std::vector<int64_t>& partIds, TCs const& tracks)
   {
     // return a vector of track indices
     std::vector<int64_t> emptySelection;
@@ -157,7 +173,7 @@ struct UDTutorial03b {
       if (trs.size() > 1) {
         LOGF(info, "%d tracks belong to same McParticle!", trs.size());
       }
-      for (auto tr : trs) {
+      for (const auto& tr : trs) {
         selectedTracks.push_back(tr.globalIndex());
       }
     }
@@ -180,7 +196,7 @@ struct UDTutorial03b {
     // and be muon candidates
     int netCharge = 0;
     int ind = -1;
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       ind++;
       if (track.isPVContributor()) {
         if (!isMuonCandidate_rec(track)) {
@@ -312,7 +328,7 @@ struct UDTutorial03b {
     TLorentzVector* lv_rec = new TLorentzVector();
 
     // loop over all generated collisions
-    for (auto mccollision : mccollisions) {
+    for (const auto& mccollision : mccollisions) {
       registry.get<TH1>(HIST("MC/Stat"))->Fill(0., 1.);
 
       // get reconstructed collision which belongs to mccollision
@@ -384,14 +400,14 @@ struct UDTutorial03b {
       registry.get<TH2>(HIST("MC/selMPt"))->Fill(lv_rec->M(), lv_rec->Pt(), 1.);
 
       // compute the difference between generated and reconstructed particle momentum
-      for (auto McPart : partSlice) {
+      for (const auto& McPart : partSlice) {
         // get track which corresponds to McPart
         auto trackSlice = tracks.sliceBy(trackPerMcParticle, McPart.globalIndex());
         registry.get<TH1>(HIST("MC/nRecTracks"))->Fill(trackSlice.size(), 1.);
 
         // are there reconstructed tracks?
         if (trackSlice.size() > 0) {
-          for (auto track : trackSlice) {
+          for (const auto& track : trackSlice) {
             auto pTrack = track.p();
             auto pPart = McPart.p();
             auto pDiff = pTrack - pPart;
@@ -420,7 +436,7 @@ struct UDTutorial03b {
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("Reco/nTracks"))->Fill(tracks.size(), 1.);
     int nContributors = 0;
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (track.isPVContributor()) {
         nContributors++;
       }
@@ -473,7 +489,7 @@ struct UDTutorial03b {
     }
 
     // compute the difference between generated and reconstructed momentum
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       // is there an associated McParticle?
       if (track.has_mcParticle()) {
         auto pTrack = track.p();

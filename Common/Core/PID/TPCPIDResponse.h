@@ -17,14 +17,15 @@
 #ifndef COMMON_CORE_PID_TPCPIDRESPONSE_H_
 #define COMMON_CORE_PID_TPCPIDRESPONSE_H_
 
-#include <DataFormatsTPC/BetheBlochAleph.h>
 #include <Framework/Logger.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <Rtypes.h>
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 namespace o2::pid::tpc
@@ -77,7 +78,7 @@ class Response
   float GetExpectedSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const;
   /// Gets the expected resolution of the track with multTPC explicitly provided
   template <typename TrackType>
-  float GetExpectedSigmaAtMultiplicity(const long multTPC, const TrackType& trk, const o2::track::PID::ID id) const;
+  float GetExpectedSigmaAtMultiplicity(const int64_t multTPC, const TrackType& trk, const o2::track::PID::ID id) const;
   /// Gets the number of sigmas with respect the expected value
   template <typename CollisionType, typename TrackType>
   float GetNumberOfSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const;
@@ -86,16 +87,21 @@ class Response
   float GetNumberOfSigmaMCTuned(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const;
   // Number of sigmas with respect to expected for MC, defining a tune-on-data signal value, explicit multTPC
   template <typename TrackType>
-  float GetNumberOfSigmaMCTunedAtMultiplicity(const long multTPC, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const;
+  float GetNumberOfSigmaMCTunedAtMultiplicity(const int64_t multTPC, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const;
   /// Gets the deviation to the expected signal
   template <typename TrackType>
   float GetSignalDelta(const TrackType& trk, const o2::track::PID::ID id) const;
+
   /// Gets relative dEdx resolution contribution due to relative pt resolution
   float GetRelativeResolutiondEdx(const float p, const float mass, const float charge, const float resol) const;
 
   void PrintAll() const;
 
  private:
+  /// Compute expected sigma given a pre-computed expected signal, avoiding a redundant Bethe-Bloch call.
+  template <typename TrackType>
+  float sigmaFromSignal(float expectedSignal, const int64_t multTPC, const TrackType& track, const o2::track::PID::ID id) const;
+
   std::array<float, 5> mBetheBlochParams = {0.03209809958934784, 19.9768009185791, 2.5266601063857674e-16, 2.7212300300598145, 6.080920219421387};
   std::array<float, 2> mResolutionParamsDefault = {0.07, 0.0};
   std::vector<double> mResolutionParams = {5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585};
@@ -116,7 +122,7 @@ inline float Response::GetExpectedSignal(const TrackType& track, const o2::track
   if (!track.hasTPC()) {
     return -999.f;
   }
-  const float bethe = mMIP * o2::tpc::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
+  const float bethe = mMIP * o2::common::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
   return bethe >= 0.f ? bethe : -999.f;
 }
 
@@ -130,22 +136,27 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
 
 /// Gets the expected resolution of the measurement
 template <typename TrackType>
-inline float Response::GetExpectedSigmaAtMultiplicity(const long multTPC, const TrackType& track, const o2::track::PID::ID id) const
+inline float Response::GetExpectedSigmaAtMultiplicity(const int64_t multTPC, const TrackType& track, const o2::track::PID::ID id) const
 {
   if (!track.hasTPC()) {
     return -999.f;
   }
-  float resolution = 0.;
+  return sigmaFromSignal(GetExpectedSignal(track, id), multTPC, track, id);
+}
+
+template <typename TrackType>
+inline float Response::sigmaFromSignal(float expectedSignal, const int64_t multTPC, const TrackType& track, const o2::track::PID::ID id) const
+{
+  float resolution = 0.f;
   if (mUseDefaultResolutionParam) {
-    const float reso = GetExpectedSignal(track, id) * mResolutionParamsDefault[0] * (static_cast<float>(track.tpcNClsFound()) > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / static_cast<float>(track.tpcNClsFound())) : 1.f);
+    const float reso = expectedSignal * mResolutionParamsDefault[0] * (static_cast<float>(track.tpcNClsFound()) > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / static_cast<float>(track.tpcNClsFound())) : 1.f);
     reso >= 0.f ? resolution = reso : resolution = -999.f;
   } else {
-
-    const double ncl = nClNorm / track.tpcNClsFound(); //
+    const double ncl = nClNorm / track.tpcNClsFound();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
-    const double dEdx = o2::tpc::BetheBlochAleph(static_cast<float>(bg), mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
+    const double dEdx = o2::common::BetheBlochAleph(static_cast<float>(bg), mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
     const double relReso = GetRelativeResolutiondEdx(p, mass, o2::track::pid_constants::sCharges[id], mResolutionParams[3]);
 
     const std::vector<double> values{1.f / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), multTPC / mMultNormalization};
@@ -160,16 +171,15 @@ inline float Response::GetExpectedSigmaAtMultiplicity(const long multTPC, const 
 template <typename CollisionType, typename TrackType>
 inline float Response::GetNumberOfSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const
 {
-  if (GetExpectedSigma(collision, trk, id) < 0.) {
+  const float signal = GetExpectedSignal(trk, id);
+  if (signal < 0.f) {
     return -999.f;
   }
-  if (GetExpectedSignal(trk, id) < 0.) {
+  const float sigma = sigmaFromSignal(signal, collision.multTPC(), trk, id);
+  if (sigma < 0.f) {
     return -999.f;
   }
-  if (!trk.hasTPC()) {
-    return -999.f;
-  }
-  return ((trk.tpcSignal() - GetExpectedSignal(trk, id)) / GetExpectedSigma(collision, trk, id));
+  return (trk.tpcSignal() - signal) / sigma;
 }
 
 template <typename CollisionType, typename TrackType>
@@ -179,41 +189,38 @@ inline float Response::GetNumberOfSigmaMCTuned(const CollisionType& collision, c
 }
 
 template <typename TrackType>
-inline float Response::GetNumberOfSigmaMCTunedAtMultiplicity(const long multTPC, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const
+inline float Response::GetNumberOfSigmaMCTunedAtMultiplicity(const int64_t multTPC, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const
 {
-  if (GetExpectedSigmaAtMultiplicity(multTPC, trk, id) < 0.) {
+  const float signal = GetExpectedSignal(trk, id);
+  if (signal < 0.f) {
     return -999.f;
   }
-  if (GetExpectedSignal(trk, id) < 0.) {
+  const float sigma = sigmaFromSignal(signal, multTPC, trk, id);
+  if (sigma < 0.f) {
     return -999.f;
   }
-  if (!trk.hasTPC()) {
-    return -999.f;
-  }
-  return ((mcTunedTPCSignal - GetExpectedSignal(trk, id)) / GetExpectedSigmaAtMultiplicity(multTPC, trk, id));
+  return (mcTunedTPCSignal - signal) / sigma;
 }
 
 /// Gets the deviation between the actual signal and the expected signal
 template <typename TrackType>
 inline float Response::GetSignalDelta(const TrackType& trk, const o2::track::PID::ID id) const
 {
-  if (GetExpectedSignal(trk, id) < 0.) {
+  const float signal = GetExpectedSignal(trk, id);
+  if (signal < 0.f) {
     return -999.f;
   }
-  if (!trk.hasTPC()) {
-    return -999.f;
-  }
-  return (trk.tpcSignal() - GetExpectedSignal(trk, id));
+  return trk.tpcSignal() - signal;
 }
 
 //// Gets relative dEdx resolution contribution due relative pt resolution
 inline float Response::GetRelativeResolutiondEdx(const float p, const float mass, const float charge, const float resol) const
 {
   const float bg = p / mass;
-  const float dEdx = o2::tpc::BetheBlochAleph(bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
+  const float dEdx = o2::common::BetheBlochAleph(bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
   const float deltaP = resol * std::sqrt(dEdx);
   const float bgDelta = p * (1 + deltaP) / mass;
-  const float dEdx2 = o2::tpc::BetheBlochAleph(bgDelta, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
+  const float dEdx2 = o2::common::BetheBlochAleph(bgDelta, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
   const float deltaRel = std::abs(dEdx2 - dEdx) / dEdx;
   return deltaRel;
 }

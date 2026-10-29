@@ -25,6 +25,7 @@ struct FddConverter {
 
   void process(aod::FDDs_000 const& fdd_000)
   {
+    fdd_001.reserve(fdd_000.size());
     for (auto& p : fdd_000) {
       int16_t chargeA[8] = {0u};
       int16_t chargeC[8] = {0u};

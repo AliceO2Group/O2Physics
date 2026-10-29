@@ -14,11 +14,13 @@
 // Analysis task for single muon QC
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-
 #include "PWGEM/Dilepton/Core/SingleTrackQC.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+using namespace o2::framework;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

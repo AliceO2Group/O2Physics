@@ -31,6 +31,21 @@
 #include <THnSparse.h>
 #include <TList.h>
 #include <TMath.h>
+#include <THn.h>
+#include <TIterator.h>
+#include <TList.h>
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TNamed.h>
+#include <TObject.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <cstdint>
+#include <cstring>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -105,7 +120,7 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
 
   std::vector<o2::framework::AxisSpec> pairAxis(correlationAxis);
   pairAxis.insert(pairAxis.end(), userAxis.begin(), userAxis.end());
-  long bins = 1;
+  int64_t bins = 1;
   for (const auto& axis : pairAxis) {
     bins *= axis.getNbins();
   }

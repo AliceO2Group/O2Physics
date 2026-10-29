@@ -9,10 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/Logger.h"
-#include "CommonConstants/LHCConstants.h"
-#include "CommonDataFormat/BunchFilling.h"
 #include "UDFSParser.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/BunchFilling.h>
+#include <Framework/Logger.h>
+
+#include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <string>
+#include <vector>
+
+#include <string.h>
 
 // -----------------------------------------------------------------------------
 UDFSParser::UDFSParser(const char* filename)
@@ -129,8 +138,8 @@ bool UDFSParser::isNumber(std::string s)
 }
 
 // -----------------------------------------------------------------------------
-std::string UDFSParser::trim(std::string str,
-                             std::string whitespace = " \t")
+std::string UDFSParser::trim(const std::string& str,
+                             const std::string& whitespace = " \t")
 {
   const auto strBegin = str.find_first_not_of(whitespace);
   if (strBegin == std::string::npos)

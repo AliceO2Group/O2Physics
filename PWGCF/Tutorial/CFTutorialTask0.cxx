@@ -11,9 +11,16 @@
 
 /// \author Luca Barioglio
 
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,7 +60,7 @@ struct CFTutorialTask0 {
     }
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
 
-    for (auto track : inputTracks) { // Loop over tracks
+    for (const auto& track : inputTracks) { // Loop over tracks
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());
     }

@@ -21,7 +21,9 @@
 #ifndef PWGUD_DATAMODEL_TWOTRACKSEVENTTABLES_H_
 #define PWGUD_DATAMODEL_TWOTRACKSEVENTTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -29,7 +31,7 @@ namespace two_tracks_tree
 {
 // event info
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
-DECLARE_SOA_COLUMN(Bc, bc, int);
+DECLARE_SOA_COLUMN(Bc, bc, uint64_t);
 DECLARE_SOA_COLUMN(TotalTracks, totalTracks, int);
 DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
 DECLARE_SOA_COLUMN(GlobalNonPVtracks, globalNonPVtracks, int);

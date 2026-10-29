@@ -9,15 +9,24 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-// ROOT includes
-#include <TH1F.h>
-#include "TPDGCode.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Variant.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <utility>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,7 +41,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   std::swap(workflowOptions, options);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 #define PDGBINNING 100, 0, 100
 

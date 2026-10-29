@@ -13,13 +13,37 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  20.05.2022
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "TLorentzVector.h"
-#include "CommonConstants/LHCConstants.h"
-#include "ReconstructionDataFormats/BCRange.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/UDHelpers.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/ProcessingContext.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/BCRange.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TLorentzVector.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -74,7 +98,7 @@ struct DiffQA {
     // initialize global variables
     maxdEdxTPC = 0.;
     maxdEdxTOF = 0.;
-    diffCuts = (DGCutparHolder)DGCuts;
+    diffCuts = DGCutparHolder(DGCuts);
 
     // add histograms for the different process functions
     if (context.mOptions.get<bool>("processMain")) {
@@ -633,7 +657,7 @@ struct DiffQA {
     int64_t lastBCwFV0 = fv0s.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFV0 / o2::constants::lhc::LHCMaxBunches;
 
-    for (auto fv0 : fv0s) {
+    for (const auto& fv0 : fv0s) {
 
       // side A
       for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
@@ -668,7 +692,7 @@ struct DiffQA {
 
     int64_t lastBCwFT0 = ft0s.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFT0 / o2::constants::lhc::LHCMaxBunches;
-    for (auto ft0 : ft0s) {
+    for (const auto& ft0 : ft0s) {
 
       // side A
       for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
@@ -859,7 +883,7 @@ struct DiffQA {
 
     int64_t lastBCwFDD = fdds.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFDD / o2::constants::lhc::LHCMaxBunches;
-    for (auto fdd : fdds) {
+    for (const auto& fdd : fdds) {
 
       // side A
       for (auto ind = 0; ind < 8; ind++) {
@@ -923,7 +947,7 @@ struct DiffQA {
   void processTest(CCs const& collisions, BCs const& bcs)
   {
     uint64_t bc1, bc2, bc3;
-    for (auto col : collisions) {
+    for (const auto& col : collisions) {
       bc1 = -1;
       bc2 = -2;
       bc3 = -3;

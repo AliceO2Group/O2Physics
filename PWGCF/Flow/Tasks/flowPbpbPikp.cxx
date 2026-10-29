@@ -16,13 +16,10 @@
 #include "PWGCF/GenericFramework/Core/FlowContainer.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
-#include "PWGCF/GenericFramework/Core/GFWCumulant.h"
-#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
-#include "PWGCF/GenericFramework/Core/GFWWeightsList.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -31,26 +28,40 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StringHelpers.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "Math/Vector4D.h"
 #include <TF1.h>
+#include <TH1.h>
+#include <TH3.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TString.h>
 
+#include <sys/types.h>
+
+#include <RtypesCore.h>
+
+#include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -139,7 +150,7 @@ struct FlowPbpbPikp {
   std::vector<int> eventCuts;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -463,7 +474,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TCollision, typename TTrack>
-  void fillQA(const TCollision collision, const TTrack track, int pidIndex, double wacc)
+  void fillQA(const TCollision& collision, const TTrack& track, int pidIndex, double wacc)
   {
     histos.fill(HIST("partCount"), pidIndex - 1, collision.centFT0C(), track.pt());
     switch (pidIndex) {
@@ -510,7 +521,7 @@ struct FlowPbpbPikp {
   } // end of fillQA
 
   template <typename TTrack>
-  int getNsigmaPIDTpcTof(TTrack track)
+  int getNsigmaPIDTpcTof(const TTrack& track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -541,7 +552,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TTrack>
-  int getNsigmaPIDAssymmetric(TTrack track)
+  int getNsigmaPIDAssymmetric(const TTrack& track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -695,7 +706,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TTrack, typename TCollision>
-  double getAcceptance(TTrack track, const TCollision collision, int index)
+  double getAcceptance(const TTrack& track, const TCollision& collision, int index)
   { // 0 = ref, 1 = ch, 2 = pi, 3 = ka, 4 = pr
     if (index < 0 || index >= kCount_OutputSpecies) {
       return 1;
@@ -724,7 +735,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TTrack, typename TCollision>
-  void fillWeights(const TTrack track, const TCollision collision, const int& pid_index, const int& run)
+  void fillWeights(const TTrack& track, const TCollision& collision, const int& pid_index, const int& run)
   {
     double cent = collision.centFT0C();
     double vtxz = collision.posZ();
@@ -772,7 +783,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TCollision>
-  bool selectionEvent(TCollision collision, const int mult, const float cent)
+  bool selectionEvent(const TCollision& collision, const int mult, const float cent)
   {
     histos.fill(HIST("hEventCount"), kFilteredEvents);
     if (!collision.sel8()) {

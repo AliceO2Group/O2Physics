@@ -9,11 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <algorithm>
-#include "Framework/Logger.h"
-#include "rapidjson/document.h"
-#include "rapidjson/filereadstream.h"
 #include "PWGUD/Core/UDGoodRunSelector.h"
+
+#include <Framework/Logger.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
+#include <algorithm>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 class TFile;
 
@@ -63,7 +69,7 @@ bool UDGoodRunSelector::isGoodRun(int runNumber)
   }
 }
 
-std::vector<int> UDGoodRunSelector::goodRuns(std::string runPeriod)
+std::vector<int> UDGoodRunSelector::goodRuns(const std::string& runPeriod)
 {
   auto it = mrunMap.find(runPeriod.c_str());
   if (it != mrunMap.end()) {

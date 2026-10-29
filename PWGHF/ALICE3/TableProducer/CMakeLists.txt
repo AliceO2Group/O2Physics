@@ -13,11 +13,19 @@
 
 o2physics_add_dpl_workflow(candidate-creator-chic
                     SOURCES candidateCreatorChic.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-x
                     SOURCES candidateCreatorX.cxx
+                    REUSE_FROM HfCandidatesPCH
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(candidate-creator-xicc
+                    SOURCES candidateCreatorXicc.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
@@ -25,41 +33,55 @@ o2physics_add_dpl_workflow(candidate-creator-x
 
 o2physics_add_dpl_workflow(candidate-selector-chic-to-jpsi-gamma
                     SOURCES candidateSelectorChicToJpsiGamma.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-d0-alice3-barrel
                     SOURCES candidateSelectorD0Alice3Barrel.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-d0-alice3-forward
                     SOURCES candidateSelectorD0Alice3Forward.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-d0-parametrized-pid
                     SOURCES candidateSelectorD0ParametrizedPid.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-jpsi
                     SOURCES candidateSelectorJpsi.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-lc-alice3
                     SOURCES candidateSelectorLcAlice3.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-lc-parametrized-pid
                     SOURCES candidateSelectorLcParametrizedPid.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-x-to-jpsi-pi-pi
                     SOURCES candidateSelectorXToJpsiPiPi.cxx
+                    REUSE_FROM HfCandidatesPCH
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(candidate-selector-xicc-to-p-k-pi-pi
+                    SOURCES candidateSelectorXiccToPKPiPi.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -67,10 +89,18 @@ o2physics_add_dpl_workflow(candidate-selector-x-to-jpsi-pi-pi
 
 o2physics_add_dpl_workflow(tree-creator-chic-to-jpsi-gamma
                     SOURCES treeCreatorChicToJpsiGamma.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tree-creator-x-to-jpsi-pi-pi
                     SOURCES treeCreatorXToJpsiPiPi.cxx
+                    REUSE_FROM HfCandidatesPCH
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tree-creator-xicc-to-p-k-pi-pi
+                    SOURCES treeCreatorXiccToPKPiPi.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

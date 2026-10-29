@@ -16,16 +16,14 @@
 #ifndef DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
 #define DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
 
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
-#include <sys/types.h>
-
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <vector>
 
@@ -244,6 +242,20 @@ static const std::vector<std::string> labelsPtCand = {
 // column labels
 static const std::vector<std::string> labelsCutVarCand = {"delta inv. mass", "max d0d0", "max pointing angle", "max pointing angle XY", "min cos pointing angle", "min cos pointing angle XY", "min norm decay length", "min norm decay length XY", "min decay length", "min decay length XY"};
 
+// var indices for the cuts
+enum CutsIds : uint8_t {
+  DeltaMass = 0,
+  MaxD0D0 = 1,
+  MaxPointingAngle = 2,
+  MaxPointingAngleXY = 3,
+  MinCosPointingAngle = 4,
+  MinCosPointingAngleXY = 5,
+  MinNormDecayLength = 6,
+  MinNormDecayLengthXY = 7,
+  MinDecayLength = 8,
+  MinDecayLengthXY = 9
+};
+
 static constexpr int NBinsPtMl = 10;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
@@ -326,10 +338,10 @@ DECLARE_SOA_COLUMN(TpcNumSigmaPi, tpcNumSigmaPi, int8_t);                   //! 
 DECLARE_SOA_COLUMN(TpcNumSigmaKa, tpcNumSigmaKa, int8_t);                   //! compressed NsigmaTPC for kaons
 DECLARE_SOA_COLUMN(TofNumSigmaPi, tofNumSigmaPi, int8_t);                   //! compressed NsigmaTOF for pions
 DECLARE_SOA_COLUMN(TofNumSigmaKa, tofNumSigmaKa, int8_t);                   //! compressed NsigmaTOF for kaons
-DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t);                        //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t);                        //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t);                              //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t);                              //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t);                        // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t);                        // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t);                              // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t);                              // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(CmoPrimUnfm80, cmoPrimUnfm80, uint8_t);
 DECLARE_SOA_COLUMN(CmoFV0AUnfm80, cmoFV0AUnfm80, uint8_t);
 DECLARE_SOA_COLUMN(CmoFT0AUnfm80, cmoFT0AUnfm80, uint8_t);
@@ -444,6 +456,8 @@ DECLARE_SOA_COLUMN(Eta, eta, float);                                           /
 DECLARE_SOA_COLUMN(Phi, phi, float);                                           //! D0-candidate phi
 DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                               //! invariant mass (D0 hypothesis)
 DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);                         //! invariant mass (D0bar hypothesis)
+DECLARE_SOA_COLUMN(CosThetaStarD0, cosThetaStarD0, float);                     //! D0-candidate cost* (Helicity frame, D0 mass hypothesis)
+DECLARE_SOA_COLUMN(CosThetaStarD0bar, cosThetaStarD0bar, float);               //! D0-candidate cost* (Helicity frame, D0bar mass hypthesis)
 DECLARE_SOA_COLUMN(DecLength, decLength, uint8_t);                             //! compressed decay length
 DECLARE_SOA_COLUMN(DecLengthXY, decLengthXY, uint8_t);                         //! compressed decay length XY
 DECLARE_SOA_COLUMN(NormDecLength, normDecLength, uint8_t);                     //! compressed normalised decay length
@@ -472,6 +486,8 @@ DECLARE_SOA_TABLE(D0CalibCands, "AOD", "D0CALIBCAND",
                   hf_calib::Phi,
                   hf_calib::InvMassD0,
                   hf_calib::InvMassD0bar,
+                  hf_calib::CosThetaStarD0,
+                  hf_calib::CosThetaStarD0bar,
                   hf_calib::DecLength,
                   hf_calib::DecLengthXY,
                   hf_calib::NormDecLength,

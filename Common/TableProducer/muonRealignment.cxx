@@ -26,6 +26,7 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -38,7 +39,6 @@
 
 #include <TMath.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <RtypesCore.h>
 
 #include <chrono>
@@ -104,7 +104,7 @@ struct MuonRealignment {
   TGeoManager* geoNew = nullptr;
   TGeoManager* geoRef = nullptr;
 
-  Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
+  Preslice<aod::FwdTrkCls> perMuon = aod::fwdtrkcl::fwdtrackId;
 
   int GetDetElemId(int iDetElemNumber)
   {
@@ -289,16 +289,16 @@ struct MuonRealignment {
         fwdTrkCovRealignInfo.sigPhi = TMath::Sqrt(fwdtrack.getCovariances()(2, 2));
         fwdTrkCovRealignInfo.sigTgl = TMath::Sqrt(fwdtrack.getCovariances()(3, 3));
         fwdTrkCovRealignInfo.sig1Pt = TMath::Sqrt(fwdtrack.getCovariances()(4, 4));
-        fwdTrkCovRealignInfo.rhoXY = (Char_t)(128. * fwdtrack.getCovariances()(0, 1) / (fwdTrkCovRealignInfo.sigX * fwdTrkCovRealignInfo.sigY));
-        fwdTrkCovRealignInfo.rhoPhiX = (Char_t)(128. * fwdtrack.getCovariances()(0, 2) / (fwdTrkCovRealignInfo.sigPhi * fwdTrkCovRealignInfo.sigX));
-        fwdTrkCovRealignInfo.rhoPhiY = (Char_t)(128. * fwdtrack.getCovariances()(1, 2) / (fwdTrkCovRealignInfo.sigPhi * fwdTrkCovRealignInfo.sigY));
-        fwdTrkCovRealignInfo.rhoTglX = (Char_t)(128. * fwdtrack.getCovariances()(0, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigX));
-        fwdTrkCovRealignInfo.rhoTglY = (Char_t)(128. * fwdtrack.getCovariances()(1, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigY));
-        fwdTrkCovRealignInfo.rhoTglPhi = (Char_t)(128. * fwdtrack.getCovariances()(2, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigPhi));
-        fwdTrkCovRealignInfo.rho1PtX = (Char_t)(128. * fwdtrack.getCovariances()(0, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigX));
-        fwdTrkCovRealignInfo.rho1PtY = (Char_t)(128. * fwdtrack.getCovariances()(1, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigY));
-        fwdTrkCovRealignInfo.rho1PtPhi = (Char_t)(128. * fwdtrack.getCovariances()(2, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigPhi));
-        fwdTrkCovRealignInfo.rho1PtTgl = (Char_t)(128. * fwdtrack.getCovariances()(3, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigTgl));
+        fwdTrkCovRealignInfo.rhoXY = static_cast<Char_t>(128. * fwdtrack.getCovariances()(0, 1) / (fwdTrkCovRealignInfo.sigX * fwdTrkCovRealignInfo.sigY));
+        fwdTrkCovRealignInfo.rhoPhiX = static_cast<Char_t>(128. * fwdtrack.getCovariances()(0, 2) / (fwdTrkCovRealignInfo.sigPhi * fwdTrkCovRealignInfo.sigX));
+        fwdTrkCovRealignInfo.rhoPhiY = static_cast<Char_t>(128. * fwdtrack.getCovariances()(1, 2) / (fwdTrkCovRealignInfo.sigPhi * fwdTrkCovRealignInfo.sigY));
+        fwdTrkCovRealignInfo.rhoTglX = static_cast<Char_t>(128. * fwdtrack.getCovariances()(0, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigX));
+        fwdTrkCovRealignInfo.rhoTglY = static_cast<Char_t>(128. * fwdtrack.getCovariances()(1, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigY));
+        fwdTrkCovRealignInfo.rhoTglPhi = static_cast<Char_t>(128. * fwdtrack.getCovariances()(2, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigPhi));
+        fwdTrkCovRealignInfo.rho1PtX = static_cast<Char_t>(128. * fwdtrack.getCovariances()(0, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigX));
+        fwdTrkCovRealignInfo.rho1PtY = static_cast<Char_t>(128. * fwdtrack.getCovariances()(1, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigY));
+        fwdTrkCovRealignInfo.rho1PtPhi = static_cast<Char_t>(128. * fwdtrack.getCovariances()(2, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigPhi));
+        fwdTrkCovRealignInfo.rho1PtTgl = static_cast<Char_t>(128. * fwdtrack.getCovariances()(3, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigTgl));
         LOGF(debug, "TrackParm %d, x:%g  y:%g  z:%g  phi:%g  tgl:%g  InvQPt:%g  chi2:%g  nClusters:%d", muon.globalIndex(), muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(), muon.chi2(), muon.nClusters());
         LOGF(debug, "Re-aligned trackParm %d, x:%g  y:%g  z:%g  phi:%g  tgl:%g  InvQPt:%g  chi2:%g  nClusters:%d  removable:%d", muonRealignId, fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), fwdtrack.getPhi(), fwdtrack.getTgl(), fwdtrack.getInvQPt(), fwdtrack.getTrackChi2(), convertedTrack.getNClusters(), removable);
         // Fill refitted track info

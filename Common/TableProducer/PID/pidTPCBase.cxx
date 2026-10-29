@@ -51,7 +51,7 @@ struct PidMultiplicity {
   {
     LOG(info) << "Initializing PID Mult Task";
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "PIDMults");
+    enableTable = o2::common::core::isTableRequiredInWorkflow(initContext, "PIDMults");
     if (enableTable) {
       LOG(info) << "Table TPC PID Multiplicity enabled!";
     }
@@ -61,7 +61,7 @@ struct PidMultiplicity {
   }
 
   using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
-  Partition<TrksIU> tracksWithTPCIU = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<TrksIU> tracksWithTPCIU = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0));
   void processIU(aod::Collision const& collision, TrksIU const&)
   {
     if (!enableTable) {
@@ -73,7 +73,7 @@ struct PidMultiplicity {
   PROCESS_SWITCH(PidMultiplicity, processIU, "Process with IU tracks, faster but works on Run3 only", false);
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0));
   void processStandard(aod::Collision const& collision, Trks const&)
   {
     if (!enableTable) {

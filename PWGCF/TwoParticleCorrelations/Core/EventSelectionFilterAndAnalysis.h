@@ -8,18 +8,25 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef EVENTSELECTIONFILTERANDANALYSIS_H
-#define EVENTSELECTIONFILTERANDANALYSIS_H
+
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_EVENTSELECTIONFILTERANDANALYSIS_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_CORE_EVENTSELECTIONFILTERANDANALYSIS_H_
+
+#include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+
+#include <Framework/Logger.h>
+
+#include <TList.h>
+#include <TObject.h>
+#include <TString.h>
 
 #include <Rtypes.h>
-#include <TString.h>
-#include <TObject.h>
-#include <TNamed.h>
-#include <TList.h>
 
-#include <fairlogger/Logger.h>
-#include "SkimmingConfigurableCuts.h"
-#include "SelectionFilterAndAnalysis.h"
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace o2
 {
@@ -41,10 +48,10 @@ class EventSelectionConfigurable
                              std::string trigsel = "",
                              std::string zvtxsel = "",
                              std::string pileuprej = "")
-    : mBFiledSel(bfieldsel), mMultSel{multsel}, mTriggerSel{trigsel}, mZVertexSel{zvtxsel}, mPileUpRejection{pileuprej}
+    : mBFiledSel(std::move(bfieldsel)), mMultSel{std::move(multsel)}, mTriggerSel{std::move(trigsel)}, mZVertexSel{std::move(zvtxsel)}, mPileUpRejection{std::move(pileuprej)}
   {
   }
-  EventSelectionConfigurable(std::vector<std::string> bfieldsel,
+  EventSelectionConfigurable(const std::vector<std::string>& bfieldsel,
                              std::vector<std::string> multsel,
                              std::vector<std::string> trigsel,
                              std::vector<std::string> zvtxsel,
@@ -77,6 +84,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
  private:
   struct ComplexBrickHelper {
+    virtual ~ComplexBrickHelper() = default;
     CutBrick<float>* mBrick = nullptr;
     int mDefaultEstimatorIndex = -1;
     std::vector<int> mAlternateEstimatorIndex = std::vector<int>{};
@@ -88,15 +96,15 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
     void armedBrick(uint64_t&, uint64_t&, uint64_t&, int&);
   };
   struct MultiplicityBrick : public ComplexBrickHelper {
-    virtual void initialize();
+    void initialize() override;
     std::vector<float> GetMultiplicities();
     int GetArmedIndex() { return mBrick->getArmedIndex(); }
-    virtual bool Filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index);
+    bool Filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index) override;
   };
   struct PileUpRejBrick : public ComplexBrickHelper {
-    virtual void initialize();
+    void initialize() override;
     std::vector<float> mIndepVar = std::vector<float>{};
-    virtual bool Filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index);
+    bool Filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index) override;
   };
 
   static bool filterBrickValue(uint64_t& mask, int& bit, CutBrick<float>* brick, float value);
@@ -104,7 +112,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   template <typename CollisionToFilter, typename AssociatedTracks>
   void StoreMultiplicities(CollisionToFilter const&, AssociatedTracks const&);
   int CalculateMaskLength() override;
-  virtual void StoreArmedMask() override;
+  void StoreArmedMask() override;
 
   std::vector<CutBrick<float>*> mBFieldSelection; //! the magnetic field selection cuts
   MultiplicityBrick* mMultiplicityClasses;        //! the multiplicity classes cuts
@@ -112,7 +120,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   CutBrick<float>* mZVertex;                      //! the z vertex selection cuts
   PileUpRejBrick* mPileUpRejection;               //! the pile-up rejection criteria
 
-  ClassDef(EventSelectionFilterAndAnalysis, 1)
+  ClassDefOverride(EventSelectionFilterAndAnalysis, 1)
 };
 
 /// \brief Stores the different multiplicities needed for proper collision filtering
@@ -134,7 +142,7 @@ inline void EventSelectionFilterAndAnalysis::StoreMultiplicities(CollisionToFilt
   /* we require tracks with pT > 0.15 and |eta| < 0.8 and additionally the TPCout flag */
   /* for the time being there is not TPCout flag, we just consider hasTPC              */
   for (auto track : tracks) {
-    if (track.pt() > 0.15 and abs(track.eta()) < 0.8 and track.hasTPC()) {
+    if (track.pt() > 0.15 and std::abs(track.eta()) < 0.8 and track.hasTPC()) {
       ntracksTPCout++;
     }
   }
@@ -224,8 +232,6 @@ inline uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const&
     bool acc = mMultiplicityClasses->ComplexBrickHelper::Filter(selectedMask, bit);
     acceptcollision = acceptcollision && acc;
   }
-  if (mTriggerSelection != nullptr) {
-  }
   if (mZVertex != nullptr) {
     bool acc = filterBrickValue(selectedMask, bit, mZVertex, col.posZ());
     acceptcollision = acceptcollision && acc;
@@ -265,4 +271,4 @@ inline std::vector<float> EventSelectionFilterAndAnalysis::MultiplicityBrick::Ge
 } // namespace analysis
 } // namespace o2
 
-#endif // EVENTSELECTIONFILTERANDANALYSIS_H
+#endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_EVENTSELECTIONFILTERANDANALYSIS_H_

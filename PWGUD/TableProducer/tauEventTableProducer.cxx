@@ -16,32 +16,29 @@
 /// \since  09.04.2025
 //
 
-// C++ headers
-#include <algorithm>
-#include <random>
-#include <set>
-#include <utility>
-#include <vector>
-
-// O2 headers
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-
-// O2Physics headers
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/TauEventTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <set>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,7 +49,7 @@ struct TauEventTableProducer {
   Produces<o2::aod::TauTwoTracks> tauTwoTracks;
   Produces<o2::aod::TrueTauTwoTracks> trueTauTwoTracks;
 
-  // Global varialbes
+  // Global variables
   Service<o2::framework::O2DatabasePDG> pdg;
   SGSelector sgSelector;
 
@@ -216,7 +213,7 @@ struct TauEventTableProducer {
 
   std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
 
-  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers)
   {
     // layer 0 corresponds to the the innermost ITS layer
     cutMyRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));

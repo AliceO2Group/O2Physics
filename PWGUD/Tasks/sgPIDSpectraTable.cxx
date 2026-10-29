@@ -12,18 +12,21 @@
 // \Single Gap Event Analyzer
 // \author Sasha Bylinkin, alexander.bylinkin@gmail.com
 // \since  April 2023
+
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/SGTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TFile.h"
-#include "TTree.h"
-#include "TVector3.h"
+#include <TVector3.h>
 
 #include <vector>
 
@@ -101,7 +104,7 @@ struct SGPIDSpectraTable {
     float tpcde, tofde, tpcmu, tofmu;
     TVector3 a;
     int goodtracks = 0;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (trackselector(t, parameters)) {
         goodtracks++;
       }
@@ -110,7 +113,7 @@ struct SGPIDSpectraTable {
       return;
     SGevents(coll.runNumber(), coll.flags(), truegapSide, coll.energyCommonZNA(), coll.energyCommonZNC(), goodtracks, coll.occupancyInTime(), coll.hadronicRate());
     // SGevents(coll.runNumber(), coll.flags());
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (trackselector(t, parameters)) {
         a.SetXYZ(t.px(), t.py(), t.pz());
         tpcpi = t.hasTPC() ? t.tpcNSigmaPi() : -999;

@@ -8,17 +8,21 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef PIDSELECTIONFILTERANDANALYSIS_H
-#define PIDSELECTIONFILTERANDANALYSIS_H
+
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_PIDSELECTIONFILTERANDANALYSIS_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_CORE_PIDSELECTIONFILTERANDANALYSIS_H_
+
+#include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+
+#include <TString.h>
 
 #include <Rtypes.h>
-#include <TString.h>
-#include <TObject.h>
-#include <TNamed.h>
-#include <TList.h>
 
-#include "SkimmingConfigurableCuts.h"
-#include "SelectionFilterAndAnalysis.h"
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 #undef INCORPORATEBAYESIANPID
 
@@ -50,16 +54,16 @@ class PIDSelectionConfigurable
 #else
   PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
                            std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "")
-    : mPidTpcSel_el{pidtpcel},
-      mPidTpcSel_mu{pidtpcmu},
-      mPidTpcSel_pi{pidtpcpi},
-      mPidTpcSel_ka{pidtpcka},
-      mPidTpcSel_pr{pidtpcpr},
-      mPidTofSel_el{pidtofel},
-      mPidTofSel_mu{pidtofmu},
-      mPidTofSel_pi{pidtofpi},
-      mPidTofSel_ka{pidtofka},
-      mPidTofSel_pr{pidtofpr}
+    : mPidTpcSel_el{std::move(pidtpcel)},
+      mPidTpcSel_mu{std::move(pidtpcmu)},
+      mPidTpcSel_pi{std::move(pidtpcpi)},
+      mPidTpcSel_ka{std::move(pidtpcka)},
+      mPidTpcSel_pr{std::move(pidtpcpr)},
+      mPidTofSel_el{std::move(pidtofel)},
+      mPidTofSel_mu{std::move(pidtofmu)},
+      mPidTofSel_pi{std::move(pidtofpi)},
+      mPidTofSel_ka{std::move(pidtofka)},
+      mPidTofSel_pr{std::move(pidtofpr)}
   {
   }
   PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
@@ -94,7 +98,7 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   PIDSelectionFilterAndAnalysis();
   PIDSelectionFilterAndAnalysis(const TString&, selmodes);
   PIDSelectionFilterAndAnalysis(const PIDSelectionConfigurable& pidsel, selmodes mode);
-  virtual ~PIDSelectionFilterAndAnalysis() override;
+  ~PIDSelectionFilterAndAnalysis() override;
 
   void SetPTOF(float ptof) { mPTOF = ptof; }
   void SetRequireTOF(bool requiretof = false) { mRequireTOF = requiretof; }
@@ -129,8 +133,8 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
  private:
   void ConstructCutFromString(const TString&);
-  virtual int CalculateMaskLength() override;
-  virtual void StoreArmedMask() override;
+  int CalculateMaskLength() override;
+  void StoreArmedMask() override;
 
   float mPTOF = 0.8f;           ///< the p threshold for cheking TOF information
   bool mRequireTOF = false;     ///< is TOF required
@@ -141,7 +145,7 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   std::vector<CutBrick<float>*> mCloseNsigmasTOF;
   std::vector<CutBrick<float>*> mBayesProbability;
 
-  ClassDef(PIDSelectionFilterAndAnalysis, 1);
+  ClassDefOverride(PIDSelectionFilterAndAnalysis, 1);
 };
 
 /// \brief Fills the filter cuts mask
@@ -189,4 +193,4 @@ inline uint64_t PIDSelectionFilterAndAnalysis::Filter(TrackToFilter const& track
 } // namespace analysis
 } // namespace o2
 
-#endif // PIDSELECTIONFILTERANDANALYSIS_H
+#endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_PIDSELECTIONFILTERANDANALYSIS_H_

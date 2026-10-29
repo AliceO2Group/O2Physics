@@ -24,6 +24,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/DataModel/PIDResponseCombined.h"
@@ -108,6 +109,8 @@ struct HfCandidateSelectorLc {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_LcToPKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  // Mass Cut for trigger analysis
+  Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::DCAFitter> hfMlResponseDCA;
   o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::KfParticle> hfMlResponseKF;
@@ -117,6 +120,7 @@ struct HfCandidateSelectorLc {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
+  HfTrigger3ProngCuts hfTriggerCuts;
 
   using TracksSel = soa::Join<aod::TracksWExtra,
                               aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
@@ -133,13 +137,13 @@ struct HfCandidateSelectorLc {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
+    selectorPion.setRangePtTpc(static_cast<float>(ptPidTpcMin), static_cast<float>(ptPidTpcMax));
+    selectorPion.setRangeNSigmaTpc(-static_cast<float>(nSigmaTpcMax), static_cast<float>(nSigmaTpcMax));
+    selectorPion.setRangeNSigmaTpcCondTof(-static_cast<float>(nSigmaTpcCombinedMax), static_cast<float>(nSigmaTpcCombinedMax));
+    selectorPion.setRangePtTof(static_cast<float>(ptPidTofMin), static_cast<float>(ptPidTofMax));
+    selectorPion.setRangeNSigmaTof(-static_cast<float>(nSigmaTofMax), static_cast<float>(nSigmaTofMax));
+    selectorPion.setRangeNSigmaTofCondTpc(-static_cast<float>(nSigmaTofCombinedMax), static_cast<float>(nSigmaTofCombinedMax));
+    selectorPion.setRangePtBayes(static_cast<float>(ptPidBayesMin), static_cast<float>(ptPidBayesMax));
     selectorKaon = selectorPion;
     selectorProton = selectorPion;
 
@@ -152,7 +156,7 @@ struct HfCandidateSelectorLc {
       labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
       labels[1 + aod::SelectionStep::RecoMl] = "ML selection";
       static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
-      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
       for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
@@ -324,6 +328,10 @@ struct HfCandidateSelectorLc {
 
       // cut on Lc->pKpi, piKp mass values
       if (std::abs(massLc - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
+        return false;
+      }
+
+      if (useTriggerMassCut && !isCandidateInMassRange(massLc, o2::constants::physics::MassLambdaCPlus, candpT, hfTriggerCuts)) {
         return false;
       }
 
@@ -518,11 +526,11 @@ struct HfCandidateSelectorLc {
 
       if (usePid) {
         // track-level PID selection
-        TrackSelectorPID::Status pidTrackPos1Proton;
-        TrackSelectorPID::Status pidTrackPos2Proton;
-        TrackSelectorPID::Status pidTrackPos1Pion;
-        TrackSelectorPID::Status pidTrackPos2Pion;
-        TrackSelectorPID::Status pidTrackNegKaon;
+        TrackSelectorPID::Status pidTrackPos1Proton{};
+        TrackSelectorPID::Status pidTrackPos2Proton{};
+        TrackSelectorPID::Status pidTrackPos1Pion{};
+        TrackSelectorPID::Status pidTrackPos2Pion{};
+        TrackSelectorPID::Status pidTrackNegKaon{};
         if (usePidTpcAndTof) {
           pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
           pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());

@@ -31,36 +31,31 @@
 //
 
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/Zorro.h"
-#include "Common/Core/ZorroSummary.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/RecoDecay.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TProfile.h>
+#include <TObject.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -235,7 +230,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TCollision>
-  void fillEventHistograms(TCollision collision, int& selGapSide)
+  void fillEventHistograms(const TCollision& collision, int& selGapSide)
   {
     // in case we want to push the analysis to Pb-Pb UPC
     int gapSide = collision.gapSide();
@@ -257,7 +252,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTrack>
-  bool isTrackSelected(TTrack track)
+  bool isTrackSelected(const TTrack& track)
   {
     //
     // acceptance cut
@@ -326,7 +321,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTrack, typename TTrackMC>
-  bool checkMCAssociation(TTrack track, TTrackMC trackMC)
+  bool checkMCAssociation(const TTrack& track, const TTrackMC& trackMC)
   // MC association (if asked)
   {
     if (track.sign() * trackMC.pdgCode() != 2212)
@@ -337,7 +332,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTrack>
-  void fillQAplot(TTrack track, bool afterSel = false)
+  void fillQAplot(const TTrack& track, bool afterSel = false)
   { // fill QA information about proton/antiproton track
     if (afterSel) {
       if (track.sign() > 0) { // Proton Candidates after selections
@@ -400,7 +395,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTrack, typename TTrackMCs>
-  void analyseTrackPairCandidate(TTrack proton, TTrack antiProton, TTrackMCs const& fullTrackMCs, uint8_t gapSide)
+  void analyseTrackPairCandidate(const TTrack& proton, const TTrack& antiProton, TTrackMCs const& fullTrackMCs, uint8_t gapSide)
   // fill information related to the quarkonium mother
   {
     float pt = RecoDecay::pt(proton.px() + antiProton.px(), proton.py() + antiProton.py());
@@ -482,7 +477,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTracks, typename TTrackMCs>
-  void buildProtonAntiProtonPairs(TTracks const& fullTracks, TTrackMCs const& fullMCTracks, std::vector<bool> selProtonIndices, std::vector<bool> selAntiProtonIndices, uint8_t gapSide)
+  void buildProtonAntiProtonPairs(TTracks const& fullTracks, TTrackMCs const& fullMCTracks, const std::vector<bool>& selProtonIndices, const std::vector<bool>& selAntiProtonIndices, uint8_t gapSide)
   {
     // 1st loop over all protons
     for (const auto& proton : fullTracks) {
@@ -543,13 +538,13 @@ struct upcQuarkoniaCentralBarrel {
     // Check the number of Protons and antiProtons
     // needs at least 1 of each
     if (!buildSameSignPairs && nProtons >= 1 && nAntiProtons >= 1) {
-      buildProtonAntiProtonPairs(fullTracks, (TObject*)nullptr, selProtonIndices, selAntiProtonIndices, selGapSide);
+      buildProtonAntiProtonPairs(fullTracks, nullptr, selProtonIndices, selAntiProtonIndices, selGapSide);
     }
     if (buildSameSignPairs && nProtons > 1) {
-      buildProtonAntiProtonPairs(fullTracks, (TObject*)nullptr, selProtonIndices, selProtonIndices, selGapSide);
+      buildProtonAntiProtonPairs(fullTracks, nullptr, selProtonIndices, selProtonIndices, selGapSide);
     }
     if (buildSameSignPairs && nAntiProtons > 1) {
-      buildProtonAntiProtonPairs(fullTracks, (TObject*)nullptr, selAntiProtonIndices, selAntiProtonIndices, selGapSide);
+      buildProtonAntiProtonPairs(fullTracks, nullptr, selAntiProtonIndices, selAntiProtonIndices, selGapSide);
     }
   }
 

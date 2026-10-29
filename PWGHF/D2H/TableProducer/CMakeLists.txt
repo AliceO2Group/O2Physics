@@ -63,21 +63,43 @@ o2physics_add_dpl_workflow(candidate-selector-lb-to-lc-pi-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+# Track selectors
+
+o2physics_add_dpl_workflow(ml-based-track-selector
+                    SOURCES mlBasedTrackSelector.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCCDB O2Physics::MLCore O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 # Data creators
 
 o2physics_add_dpl_workflow(data-creator-charm-had-pi-reduced
                     SOURCES dataCreatorCharmHadPiReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(data-creator-charm-reso-reduced
-                    SOURCES dataCreatorCharmResoReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(data-creator-charm-reso-to-dstar-reduced
+                    SOURCES dataCreatorCharmResoToDstarReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(data-creator-charm-reso-to-dplus-reduced
+                    SOURCES dataCreatorCharmResoToDplusReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(data-creator-charm-reso-to-d0-reduced
+                    SOURCES dataCreatorCharmResoToD0Reduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-jpsi-had-reduced
                     SOURCES dataCreatorJpsiHadReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(data-creator-hidden-charm-reduced
+                    SOURCES dataCreatorHiddenCharmReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 # Converters
@@ -91,3 +113,11 @@ o2physics_add_dpl_workflow(converter-reduced-3-prongs-ml
                      SOURCES converterReducedHadronDausPid.cxx
                      PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                      COMPONENT_NAME Analysis)
+
+# Tree creator
+
+o2physics_add_dpl_workflow(tree-creator-dstar-spin-align-mixing
+                    SOURCES treeCreatorDstarSpinAlignMixing.cxx
+                    REUSE_FROM HfCandidatesPCH
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

@@ -15,47 +15,42 @@
 /// \brief  Task to test the performance of the KFParticle package
 ///
 
-#include "Tools/KFparticle/qaKFEventTrack.h"
-#include <CCDB/BasicCCDBManager.h>
-#include <string>
-#include "TableHelper.h"
-#include <iostream>
-using namespace std;
-
-/// includes O2
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-
-/// includes O2Physics
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
-/// includes KFParticle
-#include "KFParticle.h"
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
-
 #ifndef HomogeneousField
-
 #define HomogeneousField
-
 #endif
 
+#include "Tools/KFparticle/qaKFEventTrack.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+
+#include <cstdint>
+#include <string>
+
+using namespace std;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -121,7 +116,7 @@ struct qaKFEventTrack {
   int pVContrib = 0;
 
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, const std::string& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
                              bool isRun3)
   {
 
@@ -252,7 +247,7 @@ struct qaKFEventTrack {
   template <typename T1, typename T2, typename T3, typename T4>
   void writeVarTree(const T1& /*kfpTrackPi*/, const T2& KFPion, const T2& KFPV, const T3& track, const int source, const int pVContrib, const int runNumber, const T4& collision)
   {
-    const double pseudoRndm = track.pt() * 1000. - (int64_t)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < d_DwnSmplFact) {
       if (writeTree) {
         /// Filling the tree
@@ -541,7 +536,7 @@ struct qaKFEvent {
   Produces<o2::aod::TreeCollisions> rowKFCollisions;
 
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, const std::string& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
                              bool isRun3)
   {
 
@@ -634,7 +629,7 @@ struct qaKFEvent {
       if (!isSelectedCollision(collisionIndex)) {
         continue;
       }
-      timeColl = uint64_t((bc.globalBC() - bc0) * o2::constants::lhc::LHCBunchSpacingNS) + collisionIndex.collisionTime();
+      timeColl = static_cast<uint64_t>((bc.globalBC() - bc0) * o2::constants::lhc::LHCBunchSpacingNS) + collisionIndex.collisionTime();
       writeVarTreeColl(collisionIndex, timeColl, bc.timestamp(), collisionIndex.collisionTime(), tfID);
     }
   }

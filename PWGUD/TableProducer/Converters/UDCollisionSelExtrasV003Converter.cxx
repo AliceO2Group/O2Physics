@@ -15,9 +15,12 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -38,6 +41,7 @@ struct UDCollisionSelExtrasV003Converter {
 
   void processV000ToV003(o2::aod::UDCollisionSelExtras_000 const& collisions)
   {
+    udCollisionSelExtras_003.reserve(collisions.size());
 
     for (const auto& collision : collisions) {
 
@@ -63,6 +67,7 @@ struct UDCollisionSelExtrasV003Converter {
 
   void processV001ToV003(o2::aod::UDCollisionSelExtras_001 const& collisions)
   {
+    udCollisionSelExtras_003.reserve(collisions.size());
 
     for (const auto& collision : collisions) {
 
@@ -88,6 +93,7 @@ struct UDCollisionSelExtrasV003Converter {
 
   void processV002ToV003(o2::aod::UDCollisionSelExtras_002 const& collisions)
   {
+    udCollisionSelExtras_003.reserve(collisions.size());
 
     for (const auto& collision : collisions) {
 

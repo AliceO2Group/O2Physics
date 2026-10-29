@@ -36,20 +36,23 @@ void JetFinder::setParams()
       jetEtaMax += jetR;
     }
   }
-  if (isReclustering) {
-    jetR = 5.0 * jetR;
-  }
+  float jetRForClustering = isReclustering ? 5.0 * jetR : jetR;
 
-  // selGhosts =fastjet::SelectorRapRange(ghostEtaMin,ghostEtaMax) && fastjet::SelectorPhiRange(phiMin,phiMax);
+  selGhosts = fastjet::SelectorRapRange(etaMin, etaMax) && fastjet::SelectorPhiRange(phiMin, phiMax); // note that this is rapidity not eta but since ghosts are effectively massless this is ok
   // ghostAreaSpec=fastjet::GhostedAreaSpec(selGhosts,ghostRepeatN,ghostArea,gridScatter,ktScatter,ghostktMean);
-  ghostAreaSpec = fastjet::GhostedAreaSpec(ghostEtaMax, ghostRepeatN, ghostArea, gridScatter, ktScatter, ghostktMean); // the first argument is rapidity not pseudorapidity, to be checked
-  jetDef = fastjet::JetDefinition(fastjet::antikt_algorithm, jetR, recombScheme, strategy);
+  ghostAreaSpec = fastjet::GhostedAreaSpec(selGhosts, ghostRepeatN, ghostArea, gridScatter, ktScatter, ghostktMean);
+  jetDef = fastjet::JetDefinition(fastjet::antikt_algorithm, jetRForClustering, recombScheme, strategy);
   if (fastjetExtraParam > -98.0) {
     jetDef.set_extra_param(fastjetExtraParam);
   }
   jetDef.set_jet_algorithm(algorithm);
   areaDef = fastjet::AreaDefinition(areaType, ghostAreaSpec);
   selJets = fastjet::SelectorPtRange(jetPtMin, jetPtMax) && fastjet::SelectorEtaRange(jetEtaMin, jetEtaMax) && fastjet::SelectorPhiRange(jetPhiMin, jetPhiMax);
+
+  if (phiExclusionMin > -998.0) {
+    // automatically jets around exclusion region
+    selJets = selJets && (!fastjet::SelectorPhiRange(phiExclusionMin - jetR, phiExclusionMax + jetR));
+  }
 }
 
 /// Performs jet finding
@@ -57,7 +60,7 @@ void JetFinder::setParams()
 /// \param inputParticles vector of input particles/tracks
 /// \param jets veector of jets to be filled
 /// \return ClusterSequenceArea object needed to access constituents
-fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets) // ideally find a way of passing the cluster sequence as a reeference
+fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet> const& inputParticles, std::vector<fastjet::PseudoJet>& jets) // ideally find a way of passing the cluster sequence as a reference
 {
   setParams();
   jets.clear();
@@ -65,8 +68,5 @@ fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet>
   jets = clusterSeq.inclusive_jets();
   jets = selJets(jets);
   jets = fastjet::sorted_by_pt(jets);
-  if (isReclustering) {
-    jetR = jetR / 5.0;
-  }
   return clusterSeq;
 }

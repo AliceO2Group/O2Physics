@@ -17,9 +17,13 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRANGULARWITHCENTMULTKT_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRANGULARWITHCENTMULTKT_H_
 
-#include "Framework/HistogramRegistry.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
+#include <algorithm>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace o2::analysis::femto_universe
@@ -34,10 +38,10 @@ class FemtoUniversePairAngularWithCentMultKt
   /// @param kstarbins
   /// @param centmultbins
   template <typename t1, typename t2>
-  void init(HistogramRegistry* registry, t1& /*kstarbins*/, t1& centmultbins, t2& phiBins, t2& etaBins, bool processKT)
+  void init(framework::HistogramRegistry* registry, t1& /*kstarbins*/, t1& centmultbins, t2& phiBins, t2& etaBins, bool processKT)
   {
     pairWithCentMultKtRegistry = registry;
-    // AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};
+    // o2::framework::AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};
 
     kPhiLow = (-static_cast<int>(phiBins / 4) + 0.5) * o2::constants::math::TwoPI / phiBins;
     kPhiHigh = o2::constants::math::TwoPI + (-static_cast<int>(phiBins / 4) + 0.5) * o2::constants::math::TwoPI / phiBins;
@@ -58,7 +62,7 @@ class FemtoUniversePairAngularWithCentMultKt
       std::string kHistSuffix2 = static_cast<std::string>(HistSuffix[i + 1]);
       std::string kHistFolderMult = "mult_" + kHistSuffix1 + "_" + kHistSuffix2;
       std::string kHistName = kHistFolderMult + "/DeltaEtaDeltaPhi";
-      pairWithCentMultKtRegistry->add(kHistName.c_str(), kHistTitle.c_str(), HistType::kTH2F, {phiAxis, etaAxis});
+      pairWithCentMultKtRegistry->add(kHistName.c_str(), kHistTitle.c_str(), framework::HistType::kTH2F, {phiAxis, etaAxis});
       if (useKt) {
         for (int i = 0; i < static_cast<int>(ktBins.size() - 1); i++) {
           std::string ktBin1String = std::to_string(ktBins[i]);
@@ -71,11 +75,11 @@ class FemtoUniversePairAngularWithCentMultKt
           std::string kHistSuffix1Kt = static_cast<std::string>(HistSuffix[i]);
           std::string kHistSuffix2Kt = static_cast<std::string>(HistSuffix[i + 1]);
           std::string kHistNameKt = kHistFolderMult + "/DeltaEtaDeltaPhi" + kHistSuffix1Kt + "_" + kHistSuffix2Kt;
-          pairWithCentMultKtRegistry->add(kHistNameKt.c_str(), kHistTitleKt.c_str(), HistType::kTH2F, {phiAxis, etaAxis});
+          pairWithCentMultKtRegistry->add(kHistNameKt.c_str(), kHistTitleKt.c_str(), framework::HistType::kTH2F, {phiAxis, etaAxis});
         }
       }
     }
-    pairWithCentMultKtRegistry->add("Beyond_Max", "Beyond_Max", HistType::kTH2F, {phiAxis, etaAxis});
+    pairWithCentMultKtRegistry->add("Beyond_Max", "Beyond_Max", framework::HistType::kTH2F, {phiAxis, etaAxis});
   }
 
   /// @brief
@@ -176,7 +180,7 @@ class FemtoUniversePairAngularWithCentMultKt
   //   }
 
  protected:
-  HistogramRegistry* pairWithCentMultKtRegistry = nullptr;
+  framework::HistogramRegistry* pairWithCentMultKtRegistry = nullptr;
   std::vector<double> kCentMultBins;
   std::vector<double> ktBins;
   bool useKt = false;

@@ -14,19 +14,26 @@
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
+#include <cstdlib>
 #include <vector>
 
 using namespace o2;
@@ -82,8 +89,6 @@ struct alice3correlatorddbar {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
 
-  // HfHelper hfHelper; //not needed for now
-
   Partition<soa::Join<aod::Alice3D0Meson, aod::Alice3D0Sel>> selectedCandidates = aod::a3D0meson::y > -yCandMax&& aod::a3D0meson::y<yCandMax && aod::a3D0meson::pt> ptCandMin && (aod::a3D0Selection::isSelD0 >= selectionFlagD0 || aod::a3D0Selection::isSelD0bar >= selectionFlagD0bar);
   Partition<soa::Join<aod::Alice3D0Meson, aod::Alice3D0Sel, aod::Alice3D0MCTruth>> selectedCandidatesMC = aod::a3D0meson::y > -yCandMax&& aod::a3D0meson::y<yCandMax && aod::a3D0meson::pt> ptCandMin && (aod::a3D0Selection::isSelD0 >= selectionFlagD0 || aod::a3D0Selection::isSelD0bar >= selectionFlagD0bar);
 
@@ -108,7 +113,7 @@ struct alice3correlatorddbar {
 
   void init(InitContext&)
   {
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = std::vector<double>(binsPt);
     registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0", "D0,D0bar candidates;inv. mass D0 only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0bar", "D0,D0bar candidates;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});

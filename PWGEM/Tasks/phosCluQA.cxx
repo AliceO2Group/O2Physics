@@ -9,26 +9,38 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <CommonUtils/NameConf.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <PHOSBase/Geometry.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+#include <TVector3.h>
+
+#include <bitset>
 #include <climits>
+#include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <memory>
 #include <vector>
-#include "Common/DataModel/CaloClusters.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-
-#include "PHOSBase/Geometry.h"
-#include "CommonDataFormat/InteractionRecord.h"
 
 /// \struct PHOS QA
 /// \brief Monitoring task for PHOS related quantities
@@ -718,7 +730,7 @@ struct phosCluQA {
 
     // If several collisions appear in BC, choose one with largers number of contributors
     std::map<int64_t, int> colMap;
-    for (auto cl : colls) {
+    for (const auto& cl : colls) {
       auto colbc = colMap.find(cl.bc_as<BCsWithBcSels>().globalBC());
       if (colbc == colMap.end()) { // single collision per BC
         colMap[cl.bc_as<BCsWithBcSels>().globalBC()] = 1;

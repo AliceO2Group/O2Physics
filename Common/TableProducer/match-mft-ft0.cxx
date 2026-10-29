@@ -124,11 +124,11 @@ T getCompatibleBCs(aod::AmbiguousMFTTrack const& atrack, aod::Collision const& c
   }
 
   if (bcIt != bcs.end() && maxBCId >= minBCId) {
-    T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+    auto slice = bcs.rawSlice(minBCId, maxBCId - minBCId + 1);
     bcs.copyIndexBindings(slice);
     return slice;
   } else {
-    T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId)}, (uint64_t)minBCId};
+    auto slice = bcs.rawSlice(minBCId, maxBCId - minBCId);
     bcs.copyIndexBindings(slice);
     return slice;
   }
@@ -141,22 +141,14 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
   // define firstBC and lastBC (globalBC of beginning and end of the range, when no shift is applied)
 
   auto bcIt = collOrig.bc_as<T>();
-  // auto timstp = bcIt.timestamp();
 
   int64_t firstBC = bcIt.globalBC() + (track.trackTime() - track.trackTimeRes()) / o2::constants::lhc::LHCBunchSpacingNS;
   int64_t lastBC = firstBC + 2 * track.trackTimeRes() / o2::constants::lhc::LHCBunchSpacingNS + 1; // to have a delta = 198 BC
 
-  // printf(">>>>>>>>>>>>>>>>>>>>>>>>>>> last-first %lld\n", lastBC-firstBC);
-
-  // int collTimeResInBC = collOrig.collisionTimeRes()/o2::constants::lhc::LHCBunchSpacingNS;
-
-  // int64_t collFirstBC = bcIt.globalBC() + (collOrig.collisionTime() - collOrig.collisionTimeRes())/o2::constants::lhc::LHCBunchSpacingNS;
-  // int64_t collLastBC = collFirstBC + 2*collOrig.collisionTimeRes()/o2::constants::lhc::LHCBunchSpacingNS +1;
-
   int64_t minBCId = bcIt.globalIndex();
 
-  if ((int64_t)bcIt.globalBC() < firstBC + deltaBC) {
-    while (bcIt != bcs.end() && (int64_t)bcIt.globalBC() < firstBC + deltaBC) {
+  if (static_cast<int64_t>(bcIt.globalBC()) < firstBC + deltaBC) {
+    while (bcIt != bcs.end() && static_cast<int64_t>(bcIt.globalBC()) < firstBC + deltaBC) {
       minBCId = bcIt.globalIndex();
 
       ++bcIt;
@@ -171,11 +163,11 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
   } else {
     // here bcIt.globalBC() >= firstBC + deltaBC
 
-    while (bcIt != bcs.begin() && (int64_t)bcIt.globalBC() >= (int64_t)firstBC + deltaBC) {
+    while (bcIt != bcs.begin() && static_cast<int64_t>(bcIt.globalBC()) >= firstBC + deltaBC) {
       minBCId = bcIt.globalIndex();
       --bcIt;
     }
-    if (bcIt == bcs.begin() && (int64_t)bcIt.globalBC() >= (int64_t)firstBC + deltaBC) {
+    if (bcIt == bcs.begin() && static_cast<int64_t>(bcIt.globalBC()) >= firstBC + deltaBC) {
       minBCId = bcIt.globalIndex();
     }
     ++bcIt; // retrieve the pointer which gave minBCId and minGlobalBC
@@ -186,51 +178,42 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
 
   int64_t maxBCId = bcIt.globalIndex();
 
-  if ((int64_t)bcIt.globalBC() > (int64_t)lastBC + deltaBC) {
+  if (static_cast<int64_t>(bcIt.globalBC()) > lastBC + deltaBC) {
     // the previous minimum is actually bigger than the right boundary
 
     if (bcIt != bcs.begin()) {
-      --bcIt;                                                    // let's check the previous element in the BC list
-      if ((int64_t)bcIt.globalBC() < (int64_t)firstBC + deltaBC) // if this previous element is smaller than the left boundary
+      --bcIt;                                                        // let's check the previous element in the BC list
+      if (static_cast<int64_t>(bcIt.globalBC()) < firstBC + deltaBC) // if this previous element is smaller than the left boundary
       {
         // means that the slice of compatible BCs is empty
 
-        T slice{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-        // bcs.copyIndexBindings(slice); REMOVED IT BECAUSE I DON'T KNOW WHAT IT DOES HERE
-        return slice; // returns an empty slice
+        return bcs.emptySlice();
       }
     }
   }
 
-  if ((int64_t)bcIt.globalBC() < (int64_t)firstBC + deltaBC) {
+  if (static_cast<int64_t>(bcIt.globalBC()) < firstBC + deltaBC) {
     // the previous minimum is actually smaller than the right boundary
     ++bcIt;
 
-    if (bcIt != bcs.end() && ((int64_t)bcIt.globalBC() > (int64_t)lastBC + deltaBC)) {
+    if (bcIt != bcs.end() && (static_cast<int64_t>(bcIt.globalBC()) > lastBC + deltaBC)) {
       // check the following element
 
-      T slice{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-      // bcs.copyIndexBindings(slice); REMOVED IT BECAUSE I DON'T KNOW WHAT IT DOES HERE
-      return slice; // returns an empty slice
+      return bcs.emptySlice();
     }
   }
 
-  while (bcIt != bcs.end() && (int64_t)bcIt.globalBC() <= (int64_t)lastBC + deltaBC) {
+  while (bcIt != bcs.end() && static_cast<int64_t>(bcIt.globalBC()) <= lastBC + deltaBC) {
     maxBCId = bcIt.globalIndex();
 
     ++bcIt;
   }
 
   if (maxBCId < minBCId) {
-    if (bcIt == bcs.end()) {
-      printf("at the end of the bcs iterator %d\n", 1);
-    }
-    T slice{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-    // bcs.copyIndexBindings(slice); REMOVED IT BECAUSE I DON'T KNOW WHAT IT DOES HERE
-    return slice; // returns an empty slice
+    return bcs.emptySlice();
   }
 
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  auto slice = bcs.rawSlice(minBCId, maxBCId - minBCId + 1);
   bcs.copyIndexBindings(slice);
   return slice;
 }
@@ -292,7 +275,7 @@ struct matchmftft0 {
     o2::base::Propagator::initFieldFromGRP(grpmag); // for some reason this is necessary for the next next line
     runNumber = bc.runNumber();
 
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    o2::field::MagneticField* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
 
     Bz = field->getBz(centerMFT); // gives error if the propagator is not initFielded
     LOG(info) << "The field at the center of the MFT is Bz = " << Bz;

@@ -8,13 +8,26 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include <iostream>
 #include "PWGUD/DataModel/UDTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
 #include <TString.h>
-#include "TLorentzVector.h"
+#include <TVector3.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <vector>
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
@@ -35,9 +48,9 @@ struct PolarisationRho {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   //_____________________________________________________________________________
-  Double_t CosThetaHelicityFrame(TLorentzVector pionPositive,
-                                 TLorentzVector pionNegative,
-                                 TLorentzVector possibleRhoZero)
+  Double_t CosThetaHelicityFrame(const TLorentzVector& pionPositive,
+                                 const TLorentzVector& pionNegative,
+                                 const TLorentzVector& possibleRhoZero)
   {
 
     Double_t HalfSqrtSnn = 2680.;
@@ -64,7 +77,7 @@ struct PolarisationRho {
     return CosThetaHE;
   }
   //------------------------------------------------------------------------------------------------------
-  Double_t PhiHelicityFrame(TLorentzVector muonPositive, TLorentzVector muonNegative, TLorentzVector possibleJPsi)
+  Double_t PhiHelicityFrame(const TLorentzVector& muonPositive, const TLorentzVector& muonNegative, const TLorentzVector& possibleJPsi)
   {
 
     // Half of the energy per pair of the colliding nucleons.
@@ -228,7 +241,7 @@ struct PolarisationRho {
     std::vector<TLorentzVector> onlyKaonTracks;
     std::vector<float> onlyKaonSigma;
     std::vector<decltype(tracks.begin())> rawKaonTracks;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (!t.isPVContributor()) {
         continue;
       }
@@ -247,7 +260,7 @@ struct PolarisationRho {
     //_____________________________________
     // Creating phis
     if (onlyKaonTracks.size() == 2) {
-      for (auto kaon : onlyKaonTracks) {
+      for (const auto& kaon : onlyKaonTracks) {
         phi += kaon;
       }
       registry.fill(HIST("hNsigEvsKa1"), rawKaonTracks[0].tpcNSigmaKa(), rawKaonTracks[1].tpcNSigmaKa());
@@ -263,7 +276,7 @@ struct PolarisationRho {
     std::vector<TLorentzVector> allTracksAreKaonsWrongMomentum;
     std::vector<TLorentzVector> allTracksArePions;
     int counter = 0;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (!t.isPVContributor()) {
         continue;
       }
@@ -291,13 +304,13 @@ struct PolarisationRho {
     //_____________________________________
     // Creating phis
     if (allTracksAreKaons.size() == 2) {
-      for (auto kaon : allTracksAreKaons) {
+      for (const auto& kaon : allTracksAreKaons) {
         phiWithoutPID += kaon;
       }
-      for (auto kaon : allTracksAreKaonsWrongMomentum) {
+      for (const auto& kaon : allTracksAreKaonsWrongMomentum) {
         phiWrongMomentaWithoutPID += kaon;
       }
-      for (auto pion : allTracksArePions) {
+      for (const auto& pion : allTracksArePions) {
         phiWithoutPIDPionHypothesis += pion;
       }
       if (phiWithoutPID.M() < 1.05) {
@@ -323,7 +336,7 @@ struct PolarisationRho {
     std::vector<decltype(tracks.begin())> rawPionTracks;
     registry.fill(HIST("hTracks"), tracks.size());
     float sign = 1.;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (!t.isPVContributor()) {
         continue;
       }
@@ -348,7 +361,7 @@ struct PolarisationRho {
     registry.fill(HIST("hTracksPions"), onlyPionTracks.size());
     //_____________________________________
     // Creating rhos
-    for (auto pion : onlyPionTracks) {
+    for (const auto& pion : onlyPionTracks) {
       p += pion;
     }
     //_____________________________________
@@ -356,7 +369,7 @@ struct PolarisationRho {
     if (onlyPionTracks.size() == 4) {
       registry.fill(HIST("hMassFourPions"), p.M());
       int signSum = 0;
-      for (auto rawPion : rawPionTracks) {
+      for (const auto& rawPion : rawPionTracks) {
         if (rawPion.sign() > 0) {
           signSum += 1;
         } else if (rawPion.sign() < 0) {
@@ -372,7 +385,7 @@ struct PolarisationRho {
     if (onlyPionTracks.size() == 6) {
       registry.fill(HIST("hMassSixPions"), p.M());
       int signSum = 0;
-      for (auto rawPion : rawPionTracks) {
+      for (const auto& rawPion : rawPionTracks) {
         if (rawPion.sign() > 0) {
           signSum += 1;
         } else if (rawPion.sign() < 0) {
@@ -381,7 +394,7 @@ struct PolarisationRho {
       }
       if (signSum == 0) {
         registry.fill(HIST("hMassSixPionsRightSign"), p.M());
-        for (auto pion : onlyPionTracks) {
+        for (const auto& pion : onlyPionTracks) {
           registry.fill(HIST("hPhiEtaSixPionsRightSign"), pion.Phi(), pion.Eta());
         }
       }

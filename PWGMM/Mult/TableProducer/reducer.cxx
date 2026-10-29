@@ -9,14 +9,34 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <random>
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-
-#include "Selections.h"
 #include "ReducedTables.h"
+#include "Selections.h"
 
-#include "Framework/runDataProcessing.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
+#include <random>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

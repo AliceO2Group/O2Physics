@@ -8,10 +8,22 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include <vector>
-#include <string>
-#include "CommonConstants/PhysicsConstants.h"
 #include "DGPIDSelector.h"
+
+#include <Framework/Logger.h>
+
+#include <TDatabasePDG.h>
+#include <TParticlePDG.h>
+
+#include <sys/types.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdlib>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
 
 // -----------------------------------------------------------------------------
 float particleMass(TDatabasePDG* pdg, int pid)
@@ -76,7 +88,7 @@ DGPIDCuts::DGPIDCuts()
 
 DGPIDCuts::DGPIDCuts(std::vector<float> PIDCutValues)
 {
-  setPIDCuts(PIDCutValues);
+  setPIDCuts(std::move(PIDCutValues));
 }
 
 DGPIDCuts::~DGPIDCuts()
@@ -185,7 +197,7 @@ void DGAnaparHolder::SetdBC(int min, int max)
   mdBCMax = max;
 }
 
-void DGAnaparHolder::SetFITvetoes(std::vector<int> vetoes)
+void DGAnaparHolder::SetFITvetoes(const std::vector<int>& vetoes)
 {
 
   if (vetoes.size() == 5) {
@@ -243,22 +255,22 @@ void DGAnaparHolder::SetnCombine(std::size_t nComb)
 
 void DGAnaparHolder::SetnetCharges(std::vector<int> charges)
 {
-  mNetCharges = charges;
+  mNetCharges = std::move(charges);
 }
 
 void DGAnaparHolder::SetunlikeCharges(std::vector<int> charges)
 {
-  mUnlikeCharges = charges;
+  mUnlikeCharges = std::move(charges);
 }
 
 void DGAnaparHolder::SetlikeCharges(std::vector<int> charges)
 {
-  mLikeCharges = charges;
+  mLikeCharges = std::move(charges);
 }
 
 void DGAnaparHolder::SetPIDs(std::vector<int> pids)
 {
-  mDGPIDs = pids;
+  mDGPIDs = std::move(pids);
 }
 
 // -----------------------------------------------------------------------------
@@ -424,7 +436,7 @@ void DGPIDSelector::Print()
   mAnaPars.Print();
 }
 
-void DGPIDSelector::init(DGAnaparHolder anaPars)
+void DGPIDSelector::init(const DGAnaparHolder& anaPars)
 {
   mAnaPars = anaPars;
   mUnlikeIVMs.clear();

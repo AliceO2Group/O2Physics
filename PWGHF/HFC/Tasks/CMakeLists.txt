@@ -9,13 +9,19 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(task-charm-hadrons-femto-dream
-                    SOURCES taskCharmHadronsFemtoDream.cxx
+o2physics_add_dpl_workflow(task-charm-hadrons-track-femto-dream
+                    SOURCES taskCharmHadronsTrackFemtoDream.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-charm-hadrons-v0-femto-dream
+                    SOURCES taskCharmHadronsV0FemtoDream.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-correlation-d0-hadrons
                     SOURCES taskCorrelationD0Hadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -29,13 +35,20 @@ o2physics_add_dpl_workflow(task-correlation-d-meson-pairs
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-correlation-dplus-dplus-reduced
+                    SOURCES taskCorrelationDplusDplusReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-correlation-dplus-hadrons
                     SOURCES taskCorrelationDplusHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-correlation-ds-hadrons
                     SOURCES taskCorrelationDsHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -51,12 +64,19 @@ o2physics_add_dpl_workflow(task-correlation-hfe-hadrons
 
 o2physics_add_dpl_workflow(task-correlation-lc-hadrons
                     SOURCES taskCorrelationLcHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-flow
                     SOURCES taskFlow.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/PWGCF/Core)
+
+o2physics_add_dpl_workflow(task-charm-hadrons-charm-femto-dream
+                    SOURCES taskCharmHadronsCharmFemtoDream.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

@@ -15,10 +15,12 @@
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/Core/DileptonHadronMPC.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+using namespace o2::framework;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

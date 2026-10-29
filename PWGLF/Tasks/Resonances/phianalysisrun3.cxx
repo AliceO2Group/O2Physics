@@ -16,8 +16,8 @@
 // (5) particle = 2 --> lambdastar
 // (6) 4 process function (a) Data same event (b) Data mixed event (c) MC generated (d) MC reconstructed
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -25,30 +25,27 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <THn.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -244,14 +241,14 @@ struct phianalysisrun3 {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
 
   // using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-  // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+  // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}};
 
   // using BinningTypeTPCMultiplicity =  ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   // using BinningTypeCentrality = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  // BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true};
+  // BinningType binningOnPositions{{axisVertex, axisMultiplicity}};
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
@@ -269,7 +266,7 @@ struct phianalysisrun3 {
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -279,7 +276,7 @@ struct phianalysisrun3 {
       histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
       histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       auto track1ID = track1.index();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }
@@ -309,7 +306,7 @@ struct phianalysisrun3 {
   {
     auto tracksTuple = std::make_tuple(tracks);
     //////// currently mixing the event with similar TPC multiplicity ////////
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (applyEvsel && !c1.sel8()) {
@@ -397,7 +394,7 @@ struct phianalysisrun3 {
       }
       auto daughtp = false;
       auto daughtm = false;
-      for (auto kCurrentDaughter : kDaughters) {
+      for (const auto& kCurrentDaughter : kDaughters) {
         if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
@@ -424,7 +421,7 @@ struct phianalysisrun3 {
     }
     histos.fill(HIST("hMC"), 5.5);
     auto oldindex = -999;
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -432,7 +429,7 @@ struct phianalysisrun3 {
         continue;
       }
       auto track1ID = track1.index();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!track2.has_mcParticle()) {
           continue;
         }

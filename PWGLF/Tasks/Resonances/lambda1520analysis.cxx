@@ -13,13 +13,30 @@
 /// \brief This task reconstructs track-track decay lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
-#include "TLorentzVector.h"
-#include "TF1.h"
-#include "TRandom3.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "CommonConstants/PhysicsConstants.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TF1.h>
+#include <TLorentzVector.h>
+#include <TRandom.h>
+#include <TVector3.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -339,7 +356,7 @@ struct Lambda1520analysis {
   double massPr = MassProton;
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -1090,7 +1107,7 @@ struct Lambda1520analysis {
   void processME(o2::aod::ResoCollisions const& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {

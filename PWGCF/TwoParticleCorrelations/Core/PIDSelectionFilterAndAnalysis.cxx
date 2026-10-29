@@ -11,18 +11,27 @@
 
 #include "PIDSelectionFilterAndAnalysis.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
 
-#include <TObjArray.h>
+#include <Framework/Logger.h>
 
-#include <boost/regex.hpp>
+#include <TString.h>
+
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_fwd.hpp>
+#include <boost/regex/v5/regex_search.hpp>
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <set>
+#include <string>
+#include <vector>
 
 using namespace o2;
-using namespace o2::framework;
-using namespace o2::soa;
-using namespace o2::framework::expressions;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
@@ -50,7 +59,7 @@ PIDSelectionConfigurable::PIDSelectionConfigurable(std::vector<std::string> pidt
     mPidBaySel_ka{},
     mPidBaySel_pr{}
 {
-  auto storeCutString = [](auto& selvector, std::string selname) {
+  auto storeCutString = [](auto& selvector, const std::string& selname) {
     if (selvector.size() != 0) {
       if (selvector.size() == 1) {
         if (selvector[0].size() != 0) {
@@ -62,7 +71,7 @@ PIDSelectionConfigurable::PIDSelectionConfigurable(std::vector<std::string> pidt
         TString scut = selname + "{cwv{";
         bool def = true;
         bool firstvar = true;
-        for (auto cut : selvector) {
+        for (const auto& cut : selvector) {
           if (def) {
             scut += cut + ':';
             def = false;
@@ -142,7 +151,7 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const PIDSelectionC
   TString cutString = "pidsel{";
   bool first = true;
 
-  auto appendCut = [&cutString, &first](std::string str) {
+  auto appendCut = [&cutString, &first](const std::string& str) {
     if (str.size() > 0) {
       if (first) {
         cutString += str;
@@ -204,7 +213,7 @@ PIDSelectionFilterAndAnalysis::~PIDSelectionFilterAndAnalysis()
 int PIDSelectionFilterAndAnalysis::CalculateMaskLength()
 {
   int length = 0;
-  auto addLength = [&](auto bricklst) {
+  auto addLength = [&](const auto& bricklst) {
     for (auto brick : bricklst) {
       if (brick != nullptr) {
         length += brick->Length();
@@ -252,7 +261,7 @@ void PIDSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cutstr
         LOGF(fatal, "PIDSelectionFilterAndAnalysis::::ConstructCutFromString. Wrong RE: %s, try pidsel{tpcsel{tpcpi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}}} for instance", cutstr.Data());
       }
       LOGF(info, "Captured %s", m[1].str().c_str());
-      auto handleDetectorLevel = [](std::string detector, auto& bricklst, std::string cut) {
+      auto handleDetectorLevel = [](const std::string& detector, auto& bricklst, const std::string& cut) {
         std::set<std::string> allowed = {"lim", "th", "rg", "xrg", "cwv", "mrg"};
         TString lev3str = cut;
         while (lev3str.Length() != 0) {
@@ -320,7 +329,7 @@ void PIDSelectionFilterAndAnalysis::StoreArmedMask()
   mOptArmedMask.clear();
   mForcedArmedMask = 0UL;
   int bit = 0;
-  auto armedList = [&](auto bricklst) {
+  auto armedList = [&](const auto& bricklst) {
     auto armedBrick = [&](auto brick, bool opt = false) {
       if (brick != nullptr) {
         std::vector<bool> res = brick->IsArmed();

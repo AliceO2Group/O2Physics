@@ -9,17 +9,36 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <boost/regex.hpp>
-#include <TObjArray.h>
-
-#include "Framework/AnalysisTask.h"
 #include "EventSelectionFilterAndAnalysis.h"
+
+#include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+
+#include <Framework/Logger.h>
+
+#include <TList.h>
+#include <TObjArray.h>
+#include <TString.h>
+
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_fwd.hpp>
+#include <boost/regex/v5/regex_search.hpp>
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <cstring>
+#include <set>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 
-EventSelectionConfigurable::EventSelectionConfigurable(std::vector<std::string> bfieldsel,
+EventSelectionConfigurable::EventSelectionConfigurable(const std::vector<std::string>& bfieldsel,
                                                        std::vector<std::string> multsel,
                                                        std::vector<std::string> trigsel,
                                                        std::vector<std::string> zvtxsel,
@@ -30,7 +49,7 @@ EventSelectionConfigurable::EventSelectionConfigurable(std::vector<std::string> 
     mZVertexSel(""),
     mPileUpRejection("")
 {
-  auto storeCutString = [](auto& selvector, std::string selname) {
+  auto storeCutString = [](auto& selvector, const std::string& selname) {
     if (selvector.size() != 0) {
       if (selvector.size() == 1) {
         if (selvector[0].size() != 0) {
@@ -42,7 +61,7 @@ EventSelectionConfigurable::EventSelectionConfigurable(std::vector<std::string> 
         TString scut = selname + "{cwv{";
         bool def = true;
         bool firstvar = true;
-        for (auto cut : selvector) {
+        for (const auto& cut : selvector) {
           if (def) {
             scut += cut + ':';
             def = false;
@@ -122,7 +141,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSele
   TString cutString = "eventsel{";
   bool first = true;
 
-  auto appendCut = [&cutString, &first](std::string str) {
+  auto appendCut = [&cutString, &first](const std::string& str) {
     if (str.size() > 0) {
       if (first) {
         cutString += str;
@@ -455,8 +474,6 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
   }
   mOptArmedMask.push_back(optMask);
   optMask = 0UL;
-  if (mTriggerSelection != nullptr) {
-  }
   if (mZVertex != nullptr) {
     armedBrick(mZVertex);
   }

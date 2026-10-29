@@ -17,6 +17,7 @@
 
 #include "pidTOFBase.h"
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
@@ -35,7 +36,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
@@ -93,11 +93,11 @@ struct tofSignal {
     }
 
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
+    enableTable = o2::common::core::isTableRequiredInWorkflow(initContext, "TOFSignal");
     if (enableTable) {
       LOG(info) << "Table TOFSignal enabled!";
     }
-    enableTableFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
+    enableTableFlags = o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFFlags");
     if (enableTableFlags) {
       LOG(info) << "Table pidTOFFlags enabled!";
     }
@@ -220,10 +220,10 @@ struct tofEventTime {
   void init(o2::framework::InitContext& initContext)
   {
     if (inheritFromBaseTask.value) {
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
         LOG(fatal) << "Could not get ccdb-url from tof-signal task";
       }
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
         LOG(fatal) << "Could not get ccdb-timestamp from tof-signal task";
       }
     }
@@ -253,14 +253,14 @@ struct tofEventTime {
       LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
     }
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFEvTime");
+    enableTable = o2::common::core::isTableRequiredInWorkflow(initContext, "TOFEvTime");
     if (!enableTable) {
       LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
       return;
     }
     LOG(info) << "Table TOFEvTime enabled!";
 
-    enableTableTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
+    enableTableTOFOnly = o2::common::core::isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
     if (enableTableTOFOnly) {
       LOG(info) << "Table EvTimeTOFOnly enabled!";
     }
@@ -358,7 +358,7 @@ struct tofEventTime {
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   void processNoFT0(TrksEvTime const& tracks,
-                    EvTimeCollisions const&)
+                    EvTimeCollisions const& collisions)
   {
     if (!enableTable) {
       return;
@@ -370,13 +370,13 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
-    int lastCollisionId = -1;                                                                                    // Last collision ID analysed
-    for (auto const& t : tracks) {                                                                               // Loop on collisions
-      if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+    int lastCollisionId = -1;                                                                                                              // Last collision ID analysed
+    for (auto const& t : tracks) {                                                                                                         // Loop on collisions
+      if (!t.has_collision() || collisions.size() == 0 || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
         tableFlags(0);
         tableEvTime(0.f, 999.f);
         if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
         }
         continue;
       }
@@ -408,7 +408,7 @@ struct tofEventTime {
         tableFlags(flags);
         tableEvTime(et, erret);
         if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), et, erret, evTimeTOF.mEventTimeMultiplicity);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(filterForTOFEventTime(trk)), et, erret, evTimeTOF.mEventTimeMultiplicity);
         }
       }
     }
@@ -420,7 +420,7 @@ struct tofEventTime {
   using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
   void processFT0(TrksEvTime const& tracks,
                   aod::FT0s const&,
-                  EvTimeCollisionsFT0 const&)
+                  EvTimeCollisionsFT0 const& collisions)
   {
     if (!enableTable) {
       return;
@@ -432,13 +432,13 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
-    int lastCollisionId = -1;                                                                                       // Last collision ID analysed
-    for (auto const& t : tracks) {                                                                                  // Loop on collisions
-      if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+    int lastCollisionId = -1;                                                                                                                 // Last collision ID analysed
+    for (auto const& t : tracks) {                                                                                                            // Loop on collisions
+      if (!t.has_collision() || collisions.size() == 0 || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
         tableFlags(0);
         tableEvTime(0.f, 999.f);
         if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
         }
         continue;
       }
@@ -504,7 +504,7 @@ struct tofEventTime {
         }
         tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
         if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeTOF.mEventTimeMultiplicity);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(filterForTOFEventTime(trk)), t0TOF[0], t0TOF[1], evTimeTOF.mEventTimeMultiplicity);
         }
       }
     }
@@ -515,7 +515,7 @@ struct tofEventTime {
   /// Process function to prepare the event for each track on Run 3 data with only the FT0
   void processOnlyFT0(TrksEvTime const& tracks,
                       aod::FT0s const&,
-                      EvTimeCollisionsFT0 const&)
+                      EvTimeCollisionsFT0 const& collisions)
   {
     if (!enableTable) {
       return;
@@ -529,9 +529,9 @@ struct tofEventTime {
 
     for (auto const& t : tracks) { // Loop on collisions
       if (enableTableTOFOnly) {
-        tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+        tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
       }
-      if (!t.has_collision()) { // Track was not assigned, cannot compute event time
+      if (!t.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute event time
         tableFlags(0);
         tableEvTime(0.f, 999.f);
         continue;

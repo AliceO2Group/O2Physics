@@ -15,22 +15,22 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include "EMCALBase/Geometry.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include <EMCALBase/Geometry.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TLorentzVector.h"
-#include "TVector3.h"
 #include <TH1.h>
 #include <TH3.h>
+#include <TLorentzVector.h>
 #include <TString.h>
+#include <TVector3.h>
 
 #include <algorithm>
 #include <array>
@@ -178,8 +178,8 @@ struct Photon {
 };
 
 struct Meson {
-  Meson(Photon p1, Photon p2) : pgamma1(p1),
-                                pgamma2(p2)
+  Meson(const Photon& p1, const Photon& p2) : pgamma1(p1),
+                                              pgamma2(p2)
   {
     pMeson = p1.photon + p2.photon;
   }

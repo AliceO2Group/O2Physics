@@ -9,7 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "SGCutParHolder.h"
+#include "PWGUD/Core/SGCutParHolder.h"
+
+#include <utility>
+#include <vector>
 
 // setter
 void SGCutParHolder::SetNDtcoll(int ndtcoll)
@@ -67,7 +70,7 @@ void SGCutParHolder::SetMaxFITtime(float maxFITtime)
 }
 void SGCutParHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 {
-  mFITAmpLimits = FITAmpLimits;
+  mFITAmpLimits = std::move(FITAmpLimits);
 }
 
 // getter

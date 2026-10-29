@@ -8,31 +8,47 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
-
-#include <fmt/format.h>
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
-
-#include <cstdio>
-#include <random>
-#include <string>
-#include <string_view>
-#include <vector>
-#include <unordered_map>
-#include <utility>
 
 #include "filterTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/LHCConstants.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DataFormatsCTP/Scalers.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/InputSpec.h>
+#include <Framework/Lifetime.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/ProcessingContext.h>
+#include <Framework/TableConsumer.h>
+#include <Framework/Variant.h>
+
+#include <TH1.h>
+#include <TH2.h>
+
+#include <arrow/array/array_primitive.h>
+#include <arrow/type.h>
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <cstdio>
+#include <memory>
+#include <random>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 // we need to add workflow options before including Framework/runDataProcessing
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -43,7 +59,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   std::swap(workflowOptions, options);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;

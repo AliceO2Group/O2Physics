@@ -16,9 +16,9 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannelsLegacy.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -47,7 +47,6 @@
 #include <vector>
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -81,9 +80,11 @@ struct HfTaskXic0ToXiPi {
   using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+
   Filter filterSelectXic0Candidates = aod::hf_sel_toxipi::resultSelections == true;
-  Filter filterXicMatchedRec = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
-  Filter filterXicMatchedGen = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
+  Filter filterXicMatchedRec = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
+  Filter filterXicMatchedGen = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
   Preslice<Xic0Cands> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
   Preslice<Xic0CandsKF> candXicKFPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
   Preslice<Xic0CandsMl> candXicMlPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
@@ -124,18 +125,25 @@ struct HfTaskXic0ToXiPi {
     const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
     const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
+    const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality percentile"};
 
-    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
-      std::vector<AxisSpec> const axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
+    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterMl) {
+      std::vector<AxisSpec> const axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisCent, thnAxisNumPvContr};
       registry.add("hSparseAcc", "Thn for generated Xic0 from charm and beauty", HistType::kTHnSparseD, axesAcc);
       registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
+
+      registry.add("hSparseAccWithRecoColl", "Gen. Xic0 from charm and beauty (associated to a reco collision)", HistType::kTHnSparseD, axesAcc);
+      registry.get<THnSparse>(HIST("hSparseAccWithRecoColl"))->Sumw2();
+
+      registry.add("hNumRecoCollPerMcColl", "Number of reco collisions associated to a mc collision;Num. reco. coll. per Mc coll.;", {HistType::kTH1D, {{10, -0.5, 9.5}}});
     }
 
     std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisY};
-    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
+    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterMl) {
       axes.push_back(thnAxisPtB);
       axes.push_back(thnAxisOrigin);
       axes.push_back(thnAxisMatchFlag);
+      axes.push_back(thnAxisCent);
       axes.push_back(thnAxisNumPvContr);
     }
     if (applyMl) {
@@ -157,6 +165,19 @@ struct HfTaskXic0ToXiPi {
       registry.add("hMassVsPtVsYVsCentVsPtPion", "Thn for Xic0 candidates with Cent&pTpi", HistType::kTHnSparseD, axesWithCent);
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"))->Sumw2();
       registry.get<THnSparse>(HIST("hMassVsPtVsYVsCentVsPtPion"))->Sumw2();
+    } else {
+      const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
+      const AxisSpec thnAxisPtPion{thnConfigAxisPtPion, "Pt of Pion from Xic0."};
+      std::vector<AxisSpec> const axesWithBdtWithoutCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisPtPion, thnConfigAxisNumPvContr};
+      std::vector<AxisSpec> const axesWithoutCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisPtPion, thnConfigAxisNumPvContr};
+      registry.add("hBdtScoreVsMassVsPtVsYVsPtPion", "Thn for Xic0 candidates with BDT&Cent&pTpi", HistType::kTHnSparseD, axesWithBdtWithoutCent);
+      registry.add("hMassVsPtVsYVsPtPion", "Thn for Xic0 candidates with Cent&pTpi", HistType::kTHnSparseD, axesWithoutCent);
+      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsPtPion"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMassVsPtVsYVsPtPion"))->Sumw2();
+    }
+
+    if (yCandRecMax >= 0) {
+      registry.add("hNumRejCandidate_RapidityCut", "# of rejected candidate using rap cut;Rej;entries", {HistType::kTH1F, {thnAxisY}});
     }
   }
 
@@ -166,13 +187,14 @@ struct HfTaskXic0ToXiPi {
     if (candidate.resultSelections() != true) {
       return;
     }
-    double yCharmBaryon;
+    double yCharmBaryon{0.};
     if constexpr (UseKfParticle) {
       yCharmBaryon = candidate.kfRapXic();
     } else {
       yCharmBaryon = candidate.y(o2::constants::physics::MassXiC0);
     }
     if (yCandRecMax >= 0. && std::abs(yCharmBaryon) > yCandRecMax) {
+      registry.fill(HIST("hNumRejCandidate_RapidityCut"), yCharmBaryon);
       return;
     }
 
@@ -184,38 +206,57 @@ struct HfTaskXic0ToXiPi {
     double const ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
     double const ptPiFromXic = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
     if constexpr (ApplyMl) {
-      registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
-                    candidate.mlProbToXiPi()[0],
-                    candidate.invMassCharmBaryon(),
-                    ptXic,
-                    yCharmBaryon,
-                    centrality,
-                    ptPiFromXic,
-                    numPvContributors);
+      if constexpr (UseCentrality) {
+        registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
+                      candidate.mlProbToXiPi()[0],
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      centrality,
+                      ptPiFromXic,
+                      numPvContributors);
+      } else {
+        registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsPtPion"),
+                      candidate.mlProbToXiPi()[0],
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      ptPiFromXic,
+                      numPvContributors);
+      }
     } else {
-      registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
-                    candidate.invMassCharmBaryon(),
-                    ptXic,
-                    yCharmBaryon,
-                    centrality,
-                    ptPiFromXic,
-                    numPvContributors);
+      if constexpr (UseCentrality) {
+        registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      centrality,
+                      ptPiFromXic,
+                      numPvContributors);
+      } else {
+        registry.fill(HIST("hMassVsPtVsYVsPtPion"),
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      ptPiFromXic,
+                      numPvContributors);
+      }
     }
   }
 
-  template <bool UseKfParticle, bool ApplyMl, typename CandType, typename CollType>
+  template <bool UseKfParticle, bool ApplyMl, typename CandType, typename CollType, typename McCollisionWithCents>
   void processMc(const CandType& candidates,
                  Xic0Gen const& mcParticles,
                  TracksMc const&,
                  CollType const& collisions,
-                 aod::McCollisions const&)
+                 McCollisionWithCents const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
       if (candidate.resultSelections() != true) {
         continue;
       }
-      double yCharmBaryon;
+      double yCharmBaryon{0.};
       if constexpr (UseKfParticle) {
         yCharmBaryon = candidate.kfRapXic();
       } else {
@@ -225,7 +266,10 @@ struct HfTaskXic0ToXiPi {
         continue;
       }
 
-      auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
+      auto collision = candidate.template collision_as<CollType>();
+      auto numPvContributors = collision.numContrib();
+      float const mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
+
       double const ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
       if constexpr (ApplyMl) {
         registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"),
@@ -236,6 +280,7 @@ struct HfTaskXic0ToXiPi {
                       candidate.ptBhadMotherPart(),
                       candidate.originMcRec(),
                       candidate.flagMcMatchRec(),
+                      mcCent,
                       numPvContributors);
       } else {
         registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsXic0Type"),
@@ -245,6 +290,7 @@ struct HfTaskXic0ToXiPi {
                       candidate.ptBhadMotherPart(),
                       candidate.originMcRec(),
                       candidate.flagMcMatchRec(),
+                      mcCent,
                       numPvContributors);
       }
     }
@@ -258,11 +304,13 @@ struct HfTaskXic0ToXiPi {
       auto ptGen = particle.pt();
       auto yGen = particle.rapidityCharmBaryonGen();
 
+      auto mcCollision = particle.template mcCollision_as<McCollisionWithCents>();
       unsigned maxNumContrib = 0;
-      const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
+      const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       for (const auto& recCol : recoCollsPerMcColl) {
         maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
       }
+      float const mcCent = o2::hf_centrality::getCentralityColl(mcCollision);
 
       if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hSparseAcc"),
@@ -270,6 +318,7 @@ struct HfTaskXic0ToXiPi {
                       -1.,
                       yGen,
                       RecoDecay::OriginType::Prompt,
+                      mcCent,
                       maxNumContrib);
       } else {
         float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
@@ -278,7 +327,32 @@ struct HfTaskXic0ToXiPi {
                       ptGenB,
                       yGen,
                       RecoDecay::OriginType::NonPrompt,
+                      mcCent,
                       maxNumContrib);
+      }
+
+      registry.fill(HIST("hNumRecoCollPerMcColl"), recoCollsPerMcColl.size());
+
+      // fill sparse only for gen particles associated to a reconstructed collision
+      if (recoCollsPerMcColl.size() >= 1) {
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hSparseAccWithRecoColl"),
+                        ptGen,
+                        -1.,
+                        yGen,
+                        RecoDecay::OriginType::Prompt,
+                        mcCent,
+                        maxNumContrib);
+        } else {
+          float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+          registry.fill(HIST("hSparseAccWithRecoColl"),
+                        ptGen,
+                        ptGenB,
+                        yGen,
+                        RecoDecay::OriginType::NonPrompt,
+                        mcCent,
+                        maxNumContrib);
+        }
       }
     }
   }
@@ -307,7 +381,7 @@ struct HfTaskXic0ToXiPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi with KFParticle", true);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi with KFParticle", false);
 
   void processDataWithDCAFitterMl(Xic0CandsMl const& candidates,
                                   CollisionsWithEvSels const& collisions)
@@ -443,7 +517,7 @@ struct HfTaskXic0ToXiPi {
                               Xic0Gen const& mcParticles,
                               TracksMc const& tracks,
                               CollisionsWithMcLabels const& collisions,
-                              aod::McCollisions const& mcCollisions)
+                              McCollisionsCentFT0Ms const& mcCollisions)
   {
     processMc<false, false>(xic0CandidatesMc, mcParticles, tracks, collisions, mcCollisions);
   }
@@ -453,7 +527,7 @@ struct HfTaskXic0ToXiPi {
                                Xic0Gen const& mcParticles,
                                TracksMc const& tracks,
                                CollisionsWithMcLabels const& collisions,
-                               aod::McCollisions const& mcCollisions)
+                               McCollisionsCentFT0Ms const& mcCollisions)
   {
     processMc<true, false>(xic0CandidatesMcKf, mcParticles, tracks, collisions, mcCollisions);
   }
@@ -463,7 +537,7 @@ struct HfTaskXic0ToXiPi {
                                 Xic0Gen const& mcParticles,
                                 TracksMc const& tracks,
                                 CollisionsWithMcLabels const& collisions,
-                                aod::McCollisions const& mcCollisions)
+                                McCollisionsCentFT0Ms const& mcCollisions)
   {
     processMc<false, true>(xic0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions);
   }
@@ -473,7 +547,7 @@ struct HfTaskXic0ToXiPi {
                                  Xic0Gen const& mcParticles,
                                  TracksMc const& tracks,
                                  CollisionsWithMcLabels const& collisions,
-                                 aod::McCollisions const& mcCollisions)
+                                 McCollisionsCentFT0Ms const& mcCollisions)
   {
     processMc<true, true>(xic0CandidatesMlMcKf, mcParticles, tracks, collisions, mcCollisions);
   }

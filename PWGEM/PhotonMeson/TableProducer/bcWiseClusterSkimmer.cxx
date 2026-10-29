@@ -10,27 +10,47 @@
 // or submit itself to any jurisdiction.
 ///
 /// \file bcWiseClusterSkimmer.cxx
-///
 /// \brief This task creates minimalistic skimmed tables containing EMC clusters and centrality information
-///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
-///
 
 #include "PWGEM/PhotonMeson/DataModel/bcWiseTables.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "EMCALBase/Geometry.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <EMCALBase/Geometry.h>
+#include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <limits>
 #include <map>
 #include <string>
@@ -40,10 +60,11 @@ using namespace o2;
 using namespace o2::aod::emdownscaling;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
 using MyMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::McCollisionLabels>;
-using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::BCCentFT0Cs, aod::BCCentFT0Ms, aod::Run3MatchedToBCSparse>;
+using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::BCCentFT0Cs, aod::BCCentFT0Ms, aod::Run3MatchedToBCSparse, aod::BcLhcIfObjects>;
 
 using SelectedUniqueClusters = soa::Filtered<aod::EMCALClusters>;                                                         // Clusters from collisions with only one collision in the BC
 using SelectedUniqueMCClusters = soa::Filtered<soa::Join<aod::EMCALClusters, aod::EMCALMCClusters>>;                      // Clusters from collisions with only one collision in the BC
@@ -77,10 +98,10 @@ struct bcWiseClusterSkimmer {
   Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of T0 and EMC in RCT"};
   Configurable<bool> cfgStoreMu{"cfgStoreMu", false, "Calculate and store mu (probablity of a TVX collision in the BC) per BC. Otherwise fill with 0"};
   Configurable<bool> cfgStoreTime{"cfgStoreTime", false, "Calculate and store time since the start of fill. Otherwise fill with 0"};
+  Configurable<bool> cfgOnlyCheckFirstTrueContributor{"cfgOnlyCheckFirstTrueContributor", false, "When storing MC cluster info only count as true if the leading contributor is from pi0/eta"};
   ConfigurableAxis cfgMultiplicityBinning{"cfgMultiplicityBinning", {1000, 0, 10000}, "Binning used for the binning of the number of particles in the event"};
 
   aod::rctsel::RCTFlagsChecker isFT0EMCGoodRCTChecker{aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad};
-  parameters::GRPLHCIFData* mLHCIFdata = nullptr;
   int mRunNumber = -1;
   ctpRateFetcher mRateFetcher;
 
@@ -98,9 +119,10 @@ struct bcWiseClusterSkimmer {
   {
     const int nEventBins = 6;
     mHistManager.add("nBCs", "Number of BCs;;#bf{#it{N}_{BCs}}", HistType::kTH1F, {{nEventBins, -0.5, 5.5}});
-    const TString binLabels[nEventBins] = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "HasMCColl"};
-    for (int iBin = 0; iBin < nEventBins; iBin++)
+    const std::array<TString, nEventBins> binLabels = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "HasMCColl"};
+    for (int iBin = 0; iBin < nEventBins; iBin++) {
       mHistManager.get<TH1>(HIST("nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
+    }
 
     mHistManager.add("CentralityVsGenMultiplicity", "Centrality vs number of generated MC particles;Centrality;#bf{#it{N}_{gen}}", HistType::kTH2F, {{102, 0., 102}, cfgMultiplicityBinning});
     mHistManager.add("CentralityFT0CVsM", "Centrality of FT0C vs FT0M;FT0C Cent;FT0M Cent", HistType::kTH2F, {{102, 0., 102}, {102, 0., 102}});
@@ -122,8 +144,9 @@ struct bcWiseClusterSkimmer {
     LOG(info) << "| Min gen pt: pT > " << cfgMinPtGen;
 
     o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
-    if (cfgRequireGoodRCTQuality)
+    if (cfgRequireGoodRCTQuality) {
       isFT0EMCGoodRCTChecker.init({aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad});
+    }
   }
 
   /// \brief Process EMCAL clusters (either ambigous or unique)
@@ -144,52 +167,61 @@ struct bcWiseClusterSkimmer {
   }
 
   /// \brief Process EMCAL clusters (either ambigous or unique)
-  template <typename Clusters>
+  template <o2::soa::is_table Clusters>
   void processClusters(Clusters const& clusters, const int bcID)
   {
     for (const auto& cluster : clusters) {
       clusterTable(bcID,
-                   convertForStorage<int8_t>(cluster.definition(), kDefinition),
-                   convertForStorage<int16_t>(cluster.energy(), kEnergy),
-                   convertForStorage<int16_t>(cluster.eta(), kEta),
-                   convertForStorage<uint16_t>(cluster.phi(), kPhi),
-                   convertForStorage<int8_t>(cluster.nCells(), kNCells),
-                   convertForStorage<int16_t>(cluster.m02(), kM02),
-                   convertForStorage<int16_t>(cluster.time(), kTime),
+                   convertForStorage<int8_t>(cluster.definition(), Observable::kDefinition),
+                   convertForStorage<int16_t>(cluster.energy(), Observable::kEnergy),
+                   convertForStorage<int16_t>(cluster.eta(), Observable::kEta),
+                   convertForStorage<uint16_t>(cluster.phi(), Observable::kPhi),
+                   convertForStorage<int8_t>(cluster.nCells(), Observable::kNCells),
+                   convertForStorage<int16_t>(cluster.m02(), Observable::kM02),
+                   convertForStorage<int16_t>(cluster.time(), Observable::kTime),
                    cluster.isExotic());
     }
   }
 
-  template <typename Clusters>
+  template <o2::soa::is_table Clusters>
   void processClusterMCInfo(Clusters const& clusters, const int bcID, aod::McParticles const& mcParticles)
   {
     for (const auto& cluster : clusters) {
       float clusterInducerEnergy = 0.;
       int32_t mesonMCIndex = -1;
-      if (cluster.amplitudeA().size() > 0) {
-        int clusterInducerId = cluster.mcParticleIds()[0];
+      for (size_t i = 0; i < cluster.amplitudeA().size(); i++) {
+        int clusterInducerId = cluster.mcParticleIds()[i];
         auto clusterInducer = mcParticles.iteratorAt(clusterInducerId);
         clusterInducerEnergy = clusterInducer.e();
         int daughterId = aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(clusterInducer, mcParticles, std::vector<int>{111, 221});
         if (daughterId > 0) {
           mesonMCIndex = mcParticles.iteratorAt(daughterId).mothersIds()[0];
-          if (mcParticles.iteratorAt(mesonMCIndex).pt() < cfgMinPtGen)
+          if (mcParticles.iteratorAt(mesonMCIndex).pt() < cfgMinPtGen) {
             mesonMCIndex = -1;
+          }
+        }
+        if (mesonMCIndex != -1) {
+          break;
+        }
+        if (cfgOnlyCheckFirstTrueContributor) {
+          break;
         }
       }
       bool isEta = false;
       if (mesonMCIndex >= 0) {
-        if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == 111) {
-          if (fMapPi0Index.find(mesonMCIndex) != fMapPi0Index.end()) // Some pi0s might not be found (not gg decay or too large y)
-            mesonMCIndex = fMapPi0Index[mesonMCIndex];               // If pi0 was stored in table, change index from the MC index to the pi0 index from this task
-          else                                                       // If pi0 was not stored, treat photon as if not from pi0
+        if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == PDG_t::kPi0) {
+          if (fMapPi0Index.contains(mesonMCIndex)) {   // Some pi0s might not be found (not gg decay or too large y)
+            mesonMCIndex = fMapPi0Index[mesonMCIndex]; // If pi0 was stored in table, change index from the MC index to the pi0 index from this task
+          } else {                                     // If pi0 was not stored, treat photon as if not from pi0
             mesonMCIndex = -1;
-        } else if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == 221) {
+          }
+        } else if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == Pdg::kEta) {
           isEta = true;
-          if (fMapEtaIndex.find(mesonMCIndex) != fMapEtaIndex.end()) // Some etas might not be found (not gg decay or too large y)
-            mesonMCIndex = fMapEtaIndex[mesonMCIndex];               // If eta was stored in table, change index from the MC index to the eta index from this task
-          else                                                       // If eta was not stored, treat photon as if not from eta
+          if (fMapEtaIndex.contains(mesonMCIndex)) {   // Some etas might not be found (not gg decay or too large y)
+            mesonMCIndex = fMapEtaIndex[mesonMCIndex]; // If eta was stored in table, change index from the MC index to the eta index from this task
+          } else {                                     // If eta was not stored, treat photon as if not from eta
             mesonMCIndex = -1;
+          }
         } else {
           mesonMCIndex = -1; // Not a pi0 or eta
         }
@@ -200,29 +232,13 @@ struct bcWiseClusterSkimmer {
 
   bool isBCSelected(const auto& bc)
   {
-    if (cfgRequirekTVXinEMC && !bc.alias_bit(kTVXinEMC))
+    if (cfgRequirekTVXinEMC && !bc.alias_bit(kTVXinEMC)) {
       return false;
-    if (cfgRequireGoodRCTQuality && !isFT0EMCGoodRCTChecker(bc))
+    }
+    if (cfgRequireGoodRCTQuality && !isFT0EMCGoodRCTChecker(bc)) {
       return false;
+    }
     return true;
-  }
-
-  void setLHCIFData(const auto& bc)
-  {
-    if (mRunNumber == bc.runNumber())
-      return;
-
-    auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
-    uint64_t timeStamp = bc.timestamp();
-
-    std::map<std::string, std::string> metadata;
-    mLHCIFdata = ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
-    if (mLHCIFdata == nullptr)
-      LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
-    mRunNumber = bc.runNumber();
-    LOG(info) << "LHCIF data fetched for run " << mRunNumber << " and timestamp " << timeStamp;
-
-    return;
   }
 
   double calculateMu(const auto& bc)
@@ -230,7 +246,7 @@ struct bcWiseClusterSkimmer {
     auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
     uint64_t timeStamp = bc.timestamp();
 
-    auto bfilling = mLHCIFdata->getBunchFilling();
+    auto bfilling = bc.grpLhcFData().getBunchFilling();
     double nbc = bfilling.getFilledBCs().size();
     double tvxRate = mRateFetcher.fetch(&ccdbMgr, timeStamp, bc.runNumber(), "T0VTX");
     double nTriggersPerFilledBC = tvxRate / nbc / o2::constants::lhc::LHCRevFreq;
@@ -263,25 +279,29 @@ struct bcWiseClusterSkimmer {
     bool haskTVXinEMC = bc.alias_bit(kTVXinEMC);
     bool hasEMCCell = cellsInBC.size() > 0;
     mHistManager.fill(HIST("nBCs"), 0);
-    if (hasFoundFT0)
+    if (hasFoundFT0) {
       mHistManager.fill(HIST("nBCs"), 1);
-    if (hasTVX)
+    }
+    if (hasTVX) {
       mHistManager.fill(HIST("nBCs"), 2);
-    if (haskTVXinEMC)
+    }
+    if (haskTVXinEMC) {
       mHistManager.fill(HIST("nBCs"), 3);
-    if (hasEMCCell)
+    }
+    if (hasEMCCell) {
       mHistManager.fill(HIST("nBCs"), 4);
-    if (hasMCCollision)
+    }
+    if (hasMCCollision) {
       mHistManager.fill(HIST("nBCs"), 5);
+    }
 
-    if (cfgStoreMu || cfgStoreTime)
-      setLHCIFData(bc);
     double mu = cfgStoreMu ? calculateMu(bc) : 0.;
-    float timeSinceSOF = cfgStoreTime ? (bc.timestamp() - mLHCIFdata->getFillNumberTime()) / 1e3 : 0.; // Convert to seconds
+    float timeSinceSOF = cfgStoreTime ? (bc.timestamp() - bc.grpLhcFData().getFillNumberTime()) / 1e3 : 0.; // Convert to seconds
     float ft0Amp = hasFoundFT0 ? bc.foundFT0().sumAmpA() + bc.foundFT0().sumAmpC() : 0.;
     double centralityOfCollision = 101.5;
-    if (collisionsInBC.size() > 0)
+    if (collisionsInBC.size() > 0) {
       centralityOfCollision = collisionsInBC.iteratorAt(0).centFT0C();
+    }
     double centralityOfBC = bc.centFT0C();
 
     mHistManager.fill(HIST("BCCentVsCollCent"), centralityOfBC, centralityOfCollision);
@@ -289,40 +309,46 @@ struct bcWiseClusterSkimmer {
 
     bcTable(hasFoundFT0, hasTVX, haskTVXinEMC, hasEMCCell, convertForStorage<uint8_t>(centralityOfBC, kCent), convertForStorage<uint8_t>(bc.centFT0M(), kCent), convertForStorage<uint16_t>(ft0Amp, kFT0Amp), convertForStorage<uint16_t>(mu, kMu), convertForStorage<uint16_t>(timeSinceSOF, kTimeSinceSOF));
 
-    for (const auto& collision : collisionsInBC)
+    for (const auto& collision : collisionsInBC) {
       collisionTable(bcTable.lastIndex(), convertForStorage<int16_t>(collision.posZ(), kZVtx));
+    }
   }
 
-  template <typename TMCParticle, typename TMCParticles>
-  bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
+  template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles>
+  bool isGammaGammaDecay(TMCParticle const& mcParticle, TMCParticles const& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
-    if (daughtersIds.size() != 2)
+    if (daughtersIds.size() != 2) {
       return false;
+    }
     for (const auto& daughterId : daughtersIds) {
-      if (mcParticles.iteratorAt(daughterId).pdgCode() != 22)
+      if (mcParticles.iteratorAt(daughterId).pdgCode() != PDG_t::kGamma) {
         return false;
+      }
     }
     return true;
   }
 
-  template <typename TMCParticle, typename TMCParticles>
-  bool isAccepted(TMCParticle mcParticle, TMCParticles mcParticles)
+  template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles>
+  bool isAccepted(TMCParticle const& mcParticle, TMCParticles const& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
-    if (daughtersIds.size() != 2)
+    if (daughtersIds.size() != 2) {
       return false;
+    }
     for (const auto& daughterId : daughtersIds) {
-      if (mcParticles.iteratorAt(daughterId).pdgCode() != 22)
+      if (mcParticles.iteratorAt(daughterId).pdgCode() != PDG_t::kGamma) {
         return false;
+      }
       int iCellID = -1;
       try {
         iCellID = emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(mcParticles.iteratorAt(daughterId).eta(), mcParticles.iteratorAt(daughterId).phi());
-      } catch (emcal::InvalidPositionException& e) {
+      } catch (const emcal::InvalidPositionException& e) {
         iCellID = -1;
       }
-      if (iCellID == -1)
+      if (iCellID == -1) {
         return false;
+      }
     }
     return true;
   }
@@ -330,8 +356,9 @@ struct bcWiseClusterSkimmer {
   void processData(MyBCs const& bcs, MyCollisions const& collisions, aod::FT0s const&, SelectedCells const& cells, SelectedUniqueClusters const& uClusters, SelectedAmbiguousClusters const& aClusters)
   {
     for (const auto& bc : bcs) {
-      if (!isBCSelected(bc))
+      if (!isBCSelected(bc)) {
         continue;
+      }
       auto collisionsInBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerBC, bc.globalIndex());
 
@@ -354,8 +381,9 @@ struct bcWiseClusterSkimmer {
   void processMC(MyBCs const& bcs, MyMCCollisions const& collisions, aod::McCollisions const& mcCollisions, aod::FT0s const&, SelectedCells const& cells, SelectedUniqueMCClusters const& uClusters, SelectedAmbiguousMCClusters const& aClusters, aod::McParticles const& mcParticles)
   {
     for (const auto& bc : bcs) {
-      if (!isBCSelected(bc))
+      if (!isBCSelected(bc)) {
         continue;
+      }
       auto collisionsInBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerBC, bc.globalIndex());
 
@@ -365,21 +393,23 @@ struct bcWiseClusterSkimmer {
 
       for (const auto& mcCollision : mcCollisionsBC) {
         mHistManager.fill(HIST("MCZVtx"), mcCollision.posZ());
-        if (bc.selection_bit(aod::evsel::kIsTriggerTVX))
+        if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
           mHistManager.fill(HIST("MCZVtx_TVX"), mcCollision.posZ());
+        }
         auto mcParticlesInColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
         mHistManager.fill(HIST("CentralityVsGenMultiplicity"), bc.centFT0M(), mcParticlesInColl.size());
         for (const auto& mcParticle : mcParticlesInColl) {
-          if (std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles) || mcParticle.pt() < cfgMinPtGen)
+          if (std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles) || mcParticle.pt() < cfgMinPtGen) {
             continue;
+          }
           bool isPrimary = mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator();
           bool isFromWD = (aod::pwgem::photonmeson::utils::mcutil::IsFromWD(mcCollision, mcParticle, mcParticles)) > 0;
 
-          if (mcParticle.pdgCode() == 111) {
-            mcpi0Table(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+          if (mcParticle.pdgCode() == PDG_t::kPi0) {
+            mcpi0Table(bcTable.lastIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
             fMapPi0Index[mcParticle.globalIndex()] = static_cast<int32_t>(mcpi0Table.lastIndex());
-          } else if (mcParticle.pdgCode() == 221) {
-            mcetaTable(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+          } else if (mcParticle.pdgCode() == Pdg::kEta) {
+            mcetaTable(bcTable.lastIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
             fMapEtaIndex[mcParticle.globalIndex()] = static_cast<int32_t>(mcetaTable.lastIndex());
           }
         }
@@ -401,4 +431,7 @@ struct bcWiseClusterSkimmer {
   PROCESS_SWITCH(bcWiseClusterSkimmer, processMC, "Run skimming for MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<bcWiseClusterSkimmer>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
+{
+  return WorkflowSpec{adaptAnalysisTask<bcWiseClusterSkimmer>(context)};
+}

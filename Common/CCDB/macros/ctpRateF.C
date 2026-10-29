@@ -9,24 +9,32 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <map>
-#include <vector>
-
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsCTP/Configuration.h"
-#include "DataFormatsCTP/Scalers.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/Logger.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <map>
+#include <ostream>
+#include <string>
+#include <vector>
 
 struct ctpRateFetcher {
   ctpRateFetcher() = default;
-  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName);
+  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& sourceName);
   void getCTPconfig(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
   void getCTPscalers(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
   void getLHCIFdata(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
   double fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, int input);
-  double fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType = 1);
+  double fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& className, int inputType = 1);
   double pileUpCorrection(double rate);
 
   int mRunNumber = -1;
@@ -52,7 +60,7 @@ void ctpRateFetcher::getCTPconfig(o2::ccdb::BasicCCDBManager* ccdb, uint64_t tim
   if (runNumber == mRunNumber && mConfig != nullptr) {
     return;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   metadata["runNumber"] = std::to_string(runNumber);
   mConfig = ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", timeStamp, metadata);
   if (mConfig == nullptr) {
@@ -64,7 +72,7 @@ void ctpRateFetcher::getLHCIFdata(o2::ccdb::BasicCCDBManager* ccdb, uint64_t tim
   if (runNumber == mRunNumber && mLHCIFdata != nullptr) {
     return;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   mLHCIFdata = ccdb->getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
   if (mLHCIFdata == nullptr) {
     LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
@@ -75,7 +83,7 @@ void ctpRateFetcher::getCTPscalers(o2::ccdb::BasicCCDBManager* ccdb, uint64_t ti
   if (runNumber == mRunNumber && mScalers != nullptr) {
     return;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   metadata["runNumber"] = std::to_string(runNumber);
   mScalers = ccdb->getSpecific<o2::ctp::CTPRunScalers>("CTP/Calib/Scalers", timeStamp, metadata);
   if (mScalers == nullptr) {
@@ -96,7 +104,7 @@ double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uin
     return -1.;
   }
 }
-double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType)
+double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& className, int inputType)
 {
   getCTPscalers(ccdb, timeStamp, runNumber);
   getCTPconfig(ccdb, timeStamp, runNumber);
@@ -117,7 +125,7 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, ui
   getLHCIFdata(ccdb, timeStamp, runNumber);
   return pileUpCorrection(rate.second);
 }
-double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
+double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& sourceName)
 {
   if (sourceName.find("ZNC") != std::string::npos) {
     if (runNumber < 544448) {

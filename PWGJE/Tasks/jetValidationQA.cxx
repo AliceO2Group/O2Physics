@@ -18,11 +18,11 @@
 
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
@@ -410,7 +410,7 @@ struct mcJetTrackCollisionQa {
 
   // fill qa histograms for selected tracks in collision
   template <class ValidationTracks, typename coll>
-  void fillMcTrackHistos(ValidationTracks const& mct, coll collision, bool mc) // could give collision as argument for additional association
+  void fillMcTrackHistos(ValidationTracks const& mct, const coll& collision, bool mc) // could give collision as argument for additional association
   {
     for (const auto& track : mct) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection) || !(track.collisionId() == collision.globalIndex())) {

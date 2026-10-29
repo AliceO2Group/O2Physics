@@ -9,42 +9,62 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <algorithm>
-#include <numeric>
-#include <vector>
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/FlowPtContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "GFWPowerArray.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
-#include "FlowContainer.h"
-#include "FlowPtContainer.h"
-#include "GFWConfig.h"
-#include "GFWWeights.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TF1.h>
+#include <TH1.h>
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TF1.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
+using namespace o2::analysis::genericframework;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+
 namespace o2::analysis::flowanalysis
 {
 std::vector<double> ptbinning = {
@@ -395,7 +415,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  bool eventSelected(const TCollision& collision, const int& multTrk, const float& centrality)
   {
     if (cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
@@ -467,7 +487,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track, const int& field)
+  bool trackSelected(const TTrack& track, const int& field)
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -525,7 +545,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TCollision, typename TTracks>
-  void processCollision(datatype dt, TCollision const& collision, TTracks tracks, const float& centrality, const int& field)
+  void processCollision(datatype dt, TCollision const& collision, const TTracks& tracks, const float& centrality, const int& field)
   {
 
     if (tracks.size() < 1)
@@ -628,7 +648,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TrackObject>
-  inline void FillGFW(TrackObject track, float weff, float wacc)
+  inline void FillGFW(const TrackObject& track, float weff, float wacc)
   {
     fFCpt->fill(weff, track.pt());
     bool WithinPtPOI = (ptpoilow < track.pt()) && (track.pt() < ptpoiup); // within POI pT range
@@ -643,7 +663,7 @@ struct flowAnalysisGF {
   }
 
   template <QAtime qt, typename TrackObject>
-  inline void FillTrackQA(TrackObject track, const float vtxz)
+  inline void FillTrackQA(const TrackObject& track, const float vtxz)
   {
     if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       registry.fill(HIST("trackMCGen/phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
@@ -665,7 +685,7 @@ struct flowAnalysisGF {
   }
 
   template <QAtime qt, typename CollisionObject, typename TracksObject>
-  inline void FillEventQA(CollisionObject collision, TracksObject tracks)
+  inline void FillEventQA(const CollisionObject& collision, const TracksObject& tracks)
   {
 
     if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
@@ -680,7 +700,7 @@ struct flowAnalysisGF {
   }
 
   template <typename CollisionObject, typename TracksObject>
-  inline void RunProcess(CollisionObject collision, TracksObject tracks)
+  inline void RunProcess(const CollisionObject& collision, const TracksObject& tracks)
   {
 
     float centrality;
@@ -719,7 +739,7 @@ struct flowAnalysisGF {
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
 
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 

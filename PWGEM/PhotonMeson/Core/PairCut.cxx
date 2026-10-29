@@ -13,12 +13,15 @@
 // Class for track selection
 //
 
-#include "Framework/Logger.h"
-#include "PWGEM/PhotonMeson/Core/PairCut.h"
+#include "PairCut.h"
 
-ClassImp(PairCut);
+#include <Framework/Logger.h>
 
-const char* PairCut::mCutNames[static_cast<int>(PairCut::PairCuts::kNCuts)] = {"Asym"};
+#include <array>
+#include <cstddef>
+#include <string>
+
+const std::array<std::string, static_cast<std::size_t>(PairCut::PairCuts::kNCuts)> PairCut::mCutNames = {"Asym"};
 
 void PairCut::SetAsymRange(float min, float max)
 {

@@ -13,6 +13,12 @@
 
 #include "v0SelectionGroup.h"
 
+#include "PWGLF/Utils/v0SelectionBits.h"
+
+#include <Framework/Logger.h>
+
+#include <cstdint>
+
 // simple checkers, but ensure 64 bit integers
 #define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))

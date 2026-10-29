@@ -46,6 +46,12 @@ enum TrackSelection {
   QualityTracksITS = 2
 };
 
+enum PVContrReassocOpt {
+  Disabled = 0,
+  OnlySameBc = 1,
+  SameBcAndLowMult = 2
+};
+
 } // namespace track_association
 } // namespace o2::aod
 
@@ -59,10 +65,11 @@ class CollisionAssociation
   void setNumSigmaForTimeCompat(float nSigma) { mNumSigmaForTimeCompat = nSigma; }
   void setTimeMargin(float timeMargin) { mTimeMargin = timeMargin; }
   void setTrackSelectionOptionForStdAssoc(int option) { mTrackSelection = option; }
-  void setUsePvAssociation(bool enable = true) { mUsePvAssociation = enable; }
+  void setUsePvAssociation(int option = o2::aod::track_association::PVContrReassocOpt::OnlySameBc) { mUsePvAssociation = option; }
   void setIncludeUnassigned(bool enable = true) { mIncludeUnassigned = enable; }
   void setFillTableOfCollIdsPerTrack(bool fill = true) { mFillTableOfCollIdsPerTrack = fill; }
   void setBcWindow(int bcWindow = 115) { mBcWindowForOneSigma = bcWindow; }
+  void setMaxPvContributorsForLowMultReassoc(int pvContributorsMax) { mMaxPvContributorsForLowMultReassoc = pvContributorsMax; }
 
   template <typename TTracks, typename Slice, typename Assoc, typename RevIndices>
   void runStandardAssoc(o2::aod::Collisions const& collisions,
@@ -80,7 +87,8 @@ class CollisionAssociation
           switch (mTrackSelection) {
             case o2::aod::track_association::TrackSelection::CentralBarrelRun2: {
               unsigned char itsClusterMap = track.itsClusterMap();
-              if (!(track.tpcNClsFound() >= 50 && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
+              int minTpcNClsFound{50};
+              if (!(track.tpcNClsFound() >= minTpcNClsFound && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
                 hasGoodQuality = false;
               }
               break;
@@ -127,7 +135,7 @@ class CollisionAssociation
                         TTracksUnfiltered const& tracksUnfiltered,
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
-                        o2::aod::BCs const&,
+                        o2::aod::BCs const& bcs,
                         Assoc& association,
                         RevIndices& reverseIndices)
   {
@@ -151,6 +159,11 @@ class CollisionAssociation
         for (const auto& ambTrack : ambiguousTracks) {
           if constexpr (isCentralBarrel) { // FIXME: to be removed as soon as it is possible to use getId<Table>() for joined tables
             if (ambTrack.trackId() == track.globalIndex()) {
+              // special check to avoid crashes (in particular on some MC datasets)
+              // related to shifts in ambiguous tracks association to bc slices (off by 1) - see https://mattermost.web.cern.ch/alice/pl/g9yaaf3tn3g4pgn7c1yex9copy
+              if (ambTrack.bcIds()[0] >= bcs.size() || ambTrack.bcIds()[1] >= bcs.size()) {
+                break;
+              }
               if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
                 break;
               }
@@ -194,7 +207,7 @@ class CollisionAssociation
       uint64_t collBC = collision.bc().globalBC();
 
       // This is done per block to allow optimization below. Within each block the globalBC increase continously
-      for (auto& iterationWindow : trackIterationWindows) {
+      for (auto& iterationWindow : trackIterationWindows) { // o2-linter: disable=const-ref-in-for-loop (iterationWindow is modified)
         bool iteratorMoved = false;
         const bool isAssignedTrackWindow = (iterationWindow.first != iterationWindow.second) ? iterationWindow.first.has_collision() : false;
         for (auto trackInWindow = iterationWindow.first; trackInWindow != iterationWindow.second; ++trackInWindow) {
@@ -228,7 +241,7 @@ class CollisionAssociation
           float trackTime = 0;
           float trackTimeRes = 0;
           if constexpr (isCentralBarrel) {
-            if (mUsePvAssociation && trackInWindow.isPVContributor()) {
+            if ((mUsePvAssociation == o2::aod::track_association::PVContrReassocOpt::OnlySameBc && trackInWindow.isPVContributor()) || (mUsePvAssociation == o2::aod::track_association::PVContrReassocOpt::SameBcAndLowMult && trackInWindow.isPVContributor() && trackInWindow.collision().numContrib() > mMaxPvContributorsForLowMultReassoc)) {
               trackTime = trackInWindow.collision().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
               trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS;  // 1 BC
             } else {
@@ -246,7 +259,7 @@ class CollisionAssociation
 
           float thresholdTime = 0.;
           if constexpr (isCentralBarrel) {
-            if (mUsePvAssociation && trackInWindow.isPVContributor()) {
+            if ((mUsePvAssociation == o2::aod::track_association::PVContrReassocOpt::OnlySameBc && trackInWindow.isPVContributor()) || (mUsePvAssociation == o2::aod::track_association::PVContrReassocOpt::SameBcAndLowMult && trackInWindow.isPVContributor() && trackInWindow.collision().numContrib() > mMaxPvContributorsForLowMultReassoc)) {
               thresholdTime = trackTimeRes;
             } else if (TESTBIT(trackInWindow.flags(), o2::aod::track::TrackTimeResIsRange)) {
               // the track time resolution is a range, not a gaussian resolution
@@ -300,7 +313,8 @@ class CollisionAssociation
   float mNumSigmaForTimeCompat{4.};                                                  // number of sigma for time compatibility
   float mTimeMargin{500.};                                                           // additional time margin in ns
   int mTrackSelection{o2::aod::track_association::TrackSelection::GlobalTrackWoDCA}; // track selection for central barrel tracks (standard association only)
-  bool mUsePvAssociation{true};                                                      // use the information of PV contributors
+  int mUsePvAssociation{1};                                                          // use the information of PV contributors (0: off, 1: reassociate only with collisions in the same BC, 2: reassociate with collisions in the same BC, or within time resolution in case of low mult PVs)
+  int mMaxPvContributorsForLowMultReassoc{10};                                       // maximum value of PV contributors to reassociate tracks that are PV contributors to other vertices
   bool mIncludeUnassigned{true};                                                     // include tracks that were originally not assigned to any collision
   bool mFillTableOfCollIdsPerTrack{false};                                           // fill additional table with vectors of compatible collisions per track
   int mBcWindowForOneSigma{115};                                                     // BC window to be multiplied by the number of sigmas to define maximum window to be considered

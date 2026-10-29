@@ -11,12 +11,16 @@
 
 #include "PWGDQ/Core/MCProng.h"
 
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
 #include <map>
 #include <vector>
-#include <cmath>
-#include <iostream>
-
-ClassImp(MCProng);
 
 std::map<TString, int> MCProng::fgSourceNames = {
   {"kNothing", MCProng::kNothing},
@@ -88,19 +92,19 @@ MCProng::MCProng(int n, int m) : fNGenerations(n),
 }
 
 //________________________________________________________________________________________________________________
-MCProng::MCProng(int n, const std::vector<int> pdgs, const std::vector<bool> checkBothCharges, const std::vector<bool> excludePDG,
-                 const std::vector<uint64_t> sourceBits, const std::vector<uint64_t> excludeSource,
-                 const std::vector<bool> useANDonSourceBitMap, bool checkGenerationsInTime,
-                 const std::vector<int> checkIfPDGInHistory, const std::vector<bool> excludePDGInHistory) : fNGenerations(n),
-                                                                                                            fPDGcodes(pdgs),
-                                                                                                            fCheckBothCharges(checkBothCharges),
-                                                                                                            fExcludePDG(excludePDG),
-                                                                                                            fSourceBits(sourceBits),
-                                                                                                            fExcludeSource(excludeSource),
-                                                                                                            fUseANDonSourceBitMap(useANDonSourceBitMap),
-                                                                                                            fCheckGenerationsInTime(checkGenerationsInTime),
-                                                                                                            fPDGInHistory(checkIfPDGInHistory),
-                                                                                                            fExcludePDGInHistory(excludePDGInHistory) {}
+MCProng::MCProng(int n, const std::vector<int>& pdgs, const std::vector<bool>& checkBothCharges, const std::vector<bool>& excludePDG,
+                 const std::vector<uint64_t>& sourceBits, const std::vector<uint64_t>& excludeSource,
+                 const std::vector<bool>& useANDonSourceBitMap, bool checkGenerationsInTime,
+                 const std::vector<int>& checkIfPDGInHistory, const std::vector<bool>& excludePDGInHistory) : fNGenerations(n),
+                                                                                                              fPDGcodes(pdgs),
+                                                                                                              fCheckBothCharges(checkBothCharges),
+                                                                                                              fExcludePDG(excludePDG),
+                                                                                                              fSourceBits(sourceBits),
+                                                                                                              fExcludeSource(excludeSource),
+                                                                                                              fUseANDonSourceBitMap(useANDonSourceBitMap),
+                                                                                                              fCheckGenerationsInTime(checkGenerationsInTime),
+                                                                                                              fPDGInHistory(checkIfPDGInHistory),
+                                                                                                              fExcludePDGInHistory(excludePDGInHistory) {}
 
 //________________________________________________________________________________________________________________
 void MCProng::SetPDGcode(int generation, int code, bool checkBothCharges /*= false*/, bool exclude /*= false*/)
@@ -159,7 +163,10 @@ void MCProng::Print() const
               << ") ExcludePDG(" << fExcludePDG[i] << ")  SourceBits(" << fSourceBits[i] << ") ExcludeSource(" << fExcludeSource[i]
               << ") UseANDonSource(" << fUseANDonSourceBitMap[i] << ") CheckGenerationsInTime(" << fCheckGenerationsInTime << ")";
     for (std::size_t j = 0; j < fPDGInHistory.size(); j++) {
-      std::cout << " #" << j << " PDGInHistory(" << fPDGInHistory[j] << ") ExcludePDGInHistory(" << fExcludePDGInHistory[j] << ")";
+      std::cout << " #" << j << " PDGInHistory(" << fPDGInHistory[j] << ")";
+    }
+    for (std::size_t j = 0; j < fExcludePDGInHistory.size(); j++) {
+      std::cout << " #" << j << " ExcludePDGInHistory(" << fExcludePDGInHistory[j] << ")";
     }
     std::cout << std::endl;
   }

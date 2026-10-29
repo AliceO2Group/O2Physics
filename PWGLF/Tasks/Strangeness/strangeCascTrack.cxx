@@ -1,0 +1,1235 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+//
+/// \file strangeCascTrack.cxx
+/// \brief Analysis of strangeness tracking efficiency via primary production of Omega and Xi in Run 3
+/// \author Yakiv Paroviak (yakiv.paroviak@cern.ch)
+
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TF1.h>
+#include <THn.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <vector>
+
+using namespace o2;
+using namespace o2::constants::math;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
+// tables for derived data
+using DerCollisionWMults = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents>;
+using DerCascDatas = soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascBBs, aod::CascTOFNSigmas>;
+using DerTraCascDatas = soa::Join<aod::TraCascCores, aod::TraCascCollRefs, aod::StraTrackExtras, aod::TraToCascRefs>;
+
+// tables for derived MC
+using DerMCGenCascades = soa::Join<aod::CascMCCores, aod::CascMCCollRefs>;
+using DerMCRecCollisions = soa::Join<aod::StraCollisions, aod::StraCollLabels, aod::StraEvSels, aod::StraCents>;
+using DerMCRecCascDatas = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascCoreMCLabels, aod::CascExtras, aod::CascBBs, aod::CascTOFNSigmas>;
+using DerMCRecTraCascDatas = soa::Join<aod::TraCascCores, aod::TraCascCollRefs, aod::StraTrackExtras, aod::TraToCascRefs>;
+
+// tables for PID selection
+using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+
+struct StrangeCascTrack {
+
+  //* Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCollLabels, aod::StraCents>> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<DerMCGenCascades> cascsPerMcCollision = aod::cascdata::straMCCollisionId;
+  Preslice<DerMCRecCascDatas> cascsPerCollision = aod::cascdata::straCollisionId;
+
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // subprocess switches:
+
+  Configurable<bool> doProcessIons{"doProcessIons", false, "true for PbPb and OO, false for pp and pO"};
+
+  Configurable<bool> doApplyEventCuts{"doApplyEventCuts", true, "apply general event cuts"}; // event filter - PVz, sel8, INEL>0
+  // Xi selections
+  Configurable<bool> doApplyPtCutsXi{"doApplyPtCutsXi", true, "apply pt cuts (Xi)"};        // ignore particles with extremely low efficiencies
+  Configurable<bool> doApplyGenCutsXi{"doApplyGenCutsXi", true, "apply general cuts (Xi)"}; // general cascade cuts - cosPA, TPC hits etc.
+  Configurable<bool> doApplyTPCPIDXi{"doApplyTPCPIDXi", true, "apply tpc pid to dau tracks (Xi)"};
+  Configurable<bool> doApplyTOFPIDXi{"doApplyTOFPIDXi", true, "apply tof pid to dau tracks (Xi)"};
+  // Omega selections
+  Configurable<bool> doApplyPtCutsOmega{"doApplyPtCutsOmega", true, "apply pt cuts (Omega)"};
+  Configurable<bool> doApplyGenCutsOmega{"doApplyGenCutsOmega", true, "apply general cuts (Omega)"};
+  Configurable<bool> doApplyTPCPIDOmega{"doApplyTPCPIDOmega", true, "apply tpc pid to dau tracks (Omega)"};
+  Configurable<bool> doApplyTOFPIDOmega{"doApplyTOFPIDOmega", true, "apply tof pid to dau tracks (Omega)"};
+  Configurable<bool> doCompetingMassRej{"doCompetingMassRej", true, "competing mass rejection (Omega)"};
+
+  // axes
+  struct : ConfigurableGroup {
+    std::string prefix = "axes";
+    ConfigurableAxis axisEta{"axisEta", {102, -2.01, 2.01}, "#eta"};
+    ConfigurableAxis axisDCAxy{"axisDCAxy", {500, 0., 0.5}, "cm"};
+    ConfigurableAxis axisDCAz{"axisDCAz", {500, 0., 0.5}, "cm"};
+    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 10}, "p_{T} (GeV/c)"};
+    ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 5.0, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "FT0 mult %"};
+    ConfigurableAxis axisOmegaMass{"axisOmegaMass", {2000, 1.6, 1.8}, "#Omega M_{inv} (GeV/c^{2})"};
+    ConfigurableAxis axisXiMass{"axisXiMass", {2000, 1.2, 1.4}, "#Xi M_{inv} (GeV/c^{2})"};
+  } axesConfig;
+
+  // event selections
+  struct : ConfigurableGroup {
+    std::string prefix = "eventSelections";
+    Configurable<bool> cutDoINEL{"cutDoINEL", true, "choose events with INEL>0"};
+    Configurable<float> cutZVertex{"cutZVertex", 10.0f, "max Z-vertex position"};
+    Configurable<bool> cutDoSel8{"cutDoSel8", true, "choose events with sel8"};
+    Configurable<bool> cutDoNoPileup{"cutDoNoPileup", true, "choose events with no bunch pileup"};
+    Configurable<bool> cutDoGoodFT0{"cutDoGoodFT0", true, "choose events with IsGoodZvtxFT0VsPV"};
+    Configurable<bool> doINELMCGen{"doINELMCGen", true, "apply INEL>0 for gen MC events"};
+    Configurable<bool> doITSTPCVertexEventCut{"doITSTPCVertexEventCut", true, ">=1 ITS-TPC track"};
+    Configurable<bool> doNoCollInRofStandardCut{"doNoCollInRofStandardCut", true, "rejects if there are other events within the same ITS ROF with mult above threshold"};
+    Configurable<bool> doTimeRangeStandardCut{"doTimeRangeStandardCut", true, "rejects if there are events nearby in dtime +/- 2 μs, or mult above some threshold in -4..-2 μs"};
+  } eventCuts;
+
+  // cascade selections
+  struct : ConfigurableGroup {
+    std::string prefix = "cascadeSelections";
+    Configurable<bool> cutDoPropagateDCA{"cutDoPropagateDCA", false, "choose events with sel8"};
+    Configurable<float> cutPropDCAtoPVxy{"cutPropDCAtoPVxy", 0.02f, "max cascade dca to PV in xy - propagated"};
+    Configurable<float> cutPropDCAtoPVz{"cutPropDCAtoPVz", 0.02f, "max cascade dca to PV in z - propagated"};
+    Configurable<int> cutNClsTPC{"cutNClsTPC", 70, "min number of found TPC clusters for dau tracks"};
+    Configurable<float> cutMinV0CosPA{"cutMinV0CosPA", -1.1f, "min V0 cosPA"};
+    Configurable<float> cutMaxV0CosPA{"cutMaxV0CosPA", 1.1f, "max V0 cosPA"};
+    Configurable<float> cutMinBachCosPA{"cutMinBachCosPA", -1.1f, "min Bachelor cosPA"};
+    Configurable<float> cutMaxBachCosPA{"cutMaxBachCosPA", 1.1f, "max Bachelor cosPA"};
+    Configurable<std::vector<float>> cutMinCascCosPaVsPt{"cutMinCascCosPaVsPt",
+                                                         {0.993, 0.993, 0.994, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 0.999, 0.999},
+                                                         "Min Casc CosPA per pT bin (same binning as axisPt)"};
+    Configurable<float> cutRapidity{"cutRapidity", 0.5f, "max rapidity"};
+    Configurable<float> cutDauEta{"cutDauEta", 1.0f, "max eta of dau tracks"};
+    Configurable<float> cutCompMassRej{"cutCompMassRej", 0.008f, "Competing mass rejection"};
+    // minimum and maximum desired pt
+    Configurable<float> cutMinPtXiStd{"cutMinPtXiStd", 0.0f, "min pt for standard Xi"};
+    Configurable<float> cutMaxPtXiStd{"cutMaxPtXiStd", 15.0f, "min pt for standard Xi"};
+    Configurable<float> cutMinPtXiTra{"cutMinPtXiTra", 0.5f, "min pt for tracked Xi"};
+    Configurable<float> cutMaxPtXiTra{"cutMaxPtXiTra", 15.0f, "min pt for standard Xi"};
+    Configurable<float> cutMinPtOmegaStd{"cutMinPtOmegaStd", 0.5f, "min pt for standard Omega"};
+    Configurable<float> cutMaxPtOmegaStd{"cutMaxPtOmegaStd", 15.0f, "min pt for standard Omega"};
+    Configurable<float> cutMinPtOmegaTra{"cutMinPtOmegaTra", 1.0f, "min pt for tracked Omega"};
+    Configurable<float> cutMaxPtOmegaTra{"cutMaxPtOmegaTra", 15.0f, "min pt for standard Omega"};
+    // TPC PID selection
+    Configurable<float> cutNSigmaTPCPion{"cutNSigmaTPCPion", 4, "cutNSigmaTPCPion"};
+    Configurable<float> cutNSigmaTPCKaon{"cutNSigmaTPCKaon", 4, "cutNSigmaTPCKaon"};
+    Configurable<float> cutNSigmaTPCProton{"cutNSigmaTPCProton", 4, "cutNSigmaTPCProton"};
+    // TOF PID selection
+    Configurable<float> cutNSigmaTOFXi{"cutNSigmaTOFXi", 3, "cutNSigmaTOFXi"};
+    Configurable<float> cutNSigmaTOFOmega{"cutNSigmaTOFOmega", 3, "cutNSigmaTOFOmega"};
+  } cascCuts;
+
+  // cascade reconstruction Types
+  static constexpr std::string_view TypeNames[] = {"Standard", "Tracked"};
+
+  // general info about processed events
+  template <typename TEvent>
+  void fillEvents(TEvent const& collision)
+  {
+    histos.fill(HIST("NoSel-Events/EvCounter"), 0.5);
+    double mult = (doProcessIons) ? collision.centFT0C() : collision.centFT0M();
+    histos.fill(HIST("NoSel-Events/Mult"), mult);
+    double pvx = collision.posX();
+    double pvy = collision.posY();
+    double pvz = collision.posZ();
+    histos.fill(HIST("NoSel-Events/PVxy"), pvx, pvy);
+    histos.fill(HIST("NoSel-Events/PVz"), pvz);
+  }
+  // checks general selection criteria for collisions
+  template <typename TEvent>
+  bool isValidEvent(const TEvent& collision, bool fillHists)
+  {
+    bool passedAllSels = true;
+    //* inel>0 cut
+    if (!eventCuts.cutDoINEL || collision.multNTracksPVeta1() > 0) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 0.5);
+    } else {
+      passedAllSels = false;
+    }
+    //* pvz cut
+    if (std::abs(collision.posZ()) < eventCuts.cutZVertex) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 1.5);
+    } else {
+      passedAllSels = false;
+    }
+    //* sel8 cut
+    if (!eventCuts.cutDoSel8 || collision.sel8()) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 2.5);
+    } else {
+      passedAllSels = false;
+    }
+    //* pileup cut
+    if (!eventCuts.cutDoNoPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 3.5);
+    } else {
+      passedAllSels = false;
+    }
+    //* good ft0 z-vertex vs pv cut
+    if (!eventCuts.cutDoGoodFT0 || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 4.5);
+    } else {
+      passedAllSels = false;
+    }
+    //*
+    if (!eventCuts.doITSTPCVertexEventCut || collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 5.5);
+    } else {
+      passedAllSels = false;
+    }
+    //*
+    if (!eventCuts.doNoCollInRofStandardCut || collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 6.5);
+    } else {
+      passedAllSels = false;
+    }
+    //*
+    if (!eventCuts.doTimeRangeStandardCut || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 7.5);
+    } else {
+      passedAllSels = false;
+    }
+    //* all cuts
+    if (passedAllSels) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 8.5);
+    }
+    return passedAllSels;
+  }
+  // checks cascade pt
+  template <typename TCascade>
+  bool isValidPt(const TCascade& cascade, const TString& particle, int Type)
+  {
+    bool passedSel = true;
+    double ptMin = 0.0;
+    double ptMax = 0.0;
+    if (Type == 1 && particle == "Xi") {
+      ptMin = cascCuts.cutMinPtXiTra;
+      ptMax = cascCuts.cutMaxPtXiTra;
+    }
+    if (Type == 1 && particle == "Omega") {
+      ptMin = cascCuts.cutMinPtOmegaTra;
+      ptMax = cascCuts.cutMaxPtOmegaTra;
+    }
+    if (Type == 0 && particle == "Xi") {
+      ptMin = cascCuts.cutMinPtXiStd;
+      ptMax = cascCuts.cutMaxPtXiStd;
+    }
+    if (Type == 0 && particle == "Omega") {
+      ptMin = cascCuts.cutMinPtOmegaStd;
+      ptMax = cascCuts.cutMaxPtOmegaStd;
+    }
+    if (cascade.pt() < ptMin || cascade.pt() > ptMax)
+      passedSel = false;
+    return passedSel;
+  }
+  // checks general selection criteria for cascades
+  template <typename TEvent, typename TCascade, typename TStdCascade>
+  std::array<bool, 9> isValidCasc(const TEvent& collision, const TCascade& cascade, const TStdCascade& stdcasc, const TString& particle)
+  {
+    bool passedAllSels = true;
+    // cascade rapidity
+    bool passedRapidity = true;
+    double y;
+    if (particle == "Xi")
+      y = std::abs(cascade.yXi());
+    else
+      y = std::abs(cascade.yOmega());
+    if (y > cascCuts.cutRapidity) {
+      passedRapidity = false;
+      passedAllSels = false;
+    }
+    // daughter track pseudorapidity
+    bool passedDauEta = true;
+    double bachEta = std::abs(cascade.bacheloreta());
+    double negEta = std::abs(cascade.negativeeta());
+    double posEta = std::abs(cascade.positiveeta());
+    if (bachEta > cascCuts.cutDauEta || negEta > cascCuts.cutDauEta || posEta > cascCuts.cutDauEta) {
+      passedDauEta = false;
+      passedAllSels = false;
+    }
+    // daughter found TPC clusters
+    bool passedTPCCls = true;
+    const auto& posTrack = stdcasc.template posTrackExtra_as<DauTracks>();
+    const auto& negTrack = stdcasc.template negTrackExtra_as<DauTracks>();
+    const auto& bachTrack = stdcasc.template bachTrackExtra_as<DauTracks>();
+    double posCls = posTrack.tpcClusters();
+    double negCls = negTrack.tpcClusters();
+    double bachCls = bachTrack.tpcClusters();
+    if (posCls < cascCuts.cutNClsTPC || negCls < cascCuts.cutNClsTPC || bachCls < cascCuts.cutNClsTPC) {
+      passedTPCCls = false;
+      passedAllSels = false;
+    }
+    // V0 cosPA
+    bool passedV0CosPA = true;
+    double v0cospa = cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    if (v0cospa < cascCuts.cutMinV0CosPA || v0cospa > cascCuts.cutMaxV0CosPA) {
+      passedV0CosPA = false;
+      passedAllSels = false;
+    }
+    // Bachelor cosPA
+    bool passedBachCosPA = true;
+    double bachcospa = stdcasc.bachBaryonCosPA();
+    if (bachcospa < cascCuts.cutMinBachCosPA || bachcospa > cascCuts.cutMaxBachCosPA) {
+      passedBachCosPA = false;
+      passedAllSels = false;
+    }
+    // Cascade cosPA
+    bool passedCascCosPA = true;
+    double casccospa = cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+    const auto& edges = axesConfig.axisPt.value;
+    int ptBin = std::upper_bound(edges.begin(), edges.end(), cascade.pt()) - edges.begin() - 1;
+    if (ptBin < 0 || ptBin >= static_cast<int>(cascCuts.cutMinCascCosPaVsPt->size())) {
+      ptBin = 1;
+    } // safety check - if pt bin not determined, default to loosest cut
+    if (casccospa < cascCuts.cutMinCascCosPaVsPt->at(ptBin)) {
+      passedCascCosPA = false;
+      passedAllSels = false;
+    }
+    // Propagated cacade DCAxy to PV
+    bool passedPropDCAxy = true;
+    if (cascCuts.cutDoPropagateDCA && cascade.dcaXYCascToPV() > cascCuts.cutPropDCAtoPVxy) {
+      passedPropDCAxy = false;
+      passedAllSels = false;
+    }
+    // Propagated cacade DCAz to PV
+    bool passedPropDCAz = true;
+    if (cascCuts.cutDoPropagateDCA && cascade.dcaZCascToPV() > cascCuts.cutPropDCAtoPVz) {
+      passedPropDCAz = false;
+      passedAllSels = false;
+    }
+    return {passedRapidity, passedDauEta, passedTPCCls, passedV0CosPA, passedBachCosPA, passedCascCosPA, passedPropDCAxy, passedPropDCAz, passedAllSels};
+  }
+  // checks TPC PID of dau tracks
+  template <typename TCascade>
+  bool passesTPC(const TCascade& cascade, const TString& particle)
+  {
+    bool passedSel = true;
+    const auto& posTrack = cascade.template posTrackExtra_as<DauTracks>();
+    const auto& negTrack = cascade.template negTrackExtra_as<DauTracks>();
+    const auto& bachTrack = cascade.template bachTrackExtra_as<DauTracks>();
+    if (cascade.sign() < 0) {
+      if (std::abs(posTrack.tpcNSigmaPr()) > cascCuts.cutNSigmaTPCProton) {
+        passedSel = false;
+      }
+      if (std::abs(negTrack.tpcNSigmaPi()) > cascCuts.cutNSigmaTPCPion) {
+        passedSel = false;
+      }
+      if ((particle == "Xi" && std::abs(bachTrack.tpcNSigmaPi()) > cascCuts.cutNSigmaTPCPion) ||
+          (particle == "Omega" && std::abs(bachTrack.tpcNSigmaKa()) > cascCuts.cutNSigmaTPCKaon)) {
+        passedSel = false;
+      }
+    } else {
+      if (std::abs(negTrack.tpcNSigmaPr()) > cascCuts.cutNSigmaTPCProton) {
+        passedSel = false;
+      }
+      if (std::abs(posTrack.tpcNSigmaPi()) > cascCuts.cutNSigmaTPCPion) {
+        passedSel = false;
+      }
+      if ((particle == "Xi" && std::abs(bachTrack.tpcNSigmaPi()) > cascCuts.cutNSigmaTPCPion) ||
+          (particle == "Omega" && std::abs(bachTrack.tpcNSigmaKa()) > cascCuts.cutNSigmaTPCKaon)) {
+        passedSel = false;
+      }
+    }
+    return passedSel;
+  }
+  // checks TOF PID of dau tracks
+  template <typename TCascade>
+  bool passesTOF(const TCascade& cascade, const TString& particle)
+  {
+    bool passedSel = true;
+    if (particle == "Xi")
+      passedSel = cascade.tofXiCompatibility(cascCuts.cutNSigmaTOFXi);
+    if (particle == "Omega")
+      passedSel = cascade.tofOmegaCompatibility(cascCuts.cutNSigmaTOFOmega);
+    return passedSel;
+  }
+  // checks whether gen cascade corresponds to PDG code
+  template <typename TCascade>
+  bool isValidPDG(const TCascade& cascade, const TString& particle)
+  {
+    if (particle == "Xi" && std::abs(cascade.pdgCode()) == PDG_t::kXiMinus)
+      return true;
+    if (particle == "Omega" && std::abs(cascade.pdgCode()) == PDG_t::kOmegaMinus)
+      return true;
+    return false;
+  }
+  // checks whether rec cascade is a truth primary xi or omega
+  template <typename TCascade>
+  bool isMCTruth(const TCascade& cascade, const TString& particle)
+  {
+    if constexpr (requires { cascade.has_cascMCCore(); }) { // safety check: discard rec cascade without gen reference
+      auto cascmccore = cascade.template cascMCCore_as<DerMCGenCascades>();
+      if (!cascmccore.isPhysicalPrimary())
+        return false;
+      int pdg = std::abs(cascmccore.pdgCode());
+      if (particle == "Xi")
+        return (pdg == PDG_t::kXiMinus);
+      if (particle == "Omega")
+        return (pdg == PDG_t::kOmegaMinus);
+    }
+    return false;
+  }
+
+  // applies selections for and fills histograms
+  template <typename TEvent, typename TCasc>
+  void analyseCascade(const TEvent& collision, TCasc cascade)
+  {
+    if constexpr (requires { cascade.topologyChi2(); }) {
+      if (!cascade.has_standardCascade())
+        return; // safety check: dismisses tracked cascades without proper reference
+    }
+
+    // for tracked cascades, make a reference to standard table
+    auto stdCasc = [&]() {
+      if constexpr (requires { cascade.topologyChi2(); }) {
+        if constexpr (requires { collision.straMCCollisionId(); }) {
+          return cascade.template standardCascade_as<DerMCRecCascDatas>();
+        } else {
+          return cascade.template standardCascade_as<DerCascDatas>();
+        }
+      } else {
+        return cascade;
+      }
+    }();
+
+    // Type 1 for tracked cascades, Type 0 for standard
+    static constexpr int Type = [&]() {
+      if constexpr (requires { cascade.topologyChi2(); }) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }();
+
+    double mult = (doProcessIons) ? collision.centFT0C() : collision.centFT0M(); // ion collisions use FT0C for multiplicity, pp uses both
+
+    double massXi = cascade.mXi();
+    double massOmega = cascade.mOmega();
+    double pt = cascade.pt();
+    double v0cosPA = cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    double casccosPA = cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+    double bachEta = cascade.bacheloreta();
+    double negEta = cascade.negativeeta();
+    double posEta = cascade.positiveeta();
+
+    // fill filters for no cascade selections
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/PropDCAxy"), cascade.dcaXYCascToPV());
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/PropDCAz"), cascade.dcaZCascToPV());
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/BachCosPA"), stdCasc.bachBaryonCosPA());
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/V0CosPA"), v0cosPA);
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/CascCosPA"), casccosPA);
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/RapidityXi"), cascade.yXi());
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/PtVsRapidityXi"), pt, cascade.yXi());
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/RapidityOmega"), cascade.yOmega());
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/PtVsRapidityOmega"), pt, cascade.yOmega());
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/EtaDau"), bachEta);
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/EtaDau"), negEta);
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/Filters/EtaDau"), posEta);
+    // fill inv mass for no cascade selections
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/MassXi"), massXi);
+    histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/MassOmega"), massOmega);
+    // fill filters and inv mass for no cascade selections (MC truth)
+    if constexpr (requires { collision.straMCCollisionId(); }) {
+      if (isMCTruth(stdCasc, "Xi") || isMCTruth(stdCasc, "Omega")) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/PropDCAxy"), cascade.dcaXYCascToPV());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/PropDCAz"), cascade.dcaZCascToPV());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/BachCosPA"), stdCasc.bachBaryonCosPA());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/V0CosPA"), v0cosPA);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/CascCosPA"), casccosPA);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/EtaDau"), bachEta);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/EtaDau"), negEta);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/EtaDau"), posEta);
+        if (isMCTruth(stdCasc, "Xi")) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/RapidityXi"), cascade.yXi());
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/MassXi"), massXi);
+        }
+        if (isMCTruth(stdCasc, "Omega")) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/Filters/RapidityOmega"), cascade.yOmega());
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/MassOmega"), massOmega);
+        }
+      }
+    }
+    // start checking selections
+    bool passedAllSelsXi = true;
+    bool passedAllSelsOmega = true;
+    bool fillTruthXi = false;
+    bool fillTruthOmega = false;
+    if constexpr (requires { collision.straMCCollisionId(); }) {
+      if (isMCTruth(stdCasc, "Xi")) {
+        fillTruthXi = true;
+      }
+    }
+    if constexpr (requires { collision.straMCCollisionId(); }) {
+      if (isMCTruth(stdCasc, "Omega")) {
+        fillTruthOmega = true;
+      }
+    }
+    // apply pt cuts
+    if (doApplyPtCutsXi) {
+      if (isValidPt(cascade, "Xi", Type)) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 0.5);
+        if (fillTruthXi)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 0.5);
+      } else {
+        passedAllSelsXi = false;
+      }
+    }
+    if (doApplyPtCutsOmega) {
+      if (isValidPt(cascade, "Omega", Type)) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 0.5);
+        if (fillTruthOmega)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 0.5);
+      } else {
+        passedAllSelsOmega = false;
+      }
+    }
+    // apply general cascade cuts
+    if (doApplyGenCutsXi) {
+      auto genSels = isValidCasc(collision, cascade, stdCasc, "Xi");
+      for (size_t i = 0; i < std::size(genSels); ++i) {
+        if (genSels[i]) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenFiltersXi"), (i + 0.5));
+          if (fillTruthXi)
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenFiltersXi"), (i + 0.5));
+        }
+      }
+      if (genSels[std::size(genSels) - 1]) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 1.5);
+        if (fillTruthXi)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 1.5);
+      } else {
+        passedAllSelsXi = false;
+      }
+    }
+    if (doApplyGenCutsOmega) {
+      auto genSels = isValidCasc(collision, cascade, stdCasc, "Omega");
+      for (size_t i = 0; i < std::size(genSels); ++i) {
+        if (genSels[i]) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenFiltersOmega"), (i + 0.5));
+          if (fillTruthOmega)
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenFiltersOmega"), (i + 0.5));
+        }
+      }
+      if (genSels[std::size(genSels) - 1]) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 1.5);
+        if (fillTruthOmega)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 1.5);
+      } else {
+        passedAllSelsOmega = false;
+      }
+    }
+    // apply tpc pid
+    if (doApplyTPCPIDXi) {
+      if (passesTPC(stdCasc, "Xi")) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 2.5);
+        if (fillTruthXi)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 2.5);
+      } else {
+        passedAllSelsXi = false;
+      }
+    }
+    if (doApplyTPCPIDOmega) {
+      if (passesTPC(stdCasc, "Omega")) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 2.5);
+        if (fillTruthOmega)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 2.5);
+      } else {
+        passedAllSelsOmega = false;
+      }
+    }
+    // apply tof pid
+    if (doApplyTOFPIDXi) {
+      if (passesTOF(stdCasc, "Xi")) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 3.5);
+        if (fillTruthXi)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 3.5);
+      } else {
+        passedAllSelsXi = false;
+      }
+    }
+    if (doApplyTOFPIDOmega) {
+      if (passesTOF(stdCasc, "Omega")) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 3.5);
+        if (fillTruthOmega)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 3.5);
+      } else {
+        passedAllSelsOmega = false;
+      }
+    }
+    // apply competing mass rej
+    if (doCompetingMassRej) {
+      if ((std::abs(massXi - o2::constants::physics::MassXiMinus) > cascCuts.cutCompMassRej)) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 4.5);
+        if (fillTruthOmega)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 4.5);
+      } else {
+        passedAllSelsOmega = false;
+      }
+    }
+
+    // fil rec histograms
+    if (passedAllSelsXi || passedAllSelsOmega) {
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/PropDCAxy"), cascade.dcaXYCascToPV());
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/PropDCAz"), cascade.dcaZCascToPV());
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/BachCosPA"), stdCasc.bachBaryonCosPA());
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/V0CosPA"), v0cosPA);
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/CascCosPA"), casccosPA);
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/EtaDau"), bachEta);
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/EtaDau"), negEta);
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/EtaDau"), posEta);
+      if (passedAllSelsXi) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/RapidityXi"), cascade.yXi());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/PtVsRapidityXi"), pt, cascade.yXi());
+      }
+      if (passedAllSelsOmega) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/RapidityOmega"), cascade.yOmega());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/PtVsRapidityOmega"), pt, cascade.yOmega());
+      }
+      if (fillTruthXi || fillTruthOmega) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/PropDCAxy"), cascade.dcaXYCascToPV());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/PropDCAz"), cascade.dcaZCascToPV());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/BachCosPA"), stdCasc.bachBaryonCosPA());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/V0CosPA"), v0cosPA);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/CascCosPA"), casccosPA);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/EtaDau"), bachEta);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/EtaDau"), negEta);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/EtaDau"), posEta);
+        if (passedAllSelsXi)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/RapidityXi"), cascade.yXi());
+        if (passedAllSelsOmega)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/RapidityOmega"), cascade.yOmega());
+      }
+    }
+    if (passedAllSelsXi) {
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 4.5);
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXi"), massXi);
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Xi"), massXi, pt, mult);
+      // fill for particle-antiparticle type
+      if (cascade.sign() < 0) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiMinus"), massXi);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/XiMinus"), massXi, pt, mult);
+      }
+      if (cascade.sign() > 0) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiPlus"), massXi);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/XiPlus"), massXi, pt, mult);
+      }
+      // fill truth
+      if (fillTruthXi) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 4.5);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/MassXi"), massXi);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Xi"), massXi, pt, mult);
+        //
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/RapCheck_TH3_Truth_Xi"), pt, mult, cascade.yXi());
+      }
+    }
+    if (passedAllSelsOmega) {
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 5.5);
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmega"), massOmega);
+      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Omega"), massOmega, pt, mult);
+      // fill for particle-antiparticle type
+      if (cascade.sign() < 0) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaMinus"), massOmega);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/OmegaMinus"), massOmega, pt, mult);
+      }
+      if (cascade.sign() > 0) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaPlus"), massOmega);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/OmegaPlus"), massOmega, pt, mult);
+      }
+      // fill truth
+      if (fillTruthOmega) {
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 5.5);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/MassOmega"), massOmega);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Omega"), massOmega, pt, mult);
+        //
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/RapCheck_TH3_Truth_Omega"), pt, mult, cascade.yOmega());
+      }
+    }
+
+    // statistics - compare gen and reco pt and rapidity
+    int charmBeautyCodesLow = 4000;
+    int charmBeautyCodesHigh = 6000;
+    if constexpr (requires { collision.straMCCollisionId(); }) {
+      if constexpr (requires { stdCasc.has_cascMCCore(); }) {
+        auto cascmccore = stdCasc.template cascMCCore_as<DerMCGenCascades>();
+        double genPt = cascmccore.ptMC();
+        double genYXi = cascmccore.rapidityMC(0);
+        double genYOmega = cascmccore.rapidityMC(2);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/GenRecPt"), genPt, pt);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/GenRecRapidityXi"), genYXi, cascade.yXi());
+        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
+        if (fillTruthXi || fillTruthOmega)
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecPt"), genPt, pt);
+        if (passedAllSelsOmega || passedAllSelsXi) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecPt"), genPt, pt);
+          if (fillTruthXi || fillTruthOmega)
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecPt"), genPt, pt);
+        }
+        if (fillTruthXi) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecRapidityXi"), genYXi, cascade.yXi());
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyPrimaryXi"), cascade.dcaXYCascToPV(), pt, mult);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzPrimaryXi"), cascade.dcaZCascToPV(), pt, mult);
+          if (std::abs(cascmccore.pdgCodeMother()) > charmBeautyCodesLow && std::abs(cascmccore.pdgCodeMother()) < charmBeautyCodesHigh) {
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayXi"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayXi"), cascade.dcaZCascToPV(), pt, mult);
+          } else if (cascmccore.pdgCodeMother() == -1) {
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDirectXi"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDirectXi"), cascade.dcaZCascToPV(), pt, mult);
+          }
+        }
+        if (passedAllSelsXi) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecRapidityXi"), genYXi, cascade.yXi());
+          if (fillTruthXi) {
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecRapidityXi"), genYXi, cascade.yXi());
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyPrimaryXi"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzPrimaryXi"), cascade.dcaZCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Radius/PrimaryXi"), cascade.cascradius(), pt);
+            if (std::abs(cascmccore.pdgCodeMother()) > charmBeautyCodesLow && std::abs(cascmccore.pdgCodeMother()) < charmBeautyCodesHigh) {
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayXi"), cascade.dcaXYCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayXi"), cascade.dcaZCascToPV(), pt, mult);
+            } else if (cascmccore.pdgCodeMother() == -1) {
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDirectXi"), cascade.dcaXYCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDirectXi"), cascade.dcaZCascToPV(), pt, mult);
+            }
+          }
+        }
+        if (fillTruthOmega) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyPrimaryOmega"), cascade.dcaXYCascToPV(), pt, mult);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzPrimaryOmega"), cascade.dcaZCascToPV(), pt, mult);
+          if (std::abs(cascmccore.pdgCodeMother()) > charmBeautyCodesLow && std::abs(cascmccore.pdgCodeMother()) < charmBeautyCodesHigh) {
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
+          } else if (cascmccore.pdgCodeMother() == -1) {
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDirectOmega"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDirectOmega"), cascade.dcaZCascToPV(), pt, mult);
+          }
+        }
+        if (passedAllSelsOmega) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
+          if (fillTruthOmega) {
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyPrimaryOmega"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzPrimaryOmega"), cascade.dcaZCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Radius/PrimaryOmega"), cascade.cascradius(), pt);
+            if (std::abs(cascmccore.pdgCodeMother()) > charmBeautyCodesLow && std::abs(cascmccore.pdgCodeMother()) < charmBeautyCodesHigh) {
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
+            } else if (cascmccore.pdgCodeMother() == -1) {
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDirectOmega"), cascade.dcaXYCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDirectOmega"), cascade.dcaZCascToPV(), pt, mult);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  template <typename TEvent, typename TCascs>
+  void analyseCascs(TEvent const& collision, TCascs const& cascades)
+  {
+    for (auto const& cascade : cascades) {
+      analyseCascade(collision, cascade);
+    }
+  }
+
+  void init(InitContext const&)
+  {
+    // check if cut configuration is valid
+    if (cascCuts.cutMinCascCosPaVsPt->size() != axesConfig.axisPt.value.size() - 1) {
+      LOGF(fatal, "cutMinCascCosPaVsPt size does not match axisPt binning");
+    }
+    // for all events processing
+    histos.add("NoSel-Events/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
+    histos.add("NoSel-Events/PVxy", "PV xy position", kTH2D, {{200, -0.1, 0.1}, {200, -0.1, 0.1}});
+    histos.add("NoSel-Events/PVz", "PV z position", kTH1D, {{100, -20, 20}});
+    histos.add("NoSel-Events/Mult", "Multiplicity", kTH1D, {axesConfig.axisMult});
+    // for all events processing
+    histos.add("Rec-Events/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
+    histos.add("Rec-Events/PVxy", "PV xy position", kTH2D, {{200, -0.1, 0.1}, {200, -0.1, 0.1}});
+    histos.add("Rec-Events/PVz", "PV z position", kTH1D, {{100, -20, 20}});
+    histos.add("Rec-Events/Mult", "Multiplicity", kTH1D, {axesConfig.axisMult});
+    histos.add("Rec-Events/EvFilter", "Event Filter", kTH1D, {{9, 0, 9}});
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(1, "INEL>0");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(2, "PVz cut");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(3, "sel8");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(4, "NoSameBunchPileup");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(5, "IsGoodZvtxFT0VsPV");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(6, "ITSTPCVertexEventCut");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(7, "NoCollInRofStandardCut");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(8, "TimeRangeStandardCut");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(9, "all");
+    // for cascade processing
+    static_for<0, 1>([&](auto Type) {
+      // no selections applied
+      histos.add(Form("%s/NoSel/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/NoSel/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
+      histos.add(Form("%s/NoSel/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/PtVsRapidityXi", TypeNames[Type].data()), "pt vs y under Xi hypothesis", kTH2D, {axesConfig.axisPt, {200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/PtVsRapidityOmega", TypeNames[Type].data()), "pt vs y under Xi hypothesis", kTH2D, {axesConfig.axisPt, {200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
+      histos.add(Form("%s/NoSel/GenRecPt", TypeNames[Type].data()), "Generated vs reconstructed pt", kTH2D, {axesConfig.axisPt, axesConfig.axisPt});
+      histos.add(Form("%s/NoSel/GenRecRapidityXi", TypeNames[Type].data()), "Generated vs reconstructed y (Xi)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/NoSel/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      // mc truth for no selectrion
+      histos.add(Form("%s/NoSel-Truth/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/NoSel-Truth/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
+      histos.add(Form("%s/NoSel-Truth/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
+      histos.add(Form("%s/NoSel-Truth/GenRecPt", TypeNames[Type].data()), "Generated vs reconstructed pt", kTH2D, {axesConfig.axisPt, axesConfig.axisPt});
+      histos.add(Form("%s/NoSel-Truth/GenRecRapidityXi", TypeNames[Type].data()), "Generated vs reconstructed y (Xi)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/NoSel-Truth/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      ///
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyPrimaryXi", TypeNames[Type].data()), "DCA xy for primary Xi", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzPrimaryXi", TypeNames[Type].data()), "DCA z for primary Xi", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyDirectXi", TypeNames[Type].data()), "DCA xy for direct Xi (has no mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzDirectXi", TypeNames[Type].data()), "DCA z for direct Xi (has no mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyDecayXi", TypeNames[Type].data()), "DCA xy for decay Xi (has mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzDecayXi", TypeNames[Type].data()), "DCA z for decay Xi (has mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyPrimaryOmega", TypeNames[Type].data()), "DCA xy for primary Omega", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzPrimaryOmega", TypeNames[Type].data()), "DCA z for primary Omega", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyDirectOmega", TypeNames[Type].data()), "DCA xy for direct Omega (has no mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzDirectOmega", TypeNames[Type].data()), "DCA z for direct Omega (has no mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyDecayOmega", TypeNames[Type].data()), "DCA xy for decay Omega (has mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzDecayOmega", TypeNames[Type].data()), "DCA z for decay Omega (has mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      // xi and omega selection statistics
+      histos.add(Form("%s/Rec/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/Rec/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
+      histos.add(Form("%s/Rec/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/PtVsRapidityXi", TypeNames[Type].data()), "pt vs y under Xi hypothesis", kTH2D, {axesConfig.axisPt, {200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/PtVsRapidityOmega", TypeNames[Type].data()), "pt vs y under Omega hypothesis", kTH2D, {axesConfig.axisPt, {200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
+      histos.add(Form("%s/Rec/GenRecPt", TypeNames[Type].data()), "Generated vs reconstructed pt", kTH2D, {axesConfig.axisPt, axesConfig.axisPt});
+      histos.add(Form("%s/Rec/GenRecRapidityXi", TypeNames[Type].data()), "Generated vs reconstructed y (Xi)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
+      // selected xi
+      histos.add(Form("%s/Rec/FiltersXi", TypeNames[Type].data()), "main cascade filters for Xi", kTH1D, {{5, 0, 5}});
+      histos.add(Form("%s/Rec/GenFiltersXi", TypeNames[Type].data()), "general cascade filters for Xi", kTH1D, {{9, 0, 9}});
+      histos.add(Form("%s/Rec/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/Rec/MassXiMinus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/Rec/MassXiPlus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/Rec/Xi", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/XiMinus", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/XiPlus", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      // selected omega
+      histos.add(Form("%s/Rec/FiltersOmega", TypeNames[Type].data()), "main cascade filters for Omega", kTH1D, {{6, 0, 6}});
+      histos.add(Form("%s/Rec/GenFiltersOmega", TypeNames[Type].data()), "general cascade filters for Omega", kTH1D, {{9, 0, 9}});
+      histos.add(Form("%s/Rec/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/Rec/MassOmegaMinus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/Rec/MassOmegaPlus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/Rec/Omega", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/OmegaMinus", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/OmegaPlus", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      // mc truth for all passed selections
+      // xi and omega truth selection statistics
+      histos.add(Form("%s/Rec-Truth/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/Rec-Truth/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
+      histos.add(Form("%s/Rec-Truth/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
+      histos.add(Form("%s/Rec-Truth/GenRecPt", TypeNames[Type].data()), "Generated vs reconstructed pt", kTH2D, {axesConfig.axisPt, axesConfig.axisPt});
+      histos.add(Form("%s/Rec-Truth/GenRecRapidityXi", TypeNames[Type].data()), "Generated vs reconstructed y (Xi)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/FiltersXi", TypeNames[Type].data()), "main cascade filters for Xi", kTH1D, {{5, 0, 5}});
+      histos.add(Form("%s/Rec-Truth/GenFiltersXi", TypeNames[Type].data()), "general cascade filters for Xi", kTH1D, {{9, 0, 9}});
+      histos.add(Form("%s/Rec-Truth/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/Rec-Truth/Xi", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/FiltersOmega", TypeNames[Type].data()), "main cascade filters for Omega", kTH1D, {{6, 0, 6}});
+      histos.add(Form("%s/Rec-Truth/GenFiltersOmega", TypeNames[Type].data()), "general cascade filters for Omega", kTH1D, {{9, 0, 9}});
+      histos.add(Form("%s/Rec-Truth/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/Rec-Truth/Omega", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      ///
+      histos.add(Form("%s/Rec-Truth/RapCheck_TH3_Truth_Xi", TypeNames[Type].data()), "Rapidity check (pt, mult, y)", kTHnD, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/RapCheck_TH3_Truth_Omega", TypeNames[Type].data()), "Rapidity check (pt, mult, y)", kTHnD, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
+      ///
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyPrimaryXi", TypeNames[Type].data()), "DCA xy for primary Xi", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzPrimaryXi", TypeNames[Type].data()), "DCA z for primary Xi", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyDirectXi", TypeNames[Type].data()), "DCA xy for direct Xi (has no mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzDirectXi", TypeNames[Type].data()), "DCA z for direct Xi (has no mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyDecayXi", TypeNames[Type].data()), "DCA xy for decay Xi (has mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzDecayXi", TypeNames[Type].data()), "DCA z for decay Xi (has mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyPrimaryOmega", TypeNames[Type].data()), "DCA xy for primary Omega", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzPrimaryOmega", TypeNames[Type].data()), "DCA z for primary Omega", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyDirectOmega", TypeNames[Type].data()), "DCA xy for direct Omega (has no mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzDirectOmega", TypeNames[Type].data()), "DCA z for direct Omega (has no mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyDecayOmega", TypeNames[Type].data()), "DCA xy for decay Omega (has mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzDecayOmega", TypeNames[Type].data()), "DCA z for decay Omega (has mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      ///
+      histos.add(Form("%s/Rec-Truth/Radius/PrimaryXi", TypeNames[Type].data()), "Cascade radius (primary Xi)", kTH2D, {{500, 0.0, 50.0}, axesConfig.axisPt});
+      histos.add(Form("%s/Rec-Truth/Radius/PrimaryOmega", TypeNames[Type].data()), "Cascade radius (primary Omega)", kTH2D, {{500, 0.0, 50.0}, axesConfig.axisPt});
+    });
+    // for MC-specific processing
+    // all generated events:
+    histos.add("MC/Gen/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
+    histos.add("MC/Gen/Mult", "Event charged multiplicty (all gen events)", kTH1D, {{1600, 0, 3200}});
+    histos.add("MC/Gen/RapidityXi", "Generated y (Xi)", kTH1D, {{200, -1.0, 1.0}});
+    histos.add("MC/Gen/Xi", "Xi", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}});                                        // generated Xis
+    histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}});                       // generated primary Xis
+    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}});        // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryXiMinusRapidity", "Xi- primaries in |y| ", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}}); // generated primary Xi-minus in selected rapidity range
+    histos.add("MC/Gen/PrimaryXiPlusRapidity", "Xi+ primaries in |y|", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}});   // generated primary Xi-plus in selected rapidity range
+    histos.add("MC/Gen/RapidityOmega", "Generated y (Omega)", kTH1D, {{200, -1.0, 1.0}});
+    histos.add("MC/Gen/Omega", "Omega", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}});                                        // generated Omegas
+    histos.add("MC/Gen/PrimaryOmega", "Omega primaries", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}});                       // generated primary Omegas
+    histos.add("MC/Gen/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}});        // generated primary Omegas in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmegaMinusRapidity", "Omega- primaries in |y| ", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}}); // generated primary Omega-minus in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {{1600, 0, 3200}, {100, 0.0, 10.0}});   // generated primary Omega-plus in selected rapidity range
+    // generated events with reco >= 1:
+    histos.add("MC/EvRec/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
+    histos.add("MC/EvRec/Mult", "Event charged multiplicty (gen events with reco>=1)", kTH1D, {{1600, 0, 3200}});
+    histos.add("MC/EvRec/MultCent", "Gen multiplicity vs reco centrality", kTH2D, {{100, 0, 100}, {1600, 0, 3200}});
+    histos.add("MC/EvRec/Cent", "FT0 Centality", kTH1D, {axesConfig.axisMult});
+    histos.add("MC/EvRec/Xi", "Xi", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                             // generated Xis in reco>=1
+    histos.add("MC/EvRec/PrimaryXi", "Xi primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                            // generated primary Xis in reco>=1
+    histos.add("MC/EvRec/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});             // generated primary Xis in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/PrimaryXiMinusRapidity", "Xi- primaries in |y| ", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});      // generated primary Xi-minus in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/PrimaryXiPlusRapidity", "Xi+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});        // generated primary Xi-plus in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/Omega", "Omega", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                       // generated Omegas in reco>=1
+    histos.add("MC/EvRec/PrimaryOmega", "Omega primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                      // generated primary Omegas in reco>=1
+    histos.add("MC/EvRec/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Omegas in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/PrimaryOmegaMinusRapidity", "Omega- primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omega-minus in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});  // generated primary Omega-plus in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/RapCheck_TH3_Gen_Xi", "Xi (primary, y<0.5) from pt, cent, rapidity", kTH3D, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
+    histos.add("MC/EvRec/RapCheck_TH3_Gen_Omega", "Omega (primary, y<0.5) from pt, cent, rapidity", kTH3D, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
+    // label filter statistic bins for standard cascs
+    histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(2, "gen");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(3, "TPC");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(4, "TOF");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(5, "all");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(1, "casc |y|");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(2, "dau |#eta|");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(3, "dau TPC cls");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(4, "V0CosPA");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(5, "BachCosPA");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(6, "CascCosPA");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(7, "PropDCAxy");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(8, "PropDCAz");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(9, "all");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(1, "p_{T}");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(2, "gen");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(3, "TPC");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(4, "TOF");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(5, "CMR");
+    histos.get<TH1>(HIST("Standard/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(6, "all");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(1, "casc |y|");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(2, "dau |#eta|");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(3, "dau TPC cls");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(4, "V0CosPA");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(5, "BachCosPA");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(6, "CascCosPA");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(7, "PropDCAxy");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(8, "PropDCAz");
+    histos.get<TH1>(HIST("Standard/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(9, "all");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(2, "gen");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(3, "TPC");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(4, "TOF");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(5, "all");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(1, "casc |y|");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(2, "dau |#eta|");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(3, "dau TPC cls");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(4, "V0CosPA");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(5, "BachCosPA");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(6, "CascCosPA");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(7, "PropDCAxy");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(8, "PropDCAz");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(9, "all");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(1, "p_{T}");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(2, "gen");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(3, "TPC");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(4, "TOF");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(5, "CMR");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(6, "all");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(1, "casc |y|");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(2, "dau |#eta|");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(3, "dau TPC cls");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(4, "V0CosPA");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(5, "BachCosPA");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(6, "CascCosPA");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(7, "PropDCAxy");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(8, "PropDCAz");
+    histos.get<TH1>(HIST("Standard/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(9, "all");
+    // label filter statistic bins for tracked cascs
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(2, "gen");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(3, "TPC");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(4, "TOF");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(5, "all");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(1, "casc |y|");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(2, "dau |#eta|");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(3, "dau TPC cls");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(4, "V0CosPA");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(5, "BachCosPA");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(6, "CascCosPA");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(7, "PropDCAxy");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(8, "PropDCAz");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersXi"))->GetXaxis()->SetBinLabel(9, "all");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(1, "p_{T}");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(2, "gen");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(3, "TPC");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(4, "TOF");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(5, "CMR");
+    histos.get<TH1>(HIST("Tracked/Rec/FiltersOmega"))->GetXaxis()->SetBinLabel(6, "all");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(1, "casc |y|");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(2, "dau |#eta|");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(3, "dau TPC cls");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(4, "V0CosPA");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(5, "BachCosPA");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(6, "CascCosPA");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(7, "PropDCAxy");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(8, "PropDCAz");
+    histos.get<TH1>(HIST("Tracked/Rec/GenFiltersOmega"))->GetXaxis()->SetBinLabel(9, "all");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(2, "gen");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(3, "TPC");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(4, "TOF");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersXi"))->GetXaxis()->SetBinLabel(5, "all");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(1, "casc |y|");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(2, "dau |#eta|");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(3, "dau TPC cls");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(4, "V0CosPA");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(5, "BachCosPA");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(6, "CascCosPA");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(7, "PropDCAxy");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(8, "PropDCAz");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersXi"))->GetXaxis()->SetBinLabel(9, "all");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(1, "p_{T}");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(2, "gen");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(3, "TPC");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(4, "TOF");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(5, "CMR");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/FiltersOmega"))->GetXaxis()->SetBinLabel(6, "all");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(1, "casc |y|");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(2, "dau |#eta|");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(3, "dau TPC cls");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(4, "V0CosPA");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(5, "BachCosPA");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(6, "CascCosPA");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(7, "PropDCAxy");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(8, "PropDCAz");
+    histos.get<TH1>(HIST("Tracked/Rec-Truth/GenFiltersOmega"))->GetXaxis()->SetBinLabel(9, "all");
+  }
+
+  void processDerivedData(DerCollisionWMults::iterator const& collision, DerCascDatas const& allCascs, DerTraCascDatas const& traCascs, DauTracks const&)
+  {
+    fillEvents(collision); // save info about all processed events
+    if (isValidEvent(collision, true)) {
+      histos.fill(HIST("Rec-Events/EvCounter"), 0.5);
+      histos.fill(HIST("Rec-Events/PVxy"), collision.posX(), collision.posY());
+      histos.fill(HIST("Rec-Events/PVz"), collision.posZ());
+      double mult = (doProcessIons) ? collision.centFT0C() : collision.centFT0M();
+      histos.fill(HIST("Rec-Events/Mult"), mult);
+      analyseCascs(collision, allCascs); // process all cascades
+      analyseCascs(collision, traCascs); // process tracked cascades
+    }
+  }
+
+  void processDerivedMCGen(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& genColls, DerMCGenCascades const& genCascs, DerMCRecCollisions const& recColls)
+  {
+    for (auto const& genColl : genColls) {
+      if (eventCuts.doINELMCGen && genColl.multMCNParticlesEta10() <= 0)
+        continue;                                 // skip zero gen mult events
+      histos.fill(HIST("MC/Gen/EvCounter"), 0.5); // generated events statistics
+      double genMult = genColl.multMCNParticlesEta05();
+      histos.fill(HIST("MC/Gen/Mult"), genMult);
+      // loop over generated cascades to obtain pt-genMult distribution
+      auto slicedGenCascs = genCascs.sliceBy(cascsPerMcCollision, genColl.globalIndex());
+      for (auto const& casc : slicedGenCascs) {
+        if (casc.straMCCollisionId() != genColl.index())
+          continue; // safety check for correct slicing
+        // fill generated Xi and Omega (all) for statistics
+        double cascPt = casc.ptMC();
+        if (isValidPDG(casc, "Xi"))
+          histos.fill(HIST("MC/Gen/Xi"), genMult, cascPt);
+        if (isValidPDG(casc, "Omega"))
+          histos.fill(HIST("MC/Gen/Omega"), genMult, cascPt);
+        if (casc.isPhysicalPrimary()) {
+          // fill generated primary Xi and Omega for statistics
+          if (isValidPDG(casc, "Xi"))
+            histos.fill(HIST("MC/Gen/PrimaryXi"), genMult, cascPt);
+          if (isValidPDG(casc, "Omega"))
+            histos.fill(HIST("MC/Gen/PrimaryOmega"), genMult, cascPt);
+          // fill generated primary Xi within rapidity for corrections
+          if (isValidPDG(casc, "Xi") && std::abs(casc.rapidityMC(0)) < cascCuts.cutRapidity) {
+            histos.fill(HIST("MC/Gen/PrimaryXiRapidity"), genMult, cascPt);
+            if (casc.pdgCode() == PDG_t::kXiMinus)
+              histos.fill(HIST("MC/Gen/PrimaryXiMinusRapidity"), genMult, cascPt);
+            if (casc.pdgCode() == PDG_t::kXiPlusBar)
+              histos.fill(HIST("MC/Gen/PrimaryXiPlusRapidity"), genMult, cascPt);
+          }
+          // fill generated primary Omega within rapidity for corrections
+          if (isValidPDG(casc, "Omega") && std::abs(casc.rapidityMC(2)) < cascCuts.cutRapidity) {
+            histos.fill(HIST("MC/Gen/PrimaryOmegaRapidity"), genMult, cascPt);
+            if (casc.pdgCode() == PDG_t::kOmegaMinus)
+              histos.fill(HIST("MC/Gen/PrimaryOmegaMinusRapidity"), genMult, cascPt);
+            if (casc.pdgCode() == PDG_t::kOmegaPlusBar)
+              histos.fill(HIST("MC/Gen/PrimaryOmegaPlusRapidity"), genMult, cascPt);
+          }
+        }
+        // fill gen rapidity for statistics
+        if (isValidPDG(casc, "Xi"))
+          histos.fill(HIST("MC/Gen/RapidityXi"), casc.rapidityMC(0));
+        if (isValidPDG(casc, "Omega"))
+          histos.fill(HIST("MC/Gen/RapidityOmega"), casc.rapidityMC(2));
+      }
+      // look at reco>= 1 for corrections
+      auto slicedRecColls = recColls.sliceBy(perMcCollision, genColl.globalIndex());
+      bool recoCounter = false;
+      int biggestNContribs = -1;
+      float bestCentrality = 100.5;
+      for (auto const& recColl : slicedRecColls) {
+        if (!isValidEvent(recColl, false))
+          continue; // from this point on - only gen events (and cascades from such events) that were reconstructed
+        int64_t genCollId = recColl.straMCCollisionId();
+        if (genColl.index() != genCollId)
+          continue;         // safety check for correct slicing
+        if (!recoCounter) { // fill counting histograms only once for each gen reco>=1 event
+          histos.fill(HIST("MC/EvRec/EvCounter"), 0.5);
+          histos.fill(HIST("MC/EvRec/Mult"), genMult);
+          recoCounter = true;
+        }
+        if (biggestNContribs < recColl.multPVTotalContributors()) {
+          biggestNContribs = recColl.multPVTotalContributors();
+          bestCentrality = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
+        }
+        // look at generated cascades within reconstructed events
+        for (auto const& casc : slicedGenCascs) {
+          if (casc.straMCCollisionId() != genCollId)
+            continue; // check for cascades belonging to the correct reco collision
+          double cascPt = casc.ptMC();
+          if (isValidPDG(casc, "Xi"))
+            histos.fill(HIST("MC/EvRec/Xi"), cascPt, bestCentrality);
+          if (isValidPDG(casc, "Omega"))
+            histos.fill(HIST("MC/EvRec/Omega"), cascPt, bestCentrality);
+          if (casc.isPhysicalPrimary()) {
+            if (isValidPDG(casc, "Xi")) {
+              histos.fill(HIST("MC/EvRec/PrimaryXi"), cascPt, bestCentrality);
+              if (std::abs(casc.rapidityMC(0)) < cascCuts.cutRapidity) {
+                histos.fill(HIST("MC/EvRec/PrimaryXiRapidity"), cascPt, bestCentrality);
+                histos.fill(HIST("MC/EvRec/RapCheck_TH3_Gen_Xi"), cascPt, bestCentrality, casc.rapidityMC(0));
+                if (casc.pdgCode() == PDG_t::kXiMinus)
+                  histos.fill(HIST("MC/EvRec/PrimaryXiMinusRapidity"), cascPt, bestCentrality);
+                if (casc.pdgCode() == PDG_t::kXiPlusBar)
+                  histos.fill(HIST("MC/EvRec/PrimaryXiPlusRapidity"), cascPt, bestCentrality);
+              }
+            }
+            if (isValidPDG(casc, "Omega")) {
+              histos.fill(HIST("MC/EvRec/PrimaryOmega"), cascPt, bestCentrality);
+              if (std::abs(casc.rapidityMC(2)) < cascCuts.cutRapidity) {
+                histos.fill(HIST("MC/EvRec/PrimaryOmegaRapidity"), cascPt, bestCentrality);
+                histos.fill(HIST("MC/EvRec/RapCheck_TH3_Gen_Omega"), cascPt, bestCentrality, casc.rapidityMC(2));
+                if (casc.pdgCode() == PDG_t::kOmegaMinus)
+                  histos.fill(HIST("MC/EvRec/PrimaryOmegaMinusRapidity"), cascPt, bestCentrality);
+                if (casc.pdgCode() == PDG_t::kOmegaPlusBar)
+                  histos.fill(HIST("MC/EvRec/PrimaryOmegaPlusRapidity"), cascPt, bestCentrality);
+              }
+            }
+          }
+        }
+      }
+      // fill centrality exactly once for each rec gen event
+      if (biggestNContribs >= 0) {
+        histos.fill(HIST("MC/EvRec/MultCent"), bestCentrality, genMult);
+        histos.fill(HIST("MC/EvRec/Cent"), bestCentrality);
+      }
+    }
+  }
+
+  std::vector<std::vector<int>> traCascsGrouped;
+  void processDerivedMCRec(DerMCRecCollisions const& collisions, DerMCRecCascDatas const& allCascs, DerMCRecTraCascDatas const& traCascs, DauTracks const&, DerMCGenCascades const&)
+  {
+    // custom group tracked cascades - a temporary fix for wrong ordering in OO MC
+    traCascsGrouped.clear();
+    traCascsGrouped.resize(collisions.size());
+    for (const auto& casc : traCascs) {
+      traCascsGrouped[casc.straCollisionId()].push_back(casc.globalIndex());
+    }
+    for (const auto& collision : collisions) {
+      fillEvents(collision); // save info about all processed events
+      auto slicedAllCascs = allCascs.sliceBy(cascsPerCollision, collision.globalIndex());
+      if (isValidEvent(collision, true)) {
+        histos.fill(HIST("Rec-Events/EvCounter"), 0.5);
+        histos.fill(HIST("Rec-Events/PVxy"), collision.posX(), collision.posY());
+        histos.fill(HIST("Rec-Events/PVz"), collision.posZ());
+        double mult = (doProcessIons) ? collision.centFT0C() : collision.centFT0M();
+        histos.fill(HIST("Rec-Events/Mult"), mult);
+        analyseCascs(collision, slicedAllCascs); // process all cascades
+        for (int const& idx : traCascsGrouped[collision.globalIndex()]) {
+          auto casc = traCascs.rawIteratorAt(idx);
+          analyseCascade(collision, casc);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedData, "process derived data", true);
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedMCGen, "process derived generated mc data", false);
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedMCRec, "process derived reconstructed mc data", false); // mc and data are mutually exclusive!
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<StrangeCascTrack>(cfgc),
+  };
+}

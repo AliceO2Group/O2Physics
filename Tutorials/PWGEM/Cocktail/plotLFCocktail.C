@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <TCanvas.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TString.h>
+#include <TVirtualPad.h>
+
 const int nHists = 7;
 TH1F* mee[nHists];
 TH1F* mee_orig[nHists];
@@ -24,7 +30,7 @@ TString histLegends[nHists] = {
   "#phi#rightarrow#etae^{+}e^{-}, #phi#rightarrow#pi^{0}e^{+}e^{-}, "
   "#phi#rightarrowe^{+}e^{-}"};
 
-void loadHistos(TFile* file, TH1F* hists[], TString name_extra, int rebin,
+void loadHistos(TFile* file, TH1F* hists[], const TString& name_extra, int rebin,
                 int nEvents)
 {
   for (int i = 0; i < nHists; i++) {
@@ -36,7 +42,7 @@ void loadHistos(TFile* file, TH1F* hists[], TString name_extra, int rebin,
   }
 }
 
-void plotLFCocktail(TString filename = "AnalysisResults.root", int rebin = 1)
+void plotLFCocktail(const TString& filename = "AnalysisResults.root", int rebin = 1)
 {
 
   TFile* file = TFile::Open(filename.Data());

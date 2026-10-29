@@ -12,17 +12,26 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TLorentzVector.h"
+#include <TH1.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
 #include <TString.h>
 
-#include <iostream>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <vector>
 
-using std::array;
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
@@ -159,7 +168,7 @@ struct sgExclusivePhiITSselections {
       std::vector<TLorentzVector> allTracksAreKaons;
       std::vector<TLorentzVector> allTracksAreKaonsBandPID;
       std::vector<TLorentzVector> allTracksAreITSonlyAndFourITSclusters;
-      for (auto t : tracks) {
+      for (const auto& t : tracks) {
         registry.fill(HIST("hSelectionCounter2"), 0);
         if (!t.isPVContributor()) {
           continue;
@@ -258,7 +267,7 @@ struct sgExclusivePhiITSselections {
       // in the case that there are ONLY 2 PV
       if (allTracksAreKaons.size() == 2) {
         registry.fill(HIST("hSelectionCounter2"), 7);
-        for (auto kaon : allTracksAreKaons) {
+        for (const auto& kaon : allTracksAreKaons) {
           phiWithoutPID += kaon;
         }
         registry.fill(HIST("hTracksKaons"), allTracksAreKaons.size());
@@ -305,7 +314,7 @@ struct sgExclusivePhiITSselections {
       if (allTracksAreKaonsBandPID.size() == 2) {
         registry.fill(HIST("hTracksKaons"), allTracksAreKaonsBandPID.size() + 10);
         TLorentzVector reallyPhi;
-        for (auto kaon : allTracksAreKaonsBandPID) {
+        for (const auto& kaon : allTracksAreKaonsBandPID) {
           reallyPhi += kaon;
         }
         registry.fill(HIST("KaonBandPHI/hPtPhiIdentifiedKaons"), reallyPhi.Pt());

@@ -17,11 +17,16 @@
 #ifndef PWGDQ_CORE_DQMLRESPONSE_H_
 #define PWGDQ_CORE_DQMLRESPONSE_H_
 
+#include "PWGDQ/Core/VarManager.h"
+
 #include "Tools/ML/MlResponse.h"
 
+#include <Framework/Logger.h>
+
+#include <cstdint>
 #include <map>
 #include <string>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace o2::analysis

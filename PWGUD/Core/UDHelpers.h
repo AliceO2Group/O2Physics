@@ -19,18 +19,25 @@
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsFT0/Digit.h"
-#include "Framework/Logger.h"
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Logger.h>
+#include <Framework/SliceCache.h>
 
-#include "TLorentzVector.h"
+#include <TLorentzVector.h>
 
-#include <bitset>
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <numeric>
+#include <type_traits>
 #include <vector>
 
 // namespace with helpers for UD framework
@@ -123,7 +130,7 @@ T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const
   // check [min,max]BC to overlap with [bcs.iteratorAt([0,bcs.size() - 1])
   if (maxBC < bcs.iteratorAt(0).globalBC() || minBC > bcs.iteratorAt(bcs.size() - 1).globalBC()) {
     LOGF(debug, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, static_cast<uint64_t>(0)};
+    return bcs.emptySlice();
   }
 
   // find slice of BCs table with BC in [minBC, maxBC]
@@ -157,7 +164,7 @@ T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const
   }
 
   // create bc slice
-  T bcslice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, static_cast<uint64_t>(minBCId)};
+  auto bcslice = bcs.rawSlice(minBCId, maxBCId);
   bcs.copyIndexBindings(bcslice);
   LOGF(debug, "  size of slice %d", bcslice.size());
   return bcslice;
@@ -172,7 +179,7 @@ T compatibleBCs(C const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 
   // return if collisions has no associated BC
   if (!collision.has_foundBC() || ndt < 0) {
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, static_cast<uint64_t>(0)};
+    return bcs.emptySlice();
   }
 
   // get associated BC
@@ -213,7 +220,7 @@ T MCcompatibleBCs(F const& collision, int const& ndt, T const& bcs, int const& n
   // return if collisions has no associated BC
   if (!collision.has_foundBC()) {
     LOGF(debug, "Collision %i - no BC found!", collision.globalIndex());
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, static_cast<uint64_t>(0)};
+    return bcs.emptySlice();
   }
 
   // get associated BC
@@ -236,7 +243,7 @@ T MCcompatibleBCs(F const& collision, int const& ndt, T const& bcs, int const& n
 // function to check if track provides good PID information
 // Checks the nSigma for any particle assumption to be within limits.
 template <typename TC>
-bool hasGoodPID(DGCutparHolder diffCuts, TC track)
+bool hasGoodPID(const DGCutparHolder& diffCuts, TC track)
 {
   // El, Mu, Pi, Ka, and Pr are considered
   // at least one nSigma must be within set limits
@@ -418,14 +425,14 @@ bool cleanFDD(T& bc, float maxFITtime, float limitA, float limitC)
 //  lims[4]: FDDC
 
 template <typename T>
-bool cleanFIT(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFIT(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFV0(bc, maxFITtime, lims[0]) &&
          cleanFT0(bc, maxFITtime, lims[1], lims[2]) &&
          cleanFDD(bc, maxFITtime, lims[3], lims[4]);
 }
 template <typename T>
-bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> lims)
+bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> const& lims)
 {
   bool isCleanFV0 = true;
   if (col.has_foundFV0()) {
@@ -446,7 +453,7 @@ bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> lims)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFITA(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFITA(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFV0(bc, maxFITtime, lims[0]) &&
          cleanFT0A(bc, maxFITtime, lims[1]) &&
@@ -455,7 +462,7 @@ bool cleanFITA(T& bc, float maxFITtime, std::vector<float> lims)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFITC(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFITC(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFT0C(bc, maxFITtime, lims[2]) &&
          cleanFDDC(bc, maxFITtime, lims[4]);
@@ -499,7 +506,7 @@ bool TCE(T& bc)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool TOR(T& bc, float maxFITtime, std::vector<float> lims)
+bool TOR(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   auto torA = !cleanFT0A(bc, maxFITtime, lims[1]);
   auto torC = !cleanFT0C(bc, maxFITtime, lims[2]);
@@ -532,6 +539,181 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
     return !cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
   }
   return false;
+}
+
+inline void setBit(uint64_t w[4], int bit, bool val)
+{
+  if (!val) {
+    return;
+  }
+  const int word = bit >> 6;
+  const int offs = bit & 63;
+  w[word] |= (static_cast<uint64_t>(1) << offs);
+}
+
+template <typename TFT0, typename TFV0A>
+inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
+                             uint64_t thr1[4], uint64_t thr2[4],
+                             float thr1_FT0A = 25., float thr1_FT0C = 50., float thr1_FV0A = 50.,
+                             float thr2_FT0A = 50., float thr2_FT0C = 100., float thr2_FV0A = 100.)
+{
+  thr1[0] = thr1[1] = thr1[2] = thr1[3] = 0ull;
+  thr2[0] = thr2[1] = thr2[2] = thr2[3] = 0ull;
+
+  constexpr int kFT0AOffset = 0;
+  constexpr int kFT0COffset = 96;
+  constexpr int kFV0Offset = 208;
+
+  auto ampsA = ft0.amplitudeA();
+  auto chanA = ft0.channelA();
+  const int nA = std::min<int>(ampsA.size(), chanA.size());
+  for (int i = 0; i < nA; ++i) {
+    const auto a = ampsA[i];
+    const int c = chanA[i];
+
+    if (c < 0 || c >= 96) {
+      continue;
+    }
+
+    setBit(thr1, kFT0AOffset + c, a >= thr1_FT0A);
+    setBit(thr2, kFT0AOffset + c, a >= thr2_FT0A);
+  }
+
+  auto ampsC = ft0.amplitudeC();
+  auto chanC = ft0.channelC();
+  const int nC = std::min<int>(ampsC.size(), chanC.size());
+  for (int i = 0; i < nC; ++i) {
+    const auto a = ampsC[i];
+    const int c = chanC[i];
+
+    if (c < 0 || c >= 112) {
+      continue;
+    }
+
+    setBit(thr1, kFT0COffset + c, a >= thr1_FT0C);
+    setBit(thr2, kFT0COffset + c, a >= thr2_FT0C);
+  }
+
+  auto ampsV = fv0a.amplitude();
+  auto chanV = fv0a.channel();
+  const int nV = std::min<int>(ampsV.size(), chanV.size());
+  for (int i = 0; i < nV; ++i) {
+    const auto a = ampsV[i];
+    const int c = chanV[i];
+
+    if (c < 0 || c >= 48) {
+      continue;
+    }
+
+    setBit(thr1, kFV0Offset + c, a >= thr1_FV0A);
+    setBit(thr2, kFV0Offset + c, a >= thr2_FV0A);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// return eta and phi of a given FIT channel based on the bitset
+// Bit layout contract:
+constexpr int kFT0Bits = 208;   // FT0 total channels
+constexpr int kFV0Bits = 48;    // FV0A channels
+constexpr int kTotalBits = 256; // 4*64
+
+// FT0 side split
+constexpr int kFT0AChannels = 96;  // FT0A channels are [0..95]
+constexpr int kFT0CChannels = 112; // FT0C channels are [96..207]
+static_assert(kFT0AChannels + kFT0CChannels == kFT0Bits);
+
+using Bits256 = std::array<uint64_t, 4>;
+
+inline Bits256 makeBits256(uint64_t w0, uint64_t w1, uint64_t w2, uint64_t w3)
+{
+  return {w0, w1, w2, w3};
+}
+
+inline bool testBit(Bits256 const& w, int bit)
+{
+  if (bit < 0 || bit >= kTotalBits) {
+    return false;
+  }
+  return (w[bit >> 6] >> (bit & 63)) & 1ULL;
+}
+
+struct FitBitRef {
+  enum class Det : uint8_t { FT0,
+                             FV0,
+                             Unknown };
+  Det det = Det::Unknown;
+  int ch = -1;      // FT0: 0..207, FV0: 0..47
+  bool isC = false; // only meaningful for FT0
+};
+
+inline FitBitRef decodeFitBit(int bit)
+{
+  FitBitRef out;
+  if (bit >= 0 && bit < kFT0Bits) {
+    out.det = FitBitRef::Det::FT0;
+    out.ch = bit;                     // FT0 channel id
+    out.isC = (bit >= kFT0AChannels); // C side if in upper range
+    return out;
+  }
+  if (bit >= kFT0Bits && bit < kTotalBits) {
+    out.det = FitBitRef::Det::FV0;
+    out.ch = bit - kFT0Bits; // FV0A channel id 0..47
+    return out;
+  }
+  return out;
+}
+
+template <typename FT0DetT, typename OffsetsT>
+inline double getPhiFT0_fromChannel(FT0DetT& ft0Det, int ft0Ch, OffsetsT const& offsetFT0, int i)
+{
+  ft0Det.calculateChannelCenter();
+  auto chPos = ft0Det.getChannelCenter(ft0Ch);
+
+  const double x = chPos.X() + offsetFT0[i].getX();
+  const double y = chPos.Y() + offsetFT0[i].getY();
+
+  return RecoDecay::phi(x, y);
+}
+
+template <typename FT0DetT, typename OffsetsT>
+inline double getEtaFT0_fromChannel(FT0DetT& ft0Det, int ft0Ch, OffsetsT const& offsetFT0, int i)
+{
+  ft0Det.calculateChannelCenter();
+  auto chPos = ft0Det.getChannelCenter(ft0Ch);
+
+  double x = chPos.X() + offsetFT0[i].getX();
+  double y = chPos.Y() + offsetFT0[i].getY();
+  double z = chPos.Z() + offsetFT0[i].getZ();
+
+  // If this channel belongs to FT0C, flip z (matches your original intent)
+  const bool isC = (ft0Ch >= kFT0AChannels);
+  if (isC) {
+    z = -z;
+  }
+
+  const double r = std::sqrt(x * x + y * y);
+  const double theta = std::atan2(r, z);
+  return -std::log(std::tan(0.5 * theta));
+}
+
+template <typename FT0DetT, typename OffsetsT>
+inline bool getPhiEtaFromFitBit(FT0DetT& ft0Det,
+                                int bit,
+                                OffsetsT const& offsetFT0,
+                                int iRunOffset,
+                                double& phi,
+                                double& eta)
+{
+  auto ref = decodeFitBit(bit);
+  if (ref.det != FitBitRef::Det::FT0) {
+    return false;
+  }
+
+  // FT0A: 0..95, FT0C: 96..207
+  const int ft0Ch = bit;
+  phi = getPhiFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
+  eta = getEtaFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
+  return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -616,24 +798,15 @@ template <typename T>
 bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
 // Return true if collision is accepted according to user-chosen rules from event selection task
 {
-  bool accepted = true;
-  std::vector<int> sels = diffCuts.collisionSel();
-  if (sels[0])
-    accepted = accepted && cutNoTimeFrameBorder(coll);
-  if (sels[1])
-    accepted = accepted && cutNoSameBunchPileup(coll);
-  if (sels[2])
-    accepted = accepted && cutNoITSROFrameBorder(coll);
-  if (sels[3])
-    accepted = accepted && cutIsGoodZvtxFT0vsPV(coll);
-  if (sels[4])
-    accepted = accepted && cutIsVertexITSTPC(coll);
-  if (sels[5])
-    accepted = accepted && cutIsVertexTRDmatched(coll);
-  if (sels[6])
-    accepted = accepted && cutIsVertexTOFmatched(coll);
+  auto const sels = diffCuts.collisionSel();
 
-  return accepted;
+  return (!sels[0] || cutNoTimeFrameBorder(coll)) &&
+         (!sels[1] || cutNoSameBunchPileup(coll)) &&
+         (!sels[2] || cutNoITSROFrameBorder(coll)) &&
+         (!sels[3] || cutIsGoodZvtxFT0vsPV(coll)) &&
+         (!sels[4] || cutIsVertexITSTPC(coll)) &&
+         (!sels[5] || cutIsVertexTRDmatched(coll)) &&
+         (!sels[6] || cutIsVertexTOFmatched(coll));
 }
 
 // -----------------------------------------------------------------------------
@@ -730,7 +903,7 @@ bool cleanCalo(T const& bc, o2::aod::Calos& calos, std::vector<float>& /*lims*/,
 // -----------------------------------------------------------------------------
 // check if all tracks come from same MCCollision
 template <typename T>
-int64_t sameMCCollision(T tracks, o2::aod::McCollisions, o2::aod::McParticles)
+int64_t sameMCCollision(T tracks, const o2::aod::McCollisions&, const o2::aod::McParticles&)
 {
   int64_t colID = -1;
   for (auto const& track : tracks) {

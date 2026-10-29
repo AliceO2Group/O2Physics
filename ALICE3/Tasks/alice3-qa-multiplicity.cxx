@@ -10,11 +10,21 @@
 // or submit itself to any jurisdiction.
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TString.h>
+
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,7 +41,7 @@ struct ALICE3MultTask {
 
   void init(InitContext&)
   {
-    const AxisSpec axisMult{MaxMult.value > 10000.f ? 10000 : (int)MaxMult, 0, MaxMult, "Reconstructed tracks"};
+    const AxisSpec axisMult{MaxMult.value > 10000.f ? 10000 : static_cast<int>(MaxMult), 0, MaxMult, "Reconstructed tracks"};
     TString tit = Form("%.3f < #it{#eta} < %.3f", MinEta.value, MaxEta.value);
     histos.add("multiplicity/numberOfTracksNoCut", tit, kTH1D, {axisMult});
     histos.add("multiplicity/numberOfTracks", tit, kTH1D, {axisMult});

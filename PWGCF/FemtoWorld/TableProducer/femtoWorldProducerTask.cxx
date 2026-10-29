@@ -15,17 +15,21 @@
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
 #include "PWGCF/FemtoWorld/Core/FemtoWorldCollisionSelection.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldPairCleaner.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldPhiSelection.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldV0Selection.h"
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -33,20 +37,33 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "Math/Vector4D.h"
-#include "TLorentzVector.h"
-#include "TMath.h"
 #include <TDatabasePDG.h> // FIXME
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TMathBase.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
@@ -223,7 +240,6 @@ struct femtoWorldProducerTask {
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-  HfHelper hfHelper;
 
   void init(InitContext&)
   {
@@ -331,7 +347,7 @@ struct femtoWorldProducerTask {
   }
 
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
-  void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
+  void getMagneticFieldTesla(const aod::BCsWithTimestamps::iterator& bc)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     // get magnetic field for run
@@ -1151,7 +1167,7 @@ struct femtoWorldProducerTask {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (config.yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > config.yCandMax) {
+      if (config.yCandMax >= 0. && std::abs(HfHelper::yD0(candidate)) > config.yCandMax) {
         continue;
       }
 
@@ -1280,11 +1296,11 @@ struct femtoWorldProducerTask {
                     candidate.eta(),
                     candidate.phi(),
                     candidate.p(),
-                    0.,                                    // general mass
-                    hfHelper.invMassD0ToPiK(candidate),    // D0mass
-                    hfHelper.invMassD0barToKPi(candidate), // D0bar mass
-                    candidate.isSelD0(),                   // D0 flag
-                    candidate.isSelD0bar(),                // D0bar flag
+                    0.,                                     // general mass
+                    HfHelper::invMassD0ToPiK(candidate),    // D0mass
+                    HfHelper::invMassD0barToKPi(candidate), // D0bar mass
+                    candidate.isSelD0(),                    // D0 flag
+                    candidate.isSelD0bar(),                 // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
@@ -2098,7 +2114,7 @@ struct femtoWorldProducerTask {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (config.yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > config.yCandMax) {
+      if (config.yCandMax >= 0. && std::abs(HfHelper::yD0(candidate)) > config.yCandMax) {
         continue;
       }
 
@@ -2229,11 +2245,11 @@ struct femtoWorldProducerTask {
                     candidate.eta(),
                     candidate.phi(),
                     candidate.p(),
-                    0.,                                    // general mass
-                    hfHelper.invMassD0ToPiK(candidate),    // D0mass
-                    hfHelper.invMassD0barToKPi(candidate), // D0bar mass
-                    candidate.isSelD0(),                   // D0 flag
-                    candidate.isSelD0bar(),                // D0bar flag
+                    0.,                                     // general mass
+                    HfHelper::invMassD0ToPiK(candidate),    // D0mass
+                    HfHelper::invMassD0barToKPi(candidate), // D0bar mass
+                    candidate.isSelD0(),                    // D0 flag
+                    candidate.isSelD0bar(),                 // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,

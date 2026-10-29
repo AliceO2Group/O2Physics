@@ -763,6 +763,8 @@ struct HfCandidateSelectorToOmegaPi {
           isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCand, outputMlOmegac);
           if (isSelectedMlOmegac) {
             registry.fill(HIST("hBDTScoreTest1"), outputMlOmegac[0]);
+          } else {
+            resultSelections = false;
           }
           hfMlSelToOmegaPi(outputMlOmegac);
         }

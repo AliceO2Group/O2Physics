@@ -11,6 +11,7 @@
 
 o2physics_add_dpl_workflow(task-charm-had-impact-par
                     SOURCES taskCharmHadImpactPar.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -21,11 +22,13 @@ o2physics_add_dpl_workflow(task-charm-had-impact-par
 
 o2physics_add_dpl_workflow(task-mc-efficiency
                     SOURCES taskMcEfficiency.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-mc-efficiency-to-xi-pi
                     SOURCES taskMcEfficiencyToXiPi.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -36,7 +39,8 @@ o2physics_add_dpl_workflow(task-mc-gen-pt-rap-shapes
 
 o2physics_add_dpl_workflow(task-mc-validation
                     SOURCES taskMcValidation.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    REUSE_FROM HfCandidatesPCH
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-multiplicity-estimator-correlation
@@ -46,7 +50,7 @@ o2physics_add_dpl_workflow(task-multiplicity-estimator-correlation
 
 o2physics_add_dpl_workflow(task-pid-studies
                     SOURCES taskPidStudies.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-mc-injection

@@ -11,13 +11,21 @@
 
 /// \author Luca Barioglio
 
-// O2 includes
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -70,7 +78,7 @@ struct CFTutorialTask1 {
     }
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
 
-    for (auto track : inputTracks) { // Loop over tracks
+    for (const auto& track : inputTracks) { // Loop over tracks
       if (fabs(track.eta()) > 0.8) {
         continue;
       }

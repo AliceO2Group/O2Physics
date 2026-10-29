@@ -11,13 +11,15 @@
 
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 
-ClassImp(AnalysisCompositeCut)
+#include "AnalysisCut.h"
 
-  //____________________________________________________________________________
-  AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
-                                                            fOptionUseAND(useAND),
-                                                            fCutList(),
-                                                            fCompositeCutList()
+#include <vector>
+
+//____________________________________________________________________________
+AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
+                                                          fOptionUseAND(useAND),
+                                                          fCutList(),
+                                                          fCompositeCutList()
 {
   //
   // default constructor

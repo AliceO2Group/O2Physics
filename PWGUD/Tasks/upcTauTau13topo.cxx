@@ -17,27 +17,35 @@
 // copts="--configuration json://tautauConfig.json -b"
 // o2-analysis-ud-tautau13topo $copts > output.log
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-// #include "TDatabasePDG.h" // not recommended in o2
-#include "Framework/O2DatabasePDGPlugin.h"
-
-// #include "TLorentzVector.h"
-#include "Math/Vector4D.h"
-// #include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-// #include <CommonUtils/EnumFlags.h>
-#include "TPDGCode.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzE4D.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TPDGCode.h>
+#include <TVector3.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1632,7 +1640,7 @@ struct TauTau13topo {
   }
 
   // helper function to calculate delta alpha
-  float deltaAlpha(auto particle1, auto particle2)
+  float deltaAlpha(const auto& particle1, const auto& particle2)
   {
 
     TVector3 vtmp(particle1.px(), particle1.py(), particle1.pz());
@@ -1649,7 +1657,7 @@ struct TauTau13topo {
   //  }
 
   //  float calculateDeltaPhi(TLorentzVector p, TLorentzVector p1)
-  float calculateDeltaPhi(ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p, ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p1)
+  float calculateDeltaPhi(const ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>& p, const ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>& p1)
   {
     //    float delta = p.Phi();
     float delta = RecoDecay::constrainAngle(p.Phi());
@@ -1700,7 +1708,7 @@ struct TauTau13topo {
   //  }
 
   // helper function to calculate scalar asymmetry
-  float scalarAsymMC(auto particle1, auto particle2)
+  float scalarAsymMC(const auto& particle1, const auto& particle2)
   {
     // auto pt1 = pt(particle1.px(), particle1.py());
     auto pt1 = RecoDecay::pt(particle1.px(), particle1.py());
@@ -1711,7 +1719,7 @@ struct TauTau13topo {
   }
 
   // helper function to calculate vector asymmetry
-  float vectorAsym(auto particle1, auto particle2)
+  float vectorAsym(const auto& particle1, const auto& particle2)
   {
     auto delta = std::sqrt((particle1.px() - particle2.px()) * (particle1.px() - particle2.px()) +
                            (particle1.py() - particle2.py()) * (particle1.py() - particle2.py()));
@@ -1788,7 +1796,7 @@ struct TauTau13topo {
   }
 
   template <typename T>
-  int trackCheck(T track)
+  int trackCheck(const T& track)
   {
     // 1
     if (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF())
@@ -1829,7 +1837,7 @@ struct TauTau13topo {
 
   // global track check + histogram cuts separatelly
   template <typename T>
-  bool isGlobalTrackCheck(T track)
+  bool isGlobalTrackCheck(const T& track)
   {
     bool isGlobalTrack = true;
     registry.get<TH1>(HIST("global/hTrackEfficiencyPVGlobal"))->Fill(0., 1.);
@@ -1913,7 +1921,7 @@ struct TauTau13topo {
 
   // analysis track quality check with histogram filling
   template <typename T>
-  bool isGoodTrackCheckHisto(T track)
+  bool isGoodTrackCheckHisto(const T& track)
   {
     bool isGoodTrack = true;
     registry.get<TH1>(HIST("global/hTrackPVGood"))->Fill(0., 1.);
@@ -1965,7 +1973,7 @@ struct TauTau13topo {
 
   // analysis track quality check
   template <typename T>
-  bool isGoodTrackCheck(T track)
+  bool isGoodTrackCheck(const T& track)
   {
     if (!track.hasTPC())
       return false;
@@ -1986,7 +1994,7 @@ struct TauTau13topo {
 
   // analysis track quality check
   template <typename T>
-  bool isGoodTOFTrackCheckHisto(T track)
+  bool isGoodTOFTrackCheckHisto(const T& track)
   {
     bool isGoodTrack = true;
     if (track.hasTOF()) {
@@ -2004,7 +2012,7 @@ struct TauTau13topo {
 
   // analysis track quality check
   template <typename T>
-  bool isGoodTOFTrackCheck(T track)
+  bool isGoodTOFTrackCheck(const T& track)
   {
     if (!track.hasTOF())
       return false;
@@ -2016,7 +2024,7 @@ struct TauTau13topo {
   // check ITS clusters, how many -1,0,1,7 + 10 if 0,1,2 layers were fired
   // analysis track quality check
   template <typename T>
-  int numberOfItsClustersCheck(T track)
+  int numberOfItsClustersCheck(const T& track)
   {
     if (!track.hasITS())
       return -1;

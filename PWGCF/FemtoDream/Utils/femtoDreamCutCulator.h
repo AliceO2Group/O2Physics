@@ -18,21 +18,27 @@
 #ifndef PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_
 #define PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_
 
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
+
+#include <ReconstructionDataFormats/PID.h>
+
+#include <boost/property_tree/exceptions.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+
+#include <algorithm>
 #include <bitset>
+#include <cstddef>
 #include <functional>
 #include <iostream>
 #include <random>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include <iterator>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-
-#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
 
 namespace o2::analysis::femtoDream
 {
@@ -74,7 +80,7 @@ class FemtoDreamCutculator
   /// returns an std::vector in the proper format \param name Name of the
   /// selection in the dpl-config.json \return std::vector that can be directly
   /// passed to the FemtoDreamTrack/V0/../Selection
-  std::vector<float> setSelection(std::string name)
+  std::vector<float> setSelection(const std::string& name)
   {
     try {
       boost::property_tree::ptree& selections = mConfigTree.get_child(name);
@@ -351,7 +357,7 @@ class FemtoDreamCutculator
 
   /// This is the function called by the executable that then outputs the full
   /// selection bit-wise container incorporating the user choice of selections
-  void analyseCuts(std::string choice, bool SysChecks = false, float sign = 1)
+  void analyseCuts(const std::string& choice, bool SysChecks = false, float sign = 1)
   {
     aod::femtodreamparticle::cutContainerType output = -1;
     if (choice == std::string("T")) {

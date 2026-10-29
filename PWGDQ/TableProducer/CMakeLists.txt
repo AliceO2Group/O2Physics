@@ -11,35 +11,42 @@
 
 o2physics_add_dpl_workflow(table-maker
                     SOURCES tableMaker.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore
+                    REUSE_FROM DQAnalysisPCH
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(table-maker-with-assoc
                     SOURCES tableMaker_withAssoc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore
+                    REUSE_FROM DQAnalysisPCH
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(table-maker-mc
                     SOURCES tableMakerMC.cxx
+                    REUSE_FROM DQAnalysisPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(table-maker-mc-with-assoc
                     SOURCES tableMakerMC_withAssoc.cxx
+                    REUSE_FROM DQAnalysisPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(table-maker-jpsi-hf
                     SOURCES tableMakerJpsiHf.cxx
+                    REUSE_FROM DQAnalysisPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(table-maker-muon-mch-trk-eff
                     SOURCES tableMakerMuonMchTrkEfficiency.cxx
+                    REUSE_FROM DQAnalysisPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(generated-quarkonia-mc
                     SOURCES generatedQuarkoniaMC.cxx
+                    REUSE_FROM DQAnalysisPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)

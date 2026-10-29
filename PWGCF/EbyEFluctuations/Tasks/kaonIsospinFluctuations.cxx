@@ -15,7 +15,6 @@
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Sadhana Dash (sadhana@phy.iitb.ac.in)
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -24,11 +23,28 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <sys/types.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -1000,7 +1016,7 @@ struct KaonIsospinFluctuations {
   //_______________________________Identification Funtions Depending on the tpcInnerParam _______________________________
   // tpc Selections
   template <typename T>
-  bool selPionTPCInnerParam(T track)
+  bool selPionTPCInnerParam(const T& track)
   {
     if (vetoIdOthersTPC<kPi>(track)) {
       if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaPi()) < cfgPiNSigmaTPCLowP) {
@@ -1014,7 +1030,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T>
-  bool selKaonTPCInnerParam(T track)
+  bool selKaonTPCInnerParam(const T& track)
   {
     if (vetoIdOthersTPC<kKa>(track)) {
       if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaKa()) < cfgKaNSigmaTPCLowP) {
@@ -1028,7 +1044,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T>
-  bool selProtonTPCInnerParam(T track)
+  bool selProtonTPCInnerParam(const T& track)
   {
     if (vetoIdOthersTPC<kPr>(track)) {
       if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.60 && std::abs(track.tpcNSigmaPr()) < cfgPrNSigmaTPCLowP) {
@@ -1042,7 +1058,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T>
-  bool selDeuteronTPCInnerParam(T track)
+  bool selDeuteronTPCInnerParam(const T& track)
   {
     if (vetoIdOthersTPC<kDe>(track)) {
       if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.80 && std::abs(track.tpcNSigmaDe()) < 3.0) {
@@ -1056,7 +1072,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T>
-  bool selElectronTPCInnerParam(T track)
+  bool selElectronTPCInnerParam(const T& track)
   {
     if (track.tpcNSigmaEl() < 3.0 && track.tpcNSigmaPi() > 3.0 && track.tpcNSigmaKa() > 3.0 && track.tpcNSigmaPr() > 3.0 && track.tpcNSigmaDe() > 3.0) {
       return true;
@@ -1068,7 +1084,7 @@ struct KaonIsospinFluctuations {
   // TOF Selections
   // Pion
   template <typename T>
-  bool selPionTOF(T track)
+  bool selPionTOF(const T& track)
   {
     if (vetoIdOthersTOF<kPi>(track)) {
       if (track.p() <= 0.75 && std::abs(track.tpcNSigmaPi()) < cfgPiNSigmaTPCLowP && std::abs(track.tofNSigmaPi()) < cfgPiNSigmaTOFLowP) {
@@ -1083,7 +1099,7 @@ struct KaonIsospinFluctuations {
 
   // Kaon
   template <typename T>
-  bool selKaonTOF(T track)
+  bool selKaonTOF(const T& track)
   {
     if (vetoIdOthersTOF<kKa>(track)) {
       if (track.p() <= 0.75 && std::abs(track.tpcNSigmaKa()) < cfgKaNSigmaTPCLowP && std::abs(track.tofNSigmaKa()) < cfgKaNSigmaTOFLowP) {
@@ -1103,7 +1119,7 @@ struct KaonIsospinFluctuations {
 
   // Proton
   template <typename T>
-  bool selProtonTOF(T track)
+  bool selProtonTOF(const T& track)
   {
     if (vetoIdOthersTOF<kPr>(track)) {
       if (track.p() <= 1.30 && std::abs(track.tpcNSigmaPr()) < cfgPrNSigmaTPCLowP && std::abs(track.tofNSigmaPr()) < cfgPrNSigmaTOFLowP) {
@@ -1124,7 +1140,7 @@ struct KaonIsospinFluctuations {
 
   // Deuteron
   template <typename T>
-  bool selDeuteronTOF(T track)
+  bool selDeuteronTOF(const T& track)
   {
     if (vetoIdOthersTOF<kDe>(track)) {
       if (track.p() <= 3.10 && std::abs(track.tpcNSigmaDe()) < 3.0 && std::abs(track.tofNSigmaDe()) < 3.0) {
@@ -1140,7 +1156,7 @@ struct KaonIsospinFluctuations {
 
   // Electron
   template <typename T>
-  bool selElectronTOF(T track)
+  bool selElectronTOF(const T& track)
   {
     if ((std::pow(track.tpcNSigmaEl(), 2) + std::pow(track.tofNSigmaEl(), 2)) < 9.00 && vetoIdOthersTOF<kEl>(track)) {
       return true;
@@ -1152,7 +1168,7 @@ struct KaonIsospinFluctuations {
   //______________________________Identification Functions________________________________________________________________
   // Pion
   template <typename T>
-  bool selPion(T track, int& IdMethod)
+  bool selPion(const T& track, int& IdMethod)
   {
     if (cfgDoPdependentId) {
       return selPiPdependent(track, IdMethod);
@@ -1171,7 +1187,7 @@ struct KaonIsospinFluctuations {
 
   // Kaon
   template <typename T>
-  bool selKaon(T track, int& IdMethod)
+  bool selKaon(const T& track, int& IdMethod)
   {
     if (cfgDoPdependentId) {
       return selKaPdependent(track, IdMethod);
@@ -1190,7 +1206,7 @@ struct KaonIsospinFluctuations {
 
   // Proton
   template <typename T>
-  bool selProton(T track, int& IdMethod)
+  bool selProton(const T& track, int& IdMethod)
   {
     if (cfgDoPdependentId) {
       return selPrPdependent(track, IdMethod);
@@ -1209,7 +1225,7 @@ struct KaonIsospinFluctuations {
 
   // Deuteron
   template <typename T>
-  bool selDeuteron(T track, int& IdMethod)
+  bool selDeuteron(const T& track, int& IdMethod)
   {
     if (cfgDoPdependentId) {
       return false;
@@ -1228,7 +1244,7 @@ struct KaonIsospinFluctuations {
 
   // Electron
   template <typename T>
-  bool selElectron(T track, int& IdMethod)
+  bool selElectron(const T& track, int& IdMethod)
   {
     if (cfgDoPdependentId) {
       return false;
@@ -1294,7 +1310,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T>
-  bool selK0s(T v0)
+  bool selK0s(const T& v0)
   {
     if (k0sSelCut.cfgK0sMLow < v0.mK0Short() && v0.mK0Short() < k0sSelCut.cfgK0sMHigh &&
         k0sSelCut.cfgK0sLowPt < v0.pt() && v0.pt() < k0sSelCut.cfgK0sHighPt &&
@@ -1307,7 +1323,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T>
-  void findRepeatedEntries(std::vector<int64_t> ParticleList, T hist)
+  void findRepeatedEntries(std::vector<int64_t> ParticleList, const T& hist)
   {
     for (uint ii = 0; ii < ParticleList.size(); ii++) {
       int nCommonCount = 0; // checking the repeat number of track
@@ -1425,7 +1441,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <int Mode, typename T>
-  void fillTrackQA(T track)
+  void fillTrackQA(const T& track)
   {
     // FullTrack
     recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h01_p"), track.p());

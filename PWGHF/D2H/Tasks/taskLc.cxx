@@ -17,7 +17,6 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
-/// \author Ran Tu <ran.tu@cern.ch>, Fudan University
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>, Heidelberg University, GSI Darmstadt
 
 #include "PWGHF/Core/CentralityEstimation.h"
@@ -29,11 +28,11 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -46,10 +45,8 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
 #include <THnSparse.h>
 #include <TPDGCode.h>
 
@@ -67,6 +64,7 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
+using namespace o2::constants::physics;
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
@@ -78,7 +76,7 @@ struct HfTaskLc {
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
-  Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
+  Configurable<bool> storeProperDecayTime{"storeProperDecayTime", false, "Flag to store proper decay time"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
@@ -86,14 +84,14 @@ struct HfTaskLc {
 
   HfEventSelection hfEvSel; // event selection and monitoring
   SliceCache cache;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs>;
+  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
+  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
 
   using LcCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using LcCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
@@ -114,23 +112,15 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScorePrompt{"thnConfigAxisBdtScorePrompt", {100, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreNonPrompt{"thnConfigAxisBdtScoreNonPrompt", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
   ConfigurableAxis thnAxisRapidity{"thnAxisRapidity", {20, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
   ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
-  ConfigurableAxis thnConfigAxisProperLifetime{"thnConfigAxisProperLifetime", {200, 0, 2}, "Proper lifetime, ps"};
-
+  ConfigurableAxis thnConfigAxisProperDecayTime{"thnConfigAxisProperDecayTime", {200, 0, 2}, "Proper decay time, ps"};
   HistogramRegistry registry{"registry", {}};
-  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  // Factors for conversion between units
-  constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
-  constexpr static float NanoToPico = 1000.f;
-  // Names of folders and suffixes for MC signal histograms
-  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
-  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
 
   enum MlClasses : int {
     MlClassBackground = 0,
@@ -142,24 +132,24 @@ struct HfTaskLc {
   enum SignalClasses : int {
     Signal = 0,
     Prompt,
-    NonPrompt
+    NonPrompt,
+    NumberOfSignalClasses
   };
 
-  enum class GapType {
-    GapA = 0,
-    GapC = 1,
-    DoubleGap = 2,
-  };
+  // Factor for conversion between units
+  constexpr static float CtToProperDecayTimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
+  // Names of folders and suffixes for MC signal histograms
+  constexpr static std::array<std::string_view, NumberOfSignalClasses> SignalFolders = {"signal", "prompt", "nonprompt"};
+  constexpr static std::array<std::string_view, NumberOfSignalClasses> SignalSuffixes = {"", "Prompt", "NonPrompt"};
 
   void init(InitContext&)
   {
-    const std::array<bool, 14> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessDataWithMlWithUpc, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M, doprocessDataStdWithUpc};
+    const std::array<bool, 12> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
 
-    const bool isData = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessDataWithMlWithUpc;
-    const bool isUpc = doprocessDataWithMlWithUpc || doprocessDataStdWithUpc;
+    const bool isData = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
 
     auto addHistogramsRec = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
       if (isData) {
@@ -198,8 +188,8 @@ struct HfTaskLc {
     addHistogramsRec("hDecLength", "decay length (cm)", "entries", {HistType::kTH1F, {{400, 0., 1.}}});
     /// decay length xy candidate
     addHistogramsRec("hDecLengthxy", "decay length xy (cm)", "entries", {HistType::kTH1F, {{400, 0., 1.}}});
-    /// proper lifetime
-    addHistogramsRec("hCt", "proper lifetime (#Lambda_{c}) * #it{c} (cm)", "entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    /// proper decay time
+    addHistogramsRec("hCt", "proper decay time (#Lambda_{c}) * #it{c} (cm)", "entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     /// cosine of pointing angle
     addHistogramsRec("hCPA", "cosine of pointing angle", "entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
     /// cosine of pointing angle xy
@@ -214,7 +204,7 @@ struct HfTaskLc {
     addHistogramsRec("hPhi", "#it{#Phi}", "entries", {HistType::kTH1F, {{100, 0., 6.3}}});
     addHistogramsGen("hPhi", "#it{#Phi}", "entries", {HistType::kTH1F, {{100, 0., 6.3}}});
 
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = std::vector<double>(binsPt);
     /// mass candidate
     if (isData) {
       registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
@@ -231,8 +221,8 @@ struct HfTaskLc {
     /// decay length xy candidate
     addHistogramsRec("hDecLengthxyVsPt", "decay length xy (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{400, 0., 1.}, {vbins}}});
 
-    /// proper lifetime
-    addHistogramsRec("hCtVsPt", "proper lifetime (#Lambda_{c}) * #it{c} (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 0.2}, {vbins}}});
+    /// proper decay time
+    addHistogramsRec("hCtVsPt", "proper decay time (#Lambda_{c}) * #it{c} (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 0.2}, {vbins}}});
 
     /// cosine of pointing angle
     addHistogramsRec("hCPAVsPt", "cosine of pointing angle", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins}}});
@@ -262,14 +252,6 @@ struct HfTaskLc {
     /// decay length error
     addHistogramsRec("hDecLenErrVsPt", "decay length error (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 1.}, {vbins}}});
 
-    if (isUpc) {
-      qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{1500, 0., 1500}, {1500, 0., 1500}}});
-      qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
-      qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
-      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
-      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
-      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
-    }
     if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
@@ -281,18 +263,19 @@ struct HfTaskLc {
       const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length (cm)"};
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle"};
       const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreBkg, "BDT bkg score (Lc)"};
-      const AxisSpec thnAxisBdtScoreLcPrompt{thnConfigAxisBdtScoreSignal, "BDT prompt score (Lc)"};
-      const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreSignal, "BDT non-prompt score (Lc)"};
+      const AxisSpec thnAxisBdtScoreLcPrompt{thnConfigAxisBdtScorePrompt, "BDT prompt score (Lc)"};
+      const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreNonPrompt, "BDT non-prompt score (Lc)"};
       const AxisSpec thnAxisCanType{thnConfigAxisCanType, "candidates type"};
       const AxisSpec thnAxisY{thnAxisRapidity, "rapidity"};
       const AxisSpec thnAxisPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
       const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
-      const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
+      const AxisSpec thnAxisProperDecayTime{thnConfigAxisProperDecayTime, "#it{t}_{proper} (ps)"};
+      const AxisSpec thnAxisProperDecayTimeGen{thnConfigAxisProperDecayTime, "#it{t}_{proper, gen} (ps)"};
 
-      bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessDataWithMlWithUpc;
+      bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
       bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
-      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataStdWithUpc;
+      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
       bool const isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
 
       std::vector<AxisSpec> axesStd, axesWithBdt, axesGen;
@@ -320,14 +303,16 @@ struct HfTaskLc {
           }
         }
       }
-      if (storeProperLifetime) {
+      if (storeProperDecayTime) {
         for (const auto& axes : std::array<std::vector<AxisSpec>*, 3>{&axesWithBdt, &axesStd, &axesGen}) {
           if (!axes->empty()) {
-            axes->push_back(thnAxisProperLifetime);
+            axes->push_back(thnAxisProperDecayTime);
+            if (!isData && axes != &axesGen) {
+              axes->push_back(thnAxisProperDecayTimeGen);
+            }
           }
         }
       }
-
       if (isDataWithMl) {
         registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores for data with ML", HistType::kTHnSparseF, axesWithBdt);
       } else if (isMcWithMl) {
@@ -339,10 +324,6 @@ struct HfTaskLc {
         registry.add("hnLcVars", "THn for Reconstructed Lambdac candidates for mc without ML", HistType::kTHnSparseF, axesStd);
         registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, axesGen);
       }
-    }
-
-    if (isUpc) {
-      hfEvSel.addHistograms(qaRegistry); // collision monitoring
     }
 
     ccdb->setURL(ccdbUrl);
@@ -359,13 +340,34 @@ struct HfTaskLc {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
+  /// Evaluate decay time of generated particle
+  /// \param mcParticleProng0 one of generated particle's daughters
+  /// \param motherParticle generated particle
+  /// \return decay time in picoseconds. For nonprompt particles it is evaluated as if it was prompt (as it is calculated for data)
+  float evaluateMcGenDecayTime(const McParticles3ProngMatched::iterator& mcParticleProng0, const McParticles3ProngMatched::iterator& motherParticle)
+  {
+    const auto mcCollision = motherParticle.template mcCollision_as<aod::McCollisions>();
+    const float pMother = motherParticle.p();
+    const float pvX = mcCollision.posX();
+    const float pvY = mcCollision.posY();
+    const float pvZ = mcCollision.posZ();
+    const float svX = mcParticleProng0.vx();
+    const float svY = mcParticleProng0.vy();
+    const float svZ = mcParticleProng0.vz();
+
+    const float decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
+    const float properDecayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / pMother;
+
+    return properDecayTime;
+  }
+
   /// Helper function for filling MC reconstructed histograms for prompt, nonpromt and common (signal)
   /// \param candidate is a reconstructed candidate
   /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
   template <int SignalType, typename CandidateType>
   void fillHistogramsRecSig(CandidateType const& candidate)
   {
-    const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+    const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<McParticles3ProngMatched>();
     const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
     if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
       registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), HfHelper::invMassLcToPKPi(candidate));
@@ -410,8 +412,8 @@ struct HfTaskLc {
 
   /// Fill MC histograms at reconstruction level
   /// \tparam FillMl switch to fill ML histograms
-  template <bool FillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
-  void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
+  template <bool FillMl, typename CollType, typename CandLcMcRec>
+  void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, McParticles3ProngMatched const& mcParticles)
   {
     const auto thisCollId = collision.globalIndex();
     const auto& groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
@@ -428,7 +430,7 @@ struct HfTaskLc {
 
       if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         // Get the corresponding MC particle.
-        const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+        const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<McParticles3ProngMatched>();
         const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
         const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
         const auto particleMother = mcParticles.rawIteratorAt(indexMother);
@@ -444,6 +446,8 @@ struct HfTaskLc {
         const auto originType = candidate.originMcRec();
         const auto numPvContributors = collision.numContrib();
         const auto ptRecB = candidate.ptBhadMotherPart();
+
+        const float properDecayTimeGen = evaluateMcGenDecayTime(mcParticleProng0, particleMother);
 
         /// MC reconstructed signal
         fillHistogramsRecSig<Signal>(candidate);
@@ -462,36 +466,37 @@ struct HfTaskLc {
           if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
-          double massLc(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
-          const float properLifetime = HfHelper::ctLc(candidate) * CtToProperLifetimePs;
+          const float properDecayTime = HfHelper::ctLc(candidate) * CtToProperDecayTimePs;
 
           auto fillTHnRecSig = [&](bool isPKPi) {
-            massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+            const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
 
+            std::vector<double> valuesToFill;
             if constexpr (FillMl) {
-              if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
-                outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
-                outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
-                outputFD = isPKPi ? candidate.mlProbLcToPKPi()[MlClassNonPrompt] : candidate.mlProbLcToPiKP()[MlClassNonPrompt];    /// non-prompt score
+              const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
+              if (mlProb.size() == NumberOfMlClasses) {
+                outputBkg = mlProb[MlClassBackground]; /// bkg score
+                outputPrompt = mlProb[MlClassPrompt];  /// prompt score
+                outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
-              std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
-              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                valuesToFill.push_back(occ);
-              }
-              if (storeProperLifetime) {
-                valuesToFill.push_back(properLifetime);
-              }
+              valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->GetNdimensions());
+              valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)});
+            } else {
+              valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVars"))->GetNdimensions());
+              valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)});
+            }
+            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
+              valuesToFill.push_back(occ);
+            }
+            if (storeProperDecayTime) {
+              valuesToFill.push_back(properDecayTime);
+              valuesToFill.push_back(properDecayTimeGen);
+            }
+            if constexpr (FillMl) {
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
             } else {
-              std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
-              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                valuesToFill.push_back(occ);
-              }
-              if (storeProperLifetime) {
-                valuesToFill.push_back(properLifetime);
-              }
               registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
             }
           };
@@ -510,8 +515,8 @@ struct HfTaskLc {
   /// Helper function for filling MC generated histograms for prompt, nonpromt and common (signal)
   /// \param particle is a generated particle
   /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
-  template <int SignalType, typename ParticleType>
-  void fillHistogramsGen(ParticleType const& particle)
+  template <int SignalType>
+  void fillHistogramsGen(McParticles3ProngMatched::iterator const& particle)
   {
     registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[SignalType]), particle.pt());
     registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[SignalType]), particle.eta());
@@ -523,8 +528,8 @@ struct HfTaskLc {
   }
 
   /// Fill MC histograms at generated level
-  template <typename CandLcMcGen, typename Coll>
-  void fillHistosMcGen(CandLcMcGen const& mcParticles, Coll const& recoCollisions)
+  template <typename Coll>
+  void fillHistosMcGen(McParticles3ProngMatched const& mcParticles, Coll const& recoCollisions)
   {
     // MC gen.
     for (const auto& particle : mcParticles) {
@@ -547,10 +552,9 @@ struct HfTaskLc {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
         }
 
-        const auto& mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
-        const float p2m = particle.p() / o2::constants::physics::MassLambdaCPlus;
-        const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
-        const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+        const auto mcDaughter0 = particle.template daughters_as<McParticles3ProngMatched>().begin();
+
+        const float properDecayTime = evaluateMcGenDecayTime(mcDaughter0, particle);
 
         fillHistogramsGen<Signal>(particle);
 
@@ -562,8 +566,8 @@ struct HfTaskLc {
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
             }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
+            if (storeProperDecayTime) {
+              valuesToFill.push_back(properDecayTime);
             }
             registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
           }
@@ -655,36 +659,36 @@ struct HfTaskLc {
         if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         }
-        double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
-        const float properLifetime = HfHelper::ctLc(candidate) * CtToProperLifetimePs;
+        const float properDecayTime = HfHelper::ctLc(candidate) * CtToProperDecayTimePs;
 
         auto fillTHnData = [&](bool isPKPi) {
-          massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+          const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
 
+          std::vector<double> valuesToFill;
           if constexpr (FillMl) {
-            if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
-              outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
-              outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
-              outputFD = isPKPi ? candidate.mlProbLcToPKPi()[MlClassNonPrompt] : candidate.mlProbLcToPiKP()[MlClassNonPrompt];    /// non-prompt score
+            const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
+            if (mlProb.size() == NumberOfMlClasses) {
+              outputBkg = mlProb[MlClassBackground]; /// bkg score
+              outputPrompt = mlProb[MlClassPrompt];  /// prompt score
+              outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
+            valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->GetNdimensions());
+            valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)});
+          } else {
+            valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVars"))->GetNdimensions());
+            valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)});
+          }
+          if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
+            valuesToFill.push_back(occ);
+          }
+          if (storeProperDecayTime) {
+            valuesToFill.push_back(properDecayTime);
+          }
+          if constexpr (FillMl) {
             registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
           } else {
-            std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
             registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
           }
         };
@@ -710,61 +714,12 @@ struct HfTaskLc {
     }
   }
 
-  template <bool FillMl, typename CollType, typename CandType, typename BCsType>
-  void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
-                                          CandType const& candidates,
-                                          BCsType const& bcs,
-                                          aod::FT0s const& ft0s,
-                                          aod::FV0As const& fv0as,
-                                          aod::FDDs const& fdds
-
-  )
-  {
-    for (const auto& collision : collisions) {
-      float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
-      if (rejectionMask != 0) {
-        /// at least one event selection not satisfied --> reject the candidate
-        continue;
-      }
-      const auto& bc = collision.template bc_as<BCsType>();
-      upchelpers::FITInfo fitInfo{};
-      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
-
-      GapType gap = GapType::DoubleGap;
-      if (bc.has_zdc()) {
-        const auto zdc = bc.zdc();
-        qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
-        qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
-        gap = determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
-        qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
-      }
-      if (gap == GapType::GapA || gap == GapType::GapC) {
-        fillHistosData<FillMl>(collision, candidates);
-      }
-    }
-  }
-
-  GapType determineGapType(float FT0A, float FT0C, float ZNA, float ZNC)
-  {
-    constexpr float FT0AThreshold = 100.0;
-    constexpr float FT0CThreshold = 50.0;
-    constexpr float ZDCThreshold = 1.0;
-    if (FT0A < FT0AThreshold && FT0C > FT0CThreshold && ZNA < ZDCThreshold && ZNC > ZDCThreshold) {
-      return GapType::GapA;
-    }
-    if (FT0A > FT0AThreshold && FT0C < FT0CThreshold && ZNA > ZDCThreshold && ZNC < ZDCThreshold) {
-      return GapType::GapC;
-    }
-    return GapType::DoubleGap;
-  }
-
   /// Run the analysis on MC data
   /// \tparam FillMl switch to fill ML histograms
-  template <bool FillMl, typename CollType, typename CandType, typename CandLcMcGen>
+  template <bool FillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
-                                 CandLcMcGen const& mcParticles)
+                                 McParticles3ProngMatched const& mcParticles)
   {
     for (const auto& collision : collisions) {
       // MC Rec.
@@ -821,32 +776,6 @@ struct HfTaskLc {
     runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
-
-  void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                                aod::BcFullInfos const& bcs,
-                                LcCandidatesMl const& selectedLcCandidatesMl,
-                                aod::Tracks const&,
-                                aod::FT0s const& ft0s,
-                                aod::FV0As const& fv0as,
-                                aod::FDDs const& fdds,
-                                aod::Zdcs const& /*zdcs*/)
-  {
-    runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
-  }
-  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
-
-  void processDataStdWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                             aod::BcFullInfos const& bcs,
-                             LcCandidatesMl const& selectedLcCandidatesMl,
-                             aod::Tracks const&,
-                             aod::FT0s const& ft0s,
-                             aod::FV0As const& fv0as,
-                             aod::FDDs const& fdds,
-                             aod::Zdcs const& /*zdcs*/)
-  {
-    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
-  }
-  PROCESS_SWITCH(HfTaskLc, processDataStdWithUpc, "Process real data with the standard method with UPC", false);
 
   void processMcStd(CollisionsMc const& collisions,
                     LcCandidatesMc const& selectedLcCandidatesMc,

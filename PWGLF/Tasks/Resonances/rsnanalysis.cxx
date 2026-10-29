@@ -13,17 +13,28 @@
 /// \brief  Analysis task for the measurement of resonances
 /// \author Nicola Rubini <nrubini@cern.ch>
 
-// O2 includes
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TLorentzVector.h"
+#include <TLorentzVector.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <vector>
 
 using namespace std;
 using namespace o2;
@@ -328,7 +339,7 @@ struct rsn_analysis {
     std::vector<std::tuple<Float_t, Float_t, Float_t>> kNegSelectedPions;
     //
     //  Loop on Tracks
-    for (auto kCurrentTrack : kTracks) {
+    for (const auto& kCurrentTrack : kTracks) {
       //
       //  Track Selection
       if (!uIsTrackSelected(kCurrentTrack))
@@ -565,7 +576,7 @@ struct rsn_analysis {
     std::vector<std::tuple<Float_t, Float_t, Float_t, o2::aod::McParticles::iterator>> kNegSelectedPions;
     //
     //  Loop on Tracks
-    for (auto kCurrentTrack : kTracks) {
+    for (const auto& kCurrentTrack : kTracks) {
       //
       //  Track Selection
       if (!uIsTrackSelected(kCurrentTrack))
@@ -719,7 +730,7 @@ struct rsn_analysis {
   {
 
     // Loop on all mc particles
-    for (auto kCurrentParticle : mcParticles) {
+    for (const auto& kCurrentParticle : mcParticles) {
       //
       if (!kCurrentParticle.producedByGenerator())
         continue;
@@ -733,7 +744,7 @@ struct rsn_analysis {
         auto kHasKaonp = false;
         auto kHasKaonm = false;
         if (kDaughters.size() == 2) {
-          for (auto kCurrentDaughter : kDaughters) {
+          for (const auto& kCurrentDaughter : kDaughters) {
             if (kCurrentDaughter.pdgCode() == +321)
               kHasKaonp = true;
             if (kCurrentDaughter.pdgCode() == -321)
@@ -752,7 +763,7 @@ struct rsn_analysis {
         auto kHasKaonp = false;
         auto kHasKaonm = false;
         if (kDaughters.size() == 2) {
-          for (auto kCurrentDaughter : kDaughters) {
+          for (const auto& kCurrentDaughter : kDaughters) {
             if (fabs(kCurrentDaughter.pdgCode()) == 321)
               kHasKaonp = true;
             if (fabs(kCurrentDaughter.pdgCode()) == 211)

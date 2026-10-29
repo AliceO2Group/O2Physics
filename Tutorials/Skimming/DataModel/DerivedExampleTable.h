@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DERIVEDEXAMPLETABLES_H
-#define O2_ANALYSIS_DERIVEDEXAMPLETABLES_H
+#ifndef TUTORIALS_SKIMMING_DATAMODEL_DERIVEDEXAMPLETABLE_H_
+#define TUTORIALS_SKIMMING_DATAMODEL_DERIVEDEXAMPLETABLE_H_
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {
@@ -33,4 +33,4 @@ DECLARE_SOA_TABLE(DrTracks, "AOD", "DRTRACK", o2::soa::Index<>, exampleTrackSpac
 using DrTrack = DrTracks::iterator;
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_DERIVEDEXAMPLETABLES_H
+#endif // TUTORIALS_SKIMMING_DATAMODEL_DERIVEDEXAMPLETABLE_H_

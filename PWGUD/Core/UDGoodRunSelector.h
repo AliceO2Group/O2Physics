@@ -12,8 +12,8 @@
 #ifndef PWGUD_CORE_UDGOODRUNSELECTOR_H_
 #define PWGUD_CORE_UDGOODRUNSELECTOR_H_
 
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
 
 // A class to select good runs
@@ -33,7 +33,7 @@ struct UDGoodRunSelector {
   void Print();
   bool isGoodRun(int runNumber);
   std::vector<int> goodRuns() { return mgoodRuns; }
-  std::vector<int> goodRuns(std::string runPeriod);
+  std::vector<int> goodRuns(const std::string& runPeriod);
   int rnumMin() { return mrnMin; }
   int rnumMax() { return mrnMax; }
 

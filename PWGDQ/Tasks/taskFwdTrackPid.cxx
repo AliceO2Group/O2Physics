@@ -13,38 +13,30 @@
 /// \brief Task for the analysis of forward PID with MFT
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <TH1F.h>
-#include <TH3F.h>
-#include <THashList.h>
-#include <TList.h>
-#include <TString.h>
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/MixingHandler.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/MixingLibrary.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "Common/CCDB/EventSelectionParams.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <THashList.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,7 +56,7 @@ constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | 
 constexpr static uint32_t gkMCEventFillMap = VarManager::ObjTypes::ReducedEventMC;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses);
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses);
 
 struct taskFwdTrackPid {
   Produces<aod::FwdPidsAll> fwdPidAllList;
@@ -139,7 +131,6 @@ struct taskFwdTrackPid {
   template <bool TMatchedOnly, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks>
   void runFwdTrackPid(TEvent const& event, Muons const& muons, MftTracks const& mftTracks)
   {
-    fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
       if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
         auto mftTrack = muon.template matchMFTTrack_as<MyMftTracks>();
@@ -150,7 +141,7 @@ struct taskFwdTrackPid {
       for (const auto& mftTrack : mftTracks) {
         if (TMath::Abs(mftTrack.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(mftTrack.fwdDcaY()) < fConfigMaxDCA) {
           if (downSampleFactor < 1.) {
-            float pseudoRndm = mftTrack.pt() * 1000. - (int64_t)(mftTrack.pt() * 1000);
+            float pseudoRndm = mftTrack.pt() * 1000. - static_cast<int64_t>(mftTrack.pt() * 1000);
             if (pseudoRndm >= downSampleFactor) {
               continue;
             }
@@ -165,7 +156,6 @@ struct taskFwdTrackPid {
   template <bool TMatchedOnly, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks, typename TEventsMC, typename TTracksMC>
   void runFwdTrackPidMC(TEvent const& event, Muons const& muons, MftTracks const& mftTracks, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
-    fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
       if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
         auto mftTrack = muon.template matchMFTTrack_as<MyMftTracksMC>();
@@ -251,7 +241,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<taskFwdTrackPid>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses)
 {
   std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
   for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {

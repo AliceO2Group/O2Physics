@@ -8,10 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -22,6 +24,7 @@ struct v0coresconverter {
 
   void process(aod::V0MCCores_000 const& v0MCCores_000)
   {
+    v0MCCores_001.reserve(v0MCCores_000.size());
     for (auto& values : v0MCCores_000) {
       v0MCCores_001(0,
                     values.pdgCode(),

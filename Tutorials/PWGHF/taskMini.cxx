@@ -36,7 +36,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
 #include <TString.h>
 
 #include <array>

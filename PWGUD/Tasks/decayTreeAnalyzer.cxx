@@ -13,18 +13,27 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  01.03.2024
 
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "CommonConstants/LHCConstants.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UDGoodRunSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/decayTree.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Rtypes.h>
+
+#include <bitset>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

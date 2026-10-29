@@ -64,7 +64,7 @@ struct HfTaskBs {
   // MC checks
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   using TracksWithSel = soa::Join<aod::Tracks, aod::TrackSelection>;
 
@@ -79,7 +79,7 @@ struct HfTaskBs {
   void init(InitContext const&)
   {
     static const AxisSpec axisMassBs = {300, 4.5, 6.0, "inv. mass (GeV/#it{c}^{2})"};
-    static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    static const AxisSpec axisPt = {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"};
 
     registry.add("hEta", "B^{0}_{s} candidates;B^{0}_{s} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
     registry.add("hRapidity", "B^{0}_{s} candidates;B^{0}_{s} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});

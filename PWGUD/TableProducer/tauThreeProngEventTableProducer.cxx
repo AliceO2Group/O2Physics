@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 /// \file tauThreeProngEventTableProducer.cxx
-/// \brief Produces derived table from UD tables for tau pair production (3 prong)
+/// \brief Produces derived table from UD tables for tau pair production (with 3 prongs)
 ///
 /// \author Adam Matyja <adam.tomasz.matyja@cern.ch>, IFJ PAN, Cracow
 /// \since  2025-09-06
@@ -23,40 +23,38 @@
 // oopts="--aod-writer-json saveDerivedConfigData.json"
 // o2-analysis-ud-tau-three-prong-event-table-producer $copts $oopts > output.log
 
-//// C++ headers
-#include "Math/Vector4D.h"
-
-#include <algorithm>
-#include <random>
-#include <set>
-#include <utility>
-#include <vector>
-//
-//// O2 headers
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-// #include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-//
-//// O2Physics headers
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-// #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/TauThreeProngEventTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
 
-#include "TPDGCode.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzE4D.h>
+#include <TH1.h>
+#include <TPDGCode.h>
+#include <TVector3.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <set>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -65,9 +63,11 @@ using namespace o2::constants::physics;
 
 enum MyRecoProblem {
   NO_PROBLEM = 0,         // no problem
-  MANY_RECO = 1,          // more than 1 reconstructed collision
+  MANY_RECO = 1,          // more than 1 reconstructed collision, event not rejected
   TOO_MANY_DAUGHTERS = 2, // more than 6 daughters from 2 taus
-  TWO_TRACKS = 3          // more than 1 associated track to MC particle (tau daughter)
+  TWO_TRACKS = 3,         // more than 1 associated track to MC particle (tau daughter)
+  NO_TRACK = 4,           // No associated track to MC particle (tau daughter)
+  MIXED_TRACKS = 5        // 4 (or 6) tracks reconstructed but from 2 collisions
 };
 
 enum MyParticle {
@@ -79,8 +79,14 @@ enum MyParticle {
 };
 
 struct TauThreeProngEventTableProducer {
+  // derived output for 4 track topology
   Produces<o2::aod::TrueTauFourTracks> trueTauFourTracks;
   Produces<o2::aod::DataTauFourTracks> dataTauFourTracks;
+  Produces<o2::aod::GenTauFourTracks> genTauFourTracks;
+  // derived output for 6 track topology
+  Produces<o2::aod::TrueTauSixTracks> trueTauSixTracks;
+  Produces<o2::aod::DataTauSixTracks> dataTauSixTracks;
+  Produces<o2::aod::GenTauSixTracks> genTauSixTracks;
 
   // Global varialbes
   // Service<o2::framework::O2DatabasePDG> pdg;
@@ -165,6 +171,7 @@ struct TauThreeProngEventTableProducer {
   //  ConfigurableAxis minvAxis{"minvAxis", {100, 0.5, 5.0}, "M_{inv} (GeV/#it{c}^{2})"};
   //  ConfigurableAxis phiAxis{"phiAxis", {120, 0., 3.2}, "#phi"};
   Configurable<bool> verbose{"verbose", {}, "Additional print outs"};
+  Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{31}, "MC generatorIds to process"};
 
   // cut selection configurables
   //  Configurable<float> zvertexcut{"zvertexcut", 10., "Z vertex cut"};
@@ -185,7 +192,7 @@ struct TauThreeProngEventTableProducer {
   Configurable<bool> useFV0ForVeto{"useFV0ForVeto", 0, "use FV0 for veto"};
   Configurable<bool> useFDDAForVeto{"useFDDAForVeto", 0, "use FDDA for veto"};
   Configurable<bool> useFDDCForVeto{"useFDDCForVeto", 0, "use FDDC for veto"};
-  Configurable<int> nTofTrkMinCut{"nTofTrkMinCut", 1, "min TOF tracks"};
+  Configurable<int> nTofTrkMinCut{"nTofTrkMinCut", 2, "min TOF tracks"};
 
   //  Configurable<bool> invMass3piSignalRegion{"invMass3piSignalRegion", 1, "1-use inv mass 3pi in signal region, 0-in background region"};
   //  Configurable<float> invMass3piMaxcut{"invMass3piMaxcut", 1.8, "Z invariant mass of 3 pi cut"};
@@ -238,48 +245,96 @@ struct TauThreeProngEventTableProducer {
     // mySetITShitsRule(cutGlobalTrack.cutITShitsRule);
 
     if (doprocessDoSkim) {
-      registrySkim.add("skim/efficiency", ";efficeincy;events", {HistType::kTH1F, {{10, 0., 10.}}});
+      registrySkim.add("skim/efficiency", ";efficeincy;events", {HistType::kTH1D, {{10, 0., 10.}}});
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(1, "1: All");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(2, "2: Gap=012");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(3, "3: Gap=2");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(4, "4: PVcont=4");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(5, "5: |#eta^{tr}|<0.9");
-      registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(6, "6: p_{T}^{tr}>100");
+      registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(6, "6: p_{T}^{tr}>0.1");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(7, "7: N_{TOF}^{tr}>1");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(8, "8: FIT veto");
 
-      registrySkim.add("skim/gapSide", ";Gap;events", {HistType::kTH1F, {{10, -1., 9.}}});
-      registrySkim.add("skim/trueGapSide", ";TrueGap;events", {HistType::kTH1F, {{10, -1., 9.}}});
+      registrySkim.add("skim/gapSide", ";Gap;events", {HistType::kTH1D, {{10, -1., 9.}}});
+      registrySkim.add("skim/trueGapSide", ";TrueGap;events", {HistType::kTH1D, {{10, -1., 9.}}});
       registrySkim.add("skim/etaTrk", ";#eta^{trk};events", {HistType::kTH1F, {{100, -1.5, 1.5}}});
       registrySkim.add("skim/ptTrk", ";p_{T}^{trk};events", {HistType::kTH1F, {{100, 0., 5.}}});
       registrySkim.add("skim/phiTrk", ";#phi^{trk};events", {HistType::kTH1F, {{128, -3.2, 3.2}}});
       registrySkim.add("skim/nTof", ";N_{TOFtrk};events", {HistType::kTH1F, {{10, -1., 9.}}});
     }
     if (doprocessMonteCarlo) {
-      registrySkim.add("skim/efficiencyMC", ";efficeincy;events", {HistType::kTH1F, {{10, 0., 10.}}});
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "1: All");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "2: N^{#tau}=2");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "3: |y^{#tau}| <= 0.9");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "4: 4 or 6 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "5: 4 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "6: 6 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "7: |#eta^{ch}|<0.9");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "8: 7+4 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "9: 7+6 trk");
+      registrySkim.add("skim/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{16, -1., 15.}}});
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "All");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "GenID");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "N^{#tau}=2");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "|y^{#tau}| <= 0.9");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "|#eta^{ch}|<0.9");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "4 or 6 trk");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "e+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "#mu+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "#pi+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(10, "6#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(11, "rec");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(12, "rec e+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(13, "rec #mu+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(14, "rec #pi+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(15, "rec 6#pi");
 
-      registrySkim.add("skim/problemMC", ";problem;events", {HistType::kTH1F, {{10, 0., 10.}}});
+      registrySkim.add("skim/problemMC", ";problem;events", {HistType::kTH1D, {{10, 0., 10.}}});
 
-      registrySkim.add("skim/nTauMC", ";N_{#tau};events", {HistType::kTH1F, {{10, 0., 10.}}});
+      registrySkim.add("skim/nTauMC", ";N_{#tau};events", {HistType::kTH1D, {{10, 0., 10.}}});
       registrySkim.add("skim/tauRapidityMC", ";y_{#tau};events", {HistType::kTH1F, {{100, -2.5, 2.5}}});
       registrySkim.add("skim/tauPhiMC", ";#phi^{#tau};events", {HistType::kTH1F, {{100, 0, 6.4}}});
       registrySkim.add("skim/tauEtaMC", ";#eta^{#tau};events", {HistType::kTH1F, {{100, -2.5, 2.5}}});
       registrySkim.add("skim/tauPtMC", ";p_{T}^{#tau};events", {HistType::kTH1F, {{100, 0, 5.}}});
       registrySkim.add("skim/tauDeltaEtaMC", ";#Delta#eta^{#tau};events ", {HistType::kTH1F, {{100, -5., 5.}}});
       registrySkim.add("skim/tauDeltaPhiMC", ";#Delta#phi^{#tau}(deg.);events", {HistType::kTH1F, {{100, 131., 181}}});
+      registrySkim.add("skim/ditauInvMassMC", ";M_{inv}^{#tau#tau}(GeV/#it{c}^{2});events", {HistType::kTH1F, {{100, 3.4, 13.4}}});
       registrySkim.add("skim/nChPartMC", ";N^{ch. part};events", {HistType::kTH1F, {{10, 0, 10.}}});
       registrySkim.add("skim/daughterPhiMC", ";#phi^{daughter};events", {HistType::kTH1F, {{100, 0, 6.4}}});
       registrySkim.add("skim/daughterEtaMC", ";#eta^{daughter};events", {HistType::kTH1F, {{100, -4., 4.}}});
       registrySkim.add("skim/daughterPtMC", ";p_{T}^{daughter};events", {HistType::kTH1F, {{100, 0, 5.0}}});
+    }
+    if (doprocessGenerated) {
+      registrySkim.add("gen/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{16, -1., 15.}}});
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "All");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "GenID");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "N^{#tau}=2");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "|y^{#tau}| <=0.9");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "|#eta^{ch}|<=0.9");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "4 or 6 trk");
+      // registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "6: 4 trk");
+      // registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "7: 6 trk");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "e+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "#mu+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "#pi+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(10, "6#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(11, "rec");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(12, "rec e+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(13, "rec #mu+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(14, "rec #pi+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(15, "rec 6#pi");
+
+      registrySkim.add("gen/problemMC", ";problem;events", {HistType::kTH1D, {{10, 0., 10.}}});
+      registrySkim.get<TH1>(HIST("gen/problemMC"))->GetXaxis()->SetBinLabel(1, "1: NoProblem");
+      registrySkim.get<TH1>(HIST("gen/problemMC"))->GetXaxis()->SetBinLabel(2, "2: Unused");
+      registrySkim.get<TH1>(HIST("gen/problemMC"))->GetXaxis()->SetBinLabel(3, "3: N^{trk}>6");
+      registrySkim.get<TH1>(HIST("gen/problemMC"))->GetXaxis()->SetBinLabel(4, "4: Unused");
+      registrySkim.get<TH1>(HIST("gen/problemMC"))->GetXaxis()->SetBinLabel(5, "5: Unused");
+      registrySkim.get<TH1>(HIST("gen/problemMC"))->GetXaxis()->SetBinLabel(6, "6: Unused");
+
+      registrySkim.add("gen/nTauMC", ";N_{#tau};events", {HistType::kTH1D, {{10, 0., 10.}}});
+      registrySkim.add("gen/tauRapidityMC", ";y_{#tau};events", {HistType::kTH1F, {{100, -2.5, 2.5}}});
+      registrySkim.add("gen/tauPhiMC", ";#phi^{#tau};events", {HistType::kTH1F, {{100, 0, 6.4}}});
+      registrySkim.add("gen/tauEtaMC", ";#eta^{#tau};events", {HistType::kTH1F, {{100, -2.5, 2.5}}});
+      registrySkim.add("gen/tauPtMC", ";p_{T}^{#tau};events", {HistType::kTH1F, {{100, 0, 5.}}});
+      registrySkim.add("gen/tauDeltaEtaMC", ";#Delta#eta^{#tau};events ", {HistType::kTH1F, {{100, -5., 5.}}});
+      registrySkim.add("gen/tauDeltaPhiMC", ";#Delta#phi^{#tau}(deg.);events", {HistType::kTH1F, {{100, 131., 181}}});
+      registrySkim.add("gen/ditauInvMassMC", ";M_{inv}^{#tau#tau}(GeV/#it{c}^{2});events", {HistType::kTH1F, {{100, 3.4, 13.4}}});
+      registrySkim.add("gen/nChPartMC", ";N^{ch. part};events", {HistType::kTH1F, {{10, 0, 10.}}});
+      registrySkim.add("gen/daughterPhiMC", ";#phi^{daughter};events", {HistType::kTH1F, {{100, 0, 6.4}}});
+      registrySkim.add("gen/daughterEtaMC", ";#eta^{daughter};events", {HistType::kTH1F, {{100, -4., 4.}}});
+      registrySkim.add("gen/daughterPtMC", ";p_{T}^{daughter};events", {HistType::kTH1F, {{100, 0, 5.0}}});
     }
 
     // histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of  troubles (-)", HistType::kTH1D, {{15, 0.5, 15.5}});
@@ -303,7 +358,7 @@ struct TauThreeProngEventTableProducer {
     return angle;
   }
 
-  float calculateDeltaPhi(ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p, ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p1)
+  float calculateDeltaPhi(const ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>& p, const ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>& p1)
   {
     //    float delta = p.Phi();
     float delta = RecoDecay::constrainAngle(p.Phi());
@@ -453,7 +508,7 @@ struct TauThreeProngEventTableProducer {
   // check ITS clusters, how many -1,0,1,7 + 10 if 0,1,2 layers were fired
   // analysis track quality check
   template <typename T>
-  int numberOfItsClustersCheck(T track)
+  int numberOfItsClustersCheck(const T& track)
   {
     if (!track.hasITS())
       return -1;
@@ -553,7 +608,7 @@ struct TauThreeProngEventTableProducer {
 
   std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
 
-  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers)
   {
     // layer 0 corresponds to the the innermost ITS layer
     cutMyRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
@@ -585,10 +640,9 @@ struct TauThreeProngEventTableProducer {
     constexpr uint8_t KBit = 1;
     for (const auto& kITSrequirement : cutMyRequiredITSHits) {
       auto hits = std::count_if(kITSrequirement.second.begin(), kITSrequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (KBit << requiredLayer); });
-      if ((kITSrequirement.first == -1) && (hits > 0)) {
-        return false; // no hits were required in specified layers
-      } else if (hits < kITSrequirement.first) {
-        return false; // not enough hits found in specified layers
+      if (((kITSrequirement.first == -1) && (hits > 0)) || // no hits were required in specified layers
+          (hits < kITSrequirement.first)) {                // not enough hits found in specified layers
+        return false;
       }
     }
     return true;
@@ -696,6 +750,9 @@ struct TauThreeProngEventTableProducer {
   // skimming: only 4 tracks selection in data
   void processDoSkim(UDCollisionFull2 const& dgcand, UDTracksFull const& dgtracks, PVTracks const& PVContributors)
   {
+    const int fourTracks = 4;
+    const int sixTracks = 6;
+
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(0., 1.);
 
     int gapSide = dgcand.gapSide();
@@ -719,6 +776,8 @@ struct TauThreeProngEventTableProducer {
       energyZNA = -1.;
     if (energyZNC < 0)
       energyZNC = -1.;
+    float timeZNA = dgcand.timeZNA();
+    float timeZNC = dgcand.timeZNC();
 
     int nTofTrk = 0;
     int nEtaIn15 = 0;
@@ -743,15 +802,15 @@ struct TauThreeProngEventTableProducer {
         nTofTrk++;
     } // end of loop over PV tracks
 
-    if (PVContributors.size() != nPVtrackscut) // 4
+    if (PVContributors.size() != nPVtrackscut) // 4 or 6
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(3., 1.);
 
-    if (nEtaIn15 != nPVtrackscut) // 4
+    if (nEtaIn15 != nPVtrackscut) // 4 or 6
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(4., 1.);
 
-    if (npT100 != nPVtrackscut) // 4
+    if (npT100 != nPVtrackscut) // 4 or 6
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(5., 1.);
 
@@ -788,6 +847,26 @@ struct TauThreeProngEventTableProducer {
     int rct = 0;
     rct = isGoodRCTflag(dgcand);
 
+    // different events flags
+    int8_t bcSels[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
+    uint8_t bcSelBits = 0;
+    const int nBitsMax = 8;
+    bcSels[0] = dgcand.trs();
+    bcSels[1] = dgcand.trofs();
+    bcSels[2] = dgcand.hmpr();
+    bcSels[3] = dgcand.tfb();
+    bcSels[4] = dgcand.itsROFb();
+    bcSels[5] = dgcand.sbp();
+    bcSels[6] = dgcand.zVtxFT0vPV();
+    bcSels[7] = dgcand.vtxITSTPC();
+
+    const int offset = 1;
+    bcSelBits = bcSels[0]; // initialization
+    for (int ibit = 1; ibit < nBitsMax; ibit++) {
+      bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
+      bcSelBits += bcSels[ibit];         // add next bit to the pool
+    }
+
     //
     // variables per track
     //
@@ -811,7 +890,7 @@ struct TauThreeProngEventTableProducer {
     float nSigmaPr[6] = {-999., -999., -999., -999., -999., -999.};
     float nSigmaKa[6] = {-999., -999., -999., -999., -999., -999.};
     float nSigmaMu[6] = {-999., -999., -999., -999., -999., -999.};
-    float chi2TOF[6] = {-1., -1., -1., -1., -1., -1.};
+    float chi2TOF[6] = {-999., -999., -999., -999., -999., -999.};
     int nclTPCcrossedRows[6] = {-999, -999, -999, -999, -999, -999};
     int nclTPCfind[6] = {-999, -999, -999, -999, -999, -999};
     float nclTPCchi2[6] = {-999., -999., -999., -999., -999., -999.};
@@ -860,28 +939,61 @@ struct TauThreeProngEventTableProducer {
       counterTmp++;
     }
 
-    dataTauFourTracks(dgcand.runNumber(),
-                      dgcand.globalBC(), // is it necessary
-                      dgtracks.size(),
-                      dgcand.numContrib(),
-                      rct,
-                      // dgcand.posX(), dgcand.posY(),
-                      dgcand.posZ(),
-                      dgcand.flags(),
-                      dgcand.occupancyInTime(),
-                      dgcand.hadronicRate(),                       // is it necessary
-                      dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
-                      dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
-                      energyZNA, energyZNC,
-                      // qtot, <<-------- comment out
-                      dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
-                      // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
-                      px, py, pz, sign,
-                      dcaXY, dcaZ,
-                      nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
-                      tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
-                      trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr, tmpTofNsigmaMu,
-                      chi2TOF);
+    if (nPVtrackscut == fourTracks) {
+      dataTauFourTracks(dgcand.runNumber(),
+                        dgcand.globalBC(), // is it necessary
+                        dgtracks.size(),
+                        dgcand.numContrib(),
+                        rct,
+                        // dgcand.posX(), dgcand.posY(),
+                        dgcand.posZ(),
+                        dgcand.flags(),
+                        dgcand.occupancyInTime(),
+                        dgcand.hadronicRate(), // is it necessary
+                        //
+                        bcSelBits,
+                        // dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
+                        // dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                        //
+                        energyZNA, energyZNC,
+                        timeZNA, timeZNC,
+                        // qtot, <<-------- comment out
+                        dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
+                        // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
+                        px, py, pz, sign,
+                        dcaXY, dcaZ,
+                        nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
+                        tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
+                        trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr, tmpTofNsigmaMu,
+                        chi2TOF);
+    } else if (nPVtrackscut == sixTracks) {
+      dataTauSixTracks(dgcand.runNumber(),
+                       dgcand.globalBC(), // is it necessary
+                       dgtracks.size(),
+                       dgcand.numContrib(),
+                       rct,
+                       // dgcand.posX(), dgcand.posY(),
+                       dgcand.posZ(),
+                       dgcand.flags(),
+                       dgcand.occupancyInTime(),
+                       dgcand.hadronicRate(), // is it necessary
+                       //
+                       bcSelBits,
+                       // dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
+                       // dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                       //
+                       energyZNA, energyZNC,
+                       timeZNA, timeZNC,
+                       // qtot, <<-------- comment out
+                       dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
+                       // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
+                       px, py, pz, sign,
+                       dcaXY, dcaZ,
+                       nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
+                       tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
+                       trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr, tmpTofNsigmaMu,
+                       chi2TOF);
+    }
   } // end of skim process processDoSkim
   PROCESS_SWITCH(TauThreeProngEventTableProducer, processDoSkim, "Run over SG Producer tables to produce skimmed data", false);
 
@@ -1019,12 +1131,14 @@ struct TauThreeProngEventTableProducer {
     const int sixTracks = 6;
     const int oneProng = 1;
     const int threeProng = 3;
+    const float epsilon = 0.000001;
 
     if (verbose)
-      LOGF(info, "0. <MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
+      LOGF(info, "<MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
 
     // temporary variables
-    float tmpRapidity = -999.;
+    //    float tmpRapidity = -999.;
+    float trueTauRapidity[2] = {-999., -999.};
     float trueTauEta[2] = {-999., -999.};
     float trueTauPhi[2] = {-999., -999.};
 
@@ -1038,7 +1152,27 @@ struct TauThreeProngEventTableProducer {
 
     // start loop over generated collisions
     for (const auto& mccoll : mcCollisions) {
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(0., 1.); // all MC collisions
+      // all collisions
+      if (verbose)
+        LOGF(info, "-- McColl GID %d", mccoll.globalIndex());
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(-1., 1.); // all MC collisions
+
+      // check Generator ID, for taus(1+3,3+3): GenID=31,32,33,34,35
+      if (verbose) {
+        LOGF(info, "generatorId desired (0) %d, in MC %d", generatorIds->at(0), mccoll.generatorsID());
+      }
+
+      if (std::find(generatorIds->begin(), generatorIds->end(), mccoll.generatorsID()) != generatorIds->end()) {
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(0., 1.); // GenID
+        if (verbose) {
+          LOGF(info, "Event with good generatorID %d", mccoll.generatorsID());
+        }
+      } else {
+        if (verbose) {
+          LOGF(info, "Event with bad generatorID %d", mccoll.generatorsID());
+        }
+        continue;
+      }
 
       // set up default values per colission
       trueTauX[0] = -999.;
@@ -1052,58 +1186,72 @@ struct TauThreeProngEventTableProducer {
       partFromTauInEta = true;
 
       // get particles associated to generated collision
+      // auto const& tmpPartsFromMcColl = mcParticles.sliceBy(partPerMcCollision, (int64_t)mccoll.globalIndex());
       auto const& tmpPartsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
+
       if (verbose)
-        LOGF(info, "1. part from MC coll %d", tmpPartsFromMcColl.size());
+        LOGF(info, "- part from MC coll %d", tmpPartsFromMcColl.size());
       int countMothers = 0;
       const int desiredNMothers = 2;
       for (const auto& particle : tmpPartsFromMcColl) {
         if (verbose)
-          LOGF(info, "2. MC part pdg %d", particle.pdgCode());
+          LOGF(info, "-- MC part pdg %d", particle.pdgCode());
         if (std::abs(particle.pdgCode()) != kTauMinus)
-          continue; // 15 = tau_minus
-        // if (std::abs(particle.pdgCode()) != 15) continue; // 15 = tau_minus
+          continue;                           // 15 = tau_minus
         if (countMothers < desiredNMothers) { // < 2
           // fill info for each tau
           trueTauX[countMothers] = particle.px();
           trueTauY[countMothers] = particle.py();
           trueTauZ[countMothers] = particle.pz();
-          tmpRapidity = rapidity(particle.e(), trueTauZ[countMothers]);
+          trueTauRapidity[countMothers] = rapidity(particle.e(), trueTauZ[countMothers]);
           trueTauEta[countMothers] = RecoDecay::eta(std::array<double, 3>{particle.px(), particle.py(), particle.pz()});
           trueTauPhi[countMothers] = RecoDecay::phi(particle.px(), particle.py());
 
           if (verbose)
-            LOGF(info, "tau P(%f,%f,%f), e %f, y %f", particle.px(), particle.py(), particle.pz(), particle.e(), tmpRapidity);
-          registrySkim.get<TH1>(HIST("skim/tauRapidityMC"))->Fill(tmpRapidity);
-          registrySkim.get<TH1>(HIST("skim/tauPhiMC"))->Fill(trueTauPhi[countMothers]);
-          registrySkim.get<TH1>(HIST("skim/tauEtaMC"))->Fill(trueTauEta[countMothers]);
-          registrySkim.get<TH1>(HIST("skim/tauPtMC"))->Fill(RecoDecay::pt(particle.px(), particle.py()));
-          if (std::abs(tmpRapidity) > trkEtacut) { // 0.9
+            LOGF(info, "-- tau P(%f,%f,%f), e %f, y %f", particle.px(), particle.py(), particle.pz(), particle.e(), trueTauRapidity[countMothers]);
+          if (std::abs(trueTauRapidity[countMothers]) > trkEtacut) { // 0.9
             tauInRapidity = false;
             if (verbose)
-              LOGF(info, "tau y %f", tmpRapidity);
+              LOGF(info, "--- tau y %f", trueTauRapidity[countMothers]);
           } // rapidity check
         } // number of taus
         countMothers++;
       } // end of loop over MC paricles
+      // LOGF(info, "1b. <MC> countMothers %d", countMothers);
       registrySkim.get<TH1>(HIST("skim/nTauMC"))->Fill(countMothers);
       if (countMothers != desiredNMothers) { // 2
         if (verbose)
-          LOGF(info, "Truth collision has number of mother particles (taus) %d different than 2. Jump to the next MC event.", countMothers);
+          LOGF(info, "-- Truth collision has number of mother particles (taus) %d different than 2. Jump to the next MC event.", countMothers);
         continue;
       }
 
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(1., 1.); // exactly 2 taus
 
+      for (int iNmother = 0; iNmother < desiredNMothers; iNmother++) {
+        registrySkim.get<TH1>(HIST("skim/tauRapidityMC"))->Fill(trueTauRapidity[iNmother]);
+        if (tauInRapidity) {
+          registrySkim.get<TH1>(HIST("skim/tauPhiMC"))->Fill(trueTauPhi[iNmother]);
+          registrySkim.get<TH1>(HIST("skim/tauEtaMC"))->Fill(trueTauEta[iNmother]);
+          registrySkim.get<TH1>(HIST("skim/tauPtMC"))->Fill(RecoDecay::pt(trueTauX[iNmother], trueTauY[iNmother]));
+        }
+      }
+
       if (!tauInRapidity) { // tau NOT in rapidity -> continue
         if (verbose)
-          LOGF(info, "At least one mother particle (taus) out of rapidity (|y|<0.9). Jump to the next MC event.");
+          LOGF(info, "-- At least one mother particle (taus) out of rapidity (|y|<0.9). Jump to the next MC event.");
         continue;
       }
 
       // delta eta and delta phi between taus
       registrySkim.get<TH1>(HIST("skim/tauDeltaEtaMC"))->Fill(trueTauEta[0] - trueTauEta[1]);
       registrySkim.get<TH1>(HIST("skim/tauDeltaPhiMC"))->Fill(calculateDeltaPhi(trueTauPhi[0], trueTauPhi[1]) * 180. / o2::constants::math::PI);
+
+      // inv mass of two taus
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> tau1;
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> tau2;
+      tau1.SetXYZT(trueTauX[0], trueTauY[0], trueTauZ[0], RecoDecay::e(trueTauX[0], trueTauY[0], trueTauZ[0], MassTauPlus));
+      tau2.SetXYZT(trueTauX[1], trueTauY[1], trueTauZ[1], RecoDecay::e(trueTauX[1], trueTauY[1], trueTauZ[1], MassTauPlus));
+      registrySkim.get<TH1>(HIST("skim/ditauInvMassMC"))->Fill((tau1 + tau2).M());
 
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(2., 1.); // |y_tau| <= 0.9
       countMothers = 0;
@@ -1145,46 +1293,44 @@ struct TauThreeProngEventTableProducer {
           break;
       } // end of loop over MC particles
 
+      if (!partFromTauInEta) {
+        if (verbose)
+          LOGF(info, "-- At least one daughter particle from taus out of pseudo-rapidity (|eta|<0.9). Jump to the next MC event.");
+        continue;
+      }
+
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(3., 1.); // charged particles from tau in |eta|<0.9
+
       registrySkim.get<TH1>(HIST("skim/nChPartMC"))->Fill(nChargedDaughtersTau[0] + nChargedDaughtersTau[1]); // N charged particles from taus
       // check number of charged particles in MC event
       if ((nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != fourTracks) && (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != sixTracks)) {
         if (verbose)
-          LOGF(info, "Different from 4/6 charged particles (%d) from both taus. Jump to the next MC event.", nChargedDaughtersTau[0] + nChargedDaughtersTau[1]);
+          LOGF(info, "-- Different from 4/6 charged particles (%d) from both taus. Jump to the next MC event.", nChargedDaughtersTau[0] + nChargedDaughtersTau[1]);
         continue;
       }
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(3., 1.);        // 1+3 (3+3) topology
-      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(4., 1.);
-      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(5., 1.);
-      }
 
-      if (!partFromTauInEta) {
-        if (verbose)
-          LOGF(info, "At least one daughter particle from taus out of pseudo-rapidity (|eta|<0.9). Jump to the next MC event.");
-        continue;
-      }
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);        // particles from tau in |eta|<0.9
-      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(7., 1.);
-      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(8., 1.);
-      }
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(4., 1.); // 1+3 (3+3) topology = 4 or 6 tracks
+      // if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
+      //   registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(5., 1.);
+      // } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
+      //   registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);
+      // }
 
-      if (nChargedDaughtersTau[0] == oneProng) // 1
+      if ((nChargedDaughtersTau[0] == oneProng) ||                                          // 1
+          (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng)) // 3 and 3
         zerothTau = 0;
       else if (nChargedDaughtersTau[1] == oneProng) // 1
         zerothTau = 1;
-      else if (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng) // 3 and 3
-        zerothTau = 0;
+      // else if (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng) // 3 and 3
+      // zerothTau = 0;
 
       // prepare local variables for output table
-      int32_t runNumber = -999;
+      int32_t runNumber = -999; // when no reconstructed collisions is associated to MCcoll it should remain = -999
       int bc = -999;
       // int nTrks[3] = {-999, -999, -999}; // totalTracks, numContrib, globalNonPVtracks
       int totalTracks = -999;
       int8_t nPVcontrib = -99;
-      int rct = -999;
+      int rct = -99;
       // float vtxPos[3] = {-999., -999., -999.};
       float zVertex = -999;
 
@@ -1192,9 +1338,13 @@ struct TauThreeProngEventTableProducer {
       int occupancy = -999;
       double hadronicRate = -999.;
       int8_t bcSels[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
-      // zdc information - there i sno information in MC
-      float energyZNA = -999.;
-      float energyZNC = -999.;
+      uint8_t bcSelBits = 0;
+      const int nBitsMax = 8;
+      // zdc information - there is no information in MC
+      // float energyZNA = -999.;
+      // float energyZNC = -999.;
+      // float timeZNA = -999.;
+      // float timeZNC = -999.;
 
       float amplitudesFIT[3] = {-999., -999., -999.}; // FT0A, FT0C, FV0
       // float timesFIT[3] = {-999., -999., -999.};      // FT0A, FT0C, FV0
@@ -1232,12 +1382,12 @@ struct TauThreeProngEventTableProducer {
       // float tofEP[2] = {-999, -999};
       float chi2TOF[6] = {-999., -999., -999., -999., -999., -999.};
 
-      bool trueHasRecoColl = false;
-      float trueDaugX[6] = {-999., -999., -999., -999., -999., -999.};
-      float trueDaugY[6] = {-999., -999., -999., -999., -999., -999.};
-      float trueDaugZ[6] = {-999., -999., -999., -999., -999., -999.};
+      // bool trueHasRecoColl = false;
+      float trueDaugX[6] = {-998., -998., -998., -998., -998., -998.};
+      float trueDaugY[6] = {-998., -998., -998., -998., -998., -998.};
+      float trueDaugZ[6] = {-998., -998., -998., -998., -998., -998.};
       int trueDaugPdgCode[6] = {-999, -999, -999, -999, -999, -999};
-      //      bool problem = false;
+
       MyRecoProblem problem = NO_PROBLEM;
       registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_PROBLEM);
 
@@ -1247,293 +1397,681 @@ struct TauThreeProngEventTableProducer {
       // 3 = pi+3pi
       // 4 = 3pi+3pi
 
-      if (nElec == oneProng && nPi == threeProng) // 1 + 3
+      if (nElec == oneProng && nPi == threeProng) { // 1 + 3
         trueChannel = 1;
-      else if (nMuon == oneProng && nPi == threeProng) // 1 + 3
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(5., 1.);
+      } else if (nMuon == oneProng && nPi == threeProng) { // 1 + 3
         trueChannel = 2;
-      else if (nPi == fourTracks) // 4
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);
+      } else if (nPi == fourTracks) { // 4
         trueChannel = 3;
-      else if (nPi == sixTracks) // 6
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(7., 1.);
+      } else if (nPi == sixTracks) { // 6
         trueChannel = 4;
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(8., 1.);
+      }
+
+      // LOGF(info, "MC Coll global index %d", mccoll.globalIndex());
+      // LOGF(info, "2. <MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
+      // for (const auto& coll : collisions) {
+      // LOGF(info, "coll global index %d", coll.globalIndex());
+      // }
 
       // find reconstructed collisions associated to the generated collision
       auto const& collFromMcColls = collisions.sliceBy(colPerMcCollision, mccoll.globalIndex());
       if (verbose)
-        LOGF(info, "coll from MC Coll %d", collFromMcColls.size());
+        LOGF(info, "-- coll from MC Coll %d", collFromMcColls.size());
       // check the generated collision was reconstructed
       if (collFromMcColls.size() > 0) { // get the truth and reco-level info
         if (verbose)
-          LOGF(info, "MC Collision has reconstructed collision!");
-        trueHasRecoColl = true;
+          LOGF(info, "--- MC Collision has reconstructed collision!");
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(9., 1.);
+        // reconstruction in a given channel
+        if (nElec == oneProng && nPi == threeProng) { // 1 + 3
+          registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(10., 1.);
+        } else if (nMuon == oneProng && nPi == threeProng) { // 1 + 3
+          registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(11., 1.);
+        } else if (nPi == fourTracks) { // 4
+          registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(12., 1.);
+        } else if (nPi == sixTracks) { // 6
+          registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(13., 1.);
+        }
+
+        // trueHasRecoColl = true;
         // check there is exactly one reco-level collision associated to generated collision
         if (collFromMcColls.size() > 1) {
           if (verbose)
-            LOGF(info, "Truth collision has more than 1 reco collision. Skipping this event.");
-          // histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(1);
-          //  problem = true;
+            LOGF(info, "---- Truth collision has more than 1 reco collision. Event remains.");
+          // LOGF(info, "Truth collision has more than 1 reco collision. Skipping this event.");
+          //  histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(1);
+          //   problem = true;
           problem = MANY_RECO;
           registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(MANY_RECO);
-          continue;
-        }
-        // grap reco-level collision
-        auto const& collFromMcColl = collFromMcColls.iteratorAt(0);
-        // grab tracks from the reco-level collision to get info to match measured data tables (processDataSG function)
-        auto const& trksFromColl = tracks.sliceBy(trackPerCollision, collFromMcColl.globalIndex());
-        // int countTracksPerCollision = 0;
-        // int countGoodNonPVtracks = 0;
-        // for (auto const& trkFromColl : trksFromColl) {
-        //   // countTracksPerCollision++;
-        //   if (!trkFromColl.isPVContributor()) {
-        //     countGoodNonPVtracks++;
-        //     continue;
-        //   }
-        // }
-
-        // fill info for reconstructed collision
-        runNumber = collFromMcColl.runNumber();
-        bc = collFromMcColl.globalBC();
-        totalTracks = trksFromColl.size();
-        //        nTrks[0] = countTracksPerCollision;
-        nPVcontrib = collFromMcColl.numContrib();
-        //        nTrks[1] = collFromMcColl.numContrib();
-        //        nTrks[2] = countGoodNonPVtracks;
-        rct = isGoodRCTflag(collFromMcColl);
-        zVertex = collFromMcColl.posZ();
-        //        vtxPos[0] = collFromMcColl.posX();
-        //        vtxPos[1] = collFromMcColl.posY();
-        //        vtxPos[2] = collFromMcColl.posZ();
-
-        recoMode = collFromMcColl.flags();
-        occupancy = collFromMcColl.occupancyInTime();
-        hadronicRate = collFromMcColl.hadronicRate();
-        bcSels[0] = collFromMcColl.trs();
-        bcSels[1] = collFromMcColl.trofs();
-        bcSels[2] = collFromMcColl.hmpr();
-        bcSels[3] = collFromMcColl.tfb();
-        bcSels[4] = collFromMcColl.itsROFb();
-        bcSels[5] = collFromMcColl.sbp();
-        bcSels[6] = collFromMcColl.zVtxFT0vPV();
-        bcSels[7] = collFromMcColl.vtxITSTPC();
-        // energyZNA = collFromMcColl.energyCommonZNA();
-        // energyZNC = collFromMcColl.energyCommonZNC();
-        // if (energyZNA < 0)
-        //   energyZNA = -1.;
-        // if (energyZNC < 0)
-        //   energyZNC = -1.;
-
-        amplitudesFIT[0] = collFromMcColl.totalFT0AmplitudeA();
-        amplitudesFIT[1] = collFromMcColl.totalFT0AmplitudeC();
-        amplitudesFIT[2] = collFromMcColl.totalFV0AmplitudeA();
-        // timesFIT[0] = collFromMcColl.timeFT0A();
-        // timesFIT[1] = collFromMcColl.timeFT0C();
-        // timesFIT[2] = collFromMcColl.timeFV0A();
-
-        // get particles associated to generated collision
-        auto const& partsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
-        if (verbose)
-          LOGF(info, "part from MC coll %d", partsFromMcColl.size());
-        // int countMothers = 0;
-        int countDaughters = 0;
-        countPi0 = 0;
-        for (const auto& particle : partsFromMcColl) {
+          // continue;
+        } else {
           if (verbose)
-            LOGF(info, "Reco coll; part pdg %d", particle.pdgCode());
-          // select only tauons with checking if particle has no mother
-          // in UPC MC taus have mothers
-          // if (particle.has_mothers())
-          if (std::abs(particle.pdgCode()) != kTauMinus)
-            continue; // 15 = tau_minus
+            LOGF(info, "---- Truth collision has 1 reco collision. Record event.");
+        }
 
-          // get daughters of the tau
-          const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
-          // int countDaughters = 0;
-          for (const auto& daughter : daughters) {
+        // grab reco-level collision
+        for (const auto& collFromMcColl : collFromMcColls) {
+          if (verbose) {
+            LOGF(info, "---- ###### Collision %d #########", collFromMcColl.index());
+            LOGF(info, "---- Coll GID %d, Vertex (%f,%f,%f)", collFromMcColl.globalIndex(), collFromMcColl.posX(), collFromMcColl.posY(), collFromMcColl.posZ());
+          }
+          // auto const& collFromMcColl = collFromMcColls.iteratorAt(0);
+          //  grab tracks from the reco-level collision to get info to match measured data tables (processDataSG function)
+          auto const& trksFromColl = tracks.sliceBy(trackPerCollision, collFromMcColl.globalIndex());
+          // int countTracksPerCollision = 0;
+          // int countGoodNonPVtracks = 0;
+          // for (auto const& trkFromColl : trksFromColl) {
+          //   // countTracksPerCollision++;
+          //   if (!trkFromColl.isPVContributor()) {
+          //     countGoodNonPVtracks++;
+          //     continue;
+          //   }
+          // }
+
+          // fill info for reconstructed collision
+          runNumber = collFromMcColl.runNumber();
+          bc = collFromMcColl.globalBC();
+          totalTracks = trksFromColl.size();
+          //        nTrks[0] = countTracksPerCollision;
+          nPVcontrib = collFromMcColl.numContrib();
+          //        nTrks[1] = collFromMcColl.numContrib();
+          //        nTrks[2] = countGoodNonPVtracks;
+          rct = isGoodRCTflag(collFromMcColl);
+          zVertex = collFromMcColl.posZ();
+          //        vtxPos[0] = collFromMcColl.posX();
+          //        vtxPos[1] = collFromMcColl.posY();
+          //        vtxPos[2] = collFromMcColl.posZ();
+
+          recoMode = collFromMcColl.flags();
+          occupancy = collFromMcColl.occupancyInTime();
+          hadronicRate = collFromMcColl.hadronicRate();
+          bcSels[0] = collFromMcColl.trs();
+          bcSels[1] = collFromMcColl.trofs();
+          bcSels[2] = collFromMcColl.hmpr();
+          bcSels[3] = collFromMcColl.tfb();
+          bcSels[4] = collFromMcColl.itsROFb();
+          bcSels[5] = collFromMcColl.sbp();
+          bcSels[6] = collFromMcColl.zVtxFT0vPV();
+          bcSels[7] = collFromMcColl.vtxITSTPC();
+
+          const int offset = 1;
+          bcSelBits = bcSels[0]; // initialization
+          for (int ibit = 1; ibit < nBitsMax; ibit++) {
+            bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
+            bcSelBits += bcSels[ibit];         // add next bit to the pool
+          }
+
+          // energyZNA = collFromMcColl.energyCommonZNA();
+          // energyZNC = collFromMcColl.energyCommonZNC();
+          // if (energyZNA < 0)
+          //   energyZNA = -1.;
+          // if (energyZNC < 0)
+          //   energyZNC = -1.;
+
+          amplitudesFIT[0] = collFromMcColl.totalFT0AmplitudeA();
+          amplitudesFIT[1] = collFromMcColl.totalFT0AmplitudeC();
+          amplitudesFIT[2] = collFromMcColl.totalFV0AmplitudeA();
+          // timesFIT[0] = collFromMcColl.timeFT0A();
+          // timesFIT[1] = collFromMcColl.timeFT0C();
+          // timesFIT[2] = collFromMcColl.timeFV0A();
+
+          // get particles associated to generated collision
+          auto const& partsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
+          if (verbose)
+            LOGF(info, "---- part from MC coll %d", partsFromMcColl.size());
+          // int countMothers = 0;
+          int countDaughters = 0;
+          countPi0 = 0;
+          for (const auto& particle : partsFromMcColl) {
             if (verbose)
-              LOGF(info, "With Coll; daug pdg %d", daughter.pdgCode());
-            // check if it is the charged particle (= no pi0 or neutrino)
-            if (enumMyParticle(daughter.pdgCode()) == MyOtherParticle) // -1
-              continue;
-            countDaughters++;
-            if (daughter.pdgCode() == kPi0)
-              countPi0++;
+              LOGF(info, "----- Reco coll; part pdg %d, GID %d", particle.pdgCode(), particle.globalIndex());
+            // select only tauons with checking if particle has no mother
+            // in UPC MC taus have mothers
+            // if (particle.has_mothers())
+            if (std::abs(particle.pdgCode()) != kTauMinus)
+              continue; // 15 = tau_minus
 
-            // check whether 1+3 or 3+3 topology is present
-            if (countDaughters > sixTracks) { // 6
+            // get daughters of the tau
+            const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+            // int countDaughters = 0;
+            for (const auto& daughter : daughters) {
               if (verbose)
-                LOGF(info, "Truth collision has more than 6 charged daughters from 2 taus. Breaking the daughter loop.");
-              //               histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(3);
-              //               problem = true;
-              problem = TOO_MANY_DAUGHTERS;
-              registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TOO_MANY_DAUGHTERS);
+                LOGF(info, "----- With Coll; daug pdg %d, GID %d", daughter.pdgCode(), daughter.globalIndex());
 
-              break;
-            }
+              if (daughter.pdgCode() == kPi0)
+                countPi0++;
 
-            // fill info for each daughter
-            trueDaugX[countDaughters - 1] = daughter.px();
-            trueDaugY[countDaughters - 1] = daughter.py();
-            trueDaugZ[countDaughters - 1] = daughter.pz();
-            trueDaugPdgCode[countDaughters - 1] = daughter.pdgCode();
+              // check if it is the charged particle (= no pi0 or neutrino)
+              if (enumMyParticle(daughter.pdgCode()) == MyOtherParticle) // -1
+                continue;
+              countDaughters++;
 
-            // get tracks associated to MC daughter (how well the daughter was reconstructed)
-            auto const& tracksFromDaughter = tracks.sliceBy(trackPerMcParticle, daughter.globalIndex());
-            // check there is exactly 1 track per 1 particle
-            if (tracksFromDaughter.size() > 1) {
+              // check whether 1+3 or 3+3 topology is present
+              if (countDaughters > sixTracks) { // 6
+                if (verbose)
+                  LOGF(info, "------ Truth collision has more than 6 charged daughters from 2 taus. Breaking the daughter loop.");
+                //               histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(3);
+                //               problem = true;
+                problem = TOO_MANY_DAUGHTERS;
+                registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TOO_MANY_DAUGHTERS);
+
+                break;
+              }
+
+              // fill info for each daughter
+              trueDaugX[countDaughters - 1] = daughter.px();
+              trueDaugY[countDaughters - 1] = daughter.py();
+              trueDaugZ[countDaughters - 1] = daughter.pz();
+              trueDaugPdgCode[countDaughters - 1] = daughter.pdgCode();
               if (verbose)
-                LOGF(info, "Daughter has more than 1 associated track. Skipping this daughter.");
-              //              histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(4);
-              //              problem = true;
-              problem = TWO_TRACKS;
-              registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TWO_TRACKS);
-              continue;
-            }
-            // grab the track and fill info for reconstructed track (should be done 4 or 6 times)
-            const auto& trk = tracksFromDaughter.iteratorAt(0);
-            if (verbose)
-              LOGF(info, "p(%f,%f,%f)", trk.px(), trk.py(), trk.pz());
-            px[countDaughters - 1] = trk.px();
-            py[countDaughters - 1] = trk.py();
-            pz[countDaughters - 1] = trk.pz();
-            sign[countDaughters - 1] = trk.sign();
-            dcaXY[countDaughters - 1] = trk.dcaXY();
-            dcaZ[countDaughters - 1] = trk.dcaZ();
-            //            trkTimeRes[countMothers - 1] = trk.trackTimeRes();
-            //            if (countMothers == 1) {
-            //              itsClusterSizesTrk1 = trk.itsClusterSizes();
-            //            } else {
-            //              itsClusterSizesTrk2 = trk.itsClusterSizes();
-            //            }
+                LOGF(info, "----- tau daug pxpypz (%f, %f, %f) pdg %d", daughter.px(), daughter.py(), daughter.pz(), daughter.pdgCode());
+              // get tracks associated to MC daughter (how well the daughter was reconstructed)
+              auto const& tracksFromDaughter = tracks.sliceBy(trackPerMcParticle, daughter.globalIndex());
+              // check there is exactly 1 track per 1 particle
+              if (tracksFromDaughter.size() > 1) {
+                if (verbose)
+                  LOGF(info, "------ Daughter has more than 1 associated track. Ntracks = %d.", tracksFromDaughter.size());
+                // LOGF(info, "Daughter has more than 1 associated track. Ntracks = %d. Skipping this daughter.", tracksFromDaughter.size());
 
-            nclTPCcrossedRows[countDaughters - 1] = trk.tpcNClsCrossedRows();
-            nclTPCfind[countDaughters - 1] = trk.tpcNClsFindable();
-            nclTPCchi2[countDaughters - 1] = trk.tpcChi2NCl();
-            trkITSchi2[countDaughters - 1] = trk.itsChi2NCl();
-            trkITScl[countDaughters - 1] = numberOfItsClustersCheck(trk);
+                // make sure that track momentum is the same (difference is smaller than epsilon=0.000001) for multiple reconstructed tracks, if not reject
+                // tracks are accocated to 2 different collisions (!?)
+                float tmptrk[3];
+                bool firstObject = true;
+                int counter = 0;
+                for (const auto& trk : tracksFromDaughter) {
+                  if (verbose)
+                    LOGF(info, "------- track GID %d, p(%f,%f,%f)", trk.globalIndex(), trk.px(), trk.py(), trk.pz());
+                  if (firstObject) {
+                    tmptrk[0] = trk.px();
+                    tmptrk[1] = trk.py();
+                    tmptrk[2] = trk.pz();
+                    firstObject = false;
+                    counter++;
+                  } else {
+                    if ((std::abs(tmptrk[0] - trk.px()) > epsilon) || (std::abs(tmptrk[1] - trk.py()) > epsilon) || (std::abs(tmptrk[2] - trk.pz()) > epsilon))
+                      counter++;
+                  }
+                } // end of loop over tracks from 1 McParticle
+                if (verbose)
+                  LOGF(info, "------ Corrected number of associated tracks to MC particle %d", counter);
 
-            tpcSignal[countDaughters - 1] = trk.tpcSignal();
-            tpcEl[countDaughters - 1] = trk.tpcNSigmaEl();
-            tpcMu[countDaughters - 1] = trk.tpcNSigmaMu();
-            tpcPi[countDaughters - 1] = trk.tpcNSigmaPi();
-            tpcKa[countDaughters - 1] = trk.tpcNSigmaKa();
-            tpcPr[countDaughters - 1] = trk.tpcNSigmaPr();
-            // tpcIP[countDaughters - 1] = trk.tpcInnerParam();
+                if (counter > 1) {
+                  if (verbose)
+                    LOGF(info, "------ Daughter has more than 1 associated track. Ntracks = %d. Skipping this daughter.", counter);
+                  problem = TWO_TRACKS;
+                  registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TWO_TRACKS);
+                  continue;
+                }
+              } else if (tracksFromDaughter.size() < 1) {
+                // what if no track is associated to mc particle???
+                if (verbose)
+                  LOGF(info, "----- Daughter has no associated track. Ntracks = %d. Skipping this daughter.", tracksFromDaughter.size());
+                problem = NO_TRACK;
+                registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_TRACK);
+                continue;
+              }
 
-            tofSignal[countDaughters - 1] = trk.beta();
-            tofEl[countDaughters - 1] = trk.tofNSigmaEl();
-            tofMu[countDaughters - 1] = trk.tofNSigmaMu();
-            tofPi[countDaughters - 1] = trk.tofNSigmaPi();
-            tofKa[countDaughters - 1] = trk.tofNSigmaKa();
-            tofPr[countDaughters - 1] = trk.tofNSigmaPr();
-            // tofEP[countMothers - 1] = trk.tofExpMom();
-            if (trk.hasTOF())
-              chi2TOF[countDaughters - 1] = trk.tofChi2();
+              // grab the track and fill info for reconstructed track (should be done 4 or 6 times)
+              const auto& trk = tracksFromDaughter.iteratorAt(0);
 
-          } // daughters
-        } // particles
+              px[countDaughters - 1] = trk.px();
+              py[countDaughters - 1] = trk.py();
+              pz[countDaughters - 1] = trk.pz();
+              sign[countDaughters - 1] = trk.sign();
+              dcaXY[countDaughters - 1] = trk.dcaXY();
+              dcaZ[countDaughters - 1] = trk.dcaZ();
+              //            trkTimeRes[countMothers - 1] = trk.trackTimeRes();
+              //            if (countMothers == 1) {
+              //              itsClusterSizesTrk1 = trk.itsClusterSizes();
+              //            } else {
+              //              itsClusterSizesTrk2 = trk.itsClusterSizes();
+              //            }
+
+              nclTPCcrossedRows[countDaughters - 1] = trk.tpcNClsCrossedRows();
+              nclTPCfind[countDaughters - 1] = trk.tpcNClsFindable();
+              nclTPCchi2[countDaughters - 1] = trk.tpcChi2NCl();
+              trkITSchi2[countDaughters - 1] = trk.itsChi2NCl();
+              trkITScl[countDaughters - 1] = numberOfItsClustersCheck(trk);
+
+              tpcSignal[countDaughters - 1] = trk.tpcSignal();
+              tpcEl[countDaughters - 1] = trk.tpcNSigmaEl();
+              tpcMu[countDaughters - 1] = trk.tpcNSigmaMu();
+              tpcPi[countDaughters - 1] = trk.tpcNSigmaPi();
+              tpcKa[countDaughters - 1] = trk.tpcNSigmaKa();
+              tpcPr[countDaughters - 1] = trk.tpcNSigmaPr();
+              // tpcIP[countDaughters - 1] = trk.tpcInnerParam();
+
+              tofSignal[countDaughters - 1] = trk.beta();
+              tofEl[countDaughters - 1] = trk.tofNSigmaEl();
+              tofMu[countDaughters - 1] = trk.tofNSigmaMu();
+              tofPi[countDaughters - 1] = trk.tofNSigmaPi();
+              tofKa[countDaughters - 1] = trk.tofNSigmaKa();
+              tofPr[countDaughters - 1] = trk.tofNSigmaPr();
+              // tofEP[countMothers - 1] = trk.tofExpMom();
+              if (trk.hasTOF())
+                chi2TOF[countDaughters - 1] = trk.tofChi2();
+
+            } // end of loop over daughters of taus
+          } // end of loop over MC particles
+        } // end of loop over collisions associated to MC collision
+
+        // decide the channel and set the variable.
+        trueChannel = trueChannel + countPi0 * 10 + zerothTau * 100;
+
+        // LOGF(info, "Should be written!");
+
+        if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
+          trueTauFourTracks(runNumber,
+                            bc, // is it necessary
+                            totalTracks,
+                            nPVcontrib,
+                            rct,
+                            // dgcand.posX(), dgcand.posY(),
+                            zVertex,
+                            recoMode,
+                            occupancy,
+                            hadronicRate, // is it necessary
+                            bcSelBits,
+                            // bcSels[0], bcSels[1], bcSels[2], // to test it
+                            // bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+                            // energyZNA, energyZNC,
+                            // timeZNA, timeZNC,
+                            // qtot, <<-------- comment out
+                            amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
+                            // timesFIT[0], timesFIT[1], timesFIT[2],
+                            px, py, pz, sign,
+                            dcaXY, dcaZ,
+                            nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
+                            tpcSignal, tpcEl, tpcPi, tpcKa, tpcPr, tpcMu,
+                            tofSignal, tofEl, tofPi, tofKa, tofPr, tofMu,
+                            chi2TOF,
+                            //
+                            trueChannel,
+                            // trueHasRecoColl,
+                            mccoll.posZ(),
+                            // trueTauX, trueTauY, trueTauZ,
+                            trueDaugX, trueDaugY, trueDaugZ,
+                            trueDaugPdgCode, problem);
+        } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
+          trueTauSixTracks(runNumber,
+                           bc, // is it necessary
+                           totalTracks,
+                           nPVcontrib,
+                           rct,
+                           // dgcand.posX(), dgcand.posY(),
+                           zVertex,
+                           recoMode,
+                           occupancy,
+                           hadronicRate, // is it necessary
+                           bcSelBits,
+                           // bcSels[0], bcSels[1], bcSels[2], // to test it
+                           // bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+                           // energyZNA, energyZNC,
+                           // timeZNA, timeZNC,
+                           // qtot, <<-------- comment out
+                           amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
+                           // timesFIT[0], timesFIT[1], timesFIT[2],
+                           px, py, pz, sign,
+                           dcaXY, dcaZ,
+                           nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
+                           tpcSignal, tpcEl, tpcPi, tpcKa, tpcPr, tpcMu,
+                           tofSignal, tofEl, tofPi, tofKa, tofPr, tofMu,
+                           chi2TOF,
+                           //
+                           trueChannel,
+                           // trueHasRecoColl,
+                           mccoll.posZ(),
+                           // trueTauX, trueTauY, trueTauZ,
+                           trueDaugX, trueDaugY, trueDaugZ,
+                           trueDaugPdgCode, problem);
+        } // end of saving the output
+
       } else { // get only the truth information. The reco-level info is left on default
         if (verbose)
           LOGF(info, "MC Collision has NO reconstructed collision!");
-        // get particles associated to generated collision
-        auto const& partsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
-        if (verbose)
-          LOGF(info, "NO Coll; partsFromMcColl in MC %d", partsFromMcColl.size());
-        // int countMothers = 0;
-        int countDaughters = 0;
-        countPi0 = 0;
-        for (const auto& particle : partsFromMcColl) {
-          if (verbose)
-            LOGF(info, "No Coll; part Gid %d, Id %d, pdg %d, hasM %d, hasD %d", particle.globalIndex(), particle.index(), particle.pdgCode(), particle.has_mothers(), particle.has_daughters());
-          // select only tauons with checking if particle has no mother
-          // in UPC MC taus have mothers
-          // if (particle.has_mothers())
-          if (std::abs(particle.pdgCode()) != kTauMinus) // 15
-            continue;
-          // countMothers++;
-          // check the generated collision does not have more than 2 tauons
-          // if (countMothers > 2) {
-          //   if (verbose)
-          //     LOGF(info,"Truth collision has more than 2 no mother particles. Breaking the particle loop.");
-          //        //     histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(12);
-          //        //     problem = true;
-          //   break;
-          // }
-          // // fill info for each tau
-          // trueTauX[countMothers - 1] = particle.px();
-          // trueTauY[countMothers - 1] = particle.py();
-          // trueTauZ[countMothers - 1] = particle.pz();
-
-          // get daughters of the tau
-          const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
-          if (verbose)
-            LOGF(info, "NO coll; N_daughters %d", daughters.size());
-          // int countDaughters = 0;
-          for (const auto& daughter : daughters) {
-            if (verbose)
-              LOGF(info, "NO Coll; daug id %d, pdg %d", daughter.globalIndex(), daughter.pdgCode());
-            // select only the charged particle (= no pi0 or neutrino)
-            if (enumMyParticle(daughter.pdgCode()) == -1)
-              continue;
-            countDaughters++;
-            if (daughter.pdgCode() == kPi0)
-              countPi0++;
-
-            // check whether 1+3 or 3+3 topology is present
-            if (countDaughters > sixTracks) { // 6
-              if (verbose)
-                LOGF(info, "Truth collision has more than 6 charged daughters from taus. Breaking the daughter loop.");
-              //              histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(13);
-              //              problem = true;
-              registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TOO_MANY_DAUGHTERS);
-              problem = TOO_MANY_DAUGHTERS;
-              break;
-            }
-            // fill info for each daughter
-            trueDaugX[countDaughters - 1] = daughter.px();
-            trueDaugY[countDaughters - 1] = daughter.py();
-            trueDaugZ[countDaughters - 1] = daughter.pz();
-            trueDaugPdgCode[countDaughters - 1] = daughter.pdgCode();
-          } // daughters
-          if (verbose)
-            LOGF(info, "End of daughters");
-        } // particles
       } // collisions
+
+    } // mccollisions
+  } // end of processMonteCarlo
+  PROCESS_SWITCH(TauThreeProngEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
+
+  // only MC information and what events are reconstructed
+  void processGenerated(aod::UDMcCollisions const& mcCollisions,
+                        aod::UDMcParticles const& mcParticles,
+                        FullMCSGUDCollisions const& collisions)
+  {
+    // registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(0., 1.);
+
+    const int fourTracks = 4;
+    const int sixTracks = 6;
+    const int oneProng = 1;
+    const int threeProng = 3;
+    //    const float epsilon = 0.000001;
+
+    if (verbose)
+      LOGF(info, "<MC> UDMcCollision size %d, Collisions size %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), mcParticles.size());
+
+    // temporary variables
+    float trueTauRapidity[2] = {-999., -999.};
+    float trueTauEta[2] = {-999., -999.};
+    float trueTauPhi[2] = {-999., -999.};
+
+    // init variables for tree
+    float trueTauX[2] = {-999., -999.};
+    float trueTauY[2] = {-999., -999.};
+    float trueTauZ[2] = {-999., -999.};
+
+    bool tauInRapidity = true;
+    bool partFromTauInEta = true;
+
+    // start loop over generated collisions
+    for (const auto& mccoll : mcCollisions) {
+      // all collisions
+      if (verbose)
+        LOGF(info, "-- McColl GID %d", mccoll.globalIndex());
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(-1., 1.); // all MC collisions
+
+      // check Generator ID, for taus(1+3,3+3): GenID=31,32,33,34,35
+      if (verbose) {
+        LOGF(info, "generatorId desired (0) %d, in MC %d", generatorIds->at(0), mccoll.generatorsID());
+      }
+
+      if (std::find(generatorIds->begin(), generatorIds->end(), mccoll.generatorsID()) != generatorIds->end()) {
+        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(0., 1.); // GenID
+        if (verbose) {
+          LOGF(info, "Event with good generatorID %d", mccoll.generatorsID());
+        }
+      } else {
+        if (verbose) {
+          LOGF(info, "Event with bad generatorID %d", mccoll.generatorsID());
+        }
+        continue;
+      }
+
+      // set up default values per colission
+      trueTauX[0] = -999.;
+      trueTauY[0] = -999.;
+      trueTauZ[0] = -999.;
+      trueTauX[1] = -999.;
+      trueTauY[1] = -999.;
+      trueTauZ[1] = -999.;
+
+      tauInRapidity = true;
+      partFromTauInEta = true;
+
+      // get particles associated to generated collision
+      // auto const& tmpPartsFromMcColl = mcParticles.sliceBy(partPerMcCollision, (int64_t)mccoll.globalIndex());
+      auto const& tmpPartsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
+
+      if (verbose)
+        LOGF(info, "- part from MC coll %d", tmpPartsFromMcColl.size());
+      int countMothers = 0;
+      const int desiredNMothers = 2;
+      for (const auto& particle : tmpPartsFromMcColl) {
+        if (verbose)
+          LOGF(info, "-- MC part pdg %d", particle.pdgCode());
+        if (std::abs(particle.pdgCode()) != kTauMinus)
+          continue;                           // 15 = tau_minus
+        if (countMothers < desiredNMothers) { // < 2
+          // fill info for each tau
+          trueTauX[countMothers] = particle.px();
+          trueTauY[countMothers] = particle.py();
+          trueTauZ[countMothers] = particle.pz();
+          trueTauRapidity[countMothers] = rapidity(particle.e(), trueTauZ[countMothers]);
+          trueTauEta[countMothers] = RecoDecay::eta(std::array<double, 3>{particle.px(), particle.py(), particle.pz()});
+          trueTauPhi[countMothers] = RecoDecay::phi(particle.px(), particle.py());
+
+          if (verbose)
+            LOGF(info, "-- tau P(%f,%f,%f), e %f, y %f", particle.px(), particle.py(), particle.pz(), particle.e(), trueTauRapidity[countMothers]);
+          if (std::abs(trueTauRapidity[countMothers]) > trkEtacut) { // 0.9
+            tauInRapidity = false;
+            if (verbose)
+              LOGF(info, "--- tau y %f", trueTauRapidity[countMothers]);
+          } // rapidity check
+        } // number of taus
+        countMothers++;
+      } // end of loop over MC paricles
+      // LOGF(info, "1b. <MC> countMothers %d", countMothers);
+      registrySkim.get<TH1>(HIST("gen/nTauMC"))->Fill(countMothers);
+      if (countMothers != desiredNMothers) { // 2
+        if (verbose)
+          LOGF(info, "-- Truth collision has number of mother particles (taus) %d different than 2. Jump to the next MC event.", countMothers);
+        continue;
+      }
+
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(1., 1.); // exactly 2 taus
+
+      for (int iNmother = 0; iNmother < desiredNMothers; iNmother++) {
+        registrySkim.get<TH1>(HIST("gen/tauRapidityMC"))->Fill(trueTauRapidity[iNmother]);
+        if (tauInRapidity) {
+          registrySkim.get<TH1>(HIST("gen/tauPhiMC"))->Fill(trueTauPhi[iNmother]);
+          registrySkim.get<TH1>(HIST("gen/tauEtaMC"))->Fill(trueTauEta[iNmother]);
+          registrySkim.get<TH1>(HIST("gen/tauPtMC"))->Fill(RecoDecay::pt(trueTauX[iNmother], trueTauY[iNmother]));
+        }
+      }
+
+      if (!tauInRapidity) { // tau NOT in rapidity -> continue
+        if (verbose)
+          LOGF(info, "-- At least one mother particle (taus) out of rapidity (|y|<0.9). Jump to the next MC event.");
+        continue;
+      }
+
+      // delta eta and delta phi between taus
+      registrySkim.get<TH1>(HIST("gen/tauDeltaEtaMC"))->Fill(trueTauEta[0] - trueTauEta[1]);
+      registrySkim.get<TH1>(HIST("gen/tauDeltaPhiMC"))->Fill(calculateDeltaPhi(trueTauPhi[0], trueTauPhi[1]) * 180. / o2::constants::math::PI);
+
+      // inv mass of two taus
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> tau1;
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> tau2;
+      tau1.SetXYZT(trueTauX[0], trueTauY[0], trueTauZ[0], RecoDecay::e(trueTauX[0], trueTauY[0], trueTauZ[0], MassTauPlus));
+      tau2.SetXYZT(trueTauX[1], trueTauY[1], trueTauZ[1], RecoDecay::e(trueTauX[1], trueTauY[1], trueTauZ[1], MassTauPlus));
+      registrySkim.get<TH1>(HIST("gen/ditauInvMassMC"))->Fill((tau1 + tau2).M());
+
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(2., 1.); // |y_tau| <= 0.9
+      countMothers = 0;
+      int nChargedDaughtersTau[2] = {0, 0};
+      int nElec = 0;
+      int nMuon = 0;
+      int nPi = 0;
+      int particleType = -1;
+      int zerothTau = -10;
+      int trueChannel = -1;
+      int countPi0 = -1;
+
+      for (const auto& particle : tmpPartsFromMcColl) {
+        if (std::abs(particle.pdgCode()) != kTauMinus)
+          continue; // 15 = tau_minus
+        const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+        for (const auto& daughter : daughters) {
+          particleType = enumMyParticle(daughter.pdgCode());
+          if (particleType == MyOtherParticle) { // -1
+            continue;
+          } else {
+            nChargedDaughtersTau[countMothers]++;
+            if (particleType == MyElectron) // 1
+              nElec++;
+            else if (particleType == MyMuon) // 2
+              nMuon++;
+            else if (particleType == MyPion) // 3
+              nPi++;
+          }
+
+          if (std::abs(RecoDecay::eta(std::array<double, 3>{daughter.px(), daughter.py(), daughter.pz()})) > trkEtacut) // 0.9
+            partFromTauInEta = false;
+          registrySkim.get<TH1>(HIST("gen/daughterPhiMC"))->Fill(RecoDecay::phi(daughter.px(), daughter.py()));
+          registrySkim.get<TH1>(HIST("gen/daughterEtaMC"))->Fill(RecoDecay::eta(std::array<double, 3>{daughter.px(), daughter.py(), daughter.pz()}));
+          registrySkim.get<TH1>(HIST("gen/daughterPtMC"))->Fill(RecoDecay::pt(daughter.px(), daughter.py()));
+        }
+        countMothers++;
+        if (countMothers >= desiredNMothers) // 2
+          break;
+      } // end of loop over MC particles
+
+      if (!partFromTauInEta) {
+        if (verbose)
+          LOGF(info, "-- At least one daughter particle from taus out of pseudo-rapidity (|eta|<0.9). Jump to the next MC event.");
+        continue;
+      }
+
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(3., 1.); // charged particles from tau in |eta|<=0.9
+
+      registrySkim.get<TH1>(HIST("gen/nChPartMC"))->Fill(nChargedDaughtersTau[0] + nChargedDaughtersTau[1]); // N charged particles from taus
+      // check number of charged particles in MC event
+      if ((nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != fourTracks) && (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != sixTracks)) {
+        if (verbose)
+          LOGF(info, "-- Different from 4/6 charged particles (%d) from both taus. Jump to the next MC event.", nChargedDaughtersTau[0] + nChargedDaughtersTau[1]);
+        continue;
+      }
+
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(4., 1.); // 1+3 (3+3) topology = 4 or 6 tracks
+
+      if ((nChargedDaughtersTau[0] == oneProng) ||                                          // 1
+          (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng)) // 3 and 3
+        zerothTau = 0;
+      else if (nChargedDaughtersTau[1] == oneProng) // 1
+        zerothTau = 1;
+
+      float trueDaugX[6] = {-998., -998., -998., -998., -998., -998.};
+      float trueDaugY[6] = {-998., -998., -998., -998., -998., -998.};
+      float trueDaugZ[6] = {-998., -998., -998., -998., -998., -998.};
+      int trueDaugPdgCode[6] = {-999, -999, -999, -999, -999, -999};
+
+      MyRecoProblem problem = NO_PROBLEM;
+      registrySkim.get<TH1>(HIST("gen/problemMC"))->Fill(NO_PROBLEM);
+
+      // tau tau event type
+      // 1 = e+3pi
+      // 2 = mu+3pi
+      // 3 = pi+3pi
+      // 4 = 3pi+3pi
+
+      if (nElec == oneProng && nPi == threeProng) { // 1 + 3
+        trueChannel = 1;
+        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(5., 1.);
+      } else if (nMuon == oneProng && nPi == threeProng) { // 1 + 3
+        trueChannel = 2;
+        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(6., 1.);
+      } else if (nPi == fourTracks) { // 4
+        trueChannel = 3;
+        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(7., 1.);
+      } else if (nPi == sixTracks) { // 6
+        trueChannel = 4;
+        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(8., 1.);
+      }
+
+      // get particles associated to generated collision
+      auto const& partsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
+      if (verbose)
+        LOGF(info, "partsFromMcColl in MC %d", partsFromMcColl.size());
+      int countDaughters = 0;
+      countPi0 = 0;
+      for (const auto& particle : partsFromMcColl) {
+        if (verbose)
+          LOGF(info, "part Gid %d, Id %d, pdg %d, hasM %d, hasD %d", particle.globalIndex(), particle.index(), particle.pdgCode(), particle.has_mothers(), particle.has_daughters());
+        // select only tauons with checking if particle has no mother
+        // in UPC MC taus have mothers
+        // if (particle.has_mothers())
+        if (std::abs(particle.pdgCode()) != kTauMinus) // 15
+          continue;
+
+        // get daughters of the tau
+        const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+        if (verbose)
+          LOGF(info, "N_daughters %d", daughters.size());
+        for (const auto& daughter : daughters) {
+          if (verbose)
+            LOGF(info, "daug id %d, pdg %d", daughter.globalIndex(), daughter.pdgCode());
+
+          if (daughter.pdgCode() == kPi0)
+            countPi0++;
+
+          // select only the charged particle (= no pi0 or neutrino)
+          if (enumMyParticle(daughter.pdgCode()) == -1)
+            continue;
+          countDaughters++;
+
+          // check whether 1+3 or 3+3 topology is present
+          if (countDaughters > sixTracks) { // 6
+            if (verbose)
+              LOGF(info, "Truth collision has more than 6 charged daughters from taus. Breaking the daughter loop.");
+            registrySkim.get<TH1>(HIST("gen/problemMC"))->Fill(TOO_MANY_DAUGHTERS);
+            problem = TOO_MANY_DAUGHTERS;
+            break;
+          }
+          // fill info for each daughter
+          trueDaugX[countDaughters - 1] = daughter.px();
+          trueDaugY[countDaughters - 1] = daughter.py();
+          trueDaugZ[countDaughters - 1] = daughter.pz();
+          trueDaugPdgCode[countDaughters - 1] = daughter.pdgCode();
+        } // daughters
+
+        if (verbose)
+          LOGF(info, "End of daughters");
+      } // mcparticles
 
       // decide the channel and set the variable.
       trueChannel = trueChannel + countPi0 * 10 + zerothTau * 100;
 
+      //
+      // check whwther event is reconstructed
+      //
+      bool trueHasRecoColl = false;
+      // find reconstructed collisions associated to the generated collision
+      auto const& collFromMcColls = collisions.sliceBy(colPerMcCollision, mccoll.globalIndex());
+      if (verbose)
+        LOGF(info, "-- coll from MC Coll %d", collFromMcColls.size());
+      // check the generated collision was reconstructed
+      if (collFromMcColls.size() > 0) { // get the truth and reco-level info
+        trueHasRecoColl = true;
+        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(9., 1.);
+        if (verbose)
+          LOGF(info, "--- MC Collision has reconstructed collision!");
+
+        // reconstruction in a given channel
+        if (nElec == oneProng && nPi == threeProng) { // 1 + 3
+          registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(10., 1.);
+        } else if (nMuon == oneProng && nPi == threeProng) { // 1 + 3
+          registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(11., 1.);
+        } else if (nPi == fourTracks) { // 4
+          registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(12., 1.);
+        } else if (nPi == sixTracks) { // 6
+          registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(13., 1.);
+        }
+
+      } else { // get only the truth information.
+        if (verbose)
+          LOGF(info, "MC Collision has NO reconstructed collision!");
+      }
+
       // LOGF(info, "Should be written!");
-      trueTauFourTracks(runNumber,
-                        bc, // is it necessary
-                        totalTracks,
-                        nPVcontrib,
-                        rct,
-                        // dgcand.posX(), dgcand.posY(),
-                        zVertex,
-                        recoMode,
-                        occupancy,
-                        hadronicRate,                    // is it necessary
-                        bcSels[0], bcSels[1], bcSels[2], // to test it
-                        bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
-                        energyZNA, energyZNC,
-                        // qtot, <<-------- comment out
-                        amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
-                        // timesFIT[0], timesFIT[1], timesFIT[2],
-                        px, py, pz, sign,
-                        dcaXY, dcaZ,
-                        nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
-                        tpcSignal, tpcEl, tpcPi, tpcKa, tpcPr, tpcMu,
-                        tofSignal, tofEl, tofPi, tofKa, tofPr, tofMu,
-                        chi2TOF,
-                        //
-                        trueChannel,
-                        trueHasRecoColl,
-                        mccoll.posZ(),
-                        trueTauX, trueTauY, trueTauZ,
-                        trueDaugX, trueDaugY, trueDaugZ,
-                        trueDaugPdgCode, problem);
+
+      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
+        genTauFourTracks(
+          trueChannel,
+          mccoll.posZ(),
+          // trueTauX, trueTauY, trueTauZ,
+          trueDaugX, trueDaugY, trueDaugZ,
+          trueDaugPdgCode,
+          problem,
+          trueHasRecoColl);
+      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
+        genTauSixTracks(
+          trueChannel,
+          mccoll.posZ(),
+          // trueTauX, trueTauY, trueTauZ,
+          trueDaugX, trueDaugY, trueDaugZ,
+          trueDaugPdgCode,
+          problem,
+          trueHasRecoColl);
+      } // end of writing output
+
     } // mccollisions
-  } // end of  processMonteCarlo
-  PROCESS_SWITCH(TauThreeProngEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
+  } // end of processGenerated
+  PROCESS_SWITCH(TauThreeProngEventTableProducer, processGenerated, "Iterate UD tables with generated data created by SG-Candidate-Producer.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

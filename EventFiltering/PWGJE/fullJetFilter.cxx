@@ -12,35 +12,50 @@
 // Full Jet Filter
 // Author: Gijs van Weelden
 
-#include <array>
-#include <cmath>
-#include <string>
-#include <string_view>
+#include "../filterTables.h"
+
+#include "PWGJE/DataModel/EMCALClusterDefinition.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
 #include <TMath.h>
+#include <TString.h>
+#include <TVector2.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsCTP/Configuration.h"
-#include "EMCALBase/Geometry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
+#include <RtypesCore.h>
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/CCDB/TriggerAliases.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/FastJetUtilities.h"
-
-#include "../filterTables.h"
+#include <algorithm>
+#include <array>
+#include <bitset>
+#include <cfloat>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <map>
+#include <ostream>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

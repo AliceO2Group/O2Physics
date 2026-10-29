@@ -9,27 +9,34 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file svPoolCreator.h
+/// \brief Time-compatible secondary-vertex track-pair and triplet pools
+/// \author ALICE Collaboration
+
 #ifndef PWGLF_UTILS_SVPOOLCREATOR_H_
 #define PWGLF_UTILS_SVPOOLCREATOR_H_
 
-#include <array>
-#include <unordered_map>
-#include <vector>
-#include <utility>
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/trackUtilities.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
+#include <CommonConstants/LHCConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+#include <MathUtils/Primitive2D.h>
 
-using namespace o2;
-using namespace o2::constants;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using std::array;
+#include <Rtypes.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 using CollBracket = o2::math_utils::Bracket<int>;
 
 constexpr uint64_t bOffsetMax = 241; // track compatibility can never go beyond 6 mus (ITS)
+constexpr int NChargeSigns = 2;
 
 struct TrackCand {
   int Idxtr;
@@ -39,6 +46,13 @@ struct TrackCand {
 struct SVCand {
   int tr0Idx;
   int tr1Idx;
+  CollBracket collBracket{};
+};
+
+struct SVCand3 {
+  int tr0Idx;
+  int tr1Idx;
+  int tr2Idx;
   CollBracket collBracket{};
 };
 
@@ -59,7 +73,7 @@ class svPoolCreator
 
   void clearPools()
   {
-    for (auto& pool : trackCandPool) {
+    for (auto& pool : trackCandPool) { // o2-linter: disable=const-ref-in-for-loop (The pool is cleared in place.)
       pool.clear();
     }
     tmap.clear();
@@ -85,11 +99,11 @@ class svPoolCreator
     }
   }
 
-  template <typename T, typename C, typename BC>
-  void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, o2::aod::AmbiguousTracks const& ambiTracks, BC const&)
+  template <typename T, typename C, typename AT, typename BC>
+  void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, const AT& ambiTracks, BC const&)
   {
     if (pdgHypo != track0Pdg && pdgHypo != track1Pdg) {
-      LOG(debug) << "Wrong pdg hypothesis";
+      LOGP(debug, "Wrong pdg hypothesis");
       return;
     }
     bool isDau0 = pdgHypo == track0Pdg;
@@ -104,11 +118,11 @@ class svPoolCreator
         if (ambTrack.trackId() != trackCand.globalIndex()) {
           continue;
         }
-        if (!ambTrack.has_bc() || ambTrack.bc_as<BC>().size() == 0) {
+        if (!ambTrack.has_bc() || ambTrack.template bc_as<BC>().size() == 0) {
           globalBC = BcInvalid;
           break;
         }
-        globalBC = ambTrack.bc_as<BC>().begin().globalBC();
+        globalBC = ambTrack.template bc_as<BC>().begin().globalBC();
         break;
       }
     } else {
@@ -134,12 +148,12 @@ class svPoolCreator
     }
 
     // now loop over all the collisions to make the pool
-    for (int i = firstCollIdx; i < collisions.size(); i++) {
-      const auto& collision = collisions.rawIteratorAt(i);
+    for (int collIdx = firstCollIdx; collIdx < collisions.size(); collIdx++) {
+      const auto& collision = collisions.rawIteratorAt(collIdx);
       float collTime = collision.collisionTime();
       float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
       uint64_t collBC = collision.template bc_as<BC>().globalBC();
-      int collIdx = collision.globalIndex();
+      // int collIdx = collision.globalIndex();
       int64_t bcOffset = globalBC - static_cast<int64_t>(collBC);
       if (static_cast<uint64_t>(std::abs(bcOffset)) > bOffsetMax) {
         if (bcOffset < 0) {
@@ -153,13 +167,13 @@ class svPoolCreator
       float trackTimeRes{0.};
       if (trackCand.isPVContributor()) {
         trackTime = trackCand.template collision_as<C>().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
-        trackTimeRes = constants::lhc::LHCBunchSpacingNS;                 // 1 BC
+        trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS;             // 1 BC
       } else {
         trackTime = trackCand.trackTime();
         trackTimeRes = trackCand.trackTimeRes();
       }
 
-      const float deltaTime = trackTime - collTime + bcOffset * constants::lhc::LHCBunchSpacingNS;
+      const float deltaTime = trackTime - collTime + bcOffset * o2::constants::lhc::LHCBunchSpacingNS;
       float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
 
       float thresholdTime = 0.;
@@ -168,7 +182,6 @@ class svPoolCreator
       } else if (TESTBIT(trackCand.flags(), o2::aod::track::TrackTimeResIsRange)) {
         thresholdTime = std::sqrt(sigmaTimeRes2);
         thresholdTime += timeMarginNS;
-
       } else {
         thresholdTime = 4. * std::sqrt(sigmaTimeRes2);
         thresholdTime += timeMarginNS;
@@ -195,48 +208,46 @@ class svPoolCreator
 
     // is Sorting Needed ? TBD
   }
+
   template <typename C>
   std::vector<SVCand>& getSVCandPool(const C& collisions, bool combineLikeSign = false)
   {
-    gsl::span<std::vector<TrackCand>> track0Pool{trackCandPool.data(), 2};
-    gsl::span<std::vector<TrackCand>> track1Pool{trackCandPool.data() + 2, 2};
-    std::array<std::vector<int>, 2> mVtxTrack0{}; // 1st pos. and neg. track of the kink pool for each vertex
+    gsl::span<std::vector<TrackCand>> track0Pool{trackCandPool.data(), NChargeSigns};
+    gsl::span<std::vector<TrackCand>> track1Pool{trackCandPool.data() + NChargeSigns, NChargeSigns};
+    std::array<std::vector<int>, NChargeSigns> mVtxTrack0{}; // 1st pos. and neg. track of the kink pool for each vertex
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < NChargeSigns; i++) {
       mVtxTrack0[i].clear();
       mVtxTrack0[i].resize(collisions.size(), -1);
     }
-
-    for (int pn = 0; pn < 2; pn++) {
-      auto& vtxFirstT = mVtxTrack0[pn];
-      const auto& signTrack0Pool = track0Pool[pn];
+    for (int iCharge = 0; iCharge < NChargeSigns; iCharge++) {
+      auto& vtxFirstT = mVtxTrack0[iCharge];
+      const auto& signTrack0Pool = track0Pool[iCharge];
       for (unsigned i = 0; i < signTrack0Pool.size(); i++) {
         const auto& track0Seed = signTrack0Pool[i];
-        LOG(debug) << "Processsing track0 with index: " << track0Seed.Idxtr << " min bracket: " << track0Seed.collBracket.getMin() << " max bracket: " << track0Seed.collBracket.getMax();
         for (int j{track0Seed.collBracket.getMin()}; j <= track0Seed.collBracket.getMax(); ++j) {
           if (vtxFirstT[j] == -1) {
             vtxFirstT[j] = i;
           }
         }
       }
-      int track1sign = combineLikeSign ? pn : 1 - pn;
+      int track1sign = combineLikeSign ? iCharge : 1 - iCharge;
       auto& signTrack1 = track1Pool[track1sign];
-      for (unsigned itp = 0; itp < signTrack1.size(); itp++) {
-        auto& track1Seed = signTrack1[itp];
-        LOG(debug) << "Processing track1 with index: " << track1Seed.Idxtr << " min bracket: " << track1Seed.collBracket.getMin() << " max bracket: " << track1Seed.collBracket.getMax();
-        int firsOverlapIdx = -1;
+      for (unsigned iTrack1 = 0; iTrack1 < signTrack1.size(); iTrack1++) {
+        auto& track1Seed = signTrack1[iTrack1];
+        int firstOverlapIdx = -1;
         for (int j{track1Seed.collBracket.getMin()}; j <= track1Seed.collBracket.getMax(); ++j) {
           LOG(debug) << "Checking vtxFirstT at position " << j << " with value " << vtxFirstT[j];
           if (vtxFirstT[j] != -1) {
-            firsOverlapIdx = vtxFirstT[j];
+            firstOverlapIdx = vtxFirstT[j];
             break;
           }
         }
-        if (firsOverlapIdx < 0) {
+        if (firstOverlapIdx < 0) {
           continue;
         }
-        for (unsigned itn = firsOverlapIdx; itn < signTrack0Pool.size(); itn++) {
-          auto& track0Seed = signTrack0Pool[itn];
+        for (unsigned iTrack0 = firstOverlapIdx; iTrack0 < signTrack0Pool.size(); iTrack0++) {
+          auto& track0Seed = signTrack0Pool[iTrack0];
 
           if (track0Seed.collBracket.getMin() > track1Seed.collBracket.getMax()) {
             break;
@@ -270,6 +281,110 @@ class svPoolCreator
   std::array<std::vector<TrackCand>, 4> trackCandPool; // Sorting: dau0 pos, dau0 neg, dau1 pos, dau1 neg
   std::vector<SVCand> svCandPool;                      // index of the two tracks in the track table
   TrackCand trForpool;
+};
+
+/// Build time-compatible three-track combinations by joining two svPoolCreator
+/// pools on a common first prong. The class deliberately only handles
+/// combinatorics; the caller remains responsible for fitting and physics
+/// selections.
+class svPoolCreator3Body
+{
+ public:
+  svPoolCreator3Body() = default;
+  svPoolCreator3Body(int track0Pdg, int track1Pdg, int track2Pdg)
+    : track0Pdg(track0Pdg),
+      track1Pdg(track1Pdg),
+      track2Pdg(track2Pdg),
+      pool01(track0Pdg, track1Pdg),
+      pool02(track0Pdg, track2Pdg)
+  {
+  }
+
+  void setPDGs(int pdg0, int pdg1, int pdg2)
+  {
+    track0Pdg = pdg0;
+    track1Pdg = pdg1;
+    track2Pdg = pdg2;
+    pool01.setPDGs(track0Pdg, track1Pdg);
+    pool02.setPDGs(track0Pdg, track2Pdg);
+  }
+
+  void clearPools()
+  {
+    pool01.clearPools();
+    pool02.clearPools();
+    svCandPool.clear();
+  }
+
+  void setTimeMargin(float timeMargin)
+  {
+    pool01.setTimeMargin(timeMargin);
+    pool02.setTimeMargin(timeMargin);
+  }
+
+  void setSkipAmbiTracks()
+  {
+    pool01.setSkipAmbiTracks();
+    pool02.setSkipAmbiTracks();
+  }
+
+  template <typename C, typename BC>
+  void fillBC2Coll(const C& collisions, BC const& bcs)
+  {
+    pool01.fillBC2Coll(collisions, bcs);
+    pool02.fillBC2Coll(collisions, bcs);
+  }
+
+  template <typename T, typename C, typename AT, typename BC>
+  void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, const AT& ambiTracks, BC const& bcs)
+  {
+    if (pdgHypo == track0Pdg) {
+      pool01.appendTrackCand(trackCand, collisions, pdgHypo, ambiTracks, bcs);
+      pool02.appendTrackCand(trackCand, collisions, pdgHypo, ambiTracks, bcs);
+    } else if (pdgHypo == track1Pdg) {
+      pool01.appendTrackCand(trackCand, collisions, pdgHypo, ambiTracks, bcs);
+    } else if (pdgHypo == track2Pdg) {
+      pool02.appendTrackCand(trackCand, collisions, pdgHypo, ambiTracks, bcs);
+    } else {
+      LOGP(debug, "Wrong PDG hypothesis for three-body pool");
+    }
+  }
+
+  template <typename C>
+  std::vector<SVCand3>& getSVCandPool(const C& collisions, bool combineLikeSign01 = false, bool combineLikeSign02 = false)
+  {
+    auto& candidates01 = pool01.getSVCandPool(collisions, combineLikeSign01);
+    auto& candidates02 = pool02.getSVCandPool(collisions, combineLikeSign02);
+    std::unordered_multimap<int, const SVCand*> candidates02ByTrack0;
+    candidates02ByTrack0.reserve(candidates02.size());
+    for (const auto& candidate02 : candidates02) {
+      candidates02ByTrack0.emplace(candidate02.tr0Idx, &candidate02);
+    }
+
+    for (const auto& candidate01 : candidates01) {
+      const auto [begin, end] = candidates02ByTrack0.equal_range(candidate01.tr0Idx);
+      for (auto candidate02It = begin; candidate02It != end; ++candidate02It) {
+        const auto& candidate02 = *candidate02It->second;
+        if (candidate01.tr1Idx == candidate02.tr1Idx ||
+            candidate01.collBracket.isOutside(candidate02.collBracket)) {
+          continue;
+        }
+        svCandPool.emplace_back(SVCand3{candidate01.tr0Idx,
+                                        candidate01.tr1Idx,
+                                        candidate02.tr1Idx,
+                                        candidate01.collBracket.getOverlap(candidate02.collBracket)});
+      }
+    }
+    return svCandPool;
+  }
+
+ private:
+  int track0Pdg = 0;
+  int track1Pdg = 0;
+  int track2Pdg = 0;
+  svPoolCreator pool01;
+  svPoolCreator pool02;
+  std::vector<SVCand3> svCandPool;
 };
 
 #endif // PWGLF_UTILS_SVPOOLCREATOR_H_

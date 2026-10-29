@@ -13,16 +13,14 @@
 /// \brief Dedicated GFW task to analyse angular correlations using ESE primarily in light ions
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch, Joachim C. K. B. Hansen, Lund University, joachim.hansen@cern.ch
 
-#include "FlowContainer.h"
-#include "FlowPtContainer.h"
-#include "GFW.h"
-#include "GFWConfig.h"
-#include "GFWCumulant.h"
-#include "GFWPowerArray.h"
-#include "GFWWeights.h"
-#include "GFWWeightsList.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/FlowPtContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EseTable.h"
 #include "Common/DataModel/EventSelection.h"
@@ -30,31 +28,52 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
+#include <TH1.h>
+#include <TH3.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <complex>
+#include <cstdint>
+#include <cstdlib>
 #include <ctime>
+#include <iterator>
 #include <map>
-#include <numeric>
+#include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::analysis::genericframework;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -240,7 +259,11 @@ struct FlowGfwEse {
     int density;
     DensityCorr() : psi2Est(0.), psi3Est(0.), psi4Est(0.), v2(0.), v3(0.), v4(0.), density(0) {}
   };
+
+  O2_DEFINE_CONFIGURABLE(cfgAnalysisType, bool, true, "true for ese, false for mean-pT");
+  const std::string shapesel = cfgAnalysisType ? "ese" : "mpt";
   static constexpr int EseBins = 100;
+  static constexpr float MeanPtThr = -998.0;
 
   // region indices for consistency flag
   int posRegionIndex = -1;
@@ -366,6 +389,12 @@ struct FlowGfwEse {
 
     int ptbins = o2::analysis::gfwflowese::ptbinning.size() - 1;
     fSecondAxis = (cfgTimeDependent) ? new TAxis(timeAxis.binEdges.size() - 1, &(timeAxis.binEdges[0])) : new TAxis(ptbins, &o2::analysis::gfwflowese::ptbinning[0]);
+
+    if (doprocessMptq2) {
+      registry.add("mptcorr/eventcounter", "", HistType::kTH1F, {{3, 0, 3}});
+      registry.add("mptcorr/h3_cent_q2_meanptperc", ";Centrality;#it{q}_{2};mean-#it{p}_{T}", HistType::kTH3D, {{100, 0, 100}, {100, 0, 100}, {100, 0, 100}});
+      registry.add("mptcorr/h3_cent_q2_mptvalue", ";Centrality;#it{q}_{2};mean-#it{p}_{T}", HistType::kTH3D, {{100, 0, 100}, {100, 0, 100}, {200, -1, 1}});
+    }
 
     if (doprocessData) {
       registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -541,12 +570,12 @@ struct FlowGfwEse {
       for (int jese = 0; jese < EseBins; ++jese) {
         if (it->pTDif) {
           for (int i = 0; i < fSecondAxis->GetNbins(); ++i) {
-            std::string name = Form("ese_%d_%s_pt_%d", jese, it->Head.c_str(), i + 1);
+            std::string name = Form("%s_%d_%s_pt_%d", shapesel.c_str(), jese, it->Head.c_str(), i + 1);
             std::string title = it->Head + std::string("_ptDiff");
             oba->Add(new TNamed(name.c_str(), title.c_str()));
           }
         } else {
-          std::string name = Form("ese_%d_%s", jese, it->Head.c_str());
+          std::string name = Form("%s_%d_%s", shapesel.c_str(), jese, it->Head.c_str());
           std::string title = it->Head + std::string("_ese");
           oba->Add(new TNamed(name.c_str(), title.c_str()));
         }
@@ -589,7 +618,7 @@ struct FlowGfwEse {
   }
 
   template <typename TTrack>
-  double getAcceptance(TTrack track, const double& vtxz)
+  double getAcceptance(const TTrack& track, const double& vtxz)
   {
     double wacc = 1;
     if (cfg.mAcceptance)
@@ -598,7 +627,7 @@ struct FlowGfwEse {
   }
 
   template <typename TTrack>
-  double getEfficiency(TTrack track)
+  double getEfficiency(const TTrack& track)
   {
     double eff = 1.;
     if (cfg.mEfficiency)
@@ -610,7 +639,7 @@ struct FlowGfwEse {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
+  bool eventSelected(const TCollision& collision, const int& multTrk, const float& centrality, const int& run)
   {
     if (cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
@@ -619,7 +648,7 @@ struct FlowGfwEse {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), kTVXTRD);
-      if (cfgRunByRun)
+      if (cfgRunByRun && run != -1)
         th1sList[run][hEventSel]->Fill(kTVXTRD);
     }
     if (cfgNoSameBunchPileupCut) {
@@ -629,7 +658,7 @@ struct FlowGfwEse {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), kNoSamebunchPU);
-      if (cfgRunByRun)
+      if (cfgRunByRun && run != -1)
         th1sList[run][hEventSel]->Fill(kNoSamebunchPU);
     }
     if (cfgIsGoodZvtxFT0vsPV) {
@@ -639,7 +668,7 @@ struct FlowGfwEse {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), kZVtxFT0PV);
-      if (cfgRunByRun)
+      if (cfgRunByRun && run != -1)
         th1sList[run][hEventSel]->Fill(kZVtxFT0PV);
     }
     if (cfgNoCollInTimeRangeStandard) {
@@ -648,7 +677,7 @@ struct FlowGfwEse {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), kNoCollTRStd);
-      if (cfgRunByRun)
+      if (cfgRunByRun && run != -1)
         th1sList[run][hEventSel]->Fill(kNoCollTRStd);
     }
 
@@ -658,7 +687,7 @@ struct FlowGfwEse {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), kVtxITSTPC);
-      if (cfgRunByRun)
+      if (cfgRunByRun && run != -1)
         th1sList[run][hEventSel]->Fill(kVtxITSTPC);
     }
 
@@ -667,7 +696,7 @@ struct FlowGfwEse {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), kGoodITSLayers);
-      if (cfgRunByRun)
+      if (cfgRunByRun && run != -1)
         th1sList[run][hEventSel]->Fill(kGoodITSLayers);
     }
 
@@ -706,14 +735,14 @@ struct FlowGfwEse {
       if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFT0A()) > fMultGlobalT0ACutHigh->Eval(multTrk))
         return 0;
       registry.fill(HIST("eventQA/eventSel"), kMultCuts);
-      if (cfgRunByRun)
+      if (cfgRunByRun && run != -1)
         th1sList[run][hEventSel]->Fill(kMultCuts);
     }
     return 1;
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt())))
       return false;
@@ -726,7 +755,7 @@ struct FlowGfwEse {
   };
 
   template <typename TTrack>
-  void fillWeights(const TTrack track, const double vtxz, const int& run)
+  void fillWeights(const TTrack& track, const double vtxz, const int& run)
   {
     if (cfgRunByRun)
       th3sList[run][hNUAref]->Fill(track.phi(), track.eta(), vtxz);
@@ -773,12 +802,12 @@ struct FlowGfwEse {
   }
 
   template <DataType dt>
-  void fillOutputContainers(const float& centmult, const double& rndm, const int& run = 0, const float& qPerc = -1.0f)
+  void fillOutputContainers(const float& centmult, const double& rndm, const int& run = 0, const float& fPerc = -1.0f)
   {
     (dt == kGen) ? fFCptgen->calculateCorrelations() : fFCpt->calculateCorrelations();
     (dt == kGen) ? fFCptgen->fillPtProfiles(centmult, rndm) : fFCpt->fillPtProfiles(centmult, rndm);
     (dt == kGen) ? fFCptgen->fillCMProfiles(centmult, rndm) : fFCpt->fillCMProfiles(centmult, rndm);
-    int qPtmp = static_cast<int>(qPerc);
+    int qPtmp = static_cast<int>(fPerc);
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
@@ -786,7 +815,7 @@ struct FlowGfwEse {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
-          (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(Form("ese_%i_%s", qPtmp, corrconfigs.at(l_ind).Head.c_str()), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_%i_%s", shapesel.c_str(), qPtmp, corrconfigs.at(l_ind).Head.c_str()), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
           (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfwflowese::configs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfwflowese::configs.GetpTCorrMasks()[l_ind]);
           if (cfgRunByRun && cfgFillFlowRunByRun && dt != kGen && l_ind == 0) {
             tpfsList[run][pfCorr22]->Fill(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
@@ -800,7 +829,7 @@ struct FlowGfwEse {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1)
-          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(Form("ese_%i_%s_pt_%i", qPtmp, corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_%i_%s_pt_%i", shapesel.c_str(), qPtmp, corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
         // (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
       }
     }
@@ -821,7 +850,7 @@ struct FlowGfwEse {
   };
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const XAxis& xaxis, const int& run)
+  void processCollision(const TCollision& collision, const TTracks& tracks, const XAxis& xaxis, const int& run)
   {
     if (tracks.size() < 1)
       return;
@@ -898,11 +927,11 @@ struct FlowGfwEse {
         if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
           return;
     }
-    const auto qPerc{collision.qPERCFT0C()};
+    const auto fPerc = cfgAnalysisType ? collision.qPERCFT0C() : collision.fMEANPTSHAPE();
     if (!cfgFillWeights)
       fillOutputContainers<dt>((cfgTimeDependent) ? xaxis.time : (cfgUseNch) ? xaxis.multiplicity
                                                                              : xaxis.centrality,
-                               lRandom, run, qPerc[0]);
+                               lRandom, run, fPerc[0]);
   }
 
   bool isStable(int pdg)
@@ -921,7 +950,7 @@ struct FlowGfwEse {
   }
 
   template <typename TTrack>
-  void fillAcceptedTracks(TTrack track, AcceptedTracks& acceptedTracks)
+  void fillAcceptedTracks(const TTrack& track, AcceptedTracks& acceptedTracks)
   {
     if (posRegionIndex >= 0 && track.eta() > o2::analysis::gfwflowese::regions.GetEtaMin()[posRegionIndex] && track.eta() < o2::analysis::gfwflowese::regions.GetEtaMax()[posRegionIndex])
       ++acceptedTracks.nPos;
@@ -1009,7 +1038,7 @@ struct FlowGfwEse {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillGFW(TTrack track, const double& vtxz, DensityCorr densitycorrections)
+  inline void fillGFW(const TTrack& track, const double& vtxz, DensityCorr densitycorrections)
   {
     bool withinPtRef = (track.pt() > o2::analysis::gfwflowese::ptreflow && track.pt() < o2::analysis::gfwflowese::ptrefup);
     bool withinPtPOI = (track.pt() > o2::analysis::gfwflowese::ptpoilow && track.pt() < o2::analysis::gfwflowese::ptpoiup);
@@ -1041,7 +1070,7 @@ struct FlowGfwEse {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillPtSums(TTrack track)
+  inline void fillPtSums(const TTrack& track)
   {
     double weff = (dt == kGen) ? 1. : getEfficiency(track);
     if (weff < 0)
@@ -1052,7 +1081,7 @@ struct FlowGfwEse {
   }
 
   template <DataType dt, QAFillTime ft, typename TTrack>
-  inline void fillTrackQA(TTrack track, const float vtxz)
+  inline void fillTrackQA(const TTrack& track, const float vtxz)
   {
     if constexpr (dt == kGen) {
       registry.fill(HIST("MCGen/trackQA/phi_eta_vtxZ"), track.phi(), track.eta(), vtxz);
@@ -1077,7 +1106,7 @@ struct FlowGfwEse {
   }
 
   template <typename TCollision>
-  float getCentrality(TCollision collision)
+  float getCentrality(const TCollision& collision)
   {
     switch (cfgCentEstimator) {
       case kCentFT0C:
@@ -1100,7 +1129,7 @@ struct FlowGfwEse {
   }
 
   template <QAFillTime ft, typename TCollision>
-  inline void fillEventQA(TCollision collision, XAxis xaxis)
+  inline void fillEventQA(const TCollision& collision, XAxis xaxis)
   {
     if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename TCollision::all_columns>) {
       registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_centT0C"), collision.centFT0C(), xaxis.multiplicity);
@@ -1134,7 +1163,7 @@ struct FlowGfwEse {
     return static_cast<double>(diff) / 3600000.0;
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Qvectors, aod::QPercentileFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Qvectors, aod::QPercentileFT0Cs, aod::MeanPtShapes>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -1168,8 +1197,8 @@ struct FlowGfwEse {
       if (occupancy < 0 || occupancy > cfgOccupancySelection)
         return;
     }
-    const auto qPerc{collision.qPERCFT0C()};
-    if (qPerc[0] < 0)
+    const auto fPerc = cfgAnalysisType ? collision.qPERCFT0C() : collision.fMEANPTSHAPE();
+    if (fPerc[0] < 0)
       return;
     registry.fill(HIST("eventQA/eventSel"), kOccupancy);
     if (cfgRunByRun)
@@ -1190,6 +1219,40 @@ struct FlowGfwEse {
     processCollision<kReco>(collision, tracks, xaxis, run);
   }
   PROCESS_SWITCH(FlowGfwEse, processData, "Process analysis for non-derived data", true);
+
+  void processMptq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Qvectors, aod::QPercentileFT0Cs, aod::MeanPtShapes, aod::MeanPts>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  {
+    float count{0.5};
+    registry.fill(HIST("mptcorr/eventcounter"), count++);
+    if (!collision.sel8()) {
+      return;
+    }
+    registry.fill(HIST("mptcorr/eventcounter"), count++);
+    if (cfgDoOccupancySel) {
+      int occupancy = collision.trackOccupancyInTimeRange();
+      if (occupancy < 0 || occupancy > cfgOccupancySelection) {
+        return;
+      }
+    }
+    registry.fill(HIST("mptcorr/eventcounter"), count++);
+
+    const auto centr = collision.centFT0C();
+    const auto qPerc = collision.qPERCFT0C();
+    const auto mPt = collision.fMEANPTSHAPE();
+    const auto mPtv = collision.fMEANPT();
+    if (qPerc[0] < 0 || mPt[0] < 0)
+      return;
+    if (mPtv[0] < MeanPtThr)
+      return;
+    const XAxis xaxis{getCentrality(collision), tracks.size(), -1.0};
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality, -1))
+      return;
+
+    registry.fill(HIST("mptcorr/eventcounter"), count++);
+    registry.fill(HIST("mptcorr/h3_cent_q2_meanptperc"), centr, qPerc[0], mPt[0]);
+    registry.fill(HIST("mptcorr/h3_cent_q2_mptvalue"), centr, qPerc[0], mPtv[0]);
+  }
+  PROCESS_SWITCH(FlowGfwEse, processMptq2, "Process analysis for mpt-q2 correlation", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

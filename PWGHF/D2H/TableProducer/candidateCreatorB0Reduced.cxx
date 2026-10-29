@@ -65,6 +65,7 @@ struct HfCandidateCreatorB0Reduced {
   Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
   Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   // selection
   Configurable<float> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
 
@@ -94,21 +95,27 @@ struct HfCandidateCreatorB0Reduced {
     }
 
     // Initialize fitter
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-    df2.setWeightedFinalPCA(useWeightedFinalPCA);
+    if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl) {
+      df2.setPropagateToPCA(propagateToPCA);
+      df2.setMaxR(maxR);
+      df2.setMaxDZIni(maxDZIni);
+      df2.setMinParamChange(minParamChange);
+      df2.setMinRelChi2Change(minRelChi2Change);
+      df2.setUseAbsDCA(useAbsDCA);
+      df2.setWeightedFinalPCA(useWeightedFinalPCA);
+      df2.setMaxChi2(maxChi2);
+    }
 
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
+    if (doprocessDataDstarPi || doprocessDataDstarPiWithDmesMl) {
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
+      df3.setMaxChi2(maxChi2);
+    }
 
     // histograms
     if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl) {
@@ -192,8 +199,7 @@ struct HfCandidateCreatorB0Reduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate D and Pi to the B0 vertex
-        df3.propagateTracksToVertex();
+        // get D and Pi tracks (propagated to the B0 vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df3.getTrack(0).getPxPyPzGlo(pVecD0);       // momentum of D at the B0 vertex
         df3.getTrack(1).getPxPyPzGlo(pVecSoftPion); // momentum of SoftPi at the B0 vertex
@@ -210,7 +216,7 @@ struct HfCandidateCreatorB0Reduced {
         trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaBachPion);
 
         // get uncertainty of the decay length
-        float phi, theta;
+        float phi{}, theta{};
         // getPointDirection modifies phi and theta
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
@@ -226,7 +232,8 @@ struct HfCandidateCreatorB0Reduced {
                             pVecSoftPion[0], pVecSoftPion[1], pVecSoftPion[2],
                             pVecBachPion[0], pVecBachPion[1], pVecBachPion[2],
                             dcaD.getY(), dcaSoftPion.getY(), dcaBachPion.getY(),
-                            std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaSoftPion.getSigmaY2()), std::sqrt(dcaBachPion.getSigmaY2()));
+                            std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaSoftPion.getSigmaY2()), std::sqrt(dcaBachPion.getSigmaY2()),
+                            candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex());
 
         rowCandidateProngsDStar(candD.globalIndex(), trackBachPion.globalIndex(), trackSoftPion.globalIndex());
 
@@ -299,8 +306,7 @@ struct HfCandidateCreatorB0Reduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate D and Pi to the B0 vertex
-        df2.propagateTracksToVertex();
+        // get D and Pi tracks (propagated to the B0 vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
         df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
@@ -314,7 +320,7 @@ struct HfCandidateCreatorB0Reduced {
         trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
 
         // get uncertainty of the decay length
-        float phi, theta;
+        float phi{}, theta{};
         // getPointDirection modifies phi and theta
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
@@ -329,7 +335,8 @@ struct HfCandidateCreatorB0Reduced {
                          pVecD[0], pVecD[1], pVecD[2],
                          pVecPion[0], pVecPion[1], pVecPion[2],
                          dcaD.getY(), dcaPion.getY(),
-                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
+                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
+                         candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex());
 
         rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
 

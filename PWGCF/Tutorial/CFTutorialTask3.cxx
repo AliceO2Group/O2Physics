@@ -11,13 +11,24 @@
 
 /// \author Luca Barioglio
 
-// O2 includes
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -89,7 +100,7 @@ struct CFTutorialTask3 {
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     histos.fill(HIST("hZvtx"), coll.posZ());
 
-    for (auto track : groupPositive) {
+    for (const auto& track : groupPositive) {
       histos.fill(HIST("hChargePos"), track.sign());
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());
@@ -97,7 +108,7 @@ struct CFTutorialTask3 {
       histos.fill(HIST("hNsigmaTPCP"), track.p(), track.tpcNSigmaPi());
     }
 
-    for (auto track : groupNegative) {
+    for (const auto& track : groupNegative) {
       histos.fill(HIST("hChargeNeg"), track.sign());
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());

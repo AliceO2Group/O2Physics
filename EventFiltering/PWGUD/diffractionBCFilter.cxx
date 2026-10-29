@@ -8,19 +8,39 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
 //
 // \brief A filter task for diffractive BCs
 // \author P. Buehler, paul.buehler@oeaw.ac.at
 // \since December, 2022
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/TableProducer/DGBCCandProducer.h"
+#include "../filterTables.h"
+
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
-#include "../filterTables.h"
+#include "PWGUD/TableProducer/DGBCCandProducer.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <cstdint>
+#include <map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -301,7 +321,7 @@ struct DGBCFilterRun3 {
 
     // loop over bcs
     int isDGBC;
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       auto bcnum = bc.globalBC();
       auto ccs = false;
 
@@ -328,7 +348,7 @@ struct DGBCFilterRun3 {
           auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
           isDGBC = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
-          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+          auto fwdTracksArray = fwdtracks.emptySlice();
           isDGBC = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
 

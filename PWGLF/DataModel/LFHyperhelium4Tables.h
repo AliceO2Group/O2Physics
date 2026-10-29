@@ -8,13 +8,17 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef PWGLF_DATAMODEL_LFHYHEFOURTABLES_H_
-#define PWGLF_DATAMODEL_LFHYHEFOURTABLES_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
+#ifndef PWGLF_DATAMODEL_LFHYPERHELIUM4TABLES_H_
+#define PWGLF_DATAMODEL_LFHYPERHELIUM4TABLES_H_
+
 #include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <array>
+#include <cmath>
 
 //===========================================================================
 // For aiding in building: tag those candidates that are interesting
@@ -128,4 +132,5 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HyHe4Datas, StoredHyHe4Datas, "HYHE4DATAEXT", //
 using HyHe4Data = HyHe4Datas::iterator;
 
 } // namespace o2::aod
-#endif // PWGLF_DATAMODEL_LFHYHEFOURTABLES_H_
+
+#endif // PWGLF_DATAMODEL_LFHYPERHELIUM4TABLES_H_

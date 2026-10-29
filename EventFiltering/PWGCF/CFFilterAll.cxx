@@ -18,7 +18,9 @@
 
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
@@ -26,22 +28,35 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector4D.h"
-#include "TMath.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TH2.h>
 
-#include "fairlogger/Logger.h"
-
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -140,7 +155,10 @@ struct CFFilterAll {
   struct : ConfigurableGroup {
     std::string prefix = "EventSel";
     Configurable<float> zvtx{"zvtx", 10.f, "Max. z-Vertex (cm)"};
-    Configurable<bool> eventSel{"eventSel", true, "Use sel8"};
+    Configurable<bool> useSel8{"useSel8", true, "Use sel8"};
+    Configurable<bool> useIsTriggerTvx{"useIsTriggerTvx", false, "Use TVX trigger"};
+    Configurable<bool> useNoTimeFrameBorder{"useNoTimeFrameBorder", false, "Use time frame border cut"};
+    Configurable<bool> useNoItsRofFrameBorder{"useNoItsRofFrameBorder", false, "Use ITS ROF border cut"};
   } EventSelection;
 
   // Configs for tracks
@@ -1051,14 +1069,25 @@ struct CFFilterAll {
     if (std::abs(col.posZ()) > EventSelection.zvtx.value) {
       return false;
     }
-    if (EventSelection.eventSel.value && !col.sel8()) {
+    // full cut on sel 8
+    if (EventSelection.useSel8.value && !col.sel8()) {
+      return false;
+    }
+    // allow cut on components of sel8 in case we dont need ROF cut in 2026 anymore
+    if (EventSelection.useIsTriggerTvx.value && !col.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+    if (EventSelection.useNoTimeFrameBorder.value && !col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if (EventSelection.useNoItsRofFrameBorder.value && !col.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     return true;
   }
 
   template <typename T>
-  bool checkTrack(T const& track, std::string trackName)
+  bool checkTrack(T const& track, const std::string& trackName)
   {
     if (track.pt() < TrackSelections.momentum->get(trackName.c_str(), "PtMin")) {
       return false;
@@ -1106,7 +1135,7 @@ struct CFFilterAll {
   }
 
   template <typename T>
-  bool checkTrackPid(T const& track, std::string trackName)
+  bool checkTrackPid(T const& track, const std::string& trackName)
   {
     float momentum = -99;
 
@@ -1207,8 +1236,8 @@ struct CFFilterAll {
     return true;
   }
 
-  float getkstar(const ROOT::Math::PtEtaPhiMVector part1,
-                 const ROOT::Math::PtEtaPhiMVector part2)
+  float getkstar(const ROOT::Math::PtEtaPhiMVector& part1,
+                 const ROOT::Math::PtEtaPhiMVector& part2)
   {
     const ROOT::Math::PtEtaPhiMVector trackSum = part1 + part2;
     const float beta = trackSum.Beta();
@@ -1228,7 +1257,7 @@ struct CFFilterAll {
   }
 
   ROOT::Math::PxPyPzEVector
-    getqij(const ROOT::Math::PtEtaPhiMVector parti, const ROOT::Math::PtEtaPhiMVector partj)
+    getqij(const ROOT::Math::PtEtaPhiMVector& parti, const ROOT::Math::PtEtaPhiMVector& partj)
   {
     ROOT::Math::PxPyPzEVector vecparti(parti);
     ROOT::Math::PxPyPzEVector vecpartj(partj);
@@ -1237,7 +1266,7 @@ struct CFFilterAll {
     float scaling = trackDifference.Dot(trackSum) / trackSum.Dot(trackSum);
     return trackDifference - scaling * trackSum;
   }
-  float getQ3(const ROOT::Math::PtEtaPhiMVector part1, const ROOT::Math::PtEtaPhiMVector part2, const ROOT::Math::PtEtaPhiMVector part3)
+  float getQ3(const ROOT::Math::PtEtaPhiMVector& part1, const ROOT::Math::PtEtaPhiMVector& part2, const ROOT::Math::PtEtaPhiMVector& part3)
   {
     ROOT::Math::PxPyPzEVector q12 = getqij(part1, part2);
     ROOT::Math::PxPyPzEVector q23 = getqij(part2, part3);

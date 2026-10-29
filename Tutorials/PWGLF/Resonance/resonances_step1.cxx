@@ -13,14 +13,18 @@
 /// \author
 /// \since 08/11/2023
 
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TLorentzVector.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -80,7 +84,7 @@ struct resonances_tutorial {
 
   // Track selection
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -117,7 +121,7 @@ struct resonances_tutorial {
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
     auto multiplicity = collision.cent();
-    for (auto track1 : dTracks1) { // loop over all dTracks1
+    for (const auto& track1 : dTracks1) { // loop over all dTracks1
       if (!trackCut(track1) || !selectionPID(track1)) {
         continue; // track selection and PID selection
       }
@@ -129,7 +133,7 @@ struct resonances_tutorial {
       if (track1.hasTOF()) {
         histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       }
-      for (auto track2 : dTracks2) { // loop over all dTracks2
+      for (const auto& track2 : dTracks2) { // loop over all dTracks2
         if (!trackCut(track2) || !selectionPID(track2)) {
           continue; // track selection and PID selection
         }

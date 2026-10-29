@@ -12,7 +12,6 @@
 #ifndef PWGUD_CORE_UDFSPARSER_H_
 #define PWGUD_CORE_UDFSPARSER_H_
 
-// #include <gandiva/projector.h>
 #include <string>
 #include <vector>
 
@@ -61,7 +60,7 @@ class UDFSParser
 
   // helper functions for string parsing
   bool isNumber(std::string s);
-  std::string trim(std::string str, std::string whitespace);
+  std::string trim(const std::string& str, const std::string& whitespace);
   std::vector<std::string> tokenize(std::string& str, std::string separator = ",");
   bool isInVector(int num, std::vector<int> vec);
 

@@ -16,7 +16,6 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPI_H_
 #define PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPI_H_
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
 
 #include "Tools/ML/MlResponse.h"
@@ -75,6 +74,7 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t {
   dcaCascDau,
   cosPaCascToOmegac,
   decayLenXYCasc,
+  decayLenXYOmegac,
   ldlOmegac,
   chi2NdfTopoCascToOmegac,
   chi2NdfTopoCascToPv,
@@ -121,6 +121,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_OMEGAC0(dcaCascDau);
         CHECK_AND_FILL_VEC_OMEGAC0(cosPaCascToOmegac);
         CHECK_AND_FILL_VEC_OMEGAC0(decayLenXYCasc);
+        CHECK_AND_FILL_VEC_OMEGAC0(decayLenXYOmegac);
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, ldlOmegac, omegacldl);
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, chi2NdfTopoCascToOmegac, chi2TopoCascToOmegac);
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, chi2NdfTopoCascToPv, chi2TopoCascToPv);
@@ -157,6 +158,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_OMEGAC0(dcaCascDau),
       FILL_MAP_OMEGAC0(cosPaCascToOmegac),
       FILL_MAP_OMEGAC0(decayLenXYCasc),
+      FILL_MAP_OMEGAC0(decayLenXYOmegac),
       FILL_MAP_OMEGAC0(ldlOmegac),
       FILL_MAP_OMEGAC0(chi2NdfTopoCascToOmegac),
       FILL_MAP_OMEGAC0(chi2NdfTopoCascToPv),

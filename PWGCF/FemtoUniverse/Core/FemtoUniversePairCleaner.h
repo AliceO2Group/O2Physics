@@ -21,7 +21,8 @@
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/HistogramRegistry.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
 
 namespace o2::analysis::femto_universe
 {
@@ -38,8 +39,8 @@ class FemtoUniversePairCleaner
   virtual ~FemtoUniversePairCleaner() = default;
 
   /// Initialization of the QA histograms
-  /// \param registry HistogramRegistry
-  void init(HistogramRegistry* registry)
+  /// \param registry o2::framework::HistogramRegistry
+  void init(framework::HistogramRegistry* registry)
   {
     if (registry) {
       mHistogramRegistry = registry;
@@ -185,7 +186,7 @@ class FemtoUniversePairCleaner
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                                ///< For QA output
+  framework::HistogramRegistry* mHistogramRegistry;                                     ///< For QA output
   static constexpr o2::aod::femtouniverseparticle::ParticleType kPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtouniverseparticle::ParticleType kPartTwoType = partTwo; ///< Type of particle 2
 };

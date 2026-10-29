@@ -17,8 +17,8 @@
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/DecayChannelsLegacy.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
@@ -28,10 +28,11 @@
 
 #include <TPDGCode.h>
 
-#include <Rtypes.h>
-
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace o2::analysis::hf_correlations
 {
@@ -99,7 +100,7 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
     auto const& pid = mPIDspecies->at(speciesIndex);
     auto nSigmaTPC = o2::aod::pidutils::tpcNSigma(pid, track);
 
-    if (tofForced && !track.hasTOF()) {
+    if ((track.pt() > ptThreshold) && !track.hasTOF()) {
       return false;
     }
 
@@ -162,22 +163,22 @@ bool matchCandAndMass(McParticleType const& particle, double& massCand)
 
   // Map decay type to mass
   switch (matchGenFlag) {
-    case BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaC0;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaCStar0;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaCPlusPlus;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
     }
@@ -229,6 +230,63 @@ int findLeadingParticleMcGen(TMcParticles const& mcParticles, T1 const etaTrackM
     }
   }
   return leadingParticle.globalIndex();
+}
+
+// ======= Beauty-mother information of non-prompt charm hadrons ============
+constexpr float PtBMotherDefault{-1.f};         // pT(B mother) returned when the charm hadron is not from beauty
+constexpr float DeltaPhiBMotherDefault{-999.f}; // phi(charm hadron) - phi(B mother) returned when the charm hadron is not from beauty
+
+/// Gets the generated beauty mother of a reconstructed charm-hadron candidate matched to a non-prompt charm hadron
+/// \tparam TTracks is the track table with MC labels, used to access the candidate prongs
+/// \param candidate is the reconstructed candidate (with originMcRec column)
+/// \param mcParticles is the table of MC particles
+/// \param pdgCharmHadron is the PDG code of the charm hadron (e.g. Pdg::kDPlus), antiparticles are accepted
+/// \param depthMaxDaughters is the max. depth of the candidate prong in the charm-hadron decay chain (> 1 for resonant channels)
+/// \return pair (pT of the B mother, phi(candidate, reco) - phi(B mother, gen) in [-pi, pi)), default values if the candidate is not from beauty
+template <typename TTracks, typename TCandidate, typename TMcParticles>
+std::pair<float, float> getBMotherInfoMcRec(TCandidate const& candidate, TMcParticles const& mcParticles, int pdgCharmHadron, int8_t depthMaxDaughters = 2)
+{
+  std::pair<float, float> bMotherInfo{PtBMotherDefault, DeltaPhiBMotherDefault};
+  if (candidate.originMcRec() != RecoDecay::OriginType::NonPrompt) {
+    return bMotherInfo;
+  }
+  // retrieve the generated charm hadron from the MC particle of one of its daughters
+  auto prong0 = candidate.template prong0_as<TTracks>();
+  if (!prong0.has_mcParticle()) {
+    return bMotherInfo;
+  }
+  auto prong0McPart = prong0.template mcParticle_as<TMcParticles>();
+  int const indexCharmHadronGen = RecoDecay::getMother(mcParticles, prong0McPart, pdgCharmHadron, true, nullptr, depthMaxDaughters);
+  if (indexCharmHadronGen < 0) {
+    return bMotherInfo;
+  }
+  // same procedure used in the candidate creators to fill PtBhadMotherPart
+  auto charmHadronGen = mcParticles.rawIteratorAt(indexCharmHadronGen - mcParticles.offset());
+  std::vector<int> idxBhadMothers{};
+  if (RecoDecay::getCharmHadronOrigin(mcParticles, charmHadronGen, false, &idxBhadMothers) != RecoDecay::OriginType::NonPrompt || idxBhadMothers.empty()) {
+    return bMotherInfo;
+  }
+  auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0] - mcParticles.offset());
+  bMotherInfo.first = bHadMother.pt();
+  bMotherInfo.second = RecoDecay::constrainAngle(candidate.phi() - bHadMother.phi(), -o2::constants::math::PIHalf);
+  return bMotherInfo;
+}
+
+/// Gets the beauty mother of a generated charm hadron
+/// \param particle is the generated charm hadron (with originMcGen and idxBhadMotherPart columns)
+/// \param mcParticles is the table of MC particles containing the B mother
+/// \return pair (pT of the B mother, phi(charm hadron) - phi(B mother) in [-pi, pi)), default values if the charm hadron is not from beauty
+template <typename TParticle, typename TMcParticles>
+std::pair<float, float> getBMotherInfoMcGen(TParticle const& particle, TMcParticles const& mcParticles)
+{
+  std::pair<float, float> bMotherInfo{PtBMotherDefault, DeltaPhiBMotherDefault};
+  if (particle.originMcGen() != RecoDecay::OriginType::NonPrompt || particle.idxBhadMotherPart() < 0) {
+    return bMotherInfo;
+  }
+  auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
+  bMotherInfo.first = bHadMother.pt();
+  bMotherInfo.second = RecoDecay::constrainAngle(particle.phi() - bHadMother.phi(), -o2::constants::math::PIHalf);
+  return bMotherInfo;
 }
 } // namespace o2::analysis::hf_correlations
 #endif // PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_

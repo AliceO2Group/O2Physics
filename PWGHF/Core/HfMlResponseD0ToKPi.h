@@ -225,8 +225,8 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcTofKaExpKa, tpcTofNSigmaKa1, tpcTofNSigmaKa0);
 
         CHECK_AND_FILL_VEC_D0_ML(candidate, bdtOutputBkg, mlProbD0, mlProbD0bar, 0);
-        CHECK_AND_FILL_VEC_D0_ML(candidate, bdtOutputNonPrompt, mlProbD0, mlProbD0bar, 1);
-        CHECK_AND_FILL_VEC_D0_ML(candidate, bdtOutputPrompt, mlProbD0, mlProbD0bar, 2);
+        CHECK_AND_FILL_VEC_D0_ML(candidate, bdtOutputPrompt, mlProbD0, mlProbD0bar, 1);
+        CHECK_AND_FILL_VEC_D0_ML(candidate, bdtOutputNonPrompt, mlProbD0, mlProbD0bar, 2);
 
         CHECK_AND_FILL_VEC_D0(maxNormalisedDeltaIP);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameterProduct, impactParameterProduct);

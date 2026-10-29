@@ -15,12 +15,27 @@
 /// \brief  Task to analyse the numbers of particles reconstructed more than once
 ///
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/EventSelection.h"
+#include "TrackSelection.h"
+
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -119,10 +134,11 @@ struct qaTrackSplitting {
     if (!collision.sel8()) {
       return;
     }
-    typedef std::shared_ptr<TrackCandidatesMC::iterator> trkType;
+    using TrackType = const TrackCandidatesMC::iterator;
+    using TrackTypePtr = std::shared_ptr<TrackType>;
 
-    std::map<int64_t, std::vector<trkType>> particleUsageCounter;
-    for (auto track : tracks) {
+    std::map<int64_t, std::vector<TrackTypePtr>> particleUsageCounter;
+    for (const auto& track : tracks) {
       histos.fill(HIST("tracks"), 0);
       if (!track.has_mcParticle()) {
         continue;
@@ -141,7 +157,7 @@ struct qaTrackSplitting {
         continue;
       }
       histos.fill(HIST("tracks"), 4);
-      particleUsageCounter[track.mcParticleId()].push_back(std::make_shared<decltype(track)>(track));
+      particleUsageCounter[track.mcParticleId()].push_back(std::make_shared<TrackType>(track));
     }
     for (const auto& [mcId, tracksMatched] : particleUsageCounter) {
       histos.fill(HIST("numberOfRecoed"), tracksMatched.size());

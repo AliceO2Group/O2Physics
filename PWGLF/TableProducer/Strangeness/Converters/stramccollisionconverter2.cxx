@@ -16,10 +16,12 @@
 /// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & SMI
 //
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -30,6 +32,7 @@ struct stramccollisionconverter2 {
 
   void process(aod::StraMCCollisions_001 const& straMCcoll)
   {
+    straMCCollisions_002.reserve(straMCcoll.size());
     for (auto& mccollision : straMCcoll) {
       straMCCollisions_002(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
                            mccollision.impactParameter(), mccollision.eventPlaneAngle(), 0);

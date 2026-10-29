@@ -22,12 +22,6 @@ o2physics_add_dpl_workflow(trackselection
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(event-selection
-                    SOURCES eventSelection.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
-                                          O2::DataFormatsITSMFT
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(event-selection-service
                     SOURCES eventSelectionService.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
@@ -40,11 +34,6 @@ o2physics_add_dpl_workflow(event-selection-service-run2
                                           O2::DataFormatsITSMFT
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(multiplicity-table
-                    SOURCES multiplicityTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(multcenttable
                     SOURCES multCentTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -52,16 +41,6 @@ o2physics_add_dpl_workflow(multcenttable
 
 o2physics_add_dpl_workflow(multiplicity-extra-table
                     SOURCES multiplicityExtraTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(centrality-table
-                    SOURCES centralityTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(timestamp
-                    SOURCES timestamp.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -75,13 +54,13 @@ o2physics_add_dpl_workflow(ft0-corrected-table
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                 COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(track-propagation
-                    SOURCES trackPropagation.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(propagationservice
                     SOURCES propagationService.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(propagationservice-v2
+                    SOURCES propagationServiceV2.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
                     COMPONENT_NAME Analysis)
 
@@ -104,8 +83,8 @@ o2physics_add_dpl_workflow(fwdtrackextension
                     SOURCES fwdtrackextension.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                                           O2::ReconstructionDataFormats
-                                          O2::DetectorsBase
-                                          O2::DetectorsCommonDataFormats
+					  O2::GlobalTracking
+					  O2::MCHTracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(track-to-collision-associator
@@ -155,7 +134,7 @@ o2physics_add_dpl_workflow(zdc-extra-table-producer
 
 o2physics_add_dpl_workflow(ese-table-producer
                     SOURCES eseTableProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::FFitWeights
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mftmch-matching-data

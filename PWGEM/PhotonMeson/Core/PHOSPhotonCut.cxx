@@ -9,16 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for track selection
-//
+/// \file PHOSPhotonCut.cxx
+/// \brief Source of class for phos photon selection.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include "Framework/Logger.h"
-#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PHOSPhotonCut.h"
 
-ClassImp(PHOSPhotonCut);
+#include <Framework/Logger.h>
 
-const char* PHOSPhotonCut::mCutNames[static_cast<int>(PHOSPhotonCut::PHOSPhotonCuts::kNCuts)] = {"Energy", "Dispersion", "CPV"};
+#include <array>
+#include <string>
+
+const std::array<std::string, static_cast<int>(PHOSPhotonCut::PHOSPhotonCuts::kNCuts)> PHOSPhotonCut::mCutNames = {"Energy", "Dispersion", "CPV"};
 
 void PHOSPhotonCut::SetEnergyRange(float min, float max)
 {

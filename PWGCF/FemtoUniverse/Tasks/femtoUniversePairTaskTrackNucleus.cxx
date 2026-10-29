@@ -18,6 +18,7 @@
 /// \author Alicja Płachta, WUT Warsaw, alicja.plachta.stud@pw.edu.pl
 /// \author Anna-Mariia Andrushko, WUT Warsaw, anna-mariia.andrushko@cern.ch
 
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseFemtoContainer.h"
@@ -26,19 +27,28 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairWithCentMultKt.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -181,7 +191,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   ConfigurableAxis confMtBins3D{"confMtBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twoobjectsconfigs.confUse3D>> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "Multiplicity binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twoobjectsconfigs.confUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{confVtxBins, confMultBins}};
 
   ConfigurableAxis confKstarBins{"confKstarBins", {1500, 0., 6.}, "Binning kstar"};
   ConfigurableAxis confKtBins{"confKtBins", {150, 0., 9.}, "Binning kT"};
@@ -194,6 +204,8 @@ struct FemtoUniversePairTaskTrackNucleus {
   Configurable<float> confCPRDeltaEtaCutMax{"confCPRDeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
   Configurable<float> confCPRDeltaEtaCutMin{"confCPRDeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
   Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+  ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
 
   Configurable<bool> cfgProcessPP{"cfgProcessPP", true, "Process positively charged particles (plus-plus)"};
   Configurable<bool> cfgProcessMM{"cfgProcessMM", true, "Process negatively charged particles (minus-minus)"};
@@ -470,7 +482,7 @@ struct FemtoUniversePairTaskTrackNucleus {
 
     pairCleaner.init(&qaRegistry);
     if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRDeltaPhiCutMin.value, confCPRDeltaPhiCutMax.value, confCPRDeltaEtaCutMin.value, confCPRDeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, confDeltaEtaAxis, confDeltaPhiStarAxis, confCPRDeltaPhiCutMin.value, confCPRDeltaPhiCutMax.value, confCPRDeltaEtaCutMin.value, confCPRDeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
     }
 
     vPIDTrack = trackfilter.confPIDTrack.value;
@@ -479,7 +491,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     mixQARegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
     eventHisto.fillQA(col);
@@ -498,7 +510,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   /// \param pairType describes charge of correlation pair (plus-plus (1), minus-minus (2), plus-minus (3), minus-plus (4))
   /// \param fillQA enables filling of QA histograms
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupTrack, PartitionType groupNucleus, PartType parts, float magFieldTesla, int multCol, int pairType, bool /*fillQA*/)
+  void doSameEvent(const PartitionType& groupTrack, const PartitionType& groupNucleus, const PartType& parts, float magFieldTesla, int multCol, int pairType, bool /*fillQA*/)
   {
     for (const auto& part : groupTrack) {
       if (!isParticleNsigma((int8_t)1, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
@@ -668,7 +680,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   /// \param multCol multiplicity of the collision
   /// \param pairType describes charge of correlation pair (plus-minus (1), plus-plus (2), minus-minus (3))
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupTrack, PartitionType groupNucleus, PartType parts, float magFieldTesla, int multCol, int pairType)
+  void doMixedEvent(const PartitionType& groupTrack, const PartitionType& groupNucleus, const PartType& parts, float magFieldTesla, int multCol, int pairType)
   {
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupTrack, groupNucleus))) {
 

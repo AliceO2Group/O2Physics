@@ -13,29 +13,39 @@
 //
 // Analysis task to generate Monte Carlo templates of different heavy-flavour dielectron sources
 //
-#include <iostream>
-#include <vector>
-#include <TMath.h>
-#include <TH1F.h>
-#include <THashList.h>
-#include <TString.h>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-using std::cout;
-using std::endl;
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <THashList.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstdint>
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <vector>
+
 using std::string;
 
 using namespace o2;
@@ -99,7 +109,7 @@ constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | 
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const Configurable<std::string>& configVar); // defines histograms for all tasks
 
 struct AnalysisEventSelection {
   Produces<aod::EventCuts> eventSel;
@@ -480,8 +490,8 @@ struct AnalysisSameEventPairing {
           }
           fBarrelHistNamesMCmatched.emplace_back(mcSigClasses);
         } // end loop over cuts
-      }   // end if(cutNames.IsNull())
-    }     // end if processBarrel
+      } // end if(cutNames.IsNull())
+    } // end if processBarrel
 
     // Add histogram classes for each specified MCsignal at the generator level
     // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
@@ -577,7 +587,7 @@ struct AnalysisSameEventPairing {
         }
       }
     } // end loop over barrel track pairs
-  }   // end runPairing
+  } // end runPairing
 
   template <typename TTracksMC>
   void runMCGenPair(TTracksMC const& groupedMCTracks)
@@ -609,7 +619,7 @@ struct AnalysisSameEventPairing {
         }
       }
     } // end of true pairing loop
-  }   // end runMCGen
+  } // end runMCGen
 
   // skimmed
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -688,7 +698,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const Configurable<std::string>& configVar)
 {
   //
   // Define here the histograms for all the classes required in analysis.

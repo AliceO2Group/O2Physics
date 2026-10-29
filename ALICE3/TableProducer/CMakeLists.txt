@@ -22,7 +22,12 @@ o2physics_add_dpl_workflow(alice3-trackextension
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-centrality
-                    SOURCES alice3-centrality.cxx
+                    SOURCES alice3Centrality.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-multiplicity
+                    SOURCES alice3Multiplicity.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -36,12 +41,47 @@ o2physics_add_dpl_workflow(alice3-decayfinder
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(alice3-multicharm-table
-                    SOURCES alice3-multicharmTable.cxx
+o2physics_add_dpl_workflow(alice3-multicharm-finder
+                    SOURCES alice3MulticharmFinder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-correlatorddbar
                     SOURCES alice3-correlatorDDbar.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-hf-selector-3prong
+                    SOURCES alice3HfSelector3Prong.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-hf-tree-creator-3prong
+                    SOURCES alice3HfTreeCreator3Prong.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-tracking-translator
+                    SOURCES alice3TrackingTranslator.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::ALICE3Core
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-dq-table-maker
+                    SOURCES alice3DqTableMaker.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-dileptonsmearing
+                    SOURCES alice3-dileptonsmearing.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3strangenessfinder
+                    SOURCES alice3strangenessFinder.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::ALICE3Core
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-strangeness-tof-pid
+                    SOURCES alice3StrangenessTofPid.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::ALICE3Core
                     COMPONENT_NAME Analysis)

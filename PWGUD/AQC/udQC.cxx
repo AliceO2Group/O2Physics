@@ -14,17 +14,38 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  04.05.2023
 
-#include <vector>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/BCRange.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/FT0Corrected.h"
+#include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/UDHelpers.h"
-#include "Framework/StaticFor.h"
-#include "TLorentzVector.h"
-#include "TMath.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/BCRange.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TLorentzVector.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -76,7 +97,7 @@ struct UDQC {
     // initialize global variables
     maxdEdxTPC = 0.;
     maxdEdxTOF = 0.;
-    diffCuts = (DGCutparHolder)DGCuts;
+    diffCuts = DGCutparHolder(DGCuts);
 
     // add histograms for the different process functions
     if (context.mOptions.get<bool>("processMain")) {
@@ -690,7 +711,7 @@ struct UDQC {
       return;
     }
 
-    for (auto fv0 : fv0s) {
+    for (const auto& fv0 : fv0s) {
       registry.get<TH1>(HIST("FV0/hV0A"))->Fill(fv0.time());
       // side A
       for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
@@ -717,7 +738,7 @@ struct UDQC {
         registry.get<TH1>(HIST("FT0/hT0AC"))->Fill(collision.t0AC());
       }
     }
-    for (auto ft0 : ft0s) {
+    for (const auto& ft0 : ft0s) {
       registry.get<TH1>(HIST("FT0/hT0A"))->Fill(ft0.timeA());
       registry.get<TH1>(HIST("FT0/hT0C"))->Fill(ft0.timeC());
 
@@ -739,7 +760,7 @@ struct UDQC {
   {
     // LOGF(debug, "<FDDSignals> %d", fdds.size());
 
-    for (auto fdd : fdds) {
+    for (const auto& fdd : fdds) {
 
       registry.get<TH1>(HIST("FDD/hFDDA"))->Fill(fdd.timeA());
       registry.get<TH1>(HIST("FDD/hFDDC"))->Fill(fdd.timeC());

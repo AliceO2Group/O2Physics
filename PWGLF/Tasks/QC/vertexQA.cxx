@@ -9,18 +9,31 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/CCDB/ctpRateFetcher.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <string>
-#include <vector>
 #include <utility>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,7 +45,7 @@ namespace
 {
 constexpr double LHCRFFreq = 400.789e6;
 constexpr double LHCBunchSpacingNS = 10 * 1.e9 / LHCRFFreq;
-double deltaTimeColl(BCcoll const bccoll1, BCcoll const bccoll2)
+double deltaTimeColl(BCcoll const& bccoll1, BCcoll const& bccoll2)
 {
   auto coll1 = std::get<aod::Collision>(bccoll1);
   auto coll2 = std::get<aod::Collision>(bccoll2);
@@ -258,7 +271,7 @@ struct vertexQA {
 
     std::vector<int64_t> jumps{0ll};
     int64_t lastBC = bcs.rawIteratorAt(0).globalBC();
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       if (bc.globalBC() - lastBC > 3564 * 32) { // 32 orbits
         jumps.push_back(bc.globalIndex());
         lastBC = bc.globalBC();
@@ -266,7 +279,7 @@ struct vertexQA {
     }
     uint64_t jumpsSentinel{1};
     std::vector<int64_t> collisionsIndices{0ll};
-    for (auto col : collisions) {
+    for (const auto& col : collisions) {
       if (jumpsSentinel == jumps.size()) {
         break;
       }

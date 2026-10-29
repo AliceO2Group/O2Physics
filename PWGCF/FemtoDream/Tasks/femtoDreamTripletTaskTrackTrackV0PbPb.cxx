@@ -18,19 +18,31 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamContainerThreeBody.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <bitset>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -79,10 +91,10 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<float> confMinDCAxy{"confMinDCAxy", -0.1f, "Minimum DCAxy of the particles"};
   Configurable<float> confPIDthrMom{"confPIDthrMom", 0.75f, "Momentum threshold from which TPC and TOF are required for PID"};
   Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
-  Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
+  Configurable<bool> confIsAddPairsInTriplet{"confIsAddPairsInTriplet", false, "Extra histograms and pairing for tracks in triplet"};
   Configurable<bool> confDCACutPtDep{"confDCACutPtDep", false, "Use pt dependent dca cut for tracks"};
-  Configurable<float> confDCACutPtDepPar0{"confDCACutPtDepPar0", 0.0105, "Parameter par[0] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
-  Configurable<float> confDCACutPtDepPar1{"confDCACutPtDepPar1", 0.035, "Parameter par[1] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
+  Configurable<float> confDCACutPtDepPar0{"confDCACutPtDepPar0", 0.004, "Parameter par[0] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
+  Configurable<float> confDCACutPtDepPar1{"confDCACutPtDepPar1", 0.013, "Parameter par[1] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
 
   /// Partition for selected particles
   Partition<aod::FDParticles> selectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
@@ -167,7 +179,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 23.0f, 38.0f, 53.0f, 81.0f, 110.0f, 157.0f, 205.0f, 278.0f, 351.0f, 455.0f, 559.0f, 703.0f, 848.0f, 1050.0f, 1253.0f, 1530.0f, 1668.0f, 1857.0f, 2047.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
   ConfigurableAxis confQ3Bins{"confQ3Bins", {2000, 0., 8.}, "binning Q3"};
   ConfigurableAxis confQ3BinsFor4D{"confQ3BinsFor4D", {500, 0., 2.}, "binning Q3 for 4D hist"};
@@ -200,7 +212,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
 
     eventHisto.init(&qaRegistry, false);
 
-    colBinning = {{confVtxBins, confMultBins}, true};
+    colBinning = {{confVtxBins, confMultBins}};
 
     trackHistoselectedParts.init(&qaRegistry, confDummy, confDummy, confTempFitVarpTBins, confDummy, confDummy, confTempFitVarBinsTrack, confDummy, confDummy, confDummy, confDummy, confDummy, confDummy, confIsMC, confPDGCodePart);
     trackHistoALLselectedParts.init(&qaRegistry, confDummy, confDummy, confTempFitVarpTBins, confDummy, confDummy, confTempFitVarBinsTrack, confDummy, confDummy, confDummy, confDummy, confDummy, confDummy, confIsMC, confPDGCodePart);
@@ -232,6 +244,10 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerPosAfter", ";primaryTrack; posDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNegAfter", ";primaryTrack; negDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hCentralityME", ";Centrality;Entries", kTH1F, {{100, 0.0, 100.0}});
+    if (confIsAddPairsInTriplet) {
+      threeBodyQARegistry.add("SameEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{4000, 0., 4.}});
+      threeBodyQARegistry.add("MixedEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{4000, 0., 4.}});
+    }
     sameEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     mixedEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     sameEventCont.setPDGCodes(confPDGCodePart, confPDGCodePart, confPDGCodeV0);
@@ -300,7 +316,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   }
 
   template <bool isMC, typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     threeBodyQARegistry.fill(HIST("TripletTaskQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
     eventHisto.fillQA<isMC>(col);
@@ -315,13 +331,14 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupSelectedTracks, PartitionType groupselectedV0s, PartType parts, float magFieldTesla, int multCol, float centCol)
+  void doSameEvent(const PartitionType& groupSelectedTracks, const PartitionType& groupselectedV0s, const PartType& parts, float magFieldTesla, int multCol, float centCol)
   {
     /// Histograming tracks
     for (const auto& part : groupSelectedTracks) {
       trackHistoselectedParts.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, multCol, centCol);
     }
     /// Histograming V0s
+    int v0Counter = 0;
     for (const auto& V0 : groupselectedV0s) {
       const auto& posChild = parts.iteratorAt(V0.index() - 2);
       const auto& negChild = parts.iteratorAt(V0.index() - 1);
@@ -397,6 +414,15 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
         threeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_SE"), T1.pt(), T2.pt(), V0.pt(), q3);
         sameEventCont.setTriplet<isMC>(T1, T2, V0, multCol, q3);
         threeBodyQARegistry.fill(HIST("TripletTaskQA/hCentrality"), centCol, q3);
+
+        // Teporary test: pairing the same event tracks in the triplet task (without triplet-combinatoric repetitions)
+        if (confIsAddPairsInTriplet) {
+          if (v0Counter == 0) {
+            auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
+            threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_trackTrack"), kstarTT);
+          }
+        }
+        v0Counter = 1;
       }
     }
   }
@@ -544,7 +570,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartitionType groupPartsThree, PartType parts, float magFieldTesla, int multCol)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartitionType& groupPartsThree, const PartType& parts, float magFieldTesla, int multCol)
   {
     for (const auto& [T1, T2, V0] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo, groupPartsThree))) {
       const auto& posChild = parts.iteratorAt(V0.globalIndex() - 2);
@@ -576,6 +602,19 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
       threeBodyQARegistry.fill(HIST("TripletTaskQA/hMinvME_AntiLambda"), q3, V0.mAntiLambda());
       threeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_ME"), T1.pt(), T2.pt(), V0.pt(), q3);
       mixedEventCont.setTriplet<isMC>(T1, T2, V0, multCol, q3);
+    }
+
+    // Teporary test: pairing the mixed event tracks in the triplet task (without triplet-combinatoric repetitions)
+    if (confIsAddPairsInTriplet) {
+      for (const auto& [T1, T2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (confIsCPR.value) {
+          if (pairCloseRejectionTrackTrackME.isClosePair(T1, T2, parts, magFieldTesla)) {
+            continue;
+          }
+        }
+        auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
+        threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_trackTrack"), kstarTT);
+      }
     }
   }
 

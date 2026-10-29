@@ -20,7 +20,6 @@
 #define PWGLF_UTILS_INELGT_H_
 
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 
 #include <TParticlePDG.h>
 
@@ -115,7 +114,7 @@ struct ParticleCounter {
         continue;
       }
       // is charged
-      if (abs(p->Charge()) == 0) {
+      if (std::abs(p->Charge()) == 0) {
         continue;
       }
       // in acceptance

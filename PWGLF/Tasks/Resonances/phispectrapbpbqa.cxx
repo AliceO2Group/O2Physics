@@ -11,10 +11,8 @@
 // Phi meson spin alignment task
 // sourav.kundu@cern.ch
 
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -22,41 +20,34 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/V0.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TF1.h"
-#include "TRandom3.h"
-#include <TDatabasePDG.h>
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <THn.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
+#include <TMathBase.h>
 
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -64,8 +55,8 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 using namespace o2::aod::rctsel;
+
 struct phispectrapbpbqa {
   double bz = 0.;
 
@@ -371,7 +362,7 @@ struct phispectrapbpbqa {
 
     int Npostrack = 0;
     histos.fill(HIST("hOccupancy"), occupancy, centrality);
-    for (auto track1 : posThisColl) {
+    for (const auto& track1 : posThisColl) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -418,7 +409,7 @@ struct phispectrapbpbqa {
       // 1) φ at a chosen radius (e.g., outer pad rows ~247 cm)
       histos.fill(HIST("hPhiMommentum"), track1.phi(), track1.p(), occupancy);
 
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         if (track1.sign() * track2.sign() > 0.0) {
           continue;
         }
@@ -503,7 +494,7 @@ struct phispectrapbpbqa {
   void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, cnfgaxis.configThnAxisCentrality, axisOccupancy}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, cnfgaxis.configThnAxisCentrality, axisOccupancy}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!collision1.sel8() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -652,7 +643,7 @@ struct phispectrapbpbqa {
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
       int ntrack1 = 0;
-      for (auto track1 : Rectrackspart) {
+      for (const auto& track1 : Rectrackspart) {
         if (!selectionTrack(track1)) {
           continue;
         }
@@ -686,7 +677,7 @@ struct phispectrapbpbqa {
           histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF, track1.p(), occupancy);
         }
         ntrack1 = ntrack1 + 1;
-        for (auto track2 : Rectrackspart) {
+        for (const auto& track2 : Rectrackspart) {
           auto track2ID = track2.index();
           if (track2ID <= track1ID) {
             continue;
@@ -794,7 +785,7 @@ struct phispectrapbpbqa {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }

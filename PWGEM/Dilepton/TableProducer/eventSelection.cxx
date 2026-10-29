@@ -14,13 +14,24 @@
 // This code produces event selection table for PWG-EM.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <string>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+//
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <string>
+#include <type_traits>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,7 +60,6 @@ struct EMEventSelection {
 
   Configurable<float> cfgZvtxMin{"cfgZvtxMin", -1e+10, "min. Zvtx"};
   Configurable<float> cfgZvtxMax{"cfgZvtxMax", 1e+10, "max. Zvtx"};
-  Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
   Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", false, "require FT0AND in event cut"};
   Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
   Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};

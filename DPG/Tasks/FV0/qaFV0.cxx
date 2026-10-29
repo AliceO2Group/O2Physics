@@ -13,27 +13,26 @@
 /// \author Andreas Molander andreas.molander@cern.ch
 /// \brief  FV0 QA
 
-#include <bitset>
-#include <cstddef>
-#include <cstdint>
-#include <string>
-#include <map>
-#include <vector>
-
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/InitContext.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TH1F.h"
-#include "TH2F.h"
+#include <TH1.h>
+#include <TH2.h>
+
+#include <bitset>
+#include <cstddef>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

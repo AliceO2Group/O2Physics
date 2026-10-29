@@ -17,14 +17,20 @@
 ///
 
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
-#include "TH1F.h"
-#include "TCanvas.h"
-#include "TRandom.h"
+
+#include <Framework/Logger.h>
+
+#include <TCanvas.h>
+#include <TH1.h>
+#include <TRandom.h>
+#include <TString.h>
+
+#include <vector>
 
 using namespace o2;
 
 template <typename T>
-bool process(const TString outputName, const int nevents = 100000)
+bool process(const TString& outputName, const int nevents = 100000)
 {
   class Container
   {

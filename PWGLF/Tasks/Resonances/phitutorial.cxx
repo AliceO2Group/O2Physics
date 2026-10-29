@@ -12,24 +12,31 @@
 /// \brief Phi meson analysis tutorial
 /// \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>
 
-// IMPORTANT INCLUDES
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-// ROOT Includes (optional)
-#include <TLorentzVector.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
-// C++ includes
 #include <iostream>
 #include <string>
 #include <vector>
@@ -74,7 +81,7 @@ struct phitutorial {
   // PREAMBLE COMPLETE, NOW WE DO HELPER FCNS
   //**************************************//
   template <typename EventType>
-  bool eventSelection(const EventType event)
+  bool eventSelection(const EventType& event)
   {
     if (!event.sel8())
       return false;
@@ -91,7 +98,7 @@ struct phitutorial {
   };
   //********************************************//
   template <typename TracksType>
-  bool trackSelection(const TracksType track)
+  bool trackSelection(const TracksType& track)
   {
     if (!track.isGlobalTrack())
       return false;
@@ -180,7 +187,7 @@ struct phitutorial {
   std::vector<double> zBins{10, -10, 10};
   std::vector<double> multBins{VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningType binning{{zBins, multBins}, true};
+  BinningType binning{{zBins, multBins}};
   SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binning, 5, -1, &cache};
 
   void processDataMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)

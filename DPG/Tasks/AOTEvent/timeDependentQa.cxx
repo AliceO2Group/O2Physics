@@ -78,11 +78,13 @@ struct TimeDependentQaTask {
   Configurable<int> confFlagCheckQoverPtHist{"FlagCheckQoverPtHist", 1, "0 - don't check , 1 - check"};                                                                          // o2-linter: disable=name/configurable (temporary fix)
 
   // for O-O and Ne-Ne run
-  Configurable<int> confIncludeMultDistrVsTimeHistos{"IncludeMultDistrVsTimeHistos", 0, ""};                      // o2-linter: disable=name/configurable (temporary fix)
-  Configurable<float> confMaxNtracksForTimeDepDistributions{"MaxNtracksForTimeDepDistributions", 800, ""};        // o2-linter: disable=name/configurable (temporary fix)
-  Configurable<float> confMaxZNACenergyForTimeDepDistributions{"MaxZNACenergyForTimeDepDistributions", 4000, ""}; // o2-linter: disable=name/configurable (temporary fix)
-  Configurable<float> confMaxT0ACamplForTimeDepDistributions{"MaxT0ACamplForTimeDepDistributions", 25000, ""};    // o2-linter: disable=name/configurable (temporary fix)
-  Configurable<float> confMaxV0AamplForTimeDepDistributions{"MaxV0AamplForTimeDepDistributions", 40000, ""};      // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confIncludeMultDistrVsTimeHistos{"IncludeMultDistrVsTimeHistos", 0, ""};                                                                    // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confMaxNtracksForTimeDepDistributions{"MaxNtracksForTimeDepDistributions", 800, ""};                                                      // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confMaxZNACenergyForTimeDepDistributions{"MaxZNACenergyForTimeDepDistributions", 4000, ""};                                               // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confMaxT0ACamplForTimeDepDistributions{"MaxT0ACamplForTimeDepDistributions", 25000, ""};                                                  // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confMaxV0AamplForTimeDepDistributions{"MaxV0AamplForTimeDepDistributions", 40000, ""};                                                    // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confFlagUseGlobalTracksForTimeDepDistributions{"FlagUseGlobalTracksForTimeDepDistributions", 0, "0 - PV contributors , 1 - global tracks"}; // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confFlagUseGoodZvtxFT0vsPVForTimeDepDistributions{"FlagUseGoodZvtxFT0vsPVForTimeDepDistributions", 0, "0 - no , 1 - yes"};                  // o2-linter: disable=name/configurable (temporary fix)
 
   enum EvSelBitsToMonitor {
     enCollisionsAll = 0,
@@ -225,7 +227,12 @@ struct TimeDependentQaTask {
       histos.add("hSecondsCollisions", "", kTH1D, {axisSeconds});
       histos.add("hSecondsCollisionsNoPileup", "", kTH1D, {axisSeconds});
       histos.add("hSecondsIR", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVzBeforeAllCuts", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVxBeforeAllCuts", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVyBeforeAllCuts", "", kTH1D, {axisSeconds});
       histos.add("hSecondsVz", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVx", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVy", "", kTH1D, {axisSeconds});
       histos.add("hSecondsFT0Camlp", "", kTH1D, {axisSeconds});
       histos.add("hSecondsFT0CamlpByColMult", "", kTH1D, {axisSeconds});
       histos.add("hSecondsFT0AamlpByColMult", "", kTH1D, {axisSeconds});
@@ -261,6 +268,11 @@ struct TimeDependentQaTask {
         histos.add("multDistributions/hSecondsDistrZNACdiffAmpl", "", kTH2D, {axisSecondsVeryWideBins, {200, -1., 1., "ZN A-C diff"}});
         histos.add("multDistributions/hSecondsDistrZNACdiffNormAmpl", "", kTH2D, {axisSecondsVeryWideBins, {200, -1., 1., "ZN A-C diff"}});
 
+        // 2D vs time
+        histos.add("multDistributions/hSecondsNPVvsZNAampl", "", kTH3F, {axisSecondsSuperWideBins, {200, 0, 500, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNA ampl"}});
+        histos.add("multDistributions/hSecondsNPVvsZNCampl", "", kTH3F, {axisSecondsSuperWideBins, {200, 0, 500, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
+
+        // now histos after kNoSameBunchPileup cut:
         histos.add("multDistributionsNoPileup/hSecondsDistrPVtracks", "", kTH2D, {axisSecondsVeryWideBins, {maxNtracks, -0.5, maxNtracks - 0.5, "n PV tracks"}});
         histos.add("multDistributionsNoPileup/hSecondsDistrT0A", "", kTH2D, {axisSecondsVeryWideBins, {250, 0, maxT0ACamplForTimeDepDistributions, "T0A ampl"}});
         histos.add("multDistributionsNoPileup/hSecondsDistrT0C", "", kTH2D, {axisSecondsVeryWideBins, {250, 0, maxT0ACamplForTimeDepDistributions, "T0C ampl"}});
@@ -273,6 +285,10 @@ struct TimeDependentQaTask {
         histos.add("multDistributionsNoPileup/hSecondsDistrZNCampl", "", kTH2D, {axisSecondsVeryWideBins, {320, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
         histos.add("multDistributionsNoPileup/hSecondsDistrZNACdiffAmpl", "", kTH2D, {axisSecondsVeryWideBins, {200, -1., 1., "ZN A-C diff"}});
         histos.add("multDistributionsNoPileup/hSecondsDistrZNACdiffNormAmpl", "", kTH2D, {axisSecondsVeryWideBins, {200, -1., 1., "ZN A-C diff"}});
+
+        // 2D vs time
+        histos.add("multDistributionsNoPileup/hSecondsNPVvsZNAampl", "", kTH3F, {axisSecondsSuperWideBins, {200, 0, 500, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNA ampl"}});
+        histos.add("multDistributionsNoPileup/hSecondsNPVvsZNCampl", "", kTH3F, {axisSecondsSuperWideBins, {200, 0, 500, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
       }
 
       // ### QA event selection bits
@@ -516,6 +532,10 @@ struct TimeDependentQaTask {
 
       histos.fill(HIST("hSecondsUPCverticesBeforeAllCuts"), secFromSOR, isVertexUPC ? 1 : 0);
 
+      histos.fill(HIST("hSecondsVzBeforeAllCuts"), secFromSOR, col.posZ());
+      histos.fill(HIST("hSecondsVxBeforeAllCuts"), secFromSOR, col.posX());
+      histos.fill(HIST("hSecondsVyBeforeAllCuts"), secFromSOR, col.posY());
+
       if (std::fabs(col.posZ()) > 10)
         continue;
 
@@ -535,6 +555,8 @@ struct TimeDependentQaTask {
       if (col.selection_bit(kNoSameBunchPileup))
         histos.fill(HIST("hSecondsCollisionsNoPileup"), secFromSOR);
       histos.fill(HIST("hSecondsVz"), secFromSOR, col.posZ());
+      histos.fill(HIST("hSecondsVx"), secFromSOR, col.posX());
+      histos.fill(HIST("hSecondsVy"), secFromSOR, col.posY());
       histos.fill(HIST("hSecondsFT0Camlp"), secFromSOR, bc.foundFT0().sumAmpC());
       histos.fill(HIST("hSecondsFT0CamlpByColMult"), secFromSOR, col.multFT0C());
       histos.fill(HIST("hSecondsFT0AamlpByColMult"), secFromSOR, col.multFT0A());
@@ -612,6 +634,7 @@ struct TimeDependentQaTask {
       // ##### track loop
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       int nPVtracks = 0;
+      int nGlobalTracks = 0;
       for (const auto& track : tracksGrouped) {
         // if (!track.hasTPC() || !track.hasITS())
         //   continue;
@@ -677,8 +700,9 @@ struct TimeDependentQaTask {
 
         // ### global tracks
         float dedx = track.tpcSignal();
-        if (track.isGlobalTrack()) { // A side
-          if (track.tgl() > 0.) {
+        if (track.isGlobalTrack()) {
+          nGlobalTracks++;
+          if (track.tgl() > 0.) { // A side
             histos.fill(HIST("A/global/hDcaRafterCuts"), dcaR);
             histos.fill(HIST("A/global/hDcaZafterCuts"), dcaZ);
 
@@ -811,10 +835,12 @@ struct TimeDependentQaTask {
       } // end of track loop
 
       // fill mult distributions vs time
-      if (confIncludeMultDistrVsTimeHistos) {
+      if (confIncludeMultDistrVsTimeHistos && (!confFlagUseGoodZvtxFT0vsPVForTimeDepDistributions ? true : col.selection_bit(kIsGoodZvtxFT0vsPV))) {
         bool noPileup = col.selection_bit(kNoSameBunchPileup);
 
-        histos.fill(HIST("multDistributions/hSecondsDistrPVtracks"), secFromSOR, nPVtracks);
+        int nTracksForTimeDep = confFlagUseGlobalTracksForTimeDepDistributions ? nGlobalTracks : nPVtracks;
+
+        histos.fill(HIST("multDistributions/hSecondsDistrPVtracks"), secFromSOR, nTracksForTimeDep);
 
         // ZNA,C
         // float multZNA = bc.has_zdc() ? bc.zdc().energyCommonZNA() : -999.f;
@@ -838,6 +864,9 @@ struct TimeDependentQaTask {
         if (ZNsumAmpl > 0)
           histos.fill(HIST("multDistributions/hSecondsDistrZNACdiffNormAmpl"), secFromSOR, ZNdiffAmpl / ZNsumAmpl);
 
+        histos.fill(HIST("multDistributions/hSecondsNPVvsZNAampl"), secFromSOR, nTracksForTimeDep, ZNAampl);
+        histos.fill(HIST("multDistributions/hSecondsNPVvsZNCampl"), secFromSOR, nTracksForTimeDep, ZNCampl);
+
         // FT0A,C, V0A
         // float multT0A = bc.has_ft0() ? bc.ft0().sumAmpA() : -999.f;
         // float multT0C = bc.has_ft0() ? fbcundBC.ft0().sumAmpC() : -999.f;
@@ -846,7 +875,7 @@ struct TimeDependentQaTask {
         histos.fill(HIST("multDistributions/hSecondsDistrV0A"), secFromSOR, col.multFV0A());
 
         if (noPileup) {
-          histos.fill(HIST("multDistributionsNoPileup/hSecondsDistrPVtracks"), secFromSOR, nPVtracks);
+          histos.fill(HIST("multDistributionsNoPileup/hSecondsDistrPVtracks"), secFromSOR, nTracksForTimeDep);
 
           histos.fill(HIST("multDistributionsNoPileup/hSecondsDistrZNA"), secFromSOR, col.multZNA());
           histos.fill(HIST("multDistributionsNoPileup/hSecondsDistrZNC"), secFromSOR, col.multZNC());
@@ -860,6 +889,10 @@ struct TimeDependentQaTask {
           if (ZNsumAmpl > 0)
             histos.fill(HIST("multDistributionsNoPileup/hSecondsDistrZNACdiffNormAmpl"), secFromSOR, ZNdiffAmpl / ZNsumAmpl);
 
+          histos.fill(HIST("multDistributionsNoPileup/hSecondsNPVvsZNAampl"), secFromSOR, nTracksForTimeDep, ZNAampl);
+          histos.fill(HIST("multDistributionsNoPileup/hSecondsNPVvsZNCampl"), secFromSOR, nTracksForTimeDep, ZNCampl);
+
+          //
           histos.fill(HIST("multDistributionsNoPileup/hSecondsDistrT0A"), secFromSOR, col.multFT0A());
           histos.fill(HIST("multDistributionsNoPileup/hSecondsDistrT0C"), secFromSOR, col.multFT0C());
           histos.fill(HIST("multDistributionsNoPileup/hSecondsDistrV0A"), secFromSOR, col.multFV0A());

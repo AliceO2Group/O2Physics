@@ -24,36 +24,33 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TProfile.h>
+#include <TH1.h>
+#include <TMathBase.h>
 
-#include <array>
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 
 using MyTracks = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::pidTPCPr>;
 
@@ -259,7 +256,7 @@ struct lambdakzeroAnalysisMc {
                     }
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
-                      auto particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
+                      const auto& particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
                       if (particleGrandMotherOfNeg.pdgCode() == 3312 || particleGrandMotherOfNeg.pdgCode() == 3322) {
                         registry.fill(HIST("hLambdaFeedDownMatrix"), particleMotherOfNeg.pt(), particleGrandMotherOfNeg.pt());
                       }
@@ -292,7 +289,7 @@ struct lambdakzeroAnalysisMc {
                     }
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
-                      auto particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
+                      const auto& particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
                       if (particleGrandMotherOfNeg.pdgCode() == -3312 || particleGrandMotherOfNeg.pdgCode() == -3322) {
                         registry.fill(HIST("hAntiLambdaFeedDownMatrix"), particleMotherOfNeg.pt(), particleGrandMotherOfNeg.pt());
                       }

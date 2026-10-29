@@ -73,6 +73,9 @@ DECLARE_SOA_COLUMN(E, e, float);                                                
 DECLARE_SOA_COLUMN(NSigTpcPiBachelor, nSigTpcPiBachelor, float);                     //! TPC Nsigma separation for bachelor with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPiBachelor, nSigTofPiBachelor, float);                     //! TOF Nsigma separation for bachelor with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofPiBachelor, nSigTpcTofPiBachelor, float);               //! Combined TPC and TOF Nsigma separation for bachelor with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcPiLcProng0, nSigTpcPiLcProng0, float);                     //! TPC Nsigma separation for Lc-baryon prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPiLcProng0, nSigTofPiLcProng0, float);                     //! TOF Nsigma separation for Lc-baryon prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPiLcProng0, nSigTpcTofPiLcProng0, float);               //! Combined TPC and TOF Nsigma separation for Lc-baryon prong0 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcPrLcProng0, nSigTpcPrLcProng0, float);                     //! TPC Nsigma separation for Lc-baryon prong0 with proton mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPrLcProng0, nSigTofPrLcProng0, float);                     //! TOF Nsigma separation for Lc-baryon prong0 with proton mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofPrLcProng0, nSigTpcTofPrLcProng0, float);               //! Combined TPC and TOF Nsigma separation for Lc-baryon prong0 with proton mass hypothesis
@@ -82,6 +85,9 @@ DECLARE_SOA_COLUMN(NSigTpcTofKaLcProng1, nSigTpcTofKaLcProng1, float);          
 DECLARE_SOA_COLUMN(NSigTpcPiLcProng2, nSigTpcPiLcProng2, float);                     //! TPC Nsigma separation for Lc-baryon prong2 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPiLcProng2, nSigTofPiLcProng2, float);                     //! TOF Nsigma separation for Lc-baryon prong2 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofPiLcProng2, nSigTpcTofPiLcProng2, float);               //! Combined TPC and TOF Nsigma separation for Lc-baryon prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcPrLcProng2, nSigTpcPrLcProng2, float);                     //! TPC Nsigma separation for Lc-baryon prong2 with proton mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPrLcProng2, nSigTofPrLcProng2, float);                     //! TOF Nsigma separation for Lc-baryon prong2 with proton mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPrLcProng2, nSigTpcTofPrLcProng2, float);               //! Combined TPC and TOF Nsigma separation for Lc-baryon prong2 with proton mass hypothesis
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                                 //! Decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                             //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);             //! Normalised decay length of candidate
@@ -127,6 +133,9 @@ DECLARE_SOA_TABLE(HfRedCandLbLites, "AOD", "HFREDCANDLBLITE", //! Table with som
                   hf_cand_lb_lite::ItsNClsLcProngMin,
                   hf_cand_lb_lite::TpcNClsCrossedRowsLcProngMin,
                   hf_cand_lb_lite::TpcChi2NClLcProngMax,
+                  hf_cand_lb_lite::NSigTpcPiLcProng0,
+                  hf_cand_lb_lite::NSigTofPiLcProng0,
+                  hf_cand_lb_lite::NSigTpcTofPiLcProng0,
                   hf_cand_lb_lite::NSigTpcPrLcProng0,
                   hf_cand_lb_lite::NSigTofPrLcProng0,
                   hf_cand_lb_lite::NSigTpcTofPrLcProng0,
@@ -136,6 +145,9 @@ DECLARE_SOA_TABLE(HfRedCandLbLites, "AOD", "HFREDCANDLBLITE", //! Table with som
                   hf_cand_lb_lite::NSigTpcPiLcProng2,
                   hf_cand_lb_lite::NSigTofPiLcProng2,
                   hf_cand_lb_lite::NSigTpcTofPiLcProng2,
+                  hf_cand_lb_lite::NSigTpcPrLcProng2,
+                  hf_cand_lb_lite::NSigTofPrLcProng2,
+                  hf_cand_lb_lite::NSigTpcTofPrLcProng2,
                   hf_cand_lb_reduced::Prong0MlScoreBkg,
                   hf_cand_lb_reduced::Prong0MlScorePrompt,
                   hf_cand_lb_reduced::Prong0MlScoreNonprompt,
@@ -150,13 +162,13 @@ DECLARE_SOA_TABLE(HfRedCandLbLites, "AOD", "HFREDCANDLBLITE", //! Table with som
                   hf_cand_lb_lite::NSigTofPiBachelor,
                   hf_cand_lb_lite::NSigTpcTofPiBachelor,
                   // MC truth
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   hf_cand_lb_lite::FlagWrongCollision,
                   hf_cand_lb_lite::PtGen);
 
 DECLARE_SOA_TABLE(HfRedLbMcCheck, "AOD", "HFREDLBMCCHECK", //! Table with MC decay type check
-                  hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_lb_lite::FlagWrongCollision,
                   hf_cand_lb_lite::MLc,
                   hf_cand_lb_lite::PtLc,
@@ -587,6 +599,9 @@ struct HfTaskLbReduced {
           candLc.itsNClsProngMin(),
           candLc.tpcNClsCrossedRowsProngMin(),
           candLc.tpcChi2NClProngMax(),
+          candLc.tpcNSigmaPiProng0(),
+          candLc.tofNSigmaPiProng0(),
+          candLc.tpcTofNSigmaPiProng0(),
           candLc.tpcNSigmaPrProng0(),
           candLc.tofNSigmaPrProng0(),
           candLc.tpcTofNSigmaPrProng0(),
@@ -596,6 +611,9 @@ struct HfTaskLbReduced {
           candLc.tpcNSigmaPiProng2(),
           candLc.tofNSigmaPiProng2(),
           candLc.tpcTofNSigmaPiProng2(),
+          candLc.tpcNSigmaPrProng2(),
+          candLc.tofNSigmaPrProng2(),
+          candLc.tpcTofNSigmaPrProng2(),
           prong0MlScoreBkg,
           prong0MlScorePrompt,
           prong0MlScoreNonprompt,

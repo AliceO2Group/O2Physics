@@ -10,17 +10,19 @@
 // or submit itself to any jurisdiction.
 
 #include <TCanvas.h>
-#include <TH1.h>
+#include <TDirectory.h>
 #include <TFile.h>
+#include <TH1.h>
 #include <TStyle.h>
 
+#include <cstddef>
 #include <fstream>
 #include <iostream>
-#include <vector>
-#include <string>
 #include <regex>
+#include <string>
+#include <vector>
 
-void checkSkimming(std::string original_path = "AnalysisResults.root", std::string skimmed_path = "AnalysisResults_skimmed.root", TFile* outputFile = nullptr, bool skipDownscaled = true)
+void checkSkimming(const std::string& original_path = "AnalysisResults.root", const std::string& skimmed_path = "AnalysisResults_skimmed.root", TFile* outputFile = nullptr, bool skipDownscaled = true)
 {
   gStyle->SetOptStat(0);
   std::string runNumber = "";
@@ -55,7 +57,7 @@ void checkSkimming(std::string original_path = "AnalysisResults.root", std::stri
 
   // Find the bins corresponding to the desired labels
   std::vector<double> selected_bins1, selected_bins2;
-  for (auto lab : labels) {
+  for (const auto& lab : labels) {
     int bin1 = hist1->GetXaxis()->FindBin(lab.c_str());
     if (bin1 == -1) {
       std::cerr << "Error: Label " << lab << " not found in histogram 1." << std::endl;
@@ -102,7 +104,7 @@ void checkSkimming(std::string original_path = "AnalysisResults.root", std::stri
   }
 }
 
-void checkSkimming(std::string listName = "period.txt", bool skipDownscaled = true)
+void checkSkimming(const std::string& listName = "period.txt", bool skipDownscaled = true)
 {
   std::string periodName = listName.substr(0, listName.find_last_of('.'));
   std::ifstream file(listName);

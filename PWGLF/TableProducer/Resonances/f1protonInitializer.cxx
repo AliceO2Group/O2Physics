@@ -14,34 +14,23 @@
 /// \author Sourav Kundu <sourav.kundu@cern.ch>
 #include "PWGLF/DataModel/LFF1Tables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/Utils/collisionCuts.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TDatabasePDG.h>
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <THn.h>
 #include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
 
 #include <array>
 #include <cmath>
@@ -233,7 +222,7 @@ struct f1protoninitializer {
     bool triggerF1 = false;
     bool triggerF1Proton = false;
     bool triggerF1ProtonFemto = false;
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!SelectionTrack(track1)) {
         continue;
       }
@@ -253,7 +242,7 @@ struct f1protoninitializer {
         qaRegistry.fill(HIST("hNsigmaPtpionTOF"), track1.tofNSigmaPi(), track1.pt());
       }
       auto track1ID = track1.globalIndex();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!SelectionTrack(track2)) {
           continue;
         }
@@ -284,7 +273,7 @@ struct f1protoninitializer {
         int track2Sign = track2.sign();
         numberPiKpair = numberPiKpair + 1;
 
-        for (auto track3 : V0s) {
+        for (const auto& track3 : V0s) {
           if (!SelectionV0(collision, track3)) {
             continue;
           }
@@ -319,7 +308,7 @@ struct f1protoninitializer {
           F1Vector.SetXYZM(track1.px() + track2.px() + track3.px(), track1.py() + track2.py() + track3.py(), track1.pz() + track2.pz() + track3.pz(), massF1);
 
           ////////////// proton loop for F1-proton trigger/////////////////
-          for (auto track4 : tracks) {
+          for (const auto& track4 : tracks) {
             auto collisionId4 = track4.collisionId();
             if (collisionId1 != collisionId4) {
               continue;

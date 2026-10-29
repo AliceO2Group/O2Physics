@@ -13,14 +13,26 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  April 2023
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TDatabasePDG.h>
+#include <TH2.h>
+#include <TLorentzVector.h>
+#include <TParticlePDG.h>
+
+#include <Rtypes.h>
+
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -117,7 +129,7 @@ struct UDTutorial02a {
 
     // check PID of tracks, use nSigmaTPC
     // cut on track pT
-    for (auto trk : PVContributors) {
+    for (const auto& trk : PVContributors) {
       if (trk.tpcNSigmaPi() < -3. || trk.tpcNSigmaPi() > 3.) {
         if (verbose) {
           LOGF(info, "<UDTutorials02> Candidate rejected: nSigmaTPC pion is %f", trk.tpcNSigmaPi());
@@ -136,7 +148,7 @@ struct UDTutorial02a {
     TParticlePDG* pion = pdg->GetParticle(211);
     TLorentzVector lvtmp;
     auto ivm = TLorentzVector(0., 0., 0., 0.);
-    for (auto trk : PVContributors) {
+    for (const auto& trk : PVContributors) {
       lvtmp.SetXYZM(trk.px(), trk.py(), trk.pz(), pion->Mass());
       ivm += lvtmp;
     }
@@ -154,7 +166,7 @@ struct UDTutorial02a {
       LOGF(info, "<UDTutorials02> Candidate accepted!");
     }
     registry.get<TH2>(HIST("dgcandidates/IVMptsys"))->Fill(ivm.M(), ivm.Perp());
-    for (auto trk : PVContributors) {
+    for (const auto& trk : PVContributors) {
       registry.get<TH2>(HIST("dgcandidates/IVMpttrk"))->Fill(ivm.M(), trk.pt());
 
       // fill nSigma histograms

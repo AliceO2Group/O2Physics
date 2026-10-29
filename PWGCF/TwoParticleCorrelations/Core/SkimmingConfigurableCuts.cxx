@@ -9,11 +9,25 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <regex>
+#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+
+#include <TNamed.h>
 #include <TObjArray.h>
 
-#include <fairlogger/Logger.h>
-#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <regex>
+#include <set>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::PWGCF;
@@ -1175,19 +1189,18 @@ bool TrackSelectionBrick::FulfillsITSHitRequirements(uint8_t itsClusterMap)
   return true;
 }
 
-const std::string TrackSelectionBrick::mCutNames[static_cast<int>(TrackSelectionBrick::TrackCuts::kNCuts)] =
-  {
-    "TrackType",
-    "TPCNCls",
-    "TPCCrossedRowsOverNCls",
-    "TPCRefit",
-    "ITSNCls",
-    "ITSChi2NDF",
-    "ITSRefit",
-    "ITSHits",
-    "GoldenChi2",
-    "DCAxy",
-    "DCAz"};
+const std::array<std::string, static_cast<int>(TrackSelectionBrick::TrackCuts::kNCuts)> TrackSelectionBrick::mCutNames{
+  "TrackType",
+  "TPCNCls",
+  "TPCCrossedRowsOverNCls",
+  "TPCRefit",
+  "ITSNCls",
+  "ITSChi2NDF",
+  "ITSRefit",
+  "ITSHits",
+  "GoldenChi2",
+  "DCAxy",
+  "DCAz"};
 
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated

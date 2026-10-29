@@ -11,15 +11,28 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TLorentzVector.h"
+#include <TH1.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
 #include <TString.h>
+#include <TVector3.h>
 
-#include <iostream>
-using std::array;
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <vector>
+
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
@@ -40,7 +53,7 @@ struct ExclusiveTwoProtonsSG {
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   //_____________________________________________________________________________
-  Double_t CosThetaHelicityFrame(TLorentzVector posDaughter, TLorentzVector negDaughter, TLorentzVector mother)
+  Double_t CosThetaHelicityFrame(const TLorentzVector& posDaughter, const TLorentzVector& negDaughter, const TLorentzVector& mother)
   {
 
     Double_t HalfSqrtSnn = 2680.;
@@ -67,7 +80,7 @@ struct ExclusiveTwoProtonsSG {
     return CosThetaHE;
   }
   //------------------------------------------------------------------------------------------------------
-  Double_t PhiHelicityFrame(TLorentzVector posDaughter, TLorentzVector negDaughter, TLorentzVector mother)
+  Double_t PhiHelicityFrame(const TLorentzVector& posDaughter, const TLorentzVector& negDaughter, const TLorentzVector& mother)
   {
 
     // Half of the energy per pair of the colliding nucleons.
@@ -198,7 +211,7 @@ struct ExclusiveTwoProtonsSG {
     std::vector<decltype(tracks.begin())> rawProtonTracks;
     std::vector<decltype(tracks.begin())> rawProtonTracksTOF;
 
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       if (!trk.isPVContributor()) {
         continue;
       }

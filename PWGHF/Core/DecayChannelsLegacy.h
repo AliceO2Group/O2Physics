@@ -26,7 +26,8 @@ enum DecayType {
   OmegaczeroToXiPi,
   OmegaczeroToOmegaPi,
   OmegaczeroToOmegaK,
-  OmegaczeroToOmegaPiOneMu
+  OmegaczeroToOmegaPiOneMu,
+  XiczeroToOmegaK
 };
 } // namespace hf_cand_xic0_omegac0
 
@@ -49,16 +50,6 @@ enum DecayType {
   NDstarDecayType
 };
 } // namespace hf_cand_dstar
-
-namespace hf_cand_sigmac
-{
-enum DecayType {
-  Sc0ToPKPiPi = 0,
-  ScplusplusToPKPiPi,
-  ScStar0ToPKPiPi,
-  ScStarPlusPlusToPKPiPi
-};
-} // namespace hf_cand_sigmac
 
 namespace hf_cand_b0
 {

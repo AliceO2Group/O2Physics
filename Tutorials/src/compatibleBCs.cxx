@@ -15,9 +15,14 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "CommonConstants/LHCConstants.h"
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
@@ -55,7 +60,7 @@ T getCompatibleBCs(aod::Collision const& collision, T const& bcs)
 
   LOGF(info, "Will consider BC entries from %d to %d", minBCId, maxBCId);
 
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  auto slice = bcs.rawSlice(minBCId, maxBCId);
   bcs.copyIndexBindings(slice);
   return slice;
 }

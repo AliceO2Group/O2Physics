@@ -11,16 +11,31 @@
 
 /// \author Luca Barioglio
 
-// O2 includes
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TLorentzVector.h"
+#include <TLorentzVector.h>
+
+#include <cmath>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -101,7 +116,7 @@ struct CFTutorialTask5 {
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     histos.fill(HIST("hZvtx"), coll.posZ());
 
-    for (auto track : groupPositive) {
+    for (const auto& track : groupPositive) {
       histos.fill(HIST("hChargePos"), track.sign());
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());
@@ -109,7 +124,7 @@ struct CFTutorialTask5 {
       histos.fill(HIST("hNsigmaTPCP"), track.p(), track.tpcNSigmaPi());
     }
 
-    for (auto track : groupNegative) {
+    for (const auto& track : groupNegative) {
       histos.fill(HIST("hChargeNeg"), track.sign());
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());
@@ -135,7 +150,7 @@ struct CFTutorialTask5 {
 
   void processMixed(MyFilteredCollisions const& colls, MyFilteredTracks const&)
   {
-    BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
+    BinningType colBinning{{ConfVtxBins, ConfMultBins}};
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, colls, colls)) {
       auto groupPositive = positive->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
       auto groupNegative = negative->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
@@ -160,7 +175,7 @@ struct CFTutorialTask5 {
   void processMixedEventInterface(MyFilteredCollisions& colls, MyFilteredTracks& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
+    BinningType colBinning{{ConfVtxBins, ConfMultBins}};
     SameKindPair<MyFilteredCollisions, MyFilteredTracks, BinningType> pair{colBinning, 5, -1, colls, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       Partition<MyFilteredTracks> groupPositive = aod::track::signed1Pt > ConfChargeCut;

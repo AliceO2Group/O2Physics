@@ -30,6 +30,7 @@ enum CentralityEstimator {
   FT0M,
   FV0A,
   NTracksPV,
+  FT0CVariant2,
   NCentralityEstimators
 };
 
@@ -41,6 +42,11 @@ concept HasFT0ACent = requires(T collision) {
 template <typename T>
 concept HasFT0CCent = requires(T collision) {
   collision.centFT0C();
+};
+
+template <typename T>
+concept HasFT0CVariant2Cent = requires(T collision) {
+  collision.centFT0CVariant2();
 };
 
 template <typename T>
@@ -74,6 +80,15 @@ template <HasFT0CCent TCollision>
 float getCentralityColl(const TCollision& collision)
 {
   return collision.centFT0C();
+}
+
+/// Evaluate centrality/multiplicity percentile using FT0C variant 1 estimator
+/// \param candidate is candidate
+/// \return centrality/multiplicity percentile of the collision
+template <HasFT0CVariant2Cent TCollision>
+float getCentralityColl(const TCollision& collision)
+{
+  return collision.centFT0CVariant2();
 }
 
 /// Evaluate centrality/multiplicity percentile using FT0M estimator
@@ -143,6 +158,18 @@ float getCentralityColl(const TCollision& collision, const int centEstimator)
         return collision.centFV0A();
       }
       LOG(fatal) << "Collision does not have centFV0A().";
+      break;
+    case CentralityEstimator::NTracksPV:
+      if constexpr (HasNTracksPvCent<TCollision>) {
+        return collision.centNTPV();
+      }
+      LOG(fatal) << "Collision does not have centNTPV().";
+      break;
+    case CentralityEstimator::FT0CVariant2:
+      if constexpr (HasFT0CVariant2Cent<TCollision>) {
+        return collision.centFT0CVariant2();
+      }
+      LOG(fatal) << "Collision does not have centFT0CVariant2().";
       break;
     default:
       LOG(fatal) << "Centrality estimator not valid. See CentralityEstimator for valid values.";

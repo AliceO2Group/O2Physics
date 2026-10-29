@@ -13,23 +13,23 @@
 /// \brief
 /// \author ALICE
 
-#include "multCalibrator.h"
 #include "multGlauberNBDFitter.h"
 
-#include "TCanvas.h"
-#include "TDirectory.h"
-#include "TF1.h"
-#include "TFile.h"
-#include "TGraph.h"
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TLatex.h"
-#include "TLegend.h"
-#include "TLine.h"
-#include "TStopwatch.h"
-#include "TStyle.h"
-#include "TSystem.h"
-#include "TTree.h"
+#include <TCanvas.h>
+#include <TDirectory.h>
+#include <TF1.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TLatex.h>
+#include <TLine.h>
+#include <TString.h>
+#include <TStyle.h>
+#include <TTree.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <iostream>
 
@@ -39,9 +39,9 @@ Double_t FastIntegrate(TF1* f1, Double_t a, Double_t b, Int_t n = 5)
   // Do fast integration with N sampling points
   const Int_t nc = n;
   Double_t x[nc], y[nc];
-  Double_t lWidth = (b - a) / ((double)(n - 1));
+  Double_t lWidth = (b - a) / (static_cast<double>(n - 1));
   for (Int_t ii = 0; ii < n; ii++) {
-    x[ii] = a + ((double)(ii)) * lWidth;
+    x[ii] = a + (static_cast<double>(ii)) * lWidth;
     y[ii] = f1->Eval(x[ii]);
   }
   // Now go via trapezoids, please (this probably has a name)
@@ -87,33 +87,33 @@ Double_t GetBoundaryForPercentile(TH1* histo, Double_t lPercentileRequested)
 /// @param lFreef free f: keep f value free (default Pb-Pb: fixed at 0.8)
 /// @param lfvalue f value: the value to use for fixed f
 /// @param outputFile name of output file
-int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TString histogramName = "hFT0C_BCs", int ancestorMode = 2, Bool_t lFreek = kFALSE, Bool_t use_dMu_dNanc = kFALSE, Bool_t lFreef = kFALSE, Float_t lfvalue = 0.800, TString outputFile = "output.root")
+int runGlauberFit(const TString& lInputFileName = "AnalysisResultsLHC24ar.root", const TString& histogramName = "hFT0C_BCs", int ancestorMode = 2, Bool_t lFreek = kFALSE, Bool_t use_dMu_dNanc = kFALSE, Bool_t lFreef = kFALSE, Float_t lfvalue = 0.800, const TString& outputFile = "output.root")
 {
   gStyle->SetLineScalePS(1);
   gStyle->SetOptStat(0);
 
-  cout << "Starting!" << endl;
+  std::cout << "Starting!" << std::endl;
   TFile* file = new TFile(lInputFileName.Data(), "READ");
   if (!file)
-    cout << "Problem with file!" << endl;
+    std::cout << "Problem with file!" << std::endl;
   TH1F* hV0Mfine = 0x0;
 
-  hV0Mfine = (TH1F*)file->Get(Form("centrality-study/%s", histogramName.Data()));
+  hV0Mfine = dynamic_cast<TH1F*>(file->Get(Form("centrality-study/%s", histogramName.Data())));
 
   // disregard bin zero
-  cout << "Received bin zero content: " << hV0Mfine->GetBinContent(0) << ", will set to zero..." << endl;
+  std::cout << "Received bin zero content: " << hV0Mfine->GetBinContent(0) << ", will set to zero..." << std::endl;
   hV0Mfine->SetBinContent(0, 0);
 
   if (!hV0Mfine)
-    cout << "Problem with histogram!" << endl;
+    std::cout << "Problem with histogram!" << std::endl;
 
-  cout << "Input histogram has been received successfully! Information: " << endl;
+  std::cout << "Input histogram has been received successfully! Information: " << std::endl;
 
-  cout << "Counts: " << hV0Mfine->GetEntries() << endl;
-  cout << "NbinsX: " << hV0Mfine->GetNbinsX() << endl;
-  cout << "MaxX: " << hV0Mfine->GetBinLowEdge(hV0Mfine->GetNbinsX() + 1) << endl;
+  std::cout << "Counts: " << hV0Mfine->GetEntries() << std::endl;
+  std::cout << "NbinsX: " << hV0Mfine->GetNbinsX() << std::endl;
+  std::cout << "MaxX: " << hV0Mfine->GetBinLowEdge(hV0Mfine->GetNbinsX() + 1) << std::endl;
 
-  cout << "Creating output file..." << endl;
+  std::cout << "Creating output file..." << std::endl;
   TString lProcessedFileName = lInputFileName.Data();
   TString lkMode = "fixedK";
   if (lFreek)
@@ -124,8 +124,8 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
 
   TFile* fOutput = new TFile(outputFile.Data(), "RECREATE");
 
-  TH1F* hV0M = (TH1F*)hV0Mfine->Clone("hV0M");
-  TH1F* hV0MUltraFine = (TH1F*)hV0Mfine->Clone("hV0MUltraFine");
+  TH1F* hV0M = dynamic_cast<TH1F*>(hV0Mfine->Clone("hV0M"));
+  TH1F* hV0MUltraFine = dynamic_cast<TH1F*>(hV0Mfine->Clone("hV0MUltraFine"));
   hV0M->SetName("hV0M");
   hV0M->SetTitle("");
 
@@ -133,7 +133,7 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   // maximum fit range estimate (avoid tails)
   // may need adjusting
   Double_t lFitRangeMax = GetBoundaryForPercentile(hV0Mfine, 0.008);
-  cout << "Fit range max estimated from histogram: " << lFitRangeMax << endl;
+  std::cout << "Fit range max estimated from histogram: " << lFitRangeMax << std::endl;
 
   // minimum fit range estimate (guess region that may be unfittable)
   // may need adjusting
@@ -147,7 +147,7 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   if (lFitRangeMax < maxRangeForTracks)
     lFitRange = fractionOfMaxBroader * GetBoundaryForPercentile(hV0Mfine, maxPercent);
 
-  cout << "Fit range min estimated from histogram: " << lFitRange << endl;
+  std::cout << "Fit range min estimated from histogram: " << lFitRange << std::endl;
 
   //____________________________________________
   // rebinning matters
@@ -155,7 +155,7 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   if (lFitRangeMax < maxRangeForTracks)
     rebinFactor = 1;
 
-  cout << "Creating rebinned histogram with rebin factor: " << rebinFactor << endl;
+  std::cout << "Creating rebinned histogram with rebin factor: " << rebinFactor << std::endl;
   hV0M->Rebin(rebinFactor);
 
   //____________________________________________
@@ -210,7 +210,7 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
 
   // Step 1: open the (Npart, Ncoll) pair information, provide
   TFile* fbasefile = new TFile("basehistos.root", "READ");
-  TH2D* hNpNc = (TH2D*)fbasefile->Get("hNpNc");
+  TH2D* hNpNc = dynamic_cast<TH2D*>(fbasefile->Get("hNpNc"));
   // return to proper scope
   fOutput->cd();
   g->SetNpartNcollCorrelation(hNpNc);
@@ -230,7 +230,7 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   // may require manual tuning depending on data!
 
   Double_t guessedMu = lFitRangeMax / 53968.4 * 0.175 * 3.53971e+02;
-  cout << "Guessed GlauberNBD mu value: " << guessedMu << endl;
+  std::cout << "Guessed GlauberNBD mu value: " << guessedMu << std::endl;
 
   fitfunc->SetParameter(0, guessedMu); // mu value
   fitfunc->SetParLimits(0, 0.25 * guessedMu, guessedMu * 2);
@@ -276,23 +276,23 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   g->InitializeNpNc();
   g->InitAncestor();
 
-  cout << "WILL NOW ATTEMPT GLAUBER FIT" << endl;
-  cout << "This will take a while. Please wait..." << endl;
+  std::cout << "WILL NOW ATTEMPT GLAUBER FIT" << std::endl;
+  std::cout << "This will take a while. Please wait..." << std::endl;
   Int_t lFitStatus = 0;
   lFitStatus = g->DoFit();
   Int_t lAttempts = 1;
   Int_t lMaxAttempts = 10;
   while (lAttempts < lMaxAttempts && lFitStatus == 0) {
     // insist on fitting until it works
-    cout << "Attempting fit again (" << lAttempts << " attempt)..." << endl;
+    std::cout << "Attempting fit again (" << lAttempts << " attempt)..." << std::endl;
     lFitStatus = g->DoFit();
   }
-  cout << "Final fit status: " << lFitStatus << endl;
+  std::cout << "Final fit status: " << lFitStatus << std::endl;
 
   gStyle->SetOptStat(0);
   // Do a ratio plot
-  TH1D* hGlauber = (TH1D*)hV0MUltraFine->Clone("hGlauber");
-  TH1D* hRatio = (TH1D*)hV0MUltraFine->Clone("hRatio");
+  TH1D* hGlauber = dynamic_cast<TH1D*>(hV0MUltraFine->Clone("hGlauber"));
+  TH1D* hRatio = dynamic_cast<TH1D*>(hV0MUltraFine->Clone("hRatio"));
   hGlauber->Reset();
 
   c1->cd(1);
@@ -300,16 +300,16 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   fitfunc->SetLineWidth(2);
   fitfunc->Draw("same");
 
-  cout << "Calculating glauber function histogram with the same binning as data input... please wait..." << endl;
+  std::cout << "Calculating glauber function histogram with the same binning as data input... please wait..." << std::endl;
   for (Int_t ii = 1; ii < hGlauber->GetNbinsX() + 1; ii++) {
     Double_t lFuncVal = FastIntegrate(fitfunc, hGlauber->GetBinLowEdge(ii), hGlauber->GetBinLowEdge(ii + 1), 4);
     hGlauber->SetBinContent(ii, lFuncVal);
     Int_t printEveryThisManyBins = 500;
     if (ii % printEveryThisManyBins == 0) {
-      cout << "At integration #" << ii << "/" << hGlauber->GetNbinsX() + 1 << "..." << endl;
+      std::cout << "At integration #" << ii << "/" << hGlauber->GetNbinsX() + 1 << "..." << std::endl;
     }
   }
-  cout << "Glauber function evaluated. Should go quickly now." << endl;
+  std::cout << "Glauber function evaluated. Should go quickly now." << std::endl;
 
   c1->cd(2);
   Float_t lLoRangeRatio = 0.35;
@@ -345,7 +345,7 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   lFitRangeLine->SetLineStyle(2);
   lFitRangeLine->Draw();
 
-  TH1D* hRatioGrayed = (TH1D*)hRatio->Clone("hRatioGrayed");
+  TH1D* hRatioGrayed = dynamic_cast<TH1D*>(hRatio->Clone("hRatioGrayed"));
   hRatioGrayed->SetMarkerColor(kGray + 2);
   hRatioGrayed->SetLineColor(kGray + 2);
   hRatioGrayed->Draw("same");

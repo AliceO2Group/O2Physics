@@ -21,6 +21,7 @@ struct Run2BCInfosConverter {
   Produces<aod::Run2BCInfos_001> Run2BCInfos_001;
   void process(aod::Run2BCInfos_000 const& Run2BCInfos_000)
   {
+    Run2BCInfos_001.reserve(Run2BCInfos_000.size());
 
     for (const auto& entry : Run2BCInfos_000) {
       Run2BCInfos_001(entry.eventCuts(),

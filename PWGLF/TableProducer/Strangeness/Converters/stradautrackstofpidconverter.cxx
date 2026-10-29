@@ -8,32 +8,36 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+//
+/// \file stradautrackstofpidconverter.cxx
+/// \brief Produces DauTrackTOFPIDs from V0TOFs and CascTOFs table
+///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
+//
+
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 
-// Converts V0 version 001 to 002
 struct stradautrackstofpidconverter {
   Produces<aod::DauTrackTOFPIDs> dautracktofpids;
 
   void process(soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFs> const& v0s, soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFs> const& cascs, aod::DauTrackExtras const& dauTracks)
   {
     // prepare arrays with the relevant information
-    std::vector<float> lLengths, lTOFSignals, lTOFEvTimes;
-    lLengths.reserve(dauTracks.size());
-    lTOFSignals.reserve(dauTracks.size());
-    lTOFEvTimes.reserve(dauTracks.size());
-    for (int ii = 0; ii < dauTracks.size(); ii++) {
-      lLengths[ii] = 1e+6;
-      lTOFSignals[ii] = -1e+3f;
-      lTOFEvTimes[ii] = -1e+3f;
-    }
-    for (auto& v0 : v0s) {
+    dautracktofpids.reserve(dauTracks.size());
+    std::vector<float> lLengths(dauTracks.size(), 1.e+6), lTOFSignals(dauTracks.size(), -1e+3f), lTOFEvTimes(dauTracks.size(), -1e+3f);
+    for (const auto& v0 : v0s) {
       lLengths[v0.posTrackExtraId()] = v0.posTOFLengthToPV();
       lTOFSignals[v0.posTrackExtraId()] = v0.posTOFSignal();
       lTOFEvTimes[v0.posTrackExtraId()] = v0.posTOFEventTime();
@@ -41,7 +45,7 @@ struct stradautrackstofpidconverter {
       lTOFSignals[v0.negTrackExtraId()] = v0.negTOFSignal();
       lTOFEvTimes[v0.negTrackExtraId()] = v0.negTOFEventTime();
     }
-    for (auto& casc : cascs) {
+    for (const auto& casc : cascs) {
       lLengths[casc.posTrackExtraId()] = casc.posTOFLengthToPV();
       lTOFSignals[casc.posTrackExtraId()] = casc.posTOFSignal();
       lTOFEvTimes[casc.posTrackExtraId()] = casc.posTOFEventTime();
@@ -52,8 +56,8 @@ struct stradautrackstofpidconverter {
       lTOFSignals[casc.bachTrackExtraId()] = casc.bachTOFSignal();
       lTOFEvTimes[casc.bachTrackExtraId()] = casc.bachTOFEventTime();
     }
-    for (int ii = 0; ii < dauTracks.size(); ii++) {
-      dautracktofpids(-1, -1, lTOFSignals[ii], lTOFEvTimes[ii], lLengths[ii], 0.0f);
+    for (unsigned int ii = 0; ii < dauTracks.size(); ii++) {
+      dautracktofpids(-1, -1, lTOFSignals[ii], lTOFEvTimes[ii], 999.0f /*dummy event time error for TOF*/, lLengths[ii], 0.0f);
     }
   }
 };

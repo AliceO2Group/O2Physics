@@ -18,8 +18,13 @@
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 
-#include "CommonConstants/PhysicsConstants.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
 
+#include <TPDGCode.h>
+
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -54,11 +59,23 @@ inline float getMass(int pdgCode)
     case o2::constants::physics::Pdg::kPhi:
       mass = o2::constants::physics::MassPhi;
       break;
+    case o2::constants::physics::Pdg::kD0:
+      mass = o2::constants::physics::MassD0;
+      break;
+    case o2::constants::physics::Pdg::kDStar:
+      mass = o2::constants::physics::MassDStar;
+      break;
     case o2::constants::physics::Pdg::kDPlus:
       mass = o2::constants::physics::MassDPlus;
       break;
+    case o2::constants::physics::Pdg::kDS:
+      mass = o2::constants::physics::MassDS;
+      break;
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
+      break;
+    case o2::constants::physics::Pdg::kXiCPlus:
+      mass = o2::constants::physics::MassXiCPlus;
       break;
     case o2::constants::physics::Pdg::kDeuteron:
       mass = o2::constants::physics::MassDeuteron;
@@ -85,11 +102,29 @@ inline float getMass(int pdgCode)
   return mass;
 }
 
-inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG)
+inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG, int daughterPDG = 0)
 {
   int partOrigin = 0;
+  const auto absMotherPDG = std::abs(motherPDG);
+  const auto absDaughterPDG = std::abs(daughterPDG);
+  const bool isTrackLike = partType == o2::aod::femtodreamparticle::ParticleType::kTrack ||
+                           partType == o2::aod::femtodreamparticle::ParticleType::kV0Child ||
+                           partType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child ||
+                           partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor;
+
+  if (absDaughterPDG == kKPlus && isTrackLike) {
+    switch (absMotherPDG) {
+      case kOmegaMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
+        break;
+      default:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    }
+    return partOrigin;
+  }
+
   if (partType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-    switch (std::abs(motherPDG)) {
+    switch (absMotherPDG) {
       case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
@@ -101,7 +136,7 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-    switch (std::abs(motherPDG)) {
+    switch (absMotherPDG) {
       case kSigma0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
         break;
@@ -115,8 +150,8 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
     }
 
-  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
-    switch (abs(motherPDG)) {
+  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child || partType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child || partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
+    switch (absMotherPDG) {
       case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
@@ -128,9 +163,19 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
-  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    switch (absMotherPDG) {
+      case kOmegaMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
+        break;
+      case 3324:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXistar0;
+        break;
+      case 3314:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXistarMinus;
+        break;
+      default:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    }
   }
   return partOrigin;
 };

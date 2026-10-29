@@ -13,13 +13,23 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  April 2023
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "TVector3.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UDHelpers.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TVector3.h>
+
+#include <Rtypes.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -99,7 +109,7 @@ struct UDTutorial01 {
       LOGF(info, "<UDTutorial01>   Number of tracks %d", dgtracks.size());
       LOGF(info, "<UDTutorial01>   Number of PV contributors %d", PVContributors.size());
     }
-    for (auto track : dgtracks) {
+    for (const auto& track : dgtracks) {
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(0., 1.);
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(1., track.hasITS() * 1.);
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(2., track.hasTPC() * 1.);

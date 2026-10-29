@@ -16,34 +16,25 @@
 // (5) particle = 2 --> lambdastar
 // (6) 4 process function (a) Data same event (b) Data mixed event (c) MC generated (d) MC reconstructed
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
-
-#include <TDatabasePDG.h>
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <THn.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <array>
 #include <cmath>
@@ -273,7 +264,7 @@ struct resonanceqa {
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, 47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1}, "multiplicity axis for histograms"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
+  BinningType binningOnPositions{{axisVertex, axisMultiplicity}};
   SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
@@ -284,7 +275,7 @@ struct resonanceqa {
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -298,7 +289,7 @@ struct resonanceqa {
       histos.fill(HIST("hNsigmaProtonTPC"), track1.tpcNSigmaPr());
       histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr());
       auto track1ID = track1.globalIndex();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }
@@ -397,7 +388,7 @@ struct resonanceqa {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
@@ -434,7 +425,7 @@ struct resonanceqa {
       return;
     }
     histos.fill(HIST("hMC"), 1.5);
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -442,7 +433,7 @@ struct resonanceqa {
         continue;
       }
       auto track1ID = track1.globalIndex();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!track2.has_mcParticle()) {
           continue;
         }

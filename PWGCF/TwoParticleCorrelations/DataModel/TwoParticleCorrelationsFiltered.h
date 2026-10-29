@@ -8,12 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_TWOPARTFILTERED_H
-#define O2_ANALYSIS_TWOPARTFILTERED_H
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "TwoParticleCorrelationsSkimmed.h"
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSFILTERED_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSFILTERED_H_
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2
 {
@@ -46,4 +48,4 @@ DECLARE_SOA_TABLE(TwoPFilteredParticles, "AOD", "FILTEREDGENTRKS", //! The gener
 } // namespace aod
 } // namespace o2
 
-#endif // O2_ANALYSIS_TWOPARTFILTERED_H
+#endif // PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSFILTERED_H_

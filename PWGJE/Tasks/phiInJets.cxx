@@ -25,22 +25,22 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TRandom.h"
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TMathBase.h>
+#include <TRandom.h>
 #include <TVector2.h>
 
 #include <RtypesCore.h>
@@ -294,7 +294,7 @@ struct phiInJets {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
   template <typename TrackType>
-  bool trackSelection(const TrackType track)
+  bool trackSelection(const TrackType& track)
   {
     // basic track cuts
     if (track.pt() < cfgtrkMinPt)
@@ -396,7 +396,7 @@ struct phiInJets {
   /////////////////////////////////////////////////////////////////////////////
 
   template <typename JetType>
-  double DistinguishJets(const JetType& jets, const TLorentzVector lResonance)
+  double DistinguishJets(const JetType& jets, const TLorentzVector& lResonance)
   {
     if (cDebugLevel > 0)
       std::cout << "oof, multiple jets fit to the same phi. Time to find the best phi-jet link" << std::endl;
@@ -419,7 +419,7 @@ struct phiInJets {
   }
 
   template <typename Jet_pt, typename Jet_phi, typename Jet_eta>
-  double DistinguishJetsMC(const Jet_pt& jet_pt, const Jet_phi& jet_phi, const Jet_eta& jet_eta, const TLorentzVector lResonance)
+  double DistinguishJetsMC(const Jet_pt& jet_pt, const Jet_phi& jet_phi, const Jet_eta& jet_eta, const TLorentzVector& lResonance)
   {
     if (cDebugLevel > 0)
       std::cout << "oof, multiple jets fit to the same phi. Time to find the best phi-jet link" << std::endl;
@@ -593,7 +593,7 @@ struct phiInJets {
     JEhistos.fill(HIST("hNResoPerEventInJet"), nResoInTrig);
 
     int nJets = 0;
-    for (auto chargedjet : chargedjets) {
+    for (const auto& chargedjet : chargedjets) {
       JEhistos.fill(HIST("FJetaHistogram"), chargedjet.eta());
       JEhistos.fill(HIST("FJphiHistogram"), chargedjet.phi());
       JEhistos.fill(HIST("FJptHistogram"), chargedjet.pt());

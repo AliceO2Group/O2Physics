@@ -11,6 +11,10 @@
 
 #include "JEPFlowAnalysis.h"
 
+#include <Framework/HistogramRegistry.h>
+
+#include <RtypesCore.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace std;

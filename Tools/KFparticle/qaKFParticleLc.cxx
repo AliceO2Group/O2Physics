@@ -15,52 +15,40 @@
 /// \brief  Task to test the performance of the KFParticle package on the Lc to pKpi decay
 ///
 
+#ifndef HomogeneousField
+#define HomogeneousField
+#endif
+
 #include "Tools/KFparticle/qaKFParticleLc.h"
 
-#include "TableHelper.h"
-
-#include <CCDB/BasicCCDBManager.h>
-
-#include <TDatabasePDG.h>
-#include <TPDGCode.h>
-
-#include <string>
-
-/// includes O2
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-
-/// includes O2Physics
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-/// includes KFParticle
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#ifndef HomogeneousField
+#include <TPDGCode.h>
 
-#define HomogeneousField
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
 
-#endif
+#include <cmath>
+#include <cstdint>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -164,7 +152,7 @@ struct qaKFParticleLc {
   Produces<o2::aod::TreeKFLc> rowKFLc;
 
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, const std::string& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
                              bool isRun3)
   {
 
@@ -428,7 +416,7 @@ struct qaKFParticleLc {
     float chi2geo = KFLc.GetChi2() / KFLc.GetNDF();
     float normdecayLength = KFLc_PV.GetDecayLength() / KFLc_PV.GetErrDecayLength();
     float chi2topo = KFLc_PV.GetChi2() / KFLc_PV.GetNDF();
-    const double pseudoRndm = trackKa.pt() * 1000. - (int64_t)(trackKa.pt() * 1000);
+    const double pseudoRndm = trackKa.pt() * 1000. - static_cast<int64_t>(trackKa.pt() * 1000);
     if (pseudoRndm < d_DwnSmplFact) {
       /// Filling the D0 tree
       rowKFLc(runNumber,

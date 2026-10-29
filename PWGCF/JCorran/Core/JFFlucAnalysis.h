@@ -23,6 +23,9 @@
 #include <THnSparse.h>
 #include <TNamed.h>
 
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <experimental/type_traits>
 #include <vector>
 

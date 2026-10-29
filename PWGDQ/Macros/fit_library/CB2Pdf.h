@@ -11,19 +11,21 @@
 
 /// \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 
-#ifndef CB2PDF
-#define CB2PDF
+#ifndef PWGDQ_MACROS_FIT_LIBRARY_CB2PDF_H_
+#define PWGDQ_MACROS_FIT_LIBRARY_CB2PDF_H_
 
-#include "RooAbsPdf.h"
-#include "RooRealProxy.h"
-#include "RooCategoryProxy.h"
-#include "RooAbsReal.h"
-#include "RooAbsCategory.h"
+#include <RooAbsPdf.h>
+#include <RooAbsReal.h>
+#include <RooRealProxy.h>
+#include <TObject.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class CB2Pdf : public RooAbsPdf
 {
  public:
-  CB2Pdf(){};
+  CB2Pdf() {}
   CB2Pdf(const char* name, const char* title,
          RooAbsReal& _x,
          RooAbsReal& _A,
@@ -51,4 +53,4 @@ class CB2Pdf : public RooAbsPdf
   ClassDef(CB2Pdf, 1) // Your description goes here...
 };
 
-#endif
+#endif // PWGDQ_MACROS_FIT_LIBRARY_CB2PDF_H_

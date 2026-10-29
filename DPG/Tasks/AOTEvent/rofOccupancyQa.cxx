@@ -14,20 +14,27 @@
 ///
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
-#include <vector>
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "Framework/HistogramRegistry.h"
-// #include "DataFormatsParameters/GRPLHCIFData.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -747,7 +754,7 @@ struct RofOccupancyQaTask {
       // LOGP(info, "#### starting new coll: bc={} bcInTF={} bcInITSROF={} rofId={};  noROFborder={};   rofOffset={} rofLength={}", vFoundGlobalBC[colIndex], bcInTF, bcInITSROF, rofId, bc.selection_bit(kNoITSROFrameBorder), rofOffset, rofLength);
       // LOGP(info, "#### starting new coll: bcInTF={} bcInITSROF={} rofIdInTF={};  noROFborder={},  vZ={} mult={};   rofOffset={} rofLength={}", bcInTF, bcInITSROF, rofIdInTF, bc.selection_bit(kNoITSROFrameBorder), vZ, vTracksITS567perColl[colIndex], rofOffset, rofLength);
 
-      std::vector<int> vAssocToSameROF = vCollsInSameITSROF[colIndex];
+      const std::vector<int>& vAssocToSameROF = vCollsInSameITSROF[colIndex];
       int nITS567tracksForRofVetoStrict = 0;  // to veto events with other collisions in the same ITS ROF
       float nSumAmplFT0CforRofVetoStrict = 0; // to veto events with other collisions in the same ITS ROF
       // int nITS567tracksForRofVetoStandard = 0;           // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
@@ -829,8 +836,8 @@ struct RofOccupancyQaTask {
         vArrNoCollInSameRofWithCloseVz.push_back(vVzCutThisColl);
         continue;
       }
-      std::vector<int> vAssocToThisCol = vCollsInTimeWin[colIndex];
-      std::vector<float> vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
+      const std::vector<int>& vAssocToThisCol = vCollsInTimeWin[colIndex];
+      const std::vector<float>& vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
       int nITS567tracksInFullTimeWindow = 0;
       int sumAmpFT0CInFullTimeWindow = 0;
       int nITS567tracksForVetoNarrow = 0;      // to veto events with nearby collisions (narrower range)

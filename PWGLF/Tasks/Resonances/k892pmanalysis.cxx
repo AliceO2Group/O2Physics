@@ -17,14 +17,19 @@
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TLorentzVector.h>
 
@@ -192,7 +197,7 @@ struct k892pmanalysis {
   double massAntiLambda0 = MassLambda0Bar;
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -214,7 +219,7 @@ struct k892pmanalysis {
   }
 
   template <typename V0Type>
-  bool V0Cut(const V0Type v0)
+  bool V0Cut(const V0Type& v0)
   {
     // V0 track cuts
     if (std::abs(v0.eta()) > cMaxV0Etacut)
@@ -487,7 +492,7 @@ struct k892pmanalysis {
   {
     auto tracksV0sTuple = std::make_tuple(resotracks, resov0s);
     // auto V0sTuple = std::make_tuple(resov0s);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     Pair<aod::ResoCollisions, aod::ResoTracks, aod::ResoV0s, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, resotracks1, collision2, resov0s2] : pairs) {

@@ -12,8 +12,15 @@
 #ifndef PWGLF_UTILS_V0SELECTIONTOOLS_H_
 #define PWGLF_UTILS_V0SELECTIONTOOLS_H_
 
-#include "v0SelectionBits.h"
-#include "v0SelectionGroup.h"
+#include "PWGLF/Utils/v0SelectionBits.h"
+#include "PWGLF/Utils/v0SelectionGroup.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/DataTypes.h>
+
+#include <TMathBase.h>
+
+#include <cstdint>
 
 // simple checkers, but ensure 64 bit integers
 #define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))

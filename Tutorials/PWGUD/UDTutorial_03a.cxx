@@ -13,15 +13,31 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  October 2023
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/Core/UDHelpers.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TDatabasePDG.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TLorentzVector.h>
+#include <TParticlePDG.h>
+
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -88,7 +104,7 @@ struct UDTutorial03a {
   }
 
   // check if a reconstructed track is a muon candidate
-  bool isMuonCandidate_rec(TC track)
+  bool isMuonCandidate_rec(const TC& track)
   {
     if (abs(track.tpcNSigmaMu()) > 3.) {
       return false;
@@ -126,7 +142,7 @@ struct UDTutorial03a {
     // and be muon candidates
     int netCharge = 0;
     int ind = -1;
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       ind++;
       if (track.isPVContributor()) {
         if (!isMuonCandidate_rec(track)) {
@@ -281,7 +297,7 @@ struct UDTutorial03a {
     TLorentzVector* lv_gen = new TLorentzVector();
 
     // loop over all genererated collisions
-    for (auto mccollision : mccollisions) {
+    for (const auto& mccollision : mccollisions) {
       registry.get<TH1>(HIST("MC/Stat"))->Fill(0., 1.);
 
       // get McParticles which belong to mccollision
@@ -334,7 +350,7 @@ struct UDTutorial03a {
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("Reco/nTracks"))->Fill(tracks.size(), 1.);
     int nContributors = 0;
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (track.isPVContributor()) {
         nContributors++;
       }

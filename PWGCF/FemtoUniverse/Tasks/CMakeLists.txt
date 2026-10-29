@@ -44,8 +44,13 @@ o2physics_add_dpl_workflow(femtouniverse-pair-track-track-threedrelmom-mult-kt-e
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(o2-analysis-cf-femtouniverse-pair-track-track-spherhar-mult-kt-extended
+o2physics_add_dpl_workflow(femto-universe-pair-task-track-track-spher-har-mult-kt-extended
           SOURCES femtoUniversePairTaskTrackTrackSpherHarMultKtExtended.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-universe-pair-task-track-track-spher-har-mult-kt-extended-its-pid
+          SOURCES femtoUniversePairTaskTrackTrackSpherHarMultKtExtendedItsPid.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 

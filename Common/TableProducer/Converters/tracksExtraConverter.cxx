@@ -33,6 +33,7 @@ struct TracksExtraConverter {
   Produces<aod::StoredTracksExtra_001> tracksExtra_001;
   void process(aod::TracksExtra_000 const& tracksExtra_000)
   {
+    tracksExtra_001.reserve(tracksExtra_000.size());
 
     for (const auto& track0 : tracksExtra_000) {
 

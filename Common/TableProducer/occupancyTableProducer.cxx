@@ -433,51 +433,43 @@ struct OccupancyTableProducer {
   template <int processMode, int tableMode, int meanTableMode, int robustTableMode, int meanRobustTableMode, typename B, typename C, typename T>
   void executeOccProducerProcessing(B const& BCs, C const& collisions, T const& tracks)
   {
-    if (tableMode == checkTableMode) {
+    if constexpr (tableMode == checkTableMode) {
       if (buildFlag00OccTable) {
         executeOccProducerProcessing<processMode, fillOccTable, meanTableMode, robustTableMode, meanRobustTableMode>(BCs, collisions, tracks);
       } else {
         executeOccProducerProcessing<processMode, doNotFill, meanTableMode, robustTableMode, meanRobustTableMode>(BCs, collisions, tracks);
       }
-    }
-    if constexpr (tableMode == checkTableMode) {
       return;
     }
 
-    if (meanTableMode == checkTableMode) {
+    if constexpr (meanTableMode == checkTableMode) {
       if (buildFlag01OccMeanTable) {
         executeOccProducerProcessing<processMode, tableMode, fillMeanOccTable, robustTableMode, meanRobustTableMode>(BCs, collisions, tracks);
       } else {
         executeOccProducerProcessing<processMode, tableMode, doNotFill, robustTableMode, meanRobustTableMode>(BCs, collisions, tracks);
       }
-    }
-    if constexpr (meanTableMode == checkTableMode) {
       return;
     }
 
-    if (robustTableMode == checkTableMode) {
+    if constexpr (robustTableMode == checkTableMode) {
       if (buildFlag02OccRobustTable) {
         executeOccProducerProcessing<processMode, tableMode, meanTableMode, fillOccRobustTable, meanRobustTableMode>(BCs, collisions, tracks);
       } else {
         executeOccProducerProcessing<processMode, tableMode, meanTableMode, doNotFill, meanRobustTableMode>(BCs, collisions, tracks);
       }
-    }
-    if constexpr (robustTableMode == checkTableMode) {
       return;
     }
 
-    if (meanRobustTableMode == checkTableMode) {
+    if constexpr (meanRobustTableMode == checkTableMode) {
       if (buildFlag03OccMeanRobustTable) {
         executeOccProducerProcessing<processMode, tableMode, meanTableMode, robustTableMode, fillOccMeanRobustTable>(BCs, collisions, tracks);
       } else {
         executeOccProducerProcessing<processMode, tableMode, meanTableMode, robustTableMode, doNotFill>(BCs, collisions, tracks);
       }
-    }
-    if constexpr (meanRobustTableMode == checkTableMode) {
       return;
     }
 
-    if constexpr (tableMode == checkTableMode || meanTableMode == checkTableMode || robustTableMode == checkTableMode || meanRobustTableMode == checkTableMode) {
+    if constexpr (tableMode == checkTableMode || meanTableMode == checkTableMode || robustTableMode == checkTableMode) {
       return;
     } else {
 
@@ -802,7 +794,7 @@ struct OccupancyTableProducer {
 
         auto& vecOccPrimUnfm80 = occPrimUnfm80[i];
         float meanOccPrimUnfm80 = TMath::Mean(vecOccPrimUnfm80.size(), vecOccPrimUnfm80.data());
-        normalizeVector(vecOccPrimUnfm80, meanOccPrimUnfm80 / meanOccPrimUnfm80);
+        // normalizeVector(vecOccPrimUnfm80, meanOccPrimUnfm80 / meanOccPrimUnfm80);
 
         if constexpr (processMode == kProcessFullOccTableProducer || processMode == kProcessOnlyOccPrim || processMode == kProcessOnlyOccT0V0Prim || processMode == kProcessOnlyOccFDDT0V0Prim || processMode == kProcessOnlyOccNtrackDet || processMode == kProcessOnlyOccMultExtra) {
           if constexpr (tableMode == fillOccTable) {
@@ -1699,20 +1691,22 @@ struct TrackMeanOccTableProducer {
   {
     occupancyQA.fill(HIST("occTrackQA/") + HIST(OccDire[occMode]) + HIST(OccNames[occName]), occValue);
     if (fillQA1) {
-      occupancyQA.fill(HIST("occTrackQA/LogRatio/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), std::log(std::abs(occValue / occRobustValue)));
+      float logRatio = std::log(occValue / occRobustValue);
+      float weighted = logRatio * std::sqrt(occValue + occRobustValue);
+      occupancyQA.fill(HIST("occTrackQA/LogRatio/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), logRatio);
       if (fillQA2) {
         int two = 2, twenty = 20, fifty = 50, twoHundred = 200;
         if (std::abs(std::log(occValue / occRobustValue)) < two) { // conditional filling start
-          occupancyQA.fill(HIST("occTrackQA/Condition1/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+          occupancyQA.fill(HIST("occTrackQA/Condition1/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), weighted);
           if (std::abs(occRobustValue + occValue) > twoHundred) {
-            occupancyQA.fill(HIST("occTrackQA/Condition4/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
-            occupancyQA.fill(HIST("occTrackQA/Condition3/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
-            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+            occupancyQA.fill(HIST("occTrackQA/Condition4/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), weighted);
+            occupancyQA.fill(HIST("occTrackQA/Condition3/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), weighted);
+            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), weighted);
           } else if (std::abs(occRobustValue + occValue) > fifty) {
-            occupancyQA.fill(HIST("occTrackQA/Condition3/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
-            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+            occupancyQA.fill(HIST("occTrackQA/Condition3/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), weighted);
+            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), weighted);
           } else if (std::abs(occRobustValue + occValue) > twenty) {
-            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), weighted);
           }
         } // conditional filling end
       }
@@ -1762,29 +1756,25 @@ struct TrackMeanOccTableProducer {
       return;
     }
 
-    if (meanTableMode == checkTableMode) {
+    if constexpr (meanTableMode == checkTableMode) {
       if (buildFlag00MeanTable) {
         executeTrackOccProducerProcessing<processMode, fillMeanOccTable, weightMeanTableMode, qaMode>(BCs, collisions, tracks, tracksQA, occsRobustT0V0Prim, occs, executeInThisBlock);
       } else {
         executeTrackOccProducerProcessing<processMode, doNotFill, weightMeanTableMode, qaMode>(BCs, collisions, tracks, tracksQA, occsRobustT0V0Prim, occs, executeInThisBlock);
       }
-    }
-    if constexpr (meanTableMode == checkTableMode) {
       return;
     }
 
-    if (weightMeanTableMode == checkTableMode) {
+    if constexpr (weightMeanTableMode == checkTableMode) {
       if (buildFlag01WeightMeanTable) {
         executeTrackOccProducerProcessing<processMode, meanTableMode, fillWeightMeanOccTable, qaMode>(BCs, collisions, tracks, tracksQA, occsRobustT0V0Prim, occs, executeInThisBlock);
       } else {
         executeTrackOccProducerProcessing<processMode, meanTableMode, doNotFill, qaMode>(BCs, collisions, tracks, tracksQA, occsRobustT0V0Prim, occs, executeInThisBlock);
       }
-    }
-    if constexpr (weightMeanTableMode == checkTableMode) {
       return;
     }
 
-    if (qaMode == checkQAMode) {
+    if constexpr (qaMode == checkQAMode) {
       if (fillQA1 || fillQA2) {
         if (occsRobustT0V0Prim.size() == 0) {
           LOG(error) << "DEBUG :: ERROR ERROR ERROR :: OccsRobustT0V0Prim.size() == 0 :: Check \"occupancy-table-producer\" for \"buildOnlyOccsT0V0Prim == true\" & \"processOnlyOccT0V0PrimUnfm == true\"";
@@ -1794,8 +1784,6 @@ struct TrackMeanOccTableProducer {
       } else {
         executeTrackOccProducerProcessing<processMode, meanTableMode, weightMeanTableMode, doNotFill>(BCs, collisions, tracks, tracksQA, occsRobustT0V0Prim, occs, executeInThisBlock);
       }
-    }
-    if constexpr (qaMode == checkQAMode) {
       return;
     }
 
@@ -1803,7 +1791,7 @@ struct TrackMeanOccTableProducer {
     // BCs.bindExternalIndices(&occsNTrackDet);
     // BCs.bindExternalIndices(&occsRobust);
 
-    if constexpr (meanTableMode == checkTableMode || weightMeanTableMode == checkTableMode || qaMode == checkQAMode) {
+    if constexpr (meanTableMode == checkTableMode || weightMeanTableMode == checkTableMode) {
       return;
     } else {
       occupancyQA.fill(HIST("h_DFcount_Lvl2"), processMode);
@@ -1958,16 +1946,16 @@ struct TrackMeanOccTableProducer {
         if (doAmbgUpdate) { // sKipping ambiguous tracks for now, will be updated in future
           continue;
         }
-        if (doCollisionUpdate || doAmbgUpdate) { // collision.globalIndex() != oldCollisionIndex){ //don't update if info is same as old collision
+        if (doCollisionUpdate) { // collision.globalIndex() != oldCollisionIndex){ //don't update if info is same as old collision
           if (doCollisionUpdate) {
             oldCollisionIndex = collision.globalIndex();
             bc = collision.template bc_as<B>();
           }
-          if (doAmbgUpdate) {
-            // to be updated later
-            //  bc = collisions.iteratorAt(2).bc_as<aod::BCsWithTimestamps>();
-            //  bc = ambgTracks.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-          }
+          // if (doAmbgUpdate) {
+          // to be updated later
+          //  bc = collisions.iteratorAt(2).bc_as<aod::BCsWithTimestamps>();
+          //  bc = ambgTracks.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+          // }
           // LOG(info)<<" What happens in the case when the collision id is = -1 and it tries to obtain bc"
           getTimingInfo(bc, lastRun, nBCsPerTF, bcSOR, time, tfIdThis, bcInTF);
         }
@@ -2421,7 +2409,6 @@ struct TrackMeanOccTableProducer {
   {
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), kProcessNothing);
     return;
-    occupancyQA.fill(HIST("h_DFcount_Lvl1"), kProcessNothing);
   }
   PROCESS_SWITCH(TrackMeanOccTableProducer, processNothing, "process Nothing From Track Mean Occ Table Producer", true);
 

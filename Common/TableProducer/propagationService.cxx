@@ -25,25 +25,22 @@
 
 #include "PWGLF/Utils/strangenessBuilderModule.h"
 
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/Tools/StandardCCDBLoader.h"
 #include "Common/Tools/TrackPropagationModule.h"
 #include "Common/Tools/TrackTuner.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TObject.h>
 
 #include <string>
 
@@ -80,6 +77,7 @@ struct propagationService {
   o2::pwglf::strangenessbuilder::v0Configurables v0BuilderOpts;
   o2::pwglf::strangenessbuilder::cascadeConfigurables cascadeBuilderOpts;
   o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
+  o2::pwglf::strangenessbuilder::eventSelectOpts eventSelectOpts;
   o2::pwglf::strangenessbuilder::BuilderModule strangenessBuilderModule;
 
   // the track tuner object -> needs to be here as it inherits from ConfigurableGroup (+ has its own copy of ccdbApi)
@@ -102,7 +100,7 @@ struct propagationService {
 
     // task-specific
     trackPropagation.init(trackPropagationConfigurables, trackTunerObj, histos, initContext);
-    strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, histos, initContext);
+    strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, eventSelectOpts, histos, initContext);
   }
 
   void processRealData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)

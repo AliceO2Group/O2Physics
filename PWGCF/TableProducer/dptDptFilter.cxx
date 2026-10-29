@@ -19,36 +19,41 @@
 #include "PWGCF/DataModel/DptDptFiltered.h"
 
 #include "Common/Core/TableHelper.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TDirectory.h>
-#include <TFolder.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
 #include <TList.h>
 #include <TPDGCode.h>
 #include <TParameter.h>
-#include <TProfile3D.h>
-#include <TROOT.h>
+#include <TString.h>
+
+#include <sys/types.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <ios>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -58,6 +63,7 @@ using namespace o2::framework;
 using namespace o2::soa;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
+using namespace o2::common::core;
 
 #define DPTDPTFILTERLOGCOLLISIONS debug
 #define DPTDPTFILTERLOGTRACKS debug
@@ -66,8 +72,8 @@ namespace o2::analysis::dptdptfilter
 {
 using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
 using DptDptFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
-using DptDptTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
-using DptDptTracksFullPID = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+using DptDptTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe, aod::pidTOFbeta>;
+using DptDptTracksFullPID = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFbeta>;
 using DptDptFullTracksPID = soa::Join<DptDptFullTracks, DptDptTracksPID>;
 using DptDptFullTracksPIDAmbiguous = soa::Join<DptDptFullTracksAmbiguous, DptDptTracksPID>;
 using DptDptFullTracksFullPID = soa::Join<DptDptFullTracks, DptDptTracksFullPID>;
@@ -128,7 +134,7 @@ static constexpr float MultiplicityUpperLimitBase[11][8] = {
 };
 
 /* helpers for the multiplicity/centrality correlations exclusion formulae */
-static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = {
+static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = { // NOLINT
   /* no system */ {""},
   /* pp Run2   */ {""},
   /* pPb Run2  */ {""},
@@ -142,7 +148,7 @@ static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = 
   /* pO Run3   */ {""}};
 
 /* helpers for the system type assignment */
-static const std::string periodsOnSystemType[11][1] = {
+static const std::string periodsOnSystemType[11][1] = { // NOLINT
   /* no system */ {""},
   /* pp Run2   */ {""},
   /* pPb Run2  */ {""},
@@ -316,8 +322,8 @@ struct Multiplicity {
 
   MultEst classestimator = kV0M;
 
-  static constexpr float kForMultiplicityPtLowLimit = 0.001f;
-  static constexpr float kForMultiplicityPtHighLimit = 50.0f;
+  static constexpr float KForMultiplicityPtLowLimit = 0.001f;
+  static constexpr float KForMultiplicityPtHighLimit = 50.0f;
   float multiplicityClass = -1.0;
   float multiplicity = 0.0;
   bool inelgth0 = false;
@@ -353,7 +359,7 @@ struct Multiplicity {
 
   void setMultiplicityPercentiles(TList* list)
   {
-    LOGF(info, "setMultiplicityPercentiles()", "From list %s", list->GetName());
+    LOGF(info, "setMultiplicityPercentiles(). From list %s", list->GetName());
     fhV0MMultPercentile = reinterpret_cast<TH1*>(list->FindObject("V0MCentMult"));
     fhCL1MultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1MCentMult"));
     fhCL1EtaGapMultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1EtaGapMCentMult"));
@@ -385,7 +391,7 @@ struct Multiplicity {
       case kProton:
         /* not clear if we should use IsPhysicalPrimary here */
         /* TODO: adapt to FT0M Run 3 and other estimators */
-        if (kForMultiplicityPtLowLimit < p.pt() && p.pt() < kForMultiplicityPtHighLimit) {
+        if (KForMultiplicityPtLowLimit < p.pt() && p.pt() < KForMultiplicityPtHighLimit) {
           if (p.eta() < 1.0f && -1.0f < p.eta()) {
             inelgth0 = true;
           }
@@ -434,24 +440,28 @@ struct Multiplicity {
       if (fhCL1EtaGapMultiplicity != nullptr) {
         fhCL1EtaGapMultiplicity->Fill(cl1EtaGapM, dNchdEta);
       }
+      /* if there is not calibration assign 50% mutltiplicity */
+      if (fhV0MMultPercentile == nullptr && fhCL1MultPercentile == nullptr && fhCL1EtaGapMultPercentile == nullptr) {
+        multiplicityClass = 50;
+      }
       switch (classestimator) {
         case kV0M:
           if (fhV0MMultPercentile != nullptr) {
             multiplicityClass = fhV0MMultPercentile->GetBinContent(fhV0MMultPercentile->FindFixBin(v0am + v0cm));
-            multiplicity = v0am + v0cm;
           }
+          multiplicity = v0am + v0cm;
           break;
         case kCL1:
           if (fhCL1MultPercentile != nullptr) {
             multiplicityClass = fhCL1MultPercentile->GetBinContent(fhCL1MultPercentile->FindFixBin(cl1m));
-            multiplicity = cl1m;
           }
+          multiplicity = cl1m;
           break;
         case kCL1GAP:
           if (fhCL1EtaGapMultPercentile != nullptr) {
             multiplicityClass = fhCL1EtaGapMultPercentile->GetBinContent(fhCL1EtaGapMultPercentile->FindFixBin(cl1EtaGapM));
-            multiplicity = cl1EtaGapM;
           }
+          multiplicity = cl1EtaGapM;
           break;
         default:
           break;
@@ -541,8 +551,10 @@ struct DptDptFilter {
     Configurable<std::string> url{"url", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
     Configurable<std::string> pathNameCorrections{"pathNameCorrections", "", "The CCDB path for the corrections file. Default \"\", i.e. don't load from CCDB"};
     Configurable<std::string> pathNamePID{"pathNamePID", "", "The CCDB path for the PID adjusts file. Default \"\", i.e. don't load from CCDB"};
+    Configurable<std::string> pathNameOTF{"pathNameOTF", "", "The CCDB path for the OTF configuration file. Default \"\", i.e. don't load from CCDB"};
     Configurable<std::string> dateCorrections{"dateCorrections", "20220307", "The CCDB date for the corrections input file"};
     Configurable<std::string> datePID{"datePID", "20220307", "The CCDB date for the PID adjustments input file"};
+    Configurable<std::string> dateOTF{"dateOTF", "20260306", "The CCDB date for the OTF configuration file"};
     Configurable<std::string> suffix{"suffix", "", "Dataset period suffix for metadata discrimination"};
   } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"cfgFullDerivedData", false, "Produce the full derived data for external storage. Default false"};
@@ -591,9 +603,12 @@ struct DptDptFilter {
   Produces<aod::DptDptCFGenCollisionsInfo> gencollisionsinfo;
 
   Multiplicity multiplicity;
+  std::string otfGenerator;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  bool storedCcdbInfo = false;
   Preslice<DptDptFullTracksDetLevel> perCollision = aod::track::collisionId;
 
-  void init(InitContext const&)
+  void init(InitContext& initContext)
   {
     using namespace dptdptfilter;
 
@@ -639,10 +654,25 @@ struct DptDptFilter {
     triggerSelectionFlags = getTriggerSelection(cfgEventSelection.triggSel.value.c_str());
     traceCollId0 = cfgTraceCollId0;
 
-    /* get the system type */
-    fSystem = getSystemType(cfgSystemForPeriod.value);
-    fLhcRun = multRunForSystemMap.at(fSystem);
+    /* get the data type and the system type */
     fDataType = getDataType(cfgDataType);
+    if (fDataType != kOnTheFly) {
+      fSystem = getSystemType(cfgSystemForPeriod.value);
+      fLhcRun = multRunForSystemMap.at(fSystem);
+    } else {
+      std::string tmpstr;
+      getTaskOptionValue(initContext, "generator-task", "configFile", tmpstr, false);
+      TString fullPath = tmpstr;
+      auto tokens = fullPath.Tokenize("/");
+      if (tokens->GetEntries() > 0) {
+        otfGenerator = TString(tokens->At(tokens->GetEntries() - 1)->GetName()).ReplaceAll(".ini", "");
+      } else {
+        /* let's take it from the time being from the data type string */
+        otfGenerator = TString(cfgDataType).ReplaceAll("OnTheFlyMC_", "");
+      }
+      delete tokens;
+      LOGF(info, "The generator configuration file: %s", otfGenerator.c_str());
+    }
 
     /* the multiplicities outliers exclusion */
     multiplicityCentralityCorrelationsExclusion = getExclusionFormula(cfgEventSelection.multiplicitiesExclusionFormula->getData()[fSystem][0].c_str());
@@ -674,9 +704,9 @@ struct DptDptFilter {
       fhVertexZA = new TH1F("VertexZA", "Vertex Z; z_{vtx}", zvtxbins, zvtxlow, zvtxup);
 
 /* helpers for the multiplicity/centrality axes definition */
-#define DPTDPTCENTRALITYAXIS 105, -0.5f, 104.5f
+#define DPTDPTCENTRALITYAXIS 105, 0.f, 105.0f
 #define DPTDPTFWMULTIPLICITYAXIS(est) 1000, 0.0f, cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est]
-#define DPTDPTMULTIPLICITYAXIS(est) cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] + 1, -0.5f, cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] + 0.5f
+#define DPTDPTMULTIPLICITYAXIS(est) cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] + 1, 0.0f, cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] + 1.0f
 
       std::string_view multestimator = getCentMultEstimatorName(fCentMultEstimator);
       fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", DPTDPTCENTRALITYAXIS);
@@ -761,6 +791,23 @@ struct DptDptFilter {
       } else {
         fOutputList->Add(fhTrueVertexZAA);
       }
+    }
+    /* initialize access to the CCDB */
+    ccdb->setURL(cfginputfile.url);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+  }
+
+  void getCCDBInformation()
+  {
+    /* let's get a potential OTF configuration */
+    if ((cfginputfile.dateOTF.value.length() > 0) && (cfginputfile.pathNameOTF.value.length() > 0) && !storedCcdbInfo) {
+      LOGF(info, "Getting information for OTF configuration from %s, at %s", cfginputfile.pathNameOTF.value.c_str(), cfginputfile.dateOTF.value.c_str());
+      TList* otfinfo = getCCDBInput(ccdb, cfginputfile.pathNameOTF.value.c_str(), cfginputfile.dateOTF.value.c_str(), true, otfGenerator);
+      if (otfinfo != nullptr) {
+        multiplicity.setMultiplicityPercentiles(otfinfo);
+      }
+      storedCcdbInfo = true;
     }
   }
 
@@ -1052,6 +1099,8 @@ void DptDptFilter::processOnTheFlyGeneratorLevel(aod::McCollision const& mccolli
   fhTrueVertexZB->Fill(mccollision.posZ());
   /* we assign a default value for the time being */
   float centormult = 50.0f;
+  /* ask for configuration */
+  getCCDBInformation();
   if (isEventSelected(mccollision, centormult)) {
     acceptedEvent = true;
     multiplicity.extractMultiplicity(mcparticles);
@@ -1111,7 +1160,7 @@ struct DptDptFilterTracks {
   Configurable<int> cfgTrackType{"cfgTrackType", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy;50-53 w tighter pT DCAz. Default 4"};
   Configurable<bool> cfgOnlyInOneSide{"cfgOnlyInOneSide", false, "select tracks that don't cross the TPC central membrane. Default false"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"cfgTraceDCAOutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
-  Configurable<float> cfgTraceOutOfSpeciesParticles{"cfgTraceOutOfSpeciesParticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
+  Configurable<float> cfgTraceOutOfSpeciesParticles{"cfgTraceOutOfSpeciesParticles", false, "Track the particles which are not e,mu,pi,K,p,d: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"cfgRecoIdMethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries, 4 mcparticle only sec, 5 mcparicle only sec from decays, 6 mcparticle only sec from material. Default 0"};
   Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"cfgTuneTrackSelection", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, tpcshcls-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,0.4,false,2.4,false,3.2,false}"};
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"cfgPionPIDSelection",
@@ -1129,6 +1178,9 @@ struct DptDptFilterTracks {
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgMuonPIDSelection{"cfgMuonPIDSelection",
                                                                        {},
                                                                        "PID criteria for muons"};
+  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgDeuteronPIDSelection{"cfgDeuteronPIDSelection",
+                                                                           {},
+                                                                           "PID criteria for deuterons"};
 
   OutputObj<TList> fOutput{"DptDptFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> fPDG;
@@ -1200,13 +1252,13 @@ struct DptDptFilterTracks {
     tpcExcluder = TpcExcludeTrack(tpcExclude);
     tpcExcluder.setCuts(pLowCut, pUpCut, nLowCut, nUpCut);
 
-    /* self configure system type and data type */
-    o2::framework::LabeledArray<std::string> tmpLabeledArray = {};
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystemForPeriod", tmpLabeledArray, false);
-    fSystem = getSystemType(tmpLabeledArray);
+    /* self configure data type and system */
     std::string tmpstr;
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgDataType", tmpstr, false);
     fDataType = getDataType(tmpstr);
+    o2::framework::LabeledArray<std::string> tmpLabeledArray = {};
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystemForPeriod", tmpLabeledArray, false);
+    fSystem = getSystemType(tmpLabeledArray);
 
     /* required ambiguous tracks checks? */
     if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterDetectorLevelWithFullPIDAmbiguous ||
@@ -1231,6 +1283,7 @@ struct DptDptFilterTracks {
     insertInPIDselector(cfgPionPIDSelection, 2);
     insertInPIDselector(cfgKaonPIDSelection, 3);
     insertInPIDselector(cfgProtonPIDSelection, 4);
+    insertInPIDselector(cfgDeuteronPIDSelection, 5);
 
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
@@ -1432,7 +1485,7 @@ struct DptDptFilterTracks {
     /* the debug info output file if required */
     if (cfgOutDebugInfo) {
       debugstream.open("tracings.csv");
-      debugstream << "p,piw,pt,hastof,dEdx,beta,tpcnEl,tpcnMu,tpcnPi,tpcnKa,tpcnPr,tofnEl,tofnMu,tofnPi,tofnKa,tofnPr,tpcnElSft,tpcnMuSft,tpcnPiSft,tpcnKaSft,tpcnPrSft,tofnElSft,tofnMuSft,tofnPiSft,tofnKaSft,tofnPrSft,idcode,pid,pid2,truepid,phprim,process\n";
+      debugstream << "p,piw,pt,hastof,dEdx,beta,tpcnEl,tpcnMu,tpcnPi,tpcnKa,tpcnPr,tpcnDe,tofnEl,tofnMu,tofnPi,tofnKa,tofnPr,tofnDe,tpcnElSft,tpcnMuSft,tpcnPiSft,tpcnKaSft,tpcnPrSft,tpcnDeSft,tofnElSft,tofnMuSft,tofnPiSft,tofnKaSft,tofnPrSft,tofnDeSft,idcode,pid,pid2,truepid,phprim,process\n";
       debugstream.close();
     }
   }

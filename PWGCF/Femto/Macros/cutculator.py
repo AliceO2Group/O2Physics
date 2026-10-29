@@ -1,0 +1,370 @@
+#!/usr/bin/env python3
+
+# Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+# See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+# All rights not expressly granted are reserved.
+#
+# This software is distributed under the terms of the GNU General Public
+# License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+#
+# In applying this license CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as an Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+"""!
+@brief  CutCulator (Compute bitmask for selecting particles in the Femto Framework)
+@author Anton Riedel <anton.riedel@cern.ch>, Technical University of Munich
+"""
+import ROOT  # pylint: disable=import-error
+import argparse
+
+VALUE_DELIM = "___"
+SECTION_DELIM = ":::"
+
+
+def parse_bin_label(label):
+    """Parse a bin label into a dictionary."""
+    result = {}
+    sections = label.split(SECTION_DELIM)
+    for sec in sections:
+        if VALUE_DELIM not in sec:
+            continue
+        key, value = sec.split(VALUE_DELIM, 1)
+        result[key] = value
+    return result
+
+
+def is_filter_histogram(bins):
+    """
+    Determine whether the parsed bins belong to a filter histogram (fixed,
+    non-selectable pre-filter values) rather than a selection/bitmask histogram.
+    Filter bins carry a "FilterName" key; selection bins carry "SelectionName".
+    """
+    for b in bins:
+        if "FilterName" in b:
+            return True
+        if "SelectionName" in b:
+            return False
+    # no parseable bins at all; treat as selection histogram (existing behavior)
+    return False
+
+
+def format_value_with_comment(b):
+    """Return Value plus optional (comment=...) suffix."""
+    val = b.get("Value", "")
+    comment = b.get("Comment", "")
+    if comment and comment.upper() != "X":
+        return f"{val} (comment={comment})"
+    return val
+
+
+def print_filter_values(bins):
+    """
+    Filters are fixed values already applied when the producer ran — there is
+    nothing to select. Just print each filter's name and value.
+    """
+    print("\n=======================================")
+    print("Filter values used in this histogram:")
+    print("=======================================\n")
+    for b in bins:
+        name = b.get("FilterName", "unknown")
+        value = b.get("FilterValue", "")
+        print(f"  {name}: {value}")
+
+
+def ask_user_selection(group):
+    """
+    Prompt user to select bin(s) for this selection group.
+    - If minimal selections contain exactly 1 entry → auto-select it.
+    - Optional selections remain user-selectable.
+    - Neutral selections are neither minimal nor optional (useful for rejection masks or in pass through mode)
+    """
+    selection_name = group[0].get("SelectionName", "unknown")
+
+    # Separate bins by type
+    minimal_bins = [b for b in group if b.get("MinimalCut", "0") == "1" and b.get("OptionalCut", "0") == "0"]
+    optional_bins = [b for b in group if b.get("OptionalCut", "0") == "1"]
+    neutral_bins = [
+        b
+        for b in group
+        if b.get("MinimalCut", "0") == "0"
+        and b.get("OptionalCut", "0") == "0"
+        and b.get("BitPosition", "X").upper() != "X"
+    ]
+
+    selected_bins = []
+
+    # ----- Minimal selection -----
+    if minimal_bins:
+        if len(minimal_bins) == 1:
+            only = minimal_bins[0]
+            print(
+                f"\nSelection: {selection_name} — only one minimal option → auto-selecting: "
+                f"{format_value_with_comment(only)}"
+            )
+            selected_bins.append(only)
+        else:
+            print(f"\nSelection: {selection_name}")
+            for idx, b in enumerate(minimal_bins):
+                print(f"  [{idx}] {format_value_with_comment(b)}")
+            while True:
+                sel_input = input("Enter index for minimal cut (0 = loosest minimal): ")
+                if sel_input.strip() == "":
+                    sel_input = "0"
+                try:
+                    sel_idx = int(sel_input)
+                    if 0 <= sel_idx < len(minimal_bins):
+                        choice = minimal_bins[sel_idx]
+                        selected_bins.append(choice)
+                        print(f"Selected: {format_value_with_comment(choice)}")
+                        break
+                except ValueError:
+                    pass
+                print("Invalid input. Please enter a valid index.")
+
+    # ----- Optional selection -----
+    if optional_bins:
+        print(f"\nSelection: {selection_name} (optional selection, 0 to skip)")
+        for idx, b in enumerate(optional_bins, start=1):
+            print(f"  [{idx}] {format_value_with_comment(b)}")
+
+        while True:
+            sel_input = input("Enter indices separated by space (0 to skip): ")
+            if not sel_input.strip() or sel_input.strip() == "0":
+                print("Selected: (skipped)")
+                break
+
+            try:
+                indices = [int(x) for x in sel_input.split()]
+                if all(0 <= i <= len(optional_bins) for i in indices):
+                    chosen = []
+                    for i in indices:
+                        if i != 0:
+                            b = optional_bins[i - 1]
+                            selected_bins.append(b)
+                            chosen.append(format_value_with_comment(b))
+                    print("Selected: " + ", ".join(chosen))
+                    break
+            except ValueError:
+                pass
+
+            print("Invalid input. Please enter valid indices separated by space.")
+
+    # ----- Neither minimal nor optional-----
+    if neutral_bins:
+        print(f"\nSelection: {selection_name} (neutral selection, 0 to skip)")
+        for idx, b in enumerate(neutral_bins, start=1):
+            print(f"  [{idx}] {format_value_with_comment(b)}")
+
+        while True:
+            sel_input = input("Enter indices separated by space (0 to skip): ")
+            if not sel_input.strip() or sel_input.strip() == "0":
+                print("Selected: (skipped)")
+                break
+
+            try:
+                indices = [int(x) for x in sel_input.split()]
+                if all(0 <= i <= len(neutral_bins) for i in indices):
+                    chosen = []
+                    for i in indices:
+                        if i != 0:
+                            b = neutral_bins[i - 1]
+                            selected_bins.append(b)
+                            chosen.append(format_value_with_comment(b))
+                    print("Selected: " + ", ".join(chosen))
+                    break
+            except ValueError:
+                pass
+
+            print("Invalid input. Please enter valid indices separated by space.")
+
+    return selected_bins
+
+
+def parse_bitmask(text):
+    """Parse a bitmask given as decimal, hex (0x...) or binary (0b...)."""
+    text = text.strip()
+    try:
+        value = int(text, 0)
+    except ValueError:
+        # int(x, 0) rejects decimals with leading zeros, e.g. "010"
+        value = int(text, 10)
+    if value < 0:
+        raise ValueError("bitmask must be non-negative")
+    return value
+
+
+def is_minimal_bin(b):
+    return b.get("MinimalCut", "0") == "1" and b.get("OptionalCut", "0") == "0"
+
+
+def print_decoded_bitmask(groups, bitmask):
+    """
+    Print all cuts selected by the given bitmask, grouped by selection. Minimal
+    cuts with BitPosition X (always applied) are listed as well for every
+    selection where no stricter minimal bit is set.
+    """
+    print("\n=======================================")
+    print(f"Cuts selected by bitmask {bitmask} ({hex(bitmask)}):")
+    print("=======================================\n")
+
+    known_bits = set()
+    for sel_name, group in groups.items():
+        selected = []
+        has_minimal_bit = False
+        for b in group:
+            pos = b.get("BitPosition", "X")
+            if pos.upper() == "X":
+                continue
+            known_bits.add(int(pos))
+            if bitmask & (1 << int(pos)):
+                selected.append(b)
+                if is_minimal_bin(b):
+                    has_minimal_bit = True
+
+        entries = []
+        if not has_minimal_bit:
+            for b in group:
+                if is_minimal_bin(b) and b.get("BitPosition", "X").upper() == "X":
+                    entries.append(f"{format_value_with_comment(b)} [minimal, no bit]")
+        for b in selected:
+            if is_minimal_bin(b):
+                kind = "minimal"
+            elif b.get("OptionalCut", "0") == "1":
+                kind = "optional"
+            else:
+                kind = "neutral"
+            entries.append(f"{format_value_with_comment(b)} [{kind}, bit {b.get('BitPosition')}]")
+
+        if entries:
+            print(f"  {sel_name}:")
+            for e in entries:
+                print(f"    {e}")
+
+    unknown_bits = [i for i in range(bitmask.bit_length()) if bitmask & (1 << i) and i not in known_bits]
+    if unknown_bits:
+        print(f"\nWarning: bit(s) {', '.join(map(str, unknown_bits))} are set but not defined in this histogram!")
+
+    print("\nBitmask:")
+    print(f"  Decimal: {bitmask}")
+    print(f"  Binary:  {bin(bitmask)}")
+    print(f"  Hex:     {hex(bitmask)}")
+
+
+def main(rootfile_path, tdir_path="femto-producer", decode=False):
+    print(f"Opening ROOT file: {rootfile_path}")
+    f = ROOT.TFile.Open(rootfile_path)
+    if not f:
+        print("Cannot open ROOT file")
+        return
+
+    print(f"Accessing directory: {tdir_path}")
+    d = f.Get(tdir_path)
+    if not d:
+        print(f"Cannot access directory {tdir_path}")
+        return
+
+    histograms = [k.GetName() for k in d.GetListOfKeys() if k.ReadObj().InheritsFrom("TH1")]
+    if not histograms:
+        print("No histograms found")
+        return
+
+    print("\nHistograms found in directory:")
+    for i, hname in enumerate(histograms):
+        print(f"  [{i}] {hname}")
+    while True:
+        try:
+            hidx = int(input("\nSelect histogram index: "))
+            if 0 <= hidx < len(histograms):
+                break
+        except ValueError:
+            pass
+        print("Invalid index.")
+    hname = histograms[hidx]
+    hist = d.Get(hname)
+    nbins = hist.GetNbinsX()
+    print(f"\nUsing histogram: {hname}")
+    print(f"Histogram contains {nbins} bins.\n")
+
+    # parse all bins, ignoring the last 2 special bins ("All analyzed"/"All passed",
+    # present on both selection and filter histograms)
+    bins = []
+    for i in range(1, nbins - 2 + 1):
+        label = hist.GetXaxis().GetBinLabel(i)
+        if not label:
+            continue
+        bdict = parse_bin_label(label)
+        bdict["_bin_index"] = i
+        bins.append(bdict)
+
+    if not bins:
+        print("No parseable bins found in this histogram.")
+        return
+
+    # filter histograms carry fixed, already-applied values — nothing to select,
+    # so just print them and skip the interactive/bitmask machinery entirely
+    if is_filter_histogram(bins):
+        print_filter_values(bins)
+        return
+
+    # group by SelectionName
+    groups = {}
+    for b in bins:
+        sel_name = b.get("SelectionName", f"unknown_{b['_bin_index']}")
+        groups.setdefault(sel_name, []).append(b)
+
+    # decode an existing bitmask instead of building a new one
+    if decode:
+        while True:
+            try:
+                bitmask = parse_bitmask(input("\nEnter bitmask to decode (dec, 0x hex or 0b bin): "))
+                break
+            except ValueError:
+                print("Invalid bitmask.")
+        print_decoded_bitmask(groups, bitmask)
+        return
+
+    selected_bins = []
+
+    for group in groups.values():
+        res = ask_user_selection(group)
+        if res:
+            selected_bins.extend(res)
+
+    # compute bitmask from selected bins
+    bitmask = 0
+    for b in selected_bins:
+        pos = b.get("BitPosition", "")
+        if pos.upper() == "X":
+            continue
+        bitmask |= 1 << int(pos)
+
+    print("\n=======================================")
+    print("Summary of your selections:")
+    print("=======================================\n")
+
+    summary = {}
+    for b in selected_bins:
+        sel = b.get("SelectionName", "unknown")
+        summary.setdefault(sel, []).append(format_value_with_comment(b))
+
+    for sel, values in summary.items():
+        print(f"  {sel}: {', '.join(values)}")
+
+    print("\nFinal selected bitmask:")
+    print(f"  Decimal: {bitmask}")
+    print(f"  Binary:  {bin(bitmask)}")
+    print(f"  Hex:     {hex(bitmask)}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("rootfile", help="Path to ROOT file")
+    parser.add_argument("--dir", default="femto-producer", help="TDirectory path in ROOT file")
+    parser.add_argument(
+        "--bitmask",
+        action="store_true",
+        help="Ask for a bitmask after selecting the histogram and print the cuts it selects",
+    )
+    args = parser.parse_args()
+    main(args.rootfile, args.dir, args.bitmask)
