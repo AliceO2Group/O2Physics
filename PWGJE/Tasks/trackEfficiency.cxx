@@ -252,8 +252,8 @@ struct TrackEfficiency {
       LOGP(fatal, "FT0A and FT0C means must have magnitude greater than {} to avoid near-zero denominators; stopping workflow", minFT0Mean);
     }
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     if (useCustomTrackSelection) {
       // Custom track cuts

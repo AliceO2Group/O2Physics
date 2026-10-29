@@ -266,8 +266,8 @@ struct JetChargedV2 {
     AxisSpec axixCent = {20, 0, 100};
     AxisSpec axisChID = {220, 0, 220};
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     randomNumber.SetSeed(0);
 
     if (doprocessCollisions || doprocessCollisionsWeighted) {

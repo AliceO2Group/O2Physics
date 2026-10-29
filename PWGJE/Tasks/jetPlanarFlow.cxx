@@ -134,9 +134,9 @@ struct JetPlanarFlowTask {
 
   void init(o2::framework::InitContext&)
   {
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    particleSelection = static_cast<std::string>(particleSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    particleSelection = particleSelections;
     precisionMask = 0xFFFFFC00;
 
     AxisSpec centralityAxis = {1200, -10., 110., "Centrality"};
