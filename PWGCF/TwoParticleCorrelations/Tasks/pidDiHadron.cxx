@@ -235,7 +235,6 @@ struct PidDiHadron {
   Partition<FilteredTracks> asscTracks = (aod::track::pt > cfgGeneral.cfgAsscPtMin) && (aod::track::pt < cfgGeneral.cfgAsscPtMax);
   Partition<FilteredMcTracks> asscTracksMC = (aod::mcparticle::pt > cfgGeneral.cfgAsscPtMin) && (aod::mcparticle::pt < cfgGeneral.cfgAsscPtMax);
 
-  Preslice<FilteredMcTracks> mcTracksPerCol = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<aod::McCollisionLabels> collisionPerMCCollision = aod::mccollisionlabel::mcCollisionId;
 
   // Corrections
