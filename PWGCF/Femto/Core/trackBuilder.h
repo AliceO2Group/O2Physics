@@ -598,6 +598,9 @@ struct TrackBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FDeuteronPids> producedDeuteronPids;
   o2::framework::Produces<o2::aod::FTritonPids> producedTritonPids;
   o2::framework::Produces<o2::aod::FHeliumPids> producedHeliumPids;
+  o2::framework::Produces<o2::aod::FItsPurity> producedItsPurity;
+  o2::framework::Produces<o2::aod::FTpcPurity> producedTpcPurity;
+  o2::framework::Produces<o2::aod::FTofPurity> producedTofPurity;
 };
 
 struct ConfTrackTables : o2::framework::ConfigurableGroup {
@@ -615,6 +618,9 @@ struct ConfTrackTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceDeuteronPids{"produceDeuteronPids", -1, "Produce DeuteronPids (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceTritonPids{"produceTritonPids", -1, "Produce TritonPids (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceHeliumPids{"produceHeliumPids", -1, "Produce HeliumPids (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceItsPurity{"produceItsPurity", -1, "Produce ItsPurity (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceTpcPurity{"produceTpcPurity", -1, "Produce TpcPurity (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceTofPurity{"produceTofPurity", -1, "Produce TofPurity (-1: auto; 0 off; 1 on)"};
 };
 
 template <auto& SelectionHistName, auto& FilterHistName>
@@ -642,6 +648,52 @@ class TrackBuilder
     mProduceDeuteronPids = utils::enableTable("FDeuteronPids_001", table.produceDeuteronPids.value, initContext);
     mProduceTritonPids = utils::enableTable("FTritonPids_001", table.produceTritonPids.value, initContext);
     mProduceHeliumPids = utils::enableTable("FHeliumPids_001", table.produceHeliumPids.value, initContext);
+    mProduceItsPurity = utils::enableTable("FItsPurity_001", table.produceItsPurity.value, initContext);
+    mProduceTpcPurity = utils::enableTable("FTpcPurity_001", table.produceTpcPurity.value, initContext);
+    mProduceTofPurity = utils::enableTable("FTofPurity_001", table.produceTofPurity.value, initContext);
+
+    if (mProduceItsPurity || mProduceTpcPurity || mProduceTofPurity) {
+      // assign each active species (requirePidXxx == true) to the next free slot (0-3), in
+      // canonical order (PuritySpeciesName); species with requirePidXxx == false get no slot.
+      const std::array<bool, PuritySpeciesLast> requirePid = {
+        config.requirePidElectron.value, config.requirePidPion.value, config.requirePidKaon.value,
+        config.requirePidProton.value, config.requirePidDeuteron.value, config.requirePidTriton.value, config.requirePidHelium.value};
+
+      int nextSlot = 0;
+      for (int i = 0; i < PuritySpeciesLast; i++) {
+        if (!requirePid[i]) {
+          continue;
+        }
+        if (nextSlot >= utils::PurityNSlots) {
+          LOG(fatal) << "More than " << utils::PurityNSlots << " species have requirePidXxx enabled, "
+                     << "but the purity tables only have " << utils::PurityNSlots << " slots. "
+                     << "Disable requirePidXxx for species you don't need purity info for. Breaking...";
+        }
+        mPuritySlot[i] = nextSlot;
+        nextSlot++;
+      }
+
+      // one bin per species (own SelectionName -> own cutculator group), plus the usual
+      // trailing "All analyzed"/"All passed" pair that cutculator always skips by position.
+      // BitPosition___X (unassigned species) is deliberately excluded from cutculator's
+      // "neutral" category, so nothing is selectable for a species that isn't configured here.
+      // Picking the one assigned bit for a species gives exactly 1<<slot -- the one-hot
+      // puritySlotMask value to paste into the downstream TrackSelection, with no changes
+      // needed in cutculator.py itself.
+      registry->add("hPuritySlotAssignment", "Purity slot assignment", o2::framework::HistType::kTH1F, {{PuritySpeciesLast + 2, -0.5, PuritySpeciesLast + 2 - 0.5}});
+      auto hSlotAssignment = registry->get<TH1>(HIST("hPuritySlotAssignment"));
+      for (int i = 0; i < PuritySpeciesLast; i++) {
+        std::string bitPosition = mPuritySlot[i] >= 0 ? std::to_string(mPuritySlot[i]) : "X";
+        std::string value = mPuritySlot[i] >= 0 ? ("Slot " + std::to_string(mPuritySlot[i])) : "Not configured";
+        std::string label = std::string("SelectionName___") + PuritySpeciesName[i] +
+                            ":::MinimalCut___0:::OptionalCut___0:::BitPosition___" + bitPosition +
+                            ":::Value___" + value;
+        hSlotAssignment->GetXaxis()->SetBinLabel(i + 1, label.c_str());
+        hSlotAssignment->Fill(i, 1);
+      }
+      hSlotAssignment->GetXaxis()->SetBinLabel(PuritySpeciesLast + 1, "All analyzed");
+      hSlotAssignment->GetXaxis()->SetBinLabel(PuritySpeciesLast + 2, "All passed");
+    }
 
     if (mProduceTracks && mProduceLiteTracks) {
       LOG(fatal) << "FTracks and FLiteTracks are mutually exclusive -- enable only one. "
@@ -660,7 +712,7 @@ class TrackBuilder
                  << "or switch to FTracks if CollisionTables.produceCollisions is enabled instead.";
     }
 
-    if (mProduceTracks || mProduceLiteTracks || mProduceTrackMasks || mProduceTrackMass || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids) {
+    if (mProduceTracks || mProduceLiteTracks || mProduceTrackMasks || mProduceTrackMass || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids || mProduceItsPurity || mProduceTpcPurity || mProduceTofPurity) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -797,6 +849,41 @@ class TrackBuilder
       }
       trackProducts.producedHeliumPids(itsHe, track.tpcNSigmaHe(), track.tofNSigmaHe());
     }
+    if (mProduceItsPurity || mProduceTpcPurity || mProduceTofPurity) {
+      // raw nSigma per species, same values already used for the FXxxPids blocks above --
+      // unused slots (species without a requirePidXxx flag, or not covered by this track
+      // type) stay at the 0 placeholder, same contract as the missing-Tof case
+      std::array<float, PuritySpeciesLast> itsNSigma = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+      std::array<float, PuritySpeciesLast> tpcNSigma = {track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
+      std::array<float, PuritySpeciesLast> tofNSigma = {track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
+
+      if constexpr (requires(T1 t) { t.itsNSigmaEl(); }) {
+        itsNSigma = {track.itsNSigmaEl(), track.itsNSigmaPi(), track.itsNSigmaKa(), track.itsNSigmaPr(), track.itsNSigmaDe(), track.itsNSigmaTr(), track.itsNSigmaHe()};
+      }
+
+      std::array<float, utils::PurityNSlots> itsSlots = {0.f, 0.f, 0.f, 0.f};
+      std::array<float, utils::PurityNSlots> tpcSlots = {0.f, 0.f, 0.f, 0.f};
+      std::array<float, utils::PurityNSlots> tofSlots = {0.f, 0.f, 0.f, 0.f};
+      bool hasTof = track.hasTOF();
+      for (int i = 0; i < PuritySpeciesLast; i++) {
+        if (mPuritySlot[i] < 0) {
+          continue;
+        }
+        itsSlots[mPuritySlot[i]] = itsNSigma[i];
+        tpcSlots[mPuritySlot[i]] = tpcNSigma[i];
+        tofSlots[mPuritySlot[i]] = hasTof ? tofNSigma[i] : 0.f; // PurityHasTof is the gate; 0 here is just a placeholder
+      }
+
+      if (mProduceItsPurity) {
+        trackProducts.producedItsPurity(utils::packPurityNSigma4(itsSlots[0], itsSlots[1], itsSlots[2], itsSlots[3], o2::aod::femtotracks::NSigmaPurityMagMin, o2::aod::femtotracks::NSigmaPurityMagMax));
+      }
+      if (mProduceTpcPurity) {
+        trackProducts.producedTpcPurity(utils::packPurityNSigma4(tpcSlots[0], tpcSlots[1], tpcSlots[2], tpcSlots[3], o2::aod::femtotracks::NSigmaPurityMagMin, o2::aod::femtotracks::NSigmaPurityMagMax));
+      }
+      if (mProduceTofPurity) {
+        trackProducts.producedTofPurity(utils::packPurityNSigma4(tofSlots[0], tofSlots[1], tofSlots[2], tofSlots[3], o2::aod::femtotracks::NSigmaPurityMagMin, o2::aod::femtotracks::NSigmaPurityMagMax), hasTof);
+      }
+    }
     return true;
   }
 
@@ -892,6 +979,16 @@ class TrackBuilder
   bool mProduceDeuteronPids = false;
   bool mProduceTritonPids = false;
   bool mProduceHeliumPids = false;
+  bool mProduceItsPurity = false;
+  bool mProduceTpcPurity = false;
+  bool mProduceTofPurity = false;
+
+  // canonical species order for purity slot assignment -- fixed, not configurable (see
+  // init() for how requirePidXxx flags map onto slots 0-3)
+  static constexpr int PuritySpeciesLast = 7;
+  static constexpr std::array<const char*, PuritySpeciesLast> PuritySpeciesName = {"Electron", "Pion", "Kaon", "Proton", "Deuteron", "Triton", "Helium"};
+  // mPuritySlot[i] = assigned slot (0-3) for species i (PuritySpeciesName order), or -1 if not assigned
+  std::array<int, PuritySpeciesLast> mPuritySlot = {-1, -1, -1, -1, -1, -1, -1};
 
   std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughters of lambdas, cascades and resonances ...
 };
@@ -900,6 +997,12 @@ struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFTracks> producedTracks;
   o2::framework::Produces<o2::aod::StoredFTrackMasks> producedTrackMasks;
   o2::framework::Produces<o2::aod::StoredFTrackMass> producedTrackMass;
+  // purity/fraction, copied through if the input track type has them joined (same
+  // compile-time-detected, opt-in-by-type pattern as producedTrackMass above)
+  o2::framework::Produces<o2::aod::StoredFItsPurity> producedItsPurity;
+  o2::framework::Produces<o2::aod::StoredFTpcPurity> producedTpcPurity;
+  o2::framework::Produces<o2::aod::StoredFTofPurity> producedTofPurity;
+  o2::framework::Produces<o2::aod::StoredFTrackDcas> producedTrackDcas;
 };
 
 struct ConfTrackTablesDerivedToDerived : o2::framework::ConfigurableGroup {
@@ -976,6 +1079,14 @@ class TrackBuilderDerivedToDerived
     trackProducts.producedTrackMasks(track.mask());
     if constexpr (utils::HasMass<T1>) {
       trackProducts.producedTrackMass(track.mass());
+    }
+    if constexpr (requires(T1 t) { t.itsPackedNSigma(); }) {
+      trackProducts.producedItsPurity(track.itsPackedNSigma());
+      trackProducts.producedTpcPurity(track.tpcPackedNSigma());
+      trackProducts.producedTofPurity(track.tofPackedNSigma(), track.purityHasTof());
+    }
+    if constexpr (requires(T1 t) { t.dcaXY(); }) {
+      trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
     }
 
     const int64_t idx = trackProducts.producedTracks.lastIndex();

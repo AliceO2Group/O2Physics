@@ -46,6 +46,9 @@ struct FemtoProducerDerivedToDerived {
 
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
   using FemtoTracksWithMass = o2::soa::Join<FemtoTracks, o2::aod::FTrackMass>;
+  // opt-in: carries the packed purity tables and FTrackDcas through to the re-written output --
+  // needs the upstream producer's TrackTables.produceItsPurity/produceTpcPurity/produceTofPurity/produceTrackDcas enabled
+  using FemtoTracksWithPurity = o2::soa::Join<FemtoTracks, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity, o2::aod::FTrackDcas>;
   using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks>;
   using FemtoK0shorts = o2::soa::Join<o2::aod::FK0shorts, o2::aod::FK0shortMasks>;
   using FemtoRho0s = o2::soa::Join<o2::aod::FRho0s, o2::aod::FRho0Masks>;
@@ -84,6 +87,10 @@ struct FemtoProducerDerivedToDerived {
   o2::framework::Partition<FemtoTracksWithMass> trackWithMassPartition1 = MAKE_TRACK_PARTITION_WITH_MASS(trackSelections1);
   o2::framework::Partition<FemtoTracksWithMass> trackWithMassPartition2 = MAKE_TRACK_PARTITION_WITH_MASS(trackSelections2);
   o2::framework::Preslice<FemtoTracksWithMass> perColTracksWithMass = o2::aod::femtobase::stored::fColId;
+
+  o2::framework::Partition<FemtoTracksWithPurity> trackWithPurityPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
+  o2::framework::Partition<FemtoTracksWithPurity> trackWithPurityPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
+  o2::framework::Preslice<FemtoTracksWithPurity> perColTracksWithPurity = o2::aod::femtobase::stored::fColId;
 
   // v0 builder
   v0builder::V0BuilderDerivedToDerived v0Builder;
@@ -159,7 +166,7 @@ struct FemtoProducerDerivedToDerived {
   void init(o2::framework::InitContext& /*context*/)
   {
     const int activeProcesses =
-      static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksWithMass) +
+      static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksWithMass) + static_cast<int>(doprocessTracksWithPurity) +
       static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessTracksWithMassLambdas) +
       static_cast<int>(doprocessLambdas) +
       static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) +
@@ -202,6 +209,17 @@ struct FemtoProducerDerivedToDerived {
     trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithMass, "Process tracks with mass", false);
+
+  void processTracksWithPurity(FilteredFemtoCollision const& col, FemtoTracksWithPurity const& tracks)
+  {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithPurityPartition1, trackWithPurityPartition2, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackWithPurityPartition1, trackWithPurityPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithPurity, "Process tracks, carrying through purity/fraction tables", false);
 
   void processTracksLambdas(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& lambdas)
   {

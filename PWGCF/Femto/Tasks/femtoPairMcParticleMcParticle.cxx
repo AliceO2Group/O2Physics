@@ -132,9 +132,16 @@ struct FemtoPairMcParticleMcParticle {
     hRegistry.print();
   };
 
-  void processSameEvent(FilteredFemtoMcCollision const& col, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  // deliberately takes the full (ungrouped) FilteredFemtoMcCollisions table rather than its ::iterator:
+  // pairing an ::iterator first argument with FemtoMcParticles as a second table argument would make
+  // DPL auto-register a sorted per-collision slicing cache for fMcColId, which then collides with the
+  // manual sliceByCachedUnsorted() used inside the builder (see the same workaround in
+  // femtoDndetaPair.cxx/femtoDndetaTriplet.cxx); we run the per-collision loop ourselves instead
+  void processSameEvent(FilteredFemtoMcCollisions const& cols, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(col, mcParticles, mcMothers, mcPartonicMothers, mcParticlesPartition1, mcParticlesPartition2, cache);
+    for (auto const& col : cols) {
+      pairMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(col, mcParticles, mcMothers, mcPartonicMothers, mcParticlesPartition1, mcParticlesPartition2, cache);
+    }
   }
   PROCESS_SWITCH(FemtoPairMcParticleMcParticle, processSameEvent, "Enable processing same event processing", true);
 
