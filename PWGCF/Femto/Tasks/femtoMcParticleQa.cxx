@@ -81,18 +81,27 @@ struct FemtoMcParticleQa {
     hRegistry.print();
   };
 
-  void process(FilteredFemtoMcCollision const& col, FemtoMcParticles const& /*mcParticles*/, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  // deliberately takes the full (ungrouped) FilteredFemtoMcCollisions table rather than its ::iterator:
+  // pairing an ::iterator first argument with FemtoMcParticles as a second table argument would make
+  // DPL auto-register a sorted per-collision slicing cache for fMcColId, which then collides with the
+  // manual sliceByCachedUnsorted() below (see the same workaround in femtoDndetaPair.cxx/femtoDndetaTriplet.cxx);
+  // FemtoMcParticles must still appear as an argument (even though it's only accessed via the partition)
+  // so DPL actually subscribes to it -- dropping it entirely leaves mcParticlesPartition1 unbound and
+  // segfaults on the first sliceByCachedUnsorted() call
+  void process(FilteredFemtoMcCollisions const& cols, FemtoMcParticles const& /*mcParticles*/, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    auto mcParticleSlice = mcParticlesPartition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
-    if (mcParticleSlice.size() == 0) {
-      return;
-    }
-    colHistManager.fill<modes::Mode::kMc>(col);
-    for (auto const& mcParticle : mcParticleSlice) {
-      if (!mcParticleCleaner.isClean(mcParticle, mcMothers, mcPartonicMothers)) {
+    for (auto const& col : cols) {
+      auto mcParticleSlice = mcParticlesPartition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+      if (mcParticleSlice.size() == 0) {
         continue;
       }
-      mcParticleHistManager1.fill(mcParticle, mcMothers, mcPartonicMothers);
+      colHistManager.fill<modes::Mode::kMc>(col);
+      for (auto const& mcParticle : mcParticleSlice) {
+        if (!mcParticleCleaner.isClean(mcParticle, mcMothers, mcPartonicMothers)) {
+          continue;
+        }
+        mcParticleHistManager1.fill(mcParticle, mcMothers, mcPartonicMothers);
+      }
     }
   }
 };

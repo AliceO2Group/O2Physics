@@ -53,6 +53,7 @@ enum class Mode : uint32_t {
   kMc = bit<Mode>(2),
   kSe = bit<Mode>(3),
   kMe = bit<Mode>(4),
+  kFitVars = bit<Mode>(5), // purity/fraction histograms (tracks: packed nSigma tables; V0s: cpa) -- gates booking at init time
   kReco_Qa = kReco | kQa,
   kReco_Mc = kReco | kMc,
   kReco_Qa_Mc = kReco | kQa | kMc,
@@ -62,6 +63,10 @@ enum class Mode : uint32_t {
   kMe_Reco_Mc = kMe | kReco | kMc,
   kSe_Mc = kSe | kMc,
   kMe_Mc = kMe | kMc,
+  kSe_Reco_FitVars = kSe | kReco | kFitVars,
+  kMe_Reco_FitVars = kMe | kReco | kFitVars,
+  kSe_Reco_Mc_FitVars = kSe | kReco | kMc | kFitVars,
+  kMe_Reco_Mc_FitVars = kMe | kReco | kMc | kFitVars,
 };
 
 enum class System : uint32_t {
