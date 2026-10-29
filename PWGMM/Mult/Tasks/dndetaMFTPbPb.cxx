@@ -862,7 +862,7 @@ struct DndetaMFTPbPb {
   template <typename C, bool isMC = false>
   float getMult(C const& collision)
   {
-    float val = -999.0;
+    float val = CInvalid;
     switch (gConf.multEstimator.value) {
       case MultE::CnoMult:
         return val;
@@ -885,6 +885,14 @@ struct DndetaMFTPbPb {
           return collision.multTPC();
         } else {
           return collision.multMCNParticlesEta08();
+        }
+        break;
+      case MultE::CmultMFT:
+        if constexpr (!isMC) {
+          return collision.centMFT();
+        } else {
+          return CInvalid;
+          // return collision.multMCMFT(); // FIXME: uncomment when MC MFT mult is in available mcCentralityModule.cxx or in aod::MultMCExtras
         }
         break;
       default:
@@ -3075,7 +3083,7 @@ struct DndetaMFTPbPb {
                                    aod::McParticles const& particles)
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
-    auto multMC = CInvalid;
+    float multMC{};
     auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto multMCNParticlesEtaMFT = countPart(perCollMCsample);
     if (gConf.useMultMCatMidRapidity) {
