@@ -963,7 +963,8 @@ struct HfTaskFlowCharmHadrons {
   // Dstar with ML
   void processDstarMl(CollsWithSPQvecs::iterator const& collision,
                       CandDstarDataWMl const& candidatesDstar,
-                      TracksWithExtra const& tracks)
+                      TracksWithExtra const& tracks,
+                      aod::BCsWithTimestamps const& /*bcs*/)
   {
     runFlowAnalysis<RunMode::kSP, DecayChannel::DstarToD0Pi>(collision, candidatesDstar, tracks);
   }
