@@ -324,6 +324,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                            
                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); }); //! Eta distribution of charm hadron
 
+DECLARE_SOA_COLUMN(K0sDcaToPv, k0sDcaToPv, float); //! DCA of the K0s candidate to the primary vertex (cm)
+DECLARE_SOA_COLUMN(OriginMcV0, originMcV0, int);   //! MC truth origin of the V0 candidate, see ParticleOriginMCTruth
+
 } // namespace fdhf
 
 namespace fdhf_2prong
@@ -633,7 +636,9 @@ DECLARE_SOA_TABLE(FDHfV0, "AOD", "FDHFV0", //! table to store results for HF fem
                   track::TPCNClsFindable,
                   femtodreamparticle::TPCNClsCrossedRows,
                   femtodreamparticle::TPCNSigmaPr,
-                  femtodreamparticle::TOFNSigmaPr);
+                  femtodreamparticle::TOFNSigmaPr,
+                  fdhf::K0sDcaToPv,
+                  fdhf::OriginMcV0);
 
 DECLARE_SOA_TABLE(FDHfColl, "AOD", "FDHFCOLL", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
