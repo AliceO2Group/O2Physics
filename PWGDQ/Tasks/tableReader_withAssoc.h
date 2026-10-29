@@ -1444,6 +1444,10 @@ struct AnalysisSameEventPairing {
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
 
+  // add event level histograms after remove collision splitting candidates
+  o2::framework::Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms,only used after turn on the cfgRemoveCollSplittingCandidates option"};
+  o2::framework::Configurable<std::string> fConfigAddJSONEventHistograms{"cfgAddJSONEventHistograms", "", "Event histograms in JSON format,only used after turn on the cfgRemoveCollSplittingCandidates option"};
+
   o2::framework::Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
   o2::framework::Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   o2::framework::Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
@@ -1531,6 +1535,8 @@ struct AnalysisSameEventPairing {
   bool fEnableMuonMixingHistos = false;
   bool fEnableBarrelMuonHistos = false;
   bool fEnableBarrelMuonMixingHistos = false;
+
+  bool fSplitCheckEnabled = false;
 
   o2::framework::NoBinningPolicy<o2::aod::dqanalysisflags::MixingHash> hashBin;
 
@@ -1878,12 +1884,18 @@ struct AnalysisSameEventPairing {
       }
     }
 
+    o2::common::core::getTaskOptionValue<bool>(context, "analysis-event-selection", "cfgCheckSplitCollisions", fSplitCheckEnabled, false);
+
     if (fConfigQA) {
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(true);
       fHistMan->SetDefaultVarNames(dqtablereader_helpers::varNames(), dqtablereader_helpers::varUnits());
       VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
-      DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());                        // define all histograms
+      if (fConfigCuts.event.value && fSplitCheckEnabled) {
+        DefineHistograms(fHistMan, "Event_AfterSplitVeto", fConfigAddEventHistogram.value.data()); // define event histograms after removing collision splitting candidates
+        o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONEventHistograms.value.c_str());
+      }
+      DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data()); // define all histograms
       if (fEnableBarrelHistos) {
         DefineHistograms(fHistMan, "PairingSEQA", "sameevent-pairing"); // histograms for QA of the pairing
       }
@@ -2062,6 +2074,11 @@ struct AnalysisSameEventPairing {
       VarManager::ResetValues(0, VarManager::kNVars);
       // VarManager::FillEvent<gkEventFillMap>(event, dqtablereader_helpers::varValues());
       VarManager::FillEvent<TEventFillMap>(event, dqtablereader_helpers::varValues());
+
+      // fill the event histograms
+      if (fConfigQA && fConfigCuts.event && fSplitCheckEnabled) {
+        fHistMan->FillHistClass("Event_AfterSplitVeto", dqtablereader_helpers::varValues());
+      }
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
       if (groupedAssocs.size() == 0) {
@@ -2928,6 +2945,11 @@ struct AnalysisSameEventPairing {
 
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, dqtablereader_helpers::varValues());
+
+      // fill the event histograms
+      if (fConfigQA && fConfigCuts.event && fSplitCheckEnabled) {
+        fHistMan->FillHistClass("Event_AfterSplitVeto", dqtablereader_helpers::varValues());
+      }
 
       auto groupedAssocs1 = assocs1.sliceBy(preslice1, event.globalIndex());
       if (groupedAssocs1.size() == 0) {
