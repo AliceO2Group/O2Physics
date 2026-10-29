@@ -21,6 +21,7 @@
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -214,8 +215,8 @@ struct FlowGfwV02 {
   // // Filters to be applied to the received data.
   // // The analysis assumes the data has been subjected to a QA of its selection,
   // // and thus only the final distributions of the data for analysis are saved.
-  // Derived-data bit masks. Every listed track bit is required; see gfwcollision::EventSel and gfwtrack::TrackSelection.
-  O2_DEFINE_CONFIGURABLE(cfgEventBitMask, uint16_t, static_cast<uint16_t>(o2::aod::gfwcollision::DefaultEventMask), "Required event-selection bits for GFW derived data");
+  // Derived-data track mask. Every listed track bit is required; see gfwtrack::TrackSelection.
+  // The event mask is built from cfgEventCutFlags when a GFW derived process is enabled.
   Configurable<std::vector<int>> cfgBitmaskSelections{"cfgBitmaskSelections", {0, 3, 6, 9, 12}, "Enabled TrackSelection bit indices for GFW derived data. DCA 0-5, TPC track 6-13, TPC PID 14-22, TOF PID 23-31. The default is the nominal quality selection"};
   O2_DEFINE_CONFIGURABLE(cfgPidWindow, int, static_cast<int>(o2::aod::gfwtrack::PidWindowNominal), "PID nSigma window for GFW derived data: 0 nominal, 1 tight, 2 loose");
 
@@ -300,6 +301,7 @@ struct FlowGfwV02 {
 
   std::unique_ptr<TF1> fPtDepDCAxy;
   uint32_t trackBitMask = o2::aod::gfwtrack::NominalMask;
+  uint16_t eventBitMask = o2::aod::gfwcollision::DefaultEventMask;
 
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
@@ -319,6 +321,52 @@ struct FlowGfwV02 {
     IndProtonLow
   };
 
+  // Required gfwcollision::EventSel bits for derived data, taken from the event-cut configurables.
+  uint16_t eventSelectionMask()
+  {
+    uint16_t mask = 0;
+    if (cfgEventCutFlags.cfgNoSameBunchPileupCut) {
+      mask |= o2::aod::gfwcollision::kNoSameBunchPileup;
+    }
+    if (cfgEventCutFlags.cfgIsGoodZvtxFT0vsPV) {
+      mask |= o2::aod::gfwcollision::kIsGoodZvtxFT0vsPV;
+    }
+    if (cfgEventCutFlags.cfgNoCollInTimeRangeStandard) {
+      mask |= o2::aod::gfwcollision::kNoCollInTimeRangeStandard;
+    }
+    if (cfgEventCutFlags.cfgNoCollInRofStandard) {
+      mask |= o2::aod::gfwcollision::kNoCollInRofStandard;
+    }
+    if (cfgEventCutFlags.cfgNoHighMultCollInPrevRof) {
+      mask |= o2::aod::gfwcollision::kNoHighMultCollInPrevRof;
+    }
+    if (cfgEventCutFlags.cfgIsVertexITSTPC) {
+      mask |= o2::aod::gfwcollision::kIsVertexITSTPC;
+    }
+    if (cfgEventCutFlags.cfgIsGoodITSLayersAll) {
+      mask |= o2::aod::gfwcollision::kIsGoodITSLayersAll;
+    }
+    if (cfgEventCutFlags.cfgNoTimeFrameBorder) {
+      mask |= o2::aod::gfwcollision::kNoTimeFrameBorder;
+    }
+    if (cfgEventCutFlags.cfgNoITSROFrameBorder) {
+      mask |= o2::aod::gfwcollision::kNoITSROFrameBorder;
+    }
+    if (cfgEventCutFlags.cfgTVXinTRD) {
+      mask |= o2::aod::gfwcollision::kNotTVXinTRD;
+    }
+    if (cfgTrackCuts.cfgOccupancySelection >= 0) {
+      mask |= o2::aod::gfwcollision::kOccupancy;
+    }
+    if (cfgUseAdditionalEventCut) {
+      mask |= o2::aod::gfwcollision::kGoodVertex;
+      if (cfgMultCut) {
+        mask |= o2::aod::gfwcollision::kMultCorr;
+      }
+    }
+    return mask;
+  }
+
   void init(InitContext const&)
   {
     trackBitMask = 0;
@@ -326,6 +374,10 @@ struct FlowGfwV02 {
       if (bit >= 0 && bit < 32) {
         trackBitMask |= static_cast<uint32_t>(1u << bit);
       }
+    }
+    if (doprocessDerived || doprocessDerivedCorrected) {
+      eventBitMask = eventSelectionMask();
+      LOGF(info, "GFW derived event-selection mask: %u", static_cast<unsigned>(eventBitMask));
     }
 
     projectMatrix(nSigmas->getData(), pidStates.tpcNsigmaCut, pidStates.tofNsigmaCut, pidStates.itsNsigmaCut);
@@ -816,7 +868,7 @@ struct FlowGfwV02 {
   bool eventSelected(TCollision const& collision, const int& multTrk, const float& centrality)
   {
     if (cfgEventCutFlags.cfgTVXinTRD) {
-      if (collision.alias_bit(kTVXinTRD)) {
+      if (collision.alias_bit(::kTVXinTRD)) {
         // TRD triggered
         // "CMTVX-B-NOPF-TRD,minbias_TVX"
         return 0;
@@ -1520,8 +1572,7 @@ struct FlowGfwV02 {
     }
     loadCorrections(run);
 
-    const uint16_t eventMask = cfgEventBitMask;
-    if ((collision.eventSel() & eventMask) != eventMask) {
+    if ((collision.eventSel() & eventBitMask) != eventBitMask) {
       return;
     }
     if (std::abs(collision.posZ()) > cfgEventCuts.cfgZvtxMax) {
@@ -1543,8 +1594,7 @@ struct FlowGfwV02 {
       LOGF(info, "run = %d", run);
     }
 
-    const uint16_t eventMask = cfgEventBitMask;
-    if ((collision.eventSel() & eventMask) != eventMask) {
+    if ((collision.eventSel() & eventBitMask) != eventBitMask) {
       return;
     }
     if (std::abs(collision.posZ()) > cfgEventCuts.cfgZvtxMax) {
