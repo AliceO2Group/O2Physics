@@ -225,6 +225,8 @@ struct Kstarqa {
 
     rEventSelection.add("hEventCut", "No. of event after cuts", kTH1D, {{20, 0, 20}});
     std::shared_ptr<TH1> hEventSelection = rEventSelection.get<TH1>(HIST("hEventCut"));
+    rEventSelection.add("hEventCutMC", "No. of event after cuts in MC", kTH1D, {{10, 0, 10}});
+    std::shared_ptr<TH1> hEventSelectionMC = rEventSelection.get<TH1>(HIST("hEventCutMC"));
     rEventSelection.add("hTrackCut", "No. of tracks after cuts", kTH1D, {{20, 0, 20}});
     std::shared_ptr<TH1> hTrackSelection = rEventSelection.get<TH1>(HIST("hTrackCut"));
 
@@ -242,9 +244,22 @@ struct Kstarqa {
       std::string("IsGoodITSLayersAll") + check(configGp.isGoodITSLayersAll.value),
       std::string("isVertexITSTPC") + check(configGp.isVertexITSTPC.value),
     };
+
+    std::vector<std::string> eveCutLabelsMC = {
+      "All Events",
+      "RecCollision",
+      "TimeFrameBorder",
+      "ITSROFrameBorder",
+      "Vz",
+      "TriggerTVX"};
+
     // assign labels
     for (size_t i = 0; i < eveCutLabels.size(); ++i) {
       hEventSelection->GetXaxis()->SetBinLabel(i + 1, eveCutLabels[i].c_str());
+    }
+
+    for (size_t i = 0; i < eveCutLabelsMC.size(); ++i) {
+      hEventSelectionMC->GetXaxis()->SetBinLabel(i + 1, eveCutLabelsMC[i].c_str());
     }
 
     std::vector<std::string> trackCutLabels = {
@@ -1962,13 +1977,42 @@ struct Kstarqa {
       if (configGp.isNoITSROFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder))
         continue;
 
-      if (configGp.isSel8 && !RecCollision.sel8())
-        continue;
+      // if (configGp.isSel8 && !RecCollision.sel8())
+      //   continue;
 
       if (rctCut.requireRCTFlagChecker && !rctChecker(RecCollision))
         continue;
 
       isSelectedEventINEL = true;
+    }
+
+    for (const auto& RecCollision : recCollisions) {
+      rEventSelection.fill(HIST("hEventSelectionMC"), 0.5);
+
+      if (!RecCollision.has_mcCollision())
+        continue;
+
+      rEventSelection.fill(HIST("hEventSelectionMC"), 1.5);
+
+      if (configGp.isNoTimeFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        continue;
+
+      rEventSelection.fill(HIST("hEventSelectionMC"), 2.5);
+
+      if (configGp.isNoITSROFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        continue;
+
+      rEventSelection.fill(HIST("hEventSelectionMC"), 3.5);
+
+      if (std::abs(RecCollision.posZ()) > configGp.cutzvertex)
+        continue;
+
+      rEventSelection.fill(HIST("hEventSelectionMC"), 4.5);
+
+      if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
+        continue;
+
+      rEventSelection.fill(HIST("hEventSelectionMC"), 5.5);
     }
 
     bool isINELgt0true = false;
