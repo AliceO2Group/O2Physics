@@ -1096,6 +1096,18 @@ DECLARE_SOA_COLUMN(DauTpcNSigmaPi, dauTpcNSigmaPi, float);
 DECLARE_SOA_COLUMN(DauTofNSigmaPr, dauTofNSigmaPr, float);
 DECLARE_SOA_COLUMN(PtOriginal, ptOriginal, float);
 
+// columns for sigma plus reconstructed with a PCM photon
+DECLARE_SOA_COLUMN(MlScore, mlScore, float);                               //! BDT score of the candidate
+DECLARE_SOA_COLUMN(FlightDirTilt, flightDirTilt, float);                   //! Tilt of the flight direction needed for a real solution of the missing photon
+DECLARE_SOA_COLUMN(DauDcaXY, dauDcaXY, float);                             //! DCAxy of the charged daughter to the primary vertex
+DECLARE_SOA_COLUMN(DauDcaZ, dauDcaZ, float);                               //! DCAz of the charged daughter to the primary vertex
+DECLARE_SOA_COLUMN(PhotonDcaXYToPV, photonDcaXYToPV, float);               //! Transverse DCA of the photon flight line to the primary vertex
+DECLARE_SOA_COLUMN(PhotonDcaZToPV, photonDcaZToPV, float);                 //! Longitudinal DCA of the photon flight line to the primary vertex
+DECLARE_SOA_COLUMN(PhotonCosPAToPV, photonCosPAToPV, float);               //! Cosine of the photon pointing angle to the primary vertex
+DECLARE_SOA_COLUMN(PhotonConvRadius, photonConvRadius, float);             //! Conversion radius of the photon
+DECLARE_SOA_COLUMN(AntiSigmaPointingAngle, antiSigmaPointingAngle, float); //! Angle between the unbent proton momentum and the flight direction
+DECLARE_SOA_COLUMN(DcaDauPhoton, dcaDauPhoton, float);                     //! DCA between charged daughter and photon at the decay vertex
+
 // id column for charged daughter track
 DECLARE_SOA_INDEX_COLUMN_FULL(ChaDau, chaDau, int32_t, FTracks, "_ChaDau"); //!
 
@@ -1265,6 +1277,68 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_002, "FSIGMAPLUSEXTRAS", 2,
 
 using FSigmaPlusExtras = FSigmaPlusExtras_002;
 using StoredFSigmaPlusExtras = StoredFSigmaPlusExtras_002;
+
+// table for basic sigma plus information, sigma plus reconstructed with a PCM photon
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcm_001, "FSIGMAPLUSPCM", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, // use sign to differentiate between sigma plus (+1) and anti sigma plus (-1)
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtokinks::ChaDauId,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FSigmaPlusPcm = FSigmaPlusPcm_001;
+using FSigmaPlusPcmRow = FSigmaPlusPcm::iterator;
+using StoredFSigmaPlusPcm = StoredFSigmaPlusPcm_001;
+
+// table for basic sigma plus information, sigma plus reconstructed with a PCM photon, compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmaPlusPcm_001, "FLITESIGMAPCM", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtokinks::lite::BinnedSigmaMass,
+                                   femtokinks::lite::ChaDauId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
+using FLiteSigmaPlusPcm = FLiteSigmaPlusPcm_001;
+using FLiteSigmaPlusPcmRow = FLiteSigmaPlusPcm::iterator;
+using StoredFLiteSigmaPlusPcm = StoredFLiteSigmaPlusPcm_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmMasks_001, "FSIGMAPCMMASKS", 1,
+                                   femtokinks::Mask);
+using FSigmaPlusPcmMasks = FSigmaPlusPcmMasks_001;
+using StoredFSigmaPlusPcmMasks = StoredFSigmaPlusPcmMasks_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmExtras_001, "FSIGMAPCMEXTRA", 1,
+                                   femtokinks::MlScore,
+                                   femtokinks::FlightDirTilt,
+                                   femtokinks::DcaMothToPV,
+                                   femtokinks::DauDcaXY,
+                                   femtokinks::DauDcaZ,
+                                   femtokinks::DauTpcNSigmaPr,
+                                   femtokinks::DauTofNSigmaPr,
+                                   femtokinks::PhotonDcaXYToPV,
+                                   femtokinks::PhotonDcaZToPV,
+                                   femtokinks::PhotonCosPAToPV,
+                                   femtokinks::PhotonConvRadius,
+                                   femtokinks::AntiSigmaPointingAngle,
+                                   femtokinks::DcaDauPhoton,
+                                   femtokinks::TransRadius);
+using FSigmaPlusPcmExtras = FSigmaPlusPcmExtras_001;
+using StoredFSigmaPlusPcmExtras = StoredFSigmaPlusPcmExtras_001;
 
 namespace femtocascades
 {
@@ -1753,6 +1827,13 @@ using FSigmaPlusLabels = FSigmaPlusLabels_001;
 using FSigmaPlusLabel = FSigmaPlusLabels::iterator;
 using StoredFSigmaPlusLabels = StoredFSigmaPlusLabels_001;
 using StoredFSigmaPlusLabel = StoredFSigmaPlusLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmLabels_001, "FSIGMAPCMLABEL", 1, //! label from femto sigma plus (PCM) to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FSigmaPlusPcmLabels = FSigmaPlusPcmLabels_001;
+using FSigmaPlusPcmLabel = FSigmaPlusPcmLabels::iterator;
+using StoredFSigmaPlusPcmLabels = StoredFSigmaPlusPcmLabels_001;
+using StoredFSigmaPlusPcmLabel = StoredFSigmaPlusPcmLabels::iterator;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiLabels_001, "FXILABEL", 1, //! label from femto xi to femto mc particle
                                    femtolabels::FMcParticleId);

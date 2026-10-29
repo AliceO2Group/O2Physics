@@ -61,11 +61,15 @@ using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks>;
 using FemtoSigma = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks>;
 using FemtoSigmaPlus = o2::soa::Join<o2::aod::FSigmaPlus, o2::aod::FSigmaPlusMasks>;
 using FemtoSigmaPlusExtended = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusExtras>;
+using FemtoSigmaPlusPcm = o2::soa::Join<o2::aod::FSigmaPlusPcm, o2::aod::FSigmaPlusPcmMasks>;
+using FemtoSigmaPlusPcmExtended = o2::soa::Join<FemtoSigmaPlusPcm, o2::aod::FSigmaPlusPcmExtras>;
 
 using FemtoMcTracks = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
 using FemtoMcSigma = o2::soa::Join<FemtoSigma, o2::aod::FSigmaLabels>;
 using FemtoMcSigmaPlus = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusLabels>;
 using FemtoMcSigmaPlusExtended = o2::soa::Join<FemtoSigmaPlusExtended, o2::aod::FSigmaPlusLabels>;
+using FemtoMcSigmaPlusPcm = o2::soa::Join<FemtoSigmaPlusPcm, o2::aod::FSigmaPlusPcmLabels>;
+using FemtoMcSigmaPlusPcmExtended = o2::soa::Join<FemtoSigmaPlusPcmExtended, o2::aod::FSigmaPlusPcmLabels>;
 using FemtoMcParticles = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 } // namespace femtotables
 
@@ -85,12 +89,16 @@ struct FemtoProducerDerivedToDerived {
     o2::framework::Preslice<femtotables::FemtoSigma> perColSigma = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoSigmaPlus> perColSigmaPlus = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoSigmaPlusExtended> perColSigmaPlusExtended = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoSigmaPlusPcm> perColSigmaPlusPcm = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoSigmaPlusPcmExtended> perColSigmaPlusPcmExtended = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoXis> perColXis = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoOmegas> perColOmegas = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoMcTracks> perColMcTracks = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoMcSigma> perColMcSigma = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoMcSigmaPlus> perColMcSigmaPlus = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoMcSigmaPlusExtended> perColMcSigmaPlusExtended = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoMcSigmaPlusPcm> perColMcSigmaPlusPcm = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoMcSigmaPlusPcmExtended> perColMcSigmaPlusPcmExtended = o2::aod::femtobase::stored::fColId;
   } preslices;
 
   // plain builder helper objects, grouped into a single data member (not Configurable/Partition/
@@ -156,6 +164,10 @@ struct FemtoProducerDerivedToDerived {
   o2::framework::Partition<femtotables::FemtoSigmaPlus> sigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection1);
   o2::framework::Partition<femtotables::FemtoSigmaPlusExtended> sigmaPlusExtendedPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection1);
 
+  kinkbuilder::ConfSigmaPlusPcmSelection1 sigmaPlusPcmSelection1;
+  o2::framework::Partition<femtotables::FemtoSigmaPlusPcm> sigmaPlusPcmPartition = MAKE_SIGMAPLUSPCM_PARTITION(sigmaPlusPcmSelection1);
+  o2::framework::Partition<femtotables::FemtoSigmaPlusPcmExtended> sigmaPlusPcmExtendedPartition = MAKE_SIGMAPLUSPCM_PARTITION(sigmaPlusPcmSelection1);
+
   // cascade builder
   cascadebuilder::CascadeBuilderDerivedToDerivedProducts cascadeBuilderProducts;
   cascadebuilder::ConfCascadeTablesDerivedToDerived confCascadeBuilder;
@@ -178,6 +190,9 @@ struct FemtoProducerDerivedToDerived {
   o2::framework::Partition<femtotables::FemtoMcSigmaPlus> mcSigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection1);
   o2::framework::Partition<femtotables::FemtoMcSigmaPlusExtended> mcSigmaPlusExtendedPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection1);
 
+  o2::framework::Partition<femtotables::FemtoMcSigmaPlusPcm> mcSigmaPlusPcmPartition = MAKE_SIGMAPLUSPCM_PARTITION(sigmaPlusPcmSelection1);
+  o2::framework::Partition<femtotables::FemtoMcSigmaPlusPcmExtended> mcSigmaPlusPcmExtendedPartition = MAKE_SIGMAPLUSPCM_PARTITION(sigmaPlusPcmSelection1);
+
   void init(o2::framework::InitContext& /*context*/)
   {
     const int activeProcesses =
@@ -187,9 +202,11 @@ struct FemtoProducerDerivedToDerived {
       static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) +
       static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) +
       static_cast<int>(doprocessTracksSigmaPlus) + static_cast<int>(doprocessTracksSigmaPlusExtended) +
+      static_cast<int>(doprocessTracksSigmaPlusPcm) + static_cast<int>(doprocessTracksSigmaPlusPcmExtended) +
       static_cast<int>(doprocessTracksRho0) + static_cast<int>(doprocessTracksPhi) +
       static_cast<int>(doprocessTracksMc) + static_cast<int>(doprocessTracksSigmaMc) +
-      static_cast<int>(doprocessTracksSigmaPlusMc) + static_cast<int>(doprocessTracksSigmaPlusExtendedMc);
+      static_cast<int>(doprocessTracksSigmaPlusMc) + static_cast<int>(doprocessTracksSigmaPlusExtendedMc) +
+      static_cast<int>(doprocessTracksSigmaPlusPcmMc) + static_cast<int>(doprocessTracksSigmaPlusPcmExtendedMc);
     if (activeProcesses != 1) {
       LOG(fatal) << "Exactly one process function must be activated (got " << activeProcesses << ").";
     }
@@ -343,6 +360,30 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusExtended, "Process sigmaPlus (with SigmaPlusExtras) and tracks", false);
 
+  void processTracksSigmaPlusPcm(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusPcm const& sigmapluspcm)
+  {
+    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, sigmaPlusPcmPartition, cache)) {
+      return;
+    }
+    builders.trackBuilder.reset(tracks);
+    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcm, "Process sigmaPlusPcm and tracks", false);
+
+  void processTracksSigmaPlusPcmExtended(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusPcmExtended const& sigmapluspcm)
+  {
+    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, sigmaPlusPcmExtendedPartition, cache)) {
+      return;
+    }
+    builders.trackBuilder.reset(tracks);
+    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmExtendedPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmExtended, "Process sigmaPlusPcm (with SigmaPlusPcmExtras) and tracks", false);
+
   void processTracksRho0(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoRho0s const& rho0s)
   {
     if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.resonanceBuilder.collisionHasTooFewRho0s(col, rho0s, rho0Partition, cache)) {
@@ -473,6 +514,58 @@ struct FemtoProducerDerivedToDerived {
     }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusExtendedMc, "Process sigmaPlus (with SigmaPlusExtras) and tracks with MC information", false);
+
+  void processTracksSigmaPlusPcmMc(femtotables::FilteredFemtoMcCollisions const& cols,
+                                   femtotables::FemtoMcTracks const& tracks,
+                                   femtotables::FemtoMcSigmaPlusPcm const& sigmapluspcm,
+                                   o2::aod::FMcCols const& mcCols,
+                                   femtotables::FemtoMcParticles const& mcParticles,
+                                   o2::aod::FMcMothers const& mcMothers,
+                                   o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, mcSigmaPlusPcmPartition, cache)) {
+        continue;
+      }
+      builders.trackBuilder.reset(tracks);
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
+      builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
+                                                trackBuilderProducts, collisionBuilderProducts,
+                                                builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+      builders.kinkBuilder.processSigmaPlusPcmWithMc(col, sigmapluspcm, tracks, mcSigmaPlusPcmPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts,
+                                                     builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmMc, "Process sigmaPlusPcm and tracks with MC information", false);
+
+  void processTracksSigmaPlusPcmExtendedMc(femtotables::FilteredFemtoMcCollisions const& cols,
+                                           femtotables::FemtoMcTracks const& tracks,
+                                           femtotables::FemtoMcSigmaPlusPcmExtended const& sigmapluspcm,
+                                           o2::aod::FMcCols const& mcCols,
+                                           femtotables::FemtoMcParticles const& mcParticles,
+                                           o2::aod::FMcMothers const& mcMothers,
+                                           o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, mcSigmaPlusPcmExtendedPartition, cache)) {
+        continue;
+      }
+      builders.trackBuilder.reset(tracks);
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
+      builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
+                                                trackBuilderProducts, collisionBuilderProducts,
+                                                builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+      builders.kinkBuilder.processSigmaPlusPcmWithMc(col, sigmapluspcm, tracks, mcSigmaPlusPcmExtendedPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts,
+                                                     builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmExtendedMc, "Process sigmaPlusPcm (with SigmaPlusPcmExtras) and tracks with MC information", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
