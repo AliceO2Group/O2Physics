@@ -136,6 +136,8 @@ struct PidDiHadron {
     Configurable<std::vector<std::string>> cfgTrackCutsDCAxy{"cfgTrackCutsDCAxy", std::vector<std::string>{"[0]*(0.0026+0.005/(x^1.01))", "[0]*(0.0026+0.005/(x^1.01))"}, "Functional form of pt-dependent DCAxy cut"};
     Configurable<std::vector<std::string>> cfgTrackCutsDCAz{"cfgTrackCutsDCAz", std::vector<std::string>{"", ""}, "Functional form of pt-dependent DCAz cut"};
     Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {LongArrayFloat.front().data(), 10, 2, {"PtMin", "PtMax", "EtaCut", "Chi2PrTpcCls", "TpcCluster", "TpcCrossedRows", "ItsCluster", "DCAz", "DCAzNsigma", "DCAxyNsigma"}, {"General", "SelNch"}}, "Labeled array for track selections"};
+    O2_DEFINE_CONFIGURABLE(cfgMCTrigIsPhysPrim, bool, false, "Switch for using only physical primary trigger particles in MC correlations");
+    O2_DEFINE_CONFIGURABLE(cfgMCAsscIsPhysPrim, bool, false, "Switch for using only physical primary associated particles in MC correlations");
   } cfgTrkSel;
 
   struct : ConfigurableGroup {
@@ -148,6 +150,8 @@ struct PidDiHadron {
     O2_DEFINE_CONFIGURABLE(cfgPIDUseOnlyTpc, bool, true, "Use only TPC PID for daughter selection")
     O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "1 = pion, 2 = kaon, 3 = proton, 4 = kshort, 5 = lambda, 0 for no PID")
     O2_DEFINE_CONFIGURABLE(cfgPIDUseReso, bool, false, "Switch to turn on resonance analysis")
+    O2_DEFINE_CONFIGURABLE(cfgPIDNclsPIDCut, int, 70, "Number of clusters used for PID selection")
+    O2_DEFINE_CONFIGURABLE(cfgPIDUseNclsPID, bool, false, "Switch for using cfgPIDNclsPIDCut")
     Configurable<LabeledArray<float>> cfgPIDnSigmas{"cfgPIDnSigmas", {LongArrayFloat.front().data(), 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
     Configurable<LabeledArray<float>> cfgPIDResoCuts{"cfgPIDResoCuts", {LongArrayFloat.front().data(), 15, 2, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "RapidityMin", "RapidityMax", "ArmPodMinVal", "DCABetDaug", "CompMassRej"}, {"K0", "Lambda"}}, "Labeled array (float) for various cuts on resonances"};
     Configurable<LabeledArray<int>> cfgPIDResoSwitches{"cfgPIDResoSwitches", {LongArrayInt.front().data(), 7, 2, {"UseCosPA", "NMassBins", "UseDCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompMassRej"}, {"K0", "Lambda"}}, "Labeled array (int) for various cuts on resonances"};
@@ -216,17 +220,23 @@ struct PidDiHadron {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEvSel.cfgGlobalCutVertex);
+  Filter mcCollisionFilter = (nabs(aod::mccollision::posZ) < cfgEvSel.cfgGlobalCutVertex);
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkSel.cfgGlobalEta) && (aod::track::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::track::pt < cfgTrkSel.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgTrkSel.cfgGlobalChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgTrkSel.cfgGlobalDCAz);
+  Filter mcTrackFilter = (nabs(aod::mcparticle::eta) < cfgTrkSel.cfgGlobalEta) && (aod::mcparticle::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::mcparticle::pt < cfgTrkSel.cfgGlobalPtMax);
 
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
-  using FilteredMcTracks = soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  using FilteredTracksMcLabels = soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using V0TrackCandidate = aod::V0Datas;
+  using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
+  using FilteredMcTracks = soa::Filtered<aod::McParticles>;
+  using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
 
   Partition<FilteredTracks> asscTracks = (aod::track::pt > cfgGeneral.cfgAsscPtMin) && (aod::track::pt < cfgGeneral.cfgAsscPtMax);
+  Partition<FilteredMcTracks> asscTracksMC = (aod::mcparticle::pt > cfgGeneral.cfgAsscPtMin) && (aod::mcparticle::pt < cfgGeneral.cfgAsscPtMax);
 
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  Preslice<aod::V0Datas> perCollisionV0 = aod::v0::collisionId;
+  Preslice<FilteredMcTracks> mcTracksPerCol = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<aod::McCollisionLabels> collisionPerMCCollision = aod::mccollisionlabel::mcCollisionId;
 
   // Corrections
   TH3D* mEfficiency = nullptr;
@@ -427,7 +437,7 @@ struct PidDiHadron {
     }
 
     // Event Counter
-    if ((doprocessSame || doprocessSameReso || doprocessMC) && cfgEvSel.cfgUseAdditionalEventCut) {
+    if ((doprocessSame || doprocessSameReso || doprocessMCPID) && cfgEvSel.cfgUseAdditionalEventCut) {
       histos.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{15, -0.5, 14.5}}});
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvents + 1, "Filtered events");
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(AfterSel8 + 1, "After sel8");
@@ -454,6 +464,7 @@ struct PidDiHadron {
       histos.add("hK0Eta", "", {HistType::kTH1D, {axisEta}});
 
       histos.add("hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{12, -0.5, 11.5}}});
+      histos.get<TH1>(HIST("hK0Count"))->GetYaxis()->SetTitle("Counts");
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillCandidate + 1, "K0 candidates");
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterPt + 1, "Daughter pt");
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(FillMassCut + 1, "Mass cut");
@@ -476,6 +487,7 @@ struct PidDiHadron {
       histos.add("hLambdaEta", "", {HistType::kTH1D, {axisEta}});
 
       histos.add("hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{12, -0.5, 11.5}}});
+      histos.get<TH1>(HIST("hLambdaCount"))->GetYaxis()->SetTitle("Counts");
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillCandidate + 1, "Lambda candidates");
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterPt + 1, "Daughter pt");
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(FillMassCut + 1, "Mass cut");
@@ -591,16 +603,31 @@ struct PidDiHadron {
       histos.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEventClass, axisPtTrigger, axisParticle}}});
     }
 
+    if (doprocessSameMC) {
+      histos.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
+      histos.add("Centrality", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}});
+      histos.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
+      histos.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
+
+      if (cfgGeneral.cfgQABasic) {
+        histos.add("Phi", "Phi", {HistType::kTH2D, {axisPhi, axisParticle}});
+        histos.add("Eta", "Eta", {HistType::kTH2D, {axisEta, axisParticle}});
+        histos.add("pTFiner", "pTFiner", {HistType::kTHnSparseF, {axisPt, axisParticle, axisEventClass}});
+      }
+      histos.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEventClass, axisPtTrigger, axisParticle}}});
+    }
+
     if (doprocessSameReso) {
       if (cfgPIDConfigs.cfgPIDParticle == UseK0 || cfgPIDConfigs.cfgPIDParticle == UseLambda) {
         histos.add("Trig_histReso", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEventClass, axisPtTrigger, axisInvMass}}});
       }
     }
 
-    if (doprocessMixed || doprocessMixedReso) {
+    if (doprocessMixed || doprocessMixedReso || doprocessMixedMC) {
       histos.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
     }
-    if (doprocessMC) {
+
+    if (doprocessMCPID) {
       histos.add("hNsigmaPionTruePositives", "hNsigmaPionTruePositives", {HistType::kTH1D, {axisPtTrigger}});     // Fraction of particles that are pions and selected as pions
       histos.add("hNsigmaKaonTruePositives", "hNsigmaKaonTruePositives", {HistType::kTH1D, {axisPtTrigger}});     // Fraction of particles that are kaons and selected as kaons
       histos.add("hNsigmaProtonTruePositives", "hNsigmaProtonTruePositives", {HistType::kTH1D, {axisPtTrigger}}); // Fraction of particles that are protons and selected as protons
@@ -775,6 +802,10 @@ struct PidDiHadron {
   template <typename TTrack>
   int getNsigmaPID(const TTrack& track)
   {
+    if (cfgPIDConfigs.cfgPIDUseNclsPID && track.tpcNClsPID() < cfgPIDConfigs.cfgPIDNclsPIDCut) {
+      return -1;
+    }
+
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
     std::array<float, 3> nSigmaTOF = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
@@ -1286,6 +1317,91 @@ struct PidDiHadron {
           histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         } else if (system == MixedEvent) {
           mixedReso->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, trig.pt(), resoMass, deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+        }
+      }
+    }
+  }
+
+  template <typename TTracks, typename TTracksAssoc>
+  void fillCorrelationsMC(const TTracks& triggers, const TTracksAssoc& assocs, float posZ, int system, double eventClass, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms for MC truth
+  {
+    int fSampleIndex = static_cast<int>(fRandom.Uniform(0.0, cfgGeneral.cfgSampleSize));
+
+    float triggerWeight = 1.0f;
+    float associatedWeight = 1.0f;
+
+    // loop over all tracks
+    for (auto const& trig : triggers) {
+
+      if (cfgTrkSel.cfgMCTrigIsPhysPrim && !trig.isPhysicalPrimary()) {
+        continue;
+      }
+
+      auto getPIDcode = [](int x) {
+        int pid = -1;
+        switch (x) {
+          case PDG_t::kPiPlus:
+            pid = UsePions;
+            break;
+          case PDG_t::kKPlus:
+            pid = UseKaons;
+            break;
+          case PDG_t::kProton:
+            pid = UseProtons;
+            break;
+          default:
+            return pid;
+        } // end of switch
+        return pid;
+      };
+
+      int pidIndex = getPIDcode(trig.pdgCode());
+
+      if (system == SameEvent) {
+        histos.fill(HIST("Phi"), RecoDecay::constrainAngle(trig.phi(), 0.0), UseCharged);
+        histos.fill(HIST("Eta"), trig.eta(), UseCharged);
+        histos.fill(HIST("pTFiner"), trig.pt(), UseCharged, eventClass);
+        histos.fill(HIST("Trig_hist"), fSampleIndex, posZ, eventClass, trig.pt(), UseCharged, eventWeight * triggerWeight);
+        if (pidIndex > UseCharged) {
+          histos.fill(HIST("Phi"), RecoDecay::constrainAngle(trig.phi(), 0.0), pidIndex);
+          histos.fill(HIST("Eta"), trig.eta(), pidIndex);
+          histos.fill(HIST("pTFiner"), trig.pt(), pidIndex, eventClass);
+          histos.fill(HIST("Trig_hist"), fSampleIndex, posZ, eventClass, trig.pt(), pidIndex, eventWeight * triggerWeight);
+        }
+      }
+
+      for (auto const& assc : assocs) {
+
+        if (cfgTrkSel.cfgMCAsscIsPhysPrim && !assc.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (!cfgGeneral.cfgUsePtOrder && trig.globalIndex() == assc.globalIndex()) {
+          continue; // For pt-differential correlations, skip if the trigger and associate are the same track
+        }
+        if (cfgGeneral.cfgUsePtOrder && system == SameEvent && trig.pt() <= assc.pt()) {
+          continue; // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
+        }
+        if (cfgGeneral.cfgUsePtOrder && system == MixedEvent && cfgGeneral.cfgUsePtOrderInMixEvent && trig.pt() <= assc.pt()) {
+          continue; // For pt-differential correlations in mixed events, skip if the trigger pt is less than the associate pt
+        }
+
+        float deltaPhi = RecoDecay::constrainAngle(trig.phi() - assc.phi(), -PIHalf);
+        float deltaEta = trig.eta() - assc.eta();
+
+        // fill the right sparse and histograms
+        if (system == SameEvent) {
+          same->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, trig.pt(), UseCharged, deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          if (pidIndex > UseCharged) {
+            same->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, trig.pt(), pidIndex, deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          }
+          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+        } else if (system == MixedEvent) {
+          mixed->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, trig.pt(), UseCharged, deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          if (pidIndex > UseCharged) {
+            mixed->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, trig.pt(), pidIndex, deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          }
           histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         }
       }
@@ -1929,7 +2045,101 @@ struct PidDiHadron {
   }
   PROCESS_SWITCH(PidDiHadron, processMixedReso, "Process mixed events", true);
 
-  void processMC(FilteredCollisions::iterator const& collision, FilteredMcTracks const& tracksmc, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  void processSameMC(FilteredMcCollisions::iterator const& mcCollision, FilteredMcTracks const& mcTracks, SmallGroupMcCollisions const& collisions)
+  {
+    float cent = -1.f;
+    if (!cfgEvSel.cfgCentTableUnavailable) {
+      for (const auto& collision : collisions) {
+        cent = getCentrality(collision);
+      }
+      histos.fill(HIST("Centrality"), cent);
+    }
+    auto multiplicity = static_cast<double>(mcTracks.size());
+    histos.fill(HIST("Nch"), multiplicity);
+    histos.fill(HIST("zVtx"), mcCollision.posZ());
+
+    if (cfgEvSel.cfgSelCollByNch && (multiplicity < cfgEvSel.cfgCutMultMin || multiplicity >= cfgEvSel.cfgCutMultMax)) {
+      return;
+    }
+    if (!cfgEvSel.cfgSelCollByNch && !cfgEvSel.cfgCentTableUnavailable && (cent < cfgEvSel.cfgCutCentMin || cent >= cfgEvSel.cfgCutCentMax)) {
+      return;
+    }
+    histos.fill(HIST("eventcount"), SameEvent);
+
+    float eventWeight = 1.0f;
+    auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity : cent;
+
+    auto mcAssocs = asscTracksMC->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+
+    fillCorrelationsMC(mcTracks, mcAssocs, mcCollision.posZ(), SameEvent, eventClass, eventWeight);
+
+  } // end of processSameMC
+  PROCESS_SWITCH(PidDiHadron, processSameMC, "Process Monte Carlo for same event correlations", true);
+
+  void processMixedMC(FilteredMcCollisions const& mcCollisions, FilteredMcTracks const& mcTracks, SmallGroupMcCollisions const& collisions)
+  {
+    auto getTracksSize = [&mcTracks, this](FilteredMcCollisions::iterator const& mcCollision) {
+      auto associatedTracks = mcTracks.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
+      auto mult = associatedTracks.size();
+      return mult;
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
+
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}};
+
+    auto tracksTuple = std::make_tuple(mcTracks, mcTracks);
+    Pair<FilteredMcCollisions, FilteredMcTracks, FilteredMcTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgGeneral.cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [mcCollision1, mcTracks1, mcCollision2, mcTracks2] = *it;
+
+      auto groupedCollisions1 = collisions.sliceBy(collisionPerMCCollision, mcCollision1.globalIndex());
+      auto groupedCollisions2 = collisions.sliceBy(collisionPerMCCollision, mcCollision2.globalIndex());
+
+      float cent1 = -1.f;
+      float cent2 = -1.f;
+
+      if (!cfgEvSel.cfgCentTableUnavailable) {
+        for (const auto& collision : groupedCollisions1) {
+          cent1 = getCentrality(collision);
+        }
+        for (const auto& collision : groupedCollisions2) {
+          cent2 = getCentrality(collision);
+        }
+      }
+
+      if (!cfgEvSel.cfgSelCollByNch && !cfgEvSel.cfgCentTableUnavailable && (cent1 < cfgEvSel.cfgCutCentMin || cent1 >= cfgEvSel.cfgCutCentMax)) {
+        continue;
+      }
+
+      if (!cfgEvSel.cfgSelCollByNch && !cfgEvSel.cfgCentTableUnavailable && (cent2 < cfgEvSel.cfgCutCentMin || cent2 >= cfgEvSel.cfgCutCentMax)) {
+        continue;
+      }
+
+      auto multiplicity1 = static_cast<double>(mcTracks1.size());
+      auto multiplicity2 = static_cast<double>(mcTracks2.size());
+
+      if (cfgEvSel.cfgSelCollByNch && (multiplicity1 < cfgEvSel.cfgCutMultMin || multiplicity1 >= cfgEvSel.cfgCutMultMax)) {
+        continue;
+      }
+
+      if (cfgEvSel.cfgSelCollByNch && (multiplicity2 < cfgEvSel.cfgCutMultMin || multiplicity2 >= cfgEvSel.cfgCutMultMax)) {
+        continue;
+      }
+
+      histos.fill(HIST("eventcount"), MixedEvent);
+
+      float eventWeight = (cfgEffWeights.cfgUseEventWeights) ? (1.0f / it.currentWindowNeighbours()) : 1.0f;
+      auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity1 : cent1;
+
+      auto mcAssocs = asscTracksMC->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision2.globalIndex(), cache);
+
+      fillCorrelationsMC(mcTracks1, mcAssocs, mcCollision1.posZ(), MixedEvent, eventClass, eventWeight);
+    }
+  }
+  PROCESS_SWITCH(PidDiHadron, processMixedMC, "Process Monte Carlo for mixed event correlations", true);
+
+  void processMCPID(FilteredCollisions::iterator const& collision, FilteredTracksMcLabels const& tracksmc, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     float cent = -1.;
     if (!cfgEvSel.cfgCentTableUnavailable) {
@@ -2024,8 +2234,8 @@ struct PidDiHadron {
         }
       } // Proton condition
     } // end of tracks MC loop
-  } // end of process MC
-  PROCESS_SWITCH(PidDiHadron, processMC, "Process Monte Carlo", true);
+  } // end of process MCPID
+  PROCESS_SWITCH(PidDiHadron, processMCPID, "Process Monte Carlo for PID", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
