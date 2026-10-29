@@ -74,6 +74,9 @@ DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, float);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(LocalBC, localBC, int);
+DECLARE_SOA_COLUMN(KNoCollInTimeRangeStandard, kNoCollInTimeRangeStandard, bool);
+DECLARE_SOA_COLUMN(KNoCollInRofStandard, kNoCollInRofStandard, bool);
+DECLARE_SOA_COLUMN(KNoHighMultCollInPrevRof, kNoHighMultCollInPrevRof, bool);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
@@ -113,6 +116,7 @@ DECLARE_SOA_COLUMN(SubleadingTrackTofHit, subleadingTrackTofHit, int);
 } // namespace reco_tree
 DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
                   reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ, reco_tree::OccupancyInTime, reco_tree::HadronicRate, reco_tree::GlobalBC, reco_tree::LocalBC,
+                  reco_tree::KNoCollInTimeRangeStandard, reco_tree::KNoCollInRofStandard, reco_tree::KNoHighMultCollInPrevRof,
                   reco_tree::TotalFT0AmplitudeA, reco_tree::TotalFT0AmplitudeC, reco_tree::TotalFV0AmplitudeA, reco_tree::TotalFDDAmplitudeA, reco_tree::TotalFDDAmplitudeC,
                   reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
                   reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, reco_tree::NeutronClass,
@@ -970,6 +974,7 @@ struct UpcRhoAnalysis {
 
     // fill recoTree
     recoTree(collision.flags(), collision.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.occupancyInTime(), collision.hadronicRate(), collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+             collision.trs(), collision.trofs(), collision.hmpr(),
              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
              collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
              energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
