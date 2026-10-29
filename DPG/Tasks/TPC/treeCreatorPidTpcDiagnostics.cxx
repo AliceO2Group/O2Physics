@@ -91,6 +91,7 @@ struct TreeCreatorPidTpcDiagnostics {
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
 
   struct ParticleWiseCfgs : ConfigurableGroup {
+    std::string prefix = "particleWiseCfgs"; // JSON group name
 
 #define DECLARE_PARTICLE_WISE_CONFIGURABLES(Unused1, ParticleNameLong, Unused2)                                                                                                                                                                            \
   Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
