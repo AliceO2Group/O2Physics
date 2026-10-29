@@ -56,17 +56,24 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace jet_gnn_inference
+{
+// Helper struct to define optional produces for JetGnnInferenceTask
+template <typename T>
+struct OptionalProduces : Produces<T> {
+};
+template <>
+struct OptionalProduces<void> {
+};
+}; // namespace jet_gnn_inference
+
 template <bool isMCD, typename JetTable, typename JetTaggingTable, typename JetGnnInfTrackTable = void, typename JetGnnInfVertexTable = void>
 struct JetGnnInferenceTask {
   static constexpr double DefaultCutsMl[1][2] = {{0.5, 0.5}};
 
   Produces<JetTaggingTable> taggingTable;
-  if constexpr (!std::is_same_v<JetGnnInfTrackTable, void>) {
-    Produces<JetGnnInfTrackTable> gnnTrackTable;
-  }
-  if constexpr (!std::is_same_v<JetGnnInfVertexTable, void>) {
-    Produces<JetGnnInfVertexTable> gnnVertexTable;
-  }
+  jet_gnn_inference::OptionalProduces<JetGnnInfTrackTable> gnnTrackTable;
+  jet_gnn_inference::OptionalProduces<JetGnnInfVertexTable> gnnVertexTable;
 
   // configuration topological cut for track and sv
   Configurable<float> trackDcaXYMax{"trackDcaXYMax", 1, "minimum DCA xy acceptance for tracks [cm]"};
@@ -167,6 +174,7 @@ struct JetGnnInferenceTask {
   }
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   void init(InitContext const&)
   {
     if (doprocessAlgorithmGNN) {
@@ -228,6 +236,12 @@ struct JetGnnInferenceTask {
     }
   }
 
+  template <typename AnyJets, typename AnyTracks>
+  void analyzeJetAlgorithmGNNBatch(AnyJets const& jets, AnyTracks const& tracks)
+  {
+    // Implement batch inference logic here
+  }
+
   void processDummy(aod::JetCollisions const&)
   {
   }
@@ -246,6 +260,13 @@ struct JetGnnInferenceTask {
   }
   PROCESS_SWITCH(JetGnnInferenceTask, processAlgorithmGNN, "Fill GNN evaluation score (D_b) for charged jets", false);
 
+  void processAlgorithmGNNBatch(aod::JetCollisions::iterator const& /*coll*/, JetTable const& jets, JetTracksExt const& jtracks)
+  {
+    // Batch inference of GNN model per collision
+    analyzeJetAlgorithmGNNBatch(jets, jtracks);
+  }
+  PROCESS_SWITCH(JetGnnInferenceTask, processAlgorithmGNNBatch, "Fill GNN evaluation score (D_b) for charged jets, batch inference", false);
+
   void processFillTables(std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>::iterator const& jet, JetTracksExt const& tracks)
   {
     fillTables<isMCD>(jet, tracks);
@@ -253,16 +274,20 @@ struct JetGnnInferenceTask {
   PROCESS_SWITCH(JetGnnInferenceTask, processFillTables, "Fill Tables for tagging decision, jet probability, and ML score on charged jets", false);
 };
 
-using JetGnnInferenceDataCharged = JetGnnInferenceTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::ChargedJetTags>;
-using JetGnnInferenceMcdCharged = JetGnnInferenceTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetTags>;
-// using JetGnnInferenceDataChargedFull = JetGnnInferenceTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::ChargedJetTags, ?, ?>;
-// using JetGnnInferenceMcdChargedFull = JetGnnInferenceTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetTags, ?, ?>;
+using JetGnnTagInferenceDataCharged = JetGnnInferenceTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::ChargedJetTags>;
+using JetGnnTagInferenceMcdCharged = JetGnnInferenceTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetTags>;
+using JetGnnFullInferenceDataCharged = JetGnnInferenceTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::ChargedJetTags, ChargedJetGNNTrack, ChargedJetTrackTags, ChargedJetGNNEdge, ChargedJetEdgeTags>;
+using JetGnnFullInferenceMcdCharged = JetGnnInferenceTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetTags, ChargedMCDetectorLevelJetGNNTrack, ChargedMCDetectorLevelJetTrackTags, ChargedMCDetectorLevelJetGNNEdge, ChargedMCDetectorLevelJetEdgeTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetGnnInferenceDataCharged>(
-      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-inference-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
-    adaptAnalysisTask<JetGnnInferenceMcdCharged>(
-      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-inference-mcd-charged"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetGnnTagInferenceDataCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-tag-inference-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetGnnTagInferenceMcdCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-tag-inference-mcd-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetGnnFullInferenceDataCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-full-inference-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetGnnFullInferenceMcdCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-full-inference-mcd-charged"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
 }
