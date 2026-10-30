@@ -558,6 +558,8 @@ class VarManager : public TObject
     kCharge1,
     kDCAxy1,
     kDCAz1,
+    kDCASigxy1, // DCAxy / sqrt(cYY) of leg 1
+    kDCASigz1,  // DCAz / sqrt(cZZ) of leg 1
     kITSclusterMap1,
     kTPCnSigmaEl1,
     kPin_leg1,
@@ -568,6 +570,8 @@ class VarManager : public TObject
     kCharge2,
     kDCAxy2,
     kDCAz2,
+    kDCASigxy2, // DCAxy / sqrt(cYY) of leg 2
+    kDCASigz2,  // DCAz / sqrt(cZZ) of leg 2
     kITSclusterMap2,
     kTPCnSigmaEl2,
 
@@ -4024,6 +4028,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kDCAxy2] = dca2XY;
       values[kDCAz2] = dca2Z;
 
+      values[kDCASigxy1] = dca1XY / std::sqrt(t1.cYY());
+      values[kDCASigz1] = dca1Z / std::sqrt(t1.cZZ());
+      values[kDCASigxy2] = dca2XY / std::sqrt(t2.cYY());
+      values[kDCASigz2] = dca2Z / std::sqrt(t2.cZZ());
+
       if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
         // Quantities based on the barrel tables
 
@@ -5023,6 +5032,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxyErr] = -999.;
       values[kVertexingLxyzErr] = -999.;
       values[kVertexingLzErr] = -999.;
+      values[kVertexingLxyOverErr] = -999.;
+      values[kVertexingLzOverErr] = -999.;
+      values[kVertexingLxyzOverErr] = -999.;
 
       values[kVertexingTauxy] = -999.;
       values[kVertexingTauz] = -999.;
@@ -5081,6 +5093,10 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxy] = std::sqrt(values[kVertexingLxy]);
       values[kVertexingLz] = std::sqrt(values[kVertexingLz]);
       values[kVertexingLxyz] = std::sqrt(values[kVertexingLxyz]);
+
+      values[kVertexingLxyOverErr] = values[kVertexingLxy] / values[kVertexingLxyErr];
+      values[kVertexingLzOverErr] = values[kVertexingLz] / values[kVertexingLzErr];
+      values[kVertexingLxyzOverErr] = values[kVertexingLxyz] / values[kVertexingLxyzErr];
 
       values[kVertexingTauz] = -dz * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxy] = values[kVertexingLxy] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
