@@ -332,7 +332,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   } misc;
 
   struct InternalValidation {
-    TRandom3* randGen = new TRandom3(1);
+    TRandom3* randGen = new TRandom3(0);
     TF1* fIntValFun = nullptr;
     TList* fIntValList = nullptr;
     std::array<TProfile*, eIntValHarmonics_N> fProfIntVal{};
