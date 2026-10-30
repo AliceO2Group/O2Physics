@@ -420,7 +420,7 @@ struct FemtoProducerDerivedToDerived {
     cascadeBuilder.processXis(col, xis, tracks, xiPartition, trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasXis, "Process lambdas and xis", false);
-  
+
   // mc processing
   //   // NOTE: unlike the other process functions, this one subscribes to the full
   // collision table and iterates manually. The MC index maps are keyed by source
