@@ -3063,7 +3063,7 @@ struct AntinucleiInJets {
           continue;
         chargedParticles.push_back({proton.px, proton.py, proton.pz, proton.pdgCode, proton.mcIndex, proton.used});
       }
-        
+
       // Add protons from HF decays
       for (int ip = 0; ip < static_cast<int>(protonsFromHF.size()); ip++) {
         auto& proton = protonsFromHF[ip];
@@ -3139,7 +3139,7 @@ struct AntinucleiInJets {
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
         for (const auto& particle : jetConstituents) {
-            
+
           // Calculate weight for antiprotons
           double wAntipJet = 1.0;
           if (applyReweighting) {
