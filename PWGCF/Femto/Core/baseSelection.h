@@ -292,7 +292,7 @@ class BaseSelection
   /// \brief Evaluate a single observable against its configured selections.
   /// \param observableIndex Index of the observable.
   /// \param values Vector of values of the observable.
-  void evaluateObservable(int observableIndex, std::vector<T> values)
+  void evaluateObservable(int observableIndex, std::vector<T> const& values)
   {
     // if there are no selections configured, bail out
     if (mSelectionContainers.at(observableIndex).isEmpty()) {

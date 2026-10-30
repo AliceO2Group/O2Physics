@@ -556,7 +556,7 @@ class McBuilder
     int64_t mcMotherRow = -1;
     if (mProduceMcMothers && mcParticle.has_mothers()) {
       auto mothers = mcParticle.template mothers_as<T2>();
-      auto motherParticle = mothers.front();
+      auto const& motherParticle = mothers.front();
       auto mcMotherIndex = motherParticle.globalIndex();
 
       auto itM = mMcMotherMap.find(mcMotherIndex);

@@ -334,7 +334,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   }
 
   template <typename T>
-  void setSphericity(T tracks)
+  void setSphericity(T const& tracks)
   {
     mSphericity = computeSphericity(tracks);
   }
