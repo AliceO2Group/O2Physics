@@ -176,7 +176,28 @@ DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool)
 DECLARE_SOA_COLUMN(MultiplicityFT0A, multiplicityFT0AJPsi2ee, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0CJPsi2ee, float);
 DECLARE_SOA_COLUMN(PercentileFT0M, percentileFT0MJPsi2ee, float);
+DECLARE_SOA_COLUMN(PercentileFT0C, percentileFT0CJPsi2ee, float);
 DECLARE_SOA_COLUMN(MultiplicityNContrib, multiplicityNContribJPsi2ee, float);
+
+// Additional columns for prompt-non-prompt JPsi separation (BDT training)
+DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);                         //! t1.sign() + t2.sign()
+DECLARE_SOA_COLUMN(PairFilter, pairFilter, uint32_t);                   //! twoTrackFilter (cut bits + ambiguity bits 28-31)
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                   //! MC signal bits, 0 in data
+DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);                         //! correct collision association (MC only, true in data)
+DECLARE_SOA_COLUMN(TauxyeeErr, tauxyeeErr, float);                      //! kVertexingTauxyErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(TauzeeErr, tauzeeErr, float);                        //! kVertexingTauzErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(LxyeeProjected, lxyeeProjected, float);              //! kVertexingLxyProjected
+DECLARE_SOA_COLUMN(LxyeeOverErr, lxyeeOverErr, float);                  //! kVertexingLxyOverErr
+DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                              //! kVertexingLxyz
+DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);                //! kVertexingLxyzOverErr
+DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);                        //! kVertexingChi2PCA
+DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);                            //! kCosPointingAngle
+DECLARE_SOA_COLUMN(DcaXYOverSig1, dcaXYOverSig1, float);                  
+DECLARE_SOA_COLUMN(DcaZOverSig1, dcaZOverSig1, float);                 
+DECLARE_SOA_COLUMN(DcaXYOverSig2, dcaXYOverSig2, float);               
+DECLARE_SOA_COLUMN(DcaZOverSig2, dcaZOverSig2, float);               
+
+
 // Candidate columns for JPsi/muon correlations
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
@@ -210,12 +231,20 @@ DECLARE_SOA_TABLE(JPsiMuonCandidates, "AOD", "DQJPSIMUONA",
                   dqanalysisflags::MassDileptonCandidate, dqanalysisflags::Ptpair, dqanalysisflags::Etapair, dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Phiassoc,
                   dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::Phileg1, dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::Phileg2);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
+                  dqanalysisflags::PairFilter, dqanalysisflags::McDecision,
                   dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Etaee, dqanalysisflags::Rapee, dqanalysisflags::Phiee,
                   dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::LxyeePoleMassPVrecomputed,
-                  dqanalysisflags::Vx, dqanalysisflags::Vy, dqanalysisflags::Vz, dqanalysisflags::DcaXY1, dqanalysisflags::DcaZ1, dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::TPCnsigmaElleg1, dqanalysisflags::DcaXY2, dqanalysisflags::DcaZ2, dqanalysisflags::ITSClusterMapleg2, dqanalysisflags::TPCnsigmaElleg2,
-                  dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::MultiplicityFT0A, dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0M, dqanalysisflags::MultiplicityNContrib);
+                  dqanalysisflags::TauxyeeErr, dqanalysisflags::TauzeeErr,
+                  dqanalysisflags::LxyeeProjected, dqanalysisflags::LxyeeOverErr, dqanalysisflags::Lxyzee, dqanalysisflags::LxyzeeOverErr,
+                  dqanalysisflags::Chi2PCAee, dqanalysisflags::CosPAee,
+                  dqanalysisflags::Vx, dqanalysisflags::Vy, dqanalysisflags::Vz,
+                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::DcaXY1, dqanalysisflags::DcaZ1, dqanalysisflags::DcaXYOverSig1, dqanalysisflags::DcaZOverSig1,
+                  dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::ITSChi2leg1,
+                  dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::DcaXY2, dqanalysisflags::DcaZ2, dqanalysisflags::DcaXYOverSig2, dqanalysisflags::DcaZOverSig2,
+                  dqanalysisflags::ITSClusterMapleg2, dqanalysisflags::ITSChi2leg2,
+                  dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc,
+                  dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0C, dqanalysisflags::MultiplicityNContrib);
 } // namespace o2::aod
-
 // Declarations of various short names
 using MyEvents = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
 using MyEventsBasic = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended>;
@@ -2152,6 +2181,28 @@ struct AnalysisSameEventPairing {
                                (fConfigML.applyBDT && fOutputMlPsi2ee.size() > 1) ? VarManager::fgValues[VarManager::kBdtPrompt] : -999.f,
                                (fConfigML.applyBDT && fOutputMlPsi2ee.size() > 2) ? VarManager::fgValues[VarManager::kBdtNonprompt] : -999.f);
             }
+            constexpr bool eventHasVtxCovForTable = ((TEventFillMap & VarManager::ObjTypes::ReducedEventVtxCov) > 0);
+            if constexpr (trackHasCov && TTwoProngFitter && eventHasVtxCovForTable) {
+              const bool ambiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
+              const bool ambiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+              // kVertexingProcCode == 0: the fit failed; FillPairVertexing then returns early without updating the
+              // projected / pseudo-proper / pointing-angle variables, so they would be stale -> skip the pair
+              if (t1.sign() * t2.sign() < 0) {
+                PromptNonPromptSepTable(twoTrackFilter, dileptonMcDecision,
+                                      VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
+                                      VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
+                                      VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kVertexingTauzErr],
+                                      VarManager::fgValues[VarManager::kVertexingLxyProjected], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr],
+                                      VarManager::fgValues[VarManager::kVertexingChi2PCA], VarManager::fgValues[VarManager::kCosPointingAngle],
+                                      VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ],
+                                      t1.pt(), t1.eta(), VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kDCAxyOverSig1], VarManager::fgValues[VarManager::kDCAzOverSig1],
+                                      VarManager::fgValues[VarManager::kITSclusterMap1], t1.itsChi2NCl(),
+                                      t2.pt(), t2.eta(), VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kDCAxyOverSig2], VarManager::fgValues[VarManager::kDCAzOverSig2],
+                                      VarManager::fgValues[VarManager::kITSclusterMap2], t2.itsChi2NCl(),
+                                      ambiInBunch, ambiOutOfBunch, true,
+                                      VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxNcontribReal]);
+              }
+            }
           }
         }
 
@@ -2237,6 +2288,7 @@ struct AnalysisSameEventPairing {
                           VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI], VarManager::fgValues[VarManager::kMultDimuons],
                           VarManager::fgValues[VarManager::kVertexingPz], VarManager::fgValues[VarManager::kVertexingSV]);
           }
+
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
             if constexpr (eventHasQvector || eventHasQvectorCentr) {
               dileptonFlowList(event.collisionId(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kCentFT0C],
@@ -2293,10 +2345,6 @@ struct AnalysisSameEventPairing {
               }
             }
             if (sign1 * sign2 < 0) {
-              PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
-                                      VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
-                                      VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kITSclusterMap1], VarManager::fgValues[VarManager::kTPCnSigmaEl1], VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kITSclusterMap2], VarManager::fgValues[VarManager::kTPCnSigmaEl2],
-                                      isAmbiInBunch, isAmbiOutOfBunch, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
                 if (fConfigQA) {
                   fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
