@@ -665,10 +665,10 @@ struct HfCandidateCreator3Prong {
       std::array<float, 3> pProng1 = kfCalculateProngMomentumInSecondaryVertex(kfSecondKaon, kfCandPiKP);
       std::array<float, 3> pProng2 = kfCalculateProngMomentumInSecondaryVertex(kfThirdPion, kfCandPiKP);
 
-      registry.fill(HIST("hCovSVXX"), kfCandGeneric->Covariance(0, 0));
-      registry.fill(HIST("hCovSVYY"), kfCandGeneric->Covariance(1, 1));
-      registry.fill(HIST("hCovSVXZ"), kfCandGeneric->Covariance(2, 0));
-      registry.fill(HIST("hCovSVZZ"), kfCandGeneric->Covariance(2, 2));
+      registry.fill(HIST("hCovSVXX"), kfCandGeneric->GetCovariance(0, 0));
+      registry.fill(HIST("hCovSVYY"), kfCandGeneric->GetCovariance(1, 1));
+      registry.fill(HIST("hCovSVXZ"), kfCandGeneric->GetCovariance(2, 0));
+      registry.fill(HIST("hCovSVZZ"), kfCandGeneric->GetCovariance(2, 2));
 
       auto* covMatrixSV = kfCandGeneric->CovarianceMatrix();
       double phi{}, theta{};
