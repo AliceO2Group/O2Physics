@@ -198,7 +198,7 @@ namespace qamatching
 DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Candidate, candidate, int32_t, o2::aod::QaMatchingCandidates, "QAMCANDs", "");
 } // namespace qamatching
 
-using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MFTMults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 using MyMuonsReAlign = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign>;
 using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
