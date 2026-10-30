@@ -59,6 +59,7 @@ struct ConfKinkFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massMaxSigmaPlus{"massMaxSigmaPlus", 1.3f, "Maximum mass for SigmaPlus hypothesis"};
   o2::framework::Configurable<float> massMinSigmaPlusPcm{"massMinSigmaPlusPcm", 1.1f, "Minimum mass for SigmaPlus (PCM) hypothesis"};
   o2::framework::Configurable<float> massMaxSigmaPlusPcm{"massMaxSigmaPlusPcm", 1.3f, "Maximum mass for SigmaPlus (PCM) hypothesis"};
+  o2::framework::Configurable<float> mlScoreMinSigmaPlusPcm{"mlScoreMinSigmaPlusPcm", -1.f, "Minimum BDT score for SigmaPlus (PCM) (-1: no cut)"};
 };
 
 // selections bits for all kinks
@@ -104,7 +105,6 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
 struct ConfSigmaPlusPcmBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("SigmaPlusPcmBits");
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all SigmaPlusPcm are passed through. Bits for all selections are stored."};
-  o2::framework::Configurable<std::vector<float>> mlScoreMin{"mlScoreMin", {0.35f, 0.63f, 0.77f}, "Minimum BDT score"};
   o2::framework::Configurable<std::vector<float>> flightDirTiltMax{"flightDirTiltMax", {0.05f}, "Maximum tilt of the flight direction (rad)"};
   o2::framework::Configurable<std::vector<float>> mothDcaPvMax{"mothDcaPvMax", {1.0f}, "Maximum DCA of mother from primary vertex (cm)"};
   o2::framework::Configurable<std::vector<float>> chaDauDcaZMax{"chaDauDcaZMax", {0.3f}, "Maximum |DCAz| of charged daughter from primary vertex (cm)"};
@@ -151,15 +151,7 @@ struct ConfSigmaPlusPcmSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_SELECTIONS(1.1, 1.3, 3222)
   o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Sigma candidate (e.g. +1 for Sigma+ or -1 for AntiSigma+)"};
-};
-
-// base selection for analysis task for sigma plus reconstructed with a PCM photon, with a cut on the BDT score
-template <auto& Prefix>
-struct ConfSigmaPlusPcmMlSelection : o2::framework::ConfigurableGroup {
-  std::string prefix = Prefix;
-  KINK_DEFAULT_SELECTIONS(1.1, 1.3, 3222)
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Sigma candidate (e.g. +1 for Sigma+ or -1 for AntiSigma+)"};
-  o2::framework::Configurable<float> mlScoreMin{"mlScoreMin", 0.f, "Minimum BDT score"};
+  o2::framework::Configurable<float> mlScoreMin{"mlScoreMin", -1.f, "Minimum BDT score (-1: no cut)"};
 };
 
 #undef KINK_DEFAULT_SELECTIONS
@@ -176,10 +168,6 @@ constexpr const char PrefixSigmaPlusPcmSelection1[] = "SigmaPlusPcmSelection1";
 constexpr const char PrefixSigmaPlusPcmSelection2[] = "SigmaPlusPcmSelection2";
 using ConfSigmaPlusPcmSelection1 = ConfSigmaPlusPcmSelection<PrefixSigmaPlusPcmSelection1>;
 using ConfSigmaPlusPcmSelection2 = ConfSigmaPlusPcmSelection<PrefixSigmaPlusPcmSelection2>;
-constexpr const char PrefixSigmaPlusPcmMlSelection1[] = "SigmaPlusPcmMlSelection1";
-constexpr const char PrefixSigmaPlusPcmMlSelection2[] = "SigmaPlusPcmMlSelection2";
-using ConfSigmaPlusPcmMlSelection1 = ConfSigmaPlusPcmMlSelection<PrefixSigmaPlusPcmMlSelection1>;
-using ConfSigmaPlusPcmMlSelection2 = ConfSigmaPlusPcmMlSelection<PrefixSigmaPlusPcmMlSelection2>;
 
 /// The different selections for kinks
 enum KinkSeles {
@@ -204,7 +192,6 @@ enum KinkSeles {
   kPtOriginalMin,
   kPtOriginalMax,
 
-  kMlScoreMin,
   kFlightDirTiltMax,
   kChaDauDcaZMax,
   kPhotonDcaZMax,
@@ -233,7 +220,6 @@ const std::unordered_map<KinkSeles, std::string> kinkSelectionNames = {
   {kCosPointingAngleMin, "cosPointingAngleMin"},
   {kPtOriginalMin, "ptOriginalMin"},
   {kPtOriginalMax, "ptOriginalMax"},
-  {kMlScoreMin, "mlScoreMin"},
   {kFlightDirTiltMax, "flightDirTiltMax"},
   {kChaDauDcaZMax, "chaDauDcaZMax"},
   {kPhotonDcaZMax, "photonDcaZMax"}};
@@ -248,6 +234,7 @@ enum KinkFilters {
   kPhiMax,
   kMassMin,
   kMassMax,
+  kMlScoreMin,
   kKinkFiltersMax
 };
 
@@ -262,7 +249,8 @@ const std::unordered_map<KinkFilters, std::string> kinkFilterNames = {
   {kPhiMin, "phiMin"},
   {kPhiMax, "phiMax"},
   {kMassMin, "massMin"},
-  {kMassMax, "massMax"}};
+  {kMassMax, "massMax"},
+  {kMlScoreMin, "mlScoreMin"}};
 
 /// \class KinkCuts
 /// \brief Cut class to contain and execute all cuts applied to kinks
@@ -557,6 +545,7 @@ struct KinkBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FSigmaPlusPcm> producedSigmaPlusPcm;
   o2::framework::Produces<o2::aod::FLiteSigmaPlusPcm> producedLiteSigmaPlusPcm;
   o2::framework::Produces<o2::aod::FSigmaPlusPcmMasks> producedSigmaPlusPcmMasks;
+  o2::framework::Produces<o2::aod::FSigmaPlusPcmMlScores> producedSigmaPlusPcmMlScores;
   o2::framework::Produces<o2::aod::FSigmaPlusPcmExtras> producedSigmaPlusPcmExtras;
 };
 
@@ -573,6 +562,7 @@ struct ConfKinkTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceSigmaPlusPcm{"produceSigmaPlusPcm", -1, "Produce SigmaPlusPcm (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceLiteSigmaPlusPcm{"produceLiteSigmaPlusPcm", -1, "Produce LiteSigmaPlusPcm (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigmaPlusPcmMasks{"produceSigmaPlusPcmMasks", -1, "Produce SigmaPlusPcmMasks (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceSigmaPlusPcmMlScores{"produceSigmaPlusPcmMlScores", -1, "Produce SigmaPlusPcmMlScores (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigmaPlusPcmExtras{"produceSigmaPlusPcmExtras", -1, "Produce SigmaPlusPcmExtras (-1: auto; 0 off; 1 on)"};
 };
 
@@ -839,9 +829,9 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
     mPhiMax = filter.phiMax.value;
     mMassLowerLimit = filter.massMinSigmaPlusPcm.value;
     mMassUpperLimit = filter.massMaxSigmaPlusPcm.value;
+    mMlScoreMin = filter.mlScoreMinSigmaPlusPcm.value;
     mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
 
-    this->addSelection(kMlScoreMin, kinkSelectionNames.at(kMlScoreMin), config.mlScoreMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kFlightDirTiltMax, kinkSelectionNames.at(kFlightDirTiltMax), config.flightDirTiltMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kMothDcaPvMax, kinkSelectionNames.at(kMothDcaPvMax), config.mothDcaPvMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kChaDauDcaZMax, kinkSelectionNames.at(kChaDauDcaZMax), config.chaDauDcaZMax.value, limits::kAbsUpperLimit, true, true, false);
@@ -862,6 +852,7 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
         {kinkFilterNames.at(kPhiMax), mPhiMax},
         {kinkFilterNames.at(kMassMin), mMassLowerLimit},
         {kinkFilterNames.at(kMassMax), mMassUpperLimit},
+        {kinkFilterNames.at(kMlScoreMin), mMlScoreMin},
       });
   };
 
@@ -873,6 +864,7 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
     mEta = RecoDecay::eta(momMother);
     mPhi = RecoDecay::phi(momMother);
     mMass = sigmaPlusPcmCand.massSigmaPlus();
+    mMlScore = sigmaPlusPcmCand.mlScore();
   }
 
   template <typename T>
@@ -913,6 +905,10 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
     this->template fillFilter<FilterHistName>(kMassMax, p);
     pass &= p;
 
+    p = mMlScore >= mMlScoreMin;
+    this->template fillFilter<FilterHistName>(kMlScoreMin, p);
+    pass &= p;
+
     this->template fillFilterSummary<FilterHistName>(pass);
 
     return this->isPassThrough() || pass;
@@ -922,7 +918,6 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
   void applySelections(T1 const& sigmaPlusPcmCand, T2 const& /*tracks*/)
   {
     this->reset();
-    this->evaluateObservable(kMlScoreMin, sigmaPlusPcmCand.mlScore());
     this->evaluateObservable(kFlightDirTiltMax, sigmaPlusPcmCand.flightDirTilt());
     this->evaluateObservable(kMothDcaPvMax, sigmaPlusPcmCand.candDcaToPV());
     this->evaluateObservable(kChaDauDcaZMax, sigmaPlusPcmCand.protonDcaZ());
@@ -947,6 +942,7 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
  private:
   float mMassLowerLimit = 1.1f;
   float mMassUpperLimit = 1.3f;
+  float mMlScoreMin = -1.f;
   bool mKeepTracksWithoutTof = true;
 
   // kinematic filters
@@ -962,6 +958,7 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
   float mEta = 0.f;
   float mPhi = 0.f;
   float mMass = 0.f;
+  float mMlScore = 0.f;
 };
 
 template <auto& SelectionHistName, auto& FilterHistName>
@@ -978,6 +975,7 @@ class SigmaPlusPcmBuilder
     mProduceSigmaPlusPcm = utils::enableTable("FSigmaPlusPcm_001", table.produceSigmaPlusPcm.value, initContext);
     mProduceLiteSigmaPlusPcm = utils::enableTable("FLiteSigmaPlusPcm_001", table.produceLiteSigmaPlusPcm.value, initContext);
     mProduceSigmaPlusPcmMasks = utils::enableTable("FSigmaPlusPcmMasks_001", table.produceSigmaPlusPcmMasks.value, initContext);
+    mProduceSigmaPlusPcmMlScores = utils::enableTable("FSigmaPlusPcmMlScores_001", table.produceSigmaPlusPcmMlScores.value, initContext);
     mProduceSigmaPlusPcmExtras = utils::enableTable("FSigmaPlusPcmExtras_001", table.produceSigmaPlusPcmExtras.value, initContext);
 
     if (mProduceSigmaPlusPcm && mProduceLiteSigmaPlusPcm) {
@@ -996,7 +994,7 @@ class SigmaPlusPcmBuilder
                  << "or switch to FSigmaPlusPcm if TrackTables.produceTracks is enabled instead.";
     }
 
-    if (mProduceSigmaPlusPcm || mProduceLiteSigmaPlusPcm || mProduceSigmaPlusPcmMasks || mProduceSigmaPlusPcmExtras) {
+    if (mProduceSigmaPlusPcm || mProduceLiteSigmaPlusPcm || mProduceSigmaPlusPcmMasks || mProduceSigmaPlusPcmMlScores || mProduceSigmaPlusPcmExtras) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -1057,7 +1055,7 @@ class SigmaPlusPcmBuilder
       auto daughter = sigmaPlusPcm.template protonTrack_as<T8>();
       daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(daughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
       fillSigmaPlusPcm(collisionBuilder, kinkProducts, sigmaPlusPcm, daughterIndex);
-      mcBuilder.template fillMcSigmaPlusPcmWithLabel<system>(sigmaPlusPcm, mcParticles, mcCols, mcProducts);
+      mcBuilder.template fillMcSigmaPlusPcmWithLabel<system>(sigmaPlusPcm, daughter, mcParticles, mcCols, mcProducts);
     }
   }
 
@@ -1084,9 +1082,11 @@ class SigmaPlusPcmBuilder
     if (mProduceSigmaPlusPcmMasks) {
       kinkProducts.producedSigmaPlusPcmMasks(mSigmaPlusPcmSelection.getBitmask());
     }
+    if (mProduceSigmaPlusPcmMlScores) {
+      kinkProducts.producedSigmaPlusPcmMlScores(sigmaPlusPcm.mlScore());
+    }
     if (mProduceSigmaPlusPcmExtras) {
       kinkProducts.producedSigmaPlusPcmExtras(
-        sigmaPlusPcm.mlScore(),
         sigmaPlusPcm.flightDirTilt(),
         sigmaPlusPcm.candDcaToPV(),
         sigmaPlusPcm.protonDcaXY(),
@@ -1112,6 +1112,7 @@ class SigmaPlusPcmBuilder
   bool mProduceSigmaPlusPcm = false;
   bool mProduceLiteSigmaPlusPcm = false;
   bool mProduceSigmaPlusPcmMasks = false;
+  bool mProduceSigmaPlusPcmMlScores = false;
   bool mProduceSigmaPlusPcmExtras = false;
 };
 
@@ -1130,6 +1131,7 @@ struct KinkBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFSigmaPlusExtras> producedSigmaPlusExtras;
   o2::framework::Produces<o2::aod::StoredFSigmaPlusPcm> producedSigmaPlusPcms;
   o2::framework::Produces<o2::aod::StoredFSigmaPlusPcmMasks> producedSigmaPlusPcmMasks;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlusPcmMlScores> producedSigmaPlusPcmMlScores;
   o2::framework::Produces<o2::aod::StoredFSigmaPlusPcmExtras> producedSigmaPlusPcmExtras;
 };
 
@@ -1360,8 +1362,10 @@ class KinkBuilderDerivedToDerived
   void fillSigmaPlusPcmExtensions(T1 const& sigmaPlusPcm, T2& newSigmaPlusPcmTable)
   {
     if constexpr (requires(T1 t) { t.mlScore(); }) {
-      newSigmaPlusPcmTable.producedSigmaPlusPcmExtras(sigmaPlusPcm.mlScore(),
-                                                      sigmaPlusPcm.flightDirTilt(),
+      newSigmaPlusPcmTable.producedSigmaPlusPcmMlScores(sigmaPlusPcm.mlScore());
+    }
+    if constexpr (requires(T1 t) { t.photonConvRadius(); }) {
+      newSigmaPlusPcmTable.producedSigmaPlusPcmExtras(sigmaPlusPcm.flightDirTilt(),
                                                       sigmaPlusPcm.dcaMothToPV(),
                                                       sigmaPlusPcm.dauDcaXY(),
                                                       sigmaPlusPcm.dauDcaZ(),

@@ -61,7 +61,7 @@ using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks>;
 using FemtoSigma = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks>;
 using FemtoSigmaPlus = o2::soa::Join<o2::aod::FSigmaPlus, o2::aod::FSigmaPlusMasks>;
 using FemtoSigmaPlusExtended = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusExtras>;
-using FemtoSigmaPlusPcm = o2::soa::Join<o2::aod::FSigmaPlusPcm, o2::aod::FSigmaPlusPcmMasks>;
+using FemtoSigmaPlusPcm = o2::soa::Join<o2::aod::FSigmaPlusPcm, o2::aod::FSigmaPlusPcmMasks, o2::aod::FSigmaPlusPcmMlScores>;
 using FemtoSigmaPlusPcmExtended = o2::soa::Join<FemtoSigmaPlusPcm, o2::aod::FSigmaPlusPcmExtras>;
 
 using FemtoMcTracks = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
@@ -370,7 +370,7 @@ struct FemtoProducerDerivedToDerived {
     builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcm, "Process sigmaPlusPcm and tracks", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcm, "Process sigmaPlusPcm (with SigmaPlusPcmMlScores, selected on the BDT score) and tracks", false);
 
   void processTracksSigmaPlusPcmExtended(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusPcmExtended const& sigmapluspcm)
   {
@@ -382,7 +382,7 @@ struct FemtoProducerDerivedToDerived {
     builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmExtendedPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmExtended, "Process sigmaPlusPcm (with SigmaPlusPcmExtras) and tracks", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmExtended, "Process sigmaPlusPcm (with SigmaPlusPcmMlScores and SigmaPlusPcmExtras, selected on the BDT score) and tracks", false);
 
   void processTracksRho0(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoRho0s const& rho0s)
   {
@@ -539,7 +539,7 @@ struct FemtoProducerDerivedToDerived {
                                                      builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
     }
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmMc, "Process sigmaPlusPcm and tracks with MC information", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmMc, "Process sigmaPlusPcm (with SigmaPlusPcmMlScores, selected on the BDT score) and tracks with MC information", false);
 
   void processTracksSigmaPlusPcmExtendedMc(femtotables::FilteredFemtoMcCollisions const& cols,
                                            femtotables::FemtoMcTracks const& tracks,
@@ -565,7 +565,7 @@ struct FemtoProducerDerivedToDerived {
                                                      builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
     }
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmExtendedMc, "Process sigmaPlusPcm (with SigmaPlusPcmExtras) and tracks with MC information", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmExtendedMc, "Process sigmaPlusPcm (with SigmaPlusPcmMlScores and SigmaPlusPcmExtras, selected on the BDT score) and tracks with MC information", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

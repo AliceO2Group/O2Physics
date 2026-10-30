@@ -256,21 +256,7 @@
     (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                                                  \
     (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                                                \
     (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
-    ncheckbit(o2::aod::femtokinks::mask, (selection).mask)
-
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MAKE_SIGMAPLUSPCM_ML_PARTITION(selection)                                                                                              \
-  ifnode((selection).sign.node() != 0,                                                                                                         \
-         ifnode((selection).sign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) && \
-    (nabs(o2::aod::femtobase::stored::signedPt) > (selection).ptMin) &&                                                                        \
-    (nabs(o2::aod::femtobase::stored::signedPt) < (selection).ptMax) &&                                                                        \
-    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                                                  \
-    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                                                  \
-    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                                                  \
-    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                                                  \
-    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                                                \
-    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
-    (o2::aod::femtokinks::mlScore > (selection).mlScoreMin) &&                                                                                 \
+    (o2::aod::femtokinks::mlScore >= (selection).mlScoreMin) &&                                                                                \
     ncheckbit(o2::aod::femtokinks::mask, (selection).mask)
 
 // partition for D0

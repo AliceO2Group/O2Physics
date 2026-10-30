@@ -1322,8 +1322,12 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmMasks_001, "FSIGMAPCMMASKS", 1,
 using FSigmaPlusPcmMasks = FSigmaPlusPcmMasks_001;
 using StoredFSigmaPlusPcmMasks = StoredFSigmaPlusPcmMasks_001;
 
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmMlScores_001, "FSIGMAPCMML", 1,
+                                   femtokinks::MlScore);
+using FSigmaPlusPcmMlScores = FSigmaPlusPcmMlScores_001;
+using StoredFSigmaPlusPcmMlScores = StoredFSigmaPlusPcmMlScores_001;
+
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmExtras_001, "FSIGMAPCMEXTRA", 1,
-                                   femtokinks::MlScore,
                                    femtokinks::FlightDirTilt,
                                    femtokinks::DcaMothToPV,
                                    femtokinks::DauDcaXY,

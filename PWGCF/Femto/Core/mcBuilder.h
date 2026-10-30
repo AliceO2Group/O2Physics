@@ -429,14 +429,19 @@ class McBuilder
     fillMcLabelGeneric<system>(sigmaPlusDaughter, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusLabels(p); }, true);
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
-  void fillMcSigmaPlusPcmWithLabel(T1 const& sigmaPlusPcm, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcSigmaPlusPcmWithLabel(T1 const& sigmaPlusPcm, T2 const& chaDaughter, T3 const& mcParticles, T4 const& mcCols, T5& mcProducts)
   {
     if (!mProduceSigmaPlusPcmLabels) {
       mcProducts.producedSigmaPlusPcmLabels(-1);
       return;
     }
-    fillMcLabelGeneric<system>(sigmaPlusPcm, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusPcmLabels(p); });
+    // true sigma plus (proton and photon from it): label of the sigma plus, otherwise label of the proton, its mother gives the origin of the background
+    if (sigmaPlusPcm.has_mcParticle()) {
+      fillMcLabelGeneric<system>(sigmaPlusPcm, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusPcmLabels(p); });
+    } else {
+      fillMcLabelGeneric<system>(chaDaughter, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusPcmLabels(p); });
+    }
   }
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4>

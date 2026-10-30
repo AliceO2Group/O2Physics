@@ -1624,8 +1624,9 @@ struct Sigmaplusbuilder {
   // BDT score
   float computeMlScore(const SigmaPlusCandidate& cand)
   {
+    constexpr float NoTofNSigmaThreshold = -900.f; // tofNSigma is -999 without TOF, NaN for the BDT
     std::vector<float> inputs{std::abs(cand.photonDcaZToPV), std::abs(cand.protonDcaXY), std::abs(cand.protonDcaZ), cand.dcaToPV,
-                              cand.protonTpcNSigma, cand.protonTofNSigma < -900.f ? std::numeric_limits<float>::quiet_NaN() : cand.protonTofNSigma,
+                              cand.protonTpcNSigma, cand.protonTofNSigma < NoTofNSigmaThreshold ? std::numeric_limits<float>::quiet_NaN() : cand.protonTofNSigma,
                               cand.antiSigmaPointingAngle, cand.dcaProtonGamma, cand.photonDcaXYToPV, cand.photonCosPAToPV, cand.tiltAngle};
     return mlResponse.getModelOutput(inputs, 0)[1];
   }

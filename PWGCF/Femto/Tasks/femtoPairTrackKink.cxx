@@ -60,14 +60,12 @@ struct FemtoPairTrackKink {
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
   using FemtoSigmas = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks>;
   using FemtoSigmaPlus = o2::soa::Join<o2::aod::FSigmaPlus, o2::aod::FSigmaPlusMasks>;
-  using FemtoSigmaPlusPcm = o2::soa::Join<o2::aod::FSigmaPlusPcm, o2::aod::FSigmaPlusPcmMasks>;
-  using FemtoSigmaPlusPcmMl = o2::soa::Join<FemtoSigmaPlusPcm, o2::aod::FSigmaPlusPcmExtras>;
+  using FemtoSigmaPlusPcm = o2::soa::Join<o2::aod::FSigmaPlusPcm, o2::aod::FSigmaPlusPcmMasks, o2::aod::FSigmaPlusPcmMlScores>;
 
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
   using FemtoSigmasWithLabel = o2::soa::Join<FemtoSigmas, o2::aod::FSigmaLabels>;
   using FemtoSigmaPlusWithLabel = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusLabels>;
   using FemtoSigmaPlusPcmWithLabel = o2::soa::Join<FemtoSigmaPlusPcm, o2::aod::FSigmaPlusPcmLabels>;
-  using FemtoSigmaPlusPcmMlWithLabel = o2::soa::Join<FemtoSigmaPlusPcmMl, o2::aod::FSigmaPlusPcmLabels>;
 
   using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
@@ -124,15 +122,6 @@ struct FemtoPairTrackKink {
 
   o2::framework::Partition<FemtoSigmaPlusPcmWithLabel> sigmaPlusPcmWithLabelPartition = MAKE_SIGMAPLUSPCM_PARTITION(confSigmaPlusPcmSelection);
   o2::framework::Preslice<FemtoSigmaPlusPcmWithLabel> perColSigmaPlusPcmWithLabel = o2::aod::femtobase::stored::fColId;
-
-  // setup for sigma plus reconstructed with a PCM photon, with a cut on the BDT score
-  kinkbuilder::ConfSigmaPlusPcmMlSelection1 confSigmaPlusPcmMlSelection;
-
-  o2::framework::Partition<FemtoSigmaPlusPcmMl> sigmaPlusPcmMlPartition = MAKE_SIGMAPLUSPCM_ML_PARTITION(confSigmaPlusPcmMlSelection);
-  o2::framework::Preslice<FemtoSigmaPlusPcmMl> perColSigmaPlusPcmMl = o2::aod::femtobase::stored::fColId;
-
-  o2::framework::Partition<FemtoSigmaPlusPcmMlWithLabel> sigmaPlusPcmMlWithLabelPartition = MAKE_SIGMAPLUSPCM_ML_PARTITION(confSigmaPlusPcmMlSelection);
-  o2::framework::Preslice<FemtoSigmaPlusPcmMlWithLabel> perColSigmaPlusPcmMlWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
@@ -197,8 +186,8 @@ struct FemtoPairTrackKink {
 
   void init(o2::framework::InitContext&)
   {
-    bool processData = doprocessSigmaSameEvent || doprocessSigmaMixedEvent || doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent || doprocessSigmaPlusPcmSameEvent || doprocessSigmaPlusPcmMixedEvent || doprocessSigmaPlusPcmMlSameEvent || doprocessSigmaPlusPcmMlMixedEvent;
-    bool processMc = doprocessSigmaSameEventMc || doprocessSigmaMixedEventMc || doprocessSigmaPlusSameEventMc || doprocessSigmaPlusMixedEventMc || doprocessSigmaPlusPcmSameEventMc || doprocessSigmaPlusPcmMixedEventMc || doprocessSigmaPlusPcmMlSameEventMc || doprocessSigmaPlusPcmMlMixedEventMc;
+    bool processData = doprocessSigmaSameEvent || doprocessSigmaMixedEvent || doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent || doprocessSigmaPlusPcmSameEvent || doprocessSigmaPlusPcmMixedEvent;
+    bool processMc = doprocessSigmaSameEventMc || doprocessSigmaMixedEventMc || doprocessSigmaPlusSameEventMc || doprocessSigmaPlusMixedEventMc || doprocessSigmaPlusPcmSameEventMc || doprocessSigmaPlusPcmMixedEventMc;
 
     if (processData && processMc) {
       LOG(fatal) << "Both data and mc processing is enabled. Breaking...";
@@ -208,16 +197,12 @@ struct FemtoPairTrackKink {
     bool processSigmaPlus = doprocessSigmaPlusSameEvent || doprocessSigmaPlusSameEventMc || doprocessSigmaPlusMixedEvent || doprocessSigmaPlusMixedEventMc;
 
     bool processSigmaPlusPcm = doprocessSigmaPlusPcmSameEvent || doprocessSigmaPlusPcmSameEventMc || doprocessSigmaPlusPcmMixedEvent || doprocessSigmaPlusPcmMixedEventMc;
-    bool processSigmaPlusPcmMl = doprocessSigmaPlusPcmMlSameEvent || doprocessSigmaPlusPcmMlSameEventMc || doprocessSigmaPlusPcmMlMixedEvent || doprocessSigmaPlusPcmMlMixedEventMc;
 
     if (processSigma && processSigmaPlus) {
       LOG(fatal) << "Both Sigma-track and SigmaPlus-track processing is enabled. Breaking...";
     }
-    if ((processSigma || processSigmaPlus) && (processSigmaPlusPcm || processSigmaPlusPcmMl)) {
+    if ((processSigma || processSigmaPlus) && processSigmaPlusPcm) {
       LOG(fatal) << "Both Sigma/SigmaPlus-track and SigmaPlusPcm-track processing is enabled. Breaking...";
-    }
-    if (processSigmaPlusPcm && processSigmaPlusPcmMl) {
-      LOG(fatal) << "Both SigmaPlusPcm-track processing with mask and with BDT score selection is enabled. Breaking...";
     }
 
     // setup columnpolicy for binning
@@ -249,11 +234,7 @@ struct FemtoPairTrackKink {
         pairTrackSigmaPlusBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusSelection, confSigmaPlusCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec, pairCleanerHistSpec);
       } else {
         sigmaPlusPcmHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaPlusPcmBinning);
-        if (processSigmaPlusPcmMl) {
-          pairTrackSigmaPlusPcmBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusPcmMlSelection, confSigmaPlusPcmCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusPcmHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec, pairCleanerHistSpec);
-        } else {
-          pairTrackSigmaPlusPcmBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusPcmSelection, confSigmaPlusPcmCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusPcmHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec, pairCleanerHistSpec);
-        }
+        pairTrackSigmaPlusPcmBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusPcmSelection, confSigmaPlusPcmCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusPcmHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec, pairCleanerHistSpec);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
@@ -268,11 +249,7 @@ struct FemtoPairTrackKink {
         pairTrackSigmaPlusBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusSelection, confSigmaPlusCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec, pairCleanerHistSpec);
       } else {
         sigmaPlusPcmHistSpec = kinkhistmanager::makeKinkMcHistSpecMap(confSigmaPlusPcmBinning);
-        if (processSigmaPlusPcmMl) {
-          pairTrackSigmaPlusPcmBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusPcmMlSelection, confSigmaPlusPcmCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusPcmHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec, pairCleanerHistSpec);
-        } else {
-          pairTrackSigmaPlusPcmBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusPcmSelection, confSigmaPlusPcmCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusPcmHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec, pairCleanerHistSpec);
-        }
+        pairTrackSigmaPlusPcmBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusPcmSelection, confSigmaPlusPcmCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusPcmHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec, pairCleanerHistSpec);
       }
     }
     hRegistry.print();
@@ -330,7 +307,7 @@ struct FemtoPairTrackKink {
   {
     pairTrackSigmaPlusPcmBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition, sigmapluspcm, sigmaPlusPcmPartition, cache);
   }
-  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmSameEvent, "Enable processing same event processing for tracks and sigma plus (PCM)", false);
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmSameEvent, "Enable processing same event processing for tracks and sigma plus (PCM), selected on the mask and the BDT score", false);
 
   void processSigmaPlusPcmSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmaPlusPcmWithLabel const& sigmapluspcm, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
@@ -342,37 +319,13 @@ struct FemtoPairTrackKink {
   {
     pairTrackSigmaPlusPcmBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, sigmaPlusPcmPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
-  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmMixedEvent, "Enable processing mixed event processing for tracks and sigma plus (PCM)", false);
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmMixedEvent, "Enable processing mixed event processing for tracks and sigma plus (PCM), selected on the mask and the BDT score", false);
 
   void processSigmaPlusPcmMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmaPlusPcmWithLabel const& /*sigmapluspcm*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     pairTrackSigmaPlusPcmBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition, sigmaPlusPcmWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmMixedEventMc, "Enable processing mixed event processing for tracks and sigma plus (PCM) with MC information", false);
-
-  void processSigmaPlusPcmMlSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoSigmaPlusPcmMl const& sigmapluspcm)
-  {
-    pairTrackSigmaPlusPcmBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition, sigmapluspcm, sigmaPlusPcmMlPartition, cache);
-  }
-  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmMlSameEvent, "Enable processing same event processing for tracks and sigma plus (PCM) with BDT score selection", false);
-
-  void processSigmaPlusPcmMlSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmaPlusPcmMlWithLabel const& sigmapluspcm, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
-  {
-    pairTrackSigmaPlusPcmBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition, sigmapluspcm, sigmaPlusPcmMlWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
-  }
-  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmMlSameEventMc, "Enable processing same event processing for tracks and sigma plus (PCM) with BDT score selection and MC information", false);
-
-  void processSigmaPlusPcmMlMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoSigmaPlusPcmMl const& /*sigmapluspcm*/)
-  {
-    pairTrackSigmaPlusPcmBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, sigmaPlusPcmMlPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
-  }
-  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmMlMixedEvent, "Enable processing mixed event processing for tracks and sigma plus (PCM) with BDT score selection", false);
-
-  void processSigmaPlusPcmMlMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmaPlusPcmMlWithLabel const& /*sigmapluspcm*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
-  {
-    pairTrackSigmaPlusPcmBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition, sigmaPlusPcmMlWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
-  }
-  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmMlMixedEventMc, "Enable processing mixed event processing for tracks and sigma plus (PCM) with BDT score selection and MC information", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
