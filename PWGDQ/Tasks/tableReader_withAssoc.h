@@ -192,10 +192,10 @@ DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                              //! kVer
 DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);                //! kVertexingLxyzOverErr
 DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);                        //! kVertexingChi2PCA
 DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);                            //! kCosPointingAngle
-DECLARE_SOA_COLUMN(DcaSigXY1, dcaSigXY1, float);                        //! leg-1 DCAxy / sqrt(cYY), kDCASigxy1
-DECLARE_SOA_COLUMN(DcaSigZ1, dcaSigZ1, float);                          //! leg-1 DCAz / sqrt(cZZ), kDCASigz1
-DECLARE_SOA_COLUMN(DcaSigXY2, dcaSigXY2, float);                        //! leg-2 DCAxy / sqrt(cYY), kDCASigxy2
-DECLARE_SOA_COLUMN(DcaSigZ2, dcaSigZ2, float);                          //! leg-2 DCAz / sqrt(cZZ), kDCASigz2
+DECLARE_SOA_COLUMN(DcaXYOverSig1, dcaXYOverSig1, float);                  
+DECLARE_SOA_COLUMN(DcaZOverSig1, dcaZOverSig1, float);                 
+DECLARE_SOA_COLUMN(DcaXYOverSig2, dcaXYOverSig2, float);               
+DECLARE_SOA_COLUMN(DcaZOverSig2, dcaZOverSig2, float);               
 
 
 // Candidate columns for JPsi/muon correlations
@@ -238,9 +238,9 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
                   dqanalysisflags::LxyeeProjected, dqanalysisflags::LxyeeOverErr, dqanalysisflags::Lxyzee, dqanalysisflags::LxyzeeOverErr,
                   dqanalysisflags::Chi2PCAee, dqanalysisflags::CosPAee,
                   dqanalysisflags::Vx, dqanalysisflags::Vy, dqanalysisflags::Vz,
-                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::DcaXY1, dqanalysisflags::DcaZ1, dqanalysisflags::DcaSigXY1, dqanalysisflags::DcaSigZ1,
+                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::DcaXY1, dqanalysisflags::DcaZ1, dqanalysisflags::DcaXYOverSig1, dqanalysisflags::DcaZOverSig1,
                   dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::ITSChi2leg1,
-                  dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::DcaXY2, dqanalysisflags::DcaZ2, dqanalysisflags::DcaSigXY2, dqanalysisflags::DcaSigZ2,
+                  dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::DcaXY2, dqanalysisflags::DcaZ2, dqanalysisflags::DcaXYOverSig2, dqanalysisflags::DcaZOverSig2,
                   dqanalysisflags::ITSClusterMapleg2, dqanalysisflags::ITSChi2leg2,
                   dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc,
                   dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0C, dqanalysisflags::MultiplicityNContrib);
@@ -2181,9 +2181,6 @@ struct AnalysisSameEventPairing {
                                (fConfigML.applyBDT && fOutputMlPsi2ee.size() > 1) ? VarManager::fgValues[VarManager::kBdtPrompt] : -999.f,
                                (fConfigML.applyBDT && fOutputMlPsi2ee.size() > 2) ? VarManager::fgValues[VarManager::kBdtNonprompt] : -999.f);
             }
-            // flat table for prompt / non-prompt BDT training: one row per pair (not per cut; select cuts offline via PairFilter)
-            // Only meaningful with track covariances, the two-prong fitter and an event vertex covariance:
-            // otherwise the vertexing variables are not computed and fgValues would hold stale values from a previous pair.
             constexpr bool eventHasVtxCovForTable = ((TEventFillMap & VarManager::ObjTypes::ReducedEventVtxCov) > 0);
             if constexpr (trackHasCov && TTwoProngFitter && eventHasVtxCovForTable) {
               const bool ambiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
@@ -2198,9 +2195,9 @@ struct AnalysisSameEventPairing {
                                       VarManager::fgValues[VarManager::kVertexingLxyProjected], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr],
                                       VarManager::fgValues[VarManager::kVertexingChi2PCA], VarManager::fgValues[VarManager::kCosPointingAngle],
                                       VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ],
-                                      t1.pt(), t1.eta(), VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kDCASigxy1], VarManager::fgValues[VarManager::kDCASigz1],
+                                      t1.pt(), t1.eta(), VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kDCAxyOverSig1], VarManager::fgValues[VarManager::kDCAzOverSig1],
                                       VarManager::fgValues[VarManager::kITSclusterMap1], t1.itsChi2NCl(),
-                                      t2.pt(), t2.eta(), VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kDCASigxy2], VarManager::fgValues[VarManager::kDCASigz2],
+                                      t2.pt(), t2.eta(), VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kDCAxyOverSig2], VarManager::fgValues[VarManager::kDCAzOverSig2],
                                       VarManager::fgValues[VarManager::kITSclusterMap2], t2.itsChi2NCl(),
                                       ambiInBunch, ambiOutOfBunch, true,
                                       VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxNcontribReal]);
