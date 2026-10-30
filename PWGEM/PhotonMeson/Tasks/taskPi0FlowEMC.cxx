@@ -241,7 +241,7 @@ struct TaskPi0FlowEMC {
     std::string prefix = "rotationConfig";
     Configurable<bool> cfgDoRotation{"cfgDoRotation", false, "Flag to enable rotation background method."};
     Configurable<int> cfgDownsampling{"cfgDownsampling", 1, "Calculate rotation background only for every <value> collision."};
-    Configurable<float> cfgRotAngle{"cfgRotAngle", static_cast<float>(o2::constants::math::PIHalf), "Angle used for the rotation method."};
+    Configurable<float> cfgRotAngle{"cfgRotAngle", +o2::constants::math::PIHalf, "Angle used for the rotation method."};
     Configurable<bool> cfgUseWeights{"cfgUseWeights", false, "Flag to enable weights for rotation background method."};
   } rotationConfig;
 

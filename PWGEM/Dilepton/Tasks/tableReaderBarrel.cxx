@@ -385,37 +385,37 @@ struct AnalysisTrackSelection {
 
   bool CheckSize()
   {
-    auto veceta = (std::vector<float>)trackcuts.cfgEtaMax;
-    auto vecptmin = (std::vector<float>)trackcuts.cfgPtMin;
-    auto vecptmax = (std::vector<float>)trackcuts.cfgPtMax;
-    auto vecDCAxymax = (std::vector<float>)trackcuts.cfgDCAxyMax;
-    auto vecDCAzmax = (std::vector<float>)trackcuts.cfgDCAzMax;
-    auto vecIsSPDfirst = (std::vector<int>)trackcuts.cfgIsSPDfirst;
-    auto vecIsSPDany = (std::vector<int>)trackcuts.cfgIsSPDany;
-    auto vecIsITSibAny = (std::vector<int>)trackcuts.cfgIsITSibAny;
-    auto vecITSchi2max = (std::vector<float>)trackcuts.cfgITSchi2Max;
-    auto vecITSnclsmin = (std::vector<float>)trackcuts.cfgITSnclsMin;
-    auto vecITSnclsmax = (std::vector<float>)trackcuts.cfgITSnclsMax;
-    auto vecTPCchi2max = (std::vector<float>)trackcuts.cfgTPCchi2Max;
-    auto vecTPCnclsmin = (std::vector<float>)trackcuts.cfgTPCnclsMin;
-    auto vecTPCnclsmax = (std::vector<float>)trackcuts.cfgTPCnclsMax;
-    auto vecTPCnclsCRmin = (std::vector<float>)trackcuts.cfgTPCnclsCRMin;
-    auto vecTPCnclsCRmax = (std::vector<float>)trackcuts.cfgTPCnclsCRMax;
-    auto vecIsDalitzLeg = (std::vector<int>)trackcuts.cfgIsDalitzLeg;
-    auto vecPIDmode = (std::vector<int>)pidcuts.cfgPIDmode;
-    auto vecrejbadtof = (std::vector<int>)pidcuts.cfgRejBadTOF;
-    auto vecTPCnsigmaelmin = (std::vector<float>)pidcuts.cfgTPCNSigmaElMin;
-    auto vecTPCnsigmaelmax = (std::vector<float>)pidcuts.cfgTPCNSigmaElMax;
-    auto vecTPCnsigmapimin = (std::vector<float>)pidcuts.cfgTPCNSigmaPiMin;
-    auto vecTPCnsigmapimax = (std::vector<float>)pidcuts.cfgTPCNSigmaPiMax;
-    auto vecTPCnsigmaprmin = (std::vector<float>)pidcuts.cfgTPCNSigmaPrMin;
-    auto vecTPCnsigmaprmax = (std::vector<float>)pidcuts.cfgTPCNSigmaPrMax;
-    auto vecTPCnsigmakamin = (std::vector<float>)pidcuts.cfgTPCNSigmaKaMin;
-    auto vecTPCnsigmakamax = (std::vector<float>)pidcuts.cfgTPCNSigmaKaMax;
-    auto vecTPCnsigmamumin = (std::vector<float>)pidcuts.cfgTPCNSigmaMuMin;
-    auto vecTPCnsigmamumax = (std::vector<float>)pidcuts.cfgTPCNSigmaMuMax;
-    auto vecTOFnsigmaelmin = (std::vector<float>)pidcuts.cfgTOFNSigmaElMin;
-    auto vecTOFnsigmaelmax = (std::vector<float>)pidcuts.cfgTOFNSigmaElMax;
+    auto veceta = std::vector<float>(trackcuts.cfgEtaMax);
+    auto vecptmin = std::vector<float>(trackcuts.cfgPtMin);
+    auto vecptmax = std::vector<float>(trackcuts.cfgPtMax);
+    auto vecDCAxymax = std::vector<float>(trackcuts.cfgDCAxyMax);
+    auto vecDCAzmax = std::vector<float>(trackcuts.cfgDCAzMax);
+    auto vecIsSPDfirst = std::vector<int>(trackcuts.cfgIsSPDfirst);
+    auto vecIsSPDany = std::vector<int>(trackcuts.cfgIsSPDany);
+    auto vecIsITSibAny = std::vector<int>(trackcuts.cfgIsITSibAny);
+    auto vecITSchi2max = std::vector<float>(trackcuts.cfgITSchi2Max);
+    auto vecITSnclsmin = std::vector<float>(trackcuts.cfgITSnclsMin);
+    auto vecITSnclsmax = std::vector<float>(trackcuts.cfgITSnclsMax);
+    auto vecTPCchi2max = std::vector<float>(trackcuts.cfgTPCchi2Max);
+    auto vecTPCnclsmin = std::vector<float>(trackcuts.cfgTPCnclsMin);
+    auto vecTPCnclsmax = std::vector<float>(trackcuts.cfgTPCnclsMax);
+    auto vecTPCnclsCRmin = std::vector<float>(trackcuts.cfgTPCnclsCRMin);
+    auto vecTPCnclsCRmax = std::vector<float>(trackcuts.cfgTPCnclsCRMax);
+    auto vecIsDalitzLeg = std::vector<int>(trackcuts.cfgIsDalitzLeg);
+    auto vecPIDmode = std::vector<int>(pidcuts.cfgPIDmode);
+    auto vecrejbadtof = std::vector<int>(pidcuts.cfgRejBadTOF);
+    auto vecTPCnsigmaelmin = std::vector<float>(pidcuts.cfgTPCNSigmaElMin);
+    auto vecTPCnsigmaelmax = std::vector<float>(pidcuts.cfgTPCNSigmaElMax);
+    auto vecTPCnsigmapimin = std::vector<float>(pidcuts.cfgTPCNSigmaPiMin);
+    auto vecTPCnsigmapimax = std::vector<float>(pidcuts.cfgTPCNSigmaPiMax);
+    auto vecTPCnsigmaprmin = std::vector<float>(pidcuts.cfgTPCNSigmaPrMin);
+    auto vecTPCnsigmaprmax = std::vector<float>(pidcuts.cfgTPCNSigmaPrMax);
+    auto vecTPCnsigmakamin = std::vector<float>(pidcuts.cfgTPCNSigmaKaMin);
+    auto vecTPCnsigmakamax = std::vector<float>(pidcuts.cfgTPCNSigmaKaMax);
+    auto vecTPCnsigmamumin = std::vector<float>(pidcuts.cfgTPCNSigmaMuMin);
+    auto vecTPCnsigmamumax = std::vector<float>(pidcuts.cfgTPCNSigmaMuMax);
+    auto vecTOFnsigmaelmin = std::vector<float>(pidcuts.cfgTOFNSigmaElMin);
+    auto vecTOFnsigmaelmax = std::vector<float>(pidcuts.cfgTOFNSigmaElMax);
 
     if (veceta.size() != fConfigNbTrackCut)
       return false;
@@ -484,20 +484,20 @@ struct AnalysisTrackSelection {
 
   AnalysisCompositeCut* GetPIDCut(unsigned int i)
   {
-    auto vecPIDmode = (std::vector<int>)pidcuts.cfgPIDmode;
-    auto vecrejbadtof = (std::vector<int>)pidcuts.cfgRejBadTOF;
-    auto vecTPCnsigmaelmin = (std::vector<float>)pidcuts.cfgTPCNSigmaElMin;
-    auto vecTPCnsigmaelmax = (std::vector<float>)pidcuts.cfgTPCNSigmaElMax;
-    auto vecTPCnsigmapimin = (std::vector<float>)pidcuts.cfgTPCNSigmaPiMin;
-    auto vecTPCnsigmapimax = (std::vector<float>)pidcuts.cfgTPCNSigmaPiMax;
-    auto vecTPCnsigmaprmin = (std::vector<float>)pidcuts.cfgTPCNSigmaPrMin;
-    auto vecTPCnsigmaprmax = (std::vector<float>)pidcuts.cfgTPCNSigmaPrMax;
-    auto vecTPCnsigmakamin = (std::vector<float>)pidcuts.cfgTPCNSigmaKaMin;
-    auto vecTPCnsigmakamax = (std::vector<float>)pidcuts.cfgTPCNSigmaKaMax;
-    auto vecTPCnsigmamumin = (std::vector<float>)pidcuts.cfgTPCNSigmaMuMin;
-    auto vecTPCnsigmamumax = (std::vector<float>)pidcuts.cfgTPCNSigmaMuMax;
-    auto vecTOFnsigmaelmin = (std::vector<float>)pidcuts.cfgTOFNSigmaElMin;
-    auto vecTOFnsigmaelmax = (std::vector<float>)pidcuts.cfgTOFNSigmaElMax;
+    auto vecPIDmode = std::vector<int>(pidcuts.cfgPIDmode);
+    auto vecrejbadtof = std::vector<int>(pidcuts.cfgRejBadTOF);
+    auto vecTPCnsigmaelmin = std::vector<float>(pidcuts.cfgTPCNSigmaElMin);
+    auto vecTPCnsigmaelmax = std::vector<float>(pidcuts.cfgTPCNSigmaElMax);
+    auto vecTPCnsigmapimin = std::vector<float>(pidcuts.cfgTPCNSigmaPiMin);
+    auto vecTPCnsigmapimax = std::vector<float>(pidcuts.cfgTPCNSigmaPiMax);
+    auto vecTPCnsigmaprmin = std::vector<float>(pidcuts.cfgTPCNSigmaPrMin);
+    auto vecTPCnsigmaprmax = std::vector<float>(pidcuts.cfgTPCNSigmaPrMax);
+    auto vecTPCnsigmakamin = std::vector<float>(pidcuts.cfgTPCNSigmaKaMin);
+    auto vecTPCnsigmakamax = std::vector<float>(pidcuts.cfgTPCNSigmaKaMax);
+    auto vecTPCnsigmamumin = std::vector<float>(pidcuts.cfgTPCNSigmaMuMin);
+    auto vecTPCnsigmamumax = std::vector<float>(pidcuts.cfgTPCNSigmaMuMax);
+    auto vecTOFnsigmaelmin = std::vector<float>(pidcuts.cfgTOFNSigmaElMin);
+    auto vecTOFnsigmaelmax = std::vector<float>(pidcuts.cfgTOFNSigmaElMax);
 
     AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut(Form("pid_TPCnSigma_%d", i), Form("pid_TPCnSigma_%d", i), kTRUE);
     AnalysisCut* cuttpc = new AnalysisCut(Form("pidcuttpc_%d", i), Form("pidcuttpc_%d", i));
@@ -547,28 +547,28 @@ struct AnalysisTrackSelection {
 
   AnalysisCut* GetTrackCut(unsigned int i)
   {
-    auto veceta = (std::vector<float>)trackcuts.cfgEtaMax;
-    auto vecptmin = (std::vector<float>)trackcuts.cfgPtMin;
-    auto vecptmax = (std::vector<float>)trackcuts.cfgPtMax;
+    auto veceta = std::vector<float>(trackcuts.cfgEtaMax);
+    auto vecptmin = std::vector<float>(trackcuts.cfgPtMin);
+    auto vecptmax = std::vector<float>(trackcuts.cfgPtMax);
 
-    auto vecDCAxymax = (std::vector<float>)trackcuts.cfgDCAxyMax;
-    auto vecDCAzmax = (std::vector<float>)trackcuts.cfgDCAzMax;
+    auto vecDCAxymax = std::vector<float>(trackcuts.cfgDCAxyMax);
+    auto vecDCAzmax = std::vector<float>(trackcuts.cfgDCAzMax);
 
-    auto vecIsSPDfirst = (std::vector<int>)trackcuts.cfgIsSPDfirst;
-    auto vecIsSPDany = (std::vector<int>)trackcuts.cfgIsSPDany;
-    auto vecIsITSibAny = (std::vector<int>)trackcuts.cfgIsITSibAny;
+    auto vecIsSPDfirst = std::vector<int>(trackcuts.cfgIsSPDfirst);
+    auto vecIsSPDany = std::vector<int>(trackcuts.cfgIsSPDany);
+    auto vecIsITSibAny = std::vector<int>(trackcuts.cfgIsITSibAny);
 
-    auto vecITSchi2max = (std::vector<float>)trackcuts.cfgITSchi2Max;
-    auto vecITSnclsmin = (std::vector<float>)trackcuts.cfgITSnclsMin;
-    auto vecITSnclsmax = (std::vector<float>)trackcuts.cfgITSnclsMax;
+    auto vecITSchi2max = std::vector<float>(trackcuts.cfgITSchi2Max);
+    auto vecITSnclsmin = std::vector<float>(trackcuts.cfgITSnclsMin);
+    auto vecITSnclsmax = std::vector<float>(trackcuts.cfgITSnclsMax);
 
-    auto vecTPCchi2max = (std::vector<float>)trackcuts.cfgTPCchi2Max;
-    auto vecTPCnclsmin = (std::vector<float>)trackcuts.cfgTPCnclsMin;
-    auto vecTPCnclsmax = (std::vector<float>)trackcuts.cfgTPCnclsMax;
-    auto vecTPCnclsCRmin = (std::vector<float>)trackcuts.cfgTPCnclsCRMin;
-    auto vecTPCnclsCRmax = (std::vector<float>)trackcuts.cfgTPCnclsCRMax;
+    auto vecTPCchi2max = std::vector<float>(trackcuts.cfgTPCchi2Max);
+    auto vecTPCnclsmin = std::vector<float>(trackcuts.cfgTPCnclsMin);
+    auto vecTPCnclsmax = std::vector<float>(trackcuts.cfgTPCnclsMax);
+    auto vecTPCnclsCRmin = std::vector<float>(trackcuts.cfgTPCnclsCRMin);
+    auto vecTPCnclsCRmax = std::vector<float>(trackcuts.cfgTPCnclsCRMax);
 
-    auto vecIsDalitzLeg = (std::vector<int>)trackcuts.cfgIsDalitzLeg;
+    auto vecIsDalitzLeg = std::vector<int>(trackcuts.cfgIsDalitzLeg);
 
     AnalysisCut* cut = new AnalysisCut(Form("tracksel%d", i), Form("tracksel%d", i));
     cut->AddCut(VarManager::kPt, vecptmin.at(i), vecptmax.at(i));
@@ -986,11 +986,11 @@ struct AnalysisSameEventPairing {
 
   bool CheckSize()
   {
-    auto vecRej = (std::vector<int>)paircuts.cfgRej;
-    auto vecmassmin = (std::vector<float>)paircuts.cfgMassMin;
-    auto vecmassmax = (std::vector<float>)paircuts.cfgMassMax;
-    auto vecopamax = (std::vector<float>)paircuts.cfgOpAngMax;
-    auto vecphivmin = (std::vector<float>)paircuts.cfgPhiVMin;
+    auto vecRej = std::vector<int>(paircuts.cfgRej);
+    auto vecmassmin = std::vector<float>(paircuts.cfgMassMin);
+    auto vecmassmax = std::vector<float>(paircuts.cfgMassMax);
+    auto vecopamax = std::vector<float>(paircuts.cfgOpAngMax);
+    auto vecphivmin = std::vector<float>(paircuts.cfgPhiVMin);
 
     if (vecRej.size() != fConfigNbPairCut)
       return false;
@@ -1007,11 +1007,11 @@ struct AnalysisSameEventPairing {
 
   AnalysisCompositeCut* GetPairCut(unsigned int i)
   {
-    auto vecRej = (std::vector<int>)paircuts.cfgRej;
-    auto vecmassmin = (std::vector<float>)paircuts.cfgMassMin;
-    auto vecmassmax = (std::vector<float>)paircuts.cfgMassMax;
-    auto vecopamax = (std::vector<float>)paircuts.cfgOpAngMax;
-    auto vecphivmin = (std::vector<float>)paircuts.cfgPhiVMin;
+    auto vecRej = std::vector<int>(paircuts.cfgRej);
+    auto vecmassmin = std::vector<float>(paircuts.cfgMassMin);
+    auto vecmassmax = std::vector<float>(paircuts.cfgMassMax);
+    auto vecopamax = std::vector<float>(paircuts.cfgOpAngMax);
+    auto vecphivmin = std::vector<float>(paircuts.cfgPhiVMin);
 
     if (vecRej.at(i)) {
       AnalysisCompositeCut* cut_pair = new AnalysisCompositeCut(Form("cut_pair_%d", i), Form("cut_pair_%d", i), kFALSE);
@@ -1099,7 +1099,7 @@ struct AnalysisSameEventPairing {
       } // end loop (track cuts)
     } // end if (track cuts)
 
-    VarManager::SetCollisionSystem((TString)fCollisionSystem, fCenterMassEnergy); // set collision system and center of mass energy
+    VarManager::SetCollisionSystem(TString(fCollisionSystem), fCenterMassEnergy); // set collision system and center of mass energy
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill
