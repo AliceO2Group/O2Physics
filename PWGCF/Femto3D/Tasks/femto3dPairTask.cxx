@@ -357,8 +357,8 @@ struct FemtoCorrelations {
     if (_fill3dCF && multBin > SEhistos_3D.size())
       LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
 
-    for (auto ii : tracks1) {
-      for (auto iii : tracks2) {
+    for (const auto& ii : tracks1) {
+      for (const auto& iii : tracks2) {
 
         Pair->SetPair(ii, iii);
         float pair_kT = Pair->GetKt();
@@ -453,7 +453,7 @@ struct FemtoCorrelations {
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts_1, _itsNSigma_1.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) { // filling the map: eventID <-> selected particles1
         if ((_rejectWithinNsigmaTPC != 0.0 && std::fabs(o2::aod::singletrackselector::getTPCNsigma(track, _particlePDGtoReject)) < _rejectWithinNsigmaTPC) || (_rejectWithinNsigmaTOF != 0.0 && std::fabs(o2::aod::singletrackselector::getTOFNsigma(track, _particlePDGtoReject)) < _rejectWithinNsigmaTOF))
           continue;
-        
+
         selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<soa::Filtered<FilteredTracks>::iterator>(track));
 
         pHisto_first->Fill(track.p());
