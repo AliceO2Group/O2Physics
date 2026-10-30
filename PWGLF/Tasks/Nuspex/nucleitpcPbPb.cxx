@@ -1391,7 +1391,7 @@ struct NucleitpcPbPb {
     if (particle.name == "alpha" && cfgTrackPIDsettings->get("alpha", "useBBparams") < 1)
       return cfgTrackPIDsettings->get("alpha", "useBBparams") == 0 ? track.tpcNSigmaAl() : 0;
 
-    double expBethe{common::BetheBlochAleph(static_cast<double>(particle.charge * rigidity / particle.mass), particle.betheParams[0], particle.betheParams[1], particle.betheParams[2], particle.betheParams[3], particle.betheParams[4])};
+    double expBethe{common::BetheBlochAleph((particle.charge * rigidity / particle.mass), particle.betheParams[0], particle.betheParams[1], particle.betheParams[2], particle.betheParams[3], particle.betheParams[4])};
     double expSigma{expBethe * particle.resolution};
     return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
   }

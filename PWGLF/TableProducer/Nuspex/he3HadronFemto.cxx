@@ -1407,7 +1407,7 @@ struct he3HadronFemto {
           he3Hadcand.flags |= Flags::kMixedPair;
         }
 
-        LOG(info) << "He3 flags: " << int(he3Hadcand.flagsHe3) << ", Hadron flags: " << int(he3Hadcand.flagsHad) << ", Pair flags: " << int(he3Hadcand.flags);
+        LOG(info) << "He3 flags: " << static_cast<int>(he3Hadcand.flagsHe3) << ", Hadron flags: " << static_cast<int>(he3Hadcand.flagsHad) << ", Pair flags: " << static_cast<int>(he3Hadcand.flags);
         if (!settingFillPrimariesMc && (he3Hadcand.flags == Flags::kBothPrimaries)) {
           continue;
         }

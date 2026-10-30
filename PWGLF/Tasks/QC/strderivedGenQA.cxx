@@ -734,17 +734,17 @@ struct strderivedGenQA {
       auto posTrack = v0.template posTrackExtra_as<dauTracks>();
       auto negTrack = v0.template negTrackExtra_as<dauTracks>();
 
-      uint8_t positiveTrackCode = ((uint8_t(posTrack.hasTPC()) << hasTPC) |
-                                   (uint8_t(posTrack.hasITSTracker()) << hasITSTracker) |
-                                   (uint8_t(posTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                   (uint8_t(posTrack.hasTRD()) << hasTRD) |
-                                   (uint8_t(posTrack.hasTOF()) << hasTOF));
+      uint8_t positiveTrackCode = ((static_cast<uint8_t>(posTrack.hasTPC()) << hasTPC) |
+                                   (static_cast<uint8_t>(posTrack.hasITSTracker()) << hasITSTracker) |
+                                   (static_cast<uint8_t>(posTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (static_cast<uint8_t>(posTrack.hasTRD()) << hasTRD) |
+                                   (static_cast<uint8_t>(posTrack.hasTOF()) << hasTOF));
 
-      uint8_t negativeTrackCode = ((uint8_t(negTrack.hasTPC()) << hasTPC) |
-                                   (uint8_t(negTrack.hasITSTracker()) << hasITSTracker) |
-                                   (uint8_t(negTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                   (uint8_t(negTrack.hasTRD()) << hasTRD) |
-                                   (uint8_t(negTrack.hasTOF()) << hasTOF));
+      uint8_t negativeTrackCode = ((static_cast<uint8_t>(negTrack.hasTPC()) << hasTPC) |
+                                   (static_cast<uint8_t>(negTrack.hasITSTracker()) << hasITSTracker) |
+                                   (static_cast<uint8_t>(negTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (static_cast<uint8_t>(negTrack.hasTRD()) << hasTRD) |
+                                   (static_cast<uint8_t>(negTrack.hasTOF()) << hasTOF));
 
       histos.fill(HIST("V0/Track/h2dITSNCls"), v0.positivept(), posTrack.itsNCls());
       histos.fill(HIST("V0/Track/h2dITSNCls"), -1 * v0.negativept(), negTrack.itsNCls());
@@ -897,23 +897,23 @@ struct strderivedGenQA {
       auto posTrack = casc.template posTrackExtra_as<dauTracks>();
       auto bachTrack = casc.template bachTrackExtra_as<dauTracks>();
 
-      uint8_t positiveTrackCode = ((uint8_t(posTrack.hasTPC()) << hasTPC) |
-                                   (uint8_t(posTrack.hasITSTracker()) << hasITSTracker) |
-                                   (uint8_t(posTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                   (uint8_t(posTrack.hasTRD()) << hasTRD) |
-                                   (uint8_t(posTrack.hasTOF()) << hasTOF));
+      uint8_t positiveTrackCode = ((static_cast<uint8_t>(posTrack.hasTPC()) << hasTPC) |
+                                   (static_cast<uint8_t>(posTrack.hasITSTracker()) << hasITSTracker) |
+                                   (static_cast<uint8_t>(posTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (static_cast<uint8_t>(posTrack.hasTRD()) << hasTRD) |
+                                   (static_cast<uint8_t>(posTrack.hasTOF()) << hasTOF));
 
-      uint8_t negativeTrackCode = ((uint8_t(negTrack.hasTPC()) << hasTPC) |
-                                   (uint8_t(negTrack.hasITSTracker()) << hasITSTracker) |
-                                   (uint8_t(negTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                   (uint8_t(negTrack.hasTRD()) << hasTRD) |
-                                   (uint8_t(negTrack.hasTOF()) << hasTOF));
+      uint8_t negativeTrackCode = ((static_cast<uint8_t>(negTrack.hasTPC()) << hasTPC) |
+                                   (static_cast<uint8_t>(negTrack.hasITSTracker()) << hasITSTracker) |
+                                   (static_cast<uint8_t>(negTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (static_cast<uint8_t>(negTrack.hasTRD()) << hasTRD) |
+                                   (static_cast<uint8_t>(negTrack.hasTOF()) << hasTOF));
 
-      uint8_t bachTrackCode = ((uint8_t(bachTrack.hasTPC()) << hasTPC) |
-                               (uint8_t(bachTrack.hasITSTracker()) << hasITSTracker) |
-                               (uint8_t(bachTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                               (uint8_t(bachTrack.hasTRD()) << hasTRD) |
-                               (uint8_t(bachTrack.hasTOF()) << hasTOF));
+      uint8_t bachTrackCode = ((static_cast<uint8_t>(bachTrack.hasTPC()) << hasTPC) |
+                               (static_cast<uint8_t>(bachTrack.hasITSTracker()) << hasITSTracker) |
+                               (static_cast<uint8_t>(bachTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                               (static_cast<uint8_t>(bachTrack.hasTRD()) << hasTRD) |
+                               (static_cast<uint8_t>(bachTrack.hasTOF()) << hasTOF));
 
       histos.fill(HIST("Casc/Track/h3dTrackProperties"), positiveTrackCode, negativeTrackCode, bachTrackCode); // complete tracking info
       histos.fill(HIST("Casc/Track/h2dPosTrackProperties"), positiveTrackCode, casc.positivept());             // positive track info

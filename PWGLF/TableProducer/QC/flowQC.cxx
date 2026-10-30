@@ -178,7 +178,7 @@ struct flowQC {
     const AxisSpec centFT0mAxis{cfgCentralityBins, "FT0M percentile"};
     const AxisSpec centFV0aAxis{cfgCentralityBins, "FV0A percentile"};
 
-    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)centDetectorNames[cfgCentralityEstimator])};
+    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", std::string(centDetectorNames[cfgCentralityEstimator]))};
 
     const char* qLabel = cfgQuadraticResponse ? "Q^{2}" : "Q";
 
