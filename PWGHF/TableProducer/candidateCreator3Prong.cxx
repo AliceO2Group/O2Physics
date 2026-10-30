@@ -577,33 +577,53 @@ struct HfCandidateCreator3Prong {
       const float chi2geoFirstThird = kfCalculateChi2geoBetweenParticles(kfFirstProton, kfThirdPion);
       const float chi2geoFirstSecond = kfCalculateChi2geoBetweenParticles(kfFirstProton, kfSecondKaon);
 
+      KFParticle* kfCandGeneric{nullptr};
+
       // Λc± → p± K∓ π±,  Ξc± → p± K∓ π±
       KFParticle kfCandPKPi;
       const KFParticle* kfDaughtersPKPi[3] = {&kfFirstProton, &kfSecondKaon, &kfThirdPion};
       kfCandPKPi.SetConstructMethod(2);
-      kfCandPKPi.Construct(kfDaughtersPKPi, 3);
       KFParticle kfCandPiKP;
       const KFParticle* kfDaughtersPiKP[3] = {&kfFirstPion, &kfSecondKaon, &kfThirdProton};
       kfCandPiKP.SetConstructMethod(2);
-      kfCandPiKP.Construct(kfDaughtersPiKP, 3);
+      if (createLc || createXic) {
+        kfCandPKPi.Construct(kfDaughtersPKPi, 3);
+        kfCandPiKP.Construct(kfDaughtersPiKP, 3);
+        kfCandGeneric = &kfCandPKPi;
+      }
 
       // D± → π± K∓ π±
       KFParticle kfCandPiKPi;
       const KFParticle* kfDaughtersPiKPi[3] = {&kfFirstPion, &kfSecondKaon, &kfThirdPion};
       kfCandPiKPi.SetConstructMethod(2);
-      kfCandPiKPi.Construct(kfDaughtersPiKPi, 3);
+      if (createDplus) {
+        kfCandPiKPi.Construct(kfDaughtersPiKPi, 3);
+        if (kfCandGeneric == nullptr) {
+          kfCandGeneric = &kfCandPiKPi;
+        }
+      }
 
       // Ds± → K± K∓ π±
       KFParticle kfCandKKPi;
       const KFParticle* kfDaughtersKKPi[3] = {&kfFirstKaon, &kfSecondKaon, &kfThirdPion};
       kfCandKKPi.SetConstructMethod(2);
-      kfCandKKPi.Construct(kfDaughtersKKPi, 3);
       KFParticle kfCandPiKK;
       const KFParticle* kfDaughtersPiKK[3] = {&kfFirstPion, &kfSecondKaon, &kfThirdKaon};
       kfCandPiKK.SetConstructMethod(2);
-      kfCandPiKK.Construct(kfDaughtersPiKK, 3);
+      if (createDs) {
+        kfCandKKPi.Construct(kfDaughtersKKPi, 3);
+        kfCandPiKK.Construct(kfDaughtersPiKK, 3);
+        if (kfCandGeneric == nullptr) {
+          kfCandGeneric = &kfCandKKPi;
+        }
+      }
 
-      const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, kfpV);
+      if (kfCandGeneric == nullptr) {
+        // should never happen, but for redundunt safety
+        LOGP(fatal, "kfCandGeneric was not assigned with address of any candidate hypothesis. Check the create<...> configurables");
+      }
+
+      const float chi2topo = kfCalculateChi2ToPrimaryVertex(*kfCandGeneric, kfpV);
 
       if (applyTopoConstraint) { // constraints applied after chi2topo getter - to preserve unbiased value of chi2topo
         for (const auto& kfCand : std::array<KFParticle*, 5>{&kfCandPKPi, &kfCandPiKP, &kfCandPiKPi, &kfCandKKPi, &kfCandPiKK}) {
@@ -638,21 +658,21 @@ struct HfCandidateCreator3Prong {
         kfCandPiKK.SetNonlinearMassConstraint(static_cast<float>(MassDS));
       }
 
-      const float chi2geo = kfCandPKPi.Chi2() / static_cast<float>(kfCandPKPi.NDF());
-      const std::pair<float, float> ldl = kfCalculateLdL(kfCandPKPi, kfpV);
+      const float chi2geo = kfCandGeneric->Chi2() / static_cast<float>(kfCandGeneric->NDF());
+      const std::pair<float, float> ldl = kfCalculateLdL(*kfCandGeneric, kfpV);
 
       std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
       std::array<float, 3> pProng1 = kfCalculateProngMomentumInSecondaryVertex(kfSecondKaon, kfCandPiKP);
       std::array<float, 3> pProng2 = kfCalculateProngMomentumInSecondaryVertex(kfThirdPion, kfCandPiKP);
 
-      registry.fill(HIST("hCovSVXX"), kfCandPKPi.Covariance(0, 0));
-      registry.fill(HIST("hCovSVYY"), kfCandPKPi.Covariance(1, 1));
-      registry.fill(HIST("hCovSVXZ"), kfCandPKPi.Covariance(2, 0));
-      registry.fill(HIST("hCovSVZZ"), kfCandPKPi.Covariance(2, 2));
+      registry.fill(HIST("hCovSVXX"), kfCandGeneric->Covariance(0, 0));
+      registry.fill(HIST("hCovSVYY"), kfCandGeneric->Covariance(1, 1));
+      registry.fill(HIST("hCovSVXZ"), kfCandGeneric->Covariance(2, 0));
+      registry.fill(HIST("hCovSVZZ"), kfCandGeneric->Covariance(2, 2));
 
-      auto* covMatrixSV = kfCandPKPi.CovarianceMatrix();
+      auto* covMatrixSV = kfCandGeneric->CovarianceMatrix();
       double phi{}, theta{};
-      getPointDirection(std::array{kfpV.GetX(), kfpV.GetY(), kfpV.GetZ()}, std::array{kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ()}, phi, theta);
+      getPointDirection(std::array{kfpV.GetX(), kfpV.GetY(), kfpV.GetZ()}, std::array{kfCandGeneric->GetX(), kfCandGeneric->GetY(), kfCandGeneric->GetZ()}, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
@@ -672,9 +692,9 @@ struct HfCandidateCreator3Prong {
       // fill candidate table rows
       rowCandidateBase(indexCollision,
                        kfpV.GetX(), kfpV.GetY(), kfpV.GetZ(),
-                       kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ(),
+                       kfCandGeneric->GetX(), kfCandGeneric->GetY(), kfCandGeneric->GetZ(),
                        errorDecayLength, errorDecayLengthXY,
-                       kfCandPKPi.GetChi2() / static_cast<float>(kfCandPKPi.GetNDF()),
+                       kfCandGeneric->GetChi2() / static_cast<float>(kfCandGeneric->GetNDF()),
                        pProng0.at(0), pProng0.at(1), pProng0.at(2),
                        pProng1.at(0), pProng1.at(1), pProng1.at(2),
                        pProng2.at(0), pProng2.at(1), pProng2.at(2),
@@ -686,11 +706,11 @@ struct HfCandidateCreator3Prong {
                        rowTrackIndexProng3.hfflag());
 
       // fill KF info
-      rowCandidateKF(kfCandPKPi.GetErrX(), kfCandPKPi.GetErrY(), kfCandPKPi.GetErrZ(),
+      rowCandidateKF(kfCandGeneric->GetErrX(), kfCandGeneric->GetErrY(), kfCandGeneric->GetErrZ(),
                      std::sqrt(kfpV.Covariance(0, 0)), std::sqrt(kfpV.Covariance(1, 1)), std::sqrt(kfpV.Covariance(2, 2)),
                      massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
-                     kfCandPKPi.GetPx(), kfCandPKPi.GetPy(), kfCandPKPi.GetPz(),
-                     kfCandPKPi.GetErrPx(), kfCandPKPi.GetErrPy(), kfCandPKPi.GetErrPz(),
+                     kfCandGeneric->GetPx(), kfCandGeneric->GetPy(), kfCandGeneric->GetPz(),
+                     kfCandGeneric->GetErrPx(), kfCandGeneric->GetErrPy(), kfCandGeneric->GetErrPz(),
                      chi2primFirst, chi2primSecond, chi2primThird,
                      dcaSecondThird, dcaFirstThird, dcaFirstSecond,
                      chi2geoSecondThird, chi2geoFirstThird, chi2geoFirstSecond,
