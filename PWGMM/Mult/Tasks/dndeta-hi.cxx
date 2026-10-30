@@ -367,7 +367,7 @@ struct MultiplicityCounter {
       }
       for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
         if (btrigc[itrigc])
-          registry.fill(HIST("hreczvtx"), Double_t(kDATA), Double_t(itrigc), z, cent);
+          registry.fill(HIST("hreczvtx"), static_cast<Double_t>(kDATA), static_cast<Double_t>(itrigc), z, cent);
       }
 
       for (auto& track : pertracks) {
@@ -378,8 +378,8 @@ struct MultiplicityCounter {
 
         for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
           if (btrigc[itrigc]) {
-            registry.fill(HIST("hphieta"), Double_t(kDATA), Double_t(itrigc), track.phi(), track.eta(), cent);
-            registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(itrigc), z, track.eta(), cent, Double_t(kParDATA), track.phi());
+            registry.fill(HIST("hphieta"), static_cast<Double_t>(kDATA), static_cast<Double_t>(itrigc), track.phi(), track.eta(), cent);
+            registry.fill(HIST("hrecdndeta"), static_cast<Double_t>(kDATA), static_cast<Double_t>(itrigc), z, track.eta(), cent, static_cast<Double_t>(kParDATA), track.phi());
           }
         }
       }
@@ -472,7 +472,7 @@ struct MultiplicityCounter {
       }
       for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
         if (bevtc[ievtc])
-          registry.fill(HIST("hgenzvtx"), Double_t(ievtc), genz, cent);
+          registry.fill(HIST("hgenzvtx"), static_cast<Double_t>(ievtc), genz, cent);
       }
       Int_t pid = 0;
       std::vector<Double_t> particleetas;
@@ -502,14 +502,14 @@ struct MultiplicityCounter {
           if (std::abs(p->Charge()) >= 3) {
             for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
               if (bevtc[ievtc]) {
-                registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), cent, Double_t(pid), kNoPtVar, particle.phi());
+                registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), cent, static_cast<Double_t>(pid), kNoPtVar, particle.phi());
                 if (particle.pt() < 0.1) {
-                  registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), cent, Double_t(pid), kPtUp, particle.phi(), -10.0 * particle.pt() + 2);
-                  registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), cent, Double_t(pid), kPtDw, particle.phi(), 5.0 * particle.pt() + 0.5);
+                  registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), cent, static_cast<Double_t>(pid), kPtUp, particle.phi(), -10.0 * particle.pt() + 2);
+                  registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), cent, static_cast<Double_t>(pid), kPtDw, particle.phi(), 5.0 * particle.pt() + 0.5);
 
                 } else {
-                  registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), cent, Double_t(pid), kPtUp, particle.phi());
-                  registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), cent, Double_t(pid), kPtDw, particle.phi());
+                  registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), cent, static_cast<Double_t>(pid), kPtUp, particle.phi());
+                  registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), cent, static_cast<Double_t>(pid), kPtDw, particle.phi());
                 }
               }
             }
@@ -596,7 +596,7 @@ struct MultiplicityCounter {
         for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
           for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
             if (bevtc[ievtc] && btrigc[itrigc]) {
-              registry.fill(HIST("hreczvtx"), Double_t(ievtc), Double_t(itrigc), z, cent);
+              registry.fill(HIST("hreczvtx"), static_cast<Double_t>(ievtc), static_cast<Double_t>(itrigc), z, cent);
             }
           }
         }
@@ -641,8 +641,8 @@ struct MultiplicityCounter {
             for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
               for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
                 if (bevtc[ievtc] && btrigc[itrigc]) {
-                  registry.fill(HIST("hrecdndeta"), Double_t(ievtc), Double_t(itrigc), z, particle.eta(), cent, Double_t(pid), particle.phi());
-                  registry.fill(HIST("hphieta"), Double_t(ievtc), Double_t(itrigc), track.phi(), track.eta(), cent);
+                  registry.fill(HIST("hrecdndeta"), static_cast<Double_t>(ievtc), static_cast<Double_t>(itrigc), z, particle.eta(), cent, static_cast<Double_t>(pid), particle.phi());
+                  registry.fill(HIST("hphieta"), static_cast<Double_t>(ievtc), static_cast<Double_t>(itrigc), track.phi(), track.eta(), cent);
                 }
               }
             }
@@ -651,7 +651,7 @@ struct MultiplicityCounter {
             for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
               for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
                 if (bevtc[ievtc] && btrigc[itrigc]) {
-                  registry.fill(HIST("hrecdndeta"), Double_t(ievtc), Double_t(itrigc), z, track.eta(), cent, Double_t(kBkg), track.phi());
+                  registry.fill(HIST("hrecdndeta"), static_cast<Double_t>(ievtc), static_cast<Double_t>(itrigc), z, track.eta(), cent, static_cast<Double_t>(kBkg), track.phi());
                 }
               }
             }
@@ -710,7 +710,7 @@ struct MultiplicityCounter {
     }
     for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
       if (bevtc[ievtc])
-        registry.fill(HIST("hgenzvtx"), Double_t(ievtc), genz, -1.0);
+        registry.fill(HIST("hgenzvtx"), static_cast<Double_t>(ievtc), genz, -1.0);
     }
     Int_t pid = 0;
     for (auto& particle : mcParticles) {
@@ -739,14 +739,14 @@ struct MultiplicityCounter {
         if (std::abs(p->Charge()) >= 3) {
           for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
             if (bevtc[ievtc]) {
-              registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), -1.0, Double_t(pid), kNoPtVar, particle.phi());
+              registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), -1.0, static_cast<Double_t>(pid), kNoPtVar, particle.phi());
               if (particle.pt() < 0.1) {
-                registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), -1.0, Double_t(pid), kPtUp, particle.phi(), 2.0);
-                registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), -1.0, Double_t(pid), kPtDw, particle.phi(), 0.5);
+                registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), -1.0, static_cast<Double_t>(pid), kPtUp, particle.phi(), 2.0);
+                registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), -1.0, static_cast<Double_t>(pid), kPtDw, particle.phi(), 0.5);
 
               } else {
-                registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), -1.0, Double_t(pid), kPtUp, particle.phi());
-                registry.fill(HIST("hgendndeta"), Double_t(ievtc), genz, particle.eta(), -1.0, Double_t(pid), kPtDw, particle.phi());
+                registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), -1.0, static_cast<Double_t>(pid), kPtUp, particle.phi());
+                registry.fill(HIST("hgendndeta"), static_cast<Double_t>(ievtc), genz, particle.eta(), -1.0, static_cast<Double_t>(pid), kPtDw, particle.phi());
               }
             }
           }
@@ -797,9 +797,9 @@ struct MultiplicityCounter {
 
           if (fabs(v0.eta()) < 0.5)
             registry.fill(HIST("hv0k0s"), v0.mK0Short());
-          registry.fill(HIST("hv0mass"), cent, Double_t(kK0short), v0.eta(), Double_t(v0.mK0Short()));
-          registry.fill(HIST("hv0mass"), cent, Double_t(kLambda), v0.eta(), Double_t(v0.mLambda()));
-          registry.fill(HIST("hv0mass"), cent, Double_t(kAntilambda), v0.eta(), Double_t(v0.mAntiLambda()));
+          registry.fill(HIST("hv0mass"), cent, static_cast<Double_t>(kK0short), v0.eta(), static_cast<Double_t>(v0.mK0Short()));
+          registry.fill(HIST("hv0mass"), cent, static_cast<Double_t>(kLambda), v0.eta(), static_cast<Double_t>(v0.mLambda()));
+          registry.fill(HIST("hv0mass"), cent, static_cast<Double_t>(kAntilambda), v0.eta(), static_cast<Double_t>(v0.mAntiLambda()));
         }
       }
     }
@@ -840,9 +840,9 @@ struct MultiplicityCounter {
             abs(pTrack.eta()) < etadau &&
             abs(nTrack.eta()) < etadau) {
 
-          registry.fill(HIST("hv0mass"), cent, Double_t(kK0short), v0.eta(), Double_t(v0.mK0Short()));
-          registry.fill(HIST("hv0mass"), cent, Double_t(kLambda), v0.eta(), Double_t(v0.mLambda()));
-          registry.fill(HIST("hv0mass"), cent, Double_t(kAntilambda), v0.eta(), Double_t(v0.mAntiLambda()));
+          registry.fill(HIST("hv0mass"), cent, static_cast<Double_t>(kK0short), v0.eta(), static_cast<Double_t>(v0.mK0Short()));
+          registry.fill(HIST("hv0mass"), cent, static_cast<Double_t>(kLambda), v0.eta(), static_cast<Double_t>(v0.mLambda()));
+          registry.fill(HIST("hv0mass"), cent, static_cast<Double_t>(kAntilambda), v0.eta(), static_cast<Double_t>(v0.mAntiLambda()));
         }
       }
     }
