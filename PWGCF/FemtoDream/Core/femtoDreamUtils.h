@@ -18,9 +18,12 @@
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
 
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 
 #include <cstdint>
@@ -100,6 +103,28 @@ inline float getMass(int pdgCode)
       LOG(fatal) << "PDG code is not supported";
   }
   return mass;
+}
+
+/// Classify true kaons from the correct collision for the DCA templates.
+template <typename T>
+inline int getKaonOrigin(T const& particles, typename T::iterator const& particle)
+{
+  using namespace o2::aod::femtodreamMCparticle;
+  constexpr int GenFromTransport = -1;
+  if (particle.getProcess() == TMCProcess::kPHInhelastic && particle.getGenStatusCode() == GenFromTransport) {
+    return kMaterial;
+  }
+  // HF decay products can be physical primaries. Check their ancestry first.
+  if (RecoDecay::getParticleOrigin(particles, particle) != RecoDecay::OriginType::None) {
+    return kSecondaryFromHF;
+  }
+  if (particle.isPhysicalPrimary()) {
+    return kPrimary;
+  }
+  if (particle.getProcess() == TMCProcess::kPDecay && particle.getGenStatusCode() == GenFromTransport && particle.has_mothers()) {
+    return kSecondaryFromLF;
+  }
+  return kElse;
 }
 
 inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG, int daughterPDG = 0)
