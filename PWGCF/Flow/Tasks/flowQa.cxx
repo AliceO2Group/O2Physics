@@ -459,7 +459,7 @@ struct FlowQa {
       }
       LOGF(info, "Loaded acceptance weights list from %s (%p)", cfgAcceptanceList.value.c_str(), (void*)mAcceptanceList);
 
-      mAcceptance = static_cast<GFWWeights*>(mAcceptanceList->FindObject(Form("%d", runNumber)));
+      mAcceptance = dynamic_cast<GFWWeights*>(mAcceptanceList->FindObject(Form("%d", runNumber)));
       if (mAcceptance == nullptr) {
         LOGF(fatal, "Could not find acceptance weights for run %d in acceptance list", runNumber);
       }

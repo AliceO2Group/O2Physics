@@ -221,7 +221,7 @@ struct PidDiHadron {
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEvSel.cfgGlobalCutVertex);
   Filter mcCollisionFilter = (nabs(aod::mccollision::posZ) < cfgEvSel.cfgGlobalCutVertex);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkSel.cfgGlobalEta) && (aod::track::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::track::pt < cfgTrkSel.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgTrkSel.cfgGlobalChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgTrkSel.cfgGlobalDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkSel.cfgGlobalEta) && (aod::track::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::track::pt < cfgTrkSel.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(1))) && (aod::track::tpcChi2NCl < cfgTrkSel.cfgGlobalChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgTrkSel.cfgGlobalDCAz);
   Filter mcTrackFilter = (nabs(aod::mcparticle::eta) < cfgTrkSel.cfgGlobalEta) && (aod::mcparticle::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::mcparticle::pt < cfgTrkSel.cfgGlobalPtMax);
 
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;

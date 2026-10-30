@@ -42,8 +42,8 @@ struct femtoDreamPairHashTask {
   void init(InitContext&)
   {
     /// here the Configurables are passed to std::vectors
-    CastCfgVtxBins = (std::vector<float>)CfgVtxBins;
-    CastCfgMultBins = (std::vector<float>)CfgMultBins;
+    CastCfgVtxBins = std::vector<float>(CfgVtxBins);
+    CastCfgMultBins = std::vector<float>(CfgMultBins);
   }
 
   void process(o2::aod::FDCollision const& col)

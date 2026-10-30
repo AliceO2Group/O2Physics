@@ -78,10 +78,10 @@ struct femtoDreamDebugV0 {
   Configurable<float> ConfCompetingV0MassUpLimit{"ConfCompetingV0MassUpLimit", 0., "Upper Limit of the invariant mass window within which to reject the V0"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsV0 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
+  Partition<FemtoFullParticles> partsV0 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
   Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
-  Partition<FemtoFullParticles> partsK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
+  Partition<FemtoFullParticles> partsK0Short = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0K0Short)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
 
   /// Histogramming
   FemtoDreamEventHisto eventHisto;
@@ -131,10 +131,10 @@ struct femtoDreamDebugV0 {
         continue;
       }
       // check cuts on V0 children
-      if (posChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
+      if (posChild.partType() == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0Child) &&
           (posChild.cut() & ConfV01_ChildPos_CutBit) == ConfV01_ChildPos_CutBit &&
           (posChild.pidcut() & ConfV01_ChildPos_TPCBit) == ConfV01_ChildPos_TPCBit &&
-          negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
+          negChild.partType() == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0Child) &&
           (negChild.cut() & ConfV01_ChildNeg_CutBit) == ConfV01_ChildNeg_CutBit &&
           (negChild.pidcut() & ConfV01_ChildNeg_TPCBit) == ConfV01_ChildNeg_TPCBit) {
 

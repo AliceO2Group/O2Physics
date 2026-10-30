@@ -77,7 +77,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<bool> ConfDCACutPtDep{"ConfDCACutPtDep", false, "Use pt dependent dca cut for tracks"};
   /// Partition for selected particles
-  Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCTOFPIDBit)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
                                               (aod::femtodreamparticle::pt < ConfMaxpT) &&
@@ -104,7 +104,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   Configurable<float> Conf_minPt_Cascade{"Conf_minPt_Cascade", 0., "Minimum pT of Cascade"};
   Configurable<float> Conf_maxPt_Cascade{"Conf_maxPt_Cascade", 999., "Maximum pT of Cascade"};
   // Partition for selected particles
-  Partition<aod::FDParticles> SelectedCascades = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
+  Partition<aod::FDParticles> SelectedCascades = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascade)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, ConfCutCascade)) &&
                                                  (aod::femtodreamparticle::mLambda > Conf_minInvMass_Cascade) &&
                                                  (aod::femtodreamparticle::mLambda < Conf_maxInvMass_Cascade) &&
