@@ -27,8 +27,12 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
+#include <TH1.h>
+
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -684,10 +688,17 @@ class TrackBuilder
       auto hSlotAssignment = registry->get<TH1>(HIST("hPuritySlotAssignment"));
       for (int i = 0; i < PuritySpeciesLast; i++) {
         std::string bitPosition = mPuritySlot[i] >= 0 ? std::to_string(mPuritySlot[i]) : "X";
-        std::string value = mPuritySlot[i] >= 0 ? ("Slot " + std::to_string(mPuritySlot[i])) : "Not configured";
-        std::string label = std::string("SelectionName___") + PuritySpeciesName[i] +
-                            ":::MinimalCut___0:::OptionalCut___0:::BitPosition___" + bitPosition +
-                            ":::Value___" + value;
+        std::string value = "Not configured";
+        if (mPuritySlot[i] >= 0) {
+          value = "Slot ";
+          value += std::to_string(mPuritySlot[i]);
+        }
+        std::string label = "SelectionName___";
+        label += PuritySpeciesName[i];
+        label += ":::MinimalCut___0:::OptionalCut___0:::BitPosition___";
+        label += bitPosition;
+        label += ":::Value___";
+        label += value;
         hSlotAssignment->GetXaxis()->SetBinLabel(i + 1, label.c_str());
         hSlotAssignment->Fill(i, 1);
       }

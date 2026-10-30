@@ -29,6 +29,7 @@
 #include <TH1.h>
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <map>
 #include <string>
