@@ -194,10 +194,10 @@ DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                           //! kVertex
 DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);             //! kVertexingLxyzOverErr
 DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);                     //! kVertexingChi2PCA
 DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);                         //! kCosPointingAngle
-DECLARE_SOA_COLUMN(DcaXYOverSig1, dcaXYOverSig1, float);   
-DECLARE_SOA_COLUMN(DcaZOverSig1, dcaZOverSig1, float);                       
-DECLARE_SOA_COLUMN(DcaXYOverSig2, dcaXYOverSig2, float);                     
-DECLARE_SOA_COLUMN(DcaZOverSig2, dcaZOverSig2, float);                       
+DECLARE_SOA_COLUMN(DcaXYOverSig1, dcaXYOverSig1, float);
+DECLARE_SOA_COLUMN(DcaZOverSig1, dcaZOverSig1, float);
+DECLARE_SOA_COLUMN(DcaXYOverSig2, dcaXYOverSig2, float);
+DECLARE_SOA_COLUMN(DcaZOverSig2, dcaZOverSig2, float);
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 // Candidate columns efficiency calculation for prompt-non-prompt JPsi separation
