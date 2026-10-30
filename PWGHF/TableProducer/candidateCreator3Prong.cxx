@@ -143,6 +143,7 @@ struct HfCandidateCreator3Prong {
   // KF
   Configurable<bool> applyTopoConstraint{"applyTopoConstraint", false, "apply origin from PV hypothesis for created candidate, works only in KF mode"};
   Configurable<bool> applyInvMassConstraint{"applyInvMassConstraint", false, "apply particle type hypothesis to recalculate created candidate's momentum, works only in KF mode"};
+  Configurable<bool> kfConstructWithEnergyFitMc{"kfConstructWithEnergyFitMc", true, "for details see https://github.com/alisw/KFParticle/blob/a00323cd7b022430abcb3c43f18188b291b0c803/KFParticle/KFParticleBase.cxx#L625"};
 
   Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NBetheBlochParams, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams}, "TPC PID Bethe–Bloch parameter configurations for light nuclei (deuteron, triton, helium-3, alpha)"};
 
@@ -475,6 +476,8 @@ struct HfCandidateCreator3Prong {
                                       TracksWCovExtraPidPiKaPrLightNuclei const&,
                                       BCsType const& bcs)
   {
+    const int kfConstructMethod = kfConstructWithEnergyFitMc ? 2 : 0;
+
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
@@ -582,10 +585,10 @@ struct HfCandidateCreator3Prong {
       // Λc± → p± K∓ π±,  Ξc± → p± K∓ π±
       KFParticle kfCandPKPi;
       const KFParticle* kfDaughtersPKPi[3] = {&kfFirstProton, &kfSecondKaon, &kfThirdPion};
-      kfCandPKPi.SetConstructMethod(2);
+      kfCandPKPi.SetConstructMethod(kfConstructMethod);
       KFParticle kfCandPiKP;
       const KFParticle* kfDaughtersPiKP[3] = {&kfFirstPion, &kfSecondKaon, &kfThirdProton};
-      kfCandPiKP.SetConstructMethod(2);
+      kfCandPiKP.SetConstructMethod(kfConstructMethod);
       if (createLc || createXic) {
         kfCandPKPi.Construct(kfDaughtersPKPi, 3);
         kfCandPiKP.Construct(kfDaughtersPiKP, 3);
@@ -595,7 +598,7 @@ struct HfCandidateCreator3Prong {
       // D± → π± K∓ π±
       KFParticle kfCandPiKPi;
       const KFParticle* kfDaughtersPiKPi[3] = {&kfFirstPion, &kfSecondKaon, &kfThirdPion};
-      kfCandPiKPi.SetConstructMethod(2);
+      kfCandPiKPi.SetConstructMethod(kfConstructMethod);
       if (createDplus) {
         kfCandPiKPi.Construct(kfDaughtersPiKPi, 3);
         if (kfCandGeneric == nullptr) {
@@ -606,10 +609,10 @@ struct HfCandidateCreator3Prong {
       // Ds± → K± K∓ π±
       KFParticle kfCandKKPi;
       const KFParticle* kfDaughtersKKPi[3] = {&kfFirstKaon, &kfSecondKaon, &kfThirdPion};
-      kfCandKKPi.SetConstructMethod(2);
+      kfCandKKPi.SetConstructMethod(kfConstructMethod);
       KFParticle kfCandPiKK;
       const KFParticle* kfDaughtersPiKK[3] = {&kfFirstPion, &kfSecondKaon, &kfThirdKaon};
-      kfCandPiKK.SetConstructMethod(2);
+      kfCandPiKK.SetConstructMethod(kfConstructMethod);
       if (createDs) {
         kfCandKKPi.Construct(kfDaughtersKKPi, 3);
         kfCandPiKK.Construct(kfDaughtersPiKK, 3);
@@ -619,7 +622,7 @@ struct HfCandidateCreator3Prong {
       }
 
       if (kfCandGeneric == nullptr) {
-        // should never happen, but for redundunt safety
+        // should never happen, but for redundant safety
         LOGP(fatal, "kfCandGeneric was not assigned with address of any candidate hypothesis. Check the create<...> configurables");
       }
 
@@ -634,12 +637,12 @@ struct HfCandidateCreator3Prong {
 
       KFParticle kfPairKPi;
       const KFParticle* kfDaughtersKPi[2] = {&kfSecondKaon, &kfThirdPion};
-      kfPairKPi.SetConstructMethod(2);
+      kfPairKPi.SetConstructMethod(kfConstructMethod);
       kfPairKPi.Construct(kfDaughtersKPi, 2);
 
       KFParticle kfPairPiK;
       const KFParticle* kfDaughtersPiK[2] = {&kfFirstPion, &kfSecondKaon};
-      kfPairPiK.SetConstructMethod(2);
+      kfPairPiK.SetConstructMethod(kfConstructMethod);
       kfPairPiK.Construct(kfDaughtersPiK, 2);
 
       const float massPKPi = kfCandPKPi.GetMass();
