@@ -465,6 +465,28 @@ struct HfProducerCharmHadronsTrackFemtoDream {
                             -999., -999., -999.);
   }
 
+  /// Classify true kaons from the correct collision for the DCA templates.
+  template <typename T>
+  static int getKaonOrigin(T const& particles, typename T::iterator const& particle)
+  {
+    using namespace o2::aod::femtodreamMCparticle;
+    constexpr int GenFromTransport = -1;
+    if (particle.getProcess() == TMCProcess::kPHInhelastic && particle.getGenStatusCode() == GenFromTransport) {
+      return kMaterial;
+    }
+    // HF decay products can be physical primaries. Check their ancestry first.
+    if (RecoDecay::getParticleOrigin(particles, particle) != RecoDecay::OriginType::None) {
+      return kSecondaryFromHF;
+    }
+    if (particle.isPhysicalPrimary()) {
+      return kPrimary;
+    }
+    if (particle.getProcess() == TMCProcess::kPDecay && particle.getGenStatusCode() == GenFromTransport && particle.has_mothers()) {
+      return kSecondaryFromLF;
+    }
+    return kElse;
+  }
+
   template <typename CollisionType, typename ParticleType>
   void fillMcParticle(CollisionType const& col, ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype, aod::McParticles const& mcParticles)
   {
