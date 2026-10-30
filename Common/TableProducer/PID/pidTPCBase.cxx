@@ -61,7 +61,7 @@ struct PidMultiplicity {
   }
 
   using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
-  Partition<TrksIU> tracksWithTPCIU = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<TrksIU> tracksWithTPCIU = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0));
   void processIU(aod::Collision const& collision, TrksIU const&)
   {
     if (!enableTable) {
@@ -73,7 +73,7 @@ struct PidMultiplicity {
   PROCESS_SWITCH(PidMultiplicity, processIU, "Process with IU tracks, faster but works on Run3 only", false);
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0));
   void processStandard(aod::Collision const& collision, Trks const&)
   {
     if (!enableTable) {

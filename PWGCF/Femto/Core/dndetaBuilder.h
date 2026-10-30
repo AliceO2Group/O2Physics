@@ -232,7 +232,8 @@ class DndetaBuilder
   /// - reco: for every mc collision only the reconstructed collision with the most PV contributors is used
   ///         (emulates bestCollisionIndex); it has to pass the full event selection including the reco trigger
   /// - gen:  efficiency histograms for all generated collisions, loss histograms for the generated event class
-  ///         (vertex z, optional INEL>0, optional generator-level trigger)
+  ///         (optional INEL>0, optional generator-level trigger); the loss block's reco requirement is Sel8
+  ///         only (no vtxZ, see isSelectedByMaskOnly), the vtxZ cut only gates the efficiency block above
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
   void processMc(T1 const& cols,
                  T2 const& mcCols,
@@ -263,10 +264,19 @@ class DndetaBuilder
     }
 
     // reconstructed side
+    // selectedReco: full "selvtx" selection (Sel8 + |vtxZ| < cut + trigger), feeds the Gen-efficiency block (Ctrk)
+    // hasSel8Reco: "sel" selection (Sel8 only, no vtxZ, no trigger), feeds the event/signal loss block (Csel);
+    // per the analysis note, Csel's Gsel/Esel correspond to the Sel8 class only, Cvtx (the vtxZ-related bias) is
+    // not implemented (every Run3 event with a vertex is already within the stored range), so the loss-block
+    // reco requirement must not carry the vtxZ cut like the Ctrk-side "selvtx" one does
     std::vector<int64_t> selectedReco(nMcCols, -1);
+    std::vector<bool> hasSel8Reco(nMcCols, false);
     for (auto const& col : cols) {
       if (!col.has_fMcCol() || bestReco[static_cast<std::size_t>(col.fMcColId())] != col.globalIndex()) {
         continue;
+      }
+      if (isSelectedByMaskOnly(col)) {
+        hasSel8Reco[static_cast<std::size_t>(col.fMcColId())] = true;
       }
       if (!selectCollision(col, [&]() {
             return recoTrigger(col);
@@ -300,11 +310,10 @@ class DndetaBuilder
         }
       }
 
-      // event and signal loss: generated event class, true centrality
+      // event and signal loss: generated event class (INEL or INEL>0), true centrality
+      // Gall/Gsel (and Eall/Esel) are defined by the analysis note without any vtxZ restriction - the vtxZ
+      // cut belongs only to Ctrk's "selvtx" quantities above, so it is intentionally not applied here
       if (!mDoMcLoss) {
-        continue;
-      }
-      if (mcCol.posZ() < mVtxZMin || mcCol.posZ() > mVtxZMax) {
         continue;
       }
       int nChMult = 0;
@@ -324,13 +333,14 @@ class DndetaBuilder
       if (mUseGenTrigger && !genTrigger(mcCol)) {
         continue;
       }
+      const bool hasSel8RecoForLoss = hasSel8Reco[mcColIndex];
       const auto mult = static_cast<float>(nChMult);
-      mHistManager.fillLossEvent(mcCol.cent(), mult, hasSelectedReco);
+      mHistManager.fillLossEvent(mcCol.cent(), mult, hasSel8RecoForLoss);
       for (auto const& particle : particles) {
         if (!isGenParticleSelected(particle, pdg)) {
           continue;
         }
-        mHistManager.fillLossParticle(particle.eta(), mcCol.cent(), mult, hasSelectedReco);
+        mHistManager.fillLossParticle(particle.eta(), mcCol.cent(), mult, hasSel8RecoForLoss);
       }
     }
   }
@@ -351,6 +361,18 @@ class DndetaBuilder
       LOG(warn) << name << ": rejection masks are set, tracks are rejected based on PID. Set them to 0 for dN/deta.";
     }
     LOG(info) << name << ": pT range " << conf.ptMin.value << " - " << conf.ptMax.value << " GeV/c, eta range " << conf.etaMin.value << " - " << conf.etaMax.value;
+  }
+
+  /// selected by maks only class (no vtxZ, no INEL>0, no trigger; pure predicate, no cutflow side effects), used to
+  /// build Gsel/Esel of the event/signal loss block - kept separate from selectCollision() below, whose
+  /// vtxZ-gated "selvtx" result must not be reused for the loss block (see processMc)
+  template <typename T>
+  bool isSelectedByMaskOnly(T const& col) const
+  {
+    return col.mult() >= mMultMin && col.mult() <= mMultMax &&
+           col.cent() >= mCentMin && col.cent() <= mCentMax &&
+           col.magField() >= mMagFieldMin && col.magField() <= mMagFieldMax &&
+           (col.mask() & mCollisionMask) == mCollisionMask;
   }
 
   /// event selection with cutflow; the trigger is evaluated last, so the trigger QA

@@ -30,6 +30,7 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
@@ -339,6 +340,12 @@ struct AnalysisEventSelection {
   o2::framework::Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
   o2::framework::Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
+  o2::framework::Configurable<bool> cfgUseRCT{"cfgUseRCT", false, "Apply RCT quality selection"};
+  o2::framework::Configurable<std::string> cfgRCTPath{"cfgRCTPath", "RCT/Flags/RunFlags", "CCDB path to the RCT run flags"};
+  o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT", "RCT selection label"};
+  o2::framework::Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Also check ZDC quality"};
+  o2::framework::Configurable<std::string> cfgRCTPassName{"cfgRCTPassName", "", "Reconstruction pass; leave empty for run-only lookup"};
+
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
   AnalysisCompositeCut* fEventCut = nullptr;
@@ -351,9 +358,12 @@ struct AnalysisEventSelection {
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
   int fCurrentRun = -1;
 
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT"};
+  std::map<uint64_t, uint32_t> rctFlags;
+  int rctRun = -1;
+
   void init(o2::framework::InitContext& context)
   {
-
     bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr") || context.mOptions.get<bool>("processSkimmedWithQvectorCentrMerge");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
@@ -424,6 +434,61 @@ struct AnalysisEventSelection {
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     fCCDBApi.init(fConfigCcdbUrl.value);
+
+    if (cfgUseRCT.value) {
+      if (cfgRCTLabel.value != "CBT" && cfgRCTLabel.value != "CBT_hadronPID" && cfgRCTLabel.value != "CBT_electronPID" && cfgRCTLabel.value != "CBT_calo" && cfgRCTLabel.value != "CBT_muon" && cfgRCTLabel.value != "CBT_muon_glo") {
+        LOGF(fatal, "RCT Label \"%s\" is unknown.", cfgRCTLabel.value.c_str());
+      }
+
+      rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value);
+
+      if (!rctChecker.any()) {
+        LOGF(fatal, "Empty RCT mask: check cfgRCTLabel.");
+      }
+    }
+  }
+
+  void loadRCT(int run, uint64_t timestamp)
+  {
+    std::map<std::string, std::string> metadata{{"run", std::to_string(run)}};
+
+    LOG(info) << "Requesting " << cfgRCTPath.value << " run=" << run << " timestamp=" << timestamp;
+
+    if (!cfgRCTPassName.value.empty()) {
+      metadata["passName"] = cfgRCTPassName.value;
+    }
+
+    auto* flags = fCCDB->getSpecific<std::map<uint64_t, uint32_t>>(cfgRCTPath.value, timestamp, metadata);
+    if (flags == nullptr && !cfgRCTPassName.value.empty()) {
+      metadata.erase("passName");
+      flags = fCCDB->getSpecific<std::map<uint64_t, uint32_t>>(cfgRCTPath.value, timestamp, metadata);
+    }
+
+    if (flags == nullptr || flags->empty()) {
+      LOGF(fatal, "Missing or empty RCT flags for run %d.", run);
+    }
+
+    rctFlags = *flags;
+    rctRun = run;
+  }
+
+  bool passesRCT(int run, uint64_t timestamp)
+  {
+    if (!cfgUseRCT.value) {
+      return true;
+    }
+
+    if (run != rctRun) {
+      loadRCT(run, timestamp);
+    }
+
+    auto iterator = rctFlags.upper_bound(timestamp);
+    if (iterator == rctFlags.begin()) {
+      return false;
+    }
+
+    const uint32_t flags = std::prev(iterator)->second;
+    return (static_cast<uint64_t>(flags) & rctChecker.value()) == 0;
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
@@ -463,7 +528,7 @@ struct AnalysisEventSelection {
       }
 
       // Apply event cuts and fill histograms after selection
-      if (fEventCut->IsSelected(dqtablereader_helpers::varValues())) {
+      if (fEventCut->IsSelected(dqtablereader_helpers::varValues()) && passesRCT(event.runNumber(), event.timestamp())) {
         if (fConfigRunZorro) {
           if (event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
             if (fConfigQA) {
@@ -1379,6 +1444,10 @@ struct AnalysisSameEventPairing {
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
 
+  // add event level histograms after remove collision splitting candidates
+  o2::framework::Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms,only used after turn on the cfgRemoveCollSplittingCandidates option"};
+  o2::framework::Configurable<std::string> fConfigAddJSONEventHistograms{"cfgAddJSONEventHistograms", "", "Event histograms in JSON format,only used after turn on the cfgRemoveCollSplittingCandidates option"};
+
   o2::framework::Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
   o2::framework::Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   o2::framework::Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
@@ -1466,6 +1535,8 @@ struct AnalysisSameEventPairing {
   bool fEnableMuonMixingHistos = false;
   bool fEnableBarrelMuonHistos = false;
   bool fEnableBarrelMuonMixingHistos = false;
+
+  bool fSplitCheckEnabled = false;
 
   o2::framework::NoBinningPolicy<o2::aod::dqanalysisflags::MixingHash> hashBin;
 
@@ -1813,12 +1884,18 @@ struct AnalysisSameEventPairing {
       }
     }
 
+    o2::common::core::getTaskOptionValue<bool>(context, "analysis-event-selection", "cfgCheckSplitCollisions", fSplitCheckEnabled, false);
+
     if (fConfigQA) {
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(true);
       fHistMan->SetDefaultVarNames(dqtablereader_helpers::varNames(), dqtablereader_helpers::varUnits());
       VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
-      DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());                        // define all histograms
+      if (fConfigCuts.event.value && fSplitCheckEnabled) {
+        DefineHistograms(fHistMan, "Event_AfterSplitVeto", fConfigAddEventHistogram.value.data()); // define event histograms after removing collision splitting candidates
+        o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONEventHistograms.value.c_str());
+      }
+      DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data()); // define all histograms
       if (fEnableBarrelHistos) {
         DefineHistograms(fHistMan, "PairingSEQA", "sameevent-pairing"); // histograms for QA of the pairing
       }
@@ -1997,6 +2074,11 @@ struct AnalysisSameEventPairing {
       VarManager::ResetValues(0, VarManager::kNVars);
       // VarManager::FillEvent<gkEventFillMap>(event, dqtablereader_helpers::varValues());
       VarManager::FillEvent<TEventFillMap>(event, dqtablereader_helpers::varValues());
+
+      // fill the event histograms
+      if (fConfigQA && fConfigCuts.event && fSplitCheckEnabled) {
+        fHistMan->FillHistClass("Event_AfterSplitVeto", dqtablereader_helpers::varValues());
+      }
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
       if (groupedAssocs.size() == 0) {
@@ -2864,6 +2946,11 @@ struct AnalysisSameEventPairing {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, dqtablereader_helpers::varValues());
 
+      // fill the event histograms
+      if (fConfigQA && fConfigCuts.event && fSplitCheckEnabled) {
+        fHistMan->FillHistClass("Event_AfterSplitVeto", dqtablereader_helpers::varValues());
+      }
+
       auto groupedAssocs1 = assocs1.sliceBy(preslice1, event.globalIndex());
       if (groupedAssocs1.size() == 0) {
         continue;
@@ -3574,16 +3661,21 @@ struct AnalysisAsymmetricPairing {
     // Reserve capacity for the output tables
     int64_t reserveSize = 0;
     for (auto const& event : events) {
-      if (!event.isEventSelected_bit(0)) {
-        continue;
-      }
-      if (fConfigRemoveCollSplittingCandidates.value && event.isEventSelected_bit(2)) {
-        continue;
-      }
       auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
       auto groupedLegBAssocs = legBCandidateAssocs.sliceBy(preslice, event.globalIndex());
-      reserveSize += static_cast<int64_t>(groupedLegAAssocs.size()) *
-                     static_cast<int64_t>(groupedLegBAssocs.size());
+      size_t nGoodA = 0;
+      size_t nGoodB = 0;
+      for (auto const& t : groupedLegAAssocs) {
+        if (t.isBarrelSelected_raw()) {
+          nGoodA++;
+        }
+      }
+      for (auto const& t : groupedLegBAssocs) {
+        if (t.isBarrelSelected_raw()) {
+          nGoodB++;
+        }
+      }
+      reserveSize += nGoodA * nGoodB;
     }
     ditrackList.reserve(reserveSize);
     ditrackExtraList.reserve(reserveSize);

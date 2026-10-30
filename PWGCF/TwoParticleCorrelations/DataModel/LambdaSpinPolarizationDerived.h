@@ -34,7 +34,7 @@ DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, uint64_t);
 } // namespace lambdaloosecollision
 
-DECLARE_SOA_TABLE(LambdaLooseCollisions, "AOD", "LAMBDALOOSECOLS",
+DECLARE_SOA_TABLE(LambdaLooseCols, "AOD", "LAMBDALOOSECOL",
                   o2::soa::Index<>,
                   lambdaloosecollision::Cent,
                   lambdaloosecollision::Mult,
@@ -42,11 +42,11 @@ DECLARE_SOA_TABLE(LambdaLooseCollisions, "AOD", "LAMBDALOOSECOLS",
                   lambdaloosecollision::PosY,
                   lambdaloosecollision::PosZ,
                   lambdaloosecollision::TimeStamp);
-using LambdaLooseCollision = LambdaLooseCollisions::iterator;
+using LambdaLooseCol = LambdaLooseCols::iterator;
 
 namespace lambdaloosetrack
 {
-DECLARE_SOA_INDEX_COLUMN(LambdaLooseCollision, lambdaLooseCollision);
+DECLARE_SOA_INDEX_COLUMN(LambdaLooseCol, lambdaLooseCol);
 DECLARE_SOA_COLUMN(Px, px, float);
 DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
@@ -77,7 +77,7 @@ DECLARE_SOA_COLUMN(NegTpcCrossedRows, negTpcCrossedRows, int16_t);
 
 DECLARE_SOA_TABLE(LambdaLooseTracks, "AOD", "LAMBDALOOSETRKS",
                   o2::soa::Index<>,
-                  lambdaloosetrack::LambdaLooseCollisionId,
+                  lambdaloosetrack::LambdaLooseColId,
                   lambdaloosetrack::Px,
                   lambdaloosetrack::Py,
                   lambdaloosetrack::Pz,

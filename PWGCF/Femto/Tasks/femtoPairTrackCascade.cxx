@@ -117,11 +117,16 @@ struct FemtoPairTrackCascade {
   paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairTrackCascadeBuilder<
-    trackhistmanager::PrefixTrack1,
-    cascadehistmanager::PrefixXi,
-    trackhistmanager::PrefixCascadeBachelor,
-    trackhistmanager::PrefixCascadePosDaughter,
-    trackhistmanager::PrefixCascadeNegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    cascadehistmanager::PrefixXiSe,
+    trackhistmanager::PrefixCascadeBachelorSe,
+    trackhistmanager::PrefixCascadePosDaughterSe,
+    trackhistmanager::PrefixCascadeNegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    cascadehistmanager::PrefixXiMe,
+    trackhistmanager::PrefixCascadeBachelorMe,
+    trackhistmanager::PrefixCascadePosDaughterMe,
+    trackhistmanager::PrefixCascadeNegDaughterMe,
     pairhistmanager::PrefixTrackCascadeSe,
     pairhistmanager::PrefixTrackCascadeMe,
     closepairrejection::PrefixTrackCascadeBachelorSe,
@@ -132,11 +137,16 @@ struct FemtoPairTrackCascade {
     pairTrackXiBuilder;
 
   pairbuilder::PairTrackCascadeBuilder<
-    trackhistmanager::PrefixTrack1,
-    cascadehistmanager::PrefixOmega,
-    trackhistmanager::PrefixCascadeBachelor,
-    trackhistmanager::PrefixCascadePosDaughter,
-    trackhistmanager::PrefixCascadeNegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    cascadehistmanager::PrefixOmegaSe,
+    trackhistmanager::PrefixCascadeBachelorSe,
+    trackhistmanager::PrefixCascadePosDaughterSe,
+    trackhistmanager::PrefixCascadeNegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    cascadehistmanager::PrefixOmegaMe,
+    trackhistmanager::PrefixCascadeBachelorMe,
+    trackhistmanager::PrefixCascadePosDaughterMe,
+    trackhistmanager::PrefixCascadeNegDaughterMe,
     pairhistmanager::PrefixTrackCascadeSe,
     pairhistmanager::PrefixTrackCascadeMe,
     closepairrejection::PrefixTrackCascadeBachelorSe,

@@ -66,6 +66,7 @@ struct McBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FLcLabels> producedLcLabels;
   o2::framework::Produces<o2::aod::FSigmaLabels> producedSigmaLabels;
   o2::framework::Produces<o2::aod::FSigmaPlusLabels> producedSigmaPlusLabels;
+  o2::framework::Produces<o2::aod::FSigmaPlusPcmLabels> producedSigmaPlusPcmLabels;
   o2::framework::Produces<o2::aod::FXiLabels> producedXiLabels;
   o2::framework::Produces<o2::aod::FOmegaLabels> producedOmegaLabels;
 };
@@ -86,6 +87,7 @@ struct ConfMcTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> producedLcLabels{"producedLcLabels", -1, "Produce Lc labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedSigmaLabels{"producedSigmaLabels", -1, "Produce sigma labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedSigmaPlusLabels{"producedSigmaPlusLabels", -1, "Produce sigma plus labels (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> producedSigmaPlusPcmLabels{"producedSigmaPlusPcmLabels", -1, "Produce sigma plus (PCM) labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedXiLabels{"producedXiLabels", -1, "Produce xi labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedOmegaLabels{"producedOmegaLabels", -1, "Produce omega labels (-1: auto; 0 off; 1 on)"};
 };
@@ -159,6 +161,7 @@ class McBuilder
     mProduceLcLabels = utils::enableTable("FLcLabels_001", table.producedLcLabels.value, initContext);
     mProduceSigmaLabels = utils::enableTable("FSigmaLabels_001", table.producedSigmaLabels.value, initContext);
     mProduceSigmaPlusLabels = utils::enableTable("FSigmaPlusLabels_001", table.producedSigmaPlusLabels.value, initContext);
+    mProduceSigmaPlusPcmLabels = utils::enableTable("FSigmaPlusPcmLabels_001", table.producedSigmaPlusPcmLabels.value, initContext);
     mProduceXiLabels = utils::enableTable("FXiLabels_001", table.producedXiLabels.value, initContext);
     mProduceOmegaLabels = utils::enableTable("FOmegaLabels_001", table.producedOmegaLabels.value, initContext);
 
@@ -167,7 +170,7 @@ class McBuilder
         mProduceMcMothers || mProduceMcPartonicMothers ||
         mProduceTrackLabels ||
         mProduceLambdaLabels || mProduceK0shortLabels ||
-        mProduceSigmaLabels || mProduceSigmaPlusLabels ||
+        mProduceSigmaLabels || mProduceSigmaPlusLabels || mProduceSigmaPlusPcmLabels ||
         mProduceXiLabels || mProduceOmegaLabels ||
         mProduceD0Labels || mProduceLcLabels) {
       mFillAnyTable = true;
@@ -426,6 +429,21 @@ class McBuilder
     fillMcLabelGeneric<system>(sigmaPlusDaughter, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusLabels(p); }, true);
   }
 
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcSigmaPlusPcmWithLabel(T1 const& sigmaPlusPcm, T2 const& chaDaughter, T3 const& mcParticles, T4 const& mcCols, T5& mcProducts)
+  {
+    if (!mProduceSigmaPlusPcmLabels) {
+      mcProducts.producedSigmaPlusPcmLabels(-1);
+      return;
+    }
+    // true sigma plus (proton and photon from it): label of the sigma plus, otherwise label of the proton, its mother gives the origin of the background
+    if (sigmaPlusPcm.has_mcParticle()) {
+      fillMcLabelGeneric<system>(sigmaPlusPcm, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusPcmLabels(p); });
+    } else {
+      fillMcLabelGeneric<system>(chaDaughter, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusPcmLabels(p); });
+    }
+  }
+
   template <modes::System system, typename T1, typename T2, typename T3, typename T4>
   void fillMcXiWithLabel(T1 const& xi, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
   {
@@ -556,7 +574,7 @@ class McBuilder
     int64_t mcMotherRow = -1;
     if (mProduceMcMothers && mcParticle.has_mothers()) {
       auto mothers = mcParticle.template mothers_as<T2>();
-      auto motherParticle = mothers.front();
+      auto const& motherParticle = mothers.front();
       auto mcMotherIndex = motherParticle.globalIndex();
 
       auto itM = mMcMotherMap.find(mcMotherIndex);
@@ -741,6 +759,7 @@ class McBuilder
   bool mProduceLcLabels = false;
   bool mProduceSigmaLabels = false;
   bool mProduceSigmaPlusLabels = false;
+  bool mProduceSigmaPlusPcmLabels = false;
   bool mProduceXiLabels = false;
   bool mProduceOmegaLabels = false;
   bool mProduceMcMotherLabels = false;
@@ -765,6 +784,9 @@ struct McBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
 
   o2::framework::Produces<o2::aod::StoredFColLabels> producedCollisionLabels;
   o2::framework::Produces<o2::aod::StoredFTrackLabels> producedTrackLabels;
+  o2::framework::Produces<o2::aod::StoredFSigmaLabels> producedSigmaLabels;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlusLabels> producedSigmaPlusLabels;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlusPcmLabels> producedSigmaPlusPcmLabels;
 };
 
 struct ConfMcTablesDerivedToDerived : o2::framework::ConfigurableGroup {
@@ -821,6 +843,42 @@ class McBuilderDerivedToDerived
     }
     auto mcParticle = track.template fMcParticle_as<T3>();
     mcProducts.producedTrackLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillSigmaWithLabel(T1 const& sigma, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!sigma.has_fMcParticle()) {
+      mcProducts.producedSigmaLabels(-1);
+      return;
+    }
+    auto mcParticle = sigma.template fMcParticle_as<T3>();
+    mcProducts.producedSigmaLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillSigmaPlusWithLabel(T1 const& sigmaPlus, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!sigmaPlus.has_fMcParticle()) {
+      mcProducts.producedSigmaPlusLabels(-1);
+      return;
+    }
+    auto mcParticle = sigmaPlus.template fMcParticle_as<T3>();
+    mcProducts.producedSigmaPlusLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillSigmaPlusPcmWithLabel(T1 const& sigmaPlusPcm, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!sigmaPlusPcm.has_fMcParticle()) {
+      mcProducts.producedSigmaPlusPcmLabels(-1);
+      return;
+    }
+    auto mcParticle = sigmaPlusPcm.template fMcParticle_as<T3>();
+    mcProducts.producedSigmaPlusPcmLabels(
       this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
   }
 

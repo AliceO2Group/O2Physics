@@ -195,6 +195,7 @@ struct ConfMixing : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {10, 0.f, 1.f * o2::constants::math::TwoPI}, "Mixing bins - event plane angle"};
   o2::framework::Configurable<int> depth{"depth", 5, "Number of events for mixing"};
   o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: multiplicity and centrality, -> 3: centrality and event plane angle"};
+  o2::framework::Configurable<int> eventStride{"eventStride", 1, "Only use every Nth collision as a mixing anchor (1 = use every collision). Reduces mixed-event combinatorics roughly 1/eventStride."};
   o2::framework::Configurable<bool> sameSpecies{"sameSpecies", false, "Enable if particle 1 and particle 2 are the same"};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2 (if they are identical). Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
   o2::framework::Configurable<bool> enablePairCorrelationQa{"enablePairCorrelationQa", true, "Enable pair-level correlation QA (same-event + mixed-event)"};
@@ -569,6 +570,11 @@ constexpr char PrefixV0V0Me[] = "V0V0/ME/";
 
 constexpr char PrefixTrackResonanceSe[] = "TrackResonance/SE/";
 constexpr char PrefixTrackResonanceMe[] = "TrackResonance/ME/";
+
+constexpr char PrefixTrackPi0Se[] = "TrackPi0/SE/";
+constexpr char PrefixTrackPi0Me[] = "TrackPi0/ME/";
+constexpr char PrefixTrackEtaSe[] = "TrackEta/SE/";
+constexpr char PrefixTrackEtaMe[] = "TrackEta/ME/";
 
 constexpr char PrefixV0ResonanceSe[] = "V0Resonance/SE/";
 constexpr char PrefixV0ResonanceMe[] = "V0Resonance/ME/";

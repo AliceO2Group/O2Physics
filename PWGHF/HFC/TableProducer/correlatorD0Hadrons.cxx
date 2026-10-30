@@ -250,7 +250,7 @@ struct HfCorrelatorD0Hadrons {
   Filter trackFilter = requireGlobalTrackWoDCAInFilter() && (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   Filter d0Filter = (aod::hf_sel_candidate_d0::isSelD0 >= 1) || (aod::hf_sel_candidate_d0::isSelD0bar >= 1);
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
-  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kD0) || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+  Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kD0) || ((aod::mcparticle::flags & static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)) == static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary));
 
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
   Preslice<aod::Tracks> perCollisionID = aod::track::collisionId;
@@ -279,8 +279,8 @@ struct HfCorrelatorD0Hadrons {
     AxisSpec const axisEta = {binsEta, "#it{#eta}"};
     AxisSpec const axisPhi = {binsPhi, "#it{#varphi}"};
     AxisSpec const axisRapidity = {100, -5., 5., "Rapidity"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtD), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T} Hadron (GeV/#it{c})"};
     AxisSpec const axisMultiplicity = {binsMultiplicity, "Multiplicity"};
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec const axisPosZ = {binsPosZ, "PosZ"};

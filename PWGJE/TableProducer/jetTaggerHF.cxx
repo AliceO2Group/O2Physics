@@ -145,6 +145,17 @@ struct JetTaggerHFTask {
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
 
+  // ParT (Particle Transformer) tagger. Grouped in a ConfigurableGroup because
+  // StructToTuple.h supports at most 99 task members and this task is near the limit.
+  struct ParTCfg : ConfigurableGroup {
+    std::string prefix = "part";
+    Configurable<int64_t> nConstit{"nConstit", 32, "fixed number of constituents fed to the ParT model, must match training"};
+    Configurable<int64_t> nFeat{"nFeat", 10, "number of pf_features channels"};
+    Configurable<int64_t> nVec{"nVec", 4, "number of pf_vectors channels"};
+    Configurable<bool> padWrap{"padWrap", true, "pad short jets by cyclic repetition (weaver 'wrap' mode); set false for zero padding"};
+    Configurable<int> minTracks{"minTracks", 2, "minimum number of selected constituents; training applied jet_nTracks >= 2"};
+  } parTCfg;
+
   o2::analysis::MlResponseHfTagging<float> bMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -277,7 +288,7 @@ struct JetTaggerHFTask {
         }
       }
     }
-    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra) {
+    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra || doprocessAlgorithmParT) {
       if (jet.pt() >= jetpTMin) {
         float dbRange;
         if (scoreML[jet.globalIndex()] < dbMin) {
@@ -376,46 +387,46 @@ struct JetTaggerHFTask {
     // Set up the resolution function
     switch (resoFuncMatch) {
       case 0:
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsCharmJetMC = (std::vector<float>)paramsResoFuncCharmJetMC;
-        vecParamsBeautyJetMC = (std::vector<float>)paramsResoFuncBeautyJetMC;
-        vecParamsLfJetMC = (std::vector<float>)paramsResoFuncLfJetMC;
+        vecParamsData = paramsResoFuncData;
+        vecParamsCharmJetMC = paramsResoFuncCharmJetMC;
+        vecParamsBeautyJetMC = paramsResoFuncBeautyJetMC;
+        vecParamsLfJetMC = paramsResoFuncLfJetMC;
         LOG(info) << "defined parameters of resolution function: custom";
         break;
       case 1:
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsIncJetMC = (std::vector<float>)paramsResoFuncIncJetMC;
+        vecParamsData = paramsResoFuncData;
+        vecParamsIncJetMC = paramsResoFuncIncJetMC;
         useResoFuncFromIncJet = true;
         LOG(info) << "defined parameters of resolution function: custom & use inclusive distribution";
         break;
       case 2: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         vecParamsCharmJetMC = {282119.753, -0.065, 0.893, 11.608, 0.945, 8.029, 0.131, 6.244, 0.027};
         vecParamsBeautyJetMC = {74901.583, -0.082, 0.874, 10.332, 0.941, 7.352, 0.097, 6.220, 0.022};
         vecParamsLfJetMC = {1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, MB, LHC23d1k";
         break;
       case 3: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         vecParamsIncJetMC = {1908803.027, -0.059, 0.895, 13.467, 1.005, 8.867, 0.098, 6.929, 0.011};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, MB, LHC23d1k & use inclusive distribution";
         useResoFuncFromIncJet = true;
         break;
       case 4: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         vecParamsCharmJetMC = {743719.121, -0.960, -0.240, 13.765, 1.314, 10.761, 0.293, 8.538, 0.052};
         vecParamsBeautyJetMC = {88888.418, 0.256, 1.003, 10.185, 0.740, 8.216, 0.147, 7.228, 0.040};
         vecParamsLfJetMC = {414860.372, -1.000, 0.285, 14.561, 1.464, 11.693, 0.339, 9.183, 0.052};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, weighted, LHC24g4";
         break;
       case 5: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         vecParamsIncJetMC = {2211391.862, 0.360, 1.028, 13.019, 0.650, 11.151, 0.215, 9.462, 0.044};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, weighted, LHC24g4 & use inclusive distribution";
         useResoFuncFromIncJet = true;
         break;
       case 6: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         for (size_t j = 0; j < resoFuncIncCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncIncCCDB[j]) {
@@ -429,7 +440,7 @@ struct JetTaggerHFTask {
         useResoFuncFromIncJet = true;
         break;
       case 7: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         for (size_t j = 0; j < resoFuncBeautyCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncBeautyCCDB[j]) {
@@ -525,9 +536,24 @@ struct JetTaggerHFTask {
       bMlResponse.init();
     }
 
+    if (doprocessAlgorithmParT) {
+      bMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        bMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        bMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      bMlResponse.init();
+
+      LOGF(info, "ParT: loaded %s with %d output node(s); %d constituents, %s padding", onnxFileNames.value[0].c_str(), bMlResponse.getOutputNodes(), static_cast<int>(parTCfg.nConstit.value), parTCfg.padWrap.value ? "wrap" : "zero");
+    }
+
     if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra) {
       tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst, tfFuncTypeGNN.value);
+    }
 
+    if (doprocessAlgorithmGNN || doprocessAlgorithmGNNwExtra || doprocessAlgorithmParT) {
       registry.add("h2_count_db", "#it{D}_{b} underflow/overflow;Jet flavour;#it{D}_{b} range", {HistType::kTH2F, {{4, 0., 4.}, {3, 0., 3.}}});
       auto h2CountDb = registry.get<TH2>(HIST("h2_count_db"));
       h2CountDb->GetXaxis()->SetBinLabel(1, "b-jet");
@@ -558,7 +584,7 @@ struct JetTaggerHFTask {
 
       int nSVs = analysisJet.template secondaryVertices_as<SecondaryVertices>().size();
 
-      jettaggingutilities::BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(nSVs), analysisJet.mass()};
+      jettaggingutilities::BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), nSVs, analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
       svsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 
@@ -669,6 +695,42 @@ struct JetTaggerHFTask {
     }
   }
 
+  template <typename AnyJets, typename AnyTracks>
+  void analyzeJetAlgorithmParT(AnyJets const& jets, AnyTracks const& tracks)
+  {
+    o2::analysis::ParTBjetAllocator parTTensorAlloc(parTCfg.nConstit.value, parTCfg.nFeat.value, parTCfg.nVec.value, parTCfg.padWrap.value);
+
+    for (const auto& jet : jets) {
+      std::vector<std::vector<float>> featConstit;
+      std::vector<std::vector<float>> vecConstit;
+      jettaggingutilities::analyzeJetTrackInfo4ParT(jet, tracks, featConstit, vecConstit, trackPtMin, trackDcaXYMax, trackDcaZMax);
+
+      // Training applied a jet_nTracks >= 2 selection, so jets below it are out of distribution.
+      if (static_cast<int>(featConstit.size()) < parTCfg.minTracks) {
+        scoreML[jet.globalIndex()] = -999.;
+        LOGF(debug, "doprocessAlgorithmParT, too few selected constituents (%d)", jet.globalIndex());
+        continue;
+      }
+
+      std::vector<float> featData;
+      std::vector<float> vecData;
+      std::vector<float> maskData;
+      std::vector<Ort::Value> parTInput;
+      parTTensorAlloc.getParTInput(featConstit, vecConstit, featData, vecData, maskData, parTInput);
+
+      // The exported graph applies the softmax itself, so the output is already
+      // [p_b, p_c, p_udsg] and must not be passed through getDb(), which would softmax again.
+      auto modelOutput = bMlResponse.getModelOutputMultiInput(parTInput, 0);
+      float db = jettaggingutilities::getDbFromProb(modelOutput, fC);
+      if (!std::isnan(db)) {
+        scoreML[jet.globalIndex()] = db;
+      } else {
+        scoreML[jet.globalIndex()] = 999.;
+        LOGF(debug, "doprocessAlgorithmParT, Db is NaN (%d)", jet.globalIndex());
+      }
+    }
+  }
+
   void processDummy(aod::JetCollisions const&)
   {
   }
@@ -724,6 +786,12 @@ struct JetTaggerHFTask {
     analyzeJetAlgorithmGNN(jets, jtracks);
   }
   PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmGNN, "Fill GNN evaluation score (D_b) for charged jets", false);
+
+  void processAlgorithmParT(JetTable const& jets, JetTracksExt const& jtracks)
+  {
+    analyzeJetAlgorithmParT(jets, jtracks);
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmParT, "Fill ParT evaluation score (D_b) for charged jets", false);
 
   void processFillTables(std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>::iterator const& jet, JetTracksExt const& tracks)
   {

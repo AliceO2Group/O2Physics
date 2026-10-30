@@ -291,9 +291,11 @@ std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> makeCascadeMcQaHistS
 #undef CASCADE_HIST_MC_QA_MAP
 
 constexpr char PrefixXiQa[] = "XiQA/";
-constexpr char PrefixXi[] = "Xi/";
+constexpr char PrefixXiSe[] = "Xi/SE/";
+constexpr char PrefixXiMe[] = "Xi/ME/";
 constexpr char PrefixOmegaQa[] = "OmegaQa/";
-constexpr char PrefixOmega[] = "Omega/";
+constexpr char PrefixOmegaSe[] = "Omega/SE/";
+constexpr char PrefixOmegaMe[] = "Omega/ME/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 
@@ -718,9 +720,6 @@ class CascadeHistManager
           switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
             case modes::McOrigin::kPhysicalPrimary:
               mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
-              break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
               break;
             case modes::McOrigin::kFromMaterial:
               mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());

@@ -16,6 +16,8 @@
 /// Mode A (XiK0s): Omega(2012)- -> Xi- K0S. Mode B (Xi1530K): Omega(2012)- -> Xi(1530)0 K- -> Xi- pi+ K-.
 /// Only the input-object tables (events, cascades, V0s, tracks) are common; every event row belongs to one
 /// decay mode (column omDecayMode), so the object rows of the two modes never mix either.
+/// Event rows are written only for collisions with at least one written candidate. In reconstructed MC the
+/// object MC labels and the pruned McParticles rows replace the source MC tables, which are not written.
 ///
 /// Cumulative pass bits (each bit requires all lower bits):
 ///  mode A: 1 loose (valid canonical candidate inside the rapidity window), 2 Xi selection, 4 K0s selection,
@@ -144,7 +146,7 @@ DECLARE_SOA_TABLE(Omega2012MlEvents, "AOD", "OMMLEVENT",
                   omega2012ml::OmMultiplicity, omega2012ml::OmRecINELgt0);
 namespace omega2012ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlEvent, omega2012MlEvent, int, Omega2012MlEvents, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlEvent, omega2012MlEvent, int, Omega2012MlEvents, "OmmlEvents", "");
 } // namespace omega2012ml
 
 DECLARE_SOA_TABLE(Omega2012MlCascades, "AOD", "OMMLCASCADE",
@@ -186,10 +188,10 @@ DECLARE_SOA_TABLE(Omega2012MlTracks, "AOD", "OMMLTRACK",
                   omega2012ml::OmCrossedRows, omega2012ml::OmItsClusterMap);
 namespace omega2012ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlCascade, omega2012MlCascade, int, Omega2012MlCascades, "");
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlV0, omega2012MlV0, int, Omega2012MlV0s, "");
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlPionTrack, omega2012MlPionTrack, int, Omega2012MlTracks, "_Pion");
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlKaonTrack, omega2012MlKaonTrack, int, Omega2012MlTracks, "_Kaon");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlCascade, omega2012MlCascade, int, Omega2012MlCascades, "OmmlCascades", "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlV0, omega2012MlV0, int, Omega2012MlV0s, "OmmlV0s", "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlPionTrack, omega2012MlPionTrack, int, Omega2012MlTracks, "OmmlTracks", "_Pion");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlKaonTrack, omega2012MlKaonTrack, int, Omega2012MlTracks, "OmmlTracks", "_Kaon");
 } // namespace omega2012ml
 
 // Mode A: Xi K0S
@@ -200,7 +202,7 @@ DECLARE_SOA_TABLE(Omega2012MlXiK0sCandidates, "AOD", "OMMLXIK0SCAND",
                   omega2012ml::OmOpeningAngle, omega2012ml::OmCharge, omega2012ml::OmPassBits);
 namespace omega2012ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlXiK0sCandidate, omega2012MlXiK0sCandidate, int, Omega2012MlXiK0sCandidates, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlXiK0sCandidate, omega2012MlXiK0sCandidate, int, Omega2012MlXiK0sCandidates, "OmmlXiK0sCands", "");
 } // namespace omega2012ml
 DECLARE_SOA_TABLE(Omega2012MlXiK0sInputs, "AOD", "OMMLXIK0SINPUT",
                   o2::soa::Index<>, omega2012ml::Omega2012MlXiK0sCandidateId,
@@ -219,7 +221,7 @@ DECLARE_SOA_TABLE(Omega2012MlXi1530KCandidates, "AOD", "OMMLXI1530KCAND",
                   omega2012ml::OmChargePattern, omega2012ml::OmPassBits);
 namespace omega2012ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Omega2012MlXi1530KCandidate, omega2012MlXi1530KCandidate, int, Omega2012MlXi1530KCandidates, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlXi1530KCandidate, omega2012MlXi1530KCandidate, int, Omega2012MlXi1530KCandidates, "OmmlXi1530KCands", "");
 } // namespace omega2012ml
 DECLARE_SOA_TABLE(Omega2012MlXi1530KInputs, "AOD", "OMMLXI1530KINP",
                   o2::soa::Index<>, omega2012ml::Omega2012MlXi1530KCandidateId,
@@ -234,6 +236,38 @@ DECLARE_SOA_TABLE(Omega2012MlGenAudit, "AOD", "OMMLGENAUDIT",
                   o2::soa::Index<>, omega2012ml::OmRecoCollisionId, omega2012ml::OmOriginalMcParticleId,
                   omega2012ml::OmPdg, omega2012ml::OmDaughterPdg1, omega2012ml::OmDaughterPdg2,
                   omega2012ml::OmGenChannel, omega2012ml::OmGenPt, omega2012ml::OmGenY);
+
+// MC truth of reconstructed MC: daughter labels of the written objects and the pruned source McParticles rows
+// (Omega(2012) decay trees and ancestry of the daughter labels). Source rows are DF-local scalar values.
+namespace omega2012ml
+{
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Omega2012MlTrack, omega2012MlTrack, int, Omega2012MlTracks, "OmmlTracks", "");
+DECLARE_SOA_COLUMN(OmMcCollisionRow, omMcCollisionRow, int64_t);  //! row of the MC collision in the input McCollisions table
+DECLARE_SOA_COLUMN(OmCascadeMcLabels, omCascadeMcLabels, int[3]); //! McParticles rows of the cascade daughters, order of omCascadeIndices; -1 if absent
+DECLARE_SOA_COLUMN(OmV0McLabels, omV0McLabels, int[2]);           //! McParticles rows of the V0 daughters, order of omV0Indices; -1 if absent
+DECLARE_SOA_COLUMN(OmMcLabel, omMcLabel, int);                    //! McParticles row of the track; -1 if absent
+DECLARE_SOA_COLUMN(OmMcRow, omMcRow, int64_t);                    //! row of the particle in the input McParticles table
+DECLARE_SOA_COLUMN(OmMcSelection, omMcSelection, uint8_t);        //! 1 Omega(2012) decay tree, 2 ancestry of a written daughter label
+DECLARE_SOA_COLUMN(OmNMothers, omNMothers, uint8_t);              //! number of mothers in the input row
+DECLARE_SOA_COLUMN(OmMotherRows, omMotherRows, int[2]);           //! first two McParticles mother rows; -1 if absent
+DECLARE_SOA_COLUMN(OmDaughterRows, omDaughterRows, int[2]);       //! McParticles daughter slice (first, last) as stored in the input row
+DECLARE_SOA_COLUMN(OmE, omE, float);
+DECLARE_SOA_COLUMN(OmWeight, omWeight, float);
+} // namespace omega2012ml
+
+DECLARE_SOA_TABLE(Omega2012MlEventMcs, "AOD", "OMMLEVENTMC",
+                  o2::soa::Index<>, omega2012ml::Omega2012MlEventId, omega2012ml::OmMcCollisionRow);
+DECLARE_SOA_TABLE(Omega2012MlCascadeMcs, "AOD", "OMMLCASCMC",
+                  o2::soa::Index<>, omega2012ml::Omega2012MlCascadeId, omega2012ml::OmCascadeMcLabels);
+DECLARE_SOA_TABLE(Omega2012MlV0Mcs, "AOD", "OMMLV0MC",
+                  o2::soa::Index<>, omega2012ml::Omega2012MlV0Id, omega2012ml::OmV0McLabels);
+DECLARE_SOA_TABLE(Omega2012MlTrackMcs, "AOD", "OMMLTRACKMC",
+                  o2::soa::Index<>, omega2012ml::Omega2012MlTrackId, omega2012ml::OmMcLabel);
+DECLARE_SOA_TABLE(Omega2012MlMcParticles, "AOD", "OMMLMCPART",
+                  o2::soa::Index<>, omega2012ml::OmMcRow, omega2012ml::OmMcSelection, omega2012ml::OmPdg,
+                  omega2012ml::OmMcCollisionRow, omega2012ml::OmNMothers, omega2012ml::OmMotherRows,
+                  omega2012ml::OmDaughterRows, omega2012ml::OmPx, omega2012ml::OmPy, omega2012ml::OmPz,
+                  omega2012ml::OmE, omega2012ml::OmWeight);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFOMEGA2012MLTABLES_H_

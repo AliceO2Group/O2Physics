@@ -73,6 +73,11 @@ constexpr const char PrefixSigmaPlusCleaner2[] = "SigmaPlusCleaner2";
 using ConfSigmaPlusCleaner1 = ConfParticleCleaner<PrefixSigmaPlusCleaner1>;
 using ConfSigmaPlusCleaner2 = ConfParticleCleaner<PrefixSigmaPlusCleaner2>;
 
+constexpr const char PrefixSigmaPlusPcmCleaner1[] = "SigmaPlusPcmCleaner1";
+constexpr const char PrefixSigmaPlusPcmCleaner2[] = "SigmaPlusPcmCleaner2";
+using ConfSigmaPlusPcmCleaner1 = ConfParticleCleaner<PrefixSigmaPlusPcmCleaner1>;
+using ConfSigmaPlusPcmCleaner2 = ConfParticleCleaner<PrefixSigmaPlusPcmCleaner2>;
+
 constexpr const char PrefixXiCleaner1[] = "XiCleaner1";
 constexpr const char PrefixXiCleaner2[] = "XiCleaner2";
 using ConfXiCleaner1 = ConfParticleCleaner<PrefixXiCleaner1>;

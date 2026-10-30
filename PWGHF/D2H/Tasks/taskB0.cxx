@@ -79,7 +79,7 @@ struct HfTaskB0 {
   void init(InitContext const&)
   {
     static const AxisSpec axisMassB0 = {300, 4.5, 6.0, "inv. mass (GeV/#it{c}^{2})"};
-    static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    static const AxisSpec axisPt = {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"};
 
     registry.add("hMass", "B^{0} candidates;inv. mass D^{#minus}#pi^{#plus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassB0, axisPt}});
     registry.add("hDecLength", "B^{0} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, axisPt}});

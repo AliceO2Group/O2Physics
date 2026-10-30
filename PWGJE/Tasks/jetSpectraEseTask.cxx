@@ -88,10 +88,11 @@ struct JetSpectraEseTask {
   Configurable<bool> cfgUseMCEventWeights{"cfgUseMCEventWeights", false, "Flag for using MC event weights"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
   Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
-  Configurable<bool> checkLeadConstituentMinPtForMcpJets{"checkLeadConstituentMinPtForMcpJets", false, "flag to choose whether particle level jets should have their lead track pt above leadingConstituentPtMin to be accepted; off by default, as leadingConstituentPtMin cut is only applied on MCD jets for the Pb-Pb analysis using pp MC anchored to Pb-Pb for the response matrix"};
+  Configurable<bool> checkLeadConstituentPtForMcpJets{"checkLeadConstituentPtForMcpJets", false, "flag to choose whether particle level jets should have their lead track pt above leadingConstituentPtMin to be accepted; off by default, as leadingConstituentPtMin cut is only applied on MCD jets for the Pb-Pb analysis using pp MC anchored to Pb-Pb for the response matrix"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0f, "minimum value of pTHat"};
 
   Configurable<bool> fLeadJetPtCut{"fLeadJetPtCut", false, "Flag for leading jet pT cut"};
   Configurable<float> leadJetPtMin{"leadJetPtMin", 20.0, "minimum leading jet pT cut"};
@@ -355,8 +356,8 @@ struct JetSpectraEseTask {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     LOGF(info, "jetSpectraEse::init()");
 
@@ -540,9 +541,13 @@ struct JetSpectraEseTask {
       registry.add("h3CentdeltapTRndmConePhi_localrhovsphi", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}; #Delta#varphi_{jet}", {HistType::kTH3F, {{100, 0.0, 100.0}, {400, -200.0, 200.0}, {dPhiAxis}}});
       registry.add("h3CentdeltapTRndmConePhi_rhovsphi", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}; #Delta#varphi_{jet}", {HistType::kTH3F, {{100, 0.0, 100.0}, {400, -200.0, 200.0}, {dPhiAxis}}});
     }
+    // Normalize MC spectra with hUsedEventWeights bin 1 content, not GetEntries().
     if (doprocessMCParticleLevel) {
       LOGF(info, "JetSpectraEseTask::init() - MC Particle level");
       registry.add("mcp/hEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("mcp/hUsedEventWeights", "Used MC collisions;Used events;Sum of event weights", {HistType::kTH1D, {{1, 0.0, 1.0}}});
+      registry.get<TH1>(HIST("mcp/hUsedEventWeights"))->Sumw2();
+      registry.get<TH1>(HIST("mcp/hUsedEventWeights"))->GetXaxis()->SetBinLabel(1, "Sum of weights of used events");
       registry.add("mcp/hCentralitySel", ";centr;entries", {HistType::kTH1F, {{centAxis}}});
       // registry.add("mcp/hJetSparse", ";Centrality;#it{p}_{T,jet part}; #eta; #phi", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {etaAxis}, {phiAxis}}});
       registry.add("mcp/hJetSparse", ";Centrality;#it{p}_{T,jet part}; #eta; #phi", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {etaAxis}, {phiAxis}}});
@@ -560,6 +565,9 @@ struct JetSpectraEseTask {
     if (doprocessMCDetectorLevel) {
       LOGF(info, "JetSpectraEseTask::init() - MC Detector level");
       registry.add("mcd/hEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("mcd/hUsedEventWeights", "Used reconstructed collisions;Used events;Sum of event weights", {HistType::kTH1D, {{1, 0.0, 1.0}}});
+      registry.get<TH1>(HIST("mcd/hUsedEventWeights"))->Sumw2();
+      registry.get<TH1>(HIST("mcd/hUsedEventWeights"))->GetXaxis()->SetBinLabel(1, "Sum of weights of used events");
       registry.add("mcd/hCentralitySel", ";centr;entries", {HistType::kTH1F, {{centAxis}}});
       // registry.add("mcd/hJetPt", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
       // registry.add("mcd/hJetSparse", ";Centrality;#it{p}_{T,jet det}; #eta; #phi", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {etaAxis}, {phiAxis}}});
@@ -582,6 +590,9 @@ struct JetSpectraEseTask {
 
       registry.add("mcm/hMCEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
       registry.add("mcm/hMCDMatchedEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("mcm/hUsedEventWeights", "Used reconstructed collisions with exactly one reconstructed collision per MC collision;Used events;Sum of event weights", {HistType::kTH1D, {{1, 0.0, 1.0}}});
+      registry.get<TH1>(HIST("mcm/hUsedEventWeights"))->Sumw2();
+      registry.get<TH1>(HIST("mcm/hUsedEventWeights"))->GetXaxis()->SetBinLabel(1, "Sum of weights of used events");
       registry.add("mcm/hCentralityAnalyzed", ";Centrality;entries", {HistType::kTH1F, {{centAxis}}});
 
       registry.add("mcm/hMatchedJetsPtDelta", "#it{p}_{T,jet part}; det - part", {HistType::kTH2F, {{jetPtAxis}, {100, -20., 20.0}}});
@@ -1184,6 +1195,9 @@ struct JetSpectraEseTask {
     registry.fill(HIST("mcp/hCentralitySel"), centrality);
     const float eventWeight = cfgUseMCEventWeights ? mcCollision.weight() : 1.0f;
     const float pTHat = getPTHat(eventWeight);
+    if (!(pTHat < pTHatAbsoluteMin)) {
+      registry.fill(HIST("mcp/hUsedEventWeights"), 0.5, eventWeight);
+    }
     jetLoopMCP<aod::JetParticles>(jets, centrality, mcCollision.rho(), eventWeight, pTHat);
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCParticleLevel, "jets on particle level MC", false);
@@ -1191,7 +1205,8 @@ struct JetSpectraEseTask {
   void processMCDetectorLevel(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
                               ChargedMCDJets const& mcdjets,
                               aod::JetTracks const&,
-                              aod::JetParticles const&)
+                              aod::JetParticles const&,
+                              aod::JetMcCollisions const&)
   {
     float counter{0.5f};
     registry.fill(HIST("mcd/hEventCounter"), counter++);
@@ -1212,6 +1227,17 @@ struct JetSpectraEseTask {
     auto centrality = cfgisPbPb ? getCentrality(collision) : -1;
 
     registry.fill(HIST("mcd/hCentralitySel"), centrality);
+    float eventWeight = 1.0f;
+    if (cfgUseMCEventWeights) {
+      eventWeight = collision.has_mcCollision() ? collision.mcCollision_as<aod::JetMcCollisions>().weight() : -1.0f;
+    }
+    if (eventWeight <= 0.0f) {
+      return;
+    }
+    const float pTHat = getPTHat(eventWeight);
+    if (!(pTHat < pTHatAbsoluteMin)) {
+      registry.fill(HIST("mcd/hUsedEventWeights"), 0.5, eventWeight);
+    }
     jetLoopMCD<aod::JetTracks>(mcdjets, centrality, collision.rho());
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCDetectorLevel, "jets on detector level", false);
@@ -1264,6 +1290,9 @@ struct JetSpectraEseTask {
       registry.fill(HIST("mcm/hCentralityAnalyzed"), centrality);
       float eventWeight = cfgUseMCEventWeights ? mcCol.weight() : 1.0;
       float pTHat = getPTHat(eventWeight);
+      if (!(pTHat < pTHatAbsoluteMin)) {
+        registry.fill(HIST("mcm/hUsedEventWeights"), 0.5, eventWeight);
+      }
       matchedJetLoop<JetMCPTable, aod::JetTracks>(mcdjets.sliceBy(mcdjetsPerJCollision, collision.globalIndex()), centrality, collision.rho(), mcCol.rho(), eventWeight, pTHat);
 
       registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
@@ -1914,6 +1943,9 @@ struct JetSpectraEseTask {
         weight = jet.eventWeight();
       }
       const float pTHat = getPTHat(weight);
+      if (pTHat < pTHatAbsoluteMin) {
+        continue;
+      }
       if (jet.pt() > pTHatMaxMCD * pTHat) {
         continue;
       }
@@ -1924,6 +1956,9 @@ struct JetSpectraEseTask {
   template <typename JTracks, typename Jets>
   void jetLoopMCP(const Jets& jets, const float& centrality, const float& rho, float weight = 1.0f, float pTHat = 999.0f)
   {
+    if (pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     bool mcLevelIsParticleLevel = true;
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackCuts.trackEtaMin, trackCuts.trackEtaMax)) {
@@ -1946,6 +1981,9 @@ struct JetSpectraEseTask {
   template <typename MCPTab, typename JTracks, typename Jets>
   void matchedJetLoop(const Jets& jets, const float& centrality, const float& rho, const float& rho2, float weight = 1.0, float pTHat = 999.0)
   {
+    if (pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackCuts.trackEtaMin, trackCuts.trackEtaMax)) {
         continue;
@@ -2077,6 +2115,9 @@ struct JetSpectraEseTask {
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
+    if (mcLevelIsParticleLevel && !checkLeadConstituentPtForMcpJets) {
+      checkConstituentPt = false;
+    }
 
     if (checkConstituentPt) {
       bool isMinLeadingConstituent = !checkConstituentMinPt;
@@ -2085,7 +2126,7 @@ struct JetSpectraEseTask {
       for (const auto& constituent : jet.template tracks_as<TTracks>()) {
         double pt = constituent.pt();
 
-        if ((!checkLeadConstituentMinPtForMcpJets && mcLevelIsParticleLevel) || (checkConstituentMinPt && pt >= leadingConstituentPtMin)) { // if the jet is mcp level and checkLeadConstituentMinPtForMcpJets is true, then the pt of the leading track of that jet does not need to be below the defined leadingConstituentPtMin cut
+        if ((checkConstituentMinPt && pt >= leadingConstituentPtMin)) {
           isMinLeadingConstituent = true;
         }
         if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {

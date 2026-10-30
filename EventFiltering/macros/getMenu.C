@@ -69,7 +69,7 @@ std::vector<std::string> getMenuForPeriod(std::string period)
 
   TGrid::Connect("alien://");
   TFile* scalersFile = TFile::Open((std::string("alien://") + firstLine).data(), "READ");
-  TH1D* counters = (TH1D*)scalersFile->Get("central-event-filter-task/scalers/mFiltered");
+  TH1D* counters = dynamic_cast<TH1D*>(scalersFile->Get("central-event-filter-task/scalers/mFiltered"));
   TAxis* axis = counters->GetXaxis();
 
   std::vector<std::string> binLabels(axis->GetNbins() - 2);

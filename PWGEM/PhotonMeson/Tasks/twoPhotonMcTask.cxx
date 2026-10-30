@@ -119,6 +119,7 @@ enum class LegMatchStatus : uint8_t {
   kOutsideWindow,      // leg found, but outside the track matching window of the analysis
   kInsideWindowEoverP, // leg found inside the window, but E/p above the cut (primaries only)
   kInsideWindow,       // leg found inside the window: the cluster should have been vetoed
+  kNotGlobalTrack,     // primaries only: the leg is not a global track, so it is no candidate of the primary matching
   kNStatus
 };
 
@@ -478,12 +479,15 @@ struct TwoPhotonMcTask {
       const AxisSpec axisDeltaPhi{100, -0.1, 0.1, "#Delta#varphi (cluster - track)"};
       const AxisSpec axisDp{200, -1., 1., "(#it{p}_{match} - #it{p}_{leg}) / #it{p}_{leg}"};
       static constexpr std::array<std::string_view, static_cast<int>(SameParticleOrigin::kNOrigins)> OriginLabels = {"leg e^{#pm}", "brems #gamma of leg", "other e^{#pm}", "other"};
-      static constexpr std::array<std::string_view, static_cast<int>(LegMatchStatus::kNStatus)> StatusLabels = {"no match stored", "no match with leg #it{p}", "outside window", "in window, #it{E}/#it{p} #geq cut", "in window"};
+      static constexpr std::array<std::string_view, static_cast<int>(LegMatchStatus::kNStatus)> StatusLabels = {"no match stored", "no match with leg #it{p}", "outside window", "in window, #it{E}/#it{p} #geq cut", "in window", "not a global track"};
 
       auto hOrigin = registry.add<TH3>("PCMEMC/SameParticle/hOrigin", "same particle pairs: leading contributor of the cluster", HistType::kTH3F, {thnAxisInvMass, thnAxisPtRec, axisOrigin});
       for (std::size_t i = 0; i < OriginLabels.size(); ++i) {
         hOrigin->GetZaxis()->SetBinLabel(static_cast<int>(i) + 1, OriginLabels[i].data());
       }
+      // labels make the axis extendable, and TH1Merger::LabelMerge in ROOT 6.36 reads the z labels from the y axis:
+      // merged TH3 content would end up in a new, unlabelled z bin. With a fixed axis the merge goes bin by bin.
+      hOrigin->GetZaxis()->SetCanExtend(false);
       registry.add("PCMEMC/SameParticle/hLegEoverP", "cluster from a V0 leg: #it{E}_{cls}/#it{p}_{leg}", HistType::kTH2F, {{200, 0., 4., "#it{E}_{cls}/#it{p}_{leg}"}, axisPtLeg});
       for (const auto& [type, title] : {std::pair<std::string_view, std::string_view>{"Prim", "primary"}, {"Sec", "secondary"}}) {
         auto hStatus = registry.add<TH2>(std::format("PCMEMC/SameParticle/hLeg{}Status", type.data()).data(), std::format("cluster from a V0 leg: leg among the matched {} tracks", title.data()).data(), HistType::kTH2F, {axisStatus, axisPtLeg});
@@ -762,6 +766,30 @@ struct TwoPhotonMcTask {
     return PairBucket::kCrossOtherHadron;
   }
 
+  /// \brief Whether the track of a V0 leg passes the global track selection used by the primary EMCal track matching.
+  ///        Rebuilt from the leg columns of the derived data, following getGlobalTrackSelectionRun3ITSMatch(Run3ITSibAny):
+  ///        the golden chi2 requirement cannot be checked here, and pT/eta are the ones of the leg at the V0 vertex.
+  /// \param leg V0 leg
+  template <o2::soa::is_iterator TLeg>
+  static bool isLikelyGlobalTrack(TLeg const& leg)
+  {
+    constexpr float MinPt = 0.1f, MaxEta = 0.8f;
+    constexpr int MinCrossedRows = 70;
+    constexpr float MinCrossedRowsOverFindable = 0.8f, MaxChi2TPC = 4.f, MaxChi2ITS = 36.f, MaxDcaZ = 2.f;
+    const float pt = leg.pt();
+    if (!leg.hasITS() || !leg.hasTPC() || pt < MinPt || std::fabs(leg.eta()) > MaxEta) {
+      return false;
+    }
+    if (leg.itsNClsInnerBarrel() < 1 || leg.itsChi2NCl() > MaxChi2ITS) { // Run3ITSibAny: at least one hit in ITS layers 0-2
+      return false;
+    }
+    if (leg.tpcNClsCrossedRows() < MinCrossedRows || leg.tpcCrossedRowsOverFindableCls() < MinCrossedRowsOverFindable || leg.tpcChi2NCl() > MaxChi2TPC) {
+      return false;
+    }
+    const float maxDcaXY = 0.0105f + 0.035f / std::pow(pt, 1.1f); // o2-linter: disable=magic-number (global track selection)
+    return std::fabs(leg.dcaXY()) <= maxDcaXY && std::fabs(leg.dcaZ()) <= MaxDcaZ;
+  }
+
   /// \brief Look for the V0 leg among the tracks matched to an EMC cluster and classify why it did not veto the cluster.
   ///        The matched track tables store no track index, so the leg is identified by its momentum.
   /// \tparam isSecondary matches are secondaries (V0 legs, no E/p condition) instead of primaries
@@ -865,7 +893,12 @@ struct TwoPhotonMcTask {
       return;
     }
     registry.fill(HIST("PCMEMC/SameParticle/hLegEoverP"), emc.e() / pLeg, ptLeg);
-    fillLegMatch<false>(matchedPrims.sliceBy(perEMCClusterMT, emc.globalIndex()), emc.e(), pLeg, ptLeg);
+    // the primary matching only uses global tracks: other legs are no candidate there and get their own status
+    if (isLikelyGlobalTrack(leg)) {
+      fillLegMatch<false>(matchedPrims.sliceBy(perEMCClusterMT, emc.globalIndex()), emc.e(), pLeg, ptLeg);
+    } else {
+      registry.fill(HIST("PCMEMC/SameParticle/hLegPrimStatus"), static_cast<int>(LegMatchStatus::kNotGlobalTrack), ptLeg);
+    }
     fillLegMatch<true>(matchedSeconds.sliceBy(perEMCClusterMS, emc.globalIndex()), emc.e(), pLeg, ptLeg);
   }
 

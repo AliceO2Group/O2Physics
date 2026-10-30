@@ -622,13 +622,13 @@ struct HadronNucleiCorrelation {
     const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
     const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
     const bool isITSPID = track.itsNSigmaDe() > nsigmaITSDe.value;
-    const bool isNotPr = (std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value && std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value) || !doPrRej.value;
+    const bool isPr = (std::abs(track.tpcNSigmaPr()) < nsigmaTPCPrRej.value && std::abs(track.tofNSigmaPr()) < nsigmaTOFPrRej.value) && doPrRej.value;
 
     const bool isQuadraticPID = std::hypot(track.tpcNSigmaDe(), track.tofNSigmaDe()) < nsigmaQuadratic.value;
 
     // Check if the sign of the track matches the expected sign for deuterons or antideuterons
     const bool signCheck = (sign > 0 && track.sign() > 0) || (sign < 0 && track.sign() < 0);
-    if (!isNotPr) {
+    if (isPr) {
       return false;
     }
     if (!doQuadraticPID.value) {
@@ -637,7 +637,7 @@ struct HadronNucleiCorrelation {
           if (!doITSPID.value || isITSPID) {
             return signCheck;
           }
-        } else if (isTPCElRejection || isTOFPID) {
+        } else if (isTOFPID || (isTPCElRejection && (!doITSPID.value || isITSPID))) {
           return signCheck;
         }
       }
@@ -674,14 +674,13 @@ struct HadronNucleiCorrelation {
     pair->SetPair(&part0, &part1);
     pair->SetIdentical(isIdentical);
     if (isIdentical && pair->IsClosePair(dEta, dPhi, radiusTPC)) {
-      registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
       return;
     }
 
     if (doClosePairRejection && pair->IsClosePair(dEta, dPhi, radiusTPC)) {
-      registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
       return;
     }
+    registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
 
     const float deltaEta = part0.eta() - part1.eta();
     const float deltaPhi = RecoDecay::constrainAngle(part0.phi() - part1.phi(), -1 * o2::constants::math::PIHalf);
@@ -1031,7 +1030,7 @@ struct HadronNucleiCorrelation {
 
         const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
         const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
-        const bool isNotPr = (std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value && std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value) || !doPrRej.value;
+        const bool isPr = (std::abs(track.tpcNSigmaPr()) < nsigmaTPCPrRej.value && std::abs(track.tofNSigmaPr()) < nsigmaTOFPrRej.value) && doPrRej.value;
 
         if (track.sign() > 0) {
 
@@ -1039,9 +1038,9 @@ struct HadronNucleiCorrelation {
             registryQa.fill(HIST("QA/h3dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
           }
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
-            if (isNotPr) {
+            if (!isPr) {
               registryQa.fill(HIST("QA/h3dTPCTOF_De"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (isTPCElRejection || isTOFPID) {
+              if (isTOFPID || (isTPCElRejection && (!doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value))) {
                 registryQa.fill(HIST("QA/h3dTPCTOF_De_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
               }
             }
@@ -1052,9 +1051,9 @@ struct HadronNucleiCorrelation {
             registryQa.fill(HIST("QA/h3dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
           }
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
-            if (isNotPr) {
+            if (!isPr) {
               registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (isTPCElRejection || isTOFPID) {
+              if (isTOFPID || (isTPCElRejection && (!doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value))) {
                 registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
               }
             }

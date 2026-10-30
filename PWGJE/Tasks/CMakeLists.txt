@@ -9,6 +9,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 add_library(JetSubstructureHFPCH OBJECT jetSubstructureHFPCH.cxx)
+# The PCH compile is one of the heaviest translation units in the tree -- it
+# instantiates the whole data model up front -- but add_library() does not put
+# it in the 'analysis' job pool that o2physics_add_dpl_workflow() uses for the
+# workflows. Left out, it runs unthrottled alongside the pooled compilations
+# and defeats the per-job memory budget the pool exists to enforce.
+set_property(TARGET JetSubstructureHFPCH PROPERTY JOB_POOL_COMPILE analysis)
 target_link_libraries(JetSubstructureHFPCH
   PUBLIC O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore)
 if(NOT DEFINED ENV{USE_RECC})
@@ -29,6 +35,12 @@ target_precompile_headers(JetSubstructureHFPCH PRIVATE
 endif()
 
 add_library(JetSubstructureHFOutputPCH OBJECT jetSubstructureHFOutputPCH.cxx)
+# The PCH compile is one of the heaviest translation units in the tree -- it
+# instantiates the whole data model up front -- but add_library() does not put
+# it in the 'analysis' job pool that o2physics_add_dpl_workflow() uses for the
+# workflows. Left out, it runs unthrottled alongside the pooled compilations
+# and defeats the per-job memory budget the pool exists to enforce.
+set_property(TARGET JetSubstructureHFOutputPCH PROPERTY JOB_POOL_COMPILE analysis)
 target_link_libraries(JetSubstructureHFOutputPCH
   PUBLIC O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore)
 if(NOT DEFINED ENV{USE_RECC})

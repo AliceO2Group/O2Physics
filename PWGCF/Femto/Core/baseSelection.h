@@ -78,7 +78,7 @@ class BaseSelection
   {
     // check index
     if (static_cast<std::size_t>(observableIndex) >= NumObservables) {
-      LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
+      LOG(fatal) << "Selection '" << selectionName << "': observable is not valid. Observable (index) has to be smaller than " << NumObservables;
     }
     // init selection container for selection at given index
     mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName,
@@ -112,7 +112,7 @@ class BaseSelection
                     bool isOptionalCut)
   {
     if (static_cast<std::size_t>(observableIndex) >= NumObservables) {
-      LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
+      LOG(fatal) << "Selection '" << selectionName << "': observable is not valid. Observable (index) has to be smaller than " << NumObservables;
     }
     mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName,
                                                                                                       lowerLimit,
@@ -125,31 +125,36 @@ class BaseSelection
     addSelection(observableIndex);
   }
 
-  /// \brief Add a static-value based selection for a specific observable.
+  /// \brief Add a range-based selection (either inside or outside the configured ranges) for a
+  ///        specific observable.
   /// \param observableIndex Index of the observable.
   /// \param selectionName Name of the selection.
-  /// \param selectionValues Vector of threshold values.
-  /// \param limitType Type of limit (from limits::LimitType).
+  /// \param selectionRanges Vector of "lower;upper" range strings.
   /// \param skipMostPermissiveBit Whether to skip the loosest threshold when assembling the bitmask.
   /// \param isMinimalCut Whether this cut is mandatory (must be passed for the candidate to be accepted).
   /// \param isOptionalCut Whether this cut is optional (candidate is accepted if any optional cut passes).
+  /// \param limitType Either limits::kInsideRange (value must fall inside) or limits::kOutsideRange
+  ///                  (value must fall outside, e.g. rejecting a competing mass hypothesis). A
+  ///                  fully-open range entry (";") is exempt for either type -- see SelectionContainer.
   void addSelection(int observableIndex,
                     std::string const& selectionName,
                     std::vector<std::string> const& selectionRanges,
                     bool skipMostPermissiveBit,
                     bool isMinimalCut,
-                    bool isOptionalCut)
+                    bool isOptionalCut,
+                    limits::LimitType limitType = limits::kInsideRange)
   {
     // check index
     if (static_cast<std::size_t>(observableIndex) >= NumObservables) {
-      LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
+      LOG(fatal) << "Selection '" << selectionName << "': observable is not valid. Observable (index) has to be smaller than " << NumObservables;
     }
     // init selection container for selection at given index
     mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName,
                                                                                                       selectionRanges,
                                                                                                       mPassThrough ? false : skipMostPermissiveBit,
                                                                                                       mPassThrough ? false : isMinimalCut,
-                                                                                                      mPassThrough ? false : isOptionalCut);
+                                                                                                      mPassThrough ? false : isOptionalCut,
+                                                                                                      limitType);
 
     addSelection(observableIndex);
   }
@@ -186,7 +191,7 @@ class BaseSelection
         mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{1}, limits::LimitType::kEqual, false, false, false);
         break;
       default:
-        LOG(fatal) << "Invalid switch for boolean selection";
+        LOG(fatal) << "Selection '" << selectionName << "': invalid switch for boolean selection";
     }
     addSelection(observableIndex);
   }
@@ -248,10 +253,46 @@ class BaseSelection
     }
   }
 
+  /// \brief Evaluate the same observable for two independently-computed values of the same
+  ///        candidate and store only the logical AND of the two resulting per-threshold bitmasks
+  /// \param observableIndex Index of the observable.
+  /// \param value1 First value to evaluate.
+  /// \param value2 Second value to evaluate.
+  void evaluateObservable(int observableIndex, T value1, T value2)
+  {
+    // if there are no selections configured, bail out
+    if (mSelectionContainers.at(observableIndex).isEmpty()) {
+      return;
+    }
+    // if a previous observable already failed a minimal selection,
+    // there is no point in evaluating further observables
+    if (!mPassesMinimalSelections) {
+      return;
+    }
+    auto& container = mSelectionContainers.at(observableIndex);
+    container.evaluate(value1);
+    auto const bitmask1 = container.getRawBitmask();
+    container.evaluate(value2);
+    auto const bitmask2 = container.getRawBitmask();
+    container.setBitmask((bitmask1 & bitmask2).to_ullong());
+    // if any minimal selection is not fulfilled, the candidate is rejected
+    if (mHasMinimalSelection) {
+      if (!container.passesAsMinimalCut()) {
+        mPassesMinimalSelections = false;
+      }
+    }
+    // if any optional selection is fulfilled, the candidate is accepted
+    if (mHasOptionalSelection) {
+      if (container.passesAsOptionalCut()) {
+        mPassesOptionalSelections = true;
+      }
+    }
+  }
+
   /// \brief Evaluate a single observable against its configured selections.
   /// \param observableIndex Index of the observable.
   /// \param values Vector of values of the observable.
-  void evaluateObservable(int observableIndex, std::vector<T> values)
+  void evaluateObservable(int observableIndex, std::vector<T> const& values)
   {
     // if there are no selections configured, bail out
     if (mSelectionContainers.at(observableIndex).isEmpty()) {
@@ -536,7 +577,7 @@ class BaseSelection
     }
 
     if (mNSelectionBits > sizeof(BitmaskType) * CHAR_BIT) {
-      LOG(fatal) << "Too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " number of bits are supported";
+      LOG(fatal) << "Selection '" << mSelectionContainers.at(observableIndex).getSelectionName() << "': too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " number of bits are supported";
     }
   }
 

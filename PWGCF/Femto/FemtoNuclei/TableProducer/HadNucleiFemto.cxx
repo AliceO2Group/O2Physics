@@ -11,7 +11,7 @@
 //
 
 /// \file HadNucleiFemtoDcaPurity.cxx
-/// \brief Nuclei-hadron femtoscopy task
+/// \brief Nuclei-hadron femtoscopy task with DCA-fraction and purity inputs
 /// \author CMY
 /// \date 2025-04-10
 
@@ -89,12 +89,11 @@ using std::array;
 using CollBracket = o2::math_utils::Bracket<int>;
 using HyperCandidates = aod::DataHypCandsWColl;
 using HyperCandidatesMC = aod::MCHypCandsWColl;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
-// The standard Femto producer stores multNTracksPV as its collision
-// multiplicity. Subscribe to PVMults only in the mixed-event process so the
-// same vertex--multiplicity pool definition can optionally be reproduced.
-using CollisionsFullWithPVMult = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
-using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
+// Save the PV-track multiplicity alongside numContrib in the event-info output
+// for both same-event and mixed-event pairs.
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
+using CollisionsFullWithPVMult = CollisionsFull;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
 using HadHyperCollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
 using HadHyperCollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
 using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime>;
@@ -317,6 +316,7 @@ struct BufferedCollision {
   uint16_t numContrib{0u};
   float centFT0C{0.f};
   float multFT0C{0.f};
+  int32_t multNTracksPV{0};
   std::vector<BufferedTrack> nuclei;
   std::vector<BufferedTrack> hadrons;
 };
@@ -403,6 +403,12 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"deuteronPid"};
     // Deuteron purity and PID cuts
+    Configurable<int> settingTPCNClsFoundMinDe{"settingTPCNClsFoundMinDe", 110, "Minimum found TPC clusters for deuterons"};
+    Configurable<int> settingTPCCrossedRowsMinDe{"settingTPCCrossedRowsMinDe", 100, "Minimum crossed TPC rows for deuterons"};
+    Configurable<float> settingDeDCAxyOffset{"settingDeDCAxyOffset", 0.004f, "Deuteron DCAxy cut offset in cm"};
+    Configurable<float> settingDeDCAxyPtCoeff{"settingDeDCAxyPtCoeff", 0.013f, "Deuteron DCAxy inverse-pT cut coefficient"};
+    Configurable<float> settingDeDCAzOffset{"settingDeDCAzOffset", 0.004f, "Deuteron DCAz cut offset in cm"};
+    Configurable<float> settingDeDCAzPtCoeff{"settingDeDCAzPtCoeff", 0.013f, "Deuteron DCAz inverse-pT cut coefficient"};
     Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
     Configurable<float> settingCutDeptMin{"settingCutDeptMin", 0.6f, "Minimum PT cut on De"};
     Configurable<float> settingCutDeptMax{"settingCutDeptMax", 1.6f, "Maximum PT cut on De"};
@@ -428,6 +434,7 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"tritonPid"};
     // Triton track-quality, purity and PID cuts
+    Configurable<int> settingITSNClsMinTr{"settingITSNClsMinTr", 5, "Minimum number of ITS clusters for triton candidates"};
     Configurable<float> settingPIDMomentumSplitTr{"settingPIDMomentumSplitTr", 2.f, "Momentum separating low- and high-momentum triton TPC PID"};
     Configurable<float> settingCutTPCNsigmaLowPTr{"settingCutTPCNsigmaLowPTr", 3.f, "Maximum absolute TPC n-sigma for tritons below the momentum split"};
     Configurable<float> settingCutITSNsigmaLowPTr{"settingCutITSNsigmaLowPTr", 3.f, "Maximum absolute ITS n-sigma for tritons below the momentum split"};
@@ -827,6 +834,7 @@ struct HadNucleiFemto {
      {"h2NsigmaHadKaTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(K)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
 
      // Purity
+     {"purity/h2MassTOFTr_preselection", "Triton TOF mass before mass cut; signed #it{p}_{T} (GeV/#it{c}); m_{TOF} (GeV/#it{c}^{2})", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {280, 0.0f, 7.0f}}}},
      {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {120, -5.0f, 5.0f}}}},
@@ -1228,16 +1236,14 @@ struct HadNucleiFemto {
       return false;
     }
 
-    constexpr int minTPCNClsFound = 110;
-    constexpr int minTPCNClsCrossedRows = 100;
     constexpr float minTPCCrossedRowsOverFound = 0.f;
     constexpr int maxTPCNClsShared = 160;
     constexpr float maxSharedTPCFraction = 1.f;
     constexpr int minITSNClsInnerBarrel = 1;
     const float tpcCrossedRowsOverFound = candidate.tpcNClsFound() > 0 ? static_cast<float>(candidate.tpcNClsCrossedRows()) / candidate.tpcNClsFound() : 0.f;
 
-    return !(candidate.tpcNClsFound() < minTPCNClsFound ||
-             candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
+    return !(candidate.tpcNClsFound() < deuteronPid.settingTPCNClsFoundMinDe ||
+             candidate.tpcNClsCrossedRows() < deuteronPid.settingTPCCrossedRowsMinDe ||
              tpcCrossedRowsOverFound < minTPCCrossedRowsOverFound ||
              candidate.tpcNClsShared() > maxTPCNClsShared ||
              candidate.tpcFractionSharedCls() > maxSharedTPCFraction ||
@@ -1254,7 +1260,6 @@ struct HadNucleiFemto {
     constexpr int minTPCCrossedRows = 70;
     constexpr float maxTPCChi2NCl = 5.f;
     constexpr float maxTPCFractionSharedCls = 0.3f;
-    constexpr int minITSNCls = 5;
     constexpr float maxITSChi2NCl = 10.f;
 
     return !(std::abs(candidate.eta()) >= maxAbsEta ||
@@ -1263,7 +1268,7 @@ struct HadNucleiFemto {
              candidate.tpcNClsCrossedRows() < minTPCCrossedRows ||
              candidate.tpcChi2NCl() >= maxTPCChi2NCl ||
              candidate.tpcFractionSharedCls() >= maxTPCFractionSharedCls ||
-             candidate.itsNCls() < minITSNCls ||
+             candidate.itsNCls() < tritonPid.settingITSNClsMinTr ||
              candidate.itsChi2NCl() >= maxITSChi2NCl);
   }
 
@@ -1839,8 +1844,8 @@ struct HadNucleiFemto {
     if (absPt <= 0.f) {
       return false;
     }
-    const float deDCAxyMax = 0.004f + 0.013f / absPt;
-    const float deDCAzMax = 0.004f + 0.013f / absPt;
+    const float deDCAxyMax = deuteronPid.settingDeDCAxyOffset + deuteronPid.settingDeDCAxyPtCoeff / absPt;
+    const float deDCAzMax = deuteronPid.settingDeDCAzOffset + deuteronPid.settingDeDCAzPtCoeff / absPt;
     if (std::abs(candidate.dcaXY()) > deDCAxyMax || std::abs(candidate.dcaZ()) > deDCAzMax) {
       return false;
     }
@@ -2644,7 +2649,8 @@ struct HadNucleiFemto {
         collision.posZ(),
         collision.numContrib(),
         collision.centFT0C(),
-        collision.multFT0C());
+        collision.multFT0C(),
+        collision.multNTracksPV());
     }
   }
 
@@ -2657,7 +2663,8 @@ struct HadNucleiFemto {
         collision.posZ,
         collision.numContrib,
         collision.centFT0C,
-        collision.multFT0C);
+        collision.multFT0C,
+        collision.multNTracksPV);
     }
   }
 
@@ -3189,7 +3196,7 @@ struct HadNucleiFemto {
                          std::unordered_map<int, std::deque<HadHyperEvent>>& mixingPools,
                          int& mixingRunNumber)
   {
-    const CentralityBinningType configuredBinningPolicy{{axisVertex, axisCentrality}};
+    const CentralityBinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
     for (const auto& collision : collisions) {
       if (!selectCollision<isMC>(collision, bcs)) {
         continue;
@@ -3344,8 +3351,8 @@ struct HadNucleiFemto {
   void processMixedEvent(const CollisionsFullWithPVMult& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     LOG(debug) << "Processing mixed event";
-    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}};
-    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}};
+    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}, true};
+    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}, true};
 
     for (const auto& collision : collisions) {
       mQaRegistry.fill(HIST("hMixedEventSelections"), 0);
@@ -3370,6 +3377,7 @@ struct HadNucleiFemto {
       currentCollision.numContrib = collision.numContrib();
       currentCollision.centFT0C = collision.centFT0C();
       currentCollision.multFT0C = collision.multFT0C();
+      currentCollision.multNTracksPV = collision.multNTracksPV();
 
       const uint64_t collIdx = collision.globalIndex();
       auto tracksThisCollision = tracks.sliceBy(mPerCol, collIdx);
@@ -3478,8 +3486,8 @@ struct HadNucleiFemto {
 
   void processMixedEventDiagnostic(const CollisionsFullWithPVMult& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
-    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}};
-    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}};
+    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}, true};
+    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}, true};
     ++mDiagnosticCall;
     MEDiagnosticRow call;
     call.run = mDiagnosticRun;
@@ -3547,6 +3555,7 @@ struct HadNucleiFemto {
       current.numContrib = collision.numContrib();
       current.centFT0C = collision.centFT0C();
       current.multFT0C = collision.multFT0C();
+      current.multNTracksPV = collision.multNTracksPV();
       row.eventId = current.eventId;
       auto tracksThisCollision = tracks.sliceBy(mPerCol, collision.globalIndex());
       tracksThisCollision.bindExternalIndices(&tracks);
@@ -4079,10 +4088,33 @@ struct HadNucleiFemto {
           }
         } else if (passTrackNu && useTritonNucleus()) {
           const float tpcNSigmaTr = track.tpcNSigmaTr();
+          const float absPTr = std::abs(track.p());
+          const float signedPtTr = track.sign() * track.pt();
+          const bool passTPCRejectTr = !(std::abs(track.tpcNSigmaDe()) < tritonPid.settingTPCRejectNsig ||
+                                         std::abs(track.tpcNSigmaPr()) < tritonPid.settingTPCRejectNsig ||
+                                         std::abs(track.tpcNSigmaPi()) < tritonPid.settingTPCRejectNsig);
           o2::aod::ITSResponse itsResponse;
-          const float itsNSigmaTr = itsResponse.nSigmaITS<o2::track::PID::Triton>(track.itsClusterSizes(), std::abs(track.p()), track.eta());
-          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaTr);
-          mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), track.sign() * track.pt(), itsNSigmaTr);
+          const float itsNSigmaTr = itsResponse.nSigmaITS<o2::track::PID::Triton>(track.itsClusterSizes(), absPTr, track.eta());
+          if (passTPCRejectTr) {
+            mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), signedPtTr, itsNSigmaTr);
+          }
+          const bool passITSTr = absPTr >= tritonPid.settingPIDMomentumSplitTr ||
+                                 std::abs(itsNSigmaTr) < tritonPid.settingCutITSNsigmaLowPTr;
+          const bool passTPCTr = absPTr < tritonPid.settingPIDMomentumSplitTr
+                                   ? std::abs(tpcNSigmaTr) < tritonPid.settingCutTPCNsigmaLowPTr
+                                   : tpcNSigmaTr > tritonPid.settingCutTPCNsigmaHighPMinTr &&
+                                       tpcNSigmaTr < tritonPid.settingCutTPCNsigmaHighPMaxTr;
+          // Keep triton TPC PID open, while matching the species-rejection and ITS cuts.
+          if (passTPCRejectTr && passITSTr) {
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), signedPtTr, tpcNSigmaTr);
+            // Apply the triton TPC PID cut but keep TOF mass uncut to retain its sidebands.
+            if (passTPCTr && absPTr > tritonPid.settingTOFMassMomentumMinTr && track.hasTOF()) {
+              const float massTOFTr = computeTOFMass(track);
+              if (std::isfinite(massTOFTr)) {
+                mQaRegistry.fill(HIST("purity/h2MassTOFTr_preselection"), signedPtTr, massTOFTr);
+              }
+            }
+          }
         }
 
         const bool isHadronSelected = passTrackHad && selectionPIDHadron(track);

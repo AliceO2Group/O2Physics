@@ -318,7 +318,7 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
   for (auto iFonll{0}; iFonll < 3; ++iFonll) {
     normCrossSec[iFonll] = hFonllBhad[iFonll]->Integral(1, hFonllBhad[iFonll]->GetNbinsX() + 1, "width");
     for (auto iChad{0}; iChad < NCharmHadrons; ++iChad) {
-      hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][NBeautyHadrons][iFonll] = reinterpret_cast<TH1D*>(hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][0][iFonll]->Clone(Form("hFonllNonPrompt%s%s", charmHadNames[iChad].data(), namesFonll[iFonll].data())));
+      hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][NBeautyHadrons][iFonll] = dynamic_cast<TH1D*>(hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][0][iFonll]->Clone(Form("hFonllNonPrompt%s%s", charmHadNames[iChad].data(), namesFonll[iFonll].data())));
       hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][NBeautyHadrons][iFonll]->Reset();
       for (auto iBHad{0}; iBHad < NBeautyHadrons; ++iBHad) {
         hFonllPythiaNonPromptChad[charmHadPdgs[iChad]][iBHad][iFonll]->Scale(normCrossSec[iFonll] / nDecays, "width");

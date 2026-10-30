@@ -1306,14 +1306,28 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     std::array<int, 5> bins = {50, 30, 10, 20, 10};
     std::array<double, 5> xmin = {2., 0., 0, -1., 0.0};
     std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
-    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaHE", "", 5, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
+    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaHE", "", 5, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-gjb1-gen") == 0) {
+    std::array<int, 5> varspTGJB1 = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaGJB1, VarManager::kMCPhiGJB1};
+    std::array<int, 5> bins = {50, 30, 10, 20, 10};
+    std::array<double, 5> xmin = {2., 0., 0, -1., 0.0};
+    std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
+    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaGJB1", "", 5, varspTGJB1.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-gjb2-gen") == 0) {
+    std::array<int, 5> varspTGJB2 = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaGJB2, VarManager::kMCPhiGJB2};
+    std::array<int, 5> bins = {50, 30, 10, 20, 10};
+    std::array<double, 5> xmin = {2., 0., 0, -1., 0.0};
+    std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
+    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaGJB2", "", 5, varspTGJB2.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
   }
   if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-cs-gen") == 0) {
     std::array<int, 5> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaCS, VarManager::kMCPhiCS};
     std::array<int, 5> bins = {50, 30, 10, 20, 10};
     std::array<double, 5> xmin = {2., 0., 0, -1., 0.0};
     std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
-    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
+    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
   }
   if (groupStr.CompareTo("pair") == 0) {
     if (subGroupStr.Contains("cepf")) {
@@ -1403,6 +1417,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         }
         hm->AddHistogram(histClass, "Mass_PtLong", "", false, 500, alice3MassBins.data(), VarManager::kMass, 20, pTBins.data(), VarManager::kPt);
       }
+      if (subGroupStr.Contains("alice3pair")) {
+        hm->AddHistogram(histClass, "CosinePointingAngle", "cos(#theta_{p})", false, 2000.0, -1.0, 1.0, VarManager::kCosPointingAngle);
+        hm->AddHistogram(histClass, "DCADaughters", "DCA_{dau}", false, 2000.0, -10.0, 10.0, VarManager::kD0DcaDaughters);
+        hm->AddHistogram(histClass, "ImpParProduct", "d_{k} #times d_{#pi}", false, 2000.0, -100.0, 100.0, VarManager::kD0ImpParProduct);
+        hm->AddHistogram(histClass, "DCAxy1", "DCA_{xy, 1}", false, 2000.0, -10.0, 10.0, VarManager::kDCAxy1);
+        hm->AddHistogram(histClass, "DCAxy2", "DCA_{xy, 2}", false, 2000.0, -10.0, 10.0, VarManager::kDCAxy2);
+      }
       if (subGroupStr.Contains("alice3pbpb")) {
         hm->AddHistogram(histClass, "Mass_Cent", "", false, 125, 0.0, 5.0, VarManager::kMass, 20, 0.0, 100.0, VarManager::kCent);
         hm->AddHistogram(histClass, "Pt_CentFT0C", "", false, 100, 0.0, 10.0, VarManager::kPt, 20, 0.0, 100.0, VarManager::kCent);
@@ -1420,6 +1441,22 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<double, 5> xminpT = {2., 0., 0, -1., 0.0};
         std::array<double, 5> xmaxpT = {4.5, 3., 100, 1., 6.28};
         hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaHE", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
+      }
+
+      if (subGroupStr.Contains("dielectron-polarization-gjb1-pbpb")) {
+        std::array<int, 5> varsGJB1pbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaGJB1, VarManager::kPhiGJB1};
+        std::array<int, 5> binspT = {100, 30, 10, 10, 10};
+        std::array<double, 5> xminpT = {2., 0., 0, -1., 0.0};
+        std::array<double, 5> xmaxpT = {4.5, 3., 100, 1., 6.28};
+        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaGJB1", "", 5, varsGJB1pbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
+      }
+
+      if (subGroupStr.Contains("dielectron-polarization-gjb2-pbpb")) {
+        std::array<int, 5> varsGJB2pbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaGJB2, VarManager::kPhiGJB2};
+        std::array<int, 5> binspT = {100, 30, 10, 10, 10};
+        std::array<double, 5> xminpT = {2., 0., 0, -1., 0.0};
+        std::array<double, 5> xmaxpT = {4.5, 3., 100, 1., 6.28};
+        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaGJB2", "", 5, varsGJB2pbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
 
       if (subGroupStr.Contains("dielectron-polarization-cs-pbpb")) {

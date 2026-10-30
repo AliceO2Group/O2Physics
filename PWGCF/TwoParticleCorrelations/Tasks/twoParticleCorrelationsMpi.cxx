@@ -159,6 +159,7 @@ struct TwoParticleCorrelationsMpi {
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
+  ConfigurableAxis axisMultiplicityQA{"axisMultiplicityQA", {250, 0, 250}, "fine multiplicity / centrality axis for control histograms"};
 
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
@@ -290,6 +291,12 @@ struct TwoParticleCorrelationsMpi {
     float deltaPhi;
     float posZ;
     float weight;
+  };
+
+  struct DetectorClosureResponseCoordinates {
+    float trueMultiplicity;
+    float rawMultiplicity;
+    float correctedMultiplicity;
   };
 
   std::vector<YieldTemplate> yieldTemplates;
@@ -437,8 +444,8 @@ struct TwoParticleCorrelationsMpi {
          eventSeedEstimatorEnabled ? "enabled" : "disabled",
          cfgNuncSeedsTemplateFile.value.c_str(), cfgNuncSeedsTemplate.value.c_str());
 
-    registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
+    registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{axisMultiplicityQA, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
+    registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{axisMultiplicityQA, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
     if (doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected) {
       if (cfgMultCorrelationsMask == 0) {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
@@ -461,10 +468,14 @@ struct TwoParticleCorrelationsMpi {
       }
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
-    registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{100, 0, 100, "/multiplicity/centrality"}}});
+    registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{axisMultiplicityQA, "/multiplicity/centrality"}}});
     if (doprocessMCDetectorClosure) {
       registry.add("detectorClosure/rawMultiplicityVsTrue", "raw reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{raw,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
       registry.add("detectorClosure/correctedMultiplicityVsTrue", "corrected reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{corr,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
+      registry.add("detectorClosure/triggerResponseRaw", "efficiency-weighted trigger response versus raw reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{raw,reco}"}, {axisPtTrigger, "p_{T,trig}"}}});
+      registry.add("detectorClosure/triggerResponseCorrected", "efficiency-weighted trigger response versus corrected reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{corr,reco}"}, {axisPtTrigger, "p_{T,trig}"}}});
+      registry.add("detectorClosure/pairResponseRaw", "efficiency-weighted pair response versus raw reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{raw,reco}"}, {axisDeltaEta, "#Delta#eta"}, {axisPtAssoc, "p_{T,assoc}"}, {axisPtTrigger, "p_{T,trig}"}, {axisDeltaPhi, "#Delta#varphi"}}});
+      registry.add("detectorClosure/pairResponseCorrected", "efficiency-weighted pair response versus corrected reconstructed multiplicity", {HistType::kTHnSparseF, {{axisMultiplicity, "N_{ch}^{true}"}, {axisMultiplicity, "N_{ch}^{corr,reco}"}, {axisDeltaEta, "#Delta#eta"}, {axisPtAssoc, "p_{T,assoc}"}, {axisPtTrigger, "p_{T,trig}"}, {axisDeltaPhi, "#Delta#varphi"}}});
       registry.add("detectorClosure/profileCorrectedMultiplicityVsTrue", "mean corrected reconstructed multiplicity versus true multiplicity;N_{ch}^{true};#LT N_{ch}^{corr,reco} #GT", {HistType::kTProfile, {axisMultiplicity}});
       registry.add("detectorClosure/profileTrueMultiplicityVsCorrected", "mean true multiplicity versus corrected reconstructed multiplicity;N_{ch}^{corr,reco};#LT N_{ch}^{true} #GT", {HistType::kTProfile, {axisMultiplicity}});
       registry.add("detectorClosure/recoCollisionsPerMCCollision", "accepted reconstructed collisions per MC collision;N_{coll}^{reco};events", {HistType::kTH1F, {{11, -0.5, 10.5}}});
@@ -475,14 +486,14 @@ struct TwoParticleCorrelationsMpi {
       detectorClosureStatus->GetXaxis()->SetBinLabel(3, "invalid best-collision count");
     }
     if (eventSeedEstimatorEnabled) {
-      registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+      registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{axisMultiplicityQA, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
       registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
       registry.add("eventSeedEstimatorStatus", "event-estimator status", {HistType::kTH1F, {{5, -0.5, 4.5, "status"}}});
-      registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
-      registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+      registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{axisMultiplicityQA, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
+      registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{axisMultiplicityQA, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
       registry.add("eventSeedFixedProbabilityVsMultiplicity", "fixed-probability event Seed versus multiplicity;multiplicity;N_{seed}^{probability sum}", {HistType::kTH2F, {axisMultiplicity, {1000, 0, 100}}});
-      registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
-      registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
+      registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{axisMultiplicityQA, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
+      registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{axisMultiplicityQA, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
       registry.add("profileEventNTriggers", "mean event trigger count", {HistType::kTProfile, {axisMultiplicity}});
       registry.add("profileEventNearPairs", "mean summed near-pair probability", {HistType::kTProfile, {axisMultiplicity}});
       registry.add("profileEventAwayPairs", "mean summed away-pair probability", {HistType::kTProfile, {axisMultiplicity}});
@@ -1773,7 +1784,7 @@ struct TwoParticleCorrelationsMpi {
   }
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
-  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight, EventSeedEstimate* seedEstimate = nullptr, std::vector<PendingSeedTriggerFill>* pendingTriggerFills = nullptr, std::vector<PendingSeedPairFill>* pendingPairFills = nullptr, double userAxisValue = -1.0, bool fillEstimatorAcceptanceQA = true, bool fillLoopQA = true, float efficiencyMultiplicity = -1.f)
+  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight, EventSeedEstimate* seedEstimate = nullptr, std::vector<PendingSeedTriggerFill>* pendingTriggerFills = nullptr, std::vector<PendingSeedPairFill>* pendingPairFills = nullptr, double userAxisValue = -1.0, bool fillEstimatorAcceptanceQA = true, bool fillLoopQA = true, float efficiencyMultiplicity = -1.f, const DetectorClosureResponseCoordinates* detectorClosureResponse = nullptr)
   {
     if (multiplicity < 0.f) {
       return;
@@ -1849,6 +1860,10 @@ struct TwoParticleCorrelationsMpi {
       if constexpr (step == CorrelationContainer::kCFStepCorrected) {
         if (cfg.mEfficiencyTrigger) {
           triggerWeight *= getEfficiencyCorrection(cfg.mEfficiencyTrigger, track1.eta(), track1.pt(), efficiencyLookupMultiplicity, posZ);
+        }
+        if (detectorClosureResponse) {
+          registry.fill(HIST("detectorClosure/triggerResponseRaw"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->rawMultiplicity, track1.pt(), triggerWeight);
+          registry.fill(HIST("detectorClosure/triggerResponseCorrected"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->correctedMultiplicity, track1.pt(), triggerWeight);
         }
       }
 
@@ -1973,6 +1988,13 @@ struct TwoParticleCorrelationsMpi {
 
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -o2::constants::math::PIHalf);
         const float deltaEta = track1.eta() - track2.eta();
+
+        if constexpr (step == CorrelationContainer::kCFStepCorrected) {
+          if (detectorClosureResponse) {
+            registry.fill(HIST("detectorClosure/pairResponseRaw"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->rawMultiplicity, deltaEta, track2.pt(), track1.pt(), deltaPhi, associatedWeight);
+            registry.fill(HIST("detectorClosure/pairResponseCorrected"), detectorClosureResponse->trueMultiplicity, detectorClosureResponse->correctedMultiplicity, deltaEta, track2.pt(), track1.pt(), deltaPhi, associatedWeight);
+          }
+        }
 
         if (triggerHasTemplate) {
           ++seedEstimate->nCandidatePairs;
@@ -2186,7 +2208,7 @@ struct TwoParticleCorrelationsMpi {
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameGenMC, "Process generated MC events from derived data and validate against the stored HepMC N MPI", false);
 
   template <class CollType, class TTracks1, class TTracks2>
-  void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr, const float* outputMultiplicityOverride = nullptr, const float* efficiencyMultiplicityOverride = nullptr)
+  void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr, const float* outputMultiplicityOverride = nullptr, const float* efficiencyMultiplicityOverride = nullptr, const DetectorClosureResponseCoordinates* detectorClosureResponse = nullptr)
   {
     auto getMultiplicity = [](const auto& col) {
       return getAnalysisMultiplicity(col);
@@ -2247,14 +2269,14 @@ struct TwoParticleCorrelationsMpi {
         flushSeedAxisFills<CorrelationContainer::kCFStepReconstructed>(same, pendingTriggerFills, pendingPairFills, seedEstimate.nuncSeeds());
       } else if (hasEfficiency) {
         fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
-        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, &seedEstimate, &pendingTriggerFills, &pendingPairFills, -1.0, true, true, efficiencyMultiplicity);
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, &seedEstimate, &pendingTriggerFills, &pendingPairFills, -1.0, true, true, efficiencyMultiplicity, detectorClosureResponse);
         finalizeEventSeedEstimate(seedEstimate);
         flushSeedAxisFills<CorrelationContainer::kCFStepCorrected>(same, pendingTriggerFills, pendingPairFills, seedEstimate.nuncSeeds());
       }
 
       if (fillReco && hasEfficiency) {
         fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
-        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, nullptr, nullptr, nullptr, getEventSeedUserAxisValue(multiplicity, seedEstimate.nuncSeeds()), true, true, efficiencyMultiplicity);
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, nullptr, nullptr, nullptr, getEventSeedUserAxisValue(multiplicity, seedEstimate.nuncSeeds()), true, true, efficiencyMultiplicity, detectorClosureResponse);
       }
       const auto seedClass = getEventSeedClass(multiplicity, seedEstimate.nuncSeeds());
       fillOutputContainers<Reco>(multiplicity, fRndm->Rndm(), seedClass);
@@ -2271,7 +2293,7 @@ struct TwoParticleCorrelationsMpi {
     }
     if (hasEfficiency) {
       fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
-      fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, fillReco ? nullptr : &seedEstimate, nullptr, nullptr, -1.0, true, true, efficiencyMultiplicity);
+      fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, fillReco ? nullptr : &seedEstimate, nullptr, nullptr, -1.0, true, true, efficiencyMultiplicity, detectorClosureResponse);
     }
     finalizeEventSeedEstimate(seedEstimate);
     fillOutputContainers<Reco>(multiplicity, fRndm->Rndm());
@@ -2604,9 +2626,10 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("detectorClosure/profileTrueMultiplicityVsCorrected"), correctedMultiplicity, trueMultiplicity);
 
       auto collisionTracks = tracks.sliceBy(derivedTracksPerCollision, collision.globalIndex());
+      const DetectorClosureResponseCoordinates responseCoordinates{trueMultiplicity, rawMultiplicity, correctedMultiplicity};
       // Physics histograms use true multiplicity, while efficiency weights use
       // the reconstructed multiplicity coordinate for which the map was made.
-      processSameDerivedT(collision, collisionTracks, collisionTracks, &trueNMPI, &trueMultiplicity, &rawMultiplicity);
+      processSameDerivedT(collision, collisionTracks, collisionTracks, &trueNMPI, &trueMultiplicity, &rawMultiplicity, &responseCoordinates);
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCDetectorClosure, "Fill generated, raw reconstructed, and efficiency-corrected MC correlations versus true charged multiplicity", false);

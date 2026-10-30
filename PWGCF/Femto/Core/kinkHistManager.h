@@ -105,6 +105,11 @@ struct ConfSigmaPlusBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_BINNING(1.1, 1.3)
 };
+template <auto& Prefix>
+struct ConfSigmaPlusPcmBinning : o2::framework::ConfigurableGroup {
+  std::string prefix = Prefix;
+  KINK_DEFAULT_BINNING(1.1, 1.3)
+};
 
 #undef KINK_DEFAULT_BINNING
 
@@ -113,6 +118,9 @@ using ConfSigmaBinning1 = ConfSigmaBinning<PrefixSigmaBinning1>;
 
 constexpr const char PrefixSigmaPlusBinning1[] = "SigmaPlusBinning1";
 using ConfSigmaPlusBinning1 = ConfSigmaPlusBinning<PrefixSigmaPlusBinning1>;
+
+constexpr const char PrefixSigmaPlusPcmBinning1[] = "SigmaPlusPcmBinning1";
+using ConfSigmaPlusPcmBinning1 = ConfSigmaPlusPcmBinning<PrefixSigmaPlusPcmBinning1>;
 
 template <auto& Prefix>
 struct ConfKinkQaBinning : o2::framework::ConfigurableGroup {
@@ -255,11 +263,15 @@ std::map<KinkHist, std::vector<o2::framework::AxisSpec>> makeKinkMcQaHistSpecMap
 #undef KINK_HIST_MC_QA_MAP
 
 constexpr char PrefixSigmaQa[] = "SigmaQA/";
-constexpr char PrefixSigma1[] = "Sigma1/";
+constexpr char PrefixSigma1Se[] = "Sigma1/SE/";
+constexpr char PrefixSigma1Me[] = "Sigma1/ME/";
 constexpr char PrefixSigma2[] = "Sigma2/";
 constexpr char PrefixSigmaPlusQa[] = "SigmaPlusQA/";
-constexpr char PrefixSigmaPlus1[] = "SigmaPlus1/";
+constexpr char PrefixSigmaPlus1Se[] = "SigmaPlus1/SE/";
+constexpr char PrefixSigmaPlus1Me[] = "SigmaPlus1/ME/";
 constexpr char PrefixSigmaPlus2[] = "SigmaPlus2/";
+constexpr char PrefixSigmaPlusPcm1Se[] = "SigmaPlusPcm1/SE/";
+constexpr char PrefixSigmaPlusPcm1Me[] = "SigmaPlusPcm1/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
@@ -506,7 +518,7 @@ class KinkHistManager
     mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), kinkcandidate.phi());
     mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), kinkcandidate.mass());
 
-    if constexpr (isEqual(kink, modes::Kink::kSigma) || isEqual(kink, modes::Kink::kSigmaPlus)) {
+    if constexpr (isEqual(kink, modes::Kink::kSigma) || isEqual(kink, modes::Kink::kSigmaPlus) || isEqual(kink, modes::Kink::kSigmaPlusPcm)) {
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), kinkcandidate.sign());
     }
   }
@@ -598,9 +610,6 @@ class KinkHistManager
           switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
             case modes::McOrigin::kPhysicalPrimary:
               mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-              break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
               break;
             case modes::McOrigin::kFromMaterial:
               mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());

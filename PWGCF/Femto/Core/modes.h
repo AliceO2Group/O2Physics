@@ -53,6 +53,7 @@ enum class Mode : uint32_t {
   kMc = bit<Mode>(2),
   kSe = bit<Mode>(3),
   kMe = bit<Mode>(4),
+  kFitVars = bit<Mode>(5), // purity/fraction histograms (tracks: packed nSigma tables; V0s: cpa) -- gates booking at init time
   kReco_Qa = kReco | kQa,
   kReco_Mc = kReco | kMc,
   kReco_Qa_Mc = kReco | kQa | kMc,
@@ -62,6 +63,10 @@ enum class Mode : uint32_t {
   kMe_Reco_Mc = kMe | kReco | kMc,
   kSe_Mc = kSe | kMc,
   kMe_Mc = kMe | kMc,
+  kSe_Reco_FitVars = kSe | kReco | kFitVars,
+  kMe_Reco_FitVars = kMe | kReco | kFitVars,
+  kSe_Reco_Mc_FitVars = kSe | kReco | kMc | kFitVars,
+  kMe_Reco_Mc_FitVars = kMe | kReco | kMc | kFitVars,
 };
 
 enum class System : uint32_t {
@@ -113,6 +118,7 @@ enum class Particle : o2::analysis::femto::datatypes::ParticleType {
   kKink = 4,
   kCascade = 5,
   kCharmHadron = 6,
+  kTwoPhotonResonance = 7,
 };
 
 enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
@@ -218,7 +224,8 @@ enum class V0 : o2::analysis::femto::datatypes::V0Type {
 
 enum class Kink : o2::analysis::femto::datatypes::KinkType {
   kSigma,
-  kSigmaPlus
+  kSigmaPlus,
+  kSigmaPlusPcm
 };
 
 enum class Cascade : o2::analysis::femto::datatypes::CascadeType {
@@ -238,6 +245,12 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
 enum class TwoPhotonResonance : o2::analysis::femto::datatypes::TwoPhotonResonanceType {
   kPi0,
   kEta
+};
+
+// resonances reconstructed from two tracks and a two-photon resonance, e.g. omega(782) -> pi+ pi- pi0.
+// Named kOmegaMeson (not kOmega) to not collide with Cascade::kOmega, the Omega- baryon.
+enum class TrackTrackTwoPhotonResonance : o2::analysis::femto::datatypes::TrackTrackTwoPhotonResonanceType {
+  kOmegaMeson
 };
 
 enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {

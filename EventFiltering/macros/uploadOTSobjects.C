@@ -67,15 +67,15 @@ void uploadOTSobjects(std::string inputList, const std::string& passName, bool u
     auto orbitResetTimestamp = (*ctp)[0];
     path = useAlien ? "alien://" + path : path;
     std::unique_ptr<TFile> scalersFile{TFile::Open((path + "/AnalysisResults_fullrun.root").data(), "READ")};
-    TH1* scalers = static_cast<TH1*>(scalersFile->Get("central-event-filter-task/scalers/mScalers"));
-    TH1* filters = static_cast<TH1*>(scalersFile->Get("central-event-filter-task/scalers/mFiltered"));
+    TH1* scalers = dynamic_cast<TH1*>(scalersFile->Get("central-event-filter-task/scalers/mScalers"));
+    TH1* filters = dynamic_cast<TH1*>(scalersFile->Get("central-event-filter-task/scalers/mFiltered"));
     api.storeAsTFile(scalers, baseCCDBpath + "FilterCounters", metadata, duration.first, duration.second + 1);
     api.storeAsTFile(filters, baseCCDBpath + "SelectionCounters", metadata, duration.first, duration.second + 1);
-    TH1* hCounterTVX = static_cast<TH1*>(scalersFile->Get("bc-selection-task/hCounterTVX"));
+    TH1* hCounterTVX = dynamic_cast<TH1*>(scalersFile->Get("bc-selection-task/hCounterTVX"));
     if (!hCounterTVX) {
-      hCounterTVX = static_cast<TH1*>(scalersFile->Get("lumi-task/hCounterTVX"));
+      hCounterTVX = dynamic_cast<TH1*>(scalersFile->Get("lumi-task/hCounterTVX"));
       if (!hCounterTVX) {
-        hCounterTVX = static_cast<TH1*>(scalersFile->Get("eventselection-run3/luminosity/hCounterTVX"));
+        hCounterTVX = dynamic_cast<TH1*>(scalersFile->Get("eventselection-run3/luminosity/hCounterTVX"));
         if (!hCounterTVX) {
           std::cout << "No hCounterTVX histogram found in the file, skipping upload for run " << runString << std::endl;
           continue;
@@ -88,7 +88,7 @@ void uploadOTSobjects(std::string inputList, const std::string& passName, bool u
     std::unique_ptr<TFile> bcRangesFile{TFile::Open((path + "/bcRanges_fullrun.root").data(), "READ")};
     int Nmax = 0;
     for (auto key : *(bcRangesFile->GetListOfKeys())) {
-      TTree* cefpTree = static_cast<TTree*>(bcRangesFile->Get(Form("%s/selectedBC", key->GetName())));
+      TTree* cefpTree = dynamic_cast<TTree*>(bcRangesFile->Get(Form("%s/selectedBC", key->GetName())));
       if (!cefpTree)
         continue;
       ZorroHelper bci;
@@ -134,7 +134,7 @@ void uploadOTSobjects(std::string inputList, const std::string& passName, bool u
           auto bcNext{nextHelper.bcAOD < nextHelper.bcEvSel ? nextHelper.bcAOD : nextHelper.bcEvSel};
           if (bcNext - bcEnd > 2001 / o2::constants::lhc::LHCBunchSpacingMUS) { /// ensure a gap of 2ms between chunks
             chunk.insert(chunk.begin(), zorroHelpers.begin() + helperIndex, zorroHelpers.begin() + endIndex + 1);
-            endTS = (orbitResetTimestamp + int64_t(bcEnd * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000 + 1;
+            endTS = (orbitResetTimestamp + static_cast<int64_t>(bcEnd * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000 + 1;
             break;
           }
           bcEnd = nextHelper.bcAOD > nextHelper.bcEvSel ? nextHelper.bcAOD : nextHelper.bcEvSel;

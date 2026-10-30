@@ -36,19 +36,20 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
 
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <THnSparse.h>
 #include <TMCProcess.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <sys/types.h>
@@ -80,7 +81,6 @@ using namespace o2::aod::rctsel;
 auto static constexpr CminCharge = 3.f;
 auto static constexpr CintZero = 0;
 auto static constexpr CintOne = 1;
-auto static constexpr CfloatFive = 5.f;
 auto static constexpr CInvalid = -999.f;
 
 enum class EvtSel {
@@ -108,6 +108,7 @@ enum class TrkSel {
   trkSelNCls,
   trkSelChi2Ncl,
   trkSelEta,
+  trkSelPhi,
   trkSelPhiCut,
   trkSelPt,
   trkSelCA,
@@ -135,7 +136,7 @@ enum class AmbTrkType {
   nAmbTrkType
 };
 
-enum class GenTrkType {
+enum class McGenTrkType {
   kGenAll = 0,
   kGenRecEvt,
   nGenTrkType
@@ -145,6 +146,11 @@ enum class GenIdxTrkType {
   kGenIdxAll = 0,
   kGenIdxDupl,
   kGenIdxFake,
+  nGenIdxTrkType
+};
+
+enum class GenIdxTrkLightType {
+  kGenIdxAll = 0,
   nGenIdxTrkType
 };
 
@@ -161,6 +167,12 @@ enum class RecIdxTrkType {
   nRecIdxTrkType
 };
 
+enum class RecIdxTrkLightType {
+  kRecIdxPrim = 0,
+  kRecIdxSec,
+  nRecIdxTrkType
+};
+
 enum class EvtLossType {
   kGenAll = 0,
   kGenSel,
@@ -172,7 +184,6 @@ enum class EvtLossType {
 enum class DataEvtStatus {
   kDataAll = 0,
   kDataSel,
-  kDataSelGt0,
   kDataRej,
   nDataEvtStatus
 };
@@ -209,12 +220,30 @@ enum class McTrackStatus {
   kTrkAsBestSel,
   kTrkHasColl,
   kTrkReassignedRemoved,
+  kTrkFake,
   nMcTrackStatus
 };
 
 enum class OccupancyEst {
   TrkITS = 1,
   Ft0C
+};
+
+enum class McRecTrkType {
+  kPrimary = 0,
+  kSecondary,
+  kStrangeDecay,
+  kTrkSel,
+  kTrkFake,
+  nMcRecTrkStatus
+};
+
+struct MultE {
+  static constexpr int CnoMult = 0;
+  static constexpr int CmultFT0C = 1;
+  static constexpr int CmultFT0M = 2;
+  static constexpr int CmultTPC = 3;
+  static constexpr int CmultMFT = 4;
 };
 
 struct DndetaMFTPbPb {
@@ -242,6 +271,10 @@ struct DndetaMFTPbPb {
     Configurable<bool> useInelgt0{"useInelgt0", false, "Use INEL > 0 condition"};
     Configurable<bool> useInelgt0wMFT{"useInelgt0wMFT", false, "Use INEL > 0 condition with MFT acceptance"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<bool> fillTrackQaHist{"fillTrackQaHist", false, "fill track QA histograms"};
+    Configurable<int> multEstimator{"multEstimator", 1, "0: without multiplicity; 1: MultFT0C; 2: MultFT0M; 3: MultTPC, 4: MultMFT"};
+    Configurable<bool> useMultMCatMidRapidity{"useMultMCatMidRapidity", true, "use generated Nch in ∣eta∣ < 0.8"};
+    Configurable<bool> useMultMCatMFTacc{"useMultMCatMFTacc", false, "use generated Nch in MFT acceptance"};
   } gConf;
 
   struct : ConfigurableGroup {
@@ -255,12 +288,12 @@ struct DndetaMFTPbPb {
     ConfigurableAxis fv0aMultBins{"fv0aMultBins", {501, -0.5, 500.5}, ""};
     ConfigurableAxis ft0aMultBins{"ft0aMultBins", {501, -0.5, 500.5}, ""};
     ConfigurableAxis ft0cMultBins{"ft0cMultBins", {501, -0.5, 500.5}, ""};
-    ConfigurableAxis ptBins{"ptBins", {101, -0.5, 10.5}, "pT binning (GeV/c)"};
+    ConfigurableAxis ptBins{"ptBins", {11, -0.5, 10.5}, "pT binning (GeV/c)"};
     ConfigurableAxis multBins{"multBins", {1001, -0.5, 1000.5}, "Multiplicity binning"};
     ConfigurableAxis zvtxBins{"zvtxBins", {60, -30., 30.}, "Z-vtx binning (cm)"};
-    ConfigurableAxis deltaZBins{"deltaZBins", {800, -10., 10.}, "Delta Z-vtx binning (cm)"};
-    ConfigurableAxis dcaXYBins{"dcaXYBins", {800, -2., 2.}, "DCAxy binning (cm)"};
-    ConfigurableAxis dcaZBins{"dcaZBins", {800, -2., 2.}, "DCAz binning (cm)"};
+    ConfigurableAxis deltaZBins{"deltaZBins", {200, -1., 1.}, "Delta Z-vtx binning (cm)"};
+    ConfigurableAxis dcaXYBins{"dcaXYBins", {100, -0.5, 0.5}, "DCAxy binning (cm)"};
+    ConfigurableAxis dcaZBins{"dcaZBins", {100, -0.5, 0.5}, "DCAz binning (cm)"};
     ConfigurableAxis phiBins{"phiBins", {629, 0., TwoPI}, "#varphi binning (rad)"};
     ConfigurableAxis etaBins{"etaBins", {20, -4., -2.}, "#eta binning"};
     ConfigurableAxis chiSqPerNclBins{"chiSqPerNclBins", {100, 0, 100}, "#chi^{2} binning"};
@@ -366,10 +399,12 @@ struct DndetaMFTPbPb {
     const AxisSpec nclsAxis = {binOpt.nClBins, "Number of clusters axis"};
     const AxisSpec tanLambdaAxis{binOpt.tanLambdaBins, "tan(#lambda)"};
     const AxisSpec invQPtAxis{binOpt.invQPtBins, "q/p_{T} (1/GeV)"};
-    const AxisSpec genEvtTypeAxis = {static_cast<int>(GenTrkType::nGenTrkType), -0.5, +static_cast<int>(GenTrkType::nGenTrkType) - 0.5, "", "Gen-Trk Type axis"};
-    const AxisSpec recEvtTypeAxis = {static_cast<int>(RecTrkType::nRecTrkType), -0.5, +static_cast<int>(RecTrkType::nRecTrkType) - 0.5, "", "Rec-Trk Type axis"};
+    const AxisSpec recTrkTypeAxis = {static_cast<int>(McRecTrkType::nMcRecTrkStatus), -0.5, +static_cast<int>(McRecTrkType::nMcRecTrkStatus) - 0.5, "", "MC Rec-Trk Type axis"};
+    const AxisSpec genTrkTypeAxis = {static_cast<int>(McGenTrkType::nGenTrkType), -0.5, +static_cast<int>(McGenTrkType::nGenTrkType) - 0.5, "", "MC Gen-Trk Type axis"};
     const AxisSpec genEvtIdxTypeAxis = {static_cast<int>(GenIdxTrkType::nGenIdxTrkType), -0.5, +static_cast<int>(GenIdxTrkType::nGenIdxTrkType) - 0.5, "", "Gen-idx-Trk Type axis"};
     const AxisSpec recEvtIdxTypeAxis = {static_cast<int>(RecIdxTrkType::nRecIdxTrkType), -0.5, +static_cast<int>(RecIdxTrkType::nRecIdxTrkType) - 0.5, "", "Rec-idx-Trk Type axis"};
+    const AxisSpec genEvtIdxLightTypeAxis = {static_cast<int>(GenIdxTrkLightType::nGenIdxTrkType), -0.5, +static_cast<int>(GenIdxTrkLightType::nGenIdxTrkType) - 0.5, "", "Gen-idx-Trk Light Type axis"};
+    const AxisSpec recEvtIdxLightTypeAxis = {static_cast<int>(RecIdxTrkLightType::nRecIdxTrkType), -0.5, +static_cast<int>(RecIdxTrkLightType::nRecIdxTrkType) - 0.5, "", "Rec-idx-Trk Light Type axis"};
     const AxisSpec evtLossTypeAxis = {static_cast<int>(EvtLossType::nEvtLossType), -0.5, +static_cast<int>(EvtLossType::nEvtLossType) - 0.5, "", "Evt-loss Type axis"};
 
     rctChecker.init(rctCuts.cfgEvtRCTFlagCheckerLabel, rctCuts.cfgEvtRCTFlagCheckerZDCCheck, rctCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
@@ -401,8 +436,14 @@ struct DndetaMFTPbPb {
     if (static_cast<int>(doprocessMcEfficiencyIdxInlusive) + static_cast<int>(doprocessMcEfficiencyIdxBestInlusive) > 1) {
       LOGP(fatal, "Either doprocessMcEfficiencyIdxInlusive OR doprocessMcEfficiencyIdxBestInlusive should be enabled!");
     }
+    if (static_cast<int>(doprocessMcEfficiencyIdxBestInlusive) + static_cast<int>(doprocessMcEfficiencyIdxBestLightInlusive) > 1) {
+      LOGP(fatal, "Either doprocessMcEfficiencyIdxBestInlusive OR doprocessMcEfficiencyIdxBestLightInlusive should be enabled!");
+    }
     if (static_cast<int>(doprocessMcEfficiencyIdxCentFT0C) + static_cast<int>(doprocessMcEfficiencyIdxBestCentFT0C) > 1) {
       LOGP(fatal, "Either doprocessMcEfficiencyIdxCentFT0C OR doprocessMcEfficiencyIdxBestCentFT0C should be enabled!");
+    }
+    if (static_cast<int>(doprocessMcEfficiencyIdxBestCentFT0C) + static_cast<int>(doprocessMcEfficiencyIdxBestLightCentFT0C) > 1) {
+      LOGP(fatal, "Either doprocessMcEfficiencyIdxBestCentFT0C OR doprocessMcEfficiencyIdxBestLightCentFT0C should be enabled!");
     }
 
     registryQC.add("Events/hEvtSel", "Number of events; Cut; #Evt Passed Cut", {HistType::kTH1F, {{static_cast<int>(EvtSel::nEvtSel), -0.5, +static_cast<int>(EvtSel::nEvtSel) - 0.5}}});
@@ -442,6 +483,7 @@ struct DndetaMFTPbPb {
         doprocessMcEfficiencyInclusive || doprocessMcEfficiencyBestInclusive ||
         doprocessMcEfficiencyCentFT0C || doprocessMcEfficiencyBestCentFT0C ||
         doprocessMcEfficiencyIdxInlusive || doprocessMcEfficiencyIdxCentFT0C ||
+        doprocessMcEfficiencyIdxBestLightInlusive || doprocessMcEfficiencyIdxBestLightCentFT0C ||
         doprocessDataCorrelationwBestTracksInclusive || doprocessMcReassocDCA) {
       registryQC.add("Tracks/hTrkSel", "Number of tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{static_cast<int>(TrkSel::nTrkSel), -0.5, +static_cast<int>(TrkSel::nTrkSel) - 0.5}}});
       std::array<std::string_view, static_cast<int>(TrkSel::nTrkSel)> labelTrkSel{
@@ -449,6 +491,7 @@ struct DndetaMFTPbPb {
         "Ncls",
         "Chi2",
         "Eta",
+        "Phi",
         "Phi cut",
         "Pt",
         "CA"};
@@ -462,6 +505,7 @@ struct DndetaMFTPbPb {
         doprocessMcBestInclusive || doprocessMcBestCentFT0C ||
         doprocessMcEfficiencyBestInclusive || doprocessMcEfficiencyBestCentFT0C ||
         doprocessMcEfficiencyIdxBestInlusive || doprocessMcEfficiencyIdxBestCentFT0C ||
+        doprocessMcEfficiencyIdxBestLightInlusive || doprocessMcEfficiencyIdxBestLightCentFT0C ||
         doprocessDataCorrelationwBestTracksInclusive) {
       registryQC.add("Tracks/hBestTrkSel", "Number of best tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{static_cast<int>(TrkBestSel::nTrkBestSel), -0.5, +static_cast<int>(TrkBestSel::nTrkBestSel) - 0.5}}});
       std::array<std::string_view, static_cast<int>(TrkBestSel::nTrkBestSel)> labelTrkTrkBestSel{
@@ -477,60 +521,60 @@ struct DndetaMFTPbPb {
       }
     }
     if (doprocessDataInclusive || doprocessDatawBestTracksInclusive) {
-      registryData.add({"Events/hInteractionRate", "; IR (kHz); occupancy", {HistType::kTH2F, {irAxis, occupancyAxis}}});
+      if (gConf.useIRFromCCDB) {
+        registryData.add({"Events/hInteractionRate", "; IR (kHz); occupancy", {HistType::kTH2F, {irAxis, occupancyAxis}}});
+      }
       registryData.add("Events/DataEvtStatus", "Number of events; Cut; occupancy", {HistType::kTH2F, {{static_cast<int>(DataEvtStatus::nDataEvtStatus), -0.5, +static_cast<int>(DataEvtStatus::nDataEvtStatus) - 0.5}, occupancyAxis}});
       std::array<std::string_view, static_cast<int>(DataEvtStatus::nDataEvtStatus)> labelDataEvtStatus{
         "Data all",
         "Data sel",
-        "Data sel gt0",
         "Data rejected"};
       for (int iBin = 0; iBin < static_cast<int>(DataEvtStatus::nDataEvtStatus); iBin++) {
         registryData.get<TH2>(HIST("Events/DataEvtStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelDataEvtStatus[iBin].data());
       }
-      registryData.add({"Tracks/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
-      registryData.add({"Tracks/EtaZvtxGt0", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
+      registryData.add({"Tracks/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, dcaxyAxis, dcazAxis, occupancyAxis}}});
       registryData.add({"Tracks/PhiEta", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
-      registryData.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Chi2Eta", "; #chi^{2}; #eta; occupancy", {HistType::kTHnSparseF, {chiSqAxis, etaAxis, occupancyAxis}}});
-      registryData.add({"Tracks/NclustersEta", "; nClusters; #eta; occupancy", {HistType::kTHnSparseF, {nclsAxis, etaAxis, occupancyAxis}}});
-      registryData.add({"Tracks/TanLambda", "; TanLambda; occupancy", {HistType::kTH2F, {tanLambdaAxis, occupancyAxis}}});
-      registryData.add({"Tracks/InvQPt", "; InvQPt; occupancy", {HistType::kTH2F, {invQPtAxis, occupancyAxis}}});
-
+      if (gConf.fillTrackQaHist) {
+        registryData.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
+        registryData.add({"Tracks/Chi2Eta", "; #chi^{2}; #eta; occupancy", {HistType::kTH2F, {chiSqAxis, occupancyAxis}}});
+        registryData.add({"Tracks/NclustersEta", "; nClusters; #eta; occupancy", {HistType::kTH2F, {nclsAxis, occupancyAxis}}});
+      }
       if (doprocessDatawBestTracksInclusive) {
-        registryData.add({"Tracks/DCA3d", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, occupancyAxis}}});
-        registryData.add({"Tracks/ReTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
-        registryData.add({"Tracks/ReTracksPhiEta", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
-        registryData.add({"Tracks/TrackAmbDegree", "; N_{coll}^{comp}; occupancy", {HistType::kTH2F, {{51, -0.5, 50.5}, occupancyAxis}}});
+        if (gConf.fillTrackQaHist) {
+          registryData.add({"Tracks/ReTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
+          registryData.add({"Tracks/ReTracksPhiEta", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
+          registryData.add({"Tracks/TrackAmbDegree", "; N_{coll}^{comp}; occupancy", {HistType::kTH2F, {{51, -0.5, 50.5}, occupancyAxis}}});
+        }
       }
       LOG(info) << "doprocessData[BestTrack]Inclusive -> Size of the Data histograms:";
       registryData.print();
     }
     if (doprocessDataCentFT0C || doprocessDatawBestTracksCentFT0C) {
-      registryData.add({"Events/Centrality/hInteractionRate", "; IR (kHz); centrality; occupancy", {HistType::kTHnSparseF, {irAxis, centralityAxis, occupancyAxis}}});
+      if (gConf.useIRFromCCDB) {
+        registryData.add({"Events/Centrality/hInteractionRate", "; IR (kHz); centrality; occupancy", {HistType::kTHnSparseF, {irAxis, centralityAxis, occupancyAxis}}});
+      }
       registryData.add("Events/Centrality/DataEvtStatus", "Number of events; Cut; centrality; occupancy", {HistType::kTHnSparseF, {{static_cast<int>(DataEvtStatus::nDataEvtStatus), -0.5, +static_cast<int>(DataEvtStatus::nDataEvtStatus) - 0.5}, centralityAxis, occupancyAxis}});
       std::array<std::string_view, static_cast<int>(DataEvtStatus::nDataEvtStatus)> labelDataEvtStatusCent{
         "Data all",
         "Data sel",
-        "Data sel gt0",
         "Data rejected"};
       for (int iBin = 0; iBin < static_cast<int>(DataEvtStatus::nDataEvtStatus); iBin++) {
         registryData.get<THnSparse>(HIST("Events/Centrality/DataEvtStatus"))->GetAxis(0)->SetBinLabel(iBin + 1, labelDataEvtStatusCent[iBin].data());
       }
-      registryData.add({"Tracks/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/EtaZvtxGt0", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/PhiEta", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Events/Centrality/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/Chi2Eta", "; #chi^{2}; #eta; centrality; occupancy", {HistType::kTHnSparseF, {chiSqAxis, etaAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/NclustersEta", "; nClusters; #eta; centrality; occupancy", {HistType::kTHnSparseF, {nclsAxis, etaAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/TanLambda", "; TanLambda; centrality; occupancy", {HistType::kTHnSparseF, {tanLambdaAxis, centralityAxis, occupancyAxis}}});
-      registryData.add({"Tracks/Centrality/InvQPt", "; InvQPt; centrality; occupancy", {HistType::kTHnSparseF, {invQPtAxis, centralityAxis, occupancyAxis}}});
       registryData.add({"Events/Centrality/hZvtxCent", "; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {zAxis, centralityAxis, occupancyAxis}}});
-
+      registryData.add({"Tracks/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis}}});
+      registryData.add({"Tracks/Centrality/PhiEta", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
+      if (gConf.fillTrackQaHist) {
+        registryData.add({"Events/Centrality/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
+        registryData.add({"Tracks/Centrality/Chi2Eta", "; #chi^{2}; centrality; occupancy", {HistType::kTHnSparseF, {chiSqAxis, centralityAxis, occupancyAxis}}});
+        registryData.add({"Tracks/Centrality/NclustersEta", "; nClusters; #eta; centrality; occupancy", {HistType::kTHnSparseF, {nclsAxis, centralityAxis, occupancyAxis}}});
+      }
       if (doprocessDatawBestTracksCentFT0C) {
-        registryData.add({"Tracks/Centrality/DCA3d", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis}}});
-        registryData.add({"Tracks/Centrality/ReTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
-        registryData.add({"Tracks/Centrality/ReTracksPhiEta", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
-        registryData.add({"Tracks/Centrality/TrackAmbDegree", "; N_{coll}^{comp}; centrality; occupancy", {HistType::kTHnSparseF, {{51, -0.5, 50.5}, centralityAxis, occupancyAxis}}});
+        if (gConf.fillTrackQaHist) {
+          registryData.add({"Tracks/Centrality/ReTracksEtaZvtx", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
+          registryData.add({"Tracks/Centrality/ReTracksPhiEta", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
+          registryData.add({"Tracks/Centrality/TrackAmbDegree", "; N_{coll}^{comp}; centrality; occupancy", {HistType::kTHnSparseF, {{51, -0.5, 50.5}, centralityAxis, occupancyAxis}}});
+        }
       }
       LOG(info) << "doprocessData[BestTrack]CentFT0C -> Size of the Data histograms:";
       registryData.print();
@@ -562,26 +606,37 @@ struct DndetaMFTPbPb {
           "Best sel",
           "Trk sel",
           "Has coll",
-          "Reas rm"};
+          "Reas rm",
+          "Fake"};
         for (int iBin = 0; iBin < static_cast<int>(McTrackStatus::nMcTrackStatus); iBin++) {
           registryMC.get<TH2>(HIST("Tracks/hMcTrackStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelMcTrackStatus[iBin].data());
         }
-        registryMC.add({"Tracks/DCA3d", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, occupancyAxis}}});
-        registryMC.add({"Tracks/TrackAmbDegree", "; N_{coll}^{comp}; occupancy", {HistType::kTH2F, {{51, -0.5, 50.5}, occupancyAxis}}});
+        if (gConf.fillTrackQaHist) {
+          registryMC.add({"Tracks/TrackAmbDegree", "; N_{coll}^{comp}; occupancy", {HistType::kTH2F, {{51, -0.5, 50.5}, occupancyAxis}}});
+        }
       }
-      registryMC.add({"Tracks/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/EtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
+      if (gConf.fillTrackQaHist) {
+        registryMC.add({"Tracks/NclustersEta", "; nClusters; #eta; occupancy", {HistType::kTHnSparseF, {nclsAxis, etaAxis, occupancyAxis}}});
+        registryMC.add({"Events/NtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
+        registryMC.add({"Events/NtrkZvtxGenRecEvt", "; N_{trk}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
+        registryMC.add({"Events/NtrkZvtxRec", "; N_{trk}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
+        registryMC.add({"Events/NotFoundEventZvtx", "; #it{z}_{vtx} (cm); occupancy", {HistType::kTH2F, {zAxis, occupancyAxis}}});
+        registryMC.add({"Events/ZvtxDiff", "; Z_{rec} - Z_{gen} (cm); occupancy", {HistType::kTH2F, {deltaZAxis, occupancyAxis}}});
+        registryMC.add({"Events/NgenZvtxSplit", "; N_{gen}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
+        registryMC.add({"Events/NgenZvtxNoSplit", "; N_{gen}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
+      }
+      if (doprocessMcBestInclusive) {
+        registryMC.add({"Tracks/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); recTrkTypeAxis; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, dcaxyAxis, dcazAxis, recTrkTypeAxis, occupancyAxis}}});
+      } else {
+        registryMC.add({"Tracks/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); recTrkTypeAxis; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, recTrkTypeAxis, occupancyAxis}}});
+      }
       registryMC.add({"Tracks/EtaZvtxGen_t", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/EtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/EtaZvtxGenRecEvt", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
       registryMC.add({"Tracks/PhiEta", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/PhiEtaGen", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
       registryMC.add({"Tracks/PhiEtaGen_t", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
-      registryMC.add({"Events/NtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
-      registryMC.add({"Events/NtrkZvtxGen", "; N_{trk}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/NclustersEta", "; nClusters; #eta; occupancy", {HistType::kTHnSparseF, {nclsAxis, etaAxis, occupancyAxis}}});
-      registryMC.add({"Events/NotFoundEventZvtx", "; #it{z}_{vtx} (cm); occupancy", {HistType::kTH2F, {zAxis, occupancyAxis}}});
-      registryMC.add({"Events/ZvtxDiff", "; Z_{rec} - Z_{gen} (cm); occupancy", {HistType::kTH2F, {deltaZAxis, occupancyAxis}}});
-      registryMC.add({"Events/NgenZvtxSplit", "; N_{gen}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
-      registryMC.add({"Events/NgenZvtxNoSplit", "; N_{gen}; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/PhiEtaGen", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/PhiEtaGenRecEvt", "; #varphi; #eta; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
       LOG(info) << "doprocessMc[Best]Inclusive -> Size of the MC histograms:";
       registryMC.print();
     }
@@ -603,26 +658,37 @@ struct DndetaMFTPbPb {
           "Best sel",
           "Trk sel",
           "Has coll",
-          "Reas rm"};
+          "Reas rm",
+          "Fake"};
         for (int iBin = 0; iBin < static_cast<int>(McTrackStatus::nMcTrackStatus); iBin++) {
           registryMC.get<THnSparse>(HIST("Tracks/Centrality/hMcTrackStatus"))->GetAxis(0)->SetBinLabel(iBin + 1, labelMcEvtStatusCentBest[iBin].data());
         }
-        registryMC.add({"Tracks/Centrality/DCA3d", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, centralityAxis, occupancyAxis}}});
-        registryMC.add({"Tracks/Centrality/TrackAmbDegree", "; N_{coll}^{comp}; centrality; occupancy", {HistType::kTHnSparseF, {{51, -0.5, 50.5}, centralityAxis, occupancyAxis}}});
+        if (gConf.fillTrackQaHist) {
+          registryMC.add({"Tracks/Centrality/TrackAmbDegree", "; N_{coll}^{comp}; centrality; occupancy", {HistType::kTHnSparseF, {{51, -0.5, 50.5}, centralityAxis, occupancyAxis}}});
+        }
       }
-      registryMC.add({"Tracks/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/Centrality/EtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
+      if (gConf.fillTrackQaHist) {
+        registryMC.add({"Tracks/Centrality/NclustersEta", "; nClusters; #eta; centrality; occupancy", {HistType::kTHnSparseF, {nclsAxis, etaAxis, centralityAxis, occupancyAxis}}});
+        registryMC.add({"Events/Centrality/NtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
+        registryMC.add({"Events/Centrality/NtrkZvtxGenRecEvt", "; N_{trk}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
+        registryMC.add({"Events/Centrality/NtrkZvtxRec", "; N_{trk}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
+        registryMC.add({"Events/Centrality/NotFoundEventZvtx", "; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {zAxis, centralityAxis, occupancyAxis}}});
+        registryMC.add({"Events/Centrality/ZvtxDiff", "; Z_{rec} - Z_{gen} (cm); centrality; occupancy", {HistType::kTHnSparseF, {deltaZAxis, centralityAxis, occupancyAxis}}});
+        registryMC.add({"Events/Centrality/NgenZvtxSplit", "; N_{gen}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
+        registryMC.add({"Events/Centrality/NgenZvtxNoSplit", "; N_{gen}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
+      }
+      if (doprocessMcBestCentFT0C) {
+        registryMC.add({"Tracks/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); recTrkTypeAxis; centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, dcaxyAxis, dcazAxis, recTrkTypeAxis, centralityAxis, occupancyAxis}}});
+      } else {
+        registryMC.add({"Tracks/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); recTrkTypeAxis; centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, recTrkTypeAxis, centralityAxis, occupancyAxis}}});
+      }
       registryMC.add({"Tracks/Centrality/EtaZvtxGen_t", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/Centrality/EtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/Centrality/EtaZvtxGenRecEvt", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
       registryMC.add({"Tracks/Centrality/PhiEta", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/Centrality/PhiEtaGen", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
       registryMC.add({"Tracks/Centrality/PhiEtaGen_t", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Events/Centrality/NtrkZvtxGen_t", "; N_{trk}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Events/Centrality/NtrkZvtxGen", "; N_{trk}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/Centrality/NclustersEta", "; nClusters; #eta; centrality; occupancy", {HistType::kTHnSparseF, {nclsAxis, etaAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Events/Centrality/NotFoundEventZvtx", "; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {zAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Events/Centrality/ZvtxDiff", "; Z_{rec} - Z_{gen} (cm); centrality; occupancy", {HistType::kTHnSparseF, {deltaZAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Events/Centrality/NgenZvtxSplit", "; N_{gen}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Events/Centrality/NgenZvtxNoSplit", "; N_{gen}; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {multAxis, zAxis, centralityAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/Centrality/PhiEtaGen", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/Centrality/PhiEtaGenRecEvt", "; #varphi; #eta; centrality; occupancy", {HistType::kTHnSparseF, {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
       registryMC.add({"Events/Centrality/hRecZvtxCent", "; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {zAxis, centralityAxis, occupancyAxis}}});
       LOG(info) << "doprocessMc[Best]CentFT0C -> Size of the MC histograms:";
       registryMC.print();
@@ -637,10 +703,14 @@ struct DndetaMFTPbPb {
       for (int iBin = 0; iBin < static_cast<int>(McEffStatus::nMcEfftStatus); iBin++) {
         registryMC.get<TH2>(HIST("Events/hMcEffStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelMcEffStatus[iBin].data());
       }
-      registryMC.add({"Events/hVtxZGen", "; #it{z}_{vtx} (cm); genEvtType; occupancy", {HistType::kTHnSparseF, {zAxis, genEvtTypeAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/hEffGen", "; p_{T} (GeV/c); #eta; #it{z}_{vtx} (cm); genEvtType; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, genEvtTypeAxis, occupancyAxis}}});
+      if (doprocessMcEfficiencyBestInclusive) {
+        registryMC.add({"Tracks/hEffRec", ";#eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); recTrkTypeAxis; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, dcaxyAxis, dcazAxis, recTrkTypeAxis, occupancyAxis}}});
+      } else {
+        registryMC.add({"Tracks/hEffRec", ";#eta; #it{z}_{vtx} (cm); recTrkTypeAxis; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, recTrkTypeAxis, occupancyAxis}}});
+      }
+      registryMC.add({"Events/hVtxZGen", ";#it{z}_{vtx} (cm); genEvtType; occupancy", {HistType::kTHnSparseF, {zAxis, genTrkTypeAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/hEffGen", ";#eta; #it{z}_{vtx} (cm); genEvtType; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, genTrkTypeAxis, occupancyAxis}}});
       registryMC.add({"Events/hVtxZRec", "#it{z}_{vtx} (cm); occupancy", {HistType::kTH2F, {zAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/hEffRec", "; p_{T} (GeV/c); #eta; #it{z}_{vtx} (cm); recEvtType; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, recEvtTypeAxis, occupancyAxis}}});
       registryMC.add({"Tracks/hEtaRes", "#eta resolution;;(#eta_{rec} - #eta_{gen})/#eta_{gen}; occupancy", {HistType::kTHnSparseF, {etaAxis, {100, -1.0, 1.0}, occupancyAxis}}});
       LOG(info) << "doprocessMcEfficiency[Best]Inclusive -> Size of the MC histograms:";
       registryMC.print();
@@ -655,26 +725,44 @@ struct DndetaMFTPbPb {
       for (int iBin = 0; iBin < static_cast<int>(McEffStatus::nMcEfftStatus); iBin++) {
         registryMC.get<THnSparse>(HIST("Events/Centrality/hMcEffStatus"))->GetAxis(0)->SetBinLabel(iBin + 1, labelMcEffStatusCent[iBin].data());
       }
-      registryMC.add({"Events/Centrality/hVtxZGen", "; #it{z}_{vtx} (cm); genEvtType; centrality; occupancy", {HistType::kTHnSparseF, {zAxis, genEvtTypeAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/Centrality/hEffGen", "; p_{T} (GeV/c); #eta; #it{z}_{vtx} (cm); genEvtType; centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, genEvtTypeAxis, centralityAxis, occupancyAxis}}});
+      if (doprocessMcEfficiencyBestCentFT0C) {
+        registryMC.add({"Tracks/Centrality/hEffRec", ";#eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); recTrkTypeAxis; centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, dcaxyAxis, dcazAxis, recTrkTypeAxis, centralityAxis, occupancyAxis}}});
+      } else {
+        registryMC.add({"Tracks/Centrality/hEffRec", ";#eta; #it{z}_{vtx} (cm); recTrkTypeAxis; centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, recTrkTypeAxis, centralityAxis, occupancyAxis}}});
+      }
+      registryMC.add({"Events/Centrality/hVtxZGen", ";#it{z}_{vtx} (cm); genEvtType; centrality; occupancy", {HistType::kTHnSparseF, {zAxis, genTrkTypeAxis, centralityAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/Centrality/hEffGen", ";#eta; #it{z}_{vtx} (cm); genEvtType; centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, genTrkTypeAxis, centralityAxis, occupancyAxis}}});
       registryMC.add({"Events/Centrality/hVtxZRec", "#it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {zAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/Centrality/hEffRec", "; p_{T} (GeV/c); #eta; #it{z}_{vtx} (cm); recEvtType; centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, recEvtTypeAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/Centrality/hEffRecClosure", "; p_{T} (GeV/c); #eta; #it{z}_{vtx} (cm); recEvtType; centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, recEvtTypeAxis, centralityAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/Centrality/hEffRecClosure", ";#eta; #it{z}_{vtx} (cm); recTrkTypeAxis; centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, recTrkTypeAxis, centralityAxis, occupancyAxis}}});
       LOG(info) << "doprocessMcEfficiency[Best]CentFT0C -> Size of the MC histograms:";
       registryMC.print();
     }
     if (doprocessMcEfficiencyIdxInlusive || doprocessMcEfficiencyIdxBestInlusive) {
-      registryMC.add({"Tracks/hEffIdxGen", "; p_{T} (GeV/c); #eta; recEvtIdxType; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, genEvtIdxTypeAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/hEffIdxRec", "; p_{T} (GeV/c); #eta; genEvtIdxType; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, recEvtIdxTypeAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/hEffIdxGen", "; p_{T} (GeV/c); #eta; genEvtIdxType; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, genEvtIdxTypeAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/hEffIdxRec", "; p_{T} (GeV/c); #eta; recEvtIdxType; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, recEvtIdxTypeAxis, occupancyAxis}}});
       registryMC.add({"Tracks/NmftTrkPerPart", "; #it{N}_{mft tracks per particle}; occupancy", {HistType::kTH2F, {{10, 0.5, 10.5}, occupancyAxis}}});
       LOG(info) << "doprocessMcEfficiencyIdx[Best]Inlusive -> Size of the MC histograms:";
       registryMC.print();
     }
     if (doprocessMcEfficiencyIdxCentFT0C || doprocessMcEfficiencyIdxBestCentFT0C) {
-      registryMC.add({"Tracks/Centrality/hEffIdxGen", "; p_{T} (GeV/c); #eta; recEvtIdxType; centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, genEvtIdxTypeAxis, centralityAxis, occupancyAxis}}});
-      registryMC.add({"Tracks/Centrality/hEffIdxRec", "; p_{T} (GeV/c); #eta; genEvtIdxType; centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, recEvtIdxTypeAxis, centralityAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/Centrality/hEffIdxGen", "; p_{T} (GeV/c); #eta; genEvtIdxType; centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, genEvtIdxTypeAxis, centralityAxis, occupancyAxis}}});
+      registryMC.add({"Tracks/Centrality/hEffIdxRec", "; p_{T} (GeV/c); #eta; recEvtIdxType; centrality; occupancy", {HistType::kTHnSparseF, {ptAxis, etaAxis, recEvtIdxTypeAxis, centralityAxis, occupancyAxis}}});
       registryMC.add({"Tracks/Centrality/NmftTrkPerPart", "; #it{N}_{mft tracks per particle}; centrality; occupancy", {HistType::kTHnSparseF, {{10, 0.5, 10.5}, centralityAxis, occupancyAxis}}});
       LOG(info) << "doprocessMcEfficiencyIdx[Best]CentFT0C -> Size of the MC histograms:";
+      registryMC.print();
+    }
+    if (doprocessMcEfficiencyIdxBestLightInlusive) {
+      registryMC.add({"Tracks/hEffIdxGen", "; p_{T} (GeV/c); #eta; genEvtIdxLightTypeAxis", {HistType::kTHnSparseF, {ptAxis, etaAxis, genEvtIdxLightTypeAxis}}});
+      registryMC.add({"Tracks/hEffIdxRec", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); recEvtIdxLightTypeAxis", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, recEvtIdxLightTypeAxis}}});
+      registryMC.add({"Tracks/NmftTrkPerPart", "; #it{N}_{mft tracks per particle}", {HistType::kTH1F, {{10, 0.5, 10.5}}}});
+      LOG(info) << "doprocessMcEfficiencyIdx[Best]LightInlusive -> Size of the MC histograms:";
+      registryMC.print();
+    }
+    if (doprocessMcEfficiencyIdxBestLightCentFT0C) {
+      registryMC.add({"Tracks/Centrality/hEffIdxGen", "; p_{T} (GeV/c); #eta; genEvtIdxLightTypeAxis; centrality", {HistType::kTHnSparseF, {ptAxis, etaAxis, genEvtIdxLightTypeAxis, centralityAxis}}});
+      registryMC.add({"Tracks/Centrality/hEffIdxRec", "; p_{T} (GeV/c); #eta; DCA_{XY} (cm); DCA_{Z} (cm); recEvtIdxLightTypeAxis; centrality", {HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, recEvtIdxLightTypeAxis, centralityAxis}}});
+      registryMC.add({"Tracks/Centrality/NmftTrkPerPart", "; #it{N}_{mft tracks per particle}; centrality", {HistType::kTH1F, {{10, 0.5, 10.5}}}});
+      LOG(info) << "doprocessMcEfficiencyIdx[Best]LightCentFT0C -> Size of the MC histograms:";
       registryMC.print();
     }
     if (doprocessMcSgnEvtLossCentFT0C) {
@@ -693,16 +781,14 @@ struct DndetaMFTPbPb {
       hstat->GetXaxis()->SetBinLabel(1, "All MC gen events");
       hstat->GetXaxis()->SetBinLabel(2, "MC gen events with rec event with event selection");
       hstat->GetXaxis()->SetBinLabel(3, "MC gen events with no rec events");
-      registryMC.add({"Events/hNchGen", "Evt loss; Gen Nch FT0C; evtLossType", {HistType::kTH2F, {multFT0cAxis, evtLossTypeAxis}}});
-      registryMC.add({"Events/hMultGenVsCentSplit", "Split MC events: Gen Nch vs Rec Cent; rec cent; Gen Nch ", {HistType::kTH2F, {centralityAxis, multFT0cAxis}}});
-      registryMC.add({"Events/hMultGenVsCent", "event mult MC gen", {HistType::kTH2F, {centralityAxis, multFT0cAxis}}});
-      registryMC.add({"Events/hMultGenVsCentNParticlesEta05", "event mult MC gen", {HistType::kTH2F, {centralityAxis, multAxis}}});
-      registryMC.add({"Events/hMultGenVsCentNParticlesEtaMFT", "event mult MC gen", {HistType::kTH2F, {centralityAxis, multAxis}}});
-      registryMC.add({"Events/hMultGenVsCentRec", "event mult MC gen vs centrality", {HistType::kTH2F, {centralityAxis, multFT0cAxis}}});
-      registryMC.add({"Events/hMultGenVsCentRecNParticlesEta05", "event mult MC gen vs centrality", {HistType::kTH2F, {centralityAxis, multAxis}}});
-      registryMC.add({"Events/hMultGenVsCentRecNParticlesEtaMFT", "event mult MC gen vs centrality", {HistType::kTH2F, {centralityAxis, multAxis}}});
-      registryMC.add({"Tracks/hEtaVsNchGen", "; #eta; mult gen", {HistType::kTH2F, {etaAxis, multFT0cAxis}}});
-      registryMC.add({"Tracks/hEtaVsNchGenRecEvt", "; #eta; mult gen w/ Rec evt", {HistType::kTH2F, {etaAxis, multFT0cAxis}}});
+      registryMC.add({"Events/hNchGen", "Evt loss; Gen Nch FT0C; evtLossType", {HistType::kTH2F, {multAxis, evtLossTypeAxis}}});
+      registryMC.add({"Events/hMultGenVsCentSplit", "Split MC events: Gen Nch vs Rec Cent; rec cent; Gen Nch ", {HistType::kTH2F, {centralityAxis, multAxis}}});
+      registryMC.add({"Events/hMultGenVsCent", "Gen Nch vs rec cent.; Gen Nch; Gen Nch; cent rec.", {HistType::kTHnSparseF, {multAxis, multAxis, centralityAxis}}});
+      registryMC.add({"Events/hMultGenVsCentMFTacc", "Gen Nch (MFT acc) vs rec cent.; Gen Nch (MFT acc); cent rec.", {HistType::kTH2F, {multAxis, centralityAxis}}});
+      registryMC.add({"Events/hMultGenVsCentRecEvt", "Gen Nch w/ Nrec > 0 vs rec cent.; Gen Nch; Gen Nch; cent rec.", {HistType::kTHnSparseF, {multAxis, multAxis, centralityAxis}}});
+      registryMC.add({"Events/hMultGenVsCentRecEvtMFTacc", "Gen Nch (MFT acc) w/ Nrec > 0 vs rec cent.; Gen Nch (MFT acc); cent rec.", {HistType::kTH2F, {multAxis, centralityAxis}}});
+      registryMC.add({"Tracks/hNchGenVsEta", "Gen Nch vs #eta; Gen Nch; #eta", {HistType::kTH2F, {multAxis, etaAxis}}});
+      registryMC.add({"Tracks/hNchGenVsEtaRecEvt", "Gen Nch w/ Nrec > 0 vs #eta; Gen Nch; #eta", {HistType::kTH2F, {multAxis, etaAxis}}});
       LOG(info) << "doprocessMcSgnEvtLossCentFT0C -> Size of the MC histograms:";
       registryMC.print();
     }
@@ -712,12 +798,10 @@ struct DndetaMFTPbPb {
       heff->GetAxis(0)->SetBinLabel(1, "All reconstructed");
       heff->GetAxis(0)->SetBinLabel(2, "Selected reconstructed");
       heff->GetAxis(0)->SetBinLabel(3, "Remove split vertices");
-
       registryMC.add("Events/hCentBest", "; centrality", HistType::kTH1F, {centralityAxis});
       registryMC.add("Events/hGenMult", "Sel rec evt. vs generated mult; mult", HistType::kTH1F, {multAxis});
       registryMC.add("Events/hCentRecVsGenMult", "Rec cent vs gen mid-rapidity multiplicity; centrality; mult", HistType::kTH2F, {centralityAxis, multAxis});
       registryMC.add("Events/hCentRecFromGenMult", "Centrality from generated mult", HistType::kTH1F, {centralityAxis});
-
       registryMC.add({"Tracks/Centrality/THnDCAxyBestRec", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis, centralityAxis}}});
       registryMC.add({"Tracks/Centrality/THnDCAxyBestRecFake", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis, centralityAxis}}});
       registryMC.add({"Tracks/Centrality/THnDCAxyBestGenPrim", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis, centralityAxis}}});
@@ -757,8 +841,6 @@ struct DndetaMFTPbPb {
     }
   }
 
-  /// Filters - particles
-  Filter primaries = ifnode(nsqrt(aod::mcparticle::vx * aod::mcparticle::vx + aod::mcparticle::vy * aod::mcparticle::vy) > CfloatFive, false, ncheckbit(aod::mcparticle_v2::storedFlags, (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary));
   /// Joined tables
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   using CollBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -771,13 +853,58 @@ struct DndetaMFTPbPb {
   using CollsCorr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
   using CollsMCExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
   using CollsMCExtraMult = soa::Join<aod::McCollisions, aod::MultMCExtras, aod::McCollsExtra>;
-
   /// Tracks
   using MftTracksLabeled = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
   using MftBestTracksLabeled = soa::Join<aod::MFTTracks, aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>;
   /// Particles
   using ParticlesIdx = soa::Join<aod::McParticles, aod::ParticlesToMftTracks>;
-  using FiltParticlesIdx = soa::Filtered<ParticlesIdx>;
+
+  template <typename C, bool isMC = false>
+  float getMult(C const& collision)
+  {
+    float val = CInvalid;
+    switch (gConf.multEstimator.value) {
+      case MultE::CnoMult:
+        return val;
+      case MultE::CmultFT0C:
+        if constexpr (!isMC) {
+          return collision.centFT0C();
+        } else {
+          return collision.multMCFT0C();
+        }
+        break;
+      case MultE::CmultFT0M:
+        if constexpr (!isMC) {
+          return collision.centFT0M();
+        } else {
+          return collision.multMCFT0C() + collision.multMCFT0A();
+        }
+        break;
+      case MultE::CmultTPC:
+        if constexpr (!isMC) {
+          return collision.multTPC();
+        } else {
+          return collision.multMCNParticlesEta08();
+        }
+        break;
+      case MultE::CmultMFT:
+        if constexpr (!isMC) {
+          return collision.centMFT();
+        } else {
+          return CInvalid;
+          // return collision.multMCMFT(); // FIXME: uncomment when MC MFT mult is in available mcCentralityModule.cxx or in aod::MultMCExtras
+        }
+        break;
+      default:
+        LOGF(fatal, "No valid multiplicity estimator: %s", gConf.multEstimator.value);
+        return val;
+    }
+  }
+
+  float getMultMC(CollsMCExtraMult::iterator const& collision)
+  {
+    return getMult<CollsMCExtraMult::iterator, true>(collision);
+  }
 
   template <typename T>
   float getDCAz(const T& track)
@@ -977,8 +1104,15 @@ struct DndetaMFTPbPb {
     if constexpr (fillHis) {
       registryQC.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelEta));
     }
+    float phi = track.phi();
+    o2::math_utils::bringTo02Pi(phi);
+    if (phi < trackCuts.minPhi || trackCuts.maxPhi < phi) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registryQC.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelPhi));
+    }
     if (trackCuts.usephiCut) {
-      float phi = track.phi();
       if ((phi < trackCuts.phiCut) ||
           ((phi > PI - trackCuts.phiCut) && (phi < PI + trackCuts.phiCut)) ||
           (phi > TwoPI - trackCuts.phiCut) ||
@@ -1005,34 +1139,30 @@ struct DndetaMFTPbPb {
     return true;
   }
 
-  template <typename C, bool fillHis = false, typename T>
+  template <typename C, typename T>
   int countTracks(T const& tracks, float z, float c, float occ)
   {
     auto nTrk = 0;
     for (auto const& track : tracks) {
-      if (fillHis) {
-        if constexpr (has_reco_cent<C>) {
-          registryData.fill(HIST("Tracks/Centrality/Chi2Eta"), track.chi2(), track.eta(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/NclustersEta"), track.nClusters(), track.eta(), c, occ);
-        } else {
-          registryData.fill(HIST("Tracks/Chi2Eta"), track.chi2(), track.eta(), occ);
-          registryData.fill(HIST("Tracks/NclustersEta"), track.nClusters(), track.eta(), occ);
-        }
-      }
       if (!isTrackSelected(track)) {
         continue;
       }
-      if (fillHis) {
+      float phi = track.phi();
+      o2::math_utils::bringTo02Pi(phi);
+      if constexpr (has_reco_cent<C>) {
+        registryData.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c, occ);
+        registryData.fill(HIST("Tracks/Centrality/PhiEta"), phi, track.eta(), c, occ);
+      } else {
+        registryData.fill(HIST("Tracks/EtaZvtx"), track.eta(), z, occ);
+        registryData.fill(HIST("Tracks/PhiEta"), phi, track.eta(), occ);
+      }
+      if (gConf.fillTrackQaHist) {
         if constexpr (has_reco_cent<C>) {
-          registryData.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c, occ);
-          registryData.fill(HIST("Tracks/Centrality/PhiEta"), track.phi(), track.eta(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/TanLambda"), track.tgl(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/InvQPt"), track.signed1Pt(), c, occ);
+          registryData.fill(HIST("Tracks/Centrality/Chi2Eta"), track.chi2(), c, occ);
+          registryData.fill(HIST("Tracks/Centrality/NclustersEta"), track.nClusters(), c, occ);
         } else {
-          registryData.fill(HIST("Tracks/EtaZvtx"), track.eta(), z, occ);
-          registryData.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta(), occ);
-          registryData.fill(HIST("Tracks/TanLambda"), track.tgl(), occ);
-          registryData.fill(HIST("Tracks/InvQPt"), track.signed1Pt(), occ);
+          registryData.fill(HIST("Tracks/Chi2Eta"), track.chi2(), occ);
+          registryData.fill(HIST("Tracks/NclustersEta"), track.nClusters(), occ);
         }
       }
       ++nTrk;
@@ -1040,7 +1170,7 @@ struct DndetaMFTPbPb {
     return nTrk;
   }
 
-  template <typename C, bool fillHis = false, typename T, typename B>
+  template <typename C, typename T, typename B>
   int countBestTracks(T const& /*tracks*/, B const& besttracks, float z, float c, float occ)
   {
     auto nATrk = 0;
@@ -1050,46 +1180,40 @@ struct DndetaMFTPbPb {
       }
       const float bestDcaZ = getDCAz(atrack);
       auto itrack = atrack.template mfttrack_as<T>();
-      if constexpr (has_reco_cent<C>) {
-        registryData.fill(HIST("Tracks/Centrality/Chi2Eta"), itrack.chi2(), itrack.eta(), c, occ);
-        registryData.fill(HIST("Tracks/Centrality/NclustersEta"), itrack.nClusters(), itrack.eta(), c, occ);
-      } else {
-        registryData.fill(HIST("Tracks/Chi2Eta"), itrack.chi2(), itrack.eta(), occ);
-        registryData.fill(HIST("Tracks/NclustersEta"), itrack.nClusters(), itrack.eta(), occ);
-      }
       if (!isTrackSelected(itrack)) {
         continue;
       }
-      ++nATrk;
-      if (fillHis) {
+      float phi = itrack.phi();
+      o2::math_utils::bringTo02Pi(phi);
+      if constexpr (has_reco_cent<C>) {
+        registryData.fill(HIST("Tracks/Centrality/EtaZvtx"), itrack.eta(), z, atrack.bestDCAXY(), bestDcaZ, c, occ);
+        registryData.fill(HIST("Tracks/Centrality/PhiEta"), phi, itrack.eta(), c, occ);
+      } else {
+        registryData.fill(HIST("Tracks/EtaZvtx"), itrack.eta(), z, atrack.bestDCAXY(), bestDcaZ, occ);
+        registryData.fill(HIST("Tracks/PhiEta"), phi, itrack.eta(), occ);
+      }
+      if (gConf.fillTrackQaHist) {
         if constexpr (has_reco_cent<C>) {
-          registryData.fill(HIST("Tracks/Centrality/EtaZvtx"), itrack.eta(), z, c, occ);
-          registryData.fill(HIST("Tracks/Centrality/PhiEta"), itrack.phi(), itrack.eta(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/TanLambda"), itrack.tgl(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/InvQPt"), itrack.signed1Pt(), c, occ);
-          registryData.fill(HIST("Tracks/Centrality/DCA3d"), itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, c, occ);
+          registryData.fill(HIST("Tracks/Centrality/Chi2Eta"), itrack.chi2(), c, occ);
+          registryData.fill(HIST("Tracks/Centrality/NclustersEta"), itrack.nClusters(), c, occ);
           registryData.fill(HIST("Tracks/Centrality/TrackAmbDegree"), atrack.ambDegree(), c, occ);
         } else {
-          registryData.fill(HIST("Tracks/EtaZvtx"), itrack.eta(), z, occ);
-          registryData.fill(HIST("Tracks/PhiEta"), itrack.phi(), itrack.eta(), occ);
-          registryData.fill(HIST("Tracks/TanLambda"), itrack.tgl(), occ);
-          registryData.fill(HIST("Tracks/InvQPt"), itrack.signed1Pt(), occ);
-          registryData.fill(HIST("Tracks/DCA3d"), itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, occ);
+          registryData.fill(HIST("Tracks/Chi2Eta"), itrack.chi2(), occ);
+          registryData.fill(HIST("Tracks/NclustersEta"), itrack.nClusters(), occ);
           registryData.fill(HIST("Tracks/TrackAmbDegree"), atrack.ambDegree(), occ);
         }
-      }
-      if (itrack.has_collision() && itrack.collisionId() != atrack.bestCollisionId()) {
-        if (fillHis) {
+        if (itrack.has_collision() && itrack.collisionId() != atrack.bestCollisionId()) {
           registryQC.fill(HIST("Tracks/hBestTrkSel"), static_cast<int>(TrkBestSel::trkBestSelNumReassoc));
           if constexpr (has_reco_cent<C>) {
             registryData.fill(HIST("Tracks/Centrality/ReTracksEtaZvtx"), itrack.eta(), itrack.template collision_as<C>().posZ(), c, occ);
-            registryData.fill(HIST("Tracks/Centrality/ReTracksPhiEta"), itrack.phi(), itrack.eta(), c, occ);
+            registryData.fill(HIST("Tracks/Centrality/ReTracksPhiEta"), phi, itrack.eta(), c, occ);
           } else {
             registryData.fill(HIST("Tracks/ReTracksEtaZvtx"), itrack.eta(), itrack.template collision_as<C>().posZ(), occ);
-            registryData.fill(HIST("Tracks/ReTracksPhiEta"), itrack.phi(), itrack.eta(), occ);
+            registryData.fill(HIST("Tracks/ReTracksPhiEta"), phi, itrack.eta(), occ);
           }
         }
       }
+      ++nATrk;
     }
     return nATrk;
   }
@@ -1175,8 +1299,12 @@ struct DndetaMFTPbPb {
     if (particle.eta() < trackCuts.minEta || particle.eta() > trackCuts.maxEta) {
       return false;
     }
+    float phi = particle.phi();
+    o2::math_utils::bringTo02Pi(phi);
+    if (phi < trackCuts.minPhi || trackCuts.maxPhi < phi) {
+      return false;
+    }
     if (trackCuts.usephiCut) {
-      float phi = particle.phi();
       if ((phi < trackCuts.phiCut) ||
           ((phi > PI - trackCuts.phiCut) && (phi < PI + trackCuts.phiCut)) ||
           (phi > TwoPI - trackCuts.phiCut) ||
@@ -1186,16 +1314,6 @@ struct DndetaMFTPbPb {
       }
     }
     return true;
-  }
-
-  template <typename P>
-  bool cutInPhi(P const& particle)
-  {
-    if (!trackCuts.usephiCut) {
-      return true;
-    }
-    auto phi = particle.phi();
-    return (phi < trackCuts.phiCut) || ((phi > PI - trackCuts.phiCut) && (phi < PI + trackCuts.phiCut)) || (phi > TwoPI - trackCuts.phiCut) || ((phi > ((PIHalf - 0.1) * PI) - trackCuts.phiCut) && (phi < ((PIHalf - 0.1) * PI) + trackCuts.phiCut));
   }
 
   template <typename C>
@@ -1349,7 +1467,7 @@ struct DndetaMFTPbPb {
   }
 
   template <bool isCent, typename P>
-  void fillHistMC(P const& particles, float zvtx, float c, float occ, bool const gtZeroColl)
+  void fillHistMC(P const& particles, float zvtx, float c, float occ, bool const gtZeroColl, bool const gtOneRec)
   {
     for (auto const& particle : particles) {
       if (!isChrgParticle(particle.pdgCode())) {
@@ -1358,20 +1476,31 @@ struct DndetaMFTPbPb {
       if (gConf.useParticleSel && !isParticleSelected(particle)) {
         continue;
       }
+      float phi = particle.phi();
+      o2::math_utils::bringTo02Pi(phi);
       if constexpr (isCent) {
         registryMC.fill(HIST("Tracks/Centrality/EtaZvtxGen_t"), particle.eta(), zvtx, c, occ);
-        registryMC.fill(HIST("Tracks/Centrality/PhiEtaGen_t"), particle.phi(), particle.eta(), c, occ);
+        registryMC.fill(HIST("Tracks/Centrality/PhiEtaGen_t"), phi, particle.eta(), c, occ);
       } else {
         registryMC.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), zvtx, occ);
-        registryMC.fill(HIST("Tracks/PhiEtaGen_t"), particle.phi(), particle.eta(), occ);
+        registryMC.fill(HIST("Tracks/PhiEtaGen_t"), phi, particle.eta(), occ);
       }
       if (gtZeroColl) {
         if constexpr (isCent) {
           registryMC.fill(HIST("Tracks/Centrality/EtaZvtxGen"), particle.eta(), zvtx, c, occ);
-          registryMC.fill(HIST("Tracks/Centrality/PhiEtaGen"), particle.phi(), particle.eta(), c, occ);
+          registryMC.fill(HIST("Tracks/Centrality/PhiEtaGen"), phi, particle.eta(), c, occ);
         } else {
           registryMC.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), zvtx, occ);
-          registryMC.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta(), occ);
+          registryMC.fill(HIST("Tracks/PhiEtaGen"), phi, particle.eta(), occ);
+        }
+      }
+      if (gtOneRec) {
+        if constexpr (isCent) {
+          registryMC.fill(HIST("Tracks/Centrality/EtaZvtxGenRecEvt"), particle.eta(), zvtx, c, occ);
+          registryMC.fill(HIST("Tracks/Centrality/PhiEtaGenRecEvt"), phi, particle.eta(), c, occ);
+        } else {
+          registryMC.fill(HIST("Tracks/EtaZvtxGenRecEvt"), particle.eta(), zvtx, occ);
+          registryMC.fill(HIST("Tracks/PhiEtaGenRecEvt"), phi, particle.eta(), occ);
         }
       }
     }
@@ -1408,12 +1537,19 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processTagging, "Collect event sample stats", true);
 
+  std::vector<int> nTrkPerCol;
+  std::vector<float> centPerCol;
+  std::vector<float> occPerCol;
+
   /// @brief process function for counting tracks
   template <typename C>
   void processData(typename C::iterator const& collision,
                    aod::MFTTracks const& tracks,
                    CollBCs const& /*bcs*/)
   {
+    nTrkPerCol.clear();
+    centPerCol.clear();
+    occPerCol.clear();
     float c = getRecoCent(collision);
     float occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     auto bc = collision.template foundBC_as<CollBCs>();
@@ -1436,34 +1572,26 @@ struct DndetaMFTPbPb {
       }
       gCurrentHadronicRate->Fill(seconds, ir);
     }
-
     if (!gConf.useEvtSel || isGoodEvent<true>(collision)) {
       auto z = collision.posZ();
+      centPerCol.emplace_back(c);
+      occPerCol.emplace_back(occ);
       if constexpr (has_reco_cent<C>) {
         registryData.fill(HIST("Events/Centrality/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), c, occ);
         registryData.fill(HIST("Events/Centrality/hZvtxCent"), z, c, occ);
       } else {
         registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), occ);
       }
-
-      auto nTrk = countTracks<C, true>(tracks, z, c, occ);
-
-      if constexpr (has_reco_cent<C>) {
-        if (nTrk > 0) {
-          registryData.fill(HIST("Events/Centrality/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSelGt0), c, occ);
-          for (auto const& track : tracks) {
-            registryData.fill(HIST("Tracks/Centrality/EtaZvtxGt0"), track.eta(), z, c, occ);
+      auto nTrk = countTracks<C>(tracks, z, c, occ);
+      nTrkPerCol.emplace_back(nTrk);
+      if (gConf.fillTrackQaHist) {
+        for (auto i = 0U; i < nTrkPerCol.size(); ++i) {
+          if constexpr (has_reco_cent<C>) {
+            registryData.fill(HIST("Events/Centrality/NtrkZvtx"), nTrkPerCol[i], z, centPerCol[i], occPerCol[i]);
+          } else {
+            registryData.fill(HIST("Events/NtrkZvtx"), nTrkPerCol[i], z, occPerCol[i]);
           }
         }
-        registryData.fill(HIST("Events/Centrality/NtrkZvtx"), nTrk, z, c, occ);
-      } else {
-        if (nTrk > 0) {
-          registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSelGt0), occ);
-          for (auto const& track : tracks) {
-            registryData.fill(HIST("Tracks/EtaZvtxGt0"), track.eta(), z, occ);
-          }
-        }
-        registryData.fill(HIST("Events/NtrkZvtx"), nTrk, z, occ);
       }
     } else {
       if constexpr (has_reco_cent<C>) {
@@ -1481,6 +1609,9 @@ struct DndetaMFTPbPb {
                               soa::SmallGroups<aod::BestCollisionsFwd3d> const& besttracks,
                               CollBCs const& /*bcs*/)
   {
+    nTrkPerCol.clear();
+    centPerCol.clear();
+    occPerCol.clear();
     float c = getRecoCent(collision);
     float occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     auto bc = collision.template foundBC_as<CollBCs>();
@@ -1503,48 +1634,26 @@ struct DndetaMFTPbPb {
       }
       gCurrentHadronicRate->Fill(seconds, ir);
     }
-
     if (!gConf.useEvtSel || isGoodEvent<true>(collision)) {
       auto z = collision.posZ();
+      centPerCol.emplace_back(c);
+      occPerCol.emplace_back(occ);
       if constexpr (has_reco_cent<C>) {
         registryData.fill(HIST("Events/Centrality/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), c, occ);
         registryData.fill(HIST("Events/Centrality/hZvtxCent"), z, c, occ);
       } else {
         registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSel), occ);
       }
-
-      auto nBestTrks = countBestTracks<C, true>(tracks, besttracks, z, c, occ);
-
-      if constexpr (has_reco_cent<C>) {
-        if (nBestTrks > 0) {
-          registryData.fill(HIST("Events/Centrality/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSelGt0), c, occ);
-          for (auto const& atrack : besttracks) {
-            if (!isBestTrackSelected(atrack)) {
-              continue;
-            }
-            auto itrack = atrack.mfttrack_as<aod::MFTTracks>();
-            if (!isTrackSelected(itrack)) {
-              continue;
-            }
-            registryData.fill(HIST("Tracks/Centrality/EtaZvtxGt0"), itrack.eta(), z, c, occ);
+      auto nBestTrks = countBestTracks<C>(tracks, besttracks, z, c, occ);
+      nTrkPerCol.emplace_back(nBestTrks);
+      if (gConf.fillTrackQaHist) {
+        for (auto i = 0U; i < nTrkPerCol.size(); ++i) {
+          if constexpr (has_reco_cent<C>) {
+            registryData.fill(HIST("Events/Centrality/NtrkZvtx"), nTrkPerCol[i], z, centPerCol[i], occPerCol[i]);
+          } else {
+            registryData.fill(HIST("Events/NtrkZvtx"), nTrkPerCol[i], z, occPerCol[i]);
           }
         }
-        registryData.fill(HIST("Events/Centrality/NtrkZvtx"), nBestTrks, z, c, occ);
-      } else {
-        if (nBestTrks > 0) {
-          registryData.fill(HIST("Events/DataEvtStatus"), static_cast<float>(DataEvtStatus::kDataSelGt0), occ);
-          for (auto const& atrack : besttracks) {
-            if (!isBestTrackSelected(atrack)) {
-              continue;
-            }
-            auto itrack = atrack.mfttrack_as<aod::MFTTracks>();
-            if (!isTrackSelected(itrack)) {
-              continue;
-            }
-            registryData.fill(HIST("Tracks/EtaZvtxGt0"), itrack.eta(), z, occ);
-          }
-        }
-        registryData.fill(HIST("Events/NtrkZvtx"), nBestTrks, z, occ);
       }
     } else {
       if constexpr (has_reco_cent<C>) {
@@ -1625,19 +1734,28 @@ struct DndetaMFTPbPb {
   Partition<aod::McParticles> mcSample = (aod::mcparticle::eta < trackCuts.maxEta) && (aod::mcparticle::eta > trackCuts.minEta);
   Preslice<MftTracksLabeled> perColMcFiltTrk = o2::aod::fwdtrack::collisionId;
 
+  std::vector<int> nRecPerCol;
+  std::vector<float> centRecPerCol;
+  std::vector<float> occRecPerCol;
+
   template <typename MC, typename C>
   void processMc(typename MC::iterator const& mcCollision,
                  soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
                  aod::McParticles const& particles,
                  MftTracksLabeled const& tracks)
   {
+    nRecPerCol.clear();
+    centRecPerCol.clear();
+    occRecPerCol.clear();
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
     float occGen = -1.;
     for (const auto& collision : collisions) {
       if (!gConf.useEvtSel || isGoodEvent<false>(collision)) {
-        float o = getOccupancy(collision, eventCuts.occupancyEstimator);
-        if (o > occGen) {
-          occGen = o;
+        if (!gConf.rmSplitVertex || (collision.globalIndex() == mcCollision.bestCollisionIndex())) {
+          float o = getOccupancy(collision, eventCuts.occupancyEstimator);
+          if (o > occGen) {
+            occGen = o;
+          }
         }
       }
     }
@@ -1649,9 +1767,11 @@ struct DndetaMFTPbPb {
       float crecMin = 999.;
       for (const auto& collision : collisions) {
         if (!gConf.useEvtSel || isGoodEvent<false>(collision)) {
-          float c = getRecoCent(collision);
-          if (c < crecMin) {
-            crecMin = c;
+          if (!gConf.rmSplitVertex || (collision.globalIndex() == mcCollision.bestCollisionIndex())) {
+            float c = getRecoCent(collision);
+            if (c < crecMin) {
+              crecMin = c;
+            }
           }
         }
       }
@@ -1661,34 +1781,39 @@ struct DndetaMFTPbPb {
     }
 
     bool gtZeroColl = false;
+    bool gtOneRec = false;
     int gtOneColl = 0;
     for (auto const& collision : collisions) {
-      float occRec = getOccupancy(collision, eventCuts.occupancyEstimator);
-      float cRec = getRecoCent(collision);
       if constexpr (has_reco_cent<C>) {
-        registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), cRec, occRec);
+        registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
       } else {
-        registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), occRec);
+        registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), getOccupancy(collision, eventCuts.occupancyEstimator));
       }
       if (!gConf.useEvtSel || isGoodEvent<true>(collision)) {
         gtZeroColl = true;
         ++gtOneColl;
         if constexpr (has_reco_cent<C>) {
-          registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecSel), cRec, occRec);
+          registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecSel), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
         } else {
-          registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecSel), occRec);
+          registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecSel), getOccupancy(collision, eventCuts.occupancyEstimator));
         }
         if (!collision.has_mcCollision()) {
           continue;
         }
         if constexpr (has_reco_cent<C>) {
-          registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecHasMcColl), cRec, occRec);
+          registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecHasMcColl), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
         } else {
-          registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecHasMcColl), occRec);
+          registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecHasMcColl), getOccupancy(collision, eventCuts.occupancyEstimator));
         }
         if (gConf.rmSplitVertex && collision.globalIndex() != mcCollision.bestCollisionIndex()) {
           continue;
         }
+        gtOneRec = true;
+        float cRec = getRecoCent(collision);
+        float occRec = getOccupancy(collision, eventCuts.occupancyEstimator);
+        centRecPerCol.emplace_back(cRec);
+        occRecPerCol.emplace_back(occRec);
+
         if constexpr (has_reco_cent<C>) {
           registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecNoSplitVtx), cRec, occRec);
           registryMC.fill(HIST("Events/Centrality/hRecZvtxCent"), collision.posZ(), cRec, occRec);
@@ -1702,79 +1827,121 @@ struct DndetaMFTPbPb {
           if (!isTrackSelected(track)) {
             continue;
           }
+          float phi = track.phi();
+          o2::math_utils::bringTo02Pi(phi);
+          if constexpr (has_reco_cent<C>) {
+            registryMC.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), collision.posZ(), static_cast<float>(McRecTrkType::kTrkSel), cRec, occRec);
+          } else {
+            registryMC.fill(HIST("Tracks/EtaZvtx"), track.eta(), collision.posZ(), static_cast<float>(McRecTrkType::kTrkSel), occRec);
+          }
           if (track.has_mcParticle() && (!trackCuts.removeFakeByMcMask || (track.mcMask() == trackCuts.selMcMask))) {
             const auto& particle = track.template mcParticle_as<aod::McParticles>();
-            if (!isChrgParticle(particle.pdgCode())) {
-              continue;
-            }
-            if (gConf.useParticleSel && !isParticleSelected(particle)) {
-              continue;
-            }
             if (collision.mcCollisionId() != particle.mcCollisionId()) {
               continue;
             }
+            bool isPhysicalPrimary = particle.isPhysicalPrimary();
+            bool isSecondary = (particle.has_mothers() && particle.getProcess() == TMCProcess::kPDecay);
+            if (!isPhysicalPrimary && !isSecondary) {
+              continue;
+            }
+            int particleOrigin = -1;
+            auto particleMother = particle.template mothers_as<aod::McParticles>().front();
+            if (particle.isPhysicalPrimary()) {
+              particleOrigin = static_cast<int>(McRecTrkType::kPrimary);
+            } else if (particleMother.isPhysicalPrimary() && particle.getProcess() == TMCProcess::kPDecay) {
+              particleOrigin = static_cast<int>(McRecTrkType::kSecondary);
+              if (particleMother.pdgCode() == PDG_t::kK0Short || std::abs(particleMother.pdgCode()) == PDG_t::kLambda0) {
+                particleOrigin = static_cast<int>(McRecTrkType::kStrangeDecay);
+              }
+            }
             if constexpr (has_reco_cent<C>) {
-              registryMC.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), collision.posZ(), cRec, occRec);
-              registryMC.fill(HIST("Tracks/Centrality/PhiEta"), track.phi(), track.eta(), cRec, occRec);
-              registryMC.fill(HIST("Tracks/Centrality/NclustersEta"), track.nClusters(), track.eta(), cRec, occRec);
+              registryMC.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), collision.posZ(), static_cast<float>(particleOrigin), cRec, occRec);
+              registryMC.fill(HIST("Tracks/Centrality/PhiEta"), phi, track.eta(), cRec, occRec);
+              if (gConf.fillTrackQaHist) {
+                registryMC.fill(HIST("Tracks/Centrality/NclustersEta"), track.nClusters(), track.eta(), cRec, occRec);
+              }
             } else {
-              registryMC.fill(HIST("Tracks/EtaZvtx"), track.eta(), collision.posZ(), occRec);
-              registryMC.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta(), occRec);
-              registryMC.fill(HIST("Tracks/NclustersEta"), track.nClusters(), track.eta(), occRec);
+              registryMC.fill(HIST("Tracks/EtaZvtx"), track.eta(), collision.posZ(), static_cast<float>(particleOrigin), occRec);
+              registryMC.fill(HIST("Tracks/PhiEta"), phi, track.eta(), occRec);
+              if (gConf.fillTrackQaHist) {
+                registryMC.fill(HIST("Tracks/NclustersEta"), track.nClusters(), track.eta(), occRec);
+              }
             }
             ++nTrkRec;
+          } else {
+            if constexpr (has_reco_cent<C>) {
+              registryMC.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), collision.posZ(), static_cast<int>(McRecTrkType::kTrkFake), cRec, occRec);
+            } else {
+              registryMC.fill(HIST("Tracks/EtaZvtx"), track.eta(), collision.posZ(), static_cast<float>(McRecTrkType::kTrkFake), occRec);
+            }
           }
         }
+        nRecPerCol.emplace_back(nTrkRec);
         if (eventCuts.useZDiffCut) {
           if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
             continue;
           }
         }
-        if constexpr (has_reco_cent<C>) {
-          registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen"), nTrkRec, collision.posZ(), cRec, occRec);
-          registryMC.fill(HIST("Events/Centrality/ZvtxDiff"), collision.posZ() - mcCollision.posZ(), cRec, occRec);
-        } else {
-          registryMC.fill(HIST("Events/NtrkZvtxGen"), nTrkRec, collision.posZ(), occRec);
-          registryMC.fill(HIST("Events/ZvtxDiff"), collision.posZ() - mcCollision.posZ(), occRec);
+        if (gConf.fillTrackQaHist) {
+          for (auto i = 0U; i < nRecPerCol.size(); ++i) {
+            if constexpr (has_reco_cent<C>) {
+              registryMC.fill(HIST("Events/Centrality/NtrkZvtxRec"), nRecPerCol[i], collision.posZ(), centRecPerCol[i], occRecPerCol[i]);
+            } else {
+              registryMC.fill(HIST("Events/NtrkZvtxRec"), nRecPerCol[i], collision.posZ(), occRecPerCol[i]);
+            }
+          }
+          if constexpr (has_reco_cent<C>) {
+            registryMC.fill(HIST("Events/Centrality/ZvtxDiff"), collision.posZ() - mcCollision.posZ(), cRec, occRec);
+          } else {
+            registryMC.fill(HIST("Events/ZvtxDiff"), collision.posZ() - mcCollision.posZ(), occRec);
+          }
         }
       }
     }
-
     if constexpr (has_reco_cent<C>) {
       registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcGenAll), cGen, occGen);
     } else {
       registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcGenAll), occGen);
     }
 
-    auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-    auto nchrg = countPart(perCollMCsample);
-    if (gtOneColl > 1) {
-      if constexpr (has_reco_cent<C>) {
-        registryMC.fill(HIST("Events/Centrality/NgenZvtxSplit"), nchrg, mcCollision.posZ(), cGen, occGen);
+    if (gConf.fillTrackQaHist) {
+      auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      auto nchrg = countPart(perCollMCsample);
+      if (gtOneColl > 1) {
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Events/Centrality/NgenZvtxSplit"), nchrg, mcCollision.posZ(), cGen, occGen);
+        } else {
+          registryMC.fill(HIST("Events/NgenZvtxSplit"), nchrg, mcCollision.posZ(), occGen);
+        }
       } else {
-        registryMC.fill(HIST("Events/NgenZvtxSplit"), nchrg, mcCollision.posZ(), occGen);
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Events/Centrality/NgenZvtxNoSplit"), nchrg, mcCollision.posZ(), cGen, occGen);
+        } else {
+          registryMC.fill(HIST("Events/NgenZvtxNoSplit"), nchrg, mcCollision.posZ(), occGen);
+        }
       }
-    } else {
+      auto nCharged = countPart(particles);
       if constexpr (has_reco_cent<C>) {
-        registryMC.fill(HIST("Events/Centrality/NgenZvtxNoSplit"), nchrg, mcCollision.posZ(), cGen, occGen);
+        registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), cGen, occGen);
       } else {
-        registryMC.fill(HIST("Events/NgenZvtxNoSplit"), nchrg, mcCollision.posZ(), occGen);
+        registryMC.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), occGen);
+      }
+      if (gtOneRec) {
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Events/Centrality/NtrkZvtxGenRecEvt"), nCharged, mcCollision.posZ(), cGen, occGen);
+        } else {
+          registryMC.fill(HIST("Events/NtrkZvtxGenRecEvt"), nCharged, mcCollision.posZ(), occGen);
+        }
+      }
+      if (collisions.size() == 0) {
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Events/Centrality/NotFoundEventZvtx"), mcCollision.posZ(), cGen, occGen);
+        } else {
+          registryMC.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ(), occGen);
+        }
       }
     }
-    auto nCharged = countPart(particles);
-    if constexpr (has_reco_cent<C>) {
-      registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), cGen, occGen);
-    } else {
-      registryMC.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), occGen);
-    }
-    if (collisions.size() == 0) {
-      if constexpr (has_reco_cent<C>) {
-        registryMC.fill(HIST("Events/Centrality/NotFoundEventZvtx"), mcCollision.posZ(), cGen, occGen);
-      } else {
-        registryMC.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ(), occGen);
-      }
-    }
-    fillHistMC<has_reco_cent<C>>(particles, mcCollision.posZ(), cGen, occGen, gtZeroColl);
+    fillHistMC<has_reco_cent<C>>(particles, mcCollision.posZ(), cGen, occGen, gtZeroColl, gtOneRec);
   }
 
   void processMcInclusive(CollsMCExtraMult::iterator const& mccollision,
@@ -1804,13 +1971,18 @@ struct DndetaMFTPbPb {
                      MftTracksLabeled const& /*tracks*/,
                      MftBestTracksLabeled const& besttracks)
   {
+    nRecPerCol.clear();
+    centRecPerCol.clear();
+    occRecPerCol.clear();
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
     float occGen = -1.;
     for (const auto& collision : collisions) {
-      if (isGoodEvent<false>(collision)) {
-        float o = getOccupancy(collision, eventCuts.occupancyEstimator);
-        if (o > occGen) {
-          occGen = o;
+      if (!gConf.useEvtSel || isGoodEvent<false>(collision)) {
+        if (!gConf.rmSplitVertex || (collision.globalIndex() == mcCollision.bestCollisionIndex())) {
+          float o = getOccupancy(collision, eventCuts.occupancyEstimator);
+          if (o > occGen) {
+            occGen = o;
+          }
         }
       }
     }
@@ -1821,10 +1993,12 @@ struct DndetaMFTPbPb {
     if constexpr (has_reco_cent<C>) {
       float crecMin = 999.;
       for (const auto& collision : collisions) {
-        if (isGoodEvent<false>(collision)) {
-          float c = getRecoCent(collision);
-          if (c < crecMin) {
-            crecMin = c;
+        if (!gConf.useEvtSel || isGoodEvent<false>(collision)) {
+          if (!gConf.rmSplitVertex || (collision.globalIndex() == mcCollision.bestCollisionIndex())) {
+            float c = getRecoCent(collision);
+            if (c < crecMin) {
+              crecMin = c;
+            }
           }
         }
       }
@@ -1836,32 +2010,39 @@ struct DndetaMFTPbPb {
     buildLookupTable(collisions);
 
     bool gtZeroColl = false;
+    bool gtOneRec = false;
+    int gtOneColl = 0;
     for (auto const& collision : collisions) {
-      float occRec = getOccupancy(collision, eventCuts.occupancyEstimator);
-      float cRec = getRecoCent(collision);
       if constexpr (has_reco_cent<C>) {
-        registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), cRec, occRec);
+        registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
       } else {
-        registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), occRec);
+        registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecAll), getOccupancy(collision, eventCuts.occupancyEstimator));
       }
       if (!gConf.useEvtSel || isGoodEvent<true>(collision)) {
         gtZeroColl = true;
+        ++gtOneColl;
         if constexpr (has_reco_cent<C>) {
-          registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecSel), cRec, occRec);
+          registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecSel), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
         } else {
-          registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecSel), occRec);
+          registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecSel), getOccupancy(collision, eventCuts.occupancyEstimator));
         }
         if (!collision.has_mcCollision()) {
           continue;
         }
         if constexpr (has_reco_cent<C>) {
-          registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecHasMcColl), cRec, occRec);
+          registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecHasMcColl), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
         } else {
-          registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecHasMcColl), occRec);
+          registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecHasMcColl), getOccupancy(collision, eventCuts.occupancyEstimator));
         }
         if (gConf.rmSplitVertex && collision.globalIndex() != mcCollision.bestCollisionIndex()) {
           continue;
         }
+        gtOneRec = true;
+        float cRec = getRecoCent(collision);
+        float occRec = getOccupancy(collision, eventCuts.occupancyEstimator);
+        centRecPerCol.emplace_back(cRec);
+        occRecPerCol.emplace_back(occRec);
+
         if constexpr (has_reco_cent<C>) {
           registryMC.fill(HIST("Events/Centrality/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecNoSplitVtx), cRec, occRec);
           registryMC.fill(HIST("Events/Centrality/hRecZvtxCent"), collision.posZ(), cRec, occRec);
@@ -1890,6 +2071,8 @@ struct DndetaMFTPbPb {
           if (!isTrackSelected(itrack)) {
             continue;
           }
+          float phi = itrack.phi();
+          o2::math_utils::bringTo02Pi(phi);
           if constexpr (has_reco_cent<C>) {
             registryMC.fill(HIST("Tracks/Centrality/hMcTrackStatus"), static_cast<int>(McTrackStatus::kTrkAsBestSel), cRec, occRec);
           } else {
@@ -1910,25 +2093,18 @@ struct DndetaMFTPbPb {
           }
           if constexpr (has_reco_cent<C>) {
             registryMC.fill(HIST("Tracks/Centrality/hMcTrackStatus"), static_cast<int>(McTrackStatus::kTrkReassignedRemoved), cRec, occRec);
+            registryMC.fill(HIST("Tracks/Centrality/EtaZvtx"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<int>(McRecTrkType::kTrkSel), cRec, occRec);
           } else {
             registryMC.fill(HIST("Tracks/hMcTrackStatus"), static_cast<int>(McTrackStatus::kTrkReassignedRemoved), occRec);
+            registryMC.fill(HIST("Tracks/EtaZvtx"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<int>(McRecTrkType::kTrkSel), occRec);
           }
           if (itrack.collisionId() >= 0 && itrack.has_mcParticle() && (!trackCuts.removeFakeByMcMask || (itrack.mcMask() == trackCuts.selMcMask))) {
             const auto& particle = itrack.template mcParticle_as<aod::McParticles>();
-            if (!isChrgParticle(particle.pdgCode())) {
-              continue;
-            }
-            if (gConf.useParticleSel && !isParticleSelected(particle)) {
-              continue;
-            }
             if (eventCuts.useZDiffCut) {
               if (std::abs(collision.posZ() - atrack.mcParticle().mcCollision().posZ()) > eventCuts.maxZvtxDiff) {
                 continue;
               }
             }
-            // if (collision.mcCollisionId() != particle.mcCollisionId()) {
-            //   continue;
-            // }
             if (eventCuts.checkCollisionId) {
               if (!mapMcCollIdPerRecColl.contains(atrack.bestCollisionId())) {
                 continue;
@@ -1937,33 +2113,66 @@ struct DndetaMFTPbPb {
                 continue;
               }
             }
+            bool isPhysicalPrimary = particle.isPhysicalPrimary();
+            bool isSecondary = (particle.has_mothers() && particle.getProcess() == TMCProcess::kPDecay);
+            if (!isPhysicalPrimary && !isSecondary) {
+              continue;
+            }
+            int particleOrigin = -1;
+            auto particleMother = particle.template mothers_as<aod::McParticles>().front();
+            if (particle.isPhysicalPrimary()) {
+              particleOrigin = static_cast<int>(McRecTrkType::kPrimary);
+            } else if (particleMother.isPhysicalPrimary() && particle.getProcess() == TMCProcess::kPDecay) {
+              particleOrigin = static_cast<int>(McRecTrkType::kSecondary);
+              if (particleMother.pdgCode() == PDG_t::kK0Short || std::abs(particleMother.pdgCode()) == PDG_t::kLambda0) {
+                particleOrigin = static_cast<int>(McRecTrkType::kStrangeDecay);
+              }
+            }
             if constexpr (has_reco_cent<C>) {
-              registryMC.fill(HIST("Tracks/Centrality/EtaZvtx"), itrack.eta(), collision.posZ(), cRec, occRec);
-              registryMC.fill(HIST("Tracks/Centrality/PhiEta"), itrack.phi(), itrack.eta(), cRec, occRec);
-              registryMC.fill(HIST("Tracks/Centrality/NclustersEta"), itrack.nClusters(), itrack.eta(), cRec, occRec);
-              registryMC.fill(HIST("Tracks/Centrality/DCA3d"), itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, cRec, occRec);
-              registryMC.fill(HIST("Tracks/Centrality/TrackAmbDegree"), atrack.ambDegree(), cRec, occRec);
+              registryMC.fill(HIST("Tracks/Centrality/EtaZvtx"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(particleOrigin), cRec, occRec);
+              registryMC.fill(HIST("Tracks/Centrality/PhiEta"), phi, itrack.eta(), cRec, occRec);
+              if (gConf.fillTrackQaHist) {
+                registryMC.fill(HIST("Tracks/Centrality/NclustersEta"), itrack.nClusters(), itrack.eta(), cRec, occRec);
+                registryMC.fill(HIST("Tracks/Centrality/TrackAmbDegree"), atrack.ambDegree(), cRec, occRec);
+              }
             } else {
-              registryMC.fill(HIST("Tracks/EtaZvtx"), itrack.eta(), collision.posZ(), occRec);
-              registryMC.fill(HIST("Tracks/PhiEta"), itrack.phi(), itrack.eta(), occRec);
-              registryMC.fill(HIST("Tracks/NclustersEta"), itrack.nClusters(), itrack.eta(), occRec);
-              registryMC.fill(HIST("Tracks/DCA3d"), itrack.pt(), itrack.eta(), atrack.bestDCAXY(), bestDcaZ, occRec);
-              registryMC.fill(HIST("Tracks/TrackAmbDegree"), atrack.ambDegree(), occRec);
+              registryMC.fill(HIST("Tracks/EtaZvtx"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(particleOrigin), occRec);
+              registryMC.fill(HIST("Tracks/PhiEta"), phi, itrack.eta(), occRec);
+              if (gConf.fillTrackQaHist) {
+                registryMC.fill(HIST("Tracks/NclustersEta"), itrack.nClusters(), itrack.eta(), occRec);
+                registryMC.fill(HIST("Tracks/TrackAmbDegree"), atrack.ambDegree(), occRec);
+              }
             }
             ++nATrk;
+          } else {
+            if constexpr (has_reco_cent<C>) {
+              registryMC.fill(HIST("Tracks/Centrality/hMcTrackStatus"), static_cast<int>(McTrackStatus::kTrkFake), cRec, occRec);
+              registryMC.fill(HIST("Tracks/Centrality/EtaZvtx"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<int>(McRecTrkType::kTrkFake), cRec, occRec);
+            } else {
+              registryMC.fill(HIST("Tracks/hMcTrackStatus"), static_cast<int>(McTrackStatus::kTrkFake), occRec);
+              registryMC.fill(HIST("Tracks/EtaZvtx"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(McRecTrkType::kTrkFake), occRec);
+            }
           }
         }
+        nRecPerCol.emplace_back(nATrk);
         if (eventCuts.useZDiffCut) {
           if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
             continue;
           }
         }
-        if constexpr (has_reco_cent<C>) {
-          registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen"), nATrk, collision.posZ(), cRec, occRec);
-          registryMC.fill(HIST("Events/Centrality/ZvtxDiff"), collision.posZ() - mcCollision.posZ(), cRec, occRec);
-        } else {
-          registryMC.fill(HIST("Events/NtrkZvtxGen"), nATrk, collision.posZ(), occRec);
-          registryMC.fill(HIST("Events/ZvtxDiff"), collision.posZ() - mcCollision.posZ(), occRec);
+        if (gConf.fillTrackQaHist) {
+          for (auto i = 0U; i < nRecPerCol.size(); ++i) {
+            if constexpr (has_reco_cent<C>) {
+              registryMC.fill(HIST("Events/Centrality/NtrkZvtxRec"), nRecPerCol[i], collision.posZ(), centRecPerCol[i], occRecPerCol[i]);
+            } else {
+              registryMC.fill(HIST("Events/NtrkZvtxRec"), nRecPerCol[i], collision.posZ(), occRecPerCol[i]);
+            }
+          }
+          if constexpr (has_reco_cent<C>) {
+            registryMC.fill(HIST("Events/Centrality/ZvtxDiff"), collision.posZ() - mcCollision.posZ(), cRec, occRec);
+          } else {
+            registryMC.fill(HIST("Events/ZvtxDiff"), collision.posZ() - mcCollision.posZ(), occRec);
+          }
         }
       }
     }
@@ -1972,20 +2181,45 @@ struct DndetaMFTPbPb {
     } else {
       registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcGenAll), occGen);
     }
-    auto nCharged = countPart(particles);
-    if constexpr (has_reco_cent<C>) {
-      registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), cGen, occGen);
-    } else {
-      registryMC.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), occGen);
-    }
-    if (collisions.size() == 0) {
-      if constexpr (has_reco_cent<C>) {
-        registryMC.fill(HIST("Events/Centrality/NotFoundEventZvtx"), mcCollision.posZ(), cGen, occGen);
+
+    if (gConf.fillTrackQaHist) {
+      auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      auto nchrg = countPart(perCollMCsample);
+      if (gtOneColl > 1) {
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Events/Centrality/NgenZvtxSplit"), nchrg, mcCollision.posZ(), cGen, occGen);
+        } else {
+          registryMC.fill(HIST("Events/NgenZvtxSplit"), nchrg, mcCollision.posZ(), occGen);
+        }
       } else {
-        registryMC.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ(), occGen);
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Events/Centrality/NgenZvtxNoSplit"), nchrg, mcCollision.posZ(), cGen, occGen);
+        } else {
+          registryMC.fill(HIST("Events/NgenZvtxNoSplit"), nchrg, mcCollision.posZ(), occGen);
+        }
+      }
+      auto nCharged = countPart(particles);
+      if constexpr (has_reco_cent<C>) {
+        registryMC.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), cGen, occGen);
+      } else {
+        registryMC.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), occGen);
+      }
+      if (gtOneRec) {
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Events/Centrality/NtrkZvtxGenRecEvt"), nCharged, mcCollision.posZ(), cGen, occGen);
+        } else {
+          registryMC.fill(HIST("Events/NtrkZvtxGenRecEvt"), nCharged, mcCollision.posZ(), occGen);
+        }
+      }
+      if (collisions.size() == 0) {
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Events/Centrality/NotFoundEventZvtx"), mcCollision.posZ(), cGen, occGen);
+        } else {
+          registryMC.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ(), occGen);
+        }
       }
     }
-    fillHistMC<has_reco_cent<C>>(particles, mcCollision.posZ(), cGen, occGen, gtZeroColl);
+    fillHistMC<has_reco_cent<C>>(particles, mcCollision.posZ(), cGen, occGen, gtZeroColl, gtOneRec);
   }
 
   void processMcBestInclusive(CollsMCExtraMult::iterator const& mccollision,
@@ -2040,14 +2274,14 @@ struct DndetaMFTPbPb {
       cGen = cRec;
     }
     if constexpr (has_reco_cent<C>) {
-      registryMC.fill(HIST("Events/Centrality/hVtxZGen"), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenAll), cGen, occRec);
+      registryMC.fill(HIST("Events/Centrality/hVtxZGen"), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenAll), cGen, occRec);
       if (gtOneRec) {
-        registryMC.fill(HIST("Events/Centrality/hVtxZGen"), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenRecEvt), cGen, occRec);
+        registryMC.fill(HIST("Events/Centrality/hVtxZGen"), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenRecEvt), cGen, occRec);
       }
     } else {
-      registryMC.fill(HIST("Events/hVtxZGen"), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenAll), occRec);
+      registryMC.fill(HIST("Events/hVtxZGen"), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenAll), occRec);
       if (gtOneRec) {
-        registryMC.fill(HIST("Events/hVtxZGen"), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenRecEvt), occRec);
+        registryMC.fill(HIST("Events/hVtxZGen"), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenRecEvt), occRec);
       }
     }
     for (const auto& particle : particles) {
@@ -2059,16 +2293,16 @@ struct DndetaMFTPbPb {
       }
       if constexpr (has_reco_cent<C>) {
         if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-          registryMC.fill(HIST("Tracks/Centrality/hEffGen"), particle.pt(), particle.eta(), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenAll), cGen, occRec);
+          registryMC.fill(HIST("Tracks/Centrality/hEffGen"), particle.eta(), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenAll), cGen, occRec);
           if (gtOneRec) {
-            registryMC.fill(HIST("Tracks/Centrality/hEffGen"), particle.pt(), particle.eta(), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenRecEvt), cGen, occRec);
+            registryMC.fill(HIST("Tracks/Centrality/hEffGen"), particle.eta(), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenRecEvt), cGen, occRec);
           }
         }
       } else {
         if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-          registryMC.fill(HIST("Tracks/hEffGen"), particle.pt(), particle.eta(), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenAll), occRec);
+          registryMC.fill(HIST("Tracks/hEffGen"), particle.eta(), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenAll), occRec);
           if (gtOneRec) {
-            registryMC.fill(HIST("Tracks/hEffGen"), particle.pt(), particle.eta(), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenRecEvt), occRec);
+            registryMC.fill(HIST("Tracks/hEffGen"), particle.eta(), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenRecEvt), occRec);
           }
         }
       }
@@ -2113,29 +2347,43 @@ struct DndetaMFTPbPb {
         if (!isTrackSelected<false>(track)) {
           continue;
         }
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Tracks/Centrality/hEffRec"), track.eta(), collision.posZ(), static_cast<float>(McRecTrkType::kTrkSel), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
+        } else {
+          registryMC.fill(HIST("Tracks/hEffRec"), track.eta(), collision.posZ(), static_cast<float>(McRecTrkType::kTrkSel), getOccupancy(collision, eventCuts.occupancyEstimator));
+        }
         if (track.has_mcParticle() && (!trackCuts.removeFakeByMcMask || (track.mcMask() == trackCuts.selMcMask))) {
           const auto& particle = track.template mcParticle_as<aod::McParticles>();
-          if (!isChrgParticle(particle.pdgCode())) {
-            continue;
-          }
-          if (gConf.useParticleSel && !isParticleSelected(particle)) {
-            continue;
-          }
           if (collision.mcCollisionId() != particle.mcCollisionId()) {
             continue;
           }
+          bool isPhysicalPrimary = particle.isPhysicalPrimary();
+          bool isSecondary = (particle.has_mothers() && particle.getProcess() == TMCProcess::kPDecay);
+          if (!isPhysicalPrimary && !isSecondary) {
+            continue;
+          }
+          int particleOrigin = -1;
+          auto particleMother = particle.template mothers_as<aod::McParticles>().front();
+          if (particle.isPhysicalPrimary()) {
+            particleOrigin = static_cast<int>(McRecTrkType::kPrimary);
+          } else if (particleMother.isPhysicalPrimary() && particle.getProcess() == TMCProcess::kPDecay) {
+            particleOrigin = static_cast<int>(McRecTrkType::kSecondary);
+            if (particleMother.pdgCode() == PDG_t::kK0Short || std::abs(particleMother.pdgCode()) == PDG_t::kLambda0) {
+              particleOrigin = static_cast<int>(McRecTrkType::kStrangeDecay);
+            }
+          }
           if constexpr (has_reco_cent<C>) {
-            registryMC.fill(HIST("Tracks/Centrality/hEffRec"), particle.pt(), particle.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecAll), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
-            registryMC.fill(HIST("Tracks/Centrality/hEffRecClosure"), particle.pt(), particle.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecAll), cGen, getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/Centrality/hEffRec"), particle.eta(), collision.posZ(), static_cast<float>(particleOrigin), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/Centrality/hEffRecClosure"), particle.eta(), collision.posZ(), static_cast<float>(particleOrigin), cGen, getOccupancy(collision, eventCuts.occupancyEstimator));
           } else {
-            registryMC.fill(HIST("Tracks/hEffRec"), particle.pt(), particle.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecAll), getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/hEffRec"), particle.eta(), collision.posZ(), static_cast<float>(particleOrigin), getOccupancy(collision, eventCuts.occupancyEstimator));
             registryMC.fill(HIST("Tracks/hEtaRes"), particle.eta(), (track.eta() - particle.eta()) / particle.eta(), getOccupancy(collision, eventCuts.occupancyEstimator));
           }
         } else {
           if constexpr (has_reco_cent<C>) {
-            registryMC.fill(HIST("Tracks/Centrality/hEffRec"), track.pt(), track.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecFake), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/Centrality/hEffRec"), track.eta(), collision.posZ(), static_cast<float>(McRecTrkType::kTrkFake), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
           } else {
-            registryMC.fill(HIST("Tracks/hEffRec"), track.pt(), track.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecFake), getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/hEffRec"), track.eta(), collision.posZ(), static_cast<float>(McRecTrkType::kTrkFake), getOccupancy(collision, eventCuts.occupancyEstimator));
           }
         }
       }
@@ -2195,14 +2443,14 @@ struct DndetaMFTPbPb {
       cGen = cRec;
     }
     if constexpr (has_reco_cent<C>) {
-      registryMC.fill(HIST("Events/Centrality/hVtxZGen"), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenAll), cGen, occRec);
+      registryMC.fill(HIST("Events/Centrality/hVtxZGen"), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenAll), cGen, occRec);
       if (gtOneRec) {
-        registryMC.fill(HIST("Events/Centrality/hVtxZGen"), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenRecEvt), cGen, occRec);
+        registryMC.fill(HIST("Events/Centrality/hVtxZGen"), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenRecEvt), cGen, occRec);
       }
     } else {
-      registryMC.fill(HIST("Events/hVtxZGen"), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenAll), occRec);
+      registryMC.fill(HIST("Events/hVtxZGen"), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenAll), occRec);
       if (gtOneRec) {
-        registryMC.fill(HIST("Events/hVtxZGen"), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenRecEvt), occRec);
+        registryMC.fill(HIST("Events/hVtxZGen"), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenRecEvt), occRec);
       }
     }
     for (const auto& particle : particles) {
@@ -2214,16 +2462,16 @@ struct DndetaMFTPbPb {
       }
       if constexpr (has_reco_cent<C>) {
         if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-          registryMC.fill(HIST("Tracks/Centrality/hEffGen"), particle.pt(), particle.eta(), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenAll), cGen, occRec);
+          registryMC.fill(HIST("Tracks/Centrality/hEffGen"), particle.eta(), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenAll), cGen, occRec);
           if (gtOneRec) {
-            registryMC.fill(HIST("Tracks/Centrality/hEffGen"), particle.pt(), particle.eta(), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenRecEvt), cGen, occRec);
+            registryMC.fill(HIST("Tracks/Centrality/hEffGen"), particle.eta(), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenRecEvt), cGen, occRec);
           }
         }
       } else {
         if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-          registryMC.fill(HIST("Tracks/hEffGen"), particle.pt(), particle.eta(), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenAll), occRec);
+          registryMC.fill(HIST("Tracks/hEffGen"), particle.eta(), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenAll), occRec);
           if (gtOneRec) {
-            registryMC.fill(HIST("Tracks/hEffGen"), particle.pt(), particle.eta(), mcCollision.posZ(), static_cast<float>(GenTrkType::kGenRecEvt), occRec);
+            registryMC.fill(HIST("Tracks/hEffGen"), particle.eta(), mcCollision.posZ(), static_cast<float>(McGenTrkType::kGenRecEvt), occRec);
           }
         }
       }
@@ -2263,12 +2511,12 @@ struct DndetaMFTPbPb {
       } else {
         registryMC.fill(HIST("Events/hVtxZRec"), collision.posZ(), getOccupancy(collision, eventCuts.occupancyEstimator));
       }
-
       auto perCollisionASample = besttracks.sliceBy(perColBestTrks, collision.globalIndex());
       for (auto const& atrack : perCollisionASample) {
         if (!isBestTrackSelected<false>(atrack)) {
           continue;
         }
+        const float bestDcaZ = getDCAz(atrack);
         auto itrack = atrack.template mfttrack_as<MftBestTracksLabeled>();
         if (!isTrackSelected<false>(itrack)) {
           continue;
@@ -2281,14 +2529,13 @@ struct DndetaMFTPbPb {
             continue;
           }
         }
+        if constexpr (has_reco_cent<C>) {
+          registryMC.fill(HIST("Tracks/Centrality/hEffRec"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(McRecTrkType::kTrkSel), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
+        } else {
+          registryMC.fill(HIST("Tracks/hEffRec"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(McRecTrkType::kTrkSel), getOccupancy(collision, eventCuts.occupancyEstimator));
+        }
         if (itrack.collisionId() >= 0 && itrack.has_mcParticle() && (!trackCuts.removeFakeByMcMask || (itrack.mcMask() == trackCuts.selMcMask))) {
           const auto& particle = itrack.template mcParticle_as<aod::McParticles>();
-          if (!isChrgParticle(particle.pdgCode())) {
-            continue;
-          }
-          if (gConf.useParticleSel && !isParticleSelected(particle)) {
-            continue;
-          }
           if (eventCuts.useZDiffCut) {
             if (std::abs(collision.posZ() - atrack.mcParticle().mcCollision().posZ()) > eventCuts.maxZvtxDiff) {
               continue;
@@ -2302,18 +2549,33 @@ struct DndetaMFTPbPb {
               continue;
             }
           }
+          bool isPhysicalPrimary = particle.isPhysicalPrimary();
+          bool isSecondary = (particle.has_mothers() && particle.getProcess() == TMCProcess::kPDecay);
+          if (!isPhysicalPrimary && !isSecondary) {
+            continue;
+          }
+          int particleOrigin = -1;
+          auto particleMother = particle.template mothers_as<aod::McParticles>().front();
+          if (particle.isPhysicalPrimary()) {
+            particleOrigin = static_cast<int>(McRecTrkType::kPrimary);
+          } else if (particleMother.isPhysicalPrimary() && particle.getProcess() == TMCProcess::kPDecay) {
+            particleOrigin = static_cast<int>(McRecTrkType::kSecondary);
+            if (particleMother.pdgCode() == PDG_t::kK0Short || std::abs(particleMother.pdgCode()) == PDG_t::kLambda0) {
+              particleOrigin = static_cast<int>(McRecTrkType::kStrangeDecay);
+            }
+          }
           if constexpr (has_reco_cent<C>) {
-            registryMC.fill(HIST("Tracks/Centrality/hEffRec"), particle.pt(), particle.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecAll), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
-            registryMC.fill(HIST("Tracks/Centrality/hEffRecClosure"), particle.pt(), particle.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecAll), cGen, getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/Centrality/hEffRec"), particle.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(particleOrigin), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/Centrality/hEffRecClosure"), particle.eta(), collision.posZ(), static_cast<float>(particleOrigin), cGen, getOccupancy(collision, eventCuts.occupancyEstimator));
           } else {
-            registryMC.fill(HIST("Tracks/hEffRec"), particle.pt(), particle.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecAll), getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/hEffRec"), particle.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(particleOrigin), getOccupancy(collision, eventCuts.occupancyEstimator));
             registryMC.fill(HIST("Tracks/hEtaRes"), particle.eta(), (itrack.eta() - particle.eta()) / particle.eta(), getOccupancy(collision, eventCuts.occupancyEstimator));
           }
         } else {
           if constexpr (has_reco_cent<C>) {
-            registryMC.fill(HIST("Tracks/Centrality/hEffRec"), itrack.pt(), itrack.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecFake), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/Centrality/hEffRec"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(McRecTrkType::kTrkFake), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
           } else {
-            registryMC.fill(HIST("Tracks/hEffRec"), itrack.pt(), itrack.phi(), itrack.eta(), collision.posZ(), static_cast<float>(RecTrkType::kRecFake), getOccupancy(collision, eventCuts.occupancyEstimator));
+            registryMC.fill(HIST("Tracks/hEffRec"), itrack.eta(), collision.posZ(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(McRecTrkType::kTrkFake), getOccupancy(collision, eventCuts.occupancyEstimator));
           }
         }
       }
@@ -2340,13 +2602,11 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMcEfficiencyBestCentFT0C, "Process tracking efficiency (in FT0 centrality bins, based on BestCollisionsFwd3d)", false);
 
-  // Partition<ParticlesIdx> primariesIdx = ifnode(nsqrt(aod::mcparticle::vx * aod::mcparticle::vx + aod::mcparticle::vy * aod::mcparticle::vy) > 5.f, false, ncheckbit(aod::mcparticle_v2::storedFlags, (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary)) && (aod::mcparticle::eta < trackCuts.maxEta) && (aod::mcparticle::eta > trackCuts.minEta);
-
   /// @brief process template function to calculate tracking efficiency (indexed as particle-to-MFT-tracks)
   template <typename MC, typename C>
   void processEfficiencyIdx(typename MC::iterator const& mcCollision,
                             soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-                            FiltParticlesIdx const& particles,
+                            ParticlesIdx const& particles,
                             MftTracksLabeled const& /*tracks*/)
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
@@ -2389,14 +2649,14 @@ struct DndetaMFTPbPb {
         }
         // MC gen
         if constexpr (has_reco_cent<C>) {
-          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta && cutInPhi(particle)) {
-            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxAll), cGen, occRec);
             }
           }
         } else {
-          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta && cutInPhi(particle)) {
-            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxAll), occRec);
             }
           }
@@ -2417,7 +2677,7 @@ struct DndetaMFTPbPb {
             if constexpr (has_reco_cent<C>) {
               if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                  if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     registryMC.fill(HIST("Tracks/Centrality/hEffIdxRec"), particle.pt(), particle.eta(), static_cast<float>(RecIdxTrkType::kRecIdxPrim), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
                   }
                   iscounted = true;
@@ -2432,7 +2692,7 @@ struct DndetaMFTPbPb {
             } else {
               if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                  if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     registryMC.fill(HIST("Tracks/hEffIdxRec"), particle.pt(), particle.eta(), static_cast<float>(RecIdxTrkType::kRecIdxPrim), occRec);
                   }
                   iscounted = true;
@@ -2463,13 +2723,13 @@ struct DndetaMFTPbPb {
           // MC FAKES
           if constexpr (has_reco_cent<C>) {
             if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-              if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                 registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxFake), cGen, occRec);
               }
             }
           } else {
             if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-              if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                 registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxFake), occRec);
               }
             }
@@ -2481,7 +2741,7 @@ struct DndetaMFTPbPb {
 
   void processMcEfficiencyIdxInlusive(CollsMCExtraMult::iterator const& mccollision,
                                       soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
-                                      FiltParticlesIdx const& particles,
+                                      ParticlesIdx const& particles,
                                       MftTracksLabeled const& tracks)
   {
     processEfficiencyIdx<CollsMCExtraMult, Colls>(mccollision, collisions, particles, tracks);
@@ -2491,7 +2751,7 @@ struct DndetaMFTPbPb {
 
   void processMcEfficiencyIdxCentFT0C(CollsMCExtraMult::iterator const& mccollision,
                                       soa::SmallGroups<soa::Join<CollsCentFT0C, aod::McCollisionLabels>> const& collisions,
-                                      FiltParticlesIdx const& particles,
+                                      ParticlesIdx const& particles,
                                       MftTracksLabeled const& tracks)
   {
     processEfficiencyIdx<CollsMCExtraMult, CollsCentFT0C>(mccollision, collisions, particles, tracks);
@@ -2502,7 +2762,7 @@ struct DndetaMFTPbPb {
   template <typename MC, typename C>
   void processEfficiencyIdxBest(typename MC::iterator const& mcCollision,
                                 soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-                                FiltParticlesIdx const& particles,
+                                ParticlesIdx const& particles,
                                 MftBestTracksLabeled const& /*atracks*/)
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
@@ -2548,14 +2808,14 @@ struct DndetaMFTPbPb {
         }
         // MC gen
         if constexpr (has_reco_cent<C>) {
-          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta && cutInPhi(particle)) {
-            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxAll), cGen, occRec);
             }
           }
         } else {
-          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta && cutInPhi(particle)) {
-            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxAll), occRec);
             }
           }
@@ -2584,7 +2844,7 @@ struct DndetaMFTPbPb {
             if constexpr (has_reco_cent<C>) {
               if (atrack.eta() > trackCuts.minEta && atrack.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                  if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     registryMC.fill(HIST("Tracks/Centrality/hEffIdxRec"), particle.pt(), particle.eta(), static_cast<float>(RecIdxTrkType::kRecIdxPrim), getRecoCent(collision), getOccupancy(collision, eventCuts.occupancyEstimator));
                   }
                   iscounted = true;
@@ -2599,7 +2859,7 @@ struct DndetaMFTPbPb {
             } else {
               if (atrack.eta() > trackCuts.minEta && atrack.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                  if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     registryMC.fill(HIST("Tracks/hEffIdxRec"), particle.pt(), particle.eta(), static_cast<float>(RecIdxTrkType::kRecIdxPrim), occRec);
                   }
                   iscounted = true;
@@ -2630,13 +2890,13 @@ struct DndetaMFTPbPb {
           // MC FAKES
           if constexpr (has_reco_cent<C>) {
             if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-              if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                 registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxFake), cGen, occRec);
               }
             }
           } else {
             if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-              if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                 registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkType::kGenIdxFake), occRec);
               }
             }
@@ -2648,7 +2908,7 @@ struct DndetaMFTPbPb {
 
   void processMcEfficiencyIdxBestInlusive(CollsMCExtraMult::iterator const& mccollision,
                                           soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
-                                          FiltParticlesIdx const& particles,
+                                          ParticlesIdx const& particles,
                                           MftBestTracksLabeled const& atracks)
   {
     processEfficiencyIdxBest<CollsMCExtraMult, Colls>(mccollision, collisions, particles, atracks);
@@ -2658,7 +2918,7 @@ struct DndetaMFTPbPb {
 
   void processMcEfficiencyIdxBestCentFT0C(CollsMCExtraMult::iterator const& mccollision,
                                           soa::SmallGroups<soa::Join<CollsCentFT0C, aod::McCollisionLabels>> const& collisions,
-                                          FiltParticlesIdx const& particles,
+                                          ParticlesIdx const& particles,
                                           MftBestTracksLabeled const& atracks)
   {
     processEfficiencyIdxBest<CollsMCExtraMult, CollsCentFT0C>(mccollision, collisions, particles, atracks);
@@ -2666,12 +2926,174 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMcEfficiencyIdxBestCentFT0C, "Process tracking efficiency best (in FT0C centrality bins, indexed)", false);
 
+  template <typename MC, typename C>
+  void processEfficiencyIdxBestLight(typename MC::iterator const& mcCollision,
+                                     soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
+                                     ParticlesIdx const& particles,
+                                     MftTracksLabeled const& /*tracks*/,
+                                     MftBestTracksLabeled const& /*atracks*/)
+  {
+    LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
+    auto cRec = CInvalid;
+    float cGen = -1;
+    if (eventCuts.useGenMult) {
+      cGen = mcCollision.multMCFT0C();
+    }
+    for (const auto& collision : collisions) {
+      if (!isGoodEvent<false>(collision)) {
+        continue;
+      }
+      if (gConf.rmSplitVertex && collision.globalIndex() != mcCollision.bestCollisionIndex()) {
+        continue;
+      }
+      cRec = getRecoCent(collision);
+    }
+    if (cGen < 0 && cRec >= 0) {
+      cGen = cRec;
+    }
+
+    buildLookupTable(collisions);
+
+    for (const auto& collision : collisions) {
+      if (gConf.useEvtSel && !isGoodEvent<true>(collision)) {
+        continue;
+      }
+      if (gConf.rmSplitVertex && collision.globalIndex() != mcCollision.bestCollisionIndex()) {
+        continue;
+      }
+      auto partsPerCol = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      for (auto const& particle : partsPerCol) {
+        if (!isChrgParticle(particle.pdgCode())) {
+          continue;
+        }
+        if (gConf.useParticleSel && !isParticleSelected(particle)) {
+          continue;
+        }
+        if (collision.mcCollisionId() != particle.mcCollisionId()) {
+          continue;
+        }
+        // MC gen
+        if constexpr (has_reco_cent<C>) {
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              registryMC.fill(HIST("Tracks/Centrality/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkLightType::kGenIdxAll), cGen);
+            }
+          }
+        } else {
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              registryMC.fill(HIST("Tracks/hEffIdxGen"), particle.pt(), particle.eta(), static_cast<float>(GenIdxTrkLightType::kGenIdxAll));
+            }
+          }
+        }
+        // MC rec
+        if (particle.has_mfttracks()) {
+          auto iscounted = false;
+          auto ncnt = 0;
+          auto relatedTracks = particle.template mfttracks_as<MftBestTracksLabeled>();
+          for (auto const& atrack : relatedTracks) {
+            if (!isBestTrackSelected(atrack)) {
+              continue;
+            }
+            if (eventCuts.checkCollisionId) {
+              if (!mapMcCollIdPerRecColl.contains(atrack.bestCollisionId())) {
+                continue;
+              }
+              if (mapMcCollIdPerRecColl.find(atrack.bestCollisionId())->second != particle.mcCollisionId()) {
+                continue;
+              }
+            }
+            const float bestDcaZ = getDCAz(atrack);
+            auto itrack = atrack.template mfttrack_as<MftBestTracksLabeled>();
+            if (!isTrackSelected<true>(itrack)) {
+              continue;
+            }
+            if (!itrack.has_collision()) {
+              continue;
+            }
+            if (gConf.rmReassigned) {
+              if (itrack.collisionId() != atrack.bestCollisionId()) {
+                continue;
+              }
+            }
+            if (itrack.collisionId() >= 0 && itrack.has_mcParticle() && (!trackCuts.removeFakeByMcMask || (itrack.mcMask() == trackCuts.selMcMask))) {
+              ++ncnt;
+              if constexpr (has_reco_cent<C>) {
+                if (atrack.eta() > trackCuts.minEta && atrack.eta() < trackCuts.maxEta) {
+                  if (!iscounted) { // primaries
+                    if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                      registryMC.fill(HIST("Tracks/Centrality/hEffIdxRec"), particle.pt(), particle.eta(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(RecIdxTrkLightType::kRecIdxPrim), cRec);
+                    }
+                    iscounted = true;
+                  }
+                }
+                registryMC.fill(HIST("Tracks/Centrality/NmftTrkPerPart"), ncnt, cRec);
+                if (ncnt > 1) { // secondaries
+                  if (atrack.eta() > trackCuts.minEta && atrack.eta() < trackCuts.maxEta) {
+                    registryMC.fill(HIST("Tracks/Centrality/hEffIdxRec"), particle.pt(), particle.eta(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(RecIdxTrkLightType::kRecIdxSec), cRec);
+                  }
+                }
+              } else {
+                if (atrack.eta() > trackCuts.minEta && atrack.eta() < trackCuts.maxEta) {
+                  if (!iscounted) { // primaries
+                    if (!eventCuts.useZVtxCutMC || std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                      registryMC.fill(HIST("Tracks/hEffIdxRec"), particle.pt(), particle.eta(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(RecIdxTrkLightType::kRecIdxPrim));
+                    }
+                    iscounted = true;
+                  }
+                }
+                registryMC.fill(HIST("Tracks/NmftTrkPerPart"), ncnt);
+                if (ncnt > 1) { // secondaries
+                  if (atrack.eta() > trackCuts.minEta && atrack.eta() < trackCuts.maxEta) {
+                    registryMC.fill(HIST("Tracks/hEffIdxRec"), particle.pt(), particle.eta(), atrack.bestDCAXY(), bestDcaZ, static_cast<float>(RecIdxTrkLightType::kRecIdxSec));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  void processMcEfficiencyIdxBestLightInlusive(CollsMCExtraMult::iterator const& mccollision,
+                                               soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
+                                               ParticlesIdx const& particles,
+                                               MftTracksLabeled const& tracks,
+                                               MftBestTracksLabeled const& atracks)
+  {
+    processEfficiencyIdxBestLight<CollsMCExtraMult, Colls>(mccollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processMcEfficiencyIdxBestLightInlusive, "Process tracking efficiency best light (inclusive, indexed)", false);
+
+  void processMcEfficiencyIdxBestLightCentFT0C(CollsMCExtraMult::iterator const& mccollision,
+                                               soa::SmallGroups<soa::Join<CollsCentFT0C, aod::McCollisionLabels>> const& collisions,
+                                               ParticlesIdx const& particles,
+                                               MftTracksLabeled const& tracks,
+                                               MftBestTracksLabeled const& atracks)
+  {
+    processEfficiencyIdxBestLight<CollsMCExtraMult, CollsCentFT0C>(mccollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processMcEfficiencyIdxBestLightCentFT0C, "Process tracking efficiency best light (in FT0C centrality bins, indexed)", false);
+
   void processMcSgnEvtLossCentFT0C(CollsMCExtraMult::iterator const& mcCollision,
                                    soa::SmallGroups<CollsGenCentFT0C> const& collisions,
                                    aod::McParticles const& particles)
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
-    registryMC.fill(HIST("Events/hNchGen"), mcCollision.multMCFT0C(), static_cast<float>(EvtLossType::kGenAll));
+    float multMC{};
+    auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+    auto multMCNParticlesEtaMFT = countPart(perCollMCsample);
+    if (gConf.useMultMCatMidRapidity) {
+      multMC = mcCollision.multMCNParticlesEta08();
+    } else if (gConf.useMultMCatMFTacc) {
+      multMC = multMCNParticlesEtaMFT;
+    } else {
+      multMC = getMultMC(mcCollision);
+    }
+    registryMC.fill(HIST("Events/hNchGen"), multMC, static_cast<float>(EvtLossType::kGenAll));
     registryMC.fill(HIST("Events/hMcEvtLossStatus"), static_cast<int>(McEvtLossStatus::kMcEvtAll));
     if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
       return;
@@ -2689,7 +3111,7 @@ struct DndetaMFTPbPb {
       return;
     }
     registryMC.fill(HIST("Events/hMcEvtLossStatus"), static_cast<int>(McEvtLossStatus::kMcEvtInelGt0wMft));
-    registryMC.fill(HIST("Events/hNchGen"), mcCollision.multMCFT0C(), static_cast<float>(EvtLossType::kGenSel)); // Evt loss den
+    registryMC.fill(HIST("Events/hNchGen"), multMC, static_cast<float>(EvtLossType::kGenSel)); // Evt loss den
 
     bool gtZeroColl = false;
     float cRec = CInvalid;
@@ -2700,29 +3122,24 @@ struct DndetaMFTPbPb {
       if (gConf.rmSplitVertex && collision.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
-      registryMC.fill(HIST("Events/hNchGen"), mcCollision.multMCFT0C(), static_cast<float>(EvtLossType::kGenSplit));
-      registryMC.fill(HIST("Events/hMultGenVsCentSplit"), getRecoCent(collision), mcCollision.multMCFT0C());
+      registryMC.fill(HIST("Events/hNchGen"), multMC, static_cast<float>(EvtLossType::kGenSplit));
+      registryMC.fill(HIST("Events/hMultGenVsCentSplit"), getRecoCent(collision), multMC);
       cRec = getRecoCent(collision);
       gtZeroColl = true;
     }
 
-    auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-    auto multMCNParticlesEtaMFT = countPart(perCollMCsample);
-
     registryMC.fill(HIST("Events/Centrality/hEvtSigLossStatus"), 1., cRec); // Evt split den
-    registryMC.fill(HIST("Events/hMultGenVsCent"), cRec, mcCollision.multMCFT0C());
-    registryMC.fill(HIST("Events/hMultGenVsCentNParticlesEta05"), cRec, mcCollision.multMCNParticlesEta05());
-    registryMC.fill(HIST("Events/hMultGenVsCentNParticlesEtaMFT"), cRec, multMCNParticlesEtaMFT);
+    registryMC.fill(HIST("Events/hMultGenVsCent"), multMC, getMultMC(mcCollision), cRec);
+    registryMC.fill(HIST("Events/hMultGenVsCentMFTacc"), multMCNParticlesEtaMFT, cRec);
 
     if (gtZeroColl) {
       if (gConf.useInelgt0wMFT && !isInelGt0wMft(particles)) {
         return;
       }
-      registryMC.fill(HIST("Events/hNchGen"), mcCollision.multMCFT0C(), static_cast<float>(EvtLossType::kGenRecEvt)); // Evt loss num
-      registryMC.fill(HIST("Events/Centrality/hEvtSigLossStatus"), 2., cRec);                                         // Evt split num
-      registryMC.fill(HIST("Events/hMultGenVsCentRec"), cRec, mcCollision.multMCFT0C());
-      registryMC.fill(HIST("Events/hMultGenVsCentRecNParticlesEta05"), cRec, mcCollision.multMCNParticlesEta05());
-      registryMC.fill(HIST("Events/hMultGenVsCentRecNParticlesEtaMFT"), cRec, multMCNParticlesEtaMFT);
+      registryMC.fill(HIST("Events/hNchGen"), multMC, static_cast<float>(EvtLossType::kGenRecEvt)); // Evt loss num
+      registryMC.fill(HIST("Events/Centrality/hEvtSigLossStatus"), 2., cRec);                       // Evt split num
+      registryMC.fill(HIST("Events/hMultGenVsCentRecEvt"), multMC, getMultMC(mcCollision), cRec);
+      registryMC.fill(HIST("Events/hMultGenVsCentRecEvtMFTacc"), multMCNParticlesEtaMFT, cRec);
     }
     if (collisions.size() == 0) {
       registryMC.fill(HIST("Events/Centrality/hEvtSigLossStatus"), 3., cRec);
@@ -2734,9 +3151,9 @@ struct DndetaMFTPbPb {
       if (gConf.useParticleSel && !isParticleSelected(particle)) {
         continue;
       }
-      registryMC.fill(HIST("Tracks/hEtaVsNchGen"), particle.eta(), mcCollision.multMCFT0C()); // Sgn loss den
+      registryMC.fill(HIST("Tracks/hNchGenVsEta"), multMC, particle.eta()); // Sgn loss den
       if (gtZeroColl) {
-        registryMC.fill(HIST("Tracks/hEtaVsNchGenRecEvt"), particle.eta(), mcCollision.multMCFT0C()); // Sgn loss num
+        registryMC.fill(HIST("Tracks/hNchGenVsEtaRecEvt"), multMC, particle.eta()); // Sgn loss num
       }
     }
   }
