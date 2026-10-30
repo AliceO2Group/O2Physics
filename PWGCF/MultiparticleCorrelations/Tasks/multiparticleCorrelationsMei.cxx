@@ -981,7 +981,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     std::vector<float> weightABMC(2, 0.f);
 
     if (tc.fInternalValidationSwitch) {
-      double psi = intval.randGen->Uniform(0, TMath::TwoPi());
+      double psi = intval.randGen->Uniform(0, math::TwoPI);
       intval.fIntValFun->SetParameter(0, psi);
     }
 
@@ -1215,7 +1215,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           if (!tc.fMasterCutSwitch && ba == eAfter) {
             continue;
           }
-          pc.fParticleHist[i][eRec][ba] = new TH1F(Form("[%s][eRec][%s]", ParticleHistNames[i], CutsNames[ba]), Form("%s distribution for reconstructed particles %s cuts", ParticleHistTitles[i], CutsTitles[ba]), static_cast<int>(bins[0]), bins[1], bins[2]);
+          pc.fParticleHist[i][eRec][ba] = new TH1F(Form("[%s][eRec][%s]", ParticleHistNames[i], CutsNames[ba]), Form("%s Distribution for Reconstructed Particles %s Cuts", ParticleHistTitles[i], CutsTitles[ba]), static_cast<int>(bins[0]), bins[1], bins[2]);
           pc.fParticleHist[i][eRec][ba]->GetXaxis()->SetTitle(Form("%s", ParticleHistTitles[i]));
           pc.fParticleHist[i][eRec][ba]->SetColors(lineColor[ba], -1, fillColor[ba]);
           pc.fParticleHistList->Add(pc.fParticleHist[i][eRec][ba]);
@@ -1230,7 +1230,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           if (!tc.fMasterCutSwitch && ba == eAfter) {
             continue;
           }
-          pc.fParticleHist[i][eSim][ba] = new TH1F(Form("[%s][eSim][%s]", ParticleHistNames[i], CutsNames[ba]), Form("%s distribution for simulated particles %s cuts", ParticleHistTitles[i], CutsTitles[ba]), static_cast<int>(bins[0]), bins[1], bins[2]);
+          pc.fParticleHist[i][eSim][ba] = new TH1F(Form("[%s][eSim][%s]", ParticleHistNames[i], CutsNames[ba]), Form("%s Distribution for Simulated Particles %s Cuts", ParticleHistTitles[i], CutsTitles[ba]), static_cast<int>(bins[0]), bins[1], bins[2]);
           pc.fParticleHist[i][eSim][ba]->GetXaxis()->SetTitle(Form("%s", ParticleHistTitles[i]));
           pc.fParticleHist[i][eSim][ba]->SetColors(lineColor[ba], -1, fillColor[ba]);
           pc.fParticleHistList->Add(pc.fParticleHist[i][eSim][ba]);
@@ -1265,7 +1265,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           if (!tc.fMasterCutSwitch && ba == eAfter) {
             continue;
           }
-          ec.fEventHist[i][eRec][ba] = new TH1F(Form("[%s][eRec][%s]", EventHistNames[i], CutsNames[ba]), Form("%s (reconstructed) %s cuts", EventHistTitles[i], CutsTitles[ba]), static_cast<int>(bins[0]), bins[1], bins[2]);
+          ec.fEventHist[i][eRec][ba] = new TH1F(Form("[%s][eRec][%s]", EventHistNames[i], CutsNames[ba]), Form("%s (Reconstructed) %s Cuts", EventHistTitles[i], CutsTitles[ba]), static_cast<int>(bins[0]), bins[1], bins[2]);
           ec.fEventHist[i][eRec][ba]->GetXaxis()->SetTitle(Form("%s", EventHistTitles[i]));
           ec.fEventHist[i][eRec][ba]->SetColors(lineColor[ba], -1, fillColor[ba]);
           ec.fEventHistList->Add(ec.fEventHist[i][eRec][ba]);
@@ -1287,7 +1287,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           if (!tc.fMasterCutSwitch && ba == eAfter) {
             continue;
           }
-          ec.fEventHist[i][eSim][ba] = new TH1F(Form("[%s][eSim][%s]", EventHistNames[i], CutsNames[ba]), Form("%s (simulated) %s cuts", EventHistTitles[i], CutsTitles[ba]), static_cast<int>(bins[0]), bins[1], bins[2]);
+          ec.fEventHist[i][eSim][ba] = new TH1F(Form("[%s][eSim][%s]", EventHistNames[i], CutsNames[ba]), Form("%s (Simulated) %s Cuts", EventHistTitles[i], CutsTitles[ba]), static_cast<int>(bins[0]), bins[1], bins[2]);
           ec.fEventHist[i][eSim][ba]->GetXaxis()->SetTitle(Form("%s", EventHistTitles[i]));
           ec.fEventHist[i][eSim][ba]->SetColors(lineColor[ba], -1, fillColor[ba]);
           ec.fEventHistList->Add(ec.fEventHist[i][eSim][ba]);
@@ -1308,7 +1308,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     if (doprocessRec || doprocessRecSim) {
       for (int i = 0; i < eObservables_N; ++i) {
-        obs.fProfCorr[i][eRec] = new TProfile(Form("[%s][eRec]", ObservablesNames[i]), Form("%s for reconstructed data after cuts", ObservablesTitles[i]), nDefaultCentBins, defaultCentBoundaries.data());
+        obs.fProfCorr[i][eRec] = new TProfile(Form("[%s][eRec]", ObservablesNames[i]), Form("%s for Reconstructed Data after Cuts", ObservablesTitles[i]), nDefaultCentBins, defaultCentBoundaries.data());
         obs.fProfCorr[i][eRec]->SetStats(false);
         obs.fProfCorr[i][eRec]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[tc.fCentralityEstimator]));
         obs.fProfCorr[i][eRec]->GetYaxis()->SetTitle(ObservablesTitles[i]);
@@ -1319,7 +1319,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     if (doprocessSim || doprocessRecSim) {
       for (int i = 0; i < eObservables_N; ++i) {
-        obs.fProfCorr[i][eSim] = new TProfile(Form("[%s][eSim]", ObservablesNames[i]), Form("%s for simulated data after cuts", ObservablesTitles[i]), nDefaultCentBins, defaultCentBoundaries.data());
+        obs.fProfCorr[i][eSim] = new TProfile(Form("[%s][eSim]", ObservablesNames[i]), Form("%s for Simulated Data after Cuts", ObservablesTitles[i]), nDefaultCentBins, defaultCentBoundaries.data());
         obs.fProfCorr[i][eSim]->SetStats(false);
         obs.fProfCorr[i][eSim]->GetXaxis()->SetTitle("Centrality (calculated from I.P.)");
         obs.fProfCorr[i][eSim]->GetYaxis()->SetTitle(ObservablesTitles[i]);
@@ -1373,7 +1373,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       fBaseList->Add(intval.fIntValList);
 
       for (int i = 0; i < eIntValHarmonics_N; ++i) {
-        intval.fProfIntVal[i] = new TProfile(Form("[%s]", IntValNames[i]), Form("Internal validation for %s with true value %f", IntValTitles[i], std::pow(tc.fIVHarmonics[i], 2)), nDefaultCentBins, defaultCentBoundaries.data());
+        intval.fProfIntVal[i] = new TProfile(Form("[%s]", IntValNames[i]), Form("Internal Validation for %s with True Value %f", IntValTitles[i], std::pow(tc.fIVHarmonics[i], 2)), nDefaultCentBins, defaultCentBoundaries.data());
         intval.fProfIntVal[i]->SetStats(false);
         intval.fProfIntVal[i]->GetXaxis()->SetTitle("Centrality (calculated from I.P.)");
         intval.fProfIntVal[i]->GetYaxis()->SetTitle(IntValTitles[i]);
