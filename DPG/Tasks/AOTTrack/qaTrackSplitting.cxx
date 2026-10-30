@@ -99,8 +99,8 @@ struct qaTrackSplitting {
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA>;
   Filter trackFilterEta = nabs(aod::track::eta - cfgCustomTrackCuts.windowEta) < cfgCustomTrackCuts.windowEtaWidth;
   Filter trackFilterPhi = nabs(aod::track::phi - cfgCustomTrackCuts.windowPhi) < cfgCustomTrackCuts.windowPhiWidth;
-  Filter trackFilterITS = (aod::track::itsClusterSizes > (uint32_t)0);
-  Filter trackFilterTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Filter trackFilterITS = (aod::track::itsClusterSizes > static_cast<uint32_t>(0));
+  Filter trackFilterTPC = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0));
   // Filter trackFilterType = (aod::track::TrackType == aod::track::Track);
   // Filter filterPt = nabs(aod::track::pt - cfgCustomTrackCuts.windowPt) < cfgCustomTrackCuts.windowPtWidth;
   void processData(CollisionCandidates const& collisions,
