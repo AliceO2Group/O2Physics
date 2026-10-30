@@ -170,22 +170,22 @@ struct HfCandidateCreator3Prong {
 
   void init(InitContext const&)
   {
-    std::array<bool, 8> doprocessDF{doprocessPvRefitWithDCAFitterN, doprocessNoPvRefitWithDCAFitterN,
-                                    doprocessPvRefitWithDCAFitterNCentFT0C, doprocessNoPvRefitWithDCAFitterNCentFT0C,
-                                    doprocessPvRefitWithDCAFitterNCentFT0M, doprocessNoPvRefitWithDCAFitterNCentFT0M, doprocessPvRefitWithDCAFitterNUpc, doprocessNoPvRefitWithDCAFitterNUpc};
-    std::array<bool, 8> doprocessKF{doprocessPvRefitWithKFParticle, doprocessNoPvRefitWithKFParticle,
-                                    doprocessPvRefitWithKFParticleCentFT0C, doprocessNoPvRefitWithKFParticleCentFT0C,
-                                    doprocessPvRefitWithKFParticleCentFT0M, doprocessNoPvRefitWithKFParticleCentFT0M, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc};
+    const std::array<bool, 8> doprocessDF{doprocessPvRefitWithDCAFitterN, doprocessNoPvRefitWithDCAFitterN,
+                                          doprocessPvRefitWithDCAFitterNCentFT0C, doprocessNoPvRefitWithDCAFitterNCentFT0C,
+                                          doprocessPvRefitWithDCAFitterNCentFT0M, doprocessNoPvRefitWithDCAFitterNCentFT0M, doprocessPvRefitWithDCAFitterNUpc, doprocessNoPvRefitWithDCAFitterNUpc};
+    const std::array<bool, 8> doprocessKF{doprocessPvRefitWithKFParticle, doprocessNoPvRefitWithKFParticle,
+                                          doprocessPvRefitWithKFParticleCentFT0C, doprocessNoPvRefitWithKFParticleCentFT0C,
+                                          doprocessPvRefitWithKFParticleCentFT0M, doprocessNoPvRefitWithKFParticleCentFT0M, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc};
     if ((std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) + std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0)) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
     if (std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1 && createCharmNuclei == true) {
       LOGP(fatal, "KF based reconstruction of charm nuclei is not impemented yet.");
     }
-    std::array<bool, 4> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M, doprocessCollisionsUpc};
+    const std::array<bool, 4> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M, doprocessCollisionsUpc};
     const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
 
-    std::array<bool, 5> processesUpc = {doprocessPvRefitWithDCAFitterNUpc, doprocessNoPvRefitWithDCAFitterNUpc, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc, doprocessCollisionsUpc};
+    const std::array<bool, 5> processesUpc = {doprocessPvRefitWithDCAFitterNUpc, doprocessNoPvRefitWithDCAFitterNUpc, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc, doprocessCollisionsUpc};
     const int nProcessesUpc = std::accumulate(processesUpc.begin(), processesUpc.end(), 0);
 
     if (nProcessesCollisions > 1) {
@@ -208,7 +208,7 @@ struct HfCandidateCreator3Prong {
     if (nProcessesUpc > 0 && isRun2) {
       LOGP(fatal, "Process function for UPC is only available in Run 3!");
     }
-    std::array<bool, 5> creationFlags = {createDplus, createDs, createLc, createXic, createCharmNuclei};
+    const std::array<bool, 5> creationFlags = {createDplus, createDs, createLc, createXic, createCharmNuclei};
     const int nParticlesToCreate = std::accumulate(creationFlags.begin(), creationFlags.end(), 0);
     if (nParticlesToCreate == 0) {
       LOGP(fatal, "At least one particle specie should be enabled for the creation.");
@@ -480,7 +480,7 @@ struct HfCandidateCreator3Prong {
 
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
       /// reject candidates in collisions not satisfying the event selections
-      auto collision = rowTrackIndexProng3.template collision_as<Coll>();
+      const auto collision = rowTrackIndexProng3.template collision_as<Coll>();
       float centrality{-1.f};
       o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       if constexpr (ApplyUpcSel) {
@@ -493,14 +493,14 @@ struct HfCandidateCreator3Prong {
         continue;
       }
 
-      auto track0 = rowTrackIndexProng3.template prong0_as<TracksWCovExtraPidPiKaPrLightNuclei>();
-      auto track1 = rowTrackIndexProng3.template prong1_as<TracksWCovExtraPidPiKaPrLightNuclei>();
-      auto track2 = rowTrackIndexProng3.template prong2_as<TracksWCovExtraPidPiKaPrLightNuclei>();
+      const auto track0 = rowTrackIndexProng3.template prong0_as<TracksWCovExtraPidPiKaPrLightNuclei>();
+      const auto track1 = rowTrackIndexProng3.template prong1_as<TracksWCovExtraPidPiKaPrLightNuclei>();
+      const auto track2 = rowTrackIndexProng3.template prong2_as<TracksWCovExtraPidPiKaPrLightNuclei>();
 
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, nullptr, isRun2);
@@ -523,7 +523,7 @@ struct HfCandidateCreator3Prong {
         kfpVertex.SetCovarianceMatrix(rowTrackIndexProng3.pvRefitSigmaX2(), rowTrackIndexProng3.pvRefitSigmaXY(), rowTrackIndexProng3.pvRefitSigmaY2(), rowTrackIndexProng3.pvRefitSigmaXZ(), rowTrackIndexProng3.pvRefitSigmaYZ(), rowTrackIndexProng3.pvRefitSigmaZ2());
       }
       kfpVertex.GetCovarianceMatrix(covMatrixPV);
-      KFParticle kfpV(kfpVertex);
+      const KFParticle kfpV(kfpVertex);
       registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
       registry.fill(HIST("hCovPVYY"), covMatrixPV[2]);
       registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
@@ -564,9 +564,9 @@ struct HfCandidateCreator3Prong {
         registry.fill(HIST("hDcaZProngs"), track2.pt(), UndefValueFloat);
       }
 
-      auto [impactParameter0Z, errImpactParameter0Z] = kfCalculateImpactParameterZ(kfFirstProton, kfpV);
-      auto [impactParameter1Z, errImpactParameter1Z] = kfCalculateImpactParameterZ(kfSecondKaon, kfpV);
-      auto [impactParameter2Z, errImpactParameter2Z] = kfCalculateImpactParameterZ(kfThirdProton, kfpV);
+      const auto [impactParameter0Z, errImpactParameter0Z] = kfCalculateImpactParameterZ(kfFirstProton, kfpV);
+      const auto [impactParameter1Z, errImpactParameter1Z] = kfCalculateImpactParameterZ(kfSecondKaon, kfpV);
+      const auto [impactParameter2Z, errImpactParameter2Z] = kfCalculateImpactParameterZ(kfThirdProton, kfpV);
 
       const float chi2primFirst = kfCalculateChi2ToPrimaryVertex(kfFirstProton, kfpV);
       const float chi2primSecond = kfCalculateChi2ToPrimaryVertex(kfSecondKaon, kfpV);
@@ -668,22 +668,22 @@ struct HfCandidateCreator3Prong {
       const float chi2geo = kfCandGeneric->Chi2() / static_cast<float>(kfCandGeneric->NDF());
       const std::pair<float, float> ldl = kfCalculateLdL(*kfCandGeneric, kfpV);
 
-      std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, *kfCandGeneric);
-      std::array<float, 3> pProng1 = kfCalculateProngMomentumInSecondaryVertex(kfSecondKaon, *kfCandGeneric);
-      std::array<float, 3> pProng2 = kfCalculateProngMomentumInSecondaryVertex(kfThirdPion, *kfCandGeneric);
+      const std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, *kfCandGeneric);
+      const std::array<float, 3> pProng1 = kfCalculateProngMomentumInSecondaryVertex(kfSecondKaon, *kfCandGeneric);
+      const std::array<float, 3> pProng2 = kfCalculateProngMomentumInSecondaryVertex(kfThirdPion, *kfCandGeneric);
 
       registry.fill(HIST("hCovSVXX"), kfCandGeneric->GetCovariance(0, 0));
       registry.fill(HIST("hCovSVYY"), kfCandGeneric->GetCovariance(1, 1));
       registry.fill(HIST("hCovSVXZ"), kfCandGeneric->GetCovariance(2, 0));
       registry.fill(HIST("hCovSVZZ"), kfCandGeneric->GetCovariance(2, 2));
 
-      auto* covMatrixSV = kfCandGeneric->CovarianceMatrix();
+      const auto* const covMatrixSV = kfCandGeneric->CovarianceMatrix();
       double phi{}, theta{};
       getPointDirection(std::array{kfpV.GetX(), kfpV.GetY(), kfpV.GetZ()}, std::array{kfCandGeneric->GetX(), kfCandGeneric->GetY(), kfCandGeneric->GetZ()}, phi, theta);
-      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
-      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
+      const auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
+      const auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
-      auto indexCollision = collision.globalIndex();
+      const auto indexCollision = collision.globalIndex();
       uint8_t bitmapProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 0);
