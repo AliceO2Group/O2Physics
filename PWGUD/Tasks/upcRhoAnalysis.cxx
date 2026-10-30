@@ -867,11 +867,11 @@ struct UpcRhoAnalysis {
 
   // function to obtain index of run from the run number vector
   // search for passed run number in the vector and return its index +1 to use in the filling of a histogram
-  int getRunIndex(int runNumber, const std::vector<int>& runNumbers)
+  int getRunIndex(int runNumber, const std::vector<int>& runNumberList)
   {
-    auto it = std::find(runNumbers.begin(), runNumbers.end(), runNumber);
-    if (it != runNumbers.end()) {
-      return std::distance(runNumbers.begin(), it) + 1; // +1 to avoid 0 bin in histogram
+    auto it = std::find(runNumberList.begin(), runNumberList.end(), runNumber);
+    if (it != runNumberList.end()) {
+      return std::distance(runNumberList.begin(), it) + 1; // +1 to avoid 0 bin in histogram
     } else {
       return 0; // return 0 if run number not found
     }
