@@ -319,17 +319,17 @@ struct findableStudy {
         histos.fill(HIST("hFoundVsTracksOK"), nTrackOK && pTrackOK, recv0.isFound());
 
         // encode conditions of tracks
-        uint8_t positiveTrackCode = ((uint8_t(pTrack.hasTPC()) << hasTPC) |
-                                     (uint8_t(pTrack.hasITSTracker()) << hasITSTracker) |
-                                     (uint8_t(pTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                     (uint8_t(pTrack.hasTRD()) << hasTRD) |
-                                     (uint8_t(pTrack.hasTOF()) << hasTOF));
+        uint8_t positiveTrackCode = ((static_cast<uint8_t>(pTrack.hasTPC()) << hasTPC) |
+                                     (static_cast<uint8_t>(pTrack.hasITSTracker()) << hasITSTracker) |
+                                     (static_cast<uint8_t>(pTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                     (static_cast<uint8_t>(pTrack.hasTRD()) << hasTRD) |
+                                     (static_cast<uint8_t>(pTrack.hasTOF()) << hasTOF));
 
-        uint8_t negativeTrackCode = ((uint8_t(nTrack.hasTPC()) << hasTPC) |
-                                     (uint8_t(nTrack.hasITSTracker()) << hasITSTracker) |
-                                     (uint8_t(nTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                     (uint8_t(nTrack.hasTRD()) << hasTRD) |
-                                     (uint8_t(nTrack.hasTOF()) << hasTOF));
+        uint8_t negativeTrackCode = ((static_cast<uint8_t>(nTrack.hasTPC()) << hasTPC) |
+                                     (static_cast<uint8_t>(nTrack.hasITSTracker()) << hasITSTracker) |
+                                     (static_cast<uint8_t>(nTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                     (static_cast<uint8_t>(nTrack.hasTRD()) << hasTRD) |
+                                     (static_cast<uint8_t>(nTrack.hasTOF()) << hasTOF));
 
         if (pTrackOK && nTrackOK && ptmc > 1.0 && ptmc < 1.1) {
           // this particular V0 reco entry has been acceptably tracked. Do bookkeeping
@@ -357,7 +357,7 @@ struct findableStudy {
           uint64_t selMap = v0data::computeReconstructionBitmap(recv0, pTrack, nTrack, coll, recv0.yLambda(), recv0.yK0Short(), v0Selections);
 
           // Consider in all cases
-          selMap = selMap | (uint64_t(1) << v0data::selConsiderK0Short) | (uint64_t(1) << v0data::selConsiderLambda) | (uint64_t(1) << v0data::selConsiderAntiLambda);
+          selMap = selMap | (static_cast<uint64_t>(1) << v0data::selConsiderK0Short) | (static_cast<uint64_t>(1) << v0data::selConsiderLambda) | (static_cast<uint64_t>(1) << v0data::selConsiderAntiLambda);
 
           // selection checker: ensure this works on subset of actual svertexer-findable
           bool validTrackProperties = v0Selections->verifyMask(selMap, maskTrackProperties) && pTrackOK && nTrackOK;
@@ -373,12 +373,12 @@ struct findableStudy {
           bool validThisSpecies = v0Selections->verifyMask(selMap, thisSpeciesMask);
 
           // specific selection (not cumulative)
-          topoV0RadiusOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadius);
-          topoV0RadiusMaxOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadiusMax);
-          topoV0CosPAOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selCosPA);
-          topoDcaPosToPVOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAPosToPV);
-          topoDcaNegToPVOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCANegToPV);
-          topoDcaV0DauOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAV0Dau);
+          topoV0RadiusOK = v0Selections->verifyMask(selMap, static_cast<uint64_t>(1) << v0data::selRadius);
+          topoV0RadiusMaxOK = v0Selections->verifyMask(selMap, static_cast<uint64_t>(1) << v0data::selRadiusMax);
+          topoV0CosPAOK = v0Selections->verifyMask(selMap, static_cast<uint64_t>(1) << v0data::selCosPA);
+          topoDcaPosToPVOK = v0Selections->verifyMask(selMap, static_cast<uint64_t>(1) << v0data::selDCAPosToPV);
+          topoDcaNegToPVOK = v0Selections->verifyMask(selMap, static_cast<uint64_t>(1) << v0data::selDCANegToPV);
+          topoDcaV0DauOK = v0Selections->verifyMask(selMap, static_cast<uint64_t>(1) << v0data::selDCAV0Dau);
           // trackTPCRowsOK = v0Selections->verifyMask(selMap, (uint64_t(1) << v0data::selPosGoodTPCTrack) | (uint64_t(1) << v0data::selNegGoodTPCTrack) );
 
           // uint64_t tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativePion);

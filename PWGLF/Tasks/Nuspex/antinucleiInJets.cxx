@@ -1181,7 +1181,7 @@ struct AntinucleiInJets {
             registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
             // custom nsigma He3 based on bethe bloch fit of TPC signal
             double tpcSignal = track.tpcSignal();
-            double expectedSignalHe3 = common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double expectedSignalHe3 = common::BetheBlochAleph((track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
             double nSigmaTPCHe3Custom = ((tpcSignal / expectedSignalHe3) - 1.) / 0.045;
             registryData.fill(HIST("antihelium3_jet_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
@@ -1198,7 +1198,7 @@ struct AntinucleiInJets {
             registryData.fill(HIST("helium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
             // custom nsigma He3 based on bethe bloch fit of TPC signal
             double tpcSignal = track.tpcSignal();
-            double expectedSignalHe3 = common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double expectedSignalHe3 = common::BetheBlochAleph((track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
             double nSigmaTPCHe3Custom = ((tpcSignal / expectedSignalHe3) - 1.) / 0.045;
             registryData.fill(HIST("helium3_jet_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
@@ -1275,7 +1275,7 @@ struct AntinucleiInJets {
             registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
             // custom nsigma He3 based on bethe bloch fit of TPC signal
             double tpcSignal = track.tpcSignal();
-            double expectedSignalHe3 = common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double expectedSignalHe3 = common::BetheBlochAleph((track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
             double nSigmaTPCHe3Custom = ((tpcSignal / expectedSignalHe3) - 1.) / 0.045;
             registryData.fill(HIST("antihelium3_ue_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
@@ -1292,7 +1292,7 @@ struct AntinucleiInJets {
             registryData.fill(HIST("helium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
             // custom nsigma He3 based on bethe bloch fit of TPC signal
             double tpcSignal = track.tpcSignal();
-            double expectedSignalHe3 = common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double expectedSignalHe3 = common::BetheBlochAleph((track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
             double nSigmaTPCHe3Custom = ((tpcSignal / expectedSignalHe3) - 1.) / 0.045;
             registryData.fill(HIST("helium3_ue_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
