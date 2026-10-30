@@ -184,16 +184,16 @@ DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
 // Additional columns for prompt-non-prompt JPsi separation (BDT training), identical to tableReader_withAssoc
-DECLARE_SOA_COLUMN(PairFilter, pairFilter, uint32_t);                //! twoTrackFilter (cut bits + ambiguity bits 28-31)
-DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                //! MC signal bits, 0 in data
-DECLARE_SOA_COLUMN(TauxyeeErr, tauxyeeErr, float);                   //! kVertexingTauxyErr: in ns (not cm) and with the reconstructed mass
-DECLARE_SOA_COLUMN(TauzeeErr, tauzeeErr, float);                     //! kVertexingTauzErr: in ns (not cm) and with the reconstructed mass
-DECLARE_SOA_COLUMN(LxyeeProjected, lxyeeProjected, float);           //! kVertexingLxyProjected
-DECLARE_SOA_COLUMN(LxyeeOverErr, lxyeeOverErr, float);               //! kVertexingLxyOverErr
-DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                           //! kVertexingLxyz
-DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);             //! kVertexingLxyzOverErr
-DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);                     //! kVertexingChi2PCA
-DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);                         //! kCosPointingAngle
+DECLARE_SOA_COLUMN(PairFilter, pairFilter, uint32_t);      //! twoTrackFilter (cut bits + ambiguity bits 28-31)
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);      //! MC signal bits, 0 in data
+DECLARE_SOA_COLUMN(TauxyeeErr, tauxyeeErr, float);         //! kVertexingTauxyErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(TauzeeErr, tauzeeErr, float);           //! kVertexingTauzErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(LxyeeProjected, lxyeeProjected, float); //! kVertexingLxyProjected
+DECLARE_SOA_COLUMN(LxyeeOverErr, lxyeeOverErr, float);     //! kVertexingLxyOverErr
+DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                 //! kVertexingLxyz
+DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);   //! kVertexingLxyzOverErr
+DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);           //! kVertexingChi2PCA
+DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);               //! kCosPointingAngle
 DECLARE_SOA_COLUMN(DcaXYOverSig1, dcaXYOverSig1, float);
 DECLARE_SOA_COLUMN(DcaZOverSig1, dcaZOverSig1, float);
 DECLARE_SOA_COLUMN(DcaXYOverSig2, dcaXYOverSig2, float);
