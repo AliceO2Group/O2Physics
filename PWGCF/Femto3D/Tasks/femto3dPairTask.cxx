@@ -94,8 +94,9 @@ struct FemtoCorrelations {
   Configurable<std::vector<float>> _tofNSigma_2{"tofNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TOF"};
   Configurable<std::vector<float>> _tpcNSigmaResidual_2{"tpcNSigmaResidual_2", std::vector<float>{-5.0f, 5.0f}, "second particle PID: residual TPC Nsigma cut to use with the TOF"};
 
-  Configurable<int> _particlePDGtoReject{"particlePDGtoRejectFromSecond", 0, "applied only if the particles are non-identical and only to the second particle in the pair!!!"};
-  Configurable<std::vector<float>> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for the particle specified with PDG to be rejected"};
+  Configurable<int> _particlePDGtoReject{"particlePDGtoRejectFromFirst", 211, "if the particles are non-identical then applied only to the first"};
+  Configurable<float> _rejectWithinNsigmaTPC{"rejectWithinNsigmaTPC", 0.0, "TPC rejection Nsigma abs range for the particle specified with PDG to be rejected"};
+  Configurable<float> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", 0.0, "TOF rejection Nsigma abs range for the particle specified with PDG to be rejected"};
 
   Configurable<int> _dPhiMode{"dPhiMode", 0, "Flag to choose how to calc. dphi*: 0 - at a fixed TPC radius; 1 - average over different TPC radii;"};
   Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
@@ -356,8 +357,8 @@ struct FemtoCorrelations {
     if (_fill3dCF && multBin > SEhistos_3D.size())
       LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
 
-    for (const auto& ii : tracks1) {
-      for (const auto& iii : tracks2) {
+    for (auto ii : tracks1) {
+      for (auto iii : tracks2) {
 
         Pair->SetPair(ii, iii);
         float pair_kT = Pair->GetKt();
@@ -450,6 +451,9 @@ struct FemtoCorrelations {
         continue;
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts_1, _itsNSigma_1.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) { // filling the map: eventID <-> selected particles1
+        if ((_rejectWithinNsigmaTPC != 0.0 && std::fabs(o2::aod::singletrackselector::getTPCNsigma(track, _particlePDGtoReject)) < _rejectWithinNsigmaTPC) || (_rejectWithinNsigmaTOF != 0.0 && std::fabs(o2::aod::singletrackselector::getTOFNsigma(track, _particlePDGtoReject)) < _rejectWithinNsigmaTOF))
+          continue;
+        
         selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<soa::Filtered<FilteredTracks>::iterator>(track));
 
         pHisto_first->Fill(track.p());
@@ -460,7 +464,7 @@ struct FemtoCorrelations {
 
       if (IsIdentical) {
         continue;
-      } else if (track.sign() != _sign_2 && !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts_2, _itsNSigma_2.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2, _tpcNSigmaResidual_2.value))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
+      } else if (track.sign() != _sign_2 && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts_2, _itsNSigma_2.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2, _tpcNSigmaResidual_2.value))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
         selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<soa::Filtered<FilteredTracks>::iterator>(track));
 
         pHisto_second->Fill(track.p());
