@@ -661,9 +661,9 @@ struct HfCandidateCreator3Prong {
       const float chi2geo = kfCandGeneric->Chi2() / static_cast<float>(kfCandGeneric->NDF());
       const std::pair<float, float> ldl = kfCalculateLdL(*kfCandGeneric, kfpV);
 
-      std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
-      std::array<float, 3> pProng1 = kfCalculateProngMomentumInSecondaryVertex(kfSecondKaon, kfCandPiKP);
-      std::array<float, 3> pProng2 = kfCalculateProngMomentumInSecondaryVertex(kfThirdPion, kfCandPiKP);
+      std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, *kfCandGeneric);
+      std::array<float, 3> pProng1 = kfCalculateProngMomentumInSecondaryVertex(kfSecondKaon, *kfCandGeneric);
+      std::array<float, 3> pProng2 = kfCalculateProngMomentumInSecondaryVertex(kfThirdPion, *kfCandGeneric);
 
       registry.fill(HIST("hCovSVXX"), kfCandGeneric->GetCovariance(0, 0));
       registry.fill(HIST("hCovSVYY"), kfCandGeneric->GetCovariance(1, 1));
