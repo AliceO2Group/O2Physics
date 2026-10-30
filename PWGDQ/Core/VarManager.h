@@ -558,8 +558,8 @@ class VarManager : public TObject
     kCharge1,
     kDCAxy1,
     kDCAz1,
-    kDCAxyOverSig1, 
-    kDCAzOverSig1,  
+    kDCAxyOverSig1,
+    kDCAzOverSig1,
     kITSclusterMap1,
     kTPCnSigmaEl1,
     kPin_leg1,
@@ -570,8 +570,8 @@ class VarManager : public TObject
     kCharge2,
     kDCAxy2,
     kDCAz2,
-    kDCAxyOverSig2, 
-    kDCAzOverSig2, 
+    kDCAxyOverSig2,
+    kDCAzOverSig2,
     kITSclusterMap2,
     kTPCnSigmaEl2,
 
@@ -4032,7 +4032,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
       double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
       double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
-      
+
       values[kDCAxyOverSig1] = dca1sigXY;
       values[kDCAzOverSig1] = dca1sigZ;
       values[kDCAxyOverSig2] = dca2sigXY;
