@@ -136,9 +136,9 @@ struct FemtoUniversePairTaskTrackNucleus {
   } trackfilter;
 
   /// Partition for track
-  Partition<FilteredFemtoFullParticles> partTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackfilter.confChargeTrack && aod::femtouniverseparticle::pt < trackfilter.confPtHighTrack && aod::femtouniverseparticle::pt > trackfilter.confPtLowTrack;
+  Partition<FilteredFemtoFullParticles> partTrack = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackfilter.confChargeTrack && aod::femtouniverseparticle::pt < trackfilter.confPtHighTrack && aod::femtouniverseparticle::pt > trackfilter.confPtLowTrack;
 
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partTrackMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackfilter.confChargeTrack && aod::femtouniverseparticle::pt < trackfilter.confPtHighTrack && aod::femtouniverseparticle::pt > trackfilter.confPtLowTrack;
+  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partTrackMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackfilter.confChargeTrack && aod::femtouniverseparticle::pt < trackfilter.confPtHighTrack && aod::femtouniverseparticle::pt > trackfilter.confPtLowTrack;
 
   /// Histogramming for track
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoTrack;
@@ -154,9 +154,9 @@ struct FemtoUniversePairTaskTrackNucleus {
   } nucleusfilter;
 
   /// Partition for nucleus
-  Partition<FilteredFemtoFullParticles> partNucleus = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == nucleusfilter.confChargeNucleus) && aod::femtouniverseparticle::pt < nucleusfilter.confPtHighNucleus && aod::femtouniverseparticle::pt > nucleusfilter.confPtLowNucleus;
+  Partition<FilteredFemtoFullParticles> partNucleus = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == nucleusfilter.confChargeNucleus) && aod::femtouniverseparticle::pt < nucleusfilter.confPtHighNucleus && aod::femtouniverseparticle::pt > nucleusfilter.confPtLowNucleus;
 
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partNucleusMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == nucleusfilter.confChargeNucleus) && aod::femtouniverseparticle::pt < nucleusfilter.confPtHighNucleus && aod::femtouniverseparticle::pt > nucleusfilter.confPtLowNucleus;
+  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partNucleusMC = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == nucleusfilter.confChargeNucleus) && aod::femtouniverseparticle::pt < nucleusfilter.confPtHighNucleus && aod::femtouniverseparticle::pt > nucleusfilter.confPtLowNucleus;
 
   /// Histogramming for nucleus
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoNucleus;
@@ -513,14 +513,14 @@ struct FemtoUniversePairTaskTrackNucleus {
   void doSameEvent(const PartitionType& groupTrack, const PartitionType& groupNucleus, const PartType& parts, float magFieldTesla, int multCol, int pairType, bool /*fillQA*/)
   {
     for (const auto& part : groupTrack) {
-      if (!isParticleNsigma((int8_t)1, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
+      if (!isParticleNsigma(static_cast<int8_t>(1), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
         continue;
       }
       trackHistoTrack.fillQA<isMC, true>(part);
     }
 
     for (const auto& part : groupNucleus) {
-      if (!isParticleNsigma((int8_t)2, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
+      if (!isParticleNsigma(static_cast<int8_t>(2), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
         continue;
       }
       trackHistoNucleus.fillQA<isMC, true>(part);
@@ -529,11 +529,11 @@ struct FemtoUniversePairTaskTrackNucleus {
     /// Combinations creation
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupTrack, groupNucleus))) {
 
-      if (!isParticleNsigma((int8_t)1, p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p1, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p1, o2::track::PID::Deuteron), p1.tpcSignal())) {
+      if (!isParticleNsigma(static_cast<int8_t>(1), p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p1, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p1, o2::track::PID::Deuteron), p1.tpcSignal())) {
         continue;
       }
 
-      if (!isParticleNsigma((int8_t)2, p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p2, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p2, o2::track::PID::Deuteron), p2.tpcSignal())) {
+      if (!isParticleNsigma(static_cast<int8_t>(2), p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p2, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p2, o2::track::PID::Deuteron), p2.tpcSignal())) {
         continue;
       }
 
@@ -684,11 +684,11 @@ struct FemtoUniversePairTaskTrackNucleus {
   {
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupTrack, groupNucleus))) {
 
-      if (!isParticleNsigma((int8_t)1, p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p1, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p1, o2::track::PID::Deuteron), p1.tpcSignal())) {
+      if (!isParticleNsigma(static_cast<int8_t>(1), p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p1, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p1, o2::track::PID::Deuteron), p1.tpcSignal())) {
         continue;
       }
 
-      if (!isParticleNsigma((int8_t)2, p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p2, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p2, o2::track::PID::Deuteron), p2.tpcSignal())) {
+      if (!isParticleNsigma(static_cast<int8_t>(2), p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p2, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p2, o2::track::PID::Deuteron), p2.tpcSignal())) {
         continue;
       }
 

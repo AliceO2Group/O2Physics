@@ -871,7 +871,7 @@ struct LambdaTableProducer {
       // Fill Lambda/AntiLambda Table
       lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0.pt(), v0.eta(), v0.phi(), v0.yLambda(), v0.px(), v0.py(), v0.pz(), lambdaMass,
                        v0.template posTrack_as<T>().index(), v0.template negTrack_as<T>().index(), posTrackKin, negTrackKin,
-                       (int8_t)partType, lambdaCorrFact);
+                       static_cast<int8_t>(partType), lambdaCorrFact);
     }
   }
 
@@ -926,7 +926,7 @@ struct LambdaTableProducer {
       }
       // Fill table
       lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), mcpart.px(), mcpart.py(), mcpart.pz(), RecoDecay::m(mcpart.p(), mcpart.e()),
-                            daughterIDs[0], daughterIDs[1], (int8_t)partType, 1.);
+                            daughterIDs[0], daughterIDs[1], static_cast<int8_t>(partType), 1.);
     }
   }
 
@@ -1038,7 +1038,7 @@ struct LambdaTableProducer {
 
       // Fill table
       lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), mcpart.px(), mcpart.py(), mcpart.pz(), RecoDecay::m(mcpart.p(), mcpart.e()),
-                            -1, -1, (int8_t)partType, 1.);
+                            -1, -1, static_cast<int8_t>(partType), 1.);
     }
   }
 
@@ -1422,8 +1422,8 @@ struct LambdaR2Correlation {
   using LambdaTracks = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
 
   SliceCache cache;
-  Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::partType == (int8_t)kLambda) && (aod::lambdatrackext::trueLambdaFlag == true);
-  Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::partType == (int8_t)kAntiLambda) && (aod::lambdatrackext::trueLambdaFlag == true);
+  Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::partType == static_cast<int8_t>(kLambda)) && (aod::lambdatrackext::trueLambdaFlag == true);
+  Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::partType == static_cast<int8_t>(kAntiLambda)) && (aod::lambdatrackext::trueLambdaFlag == true);
 
   void processDummy(aod::LambdaCollisions::iterator const&) {}
 
@@ -1458,8 +1458,8 @@ struct LambdaR2Correlation {
   using LambdaMcGenTracks = aod::LambdaMcGenTracks;
 
   SliceCache cachemc;
-  Partition<LambdaMcGenTracks> partMcLambdaTracks = (aod::lambdatrack::partType == (int8_t)kLambda);
-  Partition<LambdaMcGenTracks> partMcAntiLambdaTracks = (aod::lambdatrack::partType == (int8_t)kAntiLambda);
+  Partition<LambdaMcGenTracks> partMcLambdaTracks = (aod::lambdatrack::partType == static_cast<int8_t>(kLambda));
+  Partition<LambdaMcGenTracks> partMcAntiLambdaTracks = (aod::lambdatrack::partType == static_cast<int8_t>(kAntiLambda));
 
   void processMCGen(LambdaMcGenCollisions::iterator const& mcgencol, LambdaMcGenTracks const&)
   {

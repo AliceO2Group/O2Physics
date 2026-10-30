@@ -97,7 +97,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<float> confDCACutPtDepPar1{"confDCACutPtDepPar1", 0.013, "Parameter par[1] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
 
   /// Partition for selected particles
-  Partition<aod::FDParticles> selectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<aod::FDParticles> selectedParts = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               ifnode(aod::femtodreamparticle::pt * (0.5f * nexp(aod::femtodreamparticle::eta) + 0.5f * nexp(-1.f * aod::femtodreamparticle::eta)) <= confPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, confTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, confTPCTOFPIDBit)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, confCutPart)) &&
                                               (aod::femtodreamparticle::pt < confMaxpT) &&
@@ -107,7 +107,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
                                                       (aod::femtodreamparticle::tempFitVar <= confMaxDCAxy)));
   ;
 
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> selectedPartsMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> selectedPartsMC = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             ifnode(aod::femtodreamparticle::pt * (0.5f * nexp(aod::femtodreamparticle::eta) + 0.5f * nexp(-1.f * aod::femtodreamparticle::eta)) <= confPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, confTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, confTPCTOFPIDBit)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, confCutPart)) &&
                                                                             (aod::femtodreamparticle::pt < confMaxpT) &&
@@ -138,7 +138,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<float> confMaxPtV0{"confMaxPtV0", 999.0, "Maximum pT of V0"};
 
   // Partition for selected particles
-  Partition<aod::FDParticles> selectedV0s = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<aod::FDParticles> selectedV0s = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                             (ncheckbit(aod::femtodreamparticle::cut, confCutV0)) &&
                                             (aod::femtodreamparticle::mLambda > confMinInvMassV0) &&
                                             (aod::femtodreamparticle::mLambda < confMaxInvMassV0) &&
@@ -146,7 +146,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
                                             (aod::femtodreamparticle::mAntiLambda < confMaxInvMassAntiV0) &&
                                             (aod::femtodreamparticle::pt > confMinPtV0) &&
                                             (aod::femtodreamparticle::pt < confMaxPtV0);
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> selectedV0sMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> selectedV0sMC = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                                                           (ncheckbit(aod::femtodreamparticle::cut, confCutV0)) &&
                                                                           (aod::femtodreamparticle::mLambda > confMinInvMassV0) &&
                                                                           (aod::femtodreamparticle::mLambda < confMaxInvMassV0) &&

@@ -80,8 +80,8 @@ struct DptDptPerRunExtraQc {
     }
   }
 
-  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
-  Filter onlyacceptedtracks = (aod::dptdptfilter::trackacceptedid >= int8_t(0));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == static_cast<uint8_t>(true));
+  Filter onlyacceptedtracks = (aod::dptdptfilter::trackacceptedid >= static_cast<int8_t>(0));
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision, soa::Filtered<soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo>> const& tracks, aod::BCsWithTimestamps const&)
   {

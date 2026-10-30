@@ -761,9 +761,9 @@ struct FemtoUniverseProducerTask {
   {
     if constexpr (isTrackOrV0) {
       if constexpr (std::experimental::is_detected<HasStrangeTOFinV0, ParticleType>::value) {
-        outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
+        outputDebugParts(particle.sign(), static_cast<uint8_t>(particle.tpcNClsFound()),
                          particle.tpcNClsFindable(),
-                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         static_cast<uint8_t>(particle.tpcNClsCrossedRows()),
                          particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
                          particle.itsNCls(), particle.itsNClsInnerBarrel(),
                          particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
@@ -775,9 +775,9 @@ struct FemtoUniverseProducerTask {
                          particle.tofNSigmaLaPr(), particle.tofNSigmaLaPi(), particle.tofNSigmaALaPr(),
                          particle.tofNSigmaALaPi(), particle.tofNSigmaK0PiPlus(), particle.tofNSigmaK0PiMinus());
       } else {
-        outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
+        outputDebugParts(particle.sign(), static_cast<uint8_t>(particle.tpcNClsFound()),
                          particle.tpcNClsFindable(),
-                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         static_cast<uint8_t>(particle.tpcNClsCrossedRows()),
                          particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
                          particle.itsNCls(), particle.itsNClsInnerBarrel(),
                          particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
@@ -1304,9 +1304,9 @@ struct FemtoUniverseProducerTask {
 
       tmpIDtrack.push_back(track.globalIndex());
 
-      outputDebugParts(track.sign(), (uint8_t)track.tpcNClsFound(),
+      outputDebugParts(track.sign(), static_cast<uint8_t>(track.tpcNClsFound()),
                        track.tpcNClsFindable(),
-                       (uint8_t)track.tpcNClsCrossedRows(),
+                       static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                        track.tpcNClsShared(), track.tpcFractionSharedCls(), track.tpcInnerParam(),
                        track.itsNCls(), track.itsNClsInnerBarrel(),
                        track.dcaXY(), track.dcaZ(), track.tpcSignal(),

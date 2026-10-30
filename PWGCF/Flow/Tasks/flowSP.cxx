@@ -173,7 +173,7 @@ struct FlowSP {
   RCTFlagsChecker rctChecker;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfg.cEvSelsVtxZ;
-  Filter trackFilter = nabs(aod::track::eta) < cfg.cTrackSelsEta && aod::track::pt > cfg.cTrackSelsPtmin&& aod::track::pt < cfg.cTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true) || cfg.cIsMCReco) && nabs(aod::track::dcaXY) < cfg.cTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfg.cTrackSelsDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfg.cTrackSelsEta && aod::track::pt > cfg.cTrackSelsPtmin&& aod::track::pt < cfg.cTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true)) || cfg.cIsMCReco) && nabs(aod::track::dcaXY) < cfg.cTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfg.cTrackSelsDCAz;
   Filter trackFilterMC = nabs(aod::mcparticle::eta) < cfg.cTrackSelsEta && aod::mcparticle::pt > cfg.cTrackSelsPtmin&& aod::mcparticle::pt < cfg.cTrackSelsPtmax;
   using GeneralCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
   using UnfilteredTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
