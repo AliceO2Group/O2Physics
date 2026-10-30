@@ -2704,6 +2704,11 @@ struct AnalysisSameEventPairing {
       if (!event.has_reducedMCevent()) {
         continue;
       }
+      // Fill the event-wise variables (e.g. centrality) of this reconstructed event, otherwise the generated particles and pairs
+      // get the values left over from the last event processed in runSameEventPairing
+      VarManager::ResetValues(0, VarManager::kNVars);
+      VarManager::FillEvent<gkEventFillMap>(event, dqefficiency_helpers::varValues());
+      VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), dqefficiency_helpers::varValues());
 
       FinalStateMcParticleIndices.clear();
 
