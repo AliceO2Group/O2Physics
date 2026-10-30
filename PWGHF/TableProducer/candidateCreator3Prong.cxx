@@ -633,12 +633,12 @@ struct HfCandidateCreator3Prong {
       }
 
       KFParticle kfPairKPi;
-      const KFParticle* kfDaughtersKPi[3] = {&kfSecondKaon, &kfThirdPion};
+      const KFParticle* kfDaughtersKPi[2] = {&kfSecondKaon, &kfThirdPion};
       kfPairKPi.SetConstructMethod(2);
       kfPairKPi.Construct(kfDaughtersKPi, 2);
 
       KFParticle kfPairPiK;
-      const KFParticle* kfDaughtersPiK[3] = {&kfFirstPion, &kfSecondKaon};
+      const KFParticle* kfDaughtersPiK[2] = {&kfFirstPion, &kfSecondKaon};
       kfPairPiK.SetConstructMethod(2);
       kfPairPiK.Construct(kfDaughtersPiK, 2);
 
