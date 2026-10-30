@@ -3818,8 +3818,28 @@ struct AnalysisAsymmetricPairing {
     int sign1 = 0;
     int sign2 = 0;
     uint32_t mcDecision = 0;
-    ditrackList.reserve(1);
-    ditrackExtraList.reserve(1);
+
+    // estimate reserved size
+    int64_t reserveSize = 0;
+    for (auto const& event : events) {
+      auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
+      auto groupedLegBAssocs = legBCandidateAssocs.sliceBy(preslice, event.globalIndex());
+      size_t nGoodA = 0;
+      size_t nGoodB = 0;
+      for (auto const& t : groupedLegAAssocs) {
+        if (t.isBarrelSelected_raw()) {
+          nGoodA++;
+        }
+      }
+      for (auto const& t : groupedLegBAssocs) {
+        if (t.isBarrelSelected_raw()) {
+          nGoodB++;
+        }
+      }
+      reserveSize += nGoodA * nGoodB;
+    }
+    ditrackList.reserve(reserveSize);
+    ditrackExtraList.reserve(reserveSize);
 
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 
