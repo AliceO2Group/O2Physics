@@ -40,9 +40,10 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
-#include <Rtypes.h>
 #include <TH2.h>
 #include <TH3.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <bitset>
