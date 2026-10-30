@@ -94,7 +94,7 @@ struct PseudorapidityDensity {
       x->SetBinLabel(5, "Selected INEL>0");
 
       fRatio = new TF1("fRatio", "pol6", -15, 15);
-      auto param = (std::vector<float>)parRatio;
+      auto param = std::vector<float>(parRatio);
       fRatio->SetParameters(param[0], param[1], param[2], param[3], param[4], param[5], param[6]);
     }
 
@@ -112,7 +112,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  expressions::Filter trackTypeFilter = (aod::track::trackType == (uint8_t)aod::track::TrackTypeEnum::Run2Tracklet);
+  expressions::Filter trackTypeFilter = (aod::track::trackType == static_cast<uint8_t>(aod::track::TrackTypeEnum::Run2Tracklet));
 
   using Trks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;
   Partition<Trks> sample = nabs(aod::track::eta) < estimatorEta;
@@ -189,7 +189,7 @@ struct PseudorapidityDensity {
   PROCESS_SWITCH(PseudorapidityDensity, processBinned, "Process centrality/mult. percentile binned", false);
 
   using Particles = aod::McParticles;
-  expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
+  expressions::Filter primaries = (aod::mcparticle::flags & static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)) == static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary);
   Partition<soa::Filtered<Particles>> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
 
   void processGen(aod::McCollisions::iterator const& mcCollision, soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, soa::Filtered<Particles> const& particles, soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>> const& /*tracks*/)
@@ -200,7 +200,7 @@ struct PseudorapidityDensity {
       auto charge = 0;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
-        charge = (int)p->Charge();
+        charge = static_cast<int>(p->Charge());
       }
       if (charge != 0) {
         nCharged++;
@@ -235,7 +235,7 @@ struct PseudorapidityDensity {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
       if (p != nullptr) {
-        charge = (int)p->Charge();
+        charge = static_cast<int>(p->Charge());
       }
       if (charge != 0) {
         registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(), mcCollision.posZ());

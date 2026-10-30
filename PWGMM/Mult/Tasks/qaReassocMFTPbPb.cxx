@@ -1710,7 +1710,7 @@ struct QaReassocMFTPbPb {
 
       int nTrk = 0, nFakeTrk = 0, nGoodTrk = 0;
       for (const auto& track : tracks) {
-        uint index = uint(track.collisionId() >= 0);
+        uint index = static_cast<uint>(track.collisionId() >= 0);
         if (track.has_mcParticle() && track.mcMask() == trackCuts.selMcMask) {
           // auto particle = track.mcParticle_as<aod::McParticles>();
           const auto& particle = track.mcParticle();
