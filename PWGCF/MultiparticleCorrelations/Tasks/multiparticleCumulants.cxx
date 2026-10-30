@@ -1691,7 +1691,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
   }
 
-
   void bookParticleHistograms(int histType, const std::vector<std::vector<float>>& lPcBins)
   {
     const auto& lPtBins = lPcBins[histType]; // define local array and initialize it from an array set in the configurables
