@@ -178,6 +178,9 @@ struct HfCandidateCreator3Prong {
     if ((std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) + std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0)) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
+    if (std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1 && createCharmNuclei == true) {
+      LOGP(fatal, "KF based reconstruction of charm nuclei is not impemented yet.");
+    }
     std::array<bool, 4> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M, doprocessCollisionsUpc};
     const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
 
