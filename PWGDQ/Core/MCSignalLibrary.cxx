@@ -1754,6 +1754,16 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Kaons from D+/- decays", {prong}, {-1});
     return signal;
   }
+  if (nameStr == "KFromD0") {
+    MCProng prong(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaons from D0 decays", {prong}, {-1});
+    return signal;
+  }
+  if (nameStr == "PiFromD0") {
+    MCProng prong(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Pions from D0 decays", {prong}, {-1});
+    return signal;
+  }
   if (nameStr == "LambdaC") {
     MCProng prong(1, {Pdg::kLambdaCPlus}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "Lambda_c", {prong}, {-1});
