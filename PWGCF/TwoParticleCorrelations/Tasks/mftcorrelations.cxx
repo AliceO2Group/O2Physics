@@ -201,7 +201,7 @@ struct Mftcorrelations {
   std::vector<float> phiWeightCache;
   std::vector<float> phiWeightCache1;
   std::unique_ptr<TFormula> multCutFormula;
-  std::array<uint32_t, aod::mftmultset::NMultiplicityEstimators> multCutFormulaParamIndex;
+  std::array<uint32_t, aod::mftmultset::NMultiplicityEstimators> multCutFormulaParamIndex{};
 
   // Collisions are expected to already carry the joined centrality/multiplicity estimator tables.
   using ExtendedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::Mults>;
@@ -393,7 +393,7 @@ struct Mftcorrelations {
       if (cfg.mEfficiencyTrigger == nullptr) {
         LOGF(fatal, "Could not load trigger efficiency from %s", cfgEfficiencyTrigger.value.c_str());
       }
-      LOGF(info, "Loaded MFT trigger efficiency from %s (%p)", cfgEfficiencyTrigger.value.c_str(), (void*)cfg.mEfficiencyTrigger);
+      LOGF(info, "Loaded MFT trigger efficiency from %s (%p)", cfgEfficiencyTrigger.value.c_str(), static_cast<void*>(cfg.mEfficiencyTrigger));
     }
     if (!cfgEfficiencyAssociated.value.empty()) {
       if (cfgLocalEfficiency > 0) {
@@ -405,7 +405,7 @@ struct Mftcorrelations {
       if (cfg.mEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load associated efficiency from %s", cfgEfficiencyAssociated.value.c_str());
       }
-      LOGF(info, "Loaded MFT associated efficiency from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
+      LOGF(info, "Loaded MFT associated efficiency from %s (%p)", cfgEfficiencyAssociated.value.c_str(), static_cast<void*>(cfg.mEfficiencyAssociated));
     }
     // FIX #6d
     if (!cfgEfficiencyGlobal.value.empty()) {
@@ -418,7 +418,7 @@ struct Mftcorrelations {
       if (cfg.mEfficiencyGlobal == nullptr) {
         LOGF(fatal, "Could not load global-track efficiency from %s", cfgEfficiencyGlobal.value.c_str());
       }
-      LOGF(info, "Loaded global-track efficiency from %s (%p)", cfgEfficiencyGlobal.value.c_str(), (void*)cfg.mEfficiencyGlobal);
+      LOGF(info, "Loaded global-track efficiency from %s (%p)", cfgEfficiencyGlobal.value.c_str(), static_cast<void*>(cfg.mEfficiencyGlobal));
     }
     cfg.efficiencyLoaded = true;
   }
@@ -532,7 +532,7 @@ struct Mftcorrelations {
       LOGF(fatal, "Could not find object %s in %s", cfgPhiWeightName.value.c_str(), cfgPhiWeightFile.value.c_str());
     }
     f->Close();
-    LOGF(info, "Loaded phi weight '%s' from %s (%p)", cfgPhiWeightName.value.c_str(), cfgPhiWeightFile.value.c_str(), (void*)cfg.mPhiWeight);
+    LOGF(info, "Loaded phi weight '%s' from %s (%p)", cfgPhiWeightName.value.c_str(), cfgPhiWeightFile.value.c_str(), static_cast<void*>(cfg.mPhiWeight));
   }
 
   // Looks up a bin-content-based weight from a 1-D phi map.

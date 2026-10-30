@@ -159,7 +159,7 @@ CorrelationContainer::CorrelationContainer(const CorrelationContainer& c) : TNam
   // CorrelationContainer copy constructor
   //
 
-  ((CorrelationContainer&)c).Copy(*this);
+  c.Copy(*this);
 }
 
 //____________________________________________________________________
@@ -199,7 +199,7 @@ CorrelationContainer& CorrelationContainer::operator=(const CorrelationContainer
   // assigment operator
 
   if (this != &c) {
-    ((CorrelationContainer&)c).Copy(*this);
+    c.Copy(*this);
   }
 
   return *this;
@@ -210,7 +210,7 @@ void CorrelationContainer::Copy(TObject& c) const
 {
   // copy function
 
-  CorrelationContainer& target = (CorrelationContainer&)c;
+  CorrelationContainer& target = static_cast<CorrelationContainer&>(c);
 
   if (mPairHist) {
     target.mPairHist = dynamic_cast<StepTHn*>(mPairHist->Clone());
