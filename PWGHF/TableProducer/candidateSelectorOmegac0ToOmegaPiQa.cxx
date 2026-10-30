@@ -379,9 +379,9 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusLf"), 0.0);
 
     // Eta selection of V0, Cascade daughters
-    double etaV0PosDau = candidate.posTrack_as<TracksSelLf>().eta();
-    double etaV0NegDau = candidate.negTrack_as<TracksSelLf>().eta();
-    double etaKaFromCasc = candidate.bachelor_as<TracksSelLf>().eta();
+    double etaV0PosDau = candidate.template posTrack_as<TracksSelLf>().eta();
+    double etaV0NegDau = candidate.template negTrack_as<TracksSelLf>().eta();
+    double etaKaFromCasc = candidate.template bachelor_as<TracksSelLf>().eta();
 
     if (std::abs(etaV0PosDau) > etaTrackLFDauMax) {
       return false;
@@ -416,7 +416,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 6.0);
-    if (candidate.cpaCasc() < cosPACascMin) {
+    if (candidate.cpaCascade() < cosPACascMin) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 7.0);
@@ -448,7 +448,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusLf"), 12.0);
 
     // pT: Bachelor
-    double ptKaFromCasc = candidate.bachelor_as<TracksSelLf>().pt();
+    double ptKaFromCasc = candidate.template bachelor_as<TracksSelLf>().pt();
     if (std::abs(ptKaFromCasc) < ptKaFromCascMin) {
       return false;
     }
@@ -541,7 +541,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusHf"), 0.0);
 
     // eta selection on charm bayron bachelor
-    if (std::abs(candidate.prong1_as<TracksSel>().eta()) > etaTrackCharmBachMax) {
+    if (std::abs(candidate.template prong1_as<TracksSel>().eta()) > etaTrackCharmBachMax) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 1.0);
@@ -610,7 +610,7 @@ struct HfCandidateSelectorToOmegaPiQa {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 4.0);
-      if ((std::abs(candidate.impactParameterz1()) < impactParameterZPiFromCharmBaryonMin) || (std::abs(candidate.impactParameterz1()) > impactParameterZPiFromCharmBaryonMax)) {
+      if ((std::abs(candidate.impactParameterZ1()) < impactParameterZPiFromCharmBaryonMin) || (std::abs(candidate.impactParameterZ1()) > impactParameterZPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 5.0);
@@ -786,7 +786,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       double const invMassLambda = candidate.massLambda();
       double const invMassCascade = candidate.massCascade();
-      double const invMassCharmBaryon = HFHelperQa::invMassOmegaczeroToOmegaPi(candidate);
+      double const invMassCharmBaryon = HfHelperQa::invMassOmegaczeroToOmegaPi(candidate);
 
       if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
         statusInvMassLambda = true;
