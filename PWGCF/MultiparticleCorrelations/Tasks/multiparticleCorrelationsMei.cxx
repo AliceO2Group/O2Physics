@@ -50,6 +50,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -269,17 +270,17 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     float fSigmaInel = 7.71;
     float fEtaGap = 1.0;
 
-    std::vector<std::string> fEventCutSwitch{};
+    std::vector<std::string> fEventCutSwitch;
     std::vector<float> fVertexZCutRange = {-10., 10.};
     std::vector<float> fCentCutRange = {0., 80.};
-    std::vector<std::string> fParticleCutSwitch{};
+    std::vector<std::string> fParticleCutSwitch;
     std::vector<float> fPtCutRange = {0.2, 5.};
     std::vector<float> fEtaCutRange = {-0.8, 0.8};
     std::vector<int> fTPCNumClusterCutRange = {70, 160};
     std::vector<float> fDCAxyCutRange = {-3.2, 3.2};
     std::vector<float> fDCAzCutRange = {-2.4, 2.4};
 
-    std::vector<float> fIVHarmonics{};
+    std::vector<float> fIVHarmonics;
 
     std::string fFileWithWeights = "/alice-ccdb.cern.ch/Users/m/mei/thesis-";
 
