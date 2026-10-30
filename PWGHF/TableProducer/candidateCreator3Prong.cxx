@@ -208,12 +208,12 @@ struct HfCandidateCreator3Prong {
       LOGP(fatal, "Process function for UPC is only available in Run 3!");
     }
     std::array<bool, 5> creationFlags = {createDplus, createDs, createLc, createXic, createCharmNuclei};
-    if (std::accumulate(creationFlags.begin(), creationFlags.end(), 0) == 0) {
+    const int nParticlesToCreate = std::accumulate(creationFlags.begin(), creationFlags.end(), 0);
+    if (nParticlesToCreate == 0) {
       LOGP(fatal, "At least one particle specie should be enabled for the creation.");
     }
-
-    if (createLc && createXic && applyInvMassConstraint) {
-      LOGP(fatal, "Unable to apply invariant mass constraint due to ambiguity of mass hypothesis: only one of Lc and Xic and Cd can be reconstructed.");
+    if (nParticlesToCreate > 1 && applyInvMassConstraint) {
+      LOGP(fatal, "Invariant mass constraint can be applied only when one particle specie is requested for creation.");
     }
 
     // histograms
@@ -651,11 +651,15 @@ struct HfCandidateCreator3Prong {
       const float massPiK = kfPairPiK.GetMass();
 
       if (applyInvMassConstraint) { // constraints applied after minv getters - to preserve unbiased values of minv
-        kfCandPKPi.SetNonlinearMassConstraint(createLc ? static_cast<float>(MassLambdaCPlus) : static_cast<float>(MassXiCPlus));
-        kfCandPiKP.SetNonlinearMassConstraint(createLc ? static_cast<float>(MassLambdaCPlus) : static_cast<float>(MassXiCPlus));
-        kfCandPiKPi.SetNonlinearMassConstraint(static_cast<float>(MassDPlus));
-        kfCandKKPi.SetNonlinearMassConstraint(static_cast<float>(MassDS));
-        kfCandPiKK.SetNonlinearMassConstraint(static_cast<float>(MassDS));
+        if (createLc) {
+          kfCandGeneric->SetNonlinearMassConstraint(MassLambdaCPlus);
+        } else if (createXic) {
+          kfCandGeneric->SetNonlinearMassConstraint(MassXiCPlus);
+        } else if (createDplus) {
+          kfCandGeneric->SetNonlinearMassConstraint(MassDPlus);
+        } else if (createDs) {
+          kfCandGeneric->SetNonlinearMassConstraint(MassDS);
+        }
       }
 
       const float chi2geo = kfCandGeneric->Chi2() / static_cast<float>(kfCandGeneric->NDF());
