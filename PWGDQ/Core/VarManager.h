@@ -1910,7 +1910,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   }
 
   if constexpr ((fillMap & ReducedMuonCov) > 0) {
-    if (muon.filteringFlags() & (uint8_t(1) << VarManager::kMuonIsPropagated)) { // the muon is already propagated, so nothing to do
+    if (muon.filteringFlags() & (static_cast<uint8_t>(1) << VarManager::kMuonIsPropagated)) { // the muon is already propagated, so nothing to do
       return;
     }
   }
@@ -3148,26 +3148,26 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kOrphanTrack] = static_cast<float>((track.flags() & o2::aod::track::OrphanTrack) > 0); // NOTE: This is NOT for Run-2
     }
     if (fgUsedVars[kIsSPDfirst]) {
-      values[kIsSPDfirst] = static_cast<float>((track.itsClusterMap() & uint8_t(1)) > 0);
+      values[kIsSPDfirst] = static_cast<float>((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0);
     }
     if (fgUsedVars[kIsSPDboth]) {
-      values[kIsSPDboth] = static_cast<float>((track.itsClusterMap() & uint8_t(3)) > 0);
+      values[kIsSPDboth] = static_cast<float>((track.itsClusterMap() & static_cast<uint8_t>(3)) > 0);
     }
     if (fgUsedVars[kIsSPDany]) {
-      values[kIsSPDany] = static_cast<float>((track.itsClusterMap() & uint8_t(1)) || (track.itsClusterMap() & uint8_t(2)));
+      values[kIsSPDany] = static_cast<float>((track.itsClusterMap() & static_cast<uint8_t>(1)) || (track.itsClusterMap() & static_cast<uint8_t>(2)));
     }
     if (fgUsedVars[kITSClusterMap]) {
       values[kITSClusterMap] = track.itsClusterMap();
     }
 
     if (fgUsedVars[kIsITSibFirst]) {
-      values[kIsITSibFirst] = static_cast<float>((track.itsClusterMap() & uint8_t(1)) > 0);
+      values[kIsITSibFirst] = static_cast<float>((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0);
     }
     if (fgUsedVars[kIsITSibAny]) {
-      values[kIsITSibAny] = static_cast<float>((track.itsClusterMap() & (1 << uint8_t(0))) > 0 || (track.itsClusterMap() & (1 << uint8_t(1))) > 0 || (track.itsClusterMap() & (1 << uint8_t(2))) > 0);
+      values[kIsITSibAny] = static_cast<float>((track.itsClusterMap() & (1 << static_cast<uint8_t>(0))) > 0 || (track.itsClusterMap() & (1 << static_cast<uint8_t>(1))) > 0 || (track.itsClusterMap() & (1 << static_cast<uint8_t>(2))) > 0);
     }
     if (fgUsedVars[kIsITSibAll]) {
-      values[kIsITSibAll] = static_cast<float>((track.itsClusterMap() & (1 << uint8_t(0))) > 0 && (track.itsClusterMap() & (1 << uint8_t(1))) > 0 && (track.itsClusterMap() & (1 << uint8_t(2))) > 0);
+      values[kIsITSibAll] = static_cast<float>((track.itsClusterMap() & (1 << static_cast<uint8_t>(0))) > 0 && (track.itsClusterMap() & (1 << static_cast<uint8_t>(1))) > 0 && (track.itsClusterMap() & (1 << static_cast<uint8_t>(2))) > 0);
     }
 
     values[kTrackTime] = track.trackTime();
@@ -3276,17 +3276,17 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the dalitz selections
   if constexpr ((fillMap & DalitzBits) > 0) {
     for (int i = 0; i < 8; i++) {
-      values[kIsDalitzLeg + i] = static_cast<float>(track.dalitzBits() & (uint8_t(1) << i));
+      values[kIsDalitzLeg + i] = static_cast<float>(track.dalitzBits() & (static_cast<uint8_t>(1) << i));
     }
   }
 
   // Quantities based on the V0 selections
   if constexpr ((fillMap & TrackV0Bits) > 0) {
-    values[kIsLegFromGamma] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsConversionLeg));
-    values[kIsLegFromK0S] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsK0sLeg));
-    values[kIsLegFromLambda] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsLambdaLeg));
-    values[kIsLegFromAntiLambda] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsALambdaLeg));
-    values[kIsLegFromOmega] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsOmegaLeg));
+    values[kIsLegFromGamma] = static_cast<float>(track.pidbit() & (static_cast<uint8_t>(1) << VarManager::kIsConversionLeg));
+    values[kIsLegFromK0S] = static_cast<float>(track.pidbit() & (static_cast<uint8_t>(1) << VarManager::kIsK0sLeg));
+    values[kIsLegFromLambda] = static_cast<float>(track.pidbit() & (static_cast<uint8_t>(1) << VarManager::kIsLambdaLeg));
+    values[kIsLegFromAntiLambda] = static_cast<float>(track.pidbit() & (static_cast<uint8_t>(1) << VarManager::kIsALambdaLeg));
+    values[kIsLegFromOmega] = static_cast<float>(track.pidbit() & (static_cast<uint8_t>(1) << VarManager::kIsOmegaLeg));
     values[kIsProtonFromLambdaAndAntiLambda] = static_cast<float>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
   }
 
