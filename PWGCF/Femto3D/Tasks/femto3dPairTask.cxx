@@ -123,7 +123,7 @@ struct FemtoCorrelations {
   // P.P.P.P.S this way is still being testing i might be reconsidered; might change in the future, keep looking at the source code
   Configurable<unsigned int> _MEreductionFactor{"MEreductionFactor", 1, "only one (pseudo)randomly choosen event out per pair $value events will be processed and contribute to the final mixing (if < 2 -> all the possible event pairs (per vertex&cent bin) will be processed); implemented for the sake of efficiency; look at the source code;"};
 
-  bool IsIdentical = false;
+  bool IsIdentical = true;
 
   std::pair<int, std::vector<float>> TPCcuts_1;
   std::pair<int, std::vector<float>> TOFcuts_1;
@@ -259,7 +259,7 @@ struct FemtoCorrelations {
       }
 
       if (_fillDetaDphi > -1) {
-        TString suffix[2] = {"_nocut", "_cut"};
+        const TString suffix[2] = {"_nocut", "_cut"};
 
         for (int f = 0; f < 2; f++) {
           std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
