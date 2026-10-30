@@ -1691,8 +1691,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
   }
 
-  // template <EnParticleHistograms histType, typename T1>
-  // void bookParticleHistograms(T1 const& lPcBins)
+
   void bookParticleHistograms(int histType, const std::vector<std::vector<float>>& lPcBins)
   {
     const auto& lPtBins = lPcBins[histType]; // define local array and initialize it from an array set in the configurables
@@ -1721,8 +1720,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
   }
 
-  // template <EnEventHistograms histType, typename T1>
-  // void bookEventHistograms(T1 const& lEvBins)
   void bookEventHistograms(int histType, const std::vector<std::vector<float>>& lEvBins)
   {
     const auto& lCentBins = lEvBins[histType]; // define local array and initialize it from an array set in the configurables
@@ -1764,8 +1761,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
   }
 
-  // template <EnEventHistograms histType, typename T1>
-  // void bookQAHistograms(T1 const& lQABins)
   void bookQAHistograms(int histType, const std::vector<std::vector<float>>& lQABins)
   {
     int nBinsCentX = 0;
@@ -1819,8 +1814,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     }
   }
 
-  // template <EnCorrHistograms histType, typename T1>
-  // void bookCorrHistograms(T1 const& lCrBins)
   void bookCorrHistograms(int histType, const std::vector<std::vector<float>>& lCrBins)
   {
     // (mult)(cent)(NContribMult) offset
@@ -2128,7 +2121,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     std::vector<std::vector<float>> lEvBins = {tc.fCentBins, tc.fMultBins, tc.fVerXBins, tc.fVerYBins, tc.fVerZBins, tc.fNumContribBins, tc.fNumTrackBins};
     std::vector<std::vector<float>> lQABins = {tc.fCentBins, tc.fMultBins, tc.fNumContribBins};
     std::vector<std::vector<float>> lCrBins = {tc.fCentBins, tc.fFT0CMultBins, tc.fFT0MMultBins, tc.fFV0AMultBins, tc.fNumContribBins, tc.fMultBins};
-
 
     for (int i = 0; i < eParticleHistograms_N; i++) {
       bookParticleHistograms(i, lPcBins);
