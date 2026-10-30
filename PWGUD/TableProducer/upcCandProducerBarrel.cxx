@@ -40,8 +40,9 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
-#include <TH1.h>
 #include <TH2.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <bitset>
@@ -50,6 +51,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -291,14 +293,15 @@ struct UpcCandProducerBarrel {
   float calcWeightForOccupancy(float dt) // copied from Common/Tools/EventSelectionModule.h
   {
     float wOccup = 0;
-    if (dt > -40 && dt < -5)                      // o2-linter: disable=magic-number (collisions in the past)
+    if (dt > -40 && dt < -5) {                    // o2-linter: disable=magic-number (collisions in the past)
       wOccup = 1. / 1225 * (dt + 40) * (dt + 40); // o2-linter: disable=magic-number (parabolic weight for past collisions)
-    else if (dt >= -5 && dt < 15)                 // o2-linter: disable=magic-number (collisions near a given one)
+    } else if (dt >= -5 && dt < 15) {             // o2-linter: disable=magic-number (collisions near a given one)
       wOccup = 1;
-    else if (dt >= 15 && dt < 40)              // o2-linter: disable=magic-number (collisions from the future)
+    } else if (dt >= 15 && dt < 40) {          // o2-linter: disable=magic-number (collisions from the future)
       wOccup = -0.4 / 25 * dt + 1.24;          // o2-linter: disable=magic-number (linear weight for future collisions)
-    else if (dt >= 40 && dt < 100)             // o2-linter: disable=magic-number (collisions from the distant future)
+    } else if (dt >= 40 && dt < 100) {         // o2-linter: disable=magic-number (collisions from the distant future)
       wOccup = -0.4 / 60 * dt + 0.6 + 0.8 / 3; // o2-linter: disable=magic-number (linear weight for distant future collisions)
+    }
     return wOccup;
   }
 
@@ -595,8 +598,8 @@ struct UpcCandProducerBarrel {
 
     LOGP(debug, "Filling FDD activity arrays");
     for (const auto& fdd : fdds) {
-      const float sumAmpFDDA = std::accumulate(fdd.chargeA(), fdd.chargeA() + 8, 0.f);
-      const float sumAmpFDDC = std::accumulate(fdd.chargeC(), fdd.chargeC() + 8, 0.f);
+      const float sumAmpFDDA = std::accumulate(std::begin(fdd.chargeA()), std::end(fdd.chargeA()), 0.f);
+      const float sumAmpFDDC = std::accumulate(std::begin(fdd.chargeC()), std::end(fdd.chargeC()), 0.f);
       if ((fdd.timeA() < MaxFITTime && sumAmpFDDA >= minAmpFDDA) || (fdd.timeC() < MaxFITTime && sumAmpFDDC >= minAmpFDDC)) {
         bcsWithFDD.push_back(fdd.bc_as<BCsWithSels>().globalBC());
       }
@@ -694,23 +697,26 @@ struct UpcCandProducerBarrel {
           fillVetoHistograms(hVetoT00RCTnoPileupROFupc, hVetoTV0RCTnoPileupROFupc, hVetoTVDRCTnoPileupROFupc, bcInOrbit, tfID, distanceFT0, distanceFV0, distanceFDD);
         }
 
-        if (distanceFT0 == 0)
+        if (distanceFT0 == 0) {
           continue;
+        }
         float occupancy = vOccupancyFT0C[iTF][bcInTF];
         hOccupancyT00RCTnoPileupROF->Fill(bcInOrbit, tfID, occupancy);
         if (upcMode) {
           hOccupancyT00RCTnoPileupROFupc->Fill(bcInOrbit, tfID, occupancy);
         }
 
-        if (distanceFV0 == 0)
+        if (distanceFV0 == 0) {
           continue;
+        }
         hOccupancyTV0RCTnoPileupROF->Fill(bcInOrbit, tfID, occupancy);
         if (upcMode) {
           hOccupancyTV0RCTnoPileupROFupc->Fill(bcInOrbit, tfID, occupancy);
         }
 
-        if (distanceFDD == 0)
+        if (distanceFDD == 0) {
           continue;
+        }
         hOccupancyTVDRCTnoPileupROF->Fill(bcInOrbit, tfID, occupancy);
         if (upcMode) {
           hOccupancyTVDRCTnoPileupROFupc->Fill(bcInOrbit, tfID, occupancy);
