@@ -224,7 +224,8 @@ enum class V0 : o2::analysis::femto::datatypes::V0Type {
 
 enum class Kink : o2::analysis::femto::datatypes::KinkType {
   kSigma,
-  kSigmaPlus
+  kSigmaPlus,
+  kSigmaPlusPcm
 };
 
 enum class Cascade : o2::analysis::femto::datatypes::CascadeType {
