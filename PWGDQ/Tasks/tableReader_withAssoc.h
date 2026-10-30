@@ -180,18 +180,18 @@ DECLARE_SOA_COLUMN(PercentileFT0C, percentileFT0CJPsi2ee, float);
 DECLARE_SOA_COLUMN(MultiplicityNContrib, multiplicityNContribJPsi2ee, float);
 
 // Additional columns for prompt-non-prompt JPsi separation (BDT training)
-DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);                         //! t1.sign() + t2.sign()
-DECLARE_SOA_COLUMN(PairFilter, pairFilter, uint32_t);                   //! twoTrackFilter (cut bits + ambiguity bits 28-31)
-DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                   //! MC signal bits, 0 in data
-DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);                         //! correct collision association (MC only, true in data)
-DECLARE_SOA_COLUMN(TauxyeeErr, tauxyeeErr, float);                      //! kVertexingTauxyErr: in ns (not cm) and with the reconstructed mass
-DECLARE_SOA_COLUMN(TauzeeErr, tauzeeErr, float);                        //! kVertexingTauzErr: in ns (not cm) and with the reconstructed mass
-DECLARE_SOA_COLUMN(LxyeeProjected, lxyeeProjected, float);              //! kVertexingLxyProjected
-DECLARE_SOA_COLUMN(LxyeeOverErr, lxyeeOverErr, float);                  //! kVertexingLxyOverErr
-DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                              //! kVertexingLxyz
-DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);                //! kVertexingLxyzOverErr
-DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);                        //! kVertexingChi2PCA
-DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);                            //! kCosPointingAngle
+DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);            //! t1.sign() + t2.sign()
+DECLARE_SOA_COLUMN(PairFilter, pairFilter, uint32_t);      //! twoTrackFilter (cut bits + ambiguity bits 28-31)
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);      //! MC signal bits, 0 in data
+DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);            //! correct collision association (MC only, true in data)
+DECLARE_SOA_COLUMN(TauxyeeErr, tauxyeeErr, float);         //! kVertexingTauxyErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(TauzeeErr, tauzeeErr, float);           //! kVertexingTauzErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(LxyeeProjected, lxyeeProjected, float); //! kVertexingLxyProjected
+DECLARE_SOA_COLUMN(LxyeeOverErr, lxyeeOverErr, float);     //! kVertexingLxyOverErr
+DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                 //! kVertexingLxyz
+DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);   //! kVertexingLxyzOverErr
+DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);           //! kVertexingChi2PCA
+DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);               //! kCosPointingAngle
 DECLARE_SOA_COLUMN(DcaXYOverSig1, dcaXYOverSig1, float);
 DECLARE_SOA_COLUMN(DcaZOverSig1, dcaZOverSig1, float);
 DECLARE_SOA_COLUMN(DcaXYOverSig2, dcaXYOverSig2, float);
@@ -2188,18 +2188,18 @@ struct AnalysisSameEventPairing {
               // projected / pseudo-proper / pointing-angle variables, so they would be stale -> skip the pair
               if (t1.sign() * t2.sign() < 0) {
                 PromptNonPromptSepTable(twoTrackFilter, dileptonMcDecision,
-                                      VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
-                                      VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
-                                      VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kVertexingTauzErr],
-                                      VarManager::fgValues[VarManager::kVertexingLxyProjected], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr],
-                                      VarManager::fgValues[VarManager::kVertexingChi2PCA], VarManager::fgValues[VarManager::kCosPointingAngle],
-                                      VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ],
-                                      t1.pt(), t1.eta(), VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kDCAxyOverSig1], VarManager::fgValues[VarManager::kDCAzOverSig1],
-                                      VarManager::fgValues[VarManager::kITSclusterMap1], t1.itsChi2NCl(),
-                                      t2.pt(), t2.eta(), VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kDCAxyOverSig2], VarManager::fgValues[VarManager::kDCAzOverSig2],
-                                      VarManager::fgValues[VarManager::kITSclusterMap2], t2.itsChi2NCl(),
-                                      ambiInBunch, ambiOutOfBunch, true,
-                                      VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxNcontribReal]);
+                                        VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
+                                        VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
+                                        VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kVertexingTauzErr],
+                                        VarManager::fgValues[VarManager::kVertexingLxyProjected], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr],
+                                        VarManager::fgValues[VarManager::kVertexingChi2PCA], VarManager::fgValues[VarManager::kCosPointingAngle],
+                                        VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ],
+                                        t1.pt(), t1.eta(), VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kDCAxyOverSig1], VarManager::fgValues[VarManager::kDCAzOverSig1],
+                                        VarManager::fgValues[VarManager::kITSclusterMap1], t1.itsChi2NCl(),
+                                        t2.pt(), t2.eta(), VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kDCAxyOverSig2], VarManager::fgValues[VarManager::kDCAzOverSig2],
+                                        VarManager::fgValues[VarManager::kITSclusterMap2], t2.itsChi2NCl(),
+                                        ambiInBunch, ambiOutOfBunch, true,
+                                        VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxNcontribReal]);
               }
             }
           }
