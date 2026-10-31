@@ -4672,7 +4672,10 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
 
     // coherent Jpsi A2
-    bool useCoherentJpsiA2 = fgUsedVars[kA2EPME_TPC] || fgUsedVars[kA2EPME_FT0A] || fgUsedVars[kA2EPME_FT0C];
+    bool useA2TPC = fgUsedVars[kDeltaPhiME_TPC] || fgUsedVars[kCos2DeltaPhiME_TPC] || fgUsedVars[kA2EPME_TPC];
+    bool useA2FT0C = fgUsedVars[kDeltaPhiME_FT0C] || fgUsedVars[kCos2DeltaPhiME_FT0C] || fgUsedVars[kA2EPME_FT0C];
+    bool useA2FT0A = fgUsedVars[kDeltaPhiME_FT0A] || fgUsedVars[kCos2DeltaPhiME_FT0A] || fgUsedVars[kA2EPME_FT0A];
+    bool useCoherentJpsiA2 = useA2TPC || useA2FT0C || useA2FT0A;
     if (useCoherentJpsiA2) {
       ROOT::Math::Boost boostv12{v12.BoostToCM()};
       ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.sign() > 0 ? v1 : v2);
@@ -4822,7 +4825,10 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
     }
   }
 
-  bool useCoherentJpsiA2 = fgUsedVars[kA2EP_TPC] || fgUsedVars[kA2EP_FT0A] || fgUsedVars[kA2EP_FT0C];
+  bool useA2TPC = fgUsedVars[kDeltaPhi_TPC] || fgUsedVars[kCos2DeltaPhi_TPC] || fgUsedVars[kA2EP_TPC];
+  bool useA2FT0C = fgUsedVars[kDeltaPhi_FT0C] || fgUsedVars[kCos2DeltaPhi_FT0C] || fgUsedVars[kA2EP_FT0C];
+  bool useA2FT0A = fgUsedVars[kDeltaPhi_FT0A] || fgUsedVars[kCos2DeltaPhi_FT0A] || fgUsedVars[kA2EP_FT0A];
+  bool useCoherentJpsiA2 = useA2TPC || useA2FT0C || useA2FT0A;
   if (useCoherentJpsiA2) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(v1);
@@ -4832,6 +4838,7 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
 
     // reaction plane
     float phi = RecoDecay::constrainAngle(v_daughter.Phi(), -o2::constants::math::PI);
+    values[kPhiDau] = phi;
     values[kDeltaPhi_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
     values[kDeltaPhi_TPC] = values[kDeltaPhi_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhi_TPC] : values[kDeltaPhi_TPC];
     values[kDeltaPhi_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
@@ -6477,7 +6484,10 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   }
 
   // Coherent Jpsi A2
-  bool useCoherentJpsiA2 = fgUsedVars[kA2EP_TPC] || fgUsedVars[kA2EP_FT0A] || fgUsedVars[kA2EP_FT0C];
+  bool useA2TPC = fgUsedVars[kDeltaPhi_TPC] || fgUsedVars[kCos2DeltaPhi_TPC] || fgUsedVars[kA2EP_TPC];
+  bool useA2FT0C = fgUsedVars[kDeltaPhi_FT0C] || fgUsedVars[kCos2DeltaPhi_FT0C] || fgUsedVars[kA2EP_FT0C];
+  bool useA2FT0A = fgUsedVars[kDeltaPhi_FT0A] || fgUsedVars[kCos2DeltaPhi_FT0A] || fgUsedVars[kA2EP_FT0A];
+  bool useCoherentJpsiA2 = useA2TPC || useA2FT0C || useA2FT0A;
   if (useCoherentJpsiA2) {
     // remove daughter from TPC Q-vector
     // TODO: remove based on track cut in qVectorTable
@@ -6522,6 +6532,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
     // reaction plane
     float phi = v_daughter.Phi() > o2::constants::math::PI ? o2::constants::math::TwoPI - v_daughter.Phi() : v_daughter.Phi();
+    values[kPhiDau] = phi;
     values[kDeltaPhi_TPC] = phi > Psi2ATPC ? phi - Psi2ATPC : Psi2ATPC - phi;
     values[kDeltaPhi_TPC] = values[kDeltaPhi_TPC] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhi_TPC] : values[kDeltaPhi_TPC];
     values[kDeltaPhi_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
