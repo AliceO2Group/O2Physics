@@ -654,8 +654,22 @@ class McBuilder
   }
 
   template <typename T1, typename T2>
-  int64_t findFirstPartonicMother(const T1& mcParticle, const T2& mcParticles)
+  int64_t findFirstPartonicMother(const T1& mcParticle, const T2& mcParticles, int depth = 0)
   {
+    // guards against cyclic/malformed mother chains in some MC productions, which would
+    // otherwise recurse unboundedly and crash with a stack overflow; no physically sensible
+    // generator history is anywhere close to this deep
+    constexpr int MaxPartonicMotherDepth = 100;
+    if (depth >= MaxPartonicMotherDepth) {
+      // some productions hit this on a large fraction of particles (e.g. a mother-range
+      // heuristic below misfiring on this production's indexing convention), so warn once per
+      // device lifetime rather than once per particle
+      if (!mWarnedPartonicMotherDepth) {
+        LOG(warn) << "findFirstPartonicMother exceeded max recursion depth (" << MaxPartonicMotherDepth << ") at least once; mother chain may be cyclic or malformed for this MC production. Consider using findLastPartonicMother instead. Further occurrences will be suppressed.";
+        mWarnedPartonicMotherDepth = true;
+      }
+      return -1;
+    }
     if (!mcParticle.has_mothers()) {
       return -1;
     }
@@ -689,7 +703,7 @@ class McBuilder
         return i; // Found a parton → return index
       }
       // Recurse upward
-      int64_t found = this->findFirstPartonicMother(mother, mcParticles);
+      int64_t found = this->findFirstPartonicMother(mother, mcParticles, depth + 1);
       if (found != -1) {
         return found;
       }
@@ -745,6 +759,7 @@ class McBuilder
 
   bool mPassThrough = false;
   bool mFindLastPartonicMother = false;
+  bool mWarnedPartonicMotherDepth = false;
   bool mFillAnyTable = false;
   bool mProduceMcCollisions = false;
   bool mProduceMcParticles = false;

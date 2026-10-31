@@ -664,8 +664,8 @@ void processMixedEvent(T1 const& Collisions,
         PairHistManager.trackParticlesPerEvent(p1, p2);
         PairHistManager.template fill<mode>();
         // single-particle histograms for particles that make it into an accepted mixed-event pair
-        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
-        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable, collision1, mcParticles, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable, collision2, mcParticles, mcMothers, mcPartonicMothers);
       }
     }
 

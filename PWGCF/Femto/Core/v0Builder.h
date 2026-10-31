@@ -489,10 +489,12 @@ struct V0BuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FLiteLambdas> producedLiteLambdas;
   o2::framework::Produces<o2::aod::FLambdaMasks> producedLambdaMasks;
   o2::framework::Produces<o2::aod::FLambdaExtras> producedLambdaExtras;
+  o2::framework::Produces<o2::aod::FLambdaFrac> producedLambdaFrac;
   o2::framework::Produces<o2::aod::FK0shorts> producedK0shorts;
   o2::framework::Produces<o2::aod::FLiteK0shorts> producedLiteK0shorts;
   o2::framework::Produces<o2::aod::FK0shortMasks> producedK0shortMasks;
   o2::framework::Produces<o2::aod::FK0shortExtras> producedK0shortExtras;
+  o2::framework::Produces<o2::aod::FK0shortFrac> producedK0shortFrac;
 };
 
 struct ConfV0Tables : o2::framework::ConfigurableGroup {
@@ -501,10 +503,12 @@ struct ConfV0Tables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceLiteLambdas{"produceLiteLambdas", -1, "Produce LiteLambdas (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceLambdaMasks{"produceLambdaMasks", -1, "Produce LambdaMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceLambdaExtras{"produceLambdaExtras", -1, "Produce LambdaExtras (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLambdaFrac{"produceLambdaFrac", -1, "Produce LambdaFrac (cpa for fraction extraction) (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceK0shorts{"produceK0shorts", -1, "Produce K0shorts (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceLiteK0shorts{"produceLiteK0shorts", -1, "Produce LiteK0shorts (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceK0shortMasks{"produceK0shortMasks", -1, "Produce K0shortMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceK0shortExtras{"produceK0shortExtras", -1, "Produce K0shortExtras (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceK0shortFrac{"produceK0shortFrac", -1, "Produce K0shortFrac (cpa for fraction extraction) (-1: auto; 0 off; 1 on)"};
 };
 
 template <modes::V0 v0Type, auto& SelectionHistName, auto& FilterHistName>
@@ -528,6 +532,7 @@ class V0Builder
       mProduceLiteLambdas = utils::enableTable("FLiteLambdas_001", table.produceLiteLambdas.value, initContext);
       mProduceLambdaMasks = utils::enableTable("FLambdaMasks_002", table.produceLambdaMasks.value, initContext);
       mProduceLambdaExtras = utils::enableTable("FLambdaExtras_001", table.produceLambdaExtras.value, initContext);
+      mProduceLambdaFrac = utils::enableTable("FLambdaFrac_001", table.produceLambdaFrac.value, initContext);
 
       if (mProduceLambdas && mProduceLiteLambdas) {
         LOG(fatal) << "FLambdas and FLiteLambdas are mutually exclusive -- enable only one. "
@@ -551,6 +556,7 @@ class V0Builder
       mProduceLiteK0shorts = utils::enableTable("FLiteK0shorts_001", table.produceLiteK0shorts.value, initContext);
       mProduceK0shortMasks = utils::enableTable("FK0shortMasks_002", table.produceK0shortMasks.value, initContext);
       mProduceK0shortExtras = utils::enableTable("FK0shortExtras_001", table.produceK0shortExtras.value, initContext);
+      mProduceK0shortFrac = utils::enableTable("FK0shortFrac_001", table.produceK0shortFrac.value, initContext);
 
       if (mProduceK0shorts && mProduceLiteK0shorts) {
         LOG(fatal) << "FK0shorts and FLiteK0shorts are mutually exclusive -- enable only one. "
@@ -568,8 +574,8 @@ class V0Builder
                    << "or switch to FK0shorts if TrackTables.produceTracks is enabled instead.";
       }
     }
-    if (mProduceLambdas || mProduceLiteLambdas || mProduceLambdaMasks || mProduceLambdaExtras ||
-        mProduceK0shorts || mProduceLiteK0shorts || mProduceK0shortMasks || mProduceK0shortExtras) {
+    if (mProduceLambdas || mProduceLiteLambdas || mProduceLambdaMasks || mProduceLambdaExtras || mProduceLambdaFrac ||
+        mProduceK0shorts || mProduceLiteK0shorts || mProduceK0shortMasks || mProduceK0shortExtras || mProduceK0shortFrac) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -713,6 +719,9 @@ class V0Builder
         v0.alpha(),
         v0.qtarm());
     }
+    if (mProduceLambdaFrac) {
+      v0Products.producedLambdaFrac(v0.v0cosPA());
+    }
   }
 
   template <typename T1, typename T2, typename T3>
@@ -754,6 +763,9 @@ class V0Builder
         v0.alpha(),
         v0.qtarm());
     }
+    if (mProduceK0shortFrac) {
+      v0Products.producedK0shortFrac(v0.v0cosPA());
+    }
   }
 
   [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
@@ -766,10 +778,12 @@ class V0Builder
   bool mProduceLiteLambdas = false;
   bool mProduceLambdaMasks = false;
   bool mProduceLambdaExtras = false;
+  bool mProduceLambdaFrac = false;
   bool mProduceK0shorts = false;
   bool mProduceLiteK0shorts = false;
   bool mProduceK0shortMasks = false;
   bool mProduceK0shortExtras = false;
+  bool mProduceK0shortFrac = false;
 };
 
 struct ConfV0TablesDerivedToDerived : o2::framework::ConfigurableGroup {
