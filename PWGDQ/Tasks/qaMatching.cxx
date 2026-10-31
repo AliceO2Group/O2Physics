@@ -31,6 +31,7 @@
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonDataFormat/Timestamp.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
@@ -52,6 +53,7 @@
 #include <MFTTracking/Constants.h>
 #include <ReconstructionDataFormats/GlobalFwdTrack.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <Math/MatrixFunctions.h>
 #include <Math/MatrixRepresentationsStatic.h>
@@ -102,6 +104,7 @@ DECLARE_SOA_COLUMN(MatchType, matchType, int8_t);
 DECLARE_SOA_COLUMN(MatchChi2, matchChi2, float);
 DECLARE_SOA_COLUMN(MatchScore, matchScore, float);
 DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);
+DECLARE_SOA_COLUMN(UPCMode, upcMode, bool);
 DECLARE_SOA_COLUMN(MftMultiplicity, mftMultiplicity, int32_t);
 DECLARE_SOA_COLUMN(TrackType, trackType, int8_t);
 DECLARE_SOA_COLUMN(MftMatchAttempts, mftMatchAttempts, int32_t);
@@ -125,6 +128,7 @@ namespace o2::aod
 DECLARE_SOA_TABLE(QaMatchingEvents, "AOD", "QAMEVT",
                   o2::soa::Index<>,
                   qamatching::MftMultiplicity,
+                  qamatching::UPCMode,
                   qamatching::ColX,
                   qamatching::ColY,
                   qamatching::ColZ);
@@ -198,7 +202,7 @@ namespace qamatching
 DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Candidate, candidate, int32_t, o2::aod::QaMatchingCandidates, "QAMCANDs", "");
 } // namespace qamatching
 
-using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MFTMults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 using MyMuonsReAlign = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign>;
 using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
@@ -3249,9 +3253,11 @@ struct QaMatching {
                                           int32_t reducedEventId,
                                           int& debugCounter)
   {
+    const bool upcMode = (collision.flags() & o2::dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
     int32_t mftMultiplicity = static_cast<int32_t>(collisionInfo.mftTracks.size());
     qaMatchingEvents(
       mftMultiplicity,
+      upcMode,
       static_cast<float>(collision.posX()),
       static_cast<float>(collision.posY()),
       static_cast<float>(collision.posZ()));
