@@ -24,7 +24,11 @@
 #include <TCanvas.h>
 #include <TCollection.h>
 #include <TF1.h>
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TH3D.h>
 #include <THn.h>
+#include <THnSparse.h>
 #include <TIterator.h>
 #include <TList.h>
 #include <TMath.h>
@@ -125,7 +129,7 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
   triggerAxis.insert(triggerAxis.end(), userAxis.begin(), userAxis.end());
   mTriggerHist = HistFactory::createHist<StepTHnF>({"mTriggerHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, triggerAxis, fgkCFSteps}}).release();
 
-  mTrackHistEfficiency = HistFactory::createHist<StepTHnF>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnF, {efficiencyAxis[0], efficiencyAxis[1], {5, -0.5, 4.5, "species"}, correlationAxis[3], efficiencyAxis[2]}, fgkCFSteps}}).release();
+  mTrackHistEfficiency = HistFactory::createHist<StepTHnF>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnF, {efficiencyAxis[0], efficiencyAxis[1], {5, -0.5, 4.5, "species"}, correlationAxis[3], efficiencyAxis[2], efficiencyAxis[3]}, fgkCFSteps}}).release();
 
   mEventCount = HistFactory::createHist<TH2F>({"mEventCount", ";step;centrality;count", {HistType::kTH2F, {{fgkCFSteps + 2, -2.5, -0.5 + fgkCFSteps, "step"}, correlationAxis[3]}}}).release();
 }
@@ -155,7 +159,7 @@ CorrelationContainer::CorrelationContainer(const CorrelationContainer& c) : TNam
   // CorrelationContainer copy constructor
   //
 
-  ((CorrelationContainer&)c).Copy(*this);
+  c.Copy(*this);
 }
 
 //____________________________________________________________________
@@ -195,7 +199,7 @@ CorrelationContainer& CorrelationContainer::operator=(const CorrelationContainer
   // assigment operator
 
   if (this != &c) {
-    ((CorrelationContainer&)c).Copy(*this);
+    c.Copy(*this);
   }
 
   return *this;
@@ -206,7 +210,7 @@ void CorrelationContainer::Copy(TObject& c) const
 {
   // copy function
 
-  CorrelationContainer& target = (CorrelationContainer&)c;
+  CorrelationContainer& target = static_cast<CorrelationContainer&>(c);
 
   if (mPairHist) {
     target.mPairHist = dynamic_cast<StepTHn*>(mPairHist->Clone());
@@ -423,7 +427,7 @@ void CorrelationContainer::getHistsZVtxMult(CorrelationContainer::CFStep step, F
 
   Int_t dimensions[] = {4, 0, 5, 3};
   THnBase* tmpTrackHist = sparse->ProjectionND(4, dimensions, "E");
-  *eventHist = (TH2*)mTriggerHist->getTHn(step)->Projection(1, 2); // NOTE the syntax is Projection(Y, X) --> produces a histogram where x = axis 2 (vertex) and y = axis 1 (multiplicity)
+  *eventHist = static_cast<TH2*>(mTriggerHist->getTHn(step)->Projection(1, 2)); // NOTE the syntax is Projection(Y, X) --> produces a histogram where x = axis 2 (vertex) and y = axis 1 (multiplicity)
   // convert to THn
   *trackHist = changeToThn(tmpTrackHist);
   delete tmpTrackHist;
@@ -728,7 +732,7 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
         */
 
         if (!totalTracks) {
-          totalTracks = (TH2*)tracksSame->Clone("totalTracks");
+          totalTracks = static_cast<TH2*>(tracksSame->Clone("totalTracks"));
         } else {
           totalTracks->Add(tracksSame);
         }
@@ -836,7 +840,7 @@ THnBase* CorrelationContainer::getTrackEfficiencyND(EfficiencyStep step1, Effici
   resetBinLimits(sourceContainer->getTHn(step1));
   resetBinLimits(sourceContainer->getTHn(step2));
 
-  THnBase* clone = (THnBase*)measured->Clone();
+  THnBase* clone = static_cast<THnBase*>(measured->Clone());
 
   clone->Divide(measured, generated, 1, 1, "B");
 
@@ -1010,7 +1014,7 @@ TH1* CorrelationContainer::getTrackEfficiency(EfficiencyStep step1, EfficiencySt
         measured = new TH2D(Form("%s_rebinned", tmp->GetName()), tmp->GetTitle(), axis->GetNbins(), axis->GetXbins()->GetArray(), tmp->GetNbinsY(), tmp->GetYaxis()->GetXbins()->GetArray());
         for (Int_t x = 1; x <= tmp->GetNbinsX(); x++) {
           for (Int_t y = 1; y <= tmp->GetNbinsY(); y++) {
-            ((TH2*)measured)->Fill(tmp->GetXaxis()->GetBinCenter(x), tmp->GetYaxis()->GetBinCenter(y), tmp->GetBinContent(x, y));
+            static_cast<TH2*>(measured)->Fill(tmp->GetXaxis()->GetBinCenter(x), tmp->GetYaxis()->GetBinCenter(y), tmp->GetBinContent(x, y));
             measured->SetBinError(x, y, 0); // cannot trust bin error, set to 0
           }
         }
@@ -1020,7 +1024,7 @@ TH1* CorrelationContainer::getTrackEfficiency(EfficiencyStep step1, EfficiencySt
         generated = new TH2D(Form("%s_rebinned", tmp->GetName()), tmp->GetTitle(), axis->GetNbins(), axis->GetXbins()->GetArray(), tmp->GetNbinsY(), tmp->GetYaxis()->GetXbins()->GetArray());
         for (Int_t x = 1; x <= tmp->GetNbinsX(); x++) {
           for (Int_t y = 1; y <= tmp->GetNbinsY(); y++) {
-            ((TH2*)generated)->Fill(tmp->GetXaxis()->GetBinCenter(x), tmp->GetYaxis()->GetBinCenter(y), tmp->GetBinContent(x, y));
+            static_cast<TH2*>(generated)->Fill(tmp->GetXaxis()->GetBinCenter(x), tmp->GetYaxis()->GetBinCenter(y), tmp->GetBinContent(x, y));
             generated->SetBinError(x, y, 0); // cannot trust bin error, set to 0
           }
         }
@@ -1170,14 +1174,14 @@ TH1* CorrelationContainer::getBias(EfficiencyStep step1, EfficiencyStep step2, c
   resetBinLimits(mTriggerHist->getTHn(step2), 3);
   setBinLimits(tmp->getTHn(step2));
 
-  TH1D* events1 = (TH1D*)mTriggerHist->getTHn(step1)->Projection(0);
-  TH3D* hist1 = (TH3D*)tmp->getTHn(step1)->Projection(0, tmp->getNVar() - 1, 2);
+  TH1D* events1 = static_cast<TH1D*>(mTriggerHist->getTHn(step1)->Projection(0));
+  TH3D* hist1 = static_cast<TH3D*>(tmp->getTHn(step1)->Projection(0, tmp->getNVar() - 1, 2));
   if (weighting == 0) {
     weightHistogram(hist1, events1);
   }
 
-  TH1D* events2 = (TH1D*)mTriggerHist->getTHn(step2)->Projection(0);
-  TH3D* hist2 = (TH3D*)tmp->getTHn(step2)->Projection(0, tmp->getNVar() - 1, 2);
+  TH1D* events2 = static_cast<TH1D*>(mTriggerHist->getTHn(step2)->Projection(0));
+  TH3D* hist2 = static_cast<TH3D*>(tmp->getTHn(step2)->Projection(0, tmp->getNVar() - 1, 2));
   if (weighting == 0) {
     weightHistogram(hist2, events2);
   }
@@ -1430,7 +1434,7 @@ void CorrelationContainer::symmetrizepTBins()
     }
 
     // for symmetric bins
-    THnBase* source = (THnBase*)target->Clone();
+    THnBase* source = static_cast<THnBase*>(target->Clone());
 
     // axes: 0 delta eta; 1 pT,a; 2 pT,t; 3 centrality; 4 delta phi; 5 vtx-z
     for (Int_t i3 = 1; i3 <= target->GetAxis(3)->GetNbins(); i3++) {
