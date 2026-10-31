@@ -27,12 +27,13 @@
 
 #include <Rtypes.h>
 
+#include <iostream>
 #include <vector>
 
 double computeEfficiencyPerChamber(THnF* hnf, int iAxis, int iCh, double binLimits[2]);
 double computeEfficiencyPerChamber(THnF* hnf, const int iAxis[3], int iCh, double binLimits[3][2]);
-double computeStationEfficiency(double effPerChamber[4], int iStation);
-double computeTotalEfficiency(double effPerStation[5]);
+double computeStationEfficiency(double const effPerChamber[4], int iStation);
+double computeTotalEfficiency(double const effPerStation[5]);
 
 void getBinLimits(THnF* hnf, int nBins, int iAxis, std::vector<double>& limits);
 void setHistoMinPt(THnF* hnf, int iAxis, float minPt);
@@ -46,8 +47,26 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
 {
   // read ouput from the taskComputeMchEfficiency
   TFile* file = TFile::Open(inFile, "read");
-  TDirectoryFile* dir = reinterpret_cast<TDirectoryFile*>(file->Get("task-muon-mch-trk-efficiency"));
-  THnF* hHitsEtaPtPhi = reinterpret_cast<THnF*>(dir->Get("hHitsEtaPtPhi"));
+  if (!file || file->IsZombie()) {
+    std::cerr << "Cannot open input file: " << inFile << std::endl;
+    return;
+  }
+
+  TDirectoryFile* dir = nullptr;
+  file->GetObject("task-muon-mch-trk-efficiency", dir);
+
+  THnF* hHitsEtaPtPhi = nullptr;
+  if (dir) {
+    dir->GetObject("hHitsEtaPtPhi", hHitsEtaPtPhi);
+  } else {
+    std::cerr << "Directory task-muon-mch-trk-efficiency not found in file " << inFile << std::endl;
+    return;
+  }
+
+  if (!hHitsEtaPtPhi) {
+    std::cerr << "Histogram hHitsEtaPtPhi not found in directory." << std::endl;
+    return;
+  }
 
   // retrieve the eta/pt/phi axis binning configuration
   const int etaAx = 1, ptAx = 2, phiAx = 3;
@@ -62,8 +81,6 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
   getBinLimits(hHitsEtaPtPhi, nBinsEta, etaAx, limitsEta); // these are values!
   getBinLimits(hHitsEtaPtPhi, nBinsPt, ptAx, limitsPt);    // these are values!
   getBinLimits(hHitsEtaPtPhi, nBinsPhi, phiAx, limitsPhi); // these are values!
-
-  int nBinMinPt = hHitsEtaPtPhi->GetAxis(ptAx)->FindBin(minPt);
 
   // Define the output file
   TFile* outFile = new TFile(outFileName, "recreate");
@@ -83,7 +100,6 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
   // as well as the one per station
   // the total integrated value is stored in both histos as last quantity for reference
   TH1F* hEffIntegratedChamber = new TH1F("hEffIntegratedChamber", "integrated efficiency per chamber; ;Efficiency", kChamber + 1, -0.5, kChamber + 0.5);
-  const char* hChNames[kChamber + 1];
   for (int i = 0; i < kChamber; i++) {
     hEffIntegratedChamber->GetXaxis()->SetBinLabel(i + 1, Form("Chamber %d", i));
   }
@@ -91,7 +107,6 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
 
   // Define histogram for integrated efficiency per station
   TH1F* hEffIntegratedStation = new TH1F("hEffIntegratedStation", "integrated efficiency per station; ;Efficiency", kStation, -0.5, kStation + 0.5);
-  const char* hStNames[kStation];
   for (int i = 0; i < 3; i++) {
     hEffIntegratedStation->GetXaxis()->SetBinLabel(i + 1, Form("Station %d", i));
   }
@@ -274,7 +289,7 @@ double computeEfficiencyPerChamber(THnF* hnf, int iAxis, int iCh, double binLimi
   hnf->GetAxis(iAxis)->SetRangeUser(binLimits[0], binLimits[1]);
 
   // Project onto the Nhits axis
-  TH1F* htmp = reinterpret_cast<TH1F*>(hnf->Projection(0));
+  TH1D* htmp = hnf->Projection(0);
   double NhitPairing[16];
   for (int i = 0; i < 16; i++) {
     NhitPairing[i] = 0;
@@ -322,7 +337,7 @@ double computeEfficiencyPerChamber(THnF* hnf, const int iAxis[3], int iCh, doubl
   }
 
   // Project onto the Nhits axis
-  TH1F* htmp = reinterpret_cast<TH1F*>(hnf->Projection(0));
+  TH1D* htmp = hnf->Projection(0);
   double NhitPairing[16];
   for (int i = 0; i < 16; i++) {
     NhitPairing[i] = 0;
@@ -365,7 +380,7 @@ double computeEfficiencyPerChamber(THnF* hnf, const int iAxis[3], int iCh, doubl
 // Compute the efficiency per station
 // Stations 1, 2, 3:               Eff = 1 - ( 1 - E(i) ) * ( 1 - (E(j) )
 // Stations 4 & 5 together:   Eff = product(i=6...9) E(i) +  sum(i=6...9) [ ( 1 - E(i) )* product(j=6...9, i!=i) E(j) ]
-double computeStationEfficiency(double effPerChamber[4], int iStation)
+double computeStationEfficiency(double const effPerChamber[4], int iStation)
 {
   double effSt = 0.;
   if (iStation < 3) { // Calculation for Station 1, 2, 3
@@ -390,7 +405,7 @@ double computeStationEfficiency(double effPerChamber[4], int iStation)
 }
 
 // Total efficiency corresponds to the product of the efficiency per station
-double computeTotalEfficiency(double effPerStation[5])
+double computeTotalEfficiency(double const effPerStation[5])
 {
   double effTot = 1.;
   for (int i = 0; i < 4; i++) {
