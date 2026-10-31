@@ -110,7 +110,7 @@ struct taskMuonMchTrkEfficiency {
 
     // define axes to be used
     // and the correspondent histograms
-    auto vbins = (std::vector<double>)binsMuonPt;
+    auto vbins = std::vector<double>(binsMuonPt);
     const AxisSpec axisEta{nEtaBins, etaMuonMin, etaMuonMax, "|#eta|"};
     const AxisSpec axisPt{vbins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPhi{nPhiBins, -3.14, 3.14, "#varphi"};

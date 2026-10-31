@@ -2795,7 +2795,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
   rapidjson::Document document;
   rapidjson::ParseResult ok = document.Parse(json);
   if (!ok) {
-    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")";
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")"; // NOLINT(google-readability-casting)
     TString str = "";
     for (int i = ok.Offset() - 30; i < static_cast<int>(ok.Offset()) + 50; i++) {
       if ((i >= 0) && (i < static_cast<int>(strlen(json)))) {

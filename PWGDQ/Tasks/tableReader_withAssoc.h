@@ -1890,7 +1890,7 @@ struct AnalysisSameEventPairing {
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(true);
       fHistMan->SetDefaultVarNames(dqtablereader_helpers::varNames(), dqtablereader_helpers::varUnits());
-      VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
+      VarManager::SetCollisionSystem(TString(fConfigOptions.collisionSystem), fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
       if (fConfigCuts.event.value && fSplitCheckEnabled) {
         DefineHistograms(fHistMan, "Event_AfterSplitVeto", fConfigAddEventHistogram.value.data()); // define event histograms after removing collision splitting candidates
         o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONEventHistograms.value.c_str());
