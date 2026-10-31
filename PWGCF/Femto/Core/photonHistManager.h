@@ -75,7 +75,7 @@ struct ConfPhotonBinning : o2::framework::ConfigurableGroup {
 struct ConfPhotonQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("PhotonQaBinning");
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Generate various 2D QA plots"};
-  o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.8, 1}}, "Cosine of pointing angle"};
+  o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.95, 1}}, "Cosine of pointing angle"};
   o2::framework::ConfigurableAxis pa{"pa", {{180, 0, 1.f * o2::constants::math::PI}}, "Pointing angle"};
   o2::framework::ConfigurableAxis dcaToPv{"dcaToPv", {{200, -1, 1}}, "DCA of the photon to the PV (cm)"};
   o2::framework::ConfigurableAxis chi2Ndf{"chi2Ndf", {{100, 0, 50}}, "Chi2/NDF of the KF conversion vertex"};

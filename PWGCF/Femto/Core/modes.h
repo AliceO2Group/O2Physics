@@ -57,6 +57,8 @@ enum class Mode : uint32_t {
   kReco_Qa = kReco | kQa,
   kReco_Mc = kReco | kMc,
   kReco_Qa_Mc = kReco | kQa | kMc,
+  kReco_Qa_FitVars = kReco | kQa | kFitVars,
+  kReco_Qa_Mc_FitVars = kReco | kQa | kMc | kFitVars,
   kSe_Reco = kSe | kReco,
   kMe_Reco = kMe | kReco,
   kSe_Reco_Mc = kSe | kReco | kMc,

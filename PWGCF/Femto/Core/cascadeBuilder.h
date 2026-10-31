@@ -481,10 +481,12 @@ struct CascadeBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FLiteXis> producedLiteXis;
   o2::framework::Produces<o2::aod::FXiMasks> producedXiMasks;
   o2::framework::Produces<o2::aod::FXiExtras> producedXiExtras;
+  o2::framework::Produces<o2::aod::FXiFrac> producedXiFrac;
   o2::framework::Produces<o2::aod::FOmegas> producedOmegas;
   o2::framework::Produces<o2::aod::FLiteOmegas> producedLiteOmegas;
   o2::framework::Produces<o2::aod::FOmegaMasks> producedOmegaMasks;
   o2::framework::Produces<o2::aod::FOmegaExtras> producedOmegaExtras;
+  o2::framework::Produces<o2::aod::FOmegaFrac> producedOmegaFrac;
 };
 
 struct ConfCascadeTables : o2::framework::ConfigurableGroup {
@@ -493,10 +495,12 @@ struct ConfCascadeTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceLiteXis{"produceLiteXis", -1, "Produce LiteXis (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceXiMasks{"produceXiMasks", -1, "Produce XiMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceXiExtras{"produceXiExtras", -1, "Produce XiExtras (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceXiFrac{"produceXiFrac", -1, "Produce XiFrac (cpa for fraction extraction) (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceOmegas{"produceOmegas", -1, "Produce Omegas (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceLiteOmegas{"produceLiteOmegas", -1, "Produce LiteOmegas (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceOmegaMasks{"produceOmegaMasks", -1, "Produce OmegaMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceOmegaExtras{"produceOmegaExtras", -1, "Produce OmegaExtras (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceOmegaFrac{"produceOmegaFrac", -1, "Produce OmegaFrac (cpa for fraction extraction) (-1: auto; 0 off; 1 on)"};
 };
 
 template <modes::Cascade cascadeType, auto& SelectionHistName, auto& FilterHistName>
@@ -515,6 +519,7 @@ class CascadeBuilder
       mProduceXis = utils::enableTable("FXis_001", table.produceXis.value, initContext);
       mProduceXiMasks = utils::enableTable("FXiMasks_002", table.produceXiMasks.value, initContext);
       mProduceXiExtras = utils::enableTable("FXiExtras_001", table.produceXiExtras.value, initContext);
+      mProduceXiFrac = utils::enableTable("FXiFrac_001", table.produceXiFrac.value, initContext);
 
       if (mProduceXis && mProduceLiteXis) {
         LOG(fatal) << "FXis and FLiteXis are mutually exclusive -- enable only one. "
@@ -538,6 +543,7 @@ class CascadeBuilder
       mProduceLiteOmegas = utils::enableTable("FLiteOmegas_001", table.produceLiteOmegas.value, initContext);
       mProduceOmegaMasks = utils::enableTable("FOmegaMasks_002", table.produceOmegaMasks.value, initContext);
       mProduceOmegaExtras = utils::enableTable("FOmegaExtras_001", table.produceOmegaExtras.value, initContext);
+      mProduceOmegaFrac = utils::enableTable("FOmegaFrac_001", table.produceOmegaFrac.value, initContext);
 
       if (mProduceOmegas && mProduceLiteOmegas) {
         LOG(fatal) << "FOmegas and FLiteOmegas are mutually exclusive -- enable only one. "
@@ -556,8 +562,8 @@ class CascadeBuilder
       }
     }
 
-    if (mProduceXis || mProduceLiteXis || mProduceXiExtras || mProduceXiMasks ||
-        mProduceOmegas || mProduceLiteOmegas || mProduceOmegaMasks || mProduceOmegaExtras) {
+    if (mProduceXis || mProduceLiteXis || mProduceXiExtras || mProduceXiFrac || mProduceXiMasks ||
+        mProduceOmegas || mProduceLiteOmegas || mProduceOmegaMasks || mProduceOmegaExtras || mProduceOmegaFrac) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -701,6 +707,9 @@ class CascadeBuilder
           strangeTofPosDau,
           strangeTofNegDau);
       }
+      if (mProduceXiFrac) {
+        cascadeProducts.producedXiFrac(cascade.casccosPA(col.posX(), col.posY(), col.posZ()));
+      }
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       if (mProduceOmegas) {
@@ -741,6 +750,9 @@ class CascadeBuilder
           strangeTofPosDau,
           strangeTofNegDau);
       }
+      if (mProduceOmegaFrac) {
+        cascadeProducts.producedOmegaFrac(cascade.casccosPA(col.posX(), col.posY(), col.posZ()));
+      }
     }
   }
 
@@ -754,10 +766,12 @@ class CascadeBuilder
   bool mProduceLiteXis = false;
   bool mProduceXiMasks = false;
   bool mProduceXiExtras = false;
+  bool mProduceXiFrac = false;
   bool mProduceOmegas = false;
   bool mProduceLiteOmegas = false;
   bool mProduceOmegaMasks = false;
   bool mProduceOmegaExtras = false;
+  bool mProduceOmegaFrac = false;
 };
 
 struct ConfCascadeTablesDerivedToDerived : o2::framework::ConfigurableGroup {

@@ -68,10 +68,10 @@ struct FemtoPairTrackTrack {
   // opt-in: adds the packed purity tables (nSigma, see TrackBinning1/2.puritySlotMask) and FTrackDcas
   // (fraction estimation) for the FitVars histograms. Needs the producer's
   // TrackTables.produceItsPurity/produceTpcPurity/produceTofPurity/produceTrackDcas enabled.
-  using FemtoTracksWithPurity = o2::soa::Join<FemtoTracks, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity, o2::aod::FTrackDcas>;
+  using FemtoTracksWithFitVars = o2::soa::Join<FemtoTracks, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity, o2::aod::FTrackDcas>;
 
   // the Mc process functions always carry the purity/fraction tables (not opt-in like the data
-  // path's WithPurity variant) -- requires the producer's TrackTables.produceItsPurity/
+  // path's WithFitVars variant) -- requires the producer's TrackTables.produceItsPurity/
   // produceTpcPurity/produceTofPurity/produceTrackDcas enabled whenever MC processing is used
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity, o2::aod::FTrackDcas>;
 
@@ -101,9 +101,9 @@ struct FemtoPairTrackTrack {
   o2::framework::Partition<FemtoTracksWithMass> trackWithMassPartition2 = MAKE_TRACK_PARTITION_WITH_MASS(confTrackSelections2);
   o2::framework::Preslice<FemtoTracksWithMass> perColtracksWithMass = o2::aod::femtobase::stored::fColId;
 
-  o2::framework::Partition<FemtoTracksWithPurity> trackWithPurityPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
-  o2::framework::Partition<FemtoTracksWithPurity> trackWithPurityPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
-  o2::framework::Preslice<FemtoTracksWithPurity> perColtracksWithPurity = o2::aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoTracksWithFitVars> trackWithFitVarsPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
+  o2::framework::Partition<FemtoTracksWithFitVars> trackWithFitVarsPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
+  o2::framework::Preslice<FemtoTracksWithFitVars> perColtracksWithFitVars = o2::aod::femtobase::stored::fColId;
 
   o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
   o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
@@ -142,14 +142,14 @@ struct FemtoPairTrackTrack {
 
   void init(o2::framework::InitContext&)
   {
-    if ((static_cast<int>(doprocessSameEvent) + static_cast<int>(doprocessSameEventWithMass) + static_cast<int>(doprocessSameEventWithEventShape) + static_cast<int>(doprocessSameEventWithPurity) + static_cast<int>(doprocessSameEventMc)) > 1 ||
-        (static_cast<int>(doprocessMixedEvent) + static_cast<int>(doprocessMixedEventWithMass) + static_cast<int>(doprocessMixedEventWithEventShape) + static_cast<int>(doprocessMixedEventWithPurity) + static_cast<int>(doprocessMixedEventMc)) > 1) {
+    if ((static_cast<int>(doprocessSameEvent) + static_cast<int>(doprocessSameEventWithMass) + static_cast<int>(doprocessSameEventWithEventShape) + static_cast<int>(doprocessSameEventWithFitVars) + static_cast<int>(doprocessSameEventMc)) > 1 ||
+        (static_cast<int>(doprocessMixedEvent) + static_cast<int>(doprocessMixedEventWithMass) + static_cast<int>(doprocessMixedEventWithEventShape) + static_cast<int>(doprocessMixedEventWithFitVars) + static_cast<int>(doprocessMixedEventMc)) > 1) {
       LOG(fatal) << "More than 1 same or mixed event process function is activated. Breaking...";
     }
     bool processData = doprocessSameEvent || doprocessMixedEvent || doprocessSameEventWithMass || doprocessMixedEventWithMass || doprocessSameEventWithEventShape || doprocessMixedEventWithEventShape;
-    bool processPurity = doprocessSameEventWithPurity || doprocessMixedEventWithPurity;
+    bool processFitVars = doprocessSameEventWithFitVars || doprocessMixedEventWithFitVars;
     bool processMc = doprocessSameEventMc || doprocessMixedEventMc;
-    if (static_cast<int>(processData) + static_cast<int>(processPurity) + static_cast<int>(processMc) > 1) {
+    if (static_cast<int>(processData) + static_cast<int>(processFitVars) + static_cast<int>(processMc) > 1) {
       LOG(fatal) << "More than one of data, purity or mc processing is activated. Breaking...";
     }
 
@@ -168,7 +168,7 @@ struct FemtoPairTrackTrack {
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
     std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
-    if (processPurity) {
+    if (processFitVars) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
@@ -202,11 +202,11 @@ struct FemtoPairTrackTrack {
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processSameEventWithMass, "Enable processing same event processing (with track masses)", false);
 
-  void processSameEventWithPurity(FilteredFemtoCollision const& col, FemtoTracksWithPurity const& tracks)
+  void processSameEventWithFitVars(FilteredFemtoCollision const& col, FemtoTracksWithFitVars const& tracks)
   {
-    pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco_FitVars>(col, tracks, trackWithPurityPartition1, trackWithPurityPartition2, cache);
+    pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco_FitVars>(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache);
   }
-  PROCESS_SWITCH(FemtoPairTrackTrack, processSameEventWithPurity, "Enable processing same event processing (with purity/fraction tables)", false);
+  PROCESS_SWITCH(FemtoPairTrackTrack, processSameEventWithFitVars, "Enable processing same event processing (with FitVars tables)", false);
 
   void processSameEventWithEventShape(FilteredFemtoCollisionWithEventShape const& col, FemtoTracks const& tracks)
   {
@@ -232,11 +232,11 @@ struct FemtoPairTrackTrack {
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventWithMass, "Enable processing mixed event processing (with track masses)", false);
 
-  void processMixedEventWithPurity(FilteredFemtoCollisions const& cols, FemtoTracksWithPurity const& tracks)
+  void processMixedEventWithFitVars(FilteredFemtoCollisions const& cols, FemtoTracksWithFitVars const& tracks)
   {
-    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco_FitVars>(cols, tracks, trackWithPurityPartition1, trackWithPurityPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent, mixBinsVtxCentEventPlaneAngle);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco_FitVars>(cols, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent, mixBinsVtxCentEventPlaneAngle);
   }
-  PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventWithPurity, "Enable processing mixed event processing (with purity/fraction tables)", false);
+  PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventWithFitVars, "Enable processing mixed event processing (with FitVars tables)", false);
 
   void processMixedEventWithEventShape(FilteredFemtoCollisionsWithEventShape const& cols, FemtoTracks const& tracks)
   {
