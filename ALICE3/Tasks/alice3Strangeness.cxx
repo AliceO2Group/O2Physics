@@ -101,6 +101,7 @@ struct Alice3Strangeness {
     Configurable<float> cosPAngleSelection{"cosPAngleSelection", 0.97f, "cosine of pointing angle selection"};
     Configurable<float> dcaDaughtersToPVSelection{"dcaDaughtersToPVSelection", 0.05f, "DCA daughters to primary vertex selection"};
     Configurable<float> v0RadiusSelection{"v0RadiusSelection", 0.5f, "V0 radius selection"};
+    Configurable<float> v0MaxRadiusSelection{"v0MaxRadiusSelection", 3.0f, "V0 maximum radius selection"};
     Configurable<float> armenterosSelection{"armenterosSelection", 0.2f, "Armenteros-Podolanski selection in [0]* alpha"};
     Configurable<float> competingMassRejectionK0{"competingMassRejectionK0", 0.005f, "competing mass rejection for K0"};
     Configurable<float> competingMassRejectionLambda{"competingMassRejectionLambda", 0.01f, "competing mass rejection for Lambda"};
@@ -295,8 +296,10 @@ struct Alice3Strangeness {
     histos.add("reconstructedCandidates/hEtaDaughters", "hEtaDaughters", kTH1F, {histAxes.axisEta});
     histos.add("reconstructedCandidates/K0/hMass", "hMass", kTH3D, {histAxes.axisK0Mass, histAxes.axisPt, histAxes.axisEta});
     histos.add("reconstructedCandidates/K0/hMass1D", "hMass1D", kTH1D, {histAxes.axisK0Mass});
+    histos.add("reconstructedCandidates/K0/hMassRadius", "hMassRadius", kTH3D, {histAxes.axisK0Mass, histAxes.axisPt, {200, 0, 200}});
     histos.add("reconstructedCandidates/Lambda/hMass", "hMass", kTH3D, {histAxes.axisLambdaMass, histAxes.axisPt, histAxes.axisEta});
     histos.add("reconstructedCandidates/Lambda/hMass1D", "hMass1D", kTH1D, {histAxes.axisLambdaMass});
+    histos.add("reconstructedCandidates/Lambda/hMassRadius", "hMassRadius", kTH3D, {histAxes.axisLambdaMass, histAxes.axisPt, {200, 0, 200}});
     histos.add("reconstructedCandidates/hArmeterosBeforeAllSelections", "hArmeterosBeforeAllSelections", kTH2D, {{100, -1.0f, 1.0f}, {200, 0.0f, 0.5f}});
     histos.add("reconstructedCandidates/hArmeterosAfterAllSelections", "hArmeterosAfterAllSelections", kTH2D, {{100, -1.0f, 1.0f}, {200, 0.0f, 0.5f}});
     histos.add("reconstructedCandidates/hPtEtaPosDaughter", "hPtEtaPosDaughter", kTH2D, {histAxes.axisPt, histAxes.axisEta});
@@ -401,6 +404,12 @@ struct Alice3Strangeness {
       }
     }
     histos.addClone("reconstructedCandidates/Lambda/", "reconstructedCandidates/AntiLambda/");
+
+    if (doprocessMCTruth) {
+      histos.add("mcTruth/K0Short/hPtRadius", "hPtRadius", kTH2D, {histAxes.axisPt, histAxes.axisRadius});
+      histos.add("mcTruth/Lambda/hPtRadius", "hPtRadius", kTH2D, {histAxes.axisPt, histAxes.axisRadius});
+      histos.add("mcTruth/AntiLambda/hPtRadius", "hPtRadius", kTH2D, {histAxes.axisPt, histAxes.axisRadius});
+    }
 
     appliedSelectionCheckMask = 0;
     if (!v0SelectionFlags.applyDCAdaughterSelection) {
@@ -516,7 +525,7 @@ struct Alice3Strangeness {
       }
       histos.fill(HIST("hV0CandidateCounter"), 4.5);
       if (v0SelectionFlags.applyV0RadiusSelection) {
-        if (v0.v0radius() < v0SelectionValues.v0RadiusSelection)
+        if (v0.v0radius() < v0SelectionValues.v0RadiusSelection || v0.v0radius() > v0SelectionValues.v0MaxRadiusSelection)
           continue;
       } else {
         selectionCheck = v0.v0radius();
@@ -596,14 +605,17 @@ struct Alice3Strangeness {
       if (isK0) {
         histos.fill(HIST("reconstructedCandidates/K0/hMass"), v0.mK0Short(), v0.pt(), v0.eta());
         histos.fill(HIST("reconstructedCandidates/K0/hMass1D"), v0.mK0Short());
+        histos.fill(HIST("reconstructedCandidates/K0/hMassRadius"), v0.mK0Short(), v0.pt(), v0.v0radius());
       }
       if (isLambda) {
         histos.fill(HIST("reconstructedCandidates/Lambda/hMass"), v0.mLambda(), v0.pt(), v0.eta());
         histos.fill(HIST("reconstructedCandidates/Lambda/hMass1D"), v0.mLambda());
+        histos.fill(HIST("reconstructedCandidates/Lambda/hMassRadius"), v0.mLambda(), v0.pt(), v0.v0radius());
       }
       if (isAntiLambda) {
         histos.fill(HIST("reconstructedCandidates/AntiLambda/hMass"), v0.mAntiLambda(), v0.pt(), v0.eta());
         histos.fill(HIST("reconstructedCandidates/AntiLambda/hMass1D"), v0.mAntiLambda());
+        histos.fill(HIST("reconstructedCandidates/AntiLambda/hMassRadius"), v0.mAntiLambda(), v0.pt(), v0.v0radius());
       }
     }
   }
@@ -850,9 +862,32 @@ struct Alice3Strangeness {
       }
     }
   }
+  void processMCTruth(soa::Join<aod::McParticles, aod::MCParticlesExtraA3> const& mcParticles)
+  {
+
+    for (auto const& mcPart : mcParticles) {
+
+      if (!mcPart.isPhysicalPrimary()) {
+        continue;
+      }
+
+      float ptmc = RecoDecay::sqrtSumOfSquares(mcPart.px(), mcPart.py());
+
+      if (mcPart.pdgCode() == 310) {
+        histos.fill(HIST("mcTruth/K0Short/hPtRadius"), ptmc, mcPart.secondaryVertexRadius());
+      }
+      if (mcPart.pdgCode() == 3122) {
+        histos.fill(HIST("mcTruth/Lambda/hPtRadius"), ptmc, mcPart.secondaryVertexRadius());
+      }
+      if (mcPart.pdgCode() == -3122) {
+        histos.fill(HIST("mcTruth/AntiLambda/hPtRadius"), ptmc, mcPart.secondaryVertexRadius());
+      }
+    }
+  }
 
   PROCESS_SWITCH(Alice3Strangeness, processAllFindableCandidates, "", false);
   PROCESS_SWITCH(Alice3Strangeness, processFoundV0Candidates, "", true);
+  PROCESS_SWITCH(Alice3Strangeness, processMCTruth, "", true);
   PROCESS_SWITCH(Alice3Strangeness, processFoundCascadeCandidates, "", true);
 };
 

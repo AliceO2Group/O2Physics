@@ -1817,7 +1817,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
       tableMcTrackLabels(trackParCov.mcLabel, 0);
-      tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits, trackParCov.trackType, trackParCov.isPVContributor);
+      tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits, trackParCov.trackType, trackParCov.isPVContributor, -1, -1, -1, -1);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
