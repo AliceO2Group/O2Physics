@@ -198,7 +198,7 @@ namespace qamatching
 DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Candidate, candidate, int32_t, o2::aod::QaMatchingCandidates, "QAMCANDs", "");
 } // namespace qamatching
 
-using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MFTMults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 using MyMuonsReAlign = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign>;
 using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
@@ -1282,7 +1282,7 @@ struct QaMatching {
     }
 
     int nTrackTypes = static_cast<int>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack) + 1;
-    AxisSpec trackTypeAxis = {static_cast<int>(nTrackTypes), 0.0, static_cast<double>(nTrackTypes), "track type"};
+    AxisSpec trackTypeAxis = {nTrackTypes, 0.0, static_cast<double>(nTrackTypes), "track type"};
     registry.add("nTracksPerType", "Number of tracks per type", {HistType::kTH1F, {trackTypeAxis}});
 
     AxisSpec tracksMultiplicityAxis = {cfgMftTrackMultiplicityMax, 0, static_cast<double>(cfgMftTrackMultiplicityMax), "tracks multiplicity"};
