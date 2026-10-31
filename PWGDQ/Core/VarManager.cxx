@@ -1131,6 +1131,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAxy2] = "cm";
   fgVariableNames[kDCAz2] = "DCA_{z}";
   fgVariableUnits[kDCAz2] = "cm";
+  fgVariableNames[kDCAxyOverSig1] = "DCA_{xy}/#sigma_{DCA_{xy}}";
+  fgVariableUnits[kDCAxyOverSig1] = "";
+  fgVariableNames[kDCAzOverSig1] = "DCA_{z}/#sigma_{DCA_{z}}";
+  fgVariableUnits[kDCAzOverSig1] = "";
+  fgVariableNames[kDCAxyOverSig2] = "DCA_{xy}/#sigma_{DCA_{xy}}";
+  fgVariableUnits[kDCAxyOverSig2] = "";
+  fgVariableNames[kDCAzOverSig2] = "DCA_{z}/#sigma_{DCA_{z}}";
+  fgVariableUnits[kDCAzOverSig2] = "";
   fgVariableNames[kTPCnSigmaEl] = "n #sigma_{e}^{TPC}";
   fgVariableUnits[kTPCnSigmaEl] = "";
   fgVariableNames[kTPCnSigmaEl_Corr] = "n #sigma_{e}^{TPC} Corr.";
@@ -2389,6 +2397,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCharge1"] = kCharge1;
   fgVarNamesMap["kDCAxy1"] = kDCAxy1;
   fgVarNamesMap["kDCAz1"] = kDCAz1;
+  fgVarNamesMap["kDCAxyOverSig1"] = kDCAxyOverSig1;
+  fgVarNamesMap["kDCAzOverSig1"] = kDCAzOverSig1;
   fgVarNamesMap["kITSclusterMap1"] = kITSclusterMap1;
   fgVarNamesMap["kTPCnSigmaEl1"] = kTPCnSigmaEl1;
   fgVarNamesMap["kPin_leg1"] = kPin_leg1;
@@ -2399,6 +2409,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCharge2"] = kCharge2;
   fgVarNamesMap["kDCAxy2"] = kDCAxy2;
   fgVarNamesMap["kDCAz2"] = kDCAz2;
+  fgVarNamesMap["kDCAxyOverSig2"] = kDCAxyOverSig2;
+  fgVarNamesMap["kDCAzOverSig2"] = kDCAzOverSig2;
   fgVarNamesMap["kITSclusterMap2"] = kITSclusterMap2;
   fgVarNamesMap["kTPCnSigmaEl2"] = kTPCnSigmaEl2;
   fgVarNamesMap["kPin"] = kPin;
