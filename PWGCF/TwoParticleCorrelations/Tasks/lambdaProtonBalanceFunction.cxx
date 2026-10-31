@@ -24,10 +24,12 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/EndOfStreamContext.h>
@@ -39,13 +41,17 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TAxis.h>
+#include <TFile.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
+#include <TList.h>
 #include <TMath.h>
 #include <TString.h>
 
 #include <algorithm>
 #include <array>
+#include <cinttypes>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -66,6 +72,9 @@ using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA,
                            aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl,
                            aod::pidTOFPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFEl,
                            aod::pidTOFbeta, aod::TrackSelection>;
+// MC-labelled versions used only by processMC (efficiency maps)
+using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
+using MyV0sMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
 namespace
 {
@@ -99,6 +108,8 @@ struct LambdaProtonBalanceFunction {
   // Folder: ProtonVetoQA/
   // Contains per-event distributions of N_before, N_after, N_removed, fraction.
   HistogramRegistry registryProtonVetoQA{"ProtonVetoQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // MC efficiency maps (Gen*/Rec* TH3: x=cent, y=pT, z=y), filled only by processMC. Folder: Efficiency/
+  HistogramRegistry registryEff{"Efficiency", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // ════════════════════════════════════════════════════════════════════════
   // TaskState — ordinary C++ runtime/implementation state.
@@ -178,9 +189,17 @@ struct LambdaProtonBalanceFunction {
     int mRhoUnrolledBinsY = 0; // mRhoYBins * mRhoPhiBins
     float mRhoYMin = 0.f;
     float mRhoYMax = 0.f;
+
+    // 1/efficiency maps (TH3: x=cent, y=pt, z=y); loaded once in init() when cApplyEffCorr is true
+    TH3* invEffL = nullptr;
+    TH3* invEffAL = nullptr;
+    TH3* invEffP = nullptr;
+    TH3* invEffAP = nullptr;
   };
 
   TaskState state;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // ─────────────────────────────────────────────────────────────────────
 
@@ -196,6 +215,11 @@ struct LambdaProtonBalanceFunction {
   ConfigurableAxis cCentBins{"cCentBins", {VARIABLE_WIDTH, 0.f, 5.f, 10.f, 20.f, 40.f, 60.f, 80.f}, "Centrality bins (%)"};
   Configurable<float> cMinCentrality{"cMinCentrality", 0.0f, "Reject events with centrality below this value (%)"};
   Configurable<float> cMaxCentrality{"cMaxCentrality", 80.0f, "Reject events with centrality above this value (%)"};
+  Configurable<bool> cApplyEffCorr{"cApplyEffCorr", false, "Weight rho1/rho2 by 1/efficiency"};
+  Configurable<std::string> cEffFile{"cEffFile", "", "ROOT file with hInvEff_Lambda, hInvEff_AntiLambda, hInvEff_Proton, hInvEff_AntiProton (TH3: x=cent, y=pt, z=y). Used only if cEffCcdbPath is empty"};
+  Configurable<std::string> cEffCcdbPath{"cEffCcdbPath", "", "CCDB path of a TList holding hInvEff_Lambda, hInvEff_AntiLambda, hInvEff_Proton, hInvEff_AntiProton; if non-empty it is used instead of cEffFile"};
+  Configurable<std::string> cCcdbUrl{"cCcdbUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
+  Configurable<int64_t> cEffCcdbTimestamp{"cEffCcdbTimestamp", 1700000000000, "CCDB timestamp (ms) used to fetch the efficiency maps (must lie inside the object validity)"};
 
   // Track quality cuts
   Configurable<int> pProtonTPCMinRows{"pProtonTPCMinRows", 70, "Minimum TPC crossed rows"};
@@ -208,7 +232,7 @@ struct LambdaProtonBalanceFunction {
   Configurable<float> pProtonMaxDCAxy{"pProtonMaxDCAxy", 0.02f, "Max |DCAxy| (cm)"}; // tight cut for cleanest primary-proton sample
   Configurable<float> pProtonMaxDCAz{"pProtonMaxDCAz", 0.1f, "Max |DCAz| (cm)"};
 
-  Configurable<float> pProtonTPCTOFSwitchP{"pProtonTPCTOFSwitchP", 0.700000238f, "p threshold (GeV/c) above which TOF is used if available"};
+  Configurable<float> pProtonTPCTOFSwitchPt{"pProtonTPCTOFSwitchPt", 0.700000238f, "pT threshold (GeV/c) above which TOF is used if available"};
   // Configurable<float> cPPMinTofBeta{"cPPMinTofBeta", 0.4f, "Min TOF beta for proton selection (TOF branch only)"}; //BETACUTCommented
   // Configurable<float> cPPMaxTofBeta{"cPPMaxTofBeta", 0.96f, "Max TOF beta for proton selection (TOF branch only)"}; //BETACUTCommented
 
@@ -240,8 +264,6 @@ struct LambdaProtonBalanceFunction {
   // ─────────────────────────────────────────────────────────────────────
 
   // Proton Kinematic Cuts (from strange9)
-  Configurable<float> pProtonMinP{"pProtonMinP", 0.5f, "Min p for primary protons (GeV/c)"};
-  Configurable<float> pProtonMaxP{"pProtonMaxP", 3.6f, "Max p for primary protons (GeV/c)"};
   Configurable<float> pProtonMinPt{"pProtonMinPt", 0.5f, "Min pT for primary protons (GeV/c)"};
   Configurable<float> pProtonMaxPt{"pProtonMaxPt", 3.6f, "Max pT for primary protons (GeV/c)"};
 
@@ -391,11 +413,22 @@ struct LambdaProtonBalanceFunction {
   }
 
   // Fill helper: fills h (if valid) at (a,b) only when both indices are in range.
-  static void fillIdx(std::shared_ptr<TH2> const& h, int a, int b)
+  static void fillIdx(std::shared_ptr<TH2> const& h, int a, int b, float w = 1.f)
   {
     if (h && a >= 0 && b >= 0) {
-      h->Fill(a + 0.5f, b + 0.5f);
+      h->Fill(a + 0.5f, b + 0.5f, w);
     }
+  }
+
+  // Efficiency weight w = 1/eff from the TH3 map (x=cent, y=pt, z=y). 1 when correction is off.
+  // (TH3* non-const: TH1::FindBin is a non-const method.)
+  float getEffWeight(TH3* h, float cent, float pt, float y) const
+  {
+    if (!cApplyEffCorr.value || !h) {
+      return 1.f;
+    }
+    const float v = h->GetBinContent(h->FindBin(cent, pt, y));
+    return v > 0.f ? v : 0.f; // 0 means: particle is dropped (no efficiency info)
   }
   // ─────────────────────────────────────────────────────────────────────
 
@@ -403,13 +436,13 @@ struct LambdaProtonBalanceFunction {
   template <typename TTrack>
   bool passesPrimProtonPid(TTrack const& trk) const
   {
-    const float pTPC = trk.tpcInnerParam(); // NOTE: pTPC, not trk.p() — matches reference exactly
+    const float pt = trk.pt();
     const float nsPr = trk.tpcNSigmaPr();
 
     if (std::abs(nsPr) >= pProtonTPCNsigma.value) {
       return false;
     }
-    if (pTPC < pProtonTPCTOFSwitchP.value) {
+    if (pt < pProtonTPCTOFSwitchPt.value) {
       return true;
     }
     if (!trk.hasTOF()) {
@@ -420,11 +453,11 @@ struct LambdaProtonBalanceFunction {
 
   // Bitmask of contaminant hypotheses that REJECT the track (bit0 = pi, bit1 = K, bit2 = e).
   // A hypothesis rejects only if the track is inside its veto window AND closer to it than to the proton.
-  // Detector: TOF at/above the TPC/TOF switch momentum when TOF is available, TPC otherwise.
+  // Detector: TOF at/above the TPC/TOF switch pT when TOF is available, TPC otherwise.
   template <typename TTrack>
   int contaminantVetoMask(TTrack const& trk, bool& usedTOF) const
   {
-    usedTOF = cVetoUseTOF.value && trk.hasTOF() && trk.tpcInnerParam() >= pProtonTPCTOFSwitchP.value;
+    usedTOF = cVetoUseTOF.value && trk.hasTOF() && trk.pt() >= pProtonTPCTOFSwitchPt.value;
     const float nsP = std::abs(usedTOF ? trk.tofNSigmaPr() : trk.tpcNSigmaPr());
     const float nsPi = std::abs(usedTOF ? trk.tofNSigmaPi() : trk.tpcNSigmaPi());
     const float nsK = std::abs(usedTOF ? trk.tofNSigmaKa() : trk.tpcNSigmaKa());
@@ -481,7 +514,7 @@ struct LambdaProtonBalanceFunction {
   enum class ProtonQAStage : int {
     RawAfterTrackSel = 0, ///< after track-quality selection (TrackSelection table), before DCA cuts and PID
     TpcPid = 1,           ///< after DCA + TPC PID cut passes (all momenta)
-    TpcTofPid = 2,        ///< after DCA + full PID: TPC everywhere, plus TOF required only above pProtonTPCTOFSwitchP
+    TpcTofPid = 2,        ///< after DCA + full PID: TPC everywhere, plus TOF required only above pProtonTPCTOFSwitchPt
     FinalSelected = 3     ///< entered selectedPrimProtons / selectedPrimAntiProtons
   };
 
@@ -1242,6 +1275,19 @@ struct LambdaProtonBalanceFunction {
     // ── Other / event-level histograms ───────────────────────────────────
     registryOther.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     registryOther.add("hFT0MPercentile", ("Centrality percentile (" + centLabel + ")").c_str(), {HistType::kTH1F, {multAxis}});
+    // ── MC efficiency maps (processMC): x = centrality (cCentBins), y = pT, z = y (same range/bins as rho1) ──
+    {
+      const AxisSpec axCent(cCentBins, "centrality (%)");
+      const AxisSpec axPt{60, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axY{cRhoYBins.value, cRhoYMin.value, cRhoYMax.value, "y"};
+      for (const char* name : {"GenLambda", "GenAntiLambda", "GenProton", "GenAntiProton",
+                               "RecLambda", "RecAntiLambda", "RecProton", "RecAntiProton"}) {
+        registryEff.add(name, name, {HistType::kTH3F, {axCent, axPt, axY}});
+      }
+    }
+    registryOther.add("hEffWeightProton", "Efficiency weight 1/#epsilon, protons", {HistType::kTH1F, {{200, 0.0f, 20.0f}}});
+    registryOther.add("hEffWeightLambda", "Efficiency weight 1/#epsilon, #Lambda", {HistType::kTH1F, {{200, 0.0f, 20.0f}}});
+    registryOther.add("hEffWeightZeroCount", "Particles with efficiency weight 0 (1=p, 2=#bar{p}, 3=#Lambda, 4=#bar{#Lambda})", {HistType::kTH1F, {{4, 0.5f, 4.5f}}});
     registryOther.add("hNSelectedPrimProtons", "Number of selected primary protons per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
     registryOther.add("hNSelectedPrimAntiProtons", "Number of selected primary antiprotons per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
     registryOther.add("hNSelLambda", "Number of selected Lambda candidates per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
@@ -2055,6 +2101,92 @@ struct LambdaProtonBalanceFunction {
         addY(S.ALAL_y, "h2_rho2_ALAL_y_AllPt", "#rho_{2}(#bar{#Lambda},#bar{#Lambda}) (y,#varphi)");
       }
     }
+
+    // ── Efficiency correction: load 1/eff maps once ──────────────────────
+    if (cApplyEffCorr.value) {
+      if (!cEffCcdbPath.value.empty()) {
+        // ── load from CCDB (TList of TH3) ──
+        ccdb->setURL(cCcdbUrl.value);
+        ccdb->setCaching(true);
+        ccdb->setLocalObjectValidityChecking();
+        ccdb->setFatalWhenNull(false);
+        TList* effList = ccdb->getForTimeStamp<TList>(cEffCcdbPath.value, cEffCcdbTimestamp.value);
+        if (!effList) {
+          LOGF(fatal, "Cannot get efficiency TList from CCDB path %s (timestamp %" PRId64 ")", cEffCcdbPath.value.c_str(), static_cast<int64_t>(cEffCcdbTimestamp.value));
+        }
+        auto loadMap = [&](const char* name) -> TH3* {
+          auto* obj = effList->FindObject(name);
+          if (!obj) {
+            LOGF(fatal, "Missing efficiency map %s in CCDB object", name);
+          }
+          TH3* h = dynamic_cast<TH3*>(obj->Clone());
+          if (!h) {
+            LOGF(fatal, "Object %s in CCDB could not be cast to TH3*", name);
+          }
+          h->SetDirectory(nullptr);
+          return h;
+        };
+        state.invEffL = loadMap("hInvEff_Lambda");
+        state.invEffAL = loadMap("hInvEff_AntiLambda");
+        state.invEffP = loadMap("hInvEff_Proton");
+        state.invEffAP = loadMap("hInvEff_AntiProton");
+      } else {
+        // ── load from a ROOT file (fallback / local tests) ──
+        TFile* fEff = TFile::Open(cEffFile.value.c_str(), "READ");
+        if (!fEff || fEff->IsZombie()) {
+          LOGF(fatal, "Cannot open efficiency file %s", cEffFile.value.c_str());
+        }
+        auto loadMap = [&](const char* name) -> TH3* {
+          TH3* h = dynamic_cast<TH3*>(fEff->Get(name));
+          if (!h) {
+            LOGF(fatal, "Missing efficiency map %s", name);
+          }
+          h->SetDirectory(nullptr);
+          return h;
+        };
+        state.invEffL = loadMap("hInvEff_Lambda");
+        state.invEffAL = loadMap("hInvEff_AntiLambda");
+        state.invEffP = loadMap("hInvEff_Proton");
+        state.invEffAP = loadMap("hInvEff_AntiProton");
+        fEff->Close();
+      }
+
+      // Sumw2 for all weighted fills (rho1, and every rho2 channel: Lp family, pp family, LL family)
+      registryRho.get<TH2>(HIST("h2_rho1_Proton_y"))->Sumw2();
+      registryRho.get<TH2>(HIST("h2_rho1_AntiProton_y"))->Sumw2();
+      registryRho.get<TH2>(HIST("h2_rho1_Lambda_y"))->Sumw2();
+      registryRho.get<TH2>(HIST("h2_rho1_AntiLambda_y"))->Sumw2();
+      state.hRho2_Lp_y_AllPt->Sumw2();
+      state.hRho2_LAp_y_AllPt->Sumw2();
+      state.hRho2_ALp_y_AllPt->Sumw2();
+      state.hRho2_ALAp_y_AllPt->Sumw2();
+      state.hRho2_pp_y_AllPt->Sumw2();
+      state.hRho2_pAp_y_AllPt->Sumw2();
+      state.hRho2_App_y_AllPt->Sumw2();
+      state.hRho2_ApAp_y_AllPt->Sumw2();
+      state.hRho2_LL_y_AllPt->Sumw2();
+      state.hRho2_LAL_y_AllPt->Sumw2();
+      state.hRho2_ALL_y_AllPt->Sumw2();
+      state.hRho2_ALAL_y_AllPt->Sumw2();
+      for (auto& S : state.centSets) {
+        S.rho1_Proton_y->Sumw2();
+        S.rho1_AntiProton_y->Sumw2();
+        S.rho1_Lambda_y->Sumw2();
+        S.rho1_AntiLambda_y->Sumw2();
+        S.Lp_y->Sumw2();
+        S.LAp_y->Sumw2();
+        S.ALp_y->Sumw2();
+        S.ALAp_y->Sumw2();
+        S.pp_y->Sumw2();
+        S.pAp_y->Sumw2();
+        S.App_y->Sumw2();
+        S.ApAp_y->Sumw2();
+        S.LL_y->Sumw2();
+        S.LAL_y->Sumw2();
+        S.ALL_y->Sumw2();
+        S.ALAL_y->Sumw2();
+      }
+    }
   }
 
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
@@ -2080,9 +2212,9 @@ struct LambdaProtonBalanceFunction {
   }
   // ─────────────────────────────────────────────────────────────────────
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra, aod::CentFT0Ms, aod::CentFT0Cs>>::iterator const& collision,
-               aod::V0Datas const& V0s,
-               MyTracks const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra, aod::CentFT0Ms, aod::CentFT0Cs>>::iterator const& collision,
+                   aod::V0Datas const& V0s,
+                   MyTracks const& tracks)
   {
     // ── Ordered-pair convention ────────────────────────────────────────────
     // pp   : trigger=proton1,   assoc=proton2   (self-pairs rejected)
@@ -2098,7 +2230,7 @@ struct LambdaProtonBalanceFunction {
     // Every channel fills y-space only (unrolledIndexY).
     // ─────────────────────────────────────────────────────────────────────
 
-    // ── Event cutflow bin 1 — enters process (after sel8 + posZ filters) ──
+    // ── Event cutflow bin 1 — enters processData (after sel8 + posZ filters) ──
     registryOther.fill(HIST("hEventCutflow"), 1.0f);
 
     if (collision.numContrib() < 1) {
@@ -2553,9 +2685,14 @@ struct LambdaProtonBalanceFunction {
         fillDaughterQA<DaughterParent::Lambda, DaughterType::Proton>(DaughterQAStage::Final, dauPos);
         fillDaughterQA<DaughterParent::Lambda, DaughterType::Pion>(DaughterQAStage::Final, dauNeg);
       }
-      registryRho.fill(HIST("h2_rho1_Lambda_y"), v0.rapidity(1), v0.phi());
+      const float wL = getEffWeight(state.invEffL, cent, v0.pt(), v0.rapidity(1));
+      registryRho.fill(HIST("h2_rho1_Lambda_y"), v0.rapidity(1), v0.phi(), wL);
       if (cs) {
-        cs->rho1_Lambda_y->Fill(v0.rapidity(1), v0.phi());
+        cs->rho1_Lambda_y->Fill(v0.rapidity(1), v0.phi(), wL);
+      }
+      registryOther.fill(HIST("hEffWeightLambda"), wL);
+      if (wL == 0.f) {
+        registryOther.fill(HIST("hEffWeightZeroCount"), 3.f);
       }
       registryOther.fill(HIST("hPtSelLambda"), v0.pt());
       state.hPtSelLambda_AllPt->Fill(v0.pt());
@@ -2571,9 +2708,13 @@ struct LambdaProtonBalanceFunction {
         fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiProton>(DaughterQAStage::Final, dauNeg);
         fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiPion>(DaughterQAStage::Final, dauPos);
       }
-      registryRho.fill(HIST("h2_rho1_AntiLambda_y"), v0.rapidity(2), v0.phi());
+      const float wAL = getEffWeight(state.invEffAL, cent, v0.pt(), v0.rapidity(2));
+      registryRho.fill(HIST("h2_rho1_AntiLambda_y"), v0.rapidity(2), v0.phi(), wAL);
       if (cs) {
-        cs->rho1_AntiLambda_y->Fill(v0.rapidity(2), v0.phi());
+        cs->rho1_AntiLambda_y->Fill(v0.rapidity(2), v0.phi(), wAL);
+      }
+      if (wAL == 0.f) {
+        registryOther.fill(HIST("hEffWeightZeroCount"), 4.f);
       }
       registryOther.fill(HIST("hPtSelAntiLambda"), v0.pt());
       state.hPtSelAntiLambda_AllPt->Fill(v0.pt());
@@ -2639,11 +2780,7 @@ struct LambdaProtonBalanceFunction {
       fillCutFlow(8.0f, trk);
       // ─────────────────────────────────────────────────────────────────
 
-      // ── p_TPC and pT acceptance cuts ─────────────────────────────────────────────
-      const float pTPC = trk.tpcInnerParam();
-      if (pTPC < pProtonMinP.value || pTPC > pProtonMaxP.value) {
-        continue;
-      }
+      // ── pT acceptance cut ─────────────────────────────────────────────
       if (trk.pt() < pProtonMinPt.value || trk.pt() > pProtonMaxPt.value) {
         continue;
       }
@@ -2808,8 +2945,8 @@ struct LambdaProtonBalanceFunction {
         fillProtonDetectorQuality<true>(ProtonQAStage::FinalSelected, trk);
         fillProtonTpcQA<true>(ProtonQAStage::FinalSelected, trk);
         // TOF QA only when track was accepted through the TPC+TOF branch:
-        // p > PProtonTPC_TOFSwitchP guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
-        if (pTPC >= pProtonTPCTOFSwitchP.value) {
+        // pt > pProtonTPCTOFSwitchPt guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
+        if (trk.pt() >= pProtonTPCTOFSwitchPt.value) {
           fillProtonTofQA<true>(ProtonQAStage::FinalSelected, trk);
         }
 
@@ -2821,8 +2958,8 @@ struct LambdaProtonBalanceFunction {
         fillProtonDetectorQuality<false>(ProtonQAStage::FinalSelected, trk);
         fillProtonTpcQA<false>(ProtonQAStage::FinalSelected, trk);
         // TOF QA only when track was accepted through the TPC+TOF branch:
-        // p > pProtonTPCTOFSwitchP guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
-        if (pTPC >= pProtonTPCTOFSwitchP.value) {
+        // pt > pProtonTPCTOFSwitchPt guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
+        if (trk.pt() >= pProtonTPCTOFSwitchPt.value) {
           fillProtonTofQA<false>(ProtonQAStage::FinalSelected, trk);
         }
 
@@ -2870,16 +3007,25 @@ struct LambdaProtonBalanceFunction {
     // ── Single-particle density for protons (y) ──────────────────
     for (auto const& primProton : selectedPrimProtons) {
       const float yp = protonRapidity(primProton);
-      registryRho.fill(HIST("h2_rho1_Proton_y"), yp, primProton.phi());
+      const float wP = getEffWeight(state.invEffP, cent, primProton.pt(), yp);
+      registryRho.fill(HIST("h2_rho1_Proton_y"), yp, primProton.phi(), wP);
       if (cs) {
-        cs->rho1_Proton_y->Fill(yp, primProton.phi());
+        cs->rho1_Proton_y->Fill(yp, primProton.phi(), wP);
+      }
+      registryOther.fill(HIST("hEffWeightProton"), wP);
+      if (wP == 0.f) {
+        registryOther.fill(HIST("hEffWeightZeroCount"), 1.f);
       }
     }
     for (auto const& primAntiProton : selectedPrimAntiProtons) {
       const float yap = protonRapidity(primAntiProton);
-      registryRho.fill(HIST("h2_rho1_AntiProton_y"), yap, primAntiProton.phi());
+      const float wAP = getEffWeight(state.invEffAP, cent, primAntiProton.pt(), yap);
+      registryRho.fill(HIST("h2_rho1_AntiProton_y"), yap, primAntiProton.phi(), wAP);
       if (cs) {
-        cs->rho1_AntiProton_y->Fill(yap, primAntiProton.phi());
+        cs->rho1_AntiProton_y->Fill(yap, primAntiProton.phi(), wAP);
+      }
+      if (wAP == 0.f) {
+        registryOther.fill(HIST("hEffWeightZeroCount"), 2.f);
       }
     }
     // ─────────────────────────────────────────────────────────────────────
@@ -2963,11 +3109,12 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(y1_pp, p1.phi());
         const int idxY2 = unrolledIndexY(y2_pp, p2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffP, cent, p1.pt(), y1_pp) * getEffWeight(state.invEffP, cent, p2.pt(), y2_pp);
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_pp_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
+          state.hRho2_pp_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->pp_y, idxY1, idxY2);
+          fillIdx(cs->pp_y, idxY1, idxY2, wPair);
         }
       }
     }
@@ -2981,11 +3128,12 @@ struct LambdaProtonBalanceFunction {
         if (failsQinvCut(qinvPAp)) {
           continue;
         }
+        const float wPair = getEffWeight(state.invEffP, cent, a.pt, a.y) * getEffWeight(state.invEffAP, cent, b.pt, b.y);
         if (a.idxY >= 0 && b.idxY >= 0) {
-          state.hRho2_pAp_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f);
+          state.hRho2_pAp_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->pAp_y, a.idxY, b.idxY);
+          fillIdx(cs->pAp_y, a.idxY, b.idxY, wPair);
         }
       }
     }
@@ -2999,11 +3147,12 @@ struct LambdaProtonBalanceFunction {
         if (failsQinvCut(qinvApp)) {
           continue;
         }
+        const float wPair = getEffWeight(state.invEffAP, cent, a.pt, a.y) * getEffWeight(state.invEffP, cent, b.pt, b.y);
         if (a.idxY >= 0 && b.idxY >= 0) {
-          state.hRho2_App_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f);
+          state.hRho2_App_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->App_y, a.idxY, b.idxY);
+          fillIdx(cs->App_y, a.idxY, b.idxY, wPair);
         }
       }
     }
@@ -3020,11 +3169,12 @@ struct LambdaProtonBalanceFunction {
         if (failsQinvCut(qinvApAp)) {
           continue;
         }
+        const float wPair = getEffWeight(state.invEffAP, cent, a.pt, a.y) * getEffWeight(state.invEffAP, cent, b.pt, b.y);
         if (a.idxY >= 0 && b.idxY >= 0) {
-          state.hRho2_ApAp_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f);
+          state.hRho2_ApAp_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->ApAp_y, a.idxY, b.idxY);
+          fillIdx(cs->ApAp_y, a.idxY, b.idxY, wPair);
         }
       }
     }
@@ -3136,11 +3286,12 @@ struct LambdaProtonBalanceFunction {
         if (idxYL >= 0 && idxYP >= 0 && bin >= 0) {
           state.hPtPrimProton_Lambda[bin]->Fill(primProton.pt());
         }
+        const float wPair = getEffWeight(state.invEffL, cent, v0.pt(), yL) * getEffWeight(state.invEffP, cent, primProton.pt(), yP);
         if (idxYL >= 0 && idxYP >= 0) {
-          state.hRho2_Lp_y_AllPt->Fill(idxYL + 0.5f, idxYP + 0.5f);
+          state.hRho2_Lp_y_AllPt->Fill(idxYL + 0.5f, idxYP + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->Lp_y, idxYL, idxYP);
+          fillIdx(cs->Lp_y, idxYL, idxYP, wPair);
         }
         ++nPairs_Lambda_PrimProton;
       }
@@ -3218,11 +3369,12 @@ struct LambdaProtonBalanceFunction {
         if (idxYL2 >= 0 && idxYAp >= 0 && bin >= 0) {
           state.hPtPrimAntiProton_Lambda[bin]->Fill(primAntiProton.pt());
         }
+        const float wPair = getEffWeight(state.invEffL, cent, v0.pt(), yL2) * getEffWeight(state.invEffAP, cent, primAntiProton.pt(), yAp);
         if (idxYL2 >= 0 && idxYAp >= 0) {
-          state.hRho2_LAp_y_AllPt->Fill(idxYL2 + 0.5f, idxYAp + 0.5f);
+          state.hRho2_LAp_y_AllPt->Fill(idxYL2 + 0.5f, idxYAp + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->LAp_y, idxYL2, idxYAp);
+          fillIdx(cs->LAp_y, idxYL2, idxYAp, wPair);
         }
         ++nPairs_Lambda_PrimAntiProton;
       }
@@ -3372,11 +3524,12 @@ struct LambdaProtonBalanceFunction {
         if (idxYAL >= 0 && idxYP2 >= 0 && bin >= 0) {
           state.hPtPrimProton_AntiLambda[bin]->Fill(primProton.pt());
         }
+        const float wPair = getEffWeight(state.invEffAL, cent, v0.pt(), yAL) * getEffWeight(state.invEffP, cent, primProton.pt(), yP2);
         if (idxYAL >= 0 && idxYP2 >= 0) {
-          state.hRho2_ALp_y_AllPt->Fill(idxYAL + 0.5f, idxYP2 + 0.5f);
+          state.hRho2_ALp_y_AllPt->Fill(idxYAL + 0.5f, idxYP2 + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->ALp_y, idxYAL, idxYP2);
+          fillIdx(cs->ALp_y, idxYAL, idxYP2, wPair);
         }
         ++nPairs_AntiLambda_PrimProton;
       }
@@ -3461,11 +3614,12 @@ struct LambdaProtonBalanceFunction {
         if (idxYAL2 >= 0 && idxYAp2 >= 0 && bin >= 0) {
           state.hPtPrimAntiProton_AntiLambda[bin]->Fill(primAntiProton.pt());
         }
+        const float wPair = getEffWeight(state.invEffAL, cent, v0.pt(), yAL2) * getEffWeight(state.invEffAP, cent, primAntiProton.pt(), yAp2);
         if (idxYAL2 >= 0 && idxYAp2 >= 0) {
-          state.hRho2_ALAp_y_AllPt->Fill(idxYAL2 + 0.5f, idxYAp2 + 0.5f);
+          state.hRho2_ALAp_y_AllPt->Fill(idxYAL2 + 0.5f, idxYAp2 + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->ALAp_y, idxYAL2, idxYAp2);
+          fillIdx(cs->ALAp_y, idxYAL2, idxYAp2, wPair);
         }
         ++nPairs_AntiLambda_PrimAntiProton;
       }
@@ -3575,11 +3729,12 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(yv1L, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffL, cent, v1.pt(), yv1L) * getEffWeight(state.invEffL, cent, v2.pt(), v2.rapidity(1));
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_LL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
+          state.hRho2_LL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->LL_y, idxY1, idxY2);
+          fillIdx(cs->LL_y, idxY1, idxY2, wPair);
         }
       }
     }
@@ -3625,11 +3780,12 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(yv1LAL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffL, cent, v1.pt(), yv1LAL) * getEffWeight(state.invEffAL, cent, v2.pt(), v2.rapidity(2));
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_LAL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
+          state.hRho2_LAL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->LAL_y, idxY1, idxY2);
+          fillIdx(cs->LAL_y, idxY1, idxY2, wPair);
         }
       }
     }
@@ -3675,11 +3831,12 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(yv1ALL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffAL, cent, v1.pt(), yv1ALL) * getEffWeight(state.invEffL, cent, v2.pt(), v2.rapidity(1));
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_ALL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
+          state.hRho2_ALL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->ALL_y, idxY1, idxY2);
+          fillIdx(cs->ALL_y, idxY1, idxY2, wPair);
         }
       }
     }
@@ -3728,11 +3885,12 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(yv1ALAL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffAL, cent, v1.pt(), yv1ALAL) * getEffWeight(state.invEffAL, cent, v2.pt(), v2.rapidity(2));
         if (idxY1 >= 0 && idxY2 >= 0) {
-          state.hRho2_ALAL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f);
+          state.hRho2_ALAL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
         }
         if (cs) {
-          fillIdx(cs->ALAL_y, idxY1, idxY2);
+          fillIdx(cs->ALAL_y, idxY1, idxY2, wPair);
         }
       }
     }
@@ -3745,6 +3903,302 @@ struct LambdaProtonBalanceFunction {
     registryOther.fill(HIST("hNPairs_AntiLambda_PrimProton"), static_cast<float>(nPairs_AntiLambda_PrimProton));
     registryOther.fill(HIST("hNPairs_AntiLambda_PrimAntiProton"), static_cast<float>(nPairs_AntiLambda_PrimAntiProton));
   }
+  PROCESS_SWITCH(LambdaProtonBalanceFunction, processData, "Process for Data", true);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MC efficiency maps: Gen* from MC particles, Rec* from the reconstructed selection.
+  // Gen* use MC-truth pT and y (proton mass for p/pbar, Lambda mass for Lambda/AntiLambda).
+  // Rec* use RECONSTRUCTED pT and y, i.e. the same variables getEffWeight() queries in processData().
+  // The loop is driven by MC collisions (exactly one reconstructed collision required) to avoid
+  // split-vertex double counting of generated particles.
+  // ══════════════════════════════════════════════════════════════════════════
+  Preslice<MyV0sMC> v0sPerCollision = aod::v0data::collisionId;
+  Preslice<MyTracksMC> tracksPerCollision = aod::track::collisionId;
+
+  template <typename TMc>
+  static float mcRapidity(TMc const& mc, float mass)
+  {
+    return RecoDecay::y(std::array<float, 3>{mc.px(), mc.py(), mc.pz()}, mass);
+  }
+  // Generator-level acceptance = same pT range and |y| cut as the reco selection of the species.
+  bool inLambdaAcc(float pt, float y) const
+  {
+    return pt > lambdaV0MinPt.value && pt < lambdaV0MaxPt.value && std::abs(y) < lambdaV0MaxY.value;
+  }
+  bool inProtonAcc(float pt, float y) const
+  {
+    return pt > pProtonMinPt.value && pt < pProtonMaxPt.value && std::abs(y) < pProtonMaxY.value;
+  }
+
+  void processMC(aod::McCollisions::iterator const& mcCollision,
+                 soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra,
+                                            aod::CentFT0Ms, aod::CentFT0Cs, aod::McCollisionLabels>> const& collisions,
+                 MyV0sMC const& allV0s,
+                 MyTracksMC const& allTracks,
+                 aod::McParticles const& mcParticles)
+  {
+    // ── 1) Event association + selection (soa::Filtered does not apply to SmallGroups) ──
+    // Exactly one reconstructed collision per MC collision: removes split-vertex double counting.
+    if (collisions.size() != 1) {
+      return;
+    }
+    auto collision = collisions.begin();
+    if (!collision.has_mcCollision() || collision.mcCollisionId() != mcCollision.globalIndex()) {
+      return;
+    }
+    // Same event selection as the Filters of processData(): sel8 + |posZ| cut
+    if (!collision.sel8() || std::abs(collision.posZ()) >= cPPandV0ZVertexCut.value) {
+      return;
+    }
+    // Slice V0s and tracks to this reconstructed collision
+    auto V0s = allV0s.sliceBy(v0sPerCollision, collision.globalIndex());
+    auto tracks = allTracks.sliceBy(tracksPerCollision, collision.globalIndex());
+
+    if (collision.numContrib() < 1) {
+      return;
+    }
+    const float cent = getCentrality(collision); // FT0C or FT0M according to cUseFT0C
+    if (cent < cMinCentrality.value || cent >= cMaxCentrality.value) {
+      return;
+    }
+    // INEL > 0 (same as processData()): at least one charged track in |eta| < 0.8
+    {
+      int nTracksINEL = 0;
+      for (auto const& trk : tracks) {
+        if (std::abs(trk.eta()) < 0.8f) {
+          ++nTracksINEL;
+        }
+      }
+      if (nTracksINEL < 1) {
+        return;
+      }
+    }
+
+    // ── 2) GENERATED: physical primaries of this MC collision (mcParticles is auto-sliced to mcCollision;
+    //       NO V0-daughter veto at generator level) ──
+    for (auto const& mc : mcParticles) {
+      if (!mc.isPhysicalPrimary()) {
+        continue;
+      }
+      const int pdg = mc.pdgCode();
+      if (pdg == 3122 || pdg == -3122) {
+        if (!mc.has_daughters()) {
+          continue;
+        }
+        const float pt = mc.pt();
+        const float y = mcRapidity(mc, kMassLambda);
+        if (!inLambdaAcc(pt, y)) {
+          continue;
+        }
+        if (pdg == 3122) {
+          registryEff.fill(HIST("GenLambda"), cent, pt, y);
+        } else {
+          registryEff.fill(HIST("GenAntiLambda"), cent, pt, y);
+        }
+      } else if (pdg == 2212 || pdg == -2212) {
+        const float pt = mc.pt();
+        const float y = mcRapidity(mc, kMassProton);
+        if (!inProtonAcc(pt, y)) {
+          continue;
+        }
+        if (pdg == 2212) {
+          registryEff.fill(HIST("GenProton"), cent, pt, y);
+        } else {
+          registryEff.fill(HIST("GenAntiProton"), cent, pt, y);
+        }
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // BLOCK COPIED FROM processData() — V0 (Lambda/AntiLambda) selection.
+    // The selection is embedded in processData(), so it is duplicated here with all QA fills removed.
+    // KEEP IN SYNC with processData() (Step 2 V0 loop + shared-daughter cleaning).
+    // ══════════════════════════════════════════════════════════════════════
+    constexpr float mLambdaPDG = o2::constants::physics::MassLambda;
+    constexpr float mK0PDG = o2::constants::physics::MassK0Short;
+    std::unordered_set<int64_t> v0DaughterTrackIds;
+    std::vector<MyV0sMC::iterator> selectedLambdas;
+    std::vector<MyV0sMC::iterator> selectedAntiLambdas;
+
+    for (const auto& v0 : V0s) {
+      const auto& v0PosDau = v0.posTrack_as<MyTracksMC>();
+      const auto& v0NegDau = v0.negTrack_as<MyTracksMC>();
+
+      if (v0.v0Type() != cV0TypeSelection.value) {
+        continue;
+      }
+      if (v0PosDau.pt() <= cV0DauMinPt.value || v0NegDau.pt() <= cV0DauMinPt.value ||
+          std::abs(v0PosDau.eta()) >= cV0DauMaxEta.value || std::abs(v0NegDau.eta()) >= cV0DauMaxEta.value ||
+          v0PosDau.tpcNClsCrossedRows() <= cV0DauMinTpcCrossedRows.value ||
+          v0NegDau.tpcNClsCrossedRows() <= cV0DauMinTpcCrossedRows.value) {
+        continue;
+      }
+      const bool v0DauPID_AsLambda =
+        (std::abs(v0PosDau.tpcNSigmaPr()) < lambdaV0DaughterProtonTPCNsigma.value) &&
+        (std::abs(v0NegDau.tpcNSigmaPi()) < lambdaV0DaughterPionTPCNsigma.value);
+      const bool v0DauPID_AsAntiLambda =
+        (std::abs(v0PosDau.tpcNSigmaPi()) < lambdaV0DaughterPionTPCNsigma.value) &&
+        (std::abs(v0NegDau.tpcNSigmaPr()) < lambdaV0DaughterProtonTPCNsigma.value);
+      if (v0DauPID_AsLambda == v0DauPID_AsAntiLambda) {
+        continue;
+      }
+      if (v0DauPID_AsLambda && std::abs(v0.rapidity(1)) > lambdaV0MaxY.value) {
+        continue;
+      }
+      if (v0DauPID_AsAntiLambda && std::abs(v0.rapidity(2)) > lambdaV0MaxY.value) {
+        continue;
+      }
+      if (v0.pt() < lambdaV0MinPt.value || v0.pt() > lambdaV0MaxPt.value) {
+        continue;
+      }
+      const float dcaProton = v0DauPID_AsLambda ? std::abs(v0.dcapostopv()) : std::abs(v0.dcanegtopv());
+      const float dcaPion = v0DauPID_AsLambda ? std::abs(v0.dcanegtopv()) : std::abs(v0.dcapostopv());
+      const float ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * mLambdaPDG;
+      if (!passTopoCuts(v0)) {
+        continue;
+      }
+      if (dcaProton < lambdaV0DaughterProtonMinDCAToPV.value ||
+          dcaPion < lambdaV0DaughterPionMinDCAToPV.value) {
+        continue;
+      }
+      if (ctau > lambdaV0MaxCTau.value) {
+        continue;
+      }
+      if (std::abs(v0.mK0Short() - mK0PDG) <= lambdaV0KShortRejectMassWindow.value) {
+        continue;
+      }
+      const bool selLambda = v0DauPID_AsLambda && (std::abs(v0.mLambda() - mLambdaPDG) < lambdaV0MassWindow.value);
+      const bool selAntiLambda = v0DauPID_AsAntiLambda && (std::abs(v0.mAntiLambda() - mLambdaPDG) < lambdaV0MassWindow.value);
+      if (selLambda) {
+        selectedLambdas.push_back(v0);
+        v0DaughterTrackIds.insert(v0.posTrackId());
+        v0DaughterTrackIds.insert(v0.negTrackId());
+      }
+      if (selAntiLambda) {
+        selectedAntiLambdas.push_back(v0);
+        v0DaughterTrackIds.insert(v0.posTrackId());
+        v0DaughterTrackIds.insert(v0.negTrackId());
+      }
+    }
+    // Shared-daughter cleaning (same as processData())
+    std::unordered_map<int64_t, int> posIdCount;
+    std::unordered_map<int64_t, int> negIdCount;
+    for (const auto& v : selectedLambdas) {
+      ++posIdCount[v.posTrackId()];
+      ++negIdCount[v.negTrackId()];
+    }
+    for (const auto& v : selectedAntiLambdas) {
+      ++posIdCount[v.posTrackId()];
+      ++negIdCount[v.negTrackId()];
+    }
+    std::vector<MyV0sMC::iterator> cleanLambdas;
+    std::vector<MyV0sMC::iterator> cleanAntiLambdas;
+    for (const auto& v : selectedLambdas) {
+      if (posIdCount[v.posTrackId()] == 1 && negIdCount[v.negTrackId()] == 1) {
+        cleanLambdas.push_back(v);
+      }
+    }
+    for (const auto& v : selectedAntiLambdas) {
+      if (posIdCount[v.posTrackId()] == 1 && negIdCount[v.negTrackId()] == 1) {
+        cleanAntiLambdas.push_back(v);
+      }
+    }
+    // ══════════════ END OF BLOCK COPIED FROM processData() (V0) ══════════════
+
+    // ── 4) RECONSTRUCTED Lambda / AntiLambda: true primary (anti)Lambda, filled in RECONSTRUCTED (pT, y) ──
+    for (const auto& v0 : cleanLambdas) {
+      const auto& v0PosDau = v0.posTrack_as<MyTracksMC>();
+      const auto& v0NegDau = v0.negTrack_as<MyTracksMC>();
+      if (!v0.has_mcParticle() || !v0PosDau.has_mcParticle() || !v0NegDau.has_mcParticle()) {
+        continue;
+      }
+      const auto mc = v0.mcParticle_as<aod::McParticles>();
+      if (!mc.isPhysicalPrimary() || mc.pdgCode() != 3122) {
+        continue;
+      }
+      registryEff.fill(HIST("RecLambda"), cent, v0.pt(), v0.rapidity(1));
+    }
+    for (const auto& v0 : cleanAntiLambdas) {
+      const auto& v0PosDau = v0.posTrack_as<MyTracksMC>();
+      const auto& v0NegDau = v0.negTrack_as<MyTracksMC>();
+      if (!v0.has_mcParticle() || !v0PosDau.has_mcParticle() || !v0NegDau.has_mcParticle()) {
+        continue;
+      }
+      const auto mc = v0.mcParticle_as<aod::McParticles>();
+      if (!mc.isPhysicalPrimary() || mc.pdgCode() != -3122) {
+        continue;
+      }
+      registryEff.fill(HIST("RecAntiLambda"), cent, v0.pt(), v0.rapidity(2));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // BLOCK COPIED FROM processData() — primary (anti)proton selection (track loop, QA fills removed).
+    // Reuses passesPrimProtonPid() and passesContaminantVeto(); the remaining cuts are embedded
+    // in processData() and duplicated here. KEEP IN SYNC with processData().
+    // ══════════════════════════════════════════════════════════════════════
+    for (auto const& trk : tracks) {
+      if (!trk.hasTPC()) {
+        continue;
+      }
+      if (trk.tpcNClsCrossedRows() < pProtonTPCMinRows.value) {
+        continue;
+      }
+      if (trk.tpcCrossedRowsOverFindableCls() < pProtonTPCMinRowsOverFindable.value) {
+        continue;
+      }
+      if (trk.tpcChi2NCl() > pProtonTPCMaxChi2PerCluster.value) {
+        continue;
+      }
+      if (trk.itsNCls() < pProtonITSMinClusters.value) {
+        continue;
+      }
+      if (trk.itsChi2NCl() > pProtonITSMaxChi2PerCluster.value) {
+        continue;
+      }
+      if (trk.tpcSignal() < cPPMinTpcSignal.value) {
+        continue;
+      }
+      if (trk.pt() < pProtonMinPt.value || trk.pt() > pProtonMaxPt.value) {
+        continue;
+      }
+      if (std::abs(protonRapidity(trk)) > pProtonMaxY.value) {
+        continue;
+      }
+      if (!((std::abs(trk.dcaXY()) < pProtonMaxDCAxy.value) && (std::abs(trk.dcaZ()) < pProtonMaxDCAz.value))) {
+        continue;
+      }
+      if (!passesPrimProtonPid(trk)) {
+        continue;
+      }
+      if (!passesContaminantVeto(trk)) {
+        continue;
+      }
+      // V0-daughter veto (same set as processData(): built from V0s selected before shared-daughter cleaning)
+      if (v0DaughterTrackIds.contains(trk.globalIndex())) {
+        continue;
+      }
+      // ══════════════ END OF BLOCK COPIED FROM processData() (protons) ══════════════
+
+      // ── 3) RECONSTRUCTED protons / antiprotons: true primary p / pbar of this MC collision ──
+      if (!trk.has_mcParticle()) {
+        continue;
+      }
+      const auto mc = trk.mcParticle_as<aod::McParticles>();
+      if (!mc.isPhysicalPrimary()) {
+        continue;
+      }
+      // Fill with RECONSTRUCTED kinematics (same variables as getEffWeight in processData())
+      const float yReco = protonRapidity(trk);
+      if (trk.sign() > 0 && mc.pdgCode() == 2212) {
+        registryEff.fill(HIST("RecProton"), cent, trk.pt(), yReco);
+      } else if (trk.sign() < 0 && mc.pdgCode() == -2212) {
+        registryEff.fill(HIST("RecAntiProton"), cent, trk.pt(), yReco);
+      }
+    }
+  }
+  PROCESS_SWITCH(LambdaProtonBalanceFunction, processMC, "Efficiency from MC", false);
+  // ─────────────────────────────────────────────────────────────────────
+
   // ── Run-level summary printed once at the end of the analysis job ─────
   // Called automatically by the O2 framework after all events are processed.
   // Prints totals accumulated in runTotalProtonBeforeVeto / runTotalProtonRemovedVeto.
