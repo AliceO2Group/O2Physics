@@ -204,6 +204,7 @@ struct FemtoProducerDerivedToDerived {
       static_cast<int>(doprocessTracksSigmaPlus) + static_cast<int>(doprocessTracksSigmaPlusExtended) +
       static_cast<int>(doprocessTracksSigmaPlusPcm) + static_cast<int>(doprocessTracksSigmaPlusPcmExtended) +
       static_cast<int>(doprocessTracksRho0) + static_cast<int>(doprocessTracksPhi) +
+      static_cast<int>(doprocessLambdasXis) +
       static_cast<int>(doprocessTracksMc) + static_cast<int>(doprocessTracksSigmaMc) +
       static_cast<int>(doprocessTracksSigmaPlusMc) + static_cast<int>(doprocessTracksSigmaPlusExtendedMc) +
       static_cast<int>(doprocessTracksSigmaPlusPcmMc) + static_cast<int>(doprocessTracksSigmaPlusPcmExtendedMc);
@@ -407,6 +408,18 @@ struct FemtoProducerDerivedToDerived {
     builders.resonanceBuilder.processPhis(col, phis, tracks, phiPartition, builders.trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksPhi, "Process phi and tracks", false);
+
+  void processLambdasXis(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& lambdas, FemtoXis const& xis)
+  {
+    if (v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache) || cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    cascadeBuilder.processXis(col, xis, tracks, xiPartition, trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasXis, "Process lambdas and xis", false);
 
   // mc processing
   //   // NOTE: unlike the other process functions, this one subscribes to the full
