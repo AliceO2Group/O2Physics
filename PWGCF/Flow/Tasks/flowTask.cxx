@@ -448,7 +448,7 @@ struct FlowTask {
       registry.add("hPtA_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
       registry.add("hPtB_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
     }
-    if (cfgAdditionObs.cfgManualCk) {
+    if (!cfgAdditionObs.cfgNewPtContainer && cfgAdditionObs.cfgManualCk) {
       registry.add("ptpt_1sub1_1sub3_2pc", "", {HistType::kTProfile, {axisIndependent}});
       registry.add("pt_1sub1_1pc", "", {HistType::kTProfile, {axisIndependent}});
       registry.add("pt_1sub1_2pc", "", {HistType::kTProfile, {axisIndependent}});
@@ -1469,7 +1469,7 @@ struct FlowTask {
           weffEventWithinGap08 += weff;
           weffEventSquareWithinGap08 += weff * weff;
         }
-        if (cfgAdditionObs.cfgManualCk) {
+        if (!cfgAdditionObs.cfgNewPtContainer && cfgAdditionObs.cfgManualCk) {
           if (track.eta() >= etagapsPtPt[0].first && track.eta() <= etagapsPtPt[0].second) {
             mpt_sub1 += weff * track.pt();
             mpt_sub1_weffEv += weff;
@@ -1496,7 +1496,10 @@ struct FlowTask {
       if (withinPtPOI && withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
       if (cfgAdditionObs.cfgNewPtContainer) {
-        fFCpt->fill(track.eta(), weff, track.pt(), 1);
+        if (cfgUsePtRef && withinPtRef)
+          fFCpt->fill(track.eta(), weff, track.pt(), 1);
+        if (!cfgUsePtRef && withinPtPOI)
+          fFCpt->fill(track.eta(), weff, track.pt(), 1);
         if (withinPtRef)
           cfgAdditionObs.npcGfw.Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
         if (withinPtPOI)
@@ -1577,7 +1580,7 @@ struct FlowTask {
                     weffEventDiffWithGap08);
     }
 
-    if (cfgAdditionObs.cfgManualCk) {
+    if (!cfgAdditionObs.cfgNewPtContainer && cfgAdditionObs.cfgManualCk) {
       // 2pc event weight:
       double ev2pc = mpt_sub1_weffEv * mpt_sub3_weffEv;
       // manual pt-pt variance
