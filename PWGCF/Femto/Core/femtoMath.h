@@ -38,9 +38,9 @@ namespace o2::analysis::femto::femtomath
 {
 
 // SH reference frame selectors for computeShKinematics(), mirrors ConfPairBinning.shFrame
-constexpr int kShFrameLcmsNonIdentical = 0;
-constexpr int kShFrameLcmsIdentical = 1;
-constexpr int kShFramePrf = 2;
+constexpr int ShFrameLcmsNonIdentical = 0;
+constexpr int ShFrameLcmsIdentical = 1;
+constexpr int ShFramePrf = 2;
 
 inline float getKt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
 {
@@ -173,9 +173,9 @@ inline int findShBin(double value, std::vector<double> const& edges)
 // Kinematics feeding the spherical-harmonics decomposition, ported 1:1 from
 // FemtoUniverseMath::newpairfunc so results are numerically comparable.
 // Returns {kv, out, side, long}, selected by shFrame:
-//   kShFrameLcmsNonIdentical: {kstar,  fDKOut,  fDKSide,  fDKLong}   (LCMS components of particle 1)
-//   kShFrameLcmsIdentical:    {qinv,   outLCMS, sideLCMS, longLCMS}  (LCMS q-differences)
-//   kShFramePrf:              {|qPRF|, outPRF,  sidePRF,  longPRF}   (matches FemtoUniverse isIdenPRF=true)
+//   ShFrameLcmsNonIdentical: {kstar,  fDKOut,  fDKSide,  fDKLong}   (LCMS components of particle 1)
+//   ShFrameLcmsIdentical:    {qinv,   outLCMS, sideLCMS, longLCMS}  (LCMS q-differences)
+//   ShFramePrf:              {|qPRF|, outPRF,  sidePRF,  longPRF}   (matches FemtoUniverse isIdenPRF=true)
 inline std::tuple<float, float, float, float> computeShKinematics(ROOT::Math::PtEtaPhiMVector const& part1,
                                                                   ROOT::Math::PtEtaPhiMVector const& part2,
                                                                   int shFrame)
@@ -219,13 +219,13 @@ inline std::tuple<float, float, float, float> computeShKinematics(ROOT::Math::Pt
   const double sideLCMS = fDKSide - py2;
   const double longLCMS = fDKLong - pz2;
 
-  if (shFrame == kShFrameLcmsIdentical) {
+  if (shFrame == ShFrameLcmsIdentical) {
     // LCMS identical: Ylm <- LCMS q-differences, axis <- qinv
     const double qinv = std::sqrt(outLCMS * outLCMS + sideLCMS * sideLCMS + longLCMS * longLCMS);
     return {static_cast<float>(qinv),
             static_cast<float>(outLCMS), static_cast<float>(sideLCMS), static_cast<float>(longLCMS)};
   }
-  if (shFrame == kShFramePrf) {
+  if (shFrame == ShFramePrf) {
     // PRF: Ylm <- PRF q-differences, axis <- |q_PRF| (matches FemtoUniverse isIdenPRF=true)
     const double pE2LCMS = gamma * (e2 - beta * p2.Pz());
     const double betaOut = tPt / tMt;

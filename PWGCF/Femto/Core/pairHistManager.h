@@ -1530,7 +1530,7 @@ class PairHistManager
         if (mShPlot1D) {
           mShBinCount[iCent][iKt]->Fill(mShKv, 1.0);
           // FemtoUniverse h1D = f3d[0]: qinv (=2k*) for identical-LCMS, else k*.
-          const float sh1DValue = (mShFrame == femtomath::kShFrameLcmsIdentical) ? (2.0f * mKstar) : mKstar;
+          const float sh1DValue = (mShFrame == femtomath::ShFrameLcmsIdentical) ? (2.0f * mKstar) : mKstar;
           mSh1D[iCent][iKt]->Fill(sh1DValue);
         }
       }
