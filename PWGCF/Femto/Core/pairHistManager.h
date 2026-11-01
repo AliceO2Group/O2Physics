@@ -30,14 +30,11 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
-#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
-#include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TH3.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>

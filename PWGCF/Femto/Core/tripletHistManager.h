@@ -29,7 +29,6 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -847,6 +846,8 @@ class TripletHistManager
 
   float getMt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2, ROOT::Math::PtEtaPhiMVector const& part3)
   {
+    // all three pairwise combinations are intentional, not a mixed-up argument order
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     return (femtomath::getMt(part1, part2, mMtType) + femtomath::getMt(part2, part3, mMtType) + femtomath::getMt(part1, part3, mMtType)) / 3.f;
   }
 
