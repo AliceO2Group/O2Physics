@@ -1586,16 +1586,16 @@ struct FlowTask {
       // manual pt-pt variance
       if (mpt_sub1_weffEv) {
         mpt_sub1 = mpt_sub1 / mpt_sub1_weffEv;
-        registry.fill(HIST("pt_1sub1_1pc"), independent, mpt_sub1, mpt_sub1_weffEv);
+        registry.fill(HIST("pt_1sub1_1pc"), independent, mpt_sub1, cfgUserIO.cfgUserPtVnEvWeightEnabled ? mpt_sub1_weffEv : 1.);
       }
       if (mpt_sub3_weffEv) {
         mpt_sub3 = mpt_sub3 / mpt_sub3_weffEv;
-        registry.fill(HIST("pt_1sub3_1pc"), independent, mpt_sub3, mpt_sub3_weffEv);
+        registry.fill(HIST("pt_1sub3_1pc"), independent, mpt_sub3, cfgUserIO.cfgUserPtVnEvWeightEnabled ? mpt_sub3_weffEv : 1.);
       }
       if (mpt_sub1_weffEv && mpt_sub3_weffEv) {
-        registry.fill(HIST("ptpt_1sub1_1sub3_2pc"), independent, mpt_sub1 * mpt_sub3, ev2pc);
-        registry.fill(HIST("pt_1sub1_2pc"), independent, mpt_sub1, ev2pc);
-        registry.fill(HIST("pt_1sub3_2pc"), independent, mpt_sub3, ev2pc);
+        registry.fill(HIST("ptpt_1sub1_1sub3_2pc"), independent, mpt_sub1 * mpt_sub3, cfgUserIO.cfgUserPtVnEvWeightEnabled ? ev2pc : 1.);
+        registry.fill(HIST("pt_1sub1_2pc"), independent, mpt_sub1, cfgUserIO.cfgUserPtVnEvWeightEnabled ? ev2pc : 1.);
+        registry.fill(HIST("pt_1sub3_2pc"), independent, mpt_sub3, cfgUserIO.cfgUserPtVnEvWeightEnabled ? ev2pc : 1.);
       }
     }
 
