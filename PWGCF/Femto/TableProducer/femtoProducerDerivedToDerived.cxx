@@ -205,6 +205,7 @@ struct FemtoProducerDerivedToDerived {
       static_cast<int>(doprocessTracksSigmaPlus) + static_cast<int>(doprocessTracksSigmaPlusExtended) +
       static_cast<int>(doprocessTracksSigmaPlusPcm) + static_cast<int>(doprocessTracksSigmaPlusPcmExtended) +
       static_cast<int>(doprocessTracksRho0) + static_cast<int>(doprocessTracksPhi) +
+      static_cast<int>(doprocessLambdasXis) +
       static_cast<int>(doprocessTracksMc) + static_cast<int>(doprocessTracksSigmaMc) +
       static_cast<int>(doprocessTracksSigmaPlusMc) + static_cast<int>(doprocessTracksSigmaPlusExtendedMc) +
       static_cast<int>(doprocessTracksSigmaPlusPcmMc) + static_cast<int>(doprocessTracksSigmaPlusPcmExtendedMc);
@@ -456,6 +457,18 @@ struct FemtoProducerDerivedToDerived {
     builders.resonanceBuilder.processPhis(col, phis, tracks, phiPartition, builders.trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksPhi, "Process phi and tracks", false);
+
+  void processLambdasXis(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas, femtotables::FemtoXis const& xis)
+  {
+    if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
+      return;
+    }
+    builders.trackBuilder.reset(tracks);
+    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+    builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasXis, "Process lambdas and xis", false);
 
   // mc processing
   //   // NOTE: unlike the other process functions, this one subscribes to the full
