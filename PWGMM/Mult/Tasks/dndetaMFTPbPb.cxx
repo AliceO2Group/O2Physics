@@ -26,6 +26,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -36,6 +37,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -246,6 +248,18 @@ struct MultE {
   static constexpr int CmultMFT = 4;
 };
 
+static constexpr TrackSelectionFlags::flagtype TrackSelectionITS =
+  TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
+  TrackSelectionFlags::kITSHits;
+static constexpr TrackSelectionFlags::flagtype TrackSelectionTPC =
+  TrackSelectionFlags::kTPCNCls |
+  TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+  TrackSelectionFlags::kTPCChi2NDF;
+static constexpr TrackSelectionFlags::flagtype TrackSelectionDCA =
+  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+static constexpr TrackSelectionFlags::flagtype TrackSelectionDCAXYonly =
+  TrackSelectionFlags::kDCAxy;
+
 struct DndetaMFTPbPb {
   SliceCache cache;
 
@@ -257,6 +271,7 @@ struct DndetaMFTPbPb {
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   struct : ConfigurableGroup {
+    Configurable<float> dcaZmidrap{"dcaZmidrap", 0.2f, "Custom DCA Z cut (ignored if negative)"};
     Configurable<bool> useEvtSel{"useEvtSel", true, "Use event selection"};
     Configurable<bool> useIRFromCCDB{"useIRFromCCDB", false, "Flag to retrieve Interaction rate from CCDB"};
     Configurable<bool> useIRCut{"useIRCut", false, "Flag to cut on IR rate"};
@@ -296,6 +311,7 @@ struct DndetaMFTPbPb {
     ConfigurableAxis dcaZBins{"dcaZBins", {100, -0.5, 0.5}, "DCAz binning (cm)"};
     ConfigurableAxis phiBins{"phiBins", {629, 0., TwoPI}, "#varphi binning (rad)"};
     ConfigurableAxis etaBins{"etaBins", {20, -4., -2.}, "#eta binning"};
+    ConfigurableAxis etaMidrapBins{"etaMidrapBins", {40, -2., 2.}, "#eta midrapidity binning"};
     ConfigurableAxis chiSqPerNclBins{"chiSqPerNclBins", {100, 0, 100}, "#chi^{2} binning"};
     ConfigurableAxis nClBins{"nClBins", {10, 0.5, 10.5}, "number of clusters binning"};
     ConfigurableAxis tanLambdaBins{"tanLambdaBins", {100, -25, 0}, "binning for tan(lambda)"};
@@ -311,6 +327,7 @@ struct DndetaMFTPbPb {
   } rctCuts;
 
   struct : ConfigurableGroup {
+    Configurable<float> etaRangeMidrap{"etaRangeMidrap", 1.0f, "Eta range for midrapidity tracks"};
     Configurable<bool> usephiCut{"usephiCut", false, "use azimuthal angle cut"};
     Configurable<float> phiCut{"phiCut", 0.1f, "Cut on azimuthal angle of MFT tracks"};
     Configurable<float> minPhi{"minPhi", 0.f, ""};
@@ -395,6 +412,7 @@ struct DndetaMFTPbPb {
     const AxisSpec dcazAxis = {binOpt.dcaZBins, "DCA-z axis"};
     const AxisSpec phiAxis = {binOpt.phiBins, "#phi axis"};
     const AxisSpec etaAxis = {binOpt.etaBins, "#eta axis"};
+    const AxisSpec etaMidrapAxis = {binOpt.etaMidrapBins, "#eta midrapidity axis"};
     const AxisSpec chiSqAxis = {binOpt.chiSqPerNclBins, "Chi2 axis"};
     const AxisSpec nclsAxis = {binOpt.nClBins, "Number of clusters axis"};
     const AxisSpec tanLambdaAxis{binOpt.tanLambdaBins, "tan(#lambda)"};
@@ -630,6 +648,9 @@ struct DndetaMFTPbPb {
       } else {
         registryMC.add({"Tracks/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); recTrkTypeAxis; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, recTrkTypeAxis, occupancyAxis}}});
       }
+      if (doprocessMcInclusive) {
+        registryMC.add({"TracksMidrap/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); recTrkTypeAxis; occupancy", {HistType::kTHnSparseF, {etaMidrapAxis, zAxis, dcaxyAxis, dcazAxis, recTrkTypeAxis, occupancyAxis}}});
+      }
       registryMC.add({"Tracks/EtaZvtxGen_t", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
       registryMC.add({"Tracks/EtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
       registryMC.add({"Tracks/EtaZvtxGenRecEvt", "; #eta; #it{z}_{vtx} (cm); occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, occupancyAxis}}});
@@ -681,6 +702,9 @@ struct DndetaMFTPbPb {
         registryMC.add({"Tracks/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); recTrkTypeAxis; centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, dcaxyAxis, dcazAxis, recTrkTypeAxis, centralityAxis, occupancyAxis}}});
       } else {
         registryMC.add({"Tracks/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); recTrkTypeAxis; centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, recTrkTypeAxis, centralityAxis, occupancyAxis}}});
+      }
+      if (doprocessMcCentFT0C) {
+        registryMC.add({"TracksMidrap/Centrality/EtaZvtx", "; #eta; #it{z}_{vtx} (cm); DCA_{XY} (cm); DCA_{Z} (cm); recTrkTypeAxis; centrality; occupancy", {HistType::kTHnSparseF, {etaMidrapAxis, zAxis, dcaxyAxis, dcazAxis, recTrkTypeAxis, centralityAxis, occupancyAxis}}});
       }
       registryMC.add({"Tracks/Centrality/EtaZvtxGen_t", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
       registryMC.add({"Tracks/Centrality/EtaZvtxGen", "; #eta; #it{z}_{vtx} (cm); centrality; occupancy", {HistType::kTHnSparseF, {etaAxis, zAxis, centralityAxis, occupancyAxis}}});
@@ -841,6 +865,14 @@ struct DndetaMFTPbPb {
     }
   }
 
+  /// Filter (midrapidity selections)
+  expressions::Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                                           ncheckbit(aod::track::trackCutFlag, TrackSelectionITS);
+  expressions::Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                                  ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true);
+  expressions::Filter fTrackSelectionDCA = ifnode(gConf.dcaZmidrap.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
+                                                  ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA));
+
   /// Joined tables
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   using CollBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -856,6 +888,10 @@ struct DndetaMFTPbPb {
   /// Tracks
   using MftTracksLabeled = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
   using MftBestTracksLabeled = soa::Join<aod::MFTTracks, aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>;
+  // midrapidity tracks
+  using MidrapTracksLabeled = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
+  using FiltMidrapTracksLabeled = soa::Filtered<MidrapTracksLabeled>;
+
   /// Particles
   using ParticlesIdx = soa::Join<aod::McParticles, aod::ParticlesToMftTracks>;
 
@@ -1733,6 +1769,7 @@ struct DndetaMFTPbPb {
 
   Partition<aod::McParticles> mcSample = (aod::mcparticle::eta < trackCuts.maxEta) && (aod::mcparticle::eta > trackCuts.minEta);
   Preslice<MftTracksLabeled> perColMcFiltTrk = o2::aod::fwdtrack::collisionId;
+  Preslice<MidrapTracksLabeled> perColMcFiltTrkMidrap = aod::track::collisionId;
 
   std::vector<int> nRecPerCol;
   std::vector<float> centRecPerCol;
@@ -1742,7 +1779,8 @@ struct DndetaMFTPbPb {
   void processMc(typename MC::iterator const& mcCollision,
                  soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
                  aod::McParticles const& particles,
-                 MftTracksLabeled const& tracks)
+                 MftTracksLabeled const& tracks,
+                 FiltMidrapTracksLabeled const& midtracks)
   {
     nRecPerCol.clear();
     centRecPerCol.clear();
@@ -1819,6 +1857,51 @@ struct DndetaMFTPbPb {
           registryMC.fill(HIST("Events/Centrality/hRecZvtxCent"), collision.posZ(), cRec, occRec);
         } else {
           registryMC.fill(HIST("Events/McEvtStatus"), static_cast<float>(McEvtStatus::kMcRecNoSplitVtx), occRec);
+        }
+
+        // midrapidity tracks for weak deacy correction study
+        auto midtracksPerCol = midtracks.sliceBy(perColMcFiltTrkMidrap, collision.globalIndex());
+        for (auto const& midtrack : midtracksPerCol) {
+          if (std::abs(midtrack.eta()) >= trackCuts.etaRangeMidrap) {
+            continue;
+          }
+          if constexpr (has_reco_cent<C>) {
+            registryMC.fill(HIST("TracksMidrap/Centrality/EtaZvtx"), midtrack.eta(), collision.posZ(), midtrack.dcaXY(), midtrack.dcaZ(), static_cast<float>(McRecTrkType::kTrkSel), cRec, occRec);
+          } else {
+            registryMC.fill(HIST("TracksMidrap/EtaZvtx"), midtrack.eta(), collision.posZ(), midtrack.dcaXY(), midtrack.dcaZ(), static_cast<float>(McRecTrkType::kTrkSel), occRec);
+          }
+          if (midtrack.has_mcParticle() && (!trackCuts.removeFakeByMcMask || (midtrack.mcMask() == trackCuts.selMcMask))) {
+            const auto& particle = midtrack.template mcParticle_as<aod::McParticles>();
+            if (collision.mcCollisionId() != particle.mcCollisionId()) {
+              continue;
+            }
+            bool isPhysicalPrimary = particle.isPhysicalPrimary();
+            bool isSecondary = (particle.has_mothers() && particle.getProcess() == TMCProcess::kPDecay);
+            if (!isPhysicalPrimary && !isSecondary) {
+              continue;
+            }
+            int particleOrigin = -1;
+            auto particleMother = particle.template mothers_as<aod::McParticles>().front();
+            if (particle.isPhysicalPrimary()) {
+              particleOrigin = static_cast<int>(McRecTrkType::kPrimary);
+            } else if (particleMother.isPhysicalPrimary() && particle.getProcess() == TMCProcess::kPDecay) {
+              particleOrigin = static_cast<int>(McRecTrkType::kSecondary);
+              if (particleMother.pdgCode() == PDG_t::kK0Short || std::abs(particleMother.pdgCode()) == PDG_t::kLambda0) {
+                particleOrigin = static_cast<int>(McRecTrkType::kStrangeDecay);
+              }
+            }
+            if constexpr (has_reco_cent<C>) {
+              registryMC.fill(HIST("TracksMidrap/Centrality/EtaZvtx"), midtrack.eta(), collision.posZ(), midtrack.dcaXY(), midtrack.dcaZ(), static_cast<float>(particleOrigin), cRec, occRec);
+            } else {
+              registryMC.fill(HIST("TracksMidrap/EtaZvtx"), midtrack.eta(), collision.posZ(), midtrack.dcaXY(), midtrack.dcaZ(), static_cast<float>(particleOrigin), occRec);
+            }
+          } else {
+            if constexpr (has_reco_cent<C>) {
+              registryMC.fill(HIST("TracksMidrap/Centrality/EtaZvtx"), midtrack.eta(), collision.posZ(), midtrack.dcaXY(), midtrack.dcaZ(), static_cast<int>(McRecTrkType::kTrkFake), cRec, occRec);
+            } else {
+              registryMC.fill(HIST("TracksMidrap/EtaZvtx"), midtrack.eta(), collision.posZ(), midtrack.dcaXY(), midtrack.dcaZ(), static_cast<float>(McRecTrkType::kTrkFake), occRec);
+            }
+          }
         }
 
         auto nTrkRec = 0;
@@ -1947,9 +2030,10 @@ struct DndetaMFTPbPb {
   void processMcInclusive(CollsMCExtraMult::iterator const& mccollision,
                           soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
                           aod::McParticles const& particles,
-                          MftTracksLabeled const& tracks)
+                          MftTracksLabeled const& tracks,
+                          FiltMidrapTracksLabeled const& midtracks)
   {
-    processMc<CollsMCExtraMult, Colls>(mccollision, collisions, particles, tracks);
+    processMc<CollsMCExtraMult, Colls>(mccollision, collisions, particles, tracks, midtracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMcInclusive, "Count MC particles (inclusive)", false);
@@ -1957,9 +2041,10 @@ struct DndetaMFTPbPb {
   void processMcCentFT0C(CollsMCExtraMult::iterator const& mccollision,
                          soa::SmallGroups<soa::Join<CollsCentFT0C, aod::McCollisionLabels>> const& collisions,
                          aod::McParticles const& particles,
-                         MftTracksLabeled const& tracks)
+                         MftTracksLabeled const& tracks,
+                         FiltMidrapTracksLabeled const& midtracks)
   {
-    processMc<CollsMCExtraMult, CollsCentFT0C>(mccollision, collisions, particles, tracks);
+    processMc<CollsMCExtraMult, CollsCentFT0C>(mccollision, collisions, particles, tracks, midtracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMcCentFT0C, "Count MC particles in FT0C centrality bins", false);
