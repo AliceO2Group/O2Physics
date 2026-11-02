@@ -346,7 +346,7 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
 
   // centrality operation
-  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"MC generator name for centrality calibration (e.g. PYTHIA, EPOS). Empty: autodetect from metadata in Run 3, falling back to PYTHIA"}};
+  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"MC generator name for centrality calibration (e.g. PYTHIA, EPOS). Empty: autodetect from metadata in Run 3, falling back to PYTHIA. Specify if and only if this is MC to override autodetect from metadata"}};
   o2::framework::Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
 };
 
