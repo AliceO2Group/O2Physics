@@ -553,7 +553,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusHf"), 2.0);
 
     // pT: Charm Bachelor
-    if (inputPtBin < 0 || candidate.pt() < cuts->get(inputPtBin, "pT pi from Omegac")) {
+    if (inputPtBin < 0 || trackPiFromCharm.pt() < cuts->get(inputPtBin, "pT pi from Omegac")) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 3.0);
