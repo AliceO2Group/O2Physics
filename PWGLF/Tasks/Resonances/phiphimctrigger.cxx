@@ -31,6 +31,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 
 #include <cmath>   // std::abs
