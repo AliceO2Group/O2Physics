@@ -238,7 +238,7 @@ void CorrelationContainer::Copy(TObject& c) const
 }
 
 //____________________________________________________________________
-long long CorrelationContainer::Merge(TCollection* list)
+Long64_t CorrelationContainer::Merge(TCollection* list)
 {
   // Merge a list of CorrelationContainer objects with this (needed for
   // PROOF).
@@ -522,7 +522,7 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
   TH2* eventMixedAll = nullptr;
   TH2* eventMixedAllStep6 = nullptr;
 
-  long long totalEvents = 0;
+  int64_t totalEvents = 0;
   int nCorrelationFunctions = 0;
 
   getHistsZVtxMult(step, ptTriggerMin, ptTriggerMax, &trackSameAll, &eventSameAll);
@@ -762,7 +762,7 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
     }
 
     if (normalizePerTrigger) {
-      LOGF(info, "Dividing %f tracks by %lld events (%d correlation function(s)) (error %f)", totalTracks->Integral(), totalEvents, nCorrelationFunctions, errors[0]);
+      LOGF(info, "Dividing %f tracks by %ld events (%d correlation function(s)) (error %f)", totalTracks->Integral(), totalEvents, nCorrelationFunctions, errors[0]);
       if (totalEvents > 0) {
         totalTracks->Scale(1.0 / totalEvents);
       }
