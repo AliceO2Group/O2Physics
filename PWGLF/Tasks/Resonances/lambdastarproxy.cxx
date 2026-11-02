@@ -1197,9 +1197,9 @@ struct Lambdastarproxy {
         const std::string stem = std::string("hProxyPIDProbe") + ProbeRoles[role];
         const AxisSpec m2 = role == 0 ? AxisSpec{120, -1., 7., "Full-track TOF mass2 (GeV2/c4)"} : AxisSpec{80, -1., 2., "Full-track TOF mass2 (GeV2/c4)"};
         const AxisSpec packed{ProbeTagCount, -0.5, ProbeTagCount - 0.5, "pairBin+4*(momentumBin+9*region)"};
-        probeMass2[role][sign] = add3(stem + "Mass2" + suffix, "Loose both-TOF proxy probes;TPC/TOF envelopes;regular multiplicity", {probeMass, m2, packed});
-        probeTPC[role][sign] = add3(stem + "TPC" + suffix, "Same loose both-TOF proxy probes;TPC nSigma;regular multiplicity", {probeMass, AxisSpec{60, -ProbeTPCMax, ProbeTPCMax, "TPC nSigma for slot hypothesis"}, packed});
-        probeTOF[role][sign] = add3(stem + "TOF" + suffix, "Same loose both-TOF proxy probes;TOF nSigma;regular multiplicity", {probeMass, AxisSpec{80, -ProbeTOFMax, ProbeTOFMax, "TOF nSigma for slot hypothesis"}, packed});
+        probeMass2[role][sign] = add3(std::string(stem).append("Mass2").append(suffix), "Loose both-TOF proxy probes;TPC/TOF envelopes;regular multiplicity", {probeMass, m2, packed});
+        probeTPC[role][sign] = add3(std::string(stem).append("TPC").append(suffix), "Same loose both-TOF proxy probes;TPC nSigma;regular multiplicity", {probeMass, AxisSpec{60, -ProbeTPCMax, ProbeTPCMax, "TPC nSigma for slot hypothesis"}, packed});
+        probeTOF[role][sign] = add3(std::string(stem).append("TOF").append(suffix), "Same loose both-TOF proxy probes;TOF nSigma;regular multiplicity", {probeMass, AxisSpec{80, -ProbeTOFMax, ProbeTOFMax, "TOF nSigma for slot hypothesis"}, packed});
         for (int region = 0; region < ProbeRegions; ++region) {
           for (int momentum = 0; momentum < ProbeMomentumBins; ++momentum) {
             for (int pair = 0; pair < ProbePairPtBins; ++pair) {
