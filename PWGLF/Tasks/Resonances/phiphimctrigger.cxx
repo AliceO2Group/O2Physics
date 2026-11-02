@@ -41,11 +41,11 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct PhiCandidate {
+struct PhiCandidateTrigger {
   ROOT::Math::PxPyPzMVector p4;
-  int t1Index;
-  int t2Index;
-  int mcPhiIndex;
+  int t1Index = -1;
+  int t2Index = -1;
+  int mcPhiIndex = -1;
 
   // MC Truth attributes
   bool isValidMcPhi = false;
@@ -240,7 +240,7 @@ struct PhiPhiMCTrigger {
       return;
     }
 
-    std::vector<PhiCandidate> phiCandidates;
+    std::vector<PhiCandidateTrigger> phiCandidates;
 
     // STEP 1: Reconstruct individual Phi candidates (Kaon track pairs)
     for (const auto& t1 : tracks) {
@@ -337,7 +337,7 @@ struct PhiPhiMCTrigger {
               continue;
             }
 
-            PhiCandidate phiCand;
+            PhiCandidateTrigger phiCand;
 
             phiCand.p4 = motherRec;
             phiCand.t1Index = t1.globalIndex();
