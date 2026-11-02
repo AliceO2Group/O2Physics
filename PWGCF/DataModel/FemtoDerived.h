@@ -750,6 +750,7 @@ enum ParticleOriginMCTruth {
   kElse,                         //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kSecondaryFromHF,              //! Kaon from a charm- or beauty-hadron decay chain
   kSecondaryFromLF,              //! Kaon from a light-flavour decay without a heavy-flavour ancestor
+  kSecondaryFromPhi,             //! Kaon from a phi decay chain (phi -> K0/K0bar -> K0S)
   kNOriginMCTruthTypes
 };
 
@@ -771,7 +772,8 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
   "_SecondaryDaughterXistarMinus",
   "_Else",
   "_SecondaryFromHF",
-  "_SecondaryFromLF"};
+  "_SecondaryFromLF",
+  "_SecondaryFromPhi"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {

@@ -32,6 +32,7 @@
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -59,6 +60,7 @@
 
 #include <TH1.h>
 #include <TMCProcess.h>
+#include <TPDGCode.h>
 
 #include <array>
 #include <chrono>
@@ -494,8 +496,47 @@ struct HfProducerCharmHadronsV0FemtoDream {
     }
   }
 
+  /// Classify the MC origin of a V0 candidate.
+  /// The heavy-flavour feed-down is identified with RecoDecay::getParticleOrigin, which also
+  /// covers charm- and beauty-hadron decays flagged as physical primaries. The feed-down from
+  /// a phi decay is light-flavour and kept as a separate class, since the relatively long phi
+  /// lifetime makes it a distinct source.
+  /// \param mcParticles table of the MC particles
+  /// \param particleMc MC particle matched to the V0 candidate
+  /// \param isFromPhi true if the K0S comes from a phi decay chain
+  /// \return the origin according to ParticleOriginMCTruth (kPrimary, kMaterial,
+  /// kSecondaryFromHF, kSecondaryFromLF or kSecondaryFromPhi)
+  template <typename T>
+  static int getK0sOrigin(T const& mcParticles, typename T::iterator const& particleMc, const bool isFromPhi)
+  {
+    using namespace o2::aod::femtodreamMCparticle;
+    constexpr int GenFromTransport = -1;
+    const auto process = particleMc.getProcess();
+    // hadronic interaction in the detector material
+    if (process == TMCProcess::kPHInhelastic && particleMc.getGenStatusCode() == GenFromTransport) {
+      return kMaterial;
+    }
+    // charm- or beauty-hadron anywhere in the mother chain (feed-down can be a physical primary)
+    if (RecoDecay::getParticleOrigin(mcParticles, particleMc, false) != RecoDecay::OriginType::None) {
+      return kSecondaryFromHF;
+    }
+    // phi -> K0/K0bar -> K0S is light-flavour feed-down, but kept as a separate class because
+    // the relatively long phi lifetime makes it a distinct source (also flagged as a physical primary)
+    if (isFromPhi) {
+      return kSecondaryFromPhi;
+    }
+    if (particleMc.isPhysicalPrimary()) {
+      return kPrimary;
+    }
+    // weak decay of a light-flavour hadron during the transport
+    if (process == TMCProcess::kPDecay && particleMc.getGenStatusCode() == GenFromTransport && particleMc.has_mothers()) {
+      return kSecondaryFromLF;
+    }
+    return kElse;
+  }
+
   template <typename CollisionType, typename ParticleType>
-  void fillMcParticle(CollisionType const& col, ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
+  void fillMcParticle(CollisionType const& col, ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype, aod::McParticles const& mcParticles)
   {
     if (particle.has_mcParticle()) {
       // get corresponding MC particle and its info
@@ -510,6 +551,19 @@ struct HfProducerCharmHadronsV0FemtoDream {
       float etaPos{-1.f}, etaNeg{-1.f};
       float phiPos{-1.f}, phiNeg{-1.f};
       int pdgCodePos{0}, pdgCodeNeg{0};
+      // phi -> K0/K0bar -> K0s (or phi -> K0s directly); the heavy-flavour feed-down is
+      // handled in getK0sOrigin through RecoDecay::getParticleOrigin
+      bool isFromPhi = false;
+      if (fdparttype == o2::aod::femtodreamparticle::ParticleType::kV0 && !motherparticlesMc.empty()) {
+        const auto absPdgMother = std::abs(motherparticlesMc.front().pdgCode());
+        if (absPdgMother == o2::constants::physics::Pdg::kPhi) {
+          isFromPhi = true;
+        } else if (absPdgMother == kK0) {
+          const auto& grandMothersMc = motherparticlesMc.front().template mothers_as<aod::McParticles>();
+          isFromPhi = !grandMothersMc.empty() && std::abs(grandMothersMc.front().pdgCode()) == o2::constants::physics::Pdg::kPhi;
+        }
+      }
+
       // check pdg code
       // if this fails, the particle is a fake
       if (std::abs(pdgCode) == std::abs(v0PDGCode.value)) {
@@ -518,6 +572,11 @@ struct HfProducerCharmHadronsV0FemtoDream {
         if ((col.has_mcCollision() && (particleMc.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
           // check if particle is primary
+        } else if (fdparttype == o2::aod::femtodreamparticle::ParticleType::kV0) {
+          particleOrigin = getK0sOrigin(mcParticles, particleMc, isFromPhi);
+          if (!motherparticlesMc.empty()) {
+            pdgCodeMother = motherparticlesMc.front().pdgCode();
+          }
         } else if (particleMc.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
           // check if particle is secondary
@@ -612,7 +671,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   }
 
   template <bool IsMc = false, typename V0Type, typename CollisionType, typename TrackType>
-  bool fillV0sForCharmHadron(CollisionType const& col, V0Type const& fullV0s, TrackType const& /*tracks*/)
+  bool fillV0sForCharmHadron(CollisionType const& col, V0Type const& fullV0s, TrackType const& /*tracks*/, aod::McParticles const* mcParticles = nullptr)
   {
     const bool isK0S = (selectionFlagV0 == V0Channel::K0S);
     const bool isLambda = (selectionFlagV0 == V0Channel::Lambda);
@@ -724,7 +783,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
       }
 
       if constexpr (IsMc) {
-        fillMcParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
+        fillMcParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0, *mcParticles);
       }
       fIsV0Filled = true;
     }
@@ -732,7 +791,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   }
 
   template <DecayChannel Channel, bool IsMc, bool UseCharmMl, typename V0Type, typename CollisionType, typename TrackType, typename CandType>
-  void fillCharmHadronTable(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s, CandType const& candidates)
+  void fillCharmHadronTable(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s, CandType const& candidates, aod::McParticles const* mcParticles = nullptr)
   {
     const auto vtxZ = col.posZ();
     const auto sizeCand = candidates.size();
@@ -1019,7 +1078,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
         fillTable(2, candidate.isSelDstarToD0Pi(), outputMlDstar.at(0), outputMlDstar.at(1), outputMlDstar.at(2));
       }
     }
-    isV0Filled = fillV0sForCharmHadron<IsMc>(col, fullV0s, tracks);
+    isV0Filled = fillV0sForCharmHadron<IsMc>(col, fullV0s, tracks, mcParticles);
     aod::femtodreamcollision::BitMaskType bitV0 = 0;
     if (isV0Filled) {
       bitV0 |= 1 << 0;
@@ -1248,12 +1307,12 @@ struct HfProducerCharmHadronsV0FemtoDream {
                         aod::BCsWithTimestamps const&,
                         FemtoHFMcTracks const& tracks,
                         soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                        aod::McParticles const&,
+                        aod::McParticles const& mcParticles,
                         CandidateD0Mc const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillCharmHadronTable<DecayChannel::D0ToPiK, true, false>(col, tracks, fullV0s, candidates);
+    fillCharmHadronTable<DecayChannel::D0ToPiK, true, false>(col, tracks, fullV0s, candidates, &mcParticles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcD0ToPiK, "Provide Mc for D0ToPiK", false);
 
@@ -1261,13 +1320,13 @@ struct HfProducerCharmHadronsV0FemtoDream {
                               aod::BCsWithTimestamps const&,
                               FemtoHFMcTracks const& tracks,
                               soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                              aod::McParticles const&,
+                              aod::McParticles const& mcParticles,
                               soa::Join<CandidateD0Mc,
                                         aod::HfMlD0> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillCharmHadronTable<DecayChannel::D0ToPiK, true, true>(col, tracks, fullV0s, candidates);
+    fillCharmHadronTable<DecayChannel::D0ToPiK, true, true>(col, tracks, fullV0s, candidates, &mcParticles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcD0ToPiKWithML, "Provide Mc for D0ToPiK with ml", false);
 
@@ -1307,12 +1366,12 @@ struct HfProducerCharmHadronsV0FemtoDream {
                             aod::BCsWithTimestamps const&,
                             FemtoHFMcTracks const& tracks,
                             soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                            aod::McParticles const&,
+                            aod::McParticles const& mcParticles,
                             CandidateDstarMc const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillCharmHadronTable<DecayChannel::DstarToD0Pi, true, false>(col, tracks, fullV0s, candidates);
+    fillCharmHadronTable<DecayChannel::DstarToD0Pi, true, false>(col, tracks, fullV0s, candidates, &mcParticles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDstarToD0Pi, "Provide Mc for DstarToD0Pi", false);
 
@@ -1320,13 +1379,13 @@ struct HfProducerCharmHadronsV0FemtoDream {
                                   aod::BCsWithTimestamps const&,
                                   FemtoHFMcTracks const& tracks,
                                   soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                                  aod::McParticles const&,
+                                  aod::McParticles const& mcParticles,
                                   soa::Join<CandidateDstarMc,
                                             aod::HfMlDstarToD0Pi> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillCharmHadronTable<DecayChannel::DstarToD0Pi, true, true>(col, tracks, fullV0s, candidates);
+    fillCharmHadronTable<DecayChannel::DstarToD0Pi, true, true>(col, tracks, fullV0s, candidates, &mcParticles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDstarToD0PiWithML, "Provide Mc for DstarToD0Pi with ml", false);
 
@@ -1368,12 +1427,12 @@ struct HfProducerCharmHadronsV0FemtoDream {
                              aod::BCsWithTimestamps const&,
                              FemtoHFMcTracks const& tracks,
                              soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                             aod::McParticles const&,
+                             aod::McParticles const& mcParticles,
                              CandidateDplusMc const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillCharmHadronTable<DecayChannel::DplusToPiKPi, true, false>(col, tracks, fullV0s, candidates);
+    fillCharmHadronTable<DecayChannel::DplusToPiKPi, true, false>(col, tracks, fullV0s, candidates, &mcParticles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDplusToPiKPi, "Provide Mc for DplusToPiKPi", false);
 
@@ -1381,13 +1440,13 @@ struct HfProducerCharmHadronsV0FemtoDream {
                                    aod::BCsWithTimestamps const&,
                                    FemtoHFMcTracks const& tracks,
                                    soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                                   aod::McParticles const&,
+                                   aod::McParticles const& mcParticles,
                                    soa::Join<CandidateDplusMc,
                                              aod::HfMlDplusToPiKPi> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillCharmHadronTable<DecayChannel::DplusToPiKPi, true, true>(col, tracks, fullV0s, candidates);
+    fillCharmHadronTable<DecayChannel::DplusToPiKPi, true, true>(col, tracks, fullV0s, candidates, &mcParticles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDplusToPiKPiWithML, "Provide Mc for DplusToPiKPi with ml", false);
 
@@ -1429,12 +1488,12 @@ struct HfProducerCharmHadronsV0FemtoDream {
                          aod::BCsWithTimestamps const&,
                          FemtoHFMcTracks const& tracks,
                          soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                         aod::McParticles const&,
+                         aod::McParticles const& mcParticles,
                          CandidateLcMc const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillCharmHadronTable<DecayChannel::LcToPKPi, true, false>(col, tracks, fullV0s, candidates);
+    fillCharmHadronTable<DecayChannel::LcToPKPi, true, false>(col, tracks, fullV0s, candidates, &mcParticles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcLcToPKPi, "Provide Mc for lctopkpi", false);
 
@@ -1442,13 +1501,13 @@ struct HfProducerCharmHadronsV0FemtoDream {
                                aod::BCsWithTimestamps const&,
                                FemtoHFMcTracks const& tracks,
                                soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                               aod::McParticles const&,
+                               aod::McParticles const& mcParticles,
                                soa::Join<CandidateLcMc,
                                          aod::HfMlLcToPKPi> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    fillCharmHadronTable<DecayChannel::LcToPKPi, true, true>(col, tracks, fullV0s, candidates);
+    fillCharmHadronTable<DecayChannel::LcToPKPi, true, true>(col, tracks, fullV0s, candidates, &mcParticles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcLcToPKPiWithML, "Provide Mc for lctopkpi with ml", false);
 
