@@ -15,9 +15,7 @@
 /// \author Mintu Haldar <mintu.haldar@cern.ch>
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
 
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -28,12 +26,12 @@
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h> // needed for Pair<> (two different track tables mixed together)
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h> // Pair<>, SameKindPair<>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -41,12 +39,11 @@
 #include <Framework/StepTHn.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TAxis.h>
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TFormula.h>
 #include <THn.h>
-#include <TMath.h>
-#include <TVector2.h>
 
 #include <algorithm>
 #include <array>
@@ -54,8 +51,10 @@
 #include <cmath>
 #include <cstdint>
 #include <experimental/type_traits>
+#include <iterator>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -386,7 +385,7 @@ struct Mftcorrelations {
     if (!cfgEfficiencyTrigger.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* f = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
-        cfg.mEfficiencyTrigger = reinterpret_cast<THn*>(f->Get("ccdb_object"));
+        cfg.mEfficiencyTrigger = dynamic_cast<THn*>(f->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
       }
@@ -398,7 +397,7 @@ struct Mftcorrelations {
     if (!cfgEfficiencyAssociated.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* f = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
-        cfg.mEfficiencyAssociated = reinterpret_cast<THn*>(f->Get("ccdb_object"));
+        cfg.mEfficiencyAssociated = dynamic_cast<THn*>(f->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
       }
@@ -411,7 +410,7 @@ struct Mftcorrelations {
     if (!cfgEfficiencyGlobal.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* f = TFile::Open(cfgEfficiencyGlobal.value.c_str(), "READ");
-        cfg.mEfficiencyGlobal = reinterpret_cast<THn*>(f->Get("ccdb_object"));
+        cfg.mEfficiencyGlobal = dynamic_cast<THn*>(f->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyGlobal = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyGlobal, timestamp);
       }
@@ -525,7 +524,7 @@ struct Mftcorrelations {
       LOGF(fatal, "Could not open phi weight file %s", cfgPhiWeightFile.value.c_str());
       return;
     }
-    cfg.mPhiWeight = reinterpret_cast<TH1*>(f->Get(cfgPhiWeightName.value.c_str()));
+    cfg.mPhiWeight = dynamic_cast<TH1*>(f->Get(cfgPhiWeightName.value.c_str()));
     if (cfg.mPhiWeight) {
       cfg.mPhiWeight->SetDirectory(nullptr); // detach so it survives f->Close()
     } else {
