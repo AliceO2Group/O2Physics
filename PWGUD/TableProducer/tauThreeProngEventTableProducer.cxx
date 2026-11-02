@@ -1535,9 +1535,6 @@ struct TauThreeProngEventTableProducer {
           //      return;
           //    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(7., 1.);
 
-          //      MyRecoProblem problem = NO_PROBLEM;
-          registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_PROBLEM);
-
           // auto const& collFromMcColl = collFromMcColls.iteratorAt(0);
           //  grab tracks from the reco-level collision to get info to match measured data tables (processDataSG function)
           auto const& trksFromColl = tracks.sliceBy(trackPerCollision, collFromMcColl.globalIndex());
