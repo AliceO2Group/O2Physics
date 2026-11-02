@@ -57,7 +57,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::constants::physics;
 
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PMEvSels>;
+using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PMEvSels, aod::EMEoIs>;
 using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
 using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 using MyEMCClusters = soa::Join<aod::MinClusters, aod::EMCClusterMCLabels_001>;
@@ -95,6 +95,7 @@ struct AssociateMCInfoPhoton {
   Configurable<float> maxY{"maxY", 0.9f, "max |rapidity| for BinnedGenPts table"};
   Configurable<bool> doStoreAllDaughters{"doStoreAllDaughters", false, "flag to enable storing of all photon, pi0, eta, eta' and omega daughters. This will increase the dervied data size!"};
   Configurable<bool> useIsSelected{"useIsSelected", true, "flag to enable the usage of isSelected from our EM event selection. Disabling this will increase the derived data size!"};
+  Configurable<bool> useIsEOI{"useIsEOI", true, "flag to enable the usage of the EOI table"};
 
   HistogramRegistry registry{"EMMCEvent"};
 
@@ -172,10 +173,14 @@ struct AssociateMCInfoPhoton {
   template <soa::is_iterator TCollision>
   bool passesCollisionGate(TCollision const& collisionIter)
   {
+    // event selection same as in createEMEventPhoton
     if (!collisionIter.has_mcCollision()) {
       return false;
     }
     if (useIsSelected.value && !collisionIter.isSelected()) {
+      return false;
+    }
+    if (useIsEOI.value && !collisionIter.isEoI()) {
       return false;
     }
     return true;
