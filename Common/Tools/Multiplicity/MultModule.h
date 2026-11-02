@@ -346,7 +346,7 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
 
   // centrality operation
-  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"Specify if and only if this is MC. Typical: PYTHIA"}};
+  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"MC generator name for centrality calibration (e.g. PYTHIA, EPOS). Empty: autodetect from metadata in Run 3, falling back to PYTHIA"}};
   o2::framework::Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
 };
 
@@ -1199,16 +1199,10 @@ class MultModule
       mRunNumberCentrality = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
 
-      // capture the need for PYTHIA calibration in Pb-Pb runs
-      if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367 && internalOpts.generatorName.value.empty()) {
-        LOGF(info, "This is MC for Pb-Pb. Setting generatorName automatically to PYTHIA");
-        internalOpts.generatorName.value = "PYTHIA";
-      }
-
-      // capture the need for PYTHIA calibration in light ion runs automatically
-      if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472 && internalOpts.generatorName.value.empty()) {
-        LOGF(info, "This is MC for light ion runs. Setting generatorName automatically to PYTHIA");
-        internalOpts.generatorName.value = "PYTHIA";
+      // autodetect the generator from the metadata if not explicitly configured
+      if (metadataInfo.isMC() && internalOpts.generatorName.value.empty()) {
+        internalOpts.generatorName.value = metadataInfo.getGenerator();
+        LOGF(info, "Setting generatorName automatically from metadata to %s", internalOpts.generatorName.value);
       }
 
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());

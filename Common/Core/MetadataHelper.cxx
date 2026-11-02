@@ -25,6 +25,7 @@
 #include <TSystem.h>
 
 #include <array>
+#include <map>
 #include <string>
 
 using namespace o2::common::core;
@@ -151,6 +152,33 @@ std::string MetadataHelper::getO2Version() const
     return "undefined";
   }
   return get("O2Version");
+}
+
+std::string MetadataHelper::getGenerator() const
+{
+  if (!isMC()) {
+    return {};
+  }
+
+  // MC production tag (LPMProductionTag) -> generator name, for AO2Ds without the generator in the metadata
+  static const std::map<std::string, std::string> mcGeneratorMap = {
+    {"LHC26f3", "EPOS"}};
+
+  // FIXME: use the "Generator" key first once it is available in AO2Ds (it must also be added to the key list in the constructor)
+  // if (isKeyDefined("Generator")) {
+  //   return get("Generator");
+  // }
+
+  // older AO2Ds: rely on the LPMProductionTag to generator map
+  if (isKeyDefined("LPMProductionTag")) {
+    auto it = mcGeneratorMap.find(get("LPMProductionTag"));
+    if (it != mcGeneratorMap.end()) {
+      return it->second;
+    }
+  }
+
+  // no generator found in the metadata, fall back to PYTHIA
+  return "PYTHIA";
 }
 
 bool MetadataHelper::isCommitInSoftwareTag(const std::string& commitHash, const std::string& ccdbUrl) const
