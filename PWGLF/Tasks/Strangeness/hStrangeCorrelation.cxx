@@ -3204,6 +3204,13 @@ struct HStrangeCorrelation {
         validCollisions[i].reserve(masterConfigurations.mixingParameter);
       }
     }
+    if (masterConfigurations.mixingEventForClosureTest) {
+      genLevelCollisions.resize(histos.get<TH1>(HIST("axes/hMultAxis"))->GetNbinsX() *
+                                histos.get<TH1>(HIST("axes/hVertexZAxis"))->GetNbinsX());
+      for (size_t i = 0; i < genLevelCollisions.size(); ++i) {
+        genLevelCollisions[i].reserve(masterConfigurations.mixingParameter);
+      }
+    }
     if (!masterConfigurations.doPPAnalysis) {
       // event selections in Pb-Pb
       histos.add("hEventSelection", "hEventSelection", kTH1F, {{11, 0, 11}});
@@ -3494,7 +3501,7 @@ struct HStrangeCorrelation {
         if (TESTBIT(doCorrelation, i)) {
           histos.add(fmt::format("ClosureTest/sameEvent/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
           if (masterConfigurations.mixingEventForClosureTest) {
-            histos.addClone("ClosureTest/sameEvent/", "ClosureTest/mixedEvent/");
+            histos.add(fmt::format("ClosureTest/mixedEvent/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
           }
           if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch) {
             histos.add(fmt::format("ClosureTest/TriggerWithRecoTrackMatch/sameEvent/{}", Particlenames[i]).c_str(), "truth pairs whose trigger has at least one reconstructed track with a matching MC label", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
@@ -7026,7 +7033,8 @@ struct HStrangeCorrelation {
             TriggerInGen.pt = gpt;
             TriggerInGen.eta = geta;
             TriggerInGen.phi = gphi;
-            genLevelCollisions[binnumb].back().emplace_back(TriggerInGen);
+            if (gpt <= axisRanges[3][1] && gpt >= axisRanges[3][0])
+              genLevelCollisions[binnumb].back().emplace_back(TriggerInGen);
           }
           if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch && mcParticleIdsWithRecoTrackMatch.contains(mcParticle.globalIndex())) {
             histos.fill(HIST("ClosureTest/TriggerWithRecoTrackMatch/hTrigger"), gpt, geta, bestCollisionCentpercentile);
@@ -7155,7 +7163,7 @@ struct HStrangeCorrelation {
     if (!masterConfigurations.mixingEventForClosureTest) {
       return;
     }
-    for (std::size_t iCollision = 0; iCollision < genLevelCollisions[binnumb].size() - 1; iCollision++) {
+    for (std::size_t iCollision = 0; iCollision < genLevelCollisions[binnumb].size(); iCollision++) {
       for (std::size_t iTrigger = 0; iTrigger < genLevelCollisions[binnumb][iCollision].size(); iTrigger++) {
         auto triggerParticle = genLevelCollisions[binnumb][iCollision][iTrigger];
         double getatrigger = triggerParticle.eta;
