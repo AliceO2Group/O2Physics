@@ -1991,32 +1991,32 @@ struct Kstarqa {
     }
 
     for (const auto& RecCollision : recCollisions) {
-      rEventSelection.fill(HIST("hEventSelectionMC"), 0.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 0.5);
 
       if (!RecCollision.has_mcCollision())
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 1.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 1.5);
 
       if (configGp.isNoTimeFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 2.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 2.5);
 
       if (configGp.isNoITSROFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder))
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 3.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 3.5);
 
       if (std::abs(RecCollision.posZ()) > configGp.cutzvertex)
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 4.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 4.5);
 
       if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 5.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 5.5);
     }
 
     bool isINELgt0true = false;
