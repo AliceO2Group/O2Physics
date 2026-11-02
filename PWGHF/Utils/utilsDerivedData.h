@@ -168,11 +168,21 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
   void fillTablesMcCollision(TMcCollision const& mcCollision)
   {
     if (conf->fillMcCollBase.value) {
-      rowMcCollBase(
-        mcCollision.posX(),
-        mcCollision.posY(),
-        mcCollision.posZ(),
-        mcCollision.centFT0M());
+      if constexpr (requires { mcCollision.centFT0M(); }) {
+        // MC general: input includes centrality
+        rowMcCollBase(
+          mcCollision.posX(),
+          mcCollision.posY(),
+          mcCollision.posZ(),
+          mcCollision.centFT0M());
+      } else {
+        // Input without centrality: e.g. generator-only
+        rowMcCollBase(
+          mcCollision.posX(),
+          mcCollision.posY(),
+          mcCollision.posZ(),
+          -999.f);
+      }
     }
     if (conf->fillMcCollId.value) {
       rowMcCollId(
