@@ -339,7 +339,7 @@ struct rsn_analysis {
     std::vector<std::tuple<Float_t, Float_t, Float_t>> kNegSelectedPions;
     //
     //  Loop on Tracks
-    for (auto kCurrentTrack : kTracks) {
+    for (const auto& kCurrentTrack : kTracks) {
       //
       //  Track Selection
       if (!uIsTrackSelected(kCurrentTrack))
@@ -576,7 +576,7 @@ struct rsn_analysis {
     std::vector<std::tuple<Float_t, Float_t, Float_t, o2::aod::McParticles::iterator>> kNegSelectedPions;
     //
     //  Loop on Tracks
-    for (auto kCurrentTrack : kTracks) {
+    for (const auto& kCurrentTrack : kTracks) {
       //
       //  Track Selection
       if (!uIsTrackSelected(kCurrentTrack))
@@ -730,7 +730,7 @@ struct rsn_analysis {
   {
 
     // Loop on all mc particles
-    for (auto kCurrentParticle : mcParticles) {
+    for (const auto& kCurrentParticle : mcParticles) {
       //
       if (!kCurrentParticle.producedByGenerator())
         continue;
@@ -744,7 +744,7 @@ struct rsn_analysis {
         auto kHasKaonp = false;
         auto kHasKaonm = false;
         if (kDaughters.size() == 2) {
-          for (auto kCurrentDaughter : kDaughters) {
+          for (const auto& kCurrentDaughter : kDaughters) {
             if (kCurrentDaughter.pdgCode() == +321)
               kHasKaonp = true;
             if (kCurrentDaughter.pdgCode() == -321)
@@ -763,7 +763,7 @@ struct rsn_analysis {
         auto kHasKaonp = false;
         auto kHasKaonm = false;
         if (kDaughters.size() == 2) {
-          for (auto kCurrentDaughter : kDaughters) {
+          for (const auto& kCurrentDaughter : kDaughters) {
             if (fabs(kCurrentDaughter.pdgCode()) == 321)
               kHasKaonp = true;
             if (fabs(kCurrentDaughter.pdgCode()) == 211)

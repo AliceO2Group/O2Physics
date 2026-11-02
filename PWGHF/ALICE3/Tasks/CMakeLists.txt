@@ -11,36 +11,43 @@
 
 o2physics_add_dpl_workflow(task-chic
                     SOURCES taskChic.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-d0-alice3-barrel
                     SOURCES taskD0Alice3Barrel.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-d0-alice3-forward
                     SOURCES taskD0Alice3Forward.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-d0-parametrized-pid
                     SOURCES taskD0ParametrizedPid.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-jpsi
                     SOURCES taskJpsi.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-lc-alice3
                     SOURCES taskLcAlice3.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-lc-parametrized-pid
                     SOURCES taskLcParametrizedPid.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -51,10 +58,12 @@ o2physics_add_dpl_workflow(task-qa-pid-rejection
 
 o2physics_add_dpl_workflow(task-x
                     SOURCES taskX.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-xicc
                     SOURCES taskXicc.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

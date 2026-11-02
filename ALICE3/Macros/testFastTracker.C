@@ -14,20 +14,34 @@
 /// \brief  Test the FastTracker functionality
 
 #include "ALICE3/Core/FastTracker.h"
+#include "ALICE3/Core/GeometryContainer.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <Framework/Logger.h>
 
 #include <string>
 
-void testFastTracker(std::string geometryFile = "a3geo.ini")
+void testFastTracker(const std::string& geometryFile = "Configuration/a3geo.ini")
 {
 
   fair::Logger::SetConsoleSeverity(fair::Severity::debug);
 
-  // auto& ccdb = o2::ccdb::BasicCCDBManager::instance();
-  // ccdb.setURL("http://alice-ccdb.cern.ch");
-  o2::fastsim::FastTracker fastTracker;
-  // fastTracker.AddGenericDetector(geometryFile); // FIXME
-  // fastTracker.AddGenericDetector(geometryFile, &ccdb);
-  fastTracker.Print();
+  auto& ccdb = o2::ccdb::BasicCCDBManager::instance();
+  ccdb.setURL("http://alice-ccdb.cern.ch");
+
+  o2::fastsim::GeometryContainer geometryContainer;
+  geometryContainer.setCcdbManager(&ccdb);
+  geometryContainer.addEntry(geometryFile);
+  const int nGeometries = geometryContainer.getNumberOfConfigurations();
+  const float magneticField = geometryContainer.getFloatValue(0, "global", "magneticfield");
+
+  for (int icfg = 0; icfg < nGeometries; ++icfg) {
+    const o2::fastsim::GeometryEntry& geometry = geometryContainer.getEntry(icfg);
+    o2::fastsim::FastTracker fastTracker;
+
+    fastTracker.setMagneticField(magneticField);
+    fastTracker.addGenericDetector(geometry, &ccdb);
+
+    fastTracker.print();
+  }
 }

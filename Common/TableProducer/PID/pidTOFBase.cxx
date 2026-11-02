@@ -17,6 +17,7 @@
 
 #include "pidTOFBase.h"
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
@@ -35,7 +36,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
@@ -370,13 +370,13 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
-    int lastCollisionId = -1;                                                                                    // Last collision ID analysed
-    for (auto const& t : tracks) {                                                                               // Loop on collisions
+    int lastCollisionId = -1;                                                                                                              // Last collision ID analysed
+    for (auto const& t : tracks) {                                                                                                         // Loop on collisions
       if (!t.has_collision() || collisions.size() == 0 || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
         tableFlags(0);
         tableEvTime(0.f, 999.f);
         if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
         }
         continue;
       }
@@ -408,7 +408,7 @@ struct tofEventTime {
         tableFlags(flags);
         tableEvTime(et, erret);
         if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), et, erret, evTimeTOF.mEventTimeMultiplicity);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(filterForTOFEventTime(trk)), et, erret, evTimeTOF.mEventTimeMultiplicity);
         }
       }
     }
@@ -432,13 +432,13 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
-    int lastCollisionId = -1;                                                                                       // Last collision ID analysed
-    for (auto const& t : tracks) {                                                                                  // Loop on collisions
+    int lastCollisionId = -1;                                                                                                                 // Last collision ID analysed
+    for (auto const& t : tracks) {                                                                                                            // Loop on collisions
       if (!t.has_collision() || collisions.size() == 0 || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
         tableFlags(0);
         tableEvTime(0.f, 999.f);
         if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
         }
         continue;
       }
@@ -504,7 +504,7 @@ struct tofEventTime {
         }
         tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
         if (enableTableTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeTOF.mEventTimeMultiplicity);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(filterForTOFEventTime(trk)), t0TOF[0], t0TOF[1], evTimeTOF.mEventTimeMultiplicity);
         }
       }
     }
@@ -529,7 +529,7 @@ struct tofEventTime {
 
     for (auto const& t : tracks) { // Loop on collisions
       if (enableTableTOFOnly) {
-        tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+        tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
       }
       if (!t.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute event time
         tableFlags(0);

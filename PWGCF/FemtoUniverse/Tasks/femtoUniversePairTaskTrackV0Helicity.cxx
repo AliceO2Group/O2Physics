@@ -471,7 +471,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   /// This function processes the same event for Track-V0
   template <bool confIsMC, typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
-  void doSameEvent(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, int helRange, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doSameEvent(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, int helRange, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
     const auto& magFieldTesla = col.magField();
 
@@ -864,10 +864,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   /// This function processes the mixed event for track - V0
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
-  void doMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partitionOne, PartitionType& partitionTwo, int helRange, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partitionOne, PartitionType& partitionTwo, int helRange, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
@@ -1000,8 +1000,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   /// This function processes the mixed event for V0 - V0
   void processMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
@@ -1068,8 +1068,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   /// This function processes MC mixed events for Track - V0
   void processMCMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
@@ -1116,8 +1116,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   /// This function processes MC mixed events for V0 - V0
   void processMCMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();

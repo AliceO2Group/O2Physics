@@ -29,12 +29,6 @@ DECLARE_SOA_COLUMN(DefaultSel, defaultSel, bool);
 DECLARE_SOA_COLUMN(PhimesonSel, phimesonSel, bool);
 } // namespace lf_selection_event
 
-/*DECLARE_SOA_TABLE(PhiStrangeDefEvtSelDataLike, "AOD", "DEFEVTSELDATA",
-                  lf_selection_event::DefaultSel);
-
-DECLARE_SOA_TABLE(PhiStrangeDefEvtSelMcGen, "AOD", "DEFEVTSELMCGEN",
-                  lf_selection_event::DefaultSel);*/
-
 DECLARE_SOA_TABLE(PhiStrangeEvtSelDataLike, "AOD", "EVTSELDATA",
                   lf_selection_event::DefaultSel,
                   lf_selection_event::PhimesonSel);
@@ -42,28 +36,6 @@ DECLARE_SOA_TABLE(PhiStrangeEvtSelDataLike, "AOD", "EVTSELDATA",
 DECLARE_SOA_TABLE(PhiStrangeEvtSelMcGen, "AOD", "EVTSELMCGEN",
                   lf_selection_event::DefaultSel,
                   lf_selection_event::PhimesonSel);
-
-/*namespace lf_selection_default_collision
-{
-DECLARE_SOA_COLUMN(DefaultSel, defaultSel, bool);
-} // namespace lf_selection_default_collision
-
-DECLARE_SOA_TABLE(DefaultSelectionData, "AOD", "DEFSELDATA",
-                  lf_selection_default_collision::DefaultSel);
-
-DECLARE_SOA_TABLE(DefaultSelectionMcGen, "AOD", "DEFSELMCGEN",
-                  lf_selection_default_collision::DefaultSel);
-
-namespace lf_selection_phi_collision
-{
-DECLARE_SOA_COLUMN(PhimesonSel, phimesonSel, bool);
-} // namespace lf_selection_phi_collision
-
-DECLARE_SOA_TABLE(PhimesonSelectionData, "AOD", "PHIINCOLLDATA",
-                  lf_selection_phi_collision::PhimesonSel);
-
-DECLARE_SOA_TABLE(PhimesonSelectionMcGen, "AOD", "PHIINCOLLMCGEN",
-                  lf_selection_phi_collision::PhimesonSel);*/
 
 namespace lf_selection_phi_candidate
 {
@@ -89,7 +61,7 @@ DECLARE_SOA_TABLE(PhimesonCandidatesData, "AOD", "PHICANDDATA",
                   lf_selection_phi_candidate::Phi,
                   lf_selection_phi_candidate::InMassRegion<lf_selection_phi_candidate::M>);
 
-DECLARE_SOA_TABLE(PhimesonCandidatesMcReco, "AOD", "PHICANDMCRECO",
+DECLARE_SOA_TABLE(PhimesonCandidatesMcReco, "AOD", "PHICANDMCREC",
                   soa::Index<>,
                   lf_selection_phi_candidate::CollisionId,
                   lf_selection_phi_candidate::M,
@@ -107,7 +79,7 @@ DECLARE_SOA_TABLE(PhimesonCandidatesMcGen, "AOD", "PHICANDMCGEN",
                   lf_selection_phi_candidate::Phi,
                   lf_selection_phi_candidate::InMassRegion<lf_selection_phi_candidate::M>);
 
-namespace lf_selection_k0s_reduced
+namespace lf_selection_strange_reduced
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 
@@ -120,58 +92,97 @@ DECLARE_SOA_DYNAMIC_COLUMN(InMassRegion, inMassRegion,
                            [](float m, float minM, float maxM) -> bool {
                              return (m >= minM && m <= maxM);
                            });
-} // namespace lf_selection_k0s_reduced
+} // namespace lf_selection_strange_reduced
 
 DECLARE_SOA_TABLE(K0sReducedCandidatesData, "AOD", "K0SCANDDATA",
                   soa::Index<>,
-                  lf_selection_k0s_reduced::CollisionId,
-                  lf_selection_k0s_reduced::M,
-                  lf_selection_k0s_reduced::Pt,
-                  lf_selection_k0s_reduced::Y,
-                  lf_selection_k0s_reduced::Phi,
-                  lf_selection_k0s_reduced::InMassRegion<lf_selection_k0s_reduced::M>);
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
 
-DECLARE_SOA_TABLE(K0sReducedCandidatesMcReco, "AOD", "K0SCANDMCRECO",
+DECLARE_SOA_TABLE(K0sReducedCandidatesMcReco, "AOD", "K0SCANDMCREC",
                   soa::Index<>,
-                  lf_selection_k0s_reduced::CollisionId,
-                  lf_selection_k0s_reduced::M,
-                  lf_selection_k0s_reduced::Pt,
-                  lf_selection_k0s_reduced::Y,
-                  lf_selection_k0s_reduced::Phi,
-                  lf_selection_k0s_reduced::InMassRegion<lf_selection_k0s_reduced::M>);
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
 
-namespace lf_selection_xi_reduced
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_TABLE(LambdaReducedCandidatesData, "AOD", "LAMBDACANDDATA",
+                  soa::Index<>,
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
 
-DECLARE_SOA_COLUMN(M, m, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Y, y, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_TABLE(LambdaReducedCandidatesMcReco, "AOD", "LAMBDACANDMCREC",
+                  soa::Index<>,
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
 
-DECLARE_SOA_DYNAMIC_COLUMN(InMassRegion, inMassRegion,
-                           [](float m, float minM, float maxM) -> bool {
-                             return (m >= minM && m <= maxM);
-                           });
-} // namespace lf_selection_xi_reduced
+DECLARE_SOA_TABLE(AntiLambdaReducedCandidatesData, "AOD", "ALAMBCANDDATA",
+                  soa::Index<>,
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
+
+DECLARE_SOA_TABLE(AntiLambdaReducedCandidatesMcReco, "AOD", "ALAMBCANDMCREC",
+                  soa::Index<>,
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
 
 DECLARE_SOA_TABLE(XiReducedCandidatesData, "AOD", "XICANDDATA",
                   soa::Index<>,
-                  lf_selection_xi_reduced::CollisionId,
-                  lf_selection_xi_reduced::M,
-                  lf_selection_xi_reduced::Pt,
-                  lf_selection_xi_reduced::Y,
-                  lf_selection_xi_reduced::Phi,
-                  lf_selection_xi_reduced::InMassRegion<lf_selection_xi_reduced::M>);
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
 
-DECLARE_SOA_TABLE(XiReducedCandidatesMcReco, "AOD", "XICANDMCRECO",
+DECLARE_SOA_TABLE(XiReducedCandidatesMcReco, "AOD", "XICANDMCREC",
                   soa::Index<>,
-                  lf_selection_xi_reduced::CollisionId,
-                  lf_selection_xi_reduced::M,
-                  lf_selection_xi_reduced::Pt,
-                  lf_selection_xi_reduced::Y,
-                  lf_selection_xi_reduced::Phi,
-                  lf_selection_xi_reduced::InMassRegion<lf_selection_xi_reduced::M>);
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
+
+DECLARE_SOA_TABLE(OmegaReducedCandidatesData, "AOD", "OMEGACANDDATA",
+                  soa::Index<>,
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
+
+DECLARE_SOA_TABLE(OmegaReducedCandidatesMcReco, "AOD", "OMEGACANDMCREC",
+                  soa::Index<>,
+                  lf_selection_strange_reduced::CollisionId,
+                  lf_selection_strange_reduced::M,
+                  lf_selection_strange_reduced::Pt,
+                  lf_selection_strange_reduced::Y,
+                  lf_selection_strange_reduced::Phi,
+                  lf_selection_strange_reduced::InMassRegion<lf_selection_strange_reduced::M>);
 
 namespace lf_selection_pion_track
 {
@@ -209,7 +220,7 @@ DECLARE_SOA_TABLE(PionTracksData, "AOD", "PITRACKSDATA",
                                                           lf_selection_pion_track::HasTOF,
                                                           lf_selection_pion_track::NSigmaTOF>);
 
-DECLARE_SOA_TABLE(PionTracksMcReco, "AOD", "PITRACKSMCRECO",
+DECLARE_SOA_TABLE(PionTracksMcReco, "AOD", "PITRACKSMCREC",
                   soa::Index<>,
                   lf_selection_pion_track::CollisionId,
                   lf_selection_pion_track::NSigmaTPC,

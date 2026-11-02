@@ -793,7 +793,7 @@ struct UpcJpsiCorr {
   }
 
   template <typename C, typename Ts>
-  void fillHistograms(C collision, Ts tracks)
+  void fillHistograms(const C& collision, const Ts& tracks)
   {
     rStatistics.get<TH1>(HIST("Statistics/hCutCounterCollisions"))->Fill(0); // number of collisions without any cuts
 

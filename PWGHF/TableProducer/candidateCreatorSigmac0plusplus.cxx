@@ -33,6 +33,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h> // for dca recalculation
 #include <CommonConstants/PhysicsConstants.h>
@@ -424,7 +425,7 @@ struct HfCandidateSigmac0plusplusMc {
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   using McParticlesLcGenMatch = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>; // including response of particle matching to MC from candidate-creator-3-prong
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
 
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 

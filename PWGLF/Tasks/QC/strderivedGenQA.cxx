@@ -518,7 +518,7 @@ struct strderivedGenQA {
   }
 
   template <typename TCollision>
-  bool IsEventAccepted(TCollision collision)
+  bool IsEventAccepted(const TCollision& collision)
   // check whether the collision passes our collision selections
   {
     if (eventSelections.requireSel8 && !collision.sel8()) {

@@ -8,3 +8,8 @@
 # In applying this license CERN does not waive the privileges and immunities
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
+
+o2physics_add_dpl_workflow(flow-gfw-derived-producer
+                    SOURCES flowGfwDerivedProducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-void getMenu(int runNumber, std::string baseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/Chunked/")
+void getMenu(int runNumber, const std::string& baseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/Chunked/")
 {
   auto& ccdb = o2::ccdb::BasicCCDBManager::instance();
   TH1* counters = ccdb.getForRun<TH1>(baseCCDBPath + "FilterCounters", runNumber);
@@ -69,7 +69,7 @@ std::vector<std::string> getMenuForPeriod(std::string period)
 
   TGrid::Connect("alien://");
   TFile* scalersFile = TFile::Open((std::string("alien://") + firstLine).data(), "READ");
-  TH1D* counters = (TH1D*)scalersFile->Get("central-event-filter-task/scalers/mFiltered");
+  TH1D* counters = dynamic_cast<TH1D*>(scalersFile->Get("central-event-filter-task/scalers/mFiltered"));
   TAxis* axis = counters->GetXaxis();
 
   std::vector<std::string> binLabels(axis->GetNbins() - 2);
@@ -84,7 +84,7 @@ std::vector<std::string> getMenuForPeriod(std::string period)
   return binLabels;
 }
 
-void getMenu(std::string periods)
+void getMenu(const std::string& periods)
 {
   std::stringstream ss(periods);
   std::string period;

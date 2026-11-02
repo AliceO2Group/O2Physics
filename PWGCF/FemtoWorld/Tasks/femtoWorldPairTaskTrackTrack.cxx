@@ -156,7 +156,7 @@ struct femtoWorldPairTaskTrackTrack {
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}};
 
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
@@ -214,32 +214,39 @@ struct femtoWorldPairTaskTrackTrack {
       if (mom > 0.5) {
         //        if (TMath::Hypot( nsigmaTOFP, nsigmaTPCP )/TMath::Sqrt(2) < 3.0)
         if (mom < 2.0) {
-          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma)
+          if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma) {
             return true;
-        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2)
+          }
+        } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < fNsigma2) {
           return true;
+        }
       } else {
-        if (TMath::Abs(nsigmaTPCK) < fNsigma)
+        if (TMath::Abs(nsigmaTPCK) < fNsigma) {
           return true;
+        }
       }
     } else {
-
       if (mom < 0.4) {
         if (nsigmaTOFK < -999.) {
-          if (TMath::Abs(nsigmaTPCK) < 2.0)
+          if (TMath::Abs(nsigmaTPCK) < 2.0) {
             return true;
-        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          }
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
           return true;
+        }
       } else if (mom >= 0.4 && mom <= 0.6) {
         if (nsigmaTOFK < -999.) {
-          if (TMath::Abs(nsigmaTPCK) < 2.0)
+          if (TMath::Abs(nsigmaTPCK) < 2.0) {
             return true;
-        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+          }
+        } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
           return true;
+        }
       } else if (nsigmaTOFK < -999.) {
         return false;
-      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0)
+      } else if (TMath::Abs(nsigmaTOFK) < 3.0 && TMath::Abs(nsigmaTPCK) < 3.0) {
         return true;
+      }
     }
     return false;
   }

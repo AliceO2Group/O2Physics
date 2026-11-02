@@ -704,7 +704,7 @@ struct CalibTaskEmc {
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
 
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto clustersTuple = std::make_tuple(clusters);
     SameKindPair<FilteredCollsWithQvecs, EMCalPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, clustersTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
@@ -866,7 +866,7 @@ struct CalibTaskEmc {
       return;
     }
     using BinningTypeMixed = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto associatedTables = std::make_tuple(clusters, pcmPhotons);
 
@@ -1020,7 +1020,7 @@ struct CalibTaskEmc {
       return;
     }
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto pcmPhotonTuple = std::make_tuple(pcmPhotons);
     SameKindPair<FilteredCollsWithQvecs, PCMPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, pcmPhotonTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored

@@ -14,6 +14,7 @@
 
 #include <Rtypes.h>
 
+#include <utility>
 #include <vector>
 
 // object to hold customizable cut values
@@ -32,7 +33,7 @@ class SGCutParHolder
                  float minEta = -1.0, float maxEta = 1.0,
                  float maxFITtime = 4,
                  float minRgtrwTOF = 0.,
-                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mITSOnlyTracks{ITSonlyTracks}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMaxFITtime{maxFITtime}, mMinRgtrwTOF{minRgtrwTOF}, mFITAmpLimits{FITAmpLimits}
+                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mITSOnlyTracks{ITSonlyTracks}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMaxFITtime{maxFITtime}, mMinRgtrwTOF{minRgtrwTOF}, mFITAmpLimits{std::move(FITAmpLimits)}
   {
   }
 

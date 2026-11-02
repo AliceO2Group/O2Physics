@@ -730,7 +730,7 @@ struct phosCluQA {
 
     // If several collisions appear in BC, choose one with largers number of contributors
     std::map<int64_t, int> colMap;
-    for (auto cl : colls) {
+    for (const auto& cl : colls) {
       auto colbc = colMap.find(cl.bc_as<BCsWithBcSels>().globalBC());
       if (colbc == colMap.end()) { // single collision per BC
         colMap[cl.bc_as<BCsWithBcSels>().globalBC()] = 1;

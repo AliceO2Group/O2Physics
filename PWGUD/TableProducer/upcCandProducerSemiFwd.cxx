@@ -108,7 +108,7 @@ struct UpcCandProducerSemiFwd {
 
   void init(InitContext&)
   {
-    fUpcCuts = (UPCCutparHolder)fUpcCutsConf;
+    fUpcCuts = UPCCutparHolder(fUpcCutsConf);
     if (fUpcCuts.getUseFwdCuts()) {
       fCCDB->setURL("http://alice-ccdb.cern.ch");
       fCCDB->setCaching(true);
@@ -653,7 +653,7 @@ struct UpcCandProducerSemiFwd {
   {
     fDoMC = false;
     createCandidates(fwdTracks, ambFwdTracks, barrelTracks, ambBarrelTracks, bcs, collisions, fv0s, zdcs,
-                     (o2::aod::McFwdTrackLabels*)nullptr, (o2::aod::McTrackLabels*)nullptr);
+                     nullptr, nullptr);
   }
 
   void processSemiFwdMC(ForwardTracks const& fwdTracks,

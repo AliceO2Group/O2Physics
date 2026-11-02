@@ -64,6 +64,7 @@
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <TList.h>
 #include <TRandom3.h>
 #include <TString.h>
@@ -323,6 +324,16 @@ struct Dilepton {
     o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   } zorroGroup;
 
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "flowcorrection_group";
+    o2::framework::Configurable<bool> cfgFillNUAHist{"cfgFillNUAHist", true, "flag to fill the NUA correction hist"};
+    o2::framework::Configurable<bool> cfgApplyWeightNUA{"cfgApplyWeightNUA", false, "flag to apply q-vector Non-uniform acceptance  weighting"};
+    o2::framework::Configurable<std::string> nuaPath{"nuaPath", "Users/o/omassen/Dielectron/NUAWeights/LHC23_PbPb_pass5", "Path to NUA-weights file"};
+    o2::framework::ConfigurableAxis ConfNUAPhiBins{"ConfNUAPhiBins", {60, -M_PI, M_PI}, "NUA histogram bins - phi-angle"};
+    o2::framework::ConfigurableAxis ConfNUAEtaBins{"ConfNUAEtaBins", {40, -1., +1.}, "NUA histogram bins - eta"};
+    o2::framework::ConfigurableAxis ConfNUAZVtxBins{"ConfNUAZVtxBins", {40, -10., 10.}, "NUA histogram bins - z-vtx"};
+  } flowcorrectionGroup;
+
   Zorro zorro;
   int mToIidx = 0;
   int mTOICounter = 0;
@@ -355,6 +366,7 @@ struct Dilepton {
   float beamP1 = 0.f;                                // beam momentum
   float beamP2 = 0.f;                                // beam momentum
   TH2D* h2sp_resolution = nullptr;
+  std::vector<TH3D*> h3nua_weights;
 
   void init(o2::framework::InitContext& /*context*/)
   {
@@ -558,6 +570,16 @@ struct Dilepton {
       h2sp_resolution = reinterpret_cast<TH2D*>(list->FindObject(spresoHistName.value.data()));
       LOGF(info, "h2sp_resolution.GetBinContent(40, 1) = %f", h2sp_resolution->GetBinContent(40, 1));
     }
+
+    if (flowcorrectionGroup.cfgApplyWeightNUA) {
+      auto list_nua = ccdb->getForTimeStamp<TList>(flowcorrectionGroup.nuaPath, collision.timestamp());
+      h3nua_weights.push_back(reinterpret_cast<TH3D*>(list_nua->FindObject("weights_uls_NUA")));
+      LOGF(info, "h3nua_weights.at(0)->GetBinContent(5, 5, 5) = %f", h3nua_weights.at(0)->GetBinContent(5, 5, 5));
+      h3nua_weights.push_back(reinterpret_cast<TH3D*>(list_nua->FindObject("weights_lspp_NUA")));
+      LOGF(info, "h3nua_weights.at(1)->GetBinContent(5, 5, 5) = %f", h3nua_weights.at(1)->GetBinContent(5, 5, 5));
+      h3nua_weights.push_back(reinterpret_cast<TH3D*>(list_nua->FindObject("weights_lsmm_NUA")));
+      LOGF(info, "h3nua_weights.at(2)->GetBinContent(5, 5, 5) = %f", h3nua_weights.at(2)->GetBinContent(5, 5, 5));
+    }
   }
 
   ~Dilepton()
@@ -648,6 +670,9 @@ struct Dilepton {
       const o2::framework::AxisSpec axis_sp{ConfSPBins, Form("#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}", nmod, nmod, qvec_det_names[cfgQvecEstimator].data())};
 
       fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_sp}, true);
+      if (flowcorrectionGroup.cfgFillNUAHist) {
+        fRegistry.add("Pair/same/uls/hNUA", "NUA Histogram;#phi (rad.);#eta;VtxZ;", o2::framework::HistType::kTH3D, {flowcorrectionGroup.ConfNUAPhiBins, flowcorrectionGroup.ConfNUAEtaBins, flowcorrectionGroup.ConfNUAZVtxBins}, true);
+      }
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
@@ -880,8 +905,24 @@ struct Dilepton {
     }
   }
 
+  float getNUAweight(const int type_int, const float phi, const float eta, const float zVtx)
+  {
+    if (h3nua_weights.at(type_int) == nullptr) {
+      return 1.f;
+    }
+    int binId_phi = h3nua_weights.at(type_int)->GetXaxis()->FindBin(phi);
+    int binId_eta = h3nua_weights.at(type_int)->GetYaxis()->FindBin(eta);
+    int binId_zVtx = h3nua_weights.at(type_int)->GetZaxis()->FindBin(zVtx);
+    float nuaWeight = h3nua_weights.at(type_int)->GetBinContent(binId_phi, binId_eta, binId_zVtx);
+
+    if (nuaWeight == 0 || std::isnan(nuaWeight) || std::isinf(nuaWeight)) {
+      nuaWeight = 1.f;
+    }
+    return nuaWeight;
+  }
+
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2, typename TCut, typename TAllTracks>
-  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const&, const std::vector<float> weightvector)
+  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const&, const std::vector<float>& weightvector)
   {
     if constexpr (ev_id == 0) {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -1054,14 +1095,26 @@ struct Dilepton {
 
       if constexpr (ev_id == 0) {
         // LOGF(info, "collision.centFT0C() = %f, collision.trackOccupancyInTimeRange() = %d, getSPresolution = %f", collision.centFT0C(), collision.trackOccupancyInTimeRange(), getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange()));
+        if (flowcorrectionGroup.cfgApplyWeightNUA) {
+          weight *= 1. / getNUAweight(t1.sign() * t2.sign() < 0 ? 0 : (t1.sign() > 0 && t2.sign() > 0 ? 1 : 2), v12.Phi(), v12.Eta(), collision.posZ());
+        }
 
         float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange());
         if (t1.sign() * t2.sign() < 0) { // ULS
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
+          if (flowcorrectionGroup.cfgFillNUAHist) {
+            fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          }
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
+          if (flowcorrectionGroup.cfgFillNUAHist) {
+            fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          }
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
+          if (flowcorrectionGroup.cfgFillNUAHist) {
+            fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          }
         }
       } else if constexpr (ev_id == 1) {
         if (t1.sign() * t2.sign() < 0) { // ULS
@@ -1481,11 +1534,11 @@ struct Dilepton {
       std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex()); // this gives the current event.
 
       // make a vector of selected photons in this collision.
-      auto selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
-      auto selected_negTracks_in_this_event = emh_neg->GetTracksPerCollision(key_df_collision);
+      const auto& selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
+      const auto& selected_negTracks_in_this_event = emh_neg->GetTracksPerCollision(key_df_collision);
       // LOGF(info, "N selected tracks in current event (%d, %d), zvtx = %f, centrality = %f , npos = %d , nneg = %d, nuls = %d , nlspp = %d, nlsmm = %d", ndf, collision.globalIndex(), collision.posZ(), centralities[cfgCentEstimator], selected_posTracks_in_this_event.size(), selected_negTracks_in_this_event.size(), nuls, nlspp, nlsmm);
 
-      auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
+      const auto& collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
       // LOGF(info, "collisionIds_in_mixing_pool.size() = %d", collisionIds_in_mixing_pool.size());
 
       for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool) {
@@ -1502,8 +1555,8 @@ struct Dilepton {
           continue;
         }
 
-        auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
-        auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
         // LOGF(info, "Do event mixing: current event (%d, %d) | event pool (%d, %d), npos = %d , nneg = %d", ndf, collision.globalIndex(), mix_dfId, mix_collisionId, posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
 
         for (const auto& pos : selected_posTracks_in_this_event) { // ULS mix
@@ -1533,8 +1586,15 @@ struct Dilepton {
 
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) {
         map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
-        emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
-        emh_neg->AddCollisionIdAtLast(key_bin, key_df_collision);
+        const auto evicted_pos = emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
+        const auto evicted_neg = emh_neg->AddCollisionIdAtLast(key_bin, key_df_collision);
+        if (evicted_pos != evicted_neg) {
+          LOGF(fatal, "Positive and negative mixing pools are out of sync");
+        }
+        if (evicted_pos) {
+          map_mixed_eventId_to_globalBC.erase(*evicted_pos);
+        }
+
       } // end of if pair exist
 
     } // end of collision loop

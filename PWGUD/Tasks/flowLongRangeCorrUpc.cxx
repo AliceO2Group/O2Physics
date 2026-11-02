@@ -115,9 +115,9 @@ struct FlowLongRangeCorrUpc {
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
   Filter collisionFilter = (cfgGapSideMerge == true)
-                             ? ((aod::udcollision::gapSide == (uint8_t)0 || aod::udcollision::gapSide == (uint8_t)1) &&
+                             ? ((aod::udcollision::gapSide == static_cast<uint8_t>(0) || aod::udcollision::gapSide == static_cast<uint8_t>(1)) &&
                                 (aod::upcservice::truegapside == 0 || aod::upcservice::truegapside == 1))
-                             : ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) &&
+                             : ((aod::udcollision::gapSide == static_cast<uint8_t>(cfgGapSide)) &&
                                 (aod::upcservice::truegapside == cfgGapSide));
 
   using UDTracksFull = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>>;
@@ -266,7 +266,7 @@ struct FlowLongRangeCorrUpc {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
       return false;
@@ -334,7 +334,7 @@ struct FlowLongRangeCorrUpc {
   }
 
   template <typename TTracks>
-  double trackCounter(TTracks tracks, float posZ)
+  double trackCounter(const TTracks& tracks, float posZ)
   {
     float weff1 = 1;
     double nTracksRaw = 0.;
@@ -357,7 +357,7 @@ struct FlowLongRangeCorrUpc {
   }
 
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, TTracks tracks) // function to fill the yield and etaphi histograms.
+  void fillYield(const TCollision& collision, const TTracks& tracks) // function to fill the yield and etaphi histograms.
   {
     float weff1 = 1;
     float vtxz = collision.posZ();
@@ -385,7 +385,7 @@ struct FlowLongRangeCorrUpc {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks>
-  void fillCorrelationsTPCFT0(TTracks tracks1, aod::UDCollisionFITBits const& fitBits, float posZ, int system, int corType) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsTPCFT0(const TTracks& tracks1, aod::UDCollisionFITBits const& fitBits, float posZ, int system, int corType) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     if (fitBits.size() > 1) {
       LOGF(fatal, "fillCorrelationsTPCFT0(): fitBits.size() = %d (expected 0 or 1)", fitBits.size());
@@ -584,7 +584,7 @@ struct FlowLongRangeCorrUpc {
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
 
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}};
 
     auto tracksTuple = std::make_tuple(tracks, tracks);
     Pair<UDCollisionsFull, UDTracksFull, UDTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
@@ -652,7 +652,7 @@ struct FlowLongRangeCorrUpc {
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
 
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}};
 
     auto tracksTuple = std::make_tuple(tracks, tracks);
     Pair<UDCollisionsFull, UDTracksFull, UDTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
@@ -719,7 +719,7 @@ struct FlowLongRangeCorrUpc {
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
 
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}};
 
     auto tracksTuple = std::make_tuple(tracks, tracks);
     Pair<UDCollisionsFull, UDTracksFull, UDTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip

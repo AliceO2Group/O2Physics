@@ -62,8 +62,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
 using bcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
-using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
-using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
+using selectedClusters = o2::soa::Filtered<o2::soa::Join<o2::aod::EMCALClusters, o2::aod::Dispersions>>;
+using selectedAmbiguousClusters = o2::soa::Filtered<o2::soa::Join<o2::aod::EMCALAmbiguousClusters, o2::aod::AmbigousDispersions>>;
 struct ClusterMonitor {
   HistogramRegistry mHistManager{"ClusterMonitorHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
@@ -104,6 +104,7 @@ struct ClusterMonitor {
     o2Axis numberClustersAxis{mNumberClusterBinning, "Number of clusters / event"};
     const AxisSpec thAxisCellTimeDiff{3000, -1500, 1500, "#Delta#it{t}_{cell} (ns)"};
     const AxisSpec thAxisCellTimeMean{1500, -600, 900, "#LT#it{t}_{cell}#GT (ns)"};
+    const AxisSpec thAxisDispersion{100, 0, 10, "dispersion (cells)"};
 
     // event properties
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1D, {{1, 0.5, 1.5}});
@@ -124,8 +125,8 @@ struct ClusterMonitor {
     mHistManager.add("clusterESupermodule", "Energy of the cluster vs. supermoduleID", o2HistType::kTH2F, {energyAxis, supermoduleAxis});
     mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1D, {{2000, 0, 200}});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
-    mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1D, {{400, 0, 5}});
-    mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1D, {{400, 0, 2.5}});
+    mHistManager.add("clusterM02", "M02 of cluster;M_{02} (cells);#it{E} (GeV)", o2HistType::kTH2D, {{400, 0, 5}, {100, 0, 10}});
+    mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH2D, {{400, 0, 2.5}, {100, 0, 10}});
     mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1D, {{10, 0, 10}});
     mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1D, {{50, 0, 50}});
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1D, {{100, 0, 100}});
@@ -133,6 +134,7 @@ struct ClusterMonitor {
     mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1D, {{100, 0, 1}});
     mHistManager.add("clusterCellTimeDiff", "Cell time difference in clusters", o2HistType::kTH1D, {thAxisCellTimeDiff});
     mHistManager.add("clusterCellTimeMean", "Mean cell time per cluster", o2HistType::kTH1D, {thAxisCellTimeMean});
+    mHistManager.add("clusterDispersion", "Cluster dispersion vs energy", o2HistType::kTH2D, {thAxisDispersion, energyAxis});
 
     // add histograms per supermodule
     for (int ism = 0; ism < 20; ++ism) {
@@ -142,10 +144,10 @@ struct ClusterMonitor {
       mHistManager.add(Form("clusterM20VsESM/clusterM20VsESM%d", ism), Form("Cluster M20 vs energy in Supermodule %d", ism), o2HistType::kTH2F, {{400, 0, 2.5}, amplitudeAxisLarge});
     }
 
-    if (mVetoBCID->length()) {
+    if (!mVetoBCID->empty()) {
       std::stringstream parser(mVetoBCID.value);
       std::string token;
-      int bcid;
+      int bcid = -1;
       while (std::getline(parser, token, ',')) {
         bcid = std::stoi(token);
         LOG(info) << "Veto BCID " << bcid;
@@ -155,7 +157,7 @@ struct ClusterMonitor {
     if (mSelectBCID.value != "all") {
       std::stringstream parser(mSelectBCID.value);
       std::string token;
-      int bcid;
+      int bcid = -1;
       while (std::getline(parser, token, ',')) {
         bcid = std::stoi(token);
         LOG(info) << "Select BCID " << bcid;
@@ -204,7 +206,7 @@ struct ClusterMonitor {
     mHistManager.fill(HIST("numberOfClustersEvents"), clusters.size());
 
     LOG(debug) << "bunch crossing ID" << theCollision.bcId();
-    std::array<int, 20> numberOfClustersSM;
+    std::array<int, 20> numberOfClustersSM{0};
     std::fill(numberOfClustersSM.begin(), numberOfClustersSM.end(), 0);
     // loop over all clusters from accepted collision
     // auto eventClusters = clusters.select(o2::aod::emcalcluster::bcId == theCollision.bc().globalBC());
@@ -220,12 +222,13 @@ struct ClusterMonitor {
       mHistManager.fill(HIST("clusterE"), cluster.energy());
       mHistManager.fill(HIST("clusterE_SimpleBinning"), cluster.energy());
       mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
-      mHistManager.fill(HIST("clusterM02"), cluster.m02());
-      mHistManager.fill(HIST("clusterM20"), cluster.m20());
+      mHistManager.fill(HIST("clusterM02"), cluster.m02(), cluster.energy());
+      mHistManager.fill(HIST("clusterM20"), cluster.m20(), cluster.energy());
       mHistManager.fill(HIST("clusterTimeVsE"), cluster.time(), cluster.energy());
       mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
       mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
       mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
+      mHistManager.fill(HIST("clusterDispersion"), cluster.dispersion(), cluster.energy());
       // loop over cells in cluster
       LOG(debug) << "Cluster energy: " << cluster.energy();
       LOG(debug) << "Cluster index: " << cluster.index();
@@ -241,6 +244,7 @@ struct ClusterMonitor {
       } catch (o2::emcal::InvalidPositionException& e) {
         // Imprecision of the position at the sector boundaries, mostly due to
         // vertex imprecision. Skip these clusters for the now.
+        LOG(debug) << "Skipping cluster at sector boundary: " << e.what();
       }
 
       // example of loop over all cells of current cluster
@@ -290,7 +294,7 @@ struct ClusterMonitor {
       LOG(info) << "Event rejected because of veto BCID " << eventIR.bc;
       return;
     }
-    if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
+    if (!mSelectBCIDs.empty() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
       return;
     }
     bool isSelected = true;
@@ -311,19 +315,20 @@ struct ClusterMonitor {
     mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
     mHistManager.fill(HIST("numberOfClustersBC"), clusters.size());
 
-    std::array<int, 20> numberOfClustersSM;
+    std::array<int, 20> numberOfClustersSM{0};
     std::fill(numberOfClustersSM.begin(), numberOfClustersSM.end(), 0);
     // loop over ambiguous clusters
     for (const auto& cluster : clusters) {
       mHistManager.fill(HIST("clusterE"), cluster.energy());
       mHistManager.fill(HIST("clusterE_SimpleBinning"), cluster.energy());
       mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
-      mHistManager.fill(HIST("clusterM02"), cluster.m02());
-      mHistManager.fill(HIST("clusterM20"), cluster.m20());
+      mHistManager.fill(HIST("clusterM02"), cluster.m02(), cluster.energy());
+      mHistManager.fill(HIST("clusterM20"), cluster.m20(), cluster.energy());
       mHistManager.fill(HIST("clusterTimeVsE"), cluster.time(), cluster.energy());
       mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
       mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
       mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
+      mHistManager.fill(HIST("clusterDispersion"), cluster.dispersion(), cluster.energy());
 
       try {
         auto supermoduleID = mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
@@ -333,6 +338,7 @@ struct ClusterMonitor {
       } catch (o2::emcal::InvalidPositionException& e) {
         // Imprecision of the position at the sector boundaries, mostly due to
         // vertex imprecision. Skip these clusters for the now.
+        LOG(debug) << "Skipping cluster at sector boundary: " << e.what();
       }
     }
     for (int supermoduleID = 0; supermoduleID < 20; supermoduleID++) {
@@ -456,33 +462,34 @@ struct ClusterMonitor {
     std::vector<double> result;
     Int_t nBinsClusterE = 235;
     for (Int_t i = 0; i < nBinsClusterE + 1; i++) {
-      if (i < 1)
+      if (i < 1) {
         result.emplace_back(0.3 * i);
-      else if (i < 55)
+      } else if (i < 55) {
         result.emplace_back(0.3 + 0.05 * (i - 1));
-      else if (i < 105)
+      } else if (i < 105) {
         result.emplace_back(3. + 0.1 * (i - 55));
-      else if (i < 140)
+      } else if (i < 140) {
         result.emplace_back(8. + 0.2 * (i - 105));
-      else if (i < 170)
+      } else if (i < 170) {
         result.emplace_back(15. + 0.5 * (i - 140));
-      else if (i < 190)
+      } else if (i < 190) {
         result.emplace_back(30. + 1.0 * (i - 170));
-      else if (i < 215)
+      } else if (i < 215) {
         result.emplace_back(50. + 2.0 * (i - 190));
-      else if (i < 235)
+      } else if (i < 235) {
         result.emplace_back(100. + 5.0 * (i - 215));
-      else if (i < 245)
+      } else if (i < 245) {
         result.emplace_back(200. + 10.0 * (i - 235));
+      }
     }
     return result;
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<ClusterMonitor>(cfgc, TaskName{"EMCClusterMonitorTask"}, SetDefaultProcesses{{{"processCollisions", true}, {"processAmbiguous", false}}}),
-    adaptAnalysisTask<ClusterMonitor>(cfgc, TaskName{"EMCClusterMonitorTaskAmbiguous"}, SetDefaultProcesses{{{"processCollisions", false}, {"processAmbiguous", true}}})};
+    adaptAnalysisTask<ClusterMonitor>(context, TaskName{"EMCClusterMonitorTask"}, SetDefaultProcesses{{{"processCollisions", true}, {"processAmbiguous", false}}}),
+    adaptAnalysisTask<ClusterMonitor>(context, TaskName{"EMCClusterMonitorTaskAmbiguous"}, SetDefaultProcesses{{{"processCollisions", false}, {"processAmbiguous", true}}})};
   return workflow;
 }

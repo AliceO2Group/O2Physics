@@ -45,7 +45,7 @@
 auto readMetadata(std::unique_ptr<TFile>& currentFile) -> std::vector<o2::framework::ConfigParamSpec>
 {
   // Get the metadata, if any
-  auto m = (TMap*)currentFile->Get("metaData");
+  auto m = dynamic_cast<TMap*>(currentFile->Get("metaData"));
   if (!m) {
     return {};
   }
@@ -59,7 +59,7 @@ auto readMetadata(std::unique_ptr<TFile>& currentFile) -> std::vector<o2::framew
       LOGP(info, "Metadata for file \"{}\":", currentFile->GetName());
       first = false;
     }
-    auto objString = (TObjString*)m->GetValue(obj);
+    auto objString = dynamic_cast<TObjString*>(m->GetValue(obj));
     std::string key = "aod-metadata-" + std::string(obj->GetName());
     LOGP(info, "- {}: {} goes into key {}", obj->GetName(), objString->String().Data(), key);
     char const* value = strdup(objString->String());
@@ -128,9 +128,9 @@ std::map<std::string, bool> buildMapForCommitHash(const std::string& hash)
   return results;
 }
 
-void populateCCDBWithCommitAvailability(std::map<std::string, bool> hasHashMap,
-                                        const std::string commitHash,
-                                        const std::string ccdbUrl = "http://ccdb-test.cern.ch:8080/")
+void populateCCDBWithCommitAvailability(const std::map<std::string, bool>& hasHashMap,
+                                        const std::string& commitHash,
+                                        const std::string& ccdbUrl = "http://ccdb-test.cern.ch:8080/")
 {
   // First, init the CCDB manager to test if the ccdb is already populated
   o2::ccdb::CcdbApi api;
@@ -157,7 +157,7 @@ void populateCCDBWithCommitAvailability(std::map<std::string, bool> hasHashMap,
   }
 }
 
-void testMetadataHelper(std::string aod = "/tmp/AO2D.root")
+void testMetadataHelper(const std::string& aod = "/tmp/AO2D.root")
 {
   createO2VersionFile();
   const std::string commitHash = "63bc2e3893851ef0f849bb4c98c65eae1ba21e47";

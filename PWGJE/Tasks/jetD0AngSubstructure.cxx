@@ -344,8 +344,8 @@ struct JetD0AngSubstructure {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     addHistograms();
   }
 
@@ -698,7 +698,7 @@ struct JetD0AngSubstructure {
             typename JetTableMCP,
             typename CandidatesMCD,
             typename CandidatesMCP>
-  void analyseMonteCarlo(MCPJetsPerMCCollissionPreslice jetmcpreslice,
+  void analyseMonteCarlo(const MCPJetsPerMCCollissionPreslice& jetmcpreslice,
                          aod::JetMcCollisions const& mccollisions,
                          aod::JetCollisionsMCD const& collisions,
                          JetTableMCD const& /*mcdjets*/,

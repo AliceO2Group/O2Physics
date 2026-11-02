@@ -77,8 +77,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgDcaz, bool, false, "choose dcaz")
   O2_DEFINE_CONFIGURABLE(cfgDcazCut, float, 2.0, "dcaz cut")
   O2_DEFINE_CONFIGURABLE(cfgMaxTPCChi2NCl, int, 4, "tpcchi2")
-  O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 1, "choose one side 0:A; 1:C")
-  O2_DEFINE_CONFIGURABLE(cfgGapSideMerge, bool, true, "merge A and C side")
+  O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 0, "choose one side 0:A; 1:C")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum number of crossed TPC Rows")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum number of found TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum number of ITS clusters")
@@ -91,7 +90,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgRctFlagEnabled, bool, false, "use run condition table flag")
   O2_DEFINE_CONFIGURABLE(cfgRctFlagIndex, int, 1, "1: isCBTOk; 2:isCBTZdcOk; 3: isCBTHadronOk; 4:isCBTHadronZdcOk ")
   O2_DEFINE_CONFIGURABLE(cfgIRMaxCut, double, 50, "maximum interaction rate for UPC events")
-  O2_DEFINE_CONFIGURABLE(cfgZdcTime, bool, false, "choose zdc time cut")
+  O2_DEFINE_CONFIGURABLE(cfgZdcTime, bool, true, "choose zdc time cut")
   O2_DEFINE_CONFIGURABLE(cfgZdcTimeCut, float, 2.0, "zdc time cut")
   O2_DEFINE_CONFIGURABLE(cfgSbp, bool, true, "choose sbp")
   O2_DEFINE_CONFIGURABLE(cfgvtxITSTPC, bool, true, "choose vtxITSTPC")
@@ -122,11 +121,12 @@ struct FlowCorrelationsUpc {
 
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
-  Filter collisionFilter = cfgGapSideMerge
-                             ? ((aod::udcollision::gapSide == (uint8_t)0 || aod::udcollision::gapSide == (uint8_t)1) &&
-                                (aod::upcservice::truegapside == 0 || aod::upcservice::truegapside == 1))
-                             : ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) &&
-                                (aod::upcservice::truegapside == cfgGapSide));
+  Filter collisionFilter = ifnode(
+    cfgGapSide.node() == 0,
+    ((aod::udcollision::gapSide == static_cast<uint8_t>(0)) &&
+     (aod::upcservice::truegapside == 0)),
+    ((aod::udcollision::gapSide == static_cast<uint8_t>(1)) &&
+     (aod::upcservice::truegapside == 1)));
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb{};
@@ -264,12 +264,12 @@ struct FlowCorrelationsUpc {
       registry.fill(HIST("neutronClass"), 0, 0);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
-      neutronClass = 1;
-      registry.fill(HIST("neutronClass"), 0, 1);
-    }
-    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
       neutronClass = 2;
       registry.fill(HIST("neutronClass"), 1, 0);
+    }
+    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
+      neutronClass = 1;
+      registry.fill(HIST("neutronClass"), 0, 1);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
       neutronClass = 3;
@@ -322,10 +322,6 @@ struct FlowCorrelationsUpc {
       if (!isGoodRctFlag(collision)) { // check RCT flags
         return false;
       }
-    }
-
-    if (!zdcTimeCut(collision)) {
-      return false;
     }
 
     if (!zdcTimeCut(collision)) {
@@ -470,9 +466,11 @@ struct FlowCorrelationsUpc {
       double phi1 = RecoDecay::phi(momentum1);
       double eta1 = RecoDecay::eta(momentum1);
 
-      float weff1 = 1., wacc1 = 1.;
+      float weff1 = 1.;
+      if (!getEfficiencyCorrection(weff1, eta1, pt1, posZ))
+        continue;
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, independent, pt1, eventWeight * weff1 * wacc1);
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, independent, pt1, eventWeight * weff1);
       }
 
       for (auto const& track2 : tracks2) {
@@ -495,7 +493,7 @@ struct FlowCorrelationsUpc {
         double phi2 = RecoDecay::phi(momentum2);
         double eta2 = RecoDecay::eta(momentum2);
 
-        float weff2 = 1., wacc2 = 1.;
+        float weff2 = 1.;
         if (mEfficiency) {
           weff2 = efficiencyCache[track2.filteredIndex()];
         } else {
@@ -505,7 +503,7 @@ struct FlowCorrelationsUpc {
         float deltaPhi = RecoDecay::constrainAngle(phi1 - phi2, -PIHalf);
         float deltaEta = eta1 - eta2;
 
-        float weight = eventWeight * weff1 * weff2 * wacc1 * wacc2;
+        float weight = eventWeight * weff1 * weff2;
 
         // Merging cut
         if (std::abs(deltaEta) < cfgCutMerging) {
@@ -612,7 +610,7 @@ struct FlowCorrelationsUpc {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<UDCollisionsFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache};
 

@@ -124,7 +124,7 @@ struct UpcCandProducerGlobalMuon {
 
   void init(InitContext&)
   {
-    fUpcCuts = (UPCCutparHolder)fUpcCutsConf;
+    fUpcCuts = UPCCutparHolder(fUpcCutsConf);
     if (fUpcCuts.getUseFwdCuts() || fEnableMFT) {
       fCCDB->setURL("http://alice-ccdb.cern.ch");
       fCCDB->setCaching(true);
@@ -610,7 +610,7 @@ struct UpcCandProducerGlobalMuon {
         }
         // Initialize FwdDCAFitter with magnetic field
         if (fEnableMFT) {
-          o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+          o2::field::MagneticField* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
           static constexpr double kCenterMFT[3] = {0, 0, -61.4};
           float bz = field->getBz(kCenterMFT);
           LOG(info) << "FwdDCAFitter magnetic field at MFT center: bZ = " << bz;
@@ -922,7 +922,7 @@ struct UpcCandProducerGlobalMuon {
                   o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
-    createCandidates(fwdTracks, mftTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, (o2::aod::McFwdTrackLabels*)nullptr);
+    createCandidates(fwdTracks, mftTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, nullptr);
   }
 
   void processFwdMC(ForwardTracks const& fwdTracks,

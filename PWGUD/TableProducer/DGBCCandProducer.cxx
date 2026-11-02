@@ -131,8 +131,8 @@ struct tracksWGTInBCs {
           // compute the BC closest in time
           auto firstCompatibleBC = ambTracksSlice.begin().bc().begin().globalBC();
           LOGF(debug, "First compatible BC %d Track time %f", firstCompatibleBC, track.trackTime());
-          closestBC = (uint64_t)(firstCompatibleBC +
-                                 (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+          closestBC = static_cast<uint64_t>(firstCompatibleBC +
+                                            (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
           if (!track.has_collision()) {
@@ -147,7 +147,7 @@ struct tracksWGTInBCs {
 
         // update tracksInBCList
         LOGF(debug, "Updating tracksInBCList with %d", closestBC);
-        tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
+        tracksInBCList[closestBC].emplace_back(static_cast<int32_t>(track.globalIndex()));
       }
     }
 
@@ -215,8 +215,8 @@ struct tracksWGTInBCs {
 
           // compute the BC closest in time
           auto firstCompatibleBC = ambFwdTracksSlice.begin().bc().begin().globalBC();
-          closestBC = (uint64_t)(firstCompatibleBC +
-                                 (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+          closestBC = static_cast<uint64_t>(firstCompatibleBC +
+                                            (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
         } else {
           // this track is not ambiguous, has hence a unique association to a collision/BC
           if (!fwdTrack.has_collision()) {
@@ -231,7 +231,7 @@ struct tracksWGTInBCs {
 
         // update tracksInBCList
         LOGF(debug, "Updating fwdTracksInBCList with %d", closestBC);
-        fwdTracksInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
+        fwdTracksInBCList[closestBC].emplace_back(static_cast<int32_t>(fwdTrack.globalIndex()));
       }
     }
 
@@ -385,7 +385,7 @@ struct DGBCCandProducer {
 
   void init(InitContext& context)
   {
-    diffCuts = (DGCutparHolder)DGCuts;
+    diffCuts = DGCutparHolder(DGCuts);
 
     if (context.mOptions.get<bool>("processTinBCs")) {
       registry.add("table/candCase", "#candCase", {HistType::kTH1F, {{4, -0.5, 3.5}}});

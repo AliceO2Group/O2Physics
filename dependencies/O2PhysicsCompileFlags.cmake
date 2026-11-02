@@ -14,7 +14,7 @@ include_guard()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 # Enabled warnings supported by Clang and GCC, not treated as errors
-set(O2PHYSICS_WARNINGS_COMMON_NO_ERROR "")
+set(O2PHYSICS_WARNINGS_COMMON_NO_ERROR "deprecated-declarations")
 
 # Enabled warnings supported by Clang only, not treated as errors
 set(O2PHYSICS_WARNINGS_CLANG_NO_ERROR "vla-extension")
@@ -80,12 +80,38 @@ IF (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
 ENDIF (NOT CMAKE_BUILD_TYPE)
 
+# Adjust the per-config flags rather than replacing them. These used to be plain
+# set() calls, which create normal variables that shadow the cache for the rest of
+# the configure -- so whatever the build recipe passed as
+# -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=... was silently discarded. alidist asks for
+# "-O2 -g1 -DNDEBUG" (overridable via O2PHYSICS_DEBUG_FLAGS) and got -g anyway;
+# full debug info costs ~18% of total compile time across the tree, because the
+# register allocator's rewrite pass scales with the number of debug records.
+# Here we only enforce what this project actually cares about: -pipe, and whether
+# NDEBUG is defined. The optimisation and debug-info levels stay as given.
+function(o2physics_adjust_config_flags varname want_ndebug)
+  set(flags "${${varname}}")
+  if(want_ndebug)
+    if(NOT flags MATCHES "(^| )-DNDEBUG($| )")
+      string(APPEND flags " -DNDEBUG")
+    endif()
+  else()
+    # ENABLE_CASSERT: the CI wants <cassert> assertions live.
+    string(REGEX REPLACE "(^| )-DNDEBUG($| )" " " flags "${flags}")
+  endif()
+  if(NOT flags MATCHES "(^| )-pipe($| )")
+    string(APPEND flags " -pipe")
+  endif()
+  string(STRIP "${flags}" flags)
+  set(${varname} "${flags}" PARENT_SCOPE)
+endfunction()
+
 IF(ENABLE_CASSERT) #For the CI, we want to have <cassert> assertions enabled
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -pipe")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -pipe")
+    o2physics_adjust_config_flags(CMAKE_CXX_FLAGS_RELEASE FALSE)
+    o2physics_adjust_config_flags(CMAKE_CXX_FLAGS_RELWITHDEBINFO FALSE)
 ELSE()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -pipe")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG -pipe")
+    o2physics_adjust_config_flags(CMAKE_CXX_FLAGS_RELEASE TRUE)
+    o2physics_adjust_config_flags(CMAKE_CXX_FLAGS_RELWITHDEBINFO TRUE)
     if (CMAKE_BUILD_TYPE STREQUAL "RELEASE" OR CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
       set(FAIR_MIN_SEVERITY "info")
     endif()

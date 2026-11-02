@@ -94,9 +94,11 @@ namespace hykftrk
 DECLARE_SOA_INDEX_COLUMN(HypKfColl, hypKfColl);
 DECLARE_SOA_COLUMN(Rigidity, rigidity, float);              //!
 DECLARE_SOA_COLUMN(TpcNcluster, tpcNcluster, float);        //!
+DECLARE_SOA_COLUMN(TpcNclsPid, tpcNclsPid, float);          //!
+DECLARE_SOA_COLUMN(TpcNclsCr, tpcNclsCr, float);            //!
 DECLARE_SOA_COLUMN(TpcNsigma, tpcNsigma, float);            //!
-DECLARE_SOA_COLUMN(TpcNsigmaNhp, tpcNsigmaNhp, float);      //!
-DECLARE_SOA_COLUMN(TpcNsigmaNlp, tpcNsigmaNlp, float);      //!
+DECLARE_SOA_COLUMN(ItsNsigma, itsNsigma, float);            //!
+DECLARE_SOA_COLUMN(PidForTrk, pidForTrk, uint32_t);         //!
 DECLARE_SOA_COLUMN(TofMass, tofMass, float);                //!
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //!
 DECLARE_SOA_COLUMN(SubMass, subMass, float);                //!
@@ -140,15 +142,17 @@ DECLARE_SOA_TABLE(HypKfTracks, "AOD", "HYPKFTRACK",
                   track::Phi,
                   track::DcaXY,
                   track::DcaZ,
-                  hykftrk::TpcNcluster,
                   track::TPCChi2NCl,
                   track::ITSClusterSizes,
                   track::ITSChi2NCl,
                   hykftrk::Rigidity,
                   track::TPCSignal,
+                  hykftrk::TpcNcluster,
+                  hykftrk::TpcNclsPid,
+                  hykftrk::TpcNclsCr,
                   hykftrk::TpcNsigma,
-                  hykftrk::TpcNsigmaNhp,
-                  hykftrk::TpcNsigmaNlp,
+                  hykftrk::ItsNsigma,
+                  hykftrk::PidForTrk,
                   hykftrk::TofMass,
                   hykftrk::IsPVContributor,
                   hykftrk::Px<track::Pt, track::Phi>,

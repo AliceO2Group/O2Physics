@@ -29,10 +29,10 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -47,6 +47,7 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -60,7 +61,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
-using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsCent_000>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsCent_000, aod::EmMagFields>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -75,9 +76,6 @@ struct prefilterPhoton {
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -180,9 +178,9 @@ struct prefilterPhoton {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  float d_bz;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  int mRunNumber = 0;
+  float dBz = 0;
 
   void init(InitContext& /*context*/)
   {
@@ -191,7 +189,7 @@ struct prefilterPhoton {
     addhistograms();
 
     mRunNumber = 0;
-    d_bz = 0;
+    dBz = 0;
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -199,7 +197,7 @@ struct prefilterPhoton {
     ccdb->setFatalWhenNull(false);
   }
 
-  ~prefilterPhoton() {}
+  ~prefilterPhoton() = default;
 
   template <typename TCollision>
   void initCCDB(TCollision const& collision)
@@ -207,37 +205,21 @@ struct prefilterPhoton {
     if (mRunNumber == collision.runNumber()) {
       return;
     }
+    mRunNumber = collision.runNumber();
 
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
-      d_bz = d_bz_input;
+      dBz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (fabs(dBz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (dBz / 5.0f));
       }
-      mRunNumber = collision.runNumber();
-      return;
     }
 
     auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
-    mRunNumber = collision.runNumber();
+    // Fetch magnetic field from ccdb for current collision
+    dBz = collision.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << dBz << " kZG";
   }
 
   void addhistograms()
@@ -350,7 +332,7 @@ struct prefilterPhoton {
     if constexpr (pairtype == PairType::kPCMPCM) {
       for (const auto& collision : collisions) {
         initCCDB(collision);
-        const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+        const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
         bool is_cent_ok = true;
         if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
           is_cent_ok = false;
@@ -385,7 +367,7 @@ struct prefilterPhoton {
     } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
       for (const auto& collision : collisions) {
         initCCDB(collision);
-        const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+        const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
         bool is_cent_ok = true;
         if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
           is_cent_ok = false;
@@ -448,7 +430,7 @@ struct prefilterPhoton {
             ROOT::Math::PtEtaPhiMVector v_pos(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
-            if (!(dileptoncuts.cfg_min_mee < v_ee.M() && v_ee.M() < dileptoncuts.cfg_max_mee)) {
+            if (!(dileptoncuts.cfg_min_mee < v_ee.M()) || !(v_ee.M() < dileptoncuts.cfg_max_mee)) {
               continue;
             }
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
@@ -474,7 +456,7 @@ struct prefilterPhoton {
           ROOT::Math::PtEtaPhiMVector v_pos(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
-          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele2.px(), ele2.py(), ele2.pz(), pos2.sign(), ele2.sign(), d_bz);
+          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele2.px(), ele2.py(), ele2.pz(), pos2.sign(), ele2.sign(), dBz);
           fRegistry.fill(HIST("Pair/PCMDalitzEE/before/hMvsPhiV"), phiv, v_ee.M());
 
           if (v_ee.M() < phiv * dileptoncuts.cfg_phiv_slope + dileptoncuts.cfg_phiv_intercept) {
@@ -501,7 +483,7 @@ struct prefilterPhoton {
     // check pfb.
     if constexpr (pairtype == PairType::kPCMPCM) {
       for (auto& collision : collisions) {
-        const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+        const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
         if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
           continue;
         }
@@ -530,7 +512,7 @@ struct prefilterPhoton {
     } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
       for (auto& collision : collisions) {
         initCCDB(collision);
-        const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+        const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
         if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
           continue;
         }
@@ -583,8 +565,8 @@ struct prefilterPhoton {
             ROOT::Math::PtEtaPhiMVector v_pos(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
-            float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele2.px(), ele2.py(), ele2.pz(), pos2.sign(), ele2.sign(), d_bz);
-            if (!(dileptoncuts.cfg_min_mee < v_ee.M() && v_ee.M() < dileptoncuts.cfg_max_mee)) {
+            float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele2.px(), ele2.py(), ele2.pz(), pos2.sign(), ele2.sign(), dBz);
+            if (!(dileptoncuts.cfg_min_mee < v_ee.M()) || !(v_ee.M() < dileptoncuts.cfg_max_mee)) {
               continue;
             }
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
@@ -643,7 +625,7 @@ struct prefilterPhoton {
   PROCESS_SWITCH(prefilterPhoton, processDummyElectron, "dummy for electrons", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<prefilterPhoton>(cfgc, TaskName{"prefilter-photon"})};
+  return WorkflowSpec{adaptAnalysisTask<prefilterPhoton>(context, TaskName{"prefilter-photon"})};
 }

@@ -51,7 +51,7 @@ struct FemtoCascadeQa {
 
   using FemtoXis = o2::soa::Join<o2::aod::FXis, o2::aod::FXiMasks, o2::aod::FXiExtras>;
   using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks, o2::aod::FOmegaExtras>;
-  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity>;
 
   using FemtoXisWithLabel = o2::soa::Join<FemtoXis, o2::aod::FXiLabels>;
   using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FOmegaLabels>;
@@ -147,11 +147,11 @@ struct FemtoCascadeQa {
       negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confNegDaughterBinning, confNegDaughterQaBinning);
       if (doprocessXi) {
         xiHistSpec = cascadehistmanager::makeCascadeQaHistSpecMap(confXiBinning, confXiQaBinning);
-        xiHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, xiHistSpec, confXiSelection, confXiQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+        xiHistManager.init<modes::Mode::kReco_Qa_FitVars>(&hRegistry, xiHistSpec, confXiSelection, confXiQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
       }
       if (doprocessOmega) {
         omegaHistSpec = cascadehistmanager::makeCascadeQaHistSpecMap(confOmegaBinning, confOmegaQaBinning);
-        omegaHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, omegaHistSpec, confOmegaSelection, confOmegaQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+        omegaHistManager.init<modes::Mode::kReco_Qa_FitVars>(&hRegistry, omegaHistSpec, confOmegaSelection, confOmegaQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
@@ -161,11 +161,11 @@ struct FemtoCascadeQa {
       negDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confNegDaughterBinning, confNegDaughterQaBinning);
       if (doprocessXiMc) {
         xiHistSpec = cascadehistmanager::makeCascadeMcQaHistSpecMap(confXiBinning, confXiQaBinning);
-        xiHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, xiHistSpec, confXiSelection, confXiQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+        xiHistManager.init<modes::Mode::kReco_Qa_Mc_FitVars>(&hRegistry, xiHistSpec, confXiSelection, confXiQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
       }
       if (doprocessOmegaMc) {
         omegaHistSpec = cascadehistmanager::makeCascadeMcQaHistSpecMap(confOmegaBinning, confOmegaQaBinning);
-        omegaHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, omegaHistSpec, confOmegaSelection, confOmegaQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+        omegaHistManager.init<modes::Mode::kReco_Qa_Mc_FitVars>(&hRegistry, omegaHistSpec, confOmegaSelection, confOmegaQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
       }
     }
     hRegistry.print();
@@ -179,7 +179,7 @@ struct FemtoCascadeQa {
     }
     colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& xi : xiSlice) {
-      xiHistManager.fill<modes::Mode::kReco_Qa>(xi, tracks);
+      xiHistManager.fill<modes::Mode::kReco_Qa_FitVars>(xi, tracks);
     }
   }
   PROCESS_SWITCH(FemtoCascadeQa, processXi, "Process Xis", true);
@@ -195,7 +195,7 @@ struct FemtoCascadeQa {
       if (!xiCleaner.isClean(xi, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      xiHistManager.fill<modes::Mode::kReco_Qa_Mc>(xi, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+      xiHistManager.fill<modes::Mode::kReco_Qa_Mc_FitVars>(xi, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoCascadeQa, processXiMc, "Process Xis with MC information", false);
@@ -208,7 +208,7 @@ struct FemtoCascadeQa {
     }
     colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& omega : omegaSlice) {
-      omegaHistManager.fill<modes::Mode::kReco_Qa>(omega, tracks);
+      omegaHistManager.fill<modes::Mode::kReco_Qa_FitVars>(omega, tracks);
     }
   }
   PROCESS_SWITCH(FemtoCascadeQa, processOmega, "Process Omegas", false);
@@ -224,7 +224,7 @@ struct FemtoCascadeQa {
       if (!omegaCleaner.isClean(omega, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      omegaHistManager.fill<modes::Mode::kReco_Qa_Mc>(omega, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+      omegaHistManager.fill<modes::Mode::kReco_Qa_Mc_FitVars>(omega, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoCascadeQa, processOmegaMc, "Process Omegas with MC information", false);

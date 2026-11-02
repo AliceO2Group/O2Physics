@@ -151,7 +151,7 @@ class SimpleInclusiveCut : public TNamed
   SimpleInclusiveCut& operator=(const SimpleInclusiveCut&);
 
  private:
-  ClassDef(SimpleInclusiveCut, 1);
+  ClassDefOverride(SimpleInclusiveCut, 1);
 };
 
 } // namespace analysis

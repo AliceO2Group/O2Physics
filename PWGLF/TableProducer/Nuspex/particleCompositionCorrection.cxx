@@ -70,7 +70,7 @@ struct ParticleCompositionCorrection {
   Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
   Configurable<bool> enableQAHistos{"enableQAHistos", true, "enable qa histograms showing the effect of the PCC"};
 
-  Configurable<std::string> ccdbBasePath{"ccdbBasePath", "/Users/m/makruger/", "ccdb directory contianing the particle fraction networks"};
+  Configurable<std::string> ccdbBasePath{"ccdbBasePath", "/Users/m/mcalmonb/", "ccdb directory contianing the particle fraction networks"};
   Configurable<std::string> modelPathData{"modelPathData", "PCC/data/pp", "Path to the .onnx file containing the particle fractions in data"};
   Configurable<std::string> modelPathMC{"modelPathMC", "PCC/pythia/pp", "Path to the .onnx file containing the particle fractions in MC"};
 
@@ -97,14 +97,16 @@ void ParticleCompositionCorrection::init(InitContext const&)
     return;
   }
   if (!ccdbBasePath.value.empty()) {
-    ccdbApi.init("http://ccdb-test.cern.ch:8080");
+    // ccdbApi.init("http://ccdb-test.cern.ch:8080");
+    ccdbApi.init("http://alice-ccdb.cern.ch");
     static const int64_t dummyTimeStamp = 2;
-    if (!ccdbApi.retrieveBlob(ccdbBasePath.value + modelPathData.value, modelPathData.value, {}, dummyTimeStamp, false, "ParticleFractions_Data.onnx") || !ccdbApi.retrieveBlob(ccdbBasePath.value + modelPathMC.value, modelPathMC.value, {}, dummyTimeStamp, false, "ParticleFractions_MC.onnx")) {
+    if (!ccdbApi.retrieveBlob(ccdbBasePath.value + modelPathData.value, modelPathData.value, {}, dummyTimeStamp, false, "ParticleFractions_data.onnx") || !ccdbApi.retrieveBlob(ccdbBasePath.value + modelPathMC.value, modelPathMC.value, {}, dummyTimeStamp, false, "ParticleFractions_pythia.onnx")) {
       LOGP(fatal, "Could not download particle fraction networks!");
     }
   }
-  particleFractionsData.initModel(modelPathData.value + "/ParticleFractions_Data.onnx", true);
-  particleFractionsMC.initModel(modelPathMC.value + "/ParticleFractions_MC.onnx", true);
+
+  particleFractionsData.initModel(modelPathData.value + "/ParticleFractions_data.onnx", true);
+  particleFractionsMC.initModel(modelPathMC.value + "/ParticleFractions_pythia.onnx", true);
 
   if (enableQAHistos) {
     std::vector<double> ptBinEdges = {0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75,
@@ -113,19 +115,37 @@ void ParticleCompositionCorrection::init(InitContext const&)
                                       6.0, 6.5, 7.0, 8.0, 9.0, 10.0};
     const AxisSpec ptAxis{ptBinEdges, "#it{p}_{T} (GeV/#it{c})", "pt"};
 
-    histos.add("frac/data/pion", "", kTProfile, {ptAxis});
+    const int maxMult = 100;
+    const int nBinsMult = maxMult + 1;
+    const AxisSpec multAxis = {nBinsMult, -0.5, nBinsMult - 0.5, "#it{N}_{ch}", "mult"};
+
+    histos.add("multDist_INELg0", "", kTH1D, {multAxis});
+    histos.add("multDist_fid", "", kTH1D, {multAxis});
+    histos.add("multDist_fidVsINELg0", "", kTH2D, {multAxis, multAxis});
+
     histos.add("frac/data/kaon", "", kTProfile, {ptAxis});
     histos.add("frac/data/proton", "", kTProfile, {ptAxis});
     histos.add("frac/data/sigma", "", kTProfile, {ptAxis});
+
+    histos.add("frac/data/kaon_mult", "", kTProfile2D, {multAxis, ptAxis});
+    histos.add("frac/data/proton_mult", "", kTProfile2D, {multAxis, ptAxis});
+    histos.add("frac/data/sigma_mult", "", kTProfile2D, {multAxis, ptAxis});
+
     histos.addClone("frac/data/", "frac/mc/");
 
-    histos.add("weight/pion", "", kTProfile, {ptAxis});
     histos.add("weight/kaon", "", kTProfile, {ptAxis});
     histos.add("weight/proton", "", kTProfile, {ptAxis});
     histos.add("weight/sigma", "", kTProfile, {ptAxis});
 
+    histos.add("weight/kaon_mult", "", kTProfile2D, {multAxis, ptAxis});
+    histos.add("weight/proton_mult", "", kTProfile2D, {multAxis, ptAxis});
+    histos.add("weight/sigma_mult", "", kTProfile2D, {multAxis, ptAxis});
+
     histos.add("weight/secDec", "", kTProfile, {ptAxis});
     histos.add("weight/secMat", "", kTProfile, {ptAxis});
+
+    histos.add("weight/secDec_mult", "", kTProfile2D, {multAxis, ptAxis});
+    histos.add("weight/secMat_mult", "", kTProfile2D, {multAxis, ptAxis});
   }
 }
 
@@ -143,6 +163,11 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
     }
     auto absPDGCode = std::abs(particle.pdgCode());
     // translate abs PDG code to PID variable of neural networks (0: pion, 1: kaon, 2: proton, 3: sigma)
+
+    if (absPDGCode == PDG_t::kPiPlus || absPDGCode == PDG_t::kPi0) {
+      return noWeights;
+    }
+
     static const std::map<int, float> mapPID = {
       {PDG_t::kPiPlus, 0.f},
       {PDG_t::kPi0, 0.f},
@@ -175,25 +200,29 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
         storedWeights[particle.index()] = weights;
       }
       if (enableQAHistos && particle.isPhysicalPrimary() && std::abs(particle.eta()) < 0.8) { // o2-linter: disable=magic-number (usual range of charged-partilce measurements)
-        if (iterMapPID->first == PDG_t::kPiPlus) {
-          histos.fill(HIST("frac/data/pion"), pt, fracData);
-          histos.fill(HIST("frac/mc/pion"), pt, fracMC);
-          histos.fill(HIST("weight/pion"), pt, weight);
-        }
         if (iterMapPID->first == PDG_t::kKPlus) {
           histos.fill(HIST("frac/data/kaon"), pt, fracData);
           histos.fill(HIST("frac/mc/kaon"), pt, fracMC);
+          histos.fill(HIST("frac/data/kaon_mult"), dNdEta, pt, fracData);
+          histos.fill(HIST("frac/mc/kaon_mult"), dNdEta, pt, fracMC);
           histos.fill(HIST("weight/kaon"), pt, weight);
+          histos.fill(HIST("weight/kaon_mult"), dNdEta, pt, weight);
         }
         if (iterMapPID->first == PDG_t::kProton) {
           histos.fill(HIST("frac/data/proton"), pt, fracData);
           histos.fill(HIST("frac/mc/proton"), pt, fracMC);
+          histos.fill(HIST("frac/data/proton_mult"), dNdEta, pt, fracData);
+          histos.fill(HIST("frac/mc/proton_mult"), dNdEta, pt, fracMC);
           histos.fill(HIST("weight/proton"), pt, weight);
+          histos.fill(HIST("weight/proton_mult"), dNdEta, pt, weight);
         }
         if (iterMapPID->first == PDG_t::kSigmaPlus || iterMapPID->first == PDG_t::kSigmaMinus) {
           histos.fill(HIST("frac/data/sigma"), pt, fracData);
           histos.fill(HIST("frac/mc/sigma"), pt, fracMC);
+          histos.fill(HIST("frac/data/sigma_mult"), dNdEta, pt, fracData);
+          histos.fill(HIST("frac/mc/sigma_mult"), dNdEta, pt, fracMC);
           histos.fill(HIST("weight/sigma"), pt, weight);
+          histos.fill(HIST("weight/sigma_mult"), dNdEta, pt, weight);
         }
       }
       return weights;
@@ -218,8 +247,10 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
       if (pdgParticle && pdgParticle->Charge() != 0.) {
         if (particle.getProcess() == TMCProcess::kPDecay) {
           histos.fill(HIST("weight/secDec"), particle.pt(), weight);
+          histos.fill(HIST("weight/secDec_mult"), dNdEta, particle.pt(), weight);
         } else if (particle.getProcess() == TMCProcess::kPHInhelastic || particle.getProcess() == TMCProcess::kPHadronic || particle.getProcess() == TMCProcess::kPHElastic) {
           histos.fill(HIST("weight/secMat"), particle.pt(), weight);
+          histos.fill(HIST("weight/secMat_mult"), dNdEta, particle.pt(), weight);
         }
       }
     }
@@ -232,6 +263,8 @@ void ParticleCompositionCorrection::process(aod::McCollisions::iterator const&, 
 {
   // determine dNdEta of the collision
   float dNdEta = 0.f;
+  float dNdEtafid = 0.f;
+
   for (const auto& particle : particles) {
     if (!particle.isPhysicalPrimary()) {
       continue;
@@ -240,10 +273,19 @@ void ParticleCompositionCorrection::process(aod::McCollisions::iterator const&, 
     if (!pdgParticle || pdgParticle->Charge() == 0.) {
       continue;
     }
-    if (std::abs(particle.eta()) >= 0.5) { // o2-linter: disable=magic-number (particle density at mid-rapidity)
+    if (std::abs(particle.eta()) >= etaCut) {
       continue;
     }
-    ++dNdEta;
+    if (std::abs(particle.eta()) < 0.5) { // o2-linter: disable=magic-number (particle density at mid-rapidity)
+      ++dNdEta;
+    }
+    ++dNdEtafid;
+  }
+
+  if (dNdEtafid > 0.f) {
+    histos.fill(HIST("multDist_INELg0"), dNdEta);
+    histos.fill(HIST("multDist_fid"), dNdEtafid);
+    histos.fill(HIST("multDist_fidVsINELg0"), dNdEta, dNdEtafid);
   }
 
   std::map<int32_t, std::tuple<float, float, float>> storedWeights;

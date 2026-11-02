@@ -208,9 +208,9 @@ struct femtoDreamPairTaskV0V0 {
     Configurable<int> Policy{"Policy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
   } Mixing;
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.VztxMixBins, Mixing.MultMixBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -225,9 +225,9 @@ struct femtoDreamPairTaskV0V0 {
   void init(InitContext&)
   {
     // setup columnpolicy for binning
-    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
+    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}};
+    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}};
+    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}};
 
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);
@@ -261,7 +261,7 @@ struct femtoDreamPairTaskV0V0 {
   };
 
   template <bool isMC, typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     eventHisto.fillQA<isMC>(col);
   }
@@ -277,7 +277,7 @@ struct femtoDreamPairTaskV0V0 {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType, typename Collision>
-  void doSameEvent(PartitionType SliceV01, PartitionType SliceV02, PartType parts, Collision col)
+  void doSameEvent(const PartitionType& SliceV01, const PartitionType& SliceV02, const PartType& parts, const Collision& col)
   {
     for (auto& v0 : SliceV01) {
       const auto& posChild = parts.iteratorAt(v0.index() - 2);
@@ -365,7 +365,7 @@ struct femtoDreamPairTaskV0V0 {
   PROCESS_SWITCH(femtoDreamPairTaskV0V0, processSameEvent, "Enable processing same event", true);
 
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent_NotMasked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
+  void doMixedEvent_NotMasked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, const BinningType& policy)
   {
     for (auto const& [collision1, collision2] : soa::selfCombinations(policy, Mixing.Depth.value, -1, cols, cols)) {
       auto SliceV01 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);

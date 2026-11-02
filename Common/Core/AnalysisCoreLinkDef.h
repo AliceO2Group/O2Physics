@@ -9,8 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef COMMON_CORE_ANALYSISCORELINKDEF_H_
-#define COMMON_CORE_ANALYSISCORELINKDEF_H_
+// NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -25,7 +24,3 @@
 #pragma link C++ class o2::pid::tpc::Response + ;
 
 #pragma link C++ class OrbitRange + ;
-
-#pragma link C++ class FFitWeights + ;
-
-#endif // COMMON_CORE_ANALYSISCORELINKDEF_H_

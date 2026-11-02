@@ -26,6 +26,7 @@
 
 #include <TH2.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -38,9 +39,9 @@ struct TriggerCorrelationsTask {
   HistogramRegistry registry;
 
   std::vector<int> triggerMaskBits;
-  long unsigned int nChargedTriggers = 4;
-  long unsigned int nChargedHFTriggers = 4;
-  long unsigned int nFullTriggers = 13;
+  uint64_t nChargedTriggers = 4;
+  uint64_t nChargedHFTriggers = 4;
+  uint64_t nFullTriggers = 13;
   void init(o2::framework::InitContext&)
   {
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(jetderiveddatautilities::JTriggerMasks);

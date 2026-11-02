@@ -98,7 +98,7 @@ struct qVectorstutorial {
   }
 
   template <typename TrackType>
-  bool SelTrack(const TrackType track)
+  bool SelTrack(const TrackType& track)
   {
     if (track.pt() < cfgMinPt)
       return false;

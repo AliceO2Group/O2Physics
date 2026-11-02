@@ -29,6 +29,8 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <utility>
+
 class DhCorrelationExtraction : public TObject
 {
 
@@ -53,39 +55,39 @@ class DhCorrelationExtraction : public TObject
   /// Methods to set the input configuration
   // Input files, directories and histograms
   Bool_t setDmesonSpecie(DmesonSpecie k);
-  void setInputFilenameMass(TString filenameMass) { fFileNameMass = filenameMass; }
-  void setInputFilenameSe(TString filenameSE) { fFileNameSE = filenameSE; }
-  void setInputFilenameMe(TString filenameME) { fFileNameME = filenameME; }
-  void setInputFilenameSecPart(TString filenameSecPart) { fFileSecPartName = filenameSecPart; }
+  void setInputFilenameMass(TString filenameMass) { fFileNameMass = std::move(filenameMass); }
+  void setInputFilenameSe(TString filenameSE) { fFileNameSE = std::move(filenameSE); }
+  void setInputFilenameMe(TString filenameME) { fFileNameME = std::move(filenameME); }
+  void setInputFilenameSecPart(TString filenameSecPart) { fFileSecPartName = std::move(filenameSecPart); }
   void setInputFilenameBiasBtoD(TString filenamePromptMcRec, TString filenameNonPromptMcRec)
   {
-    fFilePromptMcRecName = filenamePromptMcRec;
-    fFileNonPromptMcRecName = filenameNonPromptMcRec;
+    fFilePromptMcRecName = std::move(filenamePromptMcRec);
+    fFileNonPromptMcRecName = std::move(filenameNonPromptMcRec);
   }
-  void setDirNameSe(TString dirNameSE) { fDirNameSE = dirNameSE; }
-  void setDirNameMe(TString dirNameME) { fDirNameME = dirNameME; }
-  void setDirNameSecPart(TString dirNameSecPart) { fDirSecPartName = dirNameSecPart; }
-  void setMassHistoNameSgn(TString massHistoNameSgn) { fMassHistoNameSgn = massHistoNameSgn; }
-  void setMassHistoNameBkg(TString massHistoNameBkg) { fMassHistoNameBkg = massHistoNameBkg; }
-  void setMassHistoNameSBs(TString massHistoNameSBs) { fMassHistoNameSBs = massHistoNameSBs; }
-  void setSeCorrelHistoSignalName(TString correlNameSigSE) { fSECorrelSignalRegionName = correlNameSigSE; }
-  void setSeCorrelHistoSidebandName(TString correlNameSbSE) { fSECorrelSidebandsName = correlNameSbSE; }
-  void setSeCorrelHistoSidebandLeftName(TString correlNameSbSE) { fSECorrelSidebandLeftName = correlNameSbSE; }
-  void setSeCorrelHistoSidebandRightName(TString correlNameSbSE) { fSECorrelSidebandRightName = correlNameSbSE; }
-  void setMeCorrelHistoSignalName(TString correlNameSigME) { fMECorrelSignalRegionName = correlNameSigME; }
-  void setMeCorrelHistoSidebandName(TString correlNameSbME) { fMECorrelSidebandsName = correlNameSbME; }
-  void setMeCorrelHistoSidebandLeftName(TString correlNameSbME) { fMECorrelSidebandLeftName = correlNameSbME; }
-  void setMeCorrelHistoSidebandRightName(TString correlNameSbME) { fMECorrelSidebandRightName = correlNameSbME; }
+  void setDirNameSe(TString dirNameSE) { fDirNameSE = std::move(dirNameSE); }
+  void setDirNameMe(TString dirNameME) { fDirNameME = std::move(dirNameME); }
+  void setDirNameSecPart(TString dirNameSecPart) { fDirSecPartName = std::move(dirNameSecPart); }
+  void setMassHistoNameSgn(TString massHistoNameSgn) { fMassHistoNameSgn = std::move(massHistoNameSgn); }
+  void setMassHistoNameBkg(TString massHistoNameBkg) { fMassHistoNameBkg = std::move(massHistoNameBkg); }
+  void setMassHistoNameSBs(TString massHistoNameSBs) { fMassHistoNameSBs = std::move(massHistoNameSBs); }
+  void setSeCorrelHistoSignalName(TString correlNameSigSE) { fSECorrelSignalRegionName = std::move(correlNameSigSE); }
+  void setSeCorrelHistoSidebandName(TString correlNameSbSE) { fSECorrelSidebandsName = std::move(correlNameSbSE); }
+  void setSeCorrelHistoSidebandLeftName(TString correlNameSbSE) { fSECorrelSidebandLeftName = std::move(correlNameSbSE); }
+  void setSeCorrelHistoSidebandRightName(TString correlNameSbSE) { fSECorrelSidebandRightName = std::move(correlNameSbSE); }
+  void setMeCorrelHistoSignalName(TString correlNameSigME) { fMECorrelSignalRegionName = std::move(correlNameSigME); }
+  void setMeCorrelHistoSidebandName(TString correlNameSbME) { fMECorrelSidebandsName = std::move(correlNameSbME); }
+  void setMeCorrelHistoSidebandLeftName(TString correlNameSbME) { fMECorrelSidebandLeftName = std::move(correlNameSbME); }
+  void setMeCorrelHistoSidebandRightName(TString correlNameSbME) { fMECorrelSidebandRightName = std::move(correlNameSbME); }
   void setHistoSecPartName(TString histoPrimaryPartName, TString histoAllPartName)
   {
-    fHistoPrimaryPartName = histoPrimaryPartName;
-    fHistoAllPartName = histoAllPartName;
+    fHistoPrimaryPartName = std::move(histoPrimaryPartName);
+    fHistoAllPartName = std::move(histoAllPartName);
   }
-  void setInputFilenameFdTemplate(TString filenameFDTemplate) { fFileFDTemplateName = filenameFDTemplate; }
-  void setInputFilenameFdPromptFrac(TString filenameFDPromptFrac) { fFileFDPromptFracName = filenameFDPromptFrac; }
-  void setInputHistoNameFdTemplatePrompt(TString hNameFDTemplatePrompt) { fHistoFDTemplatePromptName = hNameFDTemplatePrompt; }
-  void setInputHistoNameFdTemplateNonPrompt(TString hNameFDTemplateNonPrompt) { fHistoFDTemplateNonPromptName = hNameFDTemplateNonPrompt; }
-  void setInputHistoNameFdPromptFrac(TString hNameFDPromptFrac) { fHistoFDPromptFracName = hNameFDPromptFrac; }
+  void setInputFilenameFdTemplate(TString filenameFDTemplate) { fFileFDTemplateName = std::move(filenameFDTemplate); }
+  void setInputFilenameFdPromptFrac(TString filenameFDPromptFrac) { fFileFDPromptFracName = std::move(filenameFDPromptFrac); }
+  void setInputHistoNameFdTemplatePrompt(TString hNameFDTemplatePrompt) { fHistoFDTemplatePromptName = std::move(hNameFDTemplatePrompt); }
+  void setInputHistoNameFdTemplateNonPrompt(TString hNameFDTemplateNonPrompt) { fHistoFDTemplateNonPromptName = std::move(hNameFDTemplateNonPrompt); }
+  void setInputHistoNameFdPromptFrac(TString hNameFDPromptFrac) { fHistoFDPromptFracName = std::move(hNameFDPromptFrac); }
 
   // Input conditions: PtCand, PtHad, PoolBins
   void setNpools(Int_t npools) { fNpools = npools; }
@@ -143,15 +145,15 @@ class DhCorrelationExtraction : public TObject
   Bool_t readInputInvMass();
   Bool_t readInputFdSubtr();
   Bool_t readInputSecondaryPartContamination();
-  Bool_t extractCorrelations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax, TString codeName);
+  Bool_t extractCorrelations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax, const TString& codeName);
   TH1D* getCorrectedCorrHisto() { return fCorrectedCorrHisto; }
   TH1D* getCorrectedCorrHistoBaselineSubtr() { return fCorrectedCorrHistoBaselineSubtr; }
   TH1D* getCorrectedCorrHistoReflected() { return fCorrectedCorrHistoReflected; }
   TH1D* getCorrectedCorrHistoReflectedBaselineSubtr() { return fCorrectedCorrHistoReflectedBaselineSubtr; }
 
   /// Histogram style
-  void setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, Style_t markerStyle = kFullCircle, Color_t markerColor = kRed + 1, Double_t markerSize = 1.4, Color_t lineColor = kRed + 1, Int_t lineWidth = 3, Float_t hTitleXaxisOffset = 1.0, Float_t hTitleYaxisOffset = 1.0, Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060, Bool_t centerXaxisTitle = false, Bool_t centerYaxisTitle = false);
-  void setTH2HistoStyle(TH2D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, TString hZaxisTitle, Float_t hTitleXaxisOffset = 1.8, Float_t hTitleYaxisOffset = 1.8, Float_t hTitleZaxisOffset = 1.2, Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hTitleZaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060, Float_t hLabelZaxisSize = 0.060, Bool_t centerXaxisTitle = true, Bool_t centerYaxisTitle = true);
+  void setTH1HistoStyle(TH1D*& histo, const TString& hTitle, const TString& hXaxisTitle, const TString& hYaxisTitle, Style_t markerStyle = kFullCircle, Color_t markerColor = kRed + 1, Double_t markerSize = 1.4, Color_t lineColor = kRed + 1, Int_t lineWidth = 3, Float_t hTitleXaxisOffset = 1.0, Float_t hTitleYaxisOffset = 1.0, Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060, Bool_t centerXaxisTitle = false, Bool_t centerYaxisTitle = false);
+  void setTH2HistoStyle(TH2D*& histo, const TString& hTitle, const TString& hXaxisTitle, const TString& hYaxisTitle, const TString& hZaxisTitle, Float_t hTitleXaxisOffset = 1.8, Float_t hTitleYaxisOffset = 1.8, Float_t hTitleZaxisOffset = 1.2, Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hTitleZaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060, Float_t hLabelZaxisSize = 0.060, Bool_t centerXaxisTitle = true, Bool_t centerYaxisTitle = true);
 
  private:
   TFile* fFileMass;         // File containing the mass histograms

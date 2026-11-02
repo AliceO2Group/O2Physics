@@ -21,6 +21,7 @@
 
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/MetadataHelper.h"
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
@@ -40,7 +41,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
@@ -345,7 +345,7 @@ struct tofEventTime {
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
 
-    for (auto const& t : tracks) { // Loop on collisions
+    for (auto const& t : tracks) {                        // Loop on collisions
       if (!t.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute event time
         tableFlags(0);
         tableEvTime(0.f, 999.f);
@@ -399,13 +399,13 @@ struct tofEventTime {
     LOG(debug) << "Running on " << CollisionSystemType::getCollisionSystemName(tofResponse->cfgCollisionType()) << " mComputeEvTimeWithTOF " << mComputeEvTimeWithTOF.value << " mComputeEvTimeWithFT0 " << mComputeEvTimeWithFT0.value;
 
     if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 1) {
-      int lastCollisionId = -1;                                                                                       // Last collision ID analysed
-      for (auto const& t : tracks) {                                                                                  // Loop on collisions
+      int lastCollisionId = -1;                                                                                                                 // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                                                            // Loop on collisions
         if (!t.has_collision() || collisions.size() == 0 || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           if (enableTableEvTimeTOFOnly) {
-            tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+            tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
           }
           continue;
         }
@@ -470,18 +470,18 @@ struct tofEventTime {
           }
           tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
           if (enableTableEvTimeTOFOnly) {
-            tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
+            tableEvTimeTOFOnly(static_cast<uint8_t>(filterForTOFEventTime(trk)), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
           }
         }
       }
     } else if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 0) {
-      int lastCollisionId = -1;                                                                                    // Last collision ID analysed
-      for (auto const& t : tracks) {                                                                               // Loop on collisions
+      int lastCollisionId = -1;                                                                                                              // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                                                         // Loop on collisions
         if (!t.has_collision() || collisions.size() == 0 || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           if (enableTableEvTimeTOFOnly) {
-            tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+            tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
           }
           continue;
         }
@@ -513,14 +513,14 @@ struct tofEventTime {
           tableFlags(flags);
           tableEvTime(et, erret);
           if (enableTableEvTimeTOFOnly) {
-            tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), et, erret, evTimeMakerTOF.mEventTimeMultiplicity);
+            tableEvTimeTOFOnly(static_cast<uint8_t>(filterForTOFEventTime(trk)), et, erret, evTimeMakerTOF.mEventTimeMultiplicity);
           }
         }
       }
     } else if (mComputeEvTimeWithTOF == 0 && mComputeEvTimeWithFT0 == 1) {
       for (auto const& t : tracks) { // Loop on collisions
         if (enableTableEvTimeTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
         }
         if (!t.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute event time
           tableFlags(0);
@@ -906,7 +906,7 @@ struct tofPidMerge {
 
     float resolution = 1.f; // Last resolution assigned
     float nsigma = 0;
-    for (auto const& trk : tracks) { // Loop on all tracks
+    for (auto const& trk : tracks) {                        // Loop on all tracks
       if (!trk.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId, false);
@@ -1068,7 +1068,7 @@ struct tofPidMerge {
 
     float resolution = 1.f; // Last resolution assigned
     float nsigma = 0;
-    for (auto const& trk : tracks) { // Loop on all tracks
+    for (auto const& trk : tracks) {                        // Loop on all tracks
       if (!trk.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId, false);

@@ -29,6 +29,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -226,9 +227,9 @@ struct HfTaskCharmPolarisation {
   HfEventSelection hfEvSel;  // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>;
-  using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
-  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>>;
+  using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
+  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksWithMcLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 

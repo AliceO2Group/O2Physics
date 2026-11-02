@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <type_traits>
 #include <unordered_map>
 
 namespace o2::analysis::femto
@@ -83,7 +84,7 @@ inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
-  double mass = 0.f;
+  double mass = 0.;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
     case kPiPlus:
@@ -91,6 +92,9 @@ inline double getPdgMass(int pdgCode)
       break;
     case kKPlus:
       mass = o2::constants::physics::MassKPlus;
+      break;
+    case kK0Short:
+      mass = o2::constants::physics::MassK0Short;
       break;
     case kProton:
       mass = o2::constants::physics::MassProton;
@@ -102,10 +106,10 @@ inline double getPdgMass(int pdgCode)
       mass = o2::constants::physics::MassPhi;
       break;
     case kRho770_0:
-      mass = 775.26; // not defined in O2?
+      mass = 0.77526; // not defined in O2?
       break;
     case kRho770Plus:
-      mass = 775.11; // not defined in O2?
+      mass = 0.77511; // not defined in O2?
       break;
     case o2::constants::physics::Pdg::kK0Star892:
       mass = o2::constants::physics::MassK0Star892;
@@ -137,8 +141,14 @@ inline double getPdgMass(int pdgCode)
     case kOmegaMinus:
       mass = o2::constants::physics::MassOmegaMinus;
       break;
+    case kPi0:
+      mass = o2::constants::physics::MassPi0;
+      break;
+    case o2::constants::physics::kEta:
+      mass = o2::constants::physics::MassEta;
+      break;
     default:
-      LOG(warn) << "PDG code is not suppored. Return 0...";
+      LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
   }
   return mass;
 }
@@ -154,19 +164,23 @@ concept HasQvectors = requires(T col) {
 };
 
 template <typename T>
-concept HasEventShape = requires(T col) {
-  col.qvec();
-  col.eventPlaneAngle();
+concept HasEventShapeRow = requires(T row) {
+  row.qvec();
+  row.eventPlaneAngle();
 };
 
-/// Recalculate pT for Kinks (Sigmas) using kinematic constraints
-inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
+/// accepts either a row/iterator or a table (Filtered<Join<...>> etc.)
+template <typename T>
+concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typename std::decay_t<T>::iterator; } && HasEventShapeRow<typename std::decay_t<T>::iterator>);
+
+/// Recalculate the pT of a kink mother from its direction and the charged daughter momentum
+inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter,
+                       float massMother, float massChargedDaughter, float massNeutralDaughter)
 {
   float almost0 = 1e-6f;
-  // Particle masses in GeV/c^2
-  auto massPion = o2::constants::physics::MassPionCharged;
-  auto massNeutron = o2::constants::physics::MassNeutron;
-  auto massSigmaMinus = o2::constants::physics::MassSigmaMinus;
+  const float massPion = massChargedDaughter;
+  const float massNeutron = massNeutralDaughter;
+  const float massSigmaMinus = massMother;
 
   // Calculate mother momentum and direction versor
   float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);
@@ -340,6 +354,59 @@ float unBinLogUnsigned(T binned, float magMin, float magMax)
   float step = (logHi - logLo) / static_cast<float>(Levels - 1);
   float mag = std::exp(logLo + static_cast<float>(idx) * step);
   return mag;
+}
+
+// ---------------------------------------------------------------------------
+// purity/fraction packing: up to 4 species' log-binned nSigma values (see
+// binLogSigned<uint16_t>) packed bitwise into a single int64_t column. Slot
+// assignment (which species occupies which of the 4 slots) is decided at
+// producer init time from which requirePidXxx flags are active, and exposed
+// via a self-documenting histogram -- these functions only do the fixed-slot
+// bit shifting, nothing species-specific.
+// ---------------------------------------------------------------------------
+
+constexpr int PurityNSlots = 4;
+
+/// pack 4 already-binned uint16_t codes (one per slot) into a single int64_t
+inline int64_t packPurity4(uint16_t slot0, uint16_t slot1, uint16_t slot2, uint16_t slot3)
+{
+  return (static_cast<int64_t>(slot0) << 48) |
+         (static_cast<int64_t>(slot1) << 32) |
+         (static_cast<int64_t>(slot2) << 16) |
+         static_cast<int64_t>(slot3);
+}
+
+/// extract the raw uint16_t code of one of the 4 slots (0..3) from a packed int64_t
+inline uint16_t unpackPurity4(int64_t packed, int slot)
+{
+  switch (slot) {
+    case 0:
+      return static_cast<uint16_t>((packed >> 48) & 0xFFFF);
+    case 1:
+      return static_cast<uint16_t>((packed >> 32) & 0xFFFF);
+    case 2:
+      return static_cast<uint16_t>((packed >> 16) & 0xFFFF);
+    case 3:
+      return static_cast<uint16_t>(packed & 0xFFFF);
+    default:
+      LOG(fatal) << "unpackPurity4: invalid slot " << slot << " (must be 0-3). Breaking...";
+      return 0;
+  }
+}
+
+/// pack 4 raw signed nSigma values (one per slot, unused slots pass 0) directly into a packed int64_t
+inline int64_t packPurityNSigma4(float nSigma0, float nSigma1, float nSigma2, float nSigma3, float magMin, float magMax)
+{
+  return packPurity4(binLogSigned<uint16_t>(nSigma0, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma1, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma2, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma3, magMin, magMax));
+}
+
+/// unpack the nSigma value of one of the 4 slots (0..3) from a packed int64_t
+inline float unpackPurityNSigma4(int64_t packed, int slot, float magMin, float magMax)
+{
+  return unBinLogSigned<uint16_t>(unpackPurity4(packed, slot), magMin, magMax);
 }
 
 }; // namespace utils

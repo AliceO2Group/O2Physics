@@ -144,7 +144,7 @@ struct ExclusivePhiLeptonsTrees {
     // - (px,py,pz,E)1
     // - (px,py,pz,E)2
     int counterPV = 0;
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       // ----------------------------------------
       // SELECTIONS:
       // - PV track

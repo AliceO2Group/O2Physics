@@ -80,7 +80,7 @@ struct resonances_tutorial {
 
   // Track selection
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -113,7 +113,7 @@ struct resonances_tutorial {
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& /* collision */, const TracksType& dTracks)
   {
-    for (auto track : dTracks) { // loop over all dTracks
+    for (const auto& track : dTracks) { // loop over all dTracks
       if (!trackCut(track) || !selectionPID(track)) {
         continue; // track selection and PID selection
       }

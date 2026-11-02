@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <vector>
 
 // Creating output TTree for ML analysis
 namespace o2::aod
@@ -179,6 +180,8 @@ DECLARE_SOA_COLUMN(DCACascDaughters, dcaCascDaughters, float);
 DECLARE_SOA_COLUMN(DCAv0topv, dcav0topv, float);
 DECLARE_SOA_COLUMN(V0PA, v0PA, float);
 DECLARE_SOA_COLUMN(CascPA, cascPA, float);
+DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);
+DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float);
 
 DECLARE_SOA_COLUMN(IsXiMinus, isXiMinus, bool);
 DECLARE_SOA_COLUMN(IsXiPlus, isXiPlus, bool);
@@ -230,6 +233,8 @@ DECLARE_SOA_TABLE(CascMLCandidates, "AOD", "CAMLCANDIDATES",
                   cascmlcandidates::DCAv0topv,
                   cascmlcandidates::V0PA,
                   cascmlcandidates::CascPA,
+                  cascmlcandidates::BachBaryonCosPA,
+                  cascmlcandidates::BachBaryonDCAxyToPV,
                   cascmlcandidates::IsXiMinus,
                   cascmlcandidates::IsXiPlus,
                   cascmlcandidates::IsOmegaMinus,
@@ -237,8 +242,8 @@ DECLARE_SOA_TABLE(CascMLCandidates, "AOD", "CAMLCANDIDATES",
 
 namespace CascMLSelection
 {
-DECLARE_SOA_COLUMN(XiBDTScore, xiBDTScore, float);
-DECLARE_SOA_COLUMN(OmegaBDTScore, omegaBDTScore, float);
+DECLARE_SOA_COLUMN(XiBDTScore, xiBDTScore, std::vector<float>);
+DECLARE_SOA_COLUMN(OmegaBDTScore, omegaBDTScore, std::vector<float>);
 } // namespace CascMLSelection
 
 DECLARE_SOA_TABLE(CascXiMLScores, "AOD", "CASCXIMLSCORES",

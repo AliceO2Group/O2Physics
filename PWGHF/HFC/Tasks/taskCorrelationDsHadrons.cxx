@@ -196,9 +196,9 @@ struct HfTaskCorrelationDsHadrons {
     AxisSpec axisDetlaEta = {binsEta, "#it{#eta}^{Hadron}-#it{#eta}^{D}"};
     AxisSpec axisEta = {binsEta, "#it{#eta}"};
     AxisSpec axisDetlaPhi = {binsPhi, "#it{#varphi}^{Hadron}-#it{#varphi}^{D} (rad)"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T}^{D} (GeV/#it{c})"};
-    AxisSpec axisCentrality = {(std::vector<double>)binsCentrality, "centrality FT0M (%)"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtD), "#it{p}_{T}^{D} (GeV/#it{c})"};
+    AxisSpec axisCentrality = {std::vector<double>(binsCentrality), "centrality FT0M (%)"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
     AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
     AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};

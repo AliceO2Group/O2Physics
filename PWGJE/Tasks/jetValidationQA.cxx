@@ -56,7 +56,7 @@ struct jetTrackCollisionQa {
 
   void init(InitContext const&)
   {
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     // histograms
     const AxisSpec vtxZAxis{nBins, -20, 20, "Vtx_{z} (cm)"};
@@ -65,7 +65,7 @@ struct jetTrackCollisionQa {
     const AxisSpec ptAxis{BinsPt, "#it{p}_{T} (GeV/#it{c})"};
 
     // set trackselections
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     // histograms
     // 1)Jetvalidation on data
     mHistManager.add("collisionVtxZ", "selected collsion VtxZ ", HistType::kTH1D, {vtxZAxis});
@@ -337,7 +337,7 @@ struct mcJetTrackCollisionQa {
   void init(InitContext const&)
   {
     // set trackselection
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     // histograms
     const AxisSpec vtxZAxis{nBins, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec ptAxis{BinsPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -410,7 +410,7 @@ struct mcJetTrackCollisionQa {
 
   // fill qa histograms for selected tracks in collision
   template <class ValidationTracks, typename coll>
-  void fillMcTrackHistos(ValidationTracks const& mct, coll collision, bool mc) // could give collision as argument for additional association
+  void fillMcTrackHistos(ValidationTracks const& mct, const coll& collision, bool mc) // could give collision as argument for additional association
   {
     for (const auto& track : mct) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection) || !(track.collisionId() == collision.globalIndex())) {

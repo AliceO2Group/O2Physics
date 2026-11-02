@@ -20,6 +20,7 @@
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -88,14 +89,16 @@ O2ORIGIN("TMP");
 struct OnTheFlyDecayer {
   Produces<aod::McCollisions_001> tableMcCollisions;
   Produces<aod::StoredMcParticles_001> tableMcParticles;
-  Produces<aod::OTFDecayerBits> tableOTFDecayerBits;
+  Produces<aod::OTFParticleExtras> tableOTFParticleExtras;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
+  Configurable<std::string> decayTable{"decayTable", "", "Decay table overriding the TDatabasePDG decay channels of the listed particles (local path or ccdb:<path>), empty to disable"};
   Configurable<LabeledArray<int>> enabledDecays{"enabledDecays",
                                                 {DefaultParameters[0].data(), NumDecays, NumParameters, particleNames, parameterNames},
                                                 "Enable option for particle to be decayed: 0 - no, 1 - yes"};
@@ -111,6 +114,10 @@ struct OnTheFlyDecayer {
     LOG(info) << " --- Using magnetic field: " << magneticField;
     decayer.setSeed(seed);
     decayer.setBField(magneticField);
+    if (!decayTable.value.empty()) {
+      LOG(info) << " --- Using decay table: " << decayTable.value;
+      decayer.loadDecayTable(decayTable.value, pdgDB, ccdb.operator->());
+    }
     for (int i = 0; i < NumDecays; ++i) {
       if (enabledDecays->get(particleNames[i].c_str(), "enable") != 0) {
         LOG(info) << " --- Decay enabled: " << pdgCodes[i];
@@ -152,7 +159,7 @@ struct OnTheFlyDecayer {
       }
 
       particle.setBitOff(o2::upgrade::DecayerBits::IsAlive);
-      std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(pdgDB, particle);
+      std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(particle, pdgDB);
       if (decayStack.empty()) {
         continue;
       }
@@ -172,6 +179,7 @@ struct OnTheFlyDecayer {
         trackLength = o2::upgrade::computeTrackLength(o2track, decayRadius, magneticField);
       }
 
+      particle.setDecayRadius(std::hypot(decayer.getSecondaryVertexX(), decayer.getSecondaryVertexY()));
       const float trackTimeNS = trackLength / trackVelocity * PicoToNano;
       particle.setIndicesDaughter(particlesInDataframe - indexOffset + allParticles.size(), particlesInDataframe - indexOffset + allParticles.size() + (decayStack.size() - 1));
       for (auto& daughter : decayStack) {
@@ -220,7 +228,7 @@ struct OnTheFlyDecayer {
         histos.fill(HIST("hNaNBookkeeping"), 0);
       }
 
-      tableOTFDecayerBits(otfParticle.getBitsValue());
+      tableOTFParticleExtras(otfParticle.getBitsValue(), otfParticle.decayRadius());
       tableMcParticles(tableMcCollisions.lastIndex(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
                        otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
                        otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),

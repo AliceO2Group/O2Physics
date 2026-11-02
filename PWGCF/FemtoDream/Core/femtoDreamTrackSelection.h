@@ -29,6 +29,8 @@
 #include <Framework/Logger.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <fmt/format.h>
+
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -313,7 +315,7 @@ void FemtoDreamTrackSelection::init(o2::framework::HistogramRegistry* QAregistry
   if (QAregistry && Registry) {
     mHistogramRegistry = Registry;
     mQAHistogramRegistry = QAregistry;
-    std::string folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/" + static_cast<std::string>(o2::aod::femtodreamparticle::TrackTypeName[tracktype]);
+    std::string folderName = fmt::format("{}/{}", o2::aod::femtodreamparticle::ParticleTypeName[part], o2::aod::femtodreamparticle::TrackTypeName[tracktype]);
 
     /// check whether the number of selection exceeds the bitmap size
     unsigned int nSelections = getNSelections() - getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax);

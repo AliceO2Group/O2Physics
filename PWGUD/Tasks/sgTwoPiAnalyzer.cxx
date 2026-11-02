@@ -131,7 +131,7 @@ struct SGTwoPiAnalyzer {
     std::vector<TLorentzVector> goodTracks;
     // Look for D0 and D0bar
     float sign = 0;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       int itsNCls = t.itsNCls();
       // if (itsNCls) {
       registry.fill(HIST("ITSNCls"), itsNCls);
@@ -145,7 +145,7 @@ struct SGTwoPiAnalyzer {
     }
     //    std::cout << goodTracks.size()<<std::endl;
     if (goodTracks.size() == 2) {
-      for (auto pion : goodTracks) {
+      for (const auto& pion : goodTracks) {
         v01 += pion;
       }
       // Apply pion hypothesis and create pairs

@@ -18,6 +18,7 @@
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
@@ -114,15 +115,22 @@ struct FemtoPairV0TwoTrackResonance {
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
   pairhistmanager::ConfPairCuts confPairCuts;
+  paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   // setup for lambda-phi pairs
   pairbuilder::PairV0TwoTrackResonanceBuilder<
-    v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
-    twotrackresonancehistmanager::PrefixPhi,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    v0histmanager::PrefixLambda1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    twotrackresonancehistmanager::PrefixPhiSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    v0histmanager::PrefixLambda1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
+    twotrackresonancehistmanager::PrefixPhiMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixV0ResonanceSe,
     pairhistmanager::PrefixV0ResonanceMe,
     closepairrejection::PrefixV0TwoTrackResonancePosSe,
@@ -135,12 +143,18 @@ struct FemtoPairV0TwoTrackResonance {
 
   // setup for lambda-kstar0 pairs
   pairbuilder::PairV0TwoTrackResonanceBuilder<
-    v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
-    twotrackresonancehistmanager::PrefixKstar,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    v0histmanager::PrefixLambda1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    twotrackresonancehistmanager::PrefixKstarSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    v0histmanager::PrefixLambda1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
+    twotrackresonancehistmanager::PrefixKstarMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixV0ResonanceSe,
     pairhistmanager::PrefixV0ResonanceMe,
     closepairrejection::PrefixV0TwoTrackResonancePosSe,
@@ -153,12 +167,18 @@ struct FemtoPairV0TwoTrackResonance {
 
   // setup for lambda-rho0 pairs
   pairbuilder::PairV0TwoTrackResonanceBuilder<
-    v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
-    twotrackresonancehistmanager::PrefixRho,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    v0histmanager::PrefixLambda1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    twotrackresonancehistmanager::PrefixRhoSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    v0histmanager::PrefixLambda1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
+    twotrackresonancehistmanager::PrefixRhoMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixV0ResonanceSe,
     pairhistmanager::PrefixV0ResonanceMe,
     closepairrejection::PrefixV0TwoTrackResonancePosSe,
@@ -171,12 +191,18 @@ struct FemtoPairV0TwoTrackResonance {
 
   // setup for k0short-phi pairs
   pairbuilder::PairV0TwoTrackResonanceBuilder<
-    v0histmanager::PrefixK0short1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
-    twotrackresonancehistmanager::PrefixPhi,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    v0histmanager::PrefixK0short1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    twotrackresonancehistmanager::PrefixPhiSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    v0histmanager::PrefixK0short1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
+    twotrackresonancehistmanager::PrefixPhiMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixV0ResonanceSe,
     pairhistmanager::PrefixV0ResonanceMe,
     closepairrejection::PrefixV0TwoTrackResonancePosSe,
@@ -189,12 +215,18 @@ struct FemtoPairV0TwoTrackResonance {
 
   // setup for k0short-kstar0 pairs
   pairbuilder::PairV0TwoTrackResonanceBuilder<
-    v0histmanager::PrefixK0short1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
-    twotrackresonancehistmanager::PrefixKstar,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    v0histmanager::PrefixK0short1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    twotrackresonancehistmanager::PrefixKstarSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    v0histmanager::PrefixK0short1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
+    twotrackresonancehistmanager::PrefixKstarMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixV0ResonanceSe,
     pairhistmanager::PrefixV0ResonanceMe,
     closepairrejection::PrefixV0TwoTrackResonancePosSe,
@@ -207,12 +239,18 @@ struct FemtoPairV0TwoTrackResonance {
 
   // setup for k0short-rho0 pairs
   pairbuilder::PairV0TwoTrackResonanceBuilder<
-    v0histmanager::PrefixK0short1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
-    twotrackresonancehistmanager::PrefixRho,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    v0histmanager::PrefixK0short1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    twotrackresonancehistmanager::PrefixRhoSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    v0histmanager::PrefixK0short1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
+    twotrackresonancehistmanager::PrefixRhoMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixV0ResonanceSe,
     pairhistmanager::PrefixV0ResonanceMe,
     closepairrejection::PrefixV0TwoTrackResonancePosSe,
@@ -227,9 +265,9 @@ struct FemtoPairV0TwoTrackResonance {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
 
   pairhistmanager::ConfMixing confMixing;
 
@@ -255,9 +293,9 @@ struct FemtoPairV0TwoTrackResonance {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histograms
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -273,47 +311,51 @@ struct FemtoPairV0TwoTrackResonance {
 
     auto pairV0TwoTrackResonanceHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
 
+    auto pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
+
     // setup for lambda-phi
     if (doprocessLambdaPhiSameEvent || doprocessLambdaPhiMixedEvent) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confPhiBinning);
-      pairLambdaPhiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, phiSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, phiHistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairLambdaPhiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, phiSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, phiHistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for lambda-kstar0
     if (doprocessLambdaKstar0SameEvent || doprocessLambdaKstar0MixedEvent) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confKstar0Binning);
-      pairLambdaKstar0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, kstar0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, kstar0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairLambdaKstar0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, kstar0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, kstar0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for lambda-rho0
     if (doprocessLambdaRho0SameEvent || doprocessLambdaRho0MixedEvent) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confRho0Binning);
-      pairLambdaRho0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, rho0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, rho0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairLambdaRho0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, rho0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, rho0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for k0short-phi
     if (doprocessK0shortPhiSameEvent || doprocessK0shortPhiMixedEvent) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confPhiBinning);
-      pairK0shortPhiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, phiSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, phiHistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairK0shortPhiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, phiSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, phiHistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for k0short-kstar0
     if (doprocessK0shortKstar0SameEvent || doprocessK0shortKstar0MixedEvent) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confKstar0Binning);
-      pairK0shortKstar0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, kstar0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, kstar0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairK0shortKstar0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, kstar0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, kstar0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for k0short-rho0
     if (doprocessK0shortRho0SameEvent || doprocessK0shortRho0MixedEvent) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confRho0Binning);
-      pairK0shortRho0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, rho0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, rho0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairK0shortRho0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, rho0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, rho0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
+
+    hRegistry.print();
   }
 
   // lambda-phi

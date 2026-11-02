@@ -150,7 +150,7 @@ struct PartitionColExtra {
 struct BuildHmpidIndex {
   // build the index table HMPIDTracksIndex
   Builds<aod::HMPIDTracksIndex> idx;
-  void init(InitContext const&) {};
+  void init(InitContext const&) {}
 };
 
 struct ConsumeHmpidIndex {

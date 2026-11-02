@@ -41,6 +41,7 @@
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -64,6 +65,7 @@ struct JetFinderHFTask {
   o2::framework::Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   o2::framework::Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
   o2::framework::Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
+  o2::framework::Configurable<bool> isEmbedding{"isEmbedding", false, "running on an embedded dataset"};
 
   // track level configurables
   o2::framework::Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
@@ -72,6 +74,8 @@ struct JetFinderHFTask {
   o2::framework::Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   o2::framework::Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   o2::framework::Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  o2::framework::Configurable<float> phiExclusionMin{"phiExclusionMin", -999, "minimum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
+  o2::framework::Configurable<float> phiExclusionMax{"phiExclusionMax", 999, "maximum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
   o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   o2::framework::Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
@@ -130,11 +134,11 @@ struct JetFinderHFTask {
 
   void init(o2::framework::InitContext const&)
   {
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    particleSelection = static_cast<std::string>(particleSelections);
-    clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    particleSelection = particleSelections;
+    clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS);
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
@@ -145,6 +149,13 @@ struct JetFinderHFTask {
     if (trackPhiMin < -98.0) {
       jetFinder.phiMin = -1.0 * M_PI;
       jetFinder.phiMax = 2.0 * M_PI;
+    }
+    if (phiExclusionMin > -998.0) {
+      jetFinder.phiExclusionMin = phiExclusionMin;
+      jetFinder.phiExclusionMax = phiExclusionMax;
+      if (phiExclusionMin >= phiExclusionMax) {
+        throw std::runtime_error("Invalid phi exclusion range: require phiExclusionMin < phiExclusionMax when both are set.");
+      }
     }
     jetFinder.jetPhiMin = jetPhiMin;
     jetFinder.jetPhiMax = jetPhiMax;
@@ -157,8 +168,8 @@ struct JetFinderHFTask {
     if (jetEtaMin < -98.0) {
       jetFinder.jetEtaDefault = true;
     }
-    jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
-    jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
+    jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(jetAlgorithm.value);
+    jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(jetRecombScheme.value);
     jetFinder.ghostArea = jetGhostArea;
     jetFinder.ghostRepeatN = ghostRepeat;
     if (DoTriggering) {
@@ -166,7 +177,7 @@ struct JetFinderHFTask {
     }
     jetFinder.fastjetExtraParam = jetExtraParam;
 
-    auto jetRadiiBins = (std::vector<double>)jetRadius;
+    auto jetRadiiBins = jetRadius.value;
     if (jetRadiiBins.size() > 1) {
       jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + (TMath::Abs(jetRadiiBins[jetRadiiBins.size() - 1] - jetRadiiBins[jetRadiiBins.size() - 2])));
     } else {
@@ -186,8 +197,8 @@ struct JetFinderHFTask {
 
   o2::framework::expressions::Filter collisionFilter = (nabs(o2::aod::jcollision::posZ) < vertexZCut && o2::aod::jcollision::centFT0M >= centralityMin && o2::aod::jcollision::centFT0M < centralityMax && o2::aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax);
   o2::framework::expressions::Filter mcCollisionFilter = (nabs(o2::aod::jmccollision::posZ) < vertexZCut);
-  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax);
-  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax);
+  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jtrack::phi <= phiExclusionMin || o2::aod::jtrack::phi >= phiExclusionMax)));
+  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jmcparticle::phi <= phiExclusionMin || o2::aod::jmcparticle::phi >= phiExclusionMax)));
   o2::framework::expressions::Filter clusterFilter = (o2::aod::jcluster::definition == static_cast<int>(clusterDefinition) && o2::aod::jcluster::eta >= clusterEtaMin && o2::aod::jcluster::eta <= clusterEtaMax && o2::aod::jcluster::phi >= clusterPhiMin && o2::aod::jcluster::phi <= clusterPhiMax && o2::aod::jcluster::energy >= clusterEnergyMin && o2::aod::jcluster::time > clusterTimeMin && o2::aod::jcluster::time < clusterTimeMax && (!clusterRejectExotics || o2::aod::jcluster::isExotic != true));
   // o2::framework::expressions::Filter candidateCuts = (o2::aod::hfcand::pt >= candPtMin && o2::aod::hfcand::pt < candPtMax && o2::aod::hfcand::y >= candYMin && o2::aod::hfcand::y < candYMax);
 
@@ -229,9 +240,9 @@ struct JetFinderHFTask {
       }
     }
     if constexpr (isEvtWiseSub) {
-      jetfindingutilities::analyseTracks<U, typename U::iterator>(inputParticles, tracks, trackSelection);
+      jetfindingutilities::analyseTracks<U, typename U::iterator>(inputParticles, tracks, trackSelection, isEmbedding);
     } else {
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, isEmbedding, &candidate);
     }
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, true);
   }

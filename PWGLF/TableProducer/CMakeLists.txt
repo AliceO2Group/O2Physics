@@ -12,6 +12,7 @@
 add_subdirectory(QC)
 add_subdirectory(Common)
 
+add_subdirectory(GlobalEventProperties)
 add_subdirectory(Nuspex)
 add_subdirectory(Strangeness)
 add_subdirectory(Resonances)

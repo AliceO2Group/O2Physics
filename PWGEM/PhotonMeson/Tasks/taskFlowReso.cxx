@@ -22,7 +22,7 @@
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Concepts.h>
 #include <Framework/Configurable.h>

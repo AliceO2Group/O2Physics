@@ -1,0 +1,327 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file treeCreatorPidTpcDiagnostics.cxx
+/// \brief Creates trees with PID QA variables along with variables used for NN training
+///
+/// \author Ana Marin <ana.marin@cern.ch>
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
+
+#include "treeCreatorPidTpcDiagnostics.h"
+
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "DPG/Tasks/TPC/tpcSkimsTableCreator.h"
+#include "DPG/Tasks/TPC/utilsTpcSkimsTableCreator.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TRandom3.h>
+#include <TString.h>
+
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <string>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::track;
+using namespace o2::dpg_tpcskimstablecreator;
+
+#define DO_FOR_ALL_PARTICLES(MACRO, ARG) \
+  MACRO(El, Electron, ARG)               \
+  MACRO(Mu, Muon, ARG)                   \
+  MACRO(Pi, Pion, ARG)                   \
+  MACRO(Ka, Kaon, ARG)                   \
+  MACRO(Pr, Proton, ARG)                 \
+  MACRO(De, Deuteron, ARG)               \
+  MACRO(Tr, Triton, ARG)                 \
+  MACRO(He, Helium3, ARG)                \
+  MACRO(Al, Alpha, ARG)
+
+struct TreeCreatorPidTpcDiagnostics {
+  Produces<o2::aod::PidTpcDiagnostics> rowPidTpcDiagnostics;
+
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<float> cutVtxZ{"cutVtxZ", 10.f, "Cut on vertex Z position [cm]"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Skip non-global tracks"};
+  Configurable<bool> requireIts{"requireIts", true, "Skip tracks without ITS"};
+  Configurable<int16_t> cutMinTPCNcls{"cutMinTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
+  Configurable<float> cutRapidity{"cutRapidity", 999.f, "Rapidity cut"};
+  Configurable<float> nClNorm{"nClNorm", 152.f, "Number of cluster normalization. Run 2: 159, Run 3 152"};
+  // Configurable for the path of CCDB General Run Parameters LHC Interface information
+  Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+  // Configurables for output tables reservation size
+  Configurable<float> reserveRatio{"reserveRatio", 1.f, "Ratio of how many rows expected in the output table to the input Tracks table size"};
+  Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
+  // Configurables for run condtion table
+  Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
+  Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+  Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
+
+  struct ParticleWiseCfgs : ConfigurableGroup {
+
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(Unused1, ParticleNameLong, Unused2)                                                                                                                                                                            \
+  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong};  /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutExpSigmaMax##ParticleNameLong{"cutExpSigmaMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected sigma for " #ParticleNameLong};                    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxExpectedMin##ParticleNameLong{"cutDeDxExpectedMin" #ParticleNameLong, -1e9f, "Lower-value cut on expected dE/dx for " #ParticleNameLong};           /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxExpectedMax##ParticleNameLong{"cutDeDxExpectedMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected dE/dx for " #ParticleNameLong};            /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxDiffMin##ParticleNameLong{"cutDeDxDiffMin" #ParticleNameLong, -1e9f, "Lower-value cut on real - expected dE/dx difference for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxDiffMax##ParticleNameLong{"cutDeDxDiffMax" #ParticleNameLong, 1e9f, "Upper-value cut on real - expected dE/dx difference for " #ParticleNameLong};  /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};                /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> downsampleFactor##ParticleNameLong{"downsampleFactor" #ParticleNameLong, 1.f, "Downsampling factor for " #ParticleNameLong};                               // o2-linter: disable=name/configurable (Configurable defined in macro)
+
+    DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES, _)
+#undef DECLARE_PARTICLE_WISE_CONFIGURABLES
+  } particleWiseCfgs;
+
+#define PARTICLE_WISE_CFG_NAMES \
+  (cutTpcInnerParameterMin)(cutTpcInnerParameterMax)(cutExpSigmaMax)(cutDeDxExpectedMin)(cutDeDxExpectedMax)(cutDeDxDiffMin)(cutDeDxDiffMax)(cutNSigmaTpcAbs)(downsampleFactor)
+
+#define MAKE_PARTICLE_CUT_POINTER(Unused, ParticleNameLong, CfgName) \
+  &particleWiseCfgs.BOOST_PP_CAT(CfgName, ParticleNameLong),
+
+#define PACK_CONFIGURABLES_TO_ARRAY(Unused1, Unused2, CfgName) \
+  std::array<Configurable<float>*, PID::Alpha + 1> CfgName{    \
+    DO_FOR_ALL_PARTICLES(MAKE_PARTICLE_CUT_POINTER, CfgName)};
+
+  BOOST_PP_SEQ_FOR_EACH(PACK_CONFIGURABLES_TO_ARRAY, _, PARTICLE_WISE_CFG_NAMES)
+
+#undef PACK_CONFIGURABLES_TO_ARRAY
+#undef MAKE_PARTICLE_CUT_POINTER
+#undef PARTICLE_WISE_CFG_NAMES
+
+  HistogramRegistry registry{"registry", {}};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+
+  ctpRateFetcher mRateFetcher;
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+
+  TRandom3 mRnd;
+
+  using CollisionsExtra = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
+
+  Preslice<TrackCandidates> perCollisionTracks = aod::track::collisionId;
+
+  int mEnabledParticles{0};
+  int mProcessedParticles{0};
+
+  template <o2::track::PID::ID ParticleId>
+  bool initPerParticle()
+  {
+    static_assert(ParticleId >= 0 && ParticleId <= PID::Alpha && "Particle index outside limits");
+    int enabledProcesses{0};
+
+    switch (ParticleId) {
+#define INIT_PARTICLE(Unused1, ParticleNameLong, Unused2)                                                              \
+  case PID::ParticleNameLong:                                                                                          \
+    if (!doprocess##ParticleNameLong && !doprocessFull##ParticleNameLong && !doprocessFullWithTOF##ParticleNameLong) { \
+      return false;                                                                                                    \
+    }                                                                                                                  \
+    if (doprocess##ParticleNameLong) {                                                                                 \
+      ++enabledProcesses;                                                                                              \
+    }                                                                                                                  \
+    if (doprocessFull##ParticleNameLong) {                                                                             \
+      ++enabledProcesses;                                                                                              \
+    }                                                                                                                  \
+    if (doprocessFullWithTOF##ParticleNameLong) {                                                                      \
+      ++enabledProcesses;                                                                                              \
+    }                                                                                                                  \
+    LOG(info) << "Enabled TPC QA for " << #ParticleNameLong;                                                           \
+    break;
+
+      DO_FOR_ALL_PARTICLES(INIT_PARTICLE, _)
+#undef INIT_PARTICLE
+    }
+    if (enabledProcesses != 1) {
+      LOG(fatal) << "Cannot enable more than one process function per particle, check and retry!";
+    }
+    return true;
+  }
+
+  void init(o2::framework::InitContext&)
+  {
+    static_for<0, PID::Alpha>([&](auto ParticleId) {
+      mEnabledParticles += static_cast<int>(initPerParticle<ParticleId>());
+    });
+
+    if (mEnabledParticles == 0) {
+      LOG(fatal) << "At least one process function should be enabled, check and retry!";
+    }
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
+
+    rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
+
+    if (saveReserveQaHisto) {
+      registry.add("hOutputRatio", "Table out/in ratio;Table out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveRatio}}});
+    }
+  }
+
+  template <o2::track::PID::ID ParticleId, bool IsFullTable, bool IsTofTable, typename TrackType>
+  void processSingleParticle(CollisionsExtra const& collisions,
+                             TrackType const& tracks)
+  {
+    if (mProcessedParticles == 0) {
+      rowPidTpcDiagnostics.reserve(tracks.size() * reserveRatio);
+    }
+
+    std::string irSource{};
+    float sqrtSNN{}; // placeholder to satisfy evaluateIrSourceAndSqrtSnn's signature
+    bool isFirstCollision{true};
+    for (const auto& collision : collisions) {
+      if (!isEventSelected(collision, applyEvSel) || (std::abs(collision.posZ()) > cutVtxZ)) {
+        continue;
+      }
+
+      const bool isGoodRctEvent = rctChecker.checkTable(collision);
+      if (requireGoodRct && !isGoodRctEvent) {
+        continue;
+      }
+
+      const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if (isFirstCollision) {
+        evaluateIrSourceAndSqrtSnn(ccdb, ccdbPathGrpLhcIf, bc.timestamp(), irSource, sqrtSNN);
+      }
+      isFirstCollision = false;
+      const float ft0Occ = collision.ft0cOccupancyInTimeRange();
+      const float multTPC = collision.multTPC() / MultiplicityNorm;
+      const auto hadronicRate = !irSource.empty() ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo : 0.;
+
+      const auto tracksFromCollision = tracks.sliceBy(perCollisionTracks, static_cast<int>(collision.globalIndex()));
+
+      for (const auto& track : tracksFromCollision) {
+        if (*downsampleFactor.at(ParticleId) < 1.f && mRnd.Uniform(1) > *downsampleFactor.at(ParticleId)) {
+          continue;
+        }
+
+        bool isGoodTrack = isTrackSelected(track, trackSelection);
+        isGoodTrack &= (!requireGlobalTrack || track.isGlobalTrack());
+        isGoodTrack &= (!requireIts || track.hasITS());
+        isGoodTrack &= track.hasTPC();
+        isGoodTrack &= (track.tpcNClsFound() >= cutMinTPCNcls);
+
+        const float rapidity = track.rapidity(PID::getMass(ParticleId));
+        const float momentum = track.p();
+        const float nClNormalized = std::sqrt(nClNorm / track.tpcNClsFound());
+        const auto nclPID = static_cast<float>(track.tpcNClsPID());
+        const float phi = track.phi();
+        const float tgl = track.tgl();
+        const float tpcInnerParam = track.tpcInnerParam();
+        const float signed1Pt = track.signed1Pt();
+        const float nSigmaTpc = o2::aod::pidutils::tpcNSigma<ParticleId>(track);
+
+        isGoodTrack &= (std::fabs(rapidity) <= cutRapidity);
+        isGoodTrack &= (tpcInnerParam >= *cutTpcInnerParameterMin.at(ParticleId));
+        isGoodTrack &= (tpcInnerParam <= *cutTpcInnerParameterMax.at(ParticleId));
+        isGoodTrack &= (std::fabs(nSigmaTpc) <= *cutNSigmaTpcAbs.at(ParticleId));
+
+        float dedxDiff{UndefValueFloat};
+        float dedxExpected{UndefValueFloat};
+        float expSigma{UndefValueFloat};
+
+        if constexpr (IsFullTable) {
+          dedxDiff = o2::aod::pidutils::tpcExpSignalDiff<ParticleId>(track);
+          dedxExpected = track.tpcSignal() - dedxDiff;
+          expSigma = o2::aod::pidutils::tpcExpSigma<ParticleId>(track);
+
+          isGoodTrack &= (expSigma <= *cutExpSigmaMax.at(ParticleId));
+          isGoodTrack &= (dedxExpected >= *cutDeDxExpectedMin.at(ParticleId));
+          isGoodTrack &= (dedxExpected <= *cutDeDxExpectedMax.at(ParticleId));
+          isGoodTrack &= (dedxDiff >= *cutDeDxDiffMin.at(ParticleId));
+          isGoodTrack &= (dedxDiff <= *cutDeDxDiffMax.at(ParticleId));
+        }
+
+        if (!isGoodTrack) {
+          continue;
+        }
+
+        float nSigmaTof{UndefValueFloat};
+
+        if constexpr (IsTofTable) {
+          nSigmaTof = o2::aod::pidutils::tofNSigma<ParticleId>(track);
+        }
+
+        rowPidTpcDiagnostics(isGoodRctEvent, ParticleId, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
+      } // tracksFromCollision
+    } // collisions
+    ++mProcessedParticles;
+    if (mProcessedParticles == mEnabledParticles) {
+      mProcessedParticles = 0;
+      if (saveReserveQaHisto) {
+        registry.fill(HIST("hOutputRatio"), static_cast<double>((rowPidTpcDiagnostics.lastIndex() + 1)) / tracks.size());
+      }
+    }
+  }
+
+#define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong, Unused)                                                                                         \
+  void process##ParticleNameLong(CollisionsExtra const& collisions,                                                                                                 \
+                                 soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks,                                                          \
+                                 aod::BCsWithTimestamps const&)                                                                                                     \
+  {                                                                                                                                                                 \
+    processSingleParticle<PID::ParticleNameLong, false, false>(collisions, tracks);                                                                                 \
+  }                                                                                                                                                                 \
+  PROCESS_SWITCH(TreeCreatorPidTpcDiagnostics, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleNameLong), false);       \
+                                                                                                                                                                    \
+  void processFull##ParticleNameLong(CollisionsExtra const& collisions,                                                                                             \
+                                     soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort> const& tracks,                                                  \
+                                     aod::BCsWithTimestamps const&)                                                                                                 \
+  {                                                                                                                                                                 \
+    processSingleParticle<PID::ParticleNameLong, true, false>(collisions, tracks);                                                                                  \
+  }                                                                                                                                                                 \
+  PROCESS_SWITCH(TreeCreatorPidTpcDiagnostics, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleNameLong), false); \
+                                                                                                                                                                    \
+  void processFullWithTOF##ParticleNameLong(CollisionsExtra const& collisions,                                                                                      \
+                                            soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort, aod::pidTOFFull##ParticleNameShort> const& tracks,       \
+                                            aod::BCsWithTimestamps const&)                                                                                          \
+  {                                                                                                                                                                 \
+    processSingleParticle<PID::ParticleNameLong, true, true>(collisions, tracks);                                                                                   \
+  }                                                                                                                                                                 \
+  PROCESS_SWITCH(TreeCreatorPidTpcDiagnostics, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleNameLong), false);
+
+  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTIONS, _)
+#undef MAKE_PROCESS_FUNCTIONS
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
+{
+  return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcDiagnostics>(context)};
+}
+#undef DO_FOR_ALL_PARTICLES

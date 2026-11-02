@@ -78,12 +78,12 @@ struct HfCandidateSelectorToXiPiQa {
 
   // cuts from SelectorCuts.h - pT dependent cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_xi_pi::Cuts[0], hf_cuts_xic_to_xi_pi::NBinsPt, hf_cuts_xic_to_xi_pi::NCutVars, hf_cuts_xic_to_xi_pi::labelsPt, hf_cuts_xic_to_xi_pi::labelsCutVar}, "Xic0 candidate selection per Pt Bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {&hf_cuts_xic_to_xi_pi::Cuts[0][0], hf_cuts_xic_to_xi_pi::NBinsPt, hf_cuts_xic_to_xi_pi::NCutVars, hf_cuts_xic_to_xi_pi::labelsPt, hf_cuts_xic_to_xi_pi::labelsCutVar}, "Xic0 candidate selection per Pt Bin"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {&hf_cuts_ml::Cuts[0][0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
@@ -144,7 +144,7 @@ struct HfCandidateSelectorToXiPiQa {
 
   o2::analysis::HfMlResponseXic0ToXiPi<float> hfMlResponseDca;
   o2::analysis::HfMlResponseXic0ToXiPiKf<float> hfMlResponseKf;
-  std::vector<float> outputMlXic0ToXiPi = {};
+  std::vector<float> outputMlXic0ToXiPi;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -718,12 +718,11 @@ struct HfCandidateSelectorToXiPiQa {
       // ML BDT selection if required
       if (applyMl) {
         bool isSelectedMlXic0 = false;
-        std::vector<float> inputFeaturesXic0 = {};
         if constexpr (svReco == doDcaFitter) {
-          inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          auto inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
           isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
         } else {
-          inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          auto inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPrFromLam, trackPiFromCasc, trackPiFromCharm);
           isSelectedMlXic0 = hfMlResponseKf.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
         }
 
@@ -767,8 +766,8 @@ struct HfCandidateSelectorToXiPiQa {
 
 }; // end struct
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorToXiPiQa>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorToXiPiQa>(context)};
 }

@@ -381,7 +381,7 @@ struct FemtoUniversePairTaskV0CascadeExtended {
   template <class TableType, typename PartitionType>
   void doMixedEvent(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = collision1.multNtr();

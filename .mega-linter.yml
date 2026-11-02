@@ -19,8 +19,6 @@ DISABLE_LINTERS:
   - PYTHON_FLAKE8
   - PYTHON_ISORT
   - REPOSITORY_DEVSKIM
-  - REPOSITORY_GITLEAKS
-  - REPOSITORY_KICS
   - REPOSITORY_OSV_SCANNER
   - REPOSITORY_SECRETLINT
   - REPOSITORY_TRIVY
@@ -43,5 +41,4 @@ CPP_CPPLINT_FILE_EXTENSIONS: [".C", ".c", ".c++", ".cc", ".cl", ".cpp", ".cu", "
 CPP_CLANG_FORMAT_FILE_EXTENSIONS: [".C", ".c", ".c++", ".cc", ".cl", ".cpp", ".cu", ".cuh", ".cxx", ".cxx.in", ".h", ".h++", ".hh", ".h.in", ".hpp", ".hxx", ".inc", ".inl", ".macro"]
 CPP_CPPCHECK_FILE_EXTENSIONS: [".C", ".c", ".c++", ".cc", ".cl", ".cpp", ".cu", ".cuh", ".cxx", ".cxx.in", ".h", ".h++", ".hh", ".h.in", ".hpp", ".hxx", ".inc", ".inl", ".macro"]
 CPP_CPPCHECK_ARGUMENTS: --language=c++ --std=c++20 --enable=style --check-level=exhaustive --suppressions-list=cppcheck_suppressions --inline-suppr --force
-REPOSITORY_GITLEAKS_PR_COMMITS_SCAN: true
 ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES: [GITHUB_TOKEN]

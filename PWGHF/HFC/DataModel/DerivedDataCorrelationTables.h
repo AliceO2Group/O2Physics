@@ -47,16 +47,17 @@ using HfcRedCollision = HfcRedCollisions::iterator;
 
 namespace hf_candidate_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision); //! ReducedCollision index
-DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                //! Prong 0 index
-DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                //! Prong 1 index
-DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                //! Prong2 index
-DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                //! Phi of the candidate
-DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                //! Eta of the candidate
-DECLARE_SOA_COLUMN(PtCand, ptCand, float);                  //! Pt of the candidate
-DECLARE_SOA_COLUMN(InvMass, invMass, float);                //! Invariant mass of charm candidate
-DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);  //! BDT output score for prompt hypothesis
-DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);        //! BDT output score for background hypothesis
+DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision);      //! ReducedCollision index
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                     //! Prong 0 index
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                     //! Prong 1 index
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                     //! Prong2 index
+DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                     //! Phi of the candidate
+DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                     //! Eta of the candidate
+DECLARE_SOA_COLUMN(PtCand, ptCand, float);                       //! Pt of the candidate
+DECLARE_SOA_COLUMN(InvMass, invMass, float);                     //! Invariant mass of charm candidate
+DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);       //! BDT output score for prompt hypothesis
+DECLARE_SOA_COLUMN(BdtScoreNonPrompt, bdtScoreNonPrompt, float); //! BDT output score for non-prompt hypothesis
+DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);             //! BDT output score for background hypothesis
 } // namespace hf_candidate_reduced
 DECLARE_SOA_TABLE(HcCandReduceds, "AOD", "HCCANDREDUCED", //! Table with charm hadron candidate info
                   soa::Index<>,
@@ -72,8 +73,9 @@ DECLARE_SOA_TABLE(HcCandReduceds, "AOD", "HCCANDREDUCED", //! Table with charm h
 DECLARE_SOA_TABLE(HcCandSelInfos, "AOD", "HCCANDSELINFO", //! Table with charm hadron candidate selection info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedCollisionId,
+                  aod::hf_candidate_reduced::BdtScoreBkg,
                   aod::hf_candidate_reduced::BdtScorePrompt,
-                  aod::hf_candidate_reduced::BdtScoreBkg);
+                  aod::hf_candidate_reduced::BdtScoreNonPrompt);
 
 namespace hf_assoc_track_reduced
 {

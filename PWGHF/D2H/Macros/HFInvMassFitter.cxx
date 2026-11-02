@@ -40,7 +40,10 @@
 #include <RooWorkspace.h>
 #include <TColor.h>
 #include <TDatabasePDG.h>
+#include <TH2.h>
 #include <TLine.h>
+#include <TMatrixDSym.h> // IWYU pragma: keep (do not replace with TMatrixDSymfwd.h)
+#include <TMatrixDSymfwd.h>
 #include <TPaveText.h>
 #include <TRandom3.h>
 #include <TString.h>
@@ -50,6 +53,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdio>
@@ -66,7 +70,7 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                  double maxValue,
                                  int fitTypeBkg,
                                  int fitTypeSgn,
-                                 int randomSeed) : mHistoInvMass(nullptr),
+                                 int randomSeed) : mHistoInvMass(histoToFit),
                                                    mFitOption("L,E"),
                                                    mMinMass(minValue),
                                                    mMaxMass(maxValue),
@@ -147,18 +151,21 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mResidualHist(nullptr),
                                                    mRatioFrame(nullptr),
                                                    mWorkspace(nullptr),
-                                                   mIntegralHisto(0),
                                                    mIntegralBkg(0),
                                                    mIntegralSgn(0),
                                                    mHistoTemplateRefl(nullptr),
                                                    mDrawBgPrefit(false),
                                                    mHighlightPeakRegion(false),
                                                    mRandomSeed(randomSeed),
-                                                   mRandomGen(nullptr)
+                                                   mRandomGen(nullptr),
+                                                   mFitStatus(-999),
+                                                   mCovQual(-999),
+                                                   mEdm(-999.),
+                                                   mMinNll(-999.),
+                                                   mSgnGlobalCorrelCoeff(-999.),
+                                                   mCovCorrMatrix(nullptr)
 {
   // standard constructor
-  mHistoInvMass = histoToFit;
-  mHistoInvMass->SetName("mHistoInvMass");
   mHistoInvMass->SetDirectory(nullptr);
   if (mRandomSeed >= 0) {
     mRandomGen = new TRandom3();
@@ -170,7 +177,6 @@ HFInvMassFitter::~HFInvMassFitter()
 {
 
   /// destructor
-  delete mHistoInvMass;
   delete mHistoTemplateRefl;
   delete mRooMeanSgn;
   delete mRooSigmaSgn;
@@ -192,7 +198,6 @@ HFInvMassFitter::~HFInvMassFitter()
 
 void HFInvMassFitter::doFit()
 {
-  mIntegralHisto = mHistoInvMass->Integral(mHistoInvMass->FindBin(mMinMass), mHistoInvMass->FindBin(mMaxMass));
   mWorkspace = new RooWorkspace("mWorkspace");
   fillWorkspace(*mWorkspace);
   RooRealVar* mass = mWorkspace->var("mass");
@@ -201,13 +206,12 @@ void HFInvMassFitter::doFit()
   if (mTypeOfBkgPdf == NoBkg) { // MC
     mass->setRange("signal", mMass - 3. * mSigmaSgn, mMass + 3. * mSigmaSgn);
   } else {
+    mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
     if (mTypeOfSgnPdf == GausSec) { // Second Peak fit range
-      mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mSecMass - mNSigmaForSidebands * mSecSigma);
       mass->setRange("SEC", mSecMass + mNSigmaForSidebands * mSecSigma, mMaxMass);
       mass->setRange("signal", mSecMass - mNSigmaForSgn * mSecSigma, mSecMass + mNSigmaForSgn * mSecSigma);
     } else { // Single Peak fit range
-      mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mMaxMass);
       mass->setRange("signal", mMass - mNSigmaForSgn * mSigmaSgn, mMass + mNSigmaForSgn * mSigmaSgn);
     }
@@ -217,18 +221,24 @@ void HFInvMassFitter::doFit()
   mInvMassFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle()))); // define the frame to plot
   dataHistogram.plotOn(mInvMassFrame, Name("data_c"));                       // plot data histogram on the frame
 
+  TH1* histoInvMassSB = dynamic_cast<TH1*>(mHistoInvMass->Clone());
+  cutRangesFromHisto(histoInvMassSB, {"SBL", "SBR"});
+  RooDataHist sbHistogram("sbHistogram", "sb", *mass, Import(*histoInvMassSB));
+
   RooAbsPdf* bkgPdf = createBackgroundFitFunction(mWorkspace); // Create background pdf
   RooAbsPdf* sgnPdf = createSignalFitFunction(mWorkspace);     // Create signal pdf
 
+  const double integralHisto = integrateHistoInvMassOverWorkspaceRanges({"full"});
   // fit MC or Data
-  if (mTypeOfBkgPdf == NoBkg) { // MC
-    const ParameterRanges rooNSgnParamRanges{0., 1.2 * mIntegralHisto, 0.3 * mIntegralHisto};
+  RooFitResult* fitResult{nullptr};
+  if (mTypeOfBkgPdf == NoBkg) {                                                                                                                                   // MC
+    const ParameterRanges rooNSgnParamRanges{0.5 * integralHisto, 1.5 * integralHisto, integralHisto};                                                            // NOLINT(modernize-use-designated-initializers): c++17 compatibility
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));                                                          // create total pdf
     if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-      mTotalPdf->chi2FitTo(dataHistogram, Range("full"));
+      fitResult = mTotalPdf->chi2FitTo(dataHistogram, Range("full"), Save());
     } else {
-      mTotalPdf->fitTo(dataHistogram, Range("full"));
+      fitResult = mTotalPdf->fitTo(dataHistogram, Range("full"), Save());
     }
     RooAbsReal* signalIntegralMc = mTotalPdf->createIntegral(*mass, NormSet(*mass), Range("signal")); // sig yield from fit
     mIntegralSgn = signalIntegralMc->getValV();
@@ -239,31 +249,25 @@ void HFInvMassFitter::doFit()
     mRatioFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
     calculateFitToDataRatio();
   } else { // data
-    const ParameterRanges rooNBkgParamRanges{0., 1.2 * mIntegralHisto, 0.3 * mIntegralHisto};
+    const double integralSidebands = integrateHistoInvMassOverWorkspaceRanges({"SBL", "SBR"});
+    const ParameterRanges rooNBkgParamRanges{0.5 * integralSidebands, 1.5 * integralSidebands, integralSidebands};                                                    // NOLINT(modernize-use-designated-initializers): c++17 compatibility
     mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialParameter(rooNBkgParamRanges), rooNBkgParamRanges.lower, rooNBkgParamRanges.upper); // background yield
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
+    std::string sbRanges{"SBL,SBR"};
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
-      if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-        mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
-      } else {
-        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
-      }
-    } else { // single peak fit
-      if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-        mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR"), Save());
-      } else {
-        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
-      }
+      sbRanges.append(",SEC");
     }
+    mBkgPdf->chi2FitTo(sbHistogram, DataError(RooAbsData::SumW2), Save());
+
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
     RooPlot* frameTemporary = mass->frame(Title(Form("%s_temp", mHistoInvMass->GetTitle())));
     dataHistogram.plotOn(frameTemporary, Name("data_for_bkgchi2"));
-    mBkgPdf->plotOn(frameTemporary, Range("SBL", true), Name("Bkg_sidebands"));
+    mBkgPdf->plotOn(frameTemporary, Range(sbRanges.c_str()), Name("Bkg_sidebands"));
     mChiSquareOverNdfBkg = frameTemporary->chiSquare("Bkg_sidebands", "data_for_bkgchi2"); // calculate reduced chi2 / NDF of background sidebands (pre-fit)
     delete frameTemporary;
     if (mDrawBgPrefit) {
-      RooAbsPdf* bkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
-      bkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), LineColor(kGray));
+      auto* bkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
+      bkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Normalization(mRooNBkg->getVal(), RooAbsReal::NumEvent), Name("Bkg_c_prefit"), LineColor(kGray));
       delete bkgPdfPrefit;
     }
 
@@ -274,21 +278,22 @@ void HFInvMassFitter::doFit()
     checkForSignal(estimatedSignal);              // SIG's absolute integral in "bkg" range
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
-    const ParameterRanges rooNSgnParamRanges{0., 1.2 * estimatedSignal, 0.3 * estimatedSignal};
-    mRooNSgn = new RooRealVar("mNSgn", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // estimated signal yield
+    const ParameterRanges rooNSgnParamRanges{0.1 * estimatedSignal, 10 * estimatedSignal, estimatedSignal};                                                       // NOLINT(modernize-use-designated-initializers): c++17 compatibility
+    mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // estimated signal yield
     if (mFixedRawYield > 0) {
       mRooNSgn->setVal(mFixedRawYield); // fixed signal yield
       mRooNSgn->setConstant(true);
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
     // create reflection template and fit to reflection
+    RooAbsPdf* reflPdf{nullptr};
     if (mHistoTemplateRefl != nullptr) {
-      RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
+      reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
       RooDataHist reflHistogram("reflHistogram", "refl for fit", *mass, Import(*mHistoTemplateRefl));
       mReflFrame = mass->frame();
       mReflOnlyFrame = mass->frame(Title(Form("%s", mHistoTemplateRefl->GetTitle())));
       reflHistogram.plotOn(mReflOnlyFrame);
-      const ParameterRanges rooNReflParamRanges{0., mHistoTemplateRefl->Integral(), 0.5 * mHistoTemplateRefl->Integral()};
+      const ParameterRanges rooNReflParamRanges{0., mHistoTemplateRefl->Integral(), 0.5 * mHistoTemplateRefl->Integral()}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
       mRooNRefl = new RooRealVar("mNRefl", "number of reflection", randomizeInitialParameter(rooNReflParamRanges), rooNReflParamRanges.lower, rooNReflParamRanges.upper);
       RooAddPdf reflFuncTemp("reflFuncTemp", "template reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
       if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
@@ -302,42 +307,33 @@ void HFInvMassFitter::doFit()
       mRooNRefl->setConstant(true);
       setReflFuncFixed(); // fix reflection pdf parameter
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal + reflection fit function", RooArgList(*bkgPdf, *sgnPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNSgn, *mRooNRefl));
-      if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-        mTotalPdf->chi2FitTo(dataHistogram);
-      } else {
-        mTotalPdf->fitTo(dataHistogram);
-      }
-      mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"));
+    } else {
+      mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
+    }
+
+    if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
+      fitResult = mTotalPdf->chi2FitTo(dataHistogram, Save());
+    } else {
+      fitResult = mTotalPdf->fitTo(dataHistogram, Save());
+    }
+
+    plotBkg(mTotalPdf);
+    mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
+    if (mHistoTemplateRefl != nullptr) {
       mReflPdf = new RooAddPdf("mReflPdf", "reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
       RooAddPdf const reflBkgPdf("reflBkgPdf", "reflBkgPdf", RooArgList(*bkgPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNRefl));
       reflBkgPdf.plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineStyle(7), LineColor(kRed + 1), Name("ReflBkg_c"));
-      plotBkg(mTotalPdf);                                                   // plot bkg pdf in total pdf
-      plotRefl(mTotalPdf);                                                  // plot reflection in total pdf
-      mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
-
-      // plot residual distribution
-      mResidualHist = mInvMassFrame->residHist("data_c", "ReflBkg_c");
-      mResidualFrame = mass->frame(Title("Residual Distribution"));
-      mResidualFrame->addPlotable(mResidualHist, "p");
-      mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
+      plotRefl(mTotalPdf); // plot reflection in total pdf
     } else {
-      mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
-      if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-        mTotalPdf->chi2FitTo(dataHistogram);
-      } else {
-        mTotalPdf->fitTo(dataHistogram);
-      }
-      plotBkg(mTotalPdf);
-      mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
-      mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
-
-      // plot residual distribution
-      mResidualFrame = mass->frame(Title("Residual Distribution"));
-      mResidualHist = mInvMassFrame->residHist("data_c", "Bkg_c");
-      mResidualFrame->addPlotable(mResidualHist, "P");
-      mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     }
+    mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
+    // plot residual distribution
+    mResidualFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
+    mResidualHist = mInvMassFrame->residHist("data_c", mHistoTemplateRefl ? "ReflBkg_c" : "Bkg_c");
+    mResidualFrame->addPlotable(mResidualHist, "P");
+    mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
+
     mass->setRange("bkgForSignificance", mRooMeanSgn->getVal() - mNSigmaForSgn * mRooSecSigmaSgn->getVal(), mRooMeanSgn->getVal() + mNSigmaForSgn * mRooSecSigmaSgn->getVal());
     bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkgForSignificance"));
     mIntegralBkg = bkgIntegral->getValV();
@@ -352,6 +348,12 @@ void HFInvMassFitter::doFit()
     mRatioFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
     calculateFitToDataRatio();
   }
+  mFitStatus = fitResult->status();
+  mCovQual = fitResult->covQual();
+  mEdm = fitResult->edm();
+  mMinNll = fitResult->minNll();
+  mSgnGlobalCorrelCoeff = fitResult->globalCorr("mRooNSig");
+  mCovCorrMatrix = fillCovCorrMatrix(fitResult);
 }
 
 void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
@@ -359,41 +361,41 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   // Declare observable variable
   RooRealVar mass("mass", "mass", mMinMass, mMaxMass, "GeV/c^{2}");
   // bkg expo
-  const ParameterRanges tauParamRanges{-5., 5., -1., 0.1};
+  const ParameterRanges tauParamRanges{-5., 5., -1., 0.1}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar tau("tau", "tau", randomizeInitialParameter(tauParamRanges), tauParamRanges.lower, tauParamRanges.upper);
   RooAbsPdf* bkgFuncExpo = new RooExponential("bkgFuncExpo", "background fit function", mass, tau);
   workspace.import(*bkgFuncExpo);
   delete bkgFuncExpo;
   // bkg poly1
-  const ParameterRanges polyParam0ParamRanges{-5., 5., 0.5, 0.1};
+  const ParameterRanges polyParam0ParamRanges{-5., 5., 0.5, 0.1}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyParam0("polyParam0", "Parameter of Poly function", randomizeInitialParameter(polyParam0ParamRanges), polyParam0ParamRanges.lower, polyParam0ParamRanges.upper);
-  const ParameterRanges polyParam1ParamRanges{-5., 5., 0.2, 0.05};
+  const ParameterRanges polyParam1ParamRanges{-5., 5., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyParam1("polyParam1", "Parameter of Poly function", randomizeInitialParameter(polyParam1ParamRanges), polyParam1ParamRanges.lower, polyParam1ParamRanges.upper);
   RooAbsPdf* bkgFuncPoly1 = new RooPolynomial("bkgFuncPoly1", "background fit function", mass, RooArgSet(polyParam0, polyParam1));
   workspace.import(*bkgFuncPoly1);
   delete bkgFuncPoly1;
   // bkg poly2
-  const ParameterRanges polyParam2ParamRanges{-5., 5., 0.2, 0.05};
+  const ParameterRanges polyParam2ParamRanges{-5., 5., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyParam2("polyParam2", "Parameter of Poly function", randomizeInitialParameter(polyParam2ParamRanges), polyParam2ParamRanges.lower, polyParam2ParamRanges.upper);
   RooAbsPdf* bkgFuncPoly2 = new RooPolynomial("bkgFuncPoly2", "background fit function", mass, RooArgSet(polyParam0, polyParam1, polyParam2));
   workspace.import(*bkgFuncPoly2);
   delete bkgFuncPoly2;
   // bkg poly3
-  const ParameterRanges polyParam3ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyParam3ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyParam3("polyParam3", "Parameter of Poly function", randomizeInitialParameter(polyParam3ParamRanges), polyParam3ParamRanges.lower, polyParam3ParamRanges.upper);
   RooAbsPdf* bkgFuncPoly3 = new RooPolynomial("bkgFuncPoly3", "background pdf", mass, RooArgSet(polyParam0, polyParam1, polyParam2, polyParam3));
   workspace.import(*bkgFuncPoly3);
   delete bkgFuncPoly3;
   // bkg power law
   RooRealVar const powParam1("powParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
-  const ParameterRanges powParam2ParamRanges{-10., 10., 1., 0.2};
+  const ParameterRanges powParam2ParamRanges{-10., 10., 1., 0.2}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const powParam2("powParam2", "Parameter of Pow function", randomizeInitialParameter(powParam2ParamRanges), powParam2ParamRanges.lower, powParam2ParamRanges.upper);
   RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-powParam1)^powParam2", RooArgSet(mass, powParam1, powParam2));
   workspace.import(*bkgFuncPow);
   delete bkgFuncPow;
   // pow * exp
   RooRealVar const powExpoParam1("powExpoParam1", "Parameter of PowExpo function", 1. / 2.);
-  const ParameterRanges powExpoParam2ParamRanges{-10., 10., 1., 0.2};
+  const ParameterRanges powExpoParam2ParamRanges{-10., 10., 1., 0.2}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const powExpoParam2("powExpoParam2", "Parameter of PowExpo function", randomizeInitialParameter(powExpoParam2ParamRanges), powExpoParam2ParamRanges.lower, powExpoParam2ParamRanges.upper);
   RooRealVar massPi("massPi", "mass of pion", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooFormulaVar powExpoParam3("powExpoParam3", "powExpoParam1 + 1", RooArgList(powExpoParam1));
@@ -523,10 +525,10 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*reflFuncDoubleGaus);
   delete reflFuncDoubleGaus;
   // signal DSCB pdf
-  const ParameterRanges dscbAlphaLParamRanges{mDscbAlphaLLowLimit, mDscbAlphaLUpLimit, mDscbAlphaLInitialValue};
-  const ParameterRanges dscbNLParamRanges{mDscbNLLowLimit, mDscbNLUpLimit, mDscbNLInitialValue};
-  const ParameterRanges dscbAlphaRParamRanges{mDscbAlphaRLowLimit, mDscbAlphaRUpLimit, mDscbAlphaRInitialValue};
-  const ParameterRanges dscbNRParamRanges{mDscbNRLowLimit, mDscbNRUpLimit, mDscbNRInitialValue};
+  const ParameterRanges dscbAlphaLParamRanges{mDscbAlphaLLowLimit, mDscbAlphaLUpLimit, mDscbAlphaLInitialValue}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
+  const ParameterRanges dscbNLParamRanges{mDscbNLLowLimit, mDscbNLUpLimit, mDscbNLInitialValue};                 // NOLINT(modernize-use-designated-initializers): c++17 compatibility
+  const ParameterRanges dscbAlphaRParamRanges{mDscbAlphaRLowLimit, mDscbAlphaRUpLimit, mDscbAlphaRInitialValue}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
+  const ParameterRanges dscbNRParamRanges{mDscbNRLowLimit, mDscbNRUpLimit, mDscbNRInitialValue};                 // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar alphaL("alphaL", "left tail alpha", randomizeInitialParameter(dscbAlphaLParamRanges), dscbAlphaLParamRanges.lower, dscbAlphaLParamRanges.upper);
   RooRealVar nL("nL", "left tail n", randomizeInitialParameter(dscbNLParamRanges), dscbNLParamRanges.lower, dscbNLParamRanges.upper);
   RooRealVar alphaR("alphaR", "right tail alpha", randomizeInitialParameter(dscbAlphaRParamRanges), dscbAlphaRParamRanges.lower, dscbAlphaRParamRanges.upper);
@@ -546,23 +548,23 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*sgnFuncDSCB);
   delete sgnFuncDSCB;
   // reflection poly3
-  const ParameterRanges polyReflParam0ParamRanges{-1., 1., 0.5, 0.1};
+  const ParameterRanges polyReflParam0ParamRanges{-1., 1., 0.5, 0.1}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam0("polyReflParam0", "polyReflParam0", randomizeInitialParameter(polyReflParam0ParamRanges), polyReflParam0ParamRanges.lower, polyReflParam0ParamRanges.upper);
-  const ParameterRanges polyReflParam1ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam1ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam1("polyReflParam1", "polyReflParam1", randomizeInitialParameter(polyReflParam1ParamRanges), polyReflParam1ParamRanges.lower, polyReflParam1ParamRanges.upper);
-  const ParameterRanges polyReflParam2ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam2ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam2("polyReflParam2", "polyReflParam2", randomizeInitialParameter(polyReflParam2ParamRanges), polyReflParam2ParamRanges.lower, polyReflParam2ParamRanges.upper);
-  const ParameterRanges polyReflParam3ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam3ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam3("polyReflParam3", "polyReflParam3", randomizeInitialParameter(polyReflParam3ParamRanges), polyReflParam3ParamRanges.lower, polyReflParam3ParamRanges.upper);
   RooAbsPdf* reflFuncPoly3 = new RooPolynomial("reflFuncPoly3", "reflection PDF", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3));
   workspace.import(*reflFuncPoly3);
   delete reflFuncPoly3;
   // reflection poly6
-  const ParameterRanges polyReflParam4ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam4ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam4("polyReflParam4", "polyReflParam4", randomizeInitialParameter(polyReflParam4ParamRanges), polyReflParam4ParamRanges.lower, polyReflParam4ParamRanges.upper);
-  const ParameterRanges polyReflParam5ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam5ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam5("polyReflParam5", "polyReflParam5", randomizeInitialParameter(polyReflParam5ParamRanges), polyReflParam5ParamRanges.lower, polyReflParam5ParamRanges.upper);
-  const ParameterRanges polyReflParam6ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam6ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam6("polyReflParam6", "polyReflParam6", randomizeInitialParameter(polyReflParam6ParamRanges), polyReflParam6ParamRanges.lower, polyReflParam6ParamRanges.upper);
   RooAbsPdf* reflFuncPoly6 = new RooPolynomial("reflFuncPoly6", "reflection pdf", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3, polyReflParam4, polyReflParam5, polyReflParam6));
   workspace.import(*reflFuncPoly6);
@@ -624,6 +626,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   mInvMassFrame->GetXaxis()->SetTitleOffset(1.2);
   mInvMassFrame->GetYaxis()->SetTitleOffset(1.8);
   gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.02);
   mInvMassFrame->GetYaxis()->SetTitle(Form("%s", mHistoInvMass->GetYaxis()->GetTitle()));
   mInvMassFrame->GetXaxis()->SetTitle(Form("%s", mHistoInvMass->GetXaxis()->GetTitle()));
   mInvMassFrame->Draw();
@@ -636,8 +639,12 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
 // draw residual distribution on canvas
 void HFInvMassFitter::drawResidual(TVirtualPad* pad)
 {
+  if (mResidualFrame == nullptr) {
+    printf("Warning HFInvMassFitter::drawResidual(): mResidualFrame == nullptr and will not be drawn\n");
+    return;
+  }
   pad->cd();
-  mResidualFrame->GetYaxis()->SetTitle("");
+  mResidualFrame->GetYaxis()->SetTitle(mHistoInvMass->GetYaxis()->GetTitle());
   auto* textInfo = new TPaveText(0.12, 0.65, 0.47, .89, "NDC");
   textInfo->SetBorderSize(0);
   textInfo->SetFillStyle(0);
@@ -650,6 +657,9 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
     textInfo->AddText(Form("#sigma_{2} = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
   }
   mResidualFrame->addObject(textInfo);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.02);
+  mResidualFrame->GetYaxis()->SetTitleOffset(1.8);
   mResidualFrame->Draw();
   highlightPeakRegion(mResidualFrame);
 }
@@ -657,6 +667,10 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
 // draw ratio on canvas
 void HFInvMassFitter::drawRatio(TVirtualPad* pad)
 {
+  if (mRatioFrame == nullptr) {
+    printf("Warning HFInvMassFitter::drawRatio(): mRatioFrame == nullptr and will not be drawn\n");
+    return;
+  }
   pad->cd();
   mRatioFrame->GetXaxis()->SetTitleOffset(1.2);
   mRatioFrame->GetYaxis()->SetTitleOffset(1.5);
@@ -668,6 +682,8 @@ void HFInvMassFitter::drawRatio(TVirtualPad* pad)
   line->SetLineStyle(2);
   line->SetLineWidth(2);
   mRatioFrame->addObject(line);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.02);
   mRatioFrame->Draw();
   highlightPeakRegion(mRatioFrame);
 }
@@ -703,7 +719,7 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 }
 
 // calculate signal yield via bin counting
-void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
+void HFInvMassFitter::countSignal(double& signal, double& errSignal) const
 {
   const auto& histoForCounting = mTypeOfBkgPdf == NoBkg ? mInvMassFrame->getHist("data_c") : mResidualHist;
 
@@ -730,7 +746,7 @@ void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
   sumErrorsSquare += square(histoForCounting->GetErrorY(binForMaxSgn - 1) * binForMaxSgnFraction);
 
   signal = sumValues;
-  signalErr = std::sqrt(sumErrorsSquare);
+  errSignal = std::sqrt(sumErrorsSquare);
 }
 
 // calculate signal yield
@@ -748,8 +764,9 @@ void HFInvMassFitter::calculateBackground(double& bkg, double& errBkg) const
     errBkg = 0.;
     return;
   }
-  bkg = mRooNBkg->getVal() * mIntegralBkg;
-  errBkg = mRooNBkg->getError() * mIntegralBkg;
+  const double bgCoefficient = mTypeOfSgnPdf == DoubleSidedCrystalBall ? 1. : mIntegralBkg;
+  bkg = mRooNBkg->getVal() * bgCoefficient;
+  errBkg = mRooNBkg->getError() * bgCoefficient;
 }
 
 // calculate significance
@@ -769,17 +786,9 @@ void HFInvMassFitter::calculateSignificance(double& significance, double& errSig
 // estimate Signal
 void HFInvMassFitter::checkForSignal(double& estimatedSignal)
 {
-  auto const [minForSgn, maxForSgn] = getRangesOfSignal();
-  int const binForMinSgn = mHistoInvMass->FindBin(minForSgn);
-  int const binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
-
-  double sum = 0;
-  for (int i = binForMinSgn; i <= binForMaxSgn; i++) {
-    sum += mHistoInvMass->GetBinContent(i);
-  }
-  double bkg{}, errBkg{};
-  calculateBackground(bkg, errBkg);
-  estimatedSignal = sum - bkg;
+  const double integralHisto = integrateHistoInvMassOverWorkspaceRanges({"full"});
+  const double bkg = mRooNBkg->getVal();
+  estimatedSignal = integralHisto - bkg;
 }
 
 // Estimate ranges where signal is located to be used in countSignal() and checkForSignal()
@@ -788,11 +797,10 @@ std::pair<double, double> HFInvMassFitter::getRangesOfSignal() const
 {
   if (mTypeOfSgnPdf == DoubleSidedCrystalBall) {
     return std::make_pair(mMinMass, mMaxMass);
-  } else {
-    const double mean = mRooMeanSgn->getVal();
-    const double sigma = mRooSecSigmaSgn->getVal();
-    return std::make_pair(mean - mNSigmaForSgn * sigma, mean + mNSigmaForSgn * sigma);
   }
+  const double mean = mRooMeanSgn->getVal();
+  const double sigma = mRooSecSigmaSgn->getVal();
+  return std::make_pair(mean - mNSigmaForSgn * sigma, mean + mNSigmaForSgn * sigma);
 }
 
 // Create Background Fit Function
@@ -904,7 +912,7 @@ void HFInvMassFitter::calculateFitToDataRatio() const
     return;
   }
 
-  RooHist* ratioHist = new RooHist();
+  auto* ratioHist = new RooHist();
 
   for (int i = 0; i < dataHist->GetN(); ++i) {
     double x{}, dataY{}, dataErr{};
@@ -1135,17 +1143,86 @@ double HFInvMassFitter::randomizeInitialParameter(const ParameterRanges& paramet
   }
   const auto sigma = parameterRanges.sigma < 0 ? (parameterRanges.upper - parameterRanges.lower) / DefaultSigmaFraction : parameterRanges.sigma;
 
-  double result;
+  double result{};
   int nIter{0};
   do {
     result = mRandomGen->Gaus(parameterRanges.initial, sigma);
     ++nIter;
     if (nIter > MaximalNumberOfIterations) {
-      char errorMessage[200];
-      std::snprintf(errorMessage, sizeof(errorMessage), "randomizeInitialParameter() - long while loop with lower = %f upper = %f initial = %f sigma = %f\n", parameterRanges.lower, parameterRanges.upper, parameterRanges.initial, sigma);
-      throw std::runtime_error(errorMessage);
+      std::array<char, 200> errorMessage{};
+      std::snprintf(errorMessage.data(), errorMessage.size(), "randomizeInitialParameter() - long while loop with lower = %f upper = %f initial = %f sigma = %f\n", parameterRanges.lower, parameterRanges.upper, parameterRanges.initial, sigma);
+      throw std::runtime_error(errorMessage.data());
     }
   } while (result < parameterRanges.lower || result > parameterRanges.upper);
 
   return result;
+}
+
+double HFInvMassFitter::integrateHistoInvMassOverWorkspaceRanges(const std::vector<std::string>& ranges) const
+{
+  double sumEntries{0.};
+  double sumLengths{0.};
+  for (const auto& range : ranges) {
+    const auto [lo, hi] = mWorkspace->var("mass")->getRange(range.c_str());
+    const auto binLo = mHistoInvMass->FindBin(lo);
+    const auto binHi = mHistoInvMass->FindBin(hi);
+    sumEntries += mHistoInvMass->Integral(binLo + 1, binHi - 1);
+    sumEntries += mHistoInvMass->GetBinContent(binLo) * (mHistoInvMass->GetBinLowEdge(binLo + 1) - lo) / mHistoInvMass->GetBinWidth(binLo);
+    sumEntries += mHistoInvMass->GetBinContent(binHi) * (hi - mHistoInvMass->GetBinLowEdge(binHi)) / mHistoInvMass->GetBinWidth(binHi);
+    sumLengths += (hi - lo);
+  }
+  const auto [fullLo, fullHi] = mWorkspace->var("mass")->getRange("full");
+  const double fullLength = fullHi - fullLo;
+
+  return sumEntries / sumLengths * fullLength;
+}
+
+void HFInvMassFitter::cutRangesFromHisto(TH1* histo, const std::vector<std::string>& ranges) const
+{
+  auto* mass = mWorkspace->var("mass");
+
+  for (int iBin = 1, nBins = histo->GetNbinsX(); iBin <= nBins; ++iBin) {
+    const double binLow = histo->GetBinLowEdge(iBin);
+    const double binHigh = binLow + histo->GetBinWidth(iBin);
+
+    bool overlapsAnyRange = false;
+    for (const auto& range : ranges) {
+      const double rangeMin = mass->getMin(range.c_str());
+      const double rangeMax = mass->getMax(range.c_str());
+      if (std::max(binLow, rangeMin) <= std::min(binHigh, rangeMax)) {
+        overlapsAnyRange = true;
+        break;
+      }
+    }
+
+    if (!overlapsAnyRange) {
+      histo->SetBinContent(iBin, 0.);
+      histo->SetBinError(iBin, 1.e9);
+    }
+  }
+}
+
+TH2* HFInvMassFitter::fillCovCorrMatrix(const RooFitResult* fitResult)
+{
+  const RooArgList& pars = fitResult->floatParsFinal();
+  const int nPars = static_cast<int>(pars.size());
+
+  TH2* hMatrix = new TH2D("covCorrMatrix", "covariance (upper left + diagonal) and correlation (lower right) matrix", nPars, 0, nPars, nPars, 0, nPars);
+  for (int iPar = 0; iPar < nPars; ++iPar) {
+    hMatrix->GetXaxis()->SetBinLabel(iPar + 1, pars[iPar].GetName());
+    hMatrix->GetYaxis()->SetBinLabel(iPar + 1, pars[iPar].GetName());
+  }
+
+  const TMatrixDSym& covMatrix = fitResult->covarianceMatrix();
+  const TMatrixDSym& corrMatrix = fitResult->correlationMatrix();
+
+  for (int iPar = 0; iPar < nPars; ++iPar) {
+    hMatrix->SetBinContent(iPar + 1, iPar + 1, covMatrix(iPar, iPar));
+    for (int jPar = iPar + 1; jPar < nPars; ++jPar) {
+      hMatrix->SetBinContent(iPar + 1, jPar + 1, covMatrix(iPar, jPar));
+      hMatrix->SetBinContent(jPar + 1, iPar + 1, corrMatrix(iPar, jPar));
+    }
+  }
+
+  return hMatrix;
 }

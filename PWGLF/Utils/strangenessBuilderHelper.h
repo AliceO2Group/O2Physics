@@ -253,6 +253,7 @@ class strangenessBuilderHelper
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
+    fitter.setOldMode(true); // enable old convariance matrix calculation until this has been fully tested
 
     v0selections.minCrossedRows = -1;
     v0selections.dcanegtopv = -1.0f;

@@ -38,6 +38,7 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <math.h>
@@ -69,7 +70,7 @@ struct NetProtonCumulants_Table_QA {
 
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl);
+  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl);
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -126,7 +127,7 @@ struct NetProtonCumulants_Table_QA {
     //! centrality cut
     if (cent > 0.0f && cent < 90.0f) {
 
-      for (auto track : inputTracks) { //! Loop over tracks
+      for (const auto& track : inputTracks) { //! Loop over tracks
         histos.fill(HIST("hPtAll"), track.pt());
         histos.fill(HIST("hEtaAll"), track.eta());
         histos.fill(HIST("hPhiAll"), track.phi());

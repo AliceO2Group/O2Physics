@@ -26,6 +26,7 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>

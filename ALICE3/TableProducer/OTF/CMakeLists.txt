@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(onthefly-tofpid
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core O2Physics::FastTracker
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(onthefly-midpid
+                    SOURCES onTheFlyMidPid.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core O2Physics::FastTracker
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(onthefly-richpid
                     SOURCES onTheFlyRichPid.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core O2Physics::FastTracker

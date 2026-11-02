@@ -415,7 +415,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  bool eventSelected(const TCollision& collision, const int& multTrk, const float& centrality)
   {
     if (cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
@@ -487,7 +487,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track, const int& field)
+  bool trackSelected(const TTrack& track, const int& field)
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -545,7 +545,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TCollision, typename TTracks>
-  void processCollision(datatype dt, TCollision const& collision, TTracks tracks, const float& centrality, const int& field)
+  void processCollision(datatype dt, TCollision const& collision, const TTracks& tracks, const float& centrality, const int& field)
   {
 
     if (tracks.size() < 1)
@@ -648,7 +648,7 @@ struct flowAnalysisGF {
   }
 
   template <typename TrackObject>
-  inline void FillGFW(TrackObject track, float weff, float wacc)
+  inline void FillGFW(const TrackObject& track, float weff, float wacc)
   {
     fFCpt->fill(weff, track.pt());
     bool WithinPtPOI = (ptpoilow < track.pt()) && (track.pt() < ptpoiup); // within POI pT range
@@ -663,7 +663,7 @@ struct flowAnalysisGF {
   }
 
   template <QAtime qt, typename TrackObject>
-  inline void FillTrackQA(TrackObject track, const float vtxz)
+  inline void FillTrackQA(const TrackObject& track, const float vtxz)
   {
     if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       registry.fill(HIST("trackMCGen/phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
@@ -685,7 +685,7 @@ struct flowAnalysisGF {
   }
 
   template <QAtime qt, typename CollisionObject, typename TracksObject>
-  inline void FillEventQA(CollisionObject collision, TracksObject tracks)
+  inline void FillEventQA(const CollisionObject& collision, const TracksObject& tracks)
   {
 
     if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
@@ -700,7 +700,7 @@ struct flowAnalysisGF {
   }
 
   template <typename CollisionObject, typename TracksObject>
-  inline void RunProcess(CollisionObject collision, TracksObject tracks)
+  inline void RunProcess(const CollisionObject& collision, const TracksObject& tracks)
   {
 
     float centrality;

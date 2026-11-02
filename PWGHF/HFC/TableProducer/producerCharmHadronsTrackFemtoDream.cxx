@@ -435,9 +435,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   void fillDebugParticle(ParticleType const& particle)
   {
     tables.outputDebugParts(particle.sign(),
-                            (uint8_t)particle.tpcNClsFound(),
+                            static_cast<uint8_t>(particle.tpcNClsFound()),
                             particle.tpcNClsFindable(),
-                            (uint8_t)particle.tpcNClsCrossedRows(),
+                            static_cast<uint8_t>(particle.tpcNClsCrossedRows()),
                             particle.tpcNClsShared(),
                             particle.tpcInnerParam(),
                             particle.itsNCls(),
@@ -493,7 +493,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
           // list of mothers is not empty
         } else if (particleMc.getProcess() == TMCProcess::kPDecay && particleMc.getGenStatusCode() == GenFromTransport && !motherparticlesMc.empty()) {
           // get direct mother
-          auto motherparticleMc = motherparticlesMc.front();
+          const auto& motherparticleMc = motherparticlesMc.front();
           pdgCodeMother = motherparticleMc.pdgCode();
           particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode(), pdgCode);
           // check if particle is material
@@ -1068,7 +1068,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
 
   template <DecayChannel Channel, typename ParticleType>
-  void fillCharmHadMcGen(ParticleType particles)
+  void fillCharmHadMcGen(const ParticleType& particles)
   {
     // Filling particle properties
     tables.rowCandCharmHadGen.reserve(particles.size() + 1);

@@ -137,7 +137,7 @@ struct HfTaskDstarToD0Pi {
     if ((doprocessDataWoML && doprocessDataWML) || (doprocessMcWoMl && doprocessMcWML) || (doprocessDataWoML && doprocessMcWML) || (doprocessDataWML && doprocessMcWoMl)) {
       LOGP(fatal, "Only Without-ML or With-ML functions should be enabled at a time! Please check your configuration!");
     }
-    auto vecPtBins = (std::vector<double>)ptBins;
+    auto vecPtBins = std::vector<double>(ptBins);
 
     AxisSpec const axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
     AxisSpec const axisDecayLength = {binningDecayLength, " decay length (cm)"};
@@ -418,7 +418,7 @@ struct HfTaskDstarToD0Pi {
   /// @param selectedCands selected candidates with selection flag
   /// @param preslice preslice to slice
   template <bool ApplyMl, typename T1, typename T2>
-  void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice)
+  void runTaskDstar(CollisionsWCent const& cols, const T1& selectedCands, const T2& preslice)
   {
     for (const auto& col : cols) {
       auto nPVContributors = col.numContrib();
