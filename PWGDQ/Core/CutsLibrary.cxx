@@ -7695,7 +7695,7 @@ std::vector<AnalysisCut*> o2::aod::dqcuts::GetCutsFromJSON(const char* json)
   // Check that the json is parsed correctly
   rapidjson::ParseResult ok = document.Parse(json);
   if (!ok) {
-    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")";
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")"; // NOLINT(google-readability-casting)
     return cuts;
   }
 
@@ -8079,7 +8079,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
   // Check that the json is parsed correctly
   rapidjson::ParseResult ok = document.Parse(json);
   if (!ok) {
-    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")";
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")"; // NOLINT(google-readability-casting)
     return {};
   }
 

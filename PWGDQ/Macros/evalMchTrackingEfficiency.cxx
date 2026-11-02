@@ -46,8 +46,8 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
 {
   // read ouput from the taskComputeMchEfficiency
   TFile* file = TFile::Open(inFile, "read");
-  TDirectoryFile* dir = reinterpret_cast<TDirectoryFile*>(file->Get("task-muon-mch-trk-efficiency"));
-  THnF* hHitsEtaPtPhi = reinterpret_cast<THnF*>(dir->Get("hHitsEtaPtPhi"));
+  TDirectoryFile* dir = dynamic_cast<TDirectoryFile*>(file->Get("task-muon-mch-trk-efficiency"));
+  THnF* hHitsEtaPtPhi = dynamic_cast<THnF*>(dir->Get("hHitsEtaPtPhi"));
 
   // retrieve the eta/pt/phi axis binning configuration
   const int etaAx = 1, ptAx = 2, phiAx = 3;
@@ -274,7 +274,7 @@ double computeEfficiencyPerChamber(THnF* hnf, int iAxis, int iCh, double binLimi
   hnf->GetAxis(iAxis)->SetRangeUser(binLimits[0], binLimits[1]);
 
   // Project onto the Nhits axis
-  TH1F* htmp = reinterpret_cast<TH1F*>(hnf->Projection(0));
+  TH1F* htmp = dynamic_cast<TH1F*>(hnf->Projection(0)); // FIXME: invalid cast
   double NhitPairing[16];
   for (int i = 0; i < 16; i++) {
     NhitPairing[i] = 0;
@@ -322,7 +322,7 @@ double computeEfficiencyPerChamber(THnF* hnf, const int iAxis[3], int iCh, doubl
   }
 
   // Project onto the Nhits axis
-  TH1F* htmp = reinterpret_cast<TH1F*>(hnf->Projection(0));
+  TH1F* htmp = dynamic_cast<TH1F*>(hnf->Projection(0)); // FIXME: invalid cast
   double NhitPairing[16];
   for (int i = 0; i < 16; i++) {
     NhitPairing[i] = 0;
