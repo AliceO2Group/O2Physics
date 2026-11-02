@@ -1093,6 +1093,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       registry.add("hDecayedPions", "hDecayedPions", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("hInteractionsWithMaterial", "hInteractionsWithMaterial", {HistType::kTH1F, {{6, -0.5, 5.5}}});
       registry.add("hDebugRec", "hDebugRec", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+      registry.add("hy_pt_gen", "Generated MC", {HistType::kTH2F, {{20, -1.0, 1.0}, {200, 0, 20}}});
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + TotalRec, "total");
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + XicToFinalState, "#Xi^{+}_{c} #rightarrow #pi^{#plus} #pi^{#plus} #pi^{#minus} p #pi^{#minus}");
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + XiToPiPPi, "#Xi^{#minus} #rightarrow #pi^{#minus} p #pi^{#minus}");
@@ -1300,12 +1301,13 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          rowMcMatchGen(-99, -99, -99, decayLengthGen);
+          rowMcMatchGen(-99, -99, -99, decayLengthGen, -1.f);
         }
         continue;
       }
 
       for (const auto& particle : mcParticlesPerMcColl) {
+        const float massGen = RecoDecay::m(particle.pVector(), particle.e());
         sign = 0;
         flag = 0;
         origin = RecoDecay::OriginType::None;
@@ -1345,6 +1347,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
+          // fill inclusive generated Xic+
+          registry.fill(HIST("hy_pt_gen"), particle.y(), particle.pt());
+
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
           // Calculate the decay length of the generated particle
           auto dau0 = particle.template daughters_as<aod::McParticles>().begin();
@@ -1355,9 +1360,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         // Fill table
         if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-          rowMcMatchGen(flag, origin, bHadMother.pdgCode(), decayLengthGen);
+          rowMcMatchGen(flag, origin, bHadMother.pdgCode(), decayLengthGen, massGen);
         } else {
-          rowMcMatchGen(flag, origin, 0, decayLengthGen);
+          rowMcMatchGen(flag, origin, 0, decayLengthGen, massGen);
         }
       } // close loop over generated particles
     } // close loop over McCollisions

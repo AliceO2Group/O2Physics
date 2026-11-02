@@ -79,6 +79,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -106,10 +107,11 @@ DECLARE_SOA_COLUMN(ItsChi2NCl, itsChi2NCl, float);
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, int);
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, int);
 DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float);
+// Raw public-associator count, before PV locking or closest-target selection.
 DECLARE_SOA_COLUMN(NumCompatibleCollisions, numCompatibleCollisions, unsigned int);
 } // namespace pidflowtimetrack
 
-// One row per accepted (target collision, source track), ordered by collision.
+// At most one accepted target per source track, ordered by collision.
 // Kinematics/DCA belong to the target vertex; detector quality belongs to the source.
 // Baseline selection is applied here; analysis quality/pT cuts stay in the consumers.
 DECLARE_SOA_TABLE(PidFlowTimeTracks, "AOD", "PFTIMETRACK",
@@ -290,12 +292,12 @@ T timeAssociationOption(InitContext& context, std::string const& task, std::stri
 } // namespace
 
 // Shared charged-only producer: public TrackAssoc supplies time compatibility;
-// this task evaluates each pair at its target vertex once for flow, NUA and NUE.
+// lock PV contributors to their original collision and select the closest-time
+// candidate for other tracks, then evaluate the target for flow, NUA and NUE.
 struct PidFlowChargedTimeProducer {
   Produces<aod::PidFlowTimeTracks> timeTracks;
   // Original-vertex DCA/eta must not preselect candidates for another vertex.
   using SourceTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
-  Preslice<aod::TrackAssoc> timePairsPerCollision = aod::track_association::collisionId;
   Service<ccdb::BasicCCDBManager> ccdb{};
   HistogramRegistry registry{"registry"};
   OutputObj<TNamed> chargedTimeAssociationConfig{TNamed("ChargedTimeAssociationConfig", "disabled")};
@@ -307,7 +309,6 @@ struct PidFlowChargedTimeProducer {
   float timeL3Current = 0.f;
   float timeDipoleCurrent = 0.f;
   bool timeUniformField = false;
-  bool cfgRequireUniqueTimeAssociation = false;
   bool cfgTimeAssociationQA = true;
   int timeUsePVAssociation = aod::track_association::PVContrReassocOpt::OnlySameBc;
   int timeMaxPvContributorsForLowMultReassoc = 10;
@@ -322,6 +323,7 @@ struct PidFlowChargedTimeProducer {
       LOGF(fatal, "Enable exactly one of processDummy and processTimeTracks in pid-flow-charged-time-producer");
     }
     const bool needed = timeAssociationOption<bool>(context, "pid-flow-pt-corr", "processDataTimeAssociation") ||
+                        timeAssociationOption<bool>(context, "pid-flow-pt-corr", "processChargedDifferentialTimeAssociation") ||
                         timeAssociationOption<bool>(context, "pid-flow-pt-corr", "fillCorrectionGraphTimeAssociation") ||
                         timeAssociationOption<bool>(context, "pid-flow-pt-corr", "processMCTimeAssociation") ||
                         timeAssociationOption<bool>(context, "pid-flow-pt-corr", "processTimeAssociationComparison");
@@ -331,7 +333,6 @@ struct PidFlowChargedTimeProducer {
     if (!doprocessTimeTracks) {
       return;
     }
-    cfgRequireUniqueTimeAssociation = timeAssociationOption<bool>(context, "pid-flow-pt-corr", "cfgRequireUniqueTimeAssociation");
     cfgTimeAssociationQA = timeAssociationOption<bool>(context, "pid-flow-pt-corr", "cfgTimeAssociationQA");
     timeUsePVAssociation = timeAssociationOption<int>(context, "track-to-collision-association", "usePVAssociation");
     timeMaxPvContributorsForLowMultReassoc = timeAssociationOption<int>(context, "track-to-collision-association", "maxPvContributorsForLowMultReassoc");
@@ -377,7 +378,7 @@ struct PidFlowChargedTimeProducer {
       selection->SetPtRange(ptMin, ptMax);
       selection->SetEtaRange(etaMin, etaMax);
     }
-    std::string metadata = "association=TrackAssoc;table=PidFlowTimeTracks;charged-only;PID=none;local-density=none;source=Tracks;propagation=target-DCA,USEMatCorrNONE;PV=not-refitted;unique=" + std::to_string(static_cast<int>(cfgRequireUniqueTimeAssociation));
+    std::string metadata = "association=TrackAssoc;table=PidFlowTimeTracks;charged-only;PID=none;local-density=none;source=Tracks;propagation=target-DCA,USEMatCorrNONE;PV=locked-original,not-refitted;nonPV=minimum-absolute-BC-corrected-deltaTime;tie=lowest-collisionId;selection=before-cuts,no-fallback;candidate-count=raw-TrackAssoc";
     metadata += ";isRun3=" + std::to_string(static_cast<int>(timeIsRun3)) + ";itsMatching=" + std::to_string(matching) + ";dcaSetup=" + std::to_string(dcaSetup) + ";compatibilityIU=" + std::to_string(static_cast<int>(compatibilityIU));
     metadata += ";pt=" + std::to_string(ptMin) + "," + std::to_string(ptMax) + ";eta=" + std::to_string(etaMin) + "," + std::to_string(etaMax);
     metadata += ";producer.nSigmaForTimeCompat=" + std::to_string(timeAssociationOption<float>(context, "track-to-collision-association", "nSigmaForTimeCompat"));
@@ -397,7 +398,7 @@ struct PidFlowChargedTimeProducer {
     registry.add("timeAssociation/candidatesVsAmbiguousBC", "AmbiguousTracks BC status (also for assigned tracks);N_{coll}^{comp};Ambiguous BC status", {HistType::kTH2D, {{101, -0.5, 100.5}, {3, -0.5, 2.5}}});
     registry.add("timeAssociation/candidatesVsRawTimeStatus", "Stored track time/resolution before PV substitution;N_{coll}^{comp};Raw time status", {HistType::kTH2D, {{101, -0.5, 100.5}, {4, -0.5, 3.5}}});
     registry.add("timeAssociation/candidatesVsOriginalTimeTest", "Fine time test at original collision; excludes coarse BC/search checks;N_{coll}^{comp};Original time test", {HistType::kTH2D, {{101, -0.5, 100.5}, {6, -0.5, 5.5}}});
-    registry.add("timeAssociation/candidatesVsAcceptedTargets", "After unique cut, target vertex cut, propagation and baseline (before consumer cuts);N_{coll}^{comp};N accepted target collisions", {HistType::kTH2D, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}});
+    registry.add("timeAssociation/candidatesVsAcceptedTargets", "Raw candidates vs accepted PV-locked/closest-time target after producer cuts;N_{coll}^{comp} (raw TrackAssoc);N accepted targets (0 or 1)", {HistType::kTH2D, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}});
     registry.add("timeAssociation/zeroCandidatePtEta", "Zero-candidate tracks with finite source pT/eta;Source p_{T} (GeV/c);Source #eta", {HistType::kTH2D, {{200, 0., 20.}, {100, -5., 5.}}});
     const auto setLabels = [](TAxis* axis, auto const& names) {
       for (std::size_t bin = 0; bin < names.size(); ++bin) {
@@ -412,8 +413,8 @@ struct PidFlowChargedTimeProducer {
               std::array{"finite time, res > 0", "finite time, res = 0", "finite time, res < 0", "nonfinite time or res"});
     setLabels(registry.get<TH2>(HIST("timeAssociation/candidatesVsOriginalTimeTest"))->GetYaxis(),
               std::array{"no original collision", "invalid effective time/res", "fails fine time test", "passes, original pair absent", "passes, original pair present", "invalid original collision index"});
-    registry.add("timeAssociation/pairStatus", "Target-track pairs (stages overlap);stage;pairs", {HistType::kTH1D, {{9, 0, 9}}});
-    const std::array<const char*, 9> labels{"producer pair", "duplicate pair", "nonunique rejected", "same collision", "different collision", "unassigned source", "propagation failed", "baseline rejected", "baseline accepted"};
+    registry.add("timeAssociation/pairStatus", "Raw pairs and selected targets (target stages after vertex cut; stages overlap);stage;count", {HistType::kTH1D, {{10, 0, 10}}});
+    const std::array<const char*, 10> labels{"producer pair", "duplicate pair", "same collision", "different collision", "unassigned source", "propagation failed", "baseline rejected", "baseline accepted", "PV locked target", "non-PV closest-time target"};
     for (std::size_t bin = 0; bin < labels.size(); ++bin) {
       registry.get<TH1>(HIST("timeAssociation/pairStatus"))->GetXaxis()->SetBinLabel(bin + 1, labels[bin]);
     }
@@ -470,6 +471,12 @@ struct PidFlowChargedTimeProducer {
       if (index < 0 || index >= static_cast<int64_t>(tracks.size())) {
         LOGF(fatal, "TrackAssoc track index is outside the full source track table");
       }
+      if (cfgTimeAssociationQA) {
+        registry.fill(HIST("timeAssociation/pairStatus"), 0.5);
+        if (lastCollision[index] == pair.collisionId()) {
+          registry.fill(HIST("timeAssociation/pairStatus"), 1.5);
+        }
+      }
       // TrackAssoc is grouped by collision. Count distinct target collisions,
       // including those that will later fail event or target-track cuts.
       if (lastCollision[index] != pair.collisionId()) {
@@ -496,7 +503,7 @@ struct PidFlowChargedTimeProducer {
       ambiguousBCStatus[index] = valid ? 2 : 1;
     }
     // One unweighted entry per source track, including zero candidates, before
-    // the unique-association cut or any target event/track selection.
+    // ownership resolution or any target event/track selection.
     for (auto const& track : tracks) {
       const int64_t index = track.globalIndex() - tracks.offset();
       const auto count = counts[index];
@@ -549,37 +556,100 @@ struct PidFlowChargedTimeProducer {
     return counts;
   }
 
-  template <typename TCollision, typename TTracks>
-  void fillChargedTimeTracks(TCollision const& collision, aod::TrackAssoc const& pairs, TTracks const& tracks, std::vector<unsigned int> const& counts, std::vector<unsigned int>& acceptedCounts)
+  template <typename TTracks>
+  std::vector<std::vector<int64_t>> selectChargedTimeTargets(aod::TrackAssoc const& pairs, TTracks const& tracks,
+                                                             aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs, aod::AmbiguousTracks const& ambiguousTracks)
   {
-    auto collisionPairs = pairs.sliceBy(timePairsPerCollision, collision.globalIndex());
-    std::unordered_set<int64_t> seen;
-    bool fieldReady = false;
-    for (auto const& pair : collisionPairs) {
-      if (cfgTimeAssociationQA) {
-        registry.fill(HIST("timeAssociation/pairStatus"), 0.5);
+    std::vector<int64_t> targetIndices(tracks.size(), -1);
+    std::vector<int64_t> referenceBC(tracks.size(), -1);
+    std::vector<double> bestDistance(tracks.size(), std::numeric_limits<double>::infinity());
+    const auto globalBC = [&bcs](int64_t id) -> int64_t {
+      const int64_t index = id - bcs.offset();
+      if (index < 0 || index >= static_cast<int64_t>(bcs.size())) {
+        return -1;
       }
-      if (!seen.insert(pair.trackId()).second) {
-        if (cfgTimeAssociationQA) {
-          registry.fill(HIST("timeAssociation/pairStatus"), 1.5);
-        }
+      return static_cast<int64_t>(bcs.rawIteratorAt(index).globalBC());
+    };
+    for (auto const& track : tracks) {
+      const int64_t index = track.globalIndex() - tracks.offset();
+      const int64_t original = track.collisionId() - collisions.offset();
+      if (!track.has_collision() || original < 0 || original >= static_cast<int64_t>(collisions.size())) {
         continue;
       }
+      if (track.isPVContributor()) {
+        // A PV contributor defines this vertex. Restore its original pair even
+        // when the public time associator supplied zero candidates.
+        targetIndices[index] = original;
+      } else {
+        referenceBC[index] = globalBC(collisions.rawIteratorAt(original).bcId());
+      }
+    }
+    // Unassigned tracks use the first BC of their first ambiguous row, exactly
+    // as in the public associator; never replace an invalid first row by another.
+    std::vector<bool> seenAmbiguous(tracks.size(), false);
+    for (auto const& ambiguous : ambiguousTracks) {
+      const int64_t index = ambiguous.trackId() - tracks.offset();
+      if (index < 0 || index >= static_cast<int64_t>(tracks.size()) || seenAmbiguous[index]) {
+        continue;
+      }
+      seenAmbiguous[index] = true;
+      auto const& ids = ambiguous.bcIds();
+      if (!tracks.rawIteratorAt(index).has_collision() && ambiguous.has_bc() && ids[1] >= ids[0] && globalBC(ids[1]) >= 0) {
+        referenceBC[index] = globalBC(ids[0]);
+      }
+    }
+    for (auto const& pair : pairs) {
       const int64_t index = pair.trackId() - tracks.offset();
-      if (cfgRequireUniqueTimeAssociation && counts[index] != 1) {
-        if (cfgTimeAssociationQA) {
-          registry.fill(HIST("timeAssociation/pairStatus"), 2.5);
-        }
+      const int64_t target = pair.collisionId() - collisions.offset();
+      if (index < 0 || index >= static_cast<int64_t>(tracks.size()) || target < 0 || target >= static_cast<int64_t>(collisions.size())) {
+        LOGF(fatal, "TrackAssoc index is outside the full source track/collision tables");
+      }
+      auto track = tracks.rawIteratorAt(index);
+      if (track.isPVContributor() || referenceBC[index] < 0) {
         continue;
       }
+      auto collision = collisions.rawIteratorAt(target);
+      const int64_t collisionBC = globalBC(collision.bcId());
+      if (collisionBC < 0) {
+        continue;
+      }
+      // Compare in a common BC reference. Subtract the integer BCs before the
+      // floating-point conversion to retain precision for large global BCs.
+      const double deltaTime = static_cast<double>(track.trackTime()) - collision.collisionTime() +
+                               static_cast<double>(referenceBC[index] - collisionBC) * o2::constants::lhc::LHCBunchSpacingNS;
+      const double distance = std::abs(deltaTime);
+      if (std::isfinite(distance) && (distance < bestDistance[index] || (distance == bestDistance[index] && target < targetIndices[index]))) {
+        targetIndices[index] = target;
+        bestDistance[index] = distance;
+      }
+    }
+    // Resolve ownership before any event/vertex, propagation or quality cuts.
+    // A rejected best target has no fallback; each source can appear only once.
+    std::vector<std::vector<int64_t>> selected(collisions.size());
+    for (std::size_t index = 0; index < targetIndices.size(); ++index) {
+      if (targetIndices[index] >= 0) {
+        selected[targetIndices[index]].push_back(index);
+      }
+    }
+    return selected;
+  }
+
+  template <typename TCollision, typename TTracks>
+  void fillChargedTimeTracks(TCollision const& collision, std::vector<int64_t> const& selected, TTracks const& tracks, std::vector<unsigned int> const& counts, std::vector<unsigned int>& acceptedCounts)
+  {
+    bool fieldReady = false;
+    for (const auto index : selected) {
       auto source = tracks.rawIteratorAt(index);
+      if (cfgTimeAssociationQA) {
+        registry.fill(HIST("timeAssociation/pairStatus"), source.isPVContributor() ? 8.5 : 9.5);
+      }
       TimeAssociatedChargedTrack<typename TTracks::iterator> candidate(source);
       const bool sameCollision = source.collisionId() == collision.globalIndex();
       if (cfgTimeAssociationQA) {
-        registry.fill(HIST("timeAssociation/pairStatus"), sameCollision ? 3.5 : 4.5);
+        registry.fill(HIST("timeAssociation/pairStatus"), sameCollision ? 2.5 : 3.5);
       }
       if (cfgTimeAssociationQA && !source.has_collision()) {
-        registry.fill(HIST("timeAssociation/pairStatus"), 5.5);
+        registry.fill(HIST("timeAssociation/pairStatus"), 4.5);
       }
       if (!sameCollision) {
         if (!fieldReady) {
@@ -590,7 +660,7 @@ struct PidFlowChargedTimeProducer {
         std::array<float, 2> dca{};
         if (!o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, parameters, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dca)) {
           if (cfgTimeAssociationQA) {
-            registry.fill(HIST("timeAssociation/pairStatus"), 6.5);
+            registry.fill(HIST("timeAssociation/pairStatus"), 5.5);
           }
           continue;
         }
@@ -604,12 +674,12 @@ struct PidFlowChargedTimeProducer {
       const bool baseline = finite && (sameCollision ? (source.isGlobalTrack() || source.isGlobalTrackSDD()) : (timeGlobalSelection.IsSelected(candidate) || (!timeIsRun3 && timeSDDSelection.IsSelected(candidate))));
       if (!baseline || std::fabs(candidate.eta()) >= cutEta) {
         if (cfgTimeAssociationQA) {
-          registry.fill(HIST("timeAssociation/pairStatus"), 7.5);
+          registry.fill(HIST("timeAssociation/pairStatus"), 6.5);
         }
         continue;
       }
       if (cfgTimeAssociationQA) {
-        registry.fill(HIST("timeAssociation/pairStatus"), 8.5);
+        registry.fill(HIST("timeAssociation/pairStatus"), 7.5);
         ++acceptedCounts[index];
       }
       timeTracks(collision.globalIndex(), source.globalIndex(),
@@ -624,10 +694,11 @@ struct PidFlowChargedTimeProducer {
   {
     // Count all producer candidates before vertex, event or target-track cuts.
     auto counts = chargedTimeMultiplicity(pairs, sources, collisions, bcs, ambiguousTracks);
+    auto selected = selectChargedTimeTargets(pairs, sources, collisions, bcs, ambiguousTracks);
     std::vector<unsigned int> acceptedCounts(cfgTimeAssociationQA ? sources.size() : 0, 0);
     for (auto const& collision : collisions) {
       if (std::fabs(collision.posZ()) < cutVertex) {
-        fillChargedTimeTracks(collision, pairs, sources, counts, acceptedCounts);
+        fillChargedTimeTracks(collision, selected[collision.globalIndex() - collisions.offset()], sources, counts, acceptedCounts);
       }
     }
     if (cfgTimeAssociationQA) {
@@ -650,7 +721,6 @@ struct PidFlowPtCorr {
   Configurable<float> cfgCutChi2prTPCcls{"cfgCutChi2prTPCcls", 2.5, "Chi2 per TPC clusters"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A; 4:NTPV; 5:NGlobal; 6:MFT"};
   Configurable<bool> cfgUseMultiplicity{"cfgUseMultiplicity", false, "Use raw PV-contributor count in |eta| < 0.8 instead of centrality for output axes and NUE lookup; configure axisMultiplicity and disable cfgDoMultPVCut"};
-  Configurable<bool> cfgRequireUniqueTimeAssociation{"cfgRequireUniqueTimeAssociation", false, "Time entries: require exactly one producer candidate collision before event/track cuts"};
   Configurable<bool> cfgTimeAssociationQA{"cfgTimeAssociationQA", true, "Create and fill time-association producer, comparison and MC QA; keep event counters and flow/NUA/NUE outputs"};
   ConfigurableAxis cfgaxisAssociationNch{"cfgaxisAssociationNch", {601, -5., 6005.}, "Association QA Nch (default bin width: 10 tracks; includes zero)"};
   ConfigurableAxis cfgaxisAssociationChangedNch{"cfgaxisAssociationChangedNch", {1001, -0.5, 1000.5}, "Association QA lost/gained track count"};
@@ -716,6 +786,13 @@ struct PidFlowPtCorr {
   Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers"};
   Configurable<float> cfgEtaGap{"cfgEtaGap", 0.4, "Eta-gap half-width for flow particles; 0.4 selects (-etaMax,-0.4) and (0.4,etaMax)"};
   Configurable<int> cfgFlowNbootstrap{"cfgFlowNbootstrap", 30, "Number of subsamples for bootstrap"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "chargedDifferentialOpts";
+    Configurable<float> cfgRefPtMin{"cfgRefPtMin", 0.2f, "Charged differential v2{2}: reference pT lower bound (GeV/c), independent of integrated flow"};
+    Configurable<float> cfgRefPtMax{"cfgRefPtMax", 3.0f, "Charged differential v2{2}: reference pT upper bound (GeV/c), independent of integrated flow"};
+    ConfigurableAxis cfgaxisPt{"cfgaxisPt", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0}, "Charged differential v2{2}: POI pT binning and acceptance [first edge, last edge) in GeV/c"};
+  } chargedDifferentialOpts;
 
   // switch
   struct : ConfigurableGroup {
@@ -859,6 +936,7 @@ struct PidFlowPtCorr {
   // val used for bootstrap
   TRandom3* fRndm = new TRandom3(0);
   OutputObj<FlowContainer> fFCCh{FlowContainer("FlowContainerCharged")};
+  OutputObj<FlowContainer> fFCChDifferential{FlowContainer("FlowContainerChargedDifferential")};
   OutputObj<FlowContainer> fFCPi{FlowContainer("FlowContainerPi")};
   OutputObj<FlowContainer> fFCKa{FlowContainer("FlowContainerKa")};
   OutputObj<FlowContainer> fFCPr{FlowContainer("FlowContainerPr")};
@@ -871,6 +949,17 @@ struct PidFlowPtCorr {
   // define global variables
   GFW* fGFW = new GFW(); // GFW class used from main src
   std::vector<GFW::CorrConfig> corrconfigs;
+  // Independent reference pT range and Q-vectors for charged differential v2{2}.
+  // Group runtime state to stay below the GCC DPL limit of 100 task members.
+  struct {
+    std::unique_ptr<GFW> gfw;
+    std::unique_ptr<TAxis> ptAxis;
+    std::vector<GFW::CorrConfig> configs;
+  } chargedDifferential;
+  enum ChargedDifferentialMask {
+    kDifferentialReference = 1,
+    kDifferentialPOI = 2
+  };
 
   std::vector<std::string> cfgAcceptance;
   std::vector<std::string> cfgAcceptanceWithPt;
@@ -943,6 +1032,7 @@ struct PidFlowPtCorr {
     funcFillCorrectionGraphTimeAssociation,
     funcProcessMCTimeAssociation,
     funcProcessTimeAssociationComparison,
+    funcProcessChargedDifferentialTimeAssociation,
     funcNumber
   };
 
@@ -1166,7 +1256,7 @@ struct PidFlowPtCorr {
 
   void init(InitContext& context) // Initialization
   {
-    const bool timeMode = doprocessDataTimeAssociation || dofillCorrectionGraphTimeAssociation || doprocessMCTimeAssociation || doprocessTimeAssociationComparison;
+    const bool timeMode = doprocessDataTimeAssociation || doprocessChargedDifferentialTimeAssociation || dofillCorrectionGraphTimeAssociation || doprocessMCTimeAssociation || doprocessTimeAssociationComparison;
     if (timeMode) {
       initChargedTimeAssociation(context);
     }
@@ -1366,7 +1456,7 @@ struct PidFlowPtCorr {
     registry.addClone("hEventCount/processData", "hEventCount/processPidResponseMatrix");
     if (timeMode) {
       auto originalCounter = registry.get<TH1>(HIST("hEventCount/processData"));
-      for (auto const& name : {"hEventCount/processDataTimeAssociation", "hEventCount/fillCorrectionGraphTimeAssociation", "hEventCount/processMCTimeAssociation"}) {
+      for (auto const& name : {"hEventCount/processDataTimeAssociation", "hEventCount/fillCorrectionGraphTimeAssociation", "hEventCount/processMCTimeAssociation", "hEventCount/processChargedDifferentialTimeAssociation"}) {
         auto counter = registry.add<TH1>(name, "Target collisions;selection;collisions", {HistType::kTH1D, {{15, 0, 15}}});
         for (int bin = 1; bin <= originalCounter->GetNbinsX(); ++bin) {
           counter->GetXaxis()->SetBinLabel(bin, originalCounter->GetXaxis()->GetBinLabel(bin));
@@ -1518,6 +1608,51 @@ struct PidFlowPtCorr {
       initializeFlowContainer(fFCCh, oba4Ch);
     }
     // end init fFCCh
+
+    if (doprocessChargedDifferentialTimeAssociation) {
+      const double refPtMin = chargedDifferentialOpts.cfgRefPtMin.value;
+      const double refPtMax = chargedDifferentialOpts.cfgRefPtMax.value;
+      const double etaMax = trkQualityOpts.cfgCutEta.value;
+      const double etaGap = cfgEtaGap.value;
+      if (!std::isfinite(refPtMin) || !std::isfinite(refPtMax) || refPtMin < 0. || refPtMax <= refPtMin ||
+          !std::isfinite(etaMax) || !std::isfinite(etaGap) || etaGap < 0. || etaGap >= etaMax) {
+        LOGF(fatal, "Charged differential v2{2} requires 0 <= cfgRefPtMin < cfgRefPtMax and 0 <= cfgEtaGap < cfgCutEta");
+      }
+      const AxisSpec ptAxis{chargedDifferentialOpts.cfgaxisPt, "#it{p}_{T} (GeV/#it{c})"};
+      if (ptAxis.binEdges.size() < 2 || ptAxis.binEdges.front() < 0. ||
+          std::any_of(ptAxis.binEdges.begin(), ptAxis.binEdges.end(), [](double edge) { return !std::isfinite(edge); }) ||
+          std::adjacent_find(ptAxis.binEdges.begin(), ptAxis.binEdges.end(), [](double left, double right) { return left >= right; }) != ptAxis.binEdges.end() ||
+          (ptAxis.nBins.has_value() && ptAxis.nBins.value() <= 0)) {
+        LOGF(fatal, "chargedDifferentialOpts.cfgaxisPt must define a finite, nonnegative, strictly increasing pT axis with at least one bin");
+      }
+      if (ptAxis.nBins.has_value()) {
+        chargedDifferential.ptAxis = std::make_unique<TAxis>(ptAxis.nBins.value(), ptAxis.binEdges.front(), ptAxis.binEdges.back());
+      } else {
+        chargedDifferential.ptAxis = std::make_unique<TAxis>(static_cast<int>(ptAxis.binEdges.size()) - 1, ptAxis.binEdges.data());
+      }
+      chargedDifferential.ptAxis->SetTitle("#it{p}_{T} (GeV/#it{c})");
+      const int ptBins = chargedDifferential.ptAxis->GetNbins();
+      chargedDifferential.gfw = std::make_unique<GFW>();
+      chargedDifferential.gfw->AddRegion("refN", -etaMax, -etaGap, 1, kDifferentialReference);
+      chargedDifferential.gfw->AddRegion("refP", etaGap, etaMax, 1, kDifferentialReference);
+      chargedDifferential.gfw->AddRegion("poiN", -etaMax, -etaGap, ptBins, kDifferentialPOI);
+      chargedDifferential.gfw->AddRegion("poiP", etaGap, etaMax, ptBins, kDifferentialPOI);
+      chargedDifferential.configs.push_back(chargedDifferential.gfw->GetCorrelatorConfig("refN {2} refP {-2}", "ChGap22", false));
+      // Disjoint eta sides remove self-pairs even when POI and reference pT overlap.
+      // Both orientations contribute to the same profile with their own pair weight.
+      chargedDifferential.configs.push_back(chargedDifferential.gfw->GetCorrelatorConfig("poiN {2} refP {-2}", "ChGap22", true));
+      chargedDifferential.configs.push_back(chargedDifferential.gfw->GetCorrelatorConfig("poiP {2} refN {-2}", "ChGap22", true));
+      chargedDifferential.gfw->CreateRegions();
+
+      TObjArray differentialProfiles;
+      differentialProfiles.SetOwner(true);
+      differentialProfiles.Add(new TNamed("ChGap22", "Reference-reference <2>, independent differential reference pT range"));
+      for (int bin = 1; bin <= ptBins; ++bin) {
+        differentialProfiles.Add(new TNamed(Form("ChGap22_pt_%d", bin), "Charged POI-reference <2> versus pT"));
+      }
+      fFCChDifferential->SetXAxis(chargedDifferential.ptAxis.get());
+      initializeFlowContainer(fFCChDifferential, &differentialProfiles);
+    }
 
     // init fFCPID
     // note that need to add c22pure and c32pure
@@ -2835,6 +2970,9 @@ struct PidFlowPtCorr {
       case MyFunctionName::funcProcessTimeAssociationComparison:
         registry.fill(HIST("hEventCount/processTimeAssociationComparison"), position);
         break;
+      case MyFunctionName::funcProcessChargedDifferentialTimeAssociation:
+        registry.fill(HIST("hEventCount/processChargedDifferentialTimeAssociation"), position);
+        break;
 
       default:
         // LOGF(warning, "could not find event count graph");
@@ -3668,7 +3806,7 @@ struct PidFlowPtCorr {
     setLabels(registry.get<TH2>(HIST("associationComparison/hPtByCategory"))->GetYaxis(), categories);
     setLabels(registry.get<TH2>(HIST("associationComparison/hEtaByCategory"))->GetYaxis(), categories);
     setLabels(registry.get<TH2>(HIST("associationComparison/hPhiByCategory"))->GetYaxis(), categories);
-    LOG(info) << "Association comparison: " << selection << "; original=collisionId, time=PidFlowTimeTracks; unique=" << cfgRequireUniqueTimeAssociation.value;
+    LOG(info) << "Association comparison: " << selection << "; original=collisionId, time=PidFlowTimeTracks; PV=locked-original, nonPV=closest-time";
   }
 
   // Evaluate both associations in the same event loop without PID or correction
@@ -3867,6 +4005,59 @@ struct PidFlowPtCorr {
     }
   }
   PROCESS_SWITCH(PidFlowPtCorr, processDataTimeAssociation, "Charged flow and mean-pT using time-based TrackAssoc; no PID", false);
+
+  // Store raw ensemble correlators, not event-by-event normalized v2.
+  // FlowContainer: SetIDName("ChGap"), then GetVN2VsPt(2, centMin, centMax).
+  void processChargedDifferentialTimeAssociation(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::PidFlowTimeTracks const& tracks)
+  {
+    if (!chargedTimeEventSelected(collision, funcProcessChargedDifferentialTimeAssociation) || tracks.size() == 0) {
+      return;
+    }
+    fillEventCountHelper(funcProcessChargedDifferentialTimeAssociation, 14.5);
+    const double cent = getCentrality(collision);
+    const double rndm = fRndm->Rndm();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    loadChargedTimeCorrections(bc.timestamp());
+    chargedDifferential.gfw->Clear();
+    const int ptBins = chargedDifferential.ptAxis->GetNbins();
+    for (auto const& track : tracks) {
+      if (!trackSelectedForFlow(track)) {
+        continue;
+      }
+      const double pt = track.pt();
+      const bool isReference = pt > chargedDifferentialOpts.cfgRefPtMin.value && pt < chargedDifferentialOpts.cfgRefPtMax.value;
+      const int ptBin = chargedDifferential.ptAxis->FindFixBin(pt) - 1;
+      const bool isPOI = ptBin >= 0 && ptBin < ptBins;
+      if (!isReference && !isPOI) {
+        continue;
+      }
+      float weff = 1.f, wacc = 1.f;
+      setParticleNUEWeight(weff, track, cent);
+      setParticleNUAWeight(wacc, track, collision.posZ());
+      const double weight = static_cast<double>(weff) * wacc;
+      if (isReference) {
+        chargedDifferential.gfw->Fill(track.eta(), 0, track.phi(), weight, kDifferentialReference);
+      }
+      if (isPOI) {
+        chargedDifferential.gfw->Fill(track.eta(), ptBin, track.phi(), weight, kDifferentialPOI);
+      }
+    }
+    for (auto const& config : chargedDifferential.configs) {
+      const int bins = config.pTDif ? ptBins : 1;
+      for (int bin = 0; bin < bins; ++bin) {
+        const double pairs = chargedDifferential.gfw->Calculate(config, bin, true).real();
+        if (!std::isfinite(pairs) || pairs <= 0.) {
+          continue;
+        }
+        const double correlator = chargedDifferential.gfw->Calculate(config, bin, false).real() / pairs;
+        if (std::isfinite(correlator)) {
+          const std::string name = config.pTDif ? config.Head + "_pt_" + std::to_string(bin + 1) : config.Head;
+          fFCChDifferential->FillProfile(name.c_str(), cent, correlator, pairs, rndm);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processChargedDifferentialTimeAssociation, "Charged differential v2{2}(pT) using time-based TrackAssoc; independent reference pT and POI bins, no PID", false);
 
   void fillCorrectionGraphTimeAssociation(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::PidFlowTimeTracks const& tracks)
   {

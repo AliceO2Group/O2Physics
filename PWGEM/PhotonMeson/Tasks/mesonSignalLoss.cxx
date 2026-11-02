@@ -164,6 +164,9 @@ struct MesonSignalLoss {
     } else if (particleConfig.cfgEnableMultiplicityHistograms) {
       LOGF(fatal, "Unknown cfgMultiplicityEstimator '%s'; use centralBarrel, FT0A, or FT0C", particleConfig.cfgMultiplicityEstimator.value.c_str());
     }
+    if (rctConfig.cfgRequireGoodRCT) {
+      rctChecker.init(rctConfig.cfgRCTLabel.value, rctConfig.cfgCheckZDC.value, rctConfig.cfgTreatLimitedAcceptanceAsBad.value);
+    }
     Inithistograms();
   }
 

@@ -81,7 +81,7 @@ struct applyMlSelection {
   void init(InitContext const&)
   {
     // Add histograms vs pT (only for selected candidates)
-    auto vbins = (std::vector<double>)binsPtMl;
+    auto vbins = std::vector<double>(binsPtMl);
     registry.add("hMassAfterSelVsPt", "Ds candidates;inv. mass (KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 1.77, 2.17}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPromptScoreAfterSelVsPt", "Prompt score after selection;BDT first score;entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 

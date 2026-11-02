@@ -91,7 +91,9 @@ class PairTrackTrackBuilder
             std::map<T12, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
             std::map<T13, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
             std::map<T14, std::vector<o2::framework::AxisSpec>> const& cprHistSpec,
-            std::map<T15, std::vector<o2::framework::AxisSpec>> const& pairCleanerHistSpec)
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& pairCleanerHistSpec,
+            int puritySlotMask1 = 1,
+            int puritySlotMask2 = 1)
   {
 
     // check if correlate the same tracks or not
@@ -106,8 +108,8 @@ class PairTrackTrackBuilder
     if (mSameSpecies) {
       mTrackCleaner1.init(confTrackCleaner1);
 
-      mTrackHistManagerSe1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManagerMe1.template init<modeMe>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManagerSe1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1, puritySlotMask1);
+      mTrackHistManagerMe1.template init<modeMe>(registry, trackHistSpec1, confTrackSelection1, puritySlotMask1);
 
       mPairHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value);
       mPairHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
@@ -119,10 +121,10 @@ class PairTrackTrackBuilder
     } else {
       mTrackCleaner1.init(confTrackCleaner1);
       mTrackCleaner2.init(confTrackCleaner2);
-      mTrackHistManagerSe1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManagerSe2.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2);
-      mTrackHistManagerMe1.template init<modeMe>(registry, trackHistSpec1, confTrackSelection1);
-      mTrackHistManagerMe2.template init<modeMe>(registry, trackHistSpec2, confTrackSelection2);
+      mTrackHistManagerSe1.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1, puritySlotMask1);
+      mTrackHistManagerSe2.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2, puritySlotMask2);
+      mTrackHistManagerMe1.template init<modeMe>(registry, trackHistSpec1, confTrackSelection1, puritySlotMask1);
+      mTrackHistManagerMe2.template init<modeMe>(registry, trackHistSpec2, confTrackSelection2, puritySlotMask2);
 
       mPairHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value);
       mPairHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);

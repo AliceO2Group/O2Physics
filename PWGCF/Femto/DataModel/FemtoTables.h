@@ -391,6 +391,38 @@ DECLARE_SOA_DYNAMIC_COLUMN(TpctofNSigmaDe, tpctofNSigmaDe, [](float tpc, float t
 DECLARE_SOA_DYNAMIC_COLUMN(TpctofNSigmaTr, tpctofNSigmaTr, [](float tpc, float tof) -> float { return std::hypot(tpc, tof); }); //! Combined Nsigma separation with Tpc and Tof for triton
 DECLARE_SOA_DYNAMIC_COLUMN(TpctofNSigmaHe, tpctofNSigmaHe, [](float tpc, float tof) -> float { return std::hypot(tpc, tof); }); //! Combined Nsigma separation with Tpc and Tof for helium3
 
+// ---------------------------------------------------------------------------
+// purity: up to 4 species' nSigma (per detector: Its, Tpc, Tof) packed into a
+// single int64_t column each, see utils::packPurity4/unpackPurity4. Which
+// species occupies which of the 4 slots is decided at producer init time
+// (from the active requirePidXxx flags, in canonical species order) and
+// exposed via a self-documenting histogram -- it is not stored per-row.
+// ---------------------------------------------------------------------------
+constexpr float NSigmaPurityMagMin = 1e-3f; // resolution floor near the signal peak
+constexpr float NSigmaPurityMagMax = 50.f;  // clamp for the tails
+
+DECLARE_SOA_COLUMN(ItsPackedNSigma, itsPackedNSigma, int64_t); //! 4 species' Its nSigma, log-binned and packed
+DECLARE_SOA_COLUMN(TpcPackedNSigma, tpcPackedNSigma, int64_t); //! 4 species' Tpc nSigma, log-binned and packed
+DECLARE_SOA_COLUMN(TofPackedNSigma, tofPackedNSigma, int64_t); //! 4 species' Tof nSigma, log-binned and packed
+// if false, all 4 Tof slots are meaningless placeholders (producer writes 0 to all of them) --
+// check this flag before reading any TofNSigmaSlotN; never infer missingness from the slot value
+DECLARE_SOA_COLUMN(PurityHasTof, purityHasTof, bool); //! whether the Tof slots are meaningful for this track (species-independent)
+
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+// each dynamic column below is bound to its PackedNSigma column at the table-declaration
+// site, e.g. femtotracks::ItsNSigmaSlot0<femtotracks::ItsPackedNSigma>
+#define FEMTO_PURITY_SLOT_COLUMN(Detector, detector)                                                                                                                                                                    \
+  DECLARE_SOA_DYNAMIC_COLUMN(Detector##NSigmaSlot0, detector##NSigmaSlot0, [](int64_t packed) -> float { return o2::analysis::femto::utils::unpackPurityNSigma4(packed, 0, NSigmaPurityMagMin, NSigmaPurityMagMax); }); \
+  DECLARE_SOA_DYNAMIC_COLUMN(Detector##NSigmaSlot1, detector##NSigmaSlot1, [](int64_t packed) -> float { return o2::analysis::femto::utils::unpackPurityNSigma4(packed, 1, NSigmaPurityMagMin, NSigmaPurityMagMax); }); \
+  DECLARE_SOA_DYNAMIC_COLUMN(Detector##NSigmaSlot2, detector##NSigmaSlot2, [](int64_t packed) -> float { return o2::analysis::femto::utils::unpackPurityNSigma4(packed, 2, NSigmaPurityMagMin, NSigmaPurityMagMax); }); \
+  DECLARE_SOA_DYNAMIC_COLUMN(Detector##NSigmaSlot3, detector##NSigmaSlot3, [](int64_t packed) -> float { return o2::analysis::femto::utils::unpackPurityNSigma4(packed, 3, NSigmaPurityMagMin, NSigmaPurityMagMax); });
+
+FEMTO_PURITY_SLOT_COLUMN(Its, its)
+FEMTO_PURITY_SLOT_COLUMN(Tpc, tpc)
+FEMTO_PURITY_SLOT_COLUMN(Tof, tof)
+#undef FEMTO_PURITY_SLOT_COLUMN
+// NOLINTEND(cppcoreguidelines-macro-usage)
+
 } // namespace femtotracks
 
 // table for basic track information
@@ -445,6 +477,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackDcas_001, "FTRACKDCAS", 1, //! track dc
                                    femtotracks::DcaZ,
                                    femtotracks::Dca<femtotracks::DcaXY, femtotracks::DcaZ>);
 using FTrackDcas = FTrackDcas_001;
+using StoredFTrackDcas = StoredFTrackDcas_001;
 
 // table for extra track information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackExtras_001, "FTRACKEXTRA", 1, //! track extra information
@@ -522,6 +555,39 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FHeliumPids_001, "FHELIUMPID", 1, //! full he
 using FHeliumPids = FHeliumPids_001;
 
 using FTrackPids = soa::Join<FElectronPids, FPionPids, FKaonPids, FProtonPids, FDeuteronPids, FTritonPids, FHeliumPids>;
+
+// tables for track purity extraction: up to 4 species' nSigma packed per detector (see
+// femtotracks::PurityNSlots / utils::packPurity4). Slot assignment is not stored here --
+// it is exposed separately via a self-documenting histogram at producer init time.
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FItsPurity_001, "FITSPURITY", 1, //! up to 4 species' Its nSigma, packed
+                                   femtotracks::ItsPackedNSigma,
+                                   femtotracks::ItsNSigmaSlot0<femtotracks::ItsPackedNSigma>,
+                                   femtotracks::ItsNSigmaSlot1<femtotracks::ItsPackedNSigma>,
+                                   femtotracks::ItsNSigmaSlot2<femtotracks::ItsPackedNSigma>,
+                                   femtotracks::ItsNSigmaSlot3<femtotracks::ItsPackedNSigma>);
+using FItsPurity = FItsPurity_001;
+using StoredFItsPurity = StoredFItsPurity_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FTpcPurity_001, "FTPCPURITY", 1, //! up to 4 species' Tpc nSigma, packed
+                                   femtotracks::TpcPackedNSigma,
+                                   femtotracks::TpcNSigmaSlot0<femtotracks::TpcPackedNSigma>,
+                                   femtotracks::TpcNSigmaSlot1<femtotracks::TpcPackedNSigma>,
+                                   femtotracks::TpcNSigmaSlot2<femtotracks::TpcPackedNSigma>,
+                                   femtotracks::TpcNSigmaSlot3<femtotracks::TpcPackedNSigma>);
+using FTpcPurity = FTpcPurity_001;
+using StoredFTpcPurity = StoredFTpcPurity_001;
+
+// also carries PurityHasTof (species-independent: whether this track reached Tof at all) --
+// the most natural home for it, since it only matters for interpreting the Tof slots
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FTofPurity_001, "FTOFPURITY", 1, //! up to 4 species' Tof nSigma, packed
+                                   femtotracks::TofPackedNSigma,
+                                   femtotracks::PurityHasTof,
+                                   femtotracks::TofNSigmaSlot0<femtotracks::TofPackedNSigma>,
+                                   femtotracks::TofNSigmaSlot1<femtotracks::TofPackedNSigma>,
+                                   femtotracks::TofNSigmaSlot2<femtotracks::TofPackedNSigma>,
+                                   femtotracks::TofNSigmaSlot3<femtotracks::TofPackedNSigma>);
+using FTofPurity = FTofPurity_001;
+using StoredFTofPurity = StoredFTofPurity_001;
 
 namespace femtotwotrackresonances
 {
@@ -753,6 +819,11 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaExtras_001, "FLAMBDAEXTRA", 1, //! lam
 
 using FLambdaExtras = FLambdaExtras_001;
 
+// table for lambda fraction extraction (cpa only -- mass is already in FLambdas, no need to duplicate it)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaFrac_001, "FLAMBDAFRAC", 1, //! lambda cpa for fraction extraction
+                                   femtov0s::CosPa);
+using FLambdaFrac = FLambdaFrac_001;
+
 // table for basic k0short information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shorts_001, "FK0SHORT", 1, //! femto k0shorts
                                    o2::soa::Index<>,
@@ -814,6 +885,11 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortExtras_001, "FK0SHORTEXTRA", 1, //! k
                                    femtov0s::Pa<femtov0s::CosPa>);
 
 using FK0shortExtras = FK0shortExtras_001;
+
+// table for k0short fraction extraction (cpa only -- mass is already in FK0shorts, no need to duplicate it)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortFrac_001, "FK0SHORTFRAC", 1, //! k0short cpa for fraction extraction
+                                   femtov0s::CosPa);
+using FK0shortFrac = FK0shortFrac_001;
 
 namespace femtophotons
 {
@@ -1014,6 +1090,23 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! x coordinate of decay v
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! y coordinate of decay vertex (relative to PV)
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! z coordinate of decay vertex (relative to PV)
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse decay radius from PV
+DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float);
+DECLARE_SOA_COLUMN(DauTpcNSigmaPr, dauTpcNSigmaPr, float);
+DECLARE_SOA_COLUMN(DauTpcNSigmaPi, dauTpcNSigmaPi, float);
+DECLARE_SOA_COLUMN(DauTofNSigmaPr, dauTofNSigmaPr, float);
+DECLARE_SOA_COLUMN(PtOriginal, ptOriginal, float);
+
+// columns for sigma plus reconstructed with a PCM photon
+DECLARE_SOA_COLUMN(MlScore, mlScore, float);                               //! BDT score of the candidate
+DECLARE_SOA_COLUMN(FlightDirTilt, flightDirTilt, float);                   //! Tilt of the flight direction needed for a real solution of the missing photon
+DECLARE_SOA_COLUMN(DauDcaXY, dauDcaXY, float);                             //! DCAxy of the charged daughter to the primary vertex
+DECLARE_SOA_COLUMN(DauDcaZ, dauDcaZ, float);                               //! DCAz of the charged daughter to the primary vertex
+DECLARE_SOA_COLUMN(PhotonDcaXYToPV, photonDcaXYToPV, float);               //! Transverse DCA of the photon flight line to the primary vertex
+DECLARE_SOA_COLUMN(PhotonDcaZToPV, photonDcaZToPV, float);                 //! Longitudinal DCA of the photon flight line to the primary vertex
+DECLARE_SOA_COLUMN(PhotonCosPAToPV, photonCosPAToPV, float);               //! Cosine of the photon pointing angle to the primary vertex
+DECLARE_SOA_COLUMN(PhotonConvRadius, photonConvRadius, float);             //! Conversion radius of the photon
+DECLARE_SOA_COLUMN(AntiSigmaPointingAngle, antiSigmaPointingAngle, float); //! Angle between the unbent proton momentum and the flight direction
+DECLARE_SOA_COLUMN(DcaDauPhoton, dcaDauPhoton, float);                     //! DCA between charged daughter and photon at the decay vertex
 
 // id column for charged daughter track
 DECLARE_SOA_INDEX_COLUMN_FULL(ChaDau, chaDau, int32_t, FTracks, "_ChaDau"); //!
@@ -1167,7 +1260,89 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_001, "FSIGMAPLUSEXTRAS", 1,
                                    femtokinks::DecayVtxZ,
                                    femtokinks::TransRadius);
 
-using FSigmaPlusExtras = FSigmaPlusExtras_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_002, "FSIGMAPLUSEXTRAS", 2,
+                                   femtokinks::KinkAngle,
+                                   femtokinks::DcaDaugToPV,
+                                   femtokinks::DcaMothToPV,
+                                   femtokinks::DecayVtxX,
+                                   femtokinks::DecayVtxY,
+                                   femtokinks::DecayVtxZ,
+                                   femtokinks::TransRadius,
+                                   femtokinks::DcaKinkTopo,
+                                   femtokinks::DauTpcNSigmaPr,
+                                   femtokinks::DauTpcNSigmaPi,
+                                   femtokinks::DauTofNSigmaPr,
+                                   femtokinks::PtOriginal,
+                                   femtotracks::ItsClusterSizes);
+
+using FSigmaPlusExtras = FSigmaPlusExtras_002;
+using StoredFSigmaPlusExtras = StoredFSigmaPlusExtras_002;
+
+// table for basic sigma plus information, sigma plus reconstructed with a PCM photon
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcm_001, "FSIGMAPLUSPCM", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, // use sign to differentiate between sigma plus (+1) and anti sigma plus (-1)
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtokinks::ChaDauId,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FSigmaPlusPcm = FSigmaPlusPcm_001;
+using FSigmaPlusPcmRow = FSigmaPlusPcm::iterator;
+using StoredFSigmaPlusPcm = StoredFSigmaPlusPcm_001;
+
+// table for basic sigma plus information, sigma plus reconstructed with a PCM photon, compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmaPlusPcm_001, "FLITESIGMAPCM", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtokinks::lite::BinnedSigmaMass,
+                                   femtokinks::lite::ChaDauId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
+using FLiteSigmaPlusPcm = FLiteSigmaPlusPcm_001;
+using FLiteSigmaPlusPcmRow = FLiteSigmaPlusPcm::iterator;
+using StoredFLiteSigmaPlusPcm = StoredFLiteSigmaPlusPcm_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmMasks_001, "FSIGMAPCMMASKS", 1,
+                                   femtokinks::Mask);
+using FSigmaPlusPcmMasks = FSigmaPlusPcmMasks_001;
+using StoredFSigmaPlusPcmMasks = StoredFSigmaPlusPcmMasks_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmMlScores_001, "FSIGMAPCMML", 1,
+                                   femtokinks::MlScore);
+using FSigmaPlusPcmMlScores = FSigmaPlusPcmMlScores_001;
+using StoredFSigmaPlusPcmMlScores = StoredFSigmaPlusPcmMlScores_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmExtras_001, "FSIGMAPCMEXTRA", 1,
+                                   femtokinks::FlightDirTilt,
+                                   femtokinks::DcaMothToPV,
+                                   femtokinks::DauDcaXY,
+                                   femtokinks::DauDcaZ,
+                                   femtokinks::DauTpcNSigmaPr,
+                                   femtokinks::DauTofNSigmaPr,
+                                   femtokinks::PhotonDcaXYToPV,
+                                   femtokinks::PhotonDcaZToPV,
+                                   femtokinks::PhotonCosPAToPV,
+                                   femtokinks::PhotonConvRadius,
+                                   femtokinks::AntiSigmaPointingAngle,
+                                   femtokinks::DcaDauPhoton,
+                                   femtokinks::TransRadius);
+using FSigmaPlusPcmExtras = FSigmaPlusPcmExtras_001;
+using StoredFSigmaPlusPcmExtras = StoredFSigmaPlusPcmExtras_001;
 
 namespace femtocascades
 {
@@ -1302,6 +1477,12 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra in
                                    femtocascades::CascadePa<femtocascades::CascadeCosPa>);
 using FXiExtras = FXiExtras_001;
 
+// table for xi fraction extraction (cascade cpa only -- mass is already in FXis, and the daughter
+// lambda's own cpa is not needed here)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiFrac_001, "FXIFRAC", 1, //! xi cpa for fraction extraction
+                                   femtocascades::CascadeCosPa);
+using FXiFrac = FXiFrac_001;
+
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
                                    o2::soa::Index<>,
                                    femtobase::stored::FColId,
@@ -1367,6 +1548,12 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega
                                    femtov0s::StrangeTofNegDau,
                                    femtocascades::CascadePa<femtocascades::CascadeCosPa>);
 using FOmegaExtras = FOmegaExtras_001;
+
+// table for omega fraction extraction (cascade cpa only -- mass is already in FOmegas, and the daughter
+// lambda's own cpa is not needed here)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaFrac_001, "FOMEGAFRAC", 1, //! omega cpa for fraction extraction
+                                   femtocascades::CascadeCosPa);
+using FOmegaFrac = FOmegaFrac_001;
 
 namespace femtocharmhadrons
 {
@@ -1644,6 +1831,13 @@ using FSigmaPlusLabels = FSigmaPlusLabels_001;
 using FSigmaPlusLabel = FSigmaPlusLabels::iterator;
 using StoredFSigmaPlusLabels = StoredFSigmaPlusLabels_001;
 using StoredFSigmaPlusLabel = StoredFSigmaPlusLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmLabels_001, "FSIGMAPCMLABEL", 1, //! label from femto sigma plus (PCM) to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FSigmaPlusPcmLabels = FSigmaPlusPcmLabels_001;
+using FSigmaPlusPcmLabel = FSigmaPlusPcmLabels::iterator;
+using StoredFSigmaPlusPcmLabels = StoredFSigmaPlusPcmLabels_001;
+using StoredFSigmaPlusPcmLabel = StoredFSigmaPlusPcmLabels::iterator;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiLabels_001, "FXILABEL", 1, //! label from femto xi to femto mc particle
                                    femtolabels::FMcParticleId);

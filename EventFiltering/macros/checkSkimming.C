@@ -124,7 +124,7 @@ void checkSkimming(const std::string& listName = "period.txt", bool skipDownscal
     std::string original_path = line.substr(0, pos);
     std::string skimmed_path = line.substr(pos + 1);
     checkSkimming(original_path, skimmed_path, outputFile, skipDownscaled);
-    TH1* hRatio = (TH1*)gDirectory->Get("hRatio");
+    TH1* hRatio = dynamic_cast<TH1*>(gDirectory->Get("hRatio"));
     hRatio->Draw();
     std::string suffix = counter == 0 ? "(" : (counter == lineCounter - 1 ? ")" : "");
     c1.Print((periodName + ".pdf" + suffix).data());

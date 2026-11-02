@@ -21,18 +21,18 @@
 void cefpOutputChecker(std::string histoFile = "AnalysisResults.root", std::string treeFile = "AO2D.root")
 {
   TFile referenceFile(histoFile.data());
-  TH1* refScalers = (TH1*)referenceFile.Get("central-event-filter-task/scalers/mScalers");
-  TH1* refFilters = (TH1*)referenceFile.Get("central-event-filter-task/scalers/mFiltered");
+  TH1* refScalers = dynamic_cast<TH1*>(referenceFile.Get("central-event-filter-task/scalers/mScalers"));
+  TH1* refFilters = dynamic_cast<TH1*>(referenceFile.Get("central-event-filter-task/scalers/mFiltered"));
 
   TFile outputFile("cefpOutputChecker.root", "recreate");
-  TH1* newFilters = (TH1*)refFilters->Clone("newFilters");
-  TH1* newScalers = (TH1*)refScalers->Clone("newScalers");
+  TH1* newFilters = dynamic_cast<TH1*>(refFilters->Clone("newFilters"));
+  TH1* newScalers = dynamic_cast<TH1*>(refScalers->Clone("newScalers"));
   newFilters->Reset();
   newScalers->Reset();
 
   TFile inputFile(treeFile.data());
   for (auto key : *(inputFile.GetListOfKeys())) {
-    TTree* cefpTree = (TTree*)inputFile.Get(Form("%s/O2cefpdecision", key->GetName()));
+    TTree* cefpTree = dynamic_cast<TTree*>(inputFile.Get(Form("%s/O2cefpdecision", key->GetName())));
     if (!cefpTree)
       continue;
     ULong64_t fCefpSelected, fCefpTriggered;

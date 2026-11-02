@@ -106,7 +106,7 @@ o2physics_add_dpl_workflow(sigmaminus-task # o2-linter: disable=name/o2-workflow
 o2physics_add_dpl_workflow(sigmaplusbuilder
     SOURCES sigmaplusbuilder.cxx
     REUSE_FROM LfStrangenessPCH
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(strange-tree-creator

@@ -387,46 +387,46 @@ struct JetTaggerHFTask {
     // Set up the resolution function
     switch (resoFuncMatch) {
       case 0:
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsCharmJetMC = (std::vector<float>)paramsResoFuncCharmJetMC;
-        vecParamsBeautyJetMC = (std::vector<float>)paramsResoFuncBeautyJetMC;
-        vecParamsLfJetMC = (std::vector<float>)paramsResoFuncLfJetMC;
+        vecParamsData = paramsResoFuncData;
+        vecParamsCharmJetMC = paramsResoFuncCharmJetMC;
+        vecParamsBeautyJetMC = paramsResoFuncBeautyJetMC;
+        vecParamsLfJetMC = paramsResoFuncLfJetMC;
         LOG(info) << "defined parameters of resolution function: custom";
         break;
       case 1:
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsIncJetMC = (std::vector<float>)paramsResoFuncIncJetMC;
+        vecParamsData = paramsResoFuncData;
+        vecParamsIncJetMC = paramsResoFuncIncJetMC;
         useResoFuncFromIncJet = true;
         LOG(info) << "defined parameters of resolution function: custom & use inclusive distribution";
         break;
       case 2: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         vecParamsCharmJetMC = {282119.753, -0.065, 0.893, 11.608, 0.945, 8.029, 0.131, 6.244, 0.027};
         vecParamsBeautyJetMC = {74901.583, -0.082, 0.874, 10.332, 0.941, 7.352, 0.097, 6.220, 0.022};
         vecParamsLfJetMC = {1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, MB, LHC23d1k";
         break;
       case 3: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         vecParamsIncJetMC = {1908803.027, -0.059, 0.895, 13.467, 1.005, 8.867, 0.098, 6.929, 0.011};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, MB, LHC23d1k & use inclusive distribution";
         useResoFuncFromIncJet = true;
         break;
       case 4: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         vecParamsCharmJetMC = {743719.121, -0.960, -0.240, 13.765, 1.314, 10.761, 0.293, 8.538, 0.052};
         vecParamsBeautyJetMC = {88888.418, 0.256, 1.003, 10.185, 0.740, 8.216, 0.147, 7.228, 0.040};
         vecParamsLfJetMC = {414860.372, -1.000, 0.285, 14.561, 1.464, 11.693, 0.339, 9.183, 0.052};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, weighted, LHC24g4";
         break;
       case 5: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         vecParamsIncJetMC = {2211391.862, 0.360, 1.028, 13.019, 0.650, 11.151, 0.215, 9.462, 0.044};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, weighted, LHC24g4 & use inclusive distribution";
         useResoFuncFromIncJet = true;
         break;
       case 6: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         for (size_t j = 0; j < resoFuncIncCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncIncCCDB[j]) {
@@ -440,7 +440,7 @@ struct JetTaggerHFTask {
         useResoFuncFromIncJet = true;
         break;
       case 7: // TODO
-        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsData = paramsResoFuncData;
         for (size_t j = 0; j < resoFuncBeautyCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncBeautyCCDB[j]) {
@@ -584,7 +584,7 @@ struct JetTaggerHFTask {
 
       int nSVs = analysisJet.template secondaryVertices_as<SecondaryVertices>().size();
 
-      jettaggingutilities::BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(nSVs), analysisJet.mass()};
+      jettaggingutilities::BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), nSVs, analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
       svsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 

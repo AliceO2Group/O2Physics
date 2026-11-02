@@ -560,6 +560,8 @@ class VarManager : public TObject
     kCharge1,
     kDCAxy1,
     kDCAz1,
+    kDCAxyOverSig1,
+    kDCAzOverSig1,
     kITSclusterMap1,
     kTPCnSigmaEl1,
     kPin_leg1,
@@ -570,6 +572,8 @@ class VarManager : public TObject
     kCharge2,
     kDCAxy2,
     kDCAz2,
+    kDCAxyOverSig2,
+    kDCAzOverSig2,
     kITSclusterMap2,
     kTPCnSigmaEl2,
 
@@ -888,6 +892,8 @@ class VarManager : public TObject
     kQuadDCAsigXYZ,
     kSignQuadDCAsigXY,
     kCosPointingAngle,
+    kD0ImpParProduct,
+    kD0DcaDaughters,
     kImpParXYJpsi,
     kImpParXYK,
     kDCATrackProd,
@@ -4104,14 +4110,18 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kDCAxy2] = dca2XY;
       values[kDCAz2] = dca2Z;
 
+      double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
+      double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
+      double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
+      double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
+
+      values[kDCAxyOverSig1] = dca1sigXY;
+      values[kDCAzOverSig1] = dca1sigZ;
+      values[kDCAxyOverSig2] = dca2sigXY;
+      values[kDCAzOverSig2] = dca2sigZ;
+
       if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
         // Quantities based on the barrel tables
-
-        double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
-        double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
-        double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
-        double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
-
         values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
         values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
         values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
@@ -5235,6 +5245,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxyErr] = -999.;
       values[kVertexingLxyzErr] = -999.;
       values[kVertexingLzErr] = -999.;
+      values[kVertexingLxyOverErr] = -999.;
+      values[kVertexingLzOverErr] = -999.;
+      values[kVertexingLxyzOverErr] = -999.;
 
       values[kVertexingTauxy] = -999.;
       values[kVertexingTauz] = -999.;
@@ -7966,6 +7979,14 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
+
+  if constexpr (pairType == kDecayToKPi) {
+    if constexpr ((fillMap & TrackDCA) > 0 || (fillMap & ReducedTrackBarrel) > 0) {
+      values[kDCAxy1] = t1.dcaXY();
+      values[kDCAxy2] = t2.dcaXY();
+      values[kD0ImpParProduct] = t1.dcaXY() * t2.dcaXY();
+    }
+  }
 }
 
 template <typename M, typename T>
@@ -8070,7 +8091,17 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
         v1 = {trackParVar0.getPt(), trackParVar0.getEta(), trackParVar0.getPhi(), m1};
         v2 = {trackParVar1.getPt(), trackParVar1.getEta(), trackParVar1.getPhi(), m2};
         v12 = v1 + v2;
+
+        const auto pos1 = trackParVar0.getXYZGlo();
+        const auto pos2 = trackParVar1.getXYZGlo();
+
+        const double dx = pos1.X() - pos2.X();
+        const double dy = pos1.Y() - pos2.Y();
+        const double dz = pos1.Z() - pos2.Z();
+
+        values[kD0DcaDaughters] = std::sqrt(dx * dx + dy * dy + dz * dz);
       }
+
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
                                 std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +

@@ -19,6 +19,7 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
@@ -37,6 +38,7 @@
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -69,6 +71,8 @@ struct Cha01710analysis {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
+
+  o2::aod::ITSResponse itsResponse;
 
   Configurable<std::string> cfgUrl{"cfgUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
 
@@ -110,6 +114,8 @@ struct Cha01710analysis {
     Configurable<float> cfgDcaZMax{"cfgDcaZMax", 2.f, "maximum |DCAz| (cm)"};
     Configurable<float> cfgTPCNSigmaMax{"cfgTPCNSigmaMax", 3.f, "maximum |TPC nSigma(K)| without TOF"};
     Configurable<float> cfgCombinedNSigmaMax{"cfgCombinedNSigmaMax", 3.f, "maximum combined TPC-TOF nSigma(K)"};
+    Configurable<bool> cfgPIDITSFlag{"cfgPIDITSFlag", true, "PID ITS flag"};
+    Configurable<float> cfgPIDMaxITSnSigmaKaon{"cfgPIDMaxITSnSigmaKaon", 3.0, "ITS nSigma selection"};
   } kaonCuts;
 
   struct : ConfigurableGroup {
@@ -193,6 +199,8 @@ struct Cha01710analysis {
     histos.add("Kaon/hTOFNSigma", "charged kaon TOF PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
     histos.add("Kaon/hTPCNSigmaSelected", "charged kaon TPC PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
     histos.add("Kaon/hTOFNSigmaSelected", "charged kaon TOF PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
+    histos.add("Kaon/hITSNSigma", "charged kaon ITS PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
+    histos.add("Kaon/hITSNSigmaSelected", "charged kaon ITS PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
 
     histos.add("Pair/hSignalPlus", "K0S K+ same-event versus EP", HistType::kTHnSparseF, {cfgAxisMass, cfgAxisPt, cfgAxisCent, cfgAxisEP});
     histos.add("Pair/hSignalMinus", "K0S K- same-event versus EP", HistType::kTHnSparseF, {cfgAxisMass, cfgAxisPt, cfgAxisCent, cfgAxisEP});
@@ -263,9 +271,28 @@ struct Cha01710analysis {
     histos.fill(HIST("Kaon/hTPCNSigma"), track.pt(), track.tpcNSigmaKa());
     if (track.hasTOF()) {
       histos.fill(HIST("Kaon/hTOFNSigma"), track.pt(), track.tofNSigmaKa());
-      return std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()) < kaonCuts.cfgCombinedNSigmaMax;
     }
-    return std::abs(track.tpcNSigmaKa()) < kaonCuts.cfgTPCNSigmaMax;
+    histos.fill(HIST("Kaon/hITSNSigma"), track.pt(), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track));
+
+    Configurable<bool> cfgPIDITSFlag{"cfgPIDITSFlag", true, "PID ITS flag"};
+    Configurable<float> cfgPIDMaxITSnSigmaKaon{"cfgPIDMaxITSnSigmaKaon", 3.0, "ITS nSigma selection"};
+
+    if (track.hasTOF()) {
+      if (std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()) > kaonCuts.cfgCombinedNSigmaMax) {
+        return false;
+      }
+      if (kaonCuts.cfgPIDITSFlag && std::abs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track)) > kaonCuts.cfgPIDMaxITSnSigmaKaon) {
+        return false;
+      }
+      return true;
+    }
+    if (std::abs(track.tpcNSigmaKa()) > kaonCuts.cfgTPCNSigmaMax) {
+      return false;
+    }
+    if (kaonCuts.cfgPIDITSFlag && std::abs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track)) > kaonCuts.cfgPIDMaxITSnSigmaKaon) {
+      return false;
+    }
+    return true;
   }
 
   template <typename T>
