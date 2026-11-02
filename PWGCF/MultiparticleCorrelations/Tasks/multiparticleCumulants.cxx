@@ -41,6 +41,7 @@
 #include <TObject.h>
 #include <TParticlePDG.h>
 #include <TProfile.h>
+#include <TProfile2D.h>
 #include <TString.h>
 #include <TSystem.h>
 
@@ -203,9 +204,11 @@ static constexpr std::array<const char*, eBeforeAfter_N * 2> BeforeAfterNames = 
   "After"};
 
 static constexpr int NumHarmonics = 3;                                                               // n = 2, 3, 4
-static constexpr int NumTwoPCorrBins = NumHarmonics;                                                 // <v2^2>, <v3^2>, <v4^2>, in this case 3
-static constexpr int NumFourPCorrBins = (NumHarmonics * (NumHarmonics + 1)) / 2;                     // <v2^2 v2^2>, <v2^2 v3^2>, <v2^2 v4^2>, <v3^2 v3^2>, <v3^2 v4^2>, <v4^2 v4^2>, with <vn^2 vn^2>, in this case 6
-static constexpr int NumSixPCorrBins = (NumHarmonics * (NumHarmonics - 1) * (NumHarmonics - 2)) / 6; // <v2^2 v3^2 v4^2>, without <vn^2 vn^2 vm^2>, in this case 1
+static constexpr int NumTwoPCorrBins = NumHarmonics + 1;                                             // <<2>>_n = <v1^2>, <v2^2>, <v3^2>, <v4^2>, in this case 3
+static constexpr int NumThreePCorrBins = 3;                                                          // <<3>>_{n1, n2, n3}, (n1, n2, n3) = (2, -1, -1), (3, -2, -1), (4, -2, -2), in this case 3
+static constexpr int NumFourPCorrBins = (NumHarmonics * (NumHarmonics + 1)) / 2;                     // <<4>>_{n1, n1, n2, n2} = <v2^2 v2^2>, <v2^2 v3^2>, <v2^2 v4^2>, <v3^2 v3^2>, <v3^2 v4^2>, <v4^2 v4^2>, in this case 6
+static constexpr int NumSixPCorrBins = (NumHarmonics * (NumHarmonics - 1) * (NumHarmonics - 2)) / 6; // <<6>>_{n1, n1, n2, n2, n3, n3} = <v2^2 v3^2 v4^2>, in this case 1
+static constexpr std::array<std::array<int, 3>, NumThreePCorrBins> ThreePHarmonicIndex{{{2, 1, 1}, {3, 2, 1}, {4, 2, 2}}};
 static constexpr std::array<std::array<int, 2>, NumFourPCorrBins> FourPHarmonicIndex{{{2, 2}, {2, 3}, {2, 4}, {3, 3}, {3, 4}, {4, 4}}};
 static constexpr int NumEtaGap = 3;
 
@@ -295,6 +298,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   Configurable<std::vector<float>> cfNumTrackBins{"cfNumTrackBins", {100, 0., 5000.}, "nNumTrackBins, NumTrackMin, NumTrackMax"};
 
   Configurable<std::vector<double>> cfTwoParticleCorrBins{"cfTwoParticleCorrBins", {100, 0., 2e-3}, "nTwoParticleCorrBins, TwoParticleCorrMin, TwoParticleCorrMax"};
+  Configurable<std::vector<double>> cfThreeParticleCorrBins{"cfThreeParticleCorrBins", {100, 0., 2e-4}, "nThreeParticleCorrBins, ThreeParticleCorrMin, ThreeParticleCorrMax"};
   Configurable<std::vector<double>> cfFourParticleCorrBins{"cfFourParticleCorrBins", {100, 0., 1e-7}, "nFourParticleCorrBins, FourParticleCorrMin, FourParticleCorrMax"};
   Configurable<std::vector<double>> cfSixParticleCorrBins{"cfSixParticleCorrBins", {100, 0., 1e-11}, "nSixParticleCorrBins, SixParticleCorrMin, SixParticleCorrMax"};
   Configurable<std::vector<int>> cfNumTrackTotalBins{"cfNumTrackTotalBins", {100, 0, 3000}, "nNumTrackTotalBins, NumTrackTotalMin, NumTrackTotalMax"};
@@ -364,6 +368,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     std::vector<float> fNumContribBins = {100, 0, 5000};
     std::vector<float> fNumTrackBins = {100, 0, 5000};
     std::vector<double> fTwoParticleCorrBins = {100, 0, 2e-3};
+    std::vector<double> fThreeParticleCorrBins = {100, 0., 2e-4};
     std::vector<double> fFourParticleCorrBins = {100, 0, 1e-7};
     std::vector<double> fSixParticleCorrBins = {100, 0, 1e-11};
     std::vector<int> fNumTrackTotalBins = {100, 0, 3000};
@@ -437,14 +442,18 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     TList* fMultiparticleCorrelationBackupList = nullptr;
     std::map<int, TList*> fMultiparticleCorrelationByRunMap;
     std::array<TProfile*, eBeforeAfter_N> fTwoParticleCorrelationProfiles{}; // [cut]
+    std::array<TProfile*, eBeforeAfter_N> fThreeParticleCorrelationProfiles{};
     std::array<TProfile*, eBeforeAfter_N> fFourParticleCorrelationProfiles{};
     std::array<TProfile*, eBeforeAfter_N> fSixParticleCorrelationProfiles{};
     std::array<std::array<TProfile*, eBeforeAfter_N>, NumEtaGap> fTwoParticleCorrelationGapProfiles{};
     std::array<std::array<std::array<TH1D*, NumTwoPCorrBins>, eBeforeAfter_N>, eBeforeAfter_N> fTwoParticleCorrelationHistograms{}; // [cut][event weight][n]
+    std::array<std::array<std::array<TH1D*, NumThreePCorrBins>, eBeforeAfter_N>, eBeforeAfter_N> fThreeParticleCorrelationHistograms{};
     std::array<std::array<std::array<TH1D*, NumFourPCorrBins>, eBeforeAfter_N>, eBeforeAfter_N> fFourParticleCorrelationHistograms{};
     std::array<std::array<std::array<TH1D*, NumSixPCorrBins>, eBeforeAfter_N>, eBeforeAfter_N> fSixParticleCorrelationHistograms{};
     std::array<std::array<TH1D*, NumTwoPCorrBins>, NumEtaGap> fTwoParticleCorrelationGapHistograms{};
     std::array<TProfile2D*, eBeforeAfter_N> fTwoParticleCorrelationNumTrackProfiles{};
+    std::array<TProfile2D*, eBeforeAfter_N> fThreeParticleCorrelationNumTrackProfiles{};
+    std::array<TProfile2D*, eBeforeAfter_N> fFourParticleCorrelationNumTrackProfiles{};
   } mc;
 
   struct EventByEventQuantities {
@@ -455,12 +464,15 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     float fCentralitySim = 0.;
     float fImpactParameter = 0.;
     float fNumContrib = 0.;
-    std::array<std::array<float, NumTwoPCorrBins>, eBeforeAfter_N> fTwoParticleCorrelationEbye{}; // <<2>> [before, after][<v2^2>, <v3^2>, <v4^2>]
+    std::array<std::array<float, NumTwoPCorrBins>, eBeforeAfter_N> fTwoParticleCorrelationEbye{}; // <<2>> [before, after][<v1^2>, <v2^2>,<v3^2>, <v4^2>]
     std::array<std::array<float, NumTwoPCorrBins>, eBeforeAfter_N> fTwoParticleCorrelationMinEbye{};
     std::array<std::array<float, NumTwoPCorrBins>, eBeforeAfter_N> fTwoParticleCorrelationMaxEbye{};
     std::array<std::array<float, NumFourPCorrBins>, eBeforeAfter_N> fFourParticleCorrelationEbye{}; // <<4>> [before, after][<v2^2 v2^2>, <v2^2 v3^2>, <v2^2 v4^2>, <v3^2 v3^2>, <v3^2 v4^2>, <v4^2 v4^2>]
     std::array<std::array<float, NumFourPCorrBins>, eBeforeAfter_N> fFourParticleCorrelationMinEbye{};
     std::array<std::array<float, NumFourPCorrBins>, eBeforeAfter_N> fFourParticleCorrelationMaxEbye{};
+    std::array<std::array<float, NumThreePCorrBins>, eBeforeAfter_N> fThreeParticleCorrelationEbye{}; // <<3>> [before, after][]
+    std::array<std::array<float, NumThreePCorrBins>, eBeforeAfter_N> fThreeParticleCorrelationMinEbye{};
+    std::array<std::array<float, NumThreePCorrBins>, eBeforeAfter_N> fThreeParticleCorrelationMaxEbye{};
     std::array<std::array<float, NumSixPCorrBins>, eBeforeAfter_N> fSixParticleCorrelationEbye{}; // <<6>> [before, after][<v2^2 v3^2 v4^2>]
     std::array<std::array<float, NumSixPCorrBins>, eBeforeAfter_N> fSixParticleCorrelationMinEbye{};
     std::array<std::array<float, NumSixPCorrBins>, eBeforeAfter_N> fSixParticleCorrelationMaxEbye{};
@@ -669,7 +681,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     return TComplex::Conjugate(mcc.fQvectorAfter[-n][p]);
   }
 
-  // TComplex mccTwo(int n1, int n2, EnBeforeAfter eba)
+  // TComplex mccFour(int n1, int n2, EnBeforeAfter eba)
   // {
   //   return mccQ(n1, 1, eba) * mccQ(n2, 1, eba) - mccQ(n1 + n2, 2, eba);
   // }
@@ -1006,13 +1018,19 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
       for (int i = 0; i < eBeforeAfter_N; i++) { // before/after cut
         mc.fTwoParticleCorrelationProfiles[i] = nullptr;
+        mc.fThreeParticleCorrelationProfiles[i] = nullptr;
         mc.fFourParticleCorrelationProfiles[i] = nullptr;
         mc.fSixParticleCorrelationProfiles[i] = nullptr;
-        mc.fTwoParticleCorrelationGapProfiles[i].fill(nullptr);
+        for (int k = 0; k < NumEtaGap; k++) {
+          mc.fTwoParticleCorrelationGapProfiles[k][i] = nullptr;
+        }
         mc.fTwoParticleCorrelationNumTrackProfiles[i] = nullptr;
+        mc.fThreeParticleCorrelationNumTrackProfiles[i] = nullptr;
+        mc.fFourParticleCorrelationNumTrackProfiles[i] = nullptr;
 
         for (int j = 0; j < eBeforeAfter_N; j++) { // before/after weight
           mc.fTwoParticleCorrelationHistograms[i][j].fill(nullptr);
+          mc.fThreeParticleCorrelationHistograms[i][j].fill(nullptr);
           mc.fFourParticleCorrelationHistograms[i][j].fill(nullptr);
           mc.fSixParticleCorrelationHistograms[i][j].fill(nullptr);
         }
@@ -1023,15 +1041,15 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         mc.fTwoParticleCorrelationProfiles[i] = new TProfile(Form("prof2%sCut", BeforeAfterNames[i + 2]), Form("2-p correlation %s cut", BeforeAfterNames[i]), NumTwoPCorrBins, 0., 1.);
         mc.fTwoParticleCorrelationProfiles[i]->Sumw2();
         mc.fTwoParticleCorrelationNumTrackProfiles[i] = new TProfile2D(Form("prof2NumTrack%sCut", BeforeAfterNames[i + 2]), Form("2-p correlation vs. nTracks %s cut", BeforeAfterNames[i]), NumTwoPCorrBins, 0., 1., tc.fNumTrackTotalBins[0], tc.fNumTrackTotalBins[1], tc.fNumTrackTotalBins[2]);
-        mc.fTwoParticleCorrelationNumTrackProfiles[i]->Sumw2();
+        // mc.fTwoParticleCorrelationNumTrackProfiles[i]->Sumw2();
         for (int n = 0; n < NumEtaGap; n++) {
           mc.fTwoParticleCorrelationGapProfiles[n][i] = new TProfile(Form("prof2%sCutGapped%.1f", BeforeAfterNames[i + 2], tc.fEtaGap[n]), Form("2-p correlation %s cut, %.1f gapped", BeforeAfterNames[i], tc.fEtaGap[n]), NumTwoPCorrBins, 0., 1.);
           mc.fTwoParticleCorrelationGapProfiles[n][i]->Sumw2();
         }
 
-        for (int k = 0; k < NumTwoPCorrBins; k++) { // v2, v3, v4
-          mc.fTwoParticleCorrelationProfiles[i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%d^2>", k + 2));
-          mc.fTwoParticleCorrelationNumTrackProfiles[i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%d^2>", k + 2));
+        for (int k = 0; k < NumTwoPCorrBins; k++) { // v1, v2, v3, v4
+          mc.fTwoParticleCorrelationProfiles[i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%d^2>", k + 1));
+          mc.fTwoParticleCorrelationNumTrackProfiles[i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%d^2>", k + 1));
           for (int m = 0; m < tc.fNumTrackTotalBins[0]; m++) {
             int width = (tc.fNumTrackTotalBins[2] - tc.fNumTrackTotalBins[1]) / tc.fNumTrackTotalBins[0];
             int lbound = m * width;
@@ -1039,16 +1057,16 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
             mc.fTwoParticleCorrelationNumTrackProfiles[i]->GetYaxis()->SetBinLabel(m + 1, Form("%d-%d", lbound, ubound));
           }
           for (int n = 0; n < NumEtaGap; n++) {
-            mc.fTwoParticleCorrelationGapProfiles[n][i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%d^2>", k + 2));
+            mc.fTwoParticleCorrelationGapProfiles[n][i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%d^2>", k + 1));
             if (static_cast<bool>(i)) {
-              mc.fTwoParticleCorrelationGapHistograms[n][k] = new TH1D(Form("hist2v%dAfterCutWithGap%.1f", k + 2, tc.fEtaGap[n]), Form("2-p correlation v%d^2 after cut with gap %.1f", k + 2, tc.fEtaGap[n]), static_cast<int>(tc.fTwoParticleCorrBins[0]), tc.fTwoParticleCorrBins[1], tc.fTwoParticleCorrBins[2]);
+              mc.fTwoParticleCorrelationGapHistograms[n][k] = new TH1D(Form("hist2v%dAfterCutWithGap%.1f", k + 1, tc.fEtaGap[n]), Form("2-p correlation v%d^2 after cut with gap %.1f", k + 1, tc.fEtaGap[n]), static_cast<int>(tc.fTwoParticleCorrBins[0]), tc.fTwoParticleCorrBins[1], tc.fTwoParticleCorrBins[2]);
               mc.fTwoParticleCorrelationGapHistograms[n][k]->Sumw2();
               mc.fTwoParticleCorrelationGapHistograms[n][k]->SetOption("HIST");
             }
           }
 
           for (int j = 0; j < eBeforeAfter_N; j++) { // before/after weight
-            mc.fTwoParticleCorrelationHistograms[i][j][k] = new TH1D(Form("hist2v%d%sCut%sWeight", k + 2, BeforeAfterNames[i + 2], BeforeAfterNames[j + 2]), Form("2-p correlation v%d^2 %s cut %s weight", k + 2, BeforeAfterNames[i], BeforeAfterNames[j]), static_cast<int>(tc.fTwoParticleCorrBins[0]), tc.fTwoParticleCorrBins[1], tc.fTwoParticleCorrBins[2]);
+            mc.fTwoParticleCorrelationHistograms[i][j][k] = new TH1D(Form("hist2v%d%sCut%sWeight", k + 1, BeforeAfterNames[i + 2], BeforeAfterNames[j + 2]), Form("2-p correlation v%d^2 %s cut %s weight", k + 1, BeforeAfterNames[i], BeforeAfterNames[j]), static_cast<int>(tc.fTwoParticleCorrBins[0]), tc.fTwoParticleCorrBins[1], tc.fTwoParticleCorrBins[2]);
             if (static_cast<bool>(j)) {
               mc.fTwoParticleCorrelationHistograms[i][j][k]->Sumw2();
               mc.fTwoParticleCorrelationHistograms[i][j][k]->SetOption("HIST");
@@ -1068,13 +1086,52 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         }
       }
 
+      // Define 3p profiles and histograms:
+      for (int i = 0; i < eBeforeAfter_N; i++) { // before/after cut
+        mc.fThreeParticleCorrelationProfiles[i] = new TProfile(Form("prof3%sCut", BeforeAfterNames[i + 2]), Form("3-p correlation %s cut", BeforeAfterNames[i]), NumThreePCorrBins, 0., 1.);
+        mc.fThreeParticleCorrelationProfiles[i]->Sumw2();
+        mc.fThreeParticleCorrelationNumTrackProfiles[i] = new TProfile2D(Form("prof3NumTrack%sCut", BeforeAfterNames[i + 2]), Form("3-p correlation vs. nTracks %s cut", BeforeAfterNames[i]), NumThreePCorrBins, 0., 1., tc.fNumTrackTotalBins[0], tc.fNumTrackTotalBins[1], tc.fNumTrackTotalBins[2]);
+        // mc.fThreeParticleCorrelationNumTrackProfiles[i]->Sumw2();
+
+        for (int k = 0; k < NumThreePCorrBins; k++) {
+          mc.fThreeParticleCorrelationProfiles[i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%dv%dv%d>", ThreePHarmonicIndex[k][0], ThreePHarmonicIndex[k][1], ThreePHarmonicIndex[k][2]));
+          mc.fThreeParticleCorrelationNumTrackProfiles[i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%dv%dv%d>", ThreePHarmonicIndex[k][0], ThreePHarmonicIndex[k][1], ThreePHarmonicIndex[k][2]));
+          for (int m = 0; m < tc.fNumTrackTotalBins[0]; m++) {
+            int width = (tc.fNumTrackTotalBins[2] - tc.fNumTrackTotalBins[1]) / tc.fNumTrackTotalBins[0];
+            int lbound = m * width;
+            int ubound = (m + 1) * width;
+            mc.fThreeParticleCorrelationNumTrackProfiles[i]->GetYaxis()->SetBinLabel(m + 1, Form("%d-%d", lbound, ubound));
+          }
+
+          for (int j = 0; j < eBeforeAfter_N; j++) { // before/after weight
+            mc.fThreeParticleCorrelationHistograms[i][j][k] = new TH1D(Form("hist3v%dv%dv%d%sCut%sWeight", ThreePHarmonicIndex[k][0], ThreePHarmonicIndex[k][1], ThreePHarmonicIndex[k][2], BeforeAfterNames[i + 2], BeforeAfterNames[j + 2]), Form("3-p correlation v%dv%dv%d %s cut %s weight", ThreePHarmonicIndex[k][0], ThreePHarmonicIndex[k][1], ThreePHarmonicIndex[k][2], BeforeAfterNames[i], BeforeAfterNames[j]), static_cast<int>(tc.fThreeParticleCorrBins[0]), tc.fThreeParticleCorrBins[1], tc.fThreeParticleCorrBins[2]);
+            if (static_cast<bool>(j)) {
+              mc.fThreeParticleCorrelationHistograms[i][j][k]->Sumw2();
+              mc.fThreeParticleCorrelationHistograms[i][j][k]->SetOption("HIST");
+            }
+            mc.fMultiparticleCorrelationBackupList->Add(mc.fThreeParticleCorrelationHistograms[i][j][k]);
+          }
+        }
+        mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->Add(mc.fThreeParticleCorrelationProfiles[i]);
+        mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->Add(mc.fThreeParticleCorrelationNumTrackProfiles[i]);
+      }
+
       // Define 4p profiles and histograms:
       for (int i = 0; i < eBeforeAfter_N; i++) { // before/after cut
         mc.fFourParticleCorrelationProfiles[i] = new TProfile(Form("prof4%sCut", BeforeAfterNames[i + 2]), Form("4-p correlation %s cut", BeforeAfterNames[i]), NumFourPCorrBins, 0., 1.);
         mc.fFourParticleCorrelationProfiles[i]->Sumw2();
+        mc.fFourParticleCorrelationNumTrackProfiles[i] = new TProfile2D(Form("prof4NumTrack%sCut", BeforeAfterNames[i + 2]), Form("4-p correlation vs. nTracks %s cut", BeforeAfterNames[i]), NumFourPCorrBins, 0., 1., tc.fNumTrackTotalBins[0], tc.fNumTrackTotalBins[1], tc.fNumTrackTotalBins[2]);
+        // mc.fFourParticleCorrelationNumTrackProfiles[i]->Sumw2();
 
         for (int k = 0; k < NumFourPCorrBins; k++) { // v2v2, v2v3, v2v4, v3v3, v3v4, v4v4
           mc.fFourParticleCorrelationProfiles[i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%d^2v%d^2>", FourPHarmonicIndex[k][0], FourPHarmonicIndex[k][1]));
+          mc.fFourParticleCorrelationNumTrackProfiles[i]->GetXaxis()->SetBinLabel(k + 1, Form("<v%d^2v%d^2>", FourPHarmonicIndex[k][0], FourPHarmonicIndex[k][1]));
+          for (int m = 0; m < tc.fNumTrackTotalBins[0]; m++) {
+            int width = (tc.fNumTrackTotalBins[2] - tc.fNumTrackTotalBins[1]) / tc.fNumTrackTotalBins[0];
+            int lbound = m * width;
+            int ubound = (m + 1) * width;
+            mc.fFourParticleCorrelationNumTrackProfiles[i]->GetYaxis()->SetBinLabel(m + 1, Form("%d-%d", lbound, ubound));
+          }
 
           for (int j = 0; j < eBeforeAfter_N; j++) { // before/after weight
             mc.fFourParticleCorrelationHistograms[i][j][k] = new TH1D(Form("hist4v%dv%d%sCut%sWeight", FourPHarmonicIndex[k][0], FourPHarmonicIndex[k][1], BeforeAfterNames[i + 2], BeforeAfterNames[j + 2]), Form("4-p correlation v%d^2v%d^2 %s cut %s weight", FourPHarmonicIndex[k][0], FourPHarmonicIndex[k][1], BeforeAfterNames[i], BeforeAfterNames[j]), static_cast<int>(tc.fFourParticleCorrBins[0]), tc.fFourParticleCorrBins[1], tc.fFourParticleCorrBins[2]);
@@ -1086,6 +1143,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
           }
         }
         mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->Add(mc.fFourParticleCorrelationProfiles[i]);
+        mc.fMultiparticleCorrelationByRunMap[ebye.fRunNumber]->Add(mc.fFourParticleCorrelationNumTrackProfiles[i]);
       }
 
       // Define 6p profiles and histograms:
@@ -1385,7 +1443,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
         if (ctParticleCuts<eRec>(track)) {
 
-          // Fill phi/pt real histogram with this run number:
+          // Fill phi (real rec), pt (MC rec) histogram with this run number:
           wt.fPhiByRunMap.at(ebye.fRunNumber)->Fill(track.phi());
           wt.fPtRealByRunMap.at(ebye.fRunNumber)->Fill(track.pt());
 
@@ -1446,6 +1504,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
             pc.fParticleHistograms[ePhi][eSim][eBefore]->Fill(mcparticle.phi());
 
             if (ctParticleCuts<eSim>(mcparticle)) {
+              // Fill pt (MC sim) histogram with this run number:
+              wt.fPtMCByRunMap.at(ebye.fRunNumber)->Fill(mcparticle.pt());
               // Fill MC particle histograms after cut:
               pc.fParticleHistograms[ePt][eSim][eAfter]->Fill(mcparticle.pt());
               pc.fParticleHistograms[eEta][eSim][eAfter]->Fill(mcparticle.eta());
@@ -1468,8 +1528,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     // 2-p correlations:
     for (int i = 0; i < NumTwoPCorrBins; i++) {
       int k = 2;
-      mcc.h1 = -(i + 2);
-      mcc.h2 = i + 2;
+      mcc.h1 = -(i + 1);
+      mcc.h2 = i + 1;
       std::array<int, 2> harmonicsTwoNum = {mcc.h1, mcc.h2};
       std::array<int, 2> harmonicsTwoDen = {0, 0};
 
@@ -1483,16 +1543,16 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         mc.fTwoParticleCorrelationProfiles[eBefore]->Fill(mc.fTwoParticleCorrelationProfiles[eBefore]->GetXaxis()->GetBinCenter(i + 1), ebye.fTwoParticleCorrelationEbye[eBefore][i], wTwoRecursionBefore);
         mc.fTwoParticleCorrelationHistograms[eBefore][eBefore][i]->Fill(ebye.fTwoParticleCorrelationEbye[eBefore][i]);
         mc.fTwoParticleCorrelationHistograms[eBefore][eAfter][i]->Fill(ebye.fTwoParticleCorrelationEbye[eBefore][i], wTwoRecursionBefore);
-        mc.fTwoParticleCorrelationNumTrackProfiles[eBefore]->Fill(mc.fTwoParticleCorrelationNumTrackProfiles[eBefore]->GetXaxis()->GetBinCenter(i + 1), nTracksBefore, ebye.fTwoParticleCorrelationEbye[eBefore][i], wTwoRecursionBefore);
+        mc.fTwoParticleCorrelationNumTrackProfiles[eBefore]->Fill(mc.fTwoParticleCorrelationNumTrackProfiles[eBefore]->GetXaxis()->GetBinCenter(i + 1), nTracksBefore, ebye.fTwoParticleCorrelationEbye[eBefore][i]);
 
         // Find max and min:
         if (ebye.fTwoParticleCorrelationEbye[eBefore][i] > ebye.fTwoParticleCorrelationMaxEbye[eBefore][i]) {
           ebye.fTwoParticleCorrelationMaxEbye[eBefore][i] = ebye.fTwoParticleCorrelationEbye[eBefore][i];
-          LOGF(info, "max v%d^2 so far = %e", i + 2, ebye.fTwoParticleCorrelationEbye[eBefore][i]);
+          LOGF(info, "max v%d^2 so far = %e", i + 1, ebye.fTwoParticleCorrelationEbye[eBefore][i]);
         }
         if (ebye.fTwoParticleCorrelationEbye[eBefore][i] < ebye.fTwoParticleCorrelationMinEbye[eBefore][i]) {
           ebye.fTwoParticleCorrelationMinEbye[eBefore][i] = ebye.fTwoParticleCorrelationEbye[eBefore][i];
-          LOGF(info, "min v%d^2 so far = %e", i + 2, ebye.fTwoParticleCorrelationEbye[eBefore][i]);
+          LOGF(info, "min v%d^2 so far = %e", i + 1, ebye.fTwoParticleCorrelationEbye[eBefore][i]);
         }
       } else {
         if (tc.fPrintSwitch) {
@@ -1510,16 +1570,16 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         mc.fTwoParticleCorrelationProfiles[eAfter]->Fill(mc.fTwoParticleCorrelationProfiles[eAfter]->GetXaxis()->GetBinCenter(i + 1), ebye.fTwoParticleCorrelationEbye[eAfter][i], wTwoRecursionAfter);
         mc.fTwoParticleCorrelationHistograms[eAfter][eBefore][i]->Fill(ebye.fTwoParticleCorrelationEbye[eAfter][i]);
         mc.fTwoParticleCorrelationHistograms[eAfter][eAfter][i]->Fill(ebye.fTwoParticleCorrelationEbye[eAfter][i], wTwoRecursionAfter);
-        mc.fTwoParticleCorrelationNumTrackProfiles[eAfter]->Fill(mc.fTwoParticleCorrelationNumTrackProfiles[eAfter]->GetXaxis()->GetBinCenter(i + 1), nTracksAfter, ebye.fTwoParticleCorrelationEbye[eAfter][i], wTwoRecursionAfter);
+        mc.fTwoParticleCorrelationNumTrackProfiles[eAfter]->Fill(mc.fTwoParticleCorrelationNumTrackProfiles[eAfter]->GetXaxis()->GetBinCenter(i + 1), nTracksAfter, ebye.fTwoParticleCorrelationEbye[eAfter][i]);
 
         // Find max and min:
         if (ebye.fTwoParticleCorrelationEbye[eAfter][i] > ebye.fTwoParticleCorrelationMaxEbye[eAfter][i]) {
           ebye.fTwoParticleCorrelationMaxEbye[eAfter][i] = ebye.fTwoParticleCorrelationEbye[eAfter][i];
-          LOGF(info, "max v%d^2 so far = %e", i + 2, ebye.fTwoParticleCorrelationEbye[eAfter][i]);
+          LOGF(info, "max v%d^2 so far = %e", i + 1, ebye.fTwoParticleCorrelationEbye[eAfter][i]);
         }
         if (ebye.fTwoParticleCorrelationEbye[eAfter][i] < ebye.fTwoParticleCorrelationMinEbye[eAfter][i]) {
           ebye.fTwoParticleCorrelationMinEbye[eAfter][i] = ebye.fTwoParticleCorrelationEbye[eAfter][i];
-          LOGF(info, "min v%d^2 so far = %e", i + 2, ebye.fTwoParticleCorrelationEbye[eAfter][i]);
+          LOGF(info, "min v%d^2 so far = %e", i + 1, ebye.fTwoParticleCorrelationEbye[eAfter][i]);
         }
       } else {
         if (tc.fPrintSwitch) {
@@ -1562,6 +1622,70 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       }
     }
 
+    //  3-p correlations:
+    for (int i = 0; i < NumThreePCorrBins; i++) {
+      int k = 3;
+      mcc.h1 = ThreePHarmonicIndex[i][0];
+      mcc.h2 = -ThreePHarmonicIndex[i][1];
+      mcc.h3 = -ThreePHarmonicIndex[i][2];
+      std::array<int, 3> harmonicsThreeNum = {mcc.h1, mcc.h2, mcc.h3};
+      std::array<int, 3> harmonicsThreeDen = {0, 0, 0};
+
+      // Before cut:
+      TComplex threeRecursionBefore = mccRecursion(3, harmonicsThreeNum, eBefore) / mccRecursion(3, harmonicsThreeDen, eBefore).Re();
+      double wThreeRecursionBefore = mccRecursion(3, harmonicsThreeDen, eBefore).Re();
+      ebye.fThreeParticleCorrelationEbye[eBefore][i] = threeRecursionBefore.Re();
+
+      if (nTracksBefore > k - 1 && wThreeRecursionBefore > 0.) {
+        // Fill vn1vn2vn3 profile and histogram:
+        mc.fThreeParticleCorrelationProfiles[eBefore]->Fill(mc.fThreeParticleCorrelationProfiles[eBefore]->GetXaxis()->GetBinCenter(i + 1), ebye.fThreeParticleCorrelationEbye[eBefore][i], wThreeRecursionBefore);
+        mc.fThreeParticleCorrelationHistograms[eBefore][eBefore][i]->Fill(ebye.fThreeParticleCorrelationEbye[eBefore][i]);
+        mc.fThreeParticleCorrelationHistograms[eBefore][eAfter][i]->Fill(ebye.fThreeParticleCorrelationEbye[eBefore][i], wThreeRecursionBefore);
+        mc.fThreeParticleCorrelationNumTrackProfiles[eBefore]->Fill(mc.fThreeParticleCorrelationNumTrackProfiles[eBefore]->GetXaxis()->GetBinCenter(i + 1), nTracksBefore, ebye.fThreeParticleCorrelationEbye[eBefore][i]);
+
+        // Find max and min:
+        if (ebye.fThreeParticleCorrelationEbye[eBefore][i] > ebye.fThreeParticleCorrelationMaxEbye[eBefore][i]) {
+          ebye.fThreeParticleCorrelationMaxEbye[eBefore][i] = ebye.fThreeParticleCorrelationEbye[eBefore][i];
+          LOGF(info, "max v%dv%dv%d so far = %e", mcc.h1, mcc.h2, mcc.h3, ebye.fThreeParticleCorrelationEbye[eBefore][i]);
+        }
+        if (ebye.fThreeParticleCorrelationEbye[eBefore][i] < ebye.fThreeParticleCorrelationMinEbye[eBefore][i]) {
+          ebye.fThreeParticleCorrelationMinEbye[eBefore][i] = ebye.fThreeParticleCorrelationEbye[eBefore][i];
+          LOGF(info, "min v%dv%dv%d so far = %e", mcc.h1, mcc.h2, mcc.h3, ebye.fThreeParticleCorrelationEbye[eBefore][i]);
+        }
+      } else {
+        if (tc.fPrintSwitch) {
+          LOGF(warning, "cent=%f, nTracksBefore = %d, wThreeRecursionBefore = %e", rlCollisionCent, nTracksBefore, wThreeRecursionBefore);
+        }
+      }
+
+      // After cut:
+      TComplex threeRecursionAfter = mccRecursion(3, harmonicsThreeNum, eAfter) / mccRecursion(3, harmonicsThreeDen, eAfter).Re();
+      double wThreeRecursionAfter = mccRecursion(3, harmonicsThreeDen, eAfter).Re();
+      ebye.fThreeParticleCorrelationEbye[eAfter][i] = threeRecursionAfter.Re();
+
+      if (nTracksAfter > k - 1 && wThreeRecursionAfter > 0. && bNumTrackCut) {
+        // Fill vn1vn2vn3 profile and histogram:
+        mc.fThreeParticleCorrelationProfiles[eAfter]->Fill(mc.fThreeParticleCorrelationProfiles[eAfter]->GetXaxis()->GetBinCenter(i + 1), ebye.fThreeParticleCorrelationEbye[eAfter][i], wThreeRecursionAfter);
+        mc.fThreeParticleCorrelationHistograms[eAfter][eBefore][i]->Fill(ebye.fThreeParticleCorrelationEbye[eAfter][i]);
+        mc.fThreeParticleCorrelationHistograms[eAfter][eAfter][i]->Fill(ebye.fThreeParticleCorrelationEbye[eAfter][i], wThreeRecursionAfter);
+        mc.fThreeParticleCorrelationNumTrackProfiles[eAfter]->Fill(mc.fThreeParticleCorrelationNumTrackProfiles[eAfter]->GetXaxis()->GetBinCenter(i + 1), nTracksAfter, ebye.fThreeParticleCorrelationEbye[eAfter][i]);
+
+        // Find max and min:
+        if (ebye.fThreeParticleCorrelationEbye[eAfter][i] > ebye.fThreeParticleCorrelationMaxEbye[eAfter][i]) {
+          ebye.fThreeParticleCorrelationMaxEbye[eAfter][i] = ebye.fThreeParticleCorrelationEbye[eAfter][i];
+          LOGF(info, "max v%dv%dv%d so far = %e", mcc.h1, mcc.h2, mcc.h3, ebye.fThreeParticleCorrelationEbye[eAfter][i]);
+        }
+        if (ebye.fThreeParticleCorrelationEbye[eAfter][i] < ebye.fThreeParticleCorrelationMinEbye[eAfter][i]) {
+          ebye.fThreeParticleCorrelationMinEbye[eAfter][i] = ebye.fThreeParticleCorrelationEbye[eAfter][i];
+          LOGF(info, "min v%dv%dv%d so far = %e", mcc.h1, mcc.h2, mcc.h3, ebye.fThreeParticleCorrelationEbye[eAfter][i]);
+        }
+      } else {
+        if (tc.fPrintSwitch) {
+          LOGF(warning, "cent=%f, nTracksAfter = %d, wThreeRecursionAfter = %e", rlCollisionCent, nTracksAfter, wThreeRecursionAfter);
+        }
+      }
+    }
+
     //  4-p correlations:
     for (int i = 0; i < NumFourPCorrBins; i++) {
       int k = 4;
@@ -1582,6 +1706,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         mc.fFourParticleCorrelationProfiles[eBefore]->Fill(mc.fFourParticleCorrelationProfiles[eBefore]->GetXaxis()->GetBinCenter(i + 1), ebye.fFourParticleCorrelationEbye[eBefore][i], wFourRecursionBefore);
         mc.fFourParticleCorrelationHistograms[eBefore][eBefore][i]->Fill(ebye.fFourParticleCorrelationEbye[eBefore][i]);
         mc.fFourParticleCorrelationHistograms[eBefore][eAfter][i]->Fill(ebye.fFourParticleCorrelationEbye[eBefore][i], wFourRecursionBefore);
+        mc.fFourParticleCorrelationNumTrackProfiles[eBefore]->Fill(mc.fFourParticleCorrelationNumTrackProfiles[eBefore]->GetXaxis()->GetBinCenter(i + 1), nTracksBefore, ebye.fFourParticleCorrelationEbye[eBefore][i]);
 
         // Find max and min:
         if (ebye.fFourParticleCorrelationEbye[eBefore][i] > ebye.fFourParticleCorrelationMaxEbye[eBefore][i]) {
@@ -1608,6 +1733,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
         mc.fFourParticleCorrelationProfiles[eAfter]->Fill(mc.fFourParticleCorrelationProfiles[eAfter]->GetXaxis()->GetBinCenter(i + 1), ebye.fFourParticleCorrelationEbye[eAfter][i], wFourRecursionAfter);
         mc.fFourParticleCorrelationHistograms[eAfter][eBefore][i]->Fill(ebye.fFourParticleCorrelationEbye[eAfter][i]);
         mc.fFourParticleCorrelationHistograms[eAfter][eAfter][i]->Fill(ebye.fFourParticleCorrelationEbye[eAfter][i], wFourRecursionAfter);
+        mc.fFourParticleCorrelationNumTrackProfiles[eAfter]->Fill(mc.fFourParticleCorrelationNumTrackProfiles[eAfter]->GetXaxis()->GetBinCenter(i + 1), nTracksAfter, ebye.fFourParticleCorrelationEbye[eAfter][i]);
 
         // Find max and min:
         if (ebye.fFourParticleCorrelationEbye[eAfter][i] > ebye.fFourParticleCorrelationMaxEbye[eAfter][i]) {
@@ -1854,7 +1980,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     // (NContribMult) set functions and add to list:
     if (histType == eCorrNumContribMult) {
 
-      int indexBins = static_cast<int>(histType) + static_cast<int>(eMultEstm_N);
+      int indexBins = histType + static_cast<int>(eMultEstm_N);
 
       // (NContribMult) get bins:
       const auto& lMultXBins = lCrBins[indexBins];
@@ -2060,6 +2186,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     tc.fNumContribBins = cfNumContribBins;
     tc.fNumTrackBins = cfNumTrackBins;
     tc.fTwoParticleCorrBins = cfTwoParticleCorrBins;
+    tc.fThreeParticleCorrBins = cfThreeParticleCorrBins;
     tc.fFourParticleCorrBins = cfFourParticleCorrBins;
     tc.fSixParticleCorrBins = cfSixParticleCorrBins;
     tc.fNumTrackTotalBins = cfNumTrackTotalBins;
