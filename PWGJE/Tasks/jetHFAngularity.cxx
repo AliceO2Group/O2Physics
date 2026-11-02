@@ -254,7 +254,7 @@ struct JetHFAngularityTask {
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks",
                                             "Track selection string"};
   Configurable<bool> rejectReflections{"rejectReflections", true,
-                                       "Exclude reflections from response matrices and efficiency numerators"};                                          
+                                       "Exclude reflections from response matrices and efficiency numerators"};
   // Shared axes
   ConfigurableAxis binsMassD0{"binsMassD0", {500, 1.6f, 2.1f}, "m_{D^{0}} (GeV/#it{c}^{2})"};
   ConfigurableAxis binsPtD0{"binsPtD0", {200, 0.f, 100.f}, "#it{p}_{T,D^{0}} (GeV/#it{c})"};
@@ -271,7 +271,7 @@ struct JetHFAngularityTask {
   ConfigurableAxis binsPtD0Resp{"binsPtD0Resp", {50, 0.f, 50.f}, "#it{p}_{T,D^{0}} (GeV/#it{c})"};
   ConfigurableAxis binsLambda11Resp{"binsLambda11Resp", {50, 0.f, 1.f}, "#lambda_{1}^{1}"};
   ConfigurableAxis binsLambda12Resp{"binsLambda12Resp", {50, 0.f, 1.f}, "#lambda_{2}^{1}"};
-                                     
+
   Produces<aod::D0JetObjTable> objJetTable;
   Produces<aod::D0JetMCDObjTable> objJetMCDTable;
   Produces<aod::D0JetMCPObjTable> objJetMCPTable;
@@ -430,7 +430,7 @@ struct JetHFAngularityTask {
                                            {"h_kineff_det_den_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
                                            {"h_kineff_det_num_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
                                            {"h_kineff_det_den_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
-     
+
                                            {"h_eff_run2_num_pr", ";#it{p}_{T,D^{0}}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
                                            {"h_eff_run2_num_np", ";#it{p}_{T,D^{0}}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
                                            {"h_eff_run2_den_pr", ";#it{p}_{T,D^{0}}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
@@ -501,7 +501,7 @@ struct JetHFAngularityTask {
                  {axPtJetDet, axPtD0Det, axPtJetPart, axPtD0Part});
     registry.add("h_response_d0pt_np", "", HistType::kTHnSparseF,
                  {axPtJetDet, axPtD0Det, axPtJetPart, axPtD0Part});
-    
+
     // ---- Angularity / girth response matrices ----
     registry.add("h_response_angularity_pr", "", HistType::kTHnSparseF,
                  {axPtJetDet, axL11Det, axPtJetPart, axL11Part});
@@ -538,9 +538,9 @@ struct JetHFAngularityTask {
     registry.add("hSparse_d0_mcd_eff_cand", "hSparse_d0_mcd_eff_cand", HistType::kTHnSparseF,
                  {axMass, axPtD0, axPtJetDet, axZ, axOrigin, axMatch, axL11, axL12, axRefl});
     registry.add("hSparse_d0_mcp_eff_cand", "hSparse_d0_mcp_eff_cand", HistType::kTHnSparseF,
-                 {axPtD0, axPtJetPart, axZ, axOrigin, axMatch, axL11, axL12}); 
-                 
-    //  Bin labels             
+                 {axPtD0, axPtJetPart, axZ, axOrigin, axMatch, axL11, axL12});
+
+    //  Bin labels
 
     // ---- DATA bin labels ----
     auto hColl = registry.get<TH1>(HIST("h_collisions"));
@@ -1203,7 +1203,7 @@ struct JetHFAngularityTask {
           }
 
           if (isCleanMatched) {
-            //registry.fill(HIST("h_jet_pt_response_matrix"), mcdjet.pt(), matchedPt);
+            // registry.fill(HIST("h_jet_pt_response_matrix"), mcdjet.pt(), matchedPt);
             registry.fill(HIST("h_jet_matching_dr_mcd"), matchedDR);
           }
 
@@ -1253,7 +1253,7 @@ struct JetHFAngularityTask {
                           angularity,
                           girth,
                           isReflectionFlag);
-                          
+
             // Same entry, but the match axis carries the candidate-match flag
             registry.fill(HIST("hSparse_d0_mcd_eff_cand"),
                           mcdD0cand.m(),
@@ -1264,7 +1264,7 @@ struct JetHFAngularityTask {
                           static_cast<int>(isCandMatched),
                           angularity,
                           girth,
-                          isReflectionFlag);              
+                          isReflectionFlag);
 
             // Reflection rows are a second copy of the same true D0: skip them (switchable).
             const bool skipReflection = rejectReflections && isReflection;
@@ -1386,7 +1386,7 @@ struct JetHFAngularityTask {
         auto mcpJetCandidates = mcpjet.template candidates_as<D0CandidatesMCP>();
         const float angularityMCP = computeLambda(mcpjet, mcpJetParticles, mcpJetCandidates, 1.f, 1.f); // λ_1^1
         const float girthMCP = computeLambda(mcpjet, mcpJetParticles, mcpJetCandidates, 2.f, 1.f);      // λ_2^1
-        
+
         const int isCandMatchedMCP = mcpjet.has_matchedJetCand() ? 1 : 0;
         const bool mcpIsGeoMatched = mcpjet.has_matchedJetGeo();
 
@@ -1408,7 +1408,7 @@ struct JetHFAngularityTask {
                       originMcp,
                       isCandMatchedMCP,
                       angularityMCP,
-                      girthMCP);              
+                      girthMCP);
 
         if (originMcp == kOriginMcPrompt) {
           registry.fill(HIST("h_eff_den_d0pt_pr"), mcpjet.pt(), mcpD0cand.pt());
