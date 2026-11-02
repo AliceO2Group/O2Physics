@@ -536,12 +536,13 @@ struct HfCandidateSelectorToOmegaPiQa {
   // Apply cuts with charm baryon & charm bachelor related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool selectOnHf(const T& candidate, const int& inputPtBin)
+  bool selectOnHf(const T& candidate, TracksSel const& tracks, const int& inputPtBin)
   {
     registry.fill(HIST("hSelStatusHf"), 0.0);
 
     // eta selection on charm bayron bachelor
-    if (std::abs(candidate.template prong1_as<TracksSel>().eta()) > etaTrackCharmBachMax) {
+    auto trackPiFromCharm = tracks.rawIteratorAt(candidate.prong1Id());
+    if (std::abs(trackPiFromCharm.eta()) > etaTrackCharmBachMax) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 1.0);
@@ -661,7 +662,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       // Topological selection
       const bool selectionResOnLF = selectOnLf<svReco>(candidate);
-      const bool selectionResOnHF = selectOnHf<svReco>(candidate, pTBin);
+      const bool selectionResOnHF = selectOnHf<svReco>(candidate, tracks, pTBin);
       if (!selectionResOnLF || !selectionResOnHF) {
         resultSelections = false;
       }
