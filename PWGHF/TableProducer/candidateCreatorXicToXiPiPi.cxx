@@ -541,12 +541,12 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCovSVXZ"), covMatrixSV[3]);
         registry.fill(HIST("hCovSVZZ"), covMatrixSV[5]);
         // DCAs of prongs
-        registry.fill(HIST("hDcaXYProngs"), trackCasc.getPt(), impactParameterCasc.getY());
-        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor0.pt(), impactParameter0.getY());
-        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor1.pt(), impactParameter1.getY());
-        registry.fill(HIST("hDcaZProngs"), trackCasc.getPt(), impactParameterCasc.getZ());
-        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor0.pt(), impactParameter0.getZ());
-        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor1.pt(), impactParameter1.getZ());
+        registry.fill(HIST("hDcaXYProngs"), trackCasc.getPt(), impactParameterCasc.getY()*10000);
+        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor0.pt(), impactParameter0.getY()*10000);
+        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor1.pt(), impactParameter1.getY()*10000);
+        registry.fill(HIST("hDcaZProngs"), trackCasc.getPt(), impactParameterCasc.getZ()*10000);
+        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor0.pt(), impactParameter0.getZ()*10000);
+        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor1.pt(), impactParameter1.getZ()*10000);
       }
 
       //---------------------------------fill candidate table rows-------------------------------------------------------------------------------------------
