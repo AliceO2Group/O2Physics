@@ -768,6 +768,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxNcontrib] = "";
   fgVariableNames[kVtxNcontribReal] = "Real Vtx contrib.";
   fgVariableUnits[kVtxNcontribReal] = "";
+  fgVariableNames[kMultNtrkGlobal] = "Global tracks";
+  fgVariableUnits[kMultNtrkGlobal] = "";
   fgVariableNames[kVtxCovXX] = "Vtx covXX";
   fgVariableUnits[kVtxCovXX] = "cm";
   fgVariableNames[kVtxCovXY] = "Vtx covXY";
@@ -2123,6 +2125,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVtxZ"] = kVtxZ;
   fgVarNamesMap["kVtxNcontrib"] = kVtxNcontrib;
   fgVarNamesMap["kVtxNcontribReal"] = kVtxNcontribReal;
+  fgVarNamesMap["kMultNtrkGlobal"] = kMultNtrkGlobal;
   fgVarNamesMap["kVtxCovXX"] = kVtxCovXX;
   fgVarNamesMap["kVtxCovXY"] = kVtxCovXY;
   fgVarNamesMap["kVtxCovXZ"] = kVtxCovXZ;
