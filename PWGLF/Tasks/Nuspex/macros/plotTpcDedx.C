@@ -5,21 +5,25 @@
 //
 // Optional overlay: pass the 5 Bethe-Bloch parameters (+ MIP, charge factor, mass, Z) of a species to draw its curve.
 
+#include <Rtypes.h>
 #include <TCanvas.h>
+#include <TColor.h>
 #include <TDirectory.h>
 #include <TF1.h>
 #include <TFile.h>
 #include <TH2.h>
 #include <TLatex.h>
-#include <TLegend.h>
+#include <TString.h>
 #include <TStyle.h>
 
+#include <array>
 #include <cmath>
+#include <cstdio>
 #include <string>
 
 namespace
 {
-double betheBloch(double bg, const double* k)
+double betheBloch(double bg, const std::array<double, 5>& k)
 {
   const double beta = bg / std::sqrt(1. + bg * bg);
   const double aa = std::pow(beta, k[3]);
@@ -80,7 +84,7 @@ void plotTpcDedx(const char* fileName = "AnalysisResults.root",
   h->Draw("COL");
 
   if (drawLi6Curve) {
-    const double k[5] = {bb0, bb1, bb2, bb3, bb4};
+    const std::array<double, 5> k{bb0, bb1, bb2, bb3, bb4};
     const double xmax = h->GetXaxis()->GetXmax();
     for (int sign : {-1, 1}) {
       auto* fn = new TF1(Form("fLi6_%d", sign), [=](double* x, double*) {

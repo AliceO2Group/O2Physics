@@ -35,6 +35,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -53,6 +54,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <string>
 #include <string_view>
@@ -109,7 +111,7 @@ struct TpcDedxAntiLi6Search {
   Configurable<float> phiEntranceCoeff1{"phiEntranceCoeff1", 1.026f, "phiEntrance = phi + c1 * LightSpeedDm2PS * 0.5 * c2 * 1/pT (network version 5)"};
   Configurable<float> phiEntranceCoeff2{"phiEntranceCoeff2", 85.f, "phiEntrance = phi + c1 * LightSpeedDm2PS * 0.5 * c2 * 1/pT (network version 5)"};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   OutputObj<TTree> tree{"candidates", OutputObjHandlingPolicy::AnalysisObject};
 
@@ -377,8 +379,8 @@ struct TpcDedxAntiLi6Search {
         nFeatures = network.getNumInputNodes();
         struct VersionEntry {
           std::string_view name;
-          int nFeatures;
-          int version;
+          int nFeatures{};
+          int version{};
         };
         constexpr std::array<VersionEntry, 6> Versions{{{"", 6, 1}, {"1", 6, 1}, {"2", 7, 2}, {"3", 8, 3}, {"4", 9, 4}, {"5", 9, 5}}};
         for (const auto& v : Versions) {
@@ -579,7 +581,7 @@ struct TpcDedxAntiLi6Search {
   PROCESS_SWITCH(TpcDedxAntiLi6Search, processWithOrigins, "Also store the data frame ID (requires the ORIGIN table)", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<TpcDedxAntiLi6Search>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TpcDedxAntiLi6Search>(context)};
 }
