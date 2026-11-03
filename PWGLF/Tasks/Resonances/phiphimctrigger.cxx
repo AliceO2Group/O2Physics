@@ -10,9 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file phiphimctrigger.cxx
-/// \brief Code for doublephi resonance MC
+/// \brief Code for triggered doublephi resonance MC
 /// \author Sawan
-/// \since 25/09/2026
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -75,11 +74,36 @@ struct PhiPhiMCTrigger {
   ConfigurableAxis phiPhiMassAxis{"phiPhiMassAxis", {200, 2.0, 4.0}, "Phi-Phi Mass Axis"};
   ConfigurableAxis phiPhiPtAxis{"phiPhiPtAxis", {200, 0.0, 50.0}, "Phi-Phi Pt Axis"};
 
+  enum RecoSelectionStage {
+    kLoop1Track = 0,
+    kLoop1DCA,
+    kLoop1PID,
+    kLoop1MCLabel,
+    kLoop1Eta,
+    kLoop2Track,
+    kLoop2Index,
+    kLoop2Eta,
+    kLoop2DCA,
+    kLoop2PID,
+    kLoop2MCLabel,
+    kLoop2Charge,
+    kLoop2TrackSelected,
+    kLoop2KaonDaughters,
+    kCommonMotherLoop,
+    kCommonMother,
+    kPhiMother,
+    kPhiMassCut,
+    kLoop2PhiPairs,
+    kUniqueTracks,
+    kDifferentPhiMothers,
+    kValidPhiPhiPair
+  };
+
   void init(InitContext const&)
   {
 
     // Event histogram
-    registry.add("h1_TrackCount", "Track Count;Track Count;Counts", kTH1F, {{20, -0.5, 19.5}});
+    registry.add("h1_TrackCount", "Track Count;Track Count;Counts", kTH1F, {{30, -0.5, 29.5}});
     registry.add("h1_EventCount", "Event Count;Event Count;Counts", kTH1F, {{15, -0.5, 14.5}});
     // Generated MC Histograms
     registry.add("Generated/h1_GenEventAndParticleCount", "Gen Level Summary;Category;Counts", kTH1F, {{4, -0.5, 3.5}});
@@ -156,9 +180,6 @@ struct PhiPhiMCTrigger {
   ROOT::Math::PxPyPzEVector vecGen, vecDau1, vecDau2;
   ROOT::Math::PxPyPzMVector daughter1Gen, daughter2Gen, motherGen, daughter1Rec, daughter2Rec, motherRec;
 
-  double massKaPDG = o2::constants::physics::MassKPlus;
-  double massPhi = o2::constants::physics::MassPhi;
-
   // Process Generated MC
   void processGen(aod::McCollision const&, aod::McParticles const& mcParticles)
   {
@@ -173,25 +194,25 @@ struct PhiPhiMCTrigger {
         // Fill total phi produced counter
         registry.fill(HIST("Generated/h1_GenEventAndParticleCount"), 1.0);
 
-        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != 2) {
+        auto phiDaughters = mcParticle.daughters_as<aod::McParticles>();
+        if (phiDaughters.size() != 2) {
           continue;
         }
 
         bool passPosKaon = false;
         bool passNegKaon = false;
-        for (const auto& kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : phiDaughters) {
 
           if (kCurrentDaughter.pdgCode() == PDG_t::kKPlus) {
             passPosKaon = true;
-            daughter1Gen = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKaPDG);
+            daughter1Gen = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassKPlus);
 
             // Fill total phi decay to K+
             registry.fill(HIST("Generated/h1_GenEventAndParticleCount"), 2.0);
 
           } else if (kCurrentDaughter.pdgCode() == PDG_t::kKMinus) {
             passNegKaon = true;
-            daughter2Gen = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKaPDG);
+            daughter2Gen = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassKPlus);
 
             // Fill total phi decay to K-
             registry.fill(HIST("Generated/h1_GenEventAndParticleCount"), 3.0);
@@ -244,60 +265,62 @@ struct PhiPhiMCTrigger {
 
     // STEP 1: Reconstruct individual Phi candidates (Kaon track pairs)
     for (const auto& t1 : tracks) {
-      registry.fill(HIST("h1_TrackCount"), 0.0);
+      registry.fill(HIST("h1_TrackCount"), kLoop1Track);
 
       if (std::abs(t1.dcaXY()) > config.cutDCAxy || std::abs(t1.dcaZ()) > config.cutDCAz) {
         continue;
       }
-      registry.fill(HIST("h1_TrackCount"), 1.0);
+      registry.fill(HIST("h1_TrackCount"), kLoop1DCA);
 
       if (config.isApplyPIDSelection && !checkPID(t1.pt(), t1.tpcNSigmaKa(), t1.tofNSigmaKa(), t1.hasTOF())) {
         continue;
       }
-      registry.fill(HIST("h1_TrackCount"), 2.0);
+      registry.fill(HIST("h1_TrackCount"), kLoop1PID);
 
       if (!t1.has_mcParticle()) {
         continue;
       }
-      registry.fill(HIST("h1_TrackCount"), 3.0);
+      registry.fill(HIST("h1_TrackCount"), kLoop1MCLabel);
 
       if (std::abs(t1.eta()) > config.trackEtaCut) {
         continue;
       }
+      registry.fill(HIST("h1_TrackCount"), kLoop1Eta);
 
       for (const auto& t2 : tracks) {
-        registry.fill(HIST("h1_TrackCount"), 4.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2Track);
 
         if (t2.index() <= t1.index()) {
           continue;
         }
-        registry.fill(HIST("h1_TrackCount"), 5.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2Index);
 
         if (std::abs(t2.eta()) > config.trackEtaCut) {
           continue;
         }
+        registry.fill(HIST("h1_TrackCount"), kLoop2Eta);
 
         if (std::abs(t2.dcaXY()) > config.cutDCAxy || std::abs(t2.dcaZ()) > config.cutDCAz) {
           continue;
         }
-        registry.fill(HIST("h1_TrackCount"), 6.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2DCA);
 
         if (config.isApplyPIDSelection && !checkPID(t2.pt(), t2.tpcNSigmaKa(), t2.tofNSigmaKa(), t2.hasTOF())) {
           continue;
         }
-        registry.fill(HIST("h1_TrackCount"), 7.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2PID);
 
         if (!t2.has_mcParticle()) {
           continue;
         }
-        registry.fill(HIST("h1_TrackCount"), 8.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2MCLabel);
 
         if (t1.sign() * t2.sign() > 0) {
           continue;
         }
-        registry.fill(HIST("h1_TrackCount"), 9.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2Charge);
 
-        registry.fill(HIST("h1_TrackCount"), 10.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2TrackSelected);
 
         auto mcKaTrk1 = t1.mcParticle();
         auto mcKaTrk2 = t2.mcParticle();
@@ -306,7 +329,7 @@ struct PhiPhiMCTrigger {
             std::abs(mcKaTrk2.pdgCode()) != PDG_t::kKPlus) {
           continue;
         }
-        registry.fill(HIST("h1_TrackCount"), 11.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2KaonDaughters);
 
         bool foundMother = false;
 
@@ -315,27 +338,28 @@ struct PhiPhiMCTrigger {
 
           for (const auto& KaMotherPhi2 : mcKaTrk2.template mothers_as<aod::McParticles>()) {
 
-            registry.fill(HIST("h1_TrackCount"), 12.0);
+            registry.fill(HIST("h1_TrackCount"), kCommonMotherLoop);
 
             if (KaMotherPhi1.globalIndex() != KaMotherPhi2.globalIndex())
               continue;
 
-            registry.fill(HIST("h1_TrackCount"), 13.0);
+            registry.fill(HIST("h1_TrackCount"), kCommonMother);
 
             int motherPdg = KaMotherPhi1.pdgCode();
 
             if (motherPdg != o2::constants::physics::kPhi)
               continue;
 
-            registry.fill(HIST("h1_TrackCount"), 14.0);
+            registry.fill(HIST("h1_TrackCount"), kPhiMother);
 
-            daughter1Rec = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKaPDG);
-            daughter2Rec = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKaPDG);
+            daughter1Rec = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKPlus);
+            daughter2Rec = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), o2::constants::physics::MassKPlus);
             motherRec = daughter1Rec + daughter2Rec;
 
             if (motherRec.M() < config.phiMassCutLow || motherRec.M() > config.phiMassCutHigh) {
               continue;
             }
+            registry.fill(HIST("h1_TrackCount"), kPhiMassCut);
 
             PhiCandidateTrigger phiCand;
 
@@ -349,8 +373,8 @@ struct PhiPhiMCTrigger {
             foundMother = true;
             break;
           }
-          if (!foundMother) {
-            continue;
+          if (foundMother) {
+            break;
           }
         }
       }
@@ -375,22 +399,23 @@ struct PhiPhiMCTrigger {
       for (size_t j = i + 1; j < phiCandidates.size(); ++j) {
         const auto& phi2 = phiCandidates[j];
 
-        registry.fill(HIST("h1_TrackCount"), 16.0);
+        registry.fill(HIST("h1_TrackCount"), kLoop2PhiPairs);
 
         // Ensure all 4 kaon tracks are unique
         if (phi1.t1Index == phi2.t1Index || phi1.t1Index == phi2.t2Index ||
             phi1.t2Index == phi2.t1Index || phi1.t2Index == phi2.t2Index) {
           continue;
         }
+        registry.fill(HIST("h1_TrackCount"), kUniqueTracks);
 
         if (phi1.mcPhiIndex == phi2.mcPhiIndex)
           continue;
+        registry.fill(HIST("h1_TrackCount"), kDifferentPhiMothers);
 
         if (!phi1.isValidMcPhi || !phi2.isValidMcPhi) {
           continue;
         }
-
-        registry.fill(HIST("h1_TrackCount"), 17.0);
+        registry.fill(HIST("h1_TrackCount"), kValidPhiPhiPair);
 
         // Combined 4-momentum of the Mother Phi-Phi System
         ROOT::Math::PxPyPzMVector phiPhiMother = phi1.p4 + phi2.p4;

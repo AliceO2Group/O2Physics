@@ -374,12 +374,12 @@ o2physics_add_dpl_workflow(hresonancecorrelation
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(phiphimcinjected
+o2physics_add_dpl_workflow(phiphi-mc-injected
     SOURCES phiphimcinjected.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(phiphimctrigger
+o2physics_add_dpl_workflow(phiphi-mc-trigger
     SOURCES phiphimctrigger.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
