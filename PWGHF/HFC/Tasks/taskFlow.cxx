@@ -28,7 +28,6 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -49,7 +48,6 @@
 #include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -1332,10 +1330,9 @@ struct HfTaskFlow {
           registry.fill(HIST("Data/FT0IsInnerOrOuter"), FT0InnerOrOuter::FT0OuterRing);
         }
         return FT0InnerOrOuter::FT0OuterRing;
-      } else {
-        LOGF(fatal, "Channel ID %d out of range for FT0C", channelId);
-        return FT0InnerOrOuter::FT0Error;
       }
+      LOGF(fatal, "Channel ID %d out of range for FT0C", channelId);
+      return FT0InnerOrOuter::FT0Error;
     } else if (fitType == isFT0A) {
       if (channelId >= FT0DetectorChannels::FT0AInnerRingMin && channelId <= FT0DetectorChannels::FT0AInnerRingMax) {
         if (!configTask.removeQAForSystematics) {
@@ -1347,10 +1344,9 @@ struct HfTaskFlow {
           registry.fill(HIST("Data/FT0IsInnerOrOuter"), FT0InnerOrOuter::FT0OuterRing);
         }
         return FT0InnerOrOuter::FT0OuterRing;
-      } else {
-        LOGF(fatal, "Channel ID %d out of range for FT0A", channelId);
-        return FT0InnerOrOuter::FT0Error;
       }
+      LOGF(fatal, "Channel ID %d out of range for FT0A", channelId);
+      return FT0InnerOrOuter::FT0Error;
     } else {
       LOGF(fatal, "Fit type %d is not valid for FT0", fitType);
       return FT0InnerOrOuter::FT0Error;
@@ -2864,9 +2860,8 @@ struct HfTaskFlow {
       // auto mult = 0.f;
       if (configCollision.useMultiplicityFromTracks) {
         return associatedTracks.size();
-      } else {
-        return getMultiplicityEstimator(collision, false);
       }
+      return getMultiplicityEstimator(collision, false);
     };
 
     // The first one that I call "Data" should work for data and mc rec
@@ -2926,9 +2921,8 @@ struct HfTaskFlow {
       auto mult = associatedTracks.size();
       if (configCollision.useMultiplicityFromTracks) {
         return mult;
-      } else {
-        return getMultiplicityEstimator(collision, false);
       }
+      return getMultiplicityEstimator(collision, false);
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
@@ -2990,9 +2984,8 @@ struct HfTaskFlow {
       auto mult = associatedTracks.size();
       if (configCollision.useMultiplicityFromTracks) {
         return mult;
-      } else {
-        return getMultiplicityEstimator(collision, false);
       }
+      return getMultiplicityEstimator(collision, false);
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
@@ -3061,9 +3054,8 @@ struct HfTaskFlow {
       auto mult = associatedTracks.size();
       if (configCollision.useMultiplicityFromTracks) {
         return mult;
-      } else {
-        return getMultiplicityEstimator(collision, false);
       }
+      return getMultiplicityEstimator(collision, false);
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
@@ -3153,9 +3145,8 @@ struct HfTaskFlow {
       auto mult = associatedTracks.size();
       if (configCollision.useMultiplicityFromTracks) {
         return mult;
-      } else {
-        return getMultiplicityEstimator(collision, false);
       }
+      return getMultiplicityEstimator(collision, false);
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
@@ -4852,7 +4843,7 @@ struct HfTaskFlow {
 
         if (configMft.useMftPhiCut) {
           if (particle.phi() < configMft.phiMftTrackMax && particle.phi() > configMft.phiMftTrackMin &&
-              !(particle.phi() > configMft.phiMftTrackMiddleMin && particle.phi() < configMft.phiMftTrackMiddleMax)) {
+              (particle.phi() <= configMft.phiMftTrackMiddleMin || particle.phi() >= configMft.phiMftTrackMiddleMax)) {
             if (hasReconstructedCollision) {
               registry.fill(HIST("MC/hEfficiencyAssociated"), particle.pt(), particle.eta(), mcCollision.posZ());
             }
