@@ -213,12 +213,67 @@ struct FemtoProducerDerivedToDerived {
       LOG(fatal) << "Exactly one process function must be activated (got " << activeProcesses << ").";
     }
 
-    builders.trackBuilder.init(confTrackBuilder);
-    builders.v0Builder.init(confV0Builder);
-    builders.cascadeBuilder.init(confCascadeBuilder);
-    builders.kinkBuilder.init(confKinkBuilder);
-    builders.resonanceBuilder.init(confResonanceBuilder);
-    builders.mcBuilder.init(confMcBuilder);
+    // which builders the currently active process function actually exercises --
+    // only those need their limit configuration validated (see e.g. TrackBuilderDerivedToDerived::init());
+    // an unused builder is free to keep its (possibly all-zero) default limits
+    const bool needsTrackBuilder =
+      doprocessTracks || doprocessTracksWithMass || doprocessTracksWithFitVars ||
+      doprocessTracksLambdas || doprocessTracksWithMassLambdas || doprocessTracksWithFitVarsLambdas ||
+      doprocessTracksXis || doprocessTracksWithFitVarsXis ||
+      doprocessTracksOmegas || doprocessTracksWithFitVarsOmegas ||
+      doprocessTracksK0shorts || doprocessTracksWithFitVarsK0shorts ||
+      doprocessTracksSigma || doprocessTracksSigmaPlus || doprocessTracksSigmaPlusExtended ||
+      doprocessTracksSigmaPlusPcm || doprocessTracksSigmaPlusPcmExtended ||
+      doprocessTracksRho0 || doprocessTracksPhi ||
+      doprocessTracksMc || doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc ||
+      doprocessTracksSigmaPlusExtendedMc || doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc;
+
+    const bool needsV0Builder =
+      doprocessTracksLambdas || doprocessTracksWithMassLambdas || doprocessTracksWithFitVarsLambdas ||
+      doprocessLambdas ||
+      doprocessTracksK0shorts || doprocessTracksWithFitVarsK0shorts ||
+      doprocessLambdasXis;
+
+    const bool needsCascadeBuilder =
+      doprocessTracksXis || doprocessTracksWithFitVarsXis ||
+      doprocessTracksOmegas || doprocessTracksWithFitVarsOmegas ||
+      doprocessLambdasXis;
+
+    const bool needsKinkBuilder =
+      doprocessTracksSigma || doprocessTracksSigmaPlus || doprocessTracksSigmaPlusExtended ||
+      doprocessTracksSigmaPlusPcm || doprocessTracksSigmaPlusPcmExtended ||
+      doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc || doprocessTracksSigmaPlusExtendedMc ||
+      doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc;
+
+    const bool needsResonanceBuilder = doprocessTracksRho0 || doprocessTracksPhi;
+
+    const bool needsMcBuilder =
+      doprocessTracksMc || doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc ||
+      doprocessTracksSigmaPlusExtendedMc || doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc;
+
+    // skip init() entirely for builders the active process doesn't touch: their limit
+    // members default to 0 and are only ever read by the collisionHasTooFew*/process*
+    // methods that the active process also doesn't call, so leaving them uninitialized
+    // (i.e. at their 0 default) is harmless -- this also sidesteps each builder's "all
+    // limits are 0" fatal check, which would otherwise fire for an unrelated species
+    if (needsTrackBuilder) {
+      builders.trackBuilder.init(confTrackBuilder);
+    }
+    if (needsV0Builder) {
+      builders.v0Builder.init(confV0Builder);
+    }
+    if (needsCascadeBuilder) {
+      builders.cascadeBuilder.init(confCascadeBuilder);
+    }
+    if (needsKinkBuilder) {
+      builders.kinkBuilder.init(confKinkBuilder);
+    }
+    if (needsResonanceBuilder) {
+      builders.resonanceBuilder.init(confResonanceBuilder);
+    }
+    if (needsMcBuilder) {
+      builders.mcBuilder.init(confMcBuilder);
+    }
   }
 
   // process functions
