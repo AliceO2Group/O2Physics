@@ -270,7 +270,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<int> cfNContribCutInf{"cfNContribCutInf", 2, "Cuts on number of tracks used for the vertex, only numContrib > cfNContribCutInf survives"};
   Configurable<int> cfOccupancyCutSup{"cfOccupancyCutSup", 6000, "Cuts on number of tracks used for the vertex, only occupancy < cfOccupancyCutSup survives"};
   Configurable<std::vector<int>> cfCorrCent{"cfCorrCent", {0, 2}, "choose the pair of centrality estimators for cut: 0=FT0C, 1=FT0M, 2=FV0A, 3=NTPV"};
-  Configurable<float> cfCorrCentCutRatio{"cfCorrCentCutRatio", 0.5, "correlation cut on centrality, only |cent1 - cent2|/cent1(or2) < cfCorrCentCutRatio survives"};
+  Configurable<float> cfCorrCentCutRatio{"cfCorrCentCutRatio", 0.5, "correlation cut on centrality, only 2*|cent1 - cent2|/(cent1 + cent2) < cfCorrCentCutRatio survives"};
   Configurable<std::vector<std::string>> cfMultNContribBound{"cfMultNContribBound", {"0.160 * x + 153.563", "0.095 * x + -157.476"}, "geometric cuts on correlation of mult vs. nContrib switch, convention {upper bound, lower bound}"};
 
   // particle level cuts
@@ -1363,10 +1363,10 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           ec.fEventHistList->Add(ec.fEventHist[i][eRec][ba]);
         } // end of for (int ba = 0; ba < eBeforeAfterCuts_N; ++ba) {
       } // end of for (int i = 0; i < eEventHistograms_N; ++i) {
-      ec.fEventHist[eHistCentrality][eRec][eBefore]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistCentrality], CentralityEstimatorNames[cfCentralityEstimator]));
-      ec.fEventHist[eHistCentrality][eRec][eAfter]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistCentrality], CentralityEstimatorNames[cfCentralityEstimator]));
-      ec.fEventHist[eHistRefMult][eRec][eBefore]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], MultiplicityTablesNames[cfMultiplicityTables]));
-      ec.fEventHist[eHistRefMult][eRec][eAfter]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], MultiplicityTablesNames[cfMultiplicityTables]));
+      ec.fEventHist[eHistCentrality][eRec][eBefore]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistCentrality], CentralityEstimatorNames[tc.fCentralityEstimator]));
+      ec.fEventHist[eHistCentrality][eRec][eAfter]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistCentrality], CentralityEstimatorNames[tc.fCentralityEstimator]));
+      ec.fEventHist[eHistRefMult][eRec][eBefore]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], MultiplicityTablesNames[tc.fMultiplicityTables]));
+      ec.fEventHist[eHistRefMult][eRec][eAfter]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], MultiplicityTablesNames[tc.fMultiplicityTables]));
       ec.fEventHist[eHistOccupancy][eRec][eBefore]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], OccupancyEstimatorNames[tc.fOccupancyEstimator]));
       ec.fEventHist[eHistOccupancy][eRec][eAfter]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], OccupancyEstimatorNames[tc.fOccupancyEstimator]));
     } // end of if (doprocessRec || doprocessRecSim) {
@@ -1433,7 +1433,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         const auto& nContribBins = lEventHistBins[eHistNumContrib];
         const auto& refMultBins = lEventHistBins[eHistRefMult];
         for (int i = 0; i < eBeforeAfterCuts_N; ++i) {
-          qa.fHistMultNContrib[i] = new TH2F(Form("fHistMultNContrib[%s]", CutsNames[i]), Form("refMult vs. nContributors %s cuts", CutsNames[i]), static_cast<int>(refMultBins[0]), refMultBins[1], refMultBins[2], static_cast<int>(nContribBins[0]), nContribBins[1], nContribBins[2]);
+          qa.fHistMultNContrib[i] = new TH2F(Form("fHistMultNContrib[%s]", CutsNames[i]), Form("refMult vs. nContributors %s Cuts", CutsNames[i]), static_cast<int>(refMultBins[0]), refMultBins[1], refMultBins[2], static_cast<int>(nContribBins[0]), nContribBins[1], nContribBins[2]);
           qa.fHistMultNContrib[i]->GetXaxis()->SetTitle(Form("Reference Multiplicity (%s)", MultiplicityTablesNames[tc.fMultiplicityTables]));
           qa.fHistMultNContrib[i]->GetYaxis()->SetTitle("Number of contributors");
           qa.fHistMultNContrib[i]->SetStats(false);
@@ -1442,7 +1442,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
         const auto& centBins = lEventHistBins[eHistCentrality];
         for (int i = 0; i < eBeforeAfterCuts_N; ++i) {
-          qa.fHistCorrCent[i] = new TH2F(Form("fHistCorrCent[%s]", CutsNames[i]), Form("Centrality (%s) vs. Centrality (%s) %s cuts", CentralityEstimatorNames[tc.fCorrCent[0]], CentralityEstimatorNames[tc.fCorrCent[1]], CutsNames[i]), static_cast<int>(centBins[0]), centBins[1], centBins[2], static_cast<int>(centBins[0]), centBins[1], centBins[2]);
+          qa.fHistCorrCent[i] = new TH2F(Form("fHistCorrCent[%s]", CutsNames[i]), Form("Centrality (%s) vs. Centrality (%s) %s Cuts", CentralityEstimatorNames[tc.fCorrCent[0]], CentralityEstimatorNames[tc.fCorrCent[1]], CutsNames[i]), static_cast<int>(centBins[0]), centBins[1], centBins[2], static_cast<int>(centBins[0]), centBins[1], centBins[2]);
           qa.fHistCorrCent[i]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[tc.fCorrCent[0]]));
           qa.fHistCorrCent[i]->GetYaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[tc.fCorrCent[1]]));
           qa.fHistCorrCent[i]->SetStats(false);
@@ -1461,7 +1461,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       if (doprocessRecSim) {
         const auto& centBins = lEventHistBins[eHistCentrality];
         for (int i = 0; i < eBeforeAfterCuts_N; ++i) {
-          qa.fHistCentralityRecSim[i] = new TH2F(Form("fHistCentralityRecSim[%s]", CutsNames[i]), Form("Centrality Rec vs Sim %s cuts", CutsNames[i]), static_cast<int>(centBins[0]), centBins[1], centBins[2], static_cast<int>(centBins[0]), centBins[1], centBins[2]);
+          qa.fHistCentralityRecSim[i] = new TH2F(Form("fHistCentralityRecSim[%s]", CutsNames[i]), Form("Centrality Rec vs Sim %s Cuts", CutsNames[i]), static_cast<int>(centBins[0]), centBins[1], centBins[2], static_cast<int>(centBins[0]), centBins[1], centBins[2]);
           qa.fHistCentralityRecSim[i]->GetXaxis()->SetTitle("Centrality (reconstructed)");
           qa.fHistCentralityRecSim[i]->GetYaxis()->SetTitle("Centrality (simulated)");
           qa.fHistCentralityRecSim[i]->SetStats(false);
