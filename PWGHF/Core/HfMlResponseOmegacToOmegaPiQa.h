@@ -70,6 +70,7 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t {
   impactParCascZ,
   cosPACharmBaryon,
   cosPACasc,
+  normDecayLenCharmBar,
 
   // KFParticle variables
   cosPaOmegacToPv,
@@ -136,6 +137,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_OMEGAC0(impactParCascZ);
           CHECK_AND_FILL_VEC_OMEGAC0(cosPACharmBaryon);
           CHECK_AND_FILL_VEC_OMEGAC0(cosPACasc);
+          CHECK_AND_FILL_VEC_OMEGAC0(normDecayLenCharmBar);
         }
       }
 
@@ -192,7 +194,8 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
         FILL_MAP_OMEGAC0(impactParCascXY),
         FILL_MAP_OMEGAC0(impactParCascZ),
         FILL_MAP_OMEGAC0(cosPACharmBaryon),
-        FILL_MAP_OMEGAC0(cosPACasc)};
+        FILL_MAP_OMEGAC0(cosPACasc),
+        FILL_MAP_OMEGAC0(normDecayLenCharmBar)};
 
       MlResponse<TypeOutputScore>::mAvailableInputFeatures.insert(mapDcaFeatures.begin(), mapDcaFeatures.end());
     }
