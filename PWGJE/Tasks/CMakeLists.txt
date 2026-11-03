@@ -527,7 +527,7 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-hf-ang-substructure
                         SOURCES jetHFAngularity.cxx
-                        REUSE_FROM JetDataModelPCH
+						REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-upc-qa
