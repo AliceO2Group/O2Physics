@@ -830,7 +830,7 @@ struct Omega2012Analysis {
   PROCESS_SWITCH(Omega2012Analysis, processXi1530KMixedMicro, "Process mixed events of the Xi(1530)0 K mode (ResoMicroTracks_001)", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<Omega2012Analysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Omega2012Analysis>(context)};
 }
