@@ -157,6 +157,8 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<datatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
+  // which species slot this selection corresponds to in the packed purity tables (FitVars only)
+  o2::framework::Configurable<int> puritySlotMask{"puritySlotMask", 1, "Bitmask (bit N = slot N) selecting which purity slot to plot, read off hPuritySlotAssignment in the producer output."};
 };
 
 // Define unique prefixes as constexpr string literals
