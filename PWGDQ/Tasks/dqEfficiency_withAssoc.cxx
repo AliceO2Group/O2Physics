@@ -1814,7 +1814,7 @@ struct AnalysisSameEventPairing {
     bool isMCGen = context.mOptions.get<bool>("processMCGen") || context.mOptions.get<bool>("processMCGenWithGrouping") || context.mOptions.get<bool>("processBarrelOnlySkimmed");
     VarManager::SetDefaultVarNames();
 
-    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("prorcessBarrelOnlyWithGlobalMultSkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithGlobalMultSkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlyVertexingSkimmed");
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonSkimmed");
     fEnableBarrelMuonMixingHistos = context.mOptions.get<bool>("processMixingElectronMuonSkimmed");
@@ -2376,7 +2376,7 @@ struct AnalysisSameEventPairing {
       uint8_t evSel = event.isEventSelected_raw();
       // Reset the fValues array
       VarManager::ResetValues(0, VarManager::kNVars);
-      VarManager::FillEvent<gkEventFillMap>(event, dqefficiency_helpers::varValues());
+      VarManager::FillEvent<TEventFillMap>(event, dqefficiency_helpers::varValues());
       VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), dqefficiency_helpers::varValues());
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
@@ -3194,7 +3194,7 @@ struct AnalysisSameEventPairing {
     runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
   }
 
-  void prorcessBarrelOnlyWithGlobalMultSkimmed(MyEventsVtxCovGlobalMultSelected const& events,
+  void processBarrelOnlyWithGlobalMultSkimmed(MyEventsVtxCovGlobalMultSelected const& events,
                                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                                                MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
@@ -3460,7 +3460,7 @@ struct AnalysisSameEventPairing {
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processAllSkimmed, "Run all types of pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmed, "Run barrel only pairing, with skimmed tracks", false);
-  PROCESS_SWITCH(AnalysisSameEventPairing, prorcessBarrelOnlyWithGlobalMultSkimmed, "Run barrel only pairing, with global tracks, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithGlobalMultSkimmed, "Run barrel only pairing, with global tracks, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithCollSkimmed, "Run barrel only pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlyVertexingSkimmed, "Run muon only pairing with two-prong vertexing, with skimmed tracks", false);
