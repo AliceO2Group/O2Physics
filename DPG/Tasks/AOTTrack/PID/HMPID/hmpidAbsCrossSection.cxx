@@ -23,9 +23,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TString.h>
-
-#include <algorithm>
 #include <cmath>
 #include <string>
 #include <vector>
