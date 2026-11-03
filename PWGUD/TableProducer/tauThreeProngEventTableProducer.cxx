@@ -758,36 +758,10 @@ struct TauThreeProngEventTableProducer {
 
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(0., 1.);
 
-    int gapSide = dgcand.gapSide();
-    registrySkim.get<TH1>(HIST("skim/gapSide"))->Fill(gapSide);
-    //    if (gapSide < 0 || gapSide > 2)
-    if (gapSide < o2::aod::sgselector::SingleGapA || gapSide > o2::aod::sgselector::DoubleGap)
-      return;
-    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(1., 1.);
-
-    int truegapSide = sgSelector.trueGap(dgcand, cutFV0, cutFT0A, cutFT0C, cutZDC);
-    gapSide = truegapSide;
-    registrySkim.get<TH1>(HIST("skim/trueGapSide"))->Fill(gapSide);
-    if (gapSide != mGapSide)
-      return;
-    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(2., 1.);
-
-    // zdc information
-    float energyZNA = dgcand.energyCommonZNA();
-    float energyZNC = dgcand.energyCommonZNC();
-    if (energyZNA < 0)
-      energyZNA = -1.;
-    if (energyZNC < 0)
-      energyZNC = -1.;
-    float timeZNA = dgcand.timeZNA();
-    float timeZNC = dgcand.timeZNC();
-
+    // set up PV track features
     int nTofTrk = 0;
     int nEtaIn15 = 0;
     int npT100 = 0;
-    // //   int qtot = 0;
-    // int8_t qtot = 0;
-    // TLorentzVector p;
     ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p;
     for (const auto& trk : PVContributors) {
       // qtot += trk.sign();
@@ -805,7 +779,24 @@ struct TauThreeProngEventTableProducer {
         nTofTrk++;
     } // end of loop over PV tracks
 
+    // check number of PV tracks
     if (PVContributors.size() != nPVtrackscut) // 4 or 6
+      return;
+    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(1., 1.);
+
+    // check gap side
+    int gapSide = dgcand.gapSide();
+    registrySkim.get<TH1>(HIST("skim/gapSide"))->Fill(gapSide);
+    //    if (gapSide < 0 || gapSide > 2)
+    if (gapSide < o2::aod::sgselector::SingleGapA || gapSide > o2::aod::sgselector::DoubleGap)
+      return;
+    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(2., 1.);
+
+    // check true gap side
+    int truegapSide = sgSelector.trueGap(dgcand, cutFV0, cutFT0A, cutFT0C, cutZDC);
+    gapSide = truegapSide;
+    registrySkim.get<TH1>(HIST("skim/trueGapSide"))->Fill(gapSide);
+    if (gapSide != mGapSide)
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(3., 1.);
 
@@ -845,6 +836,16 @@ struct TauThreeProngEventTableProducer {
     if (mFITvetoFlag && flagFITveto)
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(7., 1.);
+
+    // zdc information
+    float energyZNA = dgcand.energyCommonZNA();
+    float energyZNC = dgcand.energyCommonZNC();
+    if (energyZNA < 0)
+      energyZNA = -1.;
+    if (energyZNC < 0)
+      energyZNC = -1.;
+    float timeZNA = dgcand.timeZNA();
+    float timeZNC = dgcand.timeZNC();
 
     // RCT variable
     int rct = 0;
