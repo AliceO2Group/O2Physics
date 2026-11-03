@@ -357,7 +357,7 @@ struct Cha01710analysis {
         return V0MassRegion::kReject;
       }
       if (std::abs(v0.tofNSigmaK0PiMinus()) > v0Cuts.cfgV0DaughterTOFNSigmaPiMax) {
-        return V0MassRegion::kReject; 
+        return V0MassRegion::kReject;
       }
     }
 
