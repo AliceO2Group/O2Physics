@@ -165,13 +165,15 @@ struct Omega2012Analysis {
     AxisSpec omegaKinPtAxis = {500, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
 
     // Event QA histograms
+    // Event counters are double precision (kTH1D): a single-precision bin stops counting at 2^24 entries per job,
+    // which truncated the zero-multiplicity bins of the multiplicity counters in large pp productions.
     histos.add("Event/posZ", "Event vertex Z position", kTH1F, {{200, -20., 20., "V_{z} (cm)"}});
-    histos.add("Event/centrality", "Event centrality distribution", kTH1F, {centAxis});
+    histos.add("Event/centrality", "Event centrality distribution", kTH1D, {centAxis});
     histos.add("Event/posZvsCent", "Vertex Z vs Centrality", kTH2F, {{200, -20., 20., "V_{z} (cm)"}, centAxis});
-    histos.add("Event/nCascades", "Number of cascades per event", kTH1F, {{100, 0., 100., "N_{cascades}"}});
-    histos.add("Event/nV0s", "Number of V0s per event", kTH1F, {{200, 0., 200., "N_{V0s}"}});
-    histos.add("Event/nCascadesAfterCuts", "Number of cascades per event after cuts", kTH1F, {{50, 0., 50., "N_{cascades}"}});
-    histos.add("Event/nV0sAfterCuts", "Number of V0s per event after cuts", kTH1F, {{100, 0., 100., "N_{V0s}"}});
+    histos.add("Event/nCascades", "Number of cascades per event", kTH1D, {{100, 0., 100., "N_{cascades}"}});
+    histos.add("Event/nV0s", "Number of V0s per event", kTH1D, {{200, 0., 200., "N_{V0s}"}});
+    histos.add("Event/nCascadesAfterCuts", "Number of cascades per event after cuts", kTH1D, {{50, 0., 50., "N_{cascades}"}});
+    histos.add("Event/nV0sAfterCuts", "Number of V0s per event after cuts", kTH1D, {{100, 0., 100., "N_{V0s}"}});
 
     // Xi QA histograms
     histos.add("QAbefore/xiMass", "Xi mass before cuts", kTH1F, {xiMassAxis});
@@ -234,8 +236,8 @@ struct Omega2012Analysis {
     // Resonance (2-body decay: Xi + K0s)
     histos.add("omega2012/invmass", "Invariant mass of Omega(2012) → Xi + K0s", kTH1F, {invMassAxis});
     histos.add("omega2012/invmass_Mix", "Mixed event Invariant mass of Omega(2012) → Xi + K0s", kTH1F, {invMassAxis});
-    histos.add("omega2012/massPtCent", "Omega(2012) mass vs pT vs cent", kTH3F, {invMassAxis, ptAxis, centAxis});
-    histos.add("omega2012/massPtCent_Mix", "Mixed event Omega(2012) mass vs pT vs cent", kTH3F, {invMassAxis, ptAxis, centAxis});
+    histos.add("omega2012/massPtCent", "Omega(2012) mass vs pT vs cent", kTHnSparseD, {invMassAxis, ptAxis, centAxis});
+    histos.add("omega2012/massPtCent_Mix", "Mixed event Omega(2012) mass vs pT vs cent", kTHnSparseD, {invMassAxis, ptAxis, centAxis});
     histos.add("QAbefore/omegaAlphaVsPt", "#alpha_{oa} vs p_{T} before kinematic cuts", kTH2F, {omegaKinPtAxis, openingAngleAxis});
     histos.add("QAafter/omegaAlphaVsPt", "#alpha_{oa} vs p_{T} after kinematic cuts", kTH2F, {omegaKinPtAxis, openingAngleAxis});
 
@@ -288,9 +290,9 @@ struct Omega2012Analysis {
 
       // Signal charge pattern: Xi- pi+ K- and Xi+ pi- K+
       histos.add("xi1530K/invmass", "Invariant mass of Omega(2012) → #Xi(1530)^{0} K → #Xi #pi K", kTH1F, {invMassAxis});
-      histos.add("xi1530K/massPtCent", "Omega(2012) → #Xi(1530)^{0} K mass vs pT vs cent", kTH3F, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1530K/massPtCent", "Omega(2012) → #Xi(1530)^{0} K mass vs pT vs cent", kTHnSparseD, {invMassAxis, ptAxis, centAxis});
       histos.add("xi1530K/invmass_Mix", "Mixed event invariant mass of Omega(2012) → #Xi(1530)^{0} K", kTH1F, {invMassAxis});
-      histos.add("xi1530K/massPtCent_Mix", "Mixed event Omega(2012) → #Xi(1530)^{0} K mass vs pT vs cent", kTH3F, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1530K/massPtCent_Mix", "Mixed event Omega(2012) → #Xi(1530)^{0} K mass vs pT vs cent", kTHnSparseD, {invMassAxis, ptAxis, centAxis});
       histos.add("xi1530K/massXiPi", "#Xi #pi mass of selected candidates (before the rapidity cut)", kTH1F, {xiPiMassAxis});
       histos.add("xi1530K/massXiPiVsMass", "#Xi #pi mass vs #Xi #pi K mass", kTH2F, {invMassAxis, xiPiMassAxis});
 
