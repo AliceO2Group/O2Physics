@@ -21,7 +21,6 @@
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FwdTrackReAlignTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -124,6 +123,7 @@ using o2::track::TrackParCovFwd;
 namespace muonaligncoll
 {
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);              //! Bunch crossing number (globally unique in this run)
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);            //! Timestamp of a BC in ms (epoch style)
 DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time in ns relative to BC stored in bc()
 DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Resolution of collision time
@@ -133,7 +133,8 @@ namespace o2::aod
 {
 // Reduced collisions table
 DECLARE_SOA_TABLE(MACollisions, "AOD", "MACOLL", //! Time and vertex information of collision
-                  o2::soa::Index<>, muonaligncoll::RunNumber, muonaligncoll::Timestamp,
+                  o2::soa::Index<>, muonaligncoll::RunNumber,
+                  muonaligncoll::GlobalBC, muonaligncoll::Timestamp,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::CovXX, collision::CovYY, collision::CovZZ,
                   collision::CollisionTime, collision::CollisionTimeRes);
@@ -247,8 +248,8 @@ namespace o2::aod
 
 namespace ma_track_association
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);            //! Collision index
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, compatibleColl); //! Array of collision indices
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(Collision, collision, int32_t, MACollisions, "MACOLLs", "");            //! Collision index
+DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL_CUSTOM(Collision, compatibleColl, int32_t, MACollisions, "MACOLLs", ""); //! Array of collision indices
 } // namespace ma_track_association
 
 DECLARE_SOA_TABLE(MAFwdTrackAssoc, "AOD", "MAFWDTRACKASSOC", //! Table for fwdtrack-to-collision association
@@ -275,7 +276,7 @@ using CompactMFTTrack = CompactMFTTracks::iterator;
 // Switch to enable/disable the processing of the derived tables
 // 0: process standard AO2Ds and produce the derived tables
 // 1: process derived AO2Ds and disable the derived tables creation
-#define PROCESS_DERIVED_TABLES 0
+#define PROCESS_DERIVED_TABLES 0 // NOLINT(cppcoreguidelines-macro-usage)
 
 struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struct (exception)
 
@@ -518,6 +519,7 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
 
   struct CollisionInfo {
     int runNumber{0};
+    uint64_t globalBC{0};
     uint64_t timestamp{0};
     // z position of the collision
     double zVertex{0};
@@ -2029,6 +2031,7 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
 
         auto& collisionInfo = collisionInfos[collisionIndex];
         collisionInfo.runNumber = bc.runNumber();
+        collisionInfo.globalBC = bc.globalBC();
         collisionInfo.timestamp = bc.timestamp();
         collisionInfo.zVertex = collision.posZ();
 
@@ -2178,6 +2181,7 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
 
         auto& collisionInfo = collisionInfos[collisionIndex];
         collisionInfo.runNumber = collision.runNumber();
+        collisionInfo.globalBC = collision.globalBC();
         collisionInfo.timestamp = collision.timestamp();
         collisionInfo.zVertex = collision.posZ();
 
@@ -2323,7 +2327,9 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
         continue;
       }
 
-      collTable(collisionInfo.runNumber, collisionInfo.timestamp,
+      collTable(collisionInfo.runNumber,
+                collisionInfo.globalBC,
+                collisionInfo.timestamp,
                 c.posX(), c.posY(), c.posZ(),
                 c.covXX(), c.covYY(), c.covZZ(),
                 c.collisionTime(), c.collisionTimeRes());
