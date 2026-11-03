@@ -1022,13 +1022,7 @@ class TrackHistManager
   /// with the one matching the configured momentum type
   void addPidHistogram(std::string const& pidDir, TrackHist hist, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    // descriptions have the form "title; x axis ; y axis"
-    std::string desc(getHistDesc(hist, HistTable));
-    const auto first = desc.find(';');
-    const auto second = (first == std::string::npos) ? std::string::npos : desc.find(';', first + 1);
-    if (second != std::string::npos) {
-      desc.replace(first + 1, second - first - 1, " " + std::string(modes::momentumTypeToAxisTitle(mMomentumType)) + " ");
-    }
+    std::string desc = histmanager::replaceFirstAxisTitle(getHistDesc(hist, HistTable), modes::momentumTypeToAxisTitle(mMomentumType));
     mHistogramRegistry->add(pidDir + getHistNameV2(hist, HistTable), desc.c_str(), getHistType(hist, HistTable), {Specs.at(hist)});
   }
 
