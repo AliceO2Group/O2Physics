@@ -99,8 +99,9 @@ struct HmpidAbsCrossSection {
   Configurable<float> nSigmaTOFMinPlot{"nSigmaTOFMinPlot", -5.0f, "nSigmaTOF min"};
   Configurable<float> nSigmaTOFMaxPlot{"nSigmaTOFMaxPlot", 5.0f, "nSigmaTOF max"};
 
-  static constexpr int Rich0 = 0, Rich1 = 1, Rich2 = 2, Rich3 = 3, Rich4 = 4, Rich5 = 5, Rich6 = 6;
-  static constexpr int Nch = 7;
+  static constexpr int Rich2 = 2, Rich4 = 4;
+  // static constexpr Rich0 = 0, Rich1 = 1, Rich3 = 3, Rich5 = 5, Rich6 = 6;
+  // static constexpr int Nch = 7;
 
   void init(o2::framework::InitContext const&)
   {
