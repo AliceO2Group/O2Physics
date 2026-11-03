@@ -8,9 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
 /// \author Alexander Tiekoetter <alexander.tiekoetter@cern.ch>, Muenster
-/// \brief Global Track estimator with track-to-collision association, supposed
-///        to run on the DQ datamodel
+/// \brief Global Track estimator with track-to-collision association
 /// \file globalTrackEstimator.cxx
 
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
@@ -40,8 +40,8 @@ using namespace o2::aod;
 using MyEventsBasic = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended>;
 using MyBarrelTracks = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelCov, o2::aod::ReducedTracksBarrelPID>;
 
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov;
+constexpr static uint32_t GkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
+constexpr static uint32_t GkTrackFillMap = VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov;
 
 struct GlobalTrackEstimator {
   Produces<o2::aod::ReducedEventsGlobalTrk> reducedEventsGlobalTrk;
@@ -91,7 +91,7 @@ struct GlobalTrackEstimator {
 
     for (const auto& event : events) {
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-      VarManager::FillEvent<gkEventFillMap>(event);
+      VarManager::FillEvent<GkEventFillMap>(event);
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
 
@@ -104,8 +104,8 @@ struct GlobalTrackEstimator {
 
         auto track = assoc.template reducedtrack_as<o2::soa::Filtered<MyBarrelTracks>>();
 
-        VarManager::FillTrack<gkTrackFillMap>(track);
-        VarManager::FillTrackCollision<gkTrackFillMap>(track, event);
+        VarManager::FillTrack<GkTrackFillMap>(track);
+        VarManager::FillTrackCollision<GkTrackFillMap>(track, event);
 
         const int nFindable = track.tpcNClsFindable();
         const int nCrossedRows = track.tpcNClsCrossedRows();
