@@ -82,7 +82,8 @@ struct zdc2stagecalibration {
   Configurable<std::string> confQRecenteringPath{"confQRecenteringPath", "", "CCDB path to the current run-wise Q-vector recentering coefficients"};
   Configurable<std::string> confQRecenteringMultidimPath{"confQRecenteringMultidimPath", "", "CCDB path to the multidimensional cubic Q-vector recentering coefficients"};
   Configurable<std::string> confQRecenteringStructured71Path{"confQRecenteringStructured71Path", "", "CCDB path to the 71-feature structured Q-vector recentering coefficients"};
-
+  Configurable<bool> useQWidthEqualization{"useQWidthEqualization", false, "equalize Qx/Qy widths after Structured71 recentering"};
+  Configurable<std::string> confQWidthPath{"confQWidthPath", "", "CCDB path to post-recentering Q-width map"};
   Configurable<int> cfgSpatialCalibBins{
     "cfgSpatialCalibBins", 30,
     "number of bins per cross coordinate for spatial calibration"};
@@ -101,6 +102,7 @@ struct zdc2stagecalibration {
   TH2D* gainprofile = nullptr;
   TH3D* spatialprofile = nullptr;
   TH3D* qRecenteringProfile = nullptr;
+  TH2D* qWidthProfile = nullptr;
 
   static constexpr int kQRecenteringNFeatures = 21;
   static constexpr int kQRecenteringNMatrixMoments = kQRecenteringNFeatures * (kQRecenteringNFeatures + 1) / 2;
@@ -132,7 +134,9 @@ struct zdc2stagecalibration {
     if (qRecenteringMethod.value != 0 && qRecenteringMethod.value != 1 && qRecenteringMethod.value != 4) {
       LOGF(fatal, "Unsupported qRecenteringMethod=%d. Use 0 for the current regression, 1 for the multidimensional cubic regression or 4 for the structured71 regression.", qRecenteringMethod.value);
     }
-
+    if (useQWidthEqualization.value && (calibrationStage.value != 2 || !useQRecentering.value || qRecenteringMethod.value != 4 || confQWidthPath.value.empty())) {
+      LOGF(fatal, "Width equalization requires stage=2, useQRecentering=true, method=4 and confQWidthPath");
+    }
     const int nTimeBins = static_cast<int>(std::ceil(cfgMaxRunHours.value * 60.f / cfgTimeSliceMinutes.value));
     AxisSpec timeAxis = {nTimeBins, 0.0, cfgMaxRunHours.value, "time from SOR (h)"};
     AxisSpec towerAxis = {4, 0.0, 4.0, "tower"};
@@ -150,6 +154,7 @@ struct zdc2stagecalibration {
     AxisSpec qRecenteringStructuredFlatnessMomentAxis = {kQRecenteringStructuredFlatnessNMoments, 0.0, static_cast<double>(kQRecenteringStructuredFlatnessNMoments), "structured flatness sufficient-statistic index"};
     AxisSpec centralityAxis = {80, 0.0, 80.0, "centrality (%)"};
     AxisSpec resolutionCentralityAxis = {50, 0.0, 50.0, "centrality (%)"};
+    AxisSpec resolutionVzAxis = {20, -10.0, 10.0, "v_{z} (cm)"};
     AxisSpec vertexXYAxis = {100, -0.1, 0.1, "vertex x/y (cm)"};
     AxisSpec vertexZAxis = {100, -10.0, 10.0, "vertex z (cm)"};
     AxisSpec qComponentAxis = {4, 0.0, 4.0, "Q component"};
@@ -254,6 +259,10 @@ struct zdc2stagecalibration {
     histos.add("QRecenteringQA/pQAfterVsVy", "Q after recentering vs v_{y};v_{y} (cm);Q component;<Q>", kTProfile2D, {vertexXYAxis, qComponentAxis});
     histos.add("QRecenteringQA/pQAfterVsVz", "Q after recentering vs v_{z};v_{z} (cm);Q component;<Q>", kTProfile2D, {vertexZAxis, qComponentAxis});
     histos.add("ResolutionQA/pCosPsiAPsiCVsCentrality", "ZDC A-C spectator-plane correlation;centrality (%);<#cos(#Psi_{A}-#Psi_{C})>", kTProfile, {resolutionCentralityAxis});
+    histos.add("ResolutionQA/pCosPsiAPsiCVsCentralityVz", "ZDC A-C correlation;centrality (%);v_{z} (cm); <#cos(#Psi_{A}-#Psi_{C})>", kTProfile2D, {resolutionCentralityAxis, resolutionVzAxis});
+    histos.add("QWidthQA/pQAfterWidthEqVsCentrality", "Q after width equalization;centrality (%);Q component;<Q>", kTProfile2D, {centralityAxis, qComponentAxis});
+    histos.add("PhiQA/hPhiAfterWidthEqVsCentralityZNA", "ZNA #phi after width equalization;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiAfterWidthEqVsCentralityZNC", "ZNC #phi after width equalization;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
     histos.add("QRecentering2DQA/pQxAAfterVsCentralityTime", "QxA after recentering;centrality (%);time from SOR (h);<Q_{x}^{A}>", kTProfile2D, {centralityAxis, timeAxis});
     histos.add("QRecentering2DQA/pQyAAfterVsCentralityTime", "QyA after recentering;centrality (%);time from SOR (h);<Q_{y}^{A}>", kTProfile2D, {centralityAxis, timeAxis});
     histos.add("QRecentering2DQA/pQxCAfterVsCentralityTime", "QxC after recentering;centrality (%);time from SOR (h);<Q_{x}^{C}>", kTProfile2D, {centralityAxis, timeAxis});
@@ -311,6 +320,7 @@ struct zdc2stagecalibration {
     gainprofile = nullptr;
     spatialprofile = nullptr;
     qRecenteringProfile = nullptr;
+    qWidthProfile = nullptr;
     if (calibrationStage.value == 2 && useGainCallib.value && !confGainPath.value.empty()) {
       gainprofile = ccdb->getForTimeStamp<TH2D>(confGainPath.value, timestamp);
       if (!gainprofile) {
@@ -337,6 +347,18 @@ struct zdc2stagecalibration {
                                      std::string(qRecenteringProfile->GetYaxis()->GetBinLabel(kQRecenteringStructuredNFeatures)) == "(Vz-+0.8)_+^3";
         if (!structuredMapOK) {
           LOGF(fatal, "CCDB object at %s is not a valid structured71 map for run %d", qRecenteringPath.c_str(), runNumber);
+        }
+      }
+    }
+    if (calibrationStage.value == 2 && useQWidthEqualization.value) {
+      qWidthProfile = ccdb->getForTimeStamp<TH2D>(confQWidthPath.value, timestamp);
+      if (!qWidthProfile || qWidthProfile->GetNbinsX() != 80 || qWidthProfile->GetNbinsY() != 4) {
+        LOGF(fatal, "Missing/invalid Q-width map for run %d", runNumber);
+      }
+      constexpr std::array<const char*, 4> labels = {"QxA", "QyA", "QxC", "QyC"};
+      for (int i = 0; i < 4; ++i) {
+        if (std::string(qWidthProfile->GetYaxis()->GetBinLabel(i + 1)) != labels[i]) {
+          LOGF(fatal, "Incorrect Q-width map component ordering");
         }
       }
     }
@@ -468,7 +490,7 @@ struct zdc2stagecalibration {
     };
 
     if (!bc.has_zdc()) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 1.5);
@@ -480,7 +502,7 @@ struct zdc2stagecalibration {
     const float zncEnergycommon = zdc.energyCommonZNC();
 
     if (!std::isfinite(znaEnergycommon) || !std::isfinite(zncEnergycommon) || znaEnergycommon <= 0.f || zncEnergycommon <= 0.f) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 2.5);
@@ -492,25 +514,25 @@ struct zdc2stagecalibration {
       }
     }
     if (!validTowers) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 3.5);
 
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 4.5);
 
     if (!(collision.sel8() && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && std::isfinite(centrality) && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && std::abs(vz) < cfgCutVertex && collision.has_foundFT0())) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 5.5);
 
     if (timeFromSOR < 0.f || timeFromSOR >= cfgMaxRunHours.value) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
 
@@ -573,7 +595,7 @@ struct zdc2stagecalibration {
       zncCorr[i] = getGain(timeFromSOR, i + 4, gainOK) * zncEnergy[i];
     }
     if (!gainOK) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 6.5);
@@ -655,7 +677,7 @@ struct zdc2stagecalibration {
       }
     }
     if (!spatialOK) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
 
@@ -746,7 +768,7 @@ struct zdc2stagecalibration {
     }
 
     if (sumA <= 1.e-4 || sumC <= 1.e-4) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
 
@@ -766,7 +788,7 @@ struct zdc2stagecalibration {
     qyZDCC = cZNC * qyZDCC / sumC;
 
     if (!std::isfinite(qxZDCA) || !std::isfinite(qyZDCA) || !std::isfinite(qxZDCC) || !std::isfinite(qyZDCC)) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
 
@@ -989,7 +1011,7 @@ struct zdc2stagecalibration {
       }
     }
     if (!qRecenteringOK) {
-      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
     }
 
@@ -1029,16 +1051,52 @@ struct zdc2stagecalibration {
 
     const double phiRecenteringA = std::atan2(qValues[1], qValues[0]);
     const double phiRecenteringC = std::atan2(qValues[3], qValues[2]);
-    // ZDC resolution
-    const double qMagA = std::hypot(qValues[0], qValues[1]);
-    const double qMagC = std::hypot(qValues[2], qValues[3]);
-    if (centrality >= 0.f && centrality < 50.f && qMagA > 0. && qMagC > 0.) {
-      histos.fill(HIST("ResolutionQA/pCosPsiAPsiCVsCentrality"), centrality, std::cos(phiRecenteringA - phiRecenteringC));
-    }
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringZNA"), phiRecenteringA);
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringZNC"), phiRecenteringC);
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringVsCentralityZNA"), centrality, phiRecenteringA);
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringVsCentralityZNC"), centrality, phiRecenteringC);
+
+    if (useQWidthEqualization.value) {
+      const int centBin = qWidthProfile->GetXaxis()->FindFixBin(centrality);
+      if (centBin < 1 || centBin > qWidthProfile->GetNbinsX()) {
+        LOGF(fatal, "Invalid ZDC Q-width centrality bin for run %d: centrality=%.6f", runNumber, static_cast<double>(centrality));
+        fillTable(false, -999.f, -999.f, -999.f, -999.f);
+        return;
+      }
+      std::array<double, 4> sigma{};
+      for (int i = 0; i < 4; ++i) {
+        sigma[i] = qWidthProfile->GetBinContent(centBin, i + 1);
+        if (!std::isfinite(sigma[i]) || sigma[i] <= 0.0) {
+          LOGF(fatal, "Invalid ZDC Q-width sigma for run %d: centrality=%.6f, component=%d, sigma=%.6g", runNumber, static_cast<double>(centrality), i, sigma[i]);
+          fillTable(false, -999.f, -999.f, -999.f, -999.f);
+          return;
+        }
+      }
+      const double factorA = std::sqrt(sigma[1] / sigma[0]);
+      const double factorC = std::sqrt(sigma[3] / sigma[2]);
+      qValues[0] *= factorA;
+      qValues[1] /= factorA;
+      qValues[2] *= factorC;
+      qValues[3] /= factorC;
+      for (int i = 0; i < 4; ++i) {
+        histos.fill(HIST("QWidthQA/pQAfterWidthEqVsCentrality"), centrality, i + 0.5, qValues[i]);
+      }
+    }
+
+    const double phiFinalA = std::atan2(qValues[1], qValues[0]);
+    const double phiFinalC = std::atan2(qValues[3], qValues[2]);
+    if (useQWidthEqualization.value) {
+      histos.fill(HIST("PhiQA/hPhiAfterWidthEqVsCentralityZNA"), centrality, phiFinalA);
+      histos.fill(HIST("PhiQA/hPhiAfterWidthEqVsCentralityZNC"), centrality, phiFinalC);
+    }
+    // ZDC resolution after all enabled corrections
+    const double qMagA = std::hypot(qValues[0], qValues[1]);
+    const double qMagC = std::hypot(qValues[2], qValues[3]);
+    if (centrality >= 0.f && centrality < 50.f && qMagA > 0. && qMagC > 0.) {
+      const double correlation = std::cos(phiFinalA - phiFinalC);
+      histos.fill(HIST("ResolutionQA/pCosPsiAPsiCVsCentrality"), centrality, correlation);
+      histos.fill(HIST("ResolutionQA/pCosPsiAPsiCVsCentralityVz"), centrality, vz, correlation);
+    }
 
     histos.fill(HIST("hEvtSelInfo"), 7.5);
     fillTable(true, static_cast<float>(qValues[0]), static_cast<float>(qValues[2]), static_cast<float>(qValues[1]), static_cast<float>(qValues[3]));
