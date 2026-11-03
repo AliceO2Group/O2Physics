@@ -154,6 +154,9 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<float> confInvMassLowLimitPhi{"confInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
   Configurable<float> confInvMassUpLimitPhi{"confInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
   Configurable<bool> confFillMinvBackground{"confFillMinvBackground", false, "Fill background histograms for Phi invariant mass."};
+  Configurable<bool> confFillMinvBackgroundKpKm{"confFillMinvBackgroundKpKm", false, "Fill background histograms for K+K- invariant mass."};
+  Configurable<bool> confFillMinvBackgroundKpKp{"confFillMinvBackgroundKpKp", false, "Fill background histograms for K+K+ invariant mass."};
+  Configurable<bool> confFillMinvBackgroundKmKm{"confFillMinvBackgroundKmKm", false, "Fill background histograms for K-K- invariant mass."};
 
   /// Partitions for the Phi meson (particle 2)
   Partition<FilteredFemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi)) &&
@@ -562,14 +565,14 @@ struct FemtoUniversePairTaskTrackPhi {
       float mMassTwo = o2::constants::physics::MassKMinus;
 
       for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsKaons, partsKaons))) {
-        if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
+        if ((confFillMinvBackgroundKpKp) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
           part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
           part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
           TLorentzVector sumVec(part1Vec);
           sumVec += part2Vec;
           registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
         }
-        if ((kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
+        if ((confFillMinvBackgroundKmKm) && (kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
           part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
           part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
 
@@ -577,7 +580,7 @@ struct FemtoUniversePairTaskTrackPhi {
           sumVec += part2Vec;
           registryPhiMinvBackground.fill(HIST("InvariantMassKmKm"), sumVec.M());
         }
-        if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == -1)) {
+        if ((confFillMinvBackgroundKpKm) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == -1)) {
           part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
           part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
 
