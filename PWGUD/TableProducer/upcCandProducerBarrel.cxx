@@ -40,6 +40,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
+#include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
 
@@ -336,6 +337,7 @@ struct UpcCandProducerBarrel {
     const AxisSpec axisOccupancy{nBinsOccupancy, 0., 250000., "FT0-based occupancy"};
     const AxisSpec axisTFs{nBinsTF, 0., 4.e7, "TFs"}; // 100 bins -> 400000 TFs per bin (1 bin ~ 1140 seconds for 32 orbits per TF)
 
+    registry.add("hTF", "TF counts", HistType::kTH1D, {axisTFs});
     registry.add("hTVX", "TVX counts", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXRCT", "TVX counts after RCT selection", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXRCTnoPileupROF", "TVX counts after RCT and ROF pileup selection", HistType::kTH2D, {axisBCs, axisTFs});
@@ -414,9 +416,12 @@ struct UpcCandProducerBarrel {
     std::vector<size_t> localTFIndex;
     localTFIndex.reserve(bcs.size());
     // Cache the local TF slot for each BC row for collision and MC lookups
+    auto hTF = registry.get<TH1>(HIST("hTF"));
     for (const auto& bc : bcs) {
-      const auto tfID = static_cast<uint32_t>((static_cast<int64_t>(bc.globalBC()) - bcSOR) / nBCsPerTF);
+      const int64_t globalBC = bc.globalBC();
+      const uint32_t tfID = (globalBC - bcSOR) / nBCsPerTF;
       if (tfIDs.empty() || tfID != tfIDs.back()) {
+        hTF->Fill(tfID);
         tfIDs.push_back(tfID);
         tfPassesRCT.push_back(static_cast<uint8_t>(rctChecker(bc)));
       }
