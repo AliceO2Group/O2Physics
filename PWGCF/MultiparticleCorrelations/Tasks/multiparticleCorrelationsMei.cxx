@@ -162,6 +162,7 @@ enum EEventHistograms {
   eHistVertexZ,
   eHistImpactParameter,
   eHistNumContrib,
+  eHistOccupancy,
   eEventHistograms_N
 };
 
@@ -207,8 +208,8 @@ static constexpr std::array<const char*, eOccupancyEstimator_N> OccupancyEstimat
 static constexpr std::array<const char*, eParticleHistograms_N> ParticleHistTitles = {"p_{T}", "#varphi", "#eta", "Particle charge"};
 static constexpr std::array<const char*, eParticleHistograms_N> ParticleHistNames = {"eHistPt", "eHistPhi", "eHistEta", "eHistCharge"};
 
-static constexpr std::array<const char*, eEventHistograms_N> EventHistTitles = {"Centrality", "Multiplicity (trak.size())", "Reference Multiplicity", "Vertex X", "Vertex Y", "Vertex Z", "Impact Parameter", "Number of Contributor"};
-static constexpr std::array<const char*, eEventHistograms_N> EventHistNames = {"eHistCentrality", "eHistMult", "eHistRefMult", "eHistVertexX", "eHistVertexY", "eHistVertexZ", "eHistImpactParameter", "eHistNumContrib"};
+static constexpr std::array<const char*, eEventHistograms_N> EventHistTitles = {"Centrality", "Multiplicity (trak.size())", "Reference Multiplicity", "Vertex X", "Vertex Y", "Vertex Z", "Impact Parameter", "Number of Contributor", "Occupancy"};
+static constexpr std::array<const char*, eEventHistograms_N> EventHistNames = {"eHistCentrality", "eHistMult", "eHistRefMult", "eHistVertexX", "eHistVertexY", "eHistVertexZ", "eHistImpactParameter", "eHistNumContrib", "eHistOccupancy"};
 
 static constexpr std::array<const char*, eWeightsHistograms_N> WeightsNames = {"eWPhiRec", "eWPhiSim", "eWPt"};
 
@@ -251,6 +252,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<std::vector<float>> cfVyBins{"cfVyBins", {500, -0.015, 0.015}, "Vertex Y hist: nVyBins, vyMin, vyMax"};
   Configurable<std::vector<float>> cfVzBins{"cfVzBins", {500, -20., 20.}, "Vertex Z hist: nVzBins, vzMin, vzMax"};
   Configurable<std::vector<float>> cfIpBins{"cfIpBins", {100, 0., 20.}, "Impact parameters hist (MC only): nIPBins, ipMin, ipMax"};
+  Configurable<std::vector<float>> cfOccuBins{"cfOccuBins", {300, 0., 10000.}, "Occupancy hist (Rec only): nOccuBins, occuMin, occuMax"};
 
   Configurable<std::vector<float>> cfPtBins{"cfPtBins", {4000, 0., 10.}, "nPtBins, ptMin, ptMax"};
   Configurable<std::vector<float>> cfPhiBins{"cfPhiBins", {180, 0., math::TwoPI}, "nPhiBins, phiMin, phiMax"};
@@ -773,6 +775,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if constexpr ((rs == eRec || rs == eRecAndSim) && rm == eReal) { // Fill reconstructed-level event histograms
       auto thisCent = chooseCent(collision, tc.fCentralityEstimator);
       auto thisRefMult = chooseMult(collision, tc.fMultiplicityTables);
+      auto thisOccu = chooseOccu(collision, tc.fOccupancyEstimator);
       int multiplicityRec = static_cast<int>(tracks.size());
       if constexpr (cuts == eBefore) {
         ec.fEventHist[eHistMult][eRec][eBefore]->Fill(multiplicityRec);
@@ -782,6 +785,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         ec.fEventHist[eHistVertexY][eRec][eBefore]->Fill(collision.posY());
         ec.fEventHist[eHistVertexZ][eRec][eBefore]->Fill(collision.posZ());
         ec.fEventHist[eHistNumContrib][eRec][eBefore]->Fill(collision.numContrib());
+        ec.fEventHist[eHistOccupancy][eRec][eBefore]->Fill(thisOccu);
       }
       if constexpr (cuts == eAfter) {
         ec.fEventHist[eHistMult][eRec][eAfter]->Fill(multiplicityRec);
@@ -791,6 +795,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         ec.fEventHist[eHistVertexY][eRec][eAfter]->Fill(collision.posY());
         ec.fEventHist[eHistVertexZ][eRec][eAfter]->Fill(collision.posZ());
         ec.fEventHist[eHistNumContrib][eRec][eAfter]->Fill(collision.numContrib());
+        ec.fEventHist[eHistOccupancy][eRec][eAfter]->Fill(thisOccu);
       }
     }
 
@@ -1340,6 +1345,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     lEventHistBins[eHistVertexZ] = cfVzBins.value;
     lEventHistBins[eHistImpactParameter] = cfIpBins.value;
     lEventHistBins[eHistNumContrib] = cfNumContribBins.value;
+    lEventHistBins[eHistOccupancy] = cfOccuBins.value;
 
     if (doprocessRec || doprocessRecSim) {
       for (int i = 0; i < eEventHistograms_N; ++i) {
@@ -1361,11 +1367,13 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       ec.fEventHist[eHistCentrality][eRec][eAfter]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistCentrality], CentralityEstimatorNames[cfCentralityEstimator]));
       ec.fEventHist[eHistRefMult][eRec][eBefore]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], MultiplicityTablesNames[cfMultiplicityTables]));
       ec.fEventHist[eHistRefMult][eRec][eAfter]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], MultiplicityTablesNames[cfMultiplicityTables]));
+      ec.fEventHist[eHistOccupancy][eRec][eBefore]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], OccupancyEstimatorNames[tc.fOccupancyEstimator]));
+      ec.fEventHist[eHistOccupancy][eRec][eAfter]->GetXaxis()->SetTitle(Form("%s (%s)", EventHistTitles[eHistRefMult], OccupancyEstimatorNames[tc.fOccupancyEstimator]));
     } // end of if (doprocessRec || doprocessRecSim) {
 
     if (doprocessSim || doprocessRecSim) {
       for (int i = 0; i < eEventHistograms_N; ++i) {
-        if (i == eHistRefMult || i == eHistNumContrib) { // no RefMult for Sim
+        if (i == eHistRefMult || i == eHistNumContrib || i == eHistOccupancy) { // no RefMult for Sim
           continue;
         }
         const auto& bins = lEventHistBins[i];
