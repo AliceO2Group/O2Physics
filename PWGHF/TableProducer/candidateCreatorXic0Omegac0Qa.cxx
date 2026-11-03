@@ -998,13 +998,16 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
       float dlV0, errDlV0;
       kfV0ToPv.GetDecayLength(dlV0, errDlV0);
+      dlV0 = std::abs(dlV0); // KFParticle returns a signed decay length
 
       float dlCasc, errDlCasc;
       kfCascToPv.GetDecayLength(dlCasc, errDlCasc);
+      dlCasc = std::abs(dlCasc);
 
       float dlCharmBaryon, dlXYCharmBaryon, errDlCharmBaryon, errDlXYCharmBaryon;
       kfCharmBaryonToPv.GetDecayLength(dlCharmBaryon, errDlCharmBaryon);
       kfCharmBaryonToPv.GetDecayLengthXY(dlXYCharmBaryon, errDlXYCharmBaryon);
+      dlCharmBaryon = std::abs(dlCharmBaryon);
 
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
       std::array<float, 3> svCoord = {kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()};
