@@ -102,14 +102,11 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Configurable<float> downSampleTrksFactor{"downSampleTrksFactor", 1., "Fraction of associated tracks to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<float> centMaxForDownSample{"centMaxForDownSample", 101., "Maximum centrality for the application of the downsampling factor"};
-  Configurable<std::vector<double>> binsPtTrig{"binsPtTrig", std::vector<double>{0., 1., 2., 3., 5., 8., 12., 24., 36.}, "pT bin limits for trigger candidates"};
-  Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc", std::vector<double>{0.2, 1., 2., 50.}, "pT bin limits for associated particles"};
 
   HfEventSelection hfEvSel; // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   SliceCache cache;
 
-  double massCharm{0.};
   TF1* funcDcaXYPtCutPrimTrk = nullptr;
 
   using CollsWithCentMult = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
@@ -117,7 +114,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
   using CandLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
-  using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
+  using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, aod::pidTPCFullMu, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
@@ -138,48 +135,34 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Partition<CandLcData> selectedLcToPKPi = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag;
   Partition<CandLcData> selectedLcToPiKP = aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
 
-  ConfigurableAxis binsInvMass{"binsInvMass", {300, 1.6, 2.2}, ""};
+  ConfigurableAxis binsTpcSignal{"binsTpcSignal", {500, 0., 500.}, "TPC signal bins"};
+  ConfigurableAxis binsPtTrig{"binsPtTrig", {24, 0, 24}, ""};
+  ConfigurableAxis binsPtAssoc{"binsPtAssoc", {20, 0, 10}, ""};
   ConfigurableAxis binsMult{"binsMult", {100, 0., 10000.}, "Multiplicity bins"};
   ConfigurableAxis binsCent{"binsCent", {100, 0., 100.}, "Centrality bins"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "Primary vertex z coordinate"};
   ConfigurableAxis binsEta{"binsEta", {50, -2., 2.}, "Eta bins"};
   ConfigurableAxis binsPhi{"binsPhi", {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "Phi bins"};
-  ConfigurableAxis binsDeltaEta{"binsDeltaEta", {100, -2., 2.}, "Delta Eta bins"};
-  ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {64, -3., 3.}, "Delta Phi bins"};
-  ConfigurableAxis binsMlOne{"binsMlOne", {100, 0., 1.}, ""};
-  ConfigurableAxis binsMlTwo{"binsMlTwo", {100, 0., 1.}, ""};
   ConfigurableAxis binsDca{"binsDca", {200, -1., 1.}, ""};
 
   HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
   {
-    if (doprocessDplusSameEvent || doprocessDplusMixedEvent) {
-      massCharm = o2::constants::physics::MassDPlus;
-    } else if (doprocessDsSameEvent || doprocessDsMixedEvent) {
-      massCharm = o2::constants::physics::MassDS;
-    } else if (doprocessD0SameEvent || doprocessD0MixedEvent) {
-      massCharm = o2::constants::physics::MassD0;
-    } else if (doprocessLcSameEvent || doprocessLcMixedEvent) {
-      massCharm = o2::constants::physics::MassLambdaCPlus;
-    } else if (doprocessHadronHadronSameEvent || doprocessHadronHadronMixedEvent) {
-      LOG(info) << "Charm mass not set, processing Hadron-Hadron case";
-    } else {
-      LOG(fatal) << "No decay channel selected to process";
-    }
 
     hfEvSel.addHistograms(registry); // collision monitoring
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
+    const AxisSpec axisTpcSignal = {binsTpcSignal, "TPC Signal"};
     const AxisSpec axisCent = {binsCent, "Centrality"};
     const AxisSpec axisMult = {binsMult, "Multiplicity"};
     const AxisSpec axisPosZ = {binsPosZ, "PosZ"};
     const AxisSpec axisEta = {binsEta, "#it{#eta}"};
     const AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
-    const AxisSpec axisPtTrig = {std::vector<double>(binsPtTrig), "#it{p}_{T} Trig (GeV/#it{c})"};
-    const AxisSpec axisPtAssoc = {std::vector<double>(binsPtAssoc), "#it{p}_{T} Assoc (GeV/#it{c})"};
+    const AxisSpec axisPtTrig = {binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
+    const AxisSpec axisPtAssoc = {binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
     const AxisSpec axisDcaXY = {binsDca, "DCA XY (cm)"};
     const AxisSpec axisDcaZ = {binsDca, "DCA Z (cm)"};
 
@@ -194,6 +177,19 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     registry.add("hDcaZVsPtVsCentAssoc", "Associated particles DCAzVsPtVsCent", {HistType::kTH3F, {{axisPtAssoc}, {axisDcaZ}, {axisCent}}});
     registry.add("hDcaXYVsPtVsMultAssoc", "Associated particles DCAxyVsPtVsMult", {HistType::kTH3F, {{axisPtAssoc}, {axisDcaXY}, {axisMult}}});
     registry.add("hDcaZVsPtVsMultAssoc", "Associated particles DCAzVsPtVsMult", {HistType::kTH3F, {{axisPtAssoc}, {axisDcaZ}, {axisMult}}});
+    registry.add("hAssocTrkPidTPC", "Associated tracks PID TPC", {HistType::kTH2F, {{axisPtAssoc}, {axisTpcSignal}}});
+    registry.add("hTrackSelection", "Track selection", {HistType::kTH1F, {{11, -0.5, 10.5}}});
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(1, "All");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(2, "IsQualityTrack");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(3, "IsQualityTrackITS");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(4, "IsQualityTrackTPC");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(5, "IsPrimaryTrack");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(6, "IsInAcceptanceTrack");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(7, "IsGlobalTrack");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(8, "IsGlobalTrackWoTPCCluster");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(9, "IsGlobalTrackWoPtEta");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(10, "IsGlobalTrackWoDCA");
+    registry.get<TH1>(HIST("hTrackSelection"))->GetXaxis()->SetBinLabel(11, "IsGlobalTrackWoDCATPCCluster");
 
     // Setup pt-dependent DCAxy cut function
     if (usePtDiffDcaXYCut) {
@@ -202,6 +198,44 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", dcaXYPtPrimTrkFunc.value.data()));
     }
   }; // end init
+
+  /// Fill track selection histograms
+  /// \param track is the associated track
+  template <typename TTrack>
+  void fillTrkSelHistos(const TTrack& track)
+  {
+    registry.fill(HIST("hTrackSelection"), 0); // all tracks
+    if (track.isQualityTrack()) {
+      registry.fill(HIST("hTrackSelection"), 1);
+    }
+    if (track.isQualityTrackITS()) {
+      registry.fill(HIST("hTrackSelection"), 2);
+    }
+    if (track.isQualityTrackTPC()) {
+      registry.fill(HIST("hTrackSelection"), 3);
+    }
+    if (track.isPrimaryTrack()) {
+      registry.fill(HIST("hTrackSelection"), 4);
+    }
+    if (track.isInAcceptanceTrack()) {
+      registry.fill(HIST("hTrackSelection"), 5);
+    }
+    if (track.isGlobalTrack()) {
+      registry.fill(HIST("hTrackSelection"), 6);
+    }
+    if (track.isGlobalTrackWoTPCCluster()) {
+      registry.fill(HIST("hTrackSelection"), 7);
+    }
+    if (track.isGlobalTrackWoPtEta()) {
+      registry.fill(HIST("hTrackSelection"), 8);
+    }
+    if (track.isGlobalTrackWoDCA()) {
+      registry.fill(HIST("hTrackSelection"), 9);
+    }
+    if (track.isGlobalTrackWoDCATPCCluster()) {
+      registry.fill(HIST("hTrackSelection"), 10);
+    }
+  }
 
   /// Get charm hadron candidate mass
   /// \param candidate is the charm hadron candidate
@@ -384,6 +418,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       }
 
       for (const auto& assTrk : assTrks) {
+        fillTrkSelHistos(assTrk);
         double assTrkPt = assTrk.pt();
         if (usePtDiffDcaXYCut) {
           float const dcaXYTrkCut = funcDcaXYPtCutPrimTrk->Eval(assTrkPt);
@@ -410,6 +445,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         registry.fill(HIST("hDcaZVsPtVsCentAssoc"), assTrkPt, assTrk.dcaZ(), cent);
         registry.fill(HIST("hDcaXYVsPtVsMultAssoc"), assTrkPt, assTrk.dcaXY(), mult);
         registry.fill(HIST("hDcaZVsPtVsMultAssoc"), assTrkPt, assTrk.dcaZ(), mult);
+        registry.fill(HIST("hAssocTrkPidTPC"), assTrkPt, assTrk.tpcSignal());
 
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
         rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
@@ -451,6 +487,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   {
     bool first = true;
     for (const auto& assTrk : assTrks) {
+      fillTrkSelHistos(assTrk);
       if (!assTrk.isGlobalTrackWoDCA() || assTrk.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
         continue;
       }
@@ -474,6 +511,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       registry.fill(HIST("hDcaZVsPtVsCentAssoc"), assTrkPt, assTrk.dcaZ(), cent);
       registry.fill(HIST("hDcaXYVsPtVsMultAssoc"), assTrkPt, assTrk.dcaXY(), mult);
       registry.fill(HIST("hDcaZVsPtVsMultAssoc"), assTrkPt, assTrk.dcaZ(), mult);
+      registry.fill(HIST("hAssocTrkPidTPC"), assTrkPt, assTrk.tpcSignal());
       rowAssocBases(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
       rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }

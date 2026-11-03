@@ -92,10 +92,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Configurable<bool> fillSparses{"fillSparses", true, "Fill sparse histograms"};
   Configurable<bool> fillTables{"fillTables", false, "Fill tables"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
-  Configurable<std::vector<double>> binsPtTrig{"binsPtTrig", std::vector<double>{0., 3., 5., 8., 16., 36.}, "pT bin limits for trigger candidates"};
   Configurable<std::vector<double>> bdtScore0PtMaxs{"bdtScore0PtMaxs", std::vector<double>{0.1, 0.1, 0.1, 0.1, 0.1}, "pT-differential maximum score 0 for charm candidates"};
   Configurable<std::vector<double>> bdtScore1PtMins{"bdtScore1PtMins", std::vector<double>{0.1, 0.1, 0.1, 0.1, 0.1}, "pT-differential minimum score 1 for charm candidates"};
-  Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc", std::vector<double>{0.3, 1., 2., 50.}, "pT bin limits for associated particles"};
   Configurable<bool> selCentrality{"selCentrality", false, "Use centrality to select events"};
   Configurable<bool> selMultiplicity{"selMultiplicity", false, "Use multiplicity to select events"};
   Configurable<float> centMin{"centMin", 0, "min. centrality"};
@@ -128,9 +126,11 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Preslice<AssocTracks> assocTracksPerCol = aod::hf_correl_charm_had_reduced::hfcRedCorrCollId;
   Preslice<TrigCharmCands> trigCharmCandsPerCol = aod::hf_correl_charm_had_reduced::hfcRedCorrCollId;
 
-  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "Z vertex position pools"};
-  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 900., 1800., 6000.}, "Event multiplicity pools (FT0M)"};
-  ConfigurableAxis centPoolBins{"centPoolBins", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100}, "Event centrality pools"};
+  ConfigurableAxis binsPtTrig{"binsPtTrig", {VARIABLE_WIDTH, 0., 1., 2., 3., 4., 5., 6., 8., 10., 12., 16., 24.}, "Trigger candidate pT bins"};
+  ConfigurableAxis binsPtAssoc{"binsPtAssoc", {VARIABLE_WIDTH, 0.3, 1., 2., 50.}, "Associated particle pT bins"};
+  ConfigurableAxis binsZPool{"binsZPool", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "Z vertex position pools"};
+  ConfigurableAxis binsMultPool{"binsMultPool", {VARIABLE_WIDTH, 0., 900., 1800., 6000.}, "Event multiplicity pools (FT0M)"};
+  ConfigurableAxis binsCentPool{"binsCentPool", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100}, "Event centrality pools"};
   ConfigurableAxis binsInvMass{"binsInvMass", {300, 1.6, 2.2}, "Invariant mass bins"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {100, 0., 10000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsCent{"binsCent", {100, 0., 100.}, "Centrality bins"};
@@ -168,14 +168,18 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     if (!fillSparses && !fillTables) {
       LOGP(fatal, "At least one of fillSparses or fillTables must be true!");
     }
-    if ((binsPtTrig.value.size() != (bdtScore0PtMaxs.value.size() + 1) || binsPtTrig.value.size() != (bdtScore1PtMins.value.size() + 1))) {
+    if (((binsPtTrig.value.size() - 1) != (bdtScore0PtMaxs.value.size() + 1) ||
+         (binsPtTrig.value.size() - 1) != (bdtScore1PtMins.value.size() + 1))) {
+      LOG(info) << "binsPtTrig.value.size(): " << binsPtTrig.value.size();
+      LOG(info) << "bdtScore0PtMaxs.value.size(): " << bdtScore0PtMaxs.value.size();
+      LOG(info) << "bdtScore1PtMins.value.size(): " << bdtScore1PtMins.value.size();
       LOGP(fatal, "The size of bdtScore0PtMaxs and bdtScore1PtMins must be the one of binsPtTrig minus one!");
     }
 
     if (doprocessSameEventCharmHadWCentMix || doprocessSameEventHadHadWCentMix || doprocessMixedEventCharmHadWCentMix || doprocessMixedEventHadHadWCentMix || doprocessSameEventCharmHadWCentMixBase || doprocessMixedEventCharmHadWCentMixBase) {
-      poolBins = (centPoolBins->size() - 2) * (zPoolBins->size() - 2);
+      poolBins = (binsCentPool->size() - 2) * (binsZPool->size() - 2);
     } else {
-      poolBins = (multPoolBins->size() - 2) * (zPoolBins->size() - 2);
+      poolBins = (binsMultPool->size() - 2) * (binsZPool->size() - 2);
     }
 
     const AxisSpec axisInvMass{binsInvMass, "Inv. mass (GeV/#it{c}^{2})"};
@@ -185,8 +189,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     const AxisSpec axisPoolBin = {poolBins, 0., static_cast<float>(poolBins), "PoolBin"};
     const AxisSpec axisDeltaEta = {binsDeltaEta, "#Delta#it{#eta}"};
     const AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta#it{#varphi}"};
-    const AxisSpec axisPtTrig = {std::vector<double>(binsPtTrig), "#it{p}_{T} Trig (GeV/#it{c})"};
-    const AxisSpec axisPtAssoc = {std::vector<double>(binsPtAssoc), "#it{p}_{T} Assoc (GeV/#it{c})"};
+    const AxisSpec axisPtTrig = {binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
+    const AxisSpec axisPtAssoc = {binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
     const AxisSpec axisMlOne{binsMlOne, "bdtScore0"};
     const AxisSpec axisMlTwo{binsMlTwo, "bdtScore1"};
 
@@ -509,7 +513,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                         aod::HfcRedTrigCharms const&,
                                         aod::HfcRedCorrColls const&)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}};
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto trigCand = pair.template hfcRedTrigCharm_as<aod::HfcRedTrigCharms>();
     if (fillSparses && fillTables) {
       fillSameEvent<true, true>(pair, trigCand, binPolicyPosZMult);
@@ -525,7 +529,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                       aod::HfcRedTrigTracks const&,
                                       aod::HfcRedCorrColls const&)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}};
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
     if (fillSparses && fillTables) {
       fillSameEvent<true, true>(pair, trigCand, binPolicyPosZMult);
@@ -541,7 +545,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                         aod::HfcRedTrigCharms const&,
                                         aod::HfcRedCorrColls const&)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto trigCand = pair.template hfcRedTrigCharm_as<aod::HfcRedTrigCharms>();
     if (fillSparses && fillTables) {
       fillSameEvent<true, true>(pair, trigCand, binPolicyPosZCent);
@@ -557,7 +561,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                       aod::HfcRedTrigTracks const&,
                                       aod::HfcRedCorrColls const&)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
     if (fillSparses && fillTables) {
       fillSameEvent<true, true>(pair, trigCand, binPolicyPosZCent);
@@ -573,7 +577,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                          TrigCharmCands const& candidates,
                                          AssocTracks const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto pairsTuple = std::make_tuple(candidates, tracks);
     Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningCentPosZ> const pairs{binPolicyPosZCent, numberEventsMixed, -1, collisions, pairsTuple, &cache};
     if (fillSparses && fillTables) {
@@ -590,7 +594,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                          TrigCharmCands const& candidates,
                                          AssocTracks const& tracks)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}};
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto pairsTuple = std::make_tuple(candidates, tracks);
     Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningMultPosZ> const pairs{binPolicyPosZMult, numberEventsMixed, -1, collisions, pairsTuple, &cache};
     if (fillSparses && fillTables) {
@@ -606,7 +610,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   void processMixedEventHadHadWCentMix(aod::HfcRedCorrColls const& collisions,
                                        AssocTracks const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aod::HfcRedCorrColls, AssocTracks, BinningCentPosZ> const pairs{binPolicyPosZCent, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     if (fillSparses && fillTables) {
@@ -622,7 +626,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   void processMixedEventHadHadWMultMix(aod::HfcRedCorrColls const& collisions,
                                        AssocTracks const& tracks)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}};
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aod::HfcRedCorrColls, AssocTracks, BinningMultPosZ> const pairs{binPolicyPosZMult, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     if (fillSparses && fillTables) {
@@ -656,7 +660,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                             TrigCharmCands const& candidates,
                                             aod::HfcRedAssBases const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
 
     for (const auto& collision : collisions) {
       if (!isSelCollision(collision)) {
@@ -677,7 +681,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                                              TrigCharmCands const& candidates,
                                              aod::HfcRedAssBases const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
 
     doCorrelationsMixedEvent<true>(collisions, candidates, tracks, binPolicyPosZCent);
   }
