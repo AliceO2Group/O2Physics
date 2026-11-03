@@ -999,16 +999,16 @@ struct HfTaskFlow {
 
       registry.add(Form("MC/hCentrality_%s", WhatCentralityEstimator[configCollision.centralityEstimator].data()), "", {HistType::kTH1D, {configAxis.axisCentrality}});
       registry.add("MC/hCentralityUsed", "", {HistType::kTH1D, {configAxis.axisCentrality}});
-      registry.add("MC/hMultiplicity_multMCPVz", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
+      registry.add("MC/hMultiplicity_multMCFT0C", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
       registry.add("MC/hMultiplicityTracksSize", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
       registry.add("MC/hMultiplicityUsed", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
 
-      registry.add("MC/hMixedMultiplicity_multMCPVz_coll1", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
+      registry.add("MC/hMixedMultiplicity_multMCFT0C_coll1", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
       registry.add("MC/hMixedMultiplicityTracksSize_coll1", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
       registry.add("MC/hMixedMultiplicityUsed_coll1", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
       registry.add("MC/hMixedCentrality_coll1", "", {HistType::kTH1D, {configAxis.axisCentrality}});
       registry.add("MC/hMixedCentralityUsed_coll1", "", {HistType::kTH1D, {configAxis.axisCentrality}});
-      registry.add("MC/hMixedMultiplicity_multMCPVz_coll2", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
+      registry.add("MC/hMixedMultiplicity_multMCFT0C_coll2", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
       registry.add("MC/hMixedMultiplicityTracksSize_coll2", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
       registry.add("MC/hMixedMultiplicityUsed_coll2", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
       registry.add("MC/hMixedCentrality_coll2", "", {HistType::kTH1D, {configAxis.axisCentrality}});
@@ -4287,7 +4287,7 @@ struct HfTaskFlow {
       registry.fill(HIST("MC/hMultiplicityTracksSize"), multiplicity);
     } else {
       multiplicity = mcCollision.multMCFT0C();
-      registry.fill(HIST("MC/hMultiplicity_multMCPVz"), multiplicity);
+      registry.fill(HIST("MC/hMultiplicity_multMCFT0C"), multiplicity);
     }
 
     float centrality = 999.f;
@@ -4762,8 +4762,8 @@ struct HfTaskFlow {
       } else {
         multiplicityCollision1 = collision1.multMCFT0C();
         multiplicityCollision2 = collision2.multMCFT0C();
-        registry.fill(HIST("MC/hMixedMultiplicity_multMCPVz_coll1"), multiplicityCollision1);
-        registry.fill(HIST("MC/hMixedMultiplicity_multMCPVz_coll2"), multiplicityCollision2);
+        registry.fill(HIST("MC/hMixedMultiplicity_multMCFT0C_coll1"), multiplicityCollision1);
+        registry.fill(HIST("MC/hMixedMultiplicity_multMCFT0C_coll2"), multiplicityCollision2);
       }
 
       float centralityCollision1 = 999.f;
