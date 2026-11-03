@@ -40,8 +40,6 @@ using namespace o2::aod;
 using MyEventsBasic = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended>;
 using MyBarrelTracks = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelCov, o2::aod::ReducedTracksBarrelPID>;
 
-//using MyDielectronCandidates = o2::soa::Join<o2::aod::Dielectrons, o2::aod::DielectronsExtra, o2::aod::DielectronsAll>;
-
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov;
 
@@ -70,7 +68,7 @@ struct GlobalTrackEstimator {
     {
         LOGF(info, "Started global track counting");
 
-        bool isAnyProcessEnabled = context.mOptions.get<bool>("processGlobalTracksSkimmed");
+        bool isAnyProcessEnabled = context.mOptions.get<bool>("processGlobalTracksSkimmed") || context.mOptions.get<bool>("processGlobalTracksSkimmed");
         bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
         if (isDummyEnabled) {
@@ -146,17 +144,9 @@ struct GlobalTrackEstimator {
 
     PROCESS_SWITCH(GlobalTrackEstimator, processGlobalTracksSkimmed, "Count global tracks from skimmed data model", false);
 
-
-    /*void processAzimuthalRegions(MyDielectronCandidates const& dielectronCandidates)
-    {
-
-    }
-
-    PROCESS_SWITCH(GlobalTrackEstimator, processAzimuthalRegions, "Count global tracks in azimuthal regions with respect to a dielectron candidate", false);*/
-
     void processDummy(MyEventsBasic const&) 
     {
-        
+        // do nothing
     }
 
     PROCESS_SWITCH(GlobalTrackEstimator, processDummy, "Dummy process function", true);

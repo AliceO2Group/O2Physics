@@ -1409,10 +1409,10 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_VtxNcontribReal_VtxZ", "Mass vs VtxNcontribReal vs VtxZ", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kVtxNcontribReal, 20, -10.0, 10.0, VarManager::kVtxZ);
         hm->AddHistogram(histClass, "VtxZ_VtxNcontribReal", "VtxZ vs VtxNcontribReal", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kVtxNcontribReal);
       }
-      if (subGroupStr.Contains("multGlobal")) {
-        hm->AddHistogram(histClass, "Mass_MultGlobal", "Mass vs VtxNcontribReal", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kMultNtrkGlobal);
-        hm->AddHistogram(histClass, "Mass_MultGlobal_VtxZ", "Mass vs VtxNcontribReal vs VtxZ", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kMultNtrkGlobal, 20, -10.0, 10.0, VarManager::kVtxZ);
-        hm->AddHistogram(histClass, "VtxZ_MultGlobal", "VtxZ vs VtxNcontribReal", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kMultNtrkGlobal);
+      if (subGroupStr.Contains("mult_global")) {
+        hm->AddHistogram(histClass, "Mass_MultGlobal", "Mass vs global tracks", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kMultNtrkGlobal);
+        hm->AddHistogram(histClass, "Mass_MultGlobal_VtxZ", "Mass vs global tracks vs VtxZ", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kMultNtrkGlobal, 20, -10.0, 10.0, VarManager::kVtxZ);
+        hm->AddHistogram(histClass, "VtxZ_MultGlobal", "VtxZ vs global tracks", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kMultNtrkGlobal);
       }
       if (subGroupStr.Contains("alice3barrel")) {
         std::array<double, 21> pTBins = {
