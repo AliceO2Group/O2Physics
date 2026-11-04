@@ -17,6 +17,7 @@
 #define PWGHF_CORE_HFMLRESPONSEXICTOXIPIPI_H_
 
 #include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Tools/ML/MlResponse.h"
 
