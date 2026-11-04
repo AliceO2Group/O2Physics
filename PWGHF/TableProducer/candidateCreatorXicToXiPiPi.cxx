@@ -541,12 +541,12 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCovSVXZ"), covMatrixSV[3]);
         registry.fill(HIST("hCovSVZZ"), covMatrixSV[5]);
         // DCAs of prongs
-        registry.fill(HIST("hDcaXYProngs"), trackCasc.getPt(), impactParameterCasc.getY()*10000.f);
-        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor0.pt(), impactParameter0.getY()*10000.f);
-        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor1.pt(), impactParameter1.getY()*10000.f);
-        registry.fill(HIST("hDcaZProngs"), trackCasc.getPt(), impactParameterCasc.getZ()*10000.f);
-        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor0.pt(), impactParameter0.getZ()*10000.f);
-        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor1.pt(), impactParameter1.getZ()*10000.f);
+        registry.fill(HIST("hDcaXYProngs"), trackCasc.getPt(), impactParameterCasc.getY() * 10000.f);
+        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor0.pt(), impactParameter0.getY() * 10000.f);
+        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor1.pt(), impactParameter1.getY() * 10000.f);
+        registry.fill(HIST("hDcaZProngs"), trackCasc.getPt(), impactParameterCasc.getZ() * 10000.f);
+        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor0.pt(), impactParameter0.getZ() * 10000.f);
+        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor1.pt(), impactParameter1.getZ() * 10000.f);
       }
 
       //---------------------------------fill candidate table rows-------------------------------------------------------------------------------------------
@@ -873,9 +873,9 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCovSVXZ"), covMatrixXicPlus[3]);
         registry.fill(HIST("hCovSVZZ"), covMatrixXicPlus[5]);
         // DCAs of prongs
-        registry.fill(HIST("hDcaXYProngs"), kfXi.GetPt(), impactParameterXiXY*10000.f);
-        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor0.GetPt(), impactParameterPi0XY*10000.f);
-        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor1.GetPt(), impactParameterPi1XY*10000.f);
+        registry.fill(HIST("hDcaXYProngs"), kfXi.GetPt(), impactParameterXiXY * 10000.f);
+        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor0.GetPt(), impactParameterPi0XY * 10000.f);
+        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor1.GetPt(), impactParameterPi1XY * 10000.f);
       }
 
       //------------------------------fill candidate table rows--------------------------------------
