@@ -767,8 +767,9 @@ struct FlowGfwOmegaXi {
   }
 
   // input HIST("name")
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -799,8 +800,9 @@ struct FlowGfwOmegaXi {
     return;
   }
 
-  template <char... chars>
-  void fillProfilepT(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilepT(const GFW::CorrConfig& corrconf, const TName& tarName, const int& ptbin, const double& cent)
   {
     float dnx = 0;
     float val = 0;
@@ -814,8 +816,9 @@ struct FlowGfwOmegaXi {
     return;
   }
 
-  template <char... chars>
-  void fillProfilepTMC(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& PDGCode, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilepTMC(const GFW::CorrConfig& corrconf, const TName& tarName, const int& ptbin, const int& PDGCode, const double& cent)
   {
     TAxis* fpt = nullptr;
     if (PDGCode == kXiMinus) {
@@ -843,8 +846,9 @@ struct FlowGfwOmegaXi {
   }
 
   // input HIST("name")
-  template <char... chars>
-  void fillProfilepTMass(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& PDGCode, const float& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilepTMass(const GFW::CorrConfig& corrconf, const TName& tarName, const int& ptbin, const int& PDGCode, const float& cent)
   {
     int nMassBins = 0;
     int nptbins = 0;
