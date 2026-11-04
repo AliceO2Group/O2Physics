@@ -20,7 +20,6 @@
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -157,7 +156,7 @@ struct DalitzEEQCMC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    fEMEventCut.addEventHistograms(&fRegistry);
 
     const AxisSpec axis_mass{200, 0, 0.2, "m_{ee} (GeV/c^{2})"};
     const AxisSpec axis_pt{200, 0, 2, "p_{T,ee} (GeV/c)"};
@@ -279,6 +278,7 @@ struct DalitzEEQCMC {
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
+    fEMEventCut.SetTrackOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefineDileptonCut()
@@ -506,8 +506,8 @@ struct DalitzEEQCMC {
   Filter trackFilter = dileptoncuts.cfg_min_pt_track < o2::aod::track::pt && nabs(o2::aod::track::eta) < dileptoncuts.cfg_max_eta_track && o2::aod::track::tpcChi2NCl < dileptoncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dileptoncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dileptoncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dileptoncuts.cfg_max_dcaz;
   Filter pidFilter = dileptoncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dileptoncuts.cfg_max_TPCNsigmaEl && (o2::aod::pidtpc::tpcNSigmaPi < dileptoncuts.cfg_min_TPCNsigmaPi || dileptoncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   using FilteredMyMCTracks = soa::Filtered<MyMCTracks>;
-  Partition<FilteredMyMCTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0);
-  Partition<FilteredMyMCTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
+  Partition<FilteredMyMCTracks> posTracks = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0);
+  Partition<FilteredMyMCTracks> negTracks = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -524,16 +524,12 @@ struct DalitzEEQCMC {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
+      fEMEventCut.fillEventInfo<0>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange()) || !(collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
-        continue;
-      }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      fEMEventCut.fillEventInfo<1>(&fRegistry, collision);
+      fEMEventCut.fillAccepted(&fRegistry);
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectronda::pmeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectronda::pmeventId, collision.globalIndex(), cache);
@@ -565,9 +561,6 @@ struct DalitzEEQCMC {
       }
 
       if (!fEMEventCut.IsSelected(collision)) {
-        continue;
-      }
-      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange()) || !(collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
         continue;
       }
       auto mccollision = collision.emmcevent_as<aod::EMMCEvents>();

@@ -1151,7 +1151,7 @@ struct PhotonConversionBuilder {
     const float gap = circleGap(o2::track::TrackAuxPar(pTrack, d_bz), o2::track::TrackAuxPar(nTrack, d_bz));
     const float score = dedupScore(v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), gap);
     if (opt.probe != nullptr) {
-      *opt.probe = {true, score};
+      *opt.probe = {.ok = true, .score = score};
       return;
     }
     const float purity = usePurity() ? purityScore(pos, ele, cospa_kf, v0photoncandidate.getPCA(), meeSV, gap, v0photoncandidate.getPsiPair()) : -999.f;
@@ -1275,7 +1275,7 @@ struct PhotonConversionBuilder {
   //  bookkeeping of candidates and stored photons
   static CandKey keyOf(V0CandidateHelper const& c)
   {
-    return CandKey{c.v0ID, c.colID, c.posID, c.eleID};
+    return CandKey{.v0Id = c.v0ID, .collisionId = c.colID, .posId = c.posID, .eleId = c.eleID};
   }
 
   std::map<CandKey, int> candidateIndexByKey() const
@@ -1612,8 +1612,8 @@ struct PhotonConversionBuilder {
     for (const auto& s : swaps) {
       const int64_t colId = s.keyI.collisionId;
       const int64_t posI = s.keyI.posId, eleI = s.keyI.eleId, posJ = s.keyJ.posId, eleJ = s.keyJ.eleId;
-      const CandKey a1 = CandKey{-1, colId, posI, eleJ};
-      const CandKey a2 = CandKey{-1, colId, posJ, eleI};
+      const CandKey a1 = CandKey{.v0Id = -1, .collisionId = colId, .posId = posI, .eleId = eleJ};
+      const CandKey a2 = CandKey{.v0Id = -1, .collisionId = colId, .posId = posJ, .eleId = eleI};
       if (storedBefore.contains(a1) || storedBefore.contains(a2)) {
         continue;
       }
@@ -1708,7 +1708,7 @@ struct PhotonConversionBuilder {
 
         // fillV0Table<isMC, TCollisions, TTracks>(v0, true);
         stored_v0Ids.emplace_back(std::make_pair(posId, eleId));
-        stored_fullv0Ids.push_back(CandKey{v0Id, collisionId, posId, eleId});
+        stored_fullv0Ids.push_back(CandKey{.v0Id = v0Id, .collisionId = collisionId, .posId = posId, .eleId = eleId});
         nv0_map[collisionId]++;
       }
     } // end of pca_map loop
@@ -2080,7 +2080,7 @@ struct PhotonConversionBuilder {
     vecV0Dedup.clear();
   } // end of build
 
-  o2::framework::expressions::Filter v0Filter = o2::aod::v0::v0Type > (uint8_t)0;
+  o2::framework::expressions::Filter v0Filter = o2::aod::v0::v0Type > static_cast<uint8_t>(0);
   using FilteredV0s = o2::soa::Filtered<o2::aod::V0s>;
 
   enum PairFate {
@@ -2186,7 +2186,8 @@ struct PhotonConversionBuilder {
       }
       int choice = 3; // o2-linter: disable=magic-number (bin 3 = lost)
       if (f.alive) {
-        const bool storedRight = std::any_of(f.aliveColls.begin(), f.aliveColls.end(), [&](int64_t c) { return isRightColl(c, mid); });
+        const auto& midRef = mid; // ordinary variable, not a structured binding
+        const bool storedRight = std::any_of(f.aliveColls.begin(), f.aliveColls.end(), [&](int64_t c) { return isRightColl(c, midRef); });
         choice = storedRight ? 0 : (rightAvailable ? 1 : 2);
       }
       const int nCopies = static_cast<int>(copyColls.size());
