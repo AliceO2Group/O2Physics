@@ -892,6 +892,7 @@ class VarManager : public TObject
     kQuadDCAsigXYZ,
     kSignQuadDCAsigXY,
     kCosPointingAngle,
+    kVertexingImpactParameter,
     kD0ImpParProduct,
     kD0DcaDaughters,
     kImpParXYJpsi,
@@ -5318,6 +5319,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
       values[kCosPointingAngle] = (dx * v12.Px() + dy * v12.Py() + dz * v12.Pz()) /
                                   (v12.P() * values[VarManager::kVertexingLxyz]);
+      values[kVertexingImpactParameter] = values[VarManager::kVertexingLxyz] * std::sqrt(1 - values[VarManager::kCosPointingAngle] * values[VarManager::kCosPointingAngle]);
       // Decay length defined as in Run 2
       values[kVertexingLzProjected] = (dz * v12.Pz()) / TMath::Sqrt(v12.Pz() * v12.Pz());
       values[kVertexingLxyProjected] = (dx * v12.Px()) + (dy * v12.Py());
@@ -5398,6 +5400,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
                                      std::sqrt(dyPair2PV * dyPair2PV) * v12.Py() +
                                      std::sqrt(dzPair2PV * dzPair2PV) * v12.Pz()) /
                                     (v12.P() * values[VarManager::kVertexingLxyz]);
+        values[kVertexingImpactParameter] = values[VarManager::kVertexingLxyz] * std::sqrt(1 - values[VarManager::kCosPointingAngle] * values[VarManager::kCosPointingAngle]);
       }
       // As defined in Run 2 (projected onto momentum)
       if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || fgUsedVars[kVertexingLzProjected]) {

@@ -220,6 +220,9 @@ struct FoxWolframCorrelation {
   };
   using TriFlags = std::array<bool, kNTriSel>;
 
+  ConfigurableAxis cfgAxisPt{"cfgAxisPt", {VARIABLE_WIDTH, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0}, "p_{T} Bins"};
+  ConfigurableAxis cfgAxisMultip{"cfgAxisMultip", {351, -0.5, 350.5}, "Multiplicity Bins"};
+
   Configurable<std::vector<double>> isoFWMnominal{"isoFWMnominal", {0.02, 0.27, 0.02, 0.16, 0.02, 0.12, 0.02, 0.10}, "isoFWMnominal"};
 
   // Multiplicity bins: bin i is [multLower[i], multUpper[i]] (inclusive limits).
@@ -237,12 +240,11 @@ struct FoxWolframCorrelation {
     "BIN6", "BIN7", "BIN8", "BIN9", "BIN10"};
 
   // Map each unique pair of Fox-Wolfram moments to its histogram.
-
   static constexpr std::array<std::string_view, 3> fwmRangeNames = {"FWM_BIN1/", "FWM_BIN2/", "FWM_BIN3/"};
   static constexpr std::array<std::string_view, 8> fwmHNames = {"H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8"};
   static constexpr std::array<std::string_view, 8> fwmMultHNames = {"Multip_H1", "Multip_H2", "Multip_H3", "Multip_H4", "Multip_H5", "Multip_H6", "Multip_H7", "Multip_H8"};
-  static constexpr std::array<std::string_view, 28> fwmCorrelationNames = {"H1_H2", "H1_H3", "H1_H4", "H1_H5", "H1_H6", "H1_H7", "H1_H8", "H2_H3", "H2_H4", "H2_H5", "H2_H6", "H2_H7", "H2_H8", "H3_H4", "H3_H5", "H3_H6", "H3_H7", "H3_H8", "H4_H5", "H4_H6", "H4_H7", "H4_H8", "H5_H6", "H5_H7", "H5_H8", "H6_H7", "H6_H8", "H7_H8"};
 
+  static constexpr std::array<std::string_view, 28> fwmCorrelationNames = {"H1_H2", "H1_H3", "H1_H4", "H1_H5", "H1_H6", "H1_H7", "H1_H8", "H2_H3", "H2_H4", "H2_H5", "H2_H6", "H2_H7", "H2_H8", "H3_H4", "H3_H5", "H3_H6", "H3_H7", "H3_H8", "H4_H5", "H4_H6", "H4_H7", "H4_H8", "H5_H6", "H5_H7", "H5_H8", "H6_H7", "H6_H8", "H7_H8"};
   static constexpr std::array<int, 28> fwmCorrelationFirst = {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 6};
   static constexpr std::array<int, 28> fwmCorrelationSecond = {1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6, 7, 3, 4, 5, 6, 7, 4, 5, 6, 7, 5, 6, 7, 6, 7, 7};
 
@@ -266,14 +268,12 @@ struct FoxWolframCorrelation {
     }
 
     // Define axes shared by the registered histograms.
-    const AxisSpec axispT{100, 0.15, 10, "p_{T}"};
-    const AxisSpec axispTL{100, 2, 3, "p_{T}^{Lead}"};
-    const AxisSpec axispTA{100, 0.15, 2, "p_{T}^{Assoc}"};
+    const AxisSpec axispT{cfgAxisPt, "p_{T} (GeV/c)"};
+    const AxisSpec axisMultip{cfgAxisMultip, "Multiplicity"};
     const AxisSpec axisDeltaEta{32, -1.6, +1.6, "#Delta#eta"};
     const AxisSpec axisDeltaPhi{72, -constants::math::PIHalf, +3 * constants::math::PIHalf, "#Delta#phi"};
     const AxisSpec axisPhi{100, 0, constants::math::TwoPI, "#phi"};
     const AxisSpec axisEta{40, -0.8, 0.8, "#eta"};
-    const AxisSpec axisMultip{350, 0, 350, "Multiplicity"};
     const AxisSpec axisHlrec{50, 0, 1, "H_{l}"};
     const AxisSpec axisHlfine{100, 0, 1, "H_{l}"};
     const AxisSpec axisEvent{10, 0.5, 10.5, "", "EventAxis"};
@@ -350,66 +350,82 @@ struct FoxWolframCorrelation {
     }
 
     // Register inclusive multiplicity, track spectra, and recoil histograms.
-    histos.add("Multip/ITSTPC_Multiplicity", "Reconstructed ITS-TPC Multiplicity; trks; Events", kTH1D, {axisMultip});
+    histos.add("Multip/multipAllEv", "multipAllEv; trks; Events", kTH1D, {axisMultip});
+    histos.add("Multip/multipTriEv", "multipTriEv; trks; Events", kTH1D, {axisMultip});
 
-    histos.add("pTSpectra/pT", "pT", kTH1D, {axispT});
-    histos.add("Spectra/phi", "phi", kTH1D, {axisPhi});
+    histos.add("Multip/nTrkTriEvS1p", "nTrkTriEvS1p", kTH1D, {axisMultip});
+    histos.add("Multip/nTrkTriEvS2p", "nTrkTriEvS2p", kTH1D, {axisMultip});
+    histos.add("Multip/nTrkTriEvS3p", "nTrkTriEvS3p", kTH1D, {axisMultip});
+    histos.add("Multip/nTrkTriEvS1m", "nTrkTriEvS1m", kTH1D, {axisMultip});
+    histos.add("Multip/nTrkTriEvS2m", "nTrkTriEvS2m", kTH1D, {axisMultip});
+    histos.add("Multip/nTrkTriEvS3m", "nTrkTriEvS3m", kTH1D, {axisMultip});
 
-    histos.add("pTSpectra/RecoilALL", "RecoilALL", kTH2D, {axisMultip, axisRecoil});
-    histos.add("pTSpectra/RecoilTRI", "RecoilTRI", kTH2D, {axisMultip, axisRecoil});
+    // Assoc. pT spectra
+    histos.add("pTSpectra/pTAssocAllEv", "pTAssocAllEv", kTH1D, {axispT});
+    histos.add("pTSpectra/pTAssocTriEv", "pTAssocTriEv", kTH1D, {axispT});
+    histos.add("pTSpectra/meanpTAssocMultipAllEv", "meanpTAssocMultipAllEv", kTProfile, {axisMultip});
+    histos.add("pTSpectra/meanpTAssocMultipTriEv", "meanpTAssocMultipTriEv", kTProfile, {axisMultip});
+
+    // Lead. pT spectra
+    histos.add("pTSpectra/pTLeadAllEv", "pTLeadAllEv", kTH1D, {axispT});
+    histos.add("pTSpectra/pTLeadTriEv", "pTLeadTriEv", kTH1D, {axispT});
+    histos.add("pTSpectra/ptLeadMultipAllEv", "ptLeadMultipAllEv", kTH2D, {axisMultip, axispT});
+    histos.add("pTSpectra/ptLeadMultipTriEv", "ptLeadMultipTriEv", kTH2D, {axisMultip, axispT});
+    histos.add("pTSpectra/meanptLeadMultipAllEv", "meanptLeadMultipAllEv", kTProfile, {axisMultip});
+    histos.add("pTSpectra/meanptLeadMultipTriEv", "meanptLeadMultipTriEv", kTProfile, {axisMultip});
+
+    histos.add("pTSpectra/RecoilAllEv", "RecoilAllEv", kTH2D, {axisMultip, axisRecoil});
+    histos.add("pTSpectra/RecoilTriEv", "RecoilTriEv", kTH2D, {axisMultip, axisRecoil});
 
     // Register track spectra for each multiplicity interval.
     for (int i = 1; i <= nMultBins; i++) {
-      histos.add(fmt::format("Multip/nTrkAllEv_BIN{}", i).c_str(), fmt::format("nTrkAllEv_BIN{}", i).c_str(), kTH1D, {axisMultip});
-      histos.add(fmt::format("Multip/nTrktriEvSetNom_BIN{}", i).c_str(), fmt::format("nTrktriEvSetNom_BIN{}", i).c_str(), kTH1D, {axisMultip});
-      histos.add(fmt::format("Multip/nTrkTriEvS1p_BIN{}", i).c_str(), fmt::format("nTrkTriEvS1p_BIN{}", i).c_str(), kTH1D, {axisMultip});
-      histos.add(fmt::format("Multip/nTrkTriEvS2p_BIN{}", i).c_str(), fmt::format("nTrkTriEvS2p_BIN{}", i).c_str(), kTH1D, {axisMultip});
-      histos.add(fmt::format("Multip/nTrkTriEvS3p_BIN{}", i).c_str(), fmt::format("nTrkTriEvS3p_BIN{}", i).c_str(), kTH1D, {axisMultip});
-      histos.add(fmt::format("Multip/nTrkTriEvS1m_BIN{}", i).c_str(), fmt::format("nTrkTriEvS1m_BIN{}", i).c_str(), kTH1D, {axisMultip});
-      histos.add(fmt::format("Multip/nTrkTriEvS2m_BIN{}", i).c_str(), fmt::format("nTrkTriEvS2m_BIN{}", i).c_str(), kTH1D, {axisMultip});
-      histos.add(fmt::format("Multip/nTrkTriEvS3m_BIN{}", i).c_str(), fmt::format("nTrkTriEvS3m_BIN{}", i).c_str(), kTH1D, {axisMultip});
 
-      histos.add(fmt::format("Spectra/etaphi_BIN{}", i).c_str(), fmt::format("etaphi_BIN{}", i).c_str(), kTH2D, {axisPhi, axisEta});
-      histos.add(fmt::format("Spectra/ptphi_BIN{}", i).c_str(), fmt::format("ptphi_BIN{}", i).c_str(), kTH2D, {axisPhi, axispT});
+      // eta-phi and pt-phi
+      histos.add(fmt::format("Spectra/etaphiAllEv_BIN{}", i).c_str(), fmt::format("etaphiAllEv_BIN{}", i).c_str(), kTH2D, {axisPhi, axisEta});
+      histos.add(fmt::format("Spectra/ptphiAllEv_BIN{}", i).c_str(), fmt::format("ptphiAllEv_BIN{}", i).c_str(), kTH2D, {axisPhi, axispT});
 
-      histos.add(fmt::format("Spectra/etaphiTri_BIN{}", i).c_str(), fmt::format("etaphiTri_BIN{}", i).c_str(), kTH2D, {axisPhi, axisEta});
-      histos.add(fmt::format("Spectra/ptphiTri_BIN{}", i).c_str(), fmt::format("ptphiTri_BIN{}", i).c_str(), kTH2D, {axisPhi, axispT});
+      histos.add(fmt::format("Spectra/etaphiTriEv_BIN{}", i).c_str(), fmt::format("etaphiTriEv_BIN{}", i).c_str(), kTH2D, {axisPhi, axisEta});
+      histos.add(fmt::format("Spectra/ptphiTriEv_BIN{}", i).c_str(), fmt::format("ptphiTriEv_BIN{}", i).c_str(), kTH2D, {axisPhi, axispT});
 
-      // onPeaks and onValleys - ALL EVENTS
+      // onPeaks and onValleys pt spectra - ALL EVENTS
       histos.add(fmt::format("allEvPkVall/allLRNearPt_BIN{}", i).c_str(), fmt::format("allLRNearPt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("allEvPkVall/allLRNearPtMultip_BIN{}", i).c_str(), fmt::format("allLRNearPtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
+
       histos.add(fmt::format("allEvPkVall/allSRNearPt_BIN{}", i).c_str(), fmt::format("allSRNearPt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("allEvPkVall/allSRNearPtMultip_BIN{}", i).c_str(), fmt::format("allSRNearPtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
 
       histos.add(fmt::format("allEvPkVall/allLRValleyPt_BIN{}", i).c_str(), fmt::format("allLRValleyPt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("allEvPkVall/allLRValleyPtMultip_BIN{}", i).c_str(), fmt::format("allLRValleyPtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
       histos.add(fmt::format("allEvPkVall/allSRValleyPt_BIN{}", i).c_str(), fmt::format("allSRValleyPt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("allEvPkVall/allSRValleyPtMultip_BIN{}", i).c_str(), fmt::format("allSRValleyPtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
 
       histos.add(fmt::format("allEvPkVall/allLRAwayPt_BIN{}", i).c_str(), fmt::format("allLRAwayPt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("allEvPkVall/allLRAwayPtMultip_BIN{}", i).c_str(), fmt::format("allLRAwayPtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
       histos.add(fmt::format("allEvPkVall/allSRAwayPt_BIN{}", i).c_str(), fmt::format("allSRAwayPt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("allEvPkVall/allSRAwayPtMultip_BIN{}", i).c_str(), fmt::format("allSRAwayPtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
 
-      // onPeaks and onValleys - TRI EVENTS
+      // onPeaks and onValleys pt spectra - TRI EVENTS
       histos.add(fmt::format("triEvPkVall/triLRPeak1Pt_BIN{}", i).c_str(), fmt::format("triLRPeak1Pt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("triEvPkVall/triLRPeak1PtMultip_BIN{}", i).c_str(), fmt::format("triLRPeak1PtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
       histos.add(fmt::format("triEvPkVall/triSRPeak1Pt_BIN{}", i).c_str(), fmt::format("triSRPeak1Pt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("triEvPkVall/triSRPeak1PtMultip_BIN{}", i).c_str(), fmt::format("triSRPeak1PtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
 
       histos.add(fmt::format("triEvPkVall/triLRPeak2Pt_BIN{}", i).c_str(), fmt::format("triLRPeak2Pt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("triEvPkVall/triLRPeak2PtMultip_BIN{}", i).c_str(), fmt::format("triLRPeak2PtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
       histos.add(fmt::format("triEvPkVall/triSRPeak2Pt_BIN{}", i).c_str(), fmt::format("triSRPeak2Pt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("triEvPkVall/triSRPeak2PtMultip_BIN{}", i).c_str(), fmt::format("triSRPeak2PtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
 
       histos.add(fmt::format("triEvPkVall/triLRPeak3Pt_BIN{}", i).c_str(), fmt::format("triLRPeak3Pt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("triEvPkVall/triLRPeak3PtMultip_BIN{}", i).c_str(), fmt::format("triLRPeak3PtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
       histos.add(fmt::format("triEvPkVall/triSRPeak3Pt_BIN{}", i).c_str(), fmt::format("triSRPeak3Pt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("triEvPkVall/triSRPeak3PtMultip_BIN{}", i).c_str(), fmt::format("triSRPeak3PtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
 
       histos.add(fmt::format("triEvPkVall/triLRValleysPt_BIN{}", i).c_str(), fmt::format("triLRValleysPt_BIN{}", i).c_str(), kTH1D, {axispT});
+      histos.add(fmt::format("triEvPkVall/triLRValleysPtMultip_BIN{}", i).c_str(), fmt::format("triLRValleysPtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
       histos.add(fmt::format("triEvPkVall/triSRValleysPt_BIN{}", i).c_str(), fmt::format("triSRValleysPt_BIN{}", i).c_str(), kTH1D, {axispT});
-    }
+      histos.add(fmt::format("triEvPkVall/triSRValleysPtMultip_BIN{}", i).c_str(), fmt::format("triSRValleysPtMultip_BIN{}", i).c_str(), kTProfile, {axisMultip});
 
-    // Register leading and associated track spectra in the broad ranges.
-    for (int i = 1; i <= 3; i++) {
-      histos.add(fmt::format("pTSpectra/pT_LA_BIN{}", i).c_str(), fmt::format("pT_LA_BIN{}", i).c_str(), kTH2D, {axispT, axispT});
-      histos.add(fmt::format("pTSpectra/pT_LA_TriBIN{}", i).c_str(), fmt::format("pT_LA_BIN{}", i).c_str(), kTH2D, {axispT, axispT});
-
-      histos.add(fmt::format("pTSpectra/fpT_LA_BIN{}", i).c_str(), fmt::format("fpT_LA_BIN{}", i).c_str(), kTH2D, {axispTL, axispTA});
-      histos.add(fmt::format("pTSpectra/fpT_LA_TriBIN{}", i).c_str(), fmt::format("fpT_LA_BIN{}", i).c_str(), kTH2D, {axispTL, axispTA});
-    }
-
-    // Register same-event angular correlations.
-    for (int i = 1; i <= nMultBins; ++i) {
+      // Same Even Fct
       histos.add(fmt::format("Corelations/sTRI_BIN{}", i).c_str(), fmt::format("sTRI_BIN{}", i).c_str(), kTH2D, {axisDeltaPhi, axisDeltaEta});
       histos.add(fmt::format("Corelations/sProjTRI_BIN{}", i).c_str(), fmt::format("sProjTRI_BIN{}", i).c_str(), kTH1D, {axisDeltaPhi});
     }
@@ -587,45 +603,17 @@ struct FoxWolframCorrelation {
 
       if (binIndex == idx + 1) {
 
-        histos.fill(HIST("Multip/nTrkAllEv_") + HIST(binNames[idx]), tracks.size());
-
         for (const auto& track : tracks) {
-          histos.fill(HIST("Spectra/etaphi_") + HIST(binNames[idx]), track.phi(), track.eta());
-          histos.fill(HIST("Spectra/ptphi_") + HIST(binNames[idx]), track.phi(), track.pt());
-        }
 
-        // Fill spectra for the configured topology selection.
-        if (isSelectedTopology) {
+          histos.fill(HIST("Spectra/etaphiAllEv_") + HIST(binNames[idx]), track.phi(), track.eta());
+          histos.fill(HIST("Spectra/ptphiAllEv_") + HIST(binNames[idx]), track.phi(), track.pt());
 
-          histos.fill(HIST("Multip/nTrktriEvSetNom_") + HIST(binNames[idx]), tracks.size());
+          if (!isSelectedTopology) {
+            continue;
+          } // TRI Ev.
 
-          for (const auto& track : tracks) {
-            histos.fill(HIST("Spectra/etaphiTri_") + HIST(binNames[idx]), track.phi(), track.eta());
-            histos.fill(HIST("Spectra/ptphiTri_") + HIST(binNames[idx]), track.phi(), track.pt());
-          }
-        }
-
-        // TRI Ev. Multip (the remaining filters) - p == permissive and m == restrictive
-        if (triFlags[kTriSet1p]) {
-          histos.fill(HIST("Multip/nTrkTriEvS1p_") + HIST(binNames[idx]), tracks.size());
-        }
-
-        if (triFlags[kTriSet2p]) {
-          histos.fill(HIST("Multip/nTrkTriEvS2p_") + HIST(binNames[idx]), tracks.size());
-        }
-
-        if (triFlags[kTriSet3p]) {
-          histos.fill(HIST("Multip/nTrkTriEvS3p_") + HIST(binNames[idx]), tracks.size());
-        }
-
-        if (triFlags[kTriSet1m]) {
-          histos.fill(HIST("Multip/nTrkTriEvS1m_") + HIST(binNames[idx]), tracks.size());
-        }
-        if (triFlags[kTriSet2m]) {
-          histos.fill(HIST("Multip/nTrkTriEvS2m_") + HIST(binNames[idx]), tracks.size());
-        }
-        if (triFlags[kTriSet3m]) {
-          histos.fill(HIST("Multip/nTrkTriEvS3m_") + HIST(binNames[idx]), tracks.size());
+          histos.fill(HIST("Spectra/etaphiTriEv_") + HIST(binNames[idx]), track.phi(), track.eta());
+          histos.fill(HIST("Spectra/ptphiTriEv_") + HIST(binNames[idx]), track.phi(), track.pt());
         }
       }
     }); // per Multip Bin
@@ -634,6 +622,7 @@ struct FoxWolframCorrelation {
   // Fill same-event pair distributions for one multiplicity interval.
   template <typename Track>
   void fillSameEventHist(int binIndex,
+                         int nTracks,
                          Track const& associatedTrack,
                          double deltaPhi,
                          double deltaEta,
@@ -667,27 +656,33 @@ struct FoxWolframCorrelation {
         if (onNearPeak) { // NEAR SIDE
           if (inLongRange) {
             histos.fill(HIST("allEvPkVall/allLRNearPt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("allEvPkVall/allLRNearPtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
           if (inShortRange) {
             histos.fill(HIST("allEvPkVall/allSRNearPt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("allEvPkVall/allSRNearPtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
         }
 
         if (onBetweenNearAway) { // BETWEEN SIDE
           if (inLongRange) {
             histos.fill(HIST("allEvPkVall/allLRValleyPt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("allEvPkVall/allLRValleyPtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
           if (inShortRange) {
             histos.fill(HIST("allEvPkVall/allSRValleyPt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("allEvPkVall/allSRValleyPtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
         }
 
         if (onAwayPeak) { // AWAY SIDE
           if (inLongRange) {
             histos.fill(HIST("allEvPkVall/allLRAwayPt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("allEvPkVall/allLRAwayPtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
           if (inShortRange) {
             histos.fill(HIST("allEvPkVall/allSRAwayPt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("allEvPkVall/allSRAwayPtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
         }
       } // for ALL Events
@@ -711,9 +706,11 @@ struct FoxWolframCorrelation {
         if (onPeak1) { // on Peak at 0
           if (inLongRange) {
             histos.fill(HIST("triEvPkVall/triLRPeak1Pt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("triEvPkVall/triLRPeak1PtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
           if (inShortRange) {
             histos.fill(HIST("triEvPkVall/triSRPeak1Pt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("triEvPkVall/triSRPeak1PtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
         }
 
@@ -721,10 +718,12 @@ struct FoxWolframCorrelation {
 
           if (inLongRange) {
             histos.fill(HIST("triEvPkVall/triLRPeak2Pt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("triEvPkVall/triLRPeak2PtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
 
           if (inShortRange) {
             histos.fill(HIST("triEvPkVall/triSRPeak2Pt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("triEvPkVall/triSRPeak2PtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
         }
 
@@ -732,10 +731,12 @@ struct FoxWolframCorrelation {
 
           if (inLongRange) {
             histos.fill(HIST("triEvPkVall/triLRPeak3Pt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("triEvPkVall/triLRPeak3PtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
 
           if (inShortRange) {
             histos.fill(HIST("triEvPkVall/triSRPeak3Pt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("triEvPkVall/triSRPeak3PtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
         }
 
@@ -743,16 +744,18 @@ struct FoxWolframCorrelation {
           // Combined valleys at 60 and 180 degrees //
           if (inLongRange) {
             histos.fill(HIST("triEvPkVall/triLRValleysPt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("triEvPkVall/triLRValleysPtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
 
           if (inShortRange) {
             histos.fill(HIST("triEvPkVall/triSRValleysPt_") + HIST(binNames[idx]), associatedTrack.pt());
+            histos.fill(HIST("triEvPkVall/triSRValleysPtMultip_") + HIST(binNames[idx]), nTracks, associatedTrack.pt());
           }
         }
 
       } // for TRI-like Events
 
-      // Count accepted pairs and fill their angular distributions.
+      // Same Event - Corr fct
       histos.fill(HIST("SamePairs/SamePairsNoLA"), binIndex);
       histos.fill(HIST("Corelations/sProjTRI_") + HIST(binNames[idx]), deltaPhi);
       histos.fill(HIST("Corelations/sTRI_") + HIST(binNames[idx]), deltaPhi, deltaEta);
@@ -859,53 +862,61 @@ struct FoxWolframCorrelation {
       (topologyMode.value == kTriEvSet2m && isTriSet2m) ||
       (topologyMode.value == kTriEvSet3m && isTriSet3m);
 
-    // Fill inclusive event multiplicity and recoil.
-    histos.fill(HIST("Multip/ITSTPC_Multiplicity"), nGlobalTracks);
-    histos.fill(HIST("pTSpectra/RecoilALL"), nGlobalTracks, nRecoil);
+    // TRI Ev. Multip (the remaining filters) - p == permissive and m == restrictive
+    if (triFlags[kTriSet1p]) {
+      histos.fill(HIST("Multip/nTrkTriEvS1p"), nGlobalTracks);
+    }
 
-    if (isSelectedTopology) {
-      histos.fill(HIST("pTSpectra/RecoilTRI"), nGlobalTracks, nRecoil);
+    if (triFlags[kTriSet2p]) {
+      histos.fill(HIST("Multip/nTrkTriEvS2p"), nGlobalTracks);
+    }
+
+    if (triFlags[kTriSet3p]) {
+      histos.fill(HIST("Multip/nTrkTriEvS3p"), nGlobalTracks);
+    }
+
+    if (triFlags[kTriSet1m]) {
+      histos.fill(HIST("Multip/nTrkTriEvS1m"), nGlobalTracks);
+    }
+    if (triFlags[kTriSet2m]) {
+      histos.fill(HIST("Multip/nTrkTriEvS2m"), nGlobalTracks);
+    }
+    if (triFlags[kTriSet3m]) {
+      histos.fill(HIST("Multip/nTrkTriEvS3m"), nGlobalTracks);
+    }
+
+    // Fill inclusive event multiplicity, recoil and average pt lead.
+
+    histos.fill(HIST("Multip/multipAllEv"), nGlobalTracks);
+    histos.fill(HIST("pTSpectra/RecoilAllEv"), nGlobalTracks, nRecoil);
+    histos.fill(HIST("pTSpectra/pTLeadAllEv"), triggTrk.pt());
+    histos.fill(HIST("pTSpectra/ptLeadMultipAllEv"), nGlobalTracks, triggTrk.pt());
+    histos.fill(HIST("pTSpectra/meanptLeadMultipAllEv"), nGlobalTracks, triggTrk.pt());
+
+    if (isSelectedTopology) { // for Tri-like Ev.
+      histos.fill(HIST("Multip/multipTriEv"), nGlobalTracks);
+      histos.fill(HIST("pTSpectra/RecoilTriEv"), nGlobalTracks, nRecoil);
+      histos.fill(HIST("pTSpectra/pTLeadTriEv"), triggTrk.pt());
+      histos.fill(HIST("pTSpectra/ptLeadMultipTriEv"), nGlobalTracks, triggTrk.pt());
+      histos.fill(HIST("pTSpectra/meanptLeadMultipTriEv"), nGlobalTracks, triggTrk.pt());
     }
 
     // Fill inclusive and topology-selected leading-track spectra.
     for (const auto& track : tracks) {
 
-      histos.fill(HIST("pTSpectra/pT"), track.pt());
-      histos.fill(HIST("Spectra/phi"), track.phi());
-
       if (track.globalIndex() == triggTrk.globalIndex()) {
         continue;
-      }
+      } // just the assoc. particles
 
-      if (multRANGE1) {
-        histos.fill(HIST("pTSpectra/pT_LA_BIN1"), triggTrk.pt(), track.pt());
-        histos.fill(HIST("pTSpectra/fpT_LA_BIN1"), triggTrk.pt(), track.pt());
-      }
-      if (multRANGE2) {
-        histos.fill(HIST("pTSpectra/pT_LA_BIN2"), triggTrk.pt(), track.pt());
-        histos.fill(HIST("pTSpectra/fpT_LA_BIN2"), triggTrk.pt(), track.pt());
-      }
-      if (multRANGE3) {
-        histos.fill(HIST("pTSpectra/pT_LA_BIN3"), triggTrk.pt(), track.pt());
-        histos.fill(HIST("pTSpectra/fpT_LA_BIN3"), triggTrk.pt(), track.pt());
-      }
+      histos.fill(HIST("pTSpectra/pTAssocAllEv"), track.pt());
+      histos.fill(HIST("pTSpectra/meanpTAssocMultipAllEv"), nGlobalTracks, track.pt());
 
       if (!isSelectedTopology) {
         continue;
-      }
+      } // for Tri-like Ev.
 
-      if (multRANGE1) {
-        histos.fill(HIST("pTSpectra/pT_LA_TriBIN1"), triggTrk.pt(), track.pt());
-        histos.fill(HIST("pTSpectra/fpT_LA_TriBIN1"), triggTrk.pt(), track.pt());
-      }
-      if (multRANGE2) {
-        histos.fill(HIST("pTSpectra/pT_LA_TriBIN2"), triggTrk.pt(), track.pt());
-        histos.fill(HIST("pTSpectra/fpT_LA_TriBIN2"), triggTrk.pt(), track.pt());
-      }
-      if (multRANGE3) {
-        histos.fill(HIST("pTSpectra/pT_LA_TriBIN3"), triggTrk.pt(), track.pt());
-        histos.fill(HIST("pTSpectra/fpT_LA_TriBIN3"), triggTrk.pt(), track.pt());
-      }
+      histos.fill(HIST("pTSpectra/pTAssocTriEv"), track.pt());
+      histos.fill(HIST("pTSpectra/meanpTAssocMultipTriEv"), nGlobalTracks, track.pt());
     }
 
     // Build same-event angular correlations for the selected topology.
@@ -927,7 +938,7 @@ struct FoxWolframCorrelation {
 
         for (int i = 0; i < nMultBins; ++i) {
           if (inBin[i]) {
-            fillSameEventHist(i + 1, track2, deltaPhi, deltaEta, isLeadAssocPair);
+            fillSameEventHist(i + 1, nGlobalTracks, track2, deltaPhi, deltaEta, isLeadAssocPair);
           }
         }
       }
