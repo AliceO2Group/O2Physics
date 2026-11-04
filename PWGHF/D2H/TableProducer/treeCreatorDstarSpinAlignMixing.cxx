@@ -46,8 +46,8 @@
 #include <TRandom3.h>
 
 #include <cstdint>
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
