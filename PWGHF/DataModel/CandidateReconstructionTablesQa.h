@@ -27,6 +27,7 @@
 
 #include <array>
 #include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {
@@ -303,6 +304,30 @@ struct HfHelperQa {
   }
 };
 
+namespace o2::aod
+{
+// selection steps
+enum SelectionStep {
+  RecoSkims = 0,
+  RecoTopol,
+  RecoPID,
+  RecoMl,
+  NSelectionSteps
+};
+
+namespace hf_sel_candidate_omegac0_qa
+{
+DECLARE_SOA_COLUMN(IsSelOmegaC0ToOmegaPi, isSelOmegaC0ToOmegaPi, int);                  //!
+DECLARE_SOA_COLUMN(MlProbOmegaC0ToOmegaPi, mlProbOmegaC0ToOmegaPi, std::vector<float>); //!
+} // namespace hf_sel_candidate_omegac0_qa
+
+DECLARE_SOA_TABLE(HfSelOmegaC0ToOmegaPi, "AOD", "HFSELOMEGAC0", //!
+                  hf_sel_candidate_omegac0_qa::IsSelOmegaC0ToOmegaPi);
+
+DECLARE_SOA_TABLE(HfMlOmegaC0ToOmegaPi, "AOD", "HFMLOMEGAC0", //!
+                  hf_sel_candidate_omegac0_qa::MlProbOmegaC0ToOmegaPi);
+} // namespace o2::aod
+
 namespace o2::hf_decay
 {
 using HfDecayChannel = int8_t;
@@ -324,7 +349,7 @@ enum DecayChannelMain : HfDecayChannel {
 
 } // namespace o2::hf_decay
 
-// TODO: remove once the candidate creator is updated
+// TODO: remove once the MC candidate creator is updated
 namespace o2::aod
 {
 namespace hf_cand_xic0_omegac0
