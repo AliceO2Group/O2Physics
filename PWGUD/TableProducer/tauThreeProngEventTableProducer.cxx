@@ -1397,7 +1397,7 @@ struct TauThreeProngEventTableProducer {
       float trueDaugZ[6] = {-998., -998., -998., -998., -998., -998.};
       int trueDaugPdgCode[6] = {-999, -999, -999, -999, -999, -999};
 
-      int8_t problemBits[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
+      bool problemBits[8] = {false, false, false, false, false, false, false, false};
       uint8_t problemBitsFlag = 0;
       // MyRecoProblem problem = NO_PROBLEM;
       registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_PROBLEM);
@@ -1742,10 +1742,10 @@ struct TauThreeProngEventTableProducer {
         } // end of loop over collisions associated to MC collision
 
         // set up problem bits
-        problemBitsFlag = problemBits[0]; // initialization
+        problemBitsFlag = static_cast<uint8_t>(problemBits[0]); // initialization
         for (int ibit = 1; ibit < nBitsMax; ibit++) {
-          problemBitsFlag = (problemBitsFlag << offset); // shift by 1 position towards left
-          problemBitsFlag += problemBits[ibit];          // add next bit to the pool
+          problemBitsFlag = (problemBitsFlag << offset);              // shift by 1 position towards left
+          problemBitsFlag += static_cast<uint8_t>(problemBits[ibit]); // add next bit to the pool
         }
 
         // decide the channel and set the variable.
