@@ -654,30 +654,30 @@ class McBuilder
   }
 
   template <typename T1, typename T2>
-  int64_t findFirstPartonicMother(const T1& mcParticle, const T2& mcParticles)
+  int64_t findFirstPartonicMother(const T1& mcParticle, const T2& mcParticles, int depth = 0)
   {
+    // guards against cyclic/malformed mother chains in some MC productions, which would
+    // otherwise recurse unboundedly and crash with a stack overflow; no physically sensible
+    // generator history is anywhere close to this deep
+    constexpr int MaxPartonicMotherDepth = 100;
+    if (depth >= MaxPartonicMotherDepth) {
+      // some productions hit this on a large fraction of particles (e.g. a mother-range
+      // heuristic below misfiring on this production's indexing convention), so warn once per
+      // device lifetime rather than once per particle
+      if (!mWarnedPartonicMotherDepth) {
+        LOG(warn) << "findFirstPartonicMother exceeded max recursion depth (" << MaxPartonicMotherDepth << ") at least once; mother chain may be cyclic or malformed for this MC production. Consider using findLastPartonicMother instead. Further occurrences will be suppressed.";
+        mWarnedPartonicMotherDepth = true;
+      }
+      return -1;
+    }
     if (!mcParticle.has_mothers()) {
       return -1;
     }
-    auto motherIds = mcParticle.mothersIds();
-    // adapted these checks from MCUtils in PWGEM
-    const int defaultMotherSize = 2;
-    std::vector<int> allMotherIds;
-    if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
-      // keep for now, might be needed later
-      // && ((80 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110))) {
-      // Pythia: mother range
-      for (int i = motherIds[0]; i <= motherIds[1]; i++) {
-        allMotherIds.push_back(i);
-      }
-    } else {
-      // Otherwise just use them as given
-      for (const int& id : motherIds) {
-        allMotherIds.push_back(id);
-      }
-    }
+    // RecoDecay::getOrderedMotherIds() implements the Pythia mother-id-range expansion (gated on the particle's gen status code)
+    std::vector<int64_t> allMotherIds;
+    RecoDecay::getOrderedMotherIds(mcParticle, allMotherIds, /*searchUpToQuark=*/true);
     // Loop over all mothers
-    for (const int& i : allMotherIds) {
+    for (const int64_t& i : allMotherIds) {
 
       if (i < 0 || i >= mcParticles.size()) {
         continue;
@@ -689,7 +689,7 @@ class McBuilder
         return i; // Found a parton → return index
       }
       // Recurse upward
-      int64_t found = this->findFirstPartonicMother(mother, mcParticles);
+      int64_t found = this->findFirstPartonicMother(mother, mcParticles, depth + 1);
       if (found != -1) {
         return found;
       }
@@ -708,19 +708,12 @@ class McBuilder
       if (!current.has_mothers()) {
         break;
       }
-      auto motherIds = current.mothersIds();
-      int nextIndex = -1;
-      const int defaultMotherSize = 2;
-      if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
-        nextIndex = motherIds[0];
-      } else {
-        for (const int& id : motherIds) {
-          if (id >= 0 && id < mcParticles.size()) {
-            nextIndex = id;
-            break;
-          }
-        }
-      }
+      // RecoDecay::getOrderedMotherIds() implements the Pythia mother-id-range expansion (gated on
+      // the particle's gen status code). This function only ever follows a single branch upward,
+      // so just the first ordered id is used.
+      std::vector<int64_t> motherIdsOrdered;
+      RecoDecay::getOrderedMotherIds(current, motherIdsOrdered, /*searchUpToQuark=*/true);
+      int64_t nextIndex = motherIdsOrdered.empty() ? -1 : motherIdsOrdered.front();
 
       if (nextIndex < 0 || nextIndex >= mcParticles.size()) {
         break;
@@ -745,6 +738,7 @@ class McBuilder
 
   bool mPassThrough = false;
   bool mFindLastPartonicMother = false;
+  bool mWarnedPartonicMotherDepth = false;
   bool mFillAnyTable = false;
   bool mProduceMcCollisions = false;
   bool mProduceMcParticles = false;

@@ -60,9 +60,14 @@ struct FemtoPairTrackCascade {
   using FemtoXis = o2::soa::Join<o2::aod::FXis, o2::aod::FXiMasks>;
   using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks>;
 
-  using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
-  using FemtoXisWithLabel = o2::soa::Join<FemtoXis, o2::aod::FXiLabels>;
-  using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FOmegaLabels>;
+  using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity, o2::aod::FTrackDcas>;
+  using FemtoXisWithLabel = o2::soa::Join<FemtoXis, o2::aod::FXiLabels, o2::aod::FXiFrac>;
+  using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FOmegaLabels, o2::aod::FOmegaFrac>;
+
+  // reco-only + FitVars (no MC labels, but carries the opt-in purity/fraction tables)
+  using FemtoTracksWithFitVars = o2::soa::Join<FemtoTracks, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity, o2::aod::FTrackDcas>;
+  using FemtoXisWithFitVars = o2::soa::Join<FemtoXis, o2::aod::FXiFrac>;
+  using FemtoOmegasWithFitVars = o2::soa::Join<FemtoOmegas, o2::aod::FOmegaFrac>;
 
   using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
@@ -84,6 +89,9 @@ struct FemtoPairTrackCascade {
   o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition = MAKE_TRACK_PARTITION(confTrackSelection);
   o2::framework::Preslice<FemtoTracksWithLabel> perColtracksWithLabel = o2::aod::femtobase::stored::fColId;
 
+  o2::framework::Partition<FemtoTracksWithFitVars> trackWithFitVarsPartition = MAKE_TRACK_PARTITION(confTrackSelection);
+  o2::framework::Preslice<FemtoTracksWithFitVars> perColTracksWithFitVars = o2::aod::femtobase::stored::fColId;
+
   // setup for daughters/bachelor
   trackhistmanager::ConfCascadePosDauBinning confPosDauBinning;
   trackhistmanager::ConfCascadeNegDauBinning confNegDauBinning;
@@ -100,6 +108,9 @@ struct FemtoPairTrackCascade {
   o2::framework::Partition<FemtoXisWithLabel> xiWithLabelPartition = MAKE_CASCADE_PARTITION(confXiSelection);
   o2::framework::Preslice<FemtoXisWithLabel> perColXisWithLabel = o2::aod::femtobase::stored::fColId;
 
+  o2::framework::Partition<FemtoXisWithFitVars> xiWithFitVarsPartition = MAKE_CASCADE_PARTITION(confXiSelection);
+  o2::framework::Preslice<FemtoXisWithFitVars> perColXisWithFitVars = o2::aod::femtobase::stored::fColId;
+
   // setup omegas
   cascadebuilder::ConfOmegaSelection confOmegaSelection;
   cascadehistmanager::ConfOmegaBinning confOmegaBinning;
@@ -110,6 +121,9 @@ struct FemtoPairTrackCascade {
 
   o2::framework::Partition<FemtoOmegasWithLabel> omegaWithLabelPartition = MAKE_CASCADE_PARTITION(confOmegaSelection);
   o2::framework::Preslice<FemtoOmegasWithLabel> perColOmegasWithLabel = o2::aod::femtobase::stored::fColId;
+
+  o2::framework::Partition<FemtoOmegasWithFitVars> omegaWithFitVarsPartition = MAKE_CASCADE_PARTITION(confOmegaSelection);
+  o2::framework::Preslice<FemtoOmegasWithFitVars> perColOmegasWithFitVars = o2::aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
@@ -174,14 +188,15 @@ struct FemtoPairTrackCascade {
   void init(o2::framework::InitContext&)
   {
     bool processData = doprocessXiSameEvent || doprocessXiMixedEvent || doprocessOmegaSameEvent || doprocessOmegaMixedEvent;
+    bool processFitVars = doprocessXiSameEventWithFitVars || doprocessXiMixedEventWithFitVars || doprocessOmegaSameEventWithFitVars || doprocessOmegaMixedEventWithFitVars;
     bool processMc = doprocessXiSameEventMc || doprocessXiMixedEventMc || doprocessOmegaSameEventMc || doprocessOmegaMixedEventMc;
 
-    if (processData && processMc) {
-      LOG(fatal) << "Both data and mc processing is enabled. Breaking...";
+    if (static_cast<int>(processData) + static_cast<int>(processFitVars) + static_cast<int>(processMc) > 1) {
+      LOG(fatal) << "More than one of data, FitVars or mc processing is activated. Breaking...";
     }
 
-    bool processXi = doprocessXiSameEvent || doprocessXiSameEventMc || doprocessXiMixedEvent || doprocessXiMixedEventMc;
-    bool processOmega = doprocessOmegaSameEvent || doprocessOmegaSameEventMc || doprocessOmegaMixedEvent || doprocessOmegaMixedEventMc;
+    bool processXi = doprocessXiSameEvent || doprocessXiSameEventWithFitVars || doprocessXiSameEventMc || doprocessXiMixedEvent || doprocessXiMixedEventWithFitVars || doprocessXiMixedEventMc;
+    bool processOmega = doprocessOmegaSameEvent || doprocessOmegaSameEventWithFitVars || doprocessOmegaSameEventMc || doprocessOmegaMixedEvent || doprocessOmegaMixedEventWithFitVars || doprocessOmegaMixedEventMc;
 
     if (processXi && processOmega) {
       LOG(fatal) << "Both xi-track and omega-track processing is enabled. Breaking...";
@@ -206,7 +221,21 @@ struct FemtoPairTrackCascade {
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecV0Daughter = closepairrejection::makeCprHistSpecMap(confCprV0Daughter);
     std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
-    if (processData) {
+    if (processFitVars) {
+      colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
+      trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
+      bachelorHistSpec = trackhistmanager::makeTrackHistSpecMap(confBachelorBinning);
+      posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
+      negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
+      pairTrackCascadeHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
+      if (processXi) {
+        xiHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confXiBinning);
+        pairTrackXiBuilder.init<modes::Mode::kSe_Reco_FitVars, modes::Mode::kMe_Reco_FitVars>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, pairCleanerHistSpec);
+      } else {
+        omegaHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confOmegaBinning);
+        pairTrackOmegaBuilder.init<modes::Mode::kSe_Reco_FitVars, modes::Mode::kMe_Reco_FitVars>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, pairCleanerHistSpec);
+      }
+    } else if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
       trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
       bachelorHistSpec = trackhistmanager::makeTrackHistSpecMap(confBachelorBinning);
@@ -230,10 +259,10 @@ struct FemtoPairTrackCascade {
       pairTrackCascadeHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
       if (processXi) {
         xiHistSpec = cascadehistmanager::makeCascadeMcHistSpecMap(confXiBinning);
-        pairTrackXiBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, pairCleanerHistSpec);
+        pairTrackXiBuilder.init<modes::Mode::kSe_Reco_Mc_FitVars, modes::Mode::kMe_Reco_Mc_FitVars>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, pairCleanerHistSpec);
       } else {
         omegaHistSpec = cascadehistmanager::makeCascadeMcHistSpecMap(confOmegaBinning);
-        pairTrackOmegaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, pairCleanerHistSpec);
+        pairTrackOmegaBuilder.init<modes::Mode::kSe_Reco_Mc_FitVars, modes::Mode::kMe_Reco_Mc_FitVars>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, pairCleanerHistSpec);
       }
     }
     hRegistry.print();
@@ -247,7 +276,7 @@ struct FemtoPairTrackCascade {
 
   void processXiSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& xis, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackXiBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition, xis, xiWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+    pairTrackXiBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc_FitVars>(col, mcCols, tracks, trackWithLabelPartition, xis, xiWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackCascade, processXiSameEventMc, "Enable processing same event processing for tracks and xis with mc information", false);
 
@@ -259,9 +288,21 @@ struct FemtoPairTrackCascade {
 
   void processXiMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackXiBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition, xiWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackXiBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc_FitVars>(cols, mcCols, tracks, trackWithLabelPartition, xiWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackCascade, processXiMixedEventMc, "Enable processing mixed event processing for tracks and xis with mc information", false);
+
+  void processXiSameEventWithFitVars(FilteredFemtoCollision const& col, FemtoTracksWithFitVars const& tracks, FemtoXisWithFitVars const& xis)
+  {
+    pairTrackXiBuilder.processSameEvent<modes::Mode::kSe_Reco_FitVars>(col, tracks, trackWithFitVarsPartition, xis, xiWithFitVarsPartition, cache);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCascade, processXiSameEventWithFitVars, "Enable processing same event processing for tracks and xis, carrying through FitVars tables", false);
+
+  void processXiMixedEventWithFitVars(FilteredFemtoCollisions const& cols, FemtoTracksWithFitVars const& tracks, FemtoXisWithFitVars const& /*xis*/)
+  {
+    pairTrackXiBuilder.processMixedEvent<modes::Mode::kMe_Reco_FitVars>(cols, tracks, trackWithFitVarsPartition, xiWithFitVarsPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCascade, processXiMixedEventWithFitVars, "Enable processing mixed event processing for tracks and xis, carrying through FitVars tables", false);
 
   void processOmegaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoOmegas const& omegas)
   {
@@ -271,7 +312,7 @@ struct FemtoPairTrackCascade {
 
   void processOmegaSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& omegas, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackOmegaBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition, omegas, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+    pairTrackOmegaBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc_FitVars>(col, mcCols, tracks, trackWithLabelPartition, omegas, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaSameEventMc, "Enable processing same event processing for tracks and omegas with mc information", false);
 
@@ -283,9 +324,21 @@ struct FemtoPairTrackCascade {
 
   void processOmegaMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackOmegaBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackOmegaBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc_FitVars>(cols, mcCols, tracks, trackWithLabelPartition, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaMixedEventMc, "Enable processing mixed event processing for tracks and omegas with mc information", false);
+
+  void processOmegaSameEventWithFitVars(FilteredFemtoCollision const& col, FemtoTracksWithFitVars const& tracks, FemtoOmegasWithFitVars const& omegas)
+  {
+    pairTrackOmegaBuilder.processSameEvent<modes::Mode::kSe_Reco_FitVars>(col, tracks, trackWithFitVarsPartition, omegas, omegaWithFitVarsPartition, cache);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaSameEventWithFitVars, "Enable processing same event processing for tracks and omegas, carrying through FitVars tables", false);
+
+  void processOmegaMixedEventWithFitVars(FilteredFemtoCollisions const& cols, FemtoTracksWithFitVars const& tracks, FemtoOmegasWithFitVars const& /*omegas*/)
+  {
+    pairTrackOmegaBuilder.processMixedEvent<modes::Mode::kMe_Reco_FitVars>(cols, tracks, trackWithFitVarsPartition, omegaWithFitVarsPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaMixedEventWithFitVars, "Enable processing mixed event processing for tracks and omegas, carrying through FitVars tables", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

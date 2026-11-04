@@ -283,7 +283,8 @@ struct PhotonConversionBuilder {
   struct : ConfigurableGroup {
     std::string prefix = "skim_group";
     Configurable<int> minNv0PerCollision{"minNv0PerCollision", -1, "store V0 photons only for collisions with at least this many surviving candidates (event-level skim for derived data). negative = store all"};
-    Configurable<float> maxMinvPairPerCollision{"maxMinvPairPerCollision", -1.f, "store a collision's photons only if at least one photon pair has qinv below this (GeV/c^2). negative = disabled"};
+    Configurable<float> minMinvPairPerCollision{"minMinvPairPerCollision", -1.f, "store a collision's photons only if at least one photon pair has qinv (minv) above this (GeV/c^2). negative = disabled"};
+    Configurable<float> maxMinvPairPerCollision{"maxMinvPairPerCollision", -1.f, "store a collision's photons only if at least one photon pair has qinv (minv) below this (GeV/c^2). negative = disabled"};
   } skim;
 
   // single track cuts
@@ -420,8 +421,8 @@ struct PhotonConversionBuilder {
     }
     LOGF(info, "photon-conversion-builder: deduplicationMode = %d (%s), score weight = %.2f",
          dedup.deduplicationMode.value, DedupNames[dedup.deduplicationMode.value], dedup.deduplicationScoreWeight.value);
-    LOGF(info, "photon-conversion-builder: minNv0PerCollision = %d, maxMinvPairPerCollision = %f",
-         skim.minNv0PerCollision.value, skim.maxMinvPairPerCollision.value);
+    LOGF(info, "photon-conversion-builder: minNv0PerCollision = %d, minMinvPairPerCollision = %f, maxMinvPairPerCollision = %f",
+         skim.minNv0PerCollision.value, skim.minMinvPairPerCollision.value, skim.maxMinvPairPerCollision.value);
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -1991,7 +1992,7 @@ struct PhotonConversionBuilder {
     }
 
     std::set<int64_t> skimRejected;
-    if (skim.minNv0PerCollision > 0 || skim.maxMinvPairPerCollision > 0.f) {
+    if (skim.minNv0PerCollision > 0 || skim.maxMinvPairPerCollision > 0.f || skim.minMinvPairPerCollision > 0.f) { // o2-linter: disable=magic-number (check if configurable is enabled)
       const std::set<CandKey> storedSetSkim(stored_fullv0Ids.begin(), stored_fullv0Ids.end());
       std::unordered_map<int64_t, std::vector<const V0CandidateHelper*>> candsPerColl;
       for (const auto& c : vecV0Dedup) {
@@ -2004,19 +2005,22 @@ struct PhotonConversionBuilder {
           skimRejected.insert(colId);
           continue;
         }
-        if (skim.maxMinvPairPerCollision > 0.f) {
-          bool hasLowMPair = false;
-          for (size_t i = 0; i < cands.size() && !hasLowMPair; ++i) {
+        if (skim.maxMinvPairPerCollision > 0.f || skim.minMinvPairPerCollision > 0.f) { // o2-linter: disable=magic-number (check if configurable is enabled)
+          bool hasPairOfInterest = false;
+          const float minMinv = skim.minMinvPairPerCollision > 0.f ? skim.minMinvPairPerCollision.value : 0.f;
+          const float maxMinv = skim.maxMinvPairPerCollision > 0.f ? skim.maxMinvPairPerCollision.value : std::numeric_limits<float>::max();
+          for (size_t i = 0; i < cands.size() && !hasPairOfInterest; ++i) {
             for (size_t j = i + 1; j < cands.size(); ++j) {
               ROOT::Math::PxPyPzMVector v1(cands[i]->pxAtPV, cands[i]->pyAtPV, cands[i]->pzAtPV, 0.f);
               ROOT::Math::PxPyPzMVector v2(cands[j]->pxAtPV, cands[j]->pyAtPV, cands[j]->pzAtPV, 0.f);
-              if ((v1 + v2).M() < skim.maxMinvPairPerCollision) {
-                hasLowMPair = true;
+              const double massPair = (v1 + v2).M();
+              if (massPair > minMinv && massPair < maxMinv) {
+                hasPairOfInterest = true;
                 break;
               }
             }
           }
-          if (!hasLowMPair) {
+          if (!hasPairOfInterest) {
             skimRejected.insert(colId);
           }
         }

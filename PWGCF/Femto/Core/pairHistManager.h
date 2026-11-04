@@ -16,6 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
 
+#include "PWGCF/Femto/Core/femtoMath.h"
 #include "PWGCF/Femto/Core/femtoSpherHarMath.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
@@ -29,14 +30,11 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
-#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
-#include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TH3.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
@@ -251,7 +249,6 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
-  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kKstar), "Type of kinematic variable (0->kstar, 1->kT, 2->mT) for PC and CPR plots"};
   o2::framework::ConfigurableAxis binningDeltaEta{"binningDeltaEta", {{35, -1.6, 1.6}}, "Delta eta"};
   o2::framework::ConfigurableAxis binningDeltaPhi{"binningDeltaPhi", {{35, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}}, "Delta phi"};
   o2::framework::Configurable<bool> plotBertschPratt{"plotBertschPratt", false, "(Reco/Mc) Enable 1D projections and 3D (q_out, q_side, q_long) Bertsch-Pratt histograms in LCMS"};
@@ -284,6 +281,7 @@ struct ConfPairCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common ancestor (in the same event)"};
   o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common ancestor (in the same event)"};
   o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kKstar), "Type of kinematic variable (0->kstar, 1->kT, 2->mT) reported by the pair-cleaner kinematic plot"};
 };
 
 // the enum gives the correct index in the array
@@ -669,9 +667,6 @@ class PairHistManager
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
 
-    // kinematic variable
-    mKinematicVariable = static_cast<modes::KinematicVariable>(ConfPairBinning.kinematicVariable.value);
-
     // values for cuts
     mKstarMin = ConfPairCuts.kstarMin.value;
     mKstarMax = ConfPairCuts.kstarMax.value;
@@ -762,14 +757,14 @@ class PairHistManager
     mTrueParticle2 = ROOT::Math::PtEtaPhiMVector(mcParticle2.pt(), mcParticle2.eta(), mcParticle2.phi(), mPdgMass2);
 
     // compute true kinematics
-    mTrueKt = getKt(mTrueParticle1, mTrueParticle2);
-    mTrueMt = getMt(mTrueParticle1, mTrueParticle2);
-    mTrueMinv = getMinv(mTrueParticle1, mTrueParticle2);
-    mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
+    mTrueKt = femtomath::getKt(mTrueParticle1, mTrueParticle2);
+    mTrueMt = femtomath::getMt(mTrueParticle1, mTrueParticle2, mMtType);
+    mTrueMinv = femtomath::getMinv(mTrueParticle1, mTrueParticle2);
+    mTrueKstar = femtomath::getKstar(mTrueParticle1, mTrueParticle2);
 
     if (mPlotBertschPratt) {
       std::tie(mTrueQout, mTrueQside, mTrueQlong) =
-        computeBertschPrattLCMS(mTrueParticle1, mTrueParticle2);
+        femtomath::computeBertschPrattLCMS(mTrueParticle1, mTrueParticle2);
     }
   }
 
@@ -815,10 +810,10 @@ class PairHistManager
     mTrueParticle1 = ROOT::Math::PtEtaPhiMVector(particle1.pt(), particle1.eta(), particle1.phi(), mPdgMass1);
     mTrueParticle2 = ROOT::Math::PtEtaPhiMVector(particle2.pt(), particle2.eta(), particle2.phi(), mPdgMass2);
 
-    mTrueKt = getKt(mTrueParticle1, mTrueParticle2);
-    mTrueMt = getMt(mTrueParticle1, mTrueParticle2);
-    mTrueMinv = getMinv(mTrueParticle1, mTrueParticle2);
-    mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
+    mTrueKt = femtomath::getKt(mTrueParticle1, mTrueParticle2);
+    mTrueMt = femtomath::getMt(mTrueParticle1, mTrueParticle2, mMtType);
+    mTrueMinv = femtomath::getMinv(mTrueParticle1, mTrueParticle2);
+    mTrueKstar = femtomath::getKstar(mTrueParticle1, mTrueParticle2);
 
     // in the pure mc-truth path there is no reco counterpart, so the generated values are also
     // stored in the reco members; they are used by getKinematic(), i.e. by the kinematic histograms
@@ -829,7 +824,7 @@ class PairHistManager
     mKstar = mTrueKstar;
 
     if (mPlotBertschPratt) {
-      std::tie(mTrueQout, mTrueQside, mTrueQlong) = computeBertschPrattLCMS(mTrueParticle1, mTrueParticle2);
+      std::tie(mTrueQout, mTrueQside, mTrueQlong) = femtomath::computeBertschPrattLCMS(mTrueParticle1, mTrueParticle2);
     }
     if (mPlotDeltaEtaDeltaPhi) {
       mTrueDeltaEta = particle1.eta() - particle2.eta();
@@ -945,9 +940,11 @@ class PairHistManager
     }
   }
 
-  float getKinematic() const
+  // kinematicVariable is supplied by the caller (CPR/pair cleaner), each of which carries its own
+  // Configurable for it -- this manager has no opinion of its own on which variable to report
+  float getKinematic(modes::KinematicVariable kinematicVariable) const
   {
-    switch (mKinematicVariable) {
+    switch (kinematicVariable) {
       case modes::KinematicVariable::kKstar:
         return mKstar;
         break;
@@ -1314,27 +1311,27 @@ class PairHistManager
     mParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * particle2.pt(), particle2.eta(), particle2.phi(), mass2);
 
     // set kT
-    mKt = getKt(mParticle1, mParticle2);
+    mKt = femtomath::getKt(mParticle1, mParticle2);
 
     // set mT
-    mMt = getMt(mParticle1, mParticle2);
+    mMt = femtomath::getMt(mParticle1, mParticle2, mMtType);
 
     // set Minv
-    mMassInv = getMinv(mParticle1, mParticle2);
+    mMassInv = femtomath::getMinv(mParticle1, mParticle2);
 
     // set kstar
-    mKstar = getKstar(mParticle1, mParticle2);
+    mKstar = femtomath::getKstar(mParticle1, mParticle2);
 
     if (mPlotBertschPratt) {
-      std::tie(mQout, mQside, mQlong) = computeBertschPrattLCMS(mParticle1, mParticle2);
+      std::tie(mQout, mQside, mQlong) = femtomath::computeBertschPrattLCMS(mParticle1, mParticle2);
     }
 
     if (mPlotEventShape) {
       if (!mPlotBertschPratt) {
-        std::tie(mQout, mQside, mQlong) = computeBertschPrattLCMS(mParticle1, mParticle2);
+        std::tie(mQout, mQside, mQlong) = femtomath::computeBertschPrattLCMS(mParticle1, mParticle2);
       }
       if constexpr (utils::HasEventShape<T4>) {
-        mPairPhiFromEventPlaneAngle = getPairPhiFromEventPlaneAngle(mParticle1, mParticle2, col);
+        mPairPhiFromEventPlaneAngle = femtomath::getPairPhiFromEventPlaneAngle(mParticle1, mParticle2, col);
         mQvector = col.qvec();
       } else {
         LOG(fatal) << "plotEventShape is enabled but the collision table has no event-shape columns. Breaking...";
@@ -1342,7 +1339,7 @@ class PairHistManager
     }
 
     if (mPlotSH) {
-      std::tie(mShKv, mShOut, mShSide, mShLong) = computeShKinematics(mParticle1, mParticle2);
+      std::tie(mShKv, mShOut, mShSide, mShLong) = femtomath::computeShKinematics(mParticle1, mParticle2, mShFrame);
     }
 
     if (mPlotDeltaEtaDeltaPhi) {
@@ -1351,10 +1348,10 @@ class PairHistManager
     }
 
     if (mPlotAlpha || mPlotKstarVsAlphaVsMtVsMult || mPlotKstarVsAlphaVsMtVsPt1VsPt2VsMult) {
-      mAlpha = getAlpha(mParticle1, mParticle2);
+      mAlpha = femtomath::getAlpha(mParticle1, mParticle2);
     }
     if (mPlotBetaLab || mPlotKstarVsBetaLabVsMtVsMult || mPlotKstarVsBetaLabVsMtVsPt1VsPt2VsMult) {
-      mBetaLab = getBetaLab(mParticle1, mParticle2);
+      mBetaLab = femtomath::getBetaLab(mParticle1, mParticle2);
     }
 
     if (mPlotDalitz) {
@@ -1506,8 +1503,8 @@ class PairHistManager
     }
     if (mPlotSH) {
       const float shCentValue = mShUseCent ? mCent : mMult;
-      const int iCent = findShBin(shCentValue, mShCentEdges);
-      const int iKt = findShBin(mKt, mShKtEdges);
+      const int iCent = femtomath::findShBin(shCentValue, mShCentEdges);
+      const int iKt = femtomath::findShBin(mKt, mShKtEdges);
       if (iCent >= 0 && iKt >= 0) {
         mYlm.doYlmUpToL(mShLMax, mShOut, mShSide, mShLong, mShYlmBuffer.data());
         for (std::size_t i = 0; i < mShYlmBuffer.size(); ++i) {
@@ -1529,7 +1526,7 @@ class PairHistManager
         if (mShPlot1D) {
           mShBinCount[iCent][iKt]->Fill(mShKv, 1.0);
           // FemtoUniverse h1D = f3d[0]: qinv (=2k*) for identical-LCMS, else k*.
-          const float sh1DValue = (mShFrame == ShFrameLcmsIdentical) ? (2.0f * mKstar) : mKstar;
+          const float sh1DValue = (mShFrame == femtomath::ShFrameLcmsIdentical) ? (2.0f * mKstar) : mKstar;
           mSh1D[iCent][iKt]->Fill(sh1DValue);
         }
       }
@@ -1606,212 +1603,6 @@ class PairHistManager
     }
   }
 
-  float getKt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    auto sum = (part1 + part2);
-    double kt = 0.5 * sum.Pt();
-    return static_cast<float>(kt);
-  }
-
-  float getMt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    auto sum = part1 + part2;
-    double mt = 0;
-    double averageMass = 0;
-    double reducedMass = 0;
-    switch (mMtType) {
-      case modes::TransverseMassType::kAveragePdgMass:
-        averageMass = 0.5 * (part1.M() + part2.M());
-        mt = std::hypot(0.5 * sum.Pt(), averageMass);
-        break;
-      case modes::TransverseMassType::kReducedPdgMass:
-        reducedMass = 2. * (part1.M() * part2.M()) / (part1.M() + part2.M());
-        mt = std::hypot(0.5 * sum.Pt(), reducedMass);
-        break;
-      case modes::TransverseMassType::kMt4Vector:
-        mt = 0.5 * sum.Mt();
-        break;
-      default:
-        LOG(fatal) << "Invalid transverse mass type, breaking...";
-    }
-    return static_cast<float>(mt);
-  }
-
-  float getMinv(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    return static_cast<float>((part1 + part2).M());
-  }
-
-  float getKstar(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    // Use Cartesian 4-vectors: addition/M2() become pure arithmetic
-    const ROOT::Math::PxPyPzEVector p1(part1);
-    const ROOT::Math::PxPyPzEVector p2(part2);
-
-    // Mandelstam s = (p1 + p2)^2
-    const double s = (p1 + p2).M2();
-    const double m1sq = p1.M2();
-    const double m2sq = p2.M2();
-
-    // Källen function λ(s, m1^2, m2^2) = (s - m1^2 - m2^2)² - 4*m1^2*m2^2
-    const double kallen = (s - m1sq - m2sq) * (s - m1sq - m2sq) - 4.0 * m1sq * m2sq;
-
-    // k* = 0.5 * sqrt(λ/s)
-    return static_cast<float>(0.5 * std::sqrt(std::max(0.0, kallen) / s));
-  }
-
-  float getAlpha(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    return static_cast<float>(RecoDecay::constrainAngle(part2.phi() - part1.phi(), -o2::constants::math::PI));
-  }
-
-  float getBetaLab(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    ROOT::Math::XYZVector p1(part1.Px(), part1.Py(), part1.Pz());
-    ROOT::Math::XYZVector p2(part2.Px(), part2.Py(), part2.Pz());
-
-    ROOT::Math::XYZVector kstar = p1 - p2;
-    ROOT::Math::XYZVector kt = p1 + p2;
-
-    return static_cast<float>(std::acos(kstar.Dot(kt) / std::sqrt(kstar.Mag2() * kt.Mag2())));
-  }
-
-  std::tuple<float, float, float> computeBertschPrattLCMS(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    const ROOT::Math::PxPyPzEVector p1(part1);
-    const ROOT::Math::PxPyPzEVector p2(part2);
-    const ROOT::Math::PxPyPzEVector pSum = p1 + p2;
-
-    const double tPx = pSum.Px();
-    const double tPy = pSum.Py();
-    const double tPz = pSum.Pz();
-    const double tE = pSum.E();
-
-    const double tPt = std::sqrt(tPx * tPx + tPy * tPy);
-    const double tMt = std::sqrt(tE * tE - tPz * tPz);
-
-    static constexpr double MinTransverseMomentum = 1e-9;
-    if (tPt < MinTransverseMomentum || tMt < MinTransverseMomentum) {
-      return {0.0f, 0.0f, 0.0f};
-    }
-
-    const double betaL = tPz / tE;
-    const double gammaL = tE / tMt;
-
-    const double kout1 = (p1.Px() * tPx + p1.Py() * tPy) / tPt;
-    const double kside1 = (-p1.Px() * tPy + p1.Py() * tPx) / tPt;
-    const double klong1 = gammaL * (p1.Pz() - betaL * p1.E());
-
-    const double kout2 = (p2.Px() * tPx + p2.Py() * tPy) / tPt;
-    const double kside2 = (p2.Py() * tPx - p2.Px() * tPy) / tPt;
-    const double klong2 = gammaL * (p2.Pz() - betaL * p2.E());
-
-    auto qOut = static_cast<float>(kout1 - kout2);
-    auto qSide = static_cast<float>(kside1 - kside2);
-    auto qLong = static_cast<float>(klong1 - klong2);
-
-    return {qOut, qSide, qLong};
-  }
-
-  // Return the bin index for value given ascending bin edges, or -1 if out of range.
-  // edges = {e0, e1, ..., eN} defines N bins [e0,e1), [e1,e2), ..., [e_{N-1},eN).
-  static int findShBin(double value, std::vector<double> const& edges)
-  {
-    static constexpr std::size_t MinEdgesForOneBin = 2;
-    if (edges.size() < MinEdgesForOneBin || value < edges.front() || value >= edges.back()) {
-      return -1;
-    }
-    for (std::size_t i = 0; i < edges.size() - 1; ++i) {
-      if (value >= edges[i] && value < edges[i + 1]) {
-        return static_cast<int>(i);
-      }
-    }
-    return -1;
-  }
-
-  // Kinematics feeding the spherical-harmonics decomposition, ported 1:1 from
-  // FemtoUniverseMath::newpairfunc so results are numerically comparable.
-  // Returns {kv, out, side, long}, selected by mShFrame:
-  //   ShFrameLcmsNonIdentical: {kstar,  fDKOut,  fDKSide,  fDKLong}   (LCMS components of particle 1)
-  //   ShFrameLcmsIdentical:    {qinv,   outLCMS, sideLCMS, longLCMS}  (LCMS q-differences)
-  //   ShFramePrf:              {|qPRF|, outPRF,  sidePRF,  longPRF}   (matches FemtoUniverse isIdenPRF=true)
-  std::tuple<float, float, float, float> computeShKinematics(ROOT::Math::PtEtaPhiMVector const& part1,
-                                                             ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    const ROOT::Math::PxPyPzEVector p1(part1);
-    const ROOT::Math::PxPyPzEVector p2(part2);
-    const ROOT::Math::PxPyPzEVector sum = p1 + p2;
-
-    const double tPx = sum.Px();
-    const double tPy = sum.Py();
-    const double tPz = sum.Pz();
-    const double tE = sum.E();
-    const double tPtSq = tPx * tPx + tPy * tPy;
-    const double tMtSq = tE * tE - tPz * tPz;
-
-    static constexpr double MinTransverseMomentum = 1e-9;
-    if (tPtSq < MinTransverseMomentum || tMtSq < MinTransverseMomentum) {
-      return {0.f, 0.f, 0.f, 0.f};
-    }
-    const double tPt = std::sqrt(tPtSq);
-    const double tMt = std::sqrt(tMtSq);
-    const double tM = std::sqrt(std::max(0.0, tMtSq - tPtSq));
-
-    const double beta = tPz / tE;
-    const double gamma = tE / tMt;
-
-    // LCMS components of particle 1 (fDKOut/Side/Long in newpairfunc)
-    const double e1 = p1.E();
-    const double fDKOut = (p1.Px() * tPx + p1.Py() * tPy) / tPt;
-    const double fDKSide = (-p1.Px() * tPy + p1.Py() * tPx) / tPt;
-    const double fDKLong = gamma * (p1.Pz() - beta * e1);
-    const double fDE = gamma * (e1 - beta * p1.Pz());
-
-    // LCMS components of particle 2
-    const double e2 = p2.E();
-    const double px2 = (p2.Px() * tPx + p2.Py() * tPy) / tPt;
-    const double py2 = (p2.Py() * tPx - p2.Px() * tPy) / tPt;
-    const double pz2 = gamma * (p2.Pz() - beta * e2);
-
-    const double outLCMS = fDKOut - px2;
-    const double sideLCMS = fDKSide - py2;
-    const double longLCMS = fDKLong - pz2;
-
-    if (mShFrame == ShFrameLcmsIdentical) {
-      // LCMS identical: Ylm <- LCMS q-differences, axis <- qinv
-      const double qinv = std::sqrt(outLCMS * outLCMS + sideLCMS * sideLCMS + longLCMS * longLCMS);
-      return {static_cast<float>(qinv),
-              static_cast<float>(outLCMS), static_cast<float>(sideLCMS), static_cast<float>(longLCMS)};
-    }
-    if (mShFrame == ShFramePrf) {
-      // PRF: Ylm <- PRF q-differences, axis <- |q_PRF| (matches FemtoUniverse isIdenPRF=true)
-      const double pE2LCMS = gamma * (e2 - beta * p2.Pz());
-      const double betaOut = tPt / tMt;
-      const double gammaOut = tMt / tM;
-      const double outPRF = gammaOut * (outLCMS - betaOut * (fDE - pE2LCMS));
-      const double sidePRF = sideLCMS;
-      const double longPRF = longLCMS;
-      const double qPRF = std::sqrt(outPRF * outPRF + sidePRF * sidePRF + longPRF * longPRF);
-      return {static_cast<float>(qPRF),
-              static_cast<float>(outPRF), static_cast<float>(sidePRF), static_cast<float>(longPRF)};
-    }
-    // LCMS non-identical (default): Ylm <- LCMS components of particle 1, axis <- k*
-    const double betaOut = tPt / tMt;
-    const double gammaOut = tMt / tM;
-    const double fKOut = gammaOut * (fDKOut - betaOut * fDE);
-    const double kstar = std::sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
-    return {static_cast<float>(kstar),
-            static_cast<float>(fDKOut), static_cast<float>(fDKSide), static_cast<float>(fDKLong)};
-  }
-
-  template <typename T1>
-  float getPairPhiFromEventPlaneAngle(const ROOT::Math::PtEtaPhiMVector& part1, const ROOT::Math::PtEtaPhiMVector& part2, const T1& col)
-  {
-    const ROOT::Math::PtEtaPhiMVector trackSum = part1 + part2;
-    float phi = RecoDecay::constrainAngle(trackSum.Phi() - col.eventPlaneAngle());
-    return phi;
-  }
-
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mUsePdgMass = true;
   double mPdgMass1 = 0.;
@@ -1822,7 +1613,6 @@ class PairHistManager
   double mPdgMassNegDau2 = 0;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
-  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kKstar;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
@@ -1929,9 +1719,6 @@ class PairHistManager
   bool mShUseCent = false;
   int mShLMax = 1;
   int mShFrame = 0;
-  static constexpr int ShFrameLcmsNonIdentical = 0;
-  static constexpr int ShFrameLcmsIdentical = 1;
-  static constexpr int ShFramePrf = 2;
 
   o2::framework::AxisSpec mShKstarSpec{{60, 0.0f, 0.3f}, "k* (GeV/#it{c})"}; // set in init()
   o2::framework::AxisSpec mShCentSpec{{1, 0.0f, 200.0f}, "mult/cent"};

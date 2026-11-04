@@ -64,6 +64,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -101,6 +102,27 @@ enum class PairBucket : uint8_t {
   kCrossOtherHadron, // any other hadron (including the rare Sigma0)
   kPartonString,     // quark, gluon, diquark or string/cluster: jet-like
   kNBuckets
+};
+
+/// \brief Origin of a photon candidate for the pi0 prefilter study: first particle above the EM steps (conversion, bremsstrahlung, shower)
+enum class PhotonOrigin : uint8_t {
+  kFromPi0 = 0, // incl. photons of pi0 from eta -> 3 pi0
+  kFromEta,
+  kElse
+};
+
+/// \brief Class of a photon pair for the pi0 prefilter study
+enum class PrefilterPairClass : uint8_t {
+  kSameParticle = 0, // one particle seen twice (same particle bucket), never counted as pi0/eta pair
+  kSamePi0,          // both from the same pi0: pi0 signal
+  kTwoPi0,           // both from pi0, but from two different pi0
+  kSameEta,          // both from the same eta: eta signal
+  kTwoEta,           // both from eta, but from two different eta
+  kPi0Eta,
+  kPi0Else,
+  kEtaElse,
+  kBothElse,
+  kNClasses
 };
 
 /// \brief What the leading contributor of the EMC cluster is in a PCM-EMC same particle pair
@@ -261,6 +283,11 @@ struct TwoPhotonMcTask {
     std::string prefix = "mesonConfig";
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle. Default value one EMCal cell"};
     Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
+    Configurable<float> prefilterMassMin{"prefilterMassMin", 0.105f, "pi0 prefilter study: lower edge of the pi0 mass window (GeV/c2)"};
+    Configurable<float> prefilterMassMax{"prefilterMassMax", 0.165f, "pi0 prefilter study: upper edge of the pi0 mass window (GeV/c2)"};
+    Configurable<bool> prefilterAllPairTypes{"prefilterAllPairTypes", false, "pi0 prefilter study, processPcmEmcal: also tag with PCM-PCM and EMC-EMC pairs and fill hPrefilterAll (for PCM-PCM / EMC-EMC use processPcmPrefilterAll / processEmcalPrefilterAll)"};
+    ConfigurableAxis thnConfigAxisPrefilterMass{"thnConfigAxisPrefilterMass", {200, 0., 0.8}, "pi0 prefilter study: invariant mass axis"};
+    ConfigurableAxis thnConfigAxisPrefilterPt{"thnConfigAxisPrefilterPt", {VARIABLE_WIDTH, 0., 1., 1.5, 2., 2.5, 3., 4., 5., 6., 8., 10., 12., 15., 20.}, "pi0 prefilter study: pT axis"};
   } mesonConfig;
 
   // same mixing as taskPi0FlowEMC, but without event plane bins: the derived MC has no Q vectors
@@ -308,6 +335,12 @@ struct TwoPhotonMcTask {
   std::vector<Chain> mChainsEMC;
   std::vector<PhotonTruth> mTruthPCM;
   std::vector<PhotonTruth> mTruthEMC;
+  // pi0 prefilter study: photon forms a pair inside the pi0 mass window with another photon of its event, index = globalIndex
+  std::vector<uint8_t> mPrefilterPCM;
+  std::vector<uint8_t> mPrefilterEMC;
+  // the same, tagged with all three pair types (PCM-PCM, EMC-EMC, PCM-EMC)
+  std::vector<uint8_t> mPrefilterAllPCM;
+  std::vector<uint8_t> mPrefilterAllEMC;
 
   void defineEMEventCut()
   {
@@ -381,6 +414,9 @@ struct TwoPhotonMcTask {
 
   void init(InitContext&)
   {
+    if ((doprocessPcm.value && doprocessPcmPrefilterAll.value) || (doprocessEmcal.value && doprocessEmcalPrefilterAll.value)) {
+      LOG(fatal) << "processPcm / processEmcal and their PrefilterAll variants fill the same histograms, enable only one of each";
+    }
     mRunNumber = 0;
     dBz = 0;
 
@@ -446,6 +482,25 @@ struct TwoPhotonMcTask {
       hOtherHadron->GetAxis(4)->SetBinLabel(static_cast<int>(i) + 1, TruthLabels[i].data());
     }
     registry.add("PCM/OtherHadron/hAncestorPdg", "other hadron pairs: |PDG| of the common ancestor;|PDG| (last bin: #geq 9999);pairs", HistType::kTH1D, {{10000, -0.5, 9999.5}});
+
+    // pi0 prefilter study for the eta: photon origins of the pair vs number of photons tagged by a pi0 mass window prefilter
+    const AxisSpec axisPrefilterMass{mesonConfig.thnConfigAxisPrefilterMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
+    const AxisSpec axisPrefilterPt{mesonConfig.thnConfigAxisPrefilterPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisPrefilterClass{static_cast<int>(PrefilterPairClass::kNClasses), -0.5, static_cast<int>(PrefilterPairClass::kNClasses) - 0.5, "photon origins"};
+    const AxisSpec axisPrefilterTagged{3, -0.5, 2.5, "photons tagged by the #pi^{0} prefilter"};
+    auto hPrefilter = registry.add<THn>("PCM/hPrefilter", "minv vs pT vs cent vs photon origins vs photons tagged by the pi0 prefilter", HistType::kTHnF, {axisPrefilterMass, axisPrefilterPt, thnAxisCentOrMult, axisPrefilterClass, axisPrefilterTagged});
+    static constexpr std::array<std::string_view, static_cast<int>(PrefilterPairClass::kNClasses)> PrefilterClassLabels = {"same particle", "same #pi^{0}", "two #pi^{0}", "same #eta", "two #eta", "#pi^{0} + #eta", "#pi^{0} + else", "#eta + else", "both else"};
+    for (std::size_t i = 0; i < PrefilterClassLabels.size(); ++i) {
+      hPrefilter->GetAxis(3)->SetBinLabel(static_cast<int>(i) + 1, PrefilterClassLabels[i].data());
+    }
+    static constexpr std::array<std::string_view, 3> TaggedLabels = {"0", "1", "2"};
+    for (std::size_t i = 0; i < TaggedLabels.size(); ++i) {
+      hPrefilter->GetAxis(4)->SetBinLabel(static_cast<int>(i) + 1, TaggedLabels[i].data());
+    }
+    // same, but the photons are tagged with all three pair types, only booked if a process function fills it
+    if (doprocessPcmPrefilterAll.value || doprocessEmcalPrefilterAll.value || (doprocessPcmEmcal.value && mesonConfig.prefilterAllPairTypes.value)) {
+      registry.addClone("PCM/hPrefilter", "PCM/hPrefilterAll");
+    }
 
     // mixed event, same axes as hPairAncestor without the bucket (pairs from different events share no ancestor)
     auto hMixed = registry.add<THn>("PCM/hMixed", "minv vs pT vs cent vs pair truth, mixed event", HistType::kTHnF, {thnAxisInvMass, thnAxisPtRec, thnAxisCentOrMult, thnAxisPairTruth});
@@ -1030,12 +1085,119 @@ struct TwoPhotonMcTask {
     registry.fill(HIST(HistAncestorPdg[pairType]), std::min(std::abs(pdg), MaxPdgBin));
   }
 
+  /// \brief Origin of a photon candidate: walk up its chain through the EM steps (gamma, e+-), the first other particle decides
+  /// \param chain ancestor chain of the candidate
+  /// \param mcIter iterator of the full MC particle table, WILL BE CHANGED
+  /// \return origin and the index of the pi0/eta (-1 for else)
+  template <o2::soa::is_iterator TMCIter>
+  static std::pair<PhotonOrigin, int> photonOrigin(Chain const& chain, TMCIter& mcIter)
+  {
+    for (const auto& id : chain) {
+      if (id < 0) {
+        break;
+      }
+      mcIter.setCursor(id);
+      const int absPdg = std::abs(mcIter.pdgCode());
+      if (absPdg == PDG_t::kGamma || absPdg == PDG_t::kElectron) {
+        continue; // EM step: conversion, bremsstrahlung, shower
+      }
+      if (absPdg == PDG_t::kPi0) {
+        return {PhotonOrigin::kFromPi0, id};
+      }
+      if (absPdg == o2::constants::physics::Pdg::kEta) {
+        return {PhotonOrigin::kFromEta, id};
+      }
+      break;
+    }
+    return {PhotonOrigin::kElse, -1};
+  }
+
+  /// \brief Class of a photon pair for the pi0 prefilter study
+  /// \param bucket closest common ancestor bucket of the pair: same particle pairs get their own class
+  template <o2::soa::is_iterator TMCIter>
+  static PrefilterPairClass prefilterClassOf(const PairBucket bucket, Chain const& chain1, Chain const& chain2, TMCIter& mcIter)
+  {
+    if (bucket == PairBucket::kSameParticle) {
+      return PrefilterPairClass::kSameParticle;
+    }
+    const auto [origin1, id1] = photonOrigin(chain1, mcIter);
+    const auto [origin2, id2] = photonOrigin(chain2, mcIter);
+    const int nPi0 = (origin1 == PhotonOrigin::kFromPi0 ? 1 : 0) + (origin2 == PhotonOrigin::kFromPi0 ? 1 : 0);
+    const int nEta = (origin1 == PhotonOrigin::kFromEta ? 1 : 0) + (origin2 == PhotonOrigin::kFromEta ? 1 : 0);
+    constexpr int Both = 2;
+    if (nPi0 == Both) {
+      return id1 == id2 ? PrefilterPairClass::kSamePi0 : PrefilterPairClass::kTwoPi0;
+    }
+    if (nEta == Both) {
+      return id1 == id2 ? PrefilterPairClass::kSameEta : PrefilterPairClass::kTwoEta;
+    }
+    if (nPi0 == 1 && nEta == 1) {
+      return PrefilterPairClass::kPi0Eta;
+    }
+    if (nPi0 == 1) {
+      return PrefilterPairClass::kPi0Else;
+    }
+    return nEta == 1 ? PrefilterPairClass::kEtaElse : PrefilterPairClass::kBothElse;
+  }
+
+  /// \brief Whether a photon pair passes the pair cuts of fillPair and lies inside the pi0 window of the prefilter
+  template <o2::soa::is_iterator TPhoton1, o2::soa::is_iterator TPhoton2>
+  bool isInPrefilterWindow(TPhoton1 const& g1, TPhoton2 const& g2)
+  {
+    ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+    ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+    const float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+    if (openingAngle <= mesonConfig.minOpenAngle) {
+      return false;
+    }
+    const float mass = (v1 + v2).M();
+    return mesonConfig.prefilterMassMin <= mass && mass <= mesonConfig.prefilterMassMax;
+  }
+
+  /// \brief pi0 prefilter: tag both photons of every same-kind pair inside the pi0 window (PCM-PCM or EMC-EMC)
+  /// \param tags tag vector of the photon type, index = globalIndex
+  template <o2::soa::is_table TPhotons>
+  void tagSameKind(TPhotons const& photonsPerCollision, EMBitFlags const& flags, std::vector<uint8_t>& tags)
+  {
+    for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsPerCollision, photonsPerCollision))) {
+      if (flags.test(g1.globalIndex()) && flags.test(g2.globalIndex()) && isInPrefilterWindow(g1, g2)) {
+        tags[g1.globalIndex()] = 1;
+        tags[g2.globalIndex()] = 1;
+      }
+    }
+  }
+
+  /// \brief pi0 prefilter: tag both photons of every PCM-EMC pair inside the pi0 window
+  template <o2::soa::is_table TPcmPhotons, o2::soa::is_table TEmcPhotons>
+  void tagPcmEmc(TPcmPhotons const& pcmPerCollision, TEmcPhotons const& emcPerCollision, EMBitFlags const& v0flags, EMBitFlags const& emcFlags, std::vector<uint8_t>& tagsPCM, std::vector<uint8_t>& tagsEMC)
+  {
+    for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(pcmPerCollision, emcPerCollision))) {
+      if (v0flags.test(g1.globalIndex()) && emcFlags.test(g2.globalIndex()) && isInPrefilterWindow(g1, g2)) {
+        tagsPCM[g1.globalIndex()] = 1;
+        tagsEMC[g2.globalIndex()] = 1;
+      }
+    }
+  }
+
+  /// \brief pi0 prefilter with all three pair types: fill mPrefilterAllPCM / mPrefilterAllEMC for one collision
+  template <o2::soa::is_table TPcmPhotons, o2::soa::is_table TEmcPhotons>
+  void tagAllPairTypes(TPcmPhotons const& pcmPerCollision, TEmcPhotons const& emcPerCollision, EMBitFlags const& v0flags, EMBitFlags const& emcFlags)
+  {
+    tagSameKind(pcmPerCollision, v0flags, mPrefilterAllPCM);
+    tagSameKind(emcPerCollision, emcFlags, mPrefilterAllEMC);
+    tagPcmEmc(pcmPerCollision, emcPerCollision, v0flags, emcFlags, mPrefilterAllPCM, mPrefilterAllEMC);
+  }
+
   /// \brief Apply the pair cuts and fill the pair ancestor histogram
+  /// \param nTagged number of photons of this pair tagged by the pi0 prefilter with the pair type of the process function
+  /// \param nTaggedAll number of photons of this pair tagged by the pi0 prefilter with all three pair types, -1: not computed
   /// \return bucket of the pair, std::nullopt if the pair was rejected
   template <int pairType, o2::soa::is_iterator TPhoton1, o2::soa::is_iterator TPhoton2, o2::soa::is_iterator TMCIter>
-  std::optional<PairBucket> fillPair(TPhoton1 const& g1, TPhoton2 const& g2, Chain const& chain1, Chain const& chain2, const PhotonTruth truth1, const PhotonTruth truth2, const float centOrMult, TMCIter& mcIter)
+  std::optional<PairBucket> fillPair(TPhoton1 const& g1, TPhoton2 const& g2, Chain const& chain1, Chain const& chain2, const PhotonTruth truth1, const PhotonTruth truth2, const float centOrMult, const int nTagged, const int nTaggedAll, TMCIter& mcIter)
   {
     static constexpr std::array<std::string_view, 3> HistPairAncestor = {"PCM/hPairAncestor", "EMC/hPairAncestor", "PCMEMC/hPairAncestor"};
+    static constexpr std::array<std::string_view, 3> HistPrefilter = {"PCM/hPrefilter", "EMC/hPrefilter", "PCMEMC/hPrefilter"};
+    static constexpr std::array<std::string_view, 3> HistPrefilterAll = {"PCM/hPrefilterAll", "EMC/hPrefilterAll", "PCMEMC/hPrefilterAll"};
 
     ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
     ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
@@ -1052,6 +1214,11 @@ struct TwoPhotonMcTask {
     const PhotonTruth pairTruth = std::max(truth1, truth2);
     const PairBucket bucket = classifyPair(chain1, chain2, mcIter);
     registry.fill(HIST(HistPairAncestor[pairType]), vMeson.M(), vMeson.Pt(), centOrMult, static_cast<int>(pairTruth), static_cast<int>(bucket));
+    const int prefilterClass = static_cast<int>(prefilterClassOf(bucket, chain1, chain2, mcIter));
+    registry.fill(HIST(HistPrefilter[pairType]), vMeson.M(), vMeson.Pt(), centOrMult, prefilterClass, nTagged);
+    if (nTaggedAll >= 0) {
+      registry.fill(HIST(HistPrefilterAll[pairType]), vMeson.M(), vMeson.Pt(), centOrMult, prefilterClass, nTaggedAll);
+    }
     if (bucket == PairBucket::kCrossOtherHadron) {
       diagnoseOtherHadron<pairType>(chain1, chain2, pairTruth, vMeson, mcIter);
     }
@@ -1088,8 +1255,21 @@ struct TwoPhotonMcTask {
     registry.fill(HIST(HistMixed[pairType]), vMeson.M(), vMeson.Pt(), centOrMult, static_cast<int>(std::max(truth1, truth2)));
   }
 
-  // PCM-PCM same event
-  void processPcm(Colls const& collisions, PcmPhotons const& photons, PcmMcLegs const& legs, McParticles const& mcParticles)
+  /// \brief Size of a table that is only subscribed in some process functions, nullptr otherwise
+  template <typename TTable>
+  static std::size_t optionalTableSize(TTable const& table)
+  {
+    if constexpr (std::is_same_v<TTable, std::nullptr_t>) {
+      return 0;
+    } else {
+      return table.size();
+    }
+  }
+
+  /// \brief PCM-PCM same event
+  /// \tparam AllPairTypes also tag the photons for the pi0 prefilter with EMC-EMC and PCM-EMC pairs (needs the EMC tables, nullptr otherwise)
+  template <bool AllPairTypes, typename TClusters, typename TMatchedPrims, typename TMatchedSeconds>
+  void runPcm(Colls const& collisions, PcmPhotons const& photons, PcmMcLegs const& legs, McParticles const& mcParticles, TClusters const& clusters, TMatchedPrims const& matchedPrims, TMatchedSeconds const& matchedSeconds)
   {
     if (photons.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
@@ -1098,9 +1278,18 @@ struct TwoPhotonMcTask {
     // none of the photon tables is filtered, so its size is the size of the full table the globalIndex points into
     resetCache(mChainsPCM, mTruthPCM, photons.size());
     fillPcmCache(photons, legs, mcParticles);
+    mPrefilterPCM.assign(photons.size(), 0);
 
     EMBitFlags v0flags(photons.size());
     fV0PhotonCut.AreSelectedRunning<decltype(photons), PcmMcLegs>(v0flags, photons, &registry);
+
+    // EMC clusters only for the prefilter tagging: no chains, no cut QA
+    EMBitFlags emcFlags(optionalTableSize(clusters));
+    if constexpr (AllPairTypes) {
+      mPrefilterAllPCM.assign(photons.size(), 0);
+      mPrefilterAllEMC.assign(clusters.size(), 0);
+      fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    }
 
     auto mcIter = mcParticles.begin();
     for (const auto& collision : collisions) {
@@ -1111,18 +1300,30 @@ struct TwoPhotonMcTask {
       const float centOrMult = getCentralityOrMultiplicity(collision);
       auto photonsPerCollision = photons.sliceBy(perCollisionPCM, collision.globalIndex());
 
+      // pi0 prefilter: tag both photons of every pair inside the pi0 window, with the pair type of this process function
+      tagSameKind(photonsPerCollision, v0flags, mPrefilterPCM);
+      if constexpr (AllPairTypes) {
+        tagAllPairTypes(photonsPerCollision, clusters.sliceBy(perCollisionEMC, collision.globalIndex()), v0flags, emcFlags);
+      }
+
       for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsPerCollision, photonsPerCollision))) {
         if (!(v0flags.test(g1.globalIndex())) || !(v0flags.test(g2.globalIndex()))) {
           continue;
         }
-        fillPair<PairPCMPCM>(g1, g2, mChainsPCM[g1.globalIndex()], mChainsPCM[g2.globalIndex()], mTruthPCM[g1.globalIndex()], mTruthPCM[g2.globalIndex()], centOrMult, mcIter);
+        const int nTagged = mPrefilterPCM[g1.globalIndex()] + mPrefilterPCM[g2.globalIndex()];
+        int nTaggedAll = -1;
+        if constexpr (AllPairTypes) {
+          nTaggedAll = mPrefilterAllPCM[g1.globalIndex()] + mPrefilterAllPCM[g2.globalIndex()];
+        }
+        fillPair<PairPCMPCM>(g1, g2, mChainsPCM[g1.globalIndex()], mChainsPCM[g2.globalIndex()], mTruthPCM[g1.globalIndex()], mTruthPCM[g2.globalIndex()], centOrMult, nTagged, nTaggedAll, mcIter);
       }
     }
   }
-  PROCESS_SWITCH(TwoPhotonMcTask, processPcm, "Process for pcm photons", false);
 
-  // EMCal-EMCal same event
-  void processEmcal(Colls const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds, McParticles const& mcParticles)
+  /// \brief EMC-EMC same event
+  /// \tparam AllPairTypes also tag the photons for the pi0 prefilter with PCM-PCM and PCM-EMC pairs (needs the PCM table, nullptr otherwise)
+  template <bool AllPairTypes, typename TPcmPhotons>
+  void runEmcal(Colls const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds, McParticles const& mcParticles, TPcmPhotons const& photons)
   {
     if (clusters.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
@@ -1132,9 +1333,18 @@ struct TwoPhotonMcTask {
     // none of the photon tables is filtered, so its size is the size of the full table the globalIndex points into
     resetCache(mChainsEMC, mTruthEMC, clusters.size());
     fillEmcCache(clusters, mcIter);
+    mPrefilterEMC.assign(clusters.size(), 0);
 
     EMBitFlags emcFlags(clusters.size());
     fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
+
+    // PCM photons only for the prefilter tagging: no chains, no cut QA
+    EMBitFlags v0flags(optionalTableSize(photons));
+    if constexpr (AllPairTypes) {
+      mPrefilterAllPCM.assign(photons.size(), 0);
+      mPrefilterAllEMC.assign(clusters.size(), 0);
+      fV0PhotonCut.AreSelectedRunning<TPcmPhotons, PcmMcLegs>(v0flags, photons);
+    }
 
     for (const auto& collision : collisions) {
       initCCDB(collision);
@@ -1144,15 +1354,53 @@ struct TwoPhotonMcTask {
       const float centOrMult = getCentralityOrMultiplicity(collision);
       auto photonsPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
 
+      // pi0 prefilter: tag both photons of every pair inside the pi0 window, with the pair type of this process function
+      tagSameKind(photonsPerCollision, emcFlags, mPrefilterEMC);
+      if constexpr (AllPairTypes) {
+        tagAllPairTypes(photons.sliceBy(perCollisionPCM, collision.globalIndex()), photonsPerCollision, v0flags, emcFlags);
+      }
+
       for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsPerCollision, photonsPerCollision))) {
         if (!(emcFlags.test(g1.globalIndex())) || !(emcFlags.test(g2.globalIndex()))) {
           continue;
         }
-        fillPair<PairEMCEMC>(g1, g2, mChainsEMC[g1.globalIndex()], mChainsEMC[g2.globalIndex()], mTruthEMC[g1.globalIndex()], mTruthEMC[g2.globalIndex()], centOrMult, mcIter);
+        const int nTagged = mPrefilterEMC[g1.globalIndex()] + mPrefilterEMC[g2.globalIndex()];
+        int nTaggedAll = -1;
+        if constexpr (AllPairTypes) {
+          nTaggedAll = mPrefilterAllEMC[g1.globalIndex()] + mPrefilterAllEMC[g2.globalIndex()];
+        }
+        fillPair<PairEMCEMC>(g1, g2, mChainsEMC[g1.globalIndex()], mChainsEMC[g2.globalIndex()], mTruthEMC[g1.globalIndex()], mTruthEMC[g2.globalIndex()], centOrMult, nTagged, nTaggedAll, mcIter);
       }
     }
   }
+
+  // PCM-PCM same event
+  void processPcm(Colls const& collisions, PcmPhotons const& photons, PcmMcLegs const& legs, McParticles const& mcParticles)
+  {
+    runPcm<false>(collisions, photons, legs, mcParticles, nullptr, nullptr, nullptr);
+  }
+  PROCESS_SWITCH(TwoPhotonMcTask, processPcm, "Process for pcm photons", false);
+
+  // PCM-PCM same event, pi0 prefilter study also with the photons tagged by all three pair types (needs the EMC tables)
+  void processPcmPrefilterAll(Colls const& collisions, PcmPhotons const& photons, PcmMcLegs const& legs, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds, McParticles const& mcParticles)
+  {
+    runPcm<true>(collisions, photons, legs, mcParticles, clusters, matchedPrims, matchedSeconds);
+  }
+  PROCESS_SWITCH(TwoPhotonMcTask, processPcmPrefilterAll, "Process for pcm photons, pi0 prefilter also with all pair types (instead of processPcm)", false);
+
+  // EMCal-EMCal same event
+  void processEmcal(Colls const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds, McParticles const& mcParticles)
+  {
+    runEmcal<false>(collisions, clusters, matchedPrims, matchedSeconds, mcParticles, nullptr);
+  }
   PROCESS_SWITCH(TwoPhotonMcTask, processEmcal, "Process for emcal photons", false);
+
+  // EMCal-EMCal same event, pi0 prefilter study also with the photons tagged by all three pair types (needs the PCM tables)
+  void processEmcalPrefilterAll(Colls const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds, PcmPhotons const& photons, PcmMcLegs const&, McParticles const& mcParticles)
+  {
+    runEmcal<true>(collisions, clusters, matchedPrims, matchedSeconds, mcParticles, photons);
+  }
+  PROCESS_SWITCH(TwoPhotonMcTask, processEmcalPrefilterAll, "Process for emcal photons, pi0 prefilter also with all pair types (instead of processEmcal)", false);
 
   // PCM-EMCal same event
   void processPcmEmcal(Colls const& collisions, EMCalPhotons const& clusters, PcmPhotons const& photons, PcmMcLegs const& legs, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds, McParticles const& mcParticles)
@@ -1167,6 +1415,13 @@ struct TwoPhotonMcTask {
     resetCache(mChainsEMC, mTruthEMC, clusters.size());
     fillPcmCache(photons, legs, mcParticles);
     fillEmcCache(clusters, mcIter);
+    mPrefilterPCM.assign(photons.size(), 0);
+    mPrefilterEMC.assign(clusters.size(), 0);
+    const bool prefilterAll = mesonConfig.prefilterAllPairTypes.value;
+    if (prefilterAll) {
+      mPrefilterAllPCM.assign(photons.size(), 0);
+      mPrefilterAllEMC.assign(clusters.size(), 0);
+    }
 
     EMBitFlags emcFlags(clusters.size());
     fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
@@ -1182,12 +1437,20 @@ struct TwoPhotonMcTask {
       auto photonsEMCPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
       auto photonsPCMPerCollision = photons.sliceBy(perCollisionPCM, collision.globalIndex());
 
+      // pi0 prefilter: tag both photons of every pair inside the pi0 window, with the pair type of this process function
+      tagPcmEmc(photonsPCMPerCollision, photonsEMCPerCollision, v0flags, emcFlags, mPrefilterPCM, mPrefilterEMC);
+      if (prefilterAll) {
+        tagAllPairTypes(photonsPCMPerCollision, photonsEMCPerCollision, v0flags, emcFlags);
+      }
+
       // PCM - EMC loop, two different tables: all combinations
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photonsPCMPerCollision, photonsEMCPerCollision))) {
         if (!(v0flags.test(g1.globalIndex())) || !(emcFlags.test(g2.globalIndex()))) {
           continue;
         }
-        const auto bucket = fillPair<PairPCMEMC>(g1, g2, mChainsPCM[g1.globalIndex()], mChainsEMC[g2.globalIndex()], mTruthPCM[g1.globalIndex()], mTruthEMC[g2.globalIndex()], centOrMult, mcIter);
+        const int nTagged = mPrefilterPCM[g1.globalIndex()] + mPrefilterEMC[g2.globalIndex()];
+        const int nTaggedAll = prefilterAll ? mPrefilterAllPCM[g1.globalIndex()] + mPrefilterAllEMC[g2.globalIndex()] : -1;
+        const auto bucket = fillPair<PairPCMEMC>(g1, g2, mChainsPCM[g1.globalIndex()], mChainsEMC[g2.globalIndex()], mTruthPCM[g1.globalIndex()], mTruthEMC[g2.globalIndex()], centOrMult, nTagged, nTaggedAll, mcIter);
         if (bucket == PairBucket::kSameParticle) {
           diagnoseSameParticle(g1, g2, legs, matchedPrims, matchedSeconds, mcIter);
         }

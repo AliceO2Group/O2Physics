@@ -35,6 +35,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH2.h>
+#include <TH3.h>
 #include <THn.h>
 #include <TPDGCode.h>
 
@@ -198,6 +199,19 @@ struct Lambdastarproxy {
   Configurable<int> lstarSparseMultBins{"lstarSparseMultBins", 100, "Multiplicity-axis bins in all invariant-mass sparse histograms; keep identical across merge inputs"};
   Configurable<int> lstarMCPrimaryOnly{"lstarMCPrimaryOnly", 1, "Generated p/K/d fiducial spectra: require physical primaries (strong-decay daughters included)"};
 
+  // Optional diagnostics leave the original selections and histograms intact.
+  Configurable<int> lstarEnableMCProxySpecies{"lstarEnableMCProxySpecies", 0, "Book selected MC proxy species x TOF/proton/multiplicity states and retained-parent controls"};
+  Configurable<int> lstarEnableProxyPIDProbes{"lstarEnableProxyPIDProbes", 0, "Book separate loose-TPC/TOF matched pair probes for PID-versus-proxy-mass fits (data or reconstructed MC)"};
+  Configurable<float> lstarProxyProbeTPCDeMax{"lstarProxyProbeTPCDeMax", 6.f, "Loose d-slot TPC envelope for PID probes; 0 < cut <= 6"};
+  Configurable<float> lstarProxyProbeTPCKaMax{"lstarProxyProbeTPCKaMax", 6.f, "Loose K-slot TPC envelope for PID probes; 0 < cut <= 6"};
+  Configurable<float> lstarProxyProbeTOFDeMax{"lstarProxyProbeTOFDeMax", 8.f, "Loose d-slot TOF envelope for PID probes; 0 < cut <= 8"};
+  Configurable<float> lstarProxyProbeTOFKaMax{"lstarProxyProbeTOFKaMax", 8.f, "Loose K-slot TOF envelope for PID probes; 0 < cut <= 8"};
+
+  struct RetainedMother {
+    int64_t id = -1;
+    int pdg = 0;
+  };
+
   struct TruthInfo {
     int64_t id = -1;
     int collisionId = -1;
@@ -205,10 +219,12 @@ struct Lambdastarproxy {
     float px = 0.f, py = 0.f, pz = 0.f;
     bool primary = false;
     std::vector<int64_t> lambdaMothers;
+    std::vector<RetainedMother> diagnosticMothers;
   };
 
   struct KaonCand {
     float px = 0.f, py = 0.f, pz = 0.f;
+    bool hasTOF = false;
     int charge = 0;
     int tid = -1;
     TruthInfo truth{};
@@ -955,6 +971,7 @@ struct Lambdastarproxy {
                  HistType::kTH2F, {ptAxis, dcaZAxis});
     }
     bookMC();
+    bookProxyDiagnostics();
   }
 
   static constexpr int PdgLambdaStar = static_cast<int>(PDG_t::kLambda1520);
@@ -963,6 +980,365 @@ struct Lambdastarproxy {
   std::array<std::shared_ptr<TH2>, 5> mcGenSpectra{};
   std::array<std::array<std::shared_ptr<TH2>, 2>, 4> mcRecoProxy{};
   std::shared_ptr<TH2> mcRecoPKTrue, mcPKResponse, mcProxyResponse;
+
+  // Fixed bounded diagnostics: the four analysis pT bins plus ROOT flow bins.
+  // Existing native 1-MeV/0.1-GeV histograms are not changed or replaced.
+  static constexpr std::array<double, 5> DiagnosticPairPtEdges{0.6, 1.3, 1.4, 1.9, 3.6};
+  static constexpr std::array<double, 9> ProbeMomentumEdges{0., 0.5, 0.8, 1.2, 1.8, 2.5, 3.5, 5., 10.};
+  static constexpr std::array<const char*, 7> SpeciesNames{"e", "mu", "pi", "K", "p", "d", "remaining"};
+  static constexpr int SpeciesCount = SpeciesNames.size();
+  static constexpr int SpeciesPairs = SpeciesCount * SpeciesCount;
+  static constexpr int UnmatchedSpeciesTag = SpeciesPairs;
+  static constexpr int ChargeMismatchSpeciesTag = SpeciesPairs + 1;
+  static constexpr int SpeciesTagCount = SpeciesPairs + 2;
+  static constexpr int ProtonSpecies = 4;
+  static constexpr int DeuteronSpecies = 5;
+  static constexpr int KaonSpecies = 3;
+  static constexpr int SelectedPIDStates = 16;
+  static constexpr int ProbeRegions = 4;
+  static constexpr int ProbePairPtBins = DiagnosticPairPtEdges.size() - 1;
+  static constexpr int ProbeMomentumBins = ProbeMomentumEdges.size(); // includes p >= 10
+  static constexpr int ProbeTagCount = ProbePairPtBins * ProbeMomentumBins * ProbeRegions;
+  static constexpr int ParentClasses = 10;
+  static constexpr int DiagnosticMassBins = 200;
+  static constexpr int ProbeMassBins = 100;
+  static constexpr float ProbeTPCMax = 6.f;
+  static constexpr float ProbeTOFMax = 8.f;
+  static constexpr double MultMin = 0.;
+  static constexpr double MultMax = 100.;
+  static constexpr std::array<const char*, 2> PairSigns{"Unlike", "Like"};
+  static constexpr std::array<const char*, 2> ProbeRoles{"De", "Ka"};
+  static constexpr std::array<const char*, ParentClasses> ParentNames{
+    "no retained common mother", "K0S", "Lambda1115", "Kstar", "phi", "Lambda1520",
+    "other retained common mother", "multiple retained common mothers", "same MC particle", "invalid truth labels"};
+
+  std::array<std::shared_ptr<TH3>, 2> mcProxySpecies{};
+  std::array<std::shared_ptr<TH3>, 2> mcProxyOtherParents{};
+  std::array<std::array<std::shared_ptr<TH3>, 2>, 2> probeMass2{}, probeTPC{}, probeTOF{};
+  std::array<std::shared_ptr<TH3>, 2> probePairRegions{}, mcProbeSpecies{};
+  std::shared_ptr<TH2> probeTrackStatus;
+  std::shared_ptr<TH1> probeEventScope;
+
+  struct PIDProbeCand {
+    float px = 0.f, py = 0.f, pz = 0.f;
+    double momentum = 0., mass2 = 0.;
+    float nsTPC = 0.f, nsTOF = 0.f;
+    bool nominal = false;
+    int charge = 0;
+    int64_t tid = -1;
+    TruthInfo truth{};
+  };
+
+  static bool regularMultiplicity(float mult)
+  {
+    return std::isfinite(mult) && mult >= MultMin && mult < MultMax;
+  }
+
+  static int speciesGroup(int pdg)
+  {
+    switch (std::abs(pdg)) {
+      case PdgElectron:
+        return 0;
+      case PdgMuon:
+        return 1;
+      case PdgPion:
+        return 2;
+      case PdgKaon:
+        return KaonSpecies;
+      case PdgProton:
+        return ProtonSpecies;
+      case PdgDeuteron:
+        return DeuteronSpecies;
+      default:
+        return SpeciesCount - 1;
+    }
+  }
+
+  int speciesPairTag(TruthInfo const& a, TruthInfo const& b, int chargeA, int chargeB)
+  {
+    if (a.id < 0 || b.id < 0) {
+      return UnmatchedSpeciesTag;
+    }
+    if (chargeFromPdg(a.pdg) != chargeA || chargeFromPdg(b.pdg) != chargeB) {
+      return ChargeMismatchSpeciesTag;
+    }
+    return SpeciesCount * speciesGroup(a.pdg) + speciesGroup(b.pdg);
+  }
+
+  static bool otherSpeciesTag(int tag)
+  {
+    return tag != UnmatchedSpeciesTag && tag != SpeciesCount * DeuteronSpecies + KaonSpecies && tag != SpeciesCount * ProtonSpecies + KaonSpecies;
+  }
+
+  static int retainedParentClass(TruthInfo const& a, TruthInfo const& b)
+  {
+    if (a.id < 0 || b.id < 0) {
+      return ParentClasses - 1;
+    }
+    if (a.id == b.id) {
+      return ParentClasses - 2;
+    }
+    int64_t commonId = -1;
+    int commonPdg = 0;
+    for (auto const& ma : a.diagnosticMothers) {
+      for (auto const& mb : b.diagnosticMothers) {
+        if (ma.id != mb.id) {
+          continue;
+        }
+        if (commonId >= 0 && commonId != ma.id) {
+          return ParentClasses - 3;
+        }
+        commonId = ma.id;
+        commonPdg = std::abs(ma.pdg);
+      }
+    }
+    if (commonId < 0) {
+      return 0; // absence of a retained link does not establish absence of ancestry
+    }
+    if (commonPdg == static_cast<int>(PDG_t::kK0Short)) {
+      return 1;
+    }
+    if (commonPdg == static_cast<int>(PDG_t::kLambda0)) {
+      return 2;
+    }
+    if (commonPdg == static_cast<int>(o2::constants::physics::Pdg::kK0Star892) || commonPdg == static_cast<int>(o2::constants::physics::Pdg::kKPlusStar892)) {
+      return 3;
+    }
+    if (commonPdg == static_cast<int>(o2::constants::physics::Pdg::kPhi)) {
+      return 4;
+    }
+    if (commonPdg == PdgLambdaStar) {
+      return 5;
+    }
+    return 6;
+  }
+
+  static int probePairPtBin(float pt)
+  {
+    if (!std::isfinite(pt) || pt < DiagnosticPairPtEdges.front() || pt >= DiagnosticPairPtEdges.back()) {
+      return -1;
+    }
+    return static_cast<int>(std::upper_bound(DiagnosticPairPtEdges.begin(), DiagnosticPairPtEdges.end(), pt) - DiagnosticPairPtEdges.begin()) - 1;
+  }
+
+  static int probeMomentumBin(double momentum)
+  {
+    return std::clamp(static_cast<int>(std::upper_bound(ProbeMomentumEdges.begin(), ProbeMomentumEdges.end(), momentum) - ProbeMomentumEdges.begin()) - 1, 0, ProbeMomentumBins - 1);
+  }
+
+  static int probeTag(int pairBin, double momentum, int region)
+  {
+    return pairBin + ProbePairPtBins * (probeMomentumBin(momentum) + ProbeMomentumBins * region);
+  }
+
+  static std::string speciesTagName(int tag)
+  {
+    if (tag == UnmatchedSpeciesTag) {
+      return "unmatched";
+    }
+    if (tag == ChargeMismatchSpeciesTag) {
+      return "charge-inconsistent";
+    }
+    return std::string(SpeciesNames[tag / SpeciesCount]) + ":" + SpeciesNames[tag % SpeciesCount];
+  }
+
+  void bookProxyDiagnostics()
+  {
+    if (lstarEnableMCProxySpecies.value != 0 && !doprocessMCReco) {
+      LOGF(fatal, "lstarEnableMCProxySpecies requires processMCReco");
+    }
+    if (lstarEnableProxyPIDProbes.value != 0) {
+      if (!doprocess && !doprocessMCReco) {
+        LOGF(fatal, "PID probes require the data or reconstructed-MC process");
+      }
+      for (auto const& cut : {lstarProxyProbeTPCDeMax.value, lstarProxyProbeTPCKaMax.value}) {
+        if (!std::isfinite(cut) || cut <= 0.f || cut > ProbeTPCMax) {
+          LOGF(fatal, "Probe TPC limits must lie in (0,6]");
+        }
+      }
+      for (auto const& cut : {lstarProxyProbeTOFDeMax.value, lstarProxyProbeTOFKaMax.value}) {
+        if (!std::isfinite(cut) || cut <= 0.f || cut > ProbeTOFMax) {
+          LOGF(fatal, "Probe TOF limits must lie in (0,8]");
+        }
+      }
+    }
+    const AxisSpec pairPt{std::vector<double>(DiagnosticPairPtEdges.begin(), DiagnosticPairPtEdges.end()), "Proxy pair pT (GeV/c)"};
+    const AxisSpec mcMass{DiagnosticMassBins, 1.4, 1.8, "M_(d/2)K (GeV/c2)"};
+    const AxisSpec probeMass{ProbeMassBins, 1.4, 1.8, "M_(d/2)K (GeV/c2)"};
+    uint64_t payload = 0;
+    auto add3 = [&](std::string const& name, std::string const& title, std::vector<AxisSpec> const& axes) {
+      auto h = histos.add<TH3>(name.c_str(), title.c_str(), HistType::kTH3D, axes, true);
+      payload += static_cast<uint64_t>(h->GetNcells()) * 2 * sizeof(double);
+      return h;
+    };
+    for (size_t sign = 0; sign < PairSigns.size(); ++sign) {
+      const std::string suffix = PairSigns[sign];
+      if (lstarEnableMCProxySpecies.value != 0) {
+        mcProxySpecies[sign] = add3("hMCProxySpecies" + suffix, "Selected proxy;species+51*(dTOF+2*kTOF+4*pTPC+8*regularMult)",
+                                    {mcMass, pairPt, AxisSpec{SpeciesTagCount * SelectedPIDStates, -0.5, SpeciesTagCount * SelectedPIDStates - 0.5, "Species and detector state"}});
+        for (int state = 0; state < SelectedPIDStates; ++state) {
+          for (int tag = 0; tag < SpeciesTagCount; ++tag) {
+            const std::string label = speciesTagName(tag) + ";state=" + std::to_string(state);
+            mcProxySpecies[sign]->GetZaxis()->SetBinLabel(tag + SpeciesTagCount * state + 1, label.c_str());
+          }
+        }
+        mcProxyOtherParents[sign] = add3("hMCProxyOtherParents" + suffix, "Selected Other: retained immediate common-mother class only",
+                                         {mcMass, pairPt, AxisSpec{ParentClasses, -0.5, ParentClasses - 0.5, "Retained parent class"}});
+        for (int parent = 0; parent < ParentClasses; ++parent) {
+          mcProxyOtherParents[sign]->GetZaxis()->SetBinLabel(parent + 1, ParentNames[parent]);
+        }
+      }
+      if (lstarEnableProxyPIDProbes.value == 0) {
+        continue;
+      }
+      probePairRegions[sign] = add3("hProxyPIDProbeRegions" + suffix, "Loose matched PID probes;regular multiplicity only;region=dNominal+2*kNominal",
+                                    {probeMass, pairPt, AxisSpec{ProbeRegions, -0.5, ProbeRegions - 0.5, "Nominal-selection region"}});
+      for (size_t role = 0; role < ProbeRoles.size(); ++role) {
+        const std::string stem = std::string("hProxyPIDProbe") + ProbeRoles[role];
+        const AxisSpec m2 = role == 0 ? AxisSpec{120, -1., 7., "Full-track TOF mass2 (GeV2/c4)"} : AxisSpec{80, -1., 2., "Full-track TOF mass2 (GeV2/c4)"};
+        const AxisSpec packed{ProbeTagCount, -0.5, ProbeTagCount - 0.5, "pairBin+4*(momentumBin+9*region)"};
+        probeMass2[role][sign] = add3(std::string(stem).append("Mass2").append(suffix), "Loose both-TOF proxy probes;TPC/TOF envelopes;regular multiplicity", {probeMass, m2, packed});
+        probeTPC[role][sign] = add3(std::string(stem).append("TPC").append(suffix), "Same loose both-TOF proxy probes;TPC nSigma;regular multiplicity", {probeMass, AxisSpec{60, -ProbeTPCMax, ProbeTPCMax, "TPC nSigma for slot hypothesis"}, packed});
+        probeTOF[role][sign] = add3(std::string(stem).append("TOF").append(suffix), "Same loose both-TOF proxy probes;TOF nSigma;regular multiplicity", {probeMass, AxisSpec{80, -ProbeTOFMax, ProbeTOFMax, "TOF nSigma for slot hypothesis"}, packed});
+        for (int region = 0; region < ProbeRegions; ++region) {
+          for (int momentum = 0; momentum < ProbeMomentumBins; ++momentum) {
+            for (int pair = 0; pair < ProbePairPtBins; ++pair) {
+              const int tag = pair + ProbePairPtBins * (momentum + ProbeMomentumBins * region);
+              const std::string label = "pair=" + std::to_string(pair) + ";p=" + std::to_string(momentum) + ";region=" + std::to_string(region);
+              probeMass2[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
+              probeTPC[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
+              probeTOF[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
+            }
+          }
+        }
+      }
+      if (doprocessMCReco) {
+        mcProbeSpecies[sign] = add3("hMCProxyPIDProbeSpecies" + suffix, "Same loose probe pairs;species+51*nominalRegion;regular multiplicity",
+                                    {probeMass, pairPt, AxisSpec{SpeciesTagCount * ProbeRegions, -0.5, SpeciesTagCount * ProbeRegions - 0.5, "Species plus nominal region"}});
+        for (int region = 0; region < ProbeRegions; ++region) {
+          for (int tag = 0; tag < SpeciesTagCount; ++tag) {
+            const std::string label = speciesTagName(tag) + ";region=" + std::to_string(region);
+            mcProbeSpecies[sign]->GetZaxis()->SetBinLabel(tag + SpeciesTagCount * region + 1, label.c_str());
+          }
+        }
+      }
+    }
+    if (lstarEnableProxyPIDProbes.value != 0) {
+      probeTrackStatus = histos.add<TH2>("hProxyPIDProbeTrackStatus", "After quality and loose TPC;slot;stage", HistType::kTH2D,
+                                         {AxisSpec{2, -0.5, 1.5, "Slot: d=0,K=1"}, AxisSpec{5, -0.5, 4.5, "Stage"}}, true);
+      const std::array<const char*, 5> labels{"loose TPC", "no TOF", "invalid TOF response", "outside loose TOF", "accepted probe track"};
+      for (size_t i = 0; i < labels.size(); ++i) {
+        probeTrackStatus->GetYaxis()->SetBinLabel(i + 1, labels[i]);
+      }
+      probeEventScope = histos.add<TH1>("hProxyPIDProbeEventScope", "Selected events;regular multiplicity flag;events", HistType::kTH1D, {AxisSpec{2, -0.5, 1.5, "0=outside,1=regular [0,100)"}}, true);
+    }
+    if (payload > 0) {
+      LOGF(info, "Proxy diagnostic TH3 content+Sumw2 payload: %.2f MiB per wagon (fixed bins; object/axis overhead extra)", static_cast<double>(payload) / (1024. * 1024.));
+    }
+  }
+
+  void fillMCProxySpecies(ProxyCand const& d, KaonCand const& k, double mass, float pt, float mult)
+  {
+    const int tag = speciesPairTag(d.truth, k.truth, d.charge, k.charge);
+    const int state = static_cast<int>(d.hasTOF) + 2 * static_cast<int>(k.hasTOF) + 4 * static_cast<int>(d.protonTPCCompatible) + 8 * static_cast<int>(regularMultiplicity(mult));
+    const size_t sign = d.charge * k.charge < 0 ? 0 : 1;
+    mcProxySpecies[sign]->Fill(mass, pt, tag + SpeciesTagCount * state);
+    if (otherSpeciesTag(tag)) {
+      mcProxyOtherParents[sign]->Fill(mass, pt, retainedParentClass(d.truth, k.truth));
+    }
+  }
+
+  template <bool IsMC, typename TTracks>
+  void fillProxyPIDProbes(TTracks const& tracks, float mult, int collisionId)
+  {
+    // This separate path must not feed nominal candidate vectors or mixing pools.
+    const bool regular = regularMultiplicity(mult);
+    probeEventScope->Fill(regular);
+    if (!regular) {
+      return;
+    }
+    std::array<std::vector<PIDProbeCand>, 2> candidates;
+    for (auto const& track : tracks) {
+      if (track.pt() < lstarCutPtMin.value || std::abs(track.eta()) > lstarCutEtaMax.value || !passTrackQuality(track) || track.sign() == 0) {
+        continue;
+      }
+      const std::array<float, 2> tpc{track.tpcNSigmaDe(), track.tpcNSigmaKa()};
+      const std::array<float, 2> tof{track.tofNSigmaDe(), track.tofNSigmaKa()};
+      const std::array<float, 2> tpcMax{lstarProxyProbeTPCDeMax.value, lstarProxyProbeTPCKaMax.value};
+      const std::array<float, 2> tofMax{lstarProxyProbeTOFDeMax.value, lstarProxyProbeTOFKaMax.value};
+      for (size_t role = 0; role < ProbeRoles.size(); ++role) {
+        if (!std::isfinite(tpc[role]) || std::abs(tpc[role]) >= tpcMax[role]) {
+          continue;
+        }
+        probeTrackStatus->Fill(role, 0);
+        if (!track.hasTOF()) {
+          probeTrackStatus->Fill(role, 1);
+          continue;
+        }
+        const double beta = track.beta();
+        const double momentum = static_cast<double>(track.pt()) * std::cosh(static_cast<double>(track.eta()));
+        if (!std::isfinite(beta) || beta <= TofBetaMin || beta >= TofBetaMax || !std::isfinite(momentum) || momentum <= 0. || !std::isfinite(tof[role])) {
+          probeTrackStatus->Fill(role, 2);
+          continue;
+        }
+        if (std::abs(tof[role]) >= tofMax[role]) {
+          probeTrackStatus->Fill(role, 3);
+          continue;
+        }
+        probeTrackStatus->Fill(role, 4);
+        PIDProbeCand probe;
+        probe.px = track.pt() * std::cos(track.phi());
+        probe.py = track.pt() * std::sin(track.phi());
+        probe.pz = track.pt() * std::sinh(track.eta());
+        probe.momentum = momentum;
+        probe.mass2 = momentum * momentum * (1. / (beta * beta) - 1.);
+        probe.nsTPC = tpc[role];
+        probe.nsTOF = tof[role];
+        probe.charge = static_cast<int>(track.sign());
+        probe.tid = track.globalIndex();
+        if (role == 0) {
+          const bool passProton = passFinalCandidatePID(track.pt(), track.tpcNSigmaPr(), track.tofNSigmaPr(), true,
+                                                        lstarCutNsigmaTPCPr.value, lstarCutNsigmaTOFPr.value, lstarPidCircularCutPr.value, lstarPidPtRefPr.value);
+          probe.nominal = passFinalCandidatePID(track.pt(), tpc[role], tof[role], true, lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value, lstarPidCircularCutDe.value, lstarPidPtRefDe.value, true) &&
+                          passOptionalDeuteronTOFExtras(track) && (lstarProxyUseProtonPIDAsDeuteron.value == 0 || passProton);
+        } else {
+          probe.nominal = passFinalCandidatePID(track.pt(), tpc[role], tof[role], true, lstarCutNsigmaTPCKaon.value, lstarCutNsigmaTOFKaon.value, lstarPidCircularCutKaon.value, lstarPidPtRefKaon.value);
+        }
+        if constexpr (IsMC) {
+          probe.truth = trackTruth(track, collisionId);
+        }
+        candidates[role].push_back(std::move(probe));
+      }
+    }
+    for (auto const& d : candidates[0]) {
+      for (auto const& k : candidates[1]) {
+        if (d.tid == k.tid) {
+          continue;
+        }
+        const double mass = invariantMass(ProxyMomentumScale * d.px, ProxyMomentumScale * d.py, ProxyMomentumScale * d.pz, o2::constants::physics::MassProton,
+                                          k.px, k.py, k.pz, o2::constants::physics::MassKaonCharged);
+        const float px = ProxyMomentumScale * d.px + k.px, py = ProxyMomentumScale * d.py + k.py, pz = ProxyMomentumScale * d.pz + k.pz;
+        const float pt = ptFromPxPy(px, py);
+        const int pairBin = probePairPtBin(pt);
+        const float y = rapidityFromMomentumAndMass(px, py, pz, mass);
+        if (pairBin < 0 || !std::isfinite(mass) || !std::isfinite(y) || std::abs(y) > lstarLambdaAbsYMax.value) {
+          continue;
+        }
+        const size_t sign = d.charge * k.charge < 0 ? 0 : 1;
+        const int region = static_cast<int>(d.nominal) + 2 * static_cast<int>(k.nominal);
+        probePairRegions[sign]->Fill(mass, pt, region);
+        probeMass2[0][sign]->Fill(mass, d.mass2, probeTag(pairBin, d.momentum, region));
+        probeMass2[1][sign]->Fill(mass, k.mass2, probeTag(pairBin, k.momentum, region));
+        probeTPC[0][sign]->Fill(mass, d.nsTPC, probeTag(pairBin, d.momentum, region));
+        probeTPC[1][sign]->Fill(mass, k.nsTPC, probeTag(pairBin, k.momentum, region));
+        probeTOF[0][sign]->Fill(mass, d.nsTOF, probeTag(pairBin, d.momentum, region));
+        probeTOF[1][sign]->Fill(mass, k.nsTOF, probeTag(pairBin, k.momentum, region));
+        if constexpr (IsMC) {
+          mcProbeSpecies[sign]->Fill(mass, pt, speciesPairTag(d.truth, k.truth, d.charge, k.charge) + SpeciesTagCount * region);
+        }
+      }
+    }
+  }
 
   bool mixingEnabled() const
   {
@@ -1001,7 +1377,7 @@ struct Lambdastarproxy {
   }
 
   template <typename TParticle>
-  static TruthInfo particleTruth(TParticle const& particle)
+  static TruthInfo particleTruth(TParticle const& particle, bool retainDiagnosticMothers = false)
   {
     TruthInfo info;
     info.id = particle.globalIndex();
@@ -1012,6 +1388,9 @@ struct Lambdastarproxy {
     info.pz = particle.pz();
     info.primary = particle.isPhysicalPrimary();
     for (auto const& mother : particle.template mothers_as<aod::McParticles>()) {
+      if (retainDiagnosticMothers && mother.mcCollisionId() == info.collisionId) {
+        info.diagnosticMothers.push_back({mother.globalIndex(), mother.pdgCode()});
+      }
       if (std::abs(mother.pdgCode()) == PdgLambdaStar && mother.mcCollisionId() == info.collisionId) {
         info.lambdaMothers.push_back(mother.globalIndex());
       }
@@ -1020,7 +1399,7 @@ struct Lambdastarproxy {
   }
 
   template <typename TTrack>
-  static TruthInfo trackTruth(TTrack const& track, int collisionId)
+  static TruthInfo trackTruth(TTrack const& track, int collisionId, bool retainDiagnosticMothers = false)
   {
     if (collisionId < 0 || !track.has_mcParticle()) {
       return {};
@@ -1029,7 +1408,7 @@ struct Lambdastarproxy {
     if (particle.mcCollisionId() != collisionId) {
       return {}; // pileup or wrong-collision labels do not enter truth components
     }
-    return particleTruth(particle);
+    return particleTruth(particle, retainDiagnosticMothers);
   }
 
   static bool commonLambdaStar(TruthInfo const& proton, TruthInfo const& kaon)
@@ -1566,6 +1945,13 @@ struct Lambdastarproxy {
 
     // Compute event multiplicity (FT0M or fallback)
     const float eventMult = eventMultiplicityFT0MOrFallback(collision, eventMultFallback);
+    if (lstarEnableProxyPIDProbes.value != 0) {
+      if constexpr (IsMC) {
+        fillProxyPIDProbes<true>(tracks, eventMult, collision.mcCollisionId());
+      } else {
+        fillProxyPIDProbes<false>(tracks, eventMult, -1);
+      }
+    }
 
     // Deuteron candidates -> proton-proxy candidates
     for (auto const& trkD : tracks) {
@@ -1725,7 +2111,7 @@ struct Lambdastarproxy {
           .tid = static_cast<int>(trkD.globalIndex()),
           .truth = {}});
       if constexpr (IsMC) {
-        proxyCands.back().truth = trackTruth(trkD, collision.mcCollisionId());
+        proxyCands.back().truth = trackTruth(trkD, collision.mcCollisionId(), lstarEnableMCProxySpecies.value != 0);
       }
     }
 
@@ -1867,11 +2253,12 @@ struct Lambdastarproxy {
         .px = pxK,
         .py = pyK,
         .pz = pzK,
+        .hasTOF = hasTofK,
         .charge = static_cast<int>(trkK.sign()),
         .tid = static_cast<int>(trkK.globalIndex()),
         .truth = {}});
       if constexpr (IsMC) {
-        kaonCands.back().truth = trackTruth(trkK, collision.mcCollisionId());
+        kaonCands.back().truth = trackTruth(trkK, collision.mcCollisionId(), lstarEnableMCProxySpecies.value != 0);
       }
     }
 
@@ -1995,6 +2382,9 @@ struct Lambdastarproxy {
 
           if constexpr (IsMC) {
             fillRecoMC(pr, k, mass, ptPair, true);
+            if (lstarEnableMCProxySpecies.value != 0) {
+              fillMCProxySpecies(pr, k, mass, ptPair, eventMult);
+            }
           }
           const bool unlikeSignProxy =
             (pr.charge * k.charge) < 0;

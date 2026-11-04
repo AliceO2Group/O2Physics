@@ -162,13 +162,13 @@ struct LumiQaTask {
         return;
       }
 
-      hCalibV0A = reinterpret_cast<TH1*>(callst->FindObject("hCalibZeqFV0"));
+      hCalibV0A = dynamic_cast<TH1*>(callst->FindObject("hCalibZeqFV0"));
       if (hCalibV0A == nullptr) {
         LOGF(info, "hCalibZeqFV0 histogram is not available for run=%d at timestamp=%llu", runNumber, ts);
         return;
       }
 
-      hCalibT0C = reinterpret_cast<TH1*>(callst->FindObject("hCalibZeqFT0C"));
+      hCalibT0C = dynamic_cast<TH1*>(callst->FindObject("hCalibZeqFT0C"));
       if (hCalibT0C == nullptr) {
         LOGF(info, "hCalibZeqFT0C histogram is not available for run=%d at timestamp=%llu", runNumber, ts);
         return;
