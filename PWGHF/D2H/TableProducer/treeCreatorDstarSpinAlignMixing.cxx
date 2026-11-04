@@ -17,8 +17,8 @@
 /// \author Mingze li <mingze.li@cern.ch>, CCNU/UniTo
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/D2H/Utils/utilsFlow.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/D2H/Utils/utilsFlow.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -390,7 +390,7 @@ struct HfTreeCreatorDstarSpinAlignMixing {
     if (activateAxisRotation) {
       qVecNorm = ROOT::Math::RotationZ(axisRotationAngle)(qVecNorm);
     }
-    float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()); 
+    float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
     rowGenMcParticles(
       mcParticle.pt(),
@@ -398,8 +398,7 @@ struct HfTreeCreatorDstarSpinAlignMixing {
       mcParticle.phi(),
       mcParticle.y(),
       cosThetaStarEP,
-      centrality);   
-    
+      centrality);
   }
 
   void processData(CollsWithQVecs const& collisions,
