@@ -162,7 +162,8 @@ std::string MetadataHelper::getGenerator() const
 
   // MC production tag (LPMProductionTag) -> generator name, for AO2Ds without the generator in the metadata
   static const std::map<std::string, std::string> mcGeneratorMap = {
-    {"LHC26f3", "EPOS"}};
+    {"LHC26f3", "EPOS"},
+    {"LHC26k3", "EPOS"}};
 
   // FIXME: use the "Generator" key first once it is available in AO2Ds (it must also be added to the key list in the constructor)
   // if (isKeyDefined("Generator")) {
