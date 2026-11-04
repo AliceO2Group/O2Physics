@@ -102,14 +102,14 @@ Type getBinIndex(float const& value, std::vector<float> const& binning, int cons
   for (unsigned int i = 0; i < binning.size() - 1; i++) {
     if (value >= binning[i] && binning[i + 1] > value) {
       if (NsubBins < 2) {
-        res = (Type)i;
+        res = static_cast<Type>(i);
         break;
       } else {
         float subBinWidth = (binning[i + 1] - binning[i]) / NsubBins;
         int subBin = std::floor((value - binning[i]) / subBinWidth);
         int delimeter = std::pow(10, std::to_string(NsubBins).size());
 
-        res = (Type)i + (Type)subBin / delimeter;
+        res = static_cast<Type>(i) + static_cast<Type>(subBin) / delimeter;
         break;
       }
     }

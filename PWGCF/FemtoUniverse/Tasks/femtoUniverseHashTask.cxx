@@ -42,8 +42,8 @@ struct FemtoUniverseHashTask {
   void init(InitContext&)
   {
     /// here the Configurables are passed to std::vectors
-    castCfgVtxBins = (std::vector<float>)cfgVtxBins;
-    castCfgMultBins = (std::vector<float>)cfgMultBins;
+    castCfgVtxBins = std::vector<float>(cfgVtxBins);
+    castCfgMultBins = std::vector<float>(cfgMultBins);
   }
 
   void process(o2::aod::FdCollision const& col)

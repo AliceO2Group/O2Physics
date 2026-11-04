@@ -1307,8 +1307,8 @@ struct DptDptEfficiencyAndQc {
   using TpcPID = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
   using TofPID = soa::Join<aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass>;
 
-  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
-  Filter onlyacceptedtracks = (aod::dptdptfilter::trackacceptedid >= int8_t(0));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == static_cast<uint8_t>(true));
+  Filter onlyacceptedtracks = (aod::dptdptfilter::trackacceptedid >= static_cast<int8_t>(0));
 
   void processReconstructedNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
                                      soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection> const& tracks)

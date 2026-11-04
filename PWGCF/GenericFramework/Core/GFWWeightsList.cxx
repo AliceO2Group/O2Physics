@@ -64,7 +64,7 @@ void GFWWeightsList::addGFWWeightsByName(const char* weightName, int nPtBins, do
   if (!list) {
     init("weightList");
   }
-  if (reinterpret_cast<GFWWeights*>(list->FindObject(weightName))) {
+  if (dynamic_cast<GFWWeights*>(list->FindObject(weightName))) {
     return;
   }
   GFWWeights* weight = new GFWWeights(weightName);
@@ -79,7 +79,7 @@ GFWWeights* GFWWeightsList::getGFWWeightsByName(const char* weightName)
     LOGF(error, "weight list is not initialized\n");
     return nullptr;
   }
-  return reinterpret_cast<GFWWeights*>(list->FindObject(weightName));
+  return dynamic_cast<GFWWeights*>(list->FindObject(weightName));
 }
 
 void GFWWeightsList::addGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, bool addData, bool addMC)
@@ -121,7 +121,7 @@ void GFWWeightsList::addPIDGFWWeightsByName(const char* weightName, int nPtBins,
   std::vector<double> refpt(ptbins.begin(), it + 1);
 
   for (auto& type : species) {
-    if (reinterpret_cast<GFWWeights*>(list->FindObject((static_cast<std::string>(weightName) + type).c_str()))) {
+    if (dynamic_cast<GFWWeights*>(list->FindObject((static_cast<std::string>(weightName) + type).c_str()))) {
       continue;
     }
     GFWWeights* weight = new GFWWeights(Form("%s", (static_cast<std::string>(weightName) + type).c_str()));
@@ -141,7 +141,7 @@ GFWWeights* GFWWeightsList::getPIDGFWWeightsByName(const char* weightName, int p
     LOGF(error, "weight list is not initialized\n");
     return nullptr;
   }
-  return reinterpret_cast<GFWWeights*>(list->FindObject((static_cast<std::string>(weightName) + species[pidIndex]).c_str()));
+  return dynamic_cast<GFWWeights*>(list->FindObject((static_cast<std::string>(weightName) + species[pidIndex]).c_str()));
 }
 void GFWWeightsList::addPIDGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, double ptrefup, bool addData, bool addMC)
 {
@@ -193,7 +193,7 @@ Long64_t GFWWeightsList::Merge(TCollection* collist)
   }
   TIter allWeights(collist);
   GFWWeightsList* lWeight = 0;
-  while ((lWeight = (reinterpret_cast<GFWWeightsList*>(allWeights())))) {
+  while ((lWeight = (dynamic_cast<GFWWeightsList*>(allWeights())))) {
     addArray(list, lWeight->getList());
     nmerged++;
   }
@@ -205,10 +205,10 @@ void GFWWeightsList::addArray(TObjArray* target, TObjArray* source)
     return;
   }
   for (int i = 0; i < source->GetEntries(); i++) {
-    GFWWeights* sourw = reinterpret_cast<GFWWeights*>(source->At(i));
-    GFWWeights* targw = reinterpret_cast<GFWWeights*>(target->FindObject(sourw->GetName()));
+    GFWWeights* sourw = dynamic_cast<GFWWeights*>(source->At(i));
+    GFWWeights* targw = dynamic_cast<GFWWeights*>(target->FindObject(sourw->GetName()));
     if (!targw) {
-      targw = reinterpret_cast<GFWWeights*>(sourw->Clone(sourw->GetName()));
+      targw = dynamic_cast<GFWWeights*>(sourw->Clone(sourw->GetName()));
       target->Add(targw);
     } else {
       targw->mergeWeights(sourw);

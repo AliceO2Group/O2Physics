@@ -78,17 +78,17 @@ struct FemtoDreamDebugReso {
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
-  Partition<FemtoFullParticles> partsPhi = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
-                                            ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false) ||
-                                            ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
-                                            ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false));
+  Partition<FemtoFullParticles> partsPhi = (ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
+                                            ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false) ||
+                                            ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
+                                            ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false));
 
   Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
-  Partition<FemtoFullParticles> partsKstar = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
-                                              ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false) ||
-                                              ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
-                                              ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false));
+  Partition<FemtoFullParticles> partsKstar = (ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
+                                              ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false) ||
+                                              ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
+                                              ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false));
   /// Histogramming
   FemtoDreamEventHisto eventHisto;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kResoChild, 3> posChildHistos;
@@ -124,9 +124,9 @@ struct FemtoDreamDebugReso {
       if (posresoChild.globalIndex() != part.childrenIds()[0] || negresoChild.globalIndex() != part.childrenIds()[1]) {
         continue;
       }
-      if (posresoChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kResoChild) &&
+      if (posresoChild.partType() == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoChild) &&
           (posresoChild.cut() & resonance.confChildPosCutBit.value) == resonance.confChildPosCutBit.value &&
-          negresoChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kResoChild) &&
+          negresoChild.partType() == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoChild) &&
           (negresoChild.cut() & resonance.confChildNegCutBit.value) == resonance.confChildNegCutBit.value) {
 
         TVector3 pparent(part.px(), part.py(), part.pz());                        // Parent momentum (px, py, pz)

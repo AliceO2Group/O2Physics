@@ -367,7 +367,7 @@ struct LongrangeMaker {
     itsNsigmaCut = itsNsigmaPidCut;
     tpcNsigmaCut = tpcNsigmaPidCut;
 
-    cfgSgCuts = (SGCutParHolder)sgCuts;
+    cfgSgCuts = SGCutParHolder(sgCuts);
   }
 
   Produces<aod::LRMcCollisions> lrmccollision;

@@ -406,7 +406,7 @@ TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
       LOGF(info, "Could not find %s!", ybinlab);
       return 0;
     }
-    TProfile* rethist = dynamic_cast<TProfile*>(fProf->ProfileX("temp_prof", ybinno, ybinno));
+    TProfile* rethist = fProf->ProfileX("temp_prof", ybinno, ybinno);
     rethist->SetTitle(Form(";multi.;#LT#LT%s#GT#GT", order));
     if (!retSubset) {
       retSubset = dynamic_cast<TProfile*>(rethist->Clone(Form("corr_%s", order)));

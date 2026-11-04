@@ -240,7 +240,7 @@ void EventSelectionFilterAndAnalysis::MultiplicityBrick::initialize()
         }
       }
     }
-    if (mAlternateEstimatorIndex.size() != (uint)(varlst.GetEntries())) {
+    if (mAlternateEstimatorIndex.size() != static_cast<uint>(varlst.GetEntries())) {
       LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() variant multiplicity class estimators not all implemented");
     }
   }
@@ -297,7 +297,7 @@ void EventSelectionFilterAndAnalysis::PileUpRejBrick::initialize()
         }
       }
     }
-    if (mAlternateEstimatorIndex.size() != (uint)(varlst.GetEntries())) {
+    if (mAlternateEstimatorIndex.size() != static_cast<uint>(varlst.GetEntries())) {
       LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() variant pile-up correlator estimators not all implemented");
     }
   }
@@ -425,11 +425,11 @@ void EventSelectionFilterAndAnalysis::ComplexBrickHelper::armedBrick(uint64_t& a
     if (deflst.GetEntries() > 1) {
       LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected only one default multiplicity class estimator");
     }
-    armedBrick((CutBrick<float>*)deflst.At(0), true);
+    armedBrick(dynamic_cast<CutBrick<float>*>(deflst.At(0)), true);
     /* and now the variants */
     TList& varlst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getVariantBricks();
     for (int i = 0; i < varlst.GetEntries(); ++i) {
-      armedBrick((CutBrick<float>*)varlst.At(i), true);
+      armedBrick(dynamic_cast<CutBrick<float>*>(varlst.At(i)), true);
     }
   } else {
     /* no alternative estimators, just the default */

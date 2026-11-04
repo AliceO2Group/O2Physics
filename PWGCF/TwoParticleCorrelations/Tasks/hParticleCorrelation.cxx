@@ -3606,7 +3606,7 @@ struct HParticleCorrelation3MixedEvent {
   // Mixing channels: 8 track channels (h-h, h-pi, h-K, h-p x low/high pT) followed by
   // 30 resonance channels (5 species x low/high pT x Peak/LSB/RSB)
   static constexpr int NMassWindows = 3;
-  static constexpr int NTrackMixChannels = static_cast<int>(kCountHPr + 1) * static_cast<int>(kNCorrCountPt);
+  static constexpr int NTrackMixChannels = (kCountHPr + 1) * static_cast<int>(kNCorrCountPt);
   static constexpr int NMixOperationChannels = NTrackMixChannels + static_cast<int>(kNResoCorrCountTypes) * static_cast<int>(kNCorrCountPt) * NMassWindows;
 
   static constexpr std::array<std::string_view, NMixOperationChannels> MixOperationChannelName = {

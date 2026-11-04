@@ -285,7 +285,7 @@ struct V0ptHadPiKaProt {
       ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
       LOGF(info, "Getting object %s", ccdbPath.value.data());
       TList* lst = ccdb->getForTimeStamp<TList>(ccdbPath.value, ccdbNoLaterThan.value);
-      hWeightPhiFunctionVzEtaPhi = reinterpret_cast<TH3D*>(lst->FindObject("hWeightPhiFunctionVzEtaPhi"));
+      hWeightPhiFunctionVzEtaPhi = dynamic_cast<TH3D*>(lst->FindObject("hWeightPhiFunctionVzEtaPhi"));
       if (!hWeightPhiFunctionVzEtaPhi)
         LOGF(info, "FATAL!! could not get phi weights---------> check");
     }
@@ -299,10 +299,10 @@ struct V0ptHadPiKaProt {
       ccdb->setCreatedNotAfter(ccdbNoLaterThanPtEff.value);
       LOGF(info, "Getting object %s", ccdbPathPtEff.value.data());
       TList* lst = ccdb->getForTimeStamp<TList>(ccdbPathPtEff.value, ccdbNoLaterThanPtEff.value);
-      hEffAllCharged = reinterpret_cast<TH1D*>(lst->FindObject("hEffAllCharged"));
-      hEffPion = reinterpret_cast<TH1D*>(lst->FindObject("hEffPion"));
-      hEffKaon = reinterpret_cast<TH1D*>(lst->FindObject("hEffKaon"));
-      hEffProton = reinterpret_cast<TH1D*>(lst->FindObject("hEffProton"));
+      hEffAllCharged = dynamic_cast<TH1D*>(lst->FindObject("hEffAllCharged"));
+      hEffPion = dynamic_cast<TH1D*>(lst->FindObject("hEffPion"));
+      hEffKaon = dynamic_cast<TH1D*>(lst->FindObject("hEffKaon"));
+      hEffProton = dynamic_cast<TH1D*>(lst->FindObject("hEffProton"));
       if (!hEffAllCharged || !hEffPion || !hEffKaon || !hEffProton)
         LOGF(info, "FATAL!! could not get efficiency files---------> !!! check !!!");
     }
