@@ -87,7 +87,7 @@ using SignalRef = std::pair<int32_t, int16_t>;
 using DistanceMap = std::vector<std::vector<uint32_t>>;
 
 DistanceMap buildMinimumDistanceMap(std::vector<uint32_t> const& tfIDs,
-                                    int64_t bcSOR, int32_t nBCsPerTF,
+                                    int64_t bcSOR, int64_t nBCsPerTF,
                                     std::vector<int64_t>& activeBCs, uint32_t maxDistance,
                                     bool skipFirstExactMatch = false)
 {
@@ -101,8 +101,10 @@ DistanceMap buildMinimumDistanceMap(std::vector<uint32_t> const& tfIDs,
   // The forward-only cursor makes the scan linear after sorting
   size_t nextIndex = 0;
   for (size_t iTF = 0; iTF < tfIDs.size(); ++iTF) {
-    const int64_t tfStartBC = bcSOR + tfIDs[iTF] * nBCsPerTF;
-    for (int64_t bcInTF = 0; bcInTF < nBCsPerTF; ++bcInTF) { // TODO why int64_t
+    // Cast before multiplication to prevent 32-bit integer overflow.
+    const int64_t tfStartBC = bcSOR + static_cast<int64_t>(tfIDs[iTF]) * nBCsPerTF;
+    // Use int64_t to keep BC arithmetic in 64 bits without additional casts.
+    for (int64_t bcInTF = 0; bcInTF < nBCsPerTF; ++bcInTF) {
       const int64_t currentBC = tfStartBC + bcInTF;
       while (nextIndex < activeBCs.size() && activeBCs[nextIndex] < currentBC) {
         ++nextIndex;
