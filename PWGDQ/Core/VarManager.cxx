@@ -1365,6 +1365,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCVertexingTauxyzProjected] = "ns";
   fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
   fgVariableUnits[kCosPointingAngle] = "";
+  fgVariableNames[kVertexingImpactParameter] = "d_{0}";
+  fgVariableUnits[kVertexingImpactParameter] = "cm";
   fgVariableNames[kMCCosPointingAngle] = "MC cos(#theta_{pointing})";
   fgVariableUnits[kMCCosPointingAngle] = "";
   fgVariableNames[kD0DcaDaughters] = "DCA of D0 daughters";
@@ -2687,6 +2689,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kQuadDCAsigXYZ"] = kQuadDCAsigXYZ;
   fgVarNamesMap["kSignQuadDCAsigXY"] = kSignQuadDCAsigXY;
   fgVarNamesMap["kCosPointingAngle"] = kCosPointingAngle;
+  fgVarNamesMap["kVertexingImpactParameter"] = kVertexingImpactParameter;
   fgVarNamesMap["kMCCosPointingAngle"] = kMCCosPointingAngle;
   fgVarNamesMap["kD0ImpParProduct"] = kD0ImpParProduct;
   fgVarNamesMap["kD0DcaDaughters"] = kD0DcaDaughters;
