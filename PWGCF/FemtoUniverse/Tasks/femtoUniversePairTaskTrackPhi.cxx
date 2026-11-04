@@ -785,7 +785,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processMCReco, "Process MC reco data", false);
 
-  void processMinvBackground()
+  void processMinvBackground(([[maybe_unused]] FilteredFemtoFullParticles const& parts))
   {
     if (!confFillMinvBackground) {
       return;
