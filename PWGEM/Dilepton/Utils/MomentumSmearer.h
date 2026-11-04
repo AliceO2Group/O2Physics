@@ -156,7 +156,7 @@ class MomentumSmearer
 
     fVecResoND.resize(fNCenBins, std::vector<std::vector<std::vector<std::vector<TH3D*>>>>(fNPtBins, std::vector<std::vector<std::vector<TH3D*>>>(fNEtaBins, std::vector<std::vector<TH3D*>>(fNPhiBins, std::vector<TH3D*>(fNChBins)))));
     // fVecResoND.resize(fNPtBins, std::vector<std::vector<std::vector<TH3D*>>>(fNEtaBins, std::vector<std::vector<TH3D*>>(fNPhiBins, std::vector<TH3D*>(fNChBins))));
-    //  auto h3 = reinterpret_cast<TH3D*>(hs_reso->Projection(4, 5, 6)); // FIXME: invalid cast
+    //  auto h3 = hs_reso->Projection(4, 5, 6);
     //  h3->SetName(Form("h3reso_pt%d_eta%d_phi%d_ch%d", 0, 0, 0, 0));
     //  fVecResoND[0][0][0][0] = h3;
 
