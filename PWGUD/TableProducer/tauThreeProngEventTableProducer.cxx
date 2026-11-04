@@ -1397,7 +1397,11 @@ struct TauThreeProngEventTableProducer {
       float trueDaugZ[6] = {-998., -998., -998., -998., -998., -998.};
       int trueDaugPdgCode[6] = {-999, -999, -999, -999, -999, -999};
 
+<<<<<<< HEAD
       int8_t problemBits[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
+=======
+      bool problemBits[8] = {false, false, false, false, false, false, false, false};
+>>>>>>> 0b37a53c3 (Fix cast in problemBits variable)
       uint8_t problemBitsFlag = 0;
       // MyRecoProblem problem = NO_PROBLEM;
       registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_PROBLEM);
