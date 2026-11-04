@@ -121,9 +121,11 @@ struct HfCandidateSelectorXicToXiPiPi {
 
   void init(InitContext&)
   {
-    if ((doprocessData + doprocessMc) != 1) {
+    if ((doprocessDataWithDCAFitter + doprocessDataWithKFParticle + doprocessMcWithDCAFitter + doprocessMcWithKFParticle) != 1) {
       LOGP(fatal, "Enable exactly one process function at a time.");
     }
+    const bool doprocessData = doprocessDataWithDCAFitter || doprocessDataWithKFParticle;
+    const bool doprocessMc = doprocessMcWithDCAFitter || doprocessMcWithKFParticle;
 
     if (usePid) {
       // pion
@@ -699,8 +701,8 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
   }
 
-  void processData(aod::HfCandXic const& hfCandsXic,
-                   TracksExtraWPid const& tracks)
+  template <aod::hf_cand::VertexerType ReconstructionType, typename CandType>
+  void runData(CandType const& hfCandsXic, TracksExtraWPid const& tracks)
   {
     for (const auto& hfCandXic : hfCandsXic) {
       int statusXicToXiPiPi = 0;
@@ -727,10 +729,9 @@ struct HfCandidateSelectorXicToXiPiPi {
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
     }
   }
-  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processData, "Select candidates without MC matching information", true);
 
-  void processMc(soa::Join<aod::HfCandXic, aod::HfCandXicMcRec> const& hfCandsXic,
-                 TracksExtraWPid const& tracks)
+  template <aod::hf_cand::VertexerType ReconstructionType, typename CandType>
+  void runMc(CandType const& hfCandsXic, TracksExtraWPid const& tracks)
   {
     for (const auto& hfCandXic : hfCandsXic) {
       int statusXicToXiPiPi = 0;
@@ -764,7 +765,34 @@ struct HfCandidateSelectorXicToXiPiPi {
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
     }
   }
-  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processMc, "Select candidates with MC matching information", false);
+
+  void processDataWithDCAFitter(aod::HfCandXic const& hfCandsXic,
+                                TracksExtraWPid const& tracks)
+  {
+    runData<aod::hf_cand::VertexerType::DCAFitter>(hfCandsXic, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processDataWithDCAFitter, "Select candidates without MC matching information using DCAFitter", true);
+
+  void processDataWithKFParticle(soa::Join<aod::HfCandXic, aod::HfCandXicKF> const& hfCandsXic,
+                                 TracksExtraWPid const& tracks)
+  {
+    runData<aod::hf_cand::VertexerType::KfParticle>(hfCandsXic, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processDataWithKFParticle, "Select candidates without MC matching information using KFParticle", false);
+
+  void processMcWithDCAFitter(soa::Join<aod::HfCandXic, aod::HfCandXicMcRec> const& hfCandsXic,
+                              TracksExtraWPid const& tracks)
+  {
+    runMc<aod::hf_cand::VertexerType::DCAFitter>(hfCandsXic, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processMcWithDCAFitter, "Select candidates with MC matching information using DCAFitter", false);
+
+  void processMcWithKFParticle(soa::Join<aod::HfCandXic, aod::HfCandXicMcRec, aod::HfCandXicKF> const& hfCandsXic,
+                               TracksExtraWPid const& tracks)
+  {
+    runMc<aod::hf_cand::VertexerType::KfParticle>(hfCandsXic, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processMcWithKFParticle, "Select candidates with MC matching information using KFParticle", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
