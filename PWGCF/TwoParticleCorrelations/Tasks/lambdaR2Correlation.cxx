@@ -742,11 +742,7 @@ struct LambdaTableProducer {
     fwdMult = multFT0M;
 
     // Minimum bias trigger (1 track in A side, 1 track in C side, 1 track in central barrel)
-    if (multFT0A > 0 && multFT0C > 0 && multTPC > 0) {
-      return true;
-    }
-
-    return false;
+    return (multFT0A > 0 && multFT0C > 0 && multTPC > 0);
   }
 
   // MC generator centrality
@@ -1394,8 +1390,9 @@ struct LambdaR2Correlation {
         histos.fill(HIST("QA/CloseLambda/Before/h2d_n1_centpt_") + HIST(SubDirHist[part]), cent, track.pt());
         if (track.closeLambdaFlag()) {
           histos.fill(HIST("QA/CloseLambda/After/h2d_n1_centpt_") + HIST(SubDirHist[part]), cent, track.pt());
-          if (cRejCloseLambda)
+          if (cRejCloseLambda) {
             continue;
+          }
         }
       }
 
