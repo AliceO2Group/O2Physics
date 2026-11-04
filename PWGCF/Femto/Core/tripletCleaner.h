@@ -44,7 +44,7 @@ class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner<prefix
                    this->isCleanParticlePair(track2, track3) &&
                    this->isCleanParticlePair(track1, track3);
     if (!isClean) {
-      this->fillBlocked(tripletHistManager.getKinematic());
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -90,7 +90,7 @@ class TrackTrackV0TripletCleaner : public paircleaner::BasePairCleaner<prefix>
                    this->isCleanParticlePair(track2, posDaughter) &&
                    this->isCleanParticlePair(track2, negDaughter);
     if (!isClean) {
-      this->fillBlocked(tripletHistManager.getKinematic());
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -139,7 +139,7 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner<pref
                    this->isCleanParticlePair(track2, negDaughter) &&
                    this->isCleanParticlePair(track2, bachelor);
     if (!isClean) {
-      this->fillBlocked(tripletHistManager.getKinematic());
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -182,7 +182,7 @@ class McParticleMcParticleMcParticleTripletCleaner : public paircleaner::BasePai
                    this->isCleanParticlePair(particle2, particle3) &&
                    this->isCleanParticlePair(particle1, particle3);
     if (!isClean) {
-      this->fillBlocked(tripletHistManager.getKinematic());
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }

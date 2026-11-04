@@ -673,25 +673,11 @@ class McBuilder
     if (!mcParticle.has_mothers()) {
       return -1;
     }
-    auto motherIds = mcParticle.mothersIds();
-    // adapted these checks from MCUtils in PWGEM
-    const int defaultMotherSize = 2;
-    std::vector<int> allMotherIds;
-    if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
-      // keep for now, might be needed later
-      // && ((80 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110))) {
-      // Pythia: mother range
-      for (int i = motherIds[0]; i <= motherIds[1]; i++) {
-        allMotherIds.push_back(i);
-      }
-    } else {
-      // Otherwise just use them as given
-      for (const int& id : motherIds) {
-        allMotherIds.push_back(id);
-      }
-    }
+    // RecoDecay::getOrderedMotherIds() implements the Pythia mother-id-range expansion (gated on the particle's gen status code)
+    std::vector<int64_t> allMotherIds;
+    RecoDecay::getOrderedMotherIds(mcParticle, allMotherIds, /*searchUpToQuark=*/true);
     // Loop over all mothers
-    for (const int& i : allMotherIds) {
+    for (const int64_t& i : allMotherIds) {
 
       if (i < 0 || i >= mcParticles.size()) {
         continue;
@@ -722,19 +708,12 @@ class McBuilder
       if (!current.has_mothers()) {
         break;
       }
-      auto motherIds = current.mothersIds();
-      int nextIndex = -1;
-      const int defaultMotherSize = 2;
-      if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
-        nextIndex = motherIds[0];
-      } else {
-        for (const int& id : motherIds) {
-          if (id >= 0 && id < mcParticles.size()) {
-            nextIndex = id;
-            break;
-          }
-        }
-      }
+      // RecoDecay::getOrderedMotherIds() implements the Pythia mother-id-range expansion (gated on
+      // the particle's gen status code). This function only ever follows a single branch upward,
+      // so just the first ordered id is used.
+      std::vector<int64_t> motherIdsOrdered;
+      RecoDecay::getOrderedMotherIds(current, motherIdsOrdered, /*searchUpToQuark=*/true);
+      int64_t nextIndex = motherIdsOrdered.empty() ? -1 : motherIdsOrdered.front();
 
       if (nextIndex < 0 || nextIndex >= mcParticles.size()) {
         break;

@@ -213,267 +213,361 @@ struct FemtoProducerDerivedToDerived {
       LOG(fatal) << "Exactly one process function must be activated (got " << activeProcesses << ").";
     }
 
-    builders.trackBuilder.init(confTrackBuilder);
-    builders.v0Builder.init(confV0Builder);
-    builders.cascadeBuilder.init(confCascadeBuilder);
-    builders.kinkBuilder.init(confKinkBuilder);
-    builders.resonanceBuilder.init(confResonanceBuilder);
-    builders.mcBuilder.init(confMcBuilder);
+    // which builders the currently active process function actually exercises --
+    // only those need their limit configuration validated (see e.g. TrackBuilderDerivedToDerived::init());
+    // an unused builder is free to keep its (possibly all-zero) default limits
+    const bool needsTrackBuilder =
+      doprocessTracks || doprocessTracksWithMass || doprocessTracksWithFitVars ||
+      doprocessTracksLambdas || doprocessTracksWithMassLambdas || doprocessTracksWithFitVarsLambdas ||
+      doprocessTracksXis || doprocessTracksWithFitVarsXis ||
+      doprocessTracksOmegas || doprocessTracksWithFitVarsOmegas ||
+      doprocessTracksK0shorts || doprocessTracksWithFitVarsK0shorts ||
+      doprocessTracksSigma || doprocessTracksSigmaPlus || doprocessTracksSigmaPlusExtended ||
+      doprocessTracksSigmaPlusPcm || doprocessTracksSigmaPlusPcmExtended ||
+      doprocessTracksRho0 || doprocessTracksPhi ||
+      doprocessTracksMc || doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc ||
+      doprocessTracksSigmaPlusExtendedMc || doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc;
+
+    const bool needsV0Builder =
+      doprocessTracksLambdas || doprocessTracksWithMassLambdas || doprocessTracksWithFitVarsLambdas ||
+      doprocessLambdas ||
+      doprocessTracksK0shorts || doprocessTracksWithFitVarsK0shorts ||
+      doprocessLambdasXis;
+
+    const bool needsCascadeBuilder =
+      doprocessTracksXis || doprocessTracksWithFitVarsXis ||
+      doprocessTracksOmegas || doprocessTracksWithFitVarsOmegas ||
+      doprocessLambdasXis;
+
+    const bool needsKinkBuilder =
+      doprocessTracksSigma || doprocessTracksSigmaPlus || doprocessTracksSigmaPlusExtended ||
+      doprocessTracksSigmaPlusPcm || doprocessTracksSigmaPlusPcmExtended ||
+      doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc || doprocessTracksSigmaPlusExtendedMc ||
+      doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc;
+
+    const bool needsResonanceBuilder = doprocessTracksRho0 || doprocessTracksPhi;
+
+    const bool needsMcBuilder =
+      doprocessTracksMc || doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc ||
+      doprocessTracksSigmaPlusExtendedMc || doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc;
+
+    // skip init() entirely for builders the active process doesn't touch: their limit
+    // members default to 0 and are only ever read by the collisionHasTooFew*/process*
+    // methods that the active process also doesn't call, so leaving them uninitialized
+    // (i.e. at their 0 default) is harmless -- this also sidesteps each builder's "all
+    // limits are 0" fatal check, which would otherwise fire for an unrelated species
+    if (needsTrackBuilder) {
+      builders.trackBuilder.init(confTrackBuilder);
+    }
+    if (needsV0Builder) {
+      builders.v0Builder.init(confV0Builder);
+    }
+    if (needsCascadeBuilder) {
+      builders.cascadeBuilder.init(confCascadeBuilder);
+    }
+    if (needsKinkBuilder) {
+      builders.kinkBuilder.init(confKinkBuilder);
+    }
+    if (needsResonanceBuilder) {
+      builders.resonanceBuilder.init(confResonanceBuilder);
+    }
+    if (needsMcBuilder) {
+      builders.mcBuilder.init(confMcBuilder);
+    }
   }
 
   // process functions
-  void processTracks(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks)
+  void processTracks(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracks, "Process tracks", true);
 
-  void processTracksWithMass(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracksWithMass const& tracks)
+  void processTracksWithMass(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithMass const& tracks)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithMass, "Process tracks with mass", false);
 
-  void processTracksWithFitVars(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracksWithFitVars const& tracks)
+  void processTracksWithFitVars(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVars, "Process tracks, carrying through FitVars tables", false);
 
-  void processTracksLambdas(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas)
+  void processTracksLambdas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksLambdas, "Process lambdas and tracks", false);
 
-  void processTracksWithMassLambdas(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracksWithMass const& tracks, femtotables::FemtoLambdas const& lambdas)
+  void processTracksWithMassLambdas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithMass const& tracks, femtotables::FemtoLambdas const& lambdas)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithMassLambdas, "Process lambdas and tracks with mass", false);
 
-  void processTracksWithFitVarsLambdas(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoLambdas const& lambdas)
+  void processTracksWithFitVarsLambdas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoLambdas const& lambdas)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVarsLambdas, "Process lambdas and tracks, carrying through FitVars tables", false);
 
-  void processLambdas(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas)
+  void processLambdas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas)
   {
-    if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdas, "Process lambdas only (produced track table contains daughers only)", false);
 
-  void processTracksXis(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoXis const& xis)
+  void processTracksXis(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoXis const& xis)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksXis, "Process tracks and xis", false);
 
-  void processTracksWithFitVarsXis(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoXis const& xis)
+  void processTracksWithFitVarsXis(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoXis const& xis)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVarsXis, "Process tracks and xis, carrying through FitVars tables", false);
 
-  void processTracksOmegas(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoOmegas const& omegas)
+  void processTracksOmegas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoOmegas const& omegas)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewOmegas(col, omegas, omegaPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.cascadeBuilder.processOmegas(col, omegas, tracks, omegaPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewOmegas(col, omegas, omegaPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.cascadeBuilder.processOmegas(col, omegas, tracks, omegaPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksOmegas, "Process tracks and omegas", false);
 
-  void processTracksWithFitVarsOmegas(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoOmegas const& omegas)
+  void processTracksWithFitVarsOmegas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoOmegas const& omegas)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewOmegas(col, omegas, omegaPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.cascadeBuilder.processOmegas(col, omegas, tracks, omegaPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewOmegas(col, omegas, omegaPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.cascadeBuilder.processOmegas(col, omegas, tracks, omegaPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVarsOmegas, "Process tracks and omegas, carrying through FitVars tables", false);
 
-  void processTracksK0shorts(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoK0shorts const& k0shorts)
+  void processTracksK0shorts(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoK0shorts const& k0shorts)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.v0Builder.processK0shorts(col, k0shorts, tracks, k0shortPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.v0Builder.processK0shorts(col, k0shorts, tracks, k0shortPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksK0shorts, "Process k0short and tracks", false);
 
-  void processTracksWithFitVarsK0shorts(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoK0shorts const& k0shorts)
+  void processTracksWithFitVarsK0shorts(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoK0shorts const& k0shorts)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.v0Builder.processK0shorts(col, k0shorts, tracks, k0shortPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.v0Builder.processK0shorts(col, k0shorts, tracks, k0shortPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVarsK0shorts, "Process k0short and tracks, carrying through FitVars tables", false);
 
-  void processTracksSigma(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigma const& sigma)
+  void processTracksSigma(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigma const& sigma)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigma(col, sigma, sigmaPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.kinkBuilder.processSigma(col, sigma, tracks, sigmaPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigma(col, sigma, sigmaPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.kinkBuilder.processSigma(col, sigma, tracks, sigmaPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigma, "Process sigma and tracks", false);
 
-  void processTracksSigmaPlus(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlus const& sigmaplus)
+  void processTracksSigmaPlus(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlus const& sigmaplus)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, sigmaPlusPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, sigmaPlusPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlus, "Process sigmaPlus and tracks", false);
 
-  void processTracksSigmaPlusExtended(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusExtended const& sigmaplus)
+  void processTracksSigmaPlusExtended(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusExtended const& sigmaplus)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, sigmaPlusExtendedPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusExtendedPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, sigmaPlusExtendedPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusExtendedPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusExtended, "Process sigmaPlus (with SigmaPlusExtras) and tracks", false);
 
-  void processTracksSigmaPlusPcm(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusPcm const& sigmapluspcm)
+  void processTracksSigmaPlusPcm(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusPcm const& sigmapluspcm)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, sigmaPlusPcmPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, sigmaPlusPcmPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcm, "Process sigmaPlusPcm (with SigmaPlusPcmMlScores, selected on the BDT score) and tracks", false);
 
-  void processTracksSigmaPlusPcmExtended(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusPcmExtended const& sigmapluspcm)
+  void processTracksSigmaPlusPcmExtended(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigmaPlusPcmExtended const& sigmapluspcm)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, sigmaPlusPcmExtendedPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmExtendedPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, sigmaPlusPcmExtendedPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmExtendedPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlusPcmExtended, "Process sigmaPlusPcm (with SigmaPlusPcmMlScores and SigmaPlusPcmExtras, selected on the BDT score) and tracks", false);
 
-  void processTracksRho0(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoRho0s const& rho0s)
+  void processTracksRho0(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoRho0s const& rho0s)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.resonanceBuilder.collisionHasTooFewRho0s(col, rho0s, rho0Partition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.resonanceBuilder.processRho0s(col, rho0s, tracks, rho0Partition, builders.trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.resonanceBuilder.collisionHasTooFewRho0s(col, rho0s, rho0Partition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.resonanceBuilder.processRho0s(col, rho0s, tracks, rho0Partition, builders.trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksRho0, "Process rho0 and tracks", false);
 
-  void processTracksPhi(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoPhis const& phis)
+  void processTracksPhi(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoPhis const& phis)
   {
-    if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.resonanceBuilder.collisionHasTooFewPhis(col, phis, phiPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-    builders.resonanceBuilder.processPhis(col, phis, tracks, phiPartition, builders.trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.resonanceBuilder.collisionHasTooFewPhis(col, phis, phiPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+      builders.resonanceBuilder.processPhis(col, phis, tracks, phiPartition, builders.trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksPhi, "Process phi and tracks", false);
 
-  void processLambdasXis(femtotables::FilteredFemtoCollision const& col, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas, femtotables::FemtoXis const& xis)
+  void processLambdasXis(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas, femtotables::FemtoXis const& xis)
   {
-    if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
-      return;
-    }
     builders.trackBuilder.reset(tracks);
-    builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
-    builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
-    builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    for (auto const& col : cols) {
+      if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+      builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasXis, "Process lambdas and xis", false);
 
   // mc processing
-  //   // NOTE: unlike the other process functions, this one subscribes to the full
-  // collision table and iterates manually. The MC index maps are keyed by source
-  // global index and must live for the whole dataframe
   void processTracksMc(femtotables::FilteredFemtoMcCollisions const& cols,
                        femtotables::FemtoMcTracks const& tracks,
                        o2::aod::FMcCols const& mcCols,
@@ -483,13 +577,12 @@ struct FemtoProducerDerivedToDerived {
   {
     // once per dataframe
     builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache)) {
         continue;
       }
-      // track indexMap is per collision by construction, so it resets here
-      builders.trackBuilder.reset(tracks);
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
       builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
@@ -507,13 +600,14 @@ struct FemtoProducerDerivedToDerived {
                             o2::aod::FMcMothers const& mcMothers,
                             o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    // once per dataframe
     builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigma(col, sigma, mcSigmaPartition, cache)) {
         continue;
       }
-      builders.trackBuilder.reset(tracks);
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
       builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
@@ -533,13 +627,14 @@ struct FemtoProducerDerivedToDerived {
                                 o2::aod::FMcMothers const& mcMothers,
                                 o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    // once per dataframe
     builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, mcSigmaPlusPartition, cache)) {
         continue;
       }
-      builders.trackBuilder.reset(tracks);
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
       builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
@@ -559,13 +654,14 @@ struct FemtoProducerDerivedToDerived {
                                         o2::aod::FMcMothers const& mcMothers,
                                         o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    // once per dataframe
     builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, mcSigmaPlusExtendedPartition, cache)) {
         continue;
       }
-      builders.trackBuilder.reset(tracks);
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
       builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
@@ -585,13 +681,14 @@ struct FemtoProducerDerivedToDerived {
                                    o2::aod::FMcMothers const& mcMothers,
                                    o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    // once per dataframe
     builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, mcSigmaPlusPcmPartition, cache)) {
         continue;
       }
-      builders.trackBuilder.reset(tracks);
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
       builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
@@ -611,13 +708,14 @@ struct FemtoProducerDerivedToDerived {
                                            o2::aod::FMcMothers const& mcMothers,
                                            o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    // once per dataframe
     builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, mcSigmaPlusPcmExtendedPartition, cache)) {
         continue;
       }
-      builders.trackBuilder.reset(tracks);
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
       builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,

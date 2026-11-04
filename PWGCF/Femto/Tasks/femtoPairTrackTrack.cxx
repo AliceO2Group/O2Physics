@@ -65,7 +65,7 @@ struct FemtoPairTrackTrack {
   // for analysis which require particles at high pt, add tof mass so sidebands can be used
   using FemtoTracksWithMass = o2::soa::Join<FemtoTracks, o2::aod::FTrackMass>;
 
-  // opt-in: adds the packed purity tables (nSigma, see TrackBinning1/2.puritySlotMask) and FTrackDcas
+  // opt-in: adds the packed purity tables (nSigma, see TrackSelection1/2.puritySlotMask) and FTrackDcas
   // (fraction estimation) for the FitVars histograms. Needs the producer's
   // TrackTables.produceItsPurity/produceTpcPurity/produceTofPurity/produceTrackDcas enabled.
   using FemtoTracksWithFitVars = o2::soa::Join<FemtoTracks, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity, o2::aod::FTrackDcas>;
@@ -173,7 +173,7 @@ struct FemtoPairTrackTrack {
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-      pairTrackTrackBuilder.init<modes::Mode::kSe_Reco_FitVars, modes::Mode::kMe_Reco_FitVars>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec, pairCleanerHistSpec, confTrackBinning1.puritySlotMask.value, confTrackBinning2.puritySlotMask.value);
+      pairTrackTrackBuilder.init<modes::Mode::kSe_Reco_FitVars, modes::Mode::kMe_Reco_FitVars>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec, pairCleanerHistSpec);
     } else if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
@@ -185,7 +185,7 @@ struct FemtoPairTrackTrack {
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
       pairHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
-      pairTrackTrackBuilder.init<modes::Mode::kSe_Reco_Mc_FitVars, modes::Mode::kMe_Reco_Mc_FitVars>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec, pairCleanerHistSpec, confTrackBinning1.puritySlotMask.value, confTrackBinning2.puritySlotMask.value);
+      pairTrackTrackBuilder.init<modes::Mode::kSe_Reco_Mc_FitVars, modes::Mode::kMe_Reco_Mc_FitVars>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec, pairCleanerHistSpec);
     }
     hRegistry.print();
   };
