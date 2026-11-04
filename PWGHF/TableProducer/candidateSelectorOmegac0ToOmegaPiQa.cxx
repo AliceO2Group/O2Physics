@@ -19,7 +19,7 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
-// #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
@@ -71,8 +71,8 @@ enum {
 /// Struct for applying Omegac0 -> Omega pi selection cuts
 struct HfCandidateSelectorToOmegaPiQa {
   // Filled for both DCAFitter and KFParticle
-  Produces<hfSelOmegaC0ToOmegaPi> hfSelOmegaC0ToOmegaPiCandidate;
-  Produces<hfMlOmegaC0ToOmegaPi> hfMlOmegaC0ToOmegaPiCandidate;
+  Produces<HfSelOmegaC0ToOmegaPi> hfSelOmegaC0ToOmegaPiCandidate;
+  Produces<HfMlOmegaC0ToOmegaPi> hfMlOmegaC0ToOmegaPiCandidate;
 
   // cuts from SelectorCuts.h  - pT dependent cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_omegac_to_omega_pi::vecBinsPt}, "pT bin limits"};
@@ -547,11 +547,11 @@ struct HfCandidateSelectorToOmegaPiQa {
   // Apply cuts with charm baryon & charm bachelor related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool selectOnHf(const T& candidate, TracksSel const& tracks, const int& inputPtBin)
+  bool selectOnHf(const T& candidate, TracksSel const& tracks)
   {
     auto ptCandOmegac = candidate.pt();
-    int pTBin = findBin(binsPt, ptCandOmegac);
-    if (pTBin == -1) {
+    int ptBin = findBin(binsPt, ptCandOmegac);
+    if (ptBin == -1) {
       return false;
     }
 
@@ -575,7 +575,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusHf"), 2.0);
 
     // pT: Charm Bachelor
-    if (inputPtBin < 0 || trackPiFromCharm.pt() < cuts->get(inputPtBin, "pT pi from Omegac")) {
+    if (trackPiFromCharm.pt() < cuts->get(ptBin, "pT pi from Omegac")) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 3.0);
@@ -720,7 +720,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       int statusOmegaC0ToOmegaPi = 0;
       outputMlOmegac.clear();
 
-      if (!TESTBIT(candidate.hfFlag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
         hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);
         if (applyMl) {
           hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
@@ -747,7 +747,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       // Topological selection + track quality selection
       const bool selectedLf = selectOnLf<svReco>(candidate);
-      const bool selectedHf = selectOnHf<svReco>(candidate, tracks, pTBin);
+      const bool selectedHf = selectOnHf<svReco>(candidate, tracks);
       const bool selectedTrackQuality = selectOnTrackQuality(trackPiFromLam, trackPrFromLam, trackKaFromCasc, trackPiFromCharm);
 
       if (!selectedLf || !selectedHf || !selectedTrackQuality) {
@@ -760,10 +760,10 @@ struct HfCandidateSelectorToOmegaPiQa {
       SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoTopol);
 
       // Track level PID selection
-      int pidPrFromLam = -1;
-      int pidPiFromLam = -1;
-      int pidKaFromCasc = -1;
-      int pidPiFromCharmBaryon = -1;
+      TrackSelectorPID::Status pidPrFromLam{};
+      TrackSelectorPID::Status pidPiFromLam{};
+      TrackSelectorPID::Status pidKaFromCasc{};
+      TrackSelectorPID::Status pidPiFromCharmBaryon{};
 
       if (usePidTpcOnly) {
         pidPrFromLam = selectorProton.statusTpc(trackPrFromLam);

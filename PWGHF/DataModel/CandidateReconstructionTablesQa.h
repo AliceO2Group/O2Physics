@@ -306,15 +306,6 @@ struct HfHelperQa {
 
 namespace o2::aod
 {
-// selection steps
-enum SelectionStep {
-  RecoSkims = 0,
-  RecoTopol,
-  RecoPID,
-  RecoMl,
-  NSelectionSteps
-};
-
 namespace hf_sel_candidate_omegac0_qa
 {
 DECLARE_SOA_COLUMN(IsSelOmegaC0ToOmegaPi, isSelOmegaC0ToOmegaPi, int);                  //!
