@@ -92,7 +92,8 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  o2::analysis::HfMlResponseXicToXiPiPi<float> hfMlResponse;
+  o2::analysis::HfMlResponseXicToXiPiPi<float, aod::hf_cand::VertexerType::DCAFitter> hfMlResponseDca;
+  o2::analysis::HfMlResponseXicToXiPiPi<float, aod::hf_cand::VertexerType::KfParticle> hfMlResponseKf;
   std::vector<float> outputMlXicToXiPiPi;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
@@ -126,6 +127,8 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
     const bool doprocessData = doprocessDataWithDCAFitter || doprocessDataWithKFParticle;
     const bool doprocessMc = doprocessMcWithDCAFitter || doprocessMcWithKFParticle;
+    const bool doprocessDCAFitter = doprocessDataWithDCAFitter || doprocessMcWithDCAFitter;
+    [[maybe_unused]] const bool doprocessKFParticle = doprocessDataWithKFParticle || doprocessMcWithKFParticle;
 
     if (usePid) {
       // pion
@@ -253,15 +256,22 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
 
     if (applyMl) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      auto initMlResponse = [&](auto& hfMlResponseGeneric) {
+        hfMlResponseGeneric.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseGeneric.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseGeneric.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseGeneric.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseGeneric.init();
+      };
+      if (doprocessDCAFitter) {
+        initMlResponse(hfMlResponseDca);
       } else {
-        hfMlResponse.setModelPathsLocal(onnxFileNames);
+        initMlResponse(hfMlResponseKf);
       }
-      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponse.init();
     }
   }
 
@@ -671,7 +681,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   /// \param hfCandXic         Xic candidate
   /// \param statusXicToXiPiPi Flag to store selection status as defined in hf_sel_candidate_xic::XicToXiPiPiSelectionStep
   /// \param isMatchedSignal   Flag to indicate if the candidate is matched to a genereated XiCplus MC particle
-  template <bool IsMc, typename XicCandidate>
+  template <bool IsMc, aod::hf_cand::VertexerType ReconstructionType, typename XicCandidate>
   void isBdtSelected(XicCandidate const& hfCandXic,
                      int& statusXicToXiPiPi,
                      bool const isMatchedSignal = false)
@@ -679,8 +689,13 @@ struct HfCandidateSelectorXicToXiPiPi {
     bool isSelectedMlXicToXiPiPi = false;
     float const ptCandXic = hfCandXic.pt();
 
-    std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
-    isSelectedMlXicToXiPiPi = hfMlResponse.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
+    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+      std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponseDca.getInputFeatures(hfCandXic);
+      isSelectedMlXicToXiPiPi = hfMlResponseDca.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
+    } else {
+      std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponseKf.getInputFeatures(hfCandXic);
+      isSelectedMlXicToXiPiPi = hfMlResponseKf.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
+    }
 
     hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
 
@@ -721,7 +736,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ML selection
       if (applyMl) {
-        isBdtSelected<false>(hfCandXic, statusXicToXiPiPi);
+        isBdtSelected<false, ReconstructionType>(hfCandXic, statusXicToXiPiPi);
       } else {
         registry.fill(HIST("hSelCandidates"), BdtSelected);
       }
@@ -755,7 +770,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ML selection
       if (applyMl) {
-        isBdtSelected<true>(hfCandXic, statusXicToXiPiPi, isMatchedCandidate);
+        isBdtSelected<true, ReconstructionType>(hfCandXic, statusXicToXiPiPi, isMatchedCandidate);
       } else if (isMatchedCandidate) {
         registry.fill(HIST("hSelCandidatesRecSig"), BdtSelected);
       } else {

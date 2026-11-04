@@ -95,7 +95,7 @@ enum class InputFeaturesXicToXiPiPi : uint8_t {
   kfDecayLengthNormalised,
   kfDecayLengthXY,
   kfDecayLengthXYNormalised,
-  kfCascadechi2,
+  kfCascadeChi2,
   kfV0Chi2,
   chi2XicPlusToPV,
   chi2TopoXicPlusToPV,
@@ -175,7 +175,7 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_XICTOXIPIPI(kfDecayLengthNormalised);
           CHECK_AND_FILL_VEC_XICTOXIPIPI(kfDecayLengthXY);
           CHECK_AND_FILL_VEC_XICTOXIPIPI(kfDecayLengthXYNormalised);
-          CHECK_AND_FILL_VEC_XICTOXIPIPI(kfCascadechi2);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(kfCascadeChi2);
           CHECK_AND_FILL_VEC_XICTOXIPIPI(kfV0Chi2);
           CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2XicPlusToPV);
           CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2TopoXicPlusToPV);
@@ -245,7 +245,7 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
         FILL_MAP_XICTOXIPIPI(kfDecayLengthNormalised),
         FILL_MAP_XICTOXIPIPI(kfDecayLengthXY),
         FILL_MAP_XICTOXIPIPI(kfDecayLengthXYNormalised),
-        FILL_MAP_XICTOXIPIPI(kfCascadechi2),
+        FILL_MAP_XICTOXIPIPI(kfCascadeChi2),
         FILL_MAP_XICTOXIPIPI(kfV0Chi2),
         FILL_MAP_XICTOXIPIPI(chi2XicPlusToPV),
         FILL_MAP_XICTOXIPIPI(chi2TopoXicPlusToPV),
