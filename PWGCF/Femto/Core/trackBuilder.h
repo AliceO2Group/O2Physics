@@ -763,6 +763,19 @@ class TrackBuilder
     if (!mProduceTracks && !mProduceLiteTracks) {
       return false;
     }
+    // getDaughterIndex() already checks indexMap and skips calling fillTrack() when the track is
+    // already present, so reaching this point with an existing entry only happens via the direct
+    // standalone-track path (fillTracks()/fillMcTracks()). Two distinct causes land here: the track
+    // was already registered as someone's daughter before its own collision was processed, or the
+    // track is itself associated with more than one collision and was already filled for an earlier
+    // one. Either way, keep the earlier row rather than writing a duplicate; its mask/fillType
+    // reflects whichever collision/role filled it first, not necessarily this one.
+    if (utils::getIndex(track.globalIndex(), indexMap)) {
+      LOG(warn) << "Track " << track.globalIndex() << " was already filled (as a daughter, or under another "
+                << "collision it is associated with); skipping the duplicate standalone fill. Its mask/fillType "
+                << "reflects whichever fill happened first, not necessarily this collision's selection.";
+      return true;
+    }
     int64_t lastIndex = 0;
     if (mProduceTracks) {
       trackProducts.producedTracks(collisionBuilder.collisionIndex(),
