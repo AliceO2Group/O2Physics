@@ -1600,7 +1600,7 @@ struct LambdaProtonBalanceFunction {
     registryQaDetector.add("AntiLambda/hCutFlow", "#bar{#Lambda} candidate cutflow;Stage;Counts", {HistType::kTH1F, {{11, 0.5f, 11.5f}}});
     {
       const std::array<const char*, 10> v0CfLabels = {"All V0s", "V0 Type", "Daughter Kinematics", "Unambiguous TPC PID", "Rapidity",
-                                    "pT Acceptance", "Topology & PV DCA", "cTau & K0s Rej", "Mass Window", "Shared-Dau Cleaned"};
+                                                      "pT Acceptance", "Topology & PV DCA", "cTau & K0s Rej", "Mass Window", "Shared-Dau Cleaned"};
       auto hCFL = registryQaDetector.get<TH1>(HIST("Lambda/hCutFlow"));
       auto hCFAL = registryQaDetector.get<TH1>(HIST("AntiLambda/hCutFlow"));
       for (int ib = 0; ib < 10; ++ib) {
@@ -1615,9 +1615,9 @@ struct LambdaProtonBalanceFunction {
     registryQaDetector.add("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton", "AntiProton cutflow vs p_{T};p_{T} (GeV/c);Stage", {HistType::kTH2F, {axisPtProton, {21, 0.5f, 21.5f}}});
     {
       const std::array<const char*, 21> cfLabels2D = {"All tracks", "hasTPC", "TPC crossed rows", "TPC rows/findable", "TPC chi2", "ITS Ncls", "ITS chi2",
-                                    "TPC signal", "p_TPC & pT window", "|y| window", "DCA xy,z", "PID (TPC/TOF)", "pi/K/e veto",
-                                    "V0-daughter veto", "Selected", "veto: TPC pi", "veto: TPC K", "veto: TPC e",
-                                    "veto: TOF pi", "veto: TOF K", "veto: TOF e"};
+                                                      "TPC signal", "p_TPC & pT window", "|y| window", "DCA xy,z", "PID (TPC/TOF)", "pi/K/e veto",
+                                                      "V0-daughter veto", "Selected", "veto: TPC pi", "veto: TPC K", "veto: TPC e",
+                                                      "veto: TOF pi", "veto: TOF K", "veto: TOF e"};
       auto hCFp = registryQaDetector.get<TH2>(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_Proton"));
       auto hCFa = registryQaDetector.get<TH2>(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton"));
       for (int ib = 0; ib < 21; ++ib) {
@@ -2193,15 +2193,15 @@ struct LambdaProtonBalanceFunction {
     auto hMatched = registryOther.add<TH1>("hMatchedEventQA", "Matched-event BF guards;Stage;Counts",
                                            {HistType::kTH1F, {{7, 0.5f, 7.5f}}});
     const std::array<const char*, 7> matchedLabels = {"MC collisions seen", "reco-collision count != 1", "MC-label mismatch",
-                                   "failed sel8/|z|", "failed numContrib/centrality/INEL/extra selection",
-                                   "accepted", "McParticle MC-collision mismatch (must be 0)"};
+                                                      "failed sel8/|z|", "failed numContrib/centrality/INEL/extra selection",
+                                                      "accepted", "McParticle MC-collision mismatch (must be 0)"};
     for (int i = 0; i < 7; ++i) {
       hMatched->GetXaxis()->SetBinLabel(i + 1, matchedLabels[i]);
     }
     auto hDaughters = registryOther.add<TH1>("hGenLambdaDaughters", "Primary generated Lambdas in accepted events, before acceptance;Population;Particles",
                                              {HistType::kTH1F, {{4, 0.5f, 4.5f}}});
     const std::array<const char*, 4> daughterLabels = {"primary Lambda with daughters", "primary Lambda without daughters",
-                                    "primary AntiLambda with daughters", "primary AntiLambda without daughters"};
+                                                       "primary AntiLambda with daughters", "primary AntiLambda without daughters"};
     for (int i = 0; i < 4; ++i) {
       hDaughters->GetXaxis()->SetBinLabel(i + 1, daughterLabels[i]);
     }
@@ -4688,7 +4688,7 @@ struct LambdaProtonBalanceFunction {
     // First/last bins are reserved for PDG codes below -10000 / above +10000.
     const AxisSpec axMother{20003, -10001.5, 10001.5, "signed direct-mother PDG (out-of-range codes mapped to endpoints)"};
     const std::array<const char*, 6> categories = {"AllCandidates", "PrimarySignal", "SecondarySignal",
-                                "WrongSpeciesOrSign", "Unmatched", "OtherMCCollision"};
+                                                   "WrongSpeciesOrSign", "Unmatched", "OtherMCCollision"};
     for (const char* species : {"Lambda", "AntiLambda", "Proton", "AntiProton"}) {
       const std::string base = std::string("MCComposition/") + species + "/";
       for (const char* category : categories) {
