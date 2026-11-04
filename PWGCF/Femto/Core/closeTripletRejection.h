@@ -17,6 +17,7 @@
 #define PWGCF_FEMTO_CORE_CLOSETRIPLETREJECTION_H_
 
 #include "PWGCF/Femto/Core/closePairRejection.h"
+#include "PWGCF/Femto/Core/modes.h"
 
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
