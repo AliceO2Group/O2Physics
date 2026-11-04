@@ -162,7 +162,7 @@ struct DetectorOccupancyQaTask {
     }
     // track QA counters
     histos.add("nTrackCounter_after_cuts_QA", "", kTH1D, {{12, -0.5, 11.5, "track QA"}});
-    TAxis* axTrackCounters = reinterpret_cast<TAxis*>(histos.get<TH1>(HIST("nTrackCounter_after_cuts_QA"))->GetXaxis());
+    TAxis* axTrackCounters = histos.get<TH1>(HIST("nTrackCounter_after_cuts_QA"))->GetXaxis();
     axTrackCounters->SetBinLabel(1, "all");
     axTrackCounters->SetBinLabel(2, "PVcontrib");
     axTrackCounters->SetBinLabel(3, "ptCut");
