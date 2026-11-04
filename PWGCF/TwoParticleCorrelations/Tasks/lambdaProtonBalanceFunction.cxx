@@ -56,7 +56,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <iterator>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -1600,7 +1599,7 @@ struct LambdaProtonBalanceFunction {
     registryQaDetector.add("Lambda/hCutFlow", "#Lambda candidate cutflow;Stage;Counts", {HistType::kTH1F, {{11, 0.5f, 11.5f}}});
     registryQaDetector.add("AntiLambda/hCutFlow", "#bar{#Lambda} candidate cutflow;Stage;Counts", {HistType::kTH1F, {{11, 0.5f, 11.5f}}});
     {
-      const char* v0CfLabels[10] = {"All V0s", "V0 Type", "Daughter Kinematics", "Unambiguous TPC PID", "Rapidity",
+      const std::array<const char*, 10> v0CfLabels = {"All V0s", "V0 Type", "Daughter Kinematics", "Unambiguous TPC PID", "Rapidity",
                                     "pT Acceptance", "Topology & PV DCA", "cTau & K0s Rej", "Mass Window", "Shared-Dau Cleaned"};
       auto hCFL = registryQaDetector.get<TH1>(HIST("Lambda/hCutFlow"));
       auto hCFAL = registryQaDetector.get<TH1>(HIST("AntiLambda/hCutFlow"));
@@ -1615,7 +1614,7 @@ struct LambdaProtonBalanceFunction {
     registryQaDetector.add("Selection/TOF_Matching/h2f_CutFlow_vs_pt_Proton", "Proton cutflow vs p_{T};p_{T} (GeV/c);Stage", {HistType::kTH2F, {axisPtProton, {21, 0.5f, 21.5f}}});
     registryQaDetector.add("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton", "AntiProton cutflow vs p_{T};p_{T} (GeV/c);Stage", {HistType::kTH2F, {axisPtProton, {21, 0.5f, 21.5f}}});
     {
-      const char* cfLabels2D[21] = {"All tracks", "hasTPC", "TPC crossed rows", "TPC rows/findable", "TPC chi2", "ITS Ncls", "ITS chi2",
+      const std::array<const char*, 21> cfLabels2D = {"All tracks", "hasTPC", "TPC crossed rows", "TPC rows/findable", "TPC chi2", "ITS Ncls", "ITS chi2",
                                     "TPC signal", "p_TPC & pT window", "|y| window", "DCA xy,z", "PID (TPC/TOF)", "pi/K/e veto",
                                     "V0-daughter veto", "Selected", "veto: TPC pi", "veto: TPC K", "veto: TPC e",
                                     "veto: TOF pi", "veto: TOF K", "veto: TOF e"};
@@ -2193,7 +2192,7 @@ struct LambdaProtonBalanceFunction {
     // Matched-event guards and generated-population diagnostic (no extra task members).
     auto hMatched = registryOther.add<TH1>("hMatchedEventQA", "Matched-event BF guards;Stage;Counts",
                                            {HistType::kTH1F, {{7, 0.5f, 7.5f}}});
-    const char* matchedLabels[] = {"MC collisions seen", "reco-collision count != 1", "MC-label mismatch",
+    const std::array<const char*, 7> matchedLabels = {"MC collisions seen", "reco-collision count != 1", "MC-label mismatch",
                                    "failed sel8/|z|", "failed numContrib/centrality/INEL/extra selection",
                                    "accepted", "McParticle MC-collision mismatch (must be 0)"};
     for (int i = 0; i < 7; ++i) {
@@ -2201,7 +2200,7 @@ struct LambdaProtonBalanceFunction {
     }
     auto hDaughters = registryOther.add<TH1>("hGenLambdaDaughters", "Primary generated Lambdas in accepted events, before acceptance;Population;Particles",
                                              {HistType::kTH1F, {{4, 0.5f, 4.5f}}});
-    const char* daughterLabels[] = {"primary Lambda with daughters", "primary Lambda without daughters",
+    const std::array<const char*, 4> daughterLabels = {"primary Lambda with daughters", "primary Lambda without daughters",
                                     "primary AntiLambda with daughters", "primary AntiLambda without daughters"};
     for (int i = 0; i < 4; ++i) {
       hDaughters->GetXaxis()->SetBinLabel(i + 1, daughterLabels[i]);
@@ -2212,13 +2211,13 @@ struct LambdaProtonBalanceFunction {
                                                                                                 : "none";
     std::vector<std::string> configLabels = {
       "activeBFMode=" + mode,
-      "cUseFT0C=" + std::to_string(cUseFT0C.value),
-      "cApplyEffCorr=" + std::to_string(cApplyEffCorr.value),
-      "cUseQinvCut=" + std::to_string(cUseQinvCut.value),
+      "cUseFT0C=" + std::to_string(static_cast<int>(cUseFT0C.value)),
+      "cApplyEffCorr=" + std::to_string(static_cast<int>(cApplyEffCorr.value)),
+      "cUseQinvCut=" + std::to_string(static_cast<int>(cUseQinvCut.value)),
       "cQinvCutValue=" + std::to_string(cQinvCutValue.value),
-      "cPileupReject=" + std::to_string(cPileupReject.value),
-      "cZVtxTimeDiff=" + std::to_string(cZVtxTimeDiff.value),
-      "cIsGoodITSLayers=" + std::to_string(cIsGoodITSLayers.value),
+      "cPileupReject=" + std::to_string(static_cast<int>(cPileupReject.value)),
+      "cZVtxTimeDiff=" + std::to_string(static_cast<int>(cZVtxTimeDiff.value)),
+      "cIsGoodITSLayers=" + std::to_string(static_cast<int>(cIsGoodITSLayers.value)),
       "cPPandV0ZVertexCut=" + std::to_string(cPPandV0ZVertexCut.value),
       "cRhoYBins=" + std::to_string(cRhoYBins.value),
       "cRhoPhiBins=" + std::to_string(cRhoPhiBins.value),
@@ -2226,7 +2225,7 @@ struct LambdaProtonBalanceFunction {
       "cRhoYMax=" + std::to_string(cRhoYMax.value),
       "mCentMin=" + std::to_string(state.mCentMin),
       "mCentMax=" + std::to_string(state.mCentMax),
-      "cFillCentHists=" + std::to_string(cFillCentHists.value)};
+      "cFillCentHists=" + std::to_string(static_cast<int>(cFillCentHists.value))};
     std::string centBinsLabel = "cCentBins=";
     for (const float edge : state.centEdgesLocal) {
       if (centBinsLabel != "cCentBins=") {
@@ -2250,7 +2249,7 @@ struct LambdaProtonBalanceFunction {
         ccdb->setCaching(true);
         ccdb->setLocalObjectValidityChecking();
         ccdb->setFatalWhenNull(false);
-        TList* effList = ccdb->getForTimeStamp<TList>(cEffCcdbPath.value, cEffCcdbTimestamp.value);
+        auto* effList = ccdb->getForTimeStamp<TList>(cEffCcdbPath.value, cEffCcdbTimestamp.value);
         if (!effList) {
           LOGF(fatal, "Cannot get efficiency TList from CCDB path %s (timestamp %" PRId64 ")", cEffCcdbPath.value.c_str(), static_cast<int64_t>(cEffCcdbTimestamp.value));
         }
@@ -4453,7 +4452,8 @@ struct LambdaProtonBalanceFunction {
       if (std::abs(protonRapidity(trk)) > pProtonMaxY.value) {
         continue;
       }
-      if (!((std::abs(trk.dcaXY()) < pProtonMaxDCAxy.value) && (std::abs(trk.dcaZ()) < pProtonMaxDCAz.value))) {
+      const bool passDCA = (std::abs(trk.dcaXY()) < pProtonMaxDCAxy.value) && (std::abs(trk.dcaZ()) < pProtonMaxDCAz.value);
+      if (!passDCA) {
         continue;
       }
       if (!passesPrimProtonPid(trk)) {
@@ -4529,7 +4529,7 @@ struct LambdaProtonBalanceFunction {
       cs = bookBFEvent(collision, cent, nTracksINEL);
     }
     registryOther.fill(HIST("hMatchedEventQA"), 6.f);
-    analyze(collision, tracks, cent, cs);
+    std::forward<TAnalysis>(analyze)(collision, tracks, cent, cs);
   }
 
   template <typename TAnalysis>
@@ -4687,7 +4687,7 @@ struct LambdaProtonBalanceFunction {
     const AxisSpec axY{cRhoYBins.value, cRhoYMin.value, cRhoYMax.value, "reconstructed y"};
     // First/last bins are reserved for PDG codes below -10000 / above +10000.
     const AxisSpec axMother{20003, -10001.5, 10001.5, "signed direct-mother PDG (out-of-range codes mapped to endpoints)"};
-    const char* categories[] = {"AllCandidates", "PrimarySignal", "SecondarySignal",
+    const std::array<const char*, 6> categories = {"AllCandidates", "PrimarySignal", "SecondarySignal",
                                 "WrongSpeciesOrSign", "Unmatched", "OtherMCCollision"};
     for (const char* species : {"Lambda", "AntiLambda", "Proton", "AntiProton"}) {
       const std::string base = std::string("MCComposition/") + species + "/";
@@ -4749,13 +4749,15 @@ struct LambdaProtonBalanceFunction {
       case 5:
         registryOther.fill(prefix + HIST("h3_OtherMCCollision"), cent, pt, y);
         break;
+      default:
+        break;
     }
   }
 
   static bool usableMCIndex(aod::McParticles const* table, int64_t id)
   {
     // has_mcParticle() tests only id >= 0 in ASoA; also check the bound table range.
-    return table && id >= 0 && id >= static_cast<int64_t>(table->offset()) &&
+    return table != nullptr && id >= 0 && id >= static_cast<int64_t>(table->offset()) &&
            id - static_cast<int64_t>(table->offset()) < table->size();
   }
 
