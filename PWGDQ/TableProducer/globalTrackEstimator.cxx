@@ -22,6 +22,9 @@
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
 
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -41,8 +44,14 @@ using namespace o2::aod;
 using MyEventsBasic = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended>;
 using MyBarrelTracks = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelCov, o2::aod::ReducedTracksBarrelPID>;
 
+using MyEventsDirect = o2::soa::Join<aod::Collisions, aod::EvSels>;
+using MyTracksDirect = o2::soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
+
 constexpr static uint32_t GkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t GkTrackFillMap = VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov;
+
+constexpr static uint32_t GkEventDirectFillMap = VarManager::ObjTypes::Collision;
+constexpr static uint32_t GkTrackDirectFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA;
 
 struct GlobalTrackEstimator {
   Produces<o2::aod::ReducedEventsGlobalTrk> reducedEventsGlobalTrk;
@@ -62,26 +71,75 @@ struct GlobalTrackEstimator {
   Configurable<bool> cfgRecalculateDCA{"cfgRecalculateDCA", true, "Recalculate DCA vector with associations"};
 
   o2::framework::Preslice<o2::aod::ReducedTracksAssoc> preslice = o2::aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<o2::aod::TrackAssoc> presliceDirect = o2::aod::track_association::collisionId;
 
   o2::framework::expressions::Filter trackFilter = (o2::aod::reducedtrack::pt >= cfgMinPt) && (nabs(o2::aod::reducedtrack::eta) <= cfgEtaRange) && (o2::aod::track::tpcChi2NCl <= cfgMaxChi2TPC) && (o2::aod::track::itsChi2NCl <= cfgMaxChi2ITS);
+  o2::framework::expressions::Filter trackDirectFilter = (o2::aod::track::pt >= cfgMinPt) && (nabs(o2::aod::track::eta) <= cfgEtaRange) && (o2::aod::track::tpcChi2NCl <= cfgMaxChi2TPC) && (o2::aod::track::itsChi2NCl <= cfgMaxChi2ITS);
 
   void init(InitContext& context)
   {
-    LOGF(info, "Started global track counting");
-
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processGlobalTracksSkimmed") || context.mOptions.get<bool>("processGlobalTracksSkimmed");
+    bool isSkimmedEnabled = context.mOptions.get<bool>("processGlobalTracksSkimmed");
+    bool isDirectEnabled = context.mOptions.get<bool>("processGlobalTracksDirect");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
-      if (isAnyProcessEnabled) {
-        LOG(fatal) << "You have enabled both the dummy process and at least one normal process function! Check your config!";
+      if (isSkimmedEnabled || isDirectEnabled) {
+        LOG(fatal) << "You have enabled both the dummy process and at least one normal process function.";
       }
       return;
     }
 
-    if (!isAnyProcessEnabled) {
+    if (!isSkimmedEnabled && !isDirectEnabled && !isDummyEnabled) {
+      LOG(fatal) << "No process function activated.";
       return;
     }
+
+    if (isSkimmedEnabled && isDirectEnabled) {
+      LOG(fatal) << "Process functions for skimmed data model and direct data model can not run simultaneously.";
+      return;
+    }
+  }
+
+  template <uint32_t fillMap, typename T, typename C>
+  bool isTrackSelected(T& track, C const& event)
+  {
+    VarManager::ResetValues(VarManager::kNBarrelTrackVariables, VarManager::kNBarrelTrackVariables);
+    VarManager::FillTrack<fillMap>(track);
+
+    if (cfgRecalculateDCA) {
+      VarManager::FillTrackCollision<fillMap>(track, event);
+    }
+
+    const int nFindable = track.tpcNClsFindable();
+    const int nCrossedRows = track.tpcNClsCrossedRows();
+
+    if (nCrossedRows < static_cast<int>(cfgMinTPCCluster.value)) {
+      return false;
+    }
+
+    if (nFindable <= 0) {
+      return false;
+    }
+
+    const float crossedOverFindable = static_cast<float>(nCrossedRows) / static_cast<float>(nFindable);
+
+    if (crossedOverFindable < cfgRatioTPCClusterOverFindableCluster.value) {
+      return false;
+    }
+
+    if (cfgRequireITSibAny.value && ((track.itsClusterMap() & 0x7) == 0)) {
+      return false;
+    }
+
+    if (std::abs(VarManager::fgValues[VarManager::kTrackDCAz]) > cfgMaxDCAz.value) {
+      return false;
+    }
+
+    if (std::abs(VarManager::fgValues[VarManager::kTrackDCAxy]) > cfgShiftDCAxy + cfgPtMagnitudeDCAxy / pow(track.pt(), cfgExponentDCAxy)) {
+      return false;
+    }
+
+    return true;
   }
 
   void processGlobalTracksSkimmed(MyEventsBasic const& events, o2::aod::ReducedTracksAssoc const& assocs, o2::soa::Filtered<MyBarrelTracks> const& tracks)
@@ -108,38 +166,7 @@ struct GlobalTrackEstimator {
 
         auto track = assoc.template reducedtrack_as<o2::soa::Filtered<MyBarrelTracks>>();
 
-        VarManager::FillTrack<GkTrackFillMap>(track);
-
-        if (cfgRecalculateDCA) {
-          VarManager::FillTrackCollision<GkTrackFillMap>(track, event);
-        }
-
-        const int nFindable = track.tpcNClsFindable();
-        const int nCrossedRows = track.tpcNClsCrossedRows();
-
-        if (nCrossedRows < static_cast<int>(cfgMinTPCCluster.value)) {
-          continue;
-        }
-
-        if (nFindable <= 0) {
-          continue;
-        }
-
-        const float crossedOverFindable = static_cast<float>(nCrossedRows) / static_cast<float>(nFindable);
-
-        if (crossedOverFindable < cfgRatioTPCClusterOverFindableCluster.value) {
-          continue;
-        }
-
-        if (cfgRequireITSibAny.value && ((track.itsClusterMap() & 0x7) == 0)) {
-          continue;
-        }
-
-        if (std::abs(VarManager::fgValues[VarManager::kTrackDCAz]) > cfgMaxDCAz.value) {
-          continue;
-        }
-
-        if (std::abs(VarManager::fgValues[VarManager::kTrackDCAxy]) > cfgShiftDCAxy + cfgPtMagnitudeDCAxy / pow(track.pt(), cfgExponentDCAxy)) {
+        if (!isTrackSelected<GkTrackFillMap>(track, event)) {
           continue;
         }
 
@@ -151,6 +178,43 @@ struct GlobalTrackEstimator {
   }
 
   PROCESS_SWITCH(GlobalTrackEstimator, processGlobalTracksSkimmed, "Count global tracks from skimmed data model", false);
+
+  void processGlobalTracksDirect(MyEventsDirect const& events, TrackAssoc const& assocs, o2::soa::Filtered<MyTracksDirect> const& tracks)
+  {
+    std::unordered_set<int64_t> selectedTrackIds;
+    selectedTrackIds.reserve(tracks.size());
+
+    for (auto const& track : tracks) {
+      selectedTrackIds.insert(track.globalIndex());
+    }
+
+    for (const auto& event : events) {
+      VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
+      VarManager::FillEvent<GkEventDirectFillMap>(event);
+
+      auto groupedAssocs = assocs.sliceBy(presliceDirect, event.globalIndex());
+
+      int nTrkGlobal = 0;
+
+      for (auto const& assoc : groupedAssocs) {
+        if (selectedTrackIds.find(assoc.trackId()) == selectedTrackIds.end()) {
+          continue;
+        }
+
+        auto track = assoc.template track_as<o2::soa::Filtered<MyTracksDirect>>();
+
+        if (!isTrackSelected<GkTrackDirectFillMap>(track, event)) {
+          continue;
+        }
+
+        ++nTrkGlobal;
+      }
+
+      reducedEventsGlobalTrk(nTrkGlobal);
+    }
+  }
+
+  PROCESS_SWITCH(GlobalTrackEstimator, processGlobalTracksDirect, "Count global tracks from unskimmed data", false);
 
   void processDummy(MyEventsBasic const&)
   {
