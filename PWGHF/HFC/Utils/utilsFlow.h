@@ -13,8 +13,8 @@
 /// \brief Utilities for HFC analyses
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>
 
-#ifndef PWGHF_HFC_UTILS_FLOW_H_
-#define PWGHF_HFC_UTILS_FLOW_H_
+#ifndef PWGHF_HFC_UTILS_UTILSFLOW_H_
+#define PWGHF_HFC_UTILS_UTILSFLOW_H_
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
@@ -74,17 +74,17 @@ class HfcFlowHelper {
 
         HfcFlowHelper() = default;
 
-        void init(o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb,
-                  o2::framework::HistogramRegistry& registry,
-                  std::vector<unsigned int> classMl,
-                  float yCandMax) {
+        void init(o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdbService,
+                o2::framework::HistogramRegistry& histRegistry,
+                std::vector<unsigned int> mlClasses,
+                float maxRapidity) {
 
             LOG(info) << "Initializing HFC flow helper!";
-            this->hfEvSel.addHistograms(registry);
-            this->ccdb = &ccdb;
-            this->registry = &registry;
-            this->classMl = std::move(classMl);
-            this->yCandMax = yCandMax;
+            this->hfEvSel.addHistograms(histRegistry);
+            this->ccdb = &ccdbService;
+            this->registry = &histRegistry;
+            this->classMl = std::move(mlClasses);
+            this->yCandMax = maxRapidity;
         }
 
         /// Get charm hadron candidate mass
@@ -219,4 +219,4 @@ class HfcFlowHelper {
 
 
 } // namespace o2::analysis::hfc_utils_flow
-#endif // PWGHF_HFC_UTILS_FLOW_H_
+#endif // PWGHF_HFC_UTILS_UTILSFLOW_H_

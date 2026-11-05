@@ -23,6 +23,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/HFC/Utils/utilsFlow.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -50,6 +51,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -169,6 +171,22 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
+    std::vector<unsigned int> classesMl;
+    for (const auto scoreClass : classMl.value) {
+      if (scoreClass < 0) {
+        LOG(fatal) << "ML class indexes must be non-negative";
+        return;
+      }
+      classesMl.push_back(static_cast<unsigned int>(scoreClass));
+    }
+
+    if (classesMl.size() > 2) {
+      LOG(fatal) << "At most two ML classes can be selected";
+      return;
+    }
+
+    hfcFlowHelper.init(ccdb, registry, classesMl, yCandMax.value);
+
     const AxisSpec axisTpcSignal = {binsTpcSignal, "TPC Signal"};
     const AxisSpec axisCent = {binsCent, "Centrality"};
     const AxisSpec axisMult = {binsMult, "Multiplicity"};
@@ -199,99 +217,6 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", dcaXYPtPrimTrkFunc.value.data()));
     }
   }; // end init
-
-  /// Get charm hadron candidate mass
-  /// \param candidate is the charm hadron candidate
-  template <CandidateType CandType, typename TCand>
-  double getCandMass(const TCand& candidate)
-  {
-    if constexpr (CandType == CandidateType::DsToKKPi) {
-      return HfHelper::invMassDsToKKPi(candidate);
-    }
-    if constexpr (CandType == CandidateType::DsToPiKK) {
-      return HfHelper::invMassDsToPiKK(candidate);
-    }
-    if constexpr (CandType == CandidateType::DplusToPiKPi) {
-      return HfHelper::invMassDplusToPiKPi(candidate);
-    }
-    if constexpr (CandType == CandidateType::D0ToPiK) {
-      return HfHelper::invMassD0ToPiK(candidate);
-    }
-    if constexpr (CandType == CandidateType::D0ToKPi) {
-      return HfHelper::invMassD0barToKPi(candidate);
-    }
-    if constexpr (CandType == CandidateType::LcToPKPi) {
-      return HfHelper::invMassLcToPKPi(candidate);
-    }
-    if constexpr (CandType == CandidateType::LcToPiKP) {
-      return HfHelper::invMassLcToPiKP(candidate);
-    }
-    return -1.;
-  }
-
-  /// Get charm hadron bdt scores
-  /// \param candidate is the charm hadron candidate
-  template <CandidateType CandType, typename TCand>
-  std::array<float, 2> getCandMlScores(const TCand& candidate)
-  {
-    std::array<float, 2> outputMl{-999.f, -999.f};
-    if constexpr (CandType == CandidateType::DsToKKPi) {
-      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-      }
-    }
-    if constexpr (CandType == CandidateType::DsToPiKK) {
-      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-      }
-    }
-    if constexpr (CandType == CandidateType::DplusToPiKPi) {
-      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
-      }
-    }
-    if constexpr (CandType == CandidateType::D0ToPiK) {
-      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
-      }
-    }
-    if constexpr (CandType == CandidateType::D0ToKPi) {
-      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
-      }
-    }
-    if constexpr (CandType == CandidateType::LcToPKPi) {
-      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
-      }
-    }
-    if constexpr (CandType == CandidateType::LcToPiKP) {
-      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
-      }
-    }
-    return outputMl;
-  }
-
-  /// Cut on rapidity of the candidate
-  /// \param candidate is the charm hadron candidate
-  template <CandidateType CandType, typename TCand>
-  bool cutCandRapidity(const TCand& candidate)
-  {
-    double y = 0.0;
-    if constexpr (CandType == CandidateType::DsToKKPi || CandType == CandidateType::DsToPiKK) {
-      y = HfHelper::yDs(candidate);
-    } else if constexpr (CandType == CandidateType::DplusToPiKPi) {
-      y = HfHelper::yDplus(candidate);
-    } else if constexpr (CandType == CandidateType::D0ToPiK || CandType == CandidateType::D0ToKPi) {
-      y = HfHelper::yD0(candidate);
-    } else if constexpr (CandType == CandidateType::LcToPKPi || CandType == CandidateType::LcToPiKP) {
-      y = HfHelper::yLc(candidate);
-    } else {
-      return true;
-    }
-    return std::fabs(y) < yCandMax;
-  }
 
   /// Check event selections for collision and fill the collision table
   /// \param collision is the collision
@@ -367,7 +292,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                      const float mult)
   {
     for (const auto& trigCand : trigCands) {
-      if (!cutCandRapidity<CandType>(trigCand)) {
+      if (!hfcFlowHelper.cutCandRapidity<CandType>(trigCand)) {
         continue;
       }
       double trigCandPt = trigCand.pt();
@@ -376,8 +301,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       if constexpr (CandType == CandidateType::Hadron) {
         rowTrigHads(rowCollisions.lastIndex(), trigCandPt, trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
       } else {
-        std::array<float, 2> outputMl = getCandMlScores<CandType>(trigCand);
-        rowTrigCharms(rowCollisions.lastIndex(), trigCandPt, getCandMass<CandType>(trigCand), outputMl[0], outputMl[1]);
+        std::array<float, 2> outputMl = hfcFlowHelper.getCandMlScores<CandType>(trigCand);
+        rowTrigCharms(rowCollisions.lastIndex(), trigCandPt, hfcFlowHelper.getCandMass<CandType>(trigCand), outputMl[0], outputMl[1]);
         rowTrigBases(trigCand.phi(), trigCand.eta());
       }
 
@@ -427,15 +352,15 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   void fillCharmMixedEvent(TTrigCands const& trigCands)
   {
     for (const auto& trigCand : trigCands) {
-      if (!cutCandRapidity<CandType>(trigCand)) {
+      if (!hfcFlowHelper.cutCandRapidity<CandType>(trigCand)) {
         continue;
       }
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCand.pt());
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
 
-      std::array<float, 2> outputMl = getCandMlScores<CandType>(trigCand);
+      std::array<float, 2> outputMl = hfcFlowHelper.getCandMlScores<CandType>(trigCand);
       rowTrigBases(trigCand.phi(), trigCand.eta());
-      rowTrigCharms(rowCollisions.lastIndex(), trigCand.pt(), getCandMass<CandType>(trigCand), outputMl[0], outputMl[1]);
+      rowTrigCharms(rowCollisions.lastIndex(), trigCand.pt(), hfcFlowHelper.getCandMass<CandType>(trigCand), outputMl[0], outputMl[1]);
     }
   }
 
