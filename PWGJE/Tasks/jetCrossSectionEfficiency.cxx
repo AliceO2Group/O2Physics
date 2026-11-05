@@ -254,7 +254,7 @@ struct JetCrossSectionEfficiency {
     rctChecker.init(static_cast<std::string>(rctSelectionsLabel));
     rctMask = rctChecker.value();
 
-    switch (getEventSelectionPreset(static_cast<std::string>(eventSelections))) {
+    switch (getEventSelectionPreset(eventSelections.value)) {
       case PresetSelTvx:
         applyTFB = false;
         applyROFB = false;
@@ -289,7 +289,7 @@ struct JetCrossSectionEfficiency {
         isSel8FullPbPb = true;
         break;
       default:
-        LOGF(fatal, "Configurable eventSelections=%s not supported; use selTVX, selMC, selMCFull, sel8, sel8Full, or sel8FullPbPb", static_cast<std::string>(eventSelections).c_str());
+        LOGF(fatal, "Configurable eventSelections=%s not supported; use selTVX, selMC, selMCFull, sel8, sel8Full, or sel8FullPbPb", eventSelections.value.c_str());
         break;
     }
 

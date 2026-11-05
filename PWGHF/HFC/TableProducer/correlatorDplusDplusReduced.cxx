@@ -104,8 +104,6 @@ struct HfCorrelatorDplusDplusReduced {
   std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
-  HfHelper hfHelper;
-
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi>>;
@@ -158,8 +156,8 @@ struct HfCorrelatorDplusDplusReduced {
     }
     for (size_t i = 0; i < cutPtSkimming.value.size() - 1; i++) {
       if (candidate.pt() <= cutPtSkimming.value.at(i + 1)) {
-        if (hfHelper.invMassDplusToPiKPi(candidate) < massMin.value.at(i) ||
-            hfHelper.invMassDplusToPiKPi(candidate) > massMax.value.at(i) ||
+        if (HfHelper::invMassDplusToPiKPi(candidate) < massMin.value.at(i) ||
+            HfHelper::invMassDplusToPiKPi(candidate) > massMax.value.at(i) ||
             candidate.cpa() < cosThetaMin.value.at(i) ||
             candidate.decayLength() < decayLengthMin.value.at(i) ||
             std::abs(candidate.nSigTofKa1()) > nSigmaTofMax.value.at(i) ||
@@ -214,7 +212,7 @@ struct HfCorrelatorDplusDplusReduced {
     if (fillCandidateTinyTable) {
       rowCandidateTiny(
         candidate.isSelDplusToPiKPi(),
-        hfHelper.invMassDplusToPiKPi(candidate),
+        HfHelper::invMassDplusToPiKPi(candidate),
         sign * candidate.pt(),
         candidate.eta(),
         candidate.phi(),
@@ -257,14 +255,14 @@ struct HfCorrelatorDplusDplusReduced {
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaKa2(),
         candidate.isSelDplusToPiKPi(),
-        hfHelper.invMassDplusToPiKPi(candidate),
+        HfHelper::invMassDplusToPiKPi(candidate),
         sign * candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yDplus(candidate),
+        HfHelper::yDplus(candidate),
         cent,
         localEvIdx,
         flagMc,
@@ -332,17 +330,17 @@ struct HfCorrelatorDplusDplusReduced {
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaKa2(),
         candidate.isSelDplusToPiKPi(),
-        hfHelper.invMassDplusToPiKPi(candidate),
+        HfHelper::invMassDplusToPiKPi(candidate),
         sign * candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        hfHelper.ctDplus(candidate),
+        HfHelper::ctDplus(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yDplus(candidate),
-        hfHelper.eDplus(candidate),
+        HfHelper::yDplus(candidate),
+        HfHelper::eDplus(candidate),
         cent,
         localEvIdx,
         flagMc,

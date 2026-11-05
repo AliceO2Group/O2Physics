@@ -316,7 +316,7 @@ class TrackPropagationModule
         }
       }
       // auto trackParCov = getTrackParCov(track);
-      o2::aod::track::TrackTypeEnum trackType = (o2::aod::track::TrackTypeEnum)track.trackType();
+      o2::aod::track::TrackTypeEnum trackType{track.trackType()};
       // std::array<float, 3> trackPxPyPz;
       // std::array<float, 3> trackPxPyPzTuned = {0.0, 0.0, 0.0};
       double q2OverPtNew = -9999.;

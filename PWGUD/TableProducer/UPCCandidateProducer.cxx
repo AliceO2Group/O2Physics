@@ -157,7 +157,7 @@ struct UpcCandProducer {
     fwdSelectors.resize(upchelpers::kNFwdSels - 1, false);
     barrelSelectors.resize(upchelpers::kNBarrelSels - 1, false);
 
-    upcCuts = (UPCCutparHolder)inputCuts;
+    upcCuts = UPCCutparHolder(inputCuts);
 
     // initialize RCT flag checker
     if (rctLabel.value != "none" && rctLabel.value != "muon" && rctLabel.value != "muon_glo") {
@@ -1990,7 +1990,7 @@ struct UpcCandProducer {
                             fwdTracks, fwdTrkClusters, ambFwdTracks,
                             bcs, collisions,
                             ft0s, fdds, fv0as,
-                            (o2::aod::McTrackLabels*)nullptr, (o2::aod::McFwdTrackLabels*)nullptr);
+                            nullptr, nullptr);
   }
 
   // create candidates for central region
@@ -2007,7 +2007,7 @@ struct UpcCandProducer {
     createCandidatesCentral(barrelTracks, ambBarrelTracks,
                             bcs, collisions,
                             ft0s, fdds, fv0as, zdcs,
-                            (o2::aod::McTrackLabels*)nullptr);
+                            nullptr);
   }
 
   // MC processors
@@ -2076,7 +2076,7 @@ struct UpcCandProducer {
     createCandidatesFwd(fwdTracks, fwdTrkClusters, ambFwdTracks,
                         bcs, collisions,
                         ft0s, fdds, fv0as, zdcs,
-                        (o2::aod::McFwdTrackLabels*)nullptr);
+                        nullptr);
   }
 
   void processForwardMC(ForwardTracks const& fwdTracks,
@@ -2116,7 +2116,7 @@ struct UpcCandProducer {
     createCandidatesFwdGlobal(fwdTracks, fwdTrkClusters, ambFwdTracks,
                               bcs, collisions,
                               ft0s, fdds, fv0as, zdcs,
-                              (o2::aod::McFwdTrackLabels*)nullptr);
+                              nullptr);
   }
 
   void processForwardGlobalMC(ForwardTracks const& fwdTracks,

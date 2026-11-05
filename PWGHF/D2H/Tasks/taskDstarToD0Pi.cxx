@@ -137,7 +137,7 @@ struct HfTaskDstarToD0Pi {
     if ((doprocessDataWoML && doprocessDataWML) || (doprocessMcWoMl && doprocessMcWML) || (doprocessDataWoML && doprocessMcWML) || (doprocessDataWML && doprocessMcWoMl)) {
       LOGP(fatal, "Only Without-ML or With-ML functions should be enabled at a time! Please check your configuration!");
     }
-    auto vecPtBins = (std::vector<double>)ptBins;
+    auto vecPtBins = std::vector<double>(ptBins);
 
     AxisSpec const axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
     AxisSpec const axisDecayLength = {binningDecayLength, " decay length (cm)"};

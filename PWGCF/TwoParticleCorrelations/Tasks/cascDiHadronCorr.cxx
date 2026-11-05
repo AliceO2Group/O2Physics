@@ -83,7 +83,7 @@ struct CascDiHadronCorr {
   O2_DEFINE_CONFIGURABLE(cfgCutCentMin, float, 0.0f, "Minimum centrality for collision")
   O2_DEFINE_CONFIGURABLE(cfgCutCentMax, float, 100.0f, "Maximum centrality for collision")
   O2_DEFINE_CONFIGURABLE(cfgMixEventNumMin, int, 1, "Minimum number of events to mix")
-  O2_DEFINE_CONFIGURABLE(cfgRadiusLow, float, 0.8, "Low radius for merging cut")
+  O2_DEFINE_CONFIGURABLE(cfgRadiusLow, double, 0.8, "Low radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
@@ -104,6 +104,7 @@ struct CascDiHadronCorr {
   O2_DEFINE_CONFIGURABLE(cfgNSigmapid, std::vector<float>, (std::vector<float>{3, 3, 3}), "tpc NSigma for Pion Proton Kaon")
   O2_DEFINE_CONFIGURABLE(cfgOutputXi, bool, true, "Output Xi-charged correlation")
   O2_DEFINE_CONFIGURABLE(cfgOutputOmega, bool, false, "Output Omega-charged correlation")
+  O2_DEFINE_CONFIGURABLE(cfgOutputCascQA, bool, true, "Output QA plots for cascades and daughters")
   struct : ConfigurableGroup {
     std::string prefix = "cfgEvSel";
     O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
@@ -118,6 +119,8 @@ struct CascDiHadronCorr {
     O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
     O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
     O2_DEFINE_CONFIGURABLE(cfgEvSelOccupancy, bool, true, "Occupancy cut")
+    O2_DEFINE_CONFIGURABLE(cfgEvSelHaveXi, bool, false, "reject the collisions without any Xi reconstracted")
+    O2_DEFINE_CONFIGURABLE(cfgEvSelHaveOmega, bool, false, "reject the collisions without any Xi reconstracted")
   } cfgEvSel;
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -174,6 +177,7 @@ struct CascDiHadronCorr {
     O2_DEFINE_CONFIGURABLE(cfgMinITSNCls, int, -1, "check minimum number of ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgTPCNCls, int, 0, "check minimum number of TPC hits")
     O2_DEFINE_CONFIGURABLE(cfgTPCCrossedRows, int, 0, "check minimum number of TPC crossed rows")
+    O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "max chi2 per TPC clusters for cascades daughters")
   } trkQualityOpts;
 
   SliceCache cache;
@@ -404,6 +408,56 @@ struct CascDiHadronCorr {
       registry.add("MCRecPri", "MCRecPri", {HistType::kTH1D, {axisPtEfficiency}});
     }
 
+    if (cfgOutputCascQA) {
+      registry.add("QAhisto/hqaTPCNClsbefore", "", {HistType::kTH1D, {{100, 0, 200}}});
+      registry.add("QAhisto/hqaTPCCrossedRowsbefore", "", {HistType::kTH1D, {{100, 0, 200}}});
+      registry.add("QAhisto/hqaChi2prTPCclsbefore", "", {HistType::kTH1D, {{100, 0, 10}}});
+      registry.add("QAhisto/hqaTPCNClsafter", "", {HistType::kTH1D, {{100, 0, 200}}});
+      registry.add("QAhisto/hqaTPCCrossedRowsafter", "", {HistType::kTH1D, {{100, 0, 200}}});
+      registry.add("QAhisto/hqaChi2prTPCclsafter", "", {HistType::kTH1D, {{100, 0, 10}}});
+
+      registry.add("QAhisto/Xi/hqaCascRadiusbefore", "", {HistType::kTH1D, {{1000, 0, 100}}});
+      registry.add("QAhisto/Xi/hqaCascRadiusafter", "", {HistType::kTH1D, {{1000, 0, 100}}});
+      registry.add("QAhisto/Xi/hqaCasccosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+      registry.add("QAhisto/Xi/hqaCasccosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+      registry.add("QAhisto/Xi/hqaCascV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+      registry.add("QAhisto/Xi/hqaCascV0cosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+      registry.add("QAhisto/Xi/hqadcaCascV0toPVbefore", "", {HistType::kTH1D, {{1000, 0, 10}}});
+      registry.add("QAhisto/Xi/hqadcaCascV0toPVafter", "", {HistType::kTH1D, {{1000, 0, 10}}});
+      registry.add("QAhisto/Xi/hqadcaCascBachtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Xi/hqadcaCascBachtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Xi/hqadcaCascLaprtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Xi/hqadcaCascLaprtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Xi/hqadcaCascLapitoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Xi/hqadcaCascLapitoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Xi/hqadcaCascdaubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Xi/hqadcaCascdauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Xi/hqadcaCascV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Xi/hqadcaCascV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Xi/hqaLambdaMassbefore", "", {HistType::kTH1D, {{160, 1.08, 1.16}}});
+      registry.add("QAhisto/Xi/hqaLambdaMassafter", "", {HistType::kTH1D, {{160, 1.08, 1.16}}});
+
+      registry.add("QAhisto/Omega/hqaCascRadiusbefore", "", {HistType::kTH1D, {{1000, 0, 100}}});
+      registry.add("QAhisto/Omega/hqaCascRadiusafter", "", {HistType::kTH1D, {{1000, 0, 100}}});
+      registry.add("QAhisto/Omega/hqaCasccosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+      registry.add("QAhisto/Omega/hqaCasccosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+      registry.add("QAhisto/Omega/hqaCascV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+      registry.add("QAhisto/Omega/hqaCascV0cosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+      registry.add("QAhisto/Omega/hqadcaCascV0toPVbefore", "", {HistType::kTH1D, {{1000, 0, 10}}});
+      registry.add("QAhisto/Omega/hqadcaCascV0toPVafter", "", {HistType::kTH1D, {{1000, 0, 10}}});
+      registry.add("QAhisto/Omega/hqadcaCascBachtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Omega/hqadcaCascBachtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Omega/hqadcaCascLaprtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Omega/hqadcaCascLaprtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Omega/hqadcaCascLapitoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Omega/hqadcaCascLapitoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+      registry.add("QAhisto/Omega/hqadcaCascdaubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Omega/hqadcaCascdauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Omega/hqadcaCascV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Omega/hqadcaCascV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Omega/hqaLambdaMassbefore", "", {HistType::kTH1D, {{160, 1.08, 1.16}}});
+      registry.add("QAhisto/Omega/hqaLambdaMassafter", "", {HistType::kTH1D, {{160, 1.08, 1.16}}});
+    }
     LOGF(info, "Initializing correlation container");
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
@@ -512,6 +566,18 @@ struct CascDiHadronCorr {
     if (std::fabs(negdau.eta()) > trkQualityOpts.cfgCutEta.value)
       return false;
 
+    if (cfgOutputCascQA) {
+      registry.fill(HIST("QAhisto/hqaTPCNClsbefore"), bachelor.tpcNClsFound());
+      registry.fill(HIST("QAhisto/hqaTPCCrossedRowsbefore"), bachelor.tpcNClsCrossedRows());
+      registry.fill(HIST("QAhisto/hqaChi2prTPCclsbefore"), bachelor.tpcChi2NCl());
+      registry.fill(HIST("QAhisto/hqaTPCNClsbefore"), posdau.tpcNClsFound());
+      registry.fill(HIST("QAhisto/hqaTPCCrossedRowsbefore"), posdau.tpcNClsCrossedRows());
+      registry.fill(HIST("QAhisto/hqaChi2prTPCclsbefore"), posdau.tpcChi2NCl());
+      registry.fill(HIST("QAhisto/hqaTPCNClsbefore"), negdau.tpcNClsFound());
+      registry.fill(HIST("QAhisto/hqaTPCCrossedRowsbefore"), negdau.tpcNClsCrossedRows());
+      registry.fill(HIST("QAhisto/hqaChi2prTPCclsbefore"), negdau.tpcChi2NCl());
+    }
+
     // track quality check
     if (bachelor.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
       return false;
@@ -538,8 +604,63 @@ struct CascDiHadronCorr {
       return false;
     if (negdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
       return false;
+    if (bachelor.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value)
+      return false;
+    if (posdau.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value)
+      return false;
+    if (negdau.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value)
+      return false;
 
-    if (cfgOutputXi) {
+    if (cfgOutputCascQA) {
+      registry.fill(HIST("QAhisto/hqaTPCNClsafter"), bachelor.tpcNClsFound());
+      registry.fill(HIST("QAhisto/hqaTPCCrossedRowsafter"), bachelor.tpcNClsCrossedRows());
+      registry.fill(HIST("QAhisto/hqaChi2prTPCclsafter"), bachelor.tpcChi2NCl());
+      registry.fill(HIST("QAhisto/hqaTPCNClsafter"), posdau.tpcNClsFound());
+      registry.fill(HIST("QAhisto/hqaTPCCrossedRowsafter"), posdau.tpcNClsCrossedRows());
+      registry.fill(HIST("QAhisto/hqaChi2prTPCclsafter"), posdau.tpcChi2NCl());
+      registry.fill(HIST("QAhisto/hqaTPCNClsafter"), negdau.tpcNClsFound());
+      registry.fill(HIST("QAhisto/hqaTPCCrossedRowsafter"), negdau.tpcNClsCrossedRows());
+      registry.fill(HIST("QAhisto/hqaChi2prTPCclsafter"), negdau.tpcChi2NCl());
+    }
+
+    if (cfgOutputCascQA) {
+      if (cfgOutputXi) {
+        registry.fill(HIST("QAhisto/Xi/hqaCascRadiusbefore"), casc.cascradius());
+        registry.fill(HIST("QAhisto/Xi/hqaCasccosPAbefore"), casc.casccosPA(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Xi/hqaCascV0cosPAbefore"), casc.v0cosPA(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Xi/hqadcaCascV0toPVbefore"), casc.dcav0topv(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Xi/hqadcaCascBachtoPVbefore"), casc.dcabachtopv());
+        registry.fill(HIST("QAhisto/Xi/hqadcaCascdaubefore"), casc.dcacascdaughters());
+        registry.fill(HIST("QAhisto/Xi/hqadcaCascV0daubefore"), casc.dcaV0daughters());
+        registry.fill(HIST("QAhisto/Xi/hqaLambdaMassbefore"), casc.mLambda());
+        if (casc.sign() > 0) {
+          registry.fill(HIST("QAhisto/Xi/hqadcaCascLaprtoPVbefore"), casc.dcapostopv());
+          registry.fill(HIST("QAhisto/Xi/hqadcaCascLapitoPVbefore"), casc.dcanegtopv());
+        } else {
+          registry.fill(HIST("QAhisto/Xi/hqadcaCascLaprtoPVbefore"), casc.dcanegtopv());
+          registry.fill(HIST("QAhisto/Xi/hqadcaCascLapitoPVbefore"), casc.dcapostopv());
+        }
+      }
+      if (cfgOutputOmega) {
+        registry.fill(HIST("QAhisto/Omega/hqaCascRadiusbefore"), casc.cascradius());
+        registry.fill(HIST("QAhisto/Omega/hqaCasccosPAbefore"), casc.casccosPA(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Omega/hqaCascV0cosPAbefore"), casc.v0cosPA(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Omega/hqadcaCascV0toPVbefore"), casc.dcav0topv(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Omega/hqadcaCascBachtoPVbefore"), casc.dcabachtopv());
+        registry.fill(HIST("QAhisto/Omega/hqadcaCascdaubefore"), casc.dcacascdaughters());
+        registry.fill(HIST("QAhisto/Omega/hqadcaCascV0daubefore"), casc.dcaV0daughters());
+        registry.fill(HIST("QAhisto/Omega/hqaLambdaMassbefore"), casc.mLambda());
+        if (casc.sign() > 0) {
+          registry.fill(HIST("QAhisto/Omega/hqadcaCascLaprtoPVbefore"), casc.dcapostopv());
+          registry.fill(HIST("QAhisto/Omega/hqadcaCascLapitoPVbefore"), casc.dcanegtopv());
+        } else {
+          registry.fill(HIST("QAhisto/Omega/hqadcaCascLaprtoPVbefore"), casc.dcanegtopv());
+          registry.fill(HIST("QAhisto/Omega/hqadcaCascLapitoPVbefore"), casc.dcapostopv());
+        }
+      }
+    }
+
+    if (cfgOutputXi || cfgEvSel.cfgEvSelHaveXi.value) {
       if (casc.mXi() > massup || casc.mXi() < masslow)
         return false;
       if (casc.sign() < 0) {
@@ -582,7 +703,7 @@ struct CascDiHadronCorr {
       if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascBuilderOpts.cfgcasc_mlambdawindow.value)
         return false;
     }
-    if (cfgOutputOmega) {
+    if (cfgOutputOmega || cfgEvSel.cfgEvSelHaveOmega.value) {
       if (casc.mOmega() > massup || casc.mOmega() < masslow)
         return false;
       if (casc.sign() < 0) {
@@ -624,6 +745,43 @@ struct CascDiHadronCorr {
         return false;
       if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascBuilderOpts.cfgcasc_mlambdawindow.value)
         return false;
+    }
+
+    if (cfgOutputCascQA) {
+      if (cfgOutputXi) {
+        registry.fill(HIST("QAhisto/Xi/hqaCascRadiusafter"), casc.cascradius());
+        registry.fill(HIST("QAhisto/Xi/hqaCasccosPAafter"), casc.casccosPA(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Xi/hqaCascV0cosPAafter"), casc.v0cosPA(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Xi/hqadcaCascV0toPVafter"), casc.dcav0topv(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Xi/hqadcaCascBachtoPVafter"), casc.dcabachtopv());
+        registry.fill(HIST("QAhisto/Xi/hqadcaCascdauafter"), casc.dcacascdaughters());
+        registry.fill(HIST("QAhisto/Xi/hqadcaCascV0dauafter"), casc.dcaV0daughters());
+        registry.fill(HIST("QAhisto/Xi/hqaLambdaMassafter"), casc.mLambda());
+        if (casc.sign() > 0) {
+          registry.fill(HIST("QAhisto/Xi/hqadcaCascLaprtoPVafter"), casc.dcapostopv());
+          registry.fill(HIST("QAhisto/Xi/hqadcaCascLapitoPVafter"), casc.dcanegtopv());
+        } else {
+          registry.fill(HIST("QAhisto/Xi/hqadcaCascLaprtoPVafter"), casc.dcanegtopv());
+          registry.fill(HIST("QAhisto/Xi/hqadcaCascLapitoPVafter"), casc.dcapostopv());
+        }
+      }
+      if (cfgOutputOmega) {
+        registry.fill(HIST("QAhisto/Omega/hqaCascRadiusafter"), casc.cascradius());
+        registry.fill(HIST("QAhisto/Omega/hqaCasccosPAafter"), casc.casccosPA(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Omega/hqaCascV0cosPAafter"), casc.v0cosPA(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Omega/hqadcaCascV0toPVafter"), casc.dcav0topv(posX, posY, posZ));
+        registry.fill(HIST("QAhisto/Omega/hqadcaCascBachtoPVafter"), casc.dcabachtopv());
+        registry.fill(HIST("QAhisto/Omega/hqadcaCascdauafter"), casc.dcacascdaughters());
+        registry.fill(HIST("QAhisto/Omega/hqadcaCascV0dauafter"), casc.dcaV0daughters());
+        registry.fill(HIST("QAhisto/Omega/hqaLambdaMassafter"), casc.mLambda());
+        if (casc.sign() > 0) {
+          registry.fill(HIST("QAhisto/Omega/hqadcaCascLaprtoPVafter"), casc.dcapostopv());
+          registry.fill(HIST("QAhisto/Omega/hqadcaCascLapitoPVafter"), casc.dcanegtopv());
+        } else {
+          registry.fill(HIST("QAhisto/Omega/hqadcaCascLaprtoPVafter"), casc.dcanegtopv());
+          registry.fill(HIST("QAhisto/Omega/hqadcaCascLapitoPVafter"), casc.dcapostopv());
+        }
+      }
     }
     return true;
   }
@@ -1410,6 +1568,18 @@ struct CascDiHadronCorr {
     }
     if (cfgEvSel.cfgUseAdditionalEventCut.value && !eventSelected(collision, tracks.size(), cent, true))
       return;
+
+    if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
+      bool haveCasc = false;
+      for (const auto& cascade : cascades) {
+        if (cascSelected(cascade, collision.posX(), collision.posY(), collision.posZ())) {
+          haveCasc = true;
+          break;
+        }
+      }
+      if (!haveCasc)
+        return;
+    }
     loadCorrection(bc.timestamp());
     if (!cfgCentTableUnavailable) {
       getCentralityWeight(weightCent, cent);
@@ -1563,7 +1733,7 @@ struct CascDiHadronCorr {
   PROCESS_SWITCH(CascDiHadronCorr, processMixedCasc, "Process mixed events", true);
 
   // the process for filling the mixed events by buffer
-  void processMixedBuffer(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
+  void processMixedBuffer(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::CascDatas const& cascades, DaughterTracks const&)
   {
     ValidCollision currentCollision;
     int nBinsMult = 0;
@@ -1596,6 +1766,18 @@ struct CascDiHadronCorr {
 
     if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
       return;
+
+    if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
+      bool haveCasc = false;
+      for (const auto& cascade : cascades) {
+        if (cascSelected(cascade, collision.posX(), collision.posY(), collision.posZ())) {
+          haveCasc = true;
+          break;
+        }
+      }
+      if (!haveCasc)
+        return;
+    }
 
     float weightCent = 1.0f;
     if (!cfgCentTableUnavailable)
@@ -1649,6 +1831,18 @@ struct CascDiHadronCorr {
 
     if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
       return;
+
+    if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
+      bool haveCasc = false;
+      for (const auto& cascade : cascades) {
+        if (cascSelected(cascade, collision.posX(), collision.posY(), collision.posZ())) {
+          haveCasc = true;
+          break;
+        }
+      }
+      if (!haveCasc)
+        return;
+    }
 
     float weightCent = 1.0f;
     if (!cfgCentTableUnavailable)

@@ -94,10 +94,14 @@ struct FemtoPairTrackTwoPhotonResonance {
 
   // setup for track-pi0 pairs
   pairbuilder::PairTrackTwoPhotonResonanceBuilder<
-    trackhistmanager::PrefixTrack1,
-    twophotonresonancehistmanager::PrefixPi0,
-    photonhistmanager::PrefixTwoPhotonResonanceDau1Qa,
-    photonhistmanager::PrefixTwoPhotonResonanceDau2Qa,
+    trackhistmanager::PrefixTrack1Se,
+    twophotonresonancehistmanager::PrefixPi0Se,
+    photonhistmanager::PrefixTwoPhotonResonanceDau1Se,
+    photonhistmanager::PrefixTwoPhotonResonanceDau2Se,
+    trackhistmanager::PrefixTrack1Me,
+    twophotonresonancehistmanager::PrefixPi0Me,
+    photonhistmanager::PrefixTwoPhotonResonanceDau1Me,
+    photonhistmanager::PrefixTwoPhotonResonanceDau2Me,
     pairhistmanager::PrefixTrackPi0Se,
     pairhistmanager::PrefixTrackPi0Me,
     closepairrejection::PrefixTrackTwoPhotonResonanceSe,
@@ -107,10 +111,14 @@ struct FemtoPairTrackTwoPhotonResonance {
 
   // setup for track-eta pairs
   pairbuilder::PairTrackTwoPhotonResonanceBuilder<
-    trackhistmanager::PrefixTrack1,
-    twophotonresonancehistmanager::PrefixEta,
-    photonhistmanager::PrefixTwoPhotonResonanceDau1Qa,
-    photonhistmanager::PrefixTwoPhotonResonanceDau2Qa,
+    trackhistmanager::PrefixTrack1Se,
+    twophotonresonancehistmanager::PrefixEtaSe,
+    photonhistmanager::PrefixTwoPhotonResonanceDau1Se,
+    photonhistmanager::PrefixTwoPhotonResonanceDau2Se,
+    trackhistmanager::PrefixTrack1Me,
+    twophotonresonancehistmanager::PrefixEtaMe,
+    photonhistmanager::PrefixTwoPhotonResonanceDau1Me,
+    photonhistmanager::PrefixTwoPhotonResonanceDau2Me,
     pairhistmanager::PrefixTrackEtaSe,
     pairhistmanager::PrefixTrackEtaMe,
     closepairrejection::PrefixTrackTwoPhotonResonanceSe,

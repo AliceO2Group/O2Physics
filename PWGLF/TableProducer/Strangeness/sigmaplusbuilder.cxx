@@ -26,8 +26,10 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -60,6 +62,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -116,6 +119,7 @@ struct Sigmaplusbuilder {
   Configurable<bool> protonRequireTofHit{"protonRequireTofHit", false, "Above protonPtMinRequireTOF, reject a proton with no TOF hit at all"};
   Configurable<float> protonMinDcaToPV{"protonMinDcaToPV", 0.005, "Min DCAxy of the proton track to the PV (cm)"};
   Configurable<float> protonMaxDcaToPV{"protonMaxDcaToPV", 5.0, "Max DCAxy of the proton track to the PV (cm)"};
+  Configurable<float> protonMaxDcaZToPV{"protonMaxDcaZToPV", 0.3, "Max |DCAz| of the proton track to the PV (cm)"};
 
   // proton-photon candidate selection
   Configurable<float> candVertexProtonWeight{"candVertexProtonWeight", 1.0, "Sigma+ vertex between the proton's (1) and the photon's (0) point of closest approach"};
@@ -134,11 +138,12 @@ struct Sigmaplusbuilder {
   Configurable<float> candMaxPhotonOpeningAngle{"candMaxPhotonOpeningAngle", 3.15, "Max photon opening angle (rad), recomputed from the daughters' track momenta"};
   Configurable<float> candMaxPhotonPointingAngle{"candMaxPhotonPointingAngle", 0.5, "Max angle between the photon momentum and the decay-vertex-to-conversion-point line (rad)"};
   Configurable<float> candMaxPhotonDcaToPV{"candMaxPhotonDcaToPV", 250.0, "Max DCA of the photon's flight line to the PV (cm)"};
+  Configurable<float> candMaxPhotonDcaZToPV{"candMaxPhotonDcaZToPV", 2.0, "Max |DCAz| of the photon's flight line to the PV at its transverse DCA (cm), applied to the photon before the pairing with the proton"};
   Configurable<bool> candDeduplicatePhotons{"candDeduplicatePhotons", true, "Per timeframe, write only the candidate with the smallest DCA to PV among candidates sharing the same photon"};
 
   // tilt search: if the measured flight direction gives no real solution for the missing photon,
   // tilted flight directions are tried starting with the smallest tilt
-  Configurable<float> candMaxTilt{"candMaxTilt", 0.3, "Max tilt of the flight direction searched for a real root (rad)"};
+  Configurable<float> candMaxTilt{"candMaxTilt", 0.05, "Max tilt of the flight direction searched for a real root (rad)"};
   Configurable<float> candTiltStep{"candTiltStep", 0.005, "Tilt step between the rings of tried flight directions (rad)"};
   Configurable<int> candTiltNAzimuth{"candTiltNAzimuth", 36, "Flight directions tried per ring"};
 
@@ -147,6 +152,13 @@ struct Sigmaplusbuilder {
   Configurable<float> cutPtGenMC{"cutPtGenMC", 0.5f, "Minimum pT for generated Sigma+ in MC"};
 
   Configurable<bool> fillSlimTables{"fillSlimTables", false, "write the slim candidate tables instead of the full ones"};
+
+  // BDT score (MlScore column) of every written candidate, inputs in the order of the training (see computeMlScore)
+  Configurable<bool> applyMl{"applyMl", false, "Compute the BDT score of every written candidate (otherwise MlScore = -1)"};
+  Configurable<bool> mlLoadModelFromCcdb{"mlLoadModelFromCcdb", true, "Load the ONNX model from the CCDB instead of a local file"};
+  Configurable<std::string> mlModelPathCcdb{"mlModelPathCcdb", "Users/h/hfribert/SigmaPlusPcm/BDT_nominalB", "CCDB path of the ONNX model (nominal field: .../BDT_nominalB, low field: .../BDT_lowB)"};
+  Configurable<std::string> mlOnnxFileName{"mlOnnxFileName", "model.onnx", "ONNX file name (local file, or name of the file retrieved from the CCDB)"};
+  Configurable<int64_t> mlTimestampCcdb{"mlTimestampCcdb", -1, "CCDB timestamp of the ONNX model (-1: now)"};
 
   Configurable<std::string> ccdbPath{"ccdbPath", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -163,6 +175,7 @@ struct Sigmaplusbuilder {
   float mBz = 0;
   o2::base::MatLayerCylSet* mLut = nullptr;
   o2::aod::common::TPCVDriftManager mVDriftMgr;
+  o2::analysis::MlResponse<float> mlResponse;
 
   // daughter pairing (electrons and positrons with the range of collisions each is compatible with)
   svPoolCreator svPhotonPoolCreator{PDG_t::kElectron, PDG_t::kPositron};
@@ -173,6 +186,10 @@ struct Sigmaplusbuilder {
   // values of a candidate, kept until the end of the timeframe and then written to the tables
   struct SigmaPlusCandidate {
     uint64_t photonId = 0;
+    int collisionId = -1;
+    int protonTrackId = -1;
+    int photonPosTrackId = -1;
+    int photonNegTrackId = -1;
     bool isSignal = false;
     int photonLegsWithoutIts = 0;
     int matchedSigmaId = -1;
@@ -257,6 +274,19 @@ struct Sigmaplusbuilder {
     fitter.setUseAbsDCA(true);
 
     mVDriftMgr.init(&ccdb->instance());
+    if (applyMl) {
+      // one model with two classes (background, signal) and no cut on the scores
+      const std::array<double, 2> noCuts{0., 0.};
+      mlResponse.configure({0., 1.e6}, LabeledArray<double>(noCuts.data(), 1, 2), {o2::cuts_ml::CutNot, o2::cuts_ml::CutNot}, 2);
+      if (mlLoadModelFromCcdb) {
+        o2::ccdb::CcdbApi ccdbApi;
+        ccdbApi.init(ccdbPath.value);
+        mlResponse.setModelPathsCCDB({mlOnnxFileName.value}, ccdbApi, {mlModelPathCcdb.value}, mlTimestampCcdb.value);
+      } else {
+        mlResponse.setModelPathsLocal({mlOnnxFileName.value});
+      }
+      mlResponse.init();
+    }
     svPhotonPoolCreator.setTimeMargin(photonPoolTimeMarginNS);
     if (photonSkipAmbiTracks) {
       svPhotonPoolCreator.setSkipAmbiTracks();
@@ -302,7 +332,7 @@ struct Sigmaplusbuilder {
     const AxisSpec axisSigmaSel{6, -0.5, 5.5, "step"};
 
     const std::vector<std::string> photonSteps{"All", "Neg eta", "Pos eta", "TPC clusters", "TPC nSigma_{el}, p_{T}", "DCA daughters", "Radius",
-                                               "Opening angle", "Delta theta", "CosPA", "Rapidity", "Qt", "Alpha", "Mass"};
+                                               "Opening angle", "Delta theta", "CosPA, DCA_{z}", "Rapidity", "Qt", "Alpha", "Mass"};
     const std::vector<std::string> protonSteps{"All", "Pt", "Eta", "TPC clusters", "TPC nSigma", "TOF nSigma", "DCA to PV"};
     const std::vector<std::string> candSteps{"All pairs", "Autocorrelation", "Vertex fit", "DCA(p,#gamma)", "Radius", "Flight distance", "Real root",
                                              "Valid root", "DCA to PV", "Mass", "Rapidity", "Photon opening angle", "Photon pointing angle", "Photon DCA to PV", "Written"};
@@ -416,6 +446,14 @@ struct Sigmaplusbuilder {
     TTrack negTrack;
     TTrack posTrack;
   };
+
+  // longitudinal distance of the photon's flight line to the PV at its transverse DCA (cm)
+  static float photonDcaZ(const std::array<float, 3>& conv, const std::array<float, 3>& pGamma, const std::array<float, 3>& pv)
+  {
+    float pt2 = pGamma[0] * pGamma[0] + pGamma[1] * pGamma[1];
+    float tAtDcaXY = pt2 > 0.f ? ((pv[0] - conv[0]) * pGamma[0] + (pv[1] - conv[1]) * pGamma[1]) / pt2 : 0.f;
+    return conv[2] + tAtDcaXY * pGamma[2] - pv[2];
+  }
 
   // MC counter of generated Sigma+ -> p pi0 in acceptance
   void fillSigmaCounter(int sigmaId, int step)
@@ -536,7 +574,7 @@ struct Sigmaplusbuilder {
 
       std::array<float, 3> pGamma{pNeg[0] + pPos[0], pNeg[1] + pPos[1], pNeg[2] + pPos[2]};
       float cosPA = RecoDecay::cpa(pv, secVtx, pGamma);
-      if (cosPA < photonMinV0cospa) {
+      if (cosPA < photonMinV0cospa || std::abs(photonDcaZ(secVtx, pGamma, pv)) > candMaxPhotonDcaZToPV) {
         continue;
       }
       fillPhotonStep(9);
@@ -923,8 +961,9 @@ struct Sigmaplusbuilder {
         passStep(8); // opening angle, and delta theta that is cut before the fit
 
         std::array<float, 3> pGamma{fit.pNeg[0] + fit.pPos[0], fit.pNeg[1] + fit.pPos[1], fit.pNeg[2] + fit.pPos[2]};
-        float cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, fit.secVtx, pGamma);
-        if (cosPA < photonMinV0cospa) {
+        std::array<float, 3> pv{collision.posX(), collision.posY(), collision.posZ()};
+        float cosPA = RecoDecay::cpa(pv, fit.secVtx, pGamma);
+        if (cosPA < photonMinV0cospa || std::abs(photonDcaZ(fit.secVtx, pGamma, pv)) > candMaxPhotonDcaZToPV) {
           continue;
         }
         passStep(9);
@@ -1034,7 +1073,7 @@ struct Sigmaplusbuilder {
     fillProtonStep(5);
 
     fillProtonHist(HIST("h2DcaToPVVsPt"), isSignal, track.pt(), std::abs(track.dcaXY()));
-    if (std::abs(track.dcaXY()) < protonMinDcaToPV || std::abs(track.dcaXY()) > protonMaxDcaToPV) {
+    if (std::abs(track.dcaXY()) < protonMinDcaToPV || std::abs(track.dcaXY()) > protonMaxDcaToPV || std::abs(track.dcaZ()) > protonMaxDcaZToPV) {
       return false;
     }
     fillProtonStep(6);
@@ -1181,7 +1220,7 @@ struct Sigmaplusbuilder {
 
   // Build a Sigma+ -> p pi0 candidate from a proton track and a PCM photon
   template <bool IsMC, typename TTrack, typename TPhotonTrack>
-  void buildSigmaPlusCandidate(const TTrack& protonTrack, const PhotonCand<TPhotonTrack>& photon, const std::array<float, 3>& pv)
+  void buildSigmaPlusCandidate(const TTrack& protonTrack, const PhotonCand<TPhotonTrack>& photon, int collisionIndex, const std::array<float, 3>& pv)
   {
     auto posTrack = photon.posTrack;
     auto negTrack = photon.negTrack;
@@ -1508,19 +1547,22 @@ struct Sigmaplusbuilder {
     std::array<float, 3> pvToConvCrossDir = cross3(pvToConv, photonDir);
     float photonDcaToPV = std::sqrt(dot3(pvToConvCrossDir, pvToConvCrossDir));
     fillCandHist(HIST("hPhotonDcaToPV"), isSignal, photonDcaToPV);
-    if (photonDcaToPV > candMaxPhotonDcaToPV) {
-      return;
-    }
-    fillCandStep(13); // photon DCA to PV
-
     float photonPt2 = photon.px * photon.px + photon.py * photon.py;
     float tAtDcaXY = photonPt2 > 0.f ? ((pv[0] - photon.x) * photon.px + (pv[1] - photon.y) * photon.py) / photonPt2 : 0.f;
     float photonDcaXYToPV = std::hypot(photon.x + tAtDcaXY * photon.px - pv[0], photon.y + tAtDcaXY * photon.py - pv[1]);
     float photonDcaZToPV = photon.z + tAtDcaXY * photon.pz - pv[2];
+    if (photonDcaToPV > candMaxPhotonDcaToPV || std::abs(photonDcaZToPV) > candMaxPhotonDcaZToPV) {
+      return;
+    }
+    fillCandStep(13); // photon DCA to PV
     float psiPair = photonPsiPair(posTrack, negTrack, photon.radius);
 
     SigmaPlusCandidate cand;
     cand.photonId = photonId(posTrack.globalIndex(), negTrack.globalIndex());
+    cand.collisionId = collisionIndex;
+    cand.protonTrackId = protonTrack.globalIndex();
+    cand.photonPosTrackId = posTrack.globalIndex();
+    cand.photonNegTrackId = negTrack.globalIndex();
     cand.isSignal = isSignal;
     cand.photonLegsWithoutIts = photonLegsWithoutIts;
     cand.matchedSigmaId = matchedSigmaId;
@@ -1579,12 +1621,25 @@ struct Sigmaplusbuilder {
     mCandidatesOfTimeframe.push_back(cand);
   }
 
+  // BDT score
+  float computeMlScore(const SigmaPlusCandidate& cand)
+  {
+    constexpr float NoTofNSigmaThreshold = -900.f; // tofNSigma is -999 without TOF, NaN for the BDT
+    std::vector<float> inputs{std::abs(cand.photonDcaZToPV), std::abs(cand.protonDcaXY), std::abs(cand.protonDcaZ), cand.dcaToPV,
+                              cand.protonTpcNSigma, cand.protonTofNSigma < NoTofNSigmaThreshold ? std::numeric_limits<float>::quiet_NaN() : cand.protonTofNSigma,
+                              cand.antiSigmaPointingAngle, cand.dcaProtonGamma, cand.photonDcaXYToPV, cand.photonCosPAToPV, cand.tiltAngle};
+    return mlResponse.getModelOutput(inputs, 0)[1];
+  }
+
   template <bool IsMC>
   void fillCandidateTables(const SigmaPlusCandidate& cand)
   {
+    const float mlScore = applyMl ? computeMlScore(cand) : -1.f;
     if constexpr (IsMC) {
       if (fillSlimTables) {
-        slimSigmaPlusCandsMC(cand.radius,
+        slimSigmaPlusCandsMC(cand.collisionId, cand.protonTrackId, cand.photonPosTrackId, cand.photonNegTrackId,
+                             cand.matchedSigmaId,
+                             cand.radius,
                              cand.dcaToPV, cand.tiltAngle, cand.dcaProtonGamma,
                              cand.protonSign,
                              cand.protonDcaXY, cand.protonDcaZ,
@@ -1597,13 +1652,16 @@ struct Sigmaplusbuilder {
                              cand.photonDcaDau, cand.photonCosPAToPV, cand.photonDcaXYToPV, cand.photonDcaZToPV, cand.photonPsiPair,
                              cand.posDcaXY, cand.posDcaZ, cand.negDcaXY, cand.negDcaZ,
                              cand.posTpcNClsFindable, cand.negTpcNClsFindable, cand.posTpcChi2NCl, cand.negTpcChi2NCl,
+                             mlScore,
                              cand.collisionIdCheck,
                              cand.isSignal, cand.protonIsSignal, cand.photonIsSignal,
                              cand.decayRadiusMC, cand.massMC,
                              cand.pSigmaPlusMC[0], cand.pSigmaPlusMC[1], cand.pSigmaPlusMC[2]);
         return;
       }
-      sigmaPlusCandsMC(cand.decVtx[0], cand.decVtx[1], cand.decVtx[2],
+      sigmaPlusCandsMC(cand.collisionId, cand.protonTrackId, cand.photonPosTrackId, cand.photonNegTrackId,
+                       cand.matchedSigmaId,
+                       cand.decVtx[0], cand.decVtx[1], cand.decVtx[2],
                        cand.flightDistance, cand.dcaProtonGamma,
                        cand.pProton[0], cand.pProton[1], cand.pProton[2],
                        cand.pGamma1[0], cand.pGamma1[1], cand.pGamma1[2],
@@ -1619,6 +1677,7 @@ struct Sigmaplusbuilder {
                        cand.photonDcaDau, cand.photonCosPAToPV, cand.photonDcaXYToPV, cand.photonDcaZToPV, cand.photonPsiPair,
                        cand.posDcaXY, cand.posDcaZ, cand.negDcaXY, cand.negDcaZ,
                        cand.posTpcNClsFindable, cand.negTpcNClsFindable, cand.posTpcChi2NCl, cand.negTpcChi2NCl,
+                       mlScore,
                        cand.collisionIdCheck,
                        cand.isSignal, cand.protonIsSignal, cand.photonIsSignal,
                        cand.decVtxMC[0], cand.decVtxMC[1], cand.decVtxMC[2],
@@ -1628,7 +1687,8 @@ struct Sigmaplusbuilder {
                        cand.decayRadiusMC, cand.massMC);
     } else {
       if (fillSlimTables) {
-        slimSigmaPlusCands(cand.radius,
+        slimSigmaPlusCands(cand.collisionId, cand.protonTrackId, cand.photonPosTrackId, cand.photonNegTrackId,
+                           cand.radius,
                            cand.dcaToPV, cand.tiltAngle, cand.dcaProtonGamma,
                            cand.protonSign,
                            cand.protonDcaXY, cand.protonDcaZ,
@@ -1640,10 +1700,12 @@ struct Sigmaplusbuilder {
                            cand.photonMass,
                            cand.photonDcaDau, cand.photonCosPAToPV, cand.photonDcaXYToPV, cand.photonDcaZToPV, cand.photonPsiPair,
                            cand.posDcaXY, cand.posDcaZ, cand.negDcaXY, cand.negDcaZ,
-                           cand.posTpcNClsFindable, cand.negTpcNClsFindable, cand.posTpcChi2NCl, cand.negTpcChi2NCl);
+                           cand.posTpcNClsFindable, cand.negTpcNClsFindable, cand.posTpcChi2NCl, cand.negTpcChi2NCl,
+                           mlScore);
         return;
       }
-      sigmaPlusCands(cand.decVtx[0], cand.decVtx[1], cand.decVtx[2],
+      sigmaPlusCands(cand.collisionId, cand.protonTrackId, cand.photonPosTrackId, cand.photonNegTrackId,
+                     cand.decVtx[0], cand.decVtx[1], cand.decVtx[2],
                      cand.flightDistance, cand.dcaProtonGamma,
                      cand.pProton[0], cand.pProton[1], cand.pProton[2],
                      cand.pGamma1[0], cand.pGamma1[1], cand.pGamma1[2],
@@ -1658,11 +1720,12 @@ struct Sigmaplusbuilder {
                      cand.posItsNCls, cand.posTpcNCls, cand.negItsNCls, cand.negTpcNCls,
                      cand.photonDcaDau, cand.photonCosPAToPV, cand.photonDcaXYToPV, cand.photonDcaZToPV, cand.photonPsiPair,
                      cand.posDcaXY, cand.posDcaZ, cand.negDcaXY, cand.negDcaZ,
-                     cand.posTpcNClsFindable, cand.negTpcNClsFindable, cand.posTpcChi2NCl, cand.negTpcChi2NCl);
+                     cand.posTpcNClsFindable, cand.negTpcNClsFindable, cand.posTpcChi2NCl, cand.negTpcChi2NCl,
+                     mlScore);
     }
   }
 
-  // The same photon can be in candidates of several collisions (with candDeduplicatePhotons only the one with the smallest DCA to PV is written)
+  // The same photon can be in candidates of several collisions
   template <bool IsMC>
   void deduplicateAndWriteCandidates()
   {
@@ -1760,7 +1823,7 @@ struct Sigmaplusbuilder {
 
       for (const auto& photon : acceptedPhotons) {
         for (const auto& proton : acceptedProtons) {
-          buildSigmaPlusCandidate<false>(proton, photon, pv);
+          buildSigmaPlusCandidate<false>(proton, photon, collision.globalIndex(), pv);
         }
       }
     }
@@ -1847,7 +1910,7 @@ struct Sigmaplusbuilder {
 
       for (const auto& photon : acceptedPhotons) {
         for (const auto& proton : acceptedProtons) {
-          buildSigmaPlusCandidate<true>(proton, photon, pv);
+          buildSigmaPlusCandidate<true>(proton, photon, collision.globalIndex(), pv);
         }
       }
     }
@@ -1874,7 +1937,9 @@ struct Sigmaplusbuilder {
       float genMassMC = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
 
       if (fillSlimTables) {
-        slimSigmaPlusCandsMC(-999.f,
+        slimSigmaPlusCandsMC(-1, -1, -1, -1,
+                             mcPart.globalIndex(),
+                             -999.f,
                              -999.f, -999.f, -999.f,
                              0,
                              -999.f, -999.f,
@@ -1887,6 +1952,7 @@ struct Sigmaplusbuilder {
                              -999.f, -999.f, -999.f, -999.f, -999.f,
                              -999.f, -999.f, -999.f, -999.f,
                              0, 0, -999.f, -999.f,
+                             -1.f,
                              false,
                              false, false, false,
                              genDecayRadiusMC, genMassMC,
@@ -1894,7 +1960,9 @@ struct Sigmaplusbuilder {
         continue;
       }
 
-      sigmaPlusCandsMC(-999.f, -999.f, -999.f,
+      sigmaPlusCandsMC(-1, -1, -1, -1,
+                       mcPart.globalIndex(),
+                       -999.f, -999.f, -999.f,
                        -999.f, -999.f,
                        -999.f, -999.f, -999.f,
                        -999.f, -999.f, -999.f,
@@ -1910,6 +1978,7 @@ struct Sigmaplusbuilder {
                        -999.f, -999.f, -999.f, -999.f, -999.f,
                        -999.f, -999.f, -999.f, -999.f,
                        0, 0, -999.f, -999.f,
+                       -1.f,
                        false,
                        false, false, false,
                        genDecVtx[0], genDecVtx[1], genDecVtx[2],

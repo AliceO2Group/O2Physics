@@ -72,7 +72,7 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
     for (int iBin{2}; iBin < mSelections->GetNbinsX(); ++iBin) { // Exclude first and last bins as they are total number of analysed and selected events, respectively
       mAnalysedTriggers->GetXaxis()->SetBinLabel(iBin - 1, mSelections->GetXaxis()->GetBinLabel(iBin));
     }
-    std::shared_ptr<TH1> selections = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "Selections").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX(), -0.5, static_cast<double>(mSelections->GetNbinsX() - 0.5)}});
+    std::shared_ptr<TH1> selections = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "Selections").data(), "", o2::framework::HistType::kTH1D, {{mSelections->GetNbinsX(), -0.5, (mSelections->GetNbinsX() - 0.5)}});
     selections->SetBit(TH1::kIsAverage);
     for (int iBin{1}; iBin <= mSelections->GetNbinsX(); ++iBin) {
       selections->GetXaxis()->SetBinLabel(iBin, mSelections->GetXaxis()->GetBinLabel(iBin));
@@ -81,7 +81,7 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
     }
   }
   if (mScalers) {
-    std::shared_ptr<TH1> scalers = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "Scalers").data(), "", o2::framework::HistType::kTH1D, {{mScalers->GetNbinsX(), -0.5, static_cast<double>(mScalers->GetNbinsX() - 0.5)}});
+    std::shared_ptr<TH1> scalers = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "Scalers").data(), "", o2::framework::HistType::kTH1D, {{mScalers->GetNbinsX(), -0.5, (mScalers->GetNbinsX() - 0.5)}});
     scalers->SetBit(TH1::kIsAverage);
     for (int iBin{1}; iBin <= mScalers->GetNbinsX(); ++iBin) {
       scalers->GetXaxis()->SetBinLabel(iBin, mScalers->GetXaxis()->GetBinLabel(iBin));
@@ -90,7 +90,7 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
     }
   }
   if (mInspectedTVX) {
-    std::shared_ptr<TH1> inspectedTVX = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "InspectedTVX").data(), "", o2::framework::HistType::kTH1D, {{mInspectedTVX->GetNbinsX(), -0.5, static_cast<double>(mInspectedTVX->GetNbinsX() - 0.5)}});
+    std::shared_ptr<TH1> inspectedTVX = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "InspectedTVX").data(), "", o2::framework::HistType::kTH1D, {{mInspectedTVX->GetNbinsX(), -0.5, (mInspectedTVX->GetNbinsX() - 0.5)}});
     inspectedTVX->SetBit(TH1::kIsAverage);
     for (int iBin{1}; iBin <= mInspectedTVX->GetNbinsX(); ++iBin) {
       inspectedTVX->GetXaxis()->SetBinLabel(iBin, mInspectedTVX->GetXaxis()->GetBinLabel(iBin));
@@ -99,7 +99,7 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
     }
   }
   if (mTOIs.size()) {
-    mAnalysedTriggersOfInterest = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "AnalysedTriggersOfInterest").data(), "", o2::framework::HistType::kTH1D, {{static_cast<int>(mTOIs.size()), -0.5, static_cast<double>(mTOIs.size() - 0.5)}}).get();
+    mAnalysedTriggersOfInterest = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "AnalysedTriggersOfInterest").data(), "", o2::framework::HistType::kTH1D, {{static_cast<int>(mTOIs.size()), -0.5, (mTOIs.size() - 0.5)}}).get();
     for (size_t i{0}; i < mTOIs.size(); ++i) {
       mAnalysedTriggersOfInterest->GetXaxis()->SetBinLabel(i + 1, mTOIs[i].data());
     }

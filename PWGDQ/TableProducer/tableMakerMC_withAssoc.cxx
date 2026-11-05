@@ -936,7 +936,7 @@ struct TableMakerMC {
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT0-4: V0Bits
         trackFilteringTag |= static_cast<uint64_t>(track.pidbit());
         for (int iv0 = 0; iv0 < 5; iv0++) {
-          if (track.pidbit() & (uint8_t(1) << iv0)) {
+          if (track.pidbit() & (static_cast<uint8_t>(1) << iv0)) {
             (dynamic_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
           }
         }
@@ -995,7 +995,7 @@ struct TableMakerMC {
             if (fDoDetailedQA) {
               j = 0;
               for (const auto& cut : fTrackCuts) {
-                if (trackTempFilterMap & (uint8_t(1) << j)) {
+                if (trackTempFilterMap & (static_cast<uint8_t>(1) << j)) {
                   fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), dqtablemakermc_helpers::varValues()); // fill the reconstructed truth
                 }
                 j++;
@@ -1159,8 +1159,8 @@ struct TableMakerMC {
         }
       }
 
-      trackFilteringTag = uint8_t(0);
-      trackTempFilterMap = uint8_t(0);
+      trackFilteringTag = static_cast<uint8_t>(0);
+      trackTempFilterMap = static_cast<uint8_t>(0);
 
       if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonRealign)) {
         // Check refit flag in case of realigned muons
@@ -1207,7 +1207,7 @@ struct TableMakerMC {
       int i = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
         if ((*cut)->IsSelected(dqtablemakermc_helpers::varValues())) {
-          trackTempFilterMap |= (uint8_t(1) << i);
+          trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
           if (fConfigHistOutput.fConfigQA) {
             fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), dqtablemakermc_helpers::varValues());
           }
@@ -1248,7 +1248,7 @@ struct TableMakerMC {
               if (fDoDetailedQA) {
                 j = 0;
                 for (const auto& cut : fMuonCuts) {
-                  if (trackTempFilterMap & (uint8_t(1) << j)) {
+                  if (trackTempFilterMap & (static_cast<uint8_t>(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut->GetName(), sig->GetName()), dqtablemakermc_helpers::varValues()); // fill the reconstructed truth
                   }
                   j++;
@@ -1291,7 +1291,7 @@ struct TableMakerMC {
       //   So all the information which pertains to collision association or MFT associations should not be taken from the skimmed data, but recomputed at analysis time.
       uint32_t mchIdx = -1;
       uint32_t mftIdx = -1;
-      if (muon.trackType() == uint8_t(0) || muon.trackType() == uint8_t(2)) { // MCH-MID (2) or global (0)
+      if (muon.trackType() == static_cast<uint8_t>(0) || muon.trackType() == static_cast<uint8_t>(2)) { // MCH-MID (2) or global (0)
         if (fFwdTrackIndexMap.find(muon.matchMCHTrackId()) != fFwdTrackIndexMap.end()) {
           mchIdx = fFwdTrackIndexMap[muon.matchMCHTrackId()];
         }
@@ -1593,7 +1593,7 @@ struct TableMakerMC {
     fStatsList.setObject(new TList());
     fStatsList->SetOwner(kTRUE);
     std::vector<TString> eventLabels{"BCs", "Collisions before filtering", "Before cuts", "After cuts"};
-    TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, (float)o2::aod::evsel::kNsel + 0.5);
+    TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, static_cast<float>(o2::aod::evsel::kNsel) + 0.5);
     int ib = 1;
     for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
       histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());

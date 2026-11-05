@@ -21,12 +21,18 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/Concepts.h>
+#include <Framework/DataTypes.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
+#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <Math/GenVector/DisplacementVector2D.h> // IWYU pragma: keep (for rotate)
-#include <Math/Vector2D.h>                       // IWYU pragma: keep (do not replace with Math/Vector2Dfwd.h)
+#include <Math/MatrixFunctions.h>
+#include <Math/SMatrix.h>
+#include <Math/SVector.h>
+#include <Math/Vector2D.h> // IWYU pragma: keep (do not replace with Math/Vector2Dfwd.h)
 #include <Math/Vector2Dfwd.h>
 #include <TPDGCode.h>
 
@@ -37,12 +43,22 @@
 #include <cstdint>
 
 //_______________________________________________________________________
+/// \brief Armenteros-Podolanski cut of photon conversions: (alpha, qT) inside the ellipse with half axes alpha_max and qt_max
+/// \param alpha Armenteros alpha
+/// \param qt Armenteros qT (GeV/c)
+/// \param alpha_max half axis in alpha
+/// \param qt_max half axis in qT (GeV/c)
+/// \return true if inside the ellipse
 inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
 {
   float ellipse = std::pow(alpha / alpha_max, 2) + std::pow(qt / qt_max, 2);
   return (ellipse < 1.0);
 }
 //_______________________________________________________________________
+/// \brief Armenteros alpha of a V0: (pL+ - pL-) / (pL+ + pL-), pL = momentum of a leg along the V0 momentum
+/// \param pxpos px of the positive leg (GeV/c), same for pypos, pzpos
+/// \param pxneg px of the negative leg (GeV/c), same for pyneg, pzneg
+/// \return alpha
 inline float v0Alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
   float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
@@ -51,6 +67,10 @@ inline float v0Alpha(float pxpos, float pypos, float pzpos, float pxneg, float p
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // longitudinal momentum asymmetry of v0
 }
 //_______________________________________________________________________
+/// \brief Armenteros qT of a V0: momentum of the negative leg transverse to the V0 momentum
+/// \param pxpos px of the positive leg (GeV/c), same for pypos, pzpos
+/// \param pxneg px of the negative leg (GeV/c), same for pyneg, pzneg
+/// \return qT (GeV/c)
 inline float v0Qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
   float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
@@ -58,6 +78,13 @@ inline float v0Qt(float pxpos, float pypos, float pzpos, float pxneg, float pyne
   return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot); // qt of v0
 }
 //_______________________________________________________________________
+/// \brief conversion point of two legs (Run 2 recipe): xy = touching point of the two helix circles (centres weighted with the
+/// radius of the other circle), z = radius-weighted mean of the leg z after propagating each leg to its point closest to it
+/// \param prop propagator (also gives the nominal field)
+/// \param trackPosInformation positive leg
+/// \param trackNegInformation negative leg
+/// \param xyz output: conversion point (cm)
+/// \param matCorr material correction of the propagation
 template <typename TrackPrecision = float>
 inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackPosInformation, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackNegInformation, std::array<float, 3>& xyz, o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
@@ -187,6 +214,12 @@ inline std::array<float, 3> getPropMomentumFromTrackHelix(const float s, const T
 }
 
 //_______________________________________________________________________
+/// \brief conversion point of two legs from their track rows (Vtx_recalculationParCov)
+/// \param prop propagator (also gives the nominal field)
+/// \param lTrackPos positive leg
+/// \param lTrackNeg negative leg
+/// \param xyz output: conversion point (cm)
+/// \param matCorr material correction of the propagation
 template <typename TrackPrecision = float, o2::soa::is_iterator T1, o2::soa::is_iterator T2>
 inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, std::array<float, 3>& xyz, o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
@@ -262,11 +295,151 @@ inline V0TruthClass classifyV0Truth(TTrack const& pos, TTrack const& ele, TMCPar
   return kV0OtherFake;
 }
 
+//_______________________________________________________________________
+/// \brief electron-PID compatibility of the two legs: mean |n sigma_e| + 2 * (n sigma_e+ + n sigma_e-) in the TPC
+/// \param pos positive leg
+/// \param ele negative leg
+/// \return kappa
 template <o2::soa::is_iterator TLeg>
 float getV0Kappa(TLeg const& pos, TLeg const& ele)
 {
   float kappa = (std::fabs(pos.tpcNSigmaEl()) + std::fabs(ele.tpcNSigmaEl())) / 2.f + (2.f * (pos.tpcNSigmaEl() + ele.tpcNSigmaEl()));
   return kappa;
+}
+
+//_______________________________________________________________________
+/// \brief gap between the helix circles of two legs in xy
+/// \param cPos circle of the positive leg
+/// \param cEle circle of the negative leg
+/// \return distance of the centres minus the sum of the radii (cm); < 0: the circles overlap
+inline float circleGap(o2::track::TrackAuxPar const& cPos, o2::track::TrackAuxPar const& cEle)
+{
+  return std::hypot(cEle.xC - cPos.xC, cEle.yC - cPos.yC) - (cPos.rC + cEle.rC);
+}
+
+/// \brief return value of tpcDriftSide if the side cannot be determined
+constexpr int TPCSideUndetermined = 2;
+
+//_______________________________________________________________________
+/// \brief TPC side in which a track drifted, from the TPC side flags, else from z, tgl and the time asymmetry
+/// \param track track row (flags, z, tgl, tpcDeltaTFwd, tpcDeltaTBwd)
+/// \return 1 A side, -1 C side, 0 both sides (crosses the central electrode), TPCSideUndetermined
+template <o2::soa::is_iterator TTrack>
+inline int tpcDriftSide(TTrack const& track)
+{
+  constexpr float MaxCECrossingDeltaTNS = 1000.f;
+  const auto sides = track.flags() & (o2::aod::track::TPCSideA | o2::aod::track::TPCSideC);
+  if (sides == o2::aod::track::TPCSideA) {
+    return 1;
+  }
+  if (sides == o2::aod::track::TPCSideC) {
+    return -1;
+  }
+  if (sides != 0) {
+    return 0;
+  }
+  const float dFwd = track.tpcDeltaTFwd();
+  const float dBwd = track.tpcDeltaTBwd();
+  if (dFwd == dBwd && dFwd < MaxCECrossingDeltaTNS) {
+    return 0;
+  }
+  const bool zPositive = track.z() > 0.f;
+  const bool tglPositive = track.tgl() > 0.f;
+  if (zPositive == tglPositive) {
+    return tglPositive ? 1 : -1;
+  }
+  if (dBwd == 0.f && dFwd > 0.f) {
+    return zPositive ? 1 : -1;
+  }
+  if (dBwd > 0.f) {
+    return tglPositive ? 1 : -1;
+  }
+  return TPCSideUndetermined;
+}
+
+/// \brief z and momentum of a track helix at a point of its circle (helixPointAt)
+struct HelixPoint {
+  bool ok = false;
+  bool inward = false;
+  float z = 0.f;
+  std::array<float, 3> p{};
+};
+
+//_______________________________________________________________________
+/// \brief z and momentum of a track helix at an xy point of its circle
+/// \param par track parameters
+/// \param xP x of the point on the circle (cm)
+/// \param yP y of the point on the circle (cm)
+/// \param xB x of the beam position (cm)
+/// \param yB y of the beam position (cm)
+/// \param bz magnetic field (kG)
+/// \return ok = false for a degenerate circle; inward = the track moves towards the beam at the point (more than 10 cm from
+/// the beam), then the momentum is reversed; z and momentum at the point
+inline HelixPoint helixPointAt(o2::track::TrackPar const& par, const float xP, const float yP, const float xB, const float yB, const float bz)
+{
+  HelixPoint h;
+  const o2::track::TrackAuxPar c(par, bz);
+  std::array<float, 3> r{}, p{};
+  par.getXYZGlo(r);
+  par.getPxPyPzGlo(p);
+  const float pt = std::hypot(p[0], p[1]);
+  if (!(c.rC > 0.f) || !(pt > 0.f)) {
+    return h;
+  }
+  const float sense = (r[0] - c.xC) * p[1] - (r[1] - c.yC) * p[0] > 0.f ? 1.f : -1.f;
+  float back = RecoDecay::constrainAngle(sense * (std::atan2(r[1] - c.yC, r[0] - c.xC) - std::atan2(yP - c.yC, xP - c.xC)), 0.f);
+  const float tx = -sense * (yP - c.yC) / c.rC;
+  const float ty = sense * (xP - c.xC) / c.rC;
+  constexpr float MinRadiusOrientation = 10.f;
+  h.inward = std::hypot(xP - xB, yP - yB) > MinRadiusOrientation && tx * (xP - xB) + ty * (yP - yB) < 0.f;
+  if (!h.inward) {
+    if (back > o2::constants::math::PI && (r[0] - xB) * p[0] + (r[1] - yB) * p[1] > 0.f) {
+      back -= o2::constants::math::TwoPI; // o2-linter: disable=two-pi-add-subtract (signed arc length to a point behind the track, not an angle range)
+    }
+    h.z = r[2] - par.getTgl() * c.rC * back;
+    h.p = {pt * tx, pt * ty, pt * par.getTgl()};
+  } else {
+    h.z = r[2] + par.getTgl() * c.rC * (back > 0.f ? o2::constants::math::TwoPI - back : 0.f);
+    h.p = {-pt * tx, -pt * ty, -pt * par.getTgl()};
+  }
+  h.ok = true;
+  return h;
+}
+
+//_______________________________________________________________________
+/// \brief compatibility of two track pieces with one track
+/// \param trA first track
+/// \param trB second track
+/// \param bz magnetic field (kG)
+/// \return chi2 of (y, snp, tgl, q/pt) at a common x with the summed covariances (4 dof); -1 if the propagation or the inversion fails
+template <o2::soa::is_iterator TTrack>
+inline float splitPieceChi2(TTrack const& trA, TTrack const& trB, const float bz)
+{
+  auto a = getTrackParCov(trA);
+  auto b = getTrackParCov(trB);
+  if (!a.rotate(b.getAlpha()) || !a.propagateTo(b.getX(), bz)) {
+    a = getTrackParCov(trA);
+    b = getTrackParCov(trB);
+    if (!b.rotate(a.getAlpha()) || !b.propagateTo(a.getX(), bz)) {
+      return -1.f;
+    }
+  }
+  ROOT::Math::SMatrix<double, 4, 4, ROOT::Math::MatRepSym<double, 4>> c;
+  c(0, 0) = a.getSigmaY2() + b.getSigmaY2();
+  c(1, 0) = a.getSigmaSnpY() + b.getSigmaSnpY();
+  c(1, 1) = a.getSigmaSnp2() + b.getSigmaSnp2();
+  c(2, 0) = a.getSigmaTglY() + b.getSigmaTglY();
+  c(2, 1) = a.getSigmaTglSnp() + b.getSigmaTglSnp();
+  c(2, 2) = a.getSigmaTgl2() + b.getSigmaTgl2();
+  c(3, 0) = a.getSigma1PtY() + b.getSigma1PtY();
+  c(3, 1) = a.getSigma1PtSnp() + b.getSigma1PtSnp();
+  c(3, 2) = a.getSigma1PtTgl() + b.getSigma1PtTgl();
+  c(3, 3) = a.getSigma1Pt2() + b.getSigma1Pt2();
+  if (!c.Invert()) {
+    return -1.f;
+  }
+  const ROOT::Math::SVector<double, 4> d(a.getY() - b.getY(), a.getSnp() - b.getSnp(), a.getTgl() - b.getTgl(), a.getQ2Pt() - b.getQ2Pt());
+  return static_cast<float>(ROOT::Math::Similarity(c, d));
 }
 
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_

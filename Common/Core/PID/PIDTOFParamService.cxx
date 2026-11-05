@@ -298,7 +298,7 @@ struct TOFSupport : o2::framework::ServicePlugin {
       },
       .configure = CommonServices::noConfiguration(),
       .exit = [](ServiceRegistryRef, void* service) {
-        auto* resp = reinterpret_cast<o2::pid::tof::TOFResponse*>(service);
+        auto* resp = static_cast<o2::pid::tof::TOFResponse*>(service);
         delete resp; },
       .kind = ServiceKind::Serial};
   }

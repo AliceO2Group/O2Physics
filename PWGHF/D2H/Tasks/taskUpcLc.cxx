@@ -190,7 +190,7 @@ struct HfTaskUpcLc {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
 
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = std::vector<double>(binsPt);
     registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{200, 0., 200}, {200, 0., 200}}});
     registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{100, 0., 10}, {100, 0., 10}}});
     registry.add("Data/zdc/timeZNA_vs_timeZNC", "ZNA vs ZNC time;ZNA Time;ZNC time", {HistType::kTH2F, {{200, -10., 10}, {200, -10., 10}}});

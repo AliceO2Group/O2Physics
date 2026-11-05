@@ -53,15 +53,22 @@ enum class Mode : uint32_t {
   kMc = bit<Mode>(2),
   kSe = bit<Mode>(3),
   kMe = bit<Mode>(4),
+  kFitVars = bit<Mode>(5), // purity/fraction histograms (tracks: packed nSigma tables; V0s: cpa) -- gates booking at init time
   kReco_Qa = kReco | kQa,
   kReco_Mc = kReco | kMc,
   kReco_Qa_Mc = kReco | kQa | kMc,
+  kReco_Qa_FitVars = kReco | kQa | kFitVars,
+  kReco_Qa_Mc_FitVars = kReco | kQa | kMc | kFitVars,
   kSe_Reco = kSe | kReco,
   kMe_Reco = kMe | kReco,
   kSe_Reco_Mc = kSe | kReco | kMc,
   kMe_Reco_Mc = kMe | kReco | kMc,
   kSe_Mc = kSe | kMc,
   kMe_Mc = kMe | kMc,
+  kSe_Reco_FitVars = kSe | kReco | kFitVars,
+  kMe_Reco_FitVars = kMe | kReco | kFitVars,
+  kSe_Reco_Mc_FitVars = kSe | kReco | kMc | kFitVars,
+  kMe_Reco_Mc_FitVars = kMe | kReco | kMc | kFitVars,
 };
 
 enum class System : uint32_t {
@@ -219,7 +226,8 @@ enum class V0 : o2::analysis::femto::datatypes::V0Type {
 
 enum class Kink : o2::analysis::femto::datatypes::KinkType {
   kSigma,
-  kSigmaPlus
+  kSigmaPlus,
+  kSigmaPlusPcm
 };
 
 enum class Cascade : o2::analysis::femto::datatypes::CascadeType {
@@ -273,6 +281,23 @@ enum class KinematicVariable : o2::analysis::femto::datatypes::KinematicVariable
   kQ3 = 3,
   kKinematicVariableLast = 4
 };
+
+/// axis title for the kinematic variable plotted by CPR / pair- and triplet-cleaner QA histograms
+constexpr const char* kinematicVariableToAxisTitle(KinematicVariable type)
+{
+  switch (type) {
+    case KinematicVariable::kKstar:
+      return "k* (GeV/#it{c})";
+    case KinematicVariable::kKt:
+      return "k_{T} (GeV/#it{c})";
+    case KinematicVariable::kMt:
+      return "m_{T} (GeV/#it{c}^{2})";
+    case KinematicVariable::kQ3:
+      return "Q_{3} (GeV/#it{c})";
+    default:
+      return "kinematic variable (GeV/#it{c})";
+  }
+}
 
 }; // namespace o2::analysis::femto::modes
 #endif // PWGCF_FEMTO_CORE_MODES_H_

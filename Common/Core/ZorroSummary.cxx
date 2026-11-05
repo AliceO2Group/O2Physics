@@ -20,7 +20,7 @@
 
 void ZorroSummary::Copy(TObject& c) const
 {
-  static_cast<ZorroSummary&>(c) = *this;
+  dynamic_cast<ZorroSummary&>(c) = *this;
 }
 
 Long64_t ZorroSummary::Merge(TCollection* list)

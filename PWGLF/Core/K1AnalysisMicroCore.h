@@ -43,6 +43,7 @@
 #include <limits>
 #include <set>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -63,6 +64,16 @@ enum class K1TruthChannel {
   RhoK = 1,
   KStarPi = 2
 };
+
+struct K1ParentTruth {
+  double pt = std::numeric_limits<double>::quiet_NaN();
+  double y = std::numeric_limits<double>::quiet_NaN();
+  int pdgCode = 0;
+  K1TruthChannel channel = K1TruthChannel::None;
+};
+using K1ParentTruthMap = std::unordered_map<int64_t, K1ParentTruth>;
+
+inline K1TruthChannel classifyGeneratedK1(int charge, int daughter1, int daughter2);
 
 // The value is the species index of the PID configuration in ResoAnalysisSelectionCore.
 enum class Species : int {
@@ -215,6 +226,49 @@ K1TruthChannel classifyK1Truth(const Track& pion1, const Track& pion2, const Kao
     return K1TruthChannel::KStarPi;
   }
   return K1TruthChannel::None;
+}
+
+template <typename Kaon, typename Pion>
+int k1MotherId(K1TruthChannel channel, const Kaon& kaon, const Pion& pion1, const Pion& pion2)
+{
+  if (channel == K1TruthChannel::RhoK) {
+    return kaon.motherId();
+  }
+  if (channel == K1TruthChannel::KStarPi) {
+    return std::abs(pion1.motherPDG()) == o2::constants::physics::Pdg::kK1_1270Plus ? pion1.motherId() : pion2.motherId();
+  }
+  return -1;
+}
+
+template <typename ParentsType>
+K1ParentTruthMap makeK1ParentTruthMap(const ParentsType& parents)
+{
+  K1ParentTruthMap result;
+  for (const auto& part : parents) {
+    if (std::abs(part.pdgCode()) != o2::constants::physics::Pdg::kK1_1270Plus || part.originalMcParticleId() < 0) {
+      continue;
+    }
+    const auto id = static_cast<int64_t>(part.originalMcParticleId());
+    const int charge = part.pdgCode() > 0 ? 1 : -1;
+    result.emplace(id, K1ParentTruth{part.pt(), part.y(), part.pdgCode(), classifyGeneratedK1(charge, part.daughterPDG1(), part.daughterPDG2())});
+  }
+  return result;
+}
+
+inline const K1ParentTruth* findK1ParentTruth(const K1ParentTruthMap& parents, int64_t motherId,
+                                              K1TruthChannel channel, int charge)
+{
+  const auto it = parents.find(motherId);
+  if (it == parents.end()) {
+    return nullptr;
+  }
+  const auto& parent = it->second;
+  const int expectedPdg = charge * o2::constants::physics::Pdg::kK1_1270Plus;
+  if (channel == K1TruthChannel::None || parent.channel != channel || parent.pdgCode != expectedPdg ||
+      !std::isfinite(parent.pt) || parent.pt < 0. || !std::isfinite(parent.y)) {
+    return nullptr;
+  }
+  return &parent;
 }
 
 // Immediate decay channel of a generated K1 from the PDG codes of its two daughters.
@@ -635,7 +689,8 @@ class K1AnalysisMicroCore
       const int charge = part.pdgCode() > 0 ? 1 : -1;
       const K1TruthChannel channel = classifyGeneratedK1(charge, part.daughterPDG1(), part.daughterPDG2());
       histos.fill(HIST("CutFlow/generated"), 0, static_cast<int>(channel));
-      if (part.y() < mCandidateCuts.cK1MinRap || part.y() > mCandidateCuts.cK1MaxRap) {
+      if (!std::isfinite(part.pt()) || part.pt() < 0. || !std::isfinite(part.y()) ||
+          part.y() < mCandidateCuts.cK1MinRap || part.y() > mCandidateCuts.cK1MaxRap) {
         continue;
       }
       histos.fill(HIST("CutFlow/generated"), 1, static_cast<int>(channel));

@@ -98,11 +98,11 @@ struct ConfigurableObjectDemo {
     LOGF(info, "max_eta: %f; min_clusters: %d", (float)trackcuts.max_eta, (int)trackcuts.min_clusters);
     LOGF(info, "Cut1 bins: %s; Cut2 bins: %s", printArray(cut->getBins()), printArray(mutable_cut->getBins()));
     LOGF(info, "Cut1 labels: %s; Cut2 labels: %s", printArray(cut->getLabels()), printArray(mutable_cut->getLabels()));
-    auto vec = (std::vector<int>)array;
+    auto vec = std::vector<int>(array);
     LOGF(info, "Array: %s", printArray(vec).c_str());
-    auto dvec = (std::vector<double>)darray;
+    auto dvec = std::vector<double>(darray);
     LOGF(info, "Double array: %s", printArray(dvec).c_str());
-    auto fvec = (std::vector<float>)farray;
+    auto fvec = std::vector<float>(farray);
     LOGF(info, "Float array: %s", printArray(fvec).c_str());
     LOGF(info, "Matrix: %s", printMatrix((Array2D<float>)vmatrix));
     LOGF(info, "Labeled float array:\n %s\n %s\n %s", printArray(vla->getLabelsRows()), printArray(vla->getLabelsCols()), printMatrix(vla->getData()));

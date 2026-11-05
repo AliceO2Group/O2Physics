@@ -119,6 +119,22 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
   /// @return number of output nodes
   int getOutputNodes(int imod = 0) const { return this->mModels[imod].getNumOutputNodes(); }
 
+  /// @brief Run a model that takes several pre-built input tensors (e.g. ParT: pf_features, pf_vectors, pf_mask inputs).
+  /// \param input the input tensors, in the order the graph declares them
+  /// \param nModel index of the model
+  /// @return the model output, mNClasses entries long
+  template <typename T>
+  std::vector<TypeOutputScore> getModelOutputMultiInput(T& input, int nModel = 0)
+  {
+    // evalModel returns an owning copy of the (last) output tensor of the model
+    std::vector<TypeOutputScore> output = this->mModels[nModel].template evalModel<TypeOutputScore>(input);
+    if (output.size() < this->mNClasses) {
+      LOG(fatal) << "Model " << this->mPaths[nModel] << " returned " << output.size() << " scores, but " << static_cast<int>(this->mNClasses) << " classes are expected. Please check your configurables.";
+    }
+    output.resize(this->mNClasses);
+    return output;
+  }
+
   /// Method to fill the inputs of jet, tracks and secondary vertices
   /// \param jet is the b-jet candidate
   /// \param tracks is the vector of tracks associated to the jet
@@ -480,6 +496,85 @@ class GNNBjetAllocator : public TensorAllocator
     if (numNaN > 0) {
       LOGF(info, "NaN found in GNN input feature, number of NaN: %d", numNaN);
     }
+  }
+};
+
+// TensorAllocator for the ParT b-jet tagger.
+// Inputs, in graph order: pf_features (1, nFeat, nConstit), pf_vectors (1, nVec, nConstit),
+// pf_mask (1, 1, nConstit).
+class ParTBjetAllocator : public TensorAllocator
+{
+ private:
+  int64_t nConstit;
+  int64_t nFeat;
+  int64_t nVec;
+  bool padWrap;
+
+  // Replace non-finite values in a vector, which the model cannot consume
+  template <typename T>
+  static void replaceNonFinite(std::vector<T>& vec, T value)
+  {
+    for (auto& el : vec) { // o2-linter: disable=const-ref-in-for-loop
+      if (std::isnan(el) || std::isinf(el)) {
+        el = value;
+      }
+    }
+  }
+
+ public:
+  ParTBjetAllocator() : TensorAllocator(), nConstit(32), nFeat(10), nVec(4), padWrap(true) {}
+  ParTBjetAllocator(int64_t nConstit, int64_t nFeat, int64_t nVec, bool padWrap = true)
+    : TensorAllocator(), nConstit(nConstit), nFeat(nFeat), nVec(nVec), padWrap(padWrap) {}
+  ~ParTBjetAllocator() = default;
+
+  ParTBjetAllocator& operator=(const ParTBjetAllocator& other)
+  {
+    nConstit = other.nConstit;
+    nFeat = other.nFeat;
+    nVec = other.nVec;
+    padWrap = other.padWrap;
+    return *this;
+  }
+
+  // Allocate and return the ParT input tensors (std::vector<Ort::Value>).
+  // featData/vecData/maskData back the tensors
+  void getParTInput(const std::vector<std::vector<float>>& featConstit, const std::vector<std::vector<float>>& vecConstit, std::vector<float>& featData, std::vector<float>& vecData, std::vector<float>& maskData, std::vector<Ort::Value>& partInput)
+  {
+    featData.assign(nFeat * nConstit, 0.f);
+    vecData.assign(nVec * nConstit, 0.f);
+    maskData.assign(nConstit, 0.f);
+
+    int64_t nSelected = static_cast<int64_t>(featConstit.size());
+    const int64_t nReal = (nSelected < nConstit) ? nSelected : nConstit; // jets longer than nConstit are truncated
+
+    for (int64_t iConstit = 0; iConstit < nConstit; ++iConstit) {
+      int64_t iSource = iConstit;
+      if (iConstit < nReal) {
+        maskData[iConstit] = 1.f;
+      } else {
+        if (!padWrap || nReal == 0) {
+          continue; // zero padding, mask stays 0
+        }
+        iSource = iConstit % nReal; // weaver 'wrap' padding: cyclic repetition, mask stays 0
+      }
+      for (int64_t iFeat = 0; iFeat < nFeat; ++iFeat) {
+        featData[iFeat * nConstit + iConstit] = featConstit[iSource][iFeat];
+      }
+      for (int64_t iVec = 0; iVec < nVec; ++iVec) {
+        vecData[iVec * nConstit + iConstit] = vecConstit[iSource][iVec];
+      }
+    }
+
+    replaceNonFinite(featData, 0.f);
+    replaceNonFinite(vecData, 0.f);
+
+    std::vector<int64_t> featShape{1, nFeat, nConstit};
+    std::vector<int64_t> vecShape{1, nVec, nConstit};
+    std::vector<int64_t> maskShape{1, 1, nConstit};
+
+    partInput.emplace_back(createTensor(featData, featShape));
+    partInput.emplace_back(createTensor(vecData, vecShape));
+    partInput.emplace_back(createTensor(maskData, maskShape));
   }
 };
 

@@ -27,8 +27,12 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
+#include <TH1.h>
+
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -129,13 +133,13 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
 };
 
 // define the template structure for TrackSelection
-template <auto& Prefix>
+template <auto& Prefix, int DefaultChargeSign = 1>
 struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 2212, "Absolute value of PDG code. Set sign of charge to -1 for antiparticle."};
   o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3)"};
-  o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Track charge sign: +1 for positive, -1 for negative, 0 for both"};
+  o2::framework::Configurable<int> chargeSign{"chargeSign", DefaultChargeSign, "Track charge sign: +1 for positive, -1 for negative, 0 for both"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.0f, "Minimum pT (GeV/c)"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
@@ -153,18 +157,14 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<datatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
+  // which species slot this selection corresponds to in the packed purity tables (FitVars only)
+  o2::framework::Configurable<int> puritySlotMask{"puritySlotMask", 1, "Bitmask (bit N = slot N) selecting which purity slot to plot, read off hPuritySlotAssignment in the producer output."};
 };
 
 // Define unique prefixes as constexpr string literals
 constexpr const char PrefixTrackSelection1[] = "TrackSelection1";
 constexpr const char PrefixTrackSelection2[] = "TrackSelection2";
 constexpr const char PrefixTrackSelection3[] = "TrackSelection3";
-
-// for resonances builder
-constexpr const char PrefixPionPlus[] = "PionPlusSelection";
-constexpr const char PrefixPionMinus[] = "PionMinusSelection";
-constexpr const char PrefixKaonPlus[] = "KaonPlusSelection";
-constexpr const char PrefixKaonMinus[] = "KaonMinusSelection";
 
 // for dN/deta: tracks with TPC (ITS + TPC quality bits) and tracks without TPC (ITS quality bits only)
 // set maskLowMomentum = maskHighMomentum (quality bits only), chargeSign = 0 and the eta/pT range of the measurement
@@ -176,13 +176,45 @@ using ConfTrackSelection1 = ConfTrackSelection<PrefixTrackSelection1>;
 using ConfTrackSelection2 = ConfTrackSelection<PrefixTrackSelection2>;
 using ConfTrackSelection3 = ConfTrackSelection<PrefixTrackSelection3>;
 
-using ConfPionPlusSelection = ConfTrackSelection<PrefixPionPlus>;
-using ConfPionMinusSelection = ConfTrackSelection<PrefixPionMinus>;
-using ConfKaonPlusSelection = ConfTrackSelection<PrefixKaonPlus>;
-using ConfKaonMinusSelection = ConfTrackSelection<PrefixKaonMinus>;
+using ConfTrackSelectionDndetaGlobal = ConfTrackSelection<PrefixTrackSelectionDndetaGlobal, 0>;
+using ConfTrackSelectionDndetaItsOnly = ConfTrackSelection<PrefixTrackSelectionDndetaItsOnly, 0>;
 
-using ConfTrackSelectionDndetaGlobal = ConfTrackSelection<PrefixTrackSelectionDndetaGlobal>;
-using ConfTrackSelectionDndetaItsOnly = ConfTrackSelection<PrefixTrackSelectionDndetaItsOnly>;
+// Track selection for resonance daughters (pion+/-, kaon+/-). Charge sign and abs charge are fixed
+// by the species itself, so they are compile-time constants rather than configurables. No pdg code
+// here at all: the daughter mass used to reconstruct the resonance is set directly in the resonance
+// builder (e.g. MassPiPlus/MassKMinus), never read from this selection. Used exclusively by the
+// resonance builders via MAKE_RESONANCE_DAUGHTER_PARTITION.
+template <auto& Prefix, int ChargeSign, float PidThresDefault>
+struct ConfResonanceDaughterSelection : public o2::framework::ConfigurableGroup {
+  std::string prefix = Prefix;
+  static const int chargeAbs = 1;
+  static const int chargeSign = ChargeSign;
+  // filters for kinematics
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.0f, "Minimum pT (GeV/c)"};
+  o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
+  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  // track selection masks
+  o2::framework::Configurable<datatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 1ul, "Bitmask for selections below momentum threshold"};
+  o2::framework::Configurable<datatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 2ul, "Bitmask for selections above momentum threshold"};
+  // track rejection masks
+  o2::framework::Configurable<datatypes::TrackMaskType> rejectionMaskLowMomentum{"rejectionMaskLowMomentum", 0ul, "Bitmask for rejections below momentum threshold"};
+  o2::framework::Configurable<datatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
+  // momentum threshold for PID usage
+  o2::framework::Configurable<float> pidThres{"pidThres", PidThresDefault, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
+};
+
+constexpr const char PrefixPionPlus[] = "PionPlusSelection";
+constexpr const char PrefixPionMinus[] = "PionMinusSelection";
+constexpr const char PrefixKaonPlus[] = "KaonPlusSelection";
+constexpr const char PrefixKaonMinus[] = "KaonMinusSelection";
+
+using ConfPionPlusSelection = ConfResonanceDaughterSelection<PrefixPionPlus, 1, 0.5f>;
+using ConfPionMinusSelection = ConfResonanceDaughterSelection<PrefixPionMinus, -1, 0.5f>;
+using ConfKaonPlusSelection = ConfResonanceDaughterSelection<PrefixKaonPlus, 1, 0.4f>;
+using ConfKaonMinusSelection = ConfResonanceDaughterSelection<PrefixKaonMinus, -1, 0.4f>;
 
 /// enum for all track selections
 enum TrackSels {
@@ -572,6 +604,9 @@ struct TrackBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FDeuteronPids> producedDeuteronPids;
   o2::framework::Produces<o2::aod::FTritonPids> producedTritonPids;
   o2::framework::Produces<o2::aod::FHeliumPids> producedHeliumPids;
+  o2::framework::Produces<o2::aod::FItsPurity> producedItsPurity;
+  o2::framework::Produces<o2::aod::FTpcPurity> producedTpcPurity;
+  o2::framework::Produces<o2::aod::FTofPurity> producedTofPurity;
 };
 
 struct ConfTrackTables : o2::framework::ConfigurableGroup {
@@ -589,6 +624,9 @@ struct ConfTrackTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceDeuteronPids{"produceDeuteronPids", -1, "Produce DeuteronPids (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceTritonPids{"produceTritonPids", -1, "Produce TritonPids (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceHeliumPids{"produceHeliumPids", -1, "Produce HeliumPids (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceItsPurity{"produceItsPurity", -1, "Produce ItsPurity (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceTpcPurity{"produceTpcPurity", -1, "Produce TpcPurity (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceTofPurity{"produceTofPurity", -1, "Produce TofPurity (-1: auto; 0 off; 1 on)"};
 };
 
 template <auto& SelectionHistName, auto& FilterHistName>
@@ -616,6 +654,59 @@ class TrackBuilder
     mProduceDeuteronPids = utils::enableTable("FDeuteronPids_001", table.produceDeuteronPids.value, initContext);
     mProduceTritonPids = utils::enableTable("FTritonPids_001", table.produceTritonPids.value, initContext);
     mProduceHeliumPids = utils::enableTable("FHeliumPids_001", table.produceHeliumPids.value, initContext);
+    mProduceItsPurity = utils::enableTable("FItsPurity_001", table.produceItsPurity.value, initContext);
+    mProduceTpcPurity = utils::enableTable("FTpcPurity_001", table.produceTpcPurity.value, initContext);
+    mProduceTofPurity = utils::enableTable("FTofPurity_001", table.produceTofPurity.value, initContext);
+
+    if (mProduceItsPurity || mProduceTpcPurity || mProduceTofPurity) {
+      // assign each active species (requirePidXxx == true) to the next free slot (0-3), in
+      // canonical order (PuritySpeciesName); species with requirePidXxx == false get no slot.
+      const std::array<bool, PuritySpeciesLast> requirePid = {
+        config.requirePidElectron.value, config.requirePidPion.value, config.requirePidKaon.value,
+        config.requirePidProton.value, config.requirePidDeuteron.value, config.requirePidTriton.value, config.requirePidHelium.value};
+
+      int nextSlot = 0;
+      for (int i = 0; i < PuritySpeciesLast; i++) {
+        if (!requirePid[i]) {
+          continue;
+        }
+        if (nextSlot >= utils::PurityNSlots) {
+          LOG(fatal) << "More than " << utils::PurityNSlots << " species have requirePidXxx enabled, "
+                     << "but the purity tables only have " << utils::PurityNSlots << " slots. "
+                     << "Disable requirePidXxx for species you don't need purity info for. Breaking...";
+        }
+        mPuritySlot[i] = nextSlot;
+        nextSlot++;
+      }
+
+      // one bin per species (own SelectionName -> own cutculator group), plus the usual
+      // trailing "All analyzed"/"All passed" pair that cutculator always skips by position.
+      // BitPosition___X (unassigned species) is deliberately excluded from cutculator's
+      // "neutral" category, so nothing is selectable for a species that isn't configured here.
+      // Picking the one assigned bit for a species gives exactly 1<<slot -- the one-hot
+      // puritySlotMask value to paste into the downstream TrackSelection, with no changes
+      // needed in cutculator.py itself.
+      registry->add("hPuritySlotAssignment", "Purity slot assignment", o2::framework::HistType::kTH1F, {{PuritySpeciesLast + 2, -0.5, PuritySpeciesLast + 2 - 0.5}});
+      auto hSlotAssignment = registry->get<TH1>(HIST("hPuritySlotAssignment"));
+      for (int i = 0; i < PuritySpeciesLast; i++) {
+        std::string bitPosition = mPuritySlot[i] >= 0 ? std::to_string(mPuritySlot[i]) : "X";
+        std::string value = "Not configured";
+        if (mPuritySlot[i] >= 0) {
+          value = "Slot ";
+          value += std::to_string(mPuritySlot[i]);
+        }
+        std::string label = "SelectionName___";
+        label += PuritySpeciesName[i];
+        label += ":::MinimalCut___0:::OptionalCut___0:::BitPosition___";
+        label += bitPosition;
+        label += ":::Value___";
+        label += value;
+        hSlotAssignment->GetXaxis()->SetBinLabel(i + 1, label.c_str());
+        hSlotAssignment->Fill(i, 1);
+      }
+      hSlotAssignment->GetXaxis()->SetBinLabel(PuritySpeciesLast + 1, "All analyzed");
+      hSlotAssignment->GetXaxis()->SetBinLabel(PuritySpeciesLast + 2, "All passed");
+    }
 
     if (mProduceTracks && mProduceLiteTracks) {
       LOG(fatal) << "FTracks and FLiteTracks are mutually exclusive -- enable only one. "
@@ -634,7 +725,7 @@ class TrackBuilder
                  << "or switch to FTracks if CollisionTables.produceCollisions is enabled instead.";
     }
 
-    if (mProduceTracks || mProduceLiteTracks || mProduceTrackMasks || mProduceTrackMass || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids) {
+    if (mProduceTracks || mProduceLiteTracks || mProduceTrackMasks || mProduceTrackMass || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids || mProduceItsPurity || mProduceTpcPurity || mProduceTofPurity) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -671,6 +762,19 @@ class TrackBuilder
   {
     if (!mProduceTracks && !mProduceLiteTracks) {
       return false;
+    }
+    // getDaughterIndex() already checks indexMap and skips calling fillTrack() when the track is
+    // already present, so reaching this point with an existing entry only happens via the direct
+    // standalone-track path (fillTracks()/fillMcTracks()). Two distinct causes land here: the track
+    // was already registered as someone's daughter before its own collision was processed, or the
+    // track is itself associated with more than one collision and was already filled for an earlier
+    // one. Either way, keep the earlier row rather than writing a duplicate; its mask/fillType
+    // reflects whichever collision/role filled it first, not necessarily this one.
+    if (utils::getIndex(track.globalIndex(), indexMap)) {
+      LOG(warn) << "Track " << track.globalIndex() << " was already filled (as a daughter, or under another "
+                << "collision it is associated with); skipping the duplicate standalone fill. Its mask/fillType "
+                << "reflects whichever fill happened first, not necessarily this collision's selection.";
+      return true;
     }
     int64_t lastIndex = 0;
     if (mProduceTracks) {
@@ -771,6 +875,41 @@ class TrackBuilder
       }
       trackProducts.producedHeliumPids(itsHe, track.tpcNSigmaHe(), track.tofNSigmaHe());
     }
+    if (mProduceItsPurity || mProduceTpcPurity || mProduceTofPurity) {
+      // raw nSigma per species, same values already used for the FXxxPids blocks above --
+      // unused slots (species without a requirePidXxx flag, or not covered by this track
+      // type) stay at the 0 placeholder, same contract as the missing-Tof case
+      std::array<float, PuritySpeciesLast> itsNSigma = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+      std::array<float, PuritySpeciesLast> tpcNSigma = {track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
+      std::array<float, PuritySpeciesLast> tofNSigma = {track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
+
+      if constexpr (requires(T1 t) { t.itsNSigmaEl(); }) {
+        itsNSigma = {track.itsNSigmaEl(), track.itsNSigmaPi(), track.itsNSigmaKa(), track.itsNSigmaPr(), track.itsNSigmaDe(), track.itsNSigmaTr(), track.itsNSigmaHe()};
+      }
+
+      std::array<float, utils::PurityNSlots> itsSlots = {0.f, 0.f, 0.f, 0.f};
+      std::array<float, utils::PurityNSlots> tpcSlots = {0.f, 0.f, 0.f, 0.f};
+      std::array<float, utils::PurityNSlots> tofSlots = {0.f, 0.f, 0.f, 0.f};
+      bool hasTof = track.hasTOF();
+      for (int i = 0; i < PuritySpeciesLast; i++) {
+        if (mPuritySlot[i] < 0) {
+          continue;
+        }
+        itsSlots[mPuritySlot[i]] = itsNSigma[i];
+        tpcSlots[mPuritySlot[i]] = tpcNSigma[i];
+        tofSlots[mPuritySlot[i]] = hasTof ? tofNSigma[i] : 0.f; // PurityHasTof is the gate; 0 here is just a placeholder
+      }
+
+      if (mProduceItsPurity) {
+        trackProducts.producedItsPurity(utils::packPurityNSigma4(itsSlots[0], itsSlots[1], itsSlots[2], itsSlots[3], o2::aod::femtotracks::NSigmaPurityMagMin, o2::aod::femtotracks::NSigmaPurityMagMax));
+      }
+      if (mProduceTpcPurity) {
+        trackProducts.producedTpcPurity(utils::packPurityNSigma4(tpcSlots[0], tpcSlots[1], tpcSlots[2], tpcSlots[3], o2::aod::femtotracks::NSigmaPurityMagMin, o2::aod::femtotracks::NSigmaPurityMagMax));
+      }
+      if (mProduceTofPurity) {
+        trackProducts.producedTofPurity(utils::packPurityNSigma4(tofSlots[0], tofSlots[1], tofSlots[2], tofSlots[3], o2::aod::femtotracks::NSigmaPurityMagMin, o2::aod::femtotracks::NSigmaPurityMagMax), hasTof);
+      }
+    }
     return true;
   }
 
@@ -866,6 +1005,16 @@ class TrackBuilder
   bool mProduceDeuteronPids = false;
   bool mProduceTritonPids = false;
   bool mProduceHeliumPids = false;
+  bool mProduceItsPurity = false;
+  bool mProduceTpcPurity = false;
+  bool mProduceTofPurity = false;
+
+  // canonical species order for purity slot assignment -- fixed, not configurable (see
+  // init() for how requirePidXxx flags map onto slots 0-3)
+  static constexpr int PuritySpeciesLast = 7;
+  static constexpr std::array<const char*, PuritySpeciesLast> PuritySpeciesName = {"Electron", "Pion", "Kaon", "Proton", "Deuteron", "Triton", "Helium"};
+  // mPuritySlot[i] = assigned slot (0-3) for species i (PuritySpeciesName order), or -1 if not assigned
+  std::array<int, PuritySpeciesLast> mPuritySlot = {-1, -1, -1, -1, -1, -1, -1};
 
   std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughters of lambdas, cascades and resonances ...
 };
@@ -874,6 +1023,12 @@ struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFTracks> producedTracks;
   o2::framework::Produces<o2::aod::StoredFTrackMasks> producedTrackMasks;
   o2::framework::Produces<o2::aod::StoredFTrackMass> producedTrackMass;
+  // purity/fraction, copied through if the input track type has them joined (same
+  // compile-time-detected, opt-in-by-type pattern as producedTrackMass above)
+  o2::framework::Produces<o2::aod::StoredFItsPurity> producedItsPurity;
+  o2::framework::Produces<o2::aod::StoredFTpcPurity> producedTpcPurity;
+  o2::framework::Produces<o2::aod::StoredFTofPurity> producedTofPurity;
+  o2::framework::Produces<o2::aod::StoredFTrackDcas> producedTrackDcas;
 };
 
 struct ConfTrackTablesDerivedToDerived : o2::framework::ConfigurableGroup {
@@ -950,6 +1105,14 @@ class TrackBuilderDerivedToDerived
     trackProducts.producedTrackMasks(track.mask());
     if constexpr (utils::HasMass<T1>) {
       trackProducts.producedTrackMass(track.mass());
+    }
+    if constexpr (requires(T1 t) { t.itsPackedNSigma(); }) {
+      trackProducts.producedItsPurity(track.itsPackedNSigma());
+      trackProducts.producedTpcPurity(track.tpcPackedNSigma());
+      trackProducts.producedTofPurity(track.tofPackedNSigma(), track.purityHasTof());
+    }
+    if constexpr (requires(T1 t) { t.dcaXY(); }) {
+      trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
     }
 
     const int64_t idx = trackProducts.producedTracks.lastIndex();

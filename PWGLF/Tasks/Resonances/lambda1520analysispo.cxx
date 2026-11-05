@@ -43,7 +43,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-// FIX name/namespace: use snake_case for namespace
 namespace lambda_analysis
 {
 // Named PDG codes — fixes pdg/explicit-code and magic-number errors
@@ -55,13 +54,11 @@ static constexpr int PdgXi0{3322};
 static constexpr int PdgOmegaMinus{3334};
 } // namespace lambda_analysis
 
-// FIX name/struct: use UpperCamelCase for struct names
 struct lambda1520analysispo {
   SliceCache sliceCache;
 
   // Preslice helpers
-  Preslice<aod::ResoTracks> tracksPerResonanceCollision =
-    aod::resodaughter::resoCollisionId;
+  Preslice<aod::ResoTracks> tracksPerResonanceCollision = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> tracksPerStandardCollision = aod::track::collisionId;
 
   // Pointer to MC parent particle table (used only in MC processing)
@@ -192,7 +189,7 @@ struct lambda1520analysispo {
     const AxisSpec axisTPCdEdx(380, 10, 200, "#frac{dE}{dx}");
     const AxisSpec axisVertexZ(120, -12, 12, "v_{z} (cm)");
     const AxisSpec axisEventPlaneAngle(120, -3.14, 3.14, "#theta (rad)");
-    const AxisSpec axisInvariantMass(numberOfInvMassBins, 1.4, 2.0, "M_{inv} (GeV/c^{2})");
+    const AxisSpec axisInvariantMass(numberOfInvMassBins, 1.4, 3.0, "M_{inv} (GeV/c^{2})");
 
     AxisSpec axisOccupancy = {occupancyBins, "Track occupancy [-40,100]"};
     AxisSpec axisDCAz = {dcaZMixingBins, "DCA_{z} (cm)"};
@@ -321,7 +318,7 @@ struct lambda1520analysispo {
   // passesProtonDCASelection()
   // ============================================================
   template <typename TrackType>
-  bool passesProtonDCASelection(TrackType const& track, float totalMomentum)
+  bool passesProtonDCASelection(TrackType const& track, float trackPt)
   {
     auto ptBinEdges = static_cast<std::vector<float>>(protonDCAPtBinEdges);
     auto maxDCAxyValues =
@@ -330,8 +327,8 @@ struct lambda1520analysispo {
 
     bool dcaXYPassed = false;
     for (int iBin = 0; iBin < numberOfBins; iBin++) {
-      if (totalMomentum >= ptBinEdges[iBin] &&
-          totalMomentum < ptBinEdges[iBin + 1] &&
+      if (trackPt >= ptBinEdges[iBin] &&
+          trackPt < ptBinEdges[iBin + 1] &&
           std::abs(track.dcaXY()) < maxDCAxyValues[iBin])
         dcaXYPassed = true;
     }
@@ -346,7 +343,7 @@ struct lambda1520analysispo {
   // passesKaonDCASelection()
   // ============================================================
   template <typename TrackType>
-  bool passesKaonDCASelection(TrackType const& track, float totalMomentum)
+  bool passesKaonDCASelection(TrackType const& track, float trackPt)
   {
     auto ptBinEdges = static_cast<std::vector<float>>(kaonDCAPtBinEdges);
     auto maxDCAxyValues = static_cast<std::vector<float>>(kaonMaxDCAxyPerPtBin);
@@ -354,8 +351,8 @@ struct lambda1520analysispo {
 
     bool dcaXYPassed = false;
     for (int iBin = 0; iBin < numberOfBins; iBin++) {
-      if (totalMomentum >= ptBinEdges[iBin] &&
-          totalMomentum < ptBinEdges[iBin + 1] &&
+      if (trackPt >= ptBinEdges[iBin] &&
+          trackPt < ptBinEdges[iBin + 1] &&
           std::abs(track.dcaXY()) < maxDCAxyValues[iBin])
         dcaXYPassed = true;
     }
@@ -406,7 +403,7 @@ struct lambda1520analysispo {
       if (track.tofNSigmaPr() < minTOFNSigmaProton)
         return false;
 
-      if (combinedNSigmaCutProton < 0 && totalMomentum >= minProtonMomentum) {
+      if (combinedNSigmaCutProton < 0) {
         for (int i = 0; i < nTOFBins - 1; ++i) {
           if (totalMomentum >= tofMomBins[i] &&
               totalMomentum < tofMomBins[i + 1] &&
@@ -423,7 +420,7 @@ struct lambda1520analysispo {
           tpcPIDPassed = true;
       }
 
-      if ((combinedNSigmaCutProton > 0) && totalMomentum >= minProtonMomentum &&
+      if ((combinedNSigmaCutProton > 0) &&
           (combinedNSigProton < circularCutSquared &&
            combinedNSigPion > circularRejCutSquared &&
            combinedNSigKaon > circularRejCutSquared)) {
@@ -431,13 +428,9 @@ struct lambda1520analysispo {
         tpcPIDPassed = true;
       }
 
-      if (totalMomentum < minProtonMomentum &&
-          tpcNSigProton < maxTPCNSigmaProton) {
-        tofPIDPassed = true;
-        tpcPIDPassed = true;
-      }
-
     } else {
+      if (!track.hasTOF() && totalMomentum >= minProtonMomentum)
+        return false;
       tofPIDPassed = true;
       if (track.tpcNSigmaPr() < minTPCNSigmaProton)
         return false;
@@ -490,7 +483,7 @@ struct lambda1520analysispo {
       if (track.tofNSigmaKa() < minTOFNSigmaKaon)
         return false;
 
-      if (combinedNSigmaCutKaon < 0 && totalMomentum >= minKaonMomentum) {
+      if (combinedNSigmaCutKaon < 0) {
         for (int i = 0; i < nTOFBins - 1; ++i) {
           if (totalMomentum >= tofMomBins[i] &&
               totalMomentum < tofMomBins[i + 1] &&
@@ -507,7 +500,7 @@ struct lambda1520analysispo {
           tpcPIDPassed = true;
       }
 
-      if ((combinedNSigmaCutKaon > 0) && totalMomentum >= minKaonMomentum &&
+      if ((combinedNSigmaCutKaon > 0) &&
           (combinedNSigKaon < circularCutSquared &&
            combinedNSigPion > circularRejCutSquared &&
            combinedNSigProton > circularRejCutSquared)) {
@@ -515,12 +508,9 @@ struct lambda1520analysispo {
         tpcPIDPassed = true;
       }
 
-      if (totalMomentum < minKaonMomentum && tpcNSigKaon < maxTPCNSigmaKaon) {
-        tofPIDPassed = true;
-        tpcPIDPassed = true;
-      }
-
     } else {
+      if (!track.hasTOF() && totalMomentum >= minKaonMomentum)
+        return false;
       tofPIDPassed = true;
       if (track.tpcNSigmaKa() < minTPCNSigmaKaon)
         return false;
@@ -535,6 +525,87 @@ struct lambda1520analysispo {
     }
 
     return (tpcPIDPassed && tofPIDPassed);
+  }
+
+  template <typename TrackType>
+  void fillTrackQAHistograms(TrackType const& track, float centralityPercent)
+  {
+    if (!passesBasicTrackSelection(track))
+      return;
+
+    const float trackPt = track.pt();
+    const float totalMomentum = RecoDecay::p(track.px(), track.py(), track.pz());
+
+    const auto tpcNSigProtonRaw = track.tpcNSigmaPr();
+    allHistograms.fill(HIST("QAbefore/Proton/tpcNSigmaVsMomentum"), totalMomentum, tpcNSigProtonRaw);
+    const auto tpcNSigKaonRaw = track.tpcNSigmaKa();
+    allHistograms.fill(HIST("QAbefore/Kaon/tpcNSigmaVsMomentum"), totalMomentum, tpcNSigKaonRaw);
+    if (track.hasTOF()) {
+      const auto tofNSigProtonRaw = track.tofNSigmaPr();
+      allHistograms.fill(HIST("QAbefore/Proton/tofNSigmaVsMomentum"), totalMomentum, tofNSigProtonRaw);
+      allHistograms.fill(HIST("QAbefore/Proton/tofNSigmaVsTPCNSigma"), tpcNSigProtonRaw, tofNSigProtonRaw);
+      const auto tofNSigKaonRaw = track.tofNSigmaKa();
+      allHistograms.fill(HIST("QAbefore/Kaon/tofNSigmaVsMomentum"), totalMomentum, tofNSigKaonRaw);
+      allHistograms.fill(HIST("QAbefore/Kaon/tofNSigmaVsTPCNSigma"), tpcNSigKaonRaw, tofNSigKaonRaw);
+    }
+
+    const bool isProtonCandidate =
+      (!requireTOFForProton || track.hasTOF()) &&
+      passesProtonPID(track, totalMomentum) &&
+      passesProtonDCASelection(track, trackPt);
+
+    if (isProtonCandidate) {
+      allHistograms.fill(HIST("QAafter/Proton/ptVsCentrality"), trackPt, centralityPercent);
+      allHistograms.fill(HIST("QAafter/Proton/dcaZVsPt"), trackPt, track.dcaZ());
+      allHistograms.fill(HIST("QAafter/Proton/dcaXYVsPt"), trackPt, track.dcaXY());
+      allHistograms.fill(HIST("QAafter/Proton/tpcDedxVsMomentum"), totalMomentum, track.tpcSignal());
+      allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaPionContamVsPt"), totalMomentum, track.tpcNSigmaPi());
+      allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaKaonContamVsPt"), totalMomentum, track.tpcNSigmaKa());
+      allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsMomentum"), totalMomentum, tpcNSigProtonRaw);
+      allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsCentrality"), centralityPercent, tpcNSigProtonRaw);
+      allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsPt"), trackPt, tpcNSigProtonRaw);
+      allHistograms.fill(HIST("QAafter/Proton/tpcCrossedRowsVsPt"), trackPt, track.tpcNClsCrossedRows());
+      allHistograms.fill(HIST("QAafter/Proton/tpcClustersFoundVsPt"), trackPt, track.tpcNClsFound());
+
+      if (!useTPCOnlyPID && track.hasTOF()) {
+        const auto tofNSigProton = track.tofNSigmaPr();
+        allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsMomentum"), totalMomentum, tofNSigProton);
+        allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsCentrality"), centralityPercent, tofNSigProton);
+        allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsPt"), trackPt, tofNSigProton);
+        allHistograms.fill(HIST("QAafter/Proton/tofNSigmaPionContamVsMomentum"), totalMomentum, track.tofNSigmaPi());
+        allHistograms.fill(HIST("QAafter/Proton/tofNSigmaKaonContamVsMomentum"), totalMomentum, track.tofNSigmaKa());
+        allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsTPCNSigma"), tpcNSigProtonRaw, tofNSigProton);
+      }
+    }
+
+    const bool isKaonCandidate =
+      (!requireTOFForKaon || track.hasTOF()) &&
+      passesKaonPID(track, totalMomentum) &&
+      passesKaonDCASelection(track, trackPt);
+
+    if (isKaonCandidate) {
+      allHistograms.fill(HIST("QAafter/Kaon/ptVsCentrality"), trackPt, centralityPercent);
+      allHistograms.fill(HIST("QAafter/Kaon/dcaZVsPt"), trackPt, track.dcaZ());
+      allHistograms.fill(HIST("QAafter/Kaon/dcaXYVsPt"), trackPt, track.dcaXY());
+      allHistograms.fill(HIST("QAafter/Kaon/tpcDedxVsMomentum"), totalMomentum, track.tpcSignal());
+      allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaPionContamVsPt"), totalMomentum, track.tpcNSigmaPi());
+      allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaProtonContamVsMomentum"), totalMomentum, track.tpcNSigmaPr());
+      allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsMomentum"), totalMomentum, tpcNSigKaonRaw);
+      allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsCentrality"), centralityPercent, tpcNSigKaonRaw);
+      allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsPt"), trackPt, tpcNSigKaonRaw);
+      allHistograms.fill(HIST("QAafter/Kaon/tpcCrossedRowsVsPt"), trackPt, track.tpcNClsCrossedRows());
+      allHistograms.fill(HIST("QAafter/Kaon/tpcClustersFoundVsPt"), trackPt, track.tpcNClsFound());
+
+      if (!useTPCOnlyPID && track.hasTOF()) {
+        const auto tofNSigKaon = track.tofNSigmaKa();
+        allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsMomentum"), totalMomentum, tofNSigKaon);
+        allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsPt"), trackPt, tofNSigKaon);
+        allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsCentrality"), centralityPercent, tofNSigKaon);
+        allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaPionContamVsMomentum"), totalMomentum, track.tofNSigmaPi());
+        allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaProtonContamVsMomentum"), totalMomentum, track.tofNSigmaPr());
+        allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsTPCNSigma"), tpcNSigKaonRaw, tofNSigKaon);
+      }
+    }
   }
 
   // ============================================================
@@ -566,23 +637,6 @@ struct lambda1520analysispo {
       protonTotalMomentum = RecoDecay::p(pxProton, pyProton, pzProton);
       kaonTotalMomentum = RecoDecay::p(pxKaon, pyKaon, pzKaon);
 
-      if (!isMixedEvent) {
-        auto tpcNSigProton = protonTrack.tpcNSigmaPr();
-        allHistograms.fill(HIST("QAbefore/Proton/tpcNSigmaVsMomentum"), protonTotalMomentum, tpcNSigProton);
-        if (protonTrack.hasTOF()) {
-          auto tofNSigProton = protonTrack.tofNSigmaPr();
-          allHistograms.fill(HIST("QAbefore/Proton/tofNSigmaVsMomentum"), protonTotalMomentum, tofNSigProton);
-          allHistograms.fill(HIST("QAbefore/Proton/tofNSigmaVsTPCNSigma"), tpcNSigProton, tofNSigProton);
-        }
-        auto tpcNSigKaon = kaonTrack.tpcNSigmaKa();
-        allHistograms.fill(HIST("QAbefore/Kaon/tpcNSigmaVsMomentum"), kaonTotalMomentum, tpcNSigKaon);
-        if (kaonTrack.hasTOF()) {
-          auto tofNSigKaon = kaonTrack.tofNSigmaKa();
-          allHistograms.fill(HIST("QAbefore/Kaon/tofNSigmaVsMomentum"), kaonTotalMomentum, tofNSigKaon);
-          allHistograms.fill(HIST("QAbefore/Kaon/tofNSigmaVsTPCNSigma"), tpcNSigKaon, tofNSigKaon);
-        }
-      }
-
       if (requireTOFForProton && !protonTrack.hasTOF())
         continue;
       if (requireTOFForKaon && !kaonTrack.hasTOF())
@@ -592,8 +646,8 @@ struct lambda1520analysispo {
           !passesKaonPID(kaonTrack, kaonTotalMomentum))
         continue;
 
-      if (!passesProtonDCASelection(protonTrack, protonTotalMomentum) ||
-          !passesKaonDCASelection(kaonTrack, kaonTotalMomentum))
+      if (!passesProtonDCASelection(protonTrack, protonTrack.pt()) ||
+          !passesKaonDCASelection(kaonTrack, kaonTrack.pt()))
         continue;
 
       // FIX root/entity: replaced TMath::ACos with std::acos
@@ -602,58 +656,6 @@ struct lambda1520analysispo {
                     (protonTotalMomentum * kaonTotalMomentum)) <
             deepAngleCutValue)
         continue;
-
-      if constexpr (!isMixedEvent) {
-        auto ptProton = protonTrack.pt();
-        auto tpcNSigProton = protonTrack.tpcNSigmaPr();
-
-        allHistograms.fill(HIST("QAafter/Proton/ptVsCentrality"), ptProton, centralityPercent);
-        allHistograms.fill(HIST("QAafter/Proton/dcaZVsPt"), ptProton, protonTrack.dcaZ());
-        allHistograms.fill(HIST("QAafter/Proton/dcaXYVsPt"), ptProton, protonTrack.dcaXY());
-        allHistograms.fill(HIST("QAafter/Proton/tpcDedxVsMomentum"), protonTotalMomentum, protonTrack.tpcSignal());
-        allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaPionContamVsPt"), protonTotalMomentum, protonTrack.tpcNSigmaPi());
-        allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaKaonContamVsPt"), protonTotalMomentum, protonTrack.tpcNSigmaKa());
-        allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsMomentum"), protonTotalMomentum, tpcNSigProton);
-        allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsCentrality"), tpcNSigProton, centralityPercent);
-        allHistograms.fill(HIST("QAafter/Proton/tpcNSigmaVsPt"), ptProton, tpcNSigProton);
-        allHistograms.fill(HIST("QAafter/Proton/tpcCrossedRowsVsPt"), ptProton, protonTrack.tpcNClsCrossedRows());
-        allHistograms.fill(HIST("QAafter/Proton/tpcClustersFoundVsPt"), ptProton, protonTrack.tpcNClsFound());
-
-        if (!useTPCOnlyPID && protonTrack.hasTOF()) {
-          auto tofNSigProton = protonTrack.tofNSigmaPr();
-          allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsMomentum"), protonTotalMomentum, tofNSigProton);
-          allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsCentrality"), tofNSigProton, centralityPercent);
-          allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsPt"), ptProton, tofNSigProton);
-          allHistograms.fill(HIST("QAafter/Proton/tofNSigmaPionContamVsMomentum"), protonTotalMomentum, protonTrack.tofNSigmaPi());
-          allHistograms.fill(HIST("QAafter/Proton/tofNSigmaKaonContamVsMomentum"), protonTotalMomentum, protonTrack.tofNSigmaKa());
-          allHistograms.fill(HIST("QAafter/Proton/tofNSigmaVsTPCNSigma"), tpcNSigProton, tofNSigProton);
-        }
-
-        auto ptKaon = kaonTrack.pt();
-        auto tpcNSigKaon = kaonTrack.tpcNSigmaKa();
-
-        allHistograms.fill(HIST("QAafter/Kaon/ptVsCentrality"), ptKaon, centralityPercent);
-        allHistograms.fill(HIST("QAafter/Kaon/dcaZVsPt"), ptKaon, kaonTrack.dcaZ());
-        allHistograms.fill(HIST("QAafter/Kaon/dcaXYVsPt"), ptKaon, kaonTrack.dcaXY());
-        allHistograms.fill(HIST("QAafter/Kaon/tpcDedxVsMomentum"), kaonTotalMomentum, kaonTrack.tpcSignal());
-        allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaPionContamVsPt"), kaonTotalMomentum, kaonTrack.tpcNSigmaPi());
-        allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaProtonContamVsMomentum"), kaonTotalMomentum, kaonTrack.tpcNSigmaPr());
-        allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsMomentum"), kaonTotalMomentum, tpcNSigKaon);
-        allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsCentrality"), tpcNSigKaon, centralityPercent);
-        allHistograms.fill(HIST("QAafter/Kaon/tpcNSigmaVsPt"), ptKaon, tpcNSigKaon);
-        allHistograms.fill(HIST("QAafter/Kaon/tpcCrossedRowsVsPt"), ptKaon, kaonTrack.tpcNClsCrossedRows());
-        allHistograms.fill(HIST("QAafter/Kaon/tpcClustersFoundVsPt"), ptKaon, kaonTrack.tpcNClsFound());
-
-        if (!useTPCOnlyPID && kaonTrack.hasTOF()) {
-          auto tofNSigKaon = kaonTrack.tofNSigmaKa();
-          allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsMomentum"), kaonTotalMomentum, tofNSigKaon);
-          allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsPt"), ptKaon, tofNSigKaon);
-          allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsCentrality"), tofNSigKaon, centralityPercent);
-          allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaPionContamVsMomentum"), kaonTotalMomentum, kaonTrack.tofNSigmaPi());
-          allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaProtonContamVsMomentum"), kaonTotalMomentum, kaonTrack.tofNSigmaPr());
-          allHistograms.fill(HIST("QAafter/Kaon/tofNSigmaVsTPCNSigma"), tpcNSigKaon, tofNSigKaon);
-        }
-      }
 
       if (runQualityChecksOnly)
         continue;
@@ -836,6 +838,9 @@ struct lambda1520analysispo {
     allHistograms.fill(HIST("Event/centralityVsOccupancy"), collision.cent(),
                        100);
     allHistograms.fill(HIST("Event/primaryVertexZ"), collision.posZ());
+    for (const auto& track : tracks) {
+      fillTrackQAHistograms(track, collision.cent());
+    }
     fillInvariantMassHistograms<false, false>(tracks, tracks, collision.cent());
   }
   PROCESS_SWITCH(lambda1520analysispo, processData,
@@ -899,6 +904,8 @@ struct lambda1520analysispo {
 
       if (!passesBasicTrackSelection(track))
         continue;
+
+      fillTrackQAHistograms(track, centralityPercent);
 
       // FIX root/entity: replaced TMath::Sqrt with RecoDecay::p
       float totalMom = RecoDecay::p(track.px(), track.py(), track.pz());
@@ -1077,7 +1084,7 @@ struct lambda1520analysispo {
     // FIX const-ref-in-for-loop: const auto& structured binding
     for (const auto& [col1, tracks1, col2, tracks2] : eventPairs) {
       if (cEvtRecINELgt0 && !col1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
-        return;
+        continue;
       allHistograms.fill(HIST("Event/mixingBins_centralityVsVtxZVsEventPlane"),
                          col1.cent(), col1.posZ(), col1.evtPl());
       fillInvariantMassHistograms<true, false>(tracks1, tracks2, col1.cent());
@@ -1110,6 +1117,9 @@ struct lambda1520analysispo {
 
     allHistograms.fill(HIST("Event/centralityVsOccupancy"), collision.cent(),
                        occupancyValue);
+    for (const auto& track : tracks) {
+      fillTrackQAHistograms(track, collision.cent());
+    }
     fillInvariantMassHistograms<false, false>(tracks, tracks, collision.cent(),
                                               occupancyValue);
   }
@@ -1140,7 +1150,7 @@ struct lambda1520analysispo {
     // FIX const-ref-in-for-loop: const auto& structured binding
     for (const auto& [col1, tracks1, col2, tracks2] : eventPairs) {
       if (cEvtRecINELgt0 && !col1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
-        return;
+        continue;
       auto occupancyValue = 100;
       if (applyOccupancyInTimeRangeCut)
         occupancyValue = col1.trackOccupancyInTimeRange();

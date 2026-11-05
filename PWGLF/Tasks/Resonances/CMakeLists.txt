@@ -144,6 +144,11 @@ o2physics_add_dpl_workflow(kshortkshort
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(k0s-k0s-flow
+    SOURCES k0sK0sFlow.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phipbpb
     SOURCES phipbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -367,4 +372,14 @@ o2physics_add_dpl_workflow(lambdastarproxy
 o2physics_add_dpl_workflow(hresonancecorrelation
     SOURCES hResonanceCorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phiphi-mc-injected
+    SOURCES phiphimcinjected.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phiphi-mc-trigger
+    SOURCES phiphimctrigger.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

@@ -195,7 +195,7 @@ struct JetHadronsPid {
       itsResponse.setMCDefaultParameters();
     }
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
 
     // --- DATA: PURE TRACKS ---
     registryData.add("data/pure/general/tpc_signal_vs_p", "TPC n#sigma_{#pi} vs transverse momentum ;#it{p} (GeV/#it{c});TPC d#it{E}/d#it{x} signal (a.u.)", HistType::kTH2F, {axis.axisMomentum, axis.axisTPCSignal});

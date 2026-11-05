@@ -46,7 +46,7 @@ class JetFinder
   /// \param inputParticles vector of input particles/tracks
   /// \param jets veector of jets to be filled
   /// \return ClusterSequenceArea object needed to access constituents
-  // fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet> &inputParticles, std::vector<fastjet::PseudoJet> &jets);
+  // fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet> const& inputParticles, std::vector<fastjet::PseudoJet>& jets);
 
   float phiMin = -1. * M_PI;
   float phiMax = 2. * M_PI;
@@ -92,7 +92,7 @@ class JetFinder
   /// \param inputParticles vector of input particles/tracks
   /// \param jets veector of jets to be filled
   /// \return ClusterSequenceArea object needed to access constituents
-  fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets); // ideally find a way of passing the cluster sequence as a reeference
+  fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet> const& inputParticles, std::vector<fastjet::PseudoJet>& jets); // ideally find a way of passing the cluster sequence as a reference
 
  private:
   ClassDefNV(JetFinder, 1);

@@ -202,10 +202,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   Filter eventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= eventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= eventSel.multPercentileMax;
   Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= charmSel.charmHadCandSel;
   Filter hfMcSelFilter = (nabs(aod::fdhf::flagMc) == charmSel.charmHadMcSel);
-  Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < trackSel.etaTrack1Max, true);
-  Filter trackEtaFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta > trackSel.etaTrack1Min, true);
-  Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < trackSel.ptTrack1Max, true);
-  Filter trackPtFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt > trackSel.ptTrack1Min, true);
+  Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < trackSel.etaTrack1Max, true);
+  Filter trackEtaFilterUp = ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta > trackSel.etaTrack1Min, true);
+  Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < trackSel.ptTrack1Max, true);
+  Filter trackPtFilterUp = ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt > trackSel.ptTrack1Min, true);
 
   struct : PresliceGroup {
     Preslice<FilteredFDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
@@ -216,14 +216,14 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   } preslices;
 
   /// Partition for particle 1
-  Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
-  Partition<FilteredFDParticles> partitionTrk1Ka = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
+  Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
+  Partition<FilteredFDParticles> partitionTrk1Ka = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
 
-  Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) &&
                                                  ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
 
-  Partition<FilteredFDMcParts> partitionMcTrk1Ka = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
+  Partition<FilteredFDMcParts> partitionMcTrk1Ka = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
 
   /// Partition for particle 2
   Partition<FilteredCharmCand3Prongs> partitionCharmHadron3Prong = aod::fdhf::bdtBkg < charmSel.charmHadBkgBDTmax && aod::fdhf::bdtFD < charmSel.charmHadFdBDTmax && aod::fdhf::bdtFD > charmSel.charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmSel.charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmSel.charmHadPromptBDTmin;

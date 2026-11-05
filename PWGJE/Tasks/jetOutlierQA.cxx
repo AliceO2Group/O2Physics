@@ -93,8 +93,8 @@ struct JetOutlierQATask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     auto jetPtTemp = 0.0;
     jetPtBins.push_back(jetPtTemp);
@@ -358,10 +358,10 @@ struct JetOutlierQATask {
       }
     }
     registry.fill(HIST("h3_jet_pt_frac_pt_ambiguous_pt_hat"), jet.pt(), pt_amb / pt_total, pTHat, weight);
-    registry.fill(HIST("h3_jet_pt_frac_constituents_ambiguous_pt_hat"), jet.pt(), double(nAmbTracks) / double(jet.template tracks_as<aod::JetTracksMCD>().size()), pTHat, weight);
+    registry.fill(HIST("h3_jet_pt_frac_constituents_ambiguous_pt_hat"), jet.pt(), static_cast<double>(nAmbTracks) / static_cast<double>(jet.template tracks_as<aod::JetTracksMCD>().size()), pTHat, weight);
 
     registry.fill(HIST("h3_jet_pt_frac_pt_unmatched_particle_pt_hat"), jet.pt(), pt_unmatched / pt_total, pTHat, weight);
-    registry.fill(HIST("h3_jet_pt_frac_constituents_unmatched_particle_pt_hat"), jet.pt(), double(nUnmatchedTracks) / double(jet.template tracks_as<aod::JetTracksMCD>().size()), pTHat, weight);
+    registry.fill(HIST("h3_jet_pt_frac_constituents_unmatched_particle_pt_hat"), jet.pt(), static_cast<double>(nUnmatchedTracks) / static_cast<double>(jet.template tracks_as<aod::JetTracksMCD>().size()), pTHat, weight);
   }
 
   void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
@@ -607,8 +607,8 @@ struct JetOutlierQATask {
             if (std::abs(diffColl) < 6) {
               float eventWeightOutlier = collisionOutlier.mcCollision().weight();
               double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
-              registry.fill(HIST("h2_neighbour_pt_hat_outlier"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
-              registry.fill(HIST("h2_neighbour_track_pt_outlier"), float(diffColl + 0.1), track.pt(), eventWeightOutlier);
+              registry.fill(HIST("h2_neighbour_pt_hat_outlier"), static_cast<float>(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
+              registry.fill(HIST("h2_neighbour_track_pt_outlier"), static_cast<float>(diffColl + 0.1), track.pt(), eventWeightOutlier);
             }
           }
           // now match tracks to their MC particle, check the MC collision ID of this particle, and
@@ -658,20 +658,20 @@ struct JetOutlierQATask {
           registry.fill(HIST("h2_outlier_event_Ntracks_different_selected_JJ"), pTHat, nJJdifferentSelected);
           registry.fill(HIST("h2_outlier_event_Ntracks_different_selected_MB"), pTHat, nMBdifferentSelected);
           registry.fill(HIST("h2_outlier_event_Ntracks_same_selected_JJ"), pTHat, nJJsameSelected);
-          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_MB"), pTHat, float(nMBdifferentSelected) / float(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
-          registry.fill(HIST("h2_outlier_event_tracks_frac_different_JJ"), pTHat, float(nJJdifferent) / float(nJJdifferent + nJJsame + nMBdifferent));
-          registry.fill(HIST("h2_outlier_event_tracks_frac_different_MB"), pTHat, float(nMBdifferent) / float(nJJdifferent + nJJsame + nMBdifferent));
-          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_JJ"), pTHat, float(nJJdifferentSelected) / float(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
-          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_MB"), pTHat, float(nMBdifferentSelected) / float(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_MB"), pTHat, static_cast<float>(nMBdifferentSelected) / static_cast<float>(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_JJ"), pTHat, static_cast<float>(nJJdifferent) / static_cast<float>(nJJdifferent + nJJsame + nMBdifferent));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_MB"), pTHat, static_cast<float>(nMBdifferent) / static_cast<float>(nJJdifferent + nJJsame + nMBdifferent));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_JJ"), pTHat, static_cast<float>(nJJdifferentSelected) / static_cast<float>(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_MB"), pTHat, static_cast<float>(nMBdifferentSelected) / static_cast<float>(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
           // now check where outlier comes from
           // LOG(info) <<"outlier comes from " << (mcCollisionIDOutlier == mcCollisionIDcoll ? "same" : "different") << " event which is a " << (subGenIDOutlier == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap ? " MB-gap" : " jet-jet") << " collision with mcCollisionID = " << mcCollisionIDOutlier;
-          registry.fill(HIST("h2_outlier_collision_ID_difference"), pTHat, float(outlierCollisionIDDifference));
+          registry.fill(HIST("h2_outlier_collision_ID_difference"), pTHat, static_cast<float>(outlierCollisionIDDifference));
           // if outlier comes from different collision, check which type and set flags
           if (mcCollisionIDOutlier != mcCollisionIDcoll && subGenIDOutlier != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
             isOutlierEventDifferentJJCollision = true;
             float deltaZ = collisionMCOutlier.begin().posZ() - collision.mcCollision().posZ();
             registry.fill(HIST("h_DeltaZ_Outlier"), deltaZ);
-            registry.fill(HIST("h2_DeltaZ_Outlier_difference"), deltaZ, float(outlierCollisionIDDifference));
+            registry.fill(HIST("h2_DeltaZ_Outlier_difference"), deltaZ, static_cast<float>(outlierCollisionIDDifference));
           } else if (mcCollisionIDOutlier != mcCollisionIDcoll && subGenIDOutlier == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
             isOutlierEventDifferentMBCollision = true;
           }
@@ -683,7 +683,7 @@ struct JetOutlierQATask {
           registry.fill(HIST("h_track_pt_same_collision"), track.pt(), weight);
           registry.fill(HIST("h_track_pt_eta_same_collision"), track.pt(), track.eta(), weight);
           registry.fill(HIST("h_track_pt_phi_same_collision"), track.pt(), track.phi(), weight);
-          registry.fill(HIST("h2_collision_ID_difference_same_collision"), pTHat, float(outlierCollisionIDDifference));
+          registry.fill(HIST("h2_collision_ID_difference_same_collision"), pTHat, static_cast<float>(outlierCollisionIDDifference));
           registry.fill(HIST("h_pt_hard_track_pt_same_collision"), pTHat != 0.0 ? track.pt() / pTHat : 0.0, track.pt(), weight);
 
           // include selection on pThat of particle
@@ -699,7 +699,7 @@ struct JetOutlierQATask {
           registry.fill(HIST("h_track_pt_no_JJ_different"), track.pt(), weight);
           registry.fill(HIST("h_track_pt_eta_no_JJ_different"), track.pt(), track.eta(), weight);
           registry.fill(HIST("h_track_pt_phi_no_JJ_different"), track.pt(), track.phi(), weight);
-          registry.fill(HIST("h2_collision_ID_difference_no_JJ_different"), pTHat, float(outlierCollisionIDDifference));
+          registry.fill(HIST("h2_collision_ID_difference_no_JJ_different"), pTHat, static_cast<float>(outlierCollisionIDDifference));
         } else {
           registry.fill(HIST("h_track_pt_no_JJ_different_rejected"), track.pt(), weight);
         }
@@ -711,8 +711,8 @@ struct JetOutlierQATask {
 
           if (std::abs(diffColl) < 6) {
             // LOG(info) << "pThat = " << pTHat << "pThat neighbour = "<<pTHatOutlier;
-            registry.fill(HIST("h2_neighbour_pt_hat_all"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
-            registry.fill(HIST("h2_neighbour_track_pt_all"), float(diffColl + 0.1), track.pt(), eventWeightOutlier);
+            registry.fill(HIST("h2_neighbour_pt_hat_all"), static_cast<float>(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
+            registry.fill(HIST("h2_neighbour_track_pt_all"), static_cast<float>(diffColl + 0.1), track.pt(), eventWeightOutlier);
           }
         }
       }

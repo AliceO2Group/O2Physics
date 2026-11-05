@@ -21,6 +21,7 @@
 /// Expected D0 v02, with an empty sideband, is 0.36.
 
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
@@ -56,6 +57,7 @@ struct JV02DmesonToy {
   Produces<aod::CFCollRefs> cfRefs;
   Produces<aod::CFTracks> cfTracks;
   Produces<aod::CF2ProngTracks> cfCandidates;
+  Produces<aod::JWeights> jWeights;
 
   void fill()
   {
@@ -101,6 +103,9 @@ struct JV02DmesonToy {
         const float pt = itrk < nSignalTracks ? 1.1f : 0.3f;
         const int8_t sign = itrk % EventPair == 0 ? int8_t{1} : int8_t{-1};
         cfTracks(ievt, pt, 0.f, 0.f, sign, uint8_t{1});
+        // Closure for hadron efficiency: signal pT bin eps=0.5, rest eps=1 (v02 unchanged if all eps equal).
+        const float eff = pt > 1.f ? 0.5f : 1.f;
+        jWeights(1.f, eff);
       }
       const int nD0 = high ? 4 : 1;
       for (int icand = 0; icand < nD0; ++icand) {
@@ -127,6 +132,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const&)
         OutputForTable<aod::CFCollRefs>::spec(),
         OutputForTable<aod::CFTracks>::spec(),
         OutputForTable<aod::CF2ProngTracks>::spec(),
+        OutputForTable<aod::JWeights>::spec(),
         OutputSpec{"TFN", "TFNumber"},
         OutputSpec{"TFF", "TFFilename"},
       },
@@ -142,6 +148,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const&)
         toy.cfRefs.resetCursor(pc.outputs().make<TableBuilder>(OutputForTable<aod::CFCollRefs>::ref()));
         toy.cfTracks.resetCursor(pc.outputs().make<TableBuilder>(OutputForTable<aod::CFTracks>::ref()));
         toy.cfCandidates.resetCursor(pc.outputs().make<TableBuilder>(OutputForTable<aod::CF2ProngTracks>::ref()));
+        toy.jWeights.resetCursor(pc.outputs().make<TableBuilder>(OutputForTable<aod::JWeights>::ref()));
         toy.fill();
         pc.outputs().make<uint64_t>(Output{"TFN", "TFNumber"}) = 1;
         pc.outputs().make<std::string>(Output{"TFF", "TFFilename"}) = std::string{"toy"};

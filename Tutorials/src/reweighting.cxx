@@ -107,7 +107,7 @@ struct CreateWeights {
 
   void init(InitContext&)
   {
-    auto path = (std::string)onnxModel;
+    auto path = std::string(onnxModel);
     /// create session
     onnxSession = std::make_shared<Ort::Session>(env, path.c_str(), sessionOptions);
     /// adjust input shape to use row-by-row model application

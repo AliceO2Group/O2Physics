@@ -17,7 +17,11 @@
 /// X and Y are the corrected Q2 of two forward detectors (default FT0A x FT0C)
 /// from the combined Qvectors table, with the same indexing as jEPDzeroFlowAnalysis.
 /// Z_D(pT) = N_D(pT) / N_ch. N_D comes from CF2ProngTracks (D0 and D0bar).
-/// N_ch comes from CFTracks. Both derived tables are indexed to CFCollisions,
+/// N_ch comes from CFTracks. With JWeights (jflucWeightsLoader, hadron NUE only),
+/// sum 1/epsilon_h into N_ch for hadrons and optionally for D0 denominators
+/// (processReferenceCorrected / processD0HadronNch). Full D0 candidate efficiency
+/// (J2ProngWeights, processD0Corrected) is not wired in the default train yet.
+/// Both derived tables are indexed to CFCollisions,
 /// so the original collision is matched through CFCollRefs (one row per kept
 /// collision, written by filter-correlations with cfgTransientTables).
 /// The D azimuth is not part of the Q-vector.
@@ -26,6 +30,7 @@
 /// Definition: arXiv:2506.18690, Appendix A.
 
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
@@ -47,6 +52,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <experimental/type_traits>
 #include <random>
 #include <string>
 #include <unordered_set>
@@ -99,6 +105,7 @@ struct JV02DmesonAnalysis {
   Configurable<bool> cfgCutNoTimeFrameBorder{"cfgCutNoTimeFrameBorder", true, "Require kNoTimeFrameBorder"};
   Configurable<bool> cfgCutNoITSROFrameBorder{"cfgCutNoITSROFrameBorder", true, "Require kNoITSROFrameBorder"};
   Configurable<bool> cfgRejectDaughters{"cfgRejectDaughters", false, "Drop D0 daughter CF tracks from N_ch"};
+  Configurable<bool> cfgWeightEffIsEfficiency{"cfgWeightEffIsEfficiency", true, "JWeights.weightEff is epsilon (multiply counts by 1/epsilon). Set false if the table already stores 1/epsilon."};
 
   ConfigurableAxis cfgAxisCent{"cfgAxisCent", {8, 0., 80.}, "Centrality axis"};
   ConfigurableAxis cfgAxisPtD{"cfgAxisPtD", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 16.f, 24.f}, "D0 pT axis"};
@@ -114,6 +121,22 @@ struct JV02DmesonAnalysis {
   std::vector<float> mHadCounts;
   std::mt19937 mRng{1};
   std::uniform_int_distribution<int> mSampleDist;
+
+  template <typename TTrack>
+  using hasWeightEff = decltype(std::declval<TTrack&>().weightEff());
+
+  template <typename TTrack>
+  float inverseEfficiencyWeight(const TTrack& track) const
+  {
+    if constexpr (std::experimental::is_detected<hasWeightEff, TTrack>::value) {
+      const float w = track.weightEff();
+      if (w <= 0.f || !std::isfinite(w)) {
+        return 0.f;
+      }
+      return cfgWeightEffIsEfficiency.value ? 1.f / w : w;
+    }
+    return 1.f;
+  }
 
   int detectorId(const std::string& name) const
   {
@@ -155,7 +178,7 @@ struct JV02DmesonAnalysis {
     const AxisSpec subsampleAxis{mNSubsample, 0., static_cast<double>(mNSubsample), "subsample"};
     const AxisSpec qaAxis{6, 0.5, 6.5, "1 seen; 2 sel8; 3 vertex; 4 quality; 5 centrality; 6 accepted"};
 
-    if (doprocessReference) {
+    if (doprocessReference || doprocessReferenceCorrected) {
       histos.add("hadron/hEventQa", "1 seen; 2 sel8; 3 vertex; 4 quality; 5 centrality; 6 accepted", {HistType::kTH1F, {qaAxis}});
       histos.add("hadron/hEvents", "Selected events;centrality (%);events", {HistType::kTH1F, {cfgAxisCent}});
       histos.add("hadron/Prof_XY", "Bulk #LTXY#GT;centrality (%);#LTXY#GT", {HistType::kTProfile, {cfgAxisCent}});
@@ -168,7 +191,13 @@ struct JV02DmesonAnalysis {
       mHadPtAxis = histos.get<TProfile2D>(HIST("hadron/Prof_Z"))->GetYaxis();
       mHadCounts.assign(mHadPtAxis->GetNbins(), 0.f);
     }
-    if (doprocessD0) {
+    if (doprocessReference && doprocessReferenceCorrected) {
+      LOGF(fatal, "Enable only one of processReference and processReferenceCorrected");
+    }
+    if (doprocessD0 + doprocessD0HadronNch + doprocessD0Corrected > 1) {
+      LOGF(fatal, "Enable only one of processD0, processD0HadronNch, and processD0Corrected");
+    }
+    if (doprocessD0 || doprocessD0HadronNch || doprocessD0Corrected) {
       histos.add("D0/hEventQa", "1 seen; 2 sel8; 3 vertex; 4 quality; 5 centrality; 6 accepted", {HistType::kTH1F, {qaAxis}});
       histos.add("D0/hEvents", "Selected events;centrality (%);events", {HistType::kTH1F, {cfgAxisCent}});
       histos.add("D0/Prof_XY", "Bulk #LTXY#GT;centrality (%);#LTXY#GT", {HistType::kTProfile, {cfgAxisCent}});
@@ -238,7 +267,7 @@ struct JV02DmesonAnalysis {
     return std::isfinite(xy);
   }
 
-  template <typename TTracks>
+  template <typename TTracks, bool kApplyEff>
   float countCharged(const TTracks& tracks, const std::unordered_set<int64_t>& daughters, bool differential)
   {
     float nch = 0.f;
@@ -253,11 +282,18 @@ struct JV02DmesonAnalysis {
       if (cfgRejectDaughters && daughters.contains(static_cast<int64_t>(track.globalIndex()))) {
         continue;
       }
-      nch += 1.f;
+      float w = 1.f;
+      if constexpr (kApplyEff) {
+        w = inverseEfficiencyWeight(track);
+        if (w <= 0.f) {
+          continue;
+        }
+      }
+      nch += w;
       if (differential && mHadPtAxis != nullptr) {
         const int bin = mHadPtAxis->FindBin(pt);
         if (bin >= 1 && bin <= mHadPtAxis->GetNbins()) {
-          mHadCounts[bin - 1] += 1.f;
+          mHadCounts[bin - 1] += w;
         }
       }
     }
@@ -291,7 +327,7 @@ struct JV02DmesonAnalysis {
       return;
     }
     const std::unordered_set<int64_t> noDaughters;
-    const float nch = countCharged(tracks.sliceBy(mPerCFTrack, cfId), noDaughters, true);
+    const float nch = countCharged<aod::CFTracks, false>(tracks.sliceBy(mPerCFTrack, cfId), noDaughters, true);
     if (nch < cfgMinNch) {
       return;
     }
@@ -312,6 +348,41 @@ struct JV02DmesonAnalysis {
     }
   }
   PROCESS_SWITCH(JV02DmesonAnalysis, processReference, "Charged-hadron v02(pT) closure", true);
+
+  void processReferenceCorrected(MyCollisions::iterator const& collision, aod::BCs const&, aod::CFCollisions const&, aod::CFCollRefs const& refs, soa::Join<aod::CFTracks, aod::JWeights> const& tracks)
+  {
+    float cent = -1.f;
+    float xy = 0.f;
+    const int step = passedEventStep(collision, cent);
+    for (int qaBin = 1; qaBin <= step; ++qaBin) {
+      histos.fill(HIST("hadron/hEventQa"), static_cast<float>(qaBin));
+    }
+    const int cfId = cfCollisionIndex(refs);
+    if (step < StepAccepted || cfId < 0 || !referenceProduct(collision, xy)) {
+      return;
+    }
+    const std::unordered_set<int64_t> noDaughters;
+    const float nch = countCharged<soa::Join<aod::CFTracks, aod::JWeights>, true>(tracks.sliceBy(mPerCFTrack, cfId), noDaughters, true);
+    if (nch < cfgMinNch) {
+      return;
+    }
+    histos.fill(HIST("hadron/hEventQa"), 6.f);
+    const int sample = mSampleDist(mRng);
+    histos.fill(HIST("hadron/hEvents"), cent);
+    histos.fill(HIST("hadron/Prof_XY"), cent, xy);
+    histos.fill(HIST("hadron/Prof_Nch"), cent, nch);
+    histos.fill(HIST("hadron/Prof_XY_sub"), static_cast<float>(sample), cent, xy);
+    const int nBins = mHadPtAxis->GetNbins();
+    for (int ibin = 1; ibin <= nBins; ++ibin) {
+      const auto pt = static_cast<float>(mHadPtAxis->GetBinCenter(ibin));
+      const float z = mHadCounts[ibin - 1] / nch;
+      histos.fill(HIST("hadron/Prof_Z"), cent, pt, z);
+      histos.fill(HIST("hadron/Prof_XYZ"), cent, pt, xy * z);
+      histos.fill(HIST("hadron/Prof_Z_sub"), static_cast<float>(sample), cent, pt, z);
+      histos.fill(HIST("hadron/Prof_XYZ_sub"), static_cast<float>(sample), cent, pt, xy * z);
+    }
+  }
+  PROCESS_SWITCH(JV02DmesonAnalysis, processReferenceCorrected, "Charged-hadron v02 with JWeights efficiency", false);
 
   void processD0(MyCollisions::iterator const& collision, aod::BCs const&, aod::CFCollisions const&, aod::CFCollRefs const& refs, aod::CF2ProngTracks const& candidates, aod::CFTracks const& tracks)
   {
@@ -338,7 +409,7 @@ struct JV02DmesonAnalysis {
         daughters.insert(static_cast<int64_t>(cand.cfTrackProng1Id()));
       }
     }
-    const float nch = countCharged(eventTracks, daughters, false);
+    const float nch = countCharged<aod::CFTracks, false>(eventTracks, daughters, false);
     if (nch < cfgMinNch) {
       return;
     }
@@ -367,6 +438,121 @@ struct JV02DmesonAnalysis {
     }
   }
   PROCESS_SWITCH(JV02DmesonAnalysis, processD0, "D0 and D0bar v02(pT) from CF2ProngTracks", true);
+
+  void processD0HadronNch(MyCollisions::iterator const& collision, aod::BCs const&, aod::CFCollisions const&, aod::CFCollRefs const& refs, aod::CF2ProngTracks const& candidates, soa::Join<aod::CFTracks, aod::JWeights> const& tracks)
+  {
+    float cent = -1.f;
+    float xy = 0.f;
+    const int step = passedEventStep(collision, cent);
+    for (int qaBin = 1; qaBin <= step; ++qaBin) {
+      histos.fill(HIST("D0/hEventQa"), static_cast<float>(qaBin));
+    }
+    const int cfId = cfCollisionIndex(refs);
+    if (step < StepAccepted || cfId < 0 || !referenceProduct(collision, xy)) {
+      return;
+    }
+    auto eventCandidates = candidates.sliceBy(mPerCFCand, cfId);
+    auto eventTracks = tracks.sliceBy(mPerCFTrack, cfId);
+
+    std::unordered_set<int64_t> daughters;
+    if (cfgRejectDaughters) {
+      for (const auto& cand : eventCandidates) {
+        if (!isD0Decay(cand.decay())) {
+          continue;
+        }
+        daughters.insert(static_cast<int64_t>(cand.cfTrackProng0Id()));
+        daughters.insert(static_cast<int64_t>(cand.cfTrackProng1Id()));
+      }
+    }
+    const float nch = countCharged<soa::Join<aod::CFTracks, aod::JWeights>, true>(eventTracks, daughters, false);
+    if (nch < cfgMinNch) {
+      return;
+    }
+    histos.fill(HIST("D0/hEventQa"), 6.f);
+    const int sample = mSampleDist(mRng);
+    const auto sampleCoord = static_cast<float>(sample);
+    histos.fill(HIST("D0/hEvents"), cent);
+    histos.fill(HIST("D0/Prof_XY"), cent, xy);
+    histos.fill(HIST("D0/Prof_Nch"), cent, nch);
+
+    const float wRaw = 1.f / nch;
+    const float wCorr = xy / nch;
+    for (const auto& cand : eventCandidates) {
+      if (!isD0Decay(cand.decay())) {
+        continue;
+      }
+      const float pt = cand.pt();
+      if (pt < cfgPtMinD || pt >= cfgPtMaxD) {
+        continue;
+      }
+      const float mass = cand.invMass();
+      histos.fill(HIST("D0/hMassRaw"), cent, pt, mass, wRaw);
+      histos.fill(HIST("D0/hMassCorr"), cent, pt, mass, wCorr);
+      histos.fill(HIST("D0/hMassRawSub"), sampleCoord, cent, pt, mass, wRaw);
+      histos.fill(HIST("D0/hMassCorrSub"), sampleCoord, cent, pt, mass, wCorr);
+    }
+  }
+  PROCESS_SWITCH(JV02DmesonAnalysis, processD0HadronNch, "D0 v02 with epsilon_h-weighted N_ch only (no D0 efficiency)", false);
+
+  void processD0Corrected(MyCollisions::iterator const& collision, aod::BCs const&, aod::CFCollisions const&, aod::CFCollRefs const& refs,
+                          soa::Join<aod::CF2ProngTracks, aod::J2ProngWeights> const& candidates, soa::Join<aod::CFTracks, aod::JWeights> const& tracks)
+  {
+    float cent = -1.f;
+    float xy = 0.f;
+    const int step = passedEventStep(collision, cent);
+    for (int qaBin = 1; qaBin <= step; ++qaBin) {
+      histos.fill(HIST("D0/hEventQa"), static_cast<float>(qaBin));
+    }
+    const int cfId = cfCollisionIndex(refs);
+    if (step < StepAccepted || cfId < 0 || !referenceProduct(collision, xy)) {
+      return;
+    }
+    auto eventCandidates = candidates.sliceBy(mPerCFCand, cfId);
+    auto eventTracks = tracks.sliceBy(mPerCFTrack, cfId);
+
+    std::unordered_set<int64_t> daughters;
+    if (cfgRejectDaughters) {
+      for (const auto& cand : eventCandidates) {
+        if (!isD0Decay(cand.decay())) {
+          continue;
+        }
+        daughters.insert(static_cast<int64_t>(cand.cfTrackProng0Id()));
+        daughters.insert(static_cast<int64_t>(cand.cfTrackProng1Id()));
+      }
+    }
+    const float nch = countCharged<soa::Join<aod::CFTracks, aod::JWeights>, true>(eventTracks, daughters, false);
+    if (nch < cfgMinNch) {
+      return;
+    }
+    histos.fill(HIST("D0/hEventQa"), 6.f);
+    const int sample = mSampleDist(mRng);
+    const auto sampleCoord = static_cast<float>(sample);
+    histos.fill(HIST("D0/hEvents"), cent);
+    histos.fill(HIST("D0/Prof_XY"), cent, xy);
+    histos.fill(HIST("D0/Prof_Nch"), cent, nch);
+
+    for (const auto& cand : eventCandidates) {
+      if (!isD0Decay(cand.decay())) {
+        continue;
+      }
+      const float pt = cand.pt();
+      if (pt < cfgPtMinD || pt >= cfgPtMaxD) {
+        continue;
+      }
+      const float wInvD = inverseEfficiencyWeight(cand);
+      if (wInvD <= 0.f) {
+        continue;
+      }
+      const float wRaw = wInvD / nch;
+      const float wCorr = xy * wInvD / nch;
+      const float mass = cand.invMass();
+      histos.fill(HIST("D0/hMassRaw"), cent, pt, mass, wRaw);
+      histos.fill(HIST("D0/hMassCorr"), cent, pt, mass, wCorr);
+      histos.fill(HIST("D0/hMassRawSub"), sampleCoord, cent, pt, mass, wRaw);
+      histos.fill(HIST("D0/hMassCorrSub"), sampleCoord, cent, pt, mass, wCorr);
+    }
+  }
+  PROCESS_SWITCH(JV02DmesonAnalysis, processD0Corrected, "D0 v02 with JWeights and J2ProngWeights efficiency", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

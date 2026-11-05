@@ -27,3 +27,7 @@
 #pragma link C++ class o2::analysis::genericframework::GFWBinningCuts + ;
 #pragma link C++ class o2::analysis::genericframework::GFWRegions + ;
 #pragma link C++ class o2::analysis::genericframework::GFWCorrConfigs + ;
+#pragma link C++ class o2::analysis::genericframework::flowptcontainer::PtMomentGroup + ;
+#pragma link C++ class o2::analysis::genericframework::flowptcontainer::PtMomentConfig + ;
+#pragma link C++ class std::vector < o2::analysis::genericframework::flowptcontainer::PtMomentGroup> + ;
+#pragma link C++ class std::vector < o2::analysis::genericframework::flowptcontainer::PtMomentConfig> + ;

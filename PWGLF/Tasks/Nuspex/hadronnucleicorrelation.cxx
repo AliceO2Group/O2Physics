@@ -637,7 +637,7 @@ struct HadronNucleiCorrelation {
           if (!doITSPID.value || isITSPID) {
             return signCheck;
           }
-        } else if (isTPCElRejection || isTOFPID) {
+        } else if (isTOFPID || (isTPCElRejection && (!doITSPID.value || isITSPID))) {
           return signCheck;
         }
       }
@@ -674,14 +674,13 @@ struct HadronNucleiCorrelation {
     pair->SetPair(&part0, &part1);
     pair->SetIdentical(isIdentical);
     if (isIdentical && pair->IsClosePair(dEta, dPhi, radiusTPC)) {
-      registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
       return;
     }
 
     if (doClosePairRejection && pair->IsClosePair(dEta, dPhi, radiusTPC)) {
-      registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
       return;
     }
+    registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
 
     const float deltaEta = part0.eta() - part1.eta();
     const float deltaPhi = RecoDecay::constrainAngle(part0.phi() - part1.phi(), -1 * o2::constants::math::PIHalf);
@@ -1041,7 +1040,7 @@ struct HadronNucleiCorrelation {
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
             if (!isPr) {
               registryQa.fill(HIST("QA/h3dTPCTOF_De"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (isTPCElRejection || isTOFPID) {
+              if (isTOFPID || (isTPCElRejection && (!doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value))) {
                 registryQa.fill(HIST("QA/h3dTPCTOF_De_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
               }
             }
@@ -1054,7 +1053,7 @@ struct HadronNucleiCorrelation {
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
             if (!isPr) {
               registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
-              if (isTPCElRejection || isTOFPID) {
+              if (isTOFPID || (isTPCElRejection && (!doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value))) {
                 registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
               }
             }

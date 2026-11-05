@@ -99,10 +99,14 @@ struct FemtoPairTrackTwoTrackResonance {
 
   // setup for track-phi pairs
   pairbuilder::PairTrackTwoTrackResonanceBuilder<
-    trackhistmanager::PrefixTrack1,
-    twotrackresonancehistmanager::PrefixPhi,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    twotrackresonancehistmanager::PrefixPhiSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    twotrackresonancehistmanager::PrefixPhiMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixTrackResonanceSe,
     pairhistmanager::PrefixTrackResonanceMe,
     closepairrejection::PrefixTrackTwoTrackResonanceSe,
@@ -112,10 +116,14 @@ struct FemtoPairTrackTwoTrackResonance {
 
   // setup for track-kstar0 pairs
   pairbuilder::PairTrackTwoTrackResonanceBuilder<
-    trackhistmanager::PrefixTrack1,
-    twotrackresonancehistmanager::PrefixKstar,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    twotrackresonancehistmanager::PrefixKstarSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    twotrackresonancehistmanager::PrefixKstarMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixTrackResonanceSe,
     pairhistmanager::PrefixTrackResonanceMe,
     closepairrejection::PrefixTrackTwoTrackResonanceSe,
@@ -125,10 +133,14 @@ struct FemtoPairTrackTwoTrackResonance {
 
   // setup for track-rho0 pairs
   pairbuilder::PairTrackTwoTrackResonanceBuilder<
-    trackhistmanager::PrefixTrack1,
-    twotrackresonancehistmanager::PrefixRho,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    twotrackresonancehistmanager::PrefixRhoSe,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    twotrackresonancehistmanager::PrefixRhoMe,
+    trackhistmanager::PrefixResonancePosDaughterMe,
+    trackhistmanager::PrefixResonanceNegDaughterMe,
     pairhistmanager::PrefixTrackResonanceSe,
     pairhistmanager::PrefixTrackResonanceMe,
     closepairrejection::PrefixTrackTwoTrackResonanceSe,

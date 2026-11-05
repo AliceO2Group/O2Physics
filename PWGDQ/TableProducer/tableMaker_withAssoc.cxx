@@ -286,7 +286,7 @@ struct TableMaker {
   struct : ConfigurableGroup {
     Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
-    Configurable<std::string> fConfigCcdbPathZorro{"ccdb-path-zorro", "/Users/m/mpuccio/EventFiltering/OTS/Chunked/", "base path to the ccdb object for zorro"};
+    Configurable<std::string> fConfigCcdbPathZorro{"ccdb-path-zorro", "EventFiltering/Zorro/", "base path to the ccdb object for zorro"};
     Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
     Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fConfigGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -1397,7 +1397,7 @@ struct TableMaker {
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT0-4: V0Bits
         trackFilteringTag |= static_cast<uint64_t>(track.pidbit());
         for (int iv0 = 0; iv0 < 5; iv0++) {
-          if (track.pidbit() & (uint8_t(1) << iv0)) {
+          if (track.pidbit() & (static_cast<uint8_t>(1) << iv0)) {
             (dynamic_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
           }
         }

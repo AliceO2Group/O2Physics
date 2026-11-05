@@ -139,7 +139,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Partition<CandLcData> selectedLcToPiKP = aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
 
   ConfigurableAxis binsInvMass{"binsInvMass", {300, 1.6, 2.2}, ""};
-  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {100, 0., 10000.}, "Multiplicity as FT0M signal amplitude"};
+  ConfigurableAxis binsMult{"binsMult", {100, 0., 10000.}, "Multiplicity bins"};
   ConfigurableAxis binsCent{"binsCent", {100, 0., 100.}, "Centrality bins"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "Primary vertex z coordinate"};
   ConfigurableAxis binsEta{"binsEta", {50, -2., 2.}, "Eta bins"};
@@ -174,12 +174,12 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     ccdb->setLocalObjectValidityChecking();
 
     const AxisSpec axisCent = {binsCent, "Centrality"};
-    const AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
+    const AxisSpec axisMult = {binsMult, "Multiplicity"};
     const AxisSpec axisPosZ = {binsPosZ, "PosZ"};
     const AxisSpec axisEta = {binsEta, "#it{#eta}"};
     const AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
-    const AxisSpec axisPtTrig = {(std::vector<double>)binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
-    const AxisSpec axisPtAssoc = {(std::vector<double>)binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
+    const AxisSpec axisPtTrig = {std::vector<double>(binsPtTrig), "#it{p}_{T} Trig (GeV/#it{c})"};
+    const AxisSpec axisPtAssoc = {std::vector<double>(binsPtAssoc), "#it{p}_{T} Assoc (GeV/#it{c})"};
     const AxisSpec axisDcaXY = {binsDca, "DCA XY (cm)"};
     const AxisSpec axisDcaZ = {binsDca, "DCA Z (cm)"};
 
@@ -190,8 +190,10 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     registry.add("hEtaVsPtTrigAssoc", "Associated particles etaVsPt", {HistType::kTH3F, {{axisEta}, {axisPtTrig}, {axisPtAssoc}}});
     registry.add("hPhiVsPtAssoc", "Associated particles phiVsPt", {HistType::kTH2F, {{axisPhi}, {axisPtAssoc}}});
     registry.add("hEtaVsPtAssoc", "Associated particles etaVsPt", {HistType::kTH2F, {{axisEta}, {axisPtAssoc}}});
-    registry.add("hDcaXYVsPtAssoc", "Associated particles DCAxyVsPt", {HistType::kTH2F, {{axisDcaXY}, {axisPtAssoc}}});
-    registry.add("hDcaZVsPtAssoc", "Associated particles DCAzVsPt", {HistType::kTH2F, {{axisDcaZ}, {axisPtAssoc}}});
+    registry.add("hDcaXYVsPtVsCentAssoc", "Associated particles DCAxyVsPtVsCent", {HistType::kTH3F, {{axisPtAssoc}, {axisDcaXY}, {axisCent}}});
+    registry.add("hDcaZVsPtVsCentAssoc", "Associated particles DCAzVsPtVsCent", {HistType::kTH3F, {{axisPtAssoc}, {axisDcaZ}, {axisCent}}});
+    registry.add("hDcaXYVsPtVsMultAssoc", "Associated particles DCAxyVsPtVsMult", {HistType::kTH3F, {{axisPtAssoc}, {axisDcaXY}, {axisMult}}});
+    registry.add("hDcaZVsPtVsMultAssoc", "Associated particles DCAzVsPtVsMult", {HistType::kTH3F, {{axisPtAssoc}, {axisDcaZ}, {axisMult}}});
 
     // Setup pt-dependent DCAxy cut function
     if (usePtDiffDcaXYCut) {
@@ -359,11 +361,13 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   /// Fill histograms and tables for same-event correlations
   /// \param trigCands are the trigger candidates
   /// \param assTrks are the associated tracks
-  /// \param collCentrality is the collision centrality
+  /// \param cent is the collision centrality
+  /// \param mult is the collision multiplicity
   template <CandidateType CandType, typename TTrigCands, typename TAssocTrks>
   void fillSameEvent(TTrigCands const& trigCands,
                      TAssocTrks const& assTrks,
-                     const float collCentrality)
+                     const float cent,
+                     const float mult)
   {
     for (const auto& trigCand : trigCands) {
       if (!cutCandRapidity<CandType>(trigCand)) {
@@ -394,7 +398,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         }
         if (downSampleTrksFactor < 1.) {
           float const pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
-          if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
+          if (assTrkPt < ptMaxForDownSample && cent < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
             continue;
           }
         }
@@ -402,8 +406,10 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         registry.fill(HIST("hEtaVsPtTrigAssoc"), assTrk.eta(), trigCandPt, assTrkPt);
         registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
         registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
-        registry.fill(HIST("hDcaXYVsPtAssoc"), assTrk.dcaXY(), assTrkPt);
-        registry.fill(HIST("hDcaZVsPtAssoc"), assTrk.dcaZ(), assTrkPt);
+        registry.fill(HIST("hDcaXYVsPtVsCentAssoc"), assTrkPt, assTrk.dcaXY(), cent);
+        registry.fill(HIST("hDcaZVsPtVsCentAssoc"), assTrkPt, assTrk.dcaZ(), cent);
+        registry.fill(HIST("hDcaXYVsPtVsMultAssoc"), assTrkPt, assTrk.dcaXY(), mult);
+        registry.fill(HIST("hDcaZVsPtVsMultAssoc"), assTrkPt, assTrk.dcaZ(), mult);
 
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
         rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
@@ -436,10 +442,12 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   /// Fill track tables for mixed-event
   /// \param assTrks are the associated tracks
-  /// \param collCentrality is the collision centrality
+  /// \param cent is the collision centrality
+  /// \param mult is the collision multiplicity
   template <typename TAssocTrks>
   void fillTrkMixedEvent(TAssocTrks const& assTrks,
-                         const float collCentrality)
+                         const float cent,
+                         const float mult)
   {
     bool first = true;
     for (const auto& assTrk : assTrks) {
@@ -455,15 +463,17 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       }
       if (!first && downSampleTrksFactor < 1.) { // skip downsampling for the first track to avoid empty tables
         float const pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
-        if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
+        if (assTrkPt < ptMaxForDownSample && cent < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
           continue;
         }
       }
       first = false;
       registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
       registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
-      registry.fill(HIST("hDcaXYVsPtAssoc"), assTrk.dcaXY(), assTrkPt);
-      registry.fill(HIST("hDcaZVsPtAssoc"), assTrk.dcaZ(), assTrkPt);
+      registry.fill(HIST("hDcaXYVsPtVsCentAssoc"), assTrkPt, assTrk.dcaXY(), cent);
+      registry.fill(HIST("hDcaZVsPtVsCentAssoc"), assTrkPt, assTrk.dcaZ(), cent);
+      registry.fill(HIST("hDcaXYVsPtVsMultAssoc"), assTrkPt, assTrk.dcaXY(), mult);
+      registry.fill(HIST("hDcaZVsPtVsMultAssoc"), assTrkPt, assTrk.dcaZ(), mult);
       rowAssocBases(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
       rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }
@@ -482,7 +492,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    fillSameEvent<CandidateType::DplusToPiKPi>(candsDplus, tracks, cent);
+    fillSameEvent<CandidateType::DplusToPiKPi>(candsDplus, tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDplusSameEvent, "Process Same Event for Dplus candidates", true);
 
@@ -500,7 +510,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillCharmMixedEvent<CandidateType::DplusToPiKPi>(candsDplus);
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDplusMixedEvent, "Process Mixed Event for Dplus candidates", false);
 
@@ -519,8 +529,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    fillSameEvent<CandidateType::DsToPiKK>(candsDsToPiKK, tracks, cent);
-    fillSameEvent<CandidateType::DsToKKPi>(candsDsToKKPi, tracks, cent);
+    fillSameEvent<CandidateType::DsToPiKK>(candsDsToPiKK, tracks, cent, mult);
+    fillSameEvent<CandidateType::DsToKKPi>(candsDsToKKPi, tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDsSameEvent, "Process Same Event for Ds candidates", false);
 
@@ -541,7 +551,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillCharmMixedEvent<CandidateType::DsToPiKK>(candsDsToPiKK);
     fillCharmMixedEvent<CandidateType::DsToKKPi>(candsDsToKKPi);
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDsMixedEvent, "Process Mixed Event for Ds candidates", false);
 
@@ -560,8 +570,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    fillSameEvent<CandidateType::D0ToPiK>(candsD0ToPiK, tracks, cent);
-    fillSameEvent<CandidateType::D0ToKPi>(candsD0ToKPi, tracks, cent);
+    fillSameEvent<CandidateType::D0ToPiK>(candsD0ToPiK, tracks, cent, mult);
+    fillSameEvent<CandidateType::D0ToKPi>(candsD0ToKPi, tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processD0SameEvent, "Process Same Event for D0 candidates", false);
 
@@ -582,7 +592,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillCharmMixedEvent<CandidateType::D0ToPiK>(candsD0ToPiK);
     fillCharmMixedEvent<CandidateType::D0ToKPi>(candsD0ToKPi);
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processD0MixedEvent, "Process Mixed Event for D0 candidates", false);
 
@@ -601,8 +611,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    fillSameEvent<CandidateType::LcToPKPi>(candsLcToPKPi, tracks, cent);
-    fillSameEvent<CandidateType::LcToPiKP>(candsLcToPiKP, tracks, cent);
+    fillSameEvent<CandidateType::LcToPKPi>(candsLcToPKPi, tracks, cent, mult);
+    fillSameEvent<CandidateType::LcToPiKP>(candsLcToPiKP, tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processLcSameEvent, "Process Same Event for Lc candidates", false);
 
@@ -623,7 +633,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillCharmMixedEvent<CandidateType::LcToPKPi>(candsLcToPKPi);
     fillCharmMixedEvent<CandidateType::LcToPiKP>(candsLcToPiKP);
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processLcMixedEvent, "Process Mixed Event for Lc candidates", false);
 
@@ -636,7 +646,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    fillSameEvent<CandidateType::Hadron>(tracks, tracks, cent);
+    fillSameEvent<CandidateType::Hadron>(tracks, tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronSameEvent, "Process Same Event for hadron candidates", false);
 
@@ -649,7 +659,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    fillTrkMixedEvent(tracks, cent);
+    fillTrkMixedEvent(tracks, cent, mult);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronMixedEvent, "Process Mixed Event for hadron candidates", false);
 };

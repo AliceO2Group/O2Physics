@@ -322,7 +322,7 @@ struct UpcVmRof {
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", sor);
     rofShift = alppar->roFrameBiasInBC;
     rofLength = alppar->roFrameLengthInBC;
-    rofPerOrbit = static_cast<int>(o2::constants::lhc::LHCMaxBunches / rofLength);
+    rofPerOrbit = (o2::constants::lhc::LHCMaxBunches / rofLength);
   }
 
   //--------------------------------------------------------------------------------

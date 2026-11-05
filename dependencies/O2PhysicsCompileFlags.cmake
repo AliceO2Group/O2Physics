@@ -14,7 +14,7 @@ include_guard()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 # Enabled warnings supported by Clang and GCC, not treated as errors
-set(O2PHYSICS_WARNINGS_COMMON_NO_ERROR "")
+set(O2PHYSICS_WARNINGS_COMMON_NO_ERROR "deprecated-declarations")
 
 # Enabled warnings supported by Clang only, not treated as errors
 set(O2PHYSICS_WARNINGS_CLANG_NO_ERROR "vla-extension")
