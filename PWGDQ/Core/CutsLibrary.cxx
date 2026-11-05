@@ -4115,17 +4115,26 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (nameStr == "alice3KaonTOFRICH") {
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
     cut->AddCut(GetAnalysisCut("alice3KaonTOFRICH"));
     return cut;
   }
 
   if (nameStr == "alice3PionTOFRICH") {
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
     cut->AddCut(GetAnalysisCut("alice3PionTOFRICH"));
     return cut;
   }
 
   if (nameStr == "alice3ProtonTOFRICH") {
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
     cut->AddCut(GetAnalysisCut("alice3ProtonTOFRICH"));
+    return cut;
+  }
+
+  if (nameStr == "alice3ElectronTOFRICH") {
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    cut->AddCut(GetAnalysisCut("alice3ElectronTOFRICH"));
     return cut;
   }
 
@@ -7708,6 +7717,24 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kEta, -0.8, 0.8, false, VarManager::kP, 4.5, 1000.0);
     cut->AddCut(VarManager::kHasRICHSigPr, 0.5f, 1.5f, false, VarManager::kP, 4.5, 1000.0);
     cut->AddCut(VarManager::kRICHnSigmaPr, -3.0f, 3.0f, false, VarManager::kP, 4.5, 1000.0);
+
+    return cut;
+  }
+
+  if (nameStr == "alice3ElectronTOFRICH") {
+    cut->AddCut(VarManager::kEta, -2.0, 2.0);
+    cut->AddCut(VarManager::kP, 0.3f, 1000.0);
+
+    cut->AddCut(VarManager::kTOFEventTimeErr, 0.0f, 30.0f, false, VarManager::kP, 0.0f, 0.6);
+    cut->AddCut(VarManager::kOuterTOFnSigmaEl, -3.0f, 3.0f, false, VarManager::kP, 0.0f, 0.6);
+
+    cut->AddCut(VarManager::kOuterTOFnSigmaPi, -2.0f, 2.0f, true, VarManager::kP, 0.0f, 0.6);
+    cut->AddCut(VarManager::kOuterTOFnSigmaKa, -2.0f, 2.0f, true, VarManager::kP, 0.0f, 0.6);
+    cut->AddCut(VarManager::kOuterTOFnSigmaPr, -2.0f, 2.0f, true, VarManager::kP, 0.0f, 0.6);
+
+    cut->AddCut(VarManager::kEta, -0.8, 0.8, false, VarManager::kP, 0.6, 1000.0);
+    cut->AddCut(VarManager::kHasRICHSigEl, 0.5f, 1.5f, false, VarManager::kP, 0.6, 1000.0);
+    cut->AddCut(VarManager::kRICHnSigmaEl, -3.0f, 3.0f, false, VarManager::kP, 0.6, 1000.0);
 
     return cut;
   }
