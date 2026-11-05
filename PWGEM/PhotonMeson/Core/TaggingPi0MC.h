@@ -58,6 +58,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -280,7 +281,7 @@ struct TaggingPi0MC {
       mggTitle = "#gamma#gamma";
     }
 
-    const o2::framework::AxisSpec axis_m{200, 0, 0.4, Form("m_{%s} (GeV/c^{2})", mggTitle)};
+    const o2::framework::AxisSpec axis_m{200, 0, 0.4, std::format("m_{} (GeV/c^{{2}})", mggTitle)};
     const o2::framework::AxisSpec axis_pt{ConfPtBins, "p_{T,#gamma} (GeV/c)"};
 
     fRegistry.add("Photon/candidate/hPt", "photon candidates;p_{T,#gamma} (GeV/c)", o2::framework::HistType::kTH1D, {axis_pt}, true);                                                               // for purity

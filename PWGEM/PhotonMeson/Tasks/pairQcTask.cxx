@@ -1454,7 +1454,7 @@ struct PairQCTask {
   PROCESS_SWITCH(PairQCTask, processMC, "pair QC on MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<PairQCTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<PairQCTask>(context)};
 }
