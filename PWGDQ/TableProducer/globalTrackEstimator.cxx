@@ -58,7 +58,9 @@ struct GlobalTrackEstimator {
   Configurable<float> cfgRatioTPCClusterOverFindableCluster{"cfgRatioTPCClusterOverFindableCluster", 0.8, "Minimum ratio of crossed TPC rows over findable clusters"};
   Configurable<float> cfgMaxChi2TPC{"cfgMaxChi2TPC", 4.0, "Maximum chi2 per cluster in TPC"};
   Configurable<float> cfgMaxChi2ITS{"cfgMaxChi2ITS", 36.0, "Maximum chi2 per cluster in ITS"};
-  Configurable<bool> cfgRequireITSibAny{"cfgRequireITSibAny", true, "Pseudorapidity range"};
+  Configurable<bool> cfgRequireITSibAny{"cfgRequireITSibAny", true, "Require a hit in the ITS inner barrel"};
+  Configurable<bool> cfgRecalculateDCA{"cfgRecalculateDCA", true, "Recalculate DCA vector with associations"};
+  
 
   o2::framework::Preslice<o2::aod::ReducedTracksAssoc> preslice = o2::aod::reducedtrack_association::reducedeventId;
 
@@ -108,8 +110,11 @@ struct GlobalTrackEstimator {
         auto track = assoc.template reducedtrack_as<o2::soa::Filtered<MyBarrelTracks>>();
 
         VarManager::FillTrack<GkTrackFillMap>(track);
-        VarManager::FillTrackCollision<GkTrackFillMap>(track, event);
 
+        if(cfgRecalculateDCA) {
+          VarManager::FillTrackCollision<GkTrackFillMap>(track, event);
+        }
+        
         const int nFindable = track.tpcNClsFindable();
         const int nCrossedRows = track.tpcNClsCrossedRows();
 
