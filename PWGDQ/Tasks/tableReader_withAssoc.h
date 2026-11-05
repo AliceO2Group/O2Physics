@@ -4133,7 +4133,7 @@ struct AnalysisDileptonTrack {
   o2::framework::Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
   o2::framework::Configurable<std::vector<float>> fConfigFitmassEC{"cfgTFitmassEC", std::vector<float>{-0.541438, 2.8, 3.2}, "parameter from the fit fuction and fit range"};
   o2::framework::Configurable<std::vector<float>> fConfigTransRange{"cfgTransRange", std::vector<float>{0.333333, 0.666667}, "Transverse region for the energy correlstor analysis"};
-
+  o2::framework::Configurable<int> fConfigbootstrapRN{"cfgBootstrapRN", -1, "Number of bootstrap samples for the energy correlator study"};
   o2::framework::Configurable<bool> fConfigApplyEfficiency{"cfgApplyEfficiency", false, "If true, apply efficiency correction for the energy correlator study"};
   o2::framework::Configurable<bool> fConfigApplyEfficiencyME{"cfgApplyEfficiencyME", false, "If true, apply efficiency correction for the energy correlator study"};
   o2::framework::Configurable<std::string> fConfigAccCCDBPath{"AccCCDBPath", "Users/y/yalin/pptest/test2", "Path of the efficiency corrections"};
@@ -4176,6 +4176,9 @@ struct AnalysisDileptonTrack {
   TH2F* hEfficiency_dilepton = nullptr;
   TH2F* hEfficiency_hadron = nullptr;
   TH1F* hMasswindow = nullptr;
+  TRandom3 fRndm{0};
+  using BootstrapEventKey = std::pair<uint64_t, uint64_t>;
+  std::map<BootstrapEventKey, int> fBootstrapSampleMap;
 
   void init(o2::framework::InitContext& context)
   {
@@ -4459,6 +4462,24 @@ struct AnalysisDileptonTrack {
     return hEff->Interpolate(safeX, safeY);
   }
 
+  template <typename TEvent>
+  int getBootstrapSample(TEvent const& event)
+  {
+    const BootstrapEventKey key{
+      static_cast<uint64_t>(event.timestamp()),
+      static_cast<uint64_t>(event.globalIndex())};
+
+    if (auto it = fBootstrapSampleMap.find(key);
+        it != fBootstrapSampleMap.end()) {
+      return it->second;
+    }
+
+    const int sample = static_cast<int>(fRndm.Rndm() * fConfigbootstrapRN.value);
+    fBootstrapSampleMap.emplace(key, sample);
+
+    return sample;
+  }
+
   // Template function to run pair - hadron combinations
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TTrackAssocs, typename TDileptons>
   void runDileptonHadron(TEvent const& event, TTrackAssocs const& assocs, TTracks const& tracks, TDileptons const& dileptons)
@@ -4468,6 +4489,10 @@ struct AnalysisDileptonTrack {
     VarManager::FillEvent<TEventFillMap>(event, fValuesHadron);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
 
+    if (fConfigbootstrapRN.value > 0) {
+      const int bootstrapSample = getBootstrapSample(event);
+      fValuesHadron[VarManager::kECBootstrapSample] = bootstrapSample;
+    }
     for (auto const& dilepton : dileptons) {
       // get full track info of tracks based on the index
       auto lepton1 = tracks.rawIteratorAt(dilepton.index0Id());
@@ -4740,6 +4765,10 @@ struct AnalysisDileptonTrack {
       auto evAssocs = assocs.sliceBy(trackAssocsPerCollision, event2.globalIndex());
       evAssocs.bindExternalIndices(&events);
 
+      if (fConfigbootstrapRN.value > 0) {
+        const int bootstrapSample = getBootstrapSample(event1);
+        dqtablereader_helpers::varValues()[VarManager::kECBootstrapSample] = bootstrapSample;
+      }
       // loop over associations
       for (auto const& assoc : evAssocs) {
 
