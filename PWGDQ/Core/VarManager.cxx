@@ -1721,8 +1721,6 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhiSym] = "rad.";
   fgVariableNames[kCosChi] = "Cos#chi";
   fgVariableUnits[kCosChi] = "";
-  fgVariableNames[kECBootstrapSample] = "EC bootstrap sample";
-  fgVariableUnits[kECBootstrapSample] = "";
   fgVariableNames[kCosTheta] = "Cos#theta";
   fgVariableUnits[kCosTheta] = "";
   fgVariableNames[kPtDau] = "hadron P_{T}";
@@ -2851,7 +2849,6 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCosChi"] = kCosChi;
   fgVarNamesMap["kWeight"] = kWeight;
   fgVarNamesMap["kECWeight"] = kECWeight;
-  fgVarNamesMap["kECBootstrapSample"] = kECBootstrapSample;
   fgVarNamesMap["kEWeight_before"] = kEWeight_before;
   fgVarNamesMap["kWeight_before"] = kWeight_before;
   fgVarNamesMap["kPtDau"] = kPtDau;
