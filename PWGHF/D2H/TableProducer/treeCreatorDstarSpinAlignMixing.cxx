@@ -25,8 +25,10 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -45,6 +47,7 @@
 #include <TPDGCode.h>
 #include <TRandom3.h>
 
+#include <cmath>
 #include <cstdint>
 #include <vector>
 
@@ -243,7 +246,6 @@ struct HfTreeCreatorDstarSpinAlignMixing {
   void fillCandidateTable(CollType const& collision, const T& candidate, Trk const& /*tracks*/, BcType const& /*bcs*/)
   {
     int8_t origin{RecoDecay::OriginType::None};
-    float ptBhadMother{-1.f};
     bool partRecoDstar{false};
     if constexpr (DoMc) {
       partRecoDstar = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0 && std::abs(candidate.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
