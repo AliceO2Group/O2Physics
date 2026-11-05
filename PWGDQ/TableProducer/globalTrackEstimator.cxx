@@ -60,7 +60,6 @@ struct GlobalTrackEstimator {
   Configurable<float> cfgMaxChi2ITS{"cfgMaxChi2ITS", 36.0, "Maximum chi2 per cluster in ITS"};
   Configurable<bool> cfgRequireITSibAny{"cfgRequireITSibAny", true, "Require a hit in the ITS inner barrel"};
   Configurable<bool> cfgRecalculateDCA{"cfgRecalculateDCA", true, "Recalculate DCA vector with associations"};
-  
 
   o2::framework::Preslice<o2::aod::ReducedTracksAssoc> preslice = o2::aod::reducedtrack_association::reducedeventId;
 
@@ -111,10 +110,10 @@ struct GlobalTrackEstimator {
 
         VarManager::FillTrack<GkTrackFillMap>(track);
 
-        if(cfgRecalculateDCA) {
+        if (cfgRecalculateDCA) {
           VarManager::FillTrackCollision<GkTrackFillMap>(track, event);
         }
-        
+
         const int nFindable = track.tpcNClsFindable();
         const int nCrossedRows = track.tpcNClsCrossedRows();
 
