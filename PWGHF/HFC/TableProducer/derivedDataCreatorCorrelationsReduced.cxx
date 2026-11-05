@@ -637,7 +637,6 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDataLcME, "Process Mixed Event for Lc candidates", false);
 
-
   // CHARM-HADRON CORRELATIONS PROCESS FUNCTIONS --- MC
   // Dplus MC
   void processMcDplusSE(McCollsWithCentMult::iterator const& coll,
@@ -799,12 +798,11 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processMcLcME, "Process Mixed Event for Lc candidates", false);
 
-
   // HADRON-HADRON CORRELATIONS PROCESS FUNCTIONS --- DATA
   // Hadron Hadron Same Event
   void processDataHadronHadronSE(DataCollsWithCentMult::iterator const& coll,
                                  TracksData const& tracks)
-  {    
+  {
     float cent{-1.}, mult{-1.};
     if (!checkCollision(coll, cent, mult)) {
       return;
@@ -817,7 +815,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   // Hadron Hadron Mixed Event
   void processDataHadronHadronME(DataCollsWithCentMult::iterator const& coll,
                                  TracksData const& tracks)
-  {    
+  {
     float cent{-1.}, mult{-1.};
     if (!checkCollision(coll, cent, mult)) {
       return;
@@ -827,12 +825,11 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDataHadronHadronME, "Process Mixed Event for hadron candidates", false);
 
-
   // HADRON-HADRON CORRELATIONS PROCESS FUNCTIONS --- MC
   // Hadron Hadron Same Event
   void processMcHadronHadronSE(McCollsWithCentMult::iterator const& coll,
                                TracksMc const& tracks)
-  {    
+  {
     float cent{-1.}, mult{-1.};
     if (!checkCollision(coll, cent, mult)) {
       return;
@@ -845,7 +842,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   // Hadron Hadron Mixed Event
   void processMcHadronHadronME(McCollsWithCentMult::iterator const& coll,
                                TracksMc const& tracks)
-  {    
+  {
     float cent{-1.}, mult{-1.};
     if (!checkCollision(coll, cent, mult)) {
       return;

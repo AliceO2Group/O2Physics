@@ -19,8 +19,8 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/HFC/Utils/utilsFlow.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -63,13 +63,13 @@ namespace o2::aod
 namespace hf_correlations_eff
 {
 // Charm-hadron candidate columns
-DECLARE_SOA_COLUMN(Pt, pt, float);              //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(PvContrib, pvContrib, int);  //! Number of primary vertex contributors
-DECLARE_SOA_COLUMN(Eta, eta, float);            //! Pseudorapidity of candidate
-DECLARE_SOA_COLUMN(Phi, phi, float);            //! Azimuthal angle of candidate
-DECLARE_SOA_COLUMN(Origin, origin, int);        //! Origin of the candidate (prompt or non-prompt)
-DECLARE_SOA_COLUMN(MlScore0, mlScore0, float);  //! ML score of the first configured index
-DECLARE_SOA_COLUMN(MlScore1, mlScore1, float);  //! ML score of the second configured index
+DECLARE_SOA_COLUMN(Pt, pt, float);             //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(PvContrib, pvContrib, int); //! Number of primary vertex contributors
+DECLARE_SOA_COLUMN(Eta, eta, float);           //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);           //! Azimuthal angle of candidate
+DECLARE_SOA_COLUMN(Origin, origin, int);       //! Origin of the candidate (prompt or non-prompt)
+DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
+DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
 
 // Associated track columns
 DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);         //! Transverse momentum of associated track (GeV/c)
@@ -219,7 +219,6 @@ struct HfTaskCorrelationsEfficiencies {
     std::vector<AxisSpec> axesAssocTracks = {axisPtAssoc, axisEtaAssoc, axisPhiAssoc, axisZVtx, axisAssTrkSpecie, axisTrackOrigin};
     registry.add("hAssTrackReco", "Reconstructed associated tracks;;", {HistType::kTHnSparseF}, axesAssocTracks);
     registry.add("hAssTrackGen", "Generated associated tracks;;", {HistType::kTHnSparseF}, axesAssocTracks);
-
   }
 
   /// Match charm-hadron based on its reconstruction flag
@@ -428,10 +427,8 @@ struct HfTaskCorrelationsEfficiencies {
       auto genCollision = genTrk.template mcCollision_as<aod::McCollisions>();
       registry.fill(HIST("hAssTrackGen"), genTrk.pt(), genTrk.eta(), genTrk.phi(), genCollision.posZ(), matchedSpecie, genTrkOrigin);
     }
-
   }
   PROCESS_SWITCH(HfTaskCorrelationsEfficiencies, processEffAssTracks, "Process efficiencies for associated tracks", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
