@@ -61,6 +61,7 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_evsel;
 using namespace o2::hf_decay;
+using namespace o2::hfc_utils_flow;
 
 enum CandidateType {
   DplusToPiKPi = 0,
