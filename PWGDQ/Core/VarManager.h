@@ -1051,6 +1051,7 @@ class VarManager : public TObject
     kPhiDau,
     kWeight,
     kECWeight,
+    kECBootstrapSample,
     kPtDau,
     kCosTheta,
     kEWeight_before,
