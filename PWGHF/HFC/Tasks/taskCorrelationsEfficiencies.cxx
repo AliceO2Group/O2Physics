@@ -205,10 +205,10 @@ struct HfTaskCorrelationsEfficiencies {
     const AxisSpec axisMlScore1 = {binsMlTwo, "ML score 1"};
     std::vector<AxisSpec> axesCharmReco = {axisPtTrig, axisPvContrib, axisEtaTrig, axisPhiTrig, axisMlScore0, axisMlScore1};
 
-    registry.add("hCharmPromptGen", "Generated prompt charm-hadron candidates;;", {HistType::kTHnSparseF}, {{axisPtTrig}, {axisEtaTrig}, {axisPhiTrig}});
-    registry.add("hCharmFdGen", "Generated non-prompt charm-hadron candidates;;", {HistType::kTHnSparseF}, {{axisPtTrig}, {axisEtaTrig}, {axisPhiTrig}});
-    registry.add("hCharmPromptReco", "Reconstructed prompt charm-hadron candidates;;", {HistType::kTHnSparseF}, axesCharmReco);
-    registry.add("hCharmFdReco", "Reconstructed non-prompt charm-hadron candidates;;", {HistType::kTHnSparseF}, axesCharmReco);
+    registry.add("hCharmPromptGen", "Generated prompt charm-hadron candidates;;", HistType::kTHnSparseF, {{axisPtTrig}, {axisEtaTrig}, {axisPhiTrig}});
+    registry.add("hCharmFdGen", "Generated non-prompt charm-hadron candidates;;", HistType::kTHnSparseF, {{axisPtTrig}, {axisEtaTrig}, {axisPhiTrig}});
+    registry.add("hCharmPromptReco", "Reconstructed prompt charm-hadron candidates;;", HistType::kTHnSparseF, axesCharmReco);
+    registry.add("hCharmFdReco", "Reconstructed non-prompt charm-hadron candidates;;", HistType::kTHnSparseF, axesCharmReco);
 
     // Axes: pt, eta, phi, z_vtx, specie
     const AxisSpec axisPtAssoc = {binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
@@ -218,8 +218,8 @@ struct HfTaskCorrelationsEfficiencies {
     const AxisSpec axisAssTrkSpecie = {static_cast<int>(NAssTracksTypes), -0.5, static_cast<int>(NAssTracksTypes) - 0.5, "Particle species"};
     const AxisSpec axisTrackOrigin = {2, -0.5, 1.5, "Particle origin"};
     std::vector<AxisSpec> axesAssocTracks = {axisPtAssoc, axisEtaAssoc, axisPhiAssoc, axisZVtx, axisAssTrkSpecie, axisTrackOrigin};
-    registry.add("hAssTrackReco", "Reconstructed associated tracks;;", {HistType::kTHnSparseF}, axesAssocTracks);
-    registry.add("hAssTrackGen", "Generated associated tracks;;", {HistType::kTHnSparseF}, axesAssocTracks);
+    registry.add("hAssTrackReco", "Reconstructed associated tracks;;", HistType::kTHnSparseF, axesAssocTracks);
+    registry.add("hAssTrackGen", "Generated associated tracks;;", HistType::kTHnSparseF, axesAssocTracks);
   }
 
   /// Match charm-hadron based on its reconstruction flag
