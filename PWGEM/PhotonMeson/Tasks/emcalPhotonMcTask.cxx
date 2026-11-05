@@ -22,7 +22,6 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/ParticleOrigin.h"
 
@@ -361,6 +360,7 @@ struct EmcalPhotonMcTask {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
   }
 
   void defineEMCCut()
@@ -393,7 +393,7 @@ struct EmcalPhotonMcTask {
     defineEMEventCut();
     defineEMCCut();
     fEMCCut.addQAHistograms(&registry);
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
+    fEMEventCut.addEventHistograms(&registry);
 
     const AxisSpec thnAxisERec{thnConfigAxisPt, "#it{E}_{Rec} (GeV)"};
     const AxisSpec thnAxisPtRec{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -568,14 +568,10 @@ struct EmcalPhotonMcTask {
   bool isFullEventSelected(TCollision const& collision, bool fillHisto = false)
   {
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
+      fEMEventCut.fillEventInfo<0>(&registry, collision);
     }
     if (!(fEMEventCut.IsSelected(collision))) {
       // general event selection
-      return false;
-    }
-    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-      // occupancy selection
       return false;
     }
     float centOrMult = getCentralityOrMultiplicity(collision);
@@ -584,9 +580,8 @@ struct EmcalPhotonMcTask {
       return false;
     }
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
-      registry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      fEMEventCut.fillEventInfo<1>(&registry, collision);
+      fEMEventCut.fillAccepted(&registry);
     }
     return true;
   }
