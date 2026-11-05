@@ -63,6 +63,7 @@
 #include <TMath.h>
 #include <TMathBase.h>
 #include <TObjString.h>
+#include <TRandom3.h>
 #include <TString.h>
 
 #include <RtypesCore.h>
