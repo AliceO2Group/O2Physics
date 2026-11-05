@@ -649,7 +649,7 @@ struct AnalysisEnergyCorrelator {
     } // end loop over MC signals
 
     VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
-    VarManager::FillPairVertexing<TPairType, gkEventFillMapWithMults, TTrackFillMap>(event, t1, t2, false, VarManager::fgValues);
+    VarManager::FillPairVertexing<TPairType, gkEventFillMapWithMults, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
 
     if (sign1 * sign2 < 0) {                                                       // +- pairs
       fHistMan->FillHistClass(histNames[iEleCut][0].Data(), VarManager::fgValues); // reconstructed, unmatched
@@ -933,7 +933,7 @@ struct AnalysisEnergyCorrelator {
           }
           // Fill pair variables for cut
           VarManager::FillPair<VarManager::kDecayToEE, gkTrackFillMapWithCov>(t1, t2, VarManager::fgValues);
-          VarManager::FillPairVertexing<VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event1, t1, t2, false, VarManager::fgValues);
+          VarManager::FillPairVertexing<VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event1, t1, t2, VarManager::fgValues);
           float mass = VarManager::fgValues[VarManager::kMass];
           float pt = VarManager::fgValues[VarManager::kPt];
           float rap = VarManager::fgValues[VarManager::kRap];
