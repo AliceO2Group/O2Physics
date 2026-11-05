@@ -109,6 +109,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Configurable<float> centMaxForDownSample{"centMaxForDownSample", 101., "Maximum centrality for the application of the downsampling factor"};
 
   HfEventSelection hfEvSel; // event selection and monitoring
+  HfcFlowHelper hfcFlowHelper; // flow utilities
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   SliceCache cache;
 
