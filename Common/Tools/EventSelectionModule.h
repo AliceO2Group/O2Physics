@@ -1285,6 +1285,7 @@ class EventSelectionModule
 
       // calculation of the median time for the occupancy in a given time window
       std::vector<std::pair<float, float>> pairsDeltaTimeMult;
+      pairsDeltaTimeMult.reserve(vCollsTimeDeltaWrtGivenColl.size());
       for (size_t iCol = 0; iCol < vCollsTimeDeltaWrtGivenColl.size(); iCol++)
         pairsDeltaTimeMult.emplace_back(vCollsTimeDeltaWrtGivenColl[iCol], vProxyNtracksAssocColls[iCol]);
       std::sort(pairsDeltaTimeMult.begin(), pairsDeltaTimeMult.end()); // sorts by first element by default
