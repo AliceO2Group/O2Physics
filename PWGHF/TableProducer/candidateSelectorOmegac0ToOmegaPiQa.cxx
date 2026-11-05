@@ -640,7 +640,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     }
 
     double const invMassCharmBaryon = HfHelperQa::invMassOmegaczeroToOmegaPi(candidate);
-    if ((invMassCharmBaryon >= invMassCharmBaryonMin) && (invMassCharmBaryon <= invMassCharmBaryonMax)) {
+    if ((invMassCharmBaryon < invMassCharmBaryonMin) || (invMassCharmBaryon > invMassCharmBaryonMax)) {
       return false;
     }
 
