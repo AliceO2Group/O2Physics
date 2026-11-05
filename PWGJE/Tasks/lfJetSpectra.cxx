@@ -222,7 +222,7 @@ struct LfJetSpectra {
     float candPtMax = 100.0;
     float candYMin = -0.8;
     float candYMax = 0.8;
-    float candPDG = PDG_t::kK0Short;
+    float candPDG = static_cast<float>(PDG_t::kK0Short);
     bool useV0SignalFlags = true;
     std::vector<int> eventSelectionBits;
   };
@@ -343,7 +343,7 @@ struct LfJetSpectra {
       }
     }
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(jetFinderConfigDet.trackSelections);
-    candIndex = (jetFinderConfigDet.candPDG == PDG_t::kLambda0) ? 1 : 0; // same convention as the V0 jet finder
+    candIndex = (jetFinderConfigDet.candPDG == static_cast<float>(PDG_t::kLambda0)) ? 1 : 0; // same convention as the V0 jet finder
 
     const AxisSpec multAxis{multBinning, "FT0M percentile"};
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
