@@ -148,7 +148,7 @@ struct DalitzEEQCMC {
   } mctrackcuts;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-  static constexpr std::array<std::string_view, 2> event_cut_types = {"before/", "after/"};
+  // static constexpr std::array<std::string_view, 2> event_cut_types = {"before/", "after/"}; // unused
   static constexpr std::array<std::string_view, 2> track_types = {"primary/", "secondary/"};
 
   ~DalitzEEQCMC() = default;
@@ -594,34 +594,34 @@ struct DalitzEEQCMC {
           continue;
         }
 
-        if (mother_id > -1) {
-          auto mcmother = mcparticles.iteratorAt(mother_id);
-          if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
+        // if (mother_id > -1) { // not needed because of
+        auto mcmother = mcparticles.iteratorAt(mother_id);
+        if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
 
-            switch (std::abs(mcmother.pdgCode())) {
-              case 111:
-                fRegistry.fill(HIST("Generated/sm/Pi0/hMvsPt"), v12.M(), v12.Pt());
-                break;
-              case 221:
-                fRegistry.fill(HIST("Generated/sm/Eta/hMvsPt"), v12.M(), v12.Pt());
-                break;
-              case 331:
-                fRegistry.fill(HIST("Generated/sm/EtaPrime/hMvsPt"), v12.M(), v12.Pt());
-                break;
-              case 113:
-                fRegistry.fill(HIST("Generated/sm/Rho/hMvsPt"), v12.M(), v12.Pt());
-                break;
-              case 223:
-                fRegistry.fill(HIST("Generated/sm/Omega/hMvsPt"), v12.M(), v12.Pt());
-                break;
-              case 333:
-                fRegistry.fill(HIST("Generated/sm/Phi/hMvsPt"), v12.M(), v12.Pt());
-                break;
-              default:
-                break;
-            }
+          switch (std::abs(mcmother.pdgCode())) {
+            case 111:
+              fRegistry.fill(HIST("Generated/sm/Pi0/hMvsPt"), v12.M(), v12.Pt());
+              break;
+            case 221:
+              fRegistry.fill(HIST("Generated/sm/Eta/hMvsPt"), v12.M(), v12.Pt());
+              break;
+            case 331:
+              fRegistry.fill(HIST("Generated/sm/EtaPrime/hMvsPt"), v12.M(), v12.Pt());
+              break;
+            case 113:
+              fRegistry.fill(HIST("Generated/sm/Rho/hMvsPt"), v12.M(), v12.Pt());
+              break;
+            case 223:
+              fRegistry.fill(HIST("Generated/sm/Omega/hMvsPt"), v12.M(), v12.Pt());
+              break;
+            case 333:
+              fRegistry.fill(HIST("Generated/sm/Phi/hMvsPt"), v12.M(), v12.Pt());
+              break;
+            default:
+              break;
           }
         }
+        // }
       } // end of true ULS pair loop
     } // end of collision loop
   }
