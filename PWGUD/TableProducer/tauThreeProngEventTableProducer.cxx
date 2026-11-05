@@ -801,7 +801,7 @@ struct TauThreeProngEventTableProducer {
     registrySkim.get<TH1>(HIST("rec/nPVtrack_SGP"))->Fill(PVContributors.size());
     registrySkim.get<TH1>(HIST("rec/qtot_SGP"))->Fill(qtot);
     registrySkim.get<TH1>(HIST("rec/nTOFtrack_SGP"))->Fill(nTofTrk);
-    registrySkim.get<TH1>(HIST("rec/FT0A_SG"))->Fill(dgcand.totalFT0AmplitudeA());
+    registrySkim.get<TH1>(HIST("rec/FT0A_SGP"))->Fill(dgcand.totalFT0AmplitudeA());
     registrySkim.get<TH1>(HIST("rec/FT0C_SGP"))->Fill(dgcand.totalFT0AmplitudeC());
     registrySkim.get<TH1>(HIST("rec/FV0A_SGP"))->Fill(dgcand.totalFV0AmplitudeA());
     //
