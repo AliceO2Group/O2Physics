@@ -167,7 +167,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  std::shared_ptr<TObject> loadEfficiencyHistogram(const std::string& path, int histoType) {
+  std::shared_ptr<TObject> loadEfficiencyHistogram(const std::string& path, int histoType)
+  {
     TObject* object = nullptr;
 
     switch (histoType) {
@@ -601,8 +602,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   }
 
   void processSECharmHadWMultMix(SameEvtPairsChHad::iterator const& pair,
-                                        aod::HfcRedTrigCharms const&,
-                                        aod::HfcRedCorrColls const&)
+                                 aod::HfcRedTrigCharms const&,
+                                 aod::HfcRedCorrColls const&)
   {
     BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto trigCand = pair.template hfcRedTrigCharm_as<aod::HfcRedTrigCharms>();
@@ -621,8 +622,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSECharmHadWMultMixWEffInfo, "Process Same Event for Charm-Had with multiplicity pools", false);
 
   void processSEHadHadWMultMix(SameEvtPairsHadHad::iterator const& pair,
-                                      aod::HfcRedTrigTracks const&,
-                                      aod::HfcRedCorrColls const&)
+                               aod::HfcRedTrigTracks const&,
+                               aod::HfcRedCorrColls const&)
   {
     BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
@@ -631,8 +632,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWMultMix, "Process Same Event for Had-Had with multiplicity pools", false);
 
   void processSECharmHadWCentMix(SameEvtPairsChHad::iterator const& pair,
-                                        aod::HfcRedTrigCharms const&,
-                                        aod::HfcRedCorrColls const&)
+                                 aod::HfcRedTrigCharms const&,
+                                 aod::HfcRedCorrColls const&)
   {
     BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto trigCand = pair.template hfcRedTrigCharm_as<aod::HfcRedTrigCharms>();
@@ -651,8 +652,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSECharmHadWCentMixWEffInfo, "Process Same Event for Charm-Had with centrality pools", false);
 
   void processSEHadHadWCentMix(SameEvtPairsHadHad::iterator const& pair,
-                                      aod::HfcRedTrigTracks const&,
-                                      aod::HfcRedCorrColls const&)
+                               aod::HfcRedTrigTracks const&,
+                               aod::HfcRedCorrColls const&)
   {
     BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
