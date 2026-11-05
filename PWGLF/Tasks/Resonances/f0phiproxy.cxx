@@ -13,6 +13,7 @@
 /// \brief Dipion-based half-momentum kaon proxies with kaon/phi and pion/K*0 bachelors, in data and MC.
 /// \author Sushanta Tripathy
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -320,7 +321,7 @@ struct F0phiproxy {
     eventSelection = histos.add<TH1>(recoName("hEventSelection").c_str(), "Received; selected including activity validity", HistType::kTH1D, {{2, 0.5, 2.5}});
     eventSelection->GetXaxis()->SetBinLabel(1, "Received");
     eventSelection->GetXaxis()->SetBinLabel(2, "Selected");
-    const AxisSpec stages{NEventStages, 0.5, NEventStages + 0.5, "Event selection stage"};
+    const AxisSpec stages{NEventStages, 0.5, static_cast<double>(NEventStages) + 0.5, "Event selection stage"};
     eventStages = histos.add<TH1>(recoName("hEventSelectionSteps").c_str(), "Reconstructed event cut flow", HistType::kTH1D, {stages});
     eventStagesByActivity = histos.add<TH2>(recoName("hEventSelectionVsMultiplicity").c_str(), "Valid-activity collisions;activity;selection stage", HistType::kTH2D, {compactMult, stages});
     const std::array<const char*, NEventStages> stageNames{"Received", "Vertex", "sel8 or disabled", "INEL>0 or disabled", "Quality flags or disabled", "Valid activity selected"};
