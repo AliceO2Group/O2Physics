@@ -48,7 +48,9 @@ struct GlobalTrackEstimator {
   Produces<o2::aod::ReducedEventsGlobalTrk> reducedEventsGlobalTrk;
   Produces<o2::aod::ReducedEventsMultAzimuth> reducedEventsMultAzimuth;
 
-  Configurable<float> cfgMaxDCAxy{"cfgMaxDCAxy", 2.0, "Maximum DCAxy"};
+  Configurable<float> cfgShiftDCAxy{"cfgShiftDCAxy", 0.0105, "Constant shift of DCAxy paramterization"};
+  Configurable<float> cfgPtMagnitudeDCAxy{"cfgPtMagnitudeDCAxy", 0.035, "Magnitude of the pT dependency of the DCAxy paramterization"};
+  Configurable<float> cfgExponentDCAxy{"cfgExponentDCAxy", 1.1, "Exponent of the pT dependency of the DCAxy paramterization"};
   Configurable<float> cfgMaxDCAz{"cfgMaxDCAz", 2.0, "Maximum DCAz"};
   Configurable<float> cfgMinPt{"cfgMinPt", 0.1, "Minimum required pT"};
   Configurable<float> cfgEtaRange{"cfgEtaRange", 0.8, "Pseudorapidity range"};
@@ -129,7 +131,11 @@ struct GlobalTrackEstimator {
           continue;
         }
 
-        if (std::abs(VarManager::fgValues[VarManager::kTrackDCAxy]) > cfgMaxDCAxy.value || std::abs(VarManager::fgValues[VarManager::kTrackDCAz]) > cfgMaxDCAz.value) {
+        if (std::abs(VarManager::fgValues[VarManager::kTrackDCAz]) > cfgMaxDCAz.value) {
+          continue;
+        }
+
+        if (std::abs(VarManager::fgValues[VarManager::kTrackDCAxy]) > cfgShiftDCAxy + cfgPtMagnitudeDCAxy / pow(track.pt(), cfgExponentDCAxy)) {
           continue;
         }
 
