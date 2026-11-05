@@ -451,7 +451,8 @@ struct HStrangeCorrelationFilter {
     if (track.pt() > generalSelections.triggerPtCutMax || track.pt() < generalSelections.triggerPtCutMin) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+    // hasTPC() is needed: since O2-7038 (Oct 2026) tracks without TPC report 256 crossed rows
+    if (!track.hasTPC() || track.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
       return false; // crossed rows
     }
     if (!track.hasITS() && trackSelections.triggerRequireITS) {
@@ -481,7 +482,7 @@ struct HStrangeCorrelationFilter {
     if (assoc.pt() > generalSelections.assocPtCutMax || assoc.pt() < generalSelections.assocPtCutMin) {
       return false;
     }
-    if (assoc.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+    if (!assoc.hasTPC() || assoc.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
       return false; // crossed rows
     }
     if (!assoc.hasITS() && trackSelections.assocRequireITS) {
@@ -848,10 +849,10 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negdau.hasTPC() || negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posdau.hasTPC() || posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
@@ -987,10 +988,10 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracksMC>();
       auto negdau = v0.negTrack_as<DauTracksMC>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negdau.hasTPC() || negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posdau.hasTPC() || posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
@@ -1145,13 +1146,13 @@ struct HStrangeCorrelationFilter {
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!bachTrackCast.hasTPC() || bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posTrackCast.hasTPC() || posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negTrackCast.hasTPC() || negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {
@@ -1318,13 +1319,13 @@ struct HStrangeCorrelationFilter {
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!bachTrackCast.hasTPC() || bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posTrackCast.hasTPC() || posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negTrackCast.hasTPC() || negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {
