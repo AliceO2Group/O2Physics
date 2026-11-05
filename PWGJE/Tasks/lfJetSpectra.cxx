@@ -22,8 +22,7 @@
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/V0SelectorTables.h"
+#include "PWGJE/DataModel/JetReducedDataV0.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -32,6 +31,8 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -39,6 +40,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
@@ -48,6 +50,7 @@
 #include <TPDGCode.h>
 #include <TProfile2D.h>
 
+#include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
 #include <algorithm>
@@ -97,7 +100,7 @@ struct LfJetSpectra {
                          kStepDauEta,
                          kStepCompetingMass,
                          kNSelectionSteps };
-  static constexpr std::array<std::string_view, kNSelectionSteps> kStepLabels = {"all", "jet finder acc.", "not rejected", "signal flag", "radius", "DCA dau-PV", "cos PA", "DCA V0 dau", "dau #eta", "competing mass"};
+  static constexpr std::array<std::string_view, kNSelectionSteps> StepLabels = {"all", "jet finder acc.", "not rejected", "signal flag", "radius", "DCA dau-PV", "cos PA", "DCA V0 dau", "dau #eta", "competing mass"};
 
   // Folders of the V0 QA histograms: all the stored V0s (before selections) and the selected V0s of each species.
   // The first three entries are also the species names used in the MC histograms
@@ -105,7 +108,7 @@ struct LfJetSpectra {
                     kQALambda,
                     kQAAntiLambda,
                     kQAAllV0s };
-  static constexpr std::array<std::string_view, 4> kQAFolders = {"K0s", "Lambda", "AntiLambda", "AllV0s"};
+  static constexpr std::array<std::string_view, 4> QAFolders = {"K0s", "Lambda", "AntiLambda", "AllV0s"};
 
   // MC histograms (one per species, axes: multiplicity, pT).
   // Reconstructed V0s: true V0s (PDG of the V0 and of the daughters) passing the selections, at reconstructed pT.
@@ -127,9 +130,9 @@ struct LfJetSpectra {
                      kGenUE,           // generated V0s in the UE of a particle-level jet
                      kGenFullEvent,    // generated V0s in all the generated events (signal loss)
                      kNMCHistograms };
-  static constexpr std::array<std::string_view, kNMCHistograms> kMCHistSuffixes = {"_reconstructed_jet", "_reconstructed_ue", "_reconstructed_jet_incl", "_reconstructed_ue_incl", "_reconstructed_fullevent", "_reconstructed_eventwjet",
-                                                                                   "_generated_recojet_jet", "_generated_recojet_ue", "_generated_recoevent", "_generated_eventwjet",
-                                                                                   "_generated_jet", "_generated_ue", "_generated_fullevent"};
+  static constexpr std::array<std::string_view, kNMCHistograms> MCHistSuffixes = {"_reconstructed_jet", "_reconstructed_ue", "_reconstructed_jet_incl", "_reconstructed_ue_incl", "_reconstructed_fullevent", "_reconstructed_eventwjet",
+                                                                                  "_generated_recojet_jet", "_generated_recojet_ue", "_generated_recoevent", "_generated_eventwjet",
+                                                                                  "_generated_jet", "_generated_ue", "_generated_fullevent"};
 
   // MC origin of a reconstructed V0, from the PDG code of the common mother of the two daughters (0 if there is none).
   // "Fake" V0s (not a K0s, Lambda or AntiLambda) are clustered in the jets as the real ones and add their momentum to the jet
@@ -140,7 +143,7 @@ struct LfJetSpectra {
                   kOriginOtherMother,
                   kOriginNoCommonMother,
                   kNV0Origins };
-  static constexpr std::array<std::string_view, kNV0Origins> kOriginLabels = {"K^{0}_{S}", "#Lambda", "#bar{#Lambda}", "#gamma conversion", "other common mother", "no common mother"};
+  static constexpr std::array<std::string_view, kNV0Origins> OriginLabels = {"K^{0}_{S}", "#Lambda", "#bar{#Lambda}", "#gamma conversion", "other common mother", "no common mother"};
 
   // Source of a real V0 (K0s, Lambda, AntiLambda) clustered in a reconstructed jet: physical primary or secondary, classified
   // by the PDG code of the mother. At particle level only the physical primary V0s are clustered: the momentum
@@ -152,7 +155,7 @@ struct LfJetSpectra {
                   kSourceOmega,
                   kSourceOtherSecondary,
                   kNV0Sources };
-  static constexpr std::array<std::string_view, kNV0Sources> kSourceLabels = {"primary", "from #Xi^{#pm}", "from #Xi^{0}", "from #Omega^{#pm}", "other secondary"};
+  static constexpr std::array<std::string_view, kNV0Sources> SourceLabels = {"primary", "from #Xi^{#pm}", "from #Xi^{0}", "from #Omega^{#pm}", "other secondary"};
 
   Configurable<bool> fillV0QAHistograms{"fillV0QAHistograms", true, "fill the V0 QA histograms (cut flow and topological variables before/after selections)"};
 
@@ -195,6 +198,9 @@ struct LfJetSpectra {
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
 
+  // phiExclusionMin at or below this value: no phi exclusion region (same convention as the V0 jet finder)
+  static constexpr float PhiExclusionUnset = -998.f;
+
   // Selections of a V0 jet finder, read from its configuration in init() so that the jet finder input
   // (used for the rho estimate), the selected events and the V0s tested for the UE are exactly the ones of the clustering
   struct JetFinderConfig {
@@ -216,7 +222,7 @@ struct LfJetSpectra {
     float candPtMax = 100.0;
     float candYMin = -0.8;
     float candYMax = 0.8;
-    float candPDG = 310;
+    float candPDG = PDG_t::kK0Short;
     bool useV0SignalFlags = true;
     std::vector<int> eventSelectionBits;
   };
@@ -273,7 +279,7 @@ struct LfJetSpectra {
     // Sanity checks on the jet finder settings needed by this analysis
     int jetAlgorithm = -1;
     readJetFinderOption("jetAlgorithm", jetAlgorithm);
-    if (jetAlgorithm != 2) {
+    if (jetAlgorithm != static_cast<int>(fastjet::antikt_algorithm)) {
       LOG(fatal) << taskName << " must use the anti-kT algorithm (jetAlgorithm = 2), found " << jetAlgorithm;
     }
     // jetRadius is read by hand: an array option is stored in the Variant as a pointer + size, so
@@ -337,7 +343,7 @@ struct LfJetSpectra {
       }
     }
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(jetFinderConfigDet.trackSelections);
-    candIndex = (jetFinderConfigDet.candPDG == 3122) ? 1 : 0; // same convention as the V0 jet finder
+    candIndex = (jetFinderConfigDet.candPDG == PDG_t::kLambda0) ? 1 : 0; // same convention as the V0 jet finder
 
     const AxisSpec multAxis{multBinning, "FT0M percentile"};
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
@@ -373,7 +379,7 @@ struct LfJetSpectra {
       registry.add("jetV0s/nAntiLambdaSelected", "V0 constituents passing the #bar{#Lambda} selection", HistType::kTH2F, {jetPtAxis, nV0Axis});
     }
     if (doprocessMCReco) {
-      const AxisSpec originAxis{kNV0Origins, -0.5, kNV0Origins - 0.5, "MC origin"};
+      const AxisSpec originAxis{kNV0Origins, -0.5, static_cast<double>(kNV0Origins) - 0.5, "MC origin"};
       const AxisSpec hypothesisAxis{3, -0.5, 2.5, "selection hypothesis"};
       const AxisSpec fractionAxis{100, 0., 1., "#Sigma#it{p}_{T}^{fake V0} / #it{p}_{T,jet}^{raw}"};
       registryMC.add("jetV0s/nRealV0Constituents", "real V0 constituents (K^{0}_{S}, #Lambda, #bar{#Lambda})", HistType::kTH2F, {jetPtAxis, nV0Axis});
@@ -394,21 +400,21 @@ struct LfJetSpectra {
       hSelectedOrigin->GetXaxis()->SetBinLabel(2, "#Lambda");
       hSelectedOrigin->GetXaxis()->SetBinLabel(3, "#bar{#Lambda}");
       for (int i = 0; i < kNV0Origins; i++) {
-        hOrigin->GetZaxis()->SetBinLabel(i + 1, std::string(kOriginLabels[i]).c_str());
-        hSelectedOrigin->GetZaxis()->SetBinLabel(i + 1, std::string(kOriginLabels[i]).c_str());
+        hOrigin->GetZaxis()->SetBinLabel(i + 1, std::string(OriginLabels[i]).c_str());
+        hSelectedOrigin->GetZaxis()->SetBinLabel(i + 1, std::string(OriginLabels[i]).c_str());
       }
 
       // Real V0 constituents by source (primary / secondary from Xi+-, Xi0, Omega+-, other) and fraction of the (raw) jet pT
       // they carry: the secondary ones are the detector-level counterpart of the momentum of their mother
-      const AxisSpec sourceAxis{kNV0Sources, -0.5, kNV0Sources - 0.5, "V0 source"};
+      const AxisSpec sourceAxis{kNV0Sources, -0.5, static_cast<double>(kNV0Sources) - 0.5, "V0 source"};
       const AxisSpec sourceFractionAxis{100, 0., 1., "#Sigma#it{p}_{T}^{V0} / #it{p}_{T,jet}^{raw}"};
       registryMC.add("jetV0s/V0ConstituentSource", "source of the real V0 constituents", HistType::kTH3F, {jetPtAxis, ptAxis, sourceAxis});
       registryMC.add("jetV0s/V0SourcePtFraction", "fraction of the jet pT carried by the real V0 constituents of each source", HistType::kTH3F, {jetPtAxis, sourceAxis, sourceFractionAxis});
       registryMC.add("jetV0s/V0SourcePtFractionProfile", "mean fraction of the jet pT carried by the real V0 constituents of each source;#it{p}_{T,jet}^{sub} (GeV/#it{c});V0 source;#LT #Sigma#it{p}_{T}^{V0} / #it{p}_{T,jet}^{raw} #GT", HistType::kTProfile2D, {jetPtAxis, sourceAxis});
-      for (TAxis* axis : {registryMC.get<TH3>(HIST("jetV0s/V0ConstituentSource"))->GetZaxis(), registryMC.get<TH3>(HIST("jetV0s/V0SourcePtFraction"))->GetYaxis(),
-                          registryMC.get<TProfile2D>(HIST("jetV0s/V0SourcePtFractionProfile"))->GetYaxis()}) {
+      for (const auto& axis : {registryMC.get<TH3>(HIST("jetV0s/V0ConstituentSource"))->GetZaxis(), registryMC.get<TH3>(HIST("jetV0s/V0SourcePtFraction"))->GetYaxis(),
+                               registryMC.get<TProfile2D>(HIST("jetV0s/V0SourcePtFractionProfile"))->GetYaxis()}) {
         for (int i = 0; i < kNV0Sources; i++) {
-          axis->SetBinLabel(i + 1, std::string(kSourceLabels[i]).c_str());
+          axis->SetBinLabel(i + 1, std::string(SourceLabels[i]).c_str());
         }
       }
     }
@@ -452,27 +458,28 @@ struct LfJetSpectra {
         continue;
       }
       for (int iSpecies = kK0s; iSpecies <= kAntiLambda; iSpecies++) {
-        const std::string name = std::string(kQAFolders[iSpecies]) + std::string(kMCHistSuffixes[iHist]);
+        const std::string name = std::string(QAFolders[iSpecies]) + std::string(MCHistSuffixes[iHist]);
         registryMC.add(name.c_str(), name.c_str(), HistType::kTH2F, {multAxis, ptAxis});
       }
     }
 
     // V0 QA
     if (fillV0QAHistograms && (doprocessData || doprocessMCReco)) {
-      registryQC.add("QA/V0SignalFlags", "v0-selector flags of the stored V0s", HistType::kTH1D, {{5, -0.5, 4.5}});
+      const std::array<std::string, 5> flagLabels = {"all", "K0S", "#Lambda", "#bar{#Lambda}", "rejected"};
+      const int nFlagBins = static_cast<int>(flagLabels.size());
+      registryQC.add("QA/V0SignalFlags", "v0-selector flags of the stored V0s", HistType::kTH1D, {{nFlagBins, -0.5, nFlagBins - 0.5}});
       auto hFlags = registryQC.get<TH1>(HIST("QA/V0SignalFlags"));
-      const char* flagLabels[] = {"all", "K0S", "#Lambda", "#bar{#Lambda}", "rejected"};
-      for (int i = 0; i < 5; i++) {
-        hFlags->GetXaxis()->SetBinLabel(i + 1, flagLabels[i]);
+      for (int i = 0; i < nFlagBins; i++) {
+        hFlags->GetXaxis()->SetBinLabel(i + 1, flagLabels[i].c_str());
       }
 
-      registryQC.add("QA/V0CutFlow", "V0 cut flow", HistType::kTH2D, {{3, -0.5, 2.5}, {kNSelectionSteps, -0.5, kNSelectionSteps - 0.5}});
+      registryQC.add("QA/V0CutFlow", "V0 cut flow", HistType::kTH2D, {{3, -0.5, 2.5}, {kNSelectionSteps, -0.5, static_cast<double>(kNSelectionSteps) - 0.5}});
       auto hCutFlow = registryQC.get<TH2>(HIST("QA/V0CutFlow"));
       hCutFlow->GetXaxis()->SetBinLabel(1, "K^{0}_{S}");
       hCutFlow->GetXaxis()->SetBinLabel(2, "#Lambda");
       hCutFlow->GetXaxis()->SetBinLabel(3, "#bar{#Lambda}");
       for (int step = 0; step < kNSelectionSteps; step++) {
-        hCutFlow->GetYaxis()->SetBinLabel(step + 1, std::string(kStepLabels[step]).c_str());
+        hCutFlow->GetYaxis()->SetBinLabel(step + 1, std::string(StepLabels[step]).c_str());
       }
 
       const AxisSpec radiusAxis{240, 0., 60., "V0 radius (cm)"};
@@ -483,7 +490,7 @@ struct LfJetSpectra {
       const AxisSpec alphaAxis{200, -1., 1., "#alpha^{Arm}"};
       const AxisSpec qtAxis{150, 0., 0.3, "#it{q}_{T}^{Arm} (GeV/#it{c})"};
       const AxisSpec deltaMassAxis{200, 0., 0.1, "|m_{competing} - m_{PDG}| (GeV/#it{c}^{2})"};
-      for (const auto& folder : kQAFolders) {
+      for (const auto& folder : QAFolders) {
         const std::string dir = "QA/" + std::string(folder) + "/";
         registryQC.add((dir + "V0Radius").c_str(), "V0 radius", HistType::kTH2F, {ptAxis, radiusAxis});
         registryQC.add((dir + "DcaPosToPV").c_str(), "DCA positive daughter to PV", HistType::kTH2F, {ptAxis, dcaToPVAxis});
@@ -523,7 +530,7 @@ struct LfJetSpectra {
         particle.phi() < config.trackPhiMin || particle.phi() > config.trackPhiMax) {
       return false;
     }
-    if (config.phiExclusionMin > -998.0 && particle.phi() > config.phiExclusionMin && particle.phi() < config.phiExclusionMax) {
+    if (config.phiExclusionMin > PhiExclusionUnset && particle.phi() > config.phiExclusionMin && particle.phi() < config.phiExclusionMax) {
       return false;
     }
     return true;
@@ -738,24 +745,24 @@ struct LfJetSpectra {
   template <int iFolder, typename T>
   void fillV0QAVariables(T const& v0)
   {
-    constexpr auto folder = HIST("QA/") + HIST(kQAFolders[iFolder]);
-    registryQC.fill(folder + HIST("/V0Radius"), v0.pt(), v0.v0radius());
-    registryQC.fill(folder + HIST("/DcaPosToPV"), v0.pt(), std::abs(v0.dcapostopv()));
-    registryQC.fill(folder + HIST("/DcaNegToPV"), v0.pt(), std::abs(v0.dcanegtopv()));
-    registryQC.fill(folder + HIST("/V0CosPA"), v0.pt(), v0.v0cosPA());
-    registryQC.fill(folder + HIST("/DcaV0Daughters"), v0.pt(), std::abs(v0.dcaV0daughters()));
-    registryQC.fill(folder + HIST("/PosDaughterEta"), v0.pt(), v0.positiveeta());
-    registryQC.fill(folder + HIST("/NegDaughterEta"), v0.pt(), v0.negativeeta());
-    registryQC.fill(folder + HIST("/Armenteros"), v0.alpha(), v0.qtarm());
+    constexpr auto Folder = HIST("QA/") + HIST(QAFolders[iFolder]);
+    registryQC.fill(Folder + HIST("/V0Radius"), v0.pt(), v0.v0radius());
+    registryQC.fill(Folder + HIST("/DcaPosToPV"), v0.pt(), std::abs(v0.dcapostopv()));
+    registryQC.fill(Folder + HIST("/DcaNegToPV"), v0.pt(), std::abs(v0.dcanegtopv()));
+    registryQC.fill(Folder + HIST("/V0CosPA"), v0.pt(), v0.v0cosPA());
+    registryQC.fill(Folder + HIST("/DcaV0Daughters"), v0.pt(), std::abs(v0.dcaV0daughters()));
+    registryQC.fill(Folder + HIST("/PosDaughterEta"), v0.pt(), v0.positiveeta());
+    registryQC.fill(Folder + HIST("/NegDaughterEta"), v0.pt(), v0.negativeeta());
+    registryQC.fill(Folder + HIST("/Armenteros"), v0.alpha(), v0.qtarm());
     if constexpr (iFolder == kQAK0s) {
-      registryQC.fill(folder + HIST("/Mass"), v0.pt(), v0.mK0Short());
-      registryQC.fill(folder + HIST("/CompetingMassDelta"), v0.pt(), competingMassDelta(v0, kK0s));
+      registryQC.fill(Folder + HIST("/Mass"), v0.pt(), v0.mK0Short());
+      registryQC.fill(Folder + HIST("/CompetingMassDelta"), v0.pt(), competingMassDelta(v0, kK0s));
     } else if constexpr (iFolder == kQALambda) {
-      registryQC.fill(folder + HIST("/Mass"), v0.pt(), v0.mLambda());
-      registryQC.fill(folder + HIST("/CompetingMassDelta"), v0.pt(), competingMassDelta(v0, kLambda));
+      registryQC.fill(Folder + HIST("/Mass"), v0.pt(), v0.mLambda());
+      registryQC.fill(Folder + HIST("/CompetingMassDelta"), v0.pt(), competingMassDelta(v0, kLambda));
     } else if constexpr (iFolder == kQAAntiLambda) {
-      registryQC.fill(folder + HIST("/Mass"), v0.pt(), v0.mAntiLambda());
-      registryQC.fill(folder + HIST("/CompetingMassDelta"), v0.pt(), competingMassDelta(v0, kAntiLambda));
+      registryQC.fill(Folder + HIST("/Mass"), v0.pt(), v0.mAntiLambda());
+      registryQC.fill(Folder + HIST("/CompetingMassDelta"), v0.pt(), competingMassDelta(v0, kAntiLambda));
     }
   }
 
@@ -779,7 +786,7 @@ struct LfJetSpectra {
     }
     fillV0QAVariables<kQAAllV0s>(v0);
 
-    for (const auto species : {kK0s, kLambda, kAntiLambda}) {
+    for (const auto& species : {kK0s, kLambda, kAntiLambda}) {
       const int lastStep = lastPassedSelectionStep(v0, species, isJetFinderV0);
       for (int step = kStepAll; step <= lastStep; step++) {
         registryQC.fill(HIST("QA/V0CutFlow"), species, step);
@@ -841,7 +848,7 @@ struct LfJetSpectra {
     // Inclusive V0 QA, filled once per V0 for all the selected events (also without jets)
     if (fillV0QAHistograms) {
       for (const auto& v0 : v0s) {
-        fillV0QA(v0, jetFinderV0s.count(v0.globalIndex()) > 0);
+        fillV0QA(v0, jetFinderV0s.contains(v0.globalIndex()));
       }
     }
 
@@ -876,7 +883,7 @@ struct LfJetSpectra {
       // V0-jet matching, UE region: V0s in the perpendicular cones. The V0s are those accepted by the jet finder
       // (same selection as the in-jet V0s), excluding the V0s that are constituents of another jet above threshold
       for (const auto& v0 : v0s) {
-        if (!jetFinderV0s.count(v0.globalIndex()) || v0sInJets.count(v0.globalIndex())) {
+        if (!jetFinderV0s.contains(v0.globalIndex()) || v0sInJets.contains(v0.globalIndex())) {
           continue;
         }
         if (isInUE(v0.eta(), v0.phi(), jet)) {
@@ -893,7 +900,7 @@ struct LfJetSpectra {
   template <int iSpecies, int iHist>
   void fillMCHistogram(float multiplicity, float pt, float weight)
   {
-    registryMC.fill(HIST(kQAFolders[iSpecies]) + HIST(kMCHistSuffixes[iHist]), multiplicity, pt, weight);
+    registryMC.fill(HIST(QAFolders[iSpecies]) + HIST(MCHistSuffixes[iHist]), multiplicity, pt, weight);
   }
 
   template <int iHist>
@@ -992,7 +999,7 @@ struct LfJetSpectra {
     for (const auto& v0 : jet.template candidates_as<TV0Table>()) {
       nV0s++;
       bool passedAnySelection = false;
-      for (const auto species : {kK0s, kLambda, kAntiLambda}) {
+      for (const auto& species : {kK0s, kLambda, kAntiLambda}) {
         if (!passedV0Selection(v0, species)) {
           continue;
         }
@@ -1053,7 +1060,7 @@ struct LfJetSpectra {
   template <int iHist, int iHistIncl, typename T>
   void fillMCRecoV0(T const& v0, float multiplicity, float weight)
   {
-    for (const auto species : {kK0s, kLambda, kAntiLambda}) {
+    for (const auto& species : {kK0s, kLambda, kAntiLambda}) {
       if (!isTrueV0(v0, species) || !passedV0Selection(v0, species)) {
         continue;
       }
@@ -1097,7 +1104,7 @@ struct LfJetSpectra {
 
     if (fillV0QAHistograms) {
       for (const auto& v0 : v0s) {
-        fillV0QA(v0, jetFinderV0s.count(v0.globalIndex()) > 0);
+        fillV0QA(v0, jetFinderV0s.contains(v0.globalIndex()));
       }
     }
 
@@ -1138,7 +1145,7 @@ struct LfJetSpectra {
       }
       // Reconstructed V0s, UE region: same definition as in data
       for (const auto& v0 : v0s) {
-        if (!jetFinderV0s.count(v0.globalIndex()) || v0sInJets.count(v0.globalIndex())) {
+        if (!jetFinderV0s.contains(v0.globalIndex()) || v0sInJets.contains(v0.globalIndex())) {
           continue;
         }
         if (isInUE(v0.eta(), v0.phi(), jet)) {
@@ -1217,7 +1224,7 @@ struct LfJetSpectra {
       }
       // Generated V0s, UE region: accepted by the particle-level jet finder and not constituents of another jet above threshold
       for (const auto& v0 : v0s) {
-        if (!jetFinderV0s.count(v0.globalIndex()) || v0sInJets.count(v0.globalIndex())) {
+        if (!jetFinderV0s.contains(v0.globalIndex()) || v0sInJets.contains(v0.globalIndex())) {
           continue;
         }
         if (isInUE(v0.eta(), v0.phi(), jet)) {
@@ -1328,7 +1335,7 @@ struct LfJetSpectra {
       const float ptSub = subtractedPt(mcpJet, rho);
       registryMC.fill(HIST("jetResponse/genJets"), ptSub, weight);
       for (const auto& mcdJet : mcpJet.template matchedJetGeo_as<MatchedMCDV0Jets>()) {
-        if (isInJetAcceptance(mcdJet) && selectedCollisions.count(mcdJet.collisionId())) {
+        if (isInJetAcceptance(mcdJet) && selectedCollisions.contains(mcdJet.collisionId())) {
           registryMC.fill(HIST("jetResponse/genJetsMatched"), ptSub, weight);
           break;
         }
@@ -1341,5 +1348,5 @@ struct LfJetSpectra {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LfJetSpectra>(cfgc, TaskName{"lf-jet-spectra"})};
+    adaptAnalysisTask<LfJetSpectra>(cfgc)};
 }
