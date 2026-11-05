@@ -24,6 +24,7 @@
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>

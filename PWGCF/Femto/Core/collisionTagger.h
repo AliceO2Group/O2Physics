@@ -97,8 +97,8 @@ struct V0SelectionValues {
 struct TrackTrackVariant {
   TrackSelectionValues sel1;
   TrackSelectionValues sel2;
-  bool sameSpecies;
-  int bit;
+  bool sameSpecies = false;
+  int bit = 0;
 };
 
 // sel1/sel2 (not trackSel/v0Sel) for the same reason TrackTrackVariant above uses sel1/sel2: so
@@ -108,7 +108,7 @@ struct TrackTrackVariant {
 struct TrackV0Variant {
   TrackSelectionValues sel1;
   V0SelectionValues sel2;
-  int bit;
+  int bit = 0;
 };
 
 // SigmaPlusPcm's selection is V0SelectionValues plus one extra field (mlScoreMin), so it needs
@@ -131,7 +131,7 @@ struct KinkPcmSelectionValues {
 struct TrackKinkPcmVariant {
   TrackSelectionValues sel1;
   KinkPcmSelectionValues sel2;
-  int bit;
+  int bit = 0;
 };
 
 // Same-type pair where BOTH legs use the V0SelectionValues shape: covers v0-v0 (lambda-lambda,
@@ -141,8 +141,8 @@ struct TrackKinkPcmVariant {
 struct V0V0Variant {
   V0SelectionValues sel1;
   V0SelectionValues sel2;
-  bool sameSpecies;
-  int bit;
+  bool sameSpecies = false;
+  int bit = 0;
 };
 
 // Phi -> K+K-, Rho0 -> pi+pi-: both daughters are the same species, so MAKE_RESONANCE_0_PARTITON
@@ -206,31 +206,31 @@ struct TwoPhotonResonanceSelectionValues {
 struct TrackTwoTrackResonanceVariant {
   TrackSelectionValues sel1;
   TwoTrackResonanceSelectionValues sel2;
-  int bit;
+  int bit = 0;
 };
 
 struct TrackKstar0Variant {
   TrackSelectionValues sel1;
   Kstar0SelectionValues sel2;
-  int bit;
+  int bit = 0;
 };
 
 struct TrackTwoPhotonResonanceVariant {
   TrackSelectionValues sel1;
   TwoPhotonResonanceSelectionValues sel2;
-  int bit;
+  int bit = 0;
 };
 
 struct V0TwoTrackResonanceVariant {
   V0SelectionValues sel1;
   TwoTrackResonanceSelectionValues sel2;
-  int bit;
+  int bit = 0;
 };
 
 struct V0Kstar0Variant {
   V0SelectionValues sel1;
   Kstar0SelectionValues sel2;
-  int bit;
+  int bit = 0;
 };
 
 // Triplet variants, mirroring the "123 same, 12 same, or all different" pattern
@@ -244,9 +244,9 @@ struct TrackTrackTrackVariant {
   TrackSelectionValues sel1;
   TrackSelectionValues sel2;
   TrackSelectionValues sel3;
-  bool same123;
-  bool same12;
-  int bit;
+  bool same123 = false;
+  bool same12 = false;
+  int bit = 0;
 };
 
 // Cross-type (track-track-v0, track-track-cascade): roles 1&2 share the track table, role 3 is a
@@ -256,8 +256,8 @@ struct TrackTrackV0Variant {
   TrackSelectionValues sel1;
   TrackSelectionValues sel2;
   V0SelectionValues sel3;
-  bool same12;
-  int bit;
+  bool same12 = false;
+  int bit = 0;
 };
 
 inline TrackSelectionValues readTrackSelection(o2::framework::DeviceSpec const& device, std::string const& prefix)
@@ -717,7 +717,7 @@ template <typename Variant, typename Range, typename PassesFn>
 inline void tagTripletVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range const& range, PassesFn&& passes)
 {
   for (auto const& v : variants) {
-    bool ok;
+    bool ok = false;
     if (v.same123) {
       ok = hasAtLeast(range, v.sel1, passes, 3);
     } else if (v.same12) {
@@ -827,7 +827,7 @@ constexpr const char* FemtoTripletTrackTrackCascade = "femto-triplet-track-track
 struct TaggedRole {
   std::string deviceName;
   std::string role;
-  int bit;
+  int bit = 0;
 };
 
 // The single canonical bit-assignment walk: scans the workflow's device list in order and, for
