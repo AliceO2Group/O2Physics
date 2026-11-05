@@ -52,20 +52,20 @@ using namespace o2::framework::expressions;
 
 struct HfTaskOmegac0ToOmegaPiQa {
 
-  Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", true, "Select Omegac0 candidates"};
+  Configurable<int> selectionFlagOmegac0{"selectionFlagOmegac0", 7, "Selection Flag for Omegac0 candidates. 1 -> skimmed, 3 -> topological, 7 -> PID, 15 -> ML"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "Max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "Max. cand. rapidity"};
 
   SliceCache cache;
 
-  using Omegac0Cands = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToOmegaPi>>;
-  using Omegac0CandsKF = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToOmegaPi, aod::HfCandCascBachKfQa>>;
-  using Omegac0CandsMc = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToOmegaPi, aod::HfCandCascBachMCRecQa>>;
-  using Omegac0CandsMcKF = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToOmegaPi, aod::HfCandCascBachKfQa, aod::HfCandCascBachMCRecQa>>;
-  using Omegac0CandsMl = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi>>;
-  using Omegac0CandsMlKF = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfCandCascBachKfQa>>;
-  using Omegac0CandsMlMc = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfCandCascBachMCRecQa>>;
-  using Omegac0CandsMlMcKF = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfCandCascBachKfQa, aod::HfCandCascBachMCRecQa>>;
+  using Omegac0Cands = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelOmegaC0ToOmegaPi>>;
+  using Omegac0CandsKF = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelOmegaC0ToOmegaPi, aod::HfCandCascBachKfQa>>;
+  using Omegac0CandsMc = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelOmegaC0ToOmegaPi, aod::HfCandCascBachMCRecQa>>;
+  using Omegac0CandsMcKF = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelOmegaC0ToOmegaPi, aod::HfCandCascBachKfQa, aod::HfCandCascBachMCRecQa>>;
+  using Omegac0CandsMl = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelOmegaC0ToOmegaPi, aod::HfMlOmegaC0ToOmegaPi>>;
+  using Omegac0CandsMlKF = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelOmegaC0ToOmegaPi, aod::HfMlOmegaC0ToOmegaPi, aod::HfCandCascBachKfQa>>;
+  using Omegac0CandsMlMc = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelOmegaC0ToOmegaPi, aod::HfMlOmegaC0ToOmegaPi, aod::HfCandCascBachMCRecQa>>;
+  using Omegac0CandsMlMcKF = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelOmegaC0ToOmegaPi, aod::HfMlOmegaC0ToOmegaPi, aod::HfCandCascBachKfQa, aod::HfCandCascBachMCRecQa>>;
 
   using Omegac0Gen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandCascBachMCGenQa>>;
 
@@ -161,10 +161,10 @@ struct HfTaskOmegac0ToOmegaPiQa {
   }
 
   template <bool ApplyMl, typename CandType>
-  void processData(const CandType& candidates)
+  void runDataAnalysis(const CandType& candidates)
   {
     for (const auto& candidate : candidates) {
-      if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
+      if (candidate.isSelOmegaC0ToOmegaPi() < selectionFlagOmegac0) {
         continue;
       }
 
@@ -174,7 +174,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       }
 
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegac()[0]);
+        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
         registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac);
       }
@@ -182,9 +182,9 @@ struct HfTaskOmegac0ToOmegaPiQa {
   }
 
   template <bool UseCentrality, bool ApplyMl, typename CandType, typename CollType>
-  void processDataCent(const CandType& candidate, CollType const& collision)
+  void runDataAnalysisCentPerCandidate(const CandType& candidate, CollType const& collision)
   {
-    if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
+    if (candidate.isSelOmegaC0ToOmegaPi() < selectionFlagOmegac0) {
       return;
     }
 
@@ -197,13 +197,13 @@ struct HfTaskOmegac0ToOmegaPiQa {
     if constexpr (UseCentrality) {
       float const cent = o2::hf_centrality::getCentralityColl(collision);
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, cent, numPvContributors, candidate.mlProbOmegac()[0]);
+        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, cent, numPvContributors, candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
         registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, cent, numPvContributors);
       }
     } else {
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegac()[0]);
+        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
         registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac);
       }
@@ -211,11 +211,11 @@ struct HfTaskOmegac0ToOmegaPiQa {
   }
 
   template <bool ApplyMl, typename CandType>
-  void processMc(const CandType& candidates, Omegac0Gen const& mcParticles)
+  void runMcAnalysis(const CandType& candidates, Omegac0Gen const& mcParticles)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
+      if (candidate.isSelOmegaC0ToOmegaPi() < selectionFlagOmegac0) {
         continue;
       }
 
@@ -225,7 +225,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       }
 
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
+        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
         registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
       }
@@ -250,12 +250,12 @@ struct HfTaskOmegac0ToOmegaPiQa {
   }
 
   template <bool ApplyMl, typename CandType, typename McCollisionWithCents>
-  void processMcCent(const CandType& candidates, Omegac0Gen const& mcParticles,
-                     CollisionsWithMcLabels const& collisions, McCollisionWithCents const&)
+  void runMcAnalysisCentPerCandidate(const CandType& candidates, Omegac0Gen const& mcParticles,
+                                     CollisionsWithMcLabels const& collisions, McCollisionWithCents const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
+      if (candidate.isSelOmegaC0ToOmegaPi() < selectionFlagOmegac0) {
         continue;
       }
 
@@ -269,7 +269,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       float const mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
 
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
+        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
         registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
       }
@@ -321,13 +321,13 @@ struct HfTaskOmegac0ToOmegaPiQa {
 
   void processDataDCAFitter(Omegac0Cands const& candidates)
   {
-    processData<false>(candidates);
+    runDataAnalysis<false>(candidates);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processDataDCAFitter, "process data with DCAFitter", false);
 
   void processDataDCAFitterMl(Omegac0CandsMl const& candidates)
   {
-    processData<true>(candidates);
+    runDataAnalysis<true>(candidates);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processDataDCAFitterMl, "process data with DCAFitter, ML selections", false);
 
@@ -338,7 +338,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacPerCollision, collision.globalIndex());
 
       for (const auto& candidate : groupedOmegacCandidates) {
-        processDataCent<true, false>(candidate, collision);
+        runDataAnalysisCentPerCandidate<true, false>(candidate, collision);
       }
     }
   }
@@ -351,7 +351,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacMlPerCollision, collision.globalIndex());
 
       for (const auto& candidate : groupedOmegacCandidates) {
-        processDataCent<true, true>(candidate, collision);
+        runDataAnalysisCentPerCandidate<true, true>(candidate, collision);
       }
     }
   }
@@ -364,7 +364,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacPerCollision, collision.globalIndex());
 
       for (const auto& candidate : groupedOmegacCandidates) {
-        processDataCent<true, false>(candidate, collision);
+        runDataAnalysisCentPerCandidate<true, false>(candidate, collision);
       }
     }
   }
@@ -377,7 +377,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacMlPerCollision, collision.globalIndex());
 
       for (const auto& candidate : groupedOmegacCandidates) {
-        processDataCent<true, true>(candidate, collision);
+        runDataAnalysisCentPerCandidate<true, true>(candidate, collision);
       }
     }
   }
@@ -389,13 +389,13 @@ struct HfTaskOmegac0ToOmegaPiQa {
 
   void processDataKFParticle(Omegac0CandsKF const& candidates)
   {
-    processData<false>(candidates);
+    runDataAnalysis<false>(candidates);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processDataKFParticle, "process data with KFParticle", false);
 
   void processDataKFParticleMl(Omegac0CandsMlKF const& candidates)
   {
-    processData<true>(candidates);
+    runDataAnalysis<true>(candidates);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processDataKFParticleMl, "process data with KFParticle, ML selections", false);
 
@@ -406,7 +406,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacKFPerCollision, collision.globalIndex());
 
       for (const auto& candidate : groupedOmegacCandidates) {
-        processDataCent<true, false>(candidate, collision);
+        runDataAnalysisCentPerCandidate<true, false>(candidate, collision);
       }
     }
   }
@@ -419,7 +419,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacKFMlPerCollision, collision.globalIndex());
 
       for (const auto& candidate : groupedOmegacCandidates) {
-        processDataCent<true, true>(candidate, collision);
+        runDataAnalysisCentPerCandidate<true, true>(candidate, collision);
       }
     }
   }
@@ -432,7 +432,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacKFPerCollision, collision.globalIndex());
 
       for (const auto& candidate : groupedOmegacCandidates) {
-        processDataCent<true, false>(candidate, collision);
+        runDataAnalysisCentPerCandidate<true, false>(candidate, collision);
       }
     }
   }
@@ -445,7 +445,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacKFMlPerCollision, collision.globalIndex());
 
       for (const auto& candidate : groupedOmegacCandidates) {
-        processDataCent<true, true>(candidate, collision);
+        runDataAnalysisCentPerCandidate<true, true>(candidate, collision);
       }
     }
   }
@@ -458,14 +458,14 @@ struct HfTaskOmegac0ToOmegaPiQa {
   void processMcDCAFitter(Omegac0CandsMc const& omegaC0CandidatesMc,
                           Omegac0Gen const& mcParticles)
   {
-    processMc<false>(omegaC0CandidatesMc, mcParticles);
+    runMcAnalysis<false>(omegaC0CandidatesMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcDCAFitter, "Process MC with DCAFitter", false);
 
   void processMcDCAFitterMl(Omegac0CandsMlMc const& omegac0CandidatesMlMc,
                             Omegac0Gen const& mcParticles)
   {
-    processMc<true>(omegac0CandidatesMlMc, mcParticles);
+    runMcAnalysis<true>(omegac0CandidatesMlMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcDCAFitterMl, "Process MC with DCAFitter, ML selections", false);
 
@@ -474,7 +474,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
                               CollisionsWithMcLabels const& collisions,
                               McCollisionsWithFT0M const& mcCollisions)
   {
-    processMcCent<false>(omegaC0CandidatesMc, mcParticles, collisions, mcCollisions);
+    runMcAnalysisCentPerCandidate<false>(omegaC0CandidatesMc, mcParticles, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcDCAFitterFT0M, "Process MC with DCAFitter, FT0M centrality (from MC)", false);
 
@@ -483,7 +483,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
                                 CollisionsWithMcLabels const& collisions,
                                 McCollisionsWithFT0M const& mcCollisions)
   {
-    processMcCent<true>(omegac0CandidatesMlMc, mcParticles, collisions, mcCollisions);
+    runMcAnalysisCentPerCandidate<true>(omegac0CandidatesMlMc, mcParticles, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcDCAFitterMlFT0M, "Process MC with DCAFitter, ML selections, FT0M centrality (from MC)", false);
 
@@ -494,14 +494,14 @@ struct HfTaskOmegac0ToOmegaPiQa {
   void processMcKFParticle(Omegac0CandsMcKF const& omegaC0CandidatesMcKF,
                            Omegac0Gen const& mcParticles)
   {
-    processMc<false>(omegaC0CandidatesMcKF, mcParticles);
+    runMcAnalysis<false>(omegaC0CandidatesMcKF, mcParticles);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcKFParticle, "Process MC with KFParticle", false);
 
   void processMcKFParticleMl(Omegac0CandsMlMcKF const& omegac0CandidatesMlMcKF,
                              Omegac0Gen const& mcParticles)
   {
-    processMc<true>(omegac0CandidatesMlMcKF, mcParticles);
+    runMcAnalysis<true>(omegac0CandidatesMlMcKF, mcParticles);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcKFParticleMl, "Process MC with KFParticle, ML selections", false);
 
@@ -510,7 +510,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
                                CollisionsWithMcLabels const& collisions,
                                McCollisionsWithFT0M const& mcCollisions)
   {
-    processMcCent<false>(omegaC0CandidatesMcKF, mcParticles, collisions, mcCollisions);
+    runMcAnalysisCentPerCandidate<false>(omegaC0CandidatesMcKF, mcParticles, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcKFParticleFT0M, "Process MC with KFParticle, FT0M centrality (from MC)", false);
 
@@ -519,7 +519,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
                                  CollisionsWithMcLabels const& collisions,
                                  McCollisionsWithFT0M const& mcCollisions)
   {
-    processMcCent<true>(omegac0CandidatesMlMcKF, mcParticles, collisions, mcCollisions);
+    runMcAnalysisCentPerCandidate<true>(omegac0CandidatesMlMcKF, mcParticles, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcKFParticleMlFT0M, "Process MC with KFParticle, ML selections, FT0M centrality (from MC)", false);
 };
