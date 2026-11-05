@@ -74,6 +74,16 @@ struct Lambdastarproxy {
   static constexpr float CutPtMinDefault = 0.5f;
   static constexpr float CutEtaMaxDefault = 0.8f;
 
+  static constexpr int FT0MPercentileBins = 100;
+  static constexpr float FT0MPercentileMax = 100.f;
+  enum class FT0MEventStatus : int {
+    Valid = 1,
+    Negative,
+    OutOfRange,
+    NonFinite,
+    Unavailable
+  };
+
   static constexpr float CutMCPtMinDefault = 0.1f;
   static constexpr float CutMCEtaMaxDefault = 0.8f;
   static constexpr int FillMCTruthDefault = 1;
@@ -352,6 +362,37 @@ struct Lambdastarproxy {
     return fallback;
   }
 
+  template <typename TCollision>
+  void fillEventMultiplicityCounters(TCollision const& collision, float eventMult)
+  {
+    // Use the exact estimator of the pair maps, including the legacy track-count
+    // fallback. Nonfinite values have no percentile and are counted in overflow.
+    histos.fill(HIST("hEventMultiplicity"), std::isfinite(eventMult) ? eventMult : FT0MPercentileMax);
+
+    // Keep the raw FT0M denominator separate: fallback track counts must never
+    // acquire an FT0M percentile label. Missing/nonfinite FT0M goes to overflow;
+    // finite negative and >=100 values retain their underflow/overflow meaning.
+    float ft0m = FT0MPercentileMax;
+    auto status = FT0MEventStatus::Unavailable;
+    if constexpr (requires { collision.centFT0M(); }) {
+      const float value = collision.centFT0M();
+      if (!std::isfinite(value)) {
+        status = FT0MEventStatus::NonFinite;
+      } else {
+        ft0m = value;
+        if (value < 0.f) {
+          status = FT0MEventStatus::Negative;
+        } else if (value >= FT0MPercentileMax) {
+          status = FT0MEventStatus::OutOfRange;
+        } else {
+          status = FT0MEventStatus::Valid;
+        }
+      }
+    }
+    histos.fill(HIST("hEventFT0M"), ft0m);
+    histos.fill(HIST("hEventFT0MStatus"), static_cast<int>(status));
+  }
+
   int chargeFromPdg(int pdg) const
   {
     const int apdg = std::abs(pdg);
@@ -529,12 +570,27 @@ struct Lambdastarproxy {
     AxisSpec dcaXYAxis{200, -0.2, 0.2, "DCA_{xy} (cm)"};
     AxisSpec dcaZAxis{200, -0.2, 0.2, "DCA_{z} (cm)"};
 
-    // Count reconstructed collisions received by the data process, before any
+    // Count reconstructed collisions received by the data or reco-MC process, before any
     // task event cuts and after all of them, independently of track candidates.
     histos.add("hEventSelection", "Proxy event selection;Selection stage;Events",
                HistType::kTH1D, {AxisSpec{2, 0.5, 2.5, "Selection stage"}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "Before event selection");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "After event selection");
+
+    // Small event-level denominators, independent of candidate and QA switches.
+    // Double storage and Sumw2 preserve large merged event counts and errors.
+    histos.add("hEventFT0M", "Selected reconstructed events;Raw FT0M percentile;Events",
+               HistType::kTH1D, {AxisSpec{FT0MPercentileBins, 0., FT0MPercentileMax, "Raw FT0M percentile"}}, true);
+    histos.add("hEventMultiplicity", "Selected reconstructed events (same estimator as pair maps);Multiplicity/centrality;Events",
+               HistType::kTH1D, {centAxis}, true);
+    histos.add("hEventFT0MStatus", "Selected reconstructed events;Raw FT0M status;Events",
+               HistType::kTH1D, {AxisSpec{static_cast<int>(FT0MEventStatus::Unavailable), 0.5, static_cast<int>(FT0MEventStatus::Unavailable) + 0.5, "Raw FT0M status"}}, true);
+    auto* ft0mStatusAxis = histos.get<TH1>(HIST("hEventFT0MStatus"))->GetXaxis();
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::Valid), "Finite FT0M [0,100)");
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::Negative), "Negative FT0M");
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::OutOfRange), "FT0M >= 100");
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::NonFinite), "Nonfinite FT0M");
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::Unavailable), "FT0M unavailable");
 
     // Invariant-mass spectra
     histos.add("hInvMassPKUnlike",
@@ -1945,6 +2001,8 @@ struct Lambdastarproxy {
 
     // Compute event multiplicity (FT0M or fallback)
     const float eventMult = eventMultiplicityFT0MOrFallback(collision, eventMultFallback);
+    // Exactly once after event cuts, before PID probes or candidate requirements.
+    fillEventMultiplicityCounters(collision, eventMult);
     if (lstarEnableProxyPIDProbes.value != 0) {
       if constexpr (IsMC) {
         fillProxyPIDProbes<true>(tracks, eventMult, collision.mcCollisionId());
