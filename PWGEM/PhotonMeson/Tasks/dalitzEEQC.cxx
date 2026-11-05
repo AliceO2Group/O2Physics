@@ -135,7 +135,7 @@ struct DalitzEEQC {
   float d_bz = 0;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-  static constexpr std::array<std::string_view, 2> event_cut_types = {"before/", "after/"};
+  // static constexpr std::array<std::string_view, 2> event_cut_types = {"before/", "after/"}; // unused
 
   void init(InitContext& /*context*/)
   {

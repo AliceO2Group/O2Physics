@@ -362,7 +362,8 @@ struct DalitzEEQCMC {
     }
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
-    if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
+    // if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
+    if (t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);
       if (cfgRequireTrueAssociation && (mcmother.emmceventId() != collision.emmceventId())) {
         return false;
