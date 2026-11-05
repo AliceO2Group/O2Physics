@@ -157,6 +157,14 @@ DECLARE_SOA_COLUMN(Psi2Random, psi2random, float); //!  Event plane angle from r
 DECLARE_SOA_COLUMN(Psi2A, psi2a, float);           //!  Event plane angle from Q-vector A
 DECLARE_SOA_COLUMN(Psi2B, psi2b, float);           //!  Event plane angle from Q-vector B
 DECLARE_SOA_COLUMN(Psi2C, psi2c, float);           //!  Event plane angle from Q-vector C
+
+DECLARE_SOA_COLUMN(MultNtrkGlobal, multNtrkGlobal, int);
+
+DECLARE_SOA_COLUMN(MultNtrkGlobalToward, multNtrkGlobalToward, int);
+DECLARE_SOA_COLUMN(MultNtrkGlobalTransverseRight, multNtrkGlobalTransverseRight, int);
+DECLARE_SOA_COLUMN(MultNtrkGlobalTransverseLeft, multNtrkGlobalTransverseLeft, int);
+DECLARE_SOA_COLUMN(MultNtrkGlobalBackward, multNtrkGlobalBackward, int);
+
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event information table
@@ -183,6 +191,13 @@ DECLARE_SOA_TABLE(ReducedEventsMultPV_000, "AOD", "REMULTPV", //!  Multiplicity 
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   evsel::NumTracksInTimeRange);
+
+DECLARE_SOA_TABLE(ReducedEventsGlobalTrk, "AOD", "REGLOBALTRK",
+                  reducedevent::MultNtrkGlobal);
+
+DECLARE_SOA_TABLE(ReducedEventsMultAzimuth, "AOD", "REMULTAZIMUTH",
+                  reducedevent::MultNtrkGlobalToward, reducedevent::MultNtrkGlobalTransverseRight,
+                  reducedevent::MultNtrkGlobalTransverseLeft, reducedevent::MultNtrkGlobalBackward);
 
 DECLARE_SOA_TABLE_VERSIONED(ReducedEventsMultPV_001, "AOD", "REMULTPV", 1, //!  Multiplicity information for primary vertex
                             mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
@@ -873,21 +888,21 @@ DECLARE_SOA_COLUMN(BdtBackground, bdtBackground, float);                        
 DECLARE_SOA_COLUMN(BdtPrompt, bdtPrompt, float);                                         //! BDT output score for the prompt class
 DECLARE_SOA_COLUMN(BdtNonprompt, bdtNonprompt, float);                                   //! BDT output score for the nonprompt class
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
-DECLARE_SOA_COLUMN(CosThetaHE, costhetaHE, float);             //! Cosine in the helicity frame
-DECLARE_SOA_COLUMN(PhiHE, phiHe, float);                       //! Phi in the helicity frame
-DECLARE_SOA_COLUMN(PhiTildeHE, phiTildeHe, float);             //! Tilde Phi in the helicity frame
-DECLARE_SOA_COLUMN(CosThetaCS, costhetaCS, float);             //! Cosine in the Collins-Soper frame
-DECLARE_SOA_COLUMN(PhiCS, phiCS, float);                       //! Phi in the Collins-Soper frame
-DECLARE_SOA_COLUMN(PhiTildeCS, phiTildeCS, float);             //! Tilde Phi in the Collins-Soper frame
-DECLARE_SOA_COLUMN(CosThetaPP, costhetaPP, float);             //! Cosine in the Production Plane frame
-DECLARE_SOA_COLUMN(PhiPP, phiPP, float);                       //! Phi in the Production Plane frame
-DECLARE_SOA_COLUMN(PhiTildePP, phiTildePP, float);             //! Tilde Phi in the Production Plane frame
-DECLARE_SOA_COLUMN(CosThetaRM, costhetaRM, float);             //! Cosine in the Random frame
-DECLARE_SOA_COLUMN(CosThetaStarTPC, costhetaStarTPC, float);   //! global polarization, event plane reconstructed from TPC tracks
-DECLARE_SOA_COLUMN(CosThetaStarFT0A, costhetaStarFT0A, float); //! global polarization, event plane reconstructed from FT0A tracks
-DECLARE_SOA_COLUMN(CosThetaStarFT0C, costhetaStarFT0C, float); //! global polarization, event plane reconstructed from FT0C tracks
+DECLARE_SOA_COLUMN(CosThetaHE, costhetaHE, float);                 //! Cosine in the helicity frame
+DECLARE_SOA_COLUMN(PhiHE, phiHe, float);                           //! Phi in the helicity frame
+DECLARE_SOA_COLUMN(PhiTildeHE, phiTildeHe, float);                 //! Tilde Phi in the helicity frame
+DECLARE_SOA_COLUMN(CosThetaCS, costhetaCS, float);                 //! Cosine in the Collins-Soper frame
+DECLARE_SOA_COLUMN(PhiCS, phiCS, float);                           //! Phi in the Collins-Soper frame
+DECLARE_SOA_COLUMN(PhiTildeCS, phiTildeCS, float);                 //! Tilde Phi in the Collins-Soper frame
+DECLARE_SOA_COLUMN(CosThetaPP, costhetaPP, float);                 //! Cosine in the Production Plane frame
+DECLARE_SOA_COLUMN(PhiPP, phiPP, float);                           //! Phi in the Production Plane frame
+DECLARE_SOA_COLUMN(PhiTildePP, phiTildePP, float);                 //! Tilde Phi in the Production Plane frame
+DECLARE_SOA_COLUMN(CosThetaRM, costhetaRM, float);                 //! Cosine in the Random frame
+DECLARE_SOA_COLUMN(CosThetaStarTPC, costhetaStarTPC, float);       //! global polarization, event plane reconstructed from TPC tracks
+DECLARE_SOA_COLUMN(CosThetaStarFT0A, costhetaStarFT0A, float);     //! global polarization, event plane reconstructed from FT0A tracks
+DECLARE_SOA_COLUMN(CosThetaStarFT0C, costhetaStarFT0C, float);     //! global polarization, event plane reconstructed from FT0C tracks
 DECLARE_SOA_COLUMN(CosThetaStarRandom, costhetaStarRandom, float); //! global polarization, event plane reconstructed from random tracks
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                             //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                                 //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pt, float phi) -> float { return pt * std::sin(phi); });

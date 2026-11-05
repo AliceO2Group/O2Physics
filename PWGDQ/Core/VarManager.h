@@ -120,6 +120,7 @@ class VarManager : public TObject
     RapidityGapFilter = BIT(21),
     Fit = BIT(22),
     ReducedFit = BIT(23),
+    ReducedEventGlobalMult = BIT(24),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -251,6 +252,7 @@ class VarManager : public TObject
     kVtxZ,
     kVtxNcontrib,
     kVtxNcontribReal,
+    kMultNtrkGlobal,
     kVtxCovXX,
     kVtxCovXY,
     kVtxCovXZ,
@@ -2659,6 +2661,10 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedZdc) > 0) {
     FillZDC(event, values);
+  }
+
+  if constexpr ((fillMap & ReducedEventGlobalMult) > 0) {
+    values[kMultNtrkGlobal] = event.multNtrkGlobal();
   }
 
   if constexpr ((fillMap & ReducedFit) > 0) {

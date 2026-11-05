@@ -1,0 +1,230 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+//
+/// \author Alexander Tiekoetter <alexander.tiekoetter@cern.ch>, Muenster
+/// \brief Global Track estimator with track-to-collision association
+/// \file globalTrackEstimator.cxx
+
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/MCSignal.h"
+#include "PWGDQ/Core/MCSignalLibrary.h"
+#include "PWGDQ/Core/VarManager.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <string>
+#include <unordered_set>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::aod;
+
+using MyEventsBasic = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended>;
+using MyBarrelTracks = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelCov, o2::aod::ReducedTracksBarrelPID>;
+
+using MyEventsDirect = o2::soa::Join<aod::Collisions, aod::EvSels>;
+using MyTracksDirect = o2::soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
+
+constexpr static uint32_t GkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
+constexpr static uint32_t GkTrackFillMap = VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov;
+
+constexpr static uint32_t GkEventDirectFillMap = VarManager::ObjTypes::Collision;
+constexpr static uint32_t GkTrackDirectFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA;
+
+struct GlobalTrackEstimator {
+  Produces<o2::aod::ReducedEventsGlobalTrk> reducedEventsGlobalTrk;
+  Produces<o2::aod::ReducedEventsMultAzimuth> reducedEventsMultAzimuth;
+
+  Configurable<float> cfgShiftDCAxy{"cfgShiftDCAxy", 0.0105, "Constant shift of DCAxy paramterization"};
+  Configurable<float> cfgPtMagnitudeDCAxy{"cfgPtMagnitudeDCAxy", 0.035, "Magnitude of the pT dependency of the DCAxy paramterization"};
+  Configurable<float> cfgExponentDCAxy{"cfgExponentDCAxy", 1.1, "Exponent of the pT dependency of the DCAxy paramterization"};
+  Configurable<float> cfgMaxDCAz{"cfgMaxDCAz", 2.0, "Maximum DCAz"};
+  Configurable<float> cfgMinPt{"cfgMinPt", 0.1, "Minimum required pT"};
+  Configurable<float> cfgEtaRange{"cfgEtaRange", 0.8, "Pseudorapidity range"};
+  Configurable<float> cfgMinTPCCluster{"cfgMinTPCCluster", 70, "Minimum number of crossed TPC rows"};
+  Configurable<float> cfgRatioTPCClusterOverFindableCluster{"cfgRatioTPCClusterOverFindableCluster", 0.8, "Minimum ratio of crossed TPC rows over findable clusters"};
+  Configurable<float> cfgMaxChi2TPC{"cfgMaxChi2TPC", 4.0, "Maximum chi2 per cluster in TPC"};
+  Configurable<float> cfgMaxChi2ITS{"cfgMaxChi2ITS", 36.0, "Maximum chi2 per cluster in ITS"};
+  Configurable<bool> cfgRequireITSibAny{"cfgRequireITSibAny", true, "Require a hit in the ITS inner barrel"};
+  Configurable<bool> cfgRecalculateDCA{"cfgRecalculateDCA", true, "Recalculate DCA vector with associations"};
+
+  o2::framework::Preslice<o2::aod::ReducedTracksAssoc> preslice = o2::aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<o2::aod::TrackAssoc> presliceDirect = o2::aod::track_association::collisionId;
+
+  o2::framework::expressions::Filter trackFilter = (o2::aod::reducedtrack::pt >= cfgMinPt) && (nabs(o2::aod::reducedtrack::eta) <= cfgEtaRange) && (o2::aod::track::tpcChi2NCl <= cfgMaxChi2TPC) && (o2::aod::track::itsChi2NCl <= cfgMaxChi2ITS);
+  o2::framework::expressions::Filter trackDirectFilter = (o2::aod::track::pt >= cfgMinPt) && (nabs(o2::aod::track::eta) <= cfgEtaRange) && (o2::aod::track::tpcChi2NCl <= cfgMaxChi2TPC) && (o2::aod::track::itsChi2NCl <= cfgMaxChi2ITS);
+
+  void init(InitContext& context)
+  {
+    bool isSkimmedEnabled = context.mOptions.get<bool>("processGlobalTracksSkimmed");
+    bool isDirectEnabled = context.mOptions.get<bool>("processGlobalTracksDirect");
+    bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
+
+    if (isDummyEnabled) {
+      if (isSkimmedEnabled || isDirectEnabled) {
+        LOG(fatal) << "You have enabled both the dummy process and at least one normal process function.";
+      }
+      return;
+    }
+
+    if (!isSkimmedEnabled && !isDirectEnabled && !isDummyEnabled) {
+      LOG(fatal) << "No process function activated.";
+      return;
+    }
+
+    if (isSkimmedEnabled && isDirectEnabled) {
+      LOG(fatal) << "Process functions for skimmed data model and direct data model can not run simultaneously.";
+      return;
+    }
+  }
+
+  template <uint32_t fillMap, typename T, typename C>
+  bool isTrackSelected(T& track, C const& event)
+  {
+    VarManager::ResetValues(VarManager::kNBarrelTrackVariables, VarManager::kNBarrelTrackVariables);
+    VarManager::FillTrack<fillMap>(track);
+
+    if (cfgRecalculateDCA) {
+      VarManager::FillTrackCollision<fillMap>(track, event);
+    }
+
+    const int nFindable = track.tpcNClsFindable();
+    const int nCrossedRows = track.tpcNClsCrossedRows();
+
+    if (nCrossedRows < static_cast<int>(cfgMinTPCCluster.value)) {
+      return false;
+    }
+
+    if (nFindable <= 0) {
+      return false;
+    }
+
+    const float crossedOverFindable = static_cast<float>(nCrossedRows) / static_cast<float>(nFindable);
+
+    if (crossedOverFindable < cfgRatioTPCClusterOverFindableCluster.value) {
+      return false;
+    }
+
+    if (cfgRequireITSibAny.value && ((track.itsClusterMap() & 0x7) == 0)) {
+      return false;
+    }
+
+    if (std::abs(VarManager::fgValues[VarManager::kTrackDCAz]) > cfgMaxDCAz.value) {
+      return false;
+    }
+
+    if (std::abs(VarManager::fgValues[VarManager::kTrackDCAxy]) > cfgShiftDCAxy + cfgPtMagnitudeDCAxy / pow(track.pt(), cfgExponentDCAxy)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void processGlobalTracksSkimmed(MyEventsBasic const& events, o2::aod::ReducedTracksAssoc const& assocs, o2::soa::Filtered<MyBarrelTracks> const& tracks)
+  {
+    std::unordered_set<int64_t> selectedTrackIds;
+    selectedTrackIds.reserve(tracks.size());
+
+    for (auto const& track : tracks) {
+      selectedTrackIds.insert(track.globalIndex());
+    }
+
+    for (const auto& event : events) {
+      VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
+      VarManager::FillEvent<GkEventFillMap>(event);
+
+      auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
+
+      int nTrkGlobal = 0;
+
+      for (auto const& assoc : groupedAssocs) {
+        if (selectedTrackIds.find(assoc.reducedtrackId()) == selectedTrackIds.end()) {
+          continue;
+        }
+
+        auto track = assoc.template reducedtrack_as<o2::soa::Filtered<MyBarrelTracks>>();
+
+        if (!isTrackSelected<GkTrackFillMap>(track, event)) {
+          continue;
+        }
+
+        ++nTrkGlobal;
+      }
+
+      reducedEventsGlobalTrk(nTrkGlobal);
+    }
+  }
+
+  PROCESS_SWITCH(GlobalTrackEstimator, processGlobalTracksSkimmed, "Count global tracks from skimmed data model", false);
+
+  void processGlobalTracksDirect(MyEventsDirect const& events, TrackAssoc const& assocs, o2::soa::Filtered<MyTracksDirect> const& tracks)
+  {
+    std::unordered_set<int64_t> selectedTrackIds;
+    selectedTrackIds.reserve(tracks.size());
+
+    for (auto const& track : tracks) {
+      selectedTrackIds.insert(track.globalIndex());
+    }
+
+    for (const auto& event : events) {
+      VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
+      VarManager::FillEvent<GkEventDirectFillMap>(event);
+
+      auto groupedAssocs = assocs.sliceBy(presliceDirect, event.globalIndex());
+
+      int nTrkGlobal = 0;
+
+      for (auto const& assoc : groupedAssocs) {
+        if (selectedTrackIds.find(assoc.trackId()) == selectedTrackIds.end()) {
+          continue;
+        }
+
+        auto track = assoc.template track_as<o2::soa::Filtered<MyTracksDirect>>();
+
+        if (!isTrackSelected<GkTrackDirectFillMap>(track, event)) {
+          continue;
+        }
+
+        ++nTrkGlobal;
+      }
+
+      reducedEventsGlobalTrk(nTrkGlobal);
+    }
+  }
+
+  PROCESS_SWITCH(GlobalTrackEstimator, processGlobalTracksDirect, "Count global tracks from unskimmed data", false);
+
+  void processDummy(MyEventsBasic const&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(GlobalTrackEstimator, processDummy, "Dummy process function", true);
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<GlobalTrackEstimator>(cfgc)};
+}

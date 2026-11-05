@@ -131,6 +131,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MultFDDC", "MultFDDC", false, 1000, 0.0, 25000.0, VarManager::kMultFDDC);
         hm->AddHistogram(histClass, "MultTracklets", "MultTracklets", false, 250, 0.0, 250.0, VarManager::kMultTracklets);
         hm->AddHistogram(histClass, "VtxNContribReal", "Vtx n contributors", false, 150, 0.0, 150.0, VarManager::kVtxNcontribReal);
+        hm->AddHistogram(histClass, "kMultNtrkGlobal", "kMultNtrkGlobal", false, 150, 0.0, 150.0, VarManager::kMultNtrkGlobal);
         hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
         hm->AddHistogram(histClass, "MultNTracksPVeta1", "MultNTracksPVeta1", false, 150, 0, 150.0, VarManager::kMultNTracksPVeta1);
         hm->AddHistogram(histClass, "MultNTracksPVetaHalf", "MultNTracksPVetaHalf", false, 150, 0, 150.0, VarManager::kMultNTracksPVetaHalf);
@@ -163,7 +164,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MultNTracksPVetaHalf_MultMCNParticlesEta05", "MultNTracksPVetaHalf vs MultMCNParticlesEta05", false, 150, 0, 150.0, VarManager::kMultNTracksPVetaHalf, 150, 0, 150.0, VarManager::kMultMCNParticlesEta05);
         hm->AddHistogram(histClass, "VtxNcontribReal_MultMCNParticlesEta08", "VtxNcontribReal vs MultMCNParticlesEta08", false, 150, 0, 150.0, VarManager::kVtxNcontribReal, 150, 0, 150.0, VarManager::kMultMCNParticlesEta08);
         hm->AddHistogram(histClass, "MultNTracksPVeta1_MultMCNParticlesEta10", "MultNTracksPVeta1 vs MultMCNParticlesEta10", false, 150, 0, 150.0, VarManager::kMultNTracksPVeta1, 150, 0, 150.0, VarManager::kMultMCNParticlesEta10);
-
+        hm->AddHistogram(histClass, "MultNtrkGlobal_MultMCNParticlesEta05", "MultNtrkGlobal vs MultMCNParticlesEta05", false, 150, 0, 150.0, VarManager::kMultNtrkGlobal, 150, 0, 150.0, VarManager::kMultMCNParticlesEta05);
+        hm->AddHistogram(histClass, "MultNtrkGlobal_MultMCNParticlesEta08", "MultNtrkGlobal vs MultMCNParticlesEta08", false, 150, 0, 150.0, VarManager::kMultNtrkGlobal, 150, 0, 150.0, VarManager::kMultMCNParticlesEta08);
+        hm->AddHistogram(histClass, "MultNtrkGlobal_MultMCNParticlesEta10", "MultNtrkGlobal vs MultMCNParticlesEta10", false, 150, 0, 150.0, VarManager::kMultNtrkGlobal, 150, 0, 150.0, VarManager::kMultMCNParticlesEta10);
       } else {
         hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 200, 0.0, 50000.0, VarManager::kMultTPC);
         hm->AddHistogram(histClass, "MultTPC_vsTimeSOR", "MultTPC vs time from SOR", true, 10000, 0.0, 1000.0, VarManager::kTimeFromSOR, 10, 0.0, 50000.0, VarManager::kMultTPC);
@@ -177,6 +180,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MultZNA_ZNC", "MultZNA vs ZNC", false, 400, 0.0, 400.0, VarManager::kMultZNA, 400, 0.0, 400.0, VarManager::kMultZNC);
         hm->AddHistogram(histClass, "MultTracklets", "MultTracklets", false, 100, 0.0, 25000.0, VarManager::kMultTracklets);
         hm->AddHistogram(histClass, "VtxNContribReal", "Vtx n contributors (real)", false, 100, 0.0, 5000.0, VarManager::kVtxNcontribReal);
+        hm->AddHistogram(histClass, "kMultNtrkGlobal", "kMultNtrkGlobal", false, 150, 0.0, 150.0, VarManager::kMultNtrkGlobal);
         hm->AddHistogram(histClass, "VtxNContribReal_vsTimeSOR", "VtxNContribReal vs time from SOR", true, 10000, 0.0, 1000.0, VarManager::kTimeFromSOR, 10, 0.0, 5000.0, VarManager::kVtxNcontribReal);
         hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 20000.0, VarManager::kVtxNcontrib);
         hm->AddHistogram(histClass, "MultTPC_MultFV0A", "MultTPC vs MultFV0A", false, 100, 0, 50000.0, VarManager::kMultTPC, 100, 0, 300000.0, VarManager::kMultFV0A);
@@ -1404,6 +1408,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_VtxNcontribReal", "Mass vs VtxNcontribReal", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kVtxNcontribReal);
         hm->AddHistogram(histClass, "Mass_VtxNcontribReal_VtxZ", "Mass vs VtxNcontribReal vs VtxZ", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kVtxNcontribReal, 20, -10.0, 10.0, VarManager::kVtxZ);
         hm->AddHistogram(histClass, "VtxZ_VtxNcontribReal", "VtxZ vs VtxNcontribReal", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kVtxNcontribReal);
+      }
+      if (subGroupStr.Contains("mult_global")) {
+        hm->AddHistogram(histClass, "Mass_MultGlobal", "Mass vs global tracks", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kMultNtrkGlobal);
+        hm->AddHistogram(histClass, "Mass_MultGlobal_VtxZ", "Mass vs global tracks vs VtxZ", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kMultNtrkGlobal, 20, -10.0, 10.0, VarManager::kVtxZ);
+        hm->AddHistogram(histClass, "VtxZ_MultGlobal", "VtxZ vs global tracks", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kMultNtrkGlobal);
       }
       if (subGroupStr.Contains("alice3barrel")) {
         std::array<double, 21> pTBins = {
