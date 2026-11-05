@@ -102,25 +102,25 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
   Configurable<bool> fillHistoMcGen{"fillHistoMcGen", true, "Flag for filling histograms in MC Gen processes"};
-  Configurable<bool> fillHistoMcEff{"fillHistoMcEff", true, "Flag for filling histograms in efficiency processes"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
   Configurable<bool> loadAccXEffFromCCDB{"loadAccXEffFromCCDB", false, "Flag for loading efficiency distributions from CCDB"};
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for D+"}; // 7 corresponds to topo+PID cuts
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
   // Machine Learning options and selections
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
-  Configurable<std::vector<double>> mlScorePromptOrNonPromptMin{"mlScorePromptOrNonPromptMin", {0.5, 0.5, 0.5, 0.5}, "Minimum Machine learning scores for prompt or Feed-down"};
-  Configurable<std::vector<double>> mlScorePromptOrNonPromptMax{"mlScorePromptOrNonPromptMax", {1.0, 1.0, 1.0, 1.0}, "Maximum Machine learning scores for prompt or Feed-down"};
-  Configurable<std::vector<double>> mlScoreBkg{"mlScoreBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
+  // default ML cuts defined in the default pT bins of the ML cuts (binsPtEfficiencyD, since binsPtMl is empty by default)
+  Configurable<std::vector<double>> mlScorePromptOrNonPromptMin{"mlScorePromptOrNonPromptMin", std::vector<double>(npTBinsEfficiency, 0.), "Minimum Machine learning scores for prompt or Feed-down, one per pT bin of the ML cuts"};
+  Configurable<std::vector<double>> mlScorePromptOrNonPromptMax{"mlScorePromptOrNonPromptMax", std::vector<double>(npTBinsEfficiency, 1.0), "Maximum Machine learning scores for prompt or Feed-down, one per pT bin of the ML cuts"};
+  Configurable<std::vector<double>> mlScoreBkg{"mlScoreBkg", std::vector<double>(npTBinsEfficiency, 0.5), "Machine learning scores for bkg, one per pT bin of the ML cuts"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{}, "pT bin limits for the ML cuts, defining also the accepted D+ pT range (if empty, binsPtEfficiencyD is used)"};
   // pT ranges of the signal and sideband regions (the pT axis of all the histograms is binsPtEfficiencyD), can be redefined via json files
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{ptBinsCorrelationsVec}, "pT bin limits for the signal and sideband regions"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle efficiency"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for efficiency and for the D+ pT axis of all the histograms"};
   Configurable<std::vector<double>> binsPtEfficiencyHad{"binsPtEfficiencyHad", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for associated particle efficiency"};
-  Configurable<std::vector<float>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for prompt D+ meson"};
-  Configurable<std::vector<float>> efficiencyFdD{"efficiencyFdD", {1., 1., 1., 1., 1., 1.}, "efficiency values for beauty feed-down D+ meson"};
-  Configurable<std::vector<float>> efficiencyHad{"efficiencyHad", {1., 1., 1., 1., 1., 1.}, "efficiency values for associated particles"};
+  Configurable<std::vector<float>> efficiencyD{"efficiencyD", std::vector<float>(npTBinsEfficiency, 1.f), "efficiency values for prompt D+ meson, one per pT bin of binsPtEfficiencyD"};
+  Configurable<std::vector<float>> efficiencyFdD{"efficiencyFdD", std::vector<float>(npTBinsEfficiency, 1.f), "efficiency values for beauty feed-down D+ meson, one per pT bin of binsPtEfficiencyD"};
+  Configurable<std::vector<float>> efficiencyHad{"efficiencyHad", {1., 1., 1., 1., 1.}, "efficiency values for associated particles, one per pT bin of binsPtEfficiencyHad"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
   Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInnerVec}, "Inner values of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuterVec}, "Outer values of signal region vs pT"};
@@ -138,7 +138,7 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
   Configurable<float> ptDaughterMin{"ptDaughterMin", 0.1, "min. daughter pT"};
-  Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
+  Configurable<int> nTpcCrossedRows{"nTpcCrossedRows", 70, "Number of crossed TPC Rows"};
   Configurable<float> cutCollPosZMc{"cutCollPosZMc", 10., "max z-vertex position for collision acceptance"};
   Configurable<bool> storeMassAxis{"storeMassAxis", false, "Store Mass axis in THnSparse"};
   Configurable<bool> storeBMotherInfo{"storeBMotherInfo", false, "Store generated pT(B mother) and phi(D+) - phi(B mother) of non-prompt D+ in MC Rec histograms"};
@@ -193,11 +193,11 @@ struct HfTaskCorrelationDplusHadrons {
     AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisDeltaEta = {binsEta, "#it{#eta}^{Hadron}-#it{#eta}^{D}"};
     AxisSpec axisDeltaPhi = {binsPhi, "#it{#varphi}^{Hadron}-#it{#varphi}^{D} (rad)"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
     AxisSpec axisDplusPrompt = {2, -0.5, 1.5, "Prompt D+"};
     AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
-    AxisSpec axisPtBMother = {(std::vector<double>)binsPtBMother, "#it{p}_{T}^{B} (GeV/#it{c})"};
+    AxisSpec axisPtBMother = {std::vector<double>(binsPtBMother), "#it{p}_{T}^{B} (GeV/#it{c})"};
     AxisSpec axisDeltaPhiBMother = {binsDeltaPhiBMother, "#it{#varphi}^{D}-#it{#varphi}^{B} (rad)"};
 
     // Histograms for data analysis
@@ -253,7 +253,7 @@ struct HfTaskCorrelationDplusHadrons {
       registry.add("hDeltaPhiPtIntSidebandRightMcRec", stringDHadron + "Right" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTH1F, {axisDeltaPhi}});
       registry.add("hCorrel2DVsPtSidebandRightMcRec", stringDHadron + "Right" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
       registry.add("hCorrel2DVsPtSignalRegionPromptDplusPromptHadronMcRec", stringDHadron + "signal region PromptD - Prompt Track MC reco", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
-      registry.add("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRec", stringDHadron + " signal region PromptD - NonPrompt Track MC reco", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+      registry.add("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRec", stringDHadron + " signal region NonPrompt - NonPrompt Track MC reco", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
 
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMcRec"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMcRec"))->Sumw2();
@@ -261,7 +261,6 @@ struct HfTaskCorrelationDplusHadrons {
       registry.get<THnSparse>(HIST("hCorrel2DVsPtBkgMcRec"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandLeftMcRec"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandRightMcRec"))->Sumw2();
-      registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMcRec"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"))->Sumw2();
 
       // beauty-mother information of non-prompt D+ (generated B, reconstructed D+)
@@ -269,7 +268,7 @@ struct HfTaskCorrelationDplusHadrons {
         registry.add("hMassNonPromptDplusVsPtVsPtBMother", "D+ non prompt candidates mass Vs Pt Vs Pt B mother", {HistType::kTH3F, {{axisMassD}, {axisPtD}, {axisPtBMother}}});
         registry.add("hDeltaPhiBMotherVsPtVsPtBMother", "D+ non prompt candidates #varphi^{D}-#varphi^{B} Vs Pt Vs Pt B mother", {HistType::kTH3F, {{axisDeltaPhiBMother}, {axisPtD}, {axisPtBMother}}});
         registry.add("hCorrel2DVsPtNonPromptDplusPhysicalPrimaryMcRecBMother", stringDHadron + "non-prompt D (only true primary particles)" + stringSignal, {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPtBMother}, {axisDeltaPhiBMother}}});
-        registry.add("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRecBMother", stringDHadron + "signal region NonPromptD - NonPrompt Track MC reco", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPtBMother}, {axisDeltaPhiBMother}}});
+        registry.add("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRecBMother", stringDHadron + "NonPrompt D - Non Prompt Track MC reco", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPtBMother}, {axisDeltaPhiBMother}}});
 
         registry.get<THnSparse>(HIST("hCorrel2DVsPtNonPromptDplusPhysicalPrimaryMcRecBMother"))->Sumw2();
         registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRecBMother"))->Sumw2();
@@ -279,7 +278,6 @@ struct HfTaskCorrelationDplusHadrons {
     if (fillHistoMcGen) {
       registry.add("hDeltaEtaPtIntMcGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {axisDeltaEta}});
       registry.add("hDeltaPhiPtIntMcGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {axisDeltaPhi}});
-      registry.add("hCorrel2DPtIntMcGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}});
       registry.add("hCorrel2DVsPtMcGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
       registry.add("hCorrel2DVsPtMcGenPrompt", stringDHadron + " Prompt MC Gen", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
       registry.add("hCorrel2DVsPtMcGenPromptDPromptHadron", stringDHadron + "prompt D prompt h MC Gen", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
@@ -337,8 +335,24 @@ struct HfTaskCorrelationDplusHadrons {
       LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
     }
 
-    // pT bins of the ML cuts, decoupled from the efficiency binning
     constexpr std::size_t NBinLimitsMin{2u}; // at least one pT bin
+
+    // efficiency values from configurables: one entry per pT bin
+    if ((applyEfficiency != 0) && !loadAccXEffFromCCDB) {
+      if (binsPtEfficiencyD->size() < NBinLimitsMin || binsPtEfficiencyHad->size() < NBinLimitsMin) {
+        LOGF(fatal, "binsPtEfficiencyD and binsPtEfficiencyHad must contain at least two pT bin limits");
+      }
+      std::size_t const nBinsPtEffD = binsPtEfficiencyD->size() - 1;
+      if (efficiencyD->size() != nBinsPtEffD || efficiencyFdD->size() != nBinsPtEffD) {
+        LOGF(fatal, "efficiencyD (%zu entries) and efficiencyFdD (%zu entries) must have one entry per pT bin of binsPtEfficiencyD (%zu bins)", efficiencyD->size(), efficiencyFdD->size(), nBinsPtEffD);
+      }
+      std::size_t const nBinsPtEffHad = binsPtEfficiencyHad->size() - 1;
+      if (efficiencyHad->size() != nBinsPtEffHad) {
+        LOGF(fatal, "efficiencyHad (%zu entries) must have one entry per pT bin of binsPtEfficiencyHad (%zu bins)", efficiencyHad->size(), nBinsPtEffHad);
+      }
+    }
+
+    // pT bins of the ML cuts, decoupled from the efficiency binning
     binsPtMlD = binsPtMl->empty() ? binsPtEfficiencyD.value : binsPtMl.value;
     if (binsPtMlD.size() < NBinLimitsMin) {
       LOGF(fatal, "binsPtMl (or binsPtEfficiencyD if binsPtMl is empty) must contain at least two pT bin limits");
@@ -463,7 +477,7 @@ struct HfTaskCorrelationDplusHadrons {
       if (!isSelectedMl(ptD, bdtScoreBkg, bdtScorePrompt, bdtScoreNonPrompt)) {
         continue;
       }
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
       double const efficiencyWeight = getEfficiencyWeight(ptD, isPromptAnalysis, ptHadron);
@@ -567,7 +581,7 @@ struct HfTaskCorrelationDplusHadrons {
       if (!isSelectedMl(ptD, bdtScoreBkg, bdtScorePrompt, bdtScoreNonPrompt)) {
         continue;
       }
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
       double const efficiencyWeight = getEfficiencyWeight(ptD, isDplusPrompt, ptHadron);
