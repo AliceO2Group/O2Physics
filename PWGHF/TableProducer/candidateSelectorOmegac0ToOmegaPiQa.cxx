@@ -720,7 +720,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       int statusOmegaC0ToOmegaPi = 0;
       outputMlOmegac.clear();
 
-      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi)) {
         hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);
         if (applyMl) {
           hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
