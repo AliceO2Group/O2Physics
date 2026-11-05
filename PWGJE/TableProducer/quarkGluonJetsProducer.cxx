@@ -39,6 +39,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TDatabasePDG.h>
 #include <TPDGCode.h>
 
 #include <Rtypes.h>
@@ -47,6 +48,8 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <tuple>
+#include <unordered_map>
 #include <vector>
 
 namespace o2::aod
@@ -94,7 +97,7 @@ using QGMLJet = QGMLJets::iterator;
 
 namespace qgmlconst
 {
-DECLARE_SOA_INDEX_COLUMN(QGMLJet, qGMLJet);
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(QGMLJet, qGMLJet, "QGMLJET");
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -117,6 +120,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPi, tofNSigmaPi, float);
 DECLARE_SOA_COLUMN(TofNSigmaKa, tofNSigmaKa, float);
 DECLARE_SOA_COLUMN(TofNSigmaPr, tofNSigmaPr, float);
 DECLARE_SOA_COLUMN(TofBeta, tofBeta, float);
+DECLARE_SOA_COLUMN(HasTruthMatch, hasTruthMatch, bool);
 DECLARE_SOA_COLUMN(TruthPdg, truthPdg, int32_t);
 DECLARE_SOA_COLUMN(TruthPt, truthPt, float);
 DECLARE_SOA_COLUMN(TruthEta, truthEta, float);
@@ -148,11 +152,96 @@ DECLARE_SOA_TABLE(QGMLConstituents, "AOD", "QGMLCONSTS",
                   qgmlconst::TofNSigmaKa,
                   qgmlconst::TofNSigmaPr,
                   qgmlconst::TofBeta,
+                  qgmlconst::HasTruthMatch,
                   qgmlconst::TruthPdg,
                   qgmlconst::TruthPt,
                   qgmlconst::TruthEta,
                   qgmlconst::TruthPhi,
                   qgmlconst::IsPhysicalPrimary);
+
+namespace qgmltruthjet
+{
+DECLARE_SOA_COLUMN(SourceMcCollisionId, sourceMcCollisionId, int64_t);
+DECLARE_SOA_COLUMN(SourceJetId, sourceJetId, int64_t);
+DECLARE_SOA_COLUMN(FlavorLabel, flavorLabel, int32_t);
+DECLARE_SOA_COLUMN(LeadingPartonPdg, leadingPartonPdg, int32_t);
+DECLARE_SOA_COLUMN(LeadingPartonPt, leadingPartonPt, float);
+DECLARE_SOA_COLUMN(LeadingPartonDeltaR, leadingPartonDeltaR, float);
+DECLARE_SOA_COLUMN(SubleadingPartonPdg, subleadingPartonPdg, int32_t);
+DECLARE_SOA_COLUMN(SubleadingPartonPt, subleadingPartonPt, float);
+DECLARE_SOA_COLUMN(SubleadingPartonDeltaR, subleadingPartonDeltaR, float);
+DECLARE_SOA_COLUMN(NPartonsInCone, nPartonsInCone, int32_t);
+DECLARE_SOA_COLUMN(LabelAmbiguous, labelAmbiguous, bool);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Area, area, float);
+DECLARE_SOA_COLUMN(Radius, radius, float);
+DECLARE_SOA_COLUMN(NConstituents, nConstituents, int32_t);
+DECLARE_SOA_COLUMN(NPions, nPions, int32_t);
+DECLARE_SOA_COLUMN(NKaons, nKaons, int32_t);
+DECLARE_SOA_COLUMN(NProtons, nProtons, int32_t);
+} // namespace qgmltruthjet
+DECLARE_SOA_TABLE(QGMLTruthJets, "AOD", "QGMLTJET",
+                  o2::soa::Index<>,
+                  qgmltruthjet::SourceMcCollisionId,
+                  qgmltruthjet::SourceJetId,
+                  qgmltruthjet::FlavorLabel,
+                  qgmltruthjet::LeadingPartonPdg,
+                  qgmltruthjet::LeadingPartonPt,
+                  qgmltruthjet::LeadingPartonDeltaR,
+                  qgmltruthjet::SubleadingPartonPdg,
+                  qgmltruthjet::SubleadingPartonPt,
+                  qgmltruthjet::SubleadingPartonDeltaR,
+                  qgmltruthjet::NPartonsInCone,
+                  qgmltruthjet::LabelAmbiguous,
+                  qgmltruthjet::Pt,
+                  qgmltruthjet::Eta,
+                  qgmltruthjet::Phi,
+                  qgmltruthjet::Area,
+                  qgmltruthjet::Radius,
+                  qgmltruthjet::NConstituents,
+                  qgmltruthjet::NPions,
+                  qgmltruthjet::NKaons,
+                  qgmltruthjet::NProtons);
+
+namespace qgmltruthconst
+{
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(QGMLTruthJet, qGMLTruthJet, "QGMLTJET");
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+DECLARE_SOA_COLUMN(DeltaR, deltaR, float);
+DECLARE_SOA_COLUMN(PtFraction, ptFraction, float);
+DECLARE_SOA_COLUMN(Pdg, pdg, int32_t);
+DECLARE_SOA_COLUMN(Charge, charge, float);
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
+} // namespace qgmltruthconst
+DECLARE_SOA_TABLE(QGMLTruthConstituents, "AOD", "QGMLTCONST",
+                  qgmltruthconst::QGMLTruthJetId,
+                  qgmltruthconst::Pt,
+                  qgmltruthconst::Eta,
+                  qgmltruthconst::Phi,
+                  qgmltruthconst::DeltaEta,
+                  qgmltruthconst::DeltaPhi,
+                  qgmltruthconst::DeltaR,
+                  qgmltruthconst::PtFraction,
+                  qgmltruthconst::Pdg,
+                  qgmltruthconst::Charge,
+                  qgmltruthconst::IsPhysicalPrimary);
+
+namespace qgmlmatch
+{
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(QGMLJet, qGMLJet, "QGMLJET");
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(QGMLTruthJet, qGMLTruthJet, "QGMLTJET");
+DECLARE_SOA_COLUMN(DeltaR, deltaR, float);
+} // namespace qgmlmatch
+DECLARE_SOA_TABLE(QGMLJetMatches, "AOD", "QGMLMATCH",
+                  qgmlmatch::QGMLJetId,
+                  qgmlmatch::QGMLTruthJetId,
+                  qgmlmatch::DeltaR);
 } // namespace o2::aod
 
 using namespace o2;
@@ -162,6 +251,11 @@ using namespace o2::framework;
 using MCDJetEvents = aod::JetCollisionsMCD;
 using ChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets,
                                  aod::ChargedMCDetectorLevelJetConstituents>;
+using ChargedMCPJets = soa::Join<aod::ChargedMCParticleLevelJets,
+                                 aod::ChargedMCParticleLevelJetConstituents>;
+using MatchedChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets,
+                                        aod::ChargedMCDetectorLevelJetConstituents,
+                                        aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
 using JetTrackRefs = soa::Join<aod::JetTracks, aod::JTrackPIs>;
 
 using HadronTracksMC = soa::Join<aod::Tracks,
@@ -181,6 +275,9 @@ using HadronTracksMC = soa::Join<aod::Tracks,
 struct QuarkGluonJetsProducer {
   Produces<aod::QGMLJets> qgMLJets;
   Produces<aod::QGMLConstituents> qgMLConstituents;
+  Produces<aod::QGMLTruthJets> qgMLTruthJets;
+  Produces<aod::QGMLTruthConstituents> qgMLTruthConstituents;
+  Produces<aod::QGMLJetMatches> qgMLJetMatches;
 
   static constexpr double JetRadiusTolerance = 1.e-3;
 
@@ -220,6 +317,11 @@ struct QuarkGluonJetsProducer {
   Configurable<bool> dropAmbiguousLabels{"dropAmbiguousLabels", false, "drop ambiguous labels"};
 
   Preslice<aod::JetParticles> mcParticlesPerCollision = aod::jmcparticle::mcCollisionId;
+  Preslice<ChargedMCPJets> truthJetsPerCollision = aod::jet::mcCollisionId;
+
+  Configurable<double> minTruthJetPt{"minTruthJetPt", 10.0, "minimum truth jet pT"};
+  Configurable<double> maxTruthJetPt{"maxTruthJetPt", 1000.0, "maximum truth jet pT"};
+  Configurable<bool> truthPhysicalPrimariesOnly{"truthPhysicalPrimariesOnly", true, "retain physical primaries only"};
 
   enum JetFlavor { UnknownJet = 0,
                    QuarkJet = 1,
@@ -340,7 +442,8 @@ struct QuarkGluonJetsProducer {
   }
 
   void process(MCDJetEvents::iterator const& collision,
-               ChargedMCDJets const& detectorLevelJets,
+               MatchedChargedMCDJets const& detectorLevelJets,
+               ChargedMCPJets const& truthJets,
                JetTrackRefs const&,
                HadronTracksMC const&,
                aod::JetParticles const& jetParticles,
@@ -357,6 +460,9 @@ struct QuarkGluonJetsProducer {
     if (std::abs(collision.posZ()) > zVtx) {
       return;
     }
+
+    const int64_t mcCollisionId = collision.mcCollisionId();
+    std::vector<std::tuple<int64_t, int64_t, float>> pendingMatches;
 
     for (auto const& jet : detectorLevelJets) {
       const double jetRadius = static_cast<double>(jet.r()) / 100.0;
@@ -427,6 +533,32 @@ struct QuarkGluonJetsProducer {
 
       const auto qgMLJetId = qgMLJets.lastIndex();
 
+      auto geoMatches = jet.matchedJetGeo_as<ChargedMCPJets>();
+      auto ptMatches = jet.matchedJetPt_as<ChargedMCPJets>();
+      float bestDR = std::numeric_limits<float>::infinity();
+      int64_t bestTruthSourceId = -1;
+      for (auto const& candidate : geoMatches) {
+        bool sharedMatch = false;
+        for (auto const& ptCandidate : ptMatches) {
+          if (candidate.globalIndex() == ptCandidate.globalIndex()) {
+            sharedMatch = true;
+            break;
+          }
+        }
+        if (!sharedMatch || candidate.mcCollisionId() != mcCollisionId) {
+          continue;
+        }
+        const auto dPhi = RecoDecay::constrainAngle(candidate.phi() - jet.phi(), -PI);
+        const float dR = std::hypot(candidate.eta() - jet.eta(), dPhi);
+        if (dR < bestDR) {
+          bestDR = dR;
+          bestTruthSourceId = candidate.globalIndex();
+        }
+      }
+      if (bestTruthSourceId >= 0) {
+        pendingMatches.emplace_back(qgMLJetId, bestTruthSourceId, bestDR);
+      }
+
       for (auto const& jtrack : jet.tracks_as<JetTrackRefs>()) {
         auto track = jtrack.track_as<HadronTracksMC>();
 
@@ -477,11 +609,97 @@ struct QuarkGluonJetsProducer {
           track.hasTOF() ? static_cast<float>(track.tofNSigmaKa()) : missingTOF,
           track.hasTOF() ? static_cast<float>(track.tofNSigmaPr()) : missingTOF,
           track.hasTOF() ? static_cast<float>(track.beta()) : missingTOF,
+          track.has_mcParticle(),
           truthPdg,
           truthPt,
           truthEta,
           truthPhi,
           isPhysicalPrimary);
+      }
+    }
+
+    auto truthJetsInCollision = truthJets.sliceBy(truthJetsPerCollision, mcCollisionId);
+    std::unordered_map<int64_t, int64_t> truthOutputIndex;
+    for (auto const& truthJet : truthJetsInCollision) {
+      const double radius = static_cast<double>(truthJet.r()) / 100.0;
+      if (std::abs(radius - static_cast<double>(rJet)) > JetRadiusTolerance) {
+        continue;
+      }
+      if (isppRefAnalysis && std::abs(truthJet.eta()) > cfgEtaJetMax) {
+        continue;
+      }
+      if (!isppRefAnalysis && std::abs(truthJet.eta()) + radius > maxEta - deltaEtaEdge) {
+        continue;
+      }
+      if (truthJet.pt() < minTruthJetPt || truthJet.pt() > maxTruthJetPt) {
+        continue;
+      }
+      if (applyAreaCut && truthJet.area() / (PI * radius * radius) < minNormalizedJetArea) {
+        continue;
+      }
+
+      struct SelectedTruthParticle {
+        float pt, eta, phi, charge;
+        int32_t pdg;
+        bool primary;
+      };
+      std::vector<SelectedTruthParticle> selected;
+      int32_t nPions = 0, nKaons = 0, nProtons = 0;
+      for (auto const& particle : truthJet.tracks_as<aod::JetParticles>()) {
+        if (truthPhysicalPrimariesOnly && !particle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (particle.pt() < minPt || particle.pt() > maxPt ||
+            particle.eta() < minEta || particle.eta() > maxEta) {
+          continue;
+        }
+        auto* pdgInfo = TDatabasePDG::Instance()->GetParticle(particle.pdgCode());
+        if (!pdgInfo) {
+          continue;
+        }
+        const float charge = static_cast<float>(pdgInfo->Charge() / 3.0);
+        if (std::abs(charge) < 0.5f) {
+          continue;
+        }
+        const int apdg = std::abs(particle.pdgCode());
+        nPions += (apdg == 211);
+        nKaons += (apdg == 321);
+        nProtons += (apdg == 2212);
+        selected.push_back({particle.pt(), particle.eta(), particle.phi(), charge,
+                            particle.pdgCode(), particle.isPhysicalPrimary()});
+      }
+      if (selected.empty()) {
+        continue;
+      }
+      auto collisionParticles = jetParticles.sliceBy(mcParticlesPerCollision, mcCollisionId);
+      auto flavor = getJetFlavorTag(truthJet, collisionParticles);
+      if (dropUnknownLabels && flavor.flavor == UnknownJet) {
+        continue;
+      }
+      if (dropAmbiguousLabels && flavor.ambiguous) {
+        continue;
+      }
+      qgMLTruthJets(mcCollisionId, truthJet.globalIndex(),
+                    flavor.flavor, flavor.leadingPartonPdg, flavor.leadingPartonPt,
+                    flavor.leadingPartonDeltaR, flavor.subleadingPartonPdg,
+                    flavor.subleadingPartonPt, flavor.subleadingPartonDeltaR,
+                    flavor.nPartonsInCone, flavor.ambiguous,
+                    truthJet.pt(), truthJet.eta(), truthJet.phi(), truthJet.area(),
+                    radius, static_cast<int32_t>(selected.size()), nPions, nKaons, nProtons);
+      const auto truthOutputId = qgMLTruthJets.lastIndex();
+      truthOutputIndex.emplace(truthJet.globalIndex(), truthOutputId);
+      for (auto const& part : selected) {
+        const float dEta = part.eta - truthJet.eta();
+        const float dPhi = RecoDecay::constrainAngle(part.phi - truthJet.phi(), -PI);
+        qgMLTruthConstituents(truthOutputId, part.pt, part.eta, part.phi,
+                              dEta, dPhi, std::hypot(dEta, dPhi),
+                              truthJet.pt() > 0 ? part.pt / truthJet.pt() : 0.f,
+                              part.pdg, part.charge, part.primary);
+      }
+    }
+    for (auto const& [recoOutputId, sourceTruthId, dR] : pendingMatches) {
+      if (auto it = truthOutputIndex.find(sourceTruthId); it != truthOutputIndex.end()) {
+        qgMLJetMatches(recoOutputId, it->second, dR);
       }
     }
   }
