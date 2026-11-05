@@ -80,9 +80,10 @@ class HfcFlowHelper
   /// \param mlClasses are the machine learning classes
   /// \param maxRapidity is the maximum rapidity
   void init(o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdbService,
-    o2::framework::HistogramRegistry& histRegistry,
-    std::vector<unsigned int> mlClasses,
-    float maxRapidity) {
+            o2::framework::HistogramRegistry& histRegistry,
+            std::vector<unsigned int> mlClasses,
+            float maxRapidity)
+  {
 
     LOG(info) << "Initializing HFC flow helper!";
     this->hfEvSel.addHistograms(histRegistry);
@@ -222,5 +223,5 @@ class HfcFlowHelper
   float yCandMax{-999.f};
 };
 
-} // namespace o2::analysis::hfc_utils_flow
+} // namespace o2::hfc_utils_flow
 #endif // PWGHF_HFC_UTILS_UTILSFLOW_H_
