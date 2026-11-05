@@ -171,16 +171,16 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
     switch (histoType) {
       case kTH1:
-        object = ccdb->getForTimeStamp<TH1F>(path, timestampCcdb);
+        object = ccdb->getForTimeStamp<TH1F>(Form("%s/TH1/", path.c_str()), timestampCcdb);
         break;
       case kTH2:
-        object = ccdb->getForTimeStamp<TH2F>(path, timestampCcdb);
+        object = ccdb->getForTimeStamp<TH2F>(Form("%s/TH2/", path.c_str()), timestampCcdb);
         break;
       case kTH3:
-        object = ccdb->getForTimeStamp<TH3F>(path, timestampCcdb);
+        object = ccdb->getForTimeStamp<TH3F>(Form("%s/TH3/", path.c_str()), timestampCcdb);
         break;
       case kTHnSparse:
-        object = ccdb->getForTimeStamp<THnSparseF>(path, timestampCcdb);
+        object = ccdb->getForTimeStamp<THnSparseF>(Form("%s/THnSparse/", path.c_str()), timestampCcdb);
         break;
       default:
         LOGF(fatal, "Invalid efficiency histogram type: %d", histoType);
@@ -200,14 +200,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     }
     if (!selCentrality && !selMultiplicity) {
       LOGP(fatal, "You must select events based on either centrality or multiplicity! Please check your configuration!");
-    }
-
-    // Fatal if selCentrality and process functions using multiplicity mixing, or selMultiplicity and process functions using centrality mixing
-    if (selCentrality && (doprocessSECharmHadWMultMix || doprocessMECharmHadWMultMix || doprocessSEHadHadWMultMix || doprocessMEHadHadWMultMix)) {
-      LOGP(fatal, "You cannot select events based on centrality and process functions using multiplicity mixing! Please check your configuration!");
-    }
-    if (selMultiplicity && (doprocessSECharmHadWCentMix || doprocessMECharmHadWCentMix || doprocessSEHadHadWCentMix || doprocessMEHadHadWCentMix)) {
-      LOGP(fatal, "You cannot select events based on multiplicity and process functions using centrality mixing! Please check your configuration!");
     }
 
     if ((doprocessSECharmHadWCentMix && doprocessMECharmHadWMultMix) ||
@@ -245,13 +237,13 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     const AxisSpec axisMlTwo{binsMlTwo, "bdtScore1"};
 
     // Histograms for data analysis
-    if (doprocessSECharmHadWCentMix || doprocessSEHadHadWCentMix) {
+    if (doprocessSECharmHadWCentMix || doprocessSECharmHadWCentMixWEffInfo || doprocessSEHadHadWCentMix) {
       registry.add("hCentPoolBinSE", "Centrality SE", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
-    } else if (doprocessSECharmHadWMultMix || doprocessSEHadHadWMultMix) {
+    } else if (doprocessSECharmHadWMultMix || doprocessSECharmHadWMultMixWEffInfo || doprocessSEHadHadWMultMix) {
       registry.add("hMultFT0MPoolBinSE", "Multiplicity FT0M SE", {HistType::kTH2F, {{axisMultFT0M}, {axisPoolBin}}});
-    } else if (doprocessMECharmHadWCentMix || doprocessMEHadHadWCentMix) {
+    } else if (doprocessMECharmHadWCentMix || doprocessMECharmHadWCentMixWEffInfo || doprocessMEHadHadWCentMix) {
       registry.add("hCentPoolBinME", "Centrality ME", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
-    } else if (doprocessMECharmHadWMultMix || doprocessMEHadHadWMultMix) {
+    } else if (doprocessMECharmHadWMultMix || doprocessMECharmHadWMultMixWEffInfo || doprocessMEHadHadWMultMix) {
       registry.add("hMultFT0MPoolBinME", "Multiplicity FT0M ME", {HistType::kTH2F, {{axisMultFT0M}, {axisPoolBin}}});
     }
     registry.add("hZVtxPoolBinSE", "z vertex SE", {HistType::kTH2F, {{axisPosZ}, {axisPoolBin}}});
@@ -277,23 +269,28 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       }
     } else {
       axes.insert(axes.end(), {axisInvMass, axisMlOne, axisMlTwo});
-      if (doprocessSECharmHadWCentMix || doprocessSECharmHadWMultMix) {
+      if (doprocessSECharmHadWCentMix || doprocessSECharmHadWCentMixWEffInfo || doprocessSECharmHadWMultMix || doprocessSECharmHadWMultMixWEffInfo) {
         registry.add("hSparseCorrelationsSECharmHad", "THn for SE Charm-Had correlations", HistType::kTHnSparseF, axes);
         if (doEfficiencyCorrection) {
           registry.get<THnSparse>(HIST("hSparseCorrelationsSECharmHad"))->Sumw2();
         }
-      } else if (doprocessMECharmHadWCentMix || doprocessMECharmHadWMultMix) {
+      } else if (doprocessMECharmHadWCentMix || doprocessMECharmHadWMultMixWEffInfo || doprocessMECharmHadWMultMix || doprocessMECharmHadWCentMixWEffInfo) {
         registry.add("hSparseCorrelationsMECharmHad", "THn for ME Charm-Had correlations", HistType::kTHnSparseF, axes);
         if (doEfficiencyCorrection) {
           registry.get<THnSparse>(HIST("hSparseCorrelationsMECharmHad"))->Sumw2();
         }
       }
-      if (doprocessCharmTriggers) {
+      if (doprocessCharmTriggers || doprocessCharmTriggersWEffInfo) {
         registry.add("hSparseTrigCandsCharm", "THn for Charm trigger candidates", HistType::kTHnSparseF, axesTrigger);
         if (doEfficiencyCorrection) {
           registry.get<THnSparse>(HIST("hSparseTrigCandsCharm"))->Sumw2();
         }
       }
+    }
+
+    if (doEfficiencyCorrection) {
+      hEffPrompt = loadEfficiencyHistogram(promptEffCcdbPath, effHistTypeCharm);
+      hEffAssoc = loadEfficiencyHistogram(assocEffCcdbPath, effHistTypeAssoc);
     }
   }
 
@@ -314,17 +311,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       auto collision = cand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
       kineFeatures = {cand.ptAssoc(), cand.etaAssoc(), cand.phiAssoc(), collision.posZ()};
     }
-
-    // // Charm triggers
-    // {ptTrig, trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(), trigCand.etaTrig(), trigCand.phiTrig()}
-    // {ptTrig, trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(), getEta(trigCand), getPhi(trigCand)}
-    // {trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(), trigCand.etaTrig(), trigCand.phiTrig()}
-    // // Had triggers
-    // {ptTrig, trigCand.etaTrig(), trigCand.phiTrig(), collision.posZ()}
-    // {ptTrig, getEta(trigCand), getPhi(trigCand), trigColl.posZ()}
-    // // Had associated tracks
-    // {pair.ptAssoc(), pair.etaAssoc(), pair.phiAssoc(), collision.posZ()}
-    // {getPt(assocTrack), getEta(assocTrack), getPhi(assocTrack), assocColl.posZ()}
 
     switch (histoType) {
 
@@ -661,7 +647,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     auto trigCand = pair.template hfcRedTrigCharm_as<TrigCharmCands>();
     fillSameEvent<true>(pair, trigCand, binPolicyPosZCent);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSECharmHadWCentMixWEffInfo, "Process Same Event for Charm-Had with centrality pools", true);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSECharmHadWCentMixWEffInfo, "Process Same Event for Charm-Had with centrality pools", false);
 
   void processSEHadHadWCentMix(SameEvtPairsHadHad::iterator const& pair,
                                       aod::HfcRedTrigTracks const&,
@@ -684,9 +670,20 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMECharmHadWCentMix, "Process Mixed Event for Charm-Had with centrality pools", false);
 
-  void processMECharmHadWMultMix(aod::HfcRedCorrColls const& collisions,
+  void processMECharmHadWCentMixWEffInfo(aod::HfcRedCorrColls const& collisions,
                                          TrigCharmCands const& candidates,
                                          AssocTracks const& tracks)
+  {
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
+    auto pairsTuple = std::make_tuple(candidates, tracks);
+    Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningCentPosZ> const pairs{binPolicyPosZCent, numberEventsMixed, -1, collisions, pairsTuple, &cache};
+    fillMixedEvent<true>(pairs, binPolicyPosZCent);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMECharmHadWCentMixWEffInfo, "Process Mixed Event for Charm-Had with centrality pools and efficiency information", false);
+
+  void processMECharmHadWMultMix(aod::HfcRedCorrColls const& collisions,
+                                 TrigCharmCands const& candidates,
+                                 AssocTracks const& tracks)
   {
     BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto pairsTuple = std::make_tuple(candidates, tracks);
@@ -694,6 +691,17 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     fillMixedEvent<false>(pairs, binPolicyPosZMult);
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMECharmHadWMultMix, "Process Mixed Event for Charm-Had with multiplicity pools", false);
+
+  void processMECharmHadWMultMixWEffInfo(aod::HfcRedCorrColls const& collisions,
+                                         TrigCharmCands const& candidates,
+                                         AssocTracks const& tracks)
+  {
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
+    auto pairsTuple = std::make_tuple(candidates, tracks);
+    Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningMultPosZ> const pairs{binPolicyPosZMult, numberEventsMixed, -1, collisions, pairsTuple, &cache};
+    fillMixedEvent<true>(pairs, binPolicyPosZMult);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMECharmHadWMultMixWEffInfo, "Process Mixed Event for Charm-Had with multiplicity pools and efficiency information", false);
 
   void processMEHadHadWCentMix(aod::HfcRedCorrColls const& collisions,
                                AssocTracks const& tracks)
@@ -728,7 +736,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         continue;
       }
 
-      std::vector<double> values = {trigCand.ptTrig(), trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig()};
+      std::vector<double> values = {trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig()};
       registry.get<THnSparse>(HIST("hSparseTrigCandsCharm"))->Fill(values.data());
     }
   }
@@ -752,7 +760,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         LOGF(warn, "Invalid efficiency value for trigger candidate: effTrig = %f", effTrig);
         continue;
       }
-      std::vector<double> values = {trigCand.ptTrig(), trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig()};
+      std::vector<double> values = {trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig()};
       double weight = doEfficiencyCorrection ? 1. / effTrig : 1.;
       registry.get<THnSparse>(HIST("hSparseTrigCandsCharm"))->Fill(values.data(), weight);
     }
