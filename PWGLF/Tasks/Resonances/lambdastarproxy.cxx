@@ -1064,9 +1064,9 @@ struct Lambdastarproxy {
   static constexpr double MultMax = 100.;
   static constexpr std::array<const char*, 2> PairSigns{"Unlike", "Like"};
   static constexpr std::array<const char*, 2> ProbeRoles{"De", "Ka"};
-  static constexpr std::array<const char*, ParentClasses> ParentNames{
-    "no retained common mother", "K0S", "Lambda1115", "Kstar", "phi", "Lambda1520",
-    "other retained common mother", "multiple retained common mothers", "same MC particle", "invalid truth labels"};
+  // Parent tags: 0=no common mother, 1=K0S, 2=Lambda1115, 3=Kstar, 4=phi,
+  // 5=Lambda1520, 6=other common mother, 7=multiple common mothers,
+  // 8=same MC particle, 9=invalid truth labels.
 
   std::array<std::shared_ptr<TH3>, 2> mcProxySpecies{};
   std::array<std::shared_ptr<TH3>, 2> mcProxyOtherParents{};
@@ -1224,7 +1224,7 @@ struct Lambdastarproxy {
     uint64_t payload = 0;
     // Keep these numerically filled TH3 axes unlabelled. ROOT label-mode merges
     // can collapse distinct Z tags, especially through empty/staged merges.
-    // SpeciesNames/ParentNames and the packed-axis formulas define the decoder.
+    // SpeciesNames, the parent-tag comments and packed-axis formulas define the decoder.
     auto add3 = [&](std::string const& name, std::string const& title, std::vector<AxisSpec> const& axes) {
       auto h = histos.add<TH3>(name.c_str(), title.c_str(), HistType::kTH3D, axes, true);
       payload += static_cast<uint64_t>(h->GetNcells()) * 2 * sizeof(double);
