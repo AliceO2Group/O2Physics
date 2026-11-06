@@ -1535,7 +1535,7 @@ struct tofSpectra {
       }
       // trackwoCut++;
       if (!passesDCAxyCut(track)) { // Skipping tracks that don't pass the standard cuts
-	continue;
+        continue;
       }
       // trackwCut++;
       const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
@@ -1601,71 +1601,71 @@ struct tofSpectra {
           }
         }
 
-	// TOF Selection and Histogram Filling
-	// RL TOF selections: same cut for TRD as inclusive analysis.
-	if (!track.hasTOF()) {
-	  continue;
-	}
-	
-	if (trkselOptions.requireTrdOnly && !track.hasTRD()) {
-	  continue;
-	}
-	
-	if (trkselOptions.requireNoTrd && track.hasTRD()) {
-	  continue;
-	}
-	
-	if (track.hasTRD() && trkselOptions.lastRequiredTrdCluster > 0) {
-	  int lastLayer = 0;
-	  for (int layer = 7; layer >= 0; --layer) {
-	    if (track.trdPattern() & (1 << layer)) {
-	      lastLayer = layer;
-	      break;
-	    }
-	  }
-	  
-	  if (lastLayer < trkselOptions.lastRequiredTrdCluster) {
-	    continue;
-	  }
-	}
-	
-	// RL: add an selection in the selection event time
-	
-	switch (trkselOptions.selectEvTime) {
-	case 0:
-	  break; // No selection
-	case 1:
-	  if (!track.isEvTimeDefined()) {
-	    continue;
-	  }
-	  break;
-	case 2:
-	  if (!track.isEvTimeTOF()) {
-	    continue;
-	  }
-	  break;
-	case 3:
-	  if (!track.isEvTimeT0AC()) {
-	    continue;
-	  }
-	  break;
-	case 4:
-	  if (!track.isEvTimeTOFT0AC()) {
-	    continue;
-	  }
-	  break;
-	case 5:
-	  if (track.isEvTimeDefined()) {
-	    continue;
-	  }
-	  break;
-	default:
-	  LOG(fatal) << "Valore selectEvTime non riconosciuto: "
-		     << trkselOptions.selectEvTime;
-	}
-	
-	//
-	
+        // TOF Selection and Histogram Filling
+        // RL TOF selections: same cut for TRD as inclusive analysis.
+        if (!track.hasTOF()) {
+          continue;
+        }
+
+        if (trkselOptions.requireTrdOnly && !track.hasTRD()) {
+          continue;
+        }
+
+        if (trkselOptions.requireNoTrd && track.hasTRD()) {
+          continue;
+        }
+
+        if (track.hasTRD() && trkselOptions.lastRequiredTrdCluster > 0) {
+          int lastLayer = 0;
+          for (int layer = 7; layer >= 0; --layer) {
+            if (track.trdPattern() & (1 << layer)) {
+              lastLayer = layer;
+              break;
+            }
+          }
+
+          if (lastLayer < trkselOptions.lastRequiredTrdCluster) {
+            continue;
+          }
+        }
+
+        // RL: add an selection in the selection event time
+
+        switch (trkselOptions.selectEvTime) {
+          case 0:
+            break; // No selection
+          case 1:
+            if (!track.isEvTimeDefined()) {
+              continue;
+            }
+            break;
+          case 2:
+            if (!track.isEvTimeTOF()) {
+              continue;
+            }
+            break;
+          case 3:
+            if (!track.isEvTimeT0AC()) {
+              continue;
+            }
+            break;
+          case 4:
+            if (!track.isEvTimeTOFT0AC()) {
+              continue;
+            }
+            break;
+          case 5:
+            if (track.isEvTimeDefined()) {
+              continue;
+            }
+            break;
+          default:
+            LOG(fatal) << "Valore selectEvTime non riconosciuto: "
+                       << trkselOptions.selectEvTime;
+        }
+
+        //
+
         if (isTOFPion && rapidityPi >= trkselOptions.cfgCutYMin && rapidityPi <= trkselOptions.cfgCutYMax) {
           if (usePDGcode) {
             if (pdgCode == kPiPlus) {
