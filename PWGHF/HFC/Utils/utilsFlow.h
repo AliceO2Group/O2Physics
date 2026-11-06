@@ -17,31 +17,19 @@
 #define PWGHF_HFC_UTILS_UTILSFLOW_H_
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
-#include "Common/Core/RecoDecay.h"
-
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TPDGCode.h>
-
 #include <cmath>
-#include <cstddef>
-#include <cstdint>
 #include <utility>
 #include <vector>
 
