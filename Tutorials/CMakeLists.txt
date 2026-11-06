@@ -60,7 +60,8 @@ o2physics_add_dpl_workflow(dynamic-columns
 o2physics_add_dpl_workflow(histograms
                   SOURCES src/histograms.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework
-                  COMPONENT_NAME AnalysisTutorial)
+                  COMPONENT_NAME AnalysisTutorial
+                  WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(histograms-full-tracks
                   SOURCES src/histogramsFullTracks.cxx
