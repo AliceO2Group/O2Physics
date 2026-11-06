@@ -889,7 +889,6 @@ class OccupancyCalculator
   int64_t getRofId(int64_t globalBC) const { return (globalBC + nBCsPerOrbit - mRofOffset) / mRofLength; }
 }; // end OccupancyCalculator
 
-
 // EventSelectionModule
 class EventSelectionModule
 {
