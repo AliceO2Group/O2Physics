@@ -35,7 +35,6 @@
 #include <TCollection.h>
 #include <TFile.h>
 #include <TH1.h>
-#include <TH2.h>
 #include <TList.h>
 #include <TString.h>
 #include <TSystem.h>
