@@ -74,9 +74,6 @@ using MCPV0JetsWithConstituents = soa::Join<aod::V0ChargedMCParticleLevelJets, a
 using MatchedMCDV0Jets = soa::Join<aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCPV0JetsWithConstituents = soa::Join<aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetConstituents, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
 
-// PWGJE MC collisions and their indices to the original AO2D MC collisions.
-using JetMcCollisionsWithPIs = soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>;
-
 struct LfJetSpectra {
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -1083,19 +1080,19 @@ struct LfJetSpectra {
 
   // MC detector level: reconstructed V0s (efficiency numerators, feed-down) and generated V0s in the reconstructed
   // events (efficiency denominators), in jets and in the UE of the reconstructed jets
-  void processMCReco(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, JetMcCollisionsWithPIs const&, MCDV0JetsWithConstituents const& v0jets,
+  void processMCReco(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MCDV0JetsWithConstituents const& v0jets,
                      aod::CandidatesV0MCD const& v0s, aod::JetTracks const& tracks, aod::JetParticles const& jetParticles)
   {
     if (!jcoll.has_mcCollision() || !isSelectedCollision(jcoll, jetFinderConfigDet)) {
       return;
     }
-    const auto mcCollision = jcoll.mcCollision_as<JetMcCollisionsWithPIs>();
+    const auto mcCollision = jcoll.mcCollision_as<aod::JetMcCollisions>();
     const float multiplicity = mcCollision.centFT0M();
     const float weight = mcCollision.weight();
     registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity, weight);
 
     // Generated particles of the MC collision associated to the reconstructed collision
-    const auto genV0s = jetParticles.sliceBy(particlesPerMcCollision, mcCollision.mcCollisionId());
+    const auto genV0s = jetParticles.sliceBy(particlesPerMcCollision, mcCollision.globalIndex());
 
     const auto jetFinderV0s = buildDetectorLevelInput(v0s, tracks);
 
@@ -1180,7 +1177,7 @@ struct LfJetSpectra {
   PROCESS_SWITCH(LfJetSpectra, processMCReco, "V0s in jets and in the UE, MC detector level (efficiency and feed-down)", false);
 
   // MC particle level: generated V0s in particle-level jets and in their UE (defined as in data), and in the full event
-  void processMCGen(soa::Filtered<JetMcCollisionsWithPIs>::iterator const& mcCollision, MCPV0JetsWithConstituents const& v0jets,
+  void processMCGen(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, MCPV0JetsWithConstituents const& v0jets,
                     aod::CandidatesV0MCP const& v0s, aod::JetParticles const& particles)
   {
     if (!jetderiveddatautilities::selectCollision(mcCollision, jetFinderConfigGen.eventSelectionBits, jetFinderConfigGen.skipMBGapEvents, jetFinderConfigGen.applyRCTSelections)) {
@@ -1190,7 +1187,7 @@ struct LfJetSpectra {
     const float weight = mcCollision.weight();
     registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), multiplicity, weight);
 
-    const auto genV0s = particles.sliceBy(particlesPerMcCollision, mcCollision.mcCollisionId());
+    const auto genV0s = particles.sliceBy(particlesPerMcCollision, mcCollision.globalIndex());
     for (const auto& genV0 : genV0s) {
       if (std::abs(genV0.eta()) < inclusiveEtaMax) {
         fillMCGenV0<kGenFullEvent>(genV0, multiplicity, weight);
@@ -1253,14 +1250,14 @@ struct LfJetSpectra {
   // Detector-level jets of the reconstructed collision and particle-level jets matched to them. The background is
   // estimated at each level from the jet finder input of that level (particle level: MC collision associated to the
   // reconstructed collision), as in processMCReco and processMCGen. Detector-level side: response and matching purity
-  void processMCResponse(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, JetMcCollisionsWithPIs const&, MatchedMCDV0Jets const& mcdJets,
+  void processMCResponse(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& mcdJets,
                          aod::CandidatesV0MCD const& v0s, aod::JetTracks const& tracks,
                          MatchedMCPV0JetsWithConstituents const& mcpJets, aod::CandidatesV0MCP const& v0sMCP, aod::JetParticles const& particles)
   {
     if (!jcoll.has_mcCollision() || !isSelectedCollision(jcoll, jetFinderConfigDet)) {
       return;
     }
-    const auto mcCollision = jcoll.mcCollision_as<JetMcCollisionsWithPIs>();
+    const auto mcCollision = jcoll.mcCollision_as<aod::JetMcCollisions>();
     if (std::abs(mcCollision.posZ()) >= vertexZCut ||
         !jetderiveddatautilities::selectCollision(mcCollision, jetFinderConfigGen.eventSelectionBits, jetFinderConfigGen.skipMBGapEvents, jetFinderConfigGen.applyRCTSelections)) {
       return;
@@ -1303,7 +1300,7 @@ struct LfJetSpectra {
 
   // Particle-level side of the jet pT response: matching efficiency of the particle-level jets in acceptance (matched to a
   // detector-level jet in acceptance, in a reconstructed collision passing the event selection of processMCResponse)
-  void processMCResponseGen(soa::Filtered<JetMcCollisionsWithPIs>::iterator const& mcCollision, MatchedMCPV0JetsWithConstituents const& mcpJets,
+  void processMCResponseGen(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, MatchedMCPV0JetsWithConstituents const& mcpJets,
                             aod::CandidatesV0MCP const& v0s, aod::JetParticles const& particles,
                             soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, MatchedMCDV0Jets const&)
   {
@@ -1312,7 +1309,7 @@ struct LfJetSpectra {
     }
     const float weight = mcCollision.weight();
 
-    // Reconstructed collisions of this MC collision passing the event selection
+    // SmallGroups contains the reconstructed collisions linked to this JetMcCollision.
     std::unordered_set<int> selectedCollisions;
     for (const auto& collision : collisions) {
       if (std::abs(collision.posZ()) < vertexZCut && isSelectedCollision(collision, jetFinderConfigDet)) {
