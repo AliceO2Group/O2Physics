@@ -623,8 +623,9 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"zorro"};
     // Zorro
-    Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Use the pair-specific fHe or fTritonFemto Zorro trigger"};
-    Configurable<bool> settingUseHighFt0MultTrigger{"settingUseHighFt0MultTrigger", false, "Select events with the fHighFt0Mult Zorro trigger instead of the pair-specific trigger"};
+    Configurable<bool> settingEnableTriggerSelection{"settingEnableTriggerSelection", false, "Enable Zorro event selection for the configured software triggers"};
+    Configurable<std::string> settingSoftwareTriggerNames{"settingSoftwareTriggerNames", "fHighFt0Mult", "Software trigger names, separated by commas (OR selection)"};
+    Configurable<std::string> settingBaseCCDBPathForTriggers{"settingBaseCCDBPathForTriggers", "EventFiltering/Zorro/", "CCDB path for Zorro trigger information"};
   } zorro;
 
   struct : o2::framework::ConfigurableGroup {
@@ -1043,7 +1044,8 @@ struct HadNucleiFemto {
     }
     if constexpr (!isMC) {
       if (useZorroSelection()) {
-        mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorroTriggerMask());
+        mZorro.setBaseCCDBPath(zorro.settingBaseCCDBPathForTriggers.value);
+        mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorro.settingSoftwareTriggerNames.value);
         mZorro.populateHistRegistry(mQaRegistry, bc.runNumber());
       }
     }
@@ -1288,21 +1290,9 @@ struct HadNucleiFemto {
     return species.settingNuPDGCode.value == He3PDG;
   }
 
-  const char* zorroTriggerMask() const
-  {
-    if (zorro.settingUseHighFt0MultTrigger.value) {
-      return "fHighFt0Mult";
-    }
-    if (useTritonNucleus()) {
-      return "fTritonFemto";
-    }
-    return "fHe";
-  }
-
   bool useZorroSelection() const
   {
-    return zorro.settingUseHighFt0MultTrigger.value ||
-           (zorro.settingSkimmedProcessing.value && (useHelium3Nucleus() || useTritonNucleus()));
+    return zorro.settingEnableTriggerSelection.value;
   }
 
   const char* nucleusBetheBlochLabel() const
