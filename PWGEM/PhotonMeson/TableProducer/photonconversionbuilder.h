@@ -1133,7 +1133,7 @@ struct PhotonConversionBuilder {
     const bool cacheDca = modeTrackPropagation == TrackPropMode::kProper;
     std::optional<o2::track::TrackParCov> posAtDca, eleAtDca; // legs at their DCA to the vertex (reused for phi_V / psi_pair)
     const LegDcaKey posKey{pos.globalIndex(), collision.globalIndex(), pvX, pvY, pvZ, sideBased};
-    const LegAtDca* posCached = nullptr; // this leg at its DCA, if already propagated in this DF
+    const LegAtDca* posCached = nullptr;
     if (cacheDca) {
       if (const auto it = mLegDcaCache.find(posKey); it != mLegDcaCache.end()) {
         posCached = &it->second;
@@ -1177,7 +1177,7 @@ struct PhotonConversionBuilder {
       return;
     }
     const LegDcaKey eleKey{ele.globalIndex(), collision.globalIndex(), pvX, pvY, pvZ, sideBased};
-    const LegAtDca* eleCached = nullptr; // this leg at its DCA, if already propagated in this DF
+    const LegAtDca* eleCached = nullptr;
     if (cacheDca) {
       if (const auto it = mLegDcaCache.find(eleKey); it != mLegDcaCache.end()) {
         eleCached = &it->second;
@@ -2904,7 +2904,9 @@ struct PhotonConversionBuilder {
         const float psi0 = std::atan2(x0[1] - circle.yC, x0[0] - circle.xC);
         const float sense = ((x0[0] - circle.xC) * p0[1] - (x0[1] - circle.yC) * p0[0]) > 0.f ? 1.f : -1.f; // direction of motion on the circle
         const float tgl = par.getTgl(), norm = std::sqrt(1.f + tgl * tgl);
-        for (float s = -MaxArcCm; s <= MaxArcCm; s += StepCm) {
+        constexpr int NSteps = static_cast<int>((MaxArcCm + MaxArcCm) / StepCm);
+        for (int iStep = 0; iStep <= NSteps; ++iStep) {
+          const float s = -MaxArcCm + static_cast<float>(iStep) * StepCm;
           const float psi = psi0 + sense * s / circle.rC;
           const std::array<float, 3> h{circle.xC + circle.rC * std::cos(psi), circle.yC + circle.rC * std::sin(psi), x0[2] + tgl * s};
           const float rH = std::hypot(h[0], h[1]);
@@ -3678,7 +3680,7 @@ struct PhotonConversionBuilder {
             auto trial = [&](FitOptions const& o) {
               const size_t n0 = vecV0Dedup.size();
               fitV0Candidate<false, void, TMixCollisions, TMixLegs>(collision, pos, ele, -1, false, o);
-              // cppcheck-suppress knownConditionTrueFalse ; fitV0Candidate appends the candidate to vecV0Dedup if it passes
+              // cppcheck-suppress knownConditionTrueFalse
               if (vecV0Dedup.size() > n0) {
                 const auto k = keyOf(vecV0Dedup.back());
                 pca_map.erase(k);

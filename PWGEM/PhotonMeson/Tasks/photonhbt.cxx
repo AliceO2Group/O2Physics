@@ -69,6 +69,7 @@
 #include <deque>
 #include <functional>
 #include <initializer_list>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <random>
@@ -4698,7 +4699,7 @@ struct Photonhbt {
       if (cls == 16.f || cls == 5.f) { // o2-linter: disable=magic-number (bremsstrahlung classes)
         // x = leg of the bremsstrahlung photon, y = the radiating electron (a leg of the partner photon): x's grandmother is y
         const PcLeg *x = nullptr, *y = nullptr;
-        const std::array<std::pair<const PcPhoton*, const PcPhoton*>, 2> orders{{{&a, &b}, {&b, &a}}}; // both photon orders
+        const std::array<std::pair<const PcPhoton*, const PcPhoton*>, 2> orders{{{&a, &b}, {&b, &a}}};
         for (const auto& [p1, p2] : orders) {
           for (const auto* l1 : {&p1->pos, &p1->ele}) {
             for (const auto* l2 : {&p2->pos, &p2->ele}) {

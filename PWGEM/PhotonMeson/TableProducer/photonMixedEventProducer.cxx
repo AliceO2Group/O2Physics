@@ -11,9 +11,9 @@
 
 /// \file photonMixedEventProducer.cxx
 /// \brief This task implements a new mixed event method and is the necessary step between builder run 1 and run 2.
-///        At first it pools the run-1 events (photons and free legs, copies with their legs) in z x occupancy bins;
-///        per event one same-event artificial event (the complete event) and cfgOverlay mixed artificial events
-///        (the complete event + one complete partner event of its pool, translated to the
+//         At first it pools of the run-1 events (photons and free legs,copies with their legs) in z x occupancy bins;
+//         per event one same-event artificial event (the complete event) and cfgOverlay mixed artificial events
+//         (the complete event + one complete partner event of its pool, translated to the
 ///        current vertex), written as PCMMixCollisions / PCMMixLegs for photon-conversion-builder-mixed. Needs builder run 1 with
 ///        storeLegCov = true and storeFreeLegs = true.
 /// \author Stefanie Mrozinski
@@ -32,12 +32,13 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-
-#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
@@ -607,6 +608,7 @@ struct PhotonMixedEventProducer {
         registry.fill(HIST("Event/hCutFlow"), kWritten);
       }
       std::vector<PhotonCopy const*> host; // the complete current event: its photons and (cfgPoolFreeLegs) its free legs
+      host.reserve(current.photons.size() + current.freeLegs.size());
       for (const auto& p : current.photons) {
         host.push_back(&p);
       }
@@ -645,7 +647,8 @@ struct PhotonMixedEventProducer {
               auto& partner = pool[order[k]];
               fillPartnerQA(partner, order[k]);
               std::vector<PhotonCopy const*> overlay(host);
-              std::vector<std::unique_ptr<PhotonCopy>> aligned; // translated copies, owned here; the pointers to them stay valid
+              std::vector<std::unique_ptr<PhotonCopy>> aligned; // translated copies; reserved, so the pointers stay valid
+              aligned.reserve(partner.photons.size() + partner.freeLegs.size());
               for (auto* src : {&partner.photons, &partner.freeLegs}) {
                 for (auto& p : *src) {
                   if (src == &partner.photons) {
@@ -691,7 +694,8 @@ struct PhotonMixedEventProducer {
         for (int iMix = 0; iMix < ((cfgInject != 0 || cfgOverlay > 0) ? 0 : cfgNMixPerEvent.value); ++iMix) {
           drawOrder();
           std::vector<PhotonCopy const*> mixedPhotons;
-          std::vector<std::unique_ptr<PhotonCopy>> aligned; // translated copies (cfgAlignToVertex), owned here; the pointers to them stay valid
+          std::vector<std::unique_ptr<PhotonCopy>> aligned; // translated copies (cfgAlignToVertex); reserved, so the pointers stay valid
+          aligned.reserve(nPhotons + (cfgPoolFreeLegs ? static_cast<int>(current.freeLegs.size()) : 0));
           std::set<int64_t> sources;
           for (int k = 0; k < nPhotons; ++k) { // N partner events, one random photon each
             auto& partner = pool[order[k]];
@@ -700,7 +704,7 @@ struct PhotonMixedEventProducer {
             p.timesUsed++;
             if (cfgAlignToVertex) {
               aligned.push_back(std::make_unique<PhotonCopy>(translated(p, current.x - partner.x, current.y - partner.y, current.z - partner.z)));
-              // cppcheck-suppress invalidContainer ; the pointee is owned by a unique_ptr and does not move when aligned grows
+              // cppcheck-suppress invalidContainer
               mixedPhotons.push_back(aligned.back().get());
             } else {
               mixedPhotons.push_back(&p);
@@ -723,7 +727,7 @@ struct PhotonMixedEventProducer {
               if (cfgAlignToVertex) {
                 const auto& partner = *pooledFree[k];
                 aligned.push_back(std::make_unique<PhotonCopy>(translated(partner, current.x - partner.pvX, current.y - partner.pvY, current.z - partner.pvZ)));
-                // cppcheck-suppress invalidContainer ; the pointee is owned by a unique_ptr and does not move when aligned grows
+                // cppcheck-suppress invalidContainer
                 mixedPhotons.push_back(aligned.back().get());
               } else {
                 mixedPhotons.push_back(pooledFree[k]);
