@@ -35,6 +35,7 @@
 #include <TCollection.h>
 #include <TFile.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TList.h>
 #include <TString.h>
 #include <TSystem.h>
@@ -100,13 +101,8 @@ struct Alice3TrackingTranslator {
     LOG(info) << "Alice3TrackingTranslator init called";
   }
 
-#define SETADDRESS(branchname, branchvar)                            \
-  if (mTree->SetBranchAddress(branchname, &branchvar)) {             \
-    LOG(fatal) << "Could not set branch address for " << branchname; \
-  }
-
   struct FileStruct {
-    FileStruct(const std::string& filename, const std::string& treename) : mFile(filename.c_str(), "READ")
+    FileStruct(const std::string& filename, const std::string& treename) : mFile(filename.c_str(), "READ"), mTree(nullptr)
     {
       if (mFile.IsZombie()) {
         LOG(fatal) << "Could not open file '" << filename << "'";
@@ -118,6 +114,13 @@ struct Alice3TrackingTranslator {
         LOG(fatal) << treename << " tree not found in " << filename;
       }
     }
+    template <typename T>
+    void setBranchAddress(const char* branchname, T& branchvar)
+    {
+      if (mTree->SetBranchAddress(branchname, &branchvar)) {
+        LOG(fatal) << "Could not set branch address for " << branchname;
+      }
+    }
     void setEventEntry(Long64_t entry)
     {
       if (mTree->GetEntry(entry) < 0) {
@@ -126,30 +129,30 @@ struct Alice3TrackingTranslator {
     }
     Long64_t getEntries() const { return mTree->GetEntries(); }
     TFile mFile;
-    TTree* mTree;
+    TTree* mTree{nullptr};
   };
 
   struct ParticleStruct : public FileStruct {
-    ParticleStruct(const std::string& filename, const std::string& treename) : FileStruct(std::move(filename), std::move(treename))
+    ParticleStruct(const std::string& filename, const std::string& treename) : FileStruct(filename, treename)
     {
       // mTree->Print();
-      SETADDRESS("particle_type", m_particle_type);
-      SETADDRESS("vx", m_vx);
-      SETADDRESS("vy", m_vy);
-      SETADDRESS("vz", m_vz);
-      SETADDRESS("vt", m_vt);
-      SETADDRESS("px", m_px);
-      SETADDRESS("py", m_py);
-      SETADDRESS("pz", m_pz);
-      SETADDRESS("m", m_m);
-      SETADDRESS("p", m_p);
-      SETADDRESS("q", m_q);
-      SETADDRESS("number_of_hits", m_number_of_hits);
-      SETADDRESS("vertex_primary", m_vertex_primary);
-      SETADDRESS("vertex_secondary", m_vertex_secondary);
-      SETADDRESS("generation", m_generation);
-      SETADDRESS("sub_particle", m_sub_particle);
-      SETADDRESS("particle", m_particle);
+      setBranchAddress("particle_type", m_particle_type);
+      setBranchAddress("vx", m_vx);
+      setBranchAddress("vy", m_vy);
+      setBranchAddress("vz", m_vz);
+      setBranchAddress("vt", m_vt);
+      setBranchAddress("px", m_px);
+      setBranchAddress("py", m_py);
+      setBranchAddress("pz", m_pz);
+      setBranchAddress("m", m_m);
+      setBranchAddress("p", m_p);
+      setBranchAddress("q", m_q);
+      setBranchAddress("number_of_hits", m_number_of_hits);
+      setBranchAddress("vertex_primary", m_vertex_primary);
+      setBranchAddress("vertex_secondary", m_vertex_secondary);
+      setBranchAddress("generation", m_generation);
+      setBranchAddress("sub_particle", m_sub_particle);
+      setBranchAddress("particle", m_particle);
     }
     std::vector<int>* m_particle_type = nullptr;
     std::vector<float>* m_vx = nullptr;
@@ -175,20 +178,20 @@ struct Alice3TrackingTranslator {
   struct VertexStruct : public FileStruct {
     VertexStruct(const std::string& filename, const std::string& treename) : FileStruct(filename, treename)
     {
-      SETADDRESS("vx", m_x);
-      SETADDRESS("vy", m_y);
-      SETADDRESS("vz", m_z);
-      SETADDRESS("vt", m_t);
-      SETADDRESS("incoming_particles_vertex_primary", m_incoming_particles_vertex_primary);
-      SETADDRESS("incoming_particles_vertex_secondary", m_incoming_particles_vertex_secondary);
-      SETADDRESS("incoming_particles_generation", m_incoming_particles_generation);
-      SETADDRESS("incoming_particles_sub_particle", m_incoming_particles_sub_particle);
-      SETADDRESS("incoming_particles_particle", m_incoming_particles_particle);
-      SETADDRESS("outgoing_particles_vertex_primary", m_outgoing_particles_vertex_primary);
-      SETADDRESS("outgoing_particles_vertex_secondary", m_outgoing_particles_vertex_secondary);
-      SETADDRESS("outgoing_particles_generation", m_outgoing_particles_generation);
-      SETADDRESS("outgoing_particles_sub_particle", m_outgoing_particles_sub_particle);
-      SETADDRESS("outgoing_particles_particle", m_outgoing_particles_particle);
+      setBranchAddress("vx", m_x);
+      setBranchAddress("vy", m_y);
+      setBranchAddress("vz", m_z);
+      setBranchAddress("vt", m_t);
+      setBranchAddress("incoming_particles_vertex_primary", m_incoming_particles_vertex_primary);
+      setBranchAddress("incoming_particles_vertex_secondary", m_incoming_particles_vertex_secondary);
+      setBranchAddress("incoming_particles_generation", m_incoming_particles_generation);
+      setBranchAddress("incoming_particles_sub_particle", m_incoming_particles_sub_particle);
+      setBranchAddress("incoming_particles_particle", m_incoming_particles_particle);
+      setBranchAddress("outgoing_particles_vertex_primary", m_outgoing_particles_vertex_primary);
+      setBranchAddress("outgoing_particles_vertex_secondary", m_outgoing_particles_vertex_secondary);
+      setBranchAddress("outgoing_particles_generation", m_outgoing_particles_generation);
+      setBranchAddress("outgoing_particles_sub_particle", m_outgoing_particles_sub_particle);
+      setBranchAddress("outgoing_particles_particle", m_outgoing_particles_particle);
     }
     std::vector<float>* m_x = nullptr;
     std::vector<float>* m_y = nullptr;
@@ -207,58 +210,58 @@ struct Alice3TrackingTranslator {
   };
 
   struct TrackStruct : public FileStruct {
-    TrackStruct(const std::string& filename, const std::string& treename) : FileStruct(std::move(filename), std::move(treename))
+    TrackStruct(const std::string& filename, const std::string& treename) : FileStruct(filename, treename)
     {
       mTree->Print();
       // Set branch addresses for ACTS track parameters
 
-      SETADDRESS("event_nr", m_event_nr);
-      SETADDRESS("nMeasurements", m_nMeasurements);
-      SETADDRESS("nStates", m_nStates);
-      SETADDRESS("nHoles", m_nHoles);
-      SETADDRESS("chi2Sum", m_chi2Sum);
-      SETADDRESS("NDF", m_NDF);
-      SETADDRESS("nMajorityHits", m_nMajorityHits);
-      SETADDRESS("t_charge", m_t_charge);
-      SETADDRESS("t_vx", m_t_vx);
-      SETADDRESS("t_vy", m_t_vy);
-      SETADDRESS("t_vz", m_t_vz);
-      SETADDRESS("t_px", m_t_px);
-      SETADDRESS("t_py", m_t_py);
-      SETADDRESS("t_pz", m_t_pz);
-      SETADDRESS("majorityParticleId_vertex_primary", m_majorityParticleId_vertex_primary);
-      SETADDRESS("majorityParticleId_vertex_secondary", m_majorityParticleId_vertex_secondary);
-      SETADDRESS("majorityParticleId_generation", m_majorityParticleId_generation);
-      SETADDRESS("majorityParticleId_sub_particle", m_majorityParticleId_sub_particle);
-      SETADDRESS("majorityParticleId_particle", m_majorityParticleId_particle);
-      SETADDRESS("eQOP_fit", m_eQOP_fit);
-      SETADDRESS("eX_fit", m_eX_fit);
-      SETADDRESS("eY_fit", m_eY_fit);
-      SETADDRESS("eZ_fit", m_eZ_fit);
-      SETADDRESS("ePX_fit", m_ePX_fit);
-      SETADDRESS("ePY_fit", m_ePY_fit);
-      SETADDRESS("ePZ_fit", m_ePZ_fit);
-      SETADDRESS("cov_eX_eX", m_cov_eX_eX);
-      // SETADDRESS("cov_eY_eY", m_cov_eY_eY);
-      SETADDRESS("cov_eZ_eZ", m_cov_eZ_eZ);
-      SETADDRESS("cov_ePX_ePX", m_cov_ePX_ePX);
-      SETADDRESS("cov_ePY_ePY", m_cov_ePY_ePY);
-      SETADDRESS("cov_ePZ_ePZ", m_cov_ePZ_ePZ);
-      SETADDRESS("cov_eX_ePX", m_cov_eX_ePX);
-      SETADDRESS("cov_eY_ePY", m_cov_eY_ePY);
-      SETADDRESS("cov_eZ_ePZ", m_cov_eZ_ePZ);
-      SETADDRESS("cov_eX_eY", m_cov_eX_eY);
-      SETADDRESS("cov_eX_eZ", m_cov_eX_eZ);
-      SETADDRESS("cov_eY_eZ", m_cov_eY_eZ);
-      SETADDRESS("cov_ePX_ePY", m_cov_ePX_ePY);
-      SETADDRESS("cov_ePX_ePZ", m_cov_ePX_ePZ);
-      SETADDRESS("cov_ePY_ePZ", m_cov_ePY_ePZ);
-      SETADDRESS("cov_eX_ePY", m_cov_eX_ePY);
-      SETADDRESS("cov_eX_ePZ", m_cov_eX_ePZ);
-      SETADDRESS("cov_eY_ePX", m_cov_eY_ePX);
-      SETADDRESS("cov_eY_ePZ", m_cov_eY_ePZ);
-      SETADDRESS("cov_eZ_ePX", m_cov_eZ_ePX);
-      SETADDRESS("cov_eZ_ePY", m_cov_eZ_ePY);
+      setBranchAddress("event_nr", m_event_nr);
+      setBranchAddress("nMeasurements", m_nMeasurements);
+      setBranchAddress("nStates", m_nStates);
+      setBranchAddress("nHoles", m_nHoles);
+      setBranchAddress("chi2Sum", m_chi2Sum);
+      setBranchAddress("NDF", m_NDF);
+      setBranchAddress("nMajorityHits", m_nMajorityHits);
+      setBranchAddress("t_charge", m_t_charge);
+      setBranchAddress("t_vx", m_t_vx);
+      setBranchAddress("t_vy", m_t_vy);
+      setBranchAddress("t_vz", m_t_vz);
+      setBranchAddress("t_px", m_t_px);
+      setBranchAddress("t_py", m_t_py);
+      setBranchAddress("t_pz", m_t_pz);
+      setBranchAddress("majorityParticleId_vertex_primary", m_majorityParticleId_vertex_primary);
+      setBranchAddress("majorityParticleId_vertex_secondary", m_majorityParticleId_vertex_secondary);
+      setBranchAddress("majorityParticleId_generation", m_majorityParticleId_generation);
+      setBranchAddress("majorityParticleId_sub_particle", m_majorityParticleId_sub_particle);
+      setBranchAddress("majorityParticleId_particle", m_majorityParticleId_particle);
+      setBranchAddress("eQOP_fit", m_eQOP_fit);
+      setBranchAddress("eX_fit", m_eX_fit);
+      setBranchAddress("eY_fit", m_eY_fit);
+      setBranchAddress("eZ_fit", m_eZ_fit);
+      setBranchAddress("ePX_fit", m_ePX_fit);
+      setBranchAddress("ePY_fit", m_ePY_fit);
+      setBranchAddress("ePZ_fit", m_ePZ_fit);
+      setBranchAddress("cov_eX_eX", m_cov_eX_eX);
+      setBranchAddress("cov_eY_eY", m_cov_eY_eY);
+      setBranchAddress("cov_eZ_eZ", m_cov_eZ_eZ);
+      setBranchAddress("cov_ePX_ePX", m_cov_ePX_ePX);
+      setBranchAddress("cov_ePY_ePY", m_cov_ePY_ePY);
+      setBranchAddress("cov_ePZ_ePZ", m_cov_ePZ_ePZ);
+      setBranchAddress("cov_eX_ePX", m_cov_eX_ePX);
+      setBranchAddress("cov_eY_ePY", m_cov_eY_ePY);
+      setBranchAddress("cov_eZ_ePZ", m_cov_eZ_ePZ);
+      setBranchAddress("cov_eX_eY", m_cov_eX_eY);
+      setBranchAddress("cov_eX_eZ", m_cov_eX_eZ);
+      setBranchAddress("cov_eY_eZ", m_cov_eY_eZ);
+      setBranchAddress("cov_ePX_ePY", m_cov_ePX_ePY);
+      setBranchAddress("cov_ePX_ePZ", m_cov_ePX_ePZ);
+      setBranchAddress("cov_ePY_ePZ", m_cov_ePY_ePZ);
+      setBranchAddress("cov_eX_ePY", m_cov_eX_ePY);
+      setBranchAddress("cov_eX_ePZ", m_cov_eX_ePZ);
+      setBranchAddress("cov_eY_ePX", m_cov_eY_ePX);
+      setBranchAddress("cov_eY_ePZ", m_cov_eY_ePZ);
+      setBranchAddress("cov_eZ_ePX", m_cov_eZ_ePX);
+      setBranchAddress("cov_eZ_ePY", m_cov_eZ_ePY);
     }
     // Define track-related members here
     UInt_t* m_event_nr = nullptr;
@@ -278,8 +281,8 @@ struct Alice3TrackingTranslator {
     std::vector<float>* m_ePZ_fit = nullptr; // global momentum pz
 
     // covariance matrices for fitted track parameters (if available)
-    std::vector<float>* m_cov_eX_eX = nullptr; // covariance of global position x
-    // std::vector<float>* m_cov_eY_eY = nullptr; // covariance of global position y
+    std::vector<float>* m_cov_eX_eX = nullptr;   // covariance of global position x
+    std::vector<float>* m_cov_eY_eY = nullptr;   // covariance of global position y
     std::vector<float>* m_cov_eZ_eZ = nullptr;   // covariance of global position z
     std::vector<float>* m_cov_ePX_ePX = nullptr; // covariance of global momentum px
     std::vector<float>* m_cov_ePY_ePY = nullptr; // covariance of global momentum py
@@ -319,34 +322,35 @@ struct Alice3TrackingTranslator {
   };
 
   struct HitsStruct : public FileStruct {
-    HitsStruct(const std::string& filename, const std::string& treename) : FileStruct(std::move(filename), std::move(treename))
+    HitsStruct(const std::string& filename, const std::string& treename) : FileStruct(filename, treename)
     {
       mTree->Print();
-      SETADDRESS("barcode", barcode);
+      setBranchAddress("barcode", barcode);
     }
     std::vector<unsigned int>* barcode = nullptr;
   };
-  void addMCParticle(int collIndex, ParticleStruct& fileParticles, int iParticle, uint8_t flags, int firstMother, int firstDaughter, int secondDaughter, int numberOfHits)
+  void addMCParticle(int collIndex, ParticleStruct& fileParticles, int iParticle, uint8_t flags, int firstMother, int firstDaughter, int secondDaughter, int numberOfHits, float secondaryVertexRadius)
   {
-    int mothers[2] = {firstMother, firstMother};
-    int daughters[2] = {firstDaughter, secondDaughter};
+    std::array<int, 2> mothers = {firstMother, firstMother};
+    std::array<int, 2> daughters = {firstDaughter, secondDaughter};
     tableStoredMcParticles(collIndex,                                                                      // mcCollisionId
                            fileParticles.m_particle_type->at(iParticle),                                   // pdgCode
                            0,                                                                              // statusCode
                            flags,                                                                          // flags
                            mothers,                                                                        // mothersIds
-                           daughters,                                                                      // daughtersIdSlice
+                           daughters.data(),                                                               // daughtersIdSlice
                            1.0f,                                                                           // weight
                            fileParticles.m_px->at(iParticle),                                              // m_px
                            fileParticles.m_py->at(iParticle),                                              // m_py
                            fileParticles.m_pz->at(iParticle),                                              // m_pz
                            std::hypot(fileParticles.m_p->at(iParticle), fileParticles.m_m->at(iParticle)), // e
-                           fileParticles.m_vx->at(iParticle),                                              // m_vx
-                           fileParticles.m_vy->at(iParticle),                                              // m_vy
-                           fileParticles.m_vz->at(iParticle),                                              // m_vz
-                           fileParticles.m_vt->at(iParticle));                                             // m_vt
+                           fileParticles.m_vx->at(iParticle) * 0.1,                                        // m_vx
+                           fileParticles.m_vy->at(iParticle) * 0.1,                                        // m_vy
+                           fileParticles.m_vz->at(iParticle) * 0.1,                                        // m_vz
+                           fileParticles.m_vt->at(iParticle) * 0.1);                                       // m_vt
     tableMCParticlesExtraA3(numberOfHits,                                                                  // number_of_hits
-                            fileParticles.m_q->at(iParticle));                                             // charge
+                            fileParticles.m_q->at(iParticle),                                              // charge
+                            secondaryVertexRadius);                                                        // secondary_vertex_radius
   };
 
   void process(o2::aod::BCs const&)
@@ -359,7 +363,7 @@ struct Alice3TrackingTranslator {
     TList* filesList = dir.GetListOfFiles();
     if (filesList) {
       TIter next(filesList);
-      TSystemFile* file;
+      TSystemFile* file = nullptr;
       while ((file = dynamic_cast<TSystemFile*>(next()))) {
         TString fname = file->GetName();
         LOG(debug) << "Found file: " << fname.Data();
@@ -426,11 +430,13 @@ struct Alice3TrackingTranslator {
 
       // barcode -> global AO2D index (used later for track labels)
       std::map<Key, int> barcodeToGlobalIdx;
-      std::map<Key, std::vector<float>> barcodeToVertexPosition;
+      std::map<int, std::vector<float>> globalToVertexPosition;
       std::map<int, int> GlobalIdxToMotherIdx;
+      std::map<int, float> GlobalIdxSecVertexRadiusIncoming;
       std::map<int, int> GlobalIdxToPDGCode;
       std::map<int, int> GlobalToLocalIdx;
       std::map<int, std::vector<int>> GlobalIdxToDaughterIdxs;
+
       for (size_t iPart = 0; iPart < nParticlesSim; ++iPart) {
         Key key = keyOf(
           fileParticlesSim.m_vertex_primary->at(iPart),
@@ -465,6 +471,7 @@ struct Alice3TrackingTranslator {
           auto iteratorMother = barcodeToGlobalIdx.find(kd);
           if (iteratorMother != barcodeToGlobalIdx.end()) {
             int motherIdx = iteratorMother->second;
+            GlobalIdxSecVertexRadiusIncoming[motherIdx] = std::hypot(fileVertices.m_x->at(j) * 0.1, fileVertices.m_y->at(j) * 0.1);
             for (size_t d2 = 0; d2 < (*fileVertices.m_outgoing_particles_vertex_secondary)[j].size(); ++d2) {
               Key kd2 = keyOf(
                 (*fileVertices.m_outgoing_particles_vertex_primary)[j][d2],
@@ -472,12 +479,12 @@ struct Alice3TrackingTranslator {
                 (*fileVertices.m_outgoing_particles_particle)[j][d2],
                 (*fileVertices.m_outgoing_particles_generation)[j][d2],
                 (*fileVertices.m_outgoing_particles_sub_particle)[j][d2]);
-              barcodeToVertexPosition[kd2].push_back(fileVertices.m_x->at(j));
-              barcodeToVertexPosition[kd2].push_back(fileVertices.m_y->at(j));
-              barcodeToVertexPosition[kd2].push_back(fileVertices.m_z->at(j));
               auto iteratorDaughter = barcodeToGlobalIdx.find(kd2);
               if (iteratorDaughter != barcodeToGlobalIdx.end()) {
                 int daughterIdx = iteratorDaughter->second;
+                globalToVertexPosition[daughterIdx].push_back(fileVertices.m_x->at(j));
+                globalToVertexPosition[daughterIdx].push_back(fileVertices.m_y->at(j));
+                globalToVertexPosition[daughterIdx].push_back(fileVertices.m_z->at(j));
                 GlobalIdxToMotherIdx[daughterIdx] = motherIdx;
                 GlobalIdxToDaughterIdxs[motherIdx].push_back(daughterIdx);
               }
@@ -486,20 +493,28 @@ struct Alice3TrackingTranslator {
         }
       }
       for (size_t iPart = 0; iPart < nParticlesSim; ++iPart) {
+        float secondaryVertexRadius = -1.0f;
         int globalIdx = firstIdxThisEvent + static_cast<int>(iPart);
         int motherIdx = -1;
-        if (GlobalIdxToMotherIdx.find(globalIdx) != GlobalIdxToMotherIdx.end()) {
+        if (GlobalIdxToMotherIdx.contains(globalIdx)) {
           motherIdx = GlobalIdxToMotherIdx[globalIdx];
         }
         int firstDaughter = -1;
         int secondDaughter = -1;
-        if (GlobalIdxToDaughterIdxs.find(globalIdx) != GlobalIdxToDaughterIdxs.end()) {
+        if (GlobalIdxToDaughterIdxs.contains(globalIdx)) {
           const auto& daughters = GlobalIdxToDaughterIdxs[globalIdx];
-          if (daughters.size() > 0) {
+          if (!daughters.empty()) {
             firstDaughter = daughters[0];
           }
           if (daughters.size() > 1) {
             secondDaughter = daughters[1];
+          }
+          if (globalToVertexPosition.contains(globalIdx)) {
+            const auto& vertexPos = globalToVertexPosition[globalIdx];
+            secondaryVertexRadius = std::hypot(vertexPos[0] * 0.1, vertexPos[1] * 0.1);
+          }
+          if (secondaryVertexRadius == -1) {
+            secondaryVertexRadius = GlobalIdxSecVertexRadiusIncoming[globalIdx];
           }
         }
         // Determine flags for the MC particle
@@ -513,24 +528,24 @@ struct Alice3TrackingTranslator {
         }
         GlobalIdxToPDGCode[globalIdx] = fileParticlesSim.m_particle_type->at(iPart);
         GlobalToLocalIdx[globalIdx] = iPart;
-        addMCParticle(tableMcCollisions.lastIndex(), fileParticlesSim, iPart, flags, motherIdx, firstDaughter, secondDaughter, fileParticlesSim.m_number_of_hits->at(iPart));
+        addMCParticle(tableMcCollisions.lastIndex(), fileParticlesSim, iPart, flags, motherIdx, firstDaughter, secondDaughter, fileParticlesSim.m_number_of_hits->at(iPart), secondaryVertexRadius);
       }
-
-      tableCollisions(0,          // bcId
-                      collisionX, // posX
-                      collisionY, // posY
-                      collisionZ, // posZ
-                      0.0f,       // covXX
-                      0.0f,       // covXY
-                      0.0f,       // covXZ
-                      0.0f,       // covYY
-                      0.0f,       // covYZ
-                      0.0f,       // covZZ
-                      0,          // flags
-                      0.0f,       // m_chi2Sum
-                      0,          // numContrib
-                      0.0f,       // collisionTime
-                      0.0f);      // collisionTimeRes
+      const float scale = 0.1f;
+      tableCollisions(0,                  // bcId
+                      collisionX * scale, // posX
+                      collisionY * scale, // posY
+                      collisionZ * scale, // posZ
+                      0.0f,               // covXX
+                      0.0f,               // covXY
+                      0.0f,               // covXZ
+                      0.0f,               // covYY
+                      0.0f,               // covYZ
+                      0.0f,               // covZZ
+                      0,                  // flags
+                      0.0f,               // m_chi2Sum
+                      0,                  // numContrib
+                      0.0f,               // collisionTime
+                      0.0f);              // collisionTimeRes
 
       tableMcCollisionLabels(iEvent, // mcCollisionId
                              0);     // mcMask
@@ -585,7 +600,7 @@ struct Alice3TrackingTranslator {
 
         // Fill covariance matrices
         float cxx = fileTracksummary.m_cov_eX_eX->at(iTrack);
-        float cyy = cxx; // fileTracksummary.cov_eY_eY->at(iTrack);
+        float cyy = fileTracksummary.m_cov_eY_eY->at(iTrack);
         float czz = fileTracksummary.m_cov_eZ_eZ->at(iTrack);
         float cxy = fileTracksummary.m_cov_eX_eY->at(iTrack);
         float cxz = fileTracksummary.m_cov_eX_eZ->at(iTrack);
@@ -606,7 +621,8 @@ struct Alice3TrackingTranslator {
         float czpy = fileTracksummary.m_cov_eZ_ePY->at(iTrack);
         float czpz = fileTracksummary.m_cov_eZ_ePZ->at(iTrack);
         // Create TrackParCov object with covariance matrix
-        std::array<float, 3> position = {x, y, z};
+
+        std::array<float, 3> position = {x * scale, y * scale, z * scale};
         std::array<float, 3> momentum = {px, py, pz};
         std::array<float, 21> trackCov = {cxx, cxy, cyy, cxz, cyz, czz, cxpx, cypx, czpx, cpxpx, cxpy, cypy, czpy, cpxpy, cpypy, cxpz, cypz, czpz, cpxpz, cpypz, cpzpz};
         o2::track::TrackParCov trackParCov(position, momentum, trackCov, charge);
@@ -669,15 +685,28 @@ struct Alice3TrackingTranslator {
         tableTracksAlice3(true,  // isReconstructed
                           -1.f,  // todo: track innermost update
                           -1.f); // todo: track outermost update
-        if (mcParticleIdx > 0)
+        if (mcParticleIdx > 0) {
           tableTracksAlice3Pdg(GlobalIdxToPDGCode[mcParticleIdx]); // PdgCode to the linked MC truth particle
-        else
+        } else {
           tableTracksAlice3Pdg(0); // No linked MC truth particle
+        }
 
-        tableTracksExtraA3(m_nMeasurements, // nSiliconHits (using m_nMeasurements as proxy)
-                           0,               // nTPCHits
-                           0,               // trackType
-                           false);          // isPVContributor
+        float secondaryVertexRadius = 0;
+        std::array<float, 3> vertexPos = {0.0, 0.0, 0.0};
+        if (mcParticleIdx > 0) {
+          vertexPos[0] = fileParticlesSim.m_vx->at(GlobalToLocalIdx[mcParticleIdx]) * 0.1;
+          vertexPos[1] = fileParticlesSim.m_vy->at(GlobalToLocalIdx[mcParticleIdx]) * 0.1;
+          vertexPos[2] = fileParticlesSim.m_vz->at(GlobalToLocalIdx[mcParticleIdx]) * 0.1;
+          secondaryVertexRadius = std::hypot(vertexPos[0], vertexPos[1]);
+        }
+        tableTracksExtraA3(m_nMeasurements,       // nSiliconHits (using m_nMeasurements as proxy)
+                           0,                     // nTPCHits
+                           0,                     // trackType
+                           false,                 // isPVContributor
+                           secondaryVertexRadius, // secondaryVertexRadius
+                           vertexPos[0],
+                           vertexPos[1],
+                           vertexPos[2]);
         // Fill extra track info
         tableStoredTracksExtra(0.f,                                 // TPCInnerParam
                                static_cast<uint32_t>(0),            // Flags
@@ -730,17 +759,17 @@ struct Alice3TrackingTranslator {
   }
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec w;
-  if (cfgc.options().hasOption("aod-file")) {
-    std::string inputFile = cfgc.options().get<std::string>("aod-file");
+  if (context.options().hasOption("aod-file")) {
+    auto inputFile = context.options().get<std::string>("aod-file");
     if (!inputFile.empty()) {
       LOG(info) << "  " << inputFile;
       TString tinputFile(inputFile.c_str());
       inputPath = gSystem->DirName(tinputFile);
     }
   }
-  w.push_back(adaptAnalysisTask<Alice3TrackingTranslator>(cfgc));
+  w.push_back(adaptAnalysisTask<Alice3TrackingTranslator>(context));
   return w;
 }
