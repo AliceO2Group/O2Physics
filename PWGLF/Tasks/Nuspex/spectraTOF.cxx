@@ -1630,7 +1630,7 @@ struct tofSpectra {
 	  }
 	}
 
-	// RL: add a selection in the selection event time
+	// RL: add an selection in the selection event time
 	
 	switch (trkselOptions.selectEvTime) {
 	case 0:
@@ -1664,7 +1664,7 @@ struct tofSpectra {
 	  LOG(fatal) << "Valore selectEvTime non riconosciuto: "
 		     << trkselOptions.selectEvTime;
 	}
-
+	
 	//
 	
         if (isTOFPion && rapidityPi >= trkselOptions.cfgCutYMin && rapidityPi <= trkselOptions.cfgCutYMax) {
