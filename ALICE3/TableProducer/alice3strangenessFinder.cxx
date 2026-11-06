@@ -280,12 +280,12 @@ struct Alice3strangenessFinder {
     hPtRes1DPosDau->GetXaxis()->SetTitle("(p_{T}^{gen} - p_{T}^{reco})/p_{T}^{gen}");
 
     auto hV0Building = histos.add<TH1>("hV0Building", "hV0Building", kTH1D, {{10, 0.5, 10.5}});
-    if(doprocessFindV0CandidateOTF || doprocessFindV0CandidateACTS){
+    if (doprocessFindV0CandidateOTF || doprocessFindV0CandidateACTS) {
       hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
       hV0Building->GetXaxis()->SetBinLabel(2, "Pdg check");
       hV0Building->GetXaxis()->SetBinLabel(3, "DCA Fitter");
     }
-    if(doprocessMCTrueFromACTS){
+    if (doprocessMCTrueFromACTS) {
       hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
       hV0Building->GetXaxis()->SetBinLabel(2, "PID");
       hV0Building->GetXaxis()->SetBinLabel(3, "Mother Check");
