@@ -155,7 +155,7 @@ struct FemtoProducerCollisionTagger {
 
     for (auto const& r : roles) {
       LOG(info) << "  bit " << r.bit << " = " << r.deviceName << " " << r.role;
-      if (doprocessTrackTrack && r.role == collisiontagger::role::TrackTrackPair && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackTrack) != std::string::npos) {
+      if (doprocessTrackTrack && r.role == static_cast<char const*>(collisiontagger::role::TrackTrackPair) && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackTrack) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
         collisiontagger::TrackTrackVariant v;
         v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
@@ -170,13 +170,13 @@ struct FemtoProducerCollisionTagger {
         mTrackTrackVariants.push_back(v);
       } else if (doprocessTrackV0 && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackV0) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == collisiontagger::role::TrackLambdaPair) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::TrackLambdaPair)) {
           collisiontagger::TrackV0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "LambdaSelection1");
           v.bit = r.bit;
           mTrackLambdaVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackK0shortPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackK0shortPair)) {
           collisiontagger::TrackV0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "K0shortSelection1");
@@ -185,13 +185,13 @@ struct FemtoProducerCollisionTagger {
         }
       } else if (doprocessTrackCascade && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackCascade) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == collisiontagger::role::TrackXiPair) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::TrackXiPair)) {
           collisiontagger::TrackV0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "XiSelection");
           v.bit = r.bit;
           mTrackXiVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackOmegaPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackOmegaPair)) {
           collisiontagger::TrackV0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "OmegaSelection");
@@ -200,19 +200,19 @@ struct FemtoProducerCollisionTagger {
         }
       } else if ((doprocessTrackKink || doprocessTrackSigmaPlusPcm) && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackKink) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == collisiontagger::role::TrackSigmaPair) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPair)) {
           collisiontagger::TrackV0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "SigmaSelection1");
           v.bit = r.bit;
           mTrackSigmaVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackSigmaPlusPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPlusPair)) {
           collisiontagger::TrackV0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "SigmaPlusSelection1");
           v.bit = r.bit;
           mTrackSigmaPlusVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackSigmaPlusPcmPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPlusPcmPair)) {
           collisiontagger::TrackKinkPcmVariant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readKinkPcmSelection(device, "SigmaPlusPcmSelection1");
@@ -221,13 +221,13 @@ struct FemtoProducerCollisionTagger {
         }
       } else if ((doprocessTrackD0 || doprocessTrackLc) && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackCharmHadron) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == collisiontagger::role::TrackD0Pair) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::TrackD0Pair)) {
           collisiontagger::TrackV0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "D0Selection1");
           v.bit = r.bit;
           mTrackD0Variants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackLcPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackLcPair)) {
           collisiontagger::TrackV0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "LcSelection1");
@@ -236,7 +236,7 @@ struct FemtoProducerCollisionTagger {
         }
       } else if (doprocessV0V0 && r.deviceName.find(collisiontagger::devicename::FemtoPairV0V0) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == collisiontagger::role::LambdaLambdaPair) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::LambdaLambdaPair)) {
           collisiontagger::V0V0Variant v;
           v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
           v.sameSpecies = collisiontagger::hasEnabledOption(device, "Mixing.sameSpecies");
@@ -246,14 +246,14 @@ struct FemtoProducerCollisionTagger {
           v.sel2 = v.sameSpecies ? v.sel1 : collisiontagger::readV0Selection(device, "LambdaSelection2");
           v.bit = r.bit;
           mLambdaLambdaVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::K0shortK0shortPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::K0shortK0shortPair)) {
           collisiontagger::V0V0Variant v;
           v.sel1 = collisiontagger::readV0Selection(device, "K0shortSelection1");
           v.sameSpecies = collisiontagger::hasEnabledOption(device, "Mixing.sameSpecies");
           v.sel2 = v.sameSpecies ? v.sel1 : collisiontagger::readV0Selection(device, "K0shortSelection2");
           v.bit = r.bit;
           mK0shortK0shortVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::LambdaK0shortPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::LambdaK0shortPair)) {
           collisiontagger::V0V0Variant v;
           v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
           v.sel2 = collisiontagger::readV0Selection(device, "K0shortSelection2");
@@ -275,19 +275,19 @@ struct FemtoProducerCollisionTagger {
         mD0D0Variants.push_back(v);
       } else if (doprocessTrackTwoTrackResonance && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackTwoTrackResonance) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == collisiontagger::role::TrackPhiPair) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::TrackPhiPair)) {
           collisiontagger::TrackTwoTrackResonanceVariant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readTwoTrackResonanceSelection(device, "PhiSelection");
           v.bit = r.bit;
           mTrackPhiVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackKstar0Pair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackKstar0Pair)) {
           collisiontagger::TrackKstar0Variant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readKstar0Selection(device, "Kstar0Selection");
           v.bit = r.bit;
           mTrackKstar0Variants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackRho0Pair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackRho0Pair)) {
           collisiontagger::TrackTwoTrackResonanceVariant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readTwoTrackResonanceSelection(device, "Rho0Selection");
@@ -296,13 +296,13 @@ struct FemtoProducerCollisionTagger {
         }
       } else if (doprocessTrackTwoPhotonResonance && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackTwoPhotonResonance) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == collisiontagger::role::TrackPi0Pair) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::TrackPi0Pair)) {
           collisiontagger::TrackTwoPhotonResonanceVariant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readTwoPhotonResonanceSelection(device, "Pi0Selection1");
           v.bit = r.bit;
           mTrackPi0Variants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackEtaPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackEtaPair)) {
           collisiontagger::TrackTwoPhotonResonanceVariant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readTwoPhotonResonanceSelection(device, "EtaSelection1");
@@ -311,37 +311,37 @@ struct FemtoProducerCollisionTagger {
         }
       } else if (doprocessV0TwoTrackResonance && r.deviceName.find(collisiontagger::devicename::FemtoPairV0TwoTrackResonance) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == collisiontagger::role::LambdaPhiPair) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::LambdaPhiPair)) {
           collisiontagger::V0TwoTrackResonanceVariant v;
           v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
           v.sel2 = collisiontagger::readTwoTrackResonanceSelection(device, "PhiSelection");
           v.bit = r.bit;
           mLambdaPhiVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::LambdaKstar0Pair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::LambdaKstar0Pair)) {
           collisiontagger::V0Kstar0Variant v;
           v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
           v.sel2 = collisiontagger::readKstar0Selection(device, "Kstar0Selection");
           v.bit = r.bit;
           mLambdaKstar0Variants.push_back(v);
-        } else if (r.role == collisiontagger::role::LambdaRho0Pair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::LambdaRho0Pair)) {
           collisiontagger::V0TwoTrackResonanceVariant v;
           v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
           v.sel2 = collisiontagger::readTwoTrackResonanceSelection(device, "Rho0Selection");
           v.bit = r.bit;
           mLambdaRho0Variants.push_back(v);
-        } else if (r.role == collisiontagger::role::K0shortPhiPair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::K0shortPhiPair)) {
           collisiontagger::V0TwoTrackResonanceVariant v;
           v.sel1 = collisiontagger::readV0Selection(device, "K0shortSelection1");
           v.sel2 = collisiontagger::readTwoTrackResonanceSelection(device, "PhiSelection");
           v.bit = r.bit;
           mK0shortPhiVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::K0shortKstar0Pair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::K0shortKstar0Pair)) {
           collisiontagger::V0Kstar0Variant v;
           v.sel1 = collisiontagger::readV0Selection(device, "K0shortSelection1");
           v.sel2 = collisiontagger::readKstar0Selection(device, "Kstar0Selection");
           v.bit = r.bit;
           mK0shortKstar0Variants.push_back(v);
-        } else if (r.role == collisiontagger::role::K0shortRho0Pair) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::K0shortRho0Pair)) {
           collisiontagger::V0TwoTrackResonanceVariant v;
           v.sel1 = collisiontagger::readV0Selection(device, "K0shortSelection1");
           v.sel2 = collisiontagger::readTwoTrackResonanceSelection(device, "Rho0Selection");
@@ -380,7 +380,7 @@ struct FemtoProducerCollisionTagger {
         collisiontagger::TrackSelectionValues sel2Raw = collisiontagger::readTrackSelection(device, "TrackSelection2");
         bool same12 = collisiontagger::hasEnabledOption(device, "Mixing.particle12AreSameSpecies");
         collisiontagger::TrackSelectionValues sel2 = same12 ? sel1 : sel2Raw;
-        if (r.role == collisiontagger::role::TrackTrackXiTriplet) {
+        if (r.role == static_cast<char const*>(collisiontagger::role::TrackTrackXiTriplet)) {
           collisiontagger::TrackTrackV0Variant v;
           v.sel1 = sel1;
           v.sel2 = sel2;
@@ -388,7 +388,7 @@ struct FemtoProducerCollisionTagger {
           v.sel3 = collisiontagger::readV0Selection(device, "XiSelection");
           v.bit = r.bit;
           mTrackTrackXiVariants.push_back(v);
-        } else if (r.role == collisiontagger::role::TrackTrackOmegaTriplet) {
+        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackTrackOmegaTriplet)) {
           collisiontagger::TrackTrackV0Variant v;
           v.sel1 = sel1;
           v.sel2 = sel2;

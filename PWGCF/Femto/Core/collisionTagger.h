@@ -467,7 +467,7 @@ inline bool hasEnabledOption(o2::framework::DeviceSpec const& device, std::strin
 inline bool hasAnyEnabledOptionStartingWith(o2::framework::DeviceSpec const& device, std::string const& prefix)
 {
   for (auto const& option : device.options) {
-    if (option.name.rfind(prefix, 0) == 0 && option.defaultValue.get<bool>()) {
+    if (option.name.starts_with(prefix) && option.defaultValue.get<bool>()) {
       return true;
     }
   }
@@ -482,7 +482,7 @@ bool trackPasses(T const& track, TrackSelectionValues const& sel)
     return false;
   }
   float absPt = std::fabs(sel.chargeAbs * track.signedPt());
-  if (!(absPt > sel.ptMin && absPt < sel.ptMax)) {
+  if (absPt <= sel.ptMin || absPt >= sel.ptMax) {
     return false;
   }
   if (!(track.eta() > sel.etaMin && track.eta() < sel.etaMax)) {
@@ -512,7 +512,7 @@ bool lambdaPasses(T const& v0, V0SelectionValues const& sel)
     return false;
   }
   float absPt = std::fabs(v0.signedPt());
-  if (!(absPt > sel.ptMin && absPt < sel.ptMax)) {
+  if (absPt <= sel.ptMin || absPt >= sel.ptMax) {
     return false;
   }
   if (!(v0.eta() > sel.etaMin && v0.eta() < sel.etaMax)) {
@@ -536,7 +536,7 @@ bool kinkPcmPasses(T const& kink, KinkPcmSelectionValues const& sel)
     return false;
   }
   float absPt = std::fabs(kink.signedPt());
-  if (!(absPt > sel.ptMin && absPt < sel.ptMax)) {
+  if (absPt <= sel.ptMin || absPt >= sel.ptMax) {
     return false;
   }
   if (!(kink.eta() > sel.etaMin && kink.eta() < sel.etaMax)) {
@@ -606,7 +606,7 @@ bool kstar0Passes(T const& kstar0, Kstar0SelectionValues const& sel)
     return false;
   }
   float absPt = std::fabs(kstar0.signedPt());
-  if (!(absPt > sel.ptMin && absPt < sel.ptMax)) {
+  if (absPt <= sel.ptMin || absPt >= sel.ptMax) {
     return false;
   }
   if (!(kstar0.eta() > sel.etaMin && kstar0.eta() < sel.etaMax)) {
@@ -657,7 +657,7 @@ using CollisionTagBitset = std::bitset<MaxTagBits>;
 // new `passes` function (trackPasses/lambdaPasses/k0shortPasses above are examples), never a new
 // copy of this loop.
 template <typename Range, typename Selection, typename PassesFn>
-inline bool hasAtLeast(Range const& range, Selection const& sel, PassesFn&& passes, int needed = 1)
+inline bool hasAtLeast(Range const& range, Selection const& sel, PassesFn const& passes, int needed = 1)
 {
   int count = 0;
   for (auto const& entry : range) {
@@ -673,7 +673,7 @@ inline bool hasAtLeast(Range const& range, Selection const& sel, PassesFn&& pass
 // the one shared selection v.sel2). Reusable for any future same-type pair (V0V0, D0D0, ...) --
 // just a different `variants`/`range`/`passes` combination, the counting logic doesn't change.
 template <typename Variant, typename Range, typename PassesFn>
-inline void tagPairVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range const& range, PassesFn&& passes)
+inline void tagPairVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range const& range, PassesFn const& passes)
 {
   for (auto const& v : variants) {
     bool ok1 = hasAtLeast(range, v.sel1, passes, 1);
@@ -689,7 +689,7 @@ inline void tagPairVariants(CollisionTagBitset& tag, std::vector<Variant> const&
 // Reusable for any future cross-type pair (track-cascade, track-kink, track-D0, ...) -- just a
 // different `variants`/ranges/passes combination.
 template <typename Variant, typename Range1, typename Range2, typename PassesFn1, typename PassesFn2>
-inline void tagCrossVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range1 const& range1, PassesFn1&& passes1, Range2 const& range2, PassesFn2&& passes2)
+inline void tagCrossVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range1 const& range1, PassesFn1 const& passes1, Range2 const& range2, PassesFn2 const& passes2)
 {
   for (auto const& v : variants) {
     if (hasAtLeast(range1, v.sel1, passes1, 1) && hasAtLeast(range2, v.sel2, passes2, 1)) {
@@ -702,7 +702,7 @@ inline void tagCrossVariants(CollisionTagBitset& tag, std::vector<Variant> const
 // followed by producing the tag row -- covers any task type whose process function only ever
 // needs one same-type-pair check per collision (e.g. processTrackTrack).
 template <typename Produces, typename Variant, typename Range, typename PassesFn>
-inline void tagAndProduce(Produces& producedTags, std::vector<Variant> const& variants, Range const& range, PassesFn&& passes)
+inline void tagAndProduce(Produces& producedTags, std::vector<Variant> const& variants, Range const& range, PassesFn const& passes)
 {
   CollisionTagBitset tag;
   tagPairVariants(tag, variants, range, passes);
@@ -714,7 +714,7 @@ inline void tagAndProduce(Produces& producedTags, std::vector<Variant> const& va
 // distinct passing sel1 plus 1 more passing sel3; otherwise sel1/sel2/sel3 each need their own
 // independent match. Mirrors TripletTrackTrackTrackBuilder exactly (see TrackTrackTrackVariant).
 template <typename Variant, typename Range, typename PassesFn>
-inline void tagTripletVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range const& range, PassesFn&& passes)
+inline void tagTripletVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range const& range, PassesFn const& passes)
 {
   for (auto const& v : variants) {
     bool ok = false;
@@ -737,7 +737,7 @@ inline void tagTripletVariants(CollisionTagBitset& tag, std::vector<Variant> con
 // and role 2 each need their own independent match in range1. Mirrors
 // TripletTrackTrackV0Builder/TripletTrackTrackCascadeBuilder exactly (see TrackTrackV0Variant).
 template <typename Variant, typename Range1, typename Range2, typename PassesFn1, typename PassesFn2>
-inline void tagCrossTripletVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range1 const& range1, PassesFn1&& passes1, Range2 const& range2, PassesFn2&& passes2)
+inline void tagCrossTripletVariants(CollisionTagBitset& tag, std::vector<Variant> const& variants, Range1 const& range1, PassesFn1 const& passes1, Range2 const& range2, PassesFn2 const& passes2)
 {
   for (auto const& v : variants) {
     bool ok = v.same12 ? hasAtLeast(range1, v.sel1, passes1, 2)
@@ -757,7 +757,7 @@ inline void tagCrossTripletVariants(CollisionTagBitset& tag, std::vector<Variant
 // disallows forming that address from a string literal directly (two identical literals aren't
 // guaranteed the same address). A named array has none of that ambiguity, and decays to
 // `const char*` on its own wherever a plain pointer is expected (ConfTagging<role::TrackTrackPair>
-// below, the std::string construction in discoverTaggedRoles(), etc.). `inline` (not just
+// below, the explicit static_cast<char const*>(...) in discoverTaggedRoles(), etc.). `inline` (not just
 // `constexpr`) matters too: without it, a namespace-scope variable has internal linkage, so each
 // translation unit would get its own copy at its own address -- fine for a value, but the same
 // template instantiation must denote the same entity everywhere it's used. `inline` guarantees
@@ -851,7 +851,7 @@ inline std::vector<TaggedRole> discoverTaggedRoles(o2::framework::RunningWorkflo
       // assigning it one anyway would just waste a slot out of the hard-capped budget
       // (MaxTagBits below) for nothing.
       if (hasAnyEnabledOptionStartingWith(device, "processMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackTrackPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackTrackPair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairTrackV0) != std::string::npos) {
       // Each species gates independently on its own *MixedEventWithTagging* switch family --
@@ -860,115 +860,115 @@ inline std::vector<TaggedRole> discoverTaggedRoles(o2::framework::RunningWorkflo
       // combination), and, same as TrackTrackPair above, same-event/Mc/WithFitVars-without-tagging
       // variants are irrelevant here since none of them ever consume a tag bit.
       if (hasAnyEnabledOptionStartingWith(device, "processLambdaMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackLambdaPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackLambdaPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processK0shortMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackK0shortPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackK0shortPair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairTrackCascade) != std::string::npos) {
       // Xi and Omega are mutually exclusive on a single instance (the task itself fatals if
       // both are enabled), but gating independently costs nothing and needs no special-casing
       // here.
       if (hasAnyEnabledOptionStartingWith(device, "processXiMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackXiPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackXiPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processOmegaMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackOmegaPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackOmegaPair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairTrackKink) != std::string::npos) {
       if (hasAnyEnabledOptionStartingWith(device, "processSigmaMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackSigmaPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackSigmaPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processSigmaPlusMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackSigmaPlusPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackSigmaPlusPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processSigmaPlusPcmMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackSigmaPlusPcmPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackSigmaPlusPcmPair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairTrackCharmHadron) != std::string::npos) {
       if (hasAnyEnabledOptionStartingWith(device, "processD0MixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackD0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackD0Pair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processLcMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackLcPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackLcPair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairV0V0) != std::string::npos) {
       // Lambda-lambda, k0short-k0short and lambda-k0short are mutually exclusive on a single
       // instance (the task itself fatals if more than one is enabled), but gating independently
       // costs nothing and needs no special-casing here.
       if (hasAnyEnabledOptionStartingWith(device, "processLambdaLambdaMixedEventWithTagging")) {
-        roles.push_back({device.name, role::LambdaLambdaPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::LambdaLambdaPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processK0shortK0shortMixedEventWithTagging")) {
-        roles.push_back({device.name, role::K0shortK0shortPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::K0shortK0shortPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processLambdaK0shortMixedEventWithTagging")) {
-        roles.push_back({device.name, role::LambdaK0shortPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::LambdaK0shortPair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairD0D0) != std::string::npos) {
       // Only one pair type possible per instance (sign on D0Selection1/2 picks the hypothesis), so
       // this task's WithTagging process function is just "processMixedEventWithTagging", same local
       // name as femtoPairTrackTrack.cxx's -- fine since option names are scoped per-device.
       if (hasAnyEnabledOptionStartingWith(device, "processMixedEventWithTagging")) {
-        roles.push_back({device.name, role::D0D0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::D0D0Pair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairTrackTwoTrackResonance) != std::string::npos) {
       // Phi, Kstar0 and Rho0 are mutually exclusive on a single instance (the task itself fatals
       // if more than one is enabled), but gating independently costs nothing here either.
       if (hasAnyEnabledOptionStartingWith(device, "processPhiMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackPhiPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackPhiPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processKstar0MixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackKstar0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackKstar0Pair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processRho0MixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackRho0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackRho0Pair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairTrackTwoPhotonResonance) != std::string::npos) {
       // Pi0 and Eta are mutually exclusive on a single instance, same as above.
       if (hasAnyEnabledOptionStartingWith(device, "processPi0MixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackPi0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackPi0Pair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processEtaMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackEtaPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackEtaPair), counter++});
       }
     } else if (device.name.find(devicename::FemtoPairV0TwoTrackResonance) != std::string::npos) {
       // All six v0 x resonance combinations are mutually exclusive on a single instance (the task
       // itself fatals if more than one is enabled), same as above.
       if (hasAnyEnabledOptionStartingWith(device, "processLambdaPhiMixedEventWithTagging")) {
-        roles.push_back({device.name, role::LambdaPhiPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::LambdaPhiPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processLambdaKstar0MixedEventWithTagging")) {
-        roles.push_back({device.name, role::LambdaKstar0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::LambdaKstar0Pair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processLambdaRho0MixedEventWithTagging")) {
-        roles.push_back({device.name, role::LambdaRho0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::LambdaRho0Pair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processK0shortPhiMixedEventWithTagging")) {
-        roles.push_back({device.name, role::K0shortPhiPair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::K0shortPhiPair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processK0shortKstar0MixedEventWithTagging")) {
-        roles.push_back({device.name, role::K0shortKstar0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::K0shortKstar0Pair), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processK0shortRho0MixedEventWithTagging")) {
-        roles.push_back({device.name, role::K0shortRho0Pair, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::K0shortRho0Pair), counter++});
       }
     } else if (device.name.find(devicename::FemtoTripletTrackTrackTrack) != std::string::npos) {
       if (hasAnyEnabledOptionStartingWith(device, "processMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackTrackTrackTriplet, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackTrackTrackTriplet), counter++});
       }
     } else if (device.name.find(devicename::FemtoTripletTrackTrackV0) != std::string::npos) {
       if (hasAnyEnabledOptionStartingWith(device, "processMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackTrackLambdaTriplet, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackTrackLambdaTriplet), counter++});
       }
     } else if (device.name.find(devicename::FemtoTripletTrackTrackCascade) != std::string::npos) {
       // Xi and Omega are mutually exclusive on a single instance (the task itself fatals if both
       // are enabled), but gating independently costs nothing here either.
       if (hasAnyEnabledOptionStartingWith(device, "processXiMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackTrackXiTriplet, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackTrackXiTriplet), counter++});
       }
       if (hasAnyEnabledOptionStartingWith(device, "processOmegaMixedEventWithTagging")) {
-        roles.push_back({device.name, role::TrackTrackOmegaTriplet, counter++});
+        roles.push_back({device.name, static_cast<char const*>(role::TrackTrackOmegaTriplet), counter++});
       }
     }
     // TODO: add the remaining triplet task types (mc-particle triplets, ...), following the same
