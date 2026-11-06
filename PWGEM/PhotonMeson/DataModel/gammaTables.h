@@ -705,7 +705,7 @@ DECLARE_SOA_TABLE(PCMMixLegs, "AOD", "PCMMIXLEG", //!
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>);
 using PCMMixLeg = PCMMixLegs::iterator;
 
-// free electron legs of builder run 1 (storeFreeLegs): tracks that pass the leg cuts and are the leg of no stored photon; the
+// free electron legs of builder run 1 (fillFreeLegs): tracks that pass the leg cuts and are the leg of no stored photon; the
 // parameters as the V0 fit would use them (TPC-only legs moved to their own collision). The mixer pools them with the photons
 // (cfgPoolFreeLegs), so that run 2 can pair them in the same and the mixed event alike.
 namespace pcmfreeleg

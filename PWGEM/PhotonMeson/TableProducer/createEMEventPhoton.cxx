@@ -68,8 +68,8 @@ struct CreateEMEventPhoton {
   Produces<o2::aod::EMSWTriggerBits> emswtbit;
   Produces<o2::aod::EMEventNormInfos_001> event_norm_info;
   Produces<o2::aod::EMEventsWeight> eventWeights;
-  Produces<o2::aod::EMEventsXY> eventXY;   // only with storeVertex
-  Produces<o2::aod::EMEventsCov> eventCov; // only with storeVertex
+  Produces<o2::aod::EMEventsXY> eventXY;   // filled only with fillVertex
+  Produces<o2::aod::EMEventsCov> eventCov; // filled only with fillVertex
 
   enum class EMEventType : int {
     kEvent = 0,
@@ -78,7 +78,7 @@ struct CreateEMEventPhoton {
     kEvent_JJ = 3,
   };
 
-  Configurable<bool> storeVertex{"storeVertex", false, "write EMEventsXY and EMEventsCov (primary vertex x, y, covariance, chi2), joinable to PMEvents: needed by the co-reconstructed mixed event on derived data (photon-mixed-event-producer processDerived)"};
+  Configurable<bool> fillVertex{"fillVertex", false, "fill EMEventsXY and EMEventsCov (primary vertex x, y, covariance, chi2; the tables are written in any case, empty if false), joinable to PMEvents: needed by the co-reconstructed mixed event on derived data (photon-mixed-event-producer processDerived)"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> enableJJHistograms{"enableJJHistograms", false, "flag to fill JJ QA histograms for outlier rejection"};
@@ -153,7 +153,7 @@ struct CreateEMEventPhoton {
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       eventalias(collision.alias_raw());
 
-      if (storeVertex) {
+      if (fillVertex) {
         eventXY(collision.posX(), collision.posY());
         eventCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       }

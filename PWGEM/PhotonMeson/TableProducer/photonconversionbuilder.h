@@ -319,9 +319,9 @@ struct PhotonConversionBuilder {
   Configurable<int> modeTrackPropagation{"modeTrackPropagation", 0, "0: use real track propagation, including material, 1: use fast approximation using only geometry, 2: Use real track propagation and make comparison to fast propagation (only for debugging and testing)"};
   Configurable<float> propV0LegsRadius{"propV0LegsRadius", 60.f, "Radius to which the V0 legs are propagated to calculate psipair and phiV"};
   o2::framework::Configurable<bool> useSideBasedCorrection{"useSideBasedCorrection", false, "when moving TPC-only tracks, use TPC side flags (with legacy fallback) instead of tgl sign"};
-  Configurable<bool> storeLegCov{"storeLegCov", false, "write V0LegsCov: the leg track parameters and covariance given to the V0 fit (TPC-only legs moved to the collision), one row per V0Legs row"};
-  Configurable<bool> storeFreeLegIds{"storeFreeLegIds", false, "write PCMFreeLegIds: the free legs (as for storeFreeLegs) as AO2D (collision, track) indices only, for the mixer on linked derived data (the leg parameters are read from the parent AO2D); only selected collisions"};
-  Configurable<bool> storeFreeLegs{"storeFreeLegs", false, "write PCMFreeLegs: tracks that pass the leg cuts (as the finder takes them) and are the leg of no stored photon, with the parameters the V0 fit would use (TPC-only legs moved to their own collision); pooled by the mixer with cfgPoolFreeLegs"};
+  Configurable<bool> fillLegCov{"fillLegCov", false, "fill V0LegsCov (the table is written in any case, empty if false): the leg track parameters and covariance given to the V0 fit (TPC-only legs moved to the collision), one row per V0Legs row"};
+  Configurable<bool> fillFreeLegIds{"fillFreeLegIds", false, "fill PCMFreeLegIds (the table is written in any case, empty if false): the free legs (as for fillFreeLegs) as AO2D (collision, track) indices only, for the mixer on linked derived data (the leg parameters are read from the parent AO2D); only selected collisions"};
+  Configurable<bool> fillFreeLegs{"fillFreeLegs", false, "fill PCMFreeLegs (the table is written in any case, empty if false): tracks that pass the leg cuts (as the finder takes them) and are the leg of no stored photon, with the parameters the V0 fit would use (TPC-only legs moved to their own collision); pooled by the mixer with cfgPoolFreeLegs"};
 
   // deduplication settings
   struct : ConfigurableGroup {
@@ -492,7 +492,7 @@ struct PhotonConversionBuilder {
     "registry",
     {
       {"hCollisionCounter", "hCollisionCounter", {HistType::kTH1F, {{1, 0.5f, 1.5f}}}},
-      {"hNFreeLegs", "free legs written per DF (storeFreeLegs);legs;DFs", {HistType::kTH1F, {{200, 0.f, 20000.f}}}},
+      {"hNFreeLegs", "free legs filled per DF (fillFreeLegs);legs;DFs", {HistType::kTH1F, {{200, 0.f, 20000.f}}}},
       {"V0/hAP", "Armenteros Podolanski;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{200, -1.0f, 1.0f}, {250, 0, 0.25}}}},
       {"V0/hConversionPointXY", "conversion point in XY;X (cm);Y (cm)", {HistType::kTH2F, {{400, -100.0f, 100.0f}, {400, -100.f, 100.f}}}},
       {"V0/hConversionPointRZ", "conversion point in RZ;Z (cm);R_{xy} (cm)", {HistType::kTH2F, {{200, -100.0f, 100.0f}, {200, 0.f, 100.f}}}},
@@ -982,7 +982,7 @@ struct PhotonConversionBuilder {
               trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt(), cov.data());
   }
 
-  // free legs (storeFreeLegs): after the tables are written; a track that passes the leg cuts, has a collision and the TPC (as the
+  // free legs (fillFreeLegs): after the tables are written; a track that passes the leg cuts, has a collision and the TPC (as the
   // finder takes them) and is the leg of no stored photon; TPC-only legs moved to their own collision as in the fit
   template <bool isMC, class TBCs, class TCollisions, class TTracks>
   void writeFreeLegs(TCollisions const& collisions, TTracks const& tracks, std::set<int64_t> const& skimRejected)
@@ -1009,11 +1009,11 @@ struct PhotonConversionBuilder {
           continue;
         }
       }
-      if (storeFreeLegIds) { // tracks are visited in increasing index order: store the difference to the previous free leg of this DF
+      if (fillFreeLegIds) { // tracks are visited in increasing index order: store the difference to the previous free leg of this DF
         pcmfreelegids(track.collisionId(), static_cast<int>(track.globalIndex() - lastFreeLegTrack));
         lastFreeLegTrack = track.globalIndex();
       }
-      if (!storeFreeLegs) {
+      if (!fillFreeLegs) {
         ++nFree;
         continue;
       }
@@ -1644,7 +1644,7 @@ struct PhotonConversionBuilder {
 
       fillTrackTable<isMC>(pos, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
       fillTrackTable<isMC>(ele, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
-      if (storeLegCov) {
+      if (fillLegCov) {
         fillLegCovTable(pTrack);
         fillLegCovTable(nTrack);
       }
@@ -2661,7 +2661,7 @@ struct PhotonConversionBuilder {
       fitV0Candidate<isMC, TBCs, TCollisions, TTracks>(collision, tracks.rawIteratorAt(fullv0Id.posId), tracks.rawIteratorAt(fullv0Id.eleId), v0Id, true,
                                                        FitOptions{.nonSVertexer = !recovery.finderUniformFit.value, .relaxAP = mRelaxedKeys.contains(fullv0Id) && !recovery.finderUniformFit.value});
     } // end of fullv0Id loop
-    if (storeFreeLegs || storeFreeLegIds) {
+    if (fillFreeLegs || fillFreeLegIds) {
       writeFreeLegs<isMC, TBCs, TCollisions, TTracks>(collisions, tracks, skimRejected);
     }
 

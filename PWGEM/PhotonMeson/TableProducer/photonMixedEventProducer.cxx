@@ -15,7 +15,7 @@
 //         per event one same-event artificial event (the complete event) and cfgOverlay mixed artificial events
 //         (the complete event + one complete partner event of its pool, translated to the
 ///        current vertex), written as PCMMixCollisions / PCMMixLegs for photon-conversion-builder-mixed. Needs builder run 1 with
-///        storeLegCov = true and storeFreeLegs = true.
+///        fillLegCov = true and fillFreeLegs = true.
 /// \author Stefanie Mrozinski
 
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
@@ -135,7 +135,7 @@ struct PhotonMixedEventProducer {
   Configurable<bool> cfgPhotonWeighted{"cfgPhotonWeighted", true, "partner events drawn with probability proportional to their photon number (each pooled photon equally likely, still N distinct events); false: events equally likely"};
   Configurable<int> cfgInject{"cfgInject", 0, "injection mixed event: instead of N photons from N partner events, K mixed artificial events per event, each = the COMPLETE current event (its photons and, with cfgPoolFreeLegs, its free legs) + ONE photon of a distinct partner event (translated with cfgAlignToVertex). K = cfgInject, -1: K = N (mixed pairs = 2 x same-event pairs), -2: K = N/2 rounded up (mixed pairs = same-event pairs, half the CPU); the pool needs K partner events. Run 2 with mixed_group.skipSameSourceCrossed: the current event's pairings stay as run 1 decided them, only the injected legs form new candidates (also with the free legs, which the N-photon mixed event cannot offer)"};
   Configurable<int> cfgOverlay{"cfgOverlay", 1, "two-event leg overlay: K mixed artificial events per event, each = the COMPLETE current event + the COMPLETE partner event k (all its photons and, with cfgPoolFreeLegs, all its free legs, translated with cfgAlignToVertex). Every leg configuration of the same event exists across the two events, incl. true pairings that failed a run-1 cut. Run 2 with mixed_group.skipSameSourceCrossed: pairings inside one source event stay as run 1 decided them, only cross-event pairings are new. 0 = off (not with cfgInject)"};
-  Configurable<bool> cfgPoolFreeLegs{"cfgPoolFreeLegs", true, "pool the free legs of run 1 (PCMFreeLegs, builder storeFreeLegs) with the photons: the same artificial event gets all M free legs of the event, the mixed one M free legs drawn from the N partner events, so that run 2 pairs free legs identically in both"};
+  Configurable<bool> cfgPoolFreeLegs{"cfgPoolFreeLegs", true, "pool the free legs of run 1 (PCMFreeLegs, builder fillFreeLegs) with the photons: the same artificial event gets all M free legs of the event, the mixed one M free legs drawn from the N partner events, so that run 2 pairs free legs identically in both"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -452,10 +452,10 @@ struct PhotonMixedEventProducer {
                 aod::PCMFreeLegs const* freeLegs, TTracks const* tracks, TMCParticles const* mcParticles)
   {
     if (legs.size() != 2 * photons.size() || legsCov.size() != legs.size()) {
-      LOG(fatal) << "V0LegsCov (" << legsCov.size() << ") / V0Legs (" << legs.size() << ") / V0PhotonsKF (" << photons.size() << ") do not match: run builder run 1 with storeLegCov = true";
+      LOG(fatal) << "V0LegsCov (" << legsCov.size() << ") / V0Legs (" << legs.size() << ") / V0PhotonsKF (" << photons.size() << ") do not match: run builder run 1 with fillLegCov = true";
     }
     if (cfgPoolFreeLegs && (freeLegs == nullptr || (freeLegs->size() == 0 && photons.size() > 0))) {
-      LOG(fatal) << "cfgPoolFreeLegs: PCMFreeLegs is empty, run builder run 1 with storeFreeLegs = true";
+      LOG(fatal) << "cfgPoolFreeLegs: PCMFreeLegs is empty, run builder run 1 with fillFreeLegs = true";
     }
     std::unordered_map<int, std::vector<int64_t>> photonsOfCollision, freeLegsOfCollision;
     for (const auto& photon : photons) {
@@ -767,7 +767,7 @@ struct PhotonMixedEventProducer {
   }
   PROCESS_SWITCH(PhotonMixedEventProducer, processMC, "MC, AO2D input (leg truth into PCMMixLegs)", false);
 
-  // derived data (EM skim with V0LegsCov and, from create-emevent-photon storeVertex, EMEventsXY + EMEventsCov)
+  // derived data (EM skim with V0LegsCov and, from create-emevent-photon fillVertex, EMEventsXY + EMEventsCov)
   void processDerived(MyEvents const& collisions, MyPhotonsDerived const& photons, aod::V0Legs const& legs, aod::V0LegsCov const& legsCov)
   {
     runMixer<false, true>(collisions, photons, legs, legsCov, nullptr, static_cast<aod::TracksIU const*>(nullptr), static_cast<aod::EMMCParticles const*>(nullptr));
