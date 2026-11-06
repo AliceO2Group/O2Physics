@@ -495,12 +495,9 @@ struct Alice3strangenessFinder {
       thisCandidate.dcaToPV = calculateDCAStraightToPV(thisCandidate.posSV[0], thisCandidate.posSV[1], thisCandidate.posSV[2],
                                                        thisCandidate.p[0], thisCandidate.p[1], thisCandidate.p[2],
                                                        vtx[0], vtx[1], vtx[2]);
-      std::array<float, 2> dcaInfo;
-      dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted, TODO implement proper DCA calculation
+      std::array<float, 2> dcaInfo = {999.0f, 999.0f}; // by default, take large value to make sure candidate accepted, TODO implement proper DCA calculation
       thisCandidate.posDauDCAxy = dcaInfo[0];
-
-      dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted, TODO implement proper DCA calculation
-      thisCandidate.negDauDCAxy = dcaInfo[0];
+      thisCandidate.negDauDCAxy = dcaInfo[1];
     } else {
       t0.getPxPyPzGlo(thisCandidate.pDau0);
       t1.getPxPyPzGlo(thisCandidate.pDau1);
@@ -526,21 +523,39 @@ struct Alice3strangenessFinder {
   void processGenerated(aod::McParticles const&)
   {
     for (const auto& mcParticle : trueK0s) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedK0s"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueLambda) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedLambda"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiLambda) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedAntiLambda"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueXi) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedXi"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiXi) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedAntiXi"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueOmega) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedOmega"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiOmega) {
@@ -963,7 +978,7 @@ struct Alice3strangenessFinder {
   // PROCESS_SWITCH(alice3strangenessFinder, processFindV0CandidateWithPid, "find V0 with PID", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<Alice3strangenessFinder>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Alice3strangenessFinder>(context)};
 }
