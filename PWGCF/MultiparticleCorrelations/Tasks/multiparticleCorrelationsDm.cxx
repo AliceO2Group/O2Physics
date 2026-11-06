@@ -15,6 +15,7 @@
 
 // O2:
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -39,10 +40,12 @@
 #include <TH2.h>
 #include <TList.h>
 #include <TObject.h>
+#include <TProfile.h>
 #include <TString.h>
 #include <TSystem.h>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -129,8 +132,17 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
 
   Configurable<bool> cfDryRun{"cfDryRun", false, "book all histos and run without filling and calculating anything"};
   Configurable<bool> cfFillQA{"cfFillQA", false, "book and fill QA histograms (only for development and validation)"}; // switch for QA histograms
+
+  // Define cuts:
   Configurable<bool> cfUseVertexZCut{"cfUseVertexZCut", true, "apply the vertex Z event cut"};
   Configurable<bool> cfUsePtCut{"cfUsePtCut", true, "apply the pt particle cut"};
+  Configurable<bool> cfUseTimeRange{"cfUseTimeRange", true, "rejects events with overlapping collisions"};
+  Configurable<bool> cfUseRof{"cfUseRof", true, "removes events containing multiple collisions in the same readout frame"};
+  Configurable<bool> cfUsePileUp{"cfUsePileUp", true, "apply pile up cuts"};
+  Configurable<bool> cfUseITSTPC{"cfUseITSTPC", true, "use reconstructed from the ITS (Inner Tracking System) and TPC (Time Porjection Chamber) tracks"};
+  Configurable<bool> cfUseITSLayers{"cfUseITSLayers", true, "use the ITS layers cut"};
+  Configurable<bool> cfUseZFT0vsPV{"cfUseZFT0vsPV", true, "use this cut"};
+  Configurable<bool> cfUsePrevRof{"cfUsePrevRof", true, " use this cut"};
 
   Configurable<std::string> cfCentralityEstimator{"cfCentralityEstimator", "FT0C", "centrality estimator: FT0C, FT0M, FT0A"};                                  // centrality estimator with valid values: FT0C (default)
   Configurable<std::string> cfReferenceMultiplicityEstimator{"cfReferenceMultiplicityEstimator", "FT0C", "reference multiplicity estimator: TPC, FT0C, FT0M"}; // ref. multiplicity estimator with valid values: TPC (default) FT0C Ft0M
@@ -147,14 +159,19 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
   Configurable<std::vector<float>> cfVertexXBins{"cfVertexXBins", {200, -1., 1.}, "nvxBins, vxMin, vxMax"};
   Configurable<std::vector<float>> cfVertexYBins{"cfVertexYBins", {200, -1, 1.}, "nvyBins, vyMin, vyMax"};
   Configurable<std::vector<float>> cfVertexZBins{"cfVertexZBins", {300, -15., 15.}, "nvzBins, vzMin, vzMax"};
+  Configurable<std::vector<float>> cfNContribBins{"cfNContribBins", {500, 0., 5000.}, "nContribBins, contribMin, contribMax"};
   Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10., 10.}, "{min, max} [cm]"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "{min, max} [GeV]"};
+  Configurable<bool> cfUseEtaCut{"cfUseEtaCut", true, "apply the eta particle cut (pseudorapidity"};
+  Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range: {min, max}, with convention: min <= eta < max"};
 
   // for weights (efficiency corrections)
-  Configurable<bool> cfUseWeights{"cfUseWeights", false, "load weights from the file in cfFileWithWeights"};
+  Configurable<bool> cfUsePhiWeights{"cfUsePhiWeights", false, "use phi weights from the file in cfFileWithWeights"};
+  Configurable<bool> cfUsePtWeights{"cfUsePtWeights", false, "use pt weights from the file in cfFileWithWeights"};
+  Configurable<bool> cfUseEtaWeights{"cfUseEtaWeights", false, "use eta weights from the file in cfFileWithWeights"};
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "", "path to external ROOT file with weights; on Hyperloop only CCDB paths (/alice-ccdb.cern.ch/...) work"};
 
-  Configurable<bool> cfVerbose{"cfVerbose", false, "print \run number, centrality and vertex for each collision"};
+  Configurable<bool> cfVerbose{"cfVerbose", false, "print run number, centrality and vertex for each collision"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
@@ -164,6 +181,13 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     bool fFillQA = false;                    // book and fill QA histos
     bool fUseVertexZCut = true;
     bool fUsePtCut = true;
+    bool fUseTimeRange = true;
+    bool fUseRof = true;
+    bool fUsePileUp = true;
+    bool fUseITSTPC = true;
+    bool fUseITSLayers = true;
+    bool fUseZFT0vsPV = true;
+    bool fUsePrevRof = true;
 
     int fCentralityEstimator = ECentFT0C;
     int fReferenceMultiplicityEstimator = ERefMultTPC;
@@ -171,9 +195,13 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     float fSigmaInel = 771.;                     // sigma inel [fm^2]
     std::array<float, 2> fVertexZ = {-10., 10.}; // {min, max} [cm]
     std::array<float, 2> fPt = {0.2, 5.0};       // {min, max} [GeV]
-    bool fWeightsLoaded = false;                 // weights are loaded once, at the first collision
-    bool fUseWeights = false;                    // load weights from external file
-    bool fVerbose = false;                       // print the values / collision
+    bool fUseEtaCut = true;
+    std::array<float, 2> fEta = {-0.8, 0.8}; // {min, max}
+    int fCurrentRunNumber = -1;              // run number of the weights currently in use
+    bool fUsePhiWeights = false;             // load phi weights
+    bool fUsePtWeights = false;              // load pt weights
+    bool fUseEtaWeights = false;             // load eta weights
+    bool fVerbose = false;                   // print the values / collision
 
   } tc; // you have to prepend "tc." for all objects name in this group later in the code
 
@@ -197,11 +225,20 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
 
   struct QAHistograms {
     TList* fQAHistogramsList = nullptr;
-    TH2F* fHistCentralityRecVsSim = nullptr; // x = centrality sim (from impact parameter), y = centrality rec
-  } qa;                                      // you have to prepend "qa." for all objects name in this group later in the code
+    TH2F* fHistCentralityRecVsSim = nullptr;                    // x = centrality sim (from impact parameter), y = centrality rec
+    std::array<TH2F*, EBeforeAfter_N> fHistRefMultVsNContrib{}; // x = reference multiplicity, y = number of vertex contributors [before, after]
+  } qa;                                                         // you have to prepend "qa." for all objects name in this group later in the code
+
+  // **) Correlations:
+  struct Correlations {
+    TList* fCorrelationsList = nullptr;
+    TProfile* fProfTwo = nullptr; // <<2>> = v2{2}^2 vs. centrality (rec)
+  } cc;
 
   // **) Histogram with weights from an external file
-  TH1F* histWeights = nullptr;
+  TH1F* histPhiWeights = nullptr; // phi weights for the current run
+  TH1F* histPtWeights = nullptr;  // pt weights for the current run
+  TH1F* histEtaWeights = nullptr; // eta weights for the current run
 
   // *) Define all member functions to be called in the main process* functions:
 
@@ -291,8 +328,7 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     return nullptr;
 
   } // TObject* getObjectFromList(...)
-
-  TH1F* getHistogramWithWeights(const char* filePath, const char* runNumber)
+  TH1F* getHistogramWithWeights(const char* filePath, const char* runNumber, const char* histName)
   {
     // Last update: 20261018
 
@@ -427,7 +463,7 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     // listWithRuns->ls();
 
     // get pointer to "hist" from "listWithRuns"
-    hist = dynamic_cast<TH1F*>(getObjectFromList(listWithRuns, "histWithEfficiencyCorrections_1"));
+    hist = dynamic_cast<TH1F*>(getObjectFromList(listWithRuns, histName));
     if (!hist) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
@@ -443,6 +479,36 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
 
   } // end of TH1F* getHistogramWithWeights(...)
 
+  // load one kind of weights for this run (or reuse it if already loaded), and save it in the output
+  TH1F* loadWeights(const char* nameInFile, const char* nameInOutput, int runNumber)
+  {
+    TString name = Form("%s_%d", nameInOutput, runNumber);
+    TH1F* hist = dynamic_cast<TH1F*>(fBaseList->FindObject(name.Data()));
+    if (!hist) {
+      hist = getHistogramWithWeights(cfFileWithWeights.value.c_str(), Form("%d", runNumber), nameInFile);
+      hist->SetName(name.Data());                      // e.g. histPhiWeights_544116
+      hist->SetTitle(cfFileWithWeights.value.c_str()); // book-keeping: title = file path
+      fBaseList->Add(hist);                            // saved in AnalysisResults.root
+    }
+    return hist;
+  }
+
+  // weight of one particle: product of all enabled weights, 1 if none is enabled
+  float getParticleWeight(float phi, float pt, float eta)
+  {
+    float weight = 1.;
+    if (tc.fUsePhiWeights && histPhiWeights) {
+      weight *= histPhiWeights->GetBinContent(histPhiWeights->FindBin(phi));
+    }
+    if (tc.fUsePtWeights && histPtWeights) {
+      weight *= histPtWeights->GetBinContent(histPtWeights->FindBin(pt));
+    }
+    if (tc.fUseEtaWeights && histEtaWeights) {
+      weight *= histEtaWeights->GetBinContent(histEtaWeights->FindBin(eta));
+    }
+    return weight;
+  }
+
   //__ EVENT CUTS __
   template <ERecSim rs, typename T1>
   bool eventCuts(T1 const& collision)
@@ -454,6 +520,55 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
         return false; // if at least one event cut is not satisfied
       }
     }
+    // *) No collision in time range cut
+    if (tc.fUseTimeRange) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        return false; // if at least one event cut is not satisfied
+      }
+    }
+
+    // *) No collision in the same readout frame cut
+    if (tc.fUseRof) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        return false; // if at least one event cut is not satisfied
+      }
+    }
+
+    // *) No same-bunch pile-up cut
+    if (tc.fUsePileUp) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        return false; // if at least one event cut is not satisfied
+      }
+    }
+
+    // *) Vertex from ITS and TPC tracks cut
+    if (tc.fUseITSTPC) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        return false; // if at least one event cut is not satisfied
+      }
+    }
+
+    // *) All ITS layers good cut
+    if (tc.fUseITSLayers) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        return false; // if at least one event cut is not satisfied
+      }
+    }
+
+    // *) z vertex from FT0 and from tracks agree cut
+    if (tc.fUseZFT0vsPV) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        return false; // if at least one event cut is not satisfied
+      }
+    }
+
+    // *) No high-multiplicity collision in previous readout frame cut
+    if (tc.fUsePrevRof) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+        return false; // if at least one event cut is not satisfied
+      }
+    }
+
     return true; // all event cuts passed
   }
 
@@ -466,6 +581,13 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     if (tc.fUsePtCut) {
       if (!(tc.fPt[0] <= track.pt() && track.pt() < tc.fPt[1])) {
         return false; // if at least one event cut is not satisfied
+      }
+    }
+
+    // *) eta cut
+    if (tc.fUseEtaCut) {
+      if (!(tc.fEta[0] <= track.eta() && track.eta() < tc.fEta[1])) {
+        return false; // if at least one particle cut is not satisfied
       }
     }
 
@@ -487,6 +609,11 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
       ec.fEventHistograms[EVertexX][ERec][ba]->Fill(collision.posX());
       ec.fEventHistograms[EVertexY][ERec][ba]->Fill(collision.posY());
       ec.fEventHistograms[EVertexZ][ERec][ba]->Fill(collision.posZ());
+
+      // QA: reference multiplicity vs. number of contributors
+      if (tc.fFillQA) {
+        qa.fHistRefMultVsNContrib[ba]->Fill(getReferenceMultiplicity(collision), collision.numContrib());
+      }
 
       if constexpr (rs == ERecAndSim) {
         if (!collision.has_mcCollision()) {
@@ -529,14 +656,19 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
       return;
     }
 
-    // Load the weights once, at the first collision, because the run number is only known here
-    if (tc.fUseWeights && !tc.fWeightsLoaded) {
-      histWeights = getHistogramWithWeights(cfFileWithWeights.value.c_str(), Form("%d", collision.bc().runNumber()));
-      histWeights->SetTitle(cfFileWithWeights.value.c_str()); // book-keeping: title = file path
-      // value takes the text as std::string and c_str makes it into a constant char*
-
-      fBaseList->Add(histWeights); // so it is saved in AnalysisResults.root
-      tc.fWeightsLoaded = true;
+    // weights are run-specific: load them again when the run number changes
+    int runNumber = collision.bc().runNumber();
+    if (runNumber != tc.fCurrentRunNumber) {
+      if (tc.fUsePhiWeights) {
+        histPhiWeights = loadWeights("histWithEfficiencyCorrections_1", "histPhiWeights", runNumber);
+      }
+      if (tc.fUsePtWeights) {
+        histPtWeights = loadWeights("histWithEfficiencyCorrections_2", "histPtWeights", runNumber);
+      }
+      if (tc.fUseEtaWeights) {
+        histEtaWeights = loadWeights("histWithEfficiencyCorrections_3", "histEtaWeights", runNumber);
+      }
+      tc.fCurrentRunNumber = runNumber;
     }
 
     // Print info for each collision, only if switched on in the config:
@@ -555,6 +687,9 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     }
 
     // Main loop over particles:
+    // Q-vector of harmonic 2 and sums of weights, for <2> of this event
+    double q2Re = 0., q2Im = 0., sumW = 0., sumW2 = 0.;
+
     auto track = tracks.iteratorAt(0); // set the type and scope from one instance
     for (int64_t i = 0; i < tracks.size(); i++) {
 
@@ -594,6 +729,13 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
         pc.fParticleHistograms[EPt][ERec][EAfter]->Fill(track.pt());
         pc.fParticleHistograms[EPhi][ERec][EAfter]->Fill(track.phi());
 
+        // add this particle to the Q-vector
+        const double w = getParticleWeight(track.phi(), track.pt(), track.eta());
+        q2Re += w * std::cos(2. * track.phi());
+        q2Im += w * std::sin(2. * track.phi());
+        sumW += w;
+        sumW2 += w * w;
+
         if constexpr (rs == ERecAndSim) {
           if (!track.has_mcParticle()) {
             continue;
@@ -610,6 +752,15 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     } // end of for (int64_t i = 0; i < tracks.size(); i++) {
 
     // Fill event histograms after event and particle cuts
+    // <2> of this event, filled vs. centrality with event weight sumW^2 - sumW2 (= M(M-1) for unit weights)
+    if constexpr (rs == ERec || rs == ERecAndSim) {
+      const double denominator = sumW * sumW - sumW2;
+      if (denominator > 0.) {
+        const double two = (q2Re * q2Re + q2Im * q2Im - sumW2) / denominator;
+        cc.fProfTwo->Fill(getCentrality(collision), two, denominator);
+      }
+    }
+
     fillEventHistograms<rs>(collision, tracks, EAfter);
 
   } // end of template <ERecSim rs, typename T1, typename T2> void steer(T1 const& collision, T2 const& tracks) {
@@ -631,9 +782,11 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     tc.fVerbose = cfVerbose;
     tc.fSigmaInel = cfSigmaInel;
 
-    tc.fUseWeights = cfUseWeights;
-    if (tc.fUseWeights && cfFileWithWeights.value.empty()) {
-      LOGF(fatal, "cfUseWeights is true, but cfFileWithWeights is empty");
+    tc.fUsePhiWeights = cfUsePhiWeights;
+    tc.fUsePtWeights = cfUsePtWeights;
+    tc.fUseEtaWeights = cfUseEtaWeights;
+    if ((tc.fUsePhiWeights || tc.fUsePtWeights || tc.fUseEtaWeights) && cfFileWithWeights.value.empty()) {
+      LOGF(fatal, "weights are switched on, but cfFileWithWeights is empty");
     }
 
     // vertex Z cut copy the swtich and range
@@ -649,6 +802,22 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
 
     tc.fPt[0] = lPtCut[0];
     tc.fPt[1] = lPtCut[1];
+
+    // eta cut copy switch and range
+    tc.fUseEtaCut = cfUseEtaCut;
+    std::vector<float> lEtaCut = cfEta.value;
+
+    tc.fEta[0] = lEtaCut[0];
+    tc.fEta[1] = lEtaCut[1];
+
+    // technical event cuts: copy the switches
+    tc.fUseTimeRange = cfUseTimeRange;
+    tc.fUseRof = cfUseRof;
+    tc.fUsePileUp = cfUsePileUp;
+    tc.fUseITSTPC = cfUseITSTPC;
+    tc.fUseITSLayers = cfUseITSLayers;
+    tc.fUseZFT0vsPV = cfUseZFT0vsPV;
+    tc.fUsePrevRof = cfUsePrevRof;
 
     // translate the centrality estimator string into the enum
     if (cfCentralityEstimator.value == "FT0C") {
@@ -687,6 +856,18 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
     ec.fEventHistogramsList->SetName("EventHistograms");
     ec.fEventHistogramsList->SetOwner(true);
     fBaseList->Add(ec.fEventHistogramsList); // any nested TList in the base TList appears as a subdir in the output ROOT file
+
+    // correlations: <<2>> vs. centrality, in the centrality classes of the reference paper
+    cc.fCorrelationsList = new TList();
+    cc.fCorrelationsList->SetName("Correlations");
+    cc.fCorrelationsList->SetOwner(true);
+    fBaseList->Add(cc.fCorrelationsList);
+    const std::array<double, 10> centBoundaries = {0., 5., 10., 20., 30., 40., 50., 60., 70., 80.};
+    cc.fProfTwo = new TProfile("fProfTwo", "<<2>> = v_{2}{2}^{2} vs. centrality", centBoundaries.size() - 1, centBoundaries.data());
+    cc.fProfTwo->GetXaxis()->SetTitle("centrality (%)");
+    cc.fProfTwo->GetYaxis()->SetTitle("#LT#LT2#GT#GT");
+    cc.fProfTwo->Sumw2();
+    cc.fCorrelationsList->Add(cc.fProfTwo);
 
     if (tc.fFillQA) { // only if QA switched on
       qa.fQAHistogramsList = new TList();
@@ -824,6 +1005,15 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format t
       qa.fHistCentralityRecVsSim->GetXaxis()->SetTitle("centrality simulated (%)");
       qa.fHistCentralityRecVsSim->GetYaxis()->SetTitle("centrality reconstructed (%)");
       qa.fQAHistogramsList->Add(qa.fHistCentralityRecVsSim);
+
+      // reference multiplicity vs. number of contributors, before and after cuts
+      std::vector<float> lContribBins = cfNContribBins.value;
+      for (int ba = 0; ba < EBeforeAfter_N; ba++) {
+        qa.fHistRefMultVsNContrib[ba] = new TH2F(Form("fHistRefMultVsNContrib[%s]", baNames[ba]), Form("reference multiplicity vs. number of contributors (%s cuts)", baNames[ba]), nRefMultBins, refMultMin, refMultMax, static_cast<int>(lContribBins[0]), lContribBins[1], lContribBins[2]);
+        qa.fHistRefMultVsNContrib[ba]->GetXaxis()->SetTitle("reference multiplicity");
+        qa.fHistRefMultVsNContrib[ba]->GetYaxis()->SetTitle("number of contributors");
+        qa.fQAHistogramsList->Add(qa.fHistRefMultVsNContrib[ba]);
+      }
     }
 
   } // end of void init(InitContext&) {
