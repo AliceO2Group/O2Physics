@@ -18,11 +18,11 @@
 ///
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/Core/RecoDecay.h"
 
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
@@ -915,8 +915,8 @@ struct Alice3Strangeness {
   PROCESS_SWITCH(Alice3Strangeness, processFoundCascadeCandidates, "", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Alice3Strangeness>(cfgc)};
+    adaptAnalysisTask<Alice3Strangeness>(context)};
 }
