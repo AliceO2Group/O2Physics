@@ -2212,9 +2212,7 @@ struct tofSpectra {
     if (!mcParticle.isPhysicalPrimary()) {      // Is not physical primary
       if (mcParticle.getProcess() == kPDecay) { // Is from decay
         if (includeCentralityMC) {
-          if (includeCentralityMC) {
-            histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
-          }
+          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
         } else {
           histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity);
         }
@@ -2749,8 +2747,6 @@ struct tofSpectra {
       }
       histos.fill(HIST("MC/Multiplicity"), getMultiplicityMC(mcCollision));
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-      bool hasParticleInFT0C = false;
-      bool hasParticleInFT0A = false;
       if (evselOptions.cfgINELCut.value == EvSelInelGt0Cut) {
         if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) {
           continue;
@@ -2776,9 +2772,6 @@ struct tofSpectra {
       }
       if (mcCollision.isInelGt1()) {
         histos.fill(HIST("MC/GenRecoCollisions"), 4.f);
-      }
-      if (hasParticleInFT0C && hasParticleInFT0A) {
-        histos.fill(HIST("MC/GenRecoCollisions"), 5.f);
       }
     }
   }
