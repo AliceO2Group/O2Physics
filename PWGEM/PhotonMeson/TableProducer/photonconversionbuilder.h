@@ -1133,7 +1133,12 @@ struct PhotonConversionBuilder {
     const bool cacheDca = modeTrackPropagation == TrackPropMode::kProper;
     std::optional<o2::track::TrackParCov> posAtDca, eleAtDca; // legs at their DCA to the vertex (reused for phi_V / psi_pair)
     const LegDcaKey posKey{pos.globalIndex(), collision.globalIndex(), pvX, pvY, pvZ, sideBased};
-    const auto posCached = cacheDca ? mLegDcaCache.find(posKey) : mLegDcaCache.end();
+    const LegAtDca* posCached = nullptr; // this leg at its DCA, if already propagated in this DF
+    if (cacheDca) {
+      if (const auto it = mLegDcaCache.find(posKey); it != mLegDcaCache.end()) {
+        posCached = &it->second;
+      }
+    }
     auto pTrackC = pTrack;
     o2::math_utils::Point3D<float> vtxPrim{pvX, pvY, pvZ};
     if (modeTrackPropagation != TrackPropMode::kProper) {
@@ -1142,9 +1147,9 @@ struct PhotonConversionBuilder {
     pTrackC.setPID(o2::track::PID::Electron);
 
     std::array<float, 2> dcaInfoFast = dcaInfo;
-    if (posCached != mLegDcaCache.end()) {
-      dcaInfo = posCached->second.dca;
-      posAtDca = posCached->second.trk;
+    if (posCached != nullptr) {
+      dcaInfo = posCached->dca;
+      posAtDca = posCached->trk;
     } else if (modeTrackPropagation != TrackPropMode::kFast) {
       const bool propOk = o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, pTrackC, 2.f, matCorr, &dcaInfo);
       if (cacheDca && propOk) { // a failed propagation leaves dcaInfo as it was: not cached
@@ -1172,7 +1177,12 @@ struct PhotonConversionBuilder {
       return;
     }
     const LegDcaKey eleKey{ele.globalIndex(), collision.globalIndex(), pvX, pvY, pvZ, sideBased};
-    const auto eleCached = cacheDca ? mLegDcaCache.find(eleKey) : mLegDcaCache.end();
+    const LegAtDca* eleCached = nullptr; // this leg at its DCA, if already propagated in this DF
+    if (cacheDca) {
+      if (const auto it = mLegDcaCache.find(eleKey); it != mLegDcaCache.end()) {
+        eleCached = &it->second;
+      }
+    }
     auto nTrackC = nTrack;
     if (modeTrackPropagation != TrackPropMode::kProper) {
       dcaInfo = CalculateDCAFast(nTrackC, vtxPrim, d_bz);
@@ -1180,9 +1190,9 @@ struct PhotonConversionBuilder {
     nTrackC.setPID(o2::track::PID::Electron);
 
     dcaInfoFast = dcaInfo;
-    if (eleCached != mLegDcaCache.end()) {
-      dcaInfo = eleCached->second.dca;
-      eleAtDca = eleCached->second.trk;
+    if (eleCached != nullptr) {
+      dcaInfo = eleCached->dca;
+      eleAtDca = eleCached->trk;
     } else if (modeTrackPropagation != TrackPropMode::kFast) {
       const bool propOk = o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, nTrackC, 2.f, matCorr, &dcaInfo);
       if (cacheDca && propOk) { // a failed propagation leaves dcaInfo as it was: not cached
@@ -3668,6 +3678,7 @@ struct PhotonConversionBuilder {
             auto trial = [&](FitOptions const& o) {
               const size_t n0 = vecV0Dedup.size();
               fitV0Candidate<false, void, TMixCollisions, TMixLegs>(collision, pos, ele, -1, false, o);
+              // cppcheck-suppress knownConditionTrueFalse ; fitV0Candidate appends the candidate to vecV0Dedup if it passes
               if (vecV0Dedup.size() > n0) {
                 const auto k = keyOf(vecV0Dedup.back());
                 pca_map.erase(k);
