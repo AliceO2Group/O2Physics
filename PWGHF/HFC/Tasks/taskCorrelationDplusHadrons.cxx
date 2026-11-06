@@ -477,7 +477,7 @@ struct HfTaskCorrelationDplusHadrons {
       if (!isSelectedMl(ptD, bdtScoreBkg, bdtScorePrompt, bdtScoreNonPrompt)) {
         continue;
       }
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
+      if (std::abs(trackDcaXY) >= dcaXYTrackMax || std::abs(trackDcaZ) >= dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
       double const efficiencyWeight = getEfficiencyWeight(ptD, isPromptAnalysis, ptHadron);
@@ -581,7 +581,7 @@ struct HfTaskCorrelationDplusHadrons {
       if (!isSelectedMl(ptD, bdtScoreBkg, bdtScorePrompt, bdtScoreNonPrompt)) {
         continue;
       }
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
+      if (std::abs(trackDcaXY) > dcaXYTrackMax || std::abs(trackDcaZ) > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
       double const efficiencyWeight = getEfficiencyWeight(ptD, isDplusPrompt, ptHadron);
