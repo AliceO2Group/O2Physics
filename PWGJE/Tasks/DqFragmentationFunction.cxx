@@ -34,6 +34,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+
 #include <cmath>
 #include <string>
 #include <vector>
@@ -387,15 +388,15 @@ struct DqFragmentationFunctionTask {
     return true;
   }
   template <typename Candidate>
-bool passesPairCuts(const Candidate& candidate)
-{
-  if (candidate.pt() < electronPairPtMin.value ||
-      std::abs(candidate.eta()) > electronPairEtaMax.value) {
-    return false;
-  }
+  bool passesPairCuts(const Candidate& candidate)
+  {
+    if (candidate.pt() < electronPairPtMin.value ||
+        std::abs(candidate.eta()) > electronPairEtaMax.value) {
+      return false;
+    }
 
-  return true;
-}
+    return true;
+  }
 
   void FragmentationFunctionData(aod::JetCollision const& collision,
                                  soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents> const& jets,
@@ -420,11 +421,11 @@ bool passesPairCuts(const Candidate& candidate)
       int electronPairs = 0;
       for (const auto& dielectronCandidate : dielectronCandidates) {
         if (useCuts &&
-    (!passesPairCuts(dielectronCandidate) ||
-     !passesElectronCuts(dielectronCandidate, 1) ||
-     !passesElectronCuts(dielectronCandidate, 2))) {
-  continue;
-}
+            (!passesPairCuts(dielectronCandidate) ||
+             !passesElectronCuts(dielectronCandidate, 1) ||
+             !passesElectronCuts(dielectronCandidate, 2))) {
+          continue;
+        }
 
         const double z = calculateZ(jet, dielectronCandidate);
         if (z < 0.) {
@@ -526,11 +527,11 @@ bool passesPairCuts(const Candidate& candidate)
       int electronPairs = 0;
       for (const auto& dielectronCandidate : dielectronCandidates) {
         if (useCuts &&
-    (!passesPairCuts(dielectronCandidate) ||
-     !passesElectronCuts(dielectronCandidate, 1) ||
-     !passesElectronCuts(dielectronCandidate, 2))) {
-  continue;
-}
+            (!passesPairCuts(dielectronCandidate) ||
+             !passesElectronCuts(dielectronCandidate, 1) ||
+             !passesElectronCuts(dielectronCandidate, 2))) {
+          continue;
+        }
         const double z = calculateZ(jet, dielectronCandidate);
         if (z < 0.) {
           continue;
@@ -762,11 +763,11 @@ bool passesPairCuts(const Candidate& candidate)
                 continue;
               }
               if (useCuts &&
-                (!passesPairCuts(mcdCandidate) ||
-                 !passesElectronCuts(mcdCandidate, 1) ||
-                 !passesElectronCuts(mcdCandidate, 2))) {
-               continue;
-      }
+                  (!passesPairCuts(mcdCandidate) ||
+                   !passesElectronCuts(mcdCandidate, 1) ||
+                   !passesElectronCuts(mcdCandidate, 2))) {
+                continue;
+              }
               registry.fill(HIST("Matching/h_candidate_counter"), 1.5);
 
               const auto matchedParticleId =
@@ -786,7 +787,7 @@ bool passesPairCuts(const Candidate& candidate)
                 registry.fill(HIST("Matching/h_candidate_counter"), 2.5);
                 if (useMCPCuts && !passesPairCuts(mcpCandidate)) {
                   continue;
-          }
+                }
                 registry.fill(HIST("Matching/h_candidate_counter"), 3.5);
                 const double mcpCandidatePt = std::sqrt(mcpCandidate.px() * mcpCandidate.px() + mcpCandidate.py() * mcpCandidate.py());
                 double tauxyMCP = 0.;
