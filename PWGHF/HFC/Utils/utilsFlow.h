@@ -79,18 +79,12 @@ class HfcFlowHelper
   /// \param histRegistry is the histogram registry
   /// \param mlClasses are the machine learning classes
   /// \param maxRapidity is the maximum rapidity
-  void init(o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdbService,
-            o2::framework::HistogramRegistry& histRegistry,
-            std::vector<unsigned int> mlClasses,
+  void init(std::vector<unsigned int> mlClasses,
             float maxRapidity)
   {
-
-    LOG(info) << "Initializing HFC flow helper!";
-    this->hfEvSel.addHistograms(histRegistry);
-    this->ccdb = &ccdbService;
-    this->registry = &histRegistry;
     this->classMl = std::move(mlClasses);
     this->yCandMax = maxRapidity;
+    LOG(info) << "HFC flow helper initialized";
   }
 
   /// Get charm hadron candidate mass
@@ -168,6 +162,7 @@ class HfcFlowHelper
 
   /// Cut on rapidity of the candidate
   /// \param candidate is the charm hadron candidate
+  /// \return true if the candidate passes the rapidity cut, false otherwise
   template <TriggerChannels CandType, typename TCand>
   bool cutCandRapidity(const TCand& candidate)
   {
@@ -186,39 +181,103 @@ class HfcFlowHelper
     return std::fabs(y) < yCandMax;
   }
 
-  /// Check event selections for collision and fill the collision table
+  /// Runtime dispatch to the compile-time checkCollision
   /// \param collision is the collision
-  template <o2::hf_centrality::CentralityEstimator CentEst, typename Coll>
-  bool checkCollision(Coll const& collision, float& cent, float& mult)
+  /// \param centEst is the centrality estimator
+  /// \param cent is the centrality value
+  /// \param mult is the multiplicity value
+  template <typename BCsInfo, typename GenColl, typename RecoCollSlice>
+  bool selectGenCollision(o2::hf_evsel::HfEventSelectionMc& hfEvSelMc,
+                          GenColl const& genColl,
+                          RecoCollSlice const& recoCollsSlice,
+                          o2::hf_centrality::CentralityEstimator centEst,
+                          float& cent,
+                          float& mult)
+  {
+    int nSplitColl = recoCollsSlice.size();
+    o2::hf_evsel::HfCollisionRejectionMask collRejMask{};
+    switch (centEst) {
+      case o2::hf_centrality::CentralityEstimator::FT0A:
+        collRejMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::FT0A>(genColl, recoCollsSlice, cent);
+        mult = o2::hf_centrality::getCentralityGenColl(recoCollsSlice, o2::hf_centrality::CentralityEstimator::FT0A);
+        hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::FT0A>(genColl, collRejMask, nSplitColl);
+        break;
+      case o2::hf_centrality::CentralityEstimator::FT0C:
+        collRejMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::FT0C>(genColl, recoCollsSlice, cent);
+        mult = o2::hf_centrality::getCentralityGenColl(recoCollsSlice, o2::hf_centrality::CentralityEstimator::FT0C);
+        hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::FT0C>(genColl, collRejMask, nSplitColl);
+        break;
+      case o2::hf_centrality::CentralityEstimator::FT0M:
+        collRejMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::FT0M>(genColl, recoCollsSlice, cent);
+        mult = o2::hf_centrality::getCentralityGenColl(recoCollsSlice, o2::hf_centrality::CentralityEstimator::FT0M);
+        hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::FT0M>(genColl, collRejMask, nSplitColl);
+        break;
+      case o2::hf_centrality::CentralityEstimator::FV0A:
+        collRejMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::FV0A>(genColl, recoCollsSlice, cent);
+        mult = o2::hf_centrality::getCentralityGenColl(recoCollsSlice, o2::hf_centrality::CentralityEstimator::FV0A);
+        hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::FV0A>(genColl, collRejMask, nSplitColl);
+        break;
+      case o2::hf_centrality::CentralityEstimator::None:
+        collRejMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(genColl, recoCollsSlice, cent);
+        mult = -1.f;
+        hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::None>(genColl, collRejMask, nSplitColl);
+        break;
+      default:
+        LOG(fatal) << "Centrality estimator not recognized for collision selection";
+        std::abort();
+    }
+
+
+    return (collRejMask == 0);
+  }
+
+  /// Apply event selection on reconstructed collisions
+  /// \param collision is the collision
+  /// \param centEst is the centrality estimator
+  /// \param cent is the centrality value
+  /// \param mult is the multiplicity value
+  template <typename Coll>
+  bool selectRecoCollision(o2::hf_evsel::HfEventSelection& hfEvSel,
+                           o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb,
+                           o2::framework::HistogramRegistry& registry,
+                           Coll const& collision,
+                           o2::hf_centrality::CentralityEstimator centEst,
+                           float& cent,
+                           float& mult)
   {
     o2::hf_evsel::HfCollisionRejectionMask collRejMask{};
-    if constexpr (CentEst == o2::hf_centrality::CentralityEstimator::FT0A) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0A, aod::BCsWithTimestamps>(collision, cent, *ccdb, *registry);
-      mult = collision.multFT0A();
-    } else if constexpr (CentEst == o2::hf_centrality::CentralityEstimator::FT0C) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, cent, *ccdb, *registry);
-      mult = collision.multFT0C();
-    } else if constexpr (CentEst == o2::hf_centrality::CentralityEstimator::FT0M) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, cent, *ccdb, *registry);
-      mult = collision.multFT0M();
-    } else if constexpr (CentEst == o2::hf_centrality::CentralityEstimator::FV0A) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FV0A, aod::BCsWithTimestamps>(collision, cent, *ccdb, *registry);
-      mult = collision.multFV0A();
-    } else if constexpr (CentEst == o2::hf_centrality::CentralityEstimator::None) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, *ccdb, *registry);
-      mult = -1.f;
-    } else {
-      LOG(fatal) << "Centrality estimator not recognized for collision selection";
-      std::abort();
+    switch (centEst) {
+      case o2::hf_centrality::CentralityEstimator::FT0A:
+        collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+        mult = collision.multFT0A();
+        break;
+      case o2::hf_centrality::CentralityEstimator::FT0C:
+        collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+        mult = collision.multFT0C();
+        break;
+      case o2::hf_centrality::CentralityEstimator::FT0M:
+        collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+        mult = collision.multFT0M();
+        break;
+      case o2::hf_centrality::CentralityEstimator::FV0A:
+        collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FV0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+        mult = collision.multFV0A();
+        break;
+      case o2::hf_centrality::CentralityEstimator::None:
+        collRejMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+        mult = -1.f;
+        break;
+      default:
+        LOG(fatal) << "Centrality estimator not recognized for collision selection";
+        std::abort();
     }
+
     hfEvSel.fillHistograms(collision, collRejMask, cent);
-    return collRejMask == 0;
+
+    return (collRejMask == 0);
   }
 
  private:
-  o2::hf_evsel::HfEventSelection hfEvSel;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager>* ccdb{nullptr};
-  o2::framework::HistogramRegistry* registry{nullptr};
   std::vector<unsigned int> classMl{};
   float yCandMax{-999.f};
 };

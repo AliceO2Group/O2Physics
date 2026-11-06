@@ -17,7 +17,6 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -157,7 +156,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   void init(InitContext&)
   {
 
-    hfEvSel.addHistograms(registry); // collision monitoring
+    hfEvSel.init(registry);
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -176,7 +176,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
 
-    hfcFlowHelper.init(ccdb, registry, classesMl, yCandMax.value);
+    hfcFlowHelper.init(classesMl, yCandMax.value);
 
     const AxisSpec axisTpcSignal = {binsTpcSignal, "TPC Signal"};
     const AxisSpec axisCent = {binsCent, "Centrality"};
@@ -208,32 +208,6 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", dcaXYPtPrimTrkFunc.value.data()));
     }
   }; // end init
-
-  /// Check event selections for collision and fill the collision table
-  /// \param collision is the collision
-  template <typename Coll>
-  bool checkCollision(Coll const& collision, float& cent, float& mult)
-  {
-    o2::hf_evsel::HfCollisionRejectionMask collRejMask{};
-    if (centEstimator == CentralityEstimator::FT0A) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-      mult = collision.multFT0A();
-    } else if (centEstimator == CentralityEstimator::FT0C) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-      mult = collision.multFT0C();
-    } else if (centEstimator == CentralityEstimator::FT0M) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-      mult = collision.multFT0M();
-    } else if (centEstimator == CentralityEstimator::FV0A) {
-      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FV0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-      mult = collision.multFV0A();
-    } else {
-      LOG(fatal) << "Centrality estimator not recognized for collision selection";
-      std::abort();
-    }
-    hfEvSel.fillHistograms(collision, collRejMask, cent);
-    return collRejMask == 0;
-  }
 
   /// Checks if the trigger cand-associated track pair can be accepted for SE correlation
   /// \param assTrk is the associated track
@@ -404,7 +378,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -421,7 +396,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -441,7 +417,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -461,7 +438,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -482,7 +460,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -502,7 +481,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -523,7 +503,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -543,7 +524,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -564,7 +546,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -582,7 +565,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -602,7 +586,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -622,7 +607,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -643,7 +629,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -663,7 +650,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -684,7 +672,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -704,7 +693,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -720,7 +710,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                                  TracksData const& tracks)
   {
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -733,7 +724,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                                  TracksData const& tracks)
   {
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -747,7 +739,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                                TracksMc const& tracks)
   {
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
@@ -760,7 +753,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                                TracksMc const& tracks)
   {
     float cent{-1.}, mult{-1.};
-    if (!checkCollision(coll, cent, mult)) {
+    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
