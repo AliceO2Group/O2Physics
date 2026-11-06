@@ -146,8 +146,8 @@ struct SlimTablesProducer {
     histos.add("Ntracks_pT", "track pT distribution;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, -0.5, 199.5}}}, doSumw2);
     histos.add("Nparticles_pT", "particle pT distribution;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, -0.5, 199.5}}}, doSumw2);
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
   }
 
   Produces<o2::aod::SlimCollisions> slimCollisions;

@@ -38,12 +38,12 @@ void runCalibration(const TString& lInputFileName = "results/AR_544122_glauberNB
   TFile* file = new TFile(lInputFileName.Data(), "READ");
   file->ls();
 
-  TH1F* hData = (TH1F*)file->Get("hV0MUltraFine");
-  TH1F* hGlauberParameters = (TH1F*)file->Get("hGlauberParameters");
-  TH1F* hGlauberFitRange = (TH1F*)file->Get("hGlauberFitRange");
+  TH1F* hData = dynamic_cast<TH1F*>(file->Get("hV0MUltraFine"));
+  TH1F* hGlauberParameters = dynamic_cast<TH1F*>(file->Get("hGlauberParameters"));
+  TH1F* hGlauberFitRange = dynamic_cast<TH1F*>(file->Get("hGlauberFitRange"));
   hData->SetName("hData");
-  TH1F* hStitched = (TH1F*)hData->Clone("hStitched");
-  TH1F* hFit = (TH1F*)file->Get("hGlauber");
+  TH1F* hStitched = dynamic_cast<TH1F*>(hData->Clone("hStitched"));
+  TH1F* hFit = dynamic_cast<TH1F*>(file->Get("hGlauber"));
 
   TCanvas* c1 = new TCanvas("c1", "", 800, 600);
   c1->SetLeftMargin(0.17);
@@ -160,7 +160,7 @@ void runCalibration(const TString& lInputFileName = "results/AR_544122_glauberNB
 
     // Step 1: open the (Npart, Ncoll) pair information, provide
     TFile* fbasefile = new TFile("basehistos.root", "READ");
-    TH2D* hNpNc = (TH2D*)fbasefile->Get("hNpNc");
+    TH2D* hNpNc = dynamic_cast<TH2D*>(fbasefile->Get("hNpNc"));
     g->SetNpartNcollCorrelation(hNpNc);
     g->InitializeNpNc();
 

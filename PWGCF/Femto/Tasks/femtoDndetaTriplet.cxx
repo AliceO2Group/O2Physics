@@ -183,9 +183,12 @@ struct FemtoDndetaTriplet {
   closetripletrejection::ConfCtrMcParticleMcParticleMcParticle confCtrMcParticleMcParticleMcParticle; // generator-level trigger, no cut by default
 
   tripletbuilder::TripletTrackTrackTrackBuilder<
-    trackhistmanager::PrefixTrack1,
-    trackhistmanager::PrefixTrack2,
-    trackhistmanager::PrefixTrack3,
+    trackhistmanager::PrefixTrack1Se,
+    trackhistmanager::PrefixTrack2Se,
+    trackhistmanager::PrefixTrack3Se,
+    trackhistmanager::PrefixTrack1Me,
+    trackhistmanager::PrefixTrack2Me,
+    trackhistmanager::PrefixTrack3Me,
     triplethistmanager::PrefixTrackTrackTrackSe,
     triplethistmanager::PrefixTrackTrackTrackMe,
     closetripletrejection::PrefixTrack1Track2Se,
@@ -198,11 +201,16 @@ struct FemtoDndetaTriplet {
 
   tripletbuilder::TripletTrackTrackV0Builder<
     modes::V0::kLambda,
-    trackhistmanager::PrefixTrack1,
-    trackhistmanager::PrefixTrack2,
-    v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV01PosDaughter,
-    trackhistmanager::PrefixV01NegDaughter,
+    trackhistmanager::PrefixTrack1Se,
+    trackhistmanager::PrefixTrack2Se,
+    v0histmanager::PrefixLambda1Se,
+    trackhistmanager::PrefixV01PosDaughterSe,
+    trackhistmanager::PrefixV01NegDaughterSe,
+    trackhistmanager::PrefixTrack1Me,
+    trackhistmanager::PrefixTrack2Me,
+    v0histmanager::PrefixLambda1Me,
+    trackhistmanager::PrefixV01PosDaughterMe,
+    trackhistmanager::PrefixV01NegDaughterMe,
     triplethistmanager::PrefixTrackTrackLambdaSe,
     triplethistmanager::PrefixTrackTrackLambdaMe,
     closetripletrejection::PrefixTrack1Track2Se,
@@ -214,9 +222,12 @@ struct FemtoDndetaTriplet {
     tripletTrackTrackLambdaBuilder;
 
   tripletbuilder::TripletMcParticleMcParticleMcParticleBuilder<
-    mcparticlehistmanager::PrefixMcParticle1,
-    mcparticlehistmanager::PrefixMcParticle2,
-    mcparticlehistmanager::PrefixMcParticle3,
+    mcparticlehistmanager::PrefixMcParticle1Se,
+    mcparticlehistmanager::PrefixMcParticle2Se,
+    mcparticlehistmanager::PrefixMcParticle3Se,
+    mcparticlehistmanager::PrefixMcParticle1Me,
+    mcparticlehistmanager::PrefixMcParticle2Me,
+    mcparticlehistmanager::PrefixMcParticle3Me,
     triplethistmanager::PrefixMcParticleMcParticleMcParticleSe,
     triplethistmanager::PrefixMcParticleMcParticleMcParticleMe,
     closetripletrejection::PrefixMcParticle1McParticle2Se,

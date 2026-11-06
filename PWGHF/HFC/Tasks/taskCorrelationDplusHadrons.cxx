@@ -190,16 +190,16 @@ struct HfTaskCorrelationDplusHadrons {
   {
     // Axis definition
     AxisSpec axisMassD = {binsMassD, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
-    AxisSpec axisPtCorr = {(std::vector<double>)binsPtCorrelations, "#it{p}_{T}^{D} (GeV/#it{c})"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtEfficiencyD, "#it{p}_{T}^{D} (GeV/#it{c})"};
+    AxisSpec axisPtCorr = {std::vector<double>(binsPtCorrelations), "#it{p}_{T}^{D} (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtEfficiencyD), "#it{p}_{T}^{D} (GeV/#it{c})"};
     AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisDeltaEta = {binsEta, "#it{#eta}^{Hadron}-#it{#eta}^{D}"};
     AxisSpec axisDeltaPhi = {binsPhi, "#it{#varphi}^{Hadron}-#it{#varphi}^{D} (rad)"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
     AxisSpec axisDplusPrompt = {2, -0.5, 1.5, "Prompt D+"};
     AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
-    AxisSpec axisPtBMother = {(std::vector<double>)binsPtBMother, "#it{p}_{T}^{B} (GeV/#it{c})"};
+    AxisSpec axisPtBMother = {std::vector<double>(binsPtBMother), "#it{p}_{T}^{B} (GeV/#it{c})"};
     AxisSpec axisDeltaPhiBMother = {binsDeltaPhiBMother, "#it{#varphi}^{D}-#it{#varphi}^{B} (rad)"};
 
     // Histograms for data analysis
@@ -345,7 +345,7 @@ struct HfTaskCorrelationDplusHadrons {
       const int regionLimits = 6;
       std::string labels[regionLimits] = {"SigReg Left", "SigReg Right", "Left SB Low", "Left SB Up", "Right SB Low", "Right SB Up"};
       static const AxisSpec axisSidebandLimits = {regionLimits, 0.5, 6.5, ""};
-      auto hSigSidebandLimits = registry.add<TH2>("Inputs/hSigSidebandLimits", "Signal and Sideband Limits;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSidebandLimits, {(std::vector<double>)binsPtCorrelations, "#it{p}_{T} (GeV/#it{c})"}}});
+      auto hSigSidebandLimits = registry.add<TH2>("Inputs/hSigSidebandLimits", "Signal and Sideband Limits;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSidebandLimits, {std::vector<double>(binsPtCorrelations), "#it{p}_{T} (GeV/#it{c})"}}});
       for (int iLim = 0; iLim < regionLimits; iLim++) {
         hSigSidebandLimits->GetXaxis()->SetBinLabel(iLim + 1, labels[iLim].data());
       }

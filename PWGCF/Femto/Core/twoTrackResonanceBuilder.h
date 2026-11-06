@@ -33,6 +33,7 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
+#include <cstdint>
 #include <string>
 
 namespace o2::analysis::femto::twotrackresonancebuilder
@@ -340,6 +341,121 @@ class TwoTrackResonanceBuilder
   bool mProduceRho0Masks = false;
 
 }; // namespace twotrackresonancebuilder
+
+struct ConfTwoTrackResonanceTablesDerivedToDerived : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("TwoTrackResonanceTables");
+  o2::framework::Configurable<int> limitRho0{"limitRho0", 1, "Require at least this many Rho0s in the collision. Set to 0 to skip Rho0s entirely (not written to output)."};
+  o2::framework::Configurable<int> limitPhi{"limitPhi", 0, "Require at least this many Phis in the collision. Set to 0 to skip Phis entirely (not written to output)."};
+};
+
+struct TwoTrackResonanceBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
+  o2::framework::Produces<o2::aod::StoredFRho0s> producedRho0s;
+  o2::framework::Produces<o2::aod::StoredFRho0Masks> producedRho0Masks;
+  o2::framework::Produces<o2::aod::StoredFPhis> producedPhis;
+  o2::framework::Produces<o2::aod::StoredFPhiMasks> producedPhiMasks;
+};
+
+class TwoTrackResonanceBuilderDerivedToDerived
+{
+ public:
+  template <typename T>
+  void init(T& config)
+  {
+    mLimitRho0 = config.limitRho0.value;
+    mLimitPhi = config.limitPhi.value;
+
+    if (mLimitRho0 < 0 || mLimitPhi < 0) {
+      LOG(fatal) << "Two-track resonance limits must be non-negative (got " << mLimitRho0 << " and " << mLimitPhi << "). Breaking...";
+    }
+    if (mLimitRho0 == 0 && mLimitPhi == 0) {
+      LOG(fatal) << "Both Rho0 limit and Phi limit are 0. Breaking...";
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewRho0s(T1 const& col, T2 const& /*rho0Table*/, T3& partitionRho0, T4& cache)
+  {
+    if (mLimitRho0 == 0) { // Rho0s disabled, cannot reject on them
+      return false;
+    }
+    auto rho0Slice = partitionRho0->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    return rho0Slice.size() < static_cast<int64_t>(mLimitRho0);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewPhis(T1 const& col, T2 const& /*phiTable*/, T3& partitionPhi, T4& cache)
+  {
+    if (mLimitPhi == 0) { // Phis disabled, cannot reject on them
+      return false;
+    }
+    auto phiSlice = partitionPhi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    return phiSlice.size() < static_cast<int64_t>(mLimitPhi);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processRho0s(T1 const& col, T2 const& /*rho0Table*/, T3 const& oldTrackTable, T4& partitionRho0, T5& trackBuilder, T6& cache, T7& newRho0Table, T8& newTrackTable, T9& newCollisionTable)
+  {
+    if (mLimitRho0 == 0) { // Rho0s disabled
+      return;
+    }
+
+    auto rho0Slice = partitionRho0->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& rho0 : rho0Slice) {
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(rho0.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(rho0.negDauId(), oldTrackTable));
+
+      int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+
+      newRho0Table.producedRho0s(newCollisionTable.producedCollision.lastIndex(),
+                                 rho0.pt(),
+                                 rho0.eta(),
+                                 rho0.phi(),
+                                 rho0.mass(),
+                                 posDaughterIndex,
+                                 negDaughterIndex);
+      newRho0Table.producedRho0Masks(rho0.maskPosDau(),
+                                     rho0.posDauHasHighMomentum(),
+                                     rho0.maskNegDau(),
+                                     rho0.negDauHasHighMomentum());
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processPhis(T1 const& col, T2 const& /*phiTable*/, T3 const& oldTrackTable, T4& partitionPhi, T5& trackBuilder, T6& cache, T7& newPhiTable, T8& newTrackTable, T9& newCollisionTable)
+  {
+    if (mLimitPhi == 0) { // Phis disabled
+      return;
+    }
+
+    auto phiSlice = partitionPhi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& phi : phiSlice) {
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(phi.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(phi.negDauId(), oldTrackTable));
+
+      int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+
+      newPhiTable.producedPhis(newCollisionTable.producedCollision.lastIndex(),
+                               phi.pt(),
+                               phi.eta(),
+                               phi.phi(),
+                               phi.mass(),
+                               posDaughterIndex,
+                               negDaughterIndex);
+      newPhiTable.producedPhiMasks(phi.maskPosDau(),
+                                   phi.posDauHasHighMomentum(),
+                                   phi.maskNegDau(),
+                                   phi.negDauHasHighMomentum());
+    }
+  }
+
+ private:
+  int mLimitRho0 = 0;
+  int mLimitPhi = 0;
+};
 
 } // namespace o2::analysis::femto::twotrackresonancebuilder
 #endif // PWGCF_FEMTO_CORE_TWOTRACKRESONANCEBUILDER_H_

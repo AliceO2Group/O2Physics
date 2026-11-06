@@ -49,14 +49,14 @@ bool process(std::string outputName, int nevents = 100000)
   LOG(info) << "Bin width = " << T::bin_width << " vs histo " << hgaus->GetXaxis()->GetBinWidth(1);
   hgaus->SetLineColor(2);
   hgaus->SetLineStyle(1);
-  TH1F* hgausPacked = static_cast<TH1F*>(hgaus->Clone("hgausPacked"));
+  TH1F* hgausPacked = dynamic_cast<TH1F*>(hgaus->Clone("hgausPacked"));
   hgausPacked->SetLineColor(4);
   hgausPacked->SetLineStyle(2);
 
-  TH1F* huniform = static_cast<TH1F*>(hgaus->Clone("huniform"));
+  TH1F* huniform = dynamic_cast<TH1F*>(hgaus->Clone("huniform"));
   huniform->SetLineColor(2);
   huniform->SetLineStyle(1);
-  TH1F* huniformPacked = static_cast<TH1F*>(hgaus->Clone("huniformPacked"));
+  TH1F* huniformPacked = dynamic_cast<TH1F*>(hgaus->Clone("huniformPacked"));
   huniformPacked->SetLineColor(4);
   huniformPacked->SetLineStyle(2);
 

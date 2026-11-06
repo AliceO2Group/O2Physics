@@ -24,13 +24,7 @@
 #include <cstdint>
 #include <vector>
 
-// Fill the map of available input features
-// the key is the feature's name (std::string)
-// the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_XIC0TOXIPIKF(FEATURE) \
-  {                                    \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesXic0ToXiPiKf::FEATURE)}
-
+// Feature names are registered explicitly with the training-tree branch names.
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
@@ -61,7 +55,7 @@ namespace o2::analysis
 {
 
 enum class InputFeaturesXic0ToXiPiKf : uint8_t {
-  // Existing feature keys retained for backwards compatibility.
+  // Internal feature identifiers; configuration names are registered below.
   tpcNSigmaPiFromLambda,
   tpcNSigmaPiFromCasc,
   tpcNSigmaPiFromCharmBaryon,
@@ -92,7 +86,10 @@ enum class InputFeaturesXic0ToXiPiKf : uint8_t {
   dcaV0Dau,
   dcaXYToPvV0Dau0,
   dcaXYToPvV0Dau1,
-  tpcNSigmaPrFromLambda
+  tpcNSigmaPrFromLambda,
+  chi2GeoXic,
+  cTauXic,
+  chi2GeoCasc
 };
 
 template <typename TypeOutputScore = float>
@@ -121,6 +118,8 @@ class HfMlResponseXic0ToXiPiKf : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(xicChi2OverNdf);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(chi2TopoXicToPv);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(dcaCharmBaryonDau);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(chi2GeoXic);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(cTauXic);
         // Bachelor pion from Xic.
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(kfDcaXYPiFromXic);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(chi2TopoPiFromXicToPv);
@@ -128,6 +127,7 @@ class HfMlResponseXic0ToXiPiKf : public HfMlResponse<TypeOutputScore>
         // Cascade.
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(decayLenXYCasc);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(cascChi2OverNdf);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(chi2GeoCasc);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(chi2TopoCascToPv);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(chi2TopoCascToXic);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(candidate, cosPaCascToPv, cosPACasc);
@@ -149,7 +149,7 @@ class HfMlResponseXic0ToXiPiKf : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(dcaXYToPvV0Dau1);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(lamProngPr, tpcNSigmaPrFromLambda, tpcNSigmaPr);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(lamProngPi, tpcNSigmaPiFromLambda, tpcNSigmaPi);
-        // Legacy features that are not part of the local 28-feature model.
+        // Additional supported features.
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(charmBaryonProngPi, tpcNSigmaPiFromCharmBaryon, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_XIC0TOXIPIKF(cascldl);
       }
@@ -164,31 +164,23 @@ class HfMlResponseXic0ToXiPiKf : public HfMlResponse<TypeOutputScore>
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
       FILL_MAP_XIC0TOXIPIKF_AS("fDecayLenXYXic", decayLenXYXic),
-      FILL_MAP_XIC0TOXIPIKF(xicChi2OverNdf),
       FILL_MAP_XIC0TOXIPIKF_AS("fXicChi2OverNdf", xicChi2OverNdf),
       FILL_MAP_XIC0TOXIPIKF_AS("fChi2TopoXicToPv", chi2TopoXicToPv),
-      FILL_MAP_XIC0TOXIPIKF(dcaCharmBaryonDau),
       FILL_MAP_XIC0TOXIPIKF_AS("fDcaCharmBaryonDau", dcaCharmBaryonDau),
-      FILL_MAP_XIC0TOXIPIKF(kfDcaXYPiFromXic),
+      FILL_MAP_XIC0TOXIPIKF_AS("fChi2GeoXic", chi2GeoXic),
+      FILL_MAP_XIC0TOXIPIKF_AS("fCtXic", cTauXic),
       FILL_MAP_XIC0TOXIPIKF_AS("fKfDcaXYPiFromXic", kfDcaXYPiFromXic),
       FILL_MAP_XIC0TOXIPIKF_AS("fChi2TopoPiFromXicToPv", chi2TopoPiFromXicToPv),
       FILL_MAP_XIC0TOXIPIKF_AS("fKfptPiFromXic", kfptPiFromXic),
-      FILL_MAP_XIC0TOXIPIKF(decayLenXYCasc),
       FILL_MAP_XIC0TOXIPIKF_AS("fDecayLenXYCasc", decayLenXYCasc),
-      FILL_MAP_XIC0TOXIPIKF(cascChi2OverNdf),
       FILL_MAP_XIC0TOXIPIKF_AS("fCascChi2OverNdf", cascChi2OverNdf),
-      FILL_MAP_XIC0TOXIPIKF(chi2TopoCascToPv),
+      FILL_MAP_XIC0TOXIPIKF_AS("fChi2GeoCasc", chi2GeoCasc),
       FILL_MAP_XIC0TOXIPIKF_AS("fChi2TopoCascToPv", chi2TopoCascToPv),
-      FILL_MAP_XIC0TOXIPIKF(chi2TopoCascToXic),
       FILL_MAP_XIC0TOXIPIKF_AS("fChi2TopoCascToXic", chi2TopoCascToXic),
       FILL_MAP_XIC0TOXIPIKF_AS("fCosPaCascToPv", cosPaCascToPv),
-      FILL_MAP_XIC0TOXIPIKF(cosPaCascToXic),
       FILL_MAP_XIC0TOXIPIKF_AS("fCosPaCascToXic", cosPaCascToXic),
-      FILL_MAP_XIC0TOXIPIKF(dcaCascDau),
       FILL_MAP_XIC0TOXIPIKF_AS("fDcaCascDau", dcaCascDau),
-      FILL_MAP_XIC0TOXIPIKF(kfDcaXYCascToPv),
       FILL_MAP_XIC0TOXIPIKF_AS("fKfDcaXYCascToPv", kfDcaXYCascToPv),
-      FILL_MAP_XIC0TOXIPIKF(tpcNSigmaPiFromCasc),
       FILL_MAP_XIC0TOXIPIKF_AS("fTpcNSigmaPiFromCasc", tpcNSigmaPiFromCasc),
       FILL_MAP_XIC0TOXIPIKF_AS("fDcaXYToPvCascDau", dcaXYToPvCascDau),
       FILL_MAP_XIC0TOXIPIKF_AS("fDecayLenXYLambda", decayLenXYLambda),
@@ -201,17 +193,15 @@ class HfMlResponseXic0ToXiPiKf : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC0TOXIPIKF_AS("fDcaXYToPvV0Dau0", dcaXYToPvV0Dau0),
       FILL_MAP_XIC0TOXIPIKF_AS("fDcaXYToPvV0Dau1", dcaXYToPvV0Dau1),
       FILL_MAP_XIC0TOXIPIKF_AS("fTpcNSigmaPrFromLambda", tpcNSigmaPrFromLambda),
-      FILL_MAP_XIC0TOXIPIKF(tpcNSigmaPiFromLambda),
       FILL_MAP_XIC0TOXIPIKF_AS("fTpcNSigmaPiFromLambda", tpcNSigmaPiFromLambda),
-      FILL_MAP_XIC0TOXIPIKF(tpcNSigmaPiFromCharmBaryon),
-      FILL_MAP_XIC0TOXIPIKF(cascldl),
+      FILL_MAP_XIC0TOXIPIKF_AS("fTpcNSigmaPiFromCharmBaryon", tpcNSigmaPiFromCharmBaryon),
+      FILL_MAP_XIC0TOXIPIKF_AS("fCascldl", cascldl),
     };
   }
 };
 
 } // namespace o2::analysis
 
-#undef FILL_MAP_XIC0TOXIPIKF
 #undef FILL_MAP_XIC0TOXIPIKF_AS
 #undef CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL
 #undef CHECK_AND_FILL_VEC_XIC0TOXIPIKF

@@ -1036,7 +1036,7 @@ struct OnTheFlyMidPid {
       if (etStatus) {
         histos.fill(HIST("h1dEventTimedelta"), eventCollisionTimePS - tzero[0]);
       }
-      static_cast<TEfficiency*>(listEfficiency->At(0))->Fill(etStatus, dNdEta);
+      dynamic_cast<TEfficiency*>(listEfficiency->At(0))->Fill(etStatus, dNdEta);
     }
 
     // Then we do a second loop to compute the measured quantities with the measured event time

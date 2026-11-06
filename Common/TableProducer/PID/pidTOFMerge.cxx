@@ -405,7 +405,7 @@ struct tofEventTime {
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           if (enableTableEvTimeTOFOnly) {
-            tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+            tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
           }
           continue;
         }
@@ -470,7 +470,7 @@ struct tofEventTime {
           }
           tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
           if (enableTableEvTimeTOFOnly) {
-            tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
+            tableEvTimeTOFOnly(static_cast<uint8_t>(filterForTOFEventTime(trk)), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
           }
         }
       }
@@ -481,7 +481,7 @@ struct tofEventTime {
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           if (enableTableEvTimeTOFOnly) {
-            tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+            tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
           }
           continue;
         }
@@ -513,14 +513,14 @@ struct tofEventTime {
           tableFlags(flags);
           tableEvTime(et, erret);
           if (enableTableEvTimeTOFOnly) {
-            tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), et, erret, evTimeMakerTOF.mEventTimeMultiplicity);
+            tableEvTimeTOFOnly(static_cast<uint8_t>(filterForTOFEventTime(trk)), et, erret, evTimeMakerTOF.mEventTimeMultiplicity);
           }
         }
       }
     } else if (mComputeEvTimeWithTOF == 0 && mComputeEvTimeWithFT0 == 1) {
       for (auto const& t : tracks) { // Loop on collisions
         if (enableTableEvTimeTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+          tableEvTimeTOFOnly(static_cast<uint8_t>(0), 0.f, 0.f, -1);
         }
         if (!t.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute event time
           tableFlags(0);

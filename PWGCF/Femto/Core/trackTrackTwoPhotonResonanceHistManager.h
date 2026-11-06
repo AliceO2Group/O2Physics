@@ -148,12 +148,9 @@ class TrackTrackTwoPhotonResonanceHistManager
   {
     mHistogramRegistry = registry;
 
-    // omega(782) -> pi+ pi- pi0: both charged daughters are pions. Daughter managers are kept at
-    // kReco regardless of the outer mode: their fillQa() needs detector-QA columns (tpcNClsFound,
-    // itsNCls, ...) that plain FTracks doesn't carry (only the dedicated femtoTrackQa.cxx joins
-    // those in) -- detailed per-track detector QA isn't this manager's job.
-    mPosDauManager.template init<modes::Mode::kReco>(registry, PosDauSpecs, 1, 1, kPiPlus, ConfPosDauQaBinning);
-    mNegDauManager.template init<modes::Mode::kReco>(registry, NegDauSpecs, 1, -1, kPiPlus, ConfNegDauQaBinning);
+    // omega(782) -> pi+ pi- pi0: both charged daughters are pions
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, 1, 1, kPiPlus, ConfPosDauQaBinning);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, 1, -1, kPiPlus, ConfNegDauQaBinning);
 
     // the embedded pi0/eta candidate is a fully-fledged femto table with its own mask/extras
     // columns, so unlike the plain-track daughters above, it can just follow the outer mode.
@@ -171,9 +168,9 @@ class TrackTrackTwoPhotonResonanceHistManager
   void fill(T1 const& resonance, T2 const& tracks, T3 const& neutralDaus, T4 const& photons)
   {
     auto posDau = tracks.rawIteratorAt(resonance.posDauId() - tracks.offset());
-    mPosDauManager.template fill<modes::Mode::kReco>(posDau, tracks);
+    mPosDauManager.template fill<mode>(posDau, tracks);
     auto negDau = tracks.rawIteratorAt(resonance.negDauId() - tracks.offset());
-    mNegDauManager.template fill<modes::Mode::kReco>(negDau, tracks);
+    mNegDauManager.template fill<mode>(negDau, tracks);
     auto neutralDau = neutralDaus.rawIteratorAt(resonance.neutralDauId() - neutralDaus.offset());
     mNeutralDauManager.template fill<mode>(neutralDau, photons);
 

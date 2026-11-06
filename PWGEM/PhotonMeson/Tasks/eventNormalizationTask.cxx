@@ -43,25 +43,10 @@ struct EventNormalizationTask {
   void init(InitContext& /*context*/)
   {
     // Names derived from EventAcceptance bits in EventTables.h
-    std::vector<std::string> vecLabelNames = {
-      "all",
-      "has MC coll",
-      "good zVtx",
-      "is FT0AND",
-      "No TFB",
-      "ITS ROFB",
-      "Same bunch Pileup",
-      "ZVtxFT0PV",
-      "No coll in time range",
-      "good track occi",
-      "Good FT0 occupancy",
-      "kTVXinEMC",
-      "Good centrality",
-      "Good RCT",
-      "Good Sel8"};
-    fRegistry.add("EventNormalization/hEventCounter", "Event Counter;category;#it{N}_{evt}", kTH1D, {{static_cast<int>(vecLabelNames.size()), -0.5, -0.5 + static_cast<int>(vecLabelNames.size())}}, false);
-    for (size_t i = 0; i < vecLabelNames.size(); ++i) {
-      fRegistry.get<TH1>(HIST("EventNormalization/hEventCounter"))->GetXaxis()->SetBinLabel(i + 1, vecLabelNames[i].c_str());
+
+    fRegistry.add("EventNormalization/hEventCounter", "Event Counter;category;#it{N}_{evt}", kTH1D, {{static_cast<int>(o2::aod::pmevsel::vecEventAccBitNames.size()), -0.5, -0.5 + static_cast<int>(o2::aod::pmevsel::vecEventAccBitNames.size())}}, false);
+    for (size_t i = 0; i < o2::aod::pmevsel::vecEventAccBitNames.size(); ++i) {
+      fRegistry.get<TH1>(HIST("EventNormalization/hEventCounter"))->GetXaxis()->SetBinLabel(i + 1, o2::aod::pmevsel::vecEventAccBitNames[i].c_str());
     }
   }
 

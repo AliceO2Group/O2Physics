@@ -19,56 +19,163 @@
 /// - cluster energy over track momentum
 /// - difference in eta
 /// - difference in phi
-/// Simple event selection using the flag doEventSel is provided, which selects INT7 events if set to 1
-/// For pilot beam data, instead of relying on the event selection, one can veto specific BC IDS using the flag
-/// fDoVetoBCID.
+/// The event selection (eventCuts) applies the standard cuts of the event selection task: sel8, z vertex, the evsel
+/// flags (pile-up, ITS/TF frame borders, vertex quality, ITS layers), occupancy, RCT flags and a centrality or
+/// multiplicity range with a configurable estimator. Optionally EMCal in the readout (Run 2: kINT7, Run 3: kTVXinEMC).
+/// For pilot beam data, specific BC IDs can be vetoed (vetoBCID) or selected (selectBCID).
+/// The MC process (processMCTruth) follows the leading MC particle of each cluster through the matching chain:
+/// is its track reconstructed, extrapolated to the EMCal, a matching candidate (global track or V0 leg),
+/// and matched to the cluster as primary or secondary track.
 
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h" // for the V0 legs used in the secondary matching
 #include "PWGJE/DataModel/EMCALClusters.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <climits>
+#include <TAxis.h>
+#include <TH2.h>
+#include <THn.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+#include <TParticlePDG.h>
+
+#include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using CollisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
+using CollisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms, o2::aod::CentFT0As, o2::aod::FT0Mults, o2::aod::PVMults>::iterator;
 using BcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using SelectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using TracksPID = o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks, o2::aod::TrackSelection>;
+using SelectedMcClusters = o2::soa::Filtered<o2::soa::Join<o2::aod::EMCALClusters, o2::aod::EMCALMCClusters>>;
+using TracksMC = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection, o2::aod::McTrackLabels>;
+
+/// \brief Truth class of the leading MC particle of a cluster
+enum class TmTruthClass : uint8_t {
+  kConversionElectron = 0, // e+- with a photon as mother, produced in the transport (photon conversion)
+  kPrimaryElectron,        // e+- produced by the generator (Dalitz, heavy flavour, ...)
+  kOtherElectron,          // any other e+- (delta rays, Compton, weak decays in the transport, ...)
+  kOtherCharged,           // charged particle that is not an e+- (hadrons, muons)
+  kPhoton,
+  kNeutral, // neutral particle that is not a photon
+  kOther,   // no MC particle or unknown PDG code
+  kNClasses
+};
+
+/// \brief What happened to the track of the leading MC particle of a cluster in the track matching
+enum class TmTruthStatus : uint8_t {
+  kNoRecoTrack = 0,     // no reconstructed track of this particle in this collision
+  kNotExtrapolated,     // track(s) exist, but none was extrapolated to the EMCal (trackEta/PhiEmcal = -999)
+  kNoMatchingCandidate, // extrapolated, but neither a global track nor a V0 leg: input to no matching
+  kCandidateNotMatched, // matching candidate, but not matched to this cluster (dR > maxMatchingDistance or not among the closest tracks)
+  kMatchedPrimary,      // matched to this cluster as primary (global) track
+  kMatchedSecondary,    // matched to this cluster as secondary track (V0 leg)
+  kNStatus
+};
+
+/// \brief Type of the reconstructed track
+enum class TmTrackType : uint8_t {
+  kNoTrack = 0,
+  kGlobal, // passes isGlobalTrack()
+  kItsTpc, // ITS and TPC, but not a global track
+  kTpcOnly,
+  kItsOnly,
+  kOtherType,
+  kNTypes
+};
+
+/// \brief Steps of the event selection, bins of the cut flow histogram (a disabled cut passes every event)
+enum class EventCut : uint8_t {
+  kAll = 0,
+  kBC,
+  kSel8,
+  kEmcalReadout,
+  kZVertex,
+  kNoTimeFrameBorder,
+  kNoITSROFrameBorder,
+  kNoSameBunchPileup,
+  kGoodZvtxFT0vsPV,
+  kVertexITSTPC,
+  kVertexTOFmatched,
+  kNoCollInTimeRangeStandard,
+  kNoCollInTimeRangeNarrow,
+  kNoCollInRofStandard,
+  kNoHighMultCollInPrevRof,
+  kGoodITSLayer3,
+  kGoodITSLayer0123,
+  kGoodITSLayersAll,
+  kTrackOccupancy,
+  kFT0COccupancy,
+  kRCT,
+  kCentMult,
+  kSelected,
+  kNCuts
+};
+
+/// \brief Estimator of the centrality / multiplicity cut
+enum class CentMultEstimator : int {
+  kOff = 0,
+  kCentFT0C,
+  kCentFT0M,
+  kCentFT0A,
+  kMultFT0C,
+  kMultFT0A,
+  kMultFT0M,
+  kMultNTracksPV,
+  kNEstimators
+};
+
 struct EmcTmMonitor {
   HistogramRegistry mHistManager{"TrackMatchingMonitorHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::emcal::Geometry* mGeometry = nullptr;
+  Service<o2::framework::O2DatabasePDG> mPdgDatabase{};
 
   Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
   Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalambiguousclusterId;
   Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCMatchSecs> perClusterMatchedSecondaries = o2::aod::emcalclustercell::emcalclusterId;
   // configurable parameters
-  // TODO adapt doEventSel switch to also allow selection of other triggers (e.g. EMC7)
-  Configurable<bool> doEventSel{"doEventSel", 0, "demand kINT7"};
+  Configurable<bool> doEventSel{"doEventSel", false, "deprecated, use eventCuts.requireEmcalReadout: demand kINT7 (Run 2) / kTVXinEMC (Run 3)"};
   Configurable<std::string> vetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
   Configurable<std::string> selectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
-  Configurable<double> vertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
+  Configurable<double> vertexCut{"vertexCut", -1, "deprecated, use eventCuts.zVertexMax: if > 0, overrides it"};
   Configurable<int> clusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
   ConfigurableAxis clusterTimeBinning{"clusterTimeBinning", {1500, -600, 900}, ""};
   Configurable<bool> usePionRejection{"usePionRejection", false, "demand pion rection for electron signal with TPC PID"};
@@ -85,9 +192,42 @@ struct EmcTmMonitor {
   Configurable<float> minDPhi{"minDPhi", 0.01, "Minimum dPhi between track and cluster"};
   Configurable<std::vector<float>> eOverPRange{"eOverPRange", {0.9, 1.2}, "E/p range where one would search for electrons (first <= E/p <= second)"};
   Configurable<bool> hasTRD{"hasTRD", false, "demand track to have a hit in TRD."};
+  Configurable<float> emcalRadius{"emcalRadius", 440.f, "MC truth: radius (cm) used to move the cluster eta from the vertex to the origin frame of the track extrapolation"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "eventCuts";
+    Configurable<bool> requireSel8{"requireSel8", true, "require sel8"};
+    Configurable<bool> requireEmcalReadout{"requireEmcalReadout", false, "require EMCal in the readout: kINT7 (Run 2) / kTVXinEMC (Run 3)"};
+    Configurable<float> zVertexMax{"zVertexMax", 10.f, "maximum |z| of the primary vertex (cm), <= 0: off"};
+    Configurable<bool> requireNoTimeFrameBorder{"requireNoTimeFrameBorder", false, "require kNoTimeFrameBorder"};
+    Configurable<bool> requireNoITSROFrameBorder{"requireNoITSROFrameBorder", false, "require kNoITSROFrameBorder"};
+    Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", false, "require kNoSameBunchPileup"};
+    Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, "require kIsGoodZvtxFT0vsPV"};
+    Configurable<bool> requireVertexITSTPC{"requireVertexITSTPC", false, "require kIsVertexITSTPC"};
+    Configurable<bool> requireVertexTOFmatched{"requireVertexTOFmatched", false, "require kIsVertexTOFmatched"};
+    Configurable<bool> requireNoCollInTimeRangeStandard{"requireNoCollInTimeRangeStandard", false, "require kNoCollInTimeRangeStandard"};
+    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "require kNoCollInTimeRangeNarrow"};
+    Configurable<bool> requireNoCollInRofStandard{"requireNoCollInRofStandard", false, "require kNoCollInRofStandard"};
+    Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", false, "require kNoHighMultCollInPrevRof"};
+    Configurable<bool> requireGoodITSLayer3{"requireGoodITSLayer3", false, "require kIsGoodITSLayer3"};
+    Configurable<bool> requireGoodITSLayer0123{"requireGoodITSLayer0123", false, "require kIsGoodITSLayer0123"};
+    Configurable<bool> requireGoodITSLayersAll{"requireGoodITSLayersAll", false, "require kIsGoodITSLayersAll"};
+    Configurable<float> trackOccupancyMin{"trackOccupancyMin", -1.f, "minimum track occupancy (trackOccupancyInTimeRange), < 0: off"};
+    Configurable<float> trackOccupancyMax{"trackOccupancyMax", -1.f, "maximum track occupancy (trackOccupancyInTimeRange), < 0: off"};
+    Configurable<float> ft0cOccupancyMin{"ft0cOccupancyMin", -1.f, "minimum FT0C occupancy (ft0cOccupancyInTimeRange), < 0: off"};
+    Configurable<float> ft0cOccupancyMax{"ft0cOccupancyMax", -1.f, "maximum FT0C occupancy (ft0cOccupancyInTimeRange), < 0: off"};
+    Configurable<bool> applyRCT{"applyRCT", false, "apply the RCT flags of rctLabel"};
+    Configurable<std::string> rctLabel{"rctLabel", "CBT_calo", "RCT selection label: CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
+    Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT: also require good ZDC quality (Pb-Pb)"};
+    Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT: reject runs flagged LimitedAcceptanceMCReproducible"};
+    Configurable<int> centMultEstimator{"centMultEstimator", 0, "centrality / multiplicity cut: 0 = off, 1 = cent FT0C, 2 = cent FT0M, 3 = cent FT0A, 4 = mult FT0C, 5 = mult FT0A, 6 = mult FT0M, 7 = mult NTracksPV"};
+    Configurable<float> centMultMin{"centMultMin", 0.f, "minimum centrality (%) / multiplicity"};
+    Configurable<float> centMultMax{"centMultMax", 100.f, "maximum centrality (%) / multiplicity"};
+  } eventCuts;
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
+  o2::aod::rctsel::RCTFlagsChecker mRctChecker;
 
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
@@ -122,6 +262,37 @@ struct EmcTmMonitor {
     mHistManager.add("eventsSelected", "Number of events", HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", HistType::kTH1F, {{200, -20, 20}});
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", HistType::kTH1F, {{200, -20, 20}});
+    auto hCutFlow = mHistManager.add<TH1>("Event/hCutFlow", "events after each step of the event selection (a disabled cut passes every event);;events", HistType::kTH1D, {{static_cast<int>(EventCut::kNCuts), -0.5, static_cast<int>(EventCut::kNCuts) - 0.5}});
+    static constexpr std::array<std::string_view, static_cast<int>(EventCut::kNCuts)> CutLabels = {"all", "BC ID", "sel8", "EMCal readout", "z vertex", "NoTimeFrameBorder", "NoITSROFrameBorder", "NoSameBunchPileup", "GoodZvtxFT0vsPV", "VertexITSTPC", "VertexTOFmatched", "NoCollInTimeRangeStandard", "NoCollInTimeRangeNarrow", "NoCollInRofStandard", "NoHighMultCollInPrevRof", "GoodITSLayer3", "GoodITSLayer0123", "GoodITSLayersAll", "track occupancy", "FT0C occupancy", "RCT", "cent/mult", "selected"};
+    for (std::size_t i = 0; i < CutLabels.size(); ++i) {
+      hCutFlow->GetXaxis()->SetBinLabel(static_cast<int>(i) + 1, CutLabels[i].data());
+    }
+    const AxisSpec trackOccupancyAxis{200, 0., 20000., "track occupancy"};
+    const AxisSpec ft0cOccupancyAxis{200, 0., 200000., "FT0C occupancy"};
+    const bool isCentrality = eventCuts.centMultEstimator.value <= static_cast<int>(CentMultEstimator::kCentFT0A);
+    const AxisSpec centMultAxis{isCentrality ? AxisSpec{110, -5., 105., "centrality (%)"} : AxisSpec{500, 0., 50000., "multiplicity"}};
+    mHistManager.add("Event/hTrackOccupancyBefore", "track occupancy (before the event selection);;events", HistType::kTH1D, {trackOccupancyAxis});
+    mHistManager.add("Event/hTrackOccupancyAfter", "track occupancy (after the event selection);;events", HistType::kTH1D, {trackOccupancyAxis});
+    mHistManager.add("Event/hFT0COccupancyBefore", "FT0C occupancy (before the event selection);;events", HistType::kTH1D, {ft0cOccupancyAxis});
+    mHistManager.add("Event/hFT0COccupancyAfter", "FT0C occupancy (after the event selection);;events", HistType::kTH1D, {ft0cOccupancyAxis});
+    if (eventCuts.centMultEstimator.value != static_cast<int>(CentMultEstimator::kOff)) {
+      mHistManager.add("Event/hCentMultBefore", "centrality / multiplicity of the cut (before the event selection);;events", HistType::kTH1D, {centMultAxis});
+      mHistManager.add("Event/hCentMultAfter", "centrality / multiplicity of the cut (after the event selection);;events", HistType::kTH1D, {centMultAxis});
+    }
+    mHistManager.add("Event/hBCId", "BC ID of the selected events;BC ID;events", HistType::kTH1D, {{o2::constants::lhc::LHCMaxBunches, -0.5, o2::constants::lhc::LHCMaxBunches - 0.5}});
+
+    if (eventCuts.centMultEstimator.value < static_cast<int>(CentMultEstimator::kOff) || eventCuts.centMultEstimator.value >= static_cast<int>(CentMultEstimator::kNEstimators)) {
+      LOG(fatal) << "eventCuts.centMultEstimator " << eventCuts.centMultEstimator.value << " unknown, see the configurable description";
+    }
+    if (eventCuts.applyRCT.value) {
+      mRctChecker.init(eventCuts.rctLabel.value, eventCuts.rctCheckZDC.value, eventCuts.rctTreatLimitedAcceptanceAsBad.value);
+    }
+    if (doEventSel.value) {
+      LOG(warning) << "doEventSel is deprecated, use eventCuts.requireEmcalReadout. Requiring EMCal in the readout.";
+    }
+    if (vertexCut.value > 0.) {
+      LOG(warning) << "vertexCut is deprecated, use eventCuts.zVertexMax. Using |z| < " << vertexCut.value << " cm instead of eventCuts.zVertexMax.";
+    }
 
     // cluster properties (matched clusters)
     mHistManager.add("TrackEtaPhi", "#eta vs #varphi of all selected tracks", HistType::kTH2F, {etaAxis, phiAxis});                                                                             // eta vs phi of all selected tracks
@@ -182,10 +353,67 @@ struct EmcTmMonitor {
     mHistManager.add("clusterTM_EoverP_hadron_ASide", "cluster E/hadron p in A-Side", HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                // E over p vs track pT for the Nth closest hadron track in A-Side
     mHistManager.add("clusterTM_EoverP_hadron_CSide", "cluster E/hadron p in C-Side", HistType::kTH3F, {eoverpAxis, trackpAxis, nmatchedtrack});                                                // E over p vs track pT for the Nth closest hadron track in C-Side
 
-    if (vetoBCID->length()) {
+    // MC truth of the track matching, only booked if processMCTruth is enabled
+    if (doprocessMCTruth.value) {
+      static constexpr std::array<std::string_view, static_cast<int>(TmTruthClass::kNClasses)> ClassLabels = {"conversion e^{#pm}", "primary e^{#pm}", "other e^{#pm}", "charged (non e)", "#gamma", "neutral (non #gamma)", "other"};
+      static constexpr std::array<std::string_view, static_cast<int>(TmTruthStatus::kNStatus)> StatusLabels = {"no reco track", "not extrapolated", "no matching candidate", "candidate not matched", "matched primary", "matched secondary"};
+      static constexpr std::array<std::string_view, static_cast<int>(TmTrackType::kNTypes)> TypeLabels = {"no track", "global", "ITS-TPC non-global", "TPC only", "ITS only", "other"};
+      const AxisSpec classAxis{static_cast<int>(TmTruthClass::kNClasses), -0.5, static_cast<int>(TmTruthClass::kNClasses) - 0.5, "leading MC particle"};
+      const AxisSpec statusAxis{static_cast<int>(TmTruthStatus::kNStatus), -0.5, static_cast<int>(TmTruthStatus::kNStatus) - 0.5, "track matching status"};
+      const AxisSpec typeAxis{static_cast<int>(TmTrackType::kNTypes), -0.5, static_cast<int>(TmTrackType::kNTypes) - 0.5, "track type"};
+      const AxisSpec v0LegAxis{2, -0.5, 1.5, "V0 leg"};
+      const AxisSpec mcPtAxis{std::vector<double>{0., 0.25, 0.5, 0.75, 1., 1.5, 2., 3., 4., 6., 10., 20., 50.}, "#it{p}_{T,MC} (GeV/#it{c})"};
+      // residuals: fine binning around 0, coarse binning up to MaxResidual, so the tails beyond the matching windows are visible
+      constexpr double MaxResidual = 0.4;  // range of the residual axes
+      constexpr double FineRange = 0.04;   // fine binning within +-FineRange
+      constexpr double FineWidth = 0.002;  // bin width within +-FineRange
+      constexpr double CoarseWidth = 0.01; // bin width outside +-FineRange
+      const int nCoarse = static_cast<int>(std::lround((MaxResidual - FineRange) / CoarseWidth));
+      const int nFine = static_cast<int>(std::lround((FineRange - (-FineRange)) / FineWidth));
+      std::vector<double> residualBins;
+      residualBins.reserve(nCoarse + nFine + nCoarse + 1); // negative coarse, fine, positive coarse edges incl. the upper end
+      for (int i = 0; i < nCoarse; ++i) {
+        residualBins.push_back(-MaxResidual + CoarseWidth * i);
+      }
+      for (int i = 0; i < nFine; ++i) {
+        residualBins.push_back(-FineRange + FineWidth * i);
+      }
+      for (int i = 0; i <= nCoarse; ++i) {
+        residualBins.push_back(FineRange + CoarseWidth * i);
+      }
+      const AxisSpec mcDEtaAxis{residualBins, "#Delta#eta (track - cluster)"};
+      const AxisSpec mcDPhiAxis{residualBins, "#Delta#varphi (track - cluster) (rad)"};
+      const AxisSpec radiusAxis{125, 0., 250., "#it{R}_{xy} of the conversion (cm)"};
+
+      auto setLabels = [](TAxis* axis, auto const& labels) {
+        for (std::size_t i = 0; i < labels.size(); ++i) {
+          axis->SetBinLabel(static_cast<int>(i) + 1, labels[i].data());
+        }
+      };
+      // histograms with labelled axes are TH2 or THn: the TH3 label merge of ROOT 6.36 is broken
+      auto hLeadingClass = mHistManager.add<TH2>("MCTruth/hLeadingClass", "leading MC particle of the cluster", HistType::kTH2F, {classAxis, energyAxis});
+      setLabels(hLeadingClass->GetXaxis(), ClassLabels);
+      auto hStatus = mHistManager.add<THn>("MCTruth/hStatus", "track matching status of the leading MC particle", HistType::kTHnF, {statusAxis, classAxis, typeAxis, v0LegAxis, mcPtAxis});
+      setLabels(hStatus->GetAxis(0), StatusLabels);
+      setLabels(hStatus->GetAxis(1), ClassLabels);
+      setLabels(hStatus->GetAxis(2), TypeLabels);
+      for (const auto& name : {"MCTruth/hResidualEta", "MCTruth/hResidualPhi"}) {
+        const bool isEta = std::string_view(name).ends_with("Eta");
+        auto hRes = mHistManager.add<THn>(name, "residual of the extrapolated track of the leading MC particle (origin frame)", HistType::kTHnF, {isEta ? mcDEtaAxis : mcDPhiAxis, mcPtAxis, classAxis, typeAxis});
+        setLabels(hRes->GetAxis(2), ClassLabels);
+        setLabels(hRes->GetAxis(3), TypeLabels);
+      }
+      mHistManager.add("MCTruth/hResidualConversion", "conversion e^{#pm}: residual of the extrapolated track", HistType::kTH3F, {mcDEtaAxis, mcDPhiAxis, mcPtAxis});
+      mHistManager.add("MCTruth/hResidualVsStored", "matched tracks: own minus stored residual;#Delta#eta_{own} - #Delta#eta_{stored};#Delta#varphi_{own} - #Delta#varphi_{stored}", HistType::kTH2F, {{200, -0.02, 0.02}, {200, -0.02, 0.02}});
+      auto hConvRadius = mHistManager.add<THn>("MCTruth/hConvRadius", "conversion e^{#pm}: matching status vs conversion radius", HistType::kTHnF, {statusAxis, radiusAxis, mcPtAxis});
+      setLabels(hConvRadius->GetAxis(0), StatusLabels);
+      mHistManager.add("MCTruth/hEoverPConversion", "conversion e^{#pm}: #it{E}_{cls}/#it{p}_{track}", HistType::kTH2F, {eoverpAxis, trackptAxis});
+    }
+
+    if (!vetoBCID->empty()) {
       std::stringstream parser(vetoBCID.value);
       std::string token;
-      int bcid;
+      int bcid = -1;
       while (std::getline(parser, token, ',')) {
         bcid = std::stoi(token);
         LOG(info) << "Veto BCID " << bcid;
@@ -195,7 +423,7 @@ struct EmcTmMonitor {
     if (selectBCID.value != "all") {
       std::stringstream parser(selectBCID.value);
       std::string token;
-      int bcid;
+      int bcid = -1;
       while (std::getline(parser, token, ',')) {
         bcid = std::stoi(token);
         LOG(info) << "Select BCID " << bcid;
@@ -209,45 +437,169 @@ struct EmcTmMonitor {
   // an integer instead
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == clusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02) && (o2::aod::emcalcluster::m02 < maxM02);
 
-  /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(CollisionEvSelIt const& theCollision, SelectedClusters const& clusters, o2::aod::EMCALClusterCells const&, o2::aod::Calos const&, o2::aod::EMCALMatchedTracks const& matchedtracks, TracksPID const& alltracks)
+  /// \brief Centrality / multiplicity of the collision for the estimator of eventCuts.centMultEstimator
+  static float getCentMult(CollisionEvSelIt const& collision, const CentMultEstimator estimator)
   {
-    mHistManager.fill(HIST("eventsAll"), 1);
+    switch (estimator) {
+      case CentMultEstimator::kCentFT0C:
+        return collision.centFT0C();
+      case CentMultEstimator::kCentFT0M:
+        return collision.centFT0M();
+      case CentMultEstimator::kCentFT0A:
+        return collision.centFT0A();
+      case CentMultEstimator::kMultFT0C:
+        return collision.multFT0C();
+      case CentMultEstimator::kMultFT0A:
+        return collision.multFT0A();
+      case CentMultEstimator::kMultFT0M:
+        return collision.multFT0M();
+      case CentMultEstimator::kMultNTracksPV:
+        return collision.multNTracksPV();
+      default:
+        return 0.f;
+    }
+  }
 
-    // do event selection if doEventSel is specified
-    // currently the event selection is hard coded to kINT7
-    // but other selections are possible that are defined in TriggerAliases.h
-    bool isSelected = true;
-    const int beginningRun3 = 300000;
-    float lowP = 0.75f;
-    float midP = 1.25f;
-    if (doEventSel) {
-      if (theCollision.bc().runNumber() < beginningRun3) {
-        if (!theCollision.alias_bit(kINT7)) {
-          isSelected = false;
-        }
-      } else {
-        if (!theCollision.alias_bit(kTVXinEMC)) {
-          isSelected = false;
-        }
+  /// \brief Whether a value lies in [min, max], a negative limit is off
+  static bool isInRange(const float value, const float min, const float max)
+  {
+    return (min < 0.f || value >= min) && (max < 0.f || value <= max);
+  }
+
+  /// \brief BC ID veto / selection of vetoBCID and selectBCID
+  bool isBCSelected(const int bcId) const
+  {
+    if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), bcId) != mVetoBCIDs.end()) {
+      return false;
+    }
+    return mSelectBCIDs.empty() || std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), bcId) != mSelectBCIDs.end();
+  }
+
+  /// \brief Event selection of the monitor, see eventCuts. The cuts are applied in the order of EventCut.
+  /// \param theCollision collision to check
+  /// \param fillHistos fill the event histograms (only once if several process functions run)
+  bool isEventSelected(CollisionEvSelIt const& theCollision, const bool fillHistos)
+  {
+    // fill the cut flow bin of a passed step
+    auto passed = [&](const EventCut cut) {
+      if (fillHistos) {
+        mHistManager.fill(HIST("Event/hCutFlow"), static_cast<int>(cut));
+      }
+    };
+    const auto estimator = static_cast<CentMultEstimator>(eventCuts.centMultEstimator.value);
+    const bool applyCentMult = estimator != CentMultEstimator::kOff;
+    if (fillHistos) {
+      mHistManager.fill(HIST("eventsAll"), 1);
+      mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
+      mHistManager.fill(HIST("Event/hTrackOccupancyBefore"), theCollision.trackOccupancyInTimeRange());
+      mHistManager.fill(HIST("Event/hFT0COccupancyBefore"), theCollision.ft0cOccupancyInTimeRange());
+      if (applyCentMult) {
+        mHistManager.fill(HIST("Event/hCentMultBefore"), getCentMult(theCollision, estimator));
       }
     }
-    if (!isSelected) {
-      LOG(debug) << "Event not selected because it is not kINT7 or does not have EMCAL in readout, skipping";
+    passed(EventCut::kAll);
+
+    // BC ID veto / selection (pilot beams); needs aod::BCs in the process function, otherwise the bc() index is not bound
+    const auto bc = theCollision.bc();
+    const int bcId = static_cast<int>(bc.globalBC() % o2::constants::lhc::LHCMaxBunches);
+    if (!isBCSelected(bcId)) {
+      return false;
+    }
+    passed(EventCut::kBC);
+
+    if (eventCuts.requireSel8.value && !theCollision.sel8()) {
+      return false;
+    }
+    passed(EventCut::kSel8);
+
+    // EMCal in the readout: kINT7 in Run 2, kTVXinEMC in Run 3
+    if (eventCuts.requireEmcalReadout.value || doEventSel.value) {
+      constexpr int BeginningRun3 = 300000;
+      const bool hasEmcal = bc.runNumber() < BeginningRun3 ? theCollision.alias_bit(kINT7) : theCollision.alias_bit(kTVXinEMC);
+      if (!hasEmcal) {
+        return false;
+      }
+    }
+    passed(EventCut::kEmcalReadout);
+
+    const double zVertexMax = vertexCut.value > 0. ? vertexCut.value : static_cast<double>(eventCuts.zVertexMax.value);
+    if (zVertexMax > 0. && std::abs(theCollision.posZ()) > zVertexMax) {
+      return false;
+    }
+    passed(EventCut::kZVertex);
+
+    // evsel flags, in the order of EventCut
+    const std::array<std::pair<bool, o2::aod::evsel::EventSelectionFlags>, static_cast<int>(EventCut::kGoodITSLayersAll) - static_cast<int>(EventCut::kNoTimeFrameBorder) + 1> flags = {{
+      {eventCuts.requireNoTimeFrameBorder.value, o2::aod::evsel::kNoTimeFrameBorder},
+      {eventCuts.requireNoITSROFrameBorder.value, o2::aod::evsel::kNoITSROFrameBorder},
+      {eventCuts.requireNoSameBunchPileup.value, o2::aod::evsel::kNoSameBunchPileup},
+      {eventCuts.requireGoodZvtxFT0vsPV.value, o2::aod::evsel::kIsGoodZvtxFT0vsPV},
+      {eventCuts.requireVertexITSTPC.value, o2::aod::evsel::kIsVertexITSTPC},
+      {eventCuts.requireVertexTOFmatched.value, o2::aod::evsel::kIsVertexTOFmatched},
+      {eventCuts.requireNoCollInTimeRangeStandard.value, o2::aod::evsel::kNoCollInTimeRangeStandard},
+      {eventCuts.requireNoCollInTimeRangeNarrow.value, o2::aod::evsel::kNoCollInTimeRangeNarrow},
+      {eventCuts.requireNoCollInRofStandard.value, o2::aod::evsel::kNoCollInRofStandard},
+      {eventCuts.requireNoHighMultCollInPrevRof.value, o2::aod::evsel::kNoHighMultCollInPrevRof},
+      {eventCuts.requireGoodITSLayer3.value, o2::aod::evsel::kIsGoodITSLayer3},
+      {eventCuts.requireGoodITSLayer0123.value, o2::aod::evsel::kIsGoodITSLayer0123},
+      {eventCuts.requireGoodITSLayersAll.value, o2::aod::evsel::kIsGoodITSLayersAll},
+    }};
+    for (std::size_t i = 0; i < flags.size(); ++i) {
+      if (flags[i].first && !theCollision.selection_bit(flags[i].second)) {
+        return false;
+      }
+      passed(static_cast<EventCut>(static_cast<int>(EventCut::kNoTimeFrameBorder) + static_cast<int>(i)));
+    }
+
+    // occupancy, track and FT0C based, each with its own range
+    if (!isInRange(static_cast<float>(theCollision.trackOccupancyInTimeRange()), eventCuts.trackOccupancyMin.value, eventCuts.trackOccupancyMax.value)) {
+      return false;
+    }
+    passed(EventCut::kTrackOccupancy);
+    if (!isInRange(theCollision.ft0cOccupancyInTimeRange(), eventCuts.ft0cOccupancyMin.value, eventCuts.ft0cOccupancyMax.value)) {
+      return false;
+    }
+    passed(EventCut::kFT0COccupancy);
+
+    if (eventCuts.applyRCT.value && !mRctChecker.checkTable(theCollision)) {
+      return false;
+    }
+    passed(EventCut::kRCT);
+
+    if (applyCentMult) {
+      const float centMult = getCentMult(theCollision, estimator);
+      if (centMult < eventCuts.centMultMin.value || centMult > eventCuts.centMultMax.value) {
+        return false;
+      }
+    }
+    passed(EventCut::kCentMult);
+
+    passed(EventCut::kSelected);
+    if (fillHistos) {
+      mHistManager.fill(HIST("eventsSelected"), 1);
+      mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
+      mHistManager.fill(HIST("Event/hTrackOccupancyAfter"), theCollision.trackOccupancyInTimeRange());
+      mHistManager.fill(HIST("Event/hFT0COccupancyAfter"), theCollision.ft0cOccupancyInTimeRange());
+      if (applyCentMult) {
+        mHistManager.fill(HIST("Event/hCentMultAfter"), getCentMult(theCollision, estimator));
+      }
+      mHistManager.fill(HIST("Event/hBCId"), bcId);
+    }
+    return true;
+  }
+
+  /// \brief Process EMCAL clusters that are matched to a collisions
+  void processCollisions(CollisionEvSelIt const& theCollision, o2::aod::BCs const&, SelectedClusters const& clusters, o2::aod::EMCALClusterCells const&, o2::aod::Calos const&, o2::aod::EMCALMatchedTracks const& matchedtracks, TracksPID const& alltracks)
+  {
+    if (!isEventSelected(theCollision, true)) {
       return;
     }
-    mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
-    if (vertexCut > 0 && std::abs(theCollision.posZ()) > vertexCut) {
-      LOG(debug) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << vertexCut << " cm, skipping";
-      return;
-    }
-    mHistManager.fill(HIST("eventsSelected"), 1);
-    mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
+    float lowP = 0.75f;
+    float midP = 1.25f;
 
     for (const auto& alltrack : alltracks) {
-      double trackEta, trackPhi;
-      trackEta = alltrack.trackEtaEmcal();
-      trackPhi = alltrack.trackPhiEmcal();
+      double trackEta = alltrack.trackEtaEmcal();
+      double trackPhi = alltrack.trackPhiEmcal();
       if (alltrack.isGlobalTrack()) { // NSigma of all global tracks without matching
         mHistManager.fill(HIST("TrackTM_NSigma"), alltrack.tpcNSigmaEl(), alltrack.pt());
         mHistManager.fill(HIST("TrackEtaPhi"), trackEta, trackPhi);
@@ -284,11 +636,11 @@ struct EmcTmMonitor {
       // match.track_as<globTracks>() with
       // using globTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection>;
       // In this example the counter t is just used to only look at the closest match
-      float dEta, dPhi, pT, abs_p, trackEta, trackPhi, nSigmaEl;
-      int supermoduleID;
+      float dEta{0}, dPhi{0}, pT{0}, absP{0}, trackEta{0}, trackPhi{0}, nSigmaEl{0};
+      int supermoduleID = -1;
       try {
         supermoduleID = mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
+      } catch (o2::emcal::InvalidPositionException const& e) {
         // Imprecision of the position at the sector boundaries, mostly due to
         // vertex imprecision. Skip these clusters for the now.
         continue;
@@ -304,7 +656,7 @@ struct EmcTmMonitor {
         nSigmaEl = match.track_as<TracksPID>().tpcNSigmaEl();
         // exmple of how to access any property of the matched tracks (tracks are sorted by how close they are to cluster)
         LOG(debug) << "Pt of match" << match.track_as<TracksPID>().pt();
-        abs_p = std::abs(match.track_as<TracksPID>().p());
+        absP = std::abs(match.track_as<TracksPID>().p());
         // only consider closest match
         trackEta = match.track_as<TracksPID>().trackEtaEmcal();
         trackPhi = match.track_as<TracksPID>().trackPhiEmcal();
@@ -330,14 +682,14 @@ struct EmcTmMonitor {
           mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi, supermoduleID);
           mHistManager.fill(HIST("clusterTM_dEtaPt"), dEta, pT, supermoduleID);
         }
-        double eOverP = cluster.energy() / abs_p;
+        double eOverP = cluster.energy() / absP;
         mHistManager.fill(HIST("clusterTM_dEtaTN"), dEta, t);
         mHistManager.fill(HIST("clusterTM_dPhiTN"), dPhi, t);
         mHistManager.fill(HIST("clusterTM_dRTN"), std::sqrt(dPhi * dPhi + dEta * dEta), t);
         mHistManager.fill(HIST("clusterTM_EoverP_E"), eOverP, cluster.energy(), t);
         mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi, t);
         mHistManager.fill(HIST("clusterEMatched"), cluster.energy(), t);
-        mHistManager.fill(HIST("clusterTM_EvsP"), cluster.energy(), abs_p, t);
+        mHistManager.fill(HIST("clusterTM_EvsP"), cluster.energy(), absP, t);
         mHistManager.fill(HIST("clusterTM_EoverP_Pt"), eOverP, match.track_as<TracksPID>().pt(), t);
         mHistManager.fill(HIST("clusterTM_NSigma"), nSigmaEl, match.track_as<TracksPID>().pt(), t);
         mHistManager.fill(HIST("MatchedTrackEtaPhi"), trackEta, trackPhi);
@@ -357,9 +709,9 @@ struct EmcTmMonitor {
           if (t == 0) {
             mHistManager.fill(HIST("clusterTM_PosdPhiPt"), dPhi, pT, supermoduleID);
             mHistManager.fill(HIST("clusterTM_PosdEtadPhi"), dEta, dPhi, supermoduleID);
-            if (abs_p < lowP) {
+            if (absP < lowP) {
               mHistManager.fill(HIST("clusterTM_PosdEtadPhi_Pl0_75"), dEta, dPhi, supermoduleID);
-            } else if (abs_p >= midP) {
+            } else if (absP >= midP) {
               mHistManager.fill(HIST("clusterTM_PosdEtadPhi_Pgeq1_25"), dEta, dPhi, supermoduleID);
             } else {
               mHistManager.fill(HIST("clusterTM_PosdEtadPhi_0_75leqPl1_25"), dEta, dPhi, supermoduleID);
@@ -371,9 +723,9 @@ struct EmcTmMonitor {
           if (t == 0) {
             mHistManager.fill(HIST("clusterTM_NegdPhiPt"), dPhi, pT, supermoduleID);
             mHistManager.fill(HIST("clusterTM_NegdEtadPhi"), dEta, dPhi, supermoduleID);
-            if (abs_p < lowP) {
+            if (absP < lowP) {
               mHistManager.fill(HIST("clusterTM_NegdEtadPhi_Pl0_75"), dEta, dPhi, supermoduleID);
-            } else if (abs_p >= midP) {
+            } else if (absP >= midP) {
               mHistManager.fill(HIST("clusterTM_NegdEtadPhi_Pgeq1_25"), dEta, dPhi, supermoduleID);
             } else {
               mHistManager.fill(HIST("clusterTM_NegdEtadPhi_0_75leqPl1_25"), dEta, dPhi, supermoduleID);
@@ -446,6 +798,191 @@ struct EmcTmMonitor {
   }
   PROCESS_SWITCH(EmcTmMonitor, processCollisions, "Process clusters from collision", true);
 
+  /// \brief Information of a reconstructed track needed for the MC truth of the matching
+  struct McTrackInfo {
+    int64_t id{-1};
+    bool isGlobal{false};
+    bool hasITS{false};
+    bool hasTPC{false};
+    float etaEmcal{-999.f};
+    float phiEmcal{-999.f};
+    float p{0.f};
+    float pt{0.f};
+  };
+
+  static constexpr float NotOnEmcal = -900.f; // trackEta/PhiEmcal of tracks that were not extrapolated to the EMCal are -999
+
+  /// \brief Truth class of an MC particle
+  template <o2::soa::is_iterator TMcParticle, o2::soa::is_table TMcParticles>
+  TmTruthClass truthClassOf(TMcParticle const& mc, TMcParticles const& mcParticles)
+  {
+    const int pdg = mc.pdgCode();
+    if (std::abs(pdg) == PDG_t::kElectron) {
+      if (mc.producedByGenerator()) {
+        return TmTruthClass::kPrimaryElectron;
+      }
+      if (mc.getProcess() == TMCProcess::kPPair && mc.has_mothers() && mcParticles.iteratorAt(mc.mothersIds()[0]).pdgCode() == PDG_t::kGamma) {
+        return TmTruthClass::kConversionElectron;
+      }
+      return TmTruthClass::kOtherElectron;
+    }
+    if (pdg == PDG_t::kGamma) {
+      return TmTruthClass::kPhoton;
+    }
+    const TParticlePDG* info = mPdgDatabase->GetParticle(pdg);
+    if (info == nullptr) {
+      return TmTruthClass::kOther;
+    }
+    return info->Charge() != 0. ? TmTruthClass::kOtherCharged : TmTruthClass::kNeutral;
+  }
+
+  /// \brief Type of a reconstructed track
+  static TmTrackType trackTypeOf(McTrackInfo const& info)
+  {
+    if (info.isGlobal) {
+      return TmTrackType::kGlobal;
+    }
+    if (info.hasITS && info.hasTPC) {
+      return TmTrackType::kItsTpc;
+    }
+    if (info.hasTPC) {
+      return TmTrackType::kTpcOnly;
+    }
+    return info.hasITS ? TmTrackType::kItsOnly : TmTrackType::kOtherType;
+  }
+
+  /// \brief MC truth of the track matching: follow the leading MC particle of each cluster through the matching chain.
+  ///        Needs emcal-correction-task with processMCWithSecondaries and the photon conversion builder (aod::V0Legs).
+  void processMCTruth(CollisionEvSelIt const& theCollision, o2::aod::BCs const&, SelectedMcClusters const& clusters, o2::aod::EMCALMatchedTracks const& matchedTracks, o2::aod::EMCMatchSecs const& matchedSecondaries, TracksMC const& tracks, o2::aod::V0Legs const& v0Legs, o2::aod::McParticles const& mcParticles)
+  {
+    if (!isEventSelected(theCollision, !doprocessCollisions.value)) {
+      return;
+    }
+
+    // reconstructed tracks of each MC particle in this collision, and the tracks used as V0 legs (secondary matching)
+    std::unordered_map<int64_t, std::vector<McTrackInfo>> tracksOfMcParticle;
+    for (const auto& track : tracks) {
+      if (!track.has_mcParticle()) {
+        continue;
+      }
+      tracksOfMcParticle[track.mcParticleId()].push_back({track.globalIndex(), track.isGlobalTrack(), track.hasITS(), track.hasTPC(), track.trackEtaEmcal(), track.trackPhiEmcal(), track.p(), track.pt()});
+    }
+    std::unordered_set<int64_t> v0LegTracks;
+    for (const auto& leg : v0Legs) {
+      v0LegTracks.insert(leg.trackId());
+    }
+
+    for (const auto& cluster : clusters) {
+      try {
+        mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
+      } catch (o2::emcal::InvalidPositionException const& e) {
+        continue; // same as in processCollisions
+      }
+      const float clusterPt = cluster.energy() / std::cosh(cluster.eta());
+      if (m02highPt > 0. && cluster.m02() >= maxM02HighPt && clusterPt >= m02highPt) {
+        continue;
+      }
+
+      // leading contributor: the labels are ordered by energy fraction (ClusterLabel::orderLabels in the ClusterFactory)
+      const auto mcIds = cluster.mcParticleIds();
+      const int64_t leadId = mcIds.empty() ? -1 : mcIds[0];
+      TmTruthClass truthClass = TmTruthClass::kOther;
+      float mcPt = 0.f;
+      float convRadius = -1.f;
+      if (leadId >= 0) {
+        const auto mc = mcParticles.iteratorAt(leadId);
+        mcPt = mc.pt();
+        truthClass = truthClassOf(mc, mcParticles);
+        convRadius = std::hypot(mc.vx(), mc.vy());
+      }
+      mHistManager.fill(HIST("MCTruth/hLeadingClass"), static_cast<int>(truthClass), cluster.energy());
+      const bool isConversion = truthClass == TmTruthClass::kConversionElectron;
+      if (truthClass != TmTruthClass::kConversionElectron && truthClass != TmTruthClass::kPrimaryElectron && truthClass != TmTruthClass::kOtherElectron && truthClass != TmTruthClass::kOtherCharged) {
+        continue; // neutral leading particle: no track to match
+      }
+
+      // best reconstructed track of the leading particle: extrapolated and matching candidate first, then highest pT
+      const McTrackInfo* best = nullptr;
+      int bestScore = -1;
+      if (auto it = tracksOfMcParticle.find(leadId); it != tracksOfMcParticle.end()) {
+        for (const auto& info : it->second) {
+          const bool isExtrapolated = info.etaEmcal > NotOnEmcal && info.phiEmcal > NotOnEmcal;
+          const bool isCandidate = info.isGlobal || v0LegTracks.contains(info.id);
+          const int score = 2 * (isExtrapolated ? 1 : 0) + (isCandidate ? 1 : 0);
+          if (score > bestScore || (score == bestScore && info.pt > best->pt)) {
+            best = &info;
+            bestScore = score;
+          }
+        }
+      }
+
+      TmTruthStatus status = TmTruthStatus::kNoRecoTrack;
+      TmTrackType type = TmTrackType::kNoTrack;
+      bool isV0Leg = false;
+      if (best != nullptr) {
+        type = trackTypeOf(*best);
+        isV0Leg = v0LegTracks.contains(best->id);
+        const bool isExtrapolated = best->etaEmcal > NotOnEmcal && best->phiEmcal > NotOnEmcal;
+
+        // is the track among the primary or secondary matches of this cluster
+        bool isMatchedPrimary = false, isMatchedSecondary = false;
+        float storedDEta = 0.f, storedDPhi = 0.f;
+        for (const auto& match : matchedTracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex())) {
+          if (match.trackId() == best->id) {
+            isMatchedPrimary = true;
+            storedDEta = match.deltaEta();
+            storedDPhi = match.deltaPhi();
+            break;
+          }
+        }
+        if (!isMatchedPrimary) {
+          for (const auto& match : matchedSecondaries.sliceBy(perClusterMatchedSecondaries, cluster.globalIndex())) {
+            if (match.trackId() == best->id) {
+              isMatchedSecondary = true;
+              storedDEta = match.deltaEta();
+              storedDPhi = match.deltaPhi();
+              break;
+            }
+          }
+        }
+        if (isMatchedPrimary) {
+          status = TmTruthStatus::kMatchedPrimary;
+        } else if (isMatchedSecondary) {
+          status = TmTruthStatus::kMatchedSecondary;
+        } else if (!isExtrapolated) {
+          status = TmTruthStatus::kNotExtrapolated;
+        } else if (!best->isGlobal && !isV0Leg) {
+          status = TmTruthStatus::kNoMatchingCandidate;
+        } else {
+          status = TmTruthStatus::kCandidateNotMatched;
+        }
+
+        if (isExtrapolated) {
+          // the matching compares to the cluster position seen from the origin, the cluster table has eta seen from the vertex
+          const float clusterEtaOrigin = std::asinh(std::sinh(cluster.eta()) + theCollision.posZ() / emcalRadius);
+          const float dEta = best->etaEmcal - clusterEtaOrigin;
+          const float dPhi = std::remainder(best->phiEmcal - cluster.phi(), o2::constants::math::TwoPI);
+          mHistManager.fill(HIST("MCTruth/hResidualEta"), dEta, mcPt, static_cast<int>(truthClass), static_cast<int>(type));
+          mHistManager.fill(HIST("MCTruth/hResidualPhi"), dPhi, mcPt, static_cast<int>(truthClass), static_cast<int>(type));
+          if (isConversion) {
+            mHistManager.fill(HIST("MCTruth/hResidualConversion"), dEta, dPhi, mcPt);
+          }
+          if (isMatchedPrimary || isMatchedSecondary) {
+            mHistManager.fill(HIST("MCTruth/hResidualVsStored"), dEta - storedDEta, dPhi - storedDPhi);
+          }
+        }
+        if (isConversion && best->p > 0.f) {
+          mHistManager.fill(HIST("MCTruth/hEoverPConversion"), cluster.energy() / best->p, best->pt);
+        }
+      }
+      mHistManager.fill(HIST("MCTruth/hStatus"), static_cast<int>(status), static_cast<int>(truthClass), static_cast<int>(type), static_cast<int>(isV0Leg), mcPt);
+      if (isConversion) {
+        mHistManager.fill(HIST("MCTruth/hConvRadius"), static_cast<int>(status), convRadius, mcPt);
+      }
+    }
+  }
+  PROCESS_SWITCH(EmcTmMonitor, processMCTruth, "MC truth of the track matching for clusters from charged particles", false);
+
   /// \brief Create binning for cluster energy axis (variable bin size)
   /// \return vector with bin limits
   std::vector<double> makeEnergyBinning() const
@@ -493,7 +1030,7 @@ struct EmcTmMonitor {
         result.emplace_back(50. + 2.0 * (i - 190));
       } else if (i < 235) { // o2-linter: disable=magic-number (just numbers for binning)
         result.emplace_back(100. + 5.0 * (i - 215));
-      } else if (i < 245) { // o2-linter: disable=magic-number (just numbers for binning)
+      } else {
         result.emplace_back(200. + 10.0 * (i - 235));
       }
     }
@@ -529,9 +1066,9 @@ struct EmcTmMonitor {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<EmcTmMonitor>(cfgc)};
+    adaptAnalysisTask<EmcTmMonitor>(context)};
   return workflow;
 }

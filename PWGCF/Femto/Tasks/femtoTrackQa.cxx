@@ -100,12 +100,12 @@ struct FemtoTrackQa {
       colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-      trackHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
+      trackHistManager.init<modes::Mode::kReco_Qa_FitVars>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       trackHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-      trackHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
+      trackHistManager.init<modes::Mode::kReco_Qa_Mc_FitVars>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
     }
     hRegistry.print();
   };
@@ -118,7 +118,7 @@ struct FemtoTrackQa {
     }
     colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& track : trackSlice) {
-      trackHistManager.fill<modes::Mode::kReco_Qa>(track, tracks);
+      trackHistManager.fill<modes::Mode::kReco_Qa_FitVars>(track, tracks);
     }
   };
   PROCESS_SWITCH(FemtoTrackQa, processData, "Track QA in Data", true);
@@ -134,7 +134,7 @@ struct FemtoTrackQa {
       if (!trackCleaner.isClean(track, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      trackHistManager.fill<modes::Mode::kReco_Qa_Mc>(track, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+      trackHistManager.fill<modes::Mode::kReco_Qa_Mc_FitVars>(track, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoTrackQa, processMc, "Track QA in Monte Carlo", false);
@@ -147,7 +147,7 @@ struct FemtoTrackQa {
     }
     colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& track : trackSlice) {
-      trackHistManager.fill<modes::Mode::kReco_Qa>(track, tracks);
+      trackHistManager.fill<modes::Mode::kReco_Qa_FitVars>(track, tracks);
     }
   };
   PROCESS_SWITCH(FemtoTrackQa, processDataWithEventShape, "Track QA in Data with event shape information", false);

@@ -29,23 +29,23 @@
 void saveCorrelation(const TString& filename = "gmc-PbPb-snn68.21-md0.40-nd-1.0-rc1-smax99.0.root", const TString& outputFile = "basehistos.root")
 {
   TFile* fin = new TFile(filename.Data(), "READ");
-  TNtuple* ntup = (TNtuple*)fin->Get("nt_Pb_Pb");
+  TNtuple* ntup = dynamic_cast<TNtuple*>(fin->Get("nt_Pb_Pb"));
 
   // try other Pb nuclear profiles in case "Pb" - "Pb" not found
   if (!ntup) {
-    ntup = (TNtuple*)fin->Get("nt_Pbpn_Pbpn");
+    ntup = dynamic_cast<TNtuple*>(fin->Get("nt_Pbpn_Pbpn"));
   }
   if (!ntup) {
-    ntup = (TNtuple*)fin->Get("nt_PbpnVar1_PbpnVar1");
+    ntup = dynamic_cast<TNtuple*>(fin->Get("nt_PbpnVar1_PbpnVar1"));
   }
   if (!ntup) {
-    ntup = (TNtuple*)fin->Get("nt_PbpnVar2_PbpnVar2");
+    ntup = dynamic_cast<TNtuple*>(fin->Get("nt_PbpnVar2_PbpnVar2"));
   }
   if (!ntup) {
-    ntup = (TNtuple*)fin->Get("nt_PbpnVar3_PbpnVar3");
+    ntup = dynamic_cast<TNtuple*>(fin->Get("nt_PbpnVar3_PbpnVar3"));
   }
   if (!ntup) {
-    ntup = (TNtuple*)fin->Get("nt_PbpnVar4_PbpnVar4");
+    ntup = dynamic_cast<TNtuple*>(fin->Get("nt_PbpnVar4_PbpnVar4"));
   }
 
   if (!ntup) {

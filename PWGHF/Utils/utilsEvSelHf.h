@@ -197,6 +197,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> occupancyMax{"occupancyMax", 1000000, "Maximum occupancy"};
   o2::framework::Configurable<bool> requireINEL0{"requireINEL0", false, "Require INEL > 0"};
   o2::framework::Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "Minimum number of PV contributors"};
+  o2::framework::Configurable<int> nPvContributorsMax{"nPvContributorsMax", 1000000, "Maximum number of PV contributors"};
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
@@ -410,7 +411,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
 
     /// number of PV contributors
-    if (collision.numContrib() < nPvContributorsMin) {
+    if (collision.numContrib() < nPvContributorsMin || collision.numContrib() > nPvContributorsMax) {
       SETBIT(rejectionMask, EventRejection::NContrib);
     }
 

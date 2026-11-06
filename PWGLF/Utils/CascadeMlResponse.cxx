@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file cascadeMlResponse.cxx
+/// \file CascadeMlResponse.cxx
 /// \brief Helper file providing the compilation command for the CascadeMlResponse header.
 ///
 /// \author ALICE Collaboration

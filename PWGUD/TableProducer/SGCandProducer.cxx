@@ -392,8 +392,8 @@ struct SGCandProducer {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
-    sameCuts = (SGCutParHolder)SGCuts;
-    fitCuts = (FITCutParHolder)FITCuts;
+    sameCuts = SGCutParHolder(SGCuts);
+    fitCuts = FITCutParHolder(FITCuts);
 
     // add histograms for the different process functions
     histPointers.clear();

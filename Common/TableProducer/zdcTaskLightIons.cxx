@@ -128,50 +128,50 @@ struct ZdcTaskLightIons {
 
     selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_zvtx);
+      selectionBits |= static_cast<uint8_t>(0x1u << evSel_zvtx);
       registry.fill(HIST("hEventCount"), evSel_zvtx);
     }
 
     selected = collision.sel8();
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_sel8);
+      selectionBits |= static_cast<uint8_t>(0x1u << evSel_sel8);
       registry.fill(HIST("hEventCount"), evSel_sel8);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
     selected = occupancy <= cfgEvSelsMaxOccupancy;
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_occupancy);
+      selectionBits |= static_cast<uint8_t>(0x1u << evSel_occupancy);
       registry.fill(HIST("hEventCount"), evSel_occupancy);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kNoSameBunchPileup);
+      selectionBits |= static_cast<uint8_t>(0x1u << evSel_kNoSameBunchPileup);
       registry.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodZvtxFT0vsPV);
+      selectionBits |= static_cast<uint8_t>(0x1u << evSel_kIsGoodZvtxFT0vsPV);
       registry.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kNoCollInTimeRangeStandard);
+      selectionBits |= static_cast<uint8_t>(0x1u << evSel_kNoCollInTimeRangeStandard);
       registry.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kNoITSROFrameBorder);
+      selectionBits |= static_cast<uint8_t>(0x1u << evSel_kNoITSROFrameBorder);
       registry.fill(HIST("hEventCount"), evSel_kNoITSROFrameBorder);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodITSLayersAll);
+      selectionBits |= static_cast<uint8_t>(0x1u << evSel_kIsGoodITSLayersAll);
       registry.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
     }
 
@@ -208,16 +208,16 @@ struct ZdcTaskLightIons {
 
         uint8_t maskSel = 0;
         if (bcPatternB[bcInOrbit]) {
-          maskSel |= (uint8_t)(0x1u << bcMask_beamB);
+          maskSel |= static_cast<uint8_t>(0x1u << bcMask_beamB);
         }
         if (bcPatternA[bcInOrbit]) {
-          maskSel |= (uint8_t)(0x1u << bcMask_beamA);
+          maskSel |= static_cast<uint8_t>(0x1u << bcMask_beamA);
         }
         if (bcPatternC[bcInOrbit]) {
-          maskSel |= (uint8_t)(0x1u << bcMask_beamC);
+          maskSel |= static_cast<uint8_t>(0x1u << bcMask_beamC);
         }
         if (bcPatternE[bcInOrbit]) {
-          maskSel |= (uint8_t)(0x1u << bcMask_beamE);
+          maskSel |= static_cast<uint8_t>(0x1u << bcMask_beamE);
         }
 
         auto tdcZNA = bc.zdc().timeZNA();

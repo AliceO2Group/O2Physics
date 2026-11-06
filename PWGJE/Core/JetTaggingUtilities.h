@@ -997,8 +997,8 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
         trkLabels["trkOrigin"].push_back(0); // mismatched coll track
       } else {
         int orig = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-        trkLabels["trkOrigin"].push_back((orig != RecoDecay::OriginType::None) ? static_cast<int>(orig) : (trkLabels["trkVtxIndex"][trkIdx] == 0) ? 3
-                                                                                                                                                  : 4); // 1: charm, 2: beauty, 3: primary, 4: other secondary
+        trkLabels["trkOrigin"].push_back((orig != RecoDecay::OriginType::None) ? orig : (trkLabels["trkVtxIndex"][trkIdx] == 0) ? 3
+                                                                                                                                : 4); // 1: charm, 2: beauty, 3: primary, 4: other secondary
       }
     }
 
@@ -1153,6 +1153,65 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
         tracksParams[minIdx] = std::vector<float>{constituent.pt(), constituent.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ()};
     }
   }
+}
+
+// Looping over the track info and putting them in the input vectors (for ParT b-jet tagging).
+template <typename AnalysisJet, typename AnyTracks>
+void analyzeJetTrackInfo4ParT(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<std::vector<float>>& featConstit, std::vector<std::vector<float>>& vecConstit, float trackPtMin = 0.5, float trackDcaXYMax = 10.0, float trackDcaZMax = 10.0)
+{
+  for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
+
+    if (constituent.pt() < trackPtMin || !trackAcceptanceWithDca(constituent, trackDcaXYMax, trackDcaZMax)) {
+      continue;
+    }
+
+    int sign = getGeoSign(analysisJet, constituent);
+
+    float trackPt = constituent.pt();
+    float trackEta = constituent.eta();
+    float trackPhi = constituent.phi();
+
+    float ip2d = std::abs(constituent.dcaXY()) * sign;
+    float ipz = std::abs(constituent.dcaZ()) * sign;
+    float ip2dSigma = constituent.sigmadcaXY();
+    float ipzSigma = constituent.sigmadcaZ();
+
+    float dPhi = std::atan2(std::sin(trackPhi - analysisJet.phi()), std::cos(trackPhi - analysisJet.phi()));
+
+    featConstit.emplace_back(std::vector<float>{
+      std::log(trackPt),
+      std::log(trackPt / analysisJet.pt()),
+      jetutilities::deltaR(analysisJet, constituent),
+      trackEta - analysisJet.eta(),
+      dPhi,
+      std::tanh(ip2d),
+      std::tanh(ipz),
+      (ip2dSigma != 0.f) ? ip2d / ip2dSigma : 0.f,
+      (ipzSigma != 0.f) ? ipz / ipzSigma : 0.f,
+      static_cast<float>(constituent.sign())});
+
+    vecConstit.emplace_back(std::vector<float>{
+      trackPt * std::cos(trackPhi),
+      trackPt * std::sin(trackPhi),
+      trackPt * std::sinh(trackEta),
+      trackPt * std::cosh(trackEta)});
+  }
+}
+
+// Discriminant value. Probability order is assumed to be [b, c, lf].
+template <typename T>
+T getDbFromProb(const std::vector<T>& probs, double fC = 0.018)
+{
+  // MlResponse::getModelOutput() returns exactly nClassesMl entries, so a mismatched
+  // nClassesMl silently truncates the model output and would read out of bounds here.
+  if (probs.size() < 3) {
+    LOG(fatal) << "getDbFromProb expects 3 class probabilities but received " << probs.size() << ". Set the nClassesMl configurable to 3 (and give cutDirMl 3 entries to match).";
+  }
+  T denominator = fC * probs[1] + (1. - fC) * probs[2];
+  if (probs[0] <= 0. || denominator <= 0.) {
+    return std::numeric_limits<T>::quiet_NaN();
+  }
+  return std::log(probs[0] / denominator);
 }
 
 // Discriminant value for GNN b-jet tagging

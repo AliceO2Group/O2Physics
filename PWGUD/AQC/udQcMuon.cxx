@@ -98,7 +98,7 @@ struct UdQcMuon {
 
   void init(InitContext& context)
   {
-    diffCuts = (DGCutparHolder)dgCuts;
+    diffCuts = DGCutparHolder(dgCuts);
 
     // add histograms for the different process functions
     if (context.mOptions.get<bool>("processMain")) {

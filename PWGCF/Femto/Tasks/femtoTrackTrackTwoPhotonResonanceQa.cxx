@@ -44,7 +44,7 @@ struct FemtoTrackTrackTwoPhotonResonanceQa {
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
   using FemtoOmegaMesons = o2::soa::Join<o2::aod::FOmegaMesons, o2::aod::FOmegaMesonMasks>;
-  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
   using FemtoPi0s = o2::soa::Join<o2::aod::FPi0s, o2::aod::FPi0Masks>;
   using FemtoPhotons = o2::soa::Join<o2::aod::FPhotons, o2::aod::FPhotonMasks, o2::aod::FPhotonExtras>;
 
@@ -79,8 +79,8 @@ struct FemtoTrackTrackTwoPhotonResonanceQa {
 
   trackstwophotonresonancehistmanager::TrackTrackTwoPhotonResonanceHistManager<
     trackstwophotonresonancehistmanager::PrefixOmegaMeson,
-    trackhistmanager::PrefixResonancePosDaughter,
-    trackhistmanager::PrefixResonanceNegDaughter,
+    trackhistmanager::PrefixResonancePosDaughterSe,
+    trackhistmanager::PrefixResonanceNegDaughterSe,
     trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDau,
     trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDauPhotonDau1,
     trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDauPhotonDau2,

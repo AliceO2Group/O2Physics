@@ -182,7 +182,7 @@ struct K1TrainingTable {
 
   template <bool IsMC, typename Collision, typename Kaon, typename Pion>
   void writeK1MlCandidate(Collision const& collision, Kaon const& kaon, Pion const& samePion, Pion const& oppPion,
-                          K1TruthChannel channel, uint16_t passBits)
+                          K1TruthChannel channel, uint16_t passBits, const K1ParentTruthMap* parentTruth = nullptr)
   {
     using o2::analysis::k1ml::BuildStatus;
     const auto canonical = o2::analysis::k1ml::canonicalizeUS(o2::analysis::k1ml::makeTrackSnapshot(kaon), o2::analysis::k1ml::makeTrackSnapshot(samePion), o2::analysis::k1ml::makeTrackSnapshot(oppPion));
@@ -215,14 +215,17 @@ struct K1TrainingTable {
     if constexpr (IsMC) {
       const bool matched = channel != K1TruthChannel::None;
       int motherId = -1;
+      const K1ParentTruth* parent = nullptr;
       if (matched) {
-        motherId = channel == K1TruthChannel::RhoK ? kaon.motherId() : std::abs(samePion.motherPDG()) == Pdg::kK1_1270Plus ? samePion.motherId()
-                                                                                                                           : oppPion.motherId();
+        motherId = k1MotherId(channel, kaon, samePion, oppPion);
+        const int charge = kaon.pdgCode() > 0 ? 1 : -1;
+        parent = parentTruth ? findK1ParentTruth(*parentTruth, motherId, channel, charge) : nullptr;
       }
       // Immediate-mother information alone does not prove a physical UID.
       k1MlTruth(row, matched ? uint8_t{1} : uint8_t{2}, static_cast<uint8_t>(channel),
-                matched ? kaon.sign() * Pdg::kK1_1270Plus : 0, static_cast<int64_t>(motherId),
-                std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN());
+                parent ? parent->pdgCode : (matched ? kaon.sign() * Pdg::kK1_1270Plus : 0), static_cast<int64_t>(motherId),
+                parent ? static_cast<float>(parent->pt) : std::numeric_limits<float>::quiet_NaN(),
+                parent ? static_cast<float>(parent->y) : std::numeric_limits<float>::quiet_NaN());
     } else {
       k1MlTruth(row, uint8_t{0}, uint8_t{0}, 0, int64_t{-1},
                 std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN());
@@ -244,7 +247,7 @@ struct K1TrainingTable {
   }
   PROCESS_SWITCH(K1TrainingTable, processResoMicroTracks, "Write K1 candidates from data micro v001 tables", true);
 
-  void processMCMicro(ResoMCCols::iterator const& collision, ResoMCMicroTracks const& tracks)
+  void processMCMicro(ResoMCCols::iterator const& collision, ResoMCMicroTracks const& tracks, ResoMCParents const& resoParents)
   {
     // The modular producer already selected these reconstructed collisions.
     if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
@@ -253,10 +256,11 @@ struct K1TrainingTable {
     histos.fill(HIST("MCReco/collisions"), 0.5);
     histos.fill(HIST("MCReco/microTracks"), 0.5, tracks.size());
     writeK1MlEvent(collision);
+    const auto parentTruth = makeK1ParentTruthMap(resoParents);
     core.forEachCandidate<true, false, true>(histos, collision, tracks, tracks, false, nullptr, nullptr,
-                                             [this](auto const& coll, auto const& kaon, auto const& samePion, auto const& oppPion,
-                                                    K1TruthChannel channel, uint16_t passBits) {
-                                               writeK1MlCandidate<true>(coll, kaon, samePion, oppPion, channel, passBits);
+                                             [this, &parentTruth](auto const& coll, auto const& kaon, auto const& samePion, auto const& oppPion,
+                                                                  K1TruthChannel channel, uint16_t passBits) {
+                                               writeK1MlCandidate<true>(coll, kaon, samePion, oppPion, channel, passBits, &parentTruth);
                                              });
   }
   PROCESS_SWITCH(K1TrainingTable, processMCMicro, "Write K1 candidates with truth from reconstructed MC micro v001 tables", false);

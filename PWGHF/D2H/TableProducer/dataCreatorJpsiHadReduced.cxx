@@ -249,7 +249,7 @@ struct HfDataCreatorJpsiHadReduced {
     labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
     labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
     static const AxisSpec axisSelections = {NumBinsSelections, 0.5, NumBinsSelections + 0.5, ""};
-    registry.add("hSelectionsJpsi", "J/Psi selection;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hSelectionsJpsi", "J/Psi selection;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
     for (int iBin = 0; iBin < NumBinsSelections; ++iBin) {
       registry.get<TH2>(HIST("hSelectionsJpsi"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
@@ -266,7 +266,7 @@ struct HfDataCreatorJpsiHadReduced {
     }
 
     registry.add("hMassJpsi", "J/Psi mass;#it{M}_{#mu#mu} (GeV/#it{c}^{2});Counts", {HistType::kTH1D, {{600, 2.8, 3.4, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtJpsi", "J/Psi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1D, {{(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtJpsi", "J/Psi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1D, {{std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCpaJpsi", "J/Psi cos#theta_{p};J/Psi cos#theta_{p};Counts", {HistType::kTH1D, {{200, -1., 1, "J/Psi cos#theta_{p}"}}});
     std::shared_ptr<TH1> hFitCandidatesJpsi = registry.add<TH1>("hFitCandidatesJpsi", "Jpsi candidate counter", {HistType::kTH1D, {axisCands}});
     std::shared_ptr<TH1> hFitCandidatesBPlus = registry.add<TH1>("hFitCandidatesBPlus", "hFitCandidatesBPlus candidate counter", {HistType::kTH1D, {axisCands}});

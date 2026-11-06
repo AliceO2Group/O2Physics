@@ -78,7 +78,7 @@ struct midEfficiency {
   o2::mid::Mapping mapping;
 
   // Filter only for MCH-MID matched tracks
-  Filter muonTrackType = aod::fwdtrack::trackType == uint8_t(3);
+  Filter muonTrackType = aod::fwdtrack::trackType == static_cast<uint8_t>(3);
 
   void init(o2::framework::InitContext const& /*ic*/)
   {

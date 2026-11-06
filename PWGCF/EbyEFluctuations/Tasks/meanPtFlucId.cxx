@@ -72,17 +72,21 @@ struct MeanPtFlucId {
   Configurable<float> cfgCutNSig3{"cfgCutNSig3", 3.0, "nSigma cut: 3"};
   Configurable<float> cfgCutNSig5{"cfgCutNSig5", 5.0, "nSigma cut: 5"};
   Configurable<float> cfgCutNSigTpcTof{"cfgCutNSigTpcTof", 3.0, "nSigma TPC cut  when TPC + TOF "};
-  Configurable<float> cfgSelCutNSigTpcPi{"cfgSelCutNSigTpcPi", 2.0, "nSigma TPC cut for pion selection"};
-  Configurable<float> cfgSelCutNSigTpcKa{"cfgSelCutNSigTpcKa", 2.0, "nSigma TPC cut for kaon selection"};
-  Configurable<float> cfgSelCutNSigTpcPr{"cfgSelCutNSigTpcPr", 2.0, "nSigma TPC cut for proton selection"};
-  Configurable<float> cfgSelCutNSigTofPi{"cfgSelCutNSigTofPi", 2.0, "nSigma TOF cut for pion selection"};
-  Configurable<float> cfgSelCutNSigTofKa{"cfgSelCutNSigTofKa", 2.0, "nSigma TOF cut for kaon selection"};
-  Configurable<float> cfgSelCutNSigTofPr{"cfgSelCutNSigTofPr", 2.0, "nSigma TOF cut for proton selection"};
+  Configurable<float> cfgSelCutNSigTpcPi{"cfgSelCutNSigTpcPi", 3.0, "nSigma TPC cut for pion selection"};
+  Configurable<float> cfgSelCutNSigTpcKa{"cfgSelCutNSigTpcKa", 3.0, "nSigma TPC cut for kaon selection"};
+  Configurable<float> cfgSelCutNSigTpcPr{"cfgSelCutNSigTpcPr", 3.0, "nSigma TPC cut for proton selection"};
+  Configurable<float> cfgSelCutNSigTofPi{"cfgSelCutNSigTofPi", 3.0, "nSigma TOF cut for pion selection"};
+  Configurable<float> cfgSelCutNSigTofKa{"cfgSelCutNSigTofKa", 3.0, "nSigma TOF cut for kaon selection"};
+  Configurable<float> cfgSelCutNSigTofPr{"cfgSelCutNSigTofPr", 3.0, "nSigma TOF cut for proton selection"};
+  // Signed TOF nSigma offsets: corrected = raw - shift. Zero preserves the original PID.
+  Configurable<float> cfgTofShiftPi{"cfgTofShiftPi", 0.f, "Pion TOF nSigma offset to subtract (not a time shift in ps)"};
+  Configurable<float> cfgTofShiftKa{"cfgTofShiftKa", 0.f, "Kaon TOF nSigma offset to subtract (not a time shift in ps)"};
+  Configurable<float> cfgTofShiftPr{"cfgTofShiftPr", 0.f, "Proton TOF nSigma offset to subtract (not a time shift in ps)"};
   Configurable<float> cfgCutPiPtMin{"cfgCutPiPtMin", 0.2, "Minimum pion p_{T} cut"};
   Configurable<float> cfgCutKaPtMin{"cfgCutKaPtMin", 0.3, "Minimum kaon p_{T} cut"};
   Configurable<float> cfgCutPrPtMin{"cfgCutPrPtMin", 0.5, "Minimum proton p_{T} cut"};
   Configurable<float> cfgCutPiThrsldP{"cfgCutPiThrsldP", 0.7, "Momentum threshold for requiring pion TOF PID"};
-  Configurable<float> cfgCutKaThrsldP{"cfgCutKaThrsldP", 0.8, "Momentum threshold for requiring kaon TOF PID"};
+  Configurable<float> cfgCutKaThrsldP{"cfgCutKaThrsldP", 0.55, "Momentum threshold for requiring kaon TOF PID"};
   Configurable<float> cfgCutPrThrsldP{"cfgCutPrThrsldP", 0.8, "Momentum threshold for requiring proton TOF PID"};
   Configurable<float> cfgP0U{"cfgP0U", 6.36269, "p_{0} for upper cut for N_{TPC} vs N{sim}"};
   Configurable<float> cfgP1U{"cfgP1U", 2.22108, "p_{1} for upper cut for N_{TPC} vs N{sim}"};
@@ -94,6 +98,7 @@ struct MeanPtFlucId {
   Configurable<float> cfgP1corr{"cfgP1corr", 0.0001, "p_{1} for corrected N_{TPC} "};
   Configurable<float> cfgP2corr{"cfgP2corr", 0.0001, "p_{2} for corrected N_{TPC} "};
   Configurable<bool> cfgSel8{"cfgSel8", true, "Sel8 trigger"};
+  Configurable<bool> cfgCentFT0C{"cfgCentFT0C", false, "Use FT0C for centrality instead of FT0M"};
   Configurable<bool> cfgNoSameBunchPileup{"cfgNoSameBunchPileup", true, "kNoSameBunchPileup"};
   Configurable<bool> cfgIsVertexITSTPC{"cfgIsVertexITSTPC", true, "kIsVertexITSTPC"};
   Configurable<bool> cfgLightIonCuts{"cfgLightIonCuts", false, "Light Ion Cuts"};
@@ -240,6 +245,10 @@ struct MeanPtFlucId {
 
   void init(InitContext const&)
   {
+    if (!std::isfinite(cfgTofShiftPi.value) || !std::isfinite(cfgTofShiftKa.value) || !std::isfinite(cfgTofShiftPr.value)) {
+      LOGF(fatal, "TOF nSigma shifts must be finite: pion=%g, kaon=%g, proton=%g",
+           cfgTofShiftPi.value, cfgTofShiftKa.value, cfgTofShiftPr.value);
+    }
 
     if (nPtBins <= 0 || cfgCutPtMin >= cfgCutPtMax || cfgCutPiPtMin >= cfgCutPtMax ||
         cfgCutKaPtMin >= cfgCutPtMax || cfgCutPrPtMin >= cfgCutPtMax) {
@@ -418,7 +427,7 @@ struct MeanPtFlucId {
       hist.add("QA/Charged/h2_Pt_Eta", "p_{T} vs #eta ", kTH2D, {{axisEta}, {axisPtCh}});
       hist.add("QA/Charged/h3_Pt_Eta_centFT0M", "p_{T} vs #eta in centrality classes", kTH3D, {{axisEta}, {axisPtCh}, {axisCent}});
       hist.add("QA/Charged/h3_Pt_EtaMC_centFT0M", "p_{T} vs #eta in centrality classes", kTH3D, {{axisEta}, {axisPtCh}, {axisCent}});
-      hist.add("QA/Charged/h3_Pt_EtaMC_primary_centFT0M", "Selected primary MC particles;#eta_{MC};p_{T,MC};FT0M (%)", kTH3D, {{axisEta}, {axisPtCh}, {axisCent}});
+      hist.add("QA/Charged/h3_Pt_EtaTruth_primary_centFT0M", "Selected truth primary tracks in reconstructed coordinates;#eta;p_{T};FT0M (%)", kTH3D, {{axisEta}, {axisPtCh}, {axisCent}});
       hist.add("QA/Charged/h2_Pt_EtaMC", "p_{T} vs #eta (MC)", kTH2D, {{axisEta}, {axisPtCh}});
     };
     addTrackQAHistograms();
@@ -429,7 +438,7 @@ struct MeanPtFlucId {
       hist.add("QA/Pion/h2_Pt_Eta", "p_{T} vs #eta ", kTH2D, {{axisEta}, {axisPtPi}});
       hist.add("QA/Pion/h3_Pt_Eta_centFT0M", "p_{T} vs #eta in centrality classes", kTH3D, {{axisEta}, {axisPtPi}, {axisCent}});
       hist.add("QA/Pion/h3_Pt_EtaMC_centFT0M", "p_{T} vs #eta in centrality classes", kTH3D, {{axisEta}, {axisPtPi}, {axisCent}});
-      hist.add("QA/Pion/h3_Pt_EtaMC_primary_centFT0M", "Correctly selected primary pions;#eta_{MC};p_{T,MC};FT0M (%)", kTH3D, {{axisEta}, {axisPtPi}, {axisCent}});
+      hist.add("QA/Pion/h3_Pt_EtaTruth_primary_centFT0M", "Selected truth primary tracks in reconstructed coordinates;#eta;p_{T};FT0M (%)", kTH3D, {{axisEta}, {axisPtPi}, {axisCent}});
       hist.add("QA/Pion/h2_Pt_EtaMC", "p_{T} vs #eta (MC)", kTH2D, {{axisEta}, {axisPtPi}});
       hist.add("QA/Pion/h_PtPos", "p_{T} (positive) ", kTH1D, {axisPtPi});
       hist.add("QA/Pion/h_PtNeg", "p_{T} (negative) ", kTH1D, {axisPtPi});
@@ -446,7 +455,7 @@ struct MeanPtFlucId {
       hist.add("QA/Kaon/h2_Pt_Eta", "p_{T} vs #eta ", kTH2D, {{axisEta}, {axisPtKa}});
       hist.add("QA/Kaon/h3_Pt_Eta_centFT0M", "p_{T} vs #eta in centrality classes", kTH3D, {{axisEta}, {axisPtKa}, {axisCent}});
       hist.add("QA/Kaon/h3_Pt_EtaMC_centFT0M", "p_{T} vs #eta in centrality classes", kTH3D, {{axisEta}, {axisPtKa}, {axisCent}});
-      hist.add("QA/Kaon/h3_Pt_EtaMC_primary_centFT0M", "Correctly selected primary kaons;#eta_{MC};p_{T,MC};FT0M (%)", kTH3D, {{axisEta}, {axisPtKa}, {axisCent}});
+      hist.add("QA/Kaon/h3_Pt_EtaTruth_primary_centFT0M", "Selected truth primary tracks in reconstructed coordinates;#eta;p_{T};FT0M (%)", kTH3D, {{axisEta}, {axisPtKa}, {axisCent}});
       hist.add("QA/Kaon/h2_Pt_EtaMC", "p_{T} vs #eta (MC)", kTH2D, {{axisEta}, {axisPtKa}});
       hist.add("QA/Kaon/h_PtPos", "p_{T} (positive) ", kTH1D, {axisPtKa});
       hist.add("QA/Kaon/h_PtNeg", "p_{T} (negative) ", kTH1D, {axisPtKa});
@@ -463,7 +472,7 @@ struct MeanPtFlucId {
       hist.add("QA/Proton/h2_Pt_Eta", "p_{T} vs #eta ", kTH2D, {{axisEta}, {axisPtPr}});
       hist.add("QA/Proton/h3_Pt_Eta_centFT0M", "p_{T} vs #eta in centrality classes", kTH3D, {{axisEta}, {axisPtPr}, {axisCent}});
       hist.add("QA/Proton/h3_Pt_EtaMC_centFT0M", "p_{T} vs #eta in centrality classes", kTH3D, {{axisEta}, {axisPtPr}, {axisCent}});
-      hist.add("QA/Proton/h3_Pt_EtaMC_primary_centFT0M", "Correctly selected primary protons;#eta_{MC};p_{T,MC};FT0M (%)", kTH3D, {{axisEta}, {axisPtPr}, {axisCent}});
+      hist.add("QA/Proton/h3_Pt_EtaTruth_primary_centFT0M", "Selected truth primary tracks in reconstructed coordinates;#eta;p_{T};FT0M (%)", kTH3D, {{axisEta}, {axisPtPr}, {axisCent}});
       hist.add("QA/Proton/h2_Pt_EtaMC", "p_{T} vs #eta (MC)", kTH2D, {{axisEta}, {axisPtPr}});
       hist.add("QA/Proton/h_PtPos", "p_{T} (positive) ", kTH1D, {axisPtPr});
       hist.add("QA/Proton/h_PtNeg", "p_{T} (negative) ", kTH1D, {axisPtPr});
@@ -591,8 +600,11 @@ struct MeanPtFlucId {
   template <typename T>
   bool selRun3Col(T const& col)
   {
-
-    centFT0M = col.centFT0M();
+    if (cfgCentFT0C) {
+      centFT0M = col.centFT0C();
+    } else {
+      centFT0M = col.centFT0M();
+    }
     nTPC = col.multNTracksHasTPC();
     nFT0M = col.multFT0M();
     hist.fill(HIST("QA/after/h_counts_evSelCuts"), kBeforeSelCol);
@@ -689,12 +701,25 @@ struct MeanPtFlucId {
             std::fabs(track.tpcNSigmaPr()) > cfgCutNSig3);
   }
 
+  // Share the corrected hypotheses between PID selection and selected-particle QA.
+  // The before-PID histograms intentionally retain raw values for calibration.
+  template <typename T>
+  std::array<float, 4> getTofNSigmaForPid(T const& track) const
+  {
+    std::array<float, 4> values = {-999.f, track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+    if (track.hasTOF()) {
+      values[static_cast<int>(PIDType::kPions)] -= cfgTofShiftPi.value;
+      values[static_cast<int>(PIDType::kKaons)] -= cfgTofShiftKa.value;
+      values[static_cast<int>(PIDType::kProtons)] -= cfgTofShiftPr.value;
+    }
+    return values;
+  }
+
   // PID cuts for identified particles
   template <typename T>
-  bool identifyParticle(T const& track, PIDType species, PIDType reject1, PIDType reject2, float p, float momThreshold)
+  bool identifyParticle(T const& track, PIDType species, PIDType reject1, PIDType reject2, float p, float momThreshold, const std::array<float, 4>& tofNSigma)
   {
     const std::array<float, 4> tpcNSigma = {-999.f, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-    const std::array<float, 4> tofNSigma = {-999.f, track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
 
     const int selSpecies = static_cast<int>(species);
     const int rejSpecies1 = static_cast<int>(reject1);
@@ -1092,9 +1117,10 @@ struct MeanPtFlucId {
       float nSigmaTPCPi = track.tpcNSigmaPi();
       float nSigmaTPCKa = track.tpcNSigmaKa();
       float nSigmaTPCPr = track.tpcNSigmaPr();
-      float nSigmaTOFPi = track.tofNSigmaPi();
-      float nSigmaTOFKa = track.tofNSigmaKa();
-      float nSigmaTOFPr = track.tofNSigmaPr();
+      const auto tofNSigma = getTofNSigmaForPid(track);
+      const float nSigmaTOFPi = tofNSigma[static_cast<int>(PIDType::kPions)];
+      const float nSigmaTOFKa = tofNSigma[static_cast<int>(PIDType::kKaons)];
+      const float nSigmaTOFPr = tofNSigma[static_cast<int>(PIDType::kProtons)];
       float rapPi = track.rapidity(MassPiPlus);
       float rapKa = track.rapidity(MassKPlus);
       float rapPr = track.rapidity(MassProton);
@@ -1129,16 +1155,13 @@ struct MeanPtFlucId {
           hist.fill(HIST("QA/after/h_DCAxy_primary"), track.dcaXY());
           hist.fill(HIST("QA/after/h_DCAz_primary"), track.dcaZ());
           hist.fill(HIST("QA/Charged/h_PtTruth_primary"), track.pt());
-          const bool mcInChargedAcceptance = ptMC >= cfgCutPtMin && ptMC < cfgCutPtMax && std::abs(etaMC) < cfgCutEta;
-          if (mcInChargedAcceptance) {
-            hist.fill(HIST("QA/Charged/h3_Pt_EtaMC_primary_centFT0M"), etaMC, ptMC, centFT0M);
-            if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
-              double weight = 0.;
-              if (!getEfficiencyWeight(PIDType::kNone, ptMC, etaMC, weight)) {
-                LOGF(fatal, "Undefined truth-matched charged efficiency weight at pT=%g, eta=%g, centrality=%g", ptMC, etaMC, centFT0M);
-              }
-              chargedTracksTruthMatchedCorrected.push_back({ptMC, weight});
+          hist.fill(HIST("QA/Charged/h3_Pt_EtaTruth_primary_centFT0M"), track.eta(), track.pt(), centFT0M);
+          if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
+            double weight = 0.;
+            if (!getEfficiencyWeight(PIDType::kNone, pt, eta, weight)) {
+              LOGF(fatal, "Undefined truth-matched charged efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
             }
+            chargedTracksTruthMatchedCorrected.push_back({pt, weight});
           }
         } else {
           hist.fill(HIST("QA/after/h_DCAxy_secondary"), track.dcaXY());
@@ -1169,9 +1192,9 @@ struct MeanPtFlucId {
       if (cfgRejTrk && rejectTracks(track)) {
         continue;
       }
-      auto selIDPion = identifyParticle(track, PIDType::kPions, PIDType::kKaons, PIDType::kProtons, p, cfgCutPiThrsldP);
-      auto selIDKaon = identifyParticle(track, PIDType::kKaons, PIDType::kPions, PIDType::kProtons, p, cfgCutKaThrsldP);
-      auto selIDProton = identifyParticle(track, PIDType::kProtons, PIDType::kPions, PIDType::kKaons, p, cfgCutPrThrsldP);
+      auto selIDPion = identifyParticle(track, PIDType::kPions, PIDType::kKaons, PIDType::kProtons, p, cfgCutPiThrsldP, tofNSigma);
+      auto selIDKaon = identifyParticle(track, PIDType::kKaons, PIDType::kPions, PIDType::kProtons, p, cfgCutKaThrsldP, tofNSigma);
+      auto selIDProton = identifyParticle(track, PIDType::kProtons, PIDType::kPions, PIDType::kKaons, p, cfgCutPrThrsldP, tofNSigma);
 
       if (selIDPion && track.pt() >= cfgCutPiPtMin) {
         if (cfgApplyEfficiencyCorrection) {
@@ -1213,17 +1236,14 @@ struct MeanPtFlucId {
             fillPtMCHist<QA_Pion>(false, pt, eta, rapPi, phi, pid, kPiPlus, kPiMinus);
             if (mc.isPhysicalPrimary()) {
               hist.fill(HIST("QA/Pion/h_PtTruth_primary"), track.pt());
+              hist.fill(HIST("QA/Pion/h3_Pt_EtaTruth_primary_centFT0M"), track.eta(), track.pt(), centFT0M);
               hist.fill(HIST("QA/Pion/h2_Pt_EtaTruth_primary"), track.eta(), track.pt());
-              const bool mcInPionAcceptance = ptMC >= cfgCutPiPtMin && ptMC < cfgCutPtMax && std::abs(etaMC) < cfgCutEta;
-              if (mcInPionAcceptance) {
-                hist.fill(HIST("QA/Pion/h3_Pt_EtaMC_primary_centFT0M"), etaMC, ptMC, centFT0M);
-                if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
-                  double weight = 0.;
-                  if (!getEfficiencyWeight(PIDType::kPions, ptMC, etaMC, weight)) {
-                    LOGF(fatal, "Undefined truth-matched pion efficiency weight at pT=%g, eta=%g, centrality=%g", ptMC, etaMC, centFT0M);
-                  }
-                  pionTracksTruthMatchedCorrected.push_back({ptMC, weight});
+              if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
+                double weight = 0.;
+                if (!getEfficiencyWeight(PIDType::kPions, pt, eta, weight)) {
+                  LOGF(fatal, "Undefined truth-matched pion efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
                 }
+                pionTracksTruthMatchedCorrected.push_back({pt, weight});
               }
             } else {
               hist.fill(HIST("QA/Pion/h_PtTruth_secondary"), track.pt());
@@ -1236,17 +1256,14 @@ struct MeanPtFlucId {
             fillPtMCHist<QA_Kaon>(false, pt, eta, rapKa, phi, pid, kKPlus, kKMinus);
             if (mc.isPhysicalPrimary()) {
               hist.fill(HIST("QA/Kaon/h_PtTruth_primary"), track.pt());
+              hist.fill(HIST("QA/Kaon/h3_Pt_EtaTruth_primary_centFT0M"), track.eta(), track.pt(), centFT0M);
               hist.fill(HIST("QA/Kaon/h2_Pt_EtaTruth_primary"), track.eta(), track.pt());
-              const bool mcInKaonAcceptance = ptMC >= cfgCutKaPtMin && ptMC < cfgCutPtMax && std::abs(etaMC) < cfgCutEta;
-              if (mcInKaonAcceptance) {
-                hist.fill(HIST("QA/Kaon/h3_Pt_EtaMC_primary_centFT0M"), etaMC, ptMC, centFT0M);
-                if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
-                  double weight = 0.;
-                  if (!getEfficiencyWeight(PIDType::kKaons, ptMC, etaMC, weight)) {
-                    LOGF(fatal, "Undefined truth-matched kaon efficiency weight at pT=%g, eta=%g, centrality=%g", ptMC, etaMC, centFT0M);
-                  }
-                  kaonTracksTruthMatchedCorrected.push_back({ptMC, weight});
+              if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
+                double weight = 0.;
+                if (!getEfficiencyWeight(PIDType::kKaons, pt, eta, weight)) {
+                  LOGF(fatal, "Undefined truth-matched kaon efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
                 }
+                kaonTracksTruthMatchedCorrected.push_back({pt, weight});
               }
             } else {
               hist.fill(HIST("QA/Kaon/h_PtTruth_secondary"), track.pt());
@@ -1259,17 +1276,14 @@ struct MeanPtFlucId {
             fillPtMCHist<QA_Proton>(false, pt, eta, rapPr, phi, pid, kProton, kProtonBar);
             if (mc.isPhysicalPrimary()) {
               hist.fill(HIST("QA/Proton/h_PtTruth_primary"), track.pt());
+              hist.fill(HIST("QA/Proton/h3_Pt_EtaTruth_primary_centFT0M"), track.eta(), track.pt(), centFT0M);
               hist.fill(HIST("QA/Proton/h2_Pt_EtaTruth_primary"), track.eta(), track.pt());
-              const bool mcInProtonAcceptance = ptMC >= cfgCutPrPtMin && ptMC < cfgCutPtMax && std::abs(etaMC) < cfgCutEta;
-              if (mcInProtonAcceptance) {
-                hist.fill(HIST("QA/Proton/h3_Pt_EtaMC_primary_centFT0M"), etaMC, ptMC, centFT0M);
-                if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
-                  double weight = 0.;
-                  if (!getEfficiencyWeight(PIDType::kProtons, ptMC, etaMC, weight)) {
-                    LOGF(fatal, "Undefined truth-matched proton efficiency weight at pT=%g, eta=%g, centrality=%g", ptMC, etaMC, centFT0M);
-                  }
-                  protonTracksTruthMatchedCorrected.push_back({ptMC, weight});
+              if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
+                double weight = 0.;
+                if (!getEfficiencyWeight(PIDType::kProtons, pt, eta, weight)) {
+                  LOGF(fatal, "Undefined truth-matched proton efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
                 }
+                protonTracksTruthMatchedCorrected.push_back({pt, weight});
               }
             } else {
               hist.fill(HIST("QA/Proton/h_PtTruth_secondary"), track.pt());
@@ -1437,8 +1451,8 @@ struct MeanPtFlucId {
                                 aod::pidTOFFullPi, aod::pidTPCFullPi, aod::pidTOFFullPr, aod::pidTPCFullPr,
                                 aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullEl, aod::pidTPCFullEl,
                                 aod::pidTOFbeta, aod::pidTOFmass>;
-  using MyRun3Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Ms>;
-  using MyRun3MCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Ms, aod::McCollisionLabels>;
+  using MyRun3Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using MyRun3MCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Ms, aod::CentFT0Cs, aod::McCollisionLabels>;
   using MyMCTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA,
                                aod::pidTOFFullPi, aod::pidTPCFullPi, aod::pidTOFFullPr, aod::pidTPCFullPr,
                                aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullEl, aod::pidTPCFullEl,

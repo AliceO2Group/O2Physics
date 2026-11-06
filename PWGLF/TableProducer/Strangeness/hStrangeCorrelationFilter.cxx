@@ -138,6 +138,10 @@ struct HStrangeCorrelationFilter {
     // formula: |DCAxy| <  0.004f + (0.013f / pt)
     Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
+
+    // perform P-Lambda correlation analysis
+    Configurable<float> performPLambdacorrelation{"performPLambdacorrelation", 3, "do p-Lambda correlation study"};
+    Configurable<float> triggerProtonNSigmaTPCFOF{"triggerProtonNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Proton ID"};
   } trackSelections;
   struct : ConfigurableGroup {
     // V0 selections
@@ -213,8 +217,8 @@ struct HStrangeCorrelationFilter {
 
   // using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   // using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
-  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackCompColls>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackCompColls>;
+  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackCompColls>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::TrackCompColls>;
   using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels, aod::TrackCompColls>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
@@ -447,7 +451,8 @@ struct HStrangeCorrelationFilter {
     if (track.pt() > generalSelections.triggerPtCutMax || track.pt() < generalSelections.triggerPtCutMin) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+    // hasTPC() is needed: since O2-7038 (Oct 2026) tracks without TPC report 256 crossed rows
+    if (!track.hasTPC() || track.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
       return false; // crossed rows
     }
     if (!track.hasITS() && trackSelections.triggerRequireITS) {
@@ -458,6 +463,13 @@ struct HStrangeCorrelationFilter {
     }
     if (!(TESTBIT(track.itsClusterMap(), 0)) && trackSelections.triggerRequireL0) {
       return false; // skip, doesn't have cluster in ITS L0
+    }
+    bool isProton = std::sqrt(track.tofNSigmaPr() * track.tofNSigmaPr() + track.tpcNSigmaPr() * track.tpcNSigmaPr()) <= trackSelections.triggerProtonNSigmaTPCFOF;
+    if (trackSelections.performPLambdacorrelation <= 1 && !isProton) {
+      return false;
+    }
+    if (trackSelections.performPLambdacorrelation == 2 && isProton) {
+      return false;
     }
     return true;
   }
@@ -470,7 +482,7 @@ struct HStrangeCorrelationFilter {
     if (assoc.pt() > generalSelections.assocPtCutMax || assoc.pt() < generalSelections.assocPtCutMin) {
       return false;
     }
-    if (assoc.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+    if (!assoc.hasTPC() || assoc.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
       return false; // crossed rows
     }
     if (!assoc.hasITS() && trackSelections.assocRequireITS) {
@@ -837,10 +849,10 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negdau.hasTPC() || negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posdau.hasTPC() || posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
@@ -976,10 +988,10 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracksMC>();
       auto negdau = v0.negTrack_as<DauTracksMC>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negdau.hasTPC() || negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posdau.hasTPC() || posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
@@ -1134,13 +1146,13 @@ struct HStrangeCorrelationFilter {
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!bachTrackCast.hasTPC() || bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posTrackCast.hasTPC() || posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negTrackCast.hasTPC() || negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {
@@ -1307,13 +1319,13 @@ struct HStrangeCorrelationFilter {
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!bachTrackCast.hasTPC() || bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posTrackCast.hasTPC() || posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negTrackCast.hasTPC() || negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {

@@ -128,7 +128,7 @@ struct ConfCharmHadronQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis massD0{"massD0", {{200, 1.7, 2.0}}, "Mass of candidates selected as D0"};
   o2::framework::ConfigurableAxis massD0bar{"massD0bar", {{200, 1.7, 2.0}}, "Mass of candidates selected as D0bar"};
   o2::framework::ConfigurableAxis mlScore{"mlScore", {{100, 0.f, 1.f}}, "BDT ML score (bkg/prompt/non-prompt)"};
-  o2::framework::ConfigurableAxis cpa{"cpa", {{100, 0.9f, 1.f}}, "Cosine of pointing angle"};
+  o2::framework::ConfigurableAxis cpa{"cpa", {{100, 0.95f, 1.f}}, "Cosine of pointing angle"};
   o2::framework::ConfigurableAxis decayLength{"decayLength", {{200, 0.f, 0.2f}}, "Decay length (cm)"};
   o2::framework::ConfigurableAxis impactParameterProduct{"impactParameterProduct", {{200, -0.001f, 0.001f}}, "Product of daughter impact parameters (cm^2)"};
   o2::framework::ConfigurableAxis cosThetaStar{"cosThetaStar", {{100, -1.f, 1.f}}, "Cosine of decay angle in D0 rest frame"};
@@ -144,7 +144,7 @@ struct ConfLcQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis massLcToPKPi{"massLcToPKPi", {{200, 2.15, 2.42}}, "Mass under the p K pi hypothesis"};
   o2::framework::ConfigurableAxis massLcToPiKP{"massLcToPiKP", {{200, 2.15, 2.42}}, "Mass under the pi K p hypothesis"};
   o2::framework::ConfigurableAxis mlScore{"mlScore", {{100, 0.f, 1.f}}, "BDT ML score (bkg/prompt/non-prompt)"};
-  o2::framework::ConfigurableAxis cpa{"cpa", {{100, 0.9f, 1.f}}, "Cosine of pointing angle"};
+  o2::framework::ConfigurableAxis cpa{"cpa", {{100, 0.95f, 1.f}}, "Cosine of pointing angle"};
   o2::framework::ConfigurableAxis decayLength{"decayLength", {{200, 0.f, 0.2f}}, "Decay length (cm)"};
   o2::framework::ConfigurableAxis chi2Pca{"chi2Pca", {{200, 0.f, 0.1f}}, "Sum of distances of the secondary vertex to its prongs (cm)"};
   o2::framework::ConfigurableAxis impactParameterProngSqSum{"impactParameterProngSqSum", {{200, 0.f, 0.01f}}, "Sum of squared prong impact parameters (cm^2)"};
@@ -291,10 +291,15 @@ auto makeLcMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQ
 #undef LC_HIST_QA_MAP
 
 // prefixes for the output directories in the histogram registry
-constexpr char PrefixD01[] = "D01/";
-constexpr char PrefixD02[] = "D02/";
+// same-event / mixed-event siblings: single-candidate histograms for a given slot, split by
+// whether the candidate came from a same-event or mixed-event pair
+constexpr char PrefixD01Se[] = "D01/SE/";
+constexpr char PrefixD02Se[] = "D02/SE/";
+constexpr char PrefixD01Me[] = "D01/ME/";
+constexpr char PrefixD02Me[] = "D02/ME/";
 constexpr char PrefixD0Qa[] = "D0QA/";
-constexpr char PrefixLc1[] = "Lc1/";
+constexpr char PrefixLc1Se[] = "Lc1/SE/";
+constexpr char PrefixLc1Me[] = "Lc1/ME/";
 constexpr char PrefixLcQa[] = "LcQA/";
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view McDir = "MC/";

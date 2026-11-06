@@ -138,7 +138,7 @@ DECLARE_SOA_COLUMN(True6DaugPx, true6DaugPx, float[6]);
 DECLARE_SOA_COLUMN(True6DaugPy, true6DaugPy, float[6]);
 DECLARE_SOA_COLUMN(True6DaugPz, true6DaugPz, float[6]);
 DECLARE_SOA_COLUMN(True6DaugPdgCode, true6DaugPdgCode, int[6]);
-DECLARE_SOA_COLUMN(Problem, problem, int8_t);
+DECLARE_SOA_COLUMN(Problem, problem, uint8_t);
 DECLARE_SOA_COLUMN(IsRec, isRec, int8_t);
 } // namespace tautree
 

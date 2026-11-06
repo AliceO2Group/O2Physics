@@ -39,9 +39,9 @@ Double_t FastIntegrate(TF1* f1, Double_t a, Double_t b, Int_t n = 5)
   // Do fast integration with N sampling points
   const Int_t nc = n;
   Double_t x[nc], y[nc];
-  Double_t lWidth = (b - a) / ((double)(n - 1));
+  Double_t lWidth = (b - a) / (static_cast<double>(n - 1));
   for (Int_t ii = 0; ii < n; ii++) {
-    x[ii] = a + ((double)(ii)) * lWidth;
+    x[ii] = a + (static_cast<double>(ii)) * lWidth;
     y[ii] = f1->Eval(x[ii]);
   }
   // Now go via trapezoids, please (this probably has a name)
@@ -98,7 +98,7 @@ int runGlauberFit(const TString& lInputFileName = "AnalysisResultsLHC24ar.root",
     std::cout << "Problem with file!" << std::endl;
   TH1F* hV0Mfine = 0x0;
 
-  hV0Mfine = (TH1F*)file->Get(Form("centrality-study/%s", histogramName.Data()));
+  hV0Mfine = dynamic_cast<TH1F*>(file->Get(Form("centrality-study/%s", histogramName.Data())));
 
   // disregard bin zero
   std::cout << "Received bin zero content: " << hV0Mfine->GetBinContent(0) << ", will set to zero..." << std::endl;
@@ -124,8 +124,8 @@ int runGlauberFit(const TString& lInputFileName = "AnalysisResultsLHC24ar.root",
 
   TFile* fOutput = new TFile(outputFile.Data(), "RECREATE");
 
-  TH1F* hV0M = (TH1F*)hV0Mfine->Clone("hV0M");
-  TH1F* hV0MUltraFine = (TH1F*)hV0Mfine->Clone("hV0MUltraFine");
+  TH1F* hV0M = dynamic_cast<TH1F*>(hV0Mfine->Clone("hV0M"));
+  TH1F* hV0MUltraFine = dynamic_cast<TH1F*>(hV0Mfine->Clone("hV0MUltraFine"));
   hV0M->SetName("hV0M");
   hV0M->SetTitle("");
 
@@ -210,7 +210,7 @@ int runGlauberFit(const TString& lInputFileName = "AnalysisResultsLHC24ar.root",
 
   // Step 1: open the (Npart, Ncoll) pair information, provide
   TFile* fbasefile = new TFile("basehistos.root", "READ");
-  TH2D* hNpNc = (TH2D*)fbasefile->Get("hNpNc");
+  TH2D* hNpNc = dynamic_cast<TH2D*>(fbasefile->Get("hNpNc"));
   // return to proper scope
   fOutput->cd();
   g->SetNpartNcollCorrelation(hNpNc);
@@ -291,8 +291,8 @@ int runGlauberFit(const TString& lInputFileName = "AnalysisResultsLHC24ar.root",
 
   gStyle->SetOptStat(0);
   // Do a ratio plot
-  TH1D* hGlauber = (TH1D*)hV0MUltraFine->Clone("hGlauber");
-  TH1D* hRatio = (TH1D*)hV0MUltraFine->Clone("hRatio");
+  TH1D* hGlauber = dynamic_cast<TH1D*>(hV0MUltraFine->Clone("hGlauber"));
+  TH1D* hRatio = dynamic_cast<TH1D*>(hV0MUltraFine->Clone("hRatio"));
   hGlauber->Reset();
 
   c1->cd(1);
@@ -345,7 +345,7 @@ int runGlauberFit(const TString& lInputFileName = "AnalysisResultsLHC24ar.root",
   lFitRangeLine->SetLineStyle(2);
   lFitRangeLine->Draw();
 
-  TH1D* hRatioGrayed = (TH1D*)hRatio->Clone("hRatioGrayed");
+  TH1D* hRatioGrayed = dynamic_cast<TH1D*>(hRatio->Clone("hRatioGrayed"));
   hRatioGrayed->SetMarkerColor(kGray + 2);
   hRatioGrayed->SetLineColor(kGray + 2);
   hRatioGrayed->Draw("same");

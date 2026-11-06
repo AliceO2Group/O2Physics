@@ -38,3 +38,8 @@ o2physics_add_dpl_workflow(multiparticle-correlations-mei
                     SOURCES multiparticleCorrelationsMei.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(multiparticle-correlations-dm
+                    SOURCES multiparticleCorrelationsDm.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
