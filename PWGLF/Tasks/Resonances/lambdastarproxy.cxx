@@ -1222,9 +1222,8 @@ struct Lambdastarproxy {
     const AxisSpec mcMass{DiagnosticMassBins, 1.4, 1.8, "M_(d/2)K (GeV/c2)"};
     const AxisSpec probeMass{ProbeMassBins, 1.4, 1.8, "M_(d/2)K (GeV/c2)"};
     uint64_t payload = 0;
-    // Keep these numerically filled TH3 axes unlabelled. ROOT label-mode merges
-    // can collapse distinct Z tags, especially through empty/staged merges.
-    // SpeciesNames, the parent-tag comments and packed-axis formulas define the decoder.
+    // Keep these numerically filled TH3 axes unlabelled.
+    // For SpeciesNames see comment above, the parent-tag comments and packed-axis formulas define the decoder.
     auto add3 = [&](std::string const& name, std::string const& title, std::vector<AxisSpec> const& axes) {
       auto h = histos.add<TH3>(name.c_str(), title.c_str(), HistType::kTH3D, axes, true);
       payload += static_cast<uint64_t>(h->GetNcells()) * 2 * sizeof(double);
