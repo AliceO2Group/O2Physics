@@ -623,7 +623,8 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"zorro"};
     // Zorro
-    Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
+    Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Use the pair-specific fHe or fTritonFemto Zorro trigger"};
+    Configurable<bool> settingUseHighFt0MultTrigger{"settingUseHighFt0MultTrigger", false, "Select events with the fHighFt0Mult Zorro trigger instead of the pair-specific trigger"};
   } zorro;
 
   struct : o2::framework::ConfigurableGroup {
@@ -1041,7 +1042,7 @@ struct HadNucleiFemto {
       return;
     }
     if constexpr (!isMC) {
-      if (zorro.settingSkimmedProcessing) {
+      if (useZorroSelection()) {
         mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorroTriggerMask());
         mZorro.populateHistRegistry(mQaRegistry, bc.runNumber());
       }
@@ -1113,7 +1114,7 @@ struct HadNucleiFemto {
   template <typename Tcollision>
   bool passesZorroSelection(const Tcollision& collision)
   {
-    if (!zorro.settingSkimmedProcessing) {
+    if (!useZorroSelection()) {
       return true;
     }
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -1132,7 +1133,7 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hEvents"), 1);
 
     if constexpr (!isMC) {
-      if (zorro.settingSkimmedProcessing) {
+      if (useZorroSelection()) {
         if (!passesZorroSelection(collision)) {
           return false;
         }
@@ -1289,10 +1290,19 @@ struct HadNucleiFemto {
 
   const char* zorroTriggerMask() const
   {
+    if (zorro.settingUseHighFt0MultTrigger.value) {
+      return "fHighFt0Mult";
+    }
     if (useTritonNucleus()) {
       return "fTritonFemto";
     }
-    return useHelium3Nucleus() ? "fHe" : "fDe";
+    return "fHe";
+  }
+
+  bool useZorroSelection() const
+  {
+    return zorro.settingUseHighFt0MultTrigger.value ||
+           (zorro.settingSkimmedProcessing.value && (useHelium3Nucleus() || useTritonNucleus()));
   }
 
   const char* nucleusBetheBlochLabel() const
