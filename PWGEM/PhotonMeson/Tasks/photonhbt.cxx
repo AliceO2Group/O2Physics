@@ -4558,7 +4558,7 @@ struct Photonhbt {
       return;
     }
     const float clean = std::max({a.pos.sharedFrac, a.ele.sharedFrac, b.pos.sharedFrac, b.ele.sharedFrac}) < qaflags.cfgPairClassMaxSharedFrac.value ? 1.f : 0.f;
-    const float cls = static_cast<float>(pcPairClass(a, b));
+    const auto cls = static_cast<float>(pcPairClass(a, b));
     fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairClass"), sample, cls, q, static_cast<float>(pcPairOrigin(a, b)), clean);
     fRegistryPairMC.fill(HIST("PairClass/Pairs/hKtQ"), sample, cls, q, 0.5f * std::hypot(a.px + b.px, a.py + b.py));
     if (cls == 4.f) { // o2-linter: disable=magic-number (half swap)
@@ -4567,7 +4567,7 @@ struct Photonhbt {
           if (x->mpdg == kPcGamma && pcSameMother(*x, *y)) {
             const float src = (x->free && y->free) ? 0.f : (x->free || y->free) ? 3.f
                                                                                 : (x->srcPhoton == y->srcPhoton ? 1.f : 2.f);
-            fRegistryPairMC.fill(HIST("PairClass/Pairs/hHalfSwapLegs"), sample, q, src, static_cast<float>((a.nFree > 0) + (b.nFree > 0)));
+            fRegistryPairMC.fill(HIST("PairClass/Pairs/hHalfSwapLegs"), sample, q, src, static_cast<float>((a.nFree > 0 ? 1 : 0) + (b.nFree > 0 ? 1 : 0)));
           }
         }
       }
@@ -4576,7 +4576,7 @@ struct Photonhbt {
       const float eA = std::sqrt(a.px * a.px + a.py * a.py + a.pz * a.pz), eB = std::sqrt(b.px * b.px + b.py * b.py + b.pz * b.pz);
       fRegistryPairMC.fill(HIST("PairClass/Pairs/hDEQinv"), sample, cls, q, std::fabs(eA - eB), 0.5f * std::hypot(a.px + b.px, a.py + b.py));
     }
-    fRegistryPairMC.fill(HIST("PairClass/Pairs/hFreeLegPair"), sample, cls, q, static_cast<float>((a.nFree > 0) + (b.nFree > 0)), static_cast<float>(!a.original + !b.original));
+    fRegistryPairMC.fill(HIST("PairClass/Pairs/hFreeLegPair"), sample, cls, q, static_cast<float>((a.nFree > 0 ? 1 : 0) + (b.nFree > 0 ? 1 : 0)), static_cast<float>((a.original ? 0 : 1) + (b.original ? 0 : 1)));
     {
       const ROOT::Math::PxPyPzMVector v1(a.px, a.py, a.pz, 0.f), v2(b.px, b.py, b.pz, 0.f);
       const auto sum = v1 + v2;
@@ -4612,7 +4612,7 @@ struct Photonhbt {
     }
     fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairDist"), sample, cls, q, std::hypot(a.vx - b.vx, a.vy - b.vy, a.vz - b.vz), pcTrueDist({&a.pos, &a.ele, &b.pos, &b.ele}));
     ROOT::Math::PxPyPzMVector sum4;
-    const PcLeg* legs4[4] = {&a.pos, &a.ele, &b.pos, &b.ele};
+    const std::array<const PcLeg*, 4> legs4{&a.pos, &a.ele, &b.pos, &b.ele};
     for (const auto* l : legs4) {
       sum4 += ROOT::Math::PxPyPzMVector(l->px, l->py, l->pz, o2::constants::physics::MassElectron);
     }
@@ -4639,7 +4639,7 @@ struct Photonhbt {
     if (q < 0.1f) {
       auto dtgl = [](PcPhoton const& p) { const float ptp = std::hypot(p.pos.px, p.pos.py), pte = std::hypot(p.ele.px, p.ele.py); return (ptp > 0.f && pte > 0.f) ? std::fabs(p.pos.pz / ptp - p.ele.pz / pte) : 0.3f; };
       const float pmin = std::min({std::hypot(a.pos.px, a.pos.py, a.pos.pz), std::hypot(a.ele.px, a.ele.py, a.ele.pz), std::hypot(b.pos.px, b.pos.py, b.pos.pz), std::hypot(b.ele.px, b.ele.py, b.ele.pz)});
-      const float nIts = static_cast<float>((a.pos.its ? 1 : 0) + (a.ele.its ? 1 : 0) + (b.pos.its ? 1 : 0) + (b.ele.its ? 1 : 0));
+      const auto nIts = static_cast<float>((a.pos.its ? 1 : 0) + (a.ele.its ? 1 : 0) + (b.pos.its ? 1 : 0) + (b.ele.its ? 1 : 0));
       fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairLegs"), sample, cls, q, std::min(std::max(dtgl(a), dtgl(b)), 0.299f), std::min(pmin, 0.999f), nIts, static_cast<float>(pcPairOrigin(a, b)));
       constexpr float kTpcRin = 85.f, kTpcRout = 247.f; // o2-linter: disable=magic-number (TPC drift volume, diagnostic)
       auto crossesCE = [&](PcLeg const& l) {
@@ -4753,12 +4753,15 @@ struct Photonhbt {
               default:
                 break;
             }
-            if (pdg == 11 || pdg == 13 || pdg == 22)
+            if (pdg == 11 || pdg == 13 || pdg == 22) {
               return 8.f; // o2-linter: disable=magic-number (leptons, photon: other)
-            if (pdg > 1000)
+            }
+            if (pdg > 1000) {
               return 6.f; // o2-linter: disable=magic-number (baryons)
-            if (pdg < 100)
+            }
+            if (pdg < 100) {
               return 7.f; // o2-linter: disable=magic-number (no hadron mother: quark, gluon, string, cluster, none)
+            }
             return 8.f;
           };
           fRegistryPairMC.fill(HIST("PairClass/Pairs/hBremsAncestry"), sample, cls == 16.f ? 0.f : 1.f, q, ancClass(y->gpdg), ancClass(y->ggpdg), ancClass(y->rootPdg)); // o2-linter: disable=magic-number (class)
@@ -4838,7 +4841,7 @@ struct Photonhbt {
       p.pos = pos;
       p.ele = ele;
       p.svertexer = p.original && posV0 >= 0;
-      p.nFree = (posV0 == -2) + (eleV0 == -2); // o2-linter: disable=magic-number (free-leg stub v0Id of the mixer)
+      p.nFree = (posV0 == -2 ? 1 : 0) + (eleV0 == -2 ? 1 : 0); // o2-linter: disable=magic-number (free-leg stub v0Id of the mixer)
       p.chi2 = photon.chiSquareNDF();
       p.dcaxy = photon.dcaXYtopv();
       p.dcaz = photon.dcaZtopv();
@@ -5298,7 +5301,7 @@ struct Photonhbt {
           fRegistryCF.fill(HIST("Pair/mix/hPhi_lowerPtV0"), (g1.pt() < g2.pt()) ? g1.phi() : g2.phi());
         }
         ndiphoton++;
-        const float origin = static_cast<float>(pcPairOrigin(a, b));
+        const auto origin = static_cast<float>(pcPairOrigin(a, b));
         const float sameSign = pcAlpha(a) * pcAlpha(b) > 0.f ? 1.f : 0.f;
         fRegistry.fill(HIST("CoReco/hPairOrigin"), kSample, origin, obs.qinv, obs.kt, sameSign);
 
@@ -5308,7 +5311,7 @@ struct Photonhbt {
           } else {
             fillMixTruth(collision, pwl1.fIsTruePhoton, pwl2.fIsTruePhoton, obs);
           }
-          const float cls = static_cast<float>(pcPairClass(a, b));
+          const auto cls = static_cast<float>(pcPairClass(a, b));
           const auto q3 = lcmsQ(obs.v1, obs.v2);
           fRegistryPairMC.fill(HIST("CoReco/MC/hClass3D"), kSample, cls, q3[0], q3[1], q3[2], obs.kt);
           fRegistryPairMC.fill(HIST("CoReco/MC/hClassQ"), kSample, cls, obs.qinv, pcTrueQ(a, b), obs.kt);

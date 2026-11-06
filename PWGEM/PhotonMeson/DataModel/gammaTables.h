@@ -301,7 +301,7 @@ DECLARE_SOA_COLUMN(Z, z, float);                 //! z (cm), TPC-only legs after
 DECLARE_SOA_COLUMN(Snp, snp, float);             //! sin(phi) in the local frame
 DECLARE_SOA_COLUMN(Tgl, tgl, float);             //! tan(lambda)
 DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float); //! q/pT (c/GeV)
-DECLARE_SOA_COLUMN(Cov, cov, float[15]);         //! covariance matrix, o2::track::TrackParCov order
+DECLARE_SOA_COLUMN(Cov, cov, float[15]);         // NOLINT(modernize-avoid-c-arrays) //! covariance matrix, o2::track::TrackParCov order
 } // namespace v0legcov
 
 // leg track parameters as used in the V0 fit, one row per V0Legs row (optional builder output, joinable with V0Legs)

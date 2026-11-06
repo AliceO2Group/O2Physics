@@ -64,7 +64,7 @@
 #include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/PID.h>
-#include <ReconstructionDataFormats/TrackParametrization.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -87,6 +87,7 @@
 #include <map>
 #include <numeric>
 #include <optional>
+#include <ratio>
 #include <set>
 #include <string>
 #include <tuple>
@@ -201,17 +202,17 @@ struct PairFit {
 struct SourcePV {
   float x = 0.f, y = 0.f, z = 0.f, cXX = 0.f, cXY = 0.f, cXZ = 0.f, cYY = 0.f, cYZ = 0.f, cZZ = 0.f, c2 = 0.f;
   uint16_t nContrib = 0;
-  float posX() const { return x; }
-  float posY() const { return y; }
-  float posZ() const { return z; }
-  float covXX() const { return cXX; }
-  float covXY() const { return cXY; }
-  float covXZ() const { return cXZ; }
-  float covYY() const { return cYY; }
-  float covYZ() const { return cYZ; }
-  float covZZ() const { return cZZ; }
-  float chi2() const { return c2; }
-  uint16_t numContrib() const { return nContrib; }
+  [[nodiscard]] float posX() const { return x; }
+  [[nodiscard]] float posY() const { return y; }
+  [[nodiscard]] float posZ() const { return z; }
+  [[nodiscard]] float covXX() const { return cXX; }
+  [[nodiscard]] float covXY() const { return cXY; }
+  [[nodiscard]] float covXZ() const { return cXZ; }
+  [[nodiscard]] float covYY() const { return cYY; }
+  [[nodiscard]] float covYZ() const { return cYZ; }
+  [[nodiscard]] float covZZ() const { return cZZ; }
+  [[nodiscard]] float chi2() const { return c2; }
+  [[nodiscard]] uint16_t numContrib() const { return nContrib; }
 };
 
 struct LegDcaKey {
@@ -1853,7 +1854,7 @@ struct PhotonConversionBuilder {
     };
     const auto tglLess = [](const FinderLeg& c, float v) { return c.tgl < v; };
     // time-binning of the negative legs: the time window of a positive leg is intersected with the time windows of the negative legs in the same bin. Reason for implementation:  faster than checking all negative legs for each positive leg
-    const bool timeBinned = !(isMC && mDiag != nullptr) && !eleLegs.empty();
+    const bool timeBinned = (!isMC || mDiag == nullptr) && !eleLegs.empty();
     std::vector<std::vector<uint32_t>> eleInBin;
     double tBin0 = 0.;
     const double binWidth = 5000.; // ns
@@ -2975,7 +2976,7 @@ struct PhotonConversionBuilder {
         if (q >= 0.2f) { // o2-linter: disable=magic-number (diagnostic range)
           continue;
         }
-        const float nIts = static_cast<float>(a.posMC.its + a.eleMC.its + b.posMC.its + b.eleMC.its);
+        const auto nIts = static_cast<float>(a.posMC.its + a.eleMC.its + b.posMC.its + b.eleMC.its);
         const float amb = (candLegs.contains({colId, a.posRow, b.eleRow}) || candLegs.contains({colId, b.posRow, a.eleRow})) ? 1.f : 0.f;
         const float cls = mixPairClass(a, b);
         registry.fill(HIST("Mixed/Pairs/hFakeClass"), type, stage, 0.f, q, nIts, amb);
@@ -3082,7 +3083,7 @@ struct PhotonConversionBuilder {
           continue;
         }
         const float q = qInv(a.px, a.py, a.pz, b.px, b.py, b.pz);
-        const float truth = static_cast<float>(mixPairTruth(a, b));
+        const auto truth = static_cast<float>(mixPairTruth(a, b));
         if constexpr (after) {
           registry.fill(HIST("Mixed/Pairs/hQAfter"), type, 0.f, q);
           registry.fill(HIST("Mixed/Pairs/hQAfter"), type, truth, q);
@@ -3295,7 +3296,7 @@ struct PhotonConversionBuilder {
     setMixPairLegs(p1, legs.rawIteratorAt(t1.posID), legs.rawIteratorAt(t1.eleID));
     setMixPairLegs(p2, legs.rawIteratorAt(t2.posID), legs.rawIteratorAt(t2.eleID));
     const int relKind = mixRelKind(p1, p2);
-    const float rel = static_cast<float>(relKind);
+    const auto rel = static_cast<float>(relKind);
     const float rel2 = relKind > 0 ? 1.f : 0.f;
     const float s0 = dedup.groupMatchingScoreThreshold.value;
     const float qTrue = qInv(t1.pxAtPV, t1.pyAtPV, t1.pzAtPV, t2.pxAtPV, t2.pyAtPV, t2.pzAtPV);
@@ -3664,7 +3665,7 @@ struct PhotonConversionBuilder {
                                   (pos.sourceEventUid() != ele.sourceEventUid() || pos.mcMotherId() != ele.mcMotherId());
           const float qTwo = twoPhotons ? qInv(pos.mcMotherPx(), pos.mcMotherPy(), pos.mcMotherPz(), ele.mcMotherPx(), ele.mcMotherPy(), ele.mcMotherPz()) : 1.f;
           const float genuineClose = (twoPhotons && qTwo < 0.05f) ? 1.f : 0.f; // o2-linter: disable=magic-number (diagnostic range)
-          const float nITSx = static_cast<float>((pos.hasITS() ? 1 : 0) + (ele.hasITS() ? 1 : 0));
+          const auto nITSx = static_cast<float>((pos.hasITS() ? 1 : 0) + (ele.hasITS() ? 1 : 0));
           if (mixed.prefilterCrossed && !crossedPrefilterCached(ip, ie)) {
             if (mixed.mixedDiagnostics) {
               registry.fill(HIST("Mixed/Decision/hCrossedFit"), type, genuineClose, 1.f, nITSx, std::min(qTwo, 0.0499f));
@@ -3692,7 +3693,7 @@ struct PhotonConversionBuilder {
             };
             const int lenient = trial(FitOptions{.relaxAP = mixed.crossedRelaxAP.value});
             const int run1 = trial(FitOptions{.nonSVertexer = finderLike, .purityGate = finderLike && recovery.runFinder.value});
-            const float nFree = static_cast<float>((pos.sourceV0Id() == -2 ? 1 : 0) + (ele.sourceV0Id() == -2 ? 1 : 0)); // o2-linter: disable=magic-number (pooled free leg)
+            const auto nFree = static_cast<float>((pos.sourceV0Id() == -2 ? 1 : 0) + (ele.sourceV0Id() == -2 ? 1 : 0)); // o2-linter: disable=magic-number (pooled free leg)
             registry.fill(HIST("Mixed/Decision/hFreeLegFit"), type, genuineClose > 0.5f ? 0.f : 1.f, static_cast<float>(std::min(lenient, 1999)), static_cast<float>(std::min(run1, 1999)), nITSx, nFree);
           }
           const int mask = mixed.freeLegRuleMask.value;
@@ -4544,7 +4545,7 @@ struct PhotonConversionBuilder {
             if (pairFate == 3 || pairFate == 4) { // o2-linter: disable=magic-number (swap, one crossed stored)
               auto o = crossedOriginOfPair.at(std::minmax(mids[a], mids[b]));
               const int o1 = std::min(o[0], o.size() > 1 ? o[1] : o[0]), o2 = std::max(o[0], o.size() > 1 ? o[1] : o[0]);
-              static constexpr int OriginCode[3][3] = {{0, 1, 3}, {1, 2, 4}, {3, 4, 5}};
+              static constexpr std::array<std::array<int, 3>, 3> OriginCode{{{0, 1, 3}, {1, 2, 4}, {3, 4, 5}}};
               if (hA < hB) {
                 std::swap(hA, hB);
               }

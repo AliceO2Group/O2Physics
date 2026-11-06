@@ -303,7 +303,7 @@ struct PhotonMixedEventProducer {
     c.snp = legCov.snp();
     c.tgl = legCov.tgl();
     c.signed1Pt = legCov.signed1Pt();
-    const auto* cov = legCov.cov();
+    const auto& cov = legCov.cov();
     for (size_t i = 0; i < c.cov.size(); ++i) {
       c.cov[i] = cov[i];
     }
@@ -391,8 +391,8 @@ struct PhotonMixedEventProducer {
         registry.fill(HIST("Mix/hPhotonPtEta"), type, std::hypot(p->px, p->py), std::asinh(p->pz / std::hypot(p->px, p->py)));
       }
       for (const auto& l : p->legs) {
-        const bool hasITS = l.detectorMap & o2::aod::track::ITS;
-        const bool hasTPC = l.detectorMap & o2::aod::track::TPC;
+        const bool hasITS = (l.detectorMap & o2::aod::track::ITS) != 0;
+        const bool hasTPC = (l.detectorMap & o2::aod::track::TPC) != 0;
         registry.fill(HIST("Mix/hLegTypes"), type, hasITS && hasTPC ? 0.f : (hasTPC ? 1.f : (hasITS ? 2.f : 3.f)));
         writeLeg(l, *p);
       }
