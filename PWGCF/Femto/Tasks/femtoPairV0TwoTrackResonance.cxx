@@ -16,6 +16,8 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/collisionTagger.h"
+#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
 #include "PWGCF/Femto/Core/pairCleaner.h"
@@ -34,10 +36,12 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <string>
@@ -63,12 +67,26 @@ struct FemtoPairV0TwoTrackResonance {
   using FemtoKstar0s = o2::soa::Join<o2::aod::FKstar0s, o2::aod::FKstar0Masks>;
   using FemtoRho0s = o2::soa::Join<o2::aod::FRho0s, o2::aod::FRho0Masks>;
 
+  // opt-in: carries FColTags, only needed by the processXxxMixedEventWithTagging functions below.
+  using FemtoCollisionsWithTags = o2::soa::Join<Collisions, o2::aod::FColTags>;
+  using FilteredFemtoCollisionsWithTags = o2::soa::Filtered<FemtoCollisionsWithTags>;
+
   o2::framework::SliceCache cache;
 
   // setup collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+
+  // opt-in, only needed by the processXxxMixedEventWithTagging functions below -- six separate
+  // instances since all six v0-resonance combinations are mutually exclusive on one instance, but
+  // tagged independently (see init()).
+  collisiontagger::ConfTagging<collisiontagger::role::LambdaPhiPair> confTaggingLambdaPhi;
+  collisiontagger::ConfTagging<collisiontagger::role::LambdaKstar0Pair> confTaggingLambdaKstar0;
+  collisiontagger::ConfTagging<collisiontagger::role::LambdaRho0Pair> confTaggingLambdaRho0;
+  collisiontagger::ConfTagging<collisiontagger::role::K0shortPhiPair> confTaggingK0shortPhi;
+  collisiontagger::ConfTagging<collisiontagger::role::K0shortKstar0Pair> confTaggingK0shortKstar0;
+  collisiontagger::ConfTagging<collisiontagger::role::K0shortRho0Pair> confTaggingK0shortRho0;
 
   // setup for daughters for v0s
   trackhistmanager::ConfV01PosDauBinning confV0PosDauBinning;
@@ -277,18 +295,80 @@ struct FemtoPairV0TwoTrackResonance {
 
   o2::framework::HistogramRegistry hRegistry{"FemtoV0TwoTrackResonance", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
 
     // all pair combinations share the same histogram prefixes, so only one combination can be processed per workflow instance
-    if (static_cast<int>(doprocessLambdaPhiSameEvent || doprocessLambdaPhiMixedEvent) +
-          static_cast<int>(doprocessLambdaKstar0SameEvent || doprocessLambdaKstar0MixedEvent) +
-          static_cast<int>(doprocessLambdaRho0SameEvent || doprocessLambdaRho0MixedEvent) +
-          static_cast<int>(doprocessK0shortPhiSameEvent || doprocessK0shortPhiMixedEvent) +
-          static_cast<int>(doprocessK0shortKstar0SameEvent || doprocessK0shortKstar0MixedEvent) +
-          static_cast<int>(doprocessK0shortRho0SameEvent || doprocessK0shortRho0MixedEvent) >
+    if (static_cast<int>(doprocessLambdaPhiSameEvent || doprocessLambdaPhiMixedEvent || doprocessLambdaPhiMixedEventWithTagging) +
+          static_cast<int>(doprocessLambdaKstar0SameEvent || doprocessLambdaKstar0MixedEvent || doprocessLambdaKstar0MixedEventWithTagging) +
+          static_cast<int>(doprocessLambdaRho0SameEvent || doprocessLambdaRho0MixedEvent || doprocessLambdaRho0MixedEventWithTagging) +
+          static_cast<int>(doprocessK0shortPhiSameEvent || doprocessK0shortPhiMixedEvent || doprocessK0shortPhiMixedEventWithTagging) +
+          static_cast<int>(doprocessK0shortKstar0SameEvent || doprocessK0shortKstar0MixedEvent || doprocessK0shortKstar0MixedEventWithTagging) +
+          static_cast<int>(doprocessK0shortRho0SameEvent || doprocessK0shortRho0MixedEvent || doprocessK0shortRho0MixedEventWithTagging) >
         1) {
       LOG(fatal) << "Can only process one v0-resonance combination (lambda/k0short x phi/kstar0/rho0)";
+    }
+
+    // Each combination discovers its own tag bit independently (see Core/collisionTagger.h).
+    if (doprocessLambdaPhiMixedEventWithTagging || doprocessLambdaKstar0MixedEventWithTagging || doprocessLambdaRho0MixedEventWithTagging ||
+        doprocessK0shortPhiMixedEventWithTagging || doprocessK0shortKstar0MixedEventWithTagging || doprocessK0shortRho0MixedEventWithTagging) {
+      auto const& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
+      auto const& ownDevice = context.services().get<o2::framework::DeviceSpec const>();
+      auto roles = collisiontagger::discoverTaggedRoles(workflows);
+      if (doprocessLambdaPhiMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingLambdaPhi.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processLambdaPhiMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0TwoTrackResonance enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingLambdaPhi.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (LambdaPhi): " << bit;
+      }
+      if (doprocessLambdaKstar0MixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingLambdaKstar0.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processLambdaKstar0MixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0TwoTrackResonance enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingLambdaKstar0.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (LambdaKstar0): " << bit;
+      }
+      if (doprocessLambdaRho0MixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingLambdaRho0.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processLambdaRho0MixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0TwoTrackResonance enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingLambdaRho0.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (LambdaRho0): " << bit;
+      }
+      if (doprocessK0shortPhiMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingK0shortPhi.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processK0shortPhiMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0TwoTrackResonance enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingK0shortPhi.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (K0shortPhi): " << bit;
+      }
+      if (doprocessK0shortKstar0MixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingK0shortKstar0.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processK0shortKstar0MixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0TwoTrackResonance enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingK0shortKstar0.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (K0shortKstar0): " << bit;
+      }
+      if (doprocessK0shortRho0MixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingK0shortRho0.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processK0shortRho0MixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0TwoTrackResonance enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingK0shortRho0.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (K0shortRho0): " << bit;
+      }
     }
 
     // setup columnpolicy for binning
@@ -314,42 +394,42 @@ struct FemtoPairV0TwoTrackResonance {
     auto pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
     // setup for lambda-phi
-    if (doprocessLambdaPhiSameEvent || doprocessLambdaPhiMixedEvent) {
+    if (doprocessLambdaPhiSameEvent || doprocessLambdaPhiMixedEvent || doprocessLambdaPhiMixedEventWithTagging) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confPhiBinning);
       pairLambdaPhiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, phiSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, phiHistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for lambda-kstar0
-    if (doprocessLambdaKstar0SameEvent || doprocessLambdaKstar0MixedEvent) {
+    if (doprocessLambdaKstar0SameEvent || doprocessLambdaKstar0MixedEvent || doprocessLambdaKstar0MixedEventWithTagging) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confKstar0Binning);
       pairLambdaKstar0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, kstar0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, kstar0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for lambda-rho0
-    if (doprocessLambdaRho0SameEvent || doprocessLambdaRho0MixedEvent) {
+    if (doprocessLambdaRho0SameEvent || doprocessLambdaRho0MixedEvent || doprocessLambdaRho0MixedEventWithTagging) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confRho0Binning);
       pairLambdaRho0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, lambdaSelection, rho0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, v0PosDauSpec, v0NegDauSpec, rho0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for k0short-phi
-    if (doprocessK0shortPhiSameEvent || doprocessK0shortPhiMixedEvent) {
+    if (doprocessK0shortPhiSameEvent || doprocessK0shortPhiMixedEvent || doprocessK0shortPhiMixedEventWithTagging) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confPhiBinning);
       pairK0shortPhiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, phiSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, phiHistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for k0short-kstar0
-    if (doprocessK0shortKstar0SameEvent || doprocessK0shortKstar0MixedEvent) {
+    if (doprocessK0shortKstar0SameEvent || doprocessK0shortKstar0MixedEvent || doprocessK0shortKstar0MixedEventWithTagging) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confKstar0Binning);
       pairK0shortKstar0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, kstar0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, kstar0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
 
     // setup for k0short-rho0
-    if (doprocessK0shortRho0SameEvent || doprocessK0shortRho0MixedEvent) {
+    if (doprocessK0shortRho0SameEvent || doprocessK0shortRho0MixedEvent || doprocessK0shortRho0MixedEventWithTagging) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confRho0Binning);
       pairK0shortRho0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, k0shortSelection, rho0Selection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, v0PosDauSpec, v0NegDauSpec, rho0HistSpec, resoPosDauSpec, resoNegDauSpec, pairV0TwoTrackResonanceHistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
@@ -365,6 +445,16 @@ struct FemtoPairV0TwoTrackResonance {
   }
   PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processLambdaPhiSameEvent, "Enable processing same event processing for lambdas and phis", true);
 
+  // Opt-in counterpart of processLambdaPhiMixedEvent() below -- same "Partition declared and
+  // bound inside process()" idiom as femtoPairTrackTrack.cxx's processMixedEventWithTagging.
+  void processLambdaPhiMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoPhis const& /*phis*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingLambdaPhi.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairLambdaPhiBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, lambdaPartition, phiPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processLambdaPhiMixedEventWithTagging, "Enable processing mixed event processing for lambdas and phis, pre-filtered using the collision tagger", false);
+
   void processLambdaPhiMixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoPhis const& /*phis*/)
   {
     pairLambdaPhiBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, lambdaPartition, phiPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -377,6 +467,16 @@ struct FemtoPairV0TwoTrackResonance {
     pairLambdaKstar0Builder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, lambdaPartition, kstar0Partition, cache);
   }
   PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processLambdaKstar0SameEvent, "Enable processing same event processing for lambdas and kstar0s", false);
+
+  // Opt-in counterpart of processLambdaKstar0MixedEvent() below -- same idiom as
+  // processLambdaPhiMixedEventWithTagging above.
+  void processLambdaKstar0MixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoKstar0s const& /*kstar0s*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingLambdaKstar0.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairLambdaKstar0Builder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, lambdaPartition, kstar0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processLambdaKstar0MixedEventWithTagging, "Enable processing mixed event processing for lambdas and kstar0s, pre-filtered using the collision tagger", false);
 
   void processLambdaKstar0MixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoKstar0s const& /*kstar0s*/)
   {
@@ -391,6 +491,16 @@ struct FemtoPairV0TwoTrackResonance {
   }
   PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processLambdaRho0SameEvent, "Enable processing same event processing for lambdas and rho0s", false);
 
+  // Opt-in counterpart of processLambdaRho0MixedEvent() below -- same idiom as
+  // processLambdaPhiMixedEventWithTagging above.
+  void processLambdaRho0MixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoRho0s const& /*rho0s*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingLambdaRho0.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairLambdaRho0Builder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, lambdaPartition, rho0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processLambdaRho0MixedEventWithTagging, "Enable processing mixed event processing for lambdas and rho0s, pre-filtered using the collision tagger", false);
+
   void processLambdaRho0MixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoRho0s const& /*rho0s*/)
   {
     pairLambdaRho0Builder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, lambdaPartition, rho0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -403,6 +513,16 @@ struct FemtoPairV0TwoTrackResonance {
     pairK0shortPhiBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, k0shortPartition, phiPartition, cache);
   }
   PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processK0shortPhiSameEvent, "Enable processing same event processing for k0shorts and phis", false);
+
+  // Opt-in counterpart of processK0shortPhiMixedEvent() below -- same idiom as
+  // processLambdaPhiMixedEventWithTagging above.
+  void processK0shortPhiMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/, FemtoPhis const& /*phis*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingK0shortPhi.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairK0shortPhiBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, k0shortPartition, phiPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processK0shortPhiMixedEventWithTagging, "Enable processing mixed event processing for k0shorts and phis, pre-filtered using the collision tagger", false);
 
   void processK0shortPhiMixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/, FemtoPhis const& /*phis*/)
   {
@@ -417,6 +537,16 @@ struct FemtoPairV0TwoTrackResonance {
   }
   PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processK0shortKstar0SameEvent, "Enable processing same event processing for k0shorts and kstar0s", false);
 
+  // Opt-in counterpart of processK0shortKstar0MixedEvent() below -- same idiom as
+  // processLambdaPhiMixedEventWithTagging above.
+  void processK0shortKstar0MixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/, FemtoKstar0s const& /*kstar0s*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingK0shortKstar0.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairK0shortKstar0Builder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, k0shortPartition, kstar0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processK0shortKstar0MixedEventWithTagging, "Enable processing mixed event processing for k0shorts and kstar0s, pre-filtered using the collision tagger", false);
+
   void processK0shortKstar0MixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/, FemtoKstar0s const& /*kstar0s*/)
   {
     pairK0shortKstar0Builder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, k0shortPartition, kstar0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -429,6 +559,16 @@ struct FemtoPairV0TwoTrackResonance {
     pairK0shortRho0Builder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, k0shortPartition, rho0Partition, cache);
   }
   PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processK0shortRho0SameEvent, "Enable processing same event processing for k0shorts and rho0s", false);
+
+  // Opt-in counterpart of processK0shortRho0MixedEvent() below -- same idiom as
+  // processLambdaPhiMixedEventWithTagging above.
+  void processK0shortRho0MixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/, FemtoRho0s const& /*rho0s*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingK0shortRho0.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairK0shortRho0Builder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, k0shortPartition, rho0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processK0shortRho0MixedEventWithTagging, "Enable processing mixed event processing for k0shorts and rho0s, pre-filtered using the collision tagger", false);
 
   void processK0shortRho0MixedEvent(FilteredCollisions const& cols, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/, FemtoRho0s const& /*rho0s*/)
   {

@@ -16,6 +16,8 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/collisionTagger.h"
+#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
 #include "PWGCF/Femto/Core/pairCleaner.h"
@@ -33,10 +35,12 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <string>
@@ -58,12 +62,22 @@ struct FemtoPairTrackTwoPhotonResonance {
   using FemtoPi0s = o2::soa::Join<o2::aod::FPi0s, o2::aod::FPi0Masks>;
   using FemtoEtas = o2::soa::Join<o2::aod::FEtas, o2::aod::FEtaMasks>;
 
+  // opt-in: carries FColTags, only needed by the processXxxMixedEventWithTagging functions below.
+  using FemtoCollisionsWithTags = o2::soa::Join<Collisions, o2::aod::FColTags>;
+  using FilteredFemtoCollisionsWithTags = o2::soa::Filtered<FemtoCollisionsWithTags>;
+
   o2::framework::SliceCache cache;
 
   // setup collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+
+  // opt-in, only needed by the processXxxMixedEventWithTagging functions below -- two separate
+  // instances since Pi0/Eta are mutually exclusive on one instance, but tagged independently
+  // (see init()).
+  collisiontagger::ConfTagging<collisiontagger::role::TrackPi0Pair> confTaggingPi0;
+  collisiontagger::ConfTagging<collisiontagger::role::TrackEtaPair> confTaggingEta;
 
   // setup tracks
   trackbuilder::ConfTrackSelection1 trackSelection;
@@ -141,11 +155,38 @@ struct FemtoPairTrackTwoPhotonResonance {
   // table, so there is no trajectory to compare against a track's -- see closePairRejection.h)
   closepairrejection::ConfCprTrackTwoPhotonResonanceDaughter confCpr;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
 
-    if (static_cast<int>(doprocessPi0SameEvent || doprocessPi0MixedEvent) + static_cast<int>(doprocessEtaSameEvent || doprocessEtaMixedEvent) > 1) {
+    if (static_cast<int>(doprocessPi0SameEvent || doprocessPi0MixedEvent || doprocessPi0MixedEventWithTagging) +
+          static_cast<int>(doprocessEtaSameEvent || doprocessEtaMixedEvent || doprocessEtaMixedEventWithTagging) >
+        1) {
       LOG(fatal) << "Can only process SE/ME for pi0-tracks or eta-tracks";
+    }
+
+    // Each species discovers its own tag bit independently (see Core/collisionTagger.h).
+    if (doprocessPi0MixedEventWithTagging || doprocessEtaMixedEventWithTagging) {
+      auto const& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
+      auto const& ownDevice = context.services().get<o2::framework::DeviceSpec const>();
+      auto roles = collisiontagger::discoverTaggedRoles(workflows);
+      if (doprocessPi0MixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingPi0.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processPi0MixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackTwoPhotonResonance enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingPi0.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (Pi0): " << bit;
+      }
+      if (doprocessEtaMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingEta.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processEtaMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackTwoPhotonResonance enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingEta.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (Eta): " << bit;
+      }
     }
 
     // setup columnpolicy for binning
@@ -162,14 +203,14 @@ struct FemtoPairTrackTwoPhotonResonance {
     auto pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
     // setup for pi0
-    if (doprocessPi0SameEvent || doprocessPi0MixedEvent) {
+    if (doprocessPi0SameEvent || doprocessPi0MixedEvent || doprocessPi0MixedEventWithTagging) {
       auto pi0HistSpec = twophotonresonancehistmanager::makeTwoPhotonResonanceHistSpecMap(confPi0Binning);
       auto pairTrackPi0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
       pairTrackPi0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, trackSelection, pi0Selection, confCpr, confMixing, confPairBinning, confPairCuts, confPhotonDauQaBinning, colHistSpec, trackHistSpec, pi0HistSpec, dauHistSpec, pairTrackPi0HistSpec, cprHistSpec, pairCleanerHistSpec);
     }
 
     // setup for eta
-    if (doprocessEtaSameEvent || doprocessEtaMixedEvent) {
+    if (doprocessEtaSameEvent || doprocessEtaMixedEvent || doprocessEtaMixedEventWithTagging) {
       auto etaHistSpec = twophotonresonancehistmanager::makeTwoPhotonResonanceHistSpecMap(confEtaBinning);
       auto pairTrackEtaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
       pairTrackEtaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, trackSelection, etaSelection, confCpr, confMixing, confPairBinning, confPairCuts, confPhotonDauQaBinning, colHistSpec, trackHistSpec, etaHistSpec, dauHistSpec, pairTrackEtaHistSpec, cprHistSpec, pairCleanerHistSpec);
@@ -184,6 +225,16 @@ struct FemtoPairTrackTwoPhotonResonance {
   }
   PROCESS_SWITCH(FemtoPairTrackTwoPhotonResonance, processPi0SameEvent, "Enable same event processing for tracks and pi0s", true);
 
+  // Opt-in counterpart of processPi0MixedEvent() below -- same "Partition declared and bound
+  // inside process()" idiom as femtoPairTrackTrack.cxx's processMixedEventWithTagging.
+  void processPi0MixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& /*tracks*/, FemtoPi0s const& /*pi0s*/, FemtoPhotons const& photons)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingPi0.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackPi0Builder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, trackPartition, pi0Partition, photons, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackTwoPhotonResonance, processPi0MixedEventWithTagging, "Enable mixed event processing for tracks and pi0s, pre-filtered using the collision tagger", false);
+
   void processPi0MixedEvent(FilteredCollisions const& cols, FemtoTracks const& /*tracks*/, FemtoPi0s const& /*pi0s*/, FemtoPhotons const& photons)
   {
     pairTrackPi0Builder.processMixedEvent<modes::Mode::kMe_Reco>(cols, trackPartition, pi0Partition, photons, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -195,6 +246,16 @@ struct FemtoPairTrackTwoPhotonResonance {
     pairTrackEtaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, trackPartition, etaPartition, photons, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTwoPhotonResonance, processEtaSameEvent, "Enable same event processing for tracks and etas", false);
+
+  // Opt-in counterpart of processEtaMixedEvent() below -- same idiom as
+  // processPi0MixedEventWithTagging above.
+  void processEtaMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& /*tracks*/, FemtoEtas const& /*etas*/, FemtoPhotons const& photons)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingEta.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackEtaBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, trackPartition, etaPartition, photons, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackTwoPhotonResonance, processEtaMixedEventWithTagging, "Enable mixed event processing for tracks and etas, pre-filtered using the collision tagger", false);
 
   void processEtaMixedEvent(FilteredCollisions const& cols, FemtoTracks const& /*tracks*/, FemtoEtas const& /*etas*/, FemtoPhotons const& photons)
   {

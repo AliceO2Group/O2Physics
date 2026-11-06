@@ -974,7 +974,7 @@ struct HStrangeCorrelation {
       .eta = track.eta(),
       .phi = track.phi(),
       .sign = track.sign(),
-      .tpcCrossedRows = track.tpcNClsCrossedRows(),
+      .tpcCrossedRows = track.hasTPC() ? static_cast<int>(track.tpcNClsCrossedRows()) : 0, // 0 without TPC, so classifyTriggerTracksFailure rejects it as the filter does
       .tpcSharedClusters = track.tpcNClsShared(),
       .itsClusters = track.itsNCls(),
       .hasLayer0 = static_cast<bool>(TESTBIT(track.itsClusterMap(), 0)),
@@ -1258,7 +1258,8 @@ struct HStrangeCorrelation {
   template <class TTrack>
   bool isValidTrigger(TTrack const& track, bool isLeading)
   {
-    if (track.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsTrigger) {
+    // hasTPC() is needed: since O2-7038 (Oct 2026) tracks without TPC report 256 crossed rows
+    if (!track.hasTPC() || track.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsTrigger) {
       return false; // crossed rows
     }
     if (!track.hasITS() && trackSelection.triggerRequireITS) {
@@ -1298,7 +1299,7 @@ struct HStrangeCorrelation {
   template <class TTrack>
   bool isValidAssocHadron(TTrack const& track)
   {
-    if (track.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
+    if (!track.hasTPC() || track.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
       return false; // crossed rows
     }
     if (!track.hasITS() && trackSelection.assocRequireITS) {
@@ -1584,7 +1585,7 @@ struct HStrangeCorrelation {
         }
 
         //---] track quality check [---
-        if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
+        if (!postrack.hasTPC() || postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || !negtrack.hasTPC() || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
           continue;
         }
         if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated)) {
@@ -2152,7 +2153,7 @@ struct HStrangeCorrelation {
         }
         std::array<double, 3> assocForDeltaPhiStar = {phiProton, ptProton, signProton};
         //---] track quality check [---
-        if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || bachtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
+        if (!postrack.hasTPC() || postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || !negtrack.hasTPC() || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || !bachtrack.hasTPC() || bachtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
           continue;
         }
         if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || bachtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated)) {
@@ -4043,7 +4044,7 @@ struct HStrangeCorrelation {
       //---] track quality check [---
       auto postrack = v0Data.posTrack_as<TracksComplete>();
       auto negtrack = v0Data.negTrack_as<TracksComplete>();
-      if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
+      if (!postrack.hasTPC() || postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || !negtrack.hasTPC() || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
         continue;
       }
       if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated)) {
@@ -4268,7 +4269,7 @@ struct HStrangeCorrelation {
       auto postrack = cascData.posTrack_as<TracksComplete>();
       auto negtrack = cascData.negTrack_as<TracksComplete>();
       auto bachtrack = cascData.bachelor_as<TracksComplete>();
-      if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || bachtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
+      if (!postrack.hasTPC() || postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || !negtrack.hasTPC() || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || !bachtrack.hasTPC() || bachtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
         continue;
       }
       if (trackSelection.checksRequireTPCChi2 && (postrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || negtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated || bachtrack.tpcChi2NCl() > trackSelection.maxTPCChi2PerClusterAssociated)) {
@@ -5377,8 +5378,8 @@ struct HStrangeCorrelation {
           const bool passesDaughterDcaAndArmenteros = std::abs(v0.dcapostopv()) > dcaCut && std::abs(v0.dcanegtopv()) > dcaCut && v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
           passesFinalSelection = v0SelectedPbPb(v0) && passesLifetime && passesDaughterDcaAndArmenteros;
         }
-        passesFinalSelection = passesFinalSelection && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
-                               negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
+        passesFinalSelection = passesFinalSelection && positiveTrack.hasTPC() && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
+                               negativeTrack.hasTPC() && negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
         if (trackSelection.checksRequireTPCChi2) {
           passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated &&
                                  negativeTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated;
@@ -5997,8 +5998,8 @@ struct HStrangeCorrelation {
             const bool passesDaughterDcaAndArmenteros = std::abs(v0.dcapostopv()) > dcaCut && std::abs(v0.dcanegtopv()) > dcaCut && v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
             passesFinalSelection = v0SelectedPbPb(v0) && passesLifetime && passesDaughterDcaAndArmenteros;
           }
-          passesFinalSelection = passesFinalSelection && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
-                                 negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
+          passesFinalSelection = passesFinalSelection && positiveTrack.hasTPC() && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
+                                 negativeTrack.hasTPC() && negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
           if (trackSelection.checksRequireTPCChi2) {
             passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated &&
                                    negativeTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated;
@@ -6536,8 +6537,8 @@ struct HStrangeCorrelation {
                                                         v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
             passesFinalSelection = v0SelectedPbPb(v0) && passesLifetime && passesDaughterDcaAndArmenteros;
           }
-          passesFinalSelection = passesFinalSelection && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
-                                 negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
+          passesFinalSelection = passesFinalSelection && positiveTrack.hasTPC() && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
+                                 negativeTrack.hasTPC() && negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
           if (trackSelection.checksRequireTPCChi2) {
             passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated &&
                                    negativeTrack.tpcChi2NCl() <= trackSelection.maxTPCChi2PerClusterAssociated;
@@ -7204,7 +7205,7 @@ struct HStrangeCorrelation {
       //---] track quality check [---
       auto postrack = v0Data.posTrack_as<TracksComplete>();
       auto negtrack = v0Data.negTrack_as<TracksComplete>();
-      if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
+      if (!postrack.hasTPC() || postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || !negtrack.hasTPC() || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
         continue;
       }
       if (trackSelection.requireClusterInITS && (postrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks || negtrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks)) {

@@ -129,7 +129,7 @@ struct HfCandidateCreatorBToJpsiReduced {
       df4.setMaxDZIni(maxDZIni);
       df4.setMinParamChange(minParamChange);
       df4.setMinRelChi2Change(minRelChi2Change);
-      df3.setMaxChi2(maxChi2BhadVtx);
+      df4.setMaxChi2(maxChi2BhadVtx);
       df4.setUseAbsDCA(useAbsDCA);
       df4.setWeightedFinalPCA(useWeightedFinalPCA);
       df4.setMatCorrType(noMatCorr);

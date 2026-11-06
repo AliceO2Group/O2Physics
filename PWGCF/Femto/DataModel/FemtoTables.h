@@ -143,6 +143,18 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMasks_001, "FCOLMASK", 1, //! collision m
 using FColMasks = FColMasks_001;
 using StoredFColMasks = StoredFColMasks_001;
 
+// table for collision tags: one bit per (wagon, pair type) combination the collision tagger was
+// self-configured to check, set if the collision has what it takes to form at least one pair of
+// that type (both particle-1-role and particle-2-role candidates present, or, for a same-species
+// pair, at least 2 distinct candidates passing the one shared selection). Used to pre-filter the
+// mixed-event pool instead of discovering empty collisions only after slicing. Which bit means
+// what is assigned at self-configuration time and logged by the tagger; see
+// PWGCF/Femto/TableProducer/femtoProducerCollisionTagger.cxx.
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColTags_001, "FCOLTAG", 1, //! collision tags
+                                   femtocollisions::CollisionTag);
+using FColTags = FColTags_001;
+using StoredFColTags = StoredFColTags_001;
+
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColSphericities_001, "FCOLSPHERICITY", 1, //! sphericity
                                    femtocollisions::Sphericity);
 using FColSphericities = FColSphericities_001;

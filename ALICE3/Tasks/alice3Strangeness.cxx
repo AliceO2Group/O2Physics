@@ -22,6 +22,7 @@
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
@@ -101,6 +102,7 @@ struct Alice3Strangeness {
     Configurable<float> cosPAngleSelection{"cosPAngleSelection", 0.97f, "cosine of pointing angle selection"};
     Configurable<float> dcaDaughtersToPVSelection{"dcaDaughtersToPVSelection", 0.05f, "DCA daughters to primary vertex selection"};
     Configurable<float> v0RadiusSelection{"v0RadiusSelection", 0.5f, "V0 radius selection"};
+    Configurable<float> v0MaxRadiusSelection{"v0MaxRadiusSelection", 3.0f, "V0 maximum radius selection"};
     Configurable<float> armenterosSelection{"armenterosSelection", 0.2f, "Armenteros-Podolanski selection in [0]* alpha"};
     Configurable<float> competingMassRejectionK0{"competingMassRejectionK0", 0.005f, "competing mass rejection for K0"};
     Configurable<float> competingMassRejectionLambda{"competingMassRejectionLambda", 0.01f, "competing mass rejection for Lambda"};
@@ -166,11 +168,11 @@ struct Alice3Strangeness {
     Configurable<bool> tofOuter{"tofOuter", false, "enable particle identification selection"};
   } cascadeFlags;
 
-  uint16_t appliedSelectionCheckMask;
-  double selectionCheck;
-  double selectionCheckPos;
-  const int posDaugDCAselIDx = 3;
-  static constexpr std::string_view KSelectionNames[] = {"DCAV0Daughters", "PointingAngle", "DCAtoPVNegDaughter", "DCAtoPVPosDaughter", "V0Radius", "ProperLifeTime"};
+  uint16_t appliedSelectionCheckMask{};
+  double selectionCheck{};
+  double selectionCheckPos{};
+  static constexpr int posDaugDCAselIDx = 3;
+  static constexpr std::array<std::string_view, 6> KSelectionNames = {"DCAV0Daughters", "PointingAngle", "DCAtoPVNegDaughter", "DCAtoPVPosDaughter", "V0Radius", "ProperLifeTime"};
 
   static constexpr float ToMicrons = 1e+4f;
   static constexpr float CtauXi = 4.91f;
@@ -214,7 +216,7 @@ struct Alice3Strangeness {
   template <typename TCascade>
   void configureNSigmas(const TCascade& cascade)
   {
-    const Cascade::Type analysedCascadeType = static_cast<Cascade::Type>(cascadeFlags.analyseCascade.value);
+    const auto analysedCascadeType = static_cast<Cascade::Type>(cascadeFlags.analyseCascade.value);
     switch (analysedCascadeType) {
       case Cascade::Xi:
         nSigmaBachInnerTof = cascade.nSigmaInnerTofXiBachPi();
@@ -295,8 +297,10 @@ struct Alice3Strangeness {
     histos.add("reconstructedCandidates/hEtaDaughters", "hEtaDaughters", kTH1F, {histAxes.axisEta});
     histos.add("reconstructedCandidates/K0/hMass", "hMass", kTH3D, {histAxes.axisK0Mass, histAxes.axisPt, histAxes.axisEta});
     histos.add("reconstructedCandidates/K0/hMass1D", "hMass1D", kTH1D, {histAxes.axisK0Mass});
+    histos.add("reconstructedCandidates/K0/hMassRadius", "hMassRadius", kTH3D, {histAxes.axisK0Mass, histAxes.axisPt, {200, 0, 200}});
     histos.add("reconstructedCandidates/Lambda/hMass", "hMass", kTH3D, {histAxes.axisLambdaMass, histAxes.axisPt, histAxes.axisEta});
     histos.add("reconstructedCandidates/Lambda/hMass1D", "hMass1D", kTH1D, {histAxes.axisLambdaMass});
+    histos.add("reconstructedCandidates/Lambda/hMassRadius", "hMassRadius", kTH3D, {histAxes.axisLambdaMass, histAxes.axisPt, {200, 0, 200}});
     histos.add("reconstructedCandidates/hArmeterosBeforeAllSelections", "hArmeterosBeforeAllSelections", kTH2D, {{100, -1.0f, 1.0f}, {200, 0.0f, 0.5f}});
     histos.add("reconstructedCandidates/hArmeterosAfterAllSelections", "hArmeterosAfterAllSelections", kTH2D, {{100, -1.0f, 1.0f}, {200, 0.0f, 0.5f}});
     histos.add("reconstructedCandidates/hPtEtaPosDaughter", "hPtEtaPosDaughter", kTH2D, {histAxes.axisPt, histAxes.axisEta});
@@ -402,6 +406,12 @@ struct Alice3Strangeness {
     }
     histos.addClone("reconstructedCandidates/Lambda/", "reconstructedCandidates/AntiLambda/");
 
+    if (doprocessMCTruth) {
+      histos.add("mcTruth/K0Short/hPtRadius", "hPtRadius", kTH2D, {histAxes.axisPt, histAxes.axisRadius});
+      histos.add("mcTruth/Lambda/hPtRadius", "hPtRadius", kTH2D, {histAxes.axisPt, histAxes.axisRadius});
+      histos.add("mcTruth/AntiLambda/hPtRadius", "hPtRadius", kTH2D, {histAxes.axisPt, histAxes.axisRadius});
+    }
+
     appliedSelectionCheckMask = 0;
     if (!v0SelectionFlags.applyDCAdaughterSelection) {
       SETBIT(appliedSelectionCheckMask, 0);
@@ -440,20 +450,25 @@ struct Alice3Strangeness {
         histos.fill(HIST("K0/hSelections"), 0); // all candidates
         histos.fill(HIST("K0/hDCANegDaughter"), negV0Daughter.dcaXY());
         histos.fill(HIST("K0/hDCAPosDaughter"), posV0Daughter.dcaXY());
-        if (std::abs(negV0Daughter.dcaXY()) < v0SelectionValues.dcaDaughtersToPVSelection)
+        if (std::abs(negV0Daughter.dcaXY()) < v0SelectionValues.dcaDaughtersToPVSelection) {
           continue;
+        }
         histos.fill(HIST("K0/hSelections"), 1); // dcaXY cut
-        if (std::abs(posV0Daughter.dcaXY()) < v0SelectionValues.dcaDaughtersToPVSelection)
+        if (std::abs(posV0Daughter.dcaXY()) < v0SelectionValues.dcaDaughtersToPVSelection) {
           continue;
+        }
         histos.fill(HIST("K0/hSelections"), 2); // dcaXY cut
-        if (v0Cand.dcaV0Daughters() > v0SelectionValues.dcaDaughterSelection)
+        if (v0Cand.dcaV0Daughters() > v0SelectionValues.dcaDaughterSelection) {
           continue;
+        }
         histos.fill(HIST("K0/hSelections"), 3); // dca between daughters
-        if (v0Cand.v0Radius() < v0SelectionValues.v0RadiusSelection)
+        if (v0Cand.v0Radius() < v0SelectionValues.v0RadiusSelection) {
           continue;
+        }
         histos.fill(HIST("K0/hSelections"), 4); // radius cut
-        if (std::abs(negV0Daughter.eta()) > v0SelectionValues.etaDaughterSelection || std::abs(posV0Daughter.eta()) > v0SelectionValues.etaDaughterSelection)
+        if (std::abs(negV0Daughter.eta()) > v0SelectionValues.etaDaughterSelection || std::abs(posV0Daughter.eta()) > v0SelectionValues.etaDaughterSelection) {
           continue;
+        }
         histos.fill(HIST("K0/hSelections"), 5); // eta cut
         histos.fill(HIST("K0/hMassSelected"), v0Cand.mK0Short(), v0Cand.pt());
       }
@@ -486,78 +501,92 @@ struct Alice3Strangeness {
       histos.fill(HIST("reconstructedCandidates/hArmeterosBeforeAllSelections"), v0.alpha(), v0.qtArm());
       histos.fill(HIST("hV0CandidateCounter"), 0.5);
       if (v0SelectionFlags.applyRapiditySelection) {
-        if (isK0 && std::abs(v0.yK0Short()) > v0SelectionValues.yK0Selection)
+        if (isK0 && std::abs(v0.yK0Short()) > v0SelectionValues.yK0Selection) {
           continue;
-        if ((isLambda || isAntiLambda) && std::abs(v0.yLambda()) > v0SelectionValues.yLambdaSelection)
+        }
+        if ((isLambda || isAntiLambda) && std::abs(v0.yLambda()) > v0SelectionValues.yLambdaSelection) {
           continue;
+        }
       }
       histos.fill(HIST("hV0CandidateCounter"), 1.5);
       if (v0SelectionFlags.applyDCAdaughterSelection) {
-        if (std::abs(v0.dcaV0Daughters()) > v0SelectionValues.dcaDaughterSelection)
+        if (std::abs(v0.dcaV0Daughters()) > v0SelectionValues.dcaDaughterSelection) {
           continue;
+        }
       } else {
         selectionCheck = v0.dcaV0Daughters();
       }
       histos.fill(HIST("hV0CandidateCounter"), 2.5);
       if (v0SelectionFlags.applyCosOfPAngleSelection) {
-        if (v0.cosPA() < v0SelectionValues.cosPAngleSelection)
+        if (v0.cosPA() < v0SelectionValues.cosPAngleSelection) {
           continue;
+        }
       } else {
         selectionCheck = std::acos(v0.cosPA());
       }
       histos.fill(HIST("hV0CandidateCounter"), 3.5);
       if (v0SelectionFlags.applyDCADaughtersToPVSelection) {
         if ((std::abs(v0.dcaNegToPV()) < v0SelectionValues.dcaDaughtersToPVSelection) ||
-            (std::abs(v0.dcaPosToPV()) < v0SelectionValues.dcaDaughtersToPVSelection))
+            (std::abs(v0.dcaPosToPV()) < v0SelectionValues.dcaDaughtersToPVSelection)) {
           continue;
+        }
       } else {
         selectionCheckPos = std::abs(v0.dcaPosToPV());
         selectionCheck = std::abs(v0.dcaNegToPV());
       }
       histos.fill(HIST("hV0CandidateCounter"), 4.5);
       if (v0SelectionFlags.applyV0RadiusSelection) {
-        if (v0.v0radius() < v0SelectionValues.v0RadiusSelection)
+        if (v0.v0radius() < v0SelectionValues.v0RadiusSelection || v0.v0radius() > v0SelectionValues.v0MaxRadiusSelection) {
           continue;
+        }
       } else {
         selectionCheck = v0.v0radius();
       }
       histos.fill(HIST("hV0CandidateCounter"), 5.5);
       if (isK0) {
         if (v0SelectionFlags.applyArmenterosSelection) {
-          if (v0.qtArm() < v0SelectionValues.armenterosSelection * std::abs(v0.alpha()))
+          if (v0.qtArm() < v0SelectionValues.armenterosSelection * std::abs(v0.alpha())) {
             continue;
+          }
         }
       }
       histos.fill(HIST("hV0CandidateCounter"), 6.5);
       if (isK0 && v0SelectionFlags.applyCompetingMassRejection) {
-        if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0SelectionValues.competingMassRejectionK0)
+        if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0SelectionValues.competingMassRejectionK0) {
           continue;
-        if (std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < v0SelectionValues.competingMassRejectionK0)
+        }
+        if (std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < v0SelectionValues.competingMassRejectionK0) {
           continue;
+        }
       }
       if ((isLambda || isAntiLambda) && v0SelectionFlags.applyCompetingMassRejection) {
-        if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0SelectionValues.competingMassRejectionLambda)
+        if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0SelectionValues.competingMassRejectionLambda) {
           continue;
+        }
       }
       histos.fill(HIST("hV0CandidateCounter"), 7.5);
       if (v0SelectionFlags.applyLifetimeSelection) {
-        if (isK0 && v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short > v0SelectionValues.lifetimecutak0)
+        if (isK0 && v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short > v0SelectionValues.lifetimecutak0) {
           continue;
-        if ((isLambda || isAntiLambda) && v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 > v0SelectionValues.lifetimecutambda)
+        }
+        if ((isLambda || isAntiLambda) && v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 > v0SelectionValues.lifetimecutambda) {
           continue;
+        }
       } else {
-        if (isK0)
+        if (isK0) {
           selectionCheck = v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
-        else
+        } else {
           selectionCheck = v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+        }
       }
       histos.fill(HIST("hV0CandidateCounter"), 8.5);
       if (v0SelectionFlags.analyseRecoV0Candidates) {
         auto posTrack = v0.template posTrack_as<Alice3Tracks>();
         auto negTrack = v0.template negTrack_as<Alice3Tracks>();
         if (v0SelectionFlags.applyEtaDaughterSelection) {
-          if (std::abs(posTrack.eta()) > v0SelectionValues.etaDaughterSelection || std::abs(negTrack.eta()) > v0SelectionValues.etaDaughterSelection)
+          if (std::abs(posTrack.eta()) > v0SelectionValues.etaDaughterSelection || std::abs(negTrack.eta()) > v0SelectionValues.etaDaughterSelection) {
             continue;
+          }
         }
         histos.fill(HIST("reconstructedCandidates/hEtaDaughters"), posTrack.eta());
         histos.fill(HIST("reconstructedCandidates/hEtaDaughters"), negTrack.eta());
@@ -581,14 +610,18 @@ struct Alice3Strangeness {
         static_for<0, 5>([&](auto i) {
           constexpr int In = i.value;
           if (TESTBIT(appliedSelectionCheckMask, In)) {
-            if (In == posDaugDCAselIDx)
+            if (In == posDaugDCAselIDx) {
               selectionCheck = selectionCheckPos;
-            if (isK0)
+            }
+            if (isK0) {
               histos.fill(HIST("reconstructedCandidates/K0/h") + HIST(KSelectionNames[In]), v0.mK0Short(), v0.pt(), selectionCheck);
-            if (isLambda)
+            }
+            if (isLambda) {
               histos.fill(HIST("reconstructedCandidates/Lambda/h") + HIST(KSelectionNames[In]), v0.mLambda(), v0.pt(), selectionCheck);
-            if (isAntiLambda)
+            }
+            if (isAntiLambda) {
               histos.fill(HIST("reconstructedCandidates/AntiLambda/h") + HIST(KSelectionNames[In]), v0.mAntiLambda(), v0.pt(), selectionCheck);
+            }
           }
         });
       }
@@ -596,14 +629,17 @@ struct Alice3Strangeness {
       if (isK0) {
         histos.fill(HIST("reconstructedCandidates/K0/hMass"), v0.mK0Short(), v0.pt(), v0.eta());
         histos.fill(HIST("reconstructedCandidates/K0/hMass1D"), v0.mK0Short());
+        histos.fill(HIST("reconstructedCandidates/K0/hMassRadius"), v0.mK0Short(), v0.pt(), v0.v0radius());
       }
       if (isLambda) {
         histos.fill(HIST("reconstructedCandidates/Lambda/hMass"), v0.mLambda(), v0.pt(), v0.eta());
         histos.fill(HIST("reconstructedCandidates/Lambda/hMass1D"), v0.mLambda());
+        histos.fill(HIST("reconstructedCandidates/Lambda/hMassRadius"), v0.mLambda(), v0.pt(), v0.v0radius());
       }
       if (isAntiLambda) {
         histos.fill(HIST("reconstructedCandidates/AntiLambda/hMass"), v0.mAntiLambda(), v0.pt(), v0.eta());
         histos.fill(HIST("reconstructedCandidates/AntiLambda/hMass1D"), v0.mAntiLambda());
+        histos.fill(HIST("reconstructedCandidates/AntiLambda/hMassRadius"), v0.mAntiLambda(), v0.pt(), v0.v0radius());
       }
     }
   }
@@ -850,14 +886,37 @@ struct Alice3Strangeness {
       }
     }
   }
+  void processMCTruth(soa::Join<aod::McParticles, aod::MCParticlesExtraA3> const& mcParticles)
+  {
+
+    for (auto const& mcPart : mcParticles) {
+
+      if (!mcPart.isPhysicalPrimary()) {
+        continue;
+      }
+
+      float ptmc = RecoDecay::sqrtSumOfSquares(mcPart.px(), mcPart.py());
+
+      if (mcPart.pdgCode() == 310) {
+        histos.fill(HIST("mcTruth/K0Short/hPtRadius"), ptmc, mcPart.secondaryVertexRadius());
+      }
+      if (mcPart.pdgCode() == 3122) {
+        histos.fill(HIST("mcTruth/Lambda/hPtRadius"), ptmc, mcPart.secondaryVertexRadius());
+      }
+      if (mcPart.pdgCode() == -3122) {
+        histos.fill(HIST("mcTruth/AntiLambda/hPtRadius"), ptmc, mcPart.secondaryVertexRadius());
+      }
+    }
+  }
 
   PROCESS_SWITCH(Alice3Strangeness, processAllFindableCandidates, "", false);
   PROCESS_SWITCH(Alice3Strangeness, processFoundV0Candidates, "", true);
+  PROCESS_SWITCH(Alice3Strangeness, processMCTruth, "", true);
   PROCESS_SWITCH(Alice3Strangeness, processFoundCascadeCandidates, "", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Alice3Strangeness>(cfgc)};
+    adaptAnalysisTask<Alice3Strangeness>(context)};
 }
