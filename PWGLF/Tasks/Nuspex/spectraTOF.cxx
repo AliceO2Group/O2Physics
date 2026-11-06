@@ -1601,7 +1601,7 @@ struct tofSpectra {
           }
         }
 
-        // TOF Selection and Histogram Filling
+	// TOF Selection and Histogram Filling
 	// RL TOF selections: same cut for TRD as inclusive analysis.
 	if (!track.hasTOF()) {
 	  continue;
@@ -1610,14 +1610,13 @@ struct tofSpectra {
 	if (trkselOptions.requireTrdOnly && !track.hasTRD()) {
 	  continue;
 	}
-
+	
 	if (trkselOptions.requireNoTrd && track.hasTRD()) {
 	  continue;
 	}
 	
 	if (track.hasTRD() && trkselOptions.lastRequiredTrdCluster > 0) {
 	  int lastLayer = 0;
-	  
 	  for (int layer = 7; layer >= 0; --layer) {
 	    if (track.trdPattern() & (1 << layer)) {
 	      lastLayer = layer;
@@ -1629,12 +1628,12 @@ struct tofSpectra {
 	    continue;
 	  }
 	}
-
+	
 	// RL: add an selection in the selection event time
 	
 	switch (trkselOptions.selectEvTime) {
 	case 0:
-	  break; // Nessuna selezione
+	  break; // No selection
 	case 1:
 	  if (!track.isEvTimeDefined()) {
 	    continue;
