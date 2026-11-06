@@ -14,8 +14,8 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
