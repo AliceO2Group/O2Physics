@@ -698,20 +698,20 @@ struct TreeWriterTpcTof {
   HistogramRegistry registry{"registry", {}};
 
   struct TofTrack {
-    bool isApplyHardCutOnly;
-    double maxMomHardCutOnly;
-    double maxMomTPCOnly;
-    double tpcNSigma;
-    double nSigmaTPCOnly;
-    double downsamplingTsalis;
-    double mass;
-    double tofNSigma;
-    double itsNSigma;
-    double tpcExpSignal;
-    o2::track::PID::ID pid;
-    double dwnSmplFactor;
-    double nSigmaTofTpctof;
-    double nSigmaTpcTpctof;
+    bool isApplyHardCutOnly{false};
+    double maxMomHardCutOnly{UndefValueDouble};
+    double maxMomTPCOnly{UndefValueDouble};
+    double tpcNSigma{UndefValueDouble};
+    double nSigmaTPCOnly{UndefValueDouble};
+    double downsamplingTsalis{UndefValueDouble};
+    double mass{UndefValueDouble};
+    double tofNSigma{UndefValueDouble};
+    double itsNSigma{UndefValueDouble};
+    double tpcExpSignal{UndefValueDouble};
+    o2::track::PID::ID pid{0};
+    double dwnSmplFactor{UndefValueDouble};
+    double nSigmaTofTpctof{UndefValueDouble};
+    double nSigmaTpcTpctof{UndefValueDouble};
   };
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
