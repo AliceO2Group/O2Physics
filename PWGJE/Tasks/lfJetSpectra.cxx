@@ -74,10 +74,8 @@ using MCPV0JetsWithConstituents = soa::Join<aod::V0ChargedMCParticleLevelJets, a
 using MatchedMCDV0Jets = soa::Join<aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCPV0JetsWithConstituents = soa::Join<aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetConstituents, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
 
-// MC collisions: PWGJE MC collisions with the index to the AO2D MC collisions, from which the generated multiplicity is taken
-// (same estimator as in strangenessInJets)
+// PWGJE MC collisions and their indices to the original AO2D MC collisions.
 using JetMcCollisionsWithPIs = soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>;
-using McCollisionsWithCent = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
 struct LfJetSpectra {
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -114,7 +112,7 @@ struct LfJetSpectra {
   // Reconstructed V0s: true V0s (PDG of the V0 and of the daughters) passing the selections, at reconstructed pT.
   // Generated V0s: physical primary V0s, at generated pT. In particle-level jets (kGenJet, kGenUE) they are the V0s
   // clustered by the particle-level jet finder (aod::CandidatesV0MCP, all decay channels with v0ChargedDecaysOnly = false),
-  // with the same in-jet / UE definition as in data. Otherwise they are taken from aod::McParticles (all decay channels,
+  // with the same in-jet / UE definition as in data. Otherwise they are taken from aod::JetParticles (all decay channels,
   // so the efficiency includes the branching ratio) and, for the reco jets, "in jet" means within R from the jet axis
   enum MCHistogram { kRecJet = 0,      // reco primary V0s, constituents of a reco jet (efficiency numerator, jet)
                      kRecUE,           // reco primary V0s in the UE of a reco jet (efficiency numerator, UE)
@@ -237,7 +235,6 @@ struct LfJetSpectra {
   Filter jetCollisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
   Filter jetMcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
 
-  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   // Particle-level jet finder input and jets of the MC collision associated to a reconstructed collision (jet pT response)
   Preslice<aod::CandidatesV0MCP> v0MCPPerMcCollision = aod::jv0indices::mcCollisionId;
   Preslice<aod::JetParticles> particlesPerMcCollision = aod::jmcparticle::mcCollisionId;
@@ -1073,7 +1070,7 @@ struct LfJetSpectra {
     }
   }
 
-  // Generated physical primary V0s (aod::McParticles)
+  // Generated physical primary V0s from the PWGJE reduced MC particle table
   template <int iHist, typename T>
   void fillMCGenV0(T const& v0, float multiplicity, float weight)
   {
@@ -1086,19 +1083,19 @@ struct LfJetSpectra {
 
   // MC detector level: reconstructed V0s (efficiency numerators, feed-down) and generated V0s in the reconstructed
   // events (efficiency denominators), in jets and in the UE of the reconstructed jets
-  void processMCReco(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, JetMcCollisionsWithPIs const&, McCollisionsWithCent const&, MCDV0JetsWithConstituents const& v0jets,
-                     aod::CandidatesV0MCD const& v0s, aod::JetTracks const& tracks, aod::McParticles const& mcParticles)
+  void processMCReco(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, JetMcCollisionsWithPIs const&, MCDV0JetsWithConstituents const& v0jets,
+                     aod::CandidatesV0MCD const& v0s, aod::JetTracks const& tracks, aod::JetParticles const& jetParticles)
   {
     if (!jcoll.has_mcCollision() || !isSelectedCollision(jcoll, jetFinderConfigDet)) {
       return;
     }
     const auto mcCollision = jcoll.mcCollision_as<JetMcCollisionsWithPIs>();
-    const float multiplicity = mcCollision.mcCollision_as<McCollisionsWithCent>().centFT0M();
+    const float multiplicity = mcCollision.centFT0M();
     const float weight = mcCollision.weight();
     registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity, weight);
 
-    // Generated particles of the AO2D MC collision associated to the reconstructed collision
-    const auto genV0s = mcParticles.sliceBy(perMcCollision, mcCollision.mcCollisionId());
+    // Generated particles of the MC collision associated to the reconstructed collision
+    const auto genV0s = jetParticles.sliceBy(particlesPerMcCollision, mcCollision.mcCollisionId());
 
     const auto jetFinderV0s = buildDetectorLevelInput(v0s, tracks);
 
@@ -1183,17 +1180,17 @@ struct LfJetSpectra {
   PROCESS_SWITCH(LfJetSpectra, processMCReco, "V0s in jets and in the UE, MC detector level (efficiency and feed-down)", false);
 
   // MC particle level: generated V0s in particle-level jets and in their UE (defined as in data), and in the full event
-  void processMCGen(soa::Filtered<JetMcCollisionsWithPIs>::iterator const& mcCollision, McCollisionsWithCent const&, MCPV0JetsWithConstituents const& v0jets,
-                    aod::CandidatesV0MCP const& v0s, aod::JetParticles const& particles, aod::McParticles const& mcParticles)
+  void processMCGen(soa::Filtered<JetMcCollisionsWithPIs>::iterator const& mcCollision, MCPV0JetsWithConstituents const& v0jets,
+                    aod::CandidatesV0MCP const& v0s, aod::JetParticles const& particles)
   {
     if (!jetderiveddatautilities::selectCollision(mcCollision, jetFinderConfigGen.eventSelectionBits, jetFinderConfigGen.skipMBGapEvents, jetFinderConfigGen.applyRCTSelections)) {
       return;
     }
-    const float multiplicity = mcCollision.mcCollision_as<McCollisionsWithCent>().centFT0M();
+    const float multiplicity = mcCollision.centFT0M();
     const float weight = mcCollision.weight();
     registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), multiplicity, weight);
 
-    const auto genV0s = mcParticles.sliceBy(perMcCollision, mcCollision.mcCollisionId());
+    const auto genV0s = particles.sliceBy(particlesPerMcCollision, mcCollision.mcCollisionId());
     for (const auto& genV0 : genV0s) {
       if (std::abs(genV0.eta()) < inclusiveEtaMax) {
         fillMCGenV0<kGenFullEvent>(genV0, multiplicity, weight);
