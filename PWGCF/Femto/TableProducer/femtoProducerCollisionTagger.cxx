@@ -572,8 +572,7 @@ struct FemtoProducerCollisionTagger {
   void processTrackSigma(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoSigmas const& sigmasThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    collisiontagger::tagCrossVariants(tag, mTrackSigmaVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, sigmasThisCol,
-                                      [](auto const& sigma, auto const& sel) { return collisiontagger::signedV0Passes(sigma, sel); });
+    collisiontagger::tagCrossVariants(tag, mTrackSigmaVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, sigmasThisCol, [](auto const& sigma, auto const& sel) { return collisiontagger::signedV0Passes(sigma, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
   PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackSigma, "Tag collisions for femto-pair-track-kink wagon(s) (Sigma)", false);
@@ -581,8 +580,7 @@ struct FemtoProducerCollisionTagger {
   void processTrackSigmaPlus(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoSigmaPlus const& sigmaPlusThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    collisiontagger::tagCrossVariants(tag, mTrackSigmaPlusVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, sigmaPlusThisCol,
-                                      [](auto const& sigmaPlus, auto const& sel) { return collisiontagger::signedV0Passes(sigmaPlus, sel); });
+    collisiontagger::tagCrossVariants(tag, mTrackSigmaPlusVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, sigmaPlusThisCol, [](auto const& sigmaPlus, auto const& sel) { return collisiontagger::signedV0Passes(sigmaPlus, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
   PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackSigmaPlus, "Tag collisions for femto-pair-track-kink wagon(s) (SigmaPlus)", false);
