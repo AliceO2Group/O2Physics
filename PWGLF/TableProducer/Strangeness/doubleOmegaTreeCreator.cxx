@@ -10,11 +10,11 @@
 // or submit itself to any jurisdiction.
 
 #include "PWGLF/DataModel/LFDoubleOmegaTables.h"
+#include "PWGLF/DataModel/LFDoubleOmegaTrackTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/doubleOmegaBuilderHelper.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
@@ -41,8 +41,6 @@
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <GPU/GPUROOTCartesianFwd.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -57,6 +55,7 @@
 #include <deque>
 #include <functional>
 #include <iterator>
+#include <ratio>
 #include <set>
 #include <sstream>
 #include <string>
@@ -153,6 +152,7 @@ struct doubleOmegaTreeCreator {
     kFindableSelectedTracks,
     kFindableCascadeAndV0,
     kFindableCascadeAndV0SelectedTracks,
+    kFindableSkimCascadeAndV0, // processFindableTracksWithSkim: in DOmegaCascades + DOmegaV0s (tracks selected by the track BDT)
     kNFindabilitySteps
   };
   enum MixingType : uint8_t {
@@ -360,6 +360,7 @@ struct doubleOmegaTreeCreator {
     printValue(doprocessDataFromCascades);
     printValue(doprocessMC);
     printValue(doprocessFindableTracks);
+    printValue(doprocessFindableTracksWithSkim);
     printValue(doprocessDerivedData);
     printValue(doprocessDerivedMixing);
     printValue(doprocessDerivedMixingCandidates);
@@ -368,6 +369,9 @@ struct doubleOmegaTreeCreator {
   void init(InitContext const&)
   {
     printConfig();
+    if (doprocessFindableTracks && doprocessFindableTracksWithSkim) {
+      LOG(fatal) << "processFindableTracks and processFindableTracksWithSkim are alternatives: enable only one of them";
+    }
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -414,6 +418,7 @@ struct doubleOmegaTreeCreator {
     generatedAndFindable->GetXaxis()->SetBinLabel(kFindableSelectedTracks + 1, "Findable, selected tracks");
     generatedAndFindable->GetXaxis()->SetBinLabel(kFindableCascadeAndV0 + 1, "Findable cascade + V0");
     generatedAndFindable->GetXaxis()->SetBinLabel(kFindableCascadeAndV0SelectedTracks + 1, "Findable cascade + V0, selected tracks");
+    generatedAndFindable->GetXaxis()->SetBinLabel(kFindableSkimCascadeAndV0 + 1, "Findable skim cascade + V0");
 
     if (doprocessDerivedMixingCandidates) {
       histos.add("Mixing/hSeedRadiusPhi", ";Double-#Omega decay radius (cm);Double-#Omega #varphi (rad);Same-event candidates", HistType::kTH2F, {mixingOpts.binsRadius, mixingOpts.binsPhi});
@@ -1039,13 +1044,57 @@ struct doubleOmegaTreeCreator {
   }
   PROCESS_SWITCH(doubleOmegaTreeCreator, processMC, "Reconstruct and truth-match Omega + Lambda + kaon in MC", false);
 
-  void processFindableTracks(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
-                             TracksFullMC const& tracks,
-                             aod::Cascades const& cascades,
-                             aod::V0s const& v0s,
-                             aod::McParticles const& mcParticles,
-                             aod::McCollisions const&,
-                             aod::BCsWithTimestamps const&)
+  // Whether the tracks of the Omega (daughterTrackIds 0-2) form a cascade of the table and those of the direct Lambda
+  // (daughterTrackIds 3-4) a V0, whatever the order of the tracks; the collisions of the first ones found
+  template <class Cascades, class V0s>
+  static void findCascadeAndV0(Cascades const& cascades, V0s const& v0s, std::array<int, 6> const& daughterTrackIds,
+                               bool& omegaInCascade, int64_t& cascadeCollisionId, bool& directLambdaInV0, int64_t& directLambdaCollisionId)
+  {
+    omegaInCascade = false;
+    directLambdaInV0 = false;
+    for (const auto& cascade : cascades) {
+      const auto cascadeV0 = v0s.rawIteratorAt(cascade.v0Id());
+      const std::array<int64_t, 3> cascadeTrackIds{
+        cascadeV0.posTrackId(), cascadeV0.negTrackId(), cascade.bachelorId()};
+      bool allOmegaTracksInCascade = true;
+      for (std::size_t iDaughter = 0; iDaughter < 3; ++iDaughter) {
+        if (std::find(cascadeTrackIds.begin(), cascadeTrackIds.end(), daughterTrackIds[iDaughter]) == cascadeTrackIds.end()) {
+          allOmegaTracksInCascade = false;
+          break;
+        }
+      }
+      if (allOmegaTracksInCascade) {
+        omegaInCascade = true;
+        cascadeCollisionId = cascade.collisionId();
+        break;
+      }
+    }
+
+    for (const auto& v0 : v0s) {
+      const std::array<int64_t, 2> v0TrackIds{v0.posTrackId(), v0.negTrackId()};
+      bool allDirectLambdaTracksInV0 = true;
+      for (std::size_t iDaughter = 3; iDaughter < 5; ++iDaughter) {
+        if (std::find(v0TrackIds.begin(), v0TrackIds.end(), daughterTrackIds[iDaughter]) == v0TrackIds.end()) {
+          allDirectLambdaTracksInV0 = false;
+          break;
+        }
+      }
+      if (allDirectLambdaTracksInV0) {
+        directLambdaInV0 = true;
+        directLambdaCollisionId = v0.collisionId();
+        break;
+      }
+    }
+  }
+
+  // skimCascades, skimV0s: tables of doubleOmegaTrackIndexSkimCreator (processFindableTracksWithSkim), nullptr otherwise
+  void runFindableTracks(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
+                         TracksFullMC const& tracks,
+                         aod::Cascades const& cascades,
+                         aod::V0s const& v0s,
+                         aod::McParticles const& mcParticles,
+                         aod::DOmegaCascades const* skimCascades,
+                         aod::DOmegaV0s const* skimV0s)
   {
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.pdgCode()) != kDoubleOmegaPdg) {
@@ -1060,11 +1109,11 @@ struct doubleOmegaTreeCreator {
 
       // First stage: double-Omega -> Omega + Lambda + kaon.
       for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
-        if (daughter.pdgCode() == sign * 3334 && omegaId < 0) {
+        if (daughter.pdgCode() == sign * PDG_t::kOmegaMinus && omegaId < 0) {
           omegaId = daughter.globalIndex();
-        } else if (daughter.pdgCode() == sign * 3122 && directLambdaId < 0) {
+        } else if (daughter.pdgCode() == sign * PDG_t::kLambda0 && directLambdaId < 0) {
           directLambdaId = daughter.globalIndex();
-        } else if (daughter.pdgCode() == -sign * 321 && directKaonId < 0) {
+        } else if (daughter.pdgCode() == -sign * PDG_t::kKPlus && directKaonId < 0) {
           directKaonId = daughter.globalIndex();
         }
       }
@@ -1078,9 +1127,9 @@ struct doubleOmegaTreeCreator {
       int64_t omegaLambdaId = -1;
       int64_t omegaKaonId = -1;
       for (const auto& daughter : omega.daughters_as<aod::McParticles>()) {
-        if (daughter.pdgCode() == sign * 3122 && omegaLambdaId < 0) {
+        if (daughter.pdgCode() == sign * PDG_t::kLambda0 && omegaLambdaId < 0) {
           omegaLambdaId = daughter.globalIndex();
-        } else if (daughter.pdgCode() == -sign * 321 && omegaKaonId < 0) {
+        } else if (daughter.pdgCode() == -sign * PDG_t::kKPlus && omegaKaonId < 0) {
           omegaKaonId = daughter.globalIndex();
         }
       }
@@ -1165,41 +1214,18 @@ struct doubleOmegaTreeCreator {
       }
       if (allDaughtersReconstructed) {
         histos.fill(HIST("MC/generatedAndFindable"), kFindable);
-        bool omegaInCascade = false;
-        int64_t cascadeCollisionId = -1;
-        for (const auto& cascade : cascades) {
-          const auto cascadeV0 = cascade.v0();
-          const std::array<int64_t, 3> cascadeTrackIds{
-            cascadeV0.posTrackId(), cascadeV0.negTrackId(), cascade.bachelorId()};
-          bool allOmegaTracksInCascade = true;
-          for (std::size_t iDaughter = 0; iDaughter < 3; ++iDaughter) {
-            if (std::find(cascadeTrackIds.begin(), cascadeTrackIds.end(), daughterTrackIds[iDaughter]) == cascadeTrackIds.end()) {
-              allOmegaTracksInCascade = false;
-              break;
-            }
-          }
-          if (allOmegaTracksInCascade) {
-            omegaInCascade = true;
-            cascadeCollisionId = cascade.collisionId();
-            break;
-          }
-        }
+        bool omegaInCascade = false, directLambdaInV0 = false;
+        int64_t cascadeCollisionId = -1, directLambdaCollisionId = -1;
+        findCascadeAndV0(cascades, v0s, daughterTrackIds, omegaInCascade, cascadeCollisionId, directLambdaInV0, directLambdaCollisionId);
 
-        bool directLambdaInV0 = false;
-        int64_t directLambdaCollisionId = -1;
-        for (const auto& v0 : v0s) {
-          const std::array<int64_t, 2> v0TrackIds{v0.posTrackId(), v0.negTrackId()};
-          bool allDirectLambdaTracksInV0 = true;
-          for (std::size_t iDaughter = 3; iDaughter < 5; ++iDaughter) {
-            if (std::find(v0TrackIds.begin(), v0TrackIds.end(), daughterTrackIds[iDaughter]) == v0TrackIds.end()) {
-              allDirectLambdaTracksInV0 = false;
-              break;
-            }
-          }
-          if (allDirectLambdaTracksInV0) {
-            directLambdaInV0 = true;
-            directLambdaCollisionId = v0.collisionId();
-            break;
+        // The same with the V0s and cascades of doubleOmegaTrackIndexSkimCreator (tracks selected by the track BDT)
+        if (skimCascades != nullptr && skimV0s != nullptr) {
+          bool omegaInSkimCascade = false, directLambdaInSkimV0 = false;
+          int64_t skimCascadeCollisionId = -1, skimDirectLambdaCollisionId = -1;
+          findCascadeAndV0(*skimCascades, *skimV0s, daughterTrackIds, omegaInSkimCascade, skimCascadeCollisionId, directLambdaInSkimV0, skimDirectLambdaCollisionId);
+          // No track selection on top: the skim tracks are already selected by the track BDT
+          if (omegaInSkimCascade && directLambdaInSkimV0) {
+            histos.fill(HIST("MC/generatedAndFindable"), kFindableSkimCascadeAndV0);
           }
         }
 
@@ -1232,7 +1258,35 @@ struct doubleOmegaTreeCreator {
       }
     }
   }
+
+  void processFindableTracks(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
+                             TracksFullMC const& tracks,
+                             aod::Cascades const& cascades,
+                             aod::V0s const& v0s,
+                             aod::McParticles const& mcParticles,
+                             aod::McCollisions const&,
+                             aod::BCsWithTimestamps const&)
+  {
+    runFindableTracks(collisions, tracks, cascades, v0s, mcParticles, nullptr, nullptr);
+  }
   PROCESS_SWITCH(doubleOmegaTreeCreator, processFindableTracks, "Count findable double-Omega decays and reconstruct selected daughter tracks", false);
+
+  // As processFindableTracks, and the findable double Omegas are also looked for in the V0s and cascades of
+  // doubleOmegaTrackIndexSkimCreator (bin "Findable skim cascade + V0" of MC/generatedAndFindable; it needs
+  // doubleOmegaTrackIndexSkimCreator with processCandidates in the same workflow)
+  void processFindableTracksWithSkim(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
+                                     TracksFullMC const& tracks,
+                                     aod::Cascades const& cascades,
+                                     aod::V0s const& v0s,
+                                     aod::DOmegaCascades const& skimCascades,
+                                     aod::DOmegaV0s const& skimV0s,
+                                     aod::McParticles const& mcParticles,
+                                     aod::McCollisions const&,
+                                     aod::BCsWithTimestamps const&)
+  {
+    runFindableTracks(collisions, tracks, cascades, v0s, mcParticles, &skimCascades, &skimV0s);
+  }
+  PROCESS_SWITCH(doubleOmegaTreeCreator, processFindableTracksWithSkim, "processFindableTracks, with the findable double Omegas also looked for in the DOmegaCascades and DOmegaV0s tables of doubleOmegaTrackIndexSkimCreator", false);
 
   // Bin index of value on a ConfigurableAxis (variable or fixed width), -1 outside the axis.
   static int findBin(std::vector<double> const& axis, double value)
