@@ -11,7 +11,11 @@
 
 /// \file doubleOmegaBuilderHelper.h
 /// \brief Building blocks of the double-Omega (Omega + Lambda + kaon) reconstruction, shared by the
-///        candidate builder (derived data producer) and the tree creator.
+///        candidate builder (derived data producer) and the tree creator; and the input features of the
+///        double-Omega track-selection BDT, computed from a track as in the training: the columns of the
+///        doubleOmegaTrackTreeCreator tree and the derived features of DoubleOmega/track_selection/common.py
+///        (add_derived_features), with the same names. Missing values (no TOF, failed DCA propagation) are NaN,
+///        as in the training (XGBoost missing values).
 
 #ifndef PWGLF_UTILS_DOUBLEOMEGABUILDERHELPER_H_
 #define PWGLF_UTILS_DOUBLEOMEGABUILDERHELPER_H_
@@ -24,14 +28,16 @@
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Logger.h>
-#include <MathUtils/Cartesian.h>
+#include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <string>
 #include <vector>
 
 namespace o2::pwglf::doubleomega
@@ -135,6 +141,7 @@ struct DoubleOmegaSelections {
   float minNTPCClus = 80.f;
   float minNCrossedRows = 100.f;
   float maxNSharedTPCClus = 5.f;
+  float minCrossedRowsOverFindable = 0.8f;
   float nSigmaTPCCut = 3.f;
   float dcaBachToPV = 0.05f;
   float dcaKaonToPV = 0.05f;
@@ -259,7 +266,7 @@ class DoubleOmegaBuilderHelper
     if (track.itsNCls() < selections.minNITSClus ||
         track.tpcNClsFound() < selections.minNTPCClus ||
         track.tpcNClsCrossedRows() < selections.minNCrossedRows ||
-        track.tpcNClsCrossedRows() < 0.8f * track.tpcNClsFindable() ||
+        track.tpcNClsCrossedRows() < selections.minCrossedRowsOverFindable * track.tpcNClsFindable() ||
         track.tpcNClsShared() > selections.maxNSharedTPCClus) {
       LOG(debug) << "Track failed selection: itsNCls=" << static_cast<int>(track.itsNCls()) << ", tpcNClsFound=" << track.tpcNClsFound() << ", tpcNClsCrossedRows=" << static_cast<int>(track.tpcNClsCrossedRows()) << ", tpcNClsFindable=" << static_cast<int>(track.tpcNClsFindable()) << ", tpcNClsShared=" << static_cast<int>(track.tpcNClsShared());
       return false;
@@ -295,7 +302,8 @@ class DoubleOmegaBuilderHelper
     return true;
   }
 
-  template <class C, class Track>
+  // isLoose: no PID, DCA or mass-window selection (left to the caller)
+  template <bool isLoose = false, class C, class Track>
   bool buildLambda(C const& collision, Track const& posTrack, Track const& negTrack, int8_t charge, BuiltLambdaCandidate& builtLambda)
   {
     if (posTrack.sign() <= 0 || negTrack.sign() >= 0 ||
@@ -306,7 +314,7 @@ class DoubleOmegaBuilderHelper
     const bool isMatter = charge < 0;
     const float protonNSigma = isMatter ? posTrack.tpcNSigmaPr() : negTrack.tpcNSigmaPr();
     const float pionNSigma = isMatter ? negTrack.tpcNSigmaPi() : posTrack.tpcNSigmaPi();
-    if (std::abs(protonNSigma) > selections.nSigmaTPCCut || std::abs(pionNSigma) > selections.nSigmaTPCCut) {
+    if ((std::abs(protonNSigma) > selections.nSigmaTPCCut || std::abs(pionNSigma) > selections.nSigmaTPCCut) && !isLoose) {
       return false;
     }
     float dcaXYPos = -999.f;
@@ -315,7 +323,7 @@ class DoubleOmegaBuilderHelper
       LOG(debug) << "Propagation to the PV failed for Lambda daughters " << posTrack.globalIndex() << ", " << negTrack.globalIndex();
       return false;
     }
-    if (std::abs(dcaXYPos) < selections.dcaV0DauToPV || std::abs(dcaXYNeg) < selections.dcaV0DauToPV) {
+    if ((std::abs(dcaXYPos) < selections.dcaV0DauToPV || std::abs(dcaXYNeg) < selections.dcaV0DauToPV) && !isLoose) {
       LOG(debug) << "Lambda dau don't pass selections: " << "nsigmaPR: " << protonNSigma << ", pionNSigma: " << pionNSigma << ", dcaXYPos: " << dcaXYPos << ", dcaXYNeg: " << dcaXYNeg;
       return false;
     }
@@ -351,8 +359,9 @@ class DoubleOmegaBuilderHelper
     const float dcaDaughters = std::sqrt(std::abs(fitter.getChi2AtPCACandidate()));
     const float eta = RecoDecay::eta(lambdaMomentum);
     if (std::abs(eta) > selections.etaMax ||
-        dcaDaughters > selections.dcaLambdaDaughters ||
-        std::abs(mass - o2::constants::physics::MassLambda0) > selections.mLambdaWindow) {
+        ((dcaDaughters > selections.dcaLambdaDaughters ||
+          std::abs(mass - o2::constants::physics::MassLambda0) > selections.mLambdaWindow) &&
+         !isLoose)) {
       return false;
     }
 
@@ -374,21 +383,22 @@ class DoubleOmegaBuilderHelper
     return true;
   }
 
-  template <class C, class Track>
+  // isLoose: no PID, DCA or mass-window selection (left to the caller)
+  template <bool isLoose = false, class C, class Track>
   bool buildOmega(C const& collision, Track const& posTrack, Track const& negTrack, Track const& bachelor, BuiltOmegaCandidate& builtOmega)
   {
     if (bachelor.sign() == 0 ||
         !selectTrack(bachelor) ||
-        std::abs(bachelor.tpcNSigmaKa()) > selections.nSigmaTPCCut) {
+        (std::abs(bachelor.tpcNSigmaKa()) > selections.nSigmaTPCCut && !isLoose)) {
       return false;
     }
     float dcaXYBachelor = -999.f;
-    if (!dcaXYToPV(collision, bachelor, dcaXYBachelor) || std::abs(dcaXYBachelor) < selections.dcaBachToPV) {
+    if (!dcaXYToPV(collision, bachelor, dcaXYBachelor) || (!isLoose && std::abs(dcaXYBachelor) < selections.dcaBachToPV)) {
       return false;
     }
 
     BuiltLambdaCandidate lambda;
-    if (!buildLambda(collision, posTrack, negTrack, bachelor.sign(), lambda)) {
+    if (!buildLambda<isLoose>(collision, posTrack, negTrack, bachelor.sign(), lambda)) {
       return false;
     }
 
@@ -422,9 +432,9 @@ class DoubleOmegaBuilderHelper
                                       std::array{o2::constants::physics::MassLambda0, o2::constants::physics::MassPionCharged});
     const float dcaDaughters = std::sqrt(std::abs(fitter.getChi2AtPCACandidate()));
     const float eta = RecoDecay::eta(omegaMomentum);
-    if (dcaDaughters > selections.dcaV0Bach ||
-        std::abs(eta) > selections.etaMax ||
-        std::abs(massOmega - o2::constants::physics::MassOmegaMinus) > selections.mOmegaWindow) {
+    if (std::abs(eta) > selections.etaMax ||
+        (!isLoose && dcaDaughters > selections.dcaV0Bach) ||
+        (!isLoose && std::abs(massOmega - o2::constants::physics::MassOmegaMinus) > selections.mOmegaWindow)) {
       return false;
     }
 
@@ -653,6 +663,138 @@ class DoubleOmegaBuilderHelper
     dcaFitter.setUseAbsDCA(true);
   }
 };
+
+// ---------------------------------------------------------------------------------------------
+// Input features of the track-selection BDT
+
+enum TrackFeature : uint8_t {
+  kFeatPt = 0,
+  kFeatEta,
+  kFeatPhi,
+  kFeatSign,
+  kFeatTpcInnerParam,
+  kFeatTpcSignal,
+  kFeatTpcNSigmaPr,
+  kFeatTpcNSigmaPi,
+  kFeatTpcNSigmaKa,
+  kFeatTofNSigmaPr,
+  kFeatTofNSigmaPi,
+  kFeatTofNSigmaKa,
+  kFeatDcaXY,
+  kFeatDcaZ,
+  kFeatSigmaDcaXY,
+  kFeatSigmaDcaZ,
+  kFeatAbsDcaXY,
+  kFeatAbsDcaZ,
+  kFeatDcaXYSig,
+  kFeatDcaZSig,
+  kFeatItsClusterMap,
+  kFeatItsNCls,
+  kFeatItsFirstLayer,
+  kFeatItsChi2NCl,
+  kFeatTpcNClsFound,
+  kFeatTpcNClsCrossedRows,
+  kFeatTpcNClsShared,
+  kFeatTpcChi2NCl,
+  kFeatHasIts,
+  kFeatHasTof,
+  kFeatIsPVContributor,
+  kFeatNumContrib,
+  kFeatPosZ,
+  kNTrackFeatures
+};
+
+// Names of the features, as the columns of the training sample
+static constexpr std::array<const char*, kNTrackFeatures> TrackFeatureNames{
+  "fPt", "fEta", "fPhi", "fSign", "fTpcInnerParam", "fTpcSignal",
+  "fTpcNSigmaPr", "fTpcNSigmaPi", "fTpcNSigmaKa", "fTofNSigmaPr", "fTofNSigmaPi", "fTofNSigmaKa",
+  "fDcaXY", "fDcaZ", "fSigmaDcaXY", "fSigmaDcaZ", "fAbsDcaXY", "fAbsDcaZ", "fDcaXYSig", "fDcaZSig",
+  "fItsClusterMap", "fItsNCls", "fItsFirstLayer", "fItsChi2NCl",
+  "fTpcNClsFound", "fTpcNClsCrossedRows", "fTpcNClsShared", "fTpcChi2NCl",
+  "fHasIts", "fHasTof", "fIsPVContributor", "fNumContrib", "fPosZ"};
+
+// Indices of the model inputs (in the order of the model) in the feature array; fatal for unknown names
+inline std::vector<int> trackFeatureIndices(std::vector<std::string> const& names)
+{
+  std::vector<int> indices;
+  for (const auto& name : names) {
+    int index = -1;
+    for (int i = 0; i < kNTrackFeatures; ++i) {
+      if (name == TrackFeatureNames[i]) {
+        index = i;
+        break;
+      }
+    }
+    if (index < 0) {
+      LOG(fatal) << "Unknown track-selection feature " << name << " (see PWGLF/Utils/doubleOmegaBuilderHelper.h)";
+    }
+    indices.push_back(index);
+  }
+  return indices;
+}
+
+// All the features of a track. The DCA to the primary vertex is computed with the uncertainties of the track
+// and of the vertex, as in doubleOmegaTrackTreeCreator. Returns false if the propagation to the PV fails (the
+// DCA features are then NaN).
+template <class C, class T>
+bool computeTrackFeatures(C const& collision, T const& track, o2::base::Propagator::MatCorrType matCorr, std::array<float, kNTrackFeatures>& features)
+{
+  constexpr float NaN = std::numeric_limits<float>::quiet_NaN();
+  auto trackParCov = getTrackParCov(track);
+  const o2::dataformats::VertexBase primaryVertex{o2::math_utils::Point3D<float>{collision.posX(), collision.posY(), collision.posZ()},
+                                                  std::array<float, 6>{collision.covXX(), collision.covXY(), collision.covYY(),
+                                                                       collision.covXZ(), collision.covYZ(), collision.covZZ()}};
+  o2::dataformats::DCA dca;
+  const bool propagated = o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCov, 2.f, matCorr, &dca);
+  const float dcaXY = propagated ? dca.getY() : NaN;
+  const float dcaZ = propagated ? dca.getZ() : NaN;
+  const float sigmaDcaXY = propagated ? std::sqrt(std::max(0.f, static_cast<float>(dca.getSigmaY2()))) : NaN;
+  const float sigmaDcaZ = propagated ? std::sqrt(std::max(0.f, static_cast<float>(dca.getSigmaZ2()))) : NaN;
+
+  const uint8_t clusterMap = track.itsClusterMap();
+  int firstLayer = 7; // no ITS cluster
+  for (int layer = 0; layer < 7; ++layer) {
+    if ((clusterMap >> layer) & 1) {
+      firstLayer = layer;
+      break;
+    }
+  }
+
+  features[kFeatPt] = track.pt();
+  features[kFeatEta] = track.eta();
+  features[kFeatPhi] = track.phi();
+  features[kFeatSign] = track.sign();
+  features[kFeatTpcInnerParam] = track.tpcInnerParam();
+  features[kFeatTpcSignal] = track.tpcSignal();
+  features[kFeatTpcNSigmaPr] = track.tpcNSigmaPr();
+  features[kFeatTpcNSigmaPi] = track.tpcNSigmaPi();
+  features[kFeatTpcNSigmaKa] = track.tpcNSigmaKa();
+  features[kFeatTofNSigmaPr] = track.hasTOF() ? track.tofNSigmaPr() : NaN;
+  features[kFeatTofNSigmaPi] = track.hasTOF() ? track.tofNSigmaPi() : NaN;
+  features[kFeatTofNSigmaKa] = track.hasTOF() ? track.tofNSigmaKa() : NaN;
+  features[kFeatDcaXY] = dcaXY;
+  features[kFeatDcaZ] = dcaZ;
+  features[kFeatSigmaDcaXY] = sigmaDcaXY;
+  features[kFeatSigmaDcaZ] = sigmaDcaZ;
+  features[kFeatAbsDcaXY] = std::abs(dcaXY);
+  features[kFeatAbsDcaZ] = std::abs(dcaZ);
+  features[kFeatDcaXYSig] = sigmaDcaXY > 0.f ? std::abs(dcaXY) / sigmaDcaXY : NaN;
+  features[kFeatDcaZSig] = sigmaDcaZ > 0.f ? std::abs(dcaZ) / sigmaDcaZ : NaN;
+  features[kFeatItsClusterMap] = clusterMap;
+  features[kFeatItsNCls] = __builtin_popcount(clusterMap);
+  features[kFeatItsFirstLayer] = firstLayer;
+  features[kFeatItsChi2NCl] = track.itsChi2NCl();
+  features[kFeatTpcNClsFound] = track.tpcNClsFound();
+  features[kFeatTpcNClsCrossedRows] = track.tpcNClsCrossedRows();
+  features[kFeatTpcNClsShared] = track.tpcNClsShared();
+  features[kFeatTpcChi2NCl] = track.tpcChi2NCl();
+  features[kFeatHasIts] = track.hasITS();
+  features[kFeatHasTof] = track.hasTOF();
+  features[kFeatIsPVContributor] = track.isPVContributor();
+  features[kFeatNumContrib] = collision.numContrib();
+  features[kFeatPosZ] = collision.posZ();
+  return propagated;
+}
 
 } // namespace o2::pwglf::doubleomega
 
