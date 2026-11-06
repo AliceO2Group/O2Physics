@@ -19,7 +19,6 @@
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/AnalysisDataModel.h>
@@ -130,7 +129,7 @@ struct Alice3TrackingTranslator {
     }
     Long64_t getEntries() const { return mTree->GetEntries(); }
     TFile mFile;
-    TTree* mTree;
+    TTree* mTree{nullptr};
   };
 
   struct ParticleStruct : public FileStruct {
@@ -433,7 +432,7 @@ struct Alice3TrackingTranslator {
       std::map<Key, int> barcodeToGlobalIdx;
       std::map<int, std::vector<float>> globalToVertexPosition;
       std::map<int, int> GlobalIdxToMotherIdx;
-      std::map<int, int> GlobalIdxSecVertexRadiusIncoming;
+      std::map<int, float> GlobalIdxSecVertexRadiusIncoming;
       std::map<int, int> GlobalIdxToPDGCode;
       std::map<int, int> GlobalToLocalIdx;
       std::map<int, std::vector<int>> GlobalIdxToDaughterIdxs;
@@ -497,20 +496,20 @@ struct Alice3TrackingTranslator {
         float secondaryVertexRadius = -1.0f;
         int globalIdx = firstIdxThisEvent + static_cast<int>(iPart);
         int motherIdx = -1;
-        if (GlobalIdxToMotherIdx.find(globalIdx) != GlobalIdxToMotherIdx.end()) {
+        if (GlobalIdxToMotherIdx.contains(globalIdx)) {
           motherIdx = GlobalIdxToMotherIdx[globalIdx];
         }
         int firstDaughter = -1;
         int secondDaughter = -1;
-        if (GlobalIdxToDaughterIdxs.find(globalIdx) != GlobalIdxToDaughterIdxs.end()) {
+        if (GlobalIdxToDaughterIdxs.contains(globalIdx)) {
           const auto& daughters = GlobalIdxToDaughterIdxs[globalIdx];
-          if (daughters.size() > 0) {
+          if (!daughters.empty()) {
             firstDaughter = daughters[0];
           }
           if (daughters.size() > 1) {
             secondDaughter = daughters[1];
           }
-          if (globalToVertexPosition.find(globalIdx) != globalToVertexPosition.end()) {
+          if (globalToVertexPosition.contains(globalIdx)) {
             const auto& vertexPos = globalToVertexPosition[globalIdx];
             secondaryVertexRadius = std::hypot(vertexPos[0] * 0.1, vertexPos[1] * 0.1);
           }
@@ -760,17 +759,17 @@ struct Alice3TrackingTranslator {
   }
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec w;
-  if (cfgc.options().hasOption("aod-file")) {
-    std::string inputFile = cfgc.options().get<std::string>("aod-file");
+  if (context.options().hasOption("aod-file")) {
+    auto inputFile = context.options().get<std::string>("aod-file");
     if (!inputFile.empty()) {
       LOG(info) << "  " << inputFile;
       TString tinputFile(inputFile.c_str());
       inputPath = gSystem->DirName(tinputFile);
     }
   }
-  w.push_back(adaptAnalysisTask<Alice3TrackingTranslator>(cfgc));
+  w.push_back(adaptAnalysisTask<Alice3TrackingTranslator>(context));
   return w;
 }
