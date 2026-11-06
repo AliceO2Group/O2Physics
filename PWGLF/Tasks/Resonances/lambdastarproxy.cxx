@@ -1222,6 +1222,9 @@ struct Lambdastarproxy {
     const AxisSpec mcMass{DiagnosticMassBins, 1.4, 1.8, "M_(d/2)K (GeV/c2)"};
     const AxisSpec probeMass{ProbeMassBins, 1.4, 1.8, "M_(d/2)K (GeV/c2)"};
     uint64_t payload = 0;
+    // Keep these numerically filled TH3 axes unlabelled. ROOT label-mode merges
+    // can collapse distinct Z tags, especially through empty/staged merges.
+    // SpeciesNames/ParentNames and the packed-axis formulas define the decoder.
     auto add3 = [&](std::string const& name, std::string const& title, std::vector<AxisSpec> const& axes) {
       auto h = histos.add<TH3>(name.c_str(), title.c_str(), HistType::kTH3D, axes, true);
       payload += static_cast<uint64_t>(h->GetNcells()) * 2 * sizeof(double);
@@ -1232,17 +1235,8 @@ struct Lambdastarproxy {
       if (lstarEnableMCProxySpecies.value != 0) {
         mcProxySpecies[sign] = add3("hMCProxySpecies" + suffix, "Selected proxy;species+51*(dTOF+2*kTOF+4*pTPC+8*regularMult)",
                                     {mcMass, pairPt, AxisSpec{SpeciesTagCount * SelectedPIDStates, -0.5, SpeciesTagCount * SelectedPIDStates - 0.5, "Species and detector state"}});
-        for (int state = 0; state < SelectedPIDStates; ++state) {
-          for (int tag = 0; tag < SpeciesTagCount; ++tag) {
-            const std::string label = speciesTagName(tag) + ";state=" + std::to_string(state);
-            mcProxySpecies[sign]->GetZaxis()->SetBinLabel(tag + SpeciesTagCount * state + 1, label.c_str());
-          }
-        }
         mcProxyOtherParents[sign] = add3("hMCProxyOtherParents" + suffix, "Selected Other: retained immediate common-mother class only",
                                          {mcMass, pairPt, AxisSpec{ParentClasses, -0.5, ParentClasses - 0.5, "Retained parent class"}});
-        for (int parent = 0; parent < ParentClasses; ++parent) {
-          mcProxyOtherParents[sign]->GetZaxis()->SetBinLabel(parent + 1, ParentNames[parent]);
-        }
       }
       if (lstarEnableProxyPIDProbes.value == 0) {
         continue;
@@ -1256,27 +1250,10 @@ struct Lambdastarproxy {
         probeMass2[role][sign] = add3(std::string(stem).append("Mass2").append(suffix), "Loose both-TOF proxy probes;TPC/TOF envelopes;regular multiplicity", {probeMass, m2, packed});
         probeTPC[role][sign] = add3(std::string(stem).append("TPC").append(suffix), "Same loose both-TOF proxy probes;TPC nSigma;regular multiplicity", {probeMass, AxisSpec{60, -ProbeTPCMax, ProbeTPCMax, "TPC nSigma for slot hypothesis"}, packed});
         probeTOF[role][sign] = add3(std::string(stem).append("TOF").append(suffix), "Same loose both-TOF proxy probes;TOF nSigma;regular multiplicity", {probeMass, AxisSpec{80, -ProbeTOFMax, ProbeTOFMax, "TOF nSigma for slot hypothesis"}, packed});
-        for (int region = 0; region < ProbeRegions; ++region) {
-          for (int momentum = 0; momentum < ProbeMomentumBins; ++momentum) {
-            for (int pair = 0; pair < ProbePairPtBins; ++pair) {
-              const int tag = pair + ProbePairPtBins * (momentum + ProbeMomentumBins * region);
-              const std::string label = "pair=" + std::to_string(pair) + ";p=" + std::to_string(momentum) + ";region=" + std::to_string(region);
-              probeMass2[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
-              probeTPC[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
-              probeTOF[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
-            }
-          }
-        }
       }
       if (doprocessMCReco) {
         mcProbeSpecies[sign] = add3("hMCProxyPIDProbeSpecies" + suffix, "Same loose probe pairs;species+51*nominalRegion;regular multiplicity",
                                     {probeMass, pairPt, AxisSpec{SpeciesTagCount * ProbeRegions, -0.5, SpeciesTagCount * ProbeRegions - 0.5, "Species plus nominal region"}});
-        for (int region = 0; region < ProbeRegions; ++region) {
-          for (int tag = 0; tag < SpeciesTagCount; ++tag) {
-            const std::string label = speciesTagName(tag) + ";region=" + std::to_string(region);
-            mcProbeSpecies[sign]->GetZaxis()->SetBinLabel(tag + SpeciesTagCount * region + 1, label.c_str());
-          }
-        }
       }
     }
     if (lstarEnableProxyPIDProbes.value != 0) {
