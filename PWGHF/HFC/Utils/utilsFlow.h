@@ -215,7 +215,6 @@ class HfcFlowHelper
         std::abort();
     }
 
-
     return (collRejMask == 0);
   }
 
