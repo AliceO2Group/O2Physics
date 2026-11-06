@@ -505,7 +505,7 @@ struct HfTaskCorrelationLcHadrons {
       if (bdtScorePrompt < mlOutputPrompt->at(effBinLc) || bdtScoreBkg > mlOutputBkg->at(effBinLc)) {
         continue;
       }
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (std::abs(trackDcaXY) >= dcaXYTrackMax || std::abs(trackDcaZ) >= dcaZTrackMax || pairEntry.trackTPCNClsCrossedRows() < nTpcCrossedRaws) {
         continue;
       }
 

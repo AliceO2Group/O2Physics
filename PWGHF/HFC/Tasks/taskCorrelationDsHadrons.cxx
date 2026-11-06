@@ -535,7 +535,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (std::abs(trackDcaXY) >= dcaXYTrackMax || std::abs(trackDcaZ) >= dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
 
