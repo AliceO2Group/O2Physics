@@ -32,7 +32,6 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -378,7 +377,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -396,7 +395,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -417,7 +416,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -438,7 +437,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -460,7 +459,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -481,7 +480,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -503,7 +502,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -524,7 +523,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -546,7 +545,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -565,7 +564,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -586,7 +585,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -607,7 +606,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -629,7 +628,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -650,7 +649,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -672,7 +671,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -693,7 +692,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -710,7 +709,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                                  TracksData const& tracks)
   {
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -724,7 +723,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                                  TracksData const& tracks)
   {
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -739,7 +738,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                                TracksMc const& tracks)
   {
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -753,7 +752,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                                TracksMc const& tracks)
   {
     float cent{-1.}, mult{-1.};
-    CentralityEstimator centDetector = static_cast<CentralityEstimator>(centEstimator.value);
+    auto centDetector = static_cast<CentralityEstimator>(centEstimator.value);
     if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
       return;
     }
@@ -763,7 +762,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processMcHadronHadronME, "Process Mixed Event for hadron candidates", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfDerivedDataCreatorCorrelationsReduced>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfDerivedDataCreatorCorrelationsReduced>(context)};
 }

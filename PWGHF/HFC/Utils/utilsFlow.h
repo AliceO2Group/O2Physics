@@ -25,11 +25,12 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
 #include <cmath>
+#include <csignal>
+#include <cstdlib>
 #include <utility>
 #include <vector>
 
@@ -265,7 +266,7 @@ class HfcFlowHelper
   }
 
  private:
-  std::vector<unsigned int> classMl{};
+  std::vector<unsigned int> classMl;
   float yCandMax{-999.f};
 };
 

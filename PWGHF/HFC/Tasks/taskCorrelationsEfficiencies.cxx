@@ -14,7 +14,6 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -31,20 +30,21 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
+#include <Framework/RunningWorkflowInfo.h>
 
 #include <TF1.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -467,7 +467,7 @@ struct HfTaskCorrelationsEfficiencies {
   PROCESS_SWITCH(HfTaskCorrelationsEfficiencies, processEffAssTracks, "Process efficiencies for associated tracks", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationsEfficiencies>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationsEfficiencies>(context)};
 }
