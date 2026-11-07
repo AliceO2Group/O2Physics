@@ -547,7 +547,7 @@ struct UpcCandProducerBarrel {
       const auto iTF = localTFIndex[bc.globalIndex()];
       const auto tfID = tfIDs[iTF];
       const int32_t rofInTF = getRofInTF(bcInTF);
-      bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] > 1;
+      bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] >= 1; // TODO investigate other options
       bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
 
       // Multiplicity for FT0C-based occupancy estimates
@@ -677,7 +677,7 @@ struct UpcCandProducerBarrel {
         const int bcInOrbit = globalBC % NBCsPerOrbit;
         const int32_t rofInTF = getRofInTF(bcInTF);
         bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
-        bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] > 1;
+        bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] >= 1;
         const auto distanceFT0 = minDistanceFT0[iTF][bcInTF];
         const auto distanceFV0 = minDistanceFV0[iTF][bcInTF];
         const auto distanceFDD = minDistanceFDD[iTF][bcInTF];
