@@ -41,8 +41,8 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
-#include <Framework/runDataProcessing.h>
 #include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
 #include <THnSparse.h>
