@@ -85,7 +85,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   Configurable<bool> ConfDCACutPtDep{"ConfDCACutPtDep", false, "Use pt dependent dca cut for tracks"};
 
   /// Partition for selected particles
-  Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCTOFPIDBit)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
                                               (aod::femtodreamparticle::pt < ConfMaxpT) &&
@@ -95,7 +95,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
                                                       (aod::femtodreamparticle::tempFitVar <= ConfMaxDCAxy)));
   ;
 
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> SelectedPartsMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> SelectedPartsMC = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCTOFPIDBit)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
                                                                             (aod::femtodreamparticle::pt < ConfMaxpT) &&
@@ -126,7 +126,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   Configurable<float> Conf_maxPt_V0{"Conf_maxPt_V0", 999., "Maximum pT of V0"};
 
   // Partition for selected particles
-  Partition<aod::FDParticles> SelectedV0s = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<aod::FDParticles> SelectedV0s = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                             (ncheckbit(aod::femtodreamparticle::cut, ConfCutV0)) &&
                                             (aod::femtodreamparticle::mLambda > Conf_minInvMass_V0) &&
                                             (aod::femtodreamparticle::mLambda < Conf_maxInvMass_V0) &&
@@ -134,7 +134,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
                                             (aod::femtodreamparticle::mAntiLambda < Conf_maxInvMassAnti_V0) &&
                                             (aod::femtodreamparticle::pt > Conf_minPt_V0) &&
                                             (aod::femtodreamparticle::pt < Conf_maxPt_V0);
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> SelectedV0sMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> SelectedV0sMC = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                                                           (ncheckbit(aod::femtodreamparticle::cut, ConfCutV0)) &&
                                                                           (aod::femtodreamparticle::mLambda > Conf_minInvMass_V0) &&
                                                                           (aod::femtodreamparticle::mLambda < Conf_maxInvMass_V0) &&

@@ -781,9 +781,9 @@ struct FemtoDreamProducerTaskReso {
     if constexpr (isTrackOrV0) {
       if constexpr (hasItsPid) {
         outputDebugParts(particle.sign(),
-                         (uint8_t)particle.tpcNClsFound(),
+                         static_cast<uint8_t>(particle.tpcNClsFound()),
                          particle.tpcNClsFindable(),
-                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         static_cast<uint8_t>(particle.tpcNClsCrossedRows()),
                          particle.tpcNClsShared(),
                          particle.tpcInnerParam(),
                          particle.itsNCls(),
@@ -817,9 +817,9 @@ struct FemtoDreamProducerTaskReso {
                          -999., -999., -999., -999., -999., -999., -999.);
       } else {
         outputDebugParts(particle.sign(),
-                         (uint8_t)particle.tpcNClsFound(),
+                         static_cast<uint8_t>(particle.tpcNClsFound()),
                          particle.tpcNClsFindable(),
-                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         static_cast<uint8_t>(particle.tpcNClsCrossedRows()),
                          particle.tpcNClsShared(),
                          particle.tpcInnerParam(),
                          particle.itsNCls(),

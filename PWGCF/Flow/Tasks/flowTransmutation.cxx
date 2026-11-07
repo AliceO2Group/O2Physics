@@ -123,7 +123,7 @@ struct FlowTransmutation {
   HistogramRegistry registryQA{"registryQA"};
   HistogramRegistry registryCorr{"registryCorr"};
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEventSelection.cfgCutVertex);
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   Service<ccdb::BasicCCDBManager> ccdb{};
   RCTFlagsChecker rctChecker{"CBT"};
   enum TrackSelectionGroup {

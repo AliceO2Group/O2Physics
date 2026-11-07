@@ -67,7 +67,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   Configurable<o2::aod::femtodreamparticle::cutContainerType> confCutPartAntiPart{"confCutPartAntiPart", 0, "Track - Selection bit from cutCulator for antipart"};
 
   /// Partition for selected particles
-  Partition<aod::FDParticles> selectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<aod::FDParticles> selectedParts = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= confPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, confTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, confTPCTOFPIDBit));
 
   /// V0 selection
@@ -123,22 +123,22 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   } Reso;
 
   // Partition for selected particles
-  Partition<aod::FDParticles> selectedV0s = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0));
-  Partition<aod::FDParticles> selectedCascades = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade));
+  Partition<aod::FDParticles> selectedV0s = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0));
+  Partition<aod::FDParticles> selectedCascades = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascade));
 
-  Partition<aod::FDParticles> selectedK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short));
+  Partition<aod::FDParticles> selectedK0Short = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0K0Short));
 
-  Partition<aod::FDParticles> selectedPhi = ((aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTPC)) ||
-                                             (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTOF)) ||
-                                             (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTPC)) ||
-                                             (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTOF))) &&
+  Partition<aod::FDParticles> selectedPhi = ((aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTPC)) ||
+                                             (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTOF)) ||
+                                             (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTPC)) ||
+                                             (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTOF))) &&
                                             ((aod::femtodreamparticle::mLambda > Reso.confMinInvMassReso) &&
                                              (aod::femtodreamparticle::mLambda < Reso.confMaxInvMassReso));
 
-  Partition<aod::FDParticles> selectedKStar = ((aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
-                                               (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
-                                               (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
-                                               (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) &&
+  Partition<aod::FDParticles> selectedKStar = ((aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
+                                               (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
+                                               (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
+                                               (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) &&
                                               ((aod::femtodreamparticle::mLambda > Reso.confMinInvMassReso) &&
                                                (aod::femtodreamparticle::mLambda < Reso.confMaxInvMassReso));
 
@@ -875,10 +875,10 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
                       femtoParticle.mAntiLambda());
         }
 
-        if ((femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) {
+        if ((femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) {
 
           std::vector<int> childIDs;
           const auto& children = femtoParticle.childrenIds();
@@ -1041,10 +1041,10 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
                       femtoParticle.mAntiLambda());
         }
 
-        if ((femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) {
+        if ((femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) {
 
           std::vector<int> childIDs;
           const auto& children = femtoParticle.childrenIds();
@@ -1184,10 +1184,10 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
 
       for (const auto& femtoParticle : parts) {
 
-        if ((femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
-            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) {
+        if ((femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
+            (femtoParticle.partType() == static_cast<uint8_t>(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) {
 
           const auto& posresoChild = parts.iteratorAt(femtoParticle.index() - 2);
           const auto& negresoChild = parts.iteratorAt(femtoParticle.index() - 1);

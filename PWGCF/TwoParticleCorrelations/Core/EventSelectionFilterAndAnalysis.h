@@ -181,12 +181,12 @@ inline bool EventSelectionFilterAndAnalysis::ComplexBrickHelper::Filter(uint64_t
         } */
     /* first the default */
     TList& deflst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getDefaultBricks();
-    bool acc = Filter(mask, bit, (CutBrick<float>*)deflst.At(0), mDefaultEstimatorIndex);
+    bool acc = Filter(mask, bit, dynamic_cast<CutBrick<float>*>(deflst.At(0)), mDefaultEstimatorIndex);
     atleastonealternative = atleastonealternative || acc;
     /* and now the variants */
     TList& varlst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getVariantBricks();
     for (int i = 0; i < varlst.GetEntries(); ++i) {
-      bool acc = Filter(mask, bit, (CutBrick<float>*)varlst.At(i), mAlternateEstimatorIndex[i]);
+      bool acc = Filter(mask, bit, dynamic_cast<CutBrick<float>*>(varlst.At(i)), mAlternateEstimatorIndex[i]);
       atleastonealternative = atleastonealternative || acc;
     }
     acceptcollision = acceptcollision && atleastonealternative;

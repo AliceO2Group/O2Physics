@@ -128,7 +128,7 @@ struct TwoParticleCorrelationsFilter {
 
     if ((collision.selflags() & collisionmask_forced) == collisionmask_forced && passOptions(collisionmask_opt, collision.selflags())) {
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selflags(), tracks.size());
-      acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(true));
+      acceptedcollisions(collision.centmult()[fMultiplicityIndex], static_cast<uint8_t>(true));
       int nAcceptedTracks = 0;
       for (const auto& track : tracks) {
         if ((track.trackflags() & trackmask_forced) == trackmask_forced && passOptions(trackmask_opt, track.trackflags())) {
@@ -140,7 +140,7 @@ struct TwoParticleCorrelationsFilter {
       }
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %d accepted tracks", collision.selflags(), nAcceptedTracks);
     } else {
-      acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(false));
+      acceptedcollisions(collision.centmult()[fMultiplicityIndex], static_cast<uint8_t>(false));
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsFilter, processRun2, "Process Run 2, i.e. over NOT stored derived data, two particle correlations filtering", true);
@@ -159,7 +159,7 @@ struct TwoParticleCorrelationsFilter {
 
     if ((collision.selflags() & collisionmask_forced) == collisionmask_forced && passOptions(collisionmask_opt, collision.selflags())) {
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selflags(), tracks.size());
-      acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(true));
+      acceptedcollisions(collision.centmult()[fMultiplicityIndex], static_cast<uint8_t>(true));
       int nAcceptedTracks = 0;
       for (const auto& track : tracks) {
         if ((track.trackflags() & trackmask_forced) == trackmask_forced && passOptions(trackmask_opt, track.trackflags())) {
@@ -171,7 +171,7 @@ struct TwoParticleCorrelationsFilter {
       }
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %d accepted tracks", collision.selflags(), nAcceptedTracks);
     } else {
-      acceptedcollisions(collision.centmult()[fMultiplicityIndex], uint8_t(false));
+      acceptedcollisions(collision.centmult()[fMultiplicityIndex], static_cast<uint8_t>(false));
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsFilter, processRun3, "Process Run 3, i.e. over stored derived data, two particle correlations filtering", false);

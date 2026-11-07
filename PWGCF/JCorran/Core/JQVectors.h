@@ -80,7 +80,7 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
           continue;
       }
 
-      UInt_t isub = (UInt_t)(track.eta() > 0.0);
+      UInt_t isub = static_cast<UInt_t>(track.eta() > 0.0);
       const Double_t phi = track.phi();
       const Double_t c1 = TMath::Cos(phi);
       const Double_t s1 = TMath::Sin(phi);

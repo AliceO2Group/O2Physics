@@ -96,13 +96,13 @@ struct femtoWorldPairTaskTrackPhi {
   Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
 
   /// Partition for particle 1 (proton)
-  Partition<aod::FemtoWorldParticles> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack)) && (aod::femtoworldparticle::pt < cfgPtHighPart1) && (aod::femtoworldparticle::pt > cfgPtLowPart1) // simple pT cuts
-                                                 && (aod::femtoworldparticle::eta < cfgEtaHighPart1) && (aod::femtoworldparticle::eta > cfgEtaLowPart1)                                                                                           // Eta cuts
-                                                 && (o2::aod::track::dcaXY < cfgDcaXYPart1) && (o2::aod::track::dcaZ < cfgDcaZPart1)                                                                                                              // DCA cuts for XY and Z
-                                                 && (aod::femtoworldparticle::tpcNClsFound > (uint8_t)cfgTpcClPart1)                                                                                                                              // Number of found TPC clusters
-                                                 && (aod::femtoworldparticle::tpcNClsCrossedRows > (uint8_t)cfgTpcCrosRoPart1)                                                                                                                    // Crossed rows TPC
-                                                 && (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart1) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart1)                                                                            //&& // chi2 cuts
-                                                 && (aod::femtoworldparticle::sign > int8_t(0));
+  Partition<aod::FemtoWorldParticles> partsOne = (aod::femtoworldparticle::partType == static_cast<uint8_t>(aod::femtoworldparticle::ParticleType::kTrack)) && (aod::femtoworldparticle::pt < cfgPtHighPart1) && (aod::femtoworldparticle::pt > cfgPtLowPart1) // simple pT cuts
+                                                 && (aod::femtoworldparticle::eta < cfgEtaHighPart1) && (aod::femtoworldparticle::eta > cfgEtaLowPart1)                                                                                                        // Eta cuts
+                                                 && (o2::aod::track::dcaXY < cfgDcaXYPart1) && (o2::aod::track::dcaZ < cfgDcaZPart1)                                                                                                                           // DCA cuts for XY and Z
+                                                 && (aod::femtoworldparticle::tpcNClsFound > static_cast<uint8_t>(cfgTpcClPart1))                                                                                                                              // Number of found TPC clusters
+                                                 && (aod::femtoworldparticle::tpcNClsCrossedRows > static_cast<uint8_t>(cfgTpcCrosRoPart1))                                                                                                                    // Crossed rows TPC
+                                                 && (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart1) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart1)                                                                                         //&& // chi2 cuts
+                                                 && (aod::femtoworldparticle::sign > static_cast<int8_t>(0));
 
   /// Histogramming for particle 1
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 0> trackHistoPartOne;
@@ -116,14 +116,14 @@ struct femtoWorldPairTaskTrackPhi {
   Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
 
   /// Partition for particle 2
-  Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kPhi)) && (aod::femtoworldparticle::pt < cfgPtHighPart2) && (aod::femtoworldparticle::pt > cfgPtLowPart2) // pT cuts
-                                                 && (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2);                                                                                        // Eta cuts
+  Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == static_cast<uint8_t>(aod::femtoworldparticle::ParticleType::kPhi)) && (aod::femtoworldparticle::pt < cfgPtHighPart2) && (aod::femtoworldparticle::pt > cfgPtLowPart2) // pT cuts
+                                                 && (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2);                                                                                                     // Eta cuts
 
   /// Histogramming for particle 2
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhi, 0> trackHistoPartTwo;
 
   // Partition for particle 3 (Phi daughters (K+ K-))
-  Partition<aod::FemtoWorldParticles> partsThree = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kPhiChild));
+  Partition<aod::FemtoWorldParticles> partsThree = (aod::femtoworldparticle::partType == static_cast<uint8_t>(aod::femtoworldparticle::ParticleType::kPhiChild));
 
   /// Histogramming for particle 3
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhiChild, 0> trackHistoPartThree;

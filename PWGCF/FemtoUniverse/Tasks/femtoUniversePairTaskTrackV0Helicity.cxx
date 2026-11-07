@@ -103,9 +103,9 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   /// Partitioning for particle 1
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
-  Partition<FemtoFullParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
-  Partition<FemtoRecoParticles> partsOneMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
+  Partition<FemtoFullParticles> partsOneMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
+  Partition<FemtoRecoParticles> partsOneMCReco = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
@@ -131,10 +131,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   } V0configs;
 
   /// Partitioning for particle 2
-  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
-  Partition<FemtoFullParticles> partsTwoMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
-  Partition<FemtoRecoParticles> partsTwoMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
-  Partition<FemtoTruthParticles> partsTwoMCTruth = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoFullParticles> partsTwoMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoRecoParticles> partsTwoMCReco = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoTruthParticles> partsTwoMCTruth = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
 
   /// Histogramming for particle 2
   /// Track-V0
@@ -1159,7 +1159,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     eventHisto.fillQA(col);
     auto groupPartsTwo = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     for (const auto& part : groupPartsTwo) {
-      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
+      if (part.partType() != static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
         continue;
 
       int pdgCode = static_cast<int>(part.tempFitVar());
