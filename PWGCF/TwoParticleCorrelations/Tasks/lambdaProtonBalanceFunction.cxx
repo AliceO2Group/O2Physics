@@ -3222,7 +3222,7 @@ struct LambdaProtonBalanceFunction {
       if (mc.mcCollisionId() != mcCollisionId) {
         continue;
       }
-      if (mc.pdgCode() != 3122) {
+      if (mc.pdgCode() != PDG_t::kLambda0) {
         continue;
       }
       ++nLambdaPrimSec;
@@ -3244,7 +3244,7 @@ struct LambdaProtonBalanceFunction {
       if (mc.mcCollisionId() != mcCollisionId) {
         continue;
       }
-      if (mc.pdgCode() != -3122) {
+      if (mc.pdgCode() != PDG_t::kLambda0Bar) {
         continue;
       }
       ++nAntiLambdaPrimSec;
@@ -3266,7 +3266,7 @@ struct LambdaProtonBalanceFunction {
       if (mc.mcCollisionId() != mcCollisionId) {
         continue;
       }
-      if (mc.pdgCode() != 2212) {
+      if (mc.pdgCode() != PDG_t::kProton) {
         continue;
       }
       ++nProtonPrimSec;
@@ -3288,7 +3288,7 @@ struct LambdaProtonBalanceFunction {
       if (mc.mcCollisionId() != mcCollisionId) {
         continue;
       }
-      if (mc.pdgCode() != -2212) {
+      if (mc.pdgCode() != PDG_t::kProtonBar) {
         continue;
       }
       ++nAntiProtonPrimSec;
