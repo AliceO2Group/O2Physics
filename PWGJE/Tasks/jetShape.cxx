@@ -668,11 +668,12 @@ struct JetShapeTask {
     return out;
   }
 
-  enum Pid2DRegion { RegIncAll = 0,
-                     RegIncJet,
-                     RegSignal,
-                     RegPerp,
-                     RegRand };
+  // Regions of the pid2D maps (int constants, not an enum: they are combined with float bin centres).
+  static constexpr int RegIncAll = 0; // inclusive, all events
+  static constexpr int RegIncJet = 1; // inclusive, events with an accepted jet
+  static constexpr int RegSignal = 2;
+  static constexpr int RegPerp = 3;
+  static constexpr int RegRand = 4;
 
   void fillMismatchTemplate(float p, float tpcPr, std::array<float, 2> const& mis, int region)
   {
@@ -692,7 +693,7 @@ struct JetShapeTask {
     constexpr float RBinWidth2D = 0.1f;
     constexpr float RMax2D = NRBins2D * RBinWidth2D;
     constexpr int Outside = -1;
-    static constexpr float JetPtEdges2D[NJetPtBins2D + 1] = {20.f, 40.f, 60.f, 80.f, 140.f};
+    static constexpr std::array<float, NJetPtBins2D + 1> JetPtEdges2D = {20.f, 40.f, 60.f, 80.f, 140.f};
     if (r < 0.f || r >= RMax2D) {
       return Outside;
     }
