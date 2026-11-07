@@ -561,28 +561,28 @@ struct FemtoUniversePairTaskTrackPhi {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = o2::constants::physics::MassKPlus;
-      float mMassTwo = o2::constants::physics::MassKMinus;
+      float mMassKp = o2::constants::physics::MassKPlus;
+      float mMassKm = o2::constants::physics::MassKMinus;
 
       for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsKaons, partsKaons))) {
         if ((confFillMinvBackgroundKpKp) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
-          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
-          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassKp);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassKp);
           TLorentzVector sumVec(part1Vec);
           sumVec += part2Vec;
           registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
         }
         if ((confFillMinvBackgroundKmKm) && (kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
-          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
-          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassKm);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassKm);
 
           TLorentzVector sumVec(part1Vec);
           sumVec += part2Vec;
           registryPhiMinvBackground.fill(HIST("InvariantMassKmKm"), sumVec.M());
         }
         if ((confFillMinvBackgroundKpKm) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == -1)) {
-          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
-          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassKp);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassKm);
 
           TLorentzVector sumVec(part1Vec);
           sumVec += part2Vec;
@@ -784,6 +784,46 @@ struct FemtoUniversePairTaskTrackPhi {
   }
 
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processMCReco, "Process MC reco data", false);
+
+  void processMinvBackground(([[maybe_unused]] FilteredFemtoFullParticles const& parts))
+  {
+    if (!confFillMinvBackground) {
+      return;
+    }
+
+    TLorentzVector part1Vec;
+    TLorentzVector part2Vec;
+
+    float mMassOne = o2::constants::physics::MassKPlus;
+    float mMassTwo = o2::constants::physics::MassKMinus;
+
+    for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsKaons, partsKaons))) {
+      if ((confFillMinvBackgroundKpKp) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
+      }
+      if ((confFillMinvBackgroundKmKm) && (kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        registryPhiMinvBackground.fill(HIST("InvariantMassKmKm"), sumVec.M());
+      }
+      if ((confFillMinvBackgroundKpKm) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == -1)) {
+        part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        registryPhiMinvBackground.fill(HIST("InvariantMassKpKm"), sumVec.M());
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processMinvBackground, "Enable processing invariant mass background for kaon pairs (K+K+, K-K-, K+K-)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
