@@ -661,6 +661,31 @@ struct AntinucleiInJets {
     return (particle.isPhysicalPrimary() || fromHF);
   }
 
+  // Check if particle is from heavy-flavor hadron decay
+  bool isFromHF(aod::McParticle const& particle, aod::McParticles const& mcParticles)
+  {
+    // Keep only pi, K, p, d, e, mu
+    int pdg = std::abs(particle.pdgCode());
+    if (!(pdg == PDG_t::kPiPlus || pdg == PDG_t::kKPlus || pdg == PDG_t::kProton || pdg == o2::constants::physics::Pdg::kDeuteron || pdg == PDG_t::kElectron || pdg == PDG_t::kMuonMinus))
+      return false;
+
+    // Constants for identifying heavy-flavor (charm and bottom) content from PDG codes
+    static constexpr int CharmQuark = 4;
+    static constexpr int BottomQuark = 5;
+    static constexpr int Hundreds = 100;
+    static constexpr int Thousands = 1000;
+
+    // Check if particle is from heavy-flavor decay
+    bool fromHF = false;
+    if (particle.has_mothers()) {
+      auto mother = mcParticles.iteratorAt(particle.mothersIds()[0]);
+      int motherPdg = std::abs(mother.pdgCode());
+      fromHF = (motherPdg / Hundreds == CharmQuark || motherPdg / Hundreds == BottomQuark || motherPdg / Thousands == CharmQuark || motherPdg / Thousands == BottomQuark);
+    }
+
+    return fromHF;
+  }
+
   // Evaluate proton–neutron coalescence for deuteron formation
   template <typename ReducedPart>
   bool passDeuteronCoalescence(const ReducedPart& p, const ReducedPart& n, double p0, TRandom3& random)
@@ -2932,6 +2957,7 @@ struct AntinucleiInJets {
     // Define per-event particle containers
     std::vector<ReducedParticle> chargedParticles;
     std::vector<ReducedParticle> protons;
+    std::vector<ReducedParticle> protonsFromHF;
     std::vector<ReducedParticle> neutrons;
     std::vector<fastjet::PseudoJet> fjParticles;
 
@@ -2945,6 +2971,7 @@ struct AntinucleiInJets {
       // Clear containers at the start of the event loop
       chargedParticles.clear();
       protons.clear();
+      protonsFromHF.clear();
       neutrons.clear();
       fjParticles.clear();
 
@@ -2972,6 +2999,11 @@ struct AntinucleiInJets {
           protons.push_back({particle.px(), particle.py(), particle.pz(), particle.pdgCode(), mcId, false});
         }
 
+        // Store Protons from HF decays
+        if (isFromHF(particle, mcParticles) && std::abs(particle.pdgCode()) == PDG_t::kProton) {
+          protonsFromHF.push_back({particle.px(), particle.py(), particle.pz(), particle.pdgCode(), mcId, false});
+        }
+
         // Store Neutrons
         if (particle.isPhysicalPrimary() && std::abs(particle.pdgCode()) == PDG_t::kNeutron) {
           neutrons.push_back({particle.px(), particle.py(), particle.pz(), particle.pdgCode(), mcId, false});
@@ -2981,16 +3013,11 @@ struct AntinucleiInJets {
         if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
           continue;
 
-        // Select particles within acceptance
-        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < MinPtParticle)
+        // Select particles within acceptance and skip protons (will be added after coalescence)
+        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < MinPtParticle || std::abs(particle.pdgCode()) == PDG_t::kProton)
           continue;
         chargedParticles.push_back({particle.px(), particle.py(), particle.pz(), particle.pdgCode(), mcId, false});
       }
-
-      // Reject empty events
-      if (chargedParticles.empty())
-        continue;
-      registryMC.fill(HIST("genEventsCoalescence"), 2.5);
 
       // Build deuterons
       for (int ip = 0; ip < static_cast<int>(protons.size()); ip++) {
@@ -3005,6 +3032,10 @@ struct AntinucleiInJets {
 
           if (passDeuteronCoalescence(proton, neutron, coalescenceMomentum, mRand)) {
 
+            // If proton and neutron are used by coalescence they are removed
+            neutron.used = true;
+            proton.used = true;
+
             int sign = (proton.pdgCode > 0) ? +1 : -1;
             int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
 
@@ -3014,17 +3045,39 @@ struct AntinucleiInJets {
             double energyDeut = std::sqrt(pxDeut * pxDeut + pyDeut * pyDeut + pzDeut * pzDeut + massDeut * massDeut);
             LorentzVector pd(pxDeut, pyDeut, pzDeut, energyDeut);
             if (pd.Eta() < minEta || pd.Eta() > maxEta || pd.Pt() < MinPtParticle)
-              continue;
+              break;
 
             // Store Deuteron
             chargedParticles.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, proton.mcIndex, false});
-
-            neutron.used = true;
-            proton.used = true;
             break;
           }
         }
       }
+
+      // Add unused protons
+      for (int ip = 0; ip < static_cast<int>(protons.size()); ip++) {
+        auto& proton = protons[ip];
+        if (proton.used)
+          continue;
+        if (proton.eta() < minEta || proton.eta() > maxEta || proton.pt() < MinPtParticle)
+          continue;
+        chargedParticles.push_back({proton.px, proton.py, proton.pz, proton.pdgCode, proton.mcIndex, proton.used});
+      }
+
+      // Add protons from HF decays
+      for (int ip = 0; ip < static_cast<int>(protonsFromHF.size()); ip++) {
+        auto& proton = protonsFromHF[ip];
+        if (proton.used)
+          continue;
+        if (proton.eta() < minEta || proton.eta() > maxEta || proton.pt() < MinPtParticle)
+          continue;
+        chargedParticles.push_back({proton.px, proton.py, proton.pz, proton.pdgCode, proton.mcIndex, proton.used});
+      }
+
+      // Reject empty events
+      if (chargedParticles.empty())
+        continue;
+      registryMC.fill(HIST("genEventsCoalescence"), 2.5);
 
       for (const auto& part : chargedParticles) {
         if (part.used)
@@ -3086,10 +3139,29 @@ struct AntinucleiInJets {
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
         for (const auto& particle : jetConstituents) {
+
+          // Calculate weight for antiprotons
+          double wAntipJet = 1.0;
+          if (applyReweighting) {
+            if (particle.pt() >= antiprotonsInsideJets->GetXaxis()->GetXmin() && particle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsInsideJets->FindBin(particle.pt());
+              wAntipJet = antiprotonsInsideJets->GetBinContent(ipt);
+            }
+          }
+
+          // Calculate weight for antideuterons
+          double wAntidJet = 1.0;
+          if (applyReweighting) {
+            if (0.5 * particle.pt() >= antiprotonsInsideJets->GetXaxis()->GetXmin() && 0.5 * particle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsInsideJets->FindBin(0.5 * particle.pt());
+              wAntidJet = antiprotonsInsideJets->GetBinContent(ipt) * antiprotonsInsideJets->GetBinContent(ipt);
+            }
+          }
+
           if (particle.user_index() == PDG_t::kProtonBar)
-            registryMC.fill(HIST("antiproton_coal_jet"), particle.pt());
+            registryMC.fill(HIST("antiproton_coal_jet"), particle.pt(), wAntipJet);
           if (particle.user_index() == -o2::constants::physics::Pdg::kDeuteron)
-            registryMC.fill(HIST("antideuteron_coal_jet"), particle.pt());
+            registryMC.fill(HIST("antideuteron_coal_jet"), particle.pt(), wAntidJet);
         }
 
         // Set up two perpendicular cone axes for underlying event estimation
@@ -3119,11 +3191,29 @@ struct AntinucleiInJets {
           if (deltaRUe1 > rJet && deltaRUe2 > rJet)
             continue;
 
+          // Calculate weight for antiprotons
+          double wAntipUE = 1.0;
+          if (applyReweighting) {
+            if (chParticle.pt() >= antiprotonsPerpCone->GetXaxis()->GetXmin() && chParticle.pt() < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsPerpCone->FindBin(chParticle.pt());
+              wAntipUE = antiprotonsPerpCone->GetBinContent(ipt);
+            }
+          }
+
+          // Calculate weight for antideuterons
+          double wAntidUE = 1.0;
+          if (applyReweighting) {
+            if (0.5 * chParticle.pt() >= antiprotonsPerpCone->GetXaxis()->GetXmin() && 0.5 * chParticle.pt() < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
+              int ipt = antiprotonsPerpCone->FindBin(0.5 * chParticle.pt());
+              wAntidUE = antiprotonsPerpCone->GetBinContent(ipt) * antiprotonsPerpCone->GetBinContent(ipt);
+            }
+          }
+
           // Fill histograms for UE
           if (chParticle.pdgCode == PDG_t::kProtonBar)
-            registryMC.fill(HIST("antiproton_coal_ue"), chParticle.pt());
+            registryMC.fill(HIST("antiproton_coal_ue"), chParticle.pt(), wAntipUE);
           if (chParticle.pdgCode == -o2::constants::physics::Pdg::kDeuteron)
-            registryMC.fill(HIST("antideuteron_coal_ue"), chParticle.pt());
+            registryMC.fill(HIST("antideuteron_coal_ue"), chParticle.pt(), wAntidUE);
         }
       }
       if (isAtLeastOneJetSelected) {

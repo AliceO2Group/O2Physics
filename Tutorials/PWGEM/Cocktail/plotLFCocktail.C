@@ -34,8 +34,8 @@ void loadHistos(TFile* file, TH1F* hists[], const TString& name_extra, int rebin
                 int nEvents)
 {
   for (int i = 0; i < nHists; i++) {
-    hists[i] = (TH1F*)file->GetDirectory("em-lmee-lf-cocktail")
-                 ->Get(TString("mee") + name_extra + histNames[i]);
+    hists[i] = dynamic_cast<TH1F*>(file->GetDirectory("em-lmee-lf-cocktail")
+                                     ->Get(TString("mee") + name_extra + histNames[i]));
     hists[i]->Rebin(rebin);
     hists[i]->Scale(1. / nEvents);
     hists[i]->SetTitle(histLegends[i]);
@@ -48,7 +48,7 @@ void plotLFCocktail(const TString& filename = "AnalysisResults.root", int rebin 
   TFile* file = TFile::Open(filename.Data());
 
   TH1I* hNEvents =
-    (TH1I*)file->GetDirectory("em-lmee-lf-cocktail")->Get("NEvents");
+    dynamic_cast<TH1I*>(file->GetDirectory("em-lmee-lf-cocktail")->Get("NEvents"));
   int nEvents = hNEvents->GetBinContent(1);
 
   loadHistos(file, mee, "", rebin, nEvents);

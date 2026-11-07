@@ -18,7 +18,6 @@
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -52,7 +51,6 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
-#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -136,7 +134,7 @@ struct DalitzEEQC {
   float d_bz = 0;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-  static constexpr std::array<std::string_view, 2> event_cut_types = {"before/", "after/"};
+  // static constexpr std::array<std::string_view, 2> event_cut_types = {"before/", "after/"}; // unused
 
   void init(InitContext& /*context*/)
   {
@@ -198,7 +196,7 @@ struct DalitzEEQC {
   void addhistograms()
   {
     // event info
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    fEMEventCut.addEventHistograms(&fRegistry);
 
     // pair info
     const AxisSpec axis_mass{200, 0, 0.2, "m_{ee} (GeV/c^{2})"};
@@ -246,6 +244,7 @@ struct DalitzEEQC {
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
+    fEMEventCut.SetTrackOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefineDileptonCut()
@@ -369,16 +368,12 @@ struct DalitzEEQC {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
+      fEMEventCut.fillEventInfo<0>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange()) || !(collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
-        continue;
-      }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      fEMEventCut.fillEventInfo<1>(&fRegistry, collision);
+      fEMEventCut.fillAccepted(&fRegistry);
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectronda::pmeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectronda::pmeventId, collision.globalIndex(), cache);

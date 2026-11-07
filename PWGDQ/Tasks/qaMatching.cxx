@@ -1282,7 +1282,7 @@ struct QaMatching {
     }
 
     int nTrackTypes = static_cast<int>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack) + 1;
-    AxisSpec trackTypeAxis = {static_cast<int>(nTrackTypes), 0.0, static_cast<double>(nTrackTypes), "track type"};
+    AxisSpec trackTypeAxis = {nTrackTypes, 0.0, static_cast<double>(nTrackTypes), "track type"};
     registry.add("nTracksPerType", "Number of tracks per type", {HistType::kTH1F, {trackTypeAxis}});
 
     AxisSpec tracksMultiplicityAxis = {cfgMftTrackMultiplicityMax, 0, static_cast<double>(cfgMftTrackMultiplicityMax), "tracks multiplicity"};

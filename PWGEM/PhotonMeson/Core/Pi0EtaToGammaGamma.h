@@ -26,7 +26,6 @@
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EMPhoton.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/NMHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 // Dilepton headers
@@ -425,7 +424,8 @@ struct Pi0EtaToGammaGamma {
     emh1 = new o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::photonmeson::utils::EMPhoton>(ndepth);
     emh2 = new o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::photonmeson::utils::EMPhoton>(ndepth);
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    DefineEMEventCut();
+    fEMEventCut.addEventHistograms(&fRegistry);
     std::vector<double> occBinsForHs(occ_bin_edges.begin(), occ_bin_edges.end());
     std::vector<double> epBinsForHs(ep_bin_edges.begin(), ep_bin_edges.end());
     std::vector<double> vtxBinsForHs(zvtx_bin_edges.begin(), zvtx_bin_edges.end());
@@ -434,7 +434,6 @@ struct Pi0EtaToGammaGamma {
     } else {
       o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, false, "#gamma#gamma", cfgSparseFullAxes.value, occBinsForHs, epBinsForHs, vtxBinsForHs, cfgNbinsMass, {cfgMassBinRange->at(0), cfgMassBinRange->at(1)});
     }
-    DefineEMEventCut();
     DefinePCMCut();
 
     mPhotonClassSelA = o2::aod::pwgem::photonmeson::utils::pairutil::buildV0PhotonClassSelection(photonclassA);
@@ -518,6 +517,8 @@ struct Pi0EtaToGammaGamma {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetTrackOccupancyRange(eventcuts.cfgTrackOccupancyMin, eventcuts.cfgTrackOccupancyMax);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
   }
 
   void DefinePCMCut()
@@ -769,13 +770,12 @@ struct Pi0EtaToGammaGamma {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, weight);
+      fEMEventCut.fillEventInfo<0>(&fRegistry, collision, weight);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, weight);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, weight); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, weight);  // accepted
+      fEMEventCut.fillEventInfo<1>(&fRegistry, collision, weight);
+      fEMEventCut.fillAccepted(&fRegistry, weight);
 
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;
       if (zbin < 0) {

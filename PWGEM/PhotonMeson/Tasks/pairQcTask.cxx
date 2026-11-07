@@ -18,7 +18,6 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/AnalyticV0.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
@@ -389,7 +388,7 @@ struct PairQCTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    fEMEventCut.addEventHistograms(&fRegistry);
     fRegistry.add("Photon/hPtEtaPhi", "selected V0 photons;p_{T} (GeV/c);#eta;#varphi (rad)", kTH3F, {{100, 0.f, 2.f}, {40, -0.8f, 0.8f}, {72, 0.f, 6.2832f}}, true); // o2-linter: disable=magic-number (axis definition)
     fRegistry.add("Photon/hNPhotonsPerEvent", "selected V0 photons per event;N_{#gamma};events", kTH1F, {{21, -0.5f, 20.5f}}, true);
     fRegistry.add("Photon/hV0LegClass", "leg classes of the selected V0s;;V0s", kTH1F, {makeAxisEnum(kNV0Classes, kV0ClassTitle)}, true);
@@ -442,6 +441,8 @@ struct PairQCTask {
     fEMEventCut.SetRequireGoodITSLayer3(eventcuts.cfgRequireGoodITSLayer3);
     fEMEventCut.SetRequireGoodITSLayer0123(eventcuts.cfgRequireGoodITSLayer0123);
     fEMEventCut.SetRequireGoodITSLayersAll(eventcuts.cfgRequireGoodITSLayersAll);
+    fEMEventCut.SetTrackOccupancyRange(eventcuts.cfgTrackOccupancyMin, eventcuts.cfgTrackOccupancyMax);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
   }
 
   void definePCMCut()
@@ -1004,7 +1005,7 @@ struct PairQCTask {
           }
           if (mcutil::classifyDupPair(a.mc, b.mc) == mcutil::DupClass::SameMcPhoton) {
             // 0 no split leg, 1 split e+, 2 split e-, 3 both
-            const float splitType = static_cast<float>((split[0] ? 1 : 0) + (split[1] ? 2 : 0)); // o2-linter: disable=magic-number (bit code, see booking)
+            const auto splitType = static_cast<float>((split[0] ? 1 : 0) + (split[1] ? 2 : 0)); // o2-linter: disable=magic-number (bit code, see booking)
             fRegistry.fill(HIST("Dedup/MC/hSamePhotonDuplicateType"), splitType);
             fRegistry.fill(HIST("Dedup/MC/hSamePhotonDuplicateType_vs_Flagged"), splitType, flagged ? 1.f : 0.f);
             fRegistry.fill(HIST("Dedup/MC/hDupTrackClassMatrix"), static_cast<float>(a.dedupCand.nITSTPC), static_cast<float>(b.dedupCand.nITSTPC));
@@ -1413,13 +1414,12 @@ struct PairQCTask {
           centralitySelection.cfgCentMax < cent[centralitySelection.cfgCentEstimator]) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, 1.f);
+      fEMEventCut.fillEventInfo<0>(&fRegistry, collision, 1.f);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, 1.f);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // o2-linter: disable=magic-number (counter bin, as in photonhbt)
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // o2-linter: disable=magic-number (counter bin, as in photonhbt)
+      fEMEventCut.fillEventInfo<1>(&fRegistry, collision, 1.f);
+      fEMEventCut.fillAccepted(&fRegistry);
       auto photonsColl = photons.sliceBy(perCollisionPCM, collision.globalIndex());
 
       collectPhotons<IsMC, decltype(photonsColl), TLegs>(photonsColl, mcParticles, collision.posZ(), cands);
@@ -1454,7 +1454,7 @@ struct PairQCTask {
   PROCESS_SWITCH(PairQCTask, processMC, "pair QC on MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<PairQCTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<PairQCTask>(context)};
 }

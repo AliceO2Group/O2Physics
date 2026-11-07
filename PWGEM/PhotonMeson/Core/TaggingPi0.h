@@ -23,7 +23,6 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EMPhoton.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 //
 #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
@@ -244,10 +243,10 @@ struct TaggingPi0 {
     emh1 = new MyEMH(ndepth);
     emh2 = new MyEMH(ndepth);
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    DefineEMEventCut();
+    fEMEventCut.addEventHistograms(&fRegistry);
 
     addHistogrms();
-    DefineEMEventCut();
     DefinePCMCut();
     DefineDileptonCut();
     DefineEMCCut();
@@ -336,6 +335,8 @@ struct TaggingPi0 {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetTrackOccupancyRange(eventcuts.cfgTrackOccupancyMin, eventcuts.cfgTrackOccupancyMax);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
   }
 
   void DefinePCMCut()
@@ -463,13 +464,12 @@ struct TaggingPi0 {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, weight);
+      fEMEventCut.fillEventInfo<0>(&fRegistry, collision, weight);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, weight);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, weight); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, weight);  // accepted
+      fEMEventCut.fillEventInfo<1>(&fRegistry, collision, weight);
+      fEMEventCut.fillAccepted(&fRegistry, weight);
 
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;
       if (zbin < 0) {
