@@ -666,10 +666,10 @@ struct CascadeCorrelations {
       if (!effList) {
         LOGF(fatal, "null ptr in efficiency list!");
       }
-      hEffXiMin = static_cast<TH1D*>(effList->FindObject("hXiMinEff"));
-      hEffXiPlus = static_cast<TH1D*>(effList->FindObject("hXiPlusEff"));
-      hEffOmegaMin = static_cast<TH1D*>(effList->FindObject("hOmegaMinEff"));
-      hEffOmegaPlus = static_cast<TH1D*>(effList->FindObject("hOmegaPlusEff"));
+      hEffXiMin = dynamic_cast<TH1D*>(effList->FindObject("hXiMinEff"));
+      hEffXiPlus = dynamic_cast<TH1D*>(effList->FindObject("hXiPlusEff"));
+      hEffOmegaMin = dynamic_cast<TH1D*>(effList->FindObject("hOmegaMinEff"));
+      hEffOmegaPlus = dynamic_cast<TH1D*>(effList->FindObject("hOmegaPlusEff"));
     }
 
     zorroSummary.setObject(zorro.getZorroSummary());

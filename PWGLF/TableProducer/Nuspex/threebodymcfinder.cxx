@@ -69,8 +69,8 @@ struct threebodymcfinder {
   void init(InitContext&)
   {
     // initialize histograms
-    const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
-    const AxisSpec axisPt{(int)100, +0.0f, +10.0f, "p_{T} (GeV/c)"};
+    const AxisSpec axisNTimesCollRecoed{10, -0.5f, +9.5f, ""};
+    const AxisSpec axisPt{100, +0.0f, +10.0f, "p_{T} (GeV/c)"};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
     histos.add("hNDaughters", "hNDaughters", kTH1F, {axisNTimesCollRecoed});
