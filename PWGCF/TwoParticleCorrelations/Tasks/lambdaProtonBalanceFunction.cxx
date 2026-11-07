@@ -58,7 +58,6 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -72,7 +71,7 @@ using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                            aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl,
                            aod::pidTOFPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFEl,
                            aod::pidTOFbeta, aod::TrackSelection>;
-// MC-labelled versions used by processMCEfficiency and processMCRecBF
+// MC-labelled versions used only by processMCEfficiency (efficiency maps)
 using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
 using MyV0sMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
@@ -1366,20 +1365,18 @@ struct LambdaProtonBalanceFunction {
     registryOther.add("hNSelectedPrimAntiProtons", "Number of selected primary antiprotons per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
     registryOther.add("hNSelLambda", "Number of selected Lambda candidates per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
     registryOther.add("hNSelAntiLambda", "Number of selected AntiLambda candidates per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-
-    // ── Unweighted reconstructed counts per event ────────────────────────
-    registryOther.add("hN_Lambda_reco1", "Stage 1: selected Lambda per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_AntiLambda_reco1", "Stage 1: selected AntiLambda per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_Proton_reco1", "Stage 1: selected Proton per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_AntiProton_reco1", "Stage 1: selected AntiProton per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_Lambda_PrimSec_reco", "Stage 2: PDG-matched primary + secondary Lambda per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_AntiLambda_PrimSec_reco", "Stage 2: PDG-matched primary + secondary AntiLambda per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_Proton_PrimSec_reco", "Stage 2: PDG-matched primary + secondary Proton per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_AntiProton_PrimSec_reco", "Stage 2: PDG-matched primary + secondary AntiProton per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_Lambda_prim_reco", "Stage 3: PDG-matched physical primary Lambda per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_AntiLambda_prim_reco", "Stage 3: PDG-matched physical primary AntiLambda per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_Proton_prim_reco", "Stage 3: PDG-matched physical primary Proton per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
-    registryOther.add("hN_AntiProton_prim_reco", "Stage 3: PDG-matched physical primary AntiProton per event (unweighted)", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Lambda_reco1", "Stage 1: selected reconstructed Lambda per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiLambda_reco1", "Stage 1: selected reconstructed AntiLambda per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Proton_reco1", "Stage 1: selected reconstructed Proton per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiProton_reco1", "Stage 1: selected reconstructed AntiProton per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Lambda_PrimSec_reco", "Stage 2: primary and secondary truth-matched Lambda per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiLambda_PrimSec_reco", "Stage 2: primary and secondary truth-matched AntiLambda per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Proton_PrimSec_reco", "Stage 2: primary and secondary truth-matched Proton per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiProton_PrimSec_reco", "Stage 2: primary and secondary truth-matched AntiProton per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Lambda_prim_reco", "Stage 3: physical-primary truth-matched Lambda per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiLambda_prim_reco", "Stage 3: physical-primary truth-matched AntiLambda per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Proton_prim_reco", "Stage 3: physical-primary truth-matched Proton per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiProton_prim_reco", "Stage 3: physical-primary truth-matched AntiProton per event (unweighted);N;Events", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
     // ── V0-daughter veto QA counters ─────────────────────────────────────
     // Proton veto counters
     registryOther.add("hNPrimProtonBeforeVeto", "Proton candidates before V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
@@ -3188,36 +3185,128 @@ struct LambdaProtonBalanceFunction {
     // ─────────────────────────────────────────────────────────────────────
   }
 
- private:
-  static bool usableMCIndex(aod::McParticles const* table, int64_t id)
+  void fillStage23Counts(int64_t /*mcCollisionId*/,
+                         std::vector<aod::V0Datas::iterator> const& /*selectedLambdas*/,
+                         std::vector<aod::V0Datas::iterator> const& /*selectedAntiLambdas*/,
+                         std::vector<MyTracks::iterator> const& /*selectedPrimProtons*/,
+                         std::vector<MyTracks::iterator> const& /*selectedPrimAntiProtons*/)
   {
-    // has_mcParticle() tests only id >= 0 in ASoA; also check the bound table range.
-    return table != nullptr && id >= 0 && id >= static_cast<int64_t>(table->offset()) &&
-           id - static_cast<int64_t>(table->offset()) < table->size();
   }
 
-  template <typename TLabel, typename TCandidate>
-  static std::pair<bool, bool> matchRecoCandidate(TCandidate const& candidate, int expectedPDG, int64_t mcCollisionId)
+  void fillStage23Counts(int64_t mcCollisionId,
+                         std::vector<MyV0sMC::iterator> const& selectedLambdas,
+                         std::vector<MyV0sMC::iterator> const& selectedAntiLambdas,
+                         std::vector<MyTracksMC::iterator> const& selectedPrimProtons,
+                         std::vector<MyTracksMC::iterator> const& selectedPrimAntiProtons)
   {
-    if (!candidate.has_mcParticle()) {
-      return {false, false};
+    // Stage 2 and Stage 3 counting; the selected reconstructed containers remain unchanged.
+    int nLambdaPrimSec = 0;
+    int nAntiLambdaPrimSec = 0;
+    int nProtonPrimSec = 0;
+    int nAntiProtonPrimSec = 0;
+    int nLambdaPrim = 0;
+    int nAntiLambdaPrim = 0;
+    int nProtonPrim = 0;
+    int nAntiProtonPrim = 0;
+
+    for (const auto& candidate : selectedLambdas) {
+      if (!candidate.has_mcParticle()) {
+        continue;
+      }
+      const auto* truth = static_cast<aod::mcv0label::McParticleId const&>(candidate).getCurrent();
+      const int64_t id = candidate.mcParticleId();
+      if (!usableMCIndex(truth, id)) {
+        continue;
+      }
+      const auto mc = truth->rawIteratorAt(id - truth->offset());
+      if (mc.mcCollisionId() != mcCollisionId) {
+        continue;
+      }
+      if (mc.pdgCode() != 3122) {
+        continue;
+      }
+      ++nLambdaPrimSec;
+      if (mc.isPhysicalPrimary()) {
+        ++nLambdaPrim;
+      }
     }
-    // The label column binds the full truth table; the process argument may be
-    // sliced to the current MC collision. Validate the index before dereferencing.
-    const auto* truth = static_cast<TLabel const&>(candidate).getCurrent();
-    const int64_t id = candidate.mcParticleId();
-    if (!usableMCIndex(truth, id)) {
-      return {false, false};
+
+    for (const auto& candidate : selectedAntiLambdas) {
+      if (!candidate.has_mcParticle()) {
+        continue;
+      }
+      const auto* truth = static_cast<aod::mcv0label::McParticleId const&>(candidate).getCurrent();
+      const int64_t id = candidate.mcParticleId();
+      if (!usableMCIndex(truth, id)) {
+        continue;
+      }
+      const auto mc = truth->rawIteratorAt(id - truth->offset());
+      if (mc.mcCollisionId() != mcCollisionId) {
+        continue;
+      }
+      if (mc.pdgCode() != -3122) {
+        continue;
+      }
+      ++nAntiLambdaPrimSec;
+      if (mc.isPhysicalPrimary()) {
+        ++nAntiLambdaPrim;
+      }
     }
-    const auto mc = truth->rawIteratorAt(id - static_cast<int64_t>(truth->offset()));
-    if (mc.mcCollisionId() != mcCollisionId || mc.pdgCode() != expectedPDG) {
-      return {false, false};
+
+    for (const auto& candidate : selectedPrimProtons) {
+      if (!candidate.has_mcParticle()) {
+        continue;
+      }
+      const auto* truth = static_cast<aod::mctracklabel::McParticleId const&>(candidate).getCurrent();
+      const int64_t id = candidate.mcParticleId();
+      if (!usableMCIndex(truth, id)) {
+        continue;
+      }
+      const auto mc = truth->rawIteratorAt(id - truth->offset());
+      if (mc.mcCollisionId() != mcCollisionId) {
+        continue;
+      }
+      if (mc.pdgCode() != 2212) {
+        continue;
+      }
+      ++nProtonPrimSec;
+      if (mc.isPhysicalPrimary()) {
+        ++nProtonPrim;
+      }
     }
-    // First flag: PDG-matched; second flag: physical primary.
-    return {true, mc.isPhysicalPrimary()};
+
+    for (const auto& candidate : selectedPrimAntiProtons) {
+      if (!candidate.has_mcParticle()) {
+        continue;
+      }
+      const auto* truth = static_cast<aod::mctracklabel::McParticleId const&>(candidate).getCurrent();
+      const int64_t id = candidate.mcParticleId();
+      if (!usableMCIndex(truth, id)) {
+        continue;
+      }
+      const auto mc = truth->rawIteratorAt(id - truth->offset());
+      if (mc.mcCollisionId() != mcCollisionId) {
+        continue;
+      }
+      if (mc.pdgCode() != -2212) {
+        continue;
+      }
+      ++nAntiProtonPrimSec;
+      if (mc.isPhysicalPrimary()) {
+        ++nAntiProtonPrim;
+      }
+    }
+
+    registryOther.fill(HIST("hN_Lambda_PrimSec_reco"), static_cast<float>(nLambdaPrimSec));
+    registryOther.fill(HIST("hN_AntiLambda_PrimSec_reco"), static_cast<float>(nAntiLambdaPrimSec));
+    registryOther.fill(HIST("hN_Proton_PrimSec_reco"), static_cast<float>(nProtonPrimSec));
+    registryOther.fill(HIST("hN_AntiProton_PrimSec_reco"), static_cast<float>(nAntiProtonPrimSec));
+    registryOther.fill(HIST("hN_Lambda_prim_reco"), static_cast<float>(nLambdaPrim));
+    registryOther.fill(HIST("hN_AntiLambda_prim_reco"), static_cast<float>(nAntiLambdaPrim));
+    registryOther.fill(HIST("hN_Proton_prim_reco"), static_cast<float>(nProtonPrim));
+    registryOther.fill(HIST("hN_AntiProton_prim_reco"), static_cast<float>(nAntiProtonPrim));
   }
 
- public:
   // Reconstructed candidates are compared with generated primary particles;
   // residual background and feed-down can prevent full closure.
   template <typename TCollision, typename TV0s, typename TTracks>
@@ -4193,71 +4282,12 @@ struct LambdaProtonBalanceFunction {
     registryOther.fill(HIST("hNPairs_AntiLambda_PrimProton"), static_cast<float>(nPairs_AntiLambda_PrimProton));
     registryOther.fill(HIST("hNPairs_AntiLambda_PrimAntiProton"), static_cast<float>(nPairs_AntiLambda_PrimAntiProton));
 
-    // ══ Stage counting: isolated from rho1/rho2 ═══════════════════════════
+    // Stage 1 counting.
     registryOther.fill(HIST("hN_Lambda_reco1"), static_cast<float>(selectedLambdas.size()));
     registryOther.fill(HIST("hN_AntiLambda_reco1"), static_cast<float>(selectedAntiLambdas.size()));
     registryOther.fill(HIST("hN_Proton_reco1"), static_cast<float>(selectedPrimProtons.size()));
     registryOther.fill(HIST("hN_AntiProton_reco1"), static_cast<float>(selectedPrimAntiProtons.size()));
-
-    if constexpr (std::is_same_v<std::decay_t<TTracks>, MyTracksMC> && std::is_same_v<std::decay_t<TV0s>, MyV0sMC>) {
-      if (mcCollisionId != -1) {
-        int nLambdaPrimSec = 0;
-        int nAntiLambdaPrimSec = 0;
-        int nProtonPrimSec = 0;
-        int nAntiProtonPrimSec = 0;
-        int nLambdaPrim = 0;
-        int nAntiLambdaPrim = 0;
-        int nProtonPrim = 0;
-        int nAntiProtonPrim = 0;
-
-        // Read only the final selected containers; every count has unit weight.
-        for (const auto& candidate : selectedLambdas) {
-          const auto [matched, primary] = matchRecoCandidate<aod::mcv0label::McParticleId>(candidate, 3122, mcCollisionId);
-          if (matched) {
-            ++nLambdaPrimSec;
-            if (primary) {
-              ++nLambdaPrim;
-            }
-          }
-        }
-        for (const auto& candidate : selectedAntiLambdas) {
-          const auto [matched, primary] = matchRecoCandidate<aod::mcv0label::McParticleId>(candidate, -3122, mcCollisionId);
-          if (matched) {
-            ++nAntiLambdaPrimSec;
-            if (primary) {
-              ++nAntiLambdaPrim;
-            }
-          }
-        }
-        for (const auto& candidate : selectedPrimProtons) {
-          const auto [matched, primary] = matchRecoCandidate<aod::mctracklabel::McParticleId>(candidate, 2212, mcCollisionId);
-          if (matched) {
-            ++nProtonPrimSec;
-            if (primary) {
-              ++nProtonPrim;
-            }
-          }
-        }
-        for (const auto& candidate : selectedPrimAntiProtons) {
-          const auto [matched, primary] = matchRecoCandidate<aod::mctracklabel::McParticleId>(candidate, -2212, mcCollisionId);
-          if (matched) {
-            ++nAntiProtonPrimSec;
-            if (primary) {
-              ++nAntiProtonPrim;
-            }
-          }
-        }
-
-        registryOther.fill(HIST("hN_Lambda_PrimSec_reco"), static_cast<float>(nLambdaPrimSec));
-        registryOther.fill(HIST("hN_AntiLambda_PrimSec_reco"), static_cast<float>(nAntiLambdaPrimSec));
-        registryOther.fill(HIST("hN_Proton_PrimSec_reco"), static_cast<float>(nProtonPrimSec));
-        registryOther.fill(HIST("hN_AntiProton_PrimSec_reco"), static_cast<float>(nAntiProtonPrimSec));
-        registryOther.fill(HIST("hN_Lambda_prim_reco"), static_cast<float>(nLambdaPrim));
-        registryOther.fill(HIST("hN_AntiLambda_prim_reco"), static_cast<float>(nAntiLambdaPrim));
-        registryOther.fill(HIST("hN_Proton_prim_reco"), static_cast<float>(nProtonPrim));
-        registryOther.fill(HIST("hN_AntiProton_prim_reco"), static_cast<float>(nAntiProtonPrim));
-      }
-    }
+    fillStage23Counts(mcCollisionId, selectedLambdas, selectedAntiLambdas, selectedPrimProtons, selectedPrimAntiProtons);
   }
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra, aod::CentFT0Ms, aod::CentFT0Cs>>::iterator const& collision,
                    aod::V0Datas const& V0s,
@@ -4285,7 +4315,7 @@ struct LambdaProtonBalanceFunction {
     auto* cs = bookBFEvent(collision, cent, nTracksINEL);
     runRecoAnalysis(collision, V0s, tracks, cent, cs);
   }
-  PROCESS_SWITCH(LambdaProtonBalanceFunction, processData, "Process for Data", false);
+  PROCESS_SWITCH(LambdaProtonBalanceFunction, processData, "Process for Data", true);
 
   // ══════════════════════════════════════════════════════════════════════════
   // MC efficiency maps: Gen* from MC particles, Rec* from the reconstructed selection.
@@ -4590,11 +4620,12 @@ struct LambdaProtonBalanceFunction {
   // ══ Matched-event BF selection (shared by reconstructed and generated modes) ══
   using MatchedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra,
                                       aod::CentFT0Ms, aod::CentFT0Cs, aod::McCollisionLabels>;
+  Preslice<aod::V0Datas> v0sPerCollisionData = aod::v0data::collisionId;
   Preslice<MyTracks> tracksPerCollisionData = aod::track::collisionId;
 
   // This reference is conditional on accepted reconstructed events and excludes
   // MC collisions with missing or split reconstructed collisions.
-  // Select once for matched events; only fillBF books BF event histograms.
+  // Select once for BF and composition; only BF books BF event histograms.
   template <bool fillBF, typename TTracks, typename TPreslice, typename TAnalysis>
   void withMatchedEvent(aod::McCollisions::iterator const& mcCollision,
                         soa::SmallGroups<MatchedCollisions> const& collisions,
@@ -4646,8 +4677,6 @@ struct LambdaProtonBalanceFunction {
                       MyTracksMC const& allTracks,
                       aod::McParticles const& /*mcParticles*/)
   {
-    // Labelled tables are joined 1:1 with the unlabelled tables: no row is dropped.
-    // Truth labels never enter Stage 1 reconstructed selection.
     withMatchedEvent<true>(mcCollision, collisions, allTracks, tracksPerCollision,
                            [&](auto const& collision, MyTracksMC const& tracks, float cent, CentRho2Set* cs) {
                              auto V0s = allV0s.sliceBy(v0sPerCollision, collision.globalIndex());
@@ -4655,7 +4684,7 @@ struct LambdaProtonBalanceFunction {
                            });
   }
   PROCESS_SWITCH(LambdaProtonBalanceFunction, processMCRecBF,
-                 "Reconstructed correlations in matched selected MC events", true);
+                 "Reconstructed correlations in matched selected MC events", false);
 
   // ══ Generated BF in the identical matched selected MC events ══
   void processMCGenBF(aod::McCollisions::iterator const& mcCollision,
@@ -4776,6 +4805,13 @@ struct LambdaProtonBalanceFunction {
   }
   PROCESS_SWITCH(LambdaProtonBalanceFunction, processMCGenBF,
                  "Generated correlations in matched selected MC events", false);
+
+  static bool usableMCIndex(aod::McParticles const* table, int64_t id)
+  {
+    // has_mcParticle() tests only id >= 0 in ASoA; also check the bound table range.
+    return table != nullptr && id >= 0 && id >= static_cast<int64_t>(table->offset()) &&
+           id - static_cast<int64_t>(table->offset()) < table->size();
+  }
 
   // ── Run-level summary printed once at the end of the analysis job ─────
   // Called automatically by the O2 framework after all events are processed.
