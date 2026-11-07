@@ -517,7 +517,7 @@ struct PseudoEffMFT {
   Filter filtATrackDCAxy = (nabs(aod::fwdtrack::bestDCAXY) < trackCuts.maxDCAxy);
   Filter filtATrackDCAz = (nabs(aod::fwdtrack::bestDCAZ) < trackCuts.maxDCAz);
   /// Filters - mc particles
-  Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary && (aod::mcparticle::eta < trackCuts.maxEta) && (aod::mcparticle::eta > trackCuts.minEta);
+  Filter primaries = (aod::mcparticle::flags & static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)) == static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary) && (aod::mcparticle::eta < trackCuts.maxEta) && (aod::mcparticle::eta > trackCuts.minEta);
 
   /// Joined tables
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
