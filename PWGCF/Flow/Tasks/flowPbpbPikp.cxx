@@ -601,8 +601,9 @@ struct FlowPbpbPikp {
     return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
   }
 
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     double dnx, val;
     if (!corrconf.pTDif) {
