@@ -12,7 +12,6 @@
 /// \brief This task is for Normalized Factorial Moments Analysis: Hwa and Yang, Phys. Rev. C 85, 044914 (2012)
 /// \author Salman Malik
 /// \author Balwan Singh
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
@@ -53,6 +52,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct FactorialMomentsTask {
+  Configurable<bool> useDcaCut{"useDcaCut", true, "Enable DCA cut"};
+  Configurable<bool> useTPCRefit{"useTPCRefit", true, "Enable TPC refit cut"};
+  Configurable<bool> useTPCChi2{"useTPCChi2", true, "Enable TPC chi2 cut"};
+  Configurable<bool> useTPCCluster{"useTPCCluster", false, "Select tracks with TPCCluster"};
   Configurable<bool> useITS{"useITS", false, "Select tracks with ITS"};
   Configurable<bool> useTPC{"useTPC", false, "Select tracks with TPC"};
   Configurable<bool> useGlobal{"useGlobal", true, "Select global tracks"};
@@ -66,8 +69,9 @@ struct FactorialMomentsTask {
   Configurable<float> ptMin{"ptMin", 0.2f, "lower pT cut"};
   Configurable<float> dcaXY{"dcaXY", 0.1f, "DCA xy cut"};
   Configurable<float> dcaZ{"dcaZ", 1.0f, "DCA z cut"};
-  Configurable<float> maxTPCChi2NCl{"maxTPCChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
+  Configurable<float> maxTPCChi2NCl{"maxTPCChi2NCl", 4.0f, "Maximum TPCchi2NCl"};
   Configurable<float> maxITSChi2NCl{"maxITSChi2NCl", 40.0f, "Maximum ITSchi2NCl"};
+  Configurable<float> minTPCr{"minTPCr", 70.0f, "minimum number of TPC clusters"};
   Configurable<float> minTPCNCls{"minTPCNCls", 70.0f, "minimum number of TPC clusters"};
   Configurable<std::vector<int>> centLimits{"centLimits", {0, 5}, "centrality min and max"};
   Configurable<std::vector<float>> vertexXYZ{"vertexXYZ", {0.3f, 0.4f, 10.0f}, "vertex cuts"};
@@ -85,9 +89,10 @@ struct FactorialMomentsTask {
   Configurable<bool> includeITSTracks{"includeITSTracks", false, "ITS Tracks"};
   Configurable<int> nSlots{"nSlots", 1250, "Number of hash slots for merge-safe subsampling (slot = splitmix64(globalBC) % nSlots); must be identical for every job"};
   Configurable<bool> useMC{"useMC", false, "Use MC information"};
+  Configurable<bool> useCrossedRows{"useCrossedRows", true, "Require global track in filter"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "Require global track in filter"};
   Configurable<int> minITSClusters{"minITSClusters", 6, "Minimum Number of ITS cluster"};
-  Configurable<int> minTPCClusters{"minTPCClusters", 80, "Minimum Number of TPC cluster"};
+  Configurable<int> minTPCClusters{"minTPCClusters", 70, "Minimum Number of TPC cluster"};
   Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
   Configurable<float> minTPCCrossedRowsOverFindableCls{"minTPCCrossedRowsOverFindableCls", 0.8, "Minimum ratio of crossed rows over findable clusters TPC"};
   Configurable<int> reduceOutput{"reduceOutput", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
@@ -132,24 +137,29 @@ struct FactorialMomentsTask {
     },
     OutputObjHandlingPolicy::AnalysisObject,
     true};
-  float collisionZ = 0.f;
-  static constexpr double kDcaXY0 = 0.0105;
-  static constexpr double kDcaXY1 = 0.035;
-  static constexpr double kDcaXY2 = 1.1;
   static const int nBins = 52;
-  static constexpr double kMinCharge = 1e-6;
+  static const int nCentLim = 2;
+  static const int nPtVal = 2;
+  static const int nVertexXYZ = 3;
+  static constexpr int NPt = 5;
+  float collisionZ = 0.f;
+  static constexpr double DcaXY0 = 0.0105;
+  static constexpr double DcaXY1 = 0.035;
+  static constexpr double DcaXY2 = 1.1;
+  static constexpr double MinCharge = 1e-6;
+  static constexpr int MaxSlots = 1000000;
   static const int nfqOrder = 6;
-  static constexpr int kEvAll = 1;
-  static constexpr int kEvSel8 = 2;
-  static constexpr int kEvITSROFrame = 3;
-  static constexpr int kEvTimeFrame = 4;
-  static constexpr int kEvSameBunch = 5;
-  static constexpr int kEvGoodITS = 6;
-  static constexpr int kEvGoodZvtx = 7;
-  static constexpr int kEvVertexITSTPC = 8;
-  static constexpr int kEvCent = 9;
-  static constexpr int kEvAccepted = 10;
-  static constexpr int kNEventSteps = 10;
+  static constexpr int EvAll = 1;
+  static constexpr int EvSel8 = 2;
+  static constexpr int EvITSROFrame = 3;
+  static constexpr int EvTimeFrame = 4;
+  static constexpr int EvSameBunch = 5;
+  static constexpr int EvGoodITS = 6;
+  static constexpr int EvGoodZvtx = 7;
+  static constexpr int EvVertexITSTPC = 8;
+  static constexpr int EvCent = 9;
+  static constexpr int EvAccepted = 10;
+  static constexpr int NEventSteps = 10;
   std::array<int, nBins> binningM{};
   std::array<int, 5> countTracks{};
   std::array<std::array<std::array<double, nBins>, 5>, nfqOrder> fqEvent{};
@@ -170,17 +180,17 @@ struct FactorialMomentsTask {
 
   void init(o2::framework::InitContext&)
   {
-    if (numPt.value < 1 || numPt.value > 5) {
-      LOG(fatal) << "numPt must be between 1 and 5, got " << numPt.value;
+    if (numPt.value < 1 || numPt.value > NPt) {
+      LOG(fatal) << "NPt must be between 1 and 5, got " << numPt.value;
     }
-    if (static_cast<int>(ptCuts.value.size()) < 2 * numPt.value) {
-      LOG(fatal) << "ptCuts needs " << 2 * numPt.value << " values for numPt=" << numPt.value
+    if (static_cast<int>(ptCuts.value.size()) < nPtVal * numPt.value) {
+      LOG(fatal) << "ptCuts needs " << nPtVal * numPt.value << " values for numPt=" << numPt.value
                  << ", got " << ptCuts.value.size();
     }
-    if (nSlots.value < 1 || nSlots.value > 1000000) {
-      LOG(fatal) << "nSlots must be in [1, 1000000], got " << nSlots.value;
+    if (nSlots.value < 1 || nSlots.value > MaxSlots) {
+      LOG(fatal) << "nSlots must be in [1, MaxSlots], got " << nSlots.value;
     }
-    if (centLimits.value.size() != 2 || vertexXYZ.value.size() != 3) {
+    if (centLimits.value.size() != nCentLim || vertexXYZ.value.size() != nVertexXYZ) {
       LOG(fatal) << "centLimits needs 2 and vertexXYZ needs 3 values";
     }
     if (applyCheckPtForRec.value == applyCheckPtForMC.value) {
@@ -195,9 +205,9 @@ struct FactorialMomentsTask {
       cfg += Form("%s%g", i > 0 ? "," : "", ptCuts.value[i]);
     }
     histos.add("metaConfig", cfg.Data(), HistType::kTH1D, {{1, 0.5, 1.5}});
-    auto mEventSelected = std::get<std::shared_ptr<TH1>>(histos.add("mEventSelected", "eventSelected", HistType::kTH1D, {{kNEventSteps, 0.5, kNEventSteps + 0.5}}));
-    const std::array<const char*, kNEventSteps> evLabels = {"all", "sel8", "kNoITSROFrameBorder", "kNoTimeFrameBorder", "kNoSameBunchPileup", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "kIsVertexITSTPC", "centrality", "accepted"};
-    for (int iStep = 0; iStep < kNEventSteps; ++iStep) {
+    auto mEventSelected = std::get<std::shared_ptr<TH1>>(histos.add("mEventSelected", "eventSelected", HistType::kTH1D, {{NEventSteps, 0.5, NEventSteps + 0.5}}));
+    const std::array<const char*, NEventSteps> evLabels = {"all", "sel8", "kNoITSROFrameBorder", "kNoTimeFrameBorder", "kNoSameBunchPileup", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "kIsVertexITSTPC", "centrality", "accepted"};
+    for (int iStep = 0; iStep < NEventSteps; ++iStep) {
       mEventSelected->GetXaxis()->SetBinLabel(iStep + 1, evLabels[iStep]);
     }
     // merge-safe slot output: additive per-slot sums, hadd-exact (see slotpool.C)
@@ -326,7 +336,7 @@ struct FactorialMomentsTask {
   template <typename T>
   bool passDcaCut(const T& track) const
   {
-    return std::fabs(track.dcaXY()) < (kDcaXY0 + kDcaXY1 / std::pow(track.pt(), kDcaXY2));
+    return std::fabs(track.dcaXY()) < (DcaXY0 + DcaXY1 / std::pow(track.pt(), DcaXY2));
   }
 
   template <typename T>
@@ -368,7 +378,7 @@ struct FactorialMomentsTask {
       double charge = pdgInfo->Charge();
       double physCharge = charge / 3.0;
       histos.fill(HIST("mChargeBefore"), physCharge);
-      if (mc.isPhysicalPrimary() && std::abs(mc.eta()) < centralEta && std::abs(physCharge) >= kMinCharge) {
+      if (mc.isPhysicalPrimary() && std::abs(mc.eta()) < centralEta && std::abs(physCharge) >= MinCharge) {
         histos.fill(HIST("mChargeAfter"), physCharge);
         histos.fill(HIST("mEta"), mc.eta());
         histos.fill(HIST("mPt"), mc.pt());
@@ -383,69 +393,100 @@ struct FactorialMomentsTask {
   template <typename T>
   bool selectEventRun3(const T& coll)
   {
-    histos.fill(HIST("mEventSelected"), kEvAll);
+    histos.fill(HIST("mEventSelected"), EvAll);
     if (!coll.sel8()) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvSel8);
+    histos.fill(HIST("mEventSelected"), EvSel8);
     if (evSelNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvITSROFrame);
+    histos.fill(HIST("mEventSelected"), EvITSROFrame);
     if (evSelNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvTimeFrame);
+    histos.fill(HIST("mEventSelected"), EvTimeFrame);
     if (evSelNoSameBunchPileup && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvSameBunch);
+    histos.fill(HIST("mEventSelected"), EvSameBunch);
     if (evSelGoodITSLayersAll && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvGoodITS);
+    histos.fill(HIST("mEventSelected"), EvGoodITS);
     if (evSelGoodZvtxFT0vsPV && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvGoodZvtx);
+    histos.fill(HIST("mEventSelected"), EvGoodZvtx);
     if (coll.centFT0C() < centLimits.value[0] || coll.centFT0C() > centLimits.value[1]) {
       return false;
     }
     collisionZ = coll.posZ();
-    histos.fill(HIST("mEventSelected"), kEvCent);
-    histos.fill(HIST("mEventSelected"), kEvAccepted);
+    histos.fill(HIST("mEventSelected"), EvCent);
+    histos.fill(HIST("mEventSelected"), EvAccepted);
     return true;
   }
 
   template <typename T>
   bool selectEventMCRec(const T& coll)
   {
-    histos.fill(HIST("mEventSelected"), kEvAll);
+    histos.fill(HIST("mEventSelected"), EvAll);
     if (!coll.sel8()) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvSel8);
+    histos.fill(HIST("mEventSelected"), EvSel8);
     if (evSelNoSameBunchPileup && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvSameBunch);
+    histos.fill(HIST("mEventSelected"), EvSameBunch);
     if (evSelGoodZvtxFT0vsPV && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvGoodZvtx);
+    histos.fill(HIST("mEventSelected"), EvGoodZvtx);
     if (evSelVertexITSTPC && !coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
-    histos.fill(HIST("mEventSelected"), kEvVertexITSTPC);
+    histos.fill(HIST("mEventSelected"), EvVertexITSTPC);
     if (coll.centFT0C() < centLimits.value[0] || coll.centFT0C() > centLimits.value[1]) {
       return false;
     }
     collisionZ = coll.posZ();
-    histos.fill(HIST("mEventSelected"), kEvCent);
-    histos.fill(HIST("mEventSelected"), kEvAccepted);
+    histos.fill(HIST("mEventSelected"), EvCent);
+    histos.fill(HIST("mEventSelected"), EvAccepted);
     return true;
   }
+  template <typename T>
+  bool selectTrack(const T& track)
+  {
+    if (useITS && !track.hasITS()) {
+      return false;
+    }
+    if (useTPC && !track.hasTPC()) {
+      return false;
+    }
+    if (useGlobal && !track.isGlobalTrack()) {
+      return false;
+    }
+    if (useCrossedRows && track.tpcNClsCrossedRows() < minTPCr) {
+      return false;
+    }
+    if (useDcaCut && !passDcaCut(track)) {
+      return false;
+    }
 
+    if (useTPCRefit && !(track.flags() & o2::aod::track::TPCrefit)) {
+      return false;
+    }
+
+    if (useTPCChi2 && track.tpcChi2NCl() > maxTPCChi2NCl) {
+      return false;
+    }
+
+    if (useTPCCluster && track.tpcNClsFound() < minTPCClusters) {
+      return false;
+    }
+    return true;
+  }
   void beginEvent()
   {
     for (int iPt = 0; iPt < numPt; ++iPt) {
@@ -488,16 +529,7 @@ struct FactorialMomentsTask {
     histos.fill(HIST("mCentFT0C"), coll.centFT0C());
     beginEvent();
     for (auto const& track : tracks) {
-      if (useITS && !track.hasITS()) {
-        continue;
-      }
-      if (useTPC && !track.hasTPC()) {
-        continue;
-      }
-      if (useGlobal && !track.isGlobalTrack()) {
-        continue;
-      }
-      if (!passDcaCut(track)) {
+      if (!selectTrack(track)) {
         continue;
       }
       fillTrackQA(track);
@@ -523,16 +555,7 @@ struct FactorialMomentsTask {
     histos.fill(HIST("mCentFT0C"), coll.centFT0C());
     beginEvent();
     for (auto const& track : colltracks) {
-      if (useITS && !track.hasITS()) {
-        continue;
-      }
-      if (useTPC && !track.hasTPC()) {
-        continue;
-      }
-      if (useGlobal && !track.isGlobalTrack()) {
-        continue;
-      }
-      if (!passDcaCut(track)) {
+      if (!selectTrack(track)) {
         continue;
       }
       fillTrackQA(track);
@@ -572,7 +595,7 @@ struct FactorialMomentsTask {
     beginEvent();
     for (auto const& track : tracks) {
       double recoCharge = (track.sign() != 0) ? track.sign() : 0.;
-      if (std::abs(track.eta()) < centralEta && track.isGlobalTrack() && std::abs(recoCharge) >= kMinCharge) {
+      if (std::abs(track.eta()) < centralEta && track.isGlobalTrack() && std::abs(recoCharge) >= MinCharge) {
         fillTrackQA(track);
         if (applyCheckPtForRec && !applyCheckPtForMC) {
           checkpT(track);
