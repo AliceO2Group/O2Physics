@@ -737,7 +737,7 @@ struct QAHistTask {
           lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           break;
         default:
-          pdgbin = -10;
+          // pdgbin = -10; // FIXME: unused
           continue;
           break;
       }
