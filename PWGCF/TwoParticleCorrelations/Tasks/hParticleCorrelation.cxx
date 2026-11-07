@@ -1987,7 +1987,7 @@ struct HParticleCorrelation2SameEvent {
       const std::string qaPeak = base + "QA/AssocLowPt/Peak/";
 
       addTrackQAHistos(histReg, base + "QA/Trigger/");
-      addTriggerPtVsCentrality(histReg, base + "QA/Trigger/");      
+      addTriggerPtVsCentrality(histReg, base + "QA/Trigger/");
       addResoAssocQAHistos(histReg, qaPeak + "Reso/", massAxis, massHistTitle);
       addResoDauQAHistos(histReg, qaPeak + "PosDau/");
       histReg.addClone(qaPeak + "PosDau/", qaPeak + "NegDau/");
@@ -3309,7 +3309,7 @@ struct HParticleCorrelation2SameEvent {
       }
       // fillTrigQA
       fillCorrParticleQA<eventType, pairType, kQA, kTrigger>(histReg, trigger);
-      histReg.fill(HIST(EventTypeDire[eventType]) + HIST(PairTypeDire[pairType]) + HIST(AnalysisTypeDire[kQA]) + HIST(CorrRoleDire[kTrigger]) + HIST("PtVsCentrality"), trigger.pt(), currentCentrality);      
+      histReg.fill(HIST(EventTypeDire[eventType]) + HIST(PairTypeDire[pairType]) + HIST(AnalysisTypeDire[kQA]) + HIST(CorrRoleDire[kTrigger]) + HIST("PtVsCentrality"), trigger.pt(), currentCentrality);
       markTrackUsed(trigger, TriggerUsedFlag);
       // ++nTrigger;
 
