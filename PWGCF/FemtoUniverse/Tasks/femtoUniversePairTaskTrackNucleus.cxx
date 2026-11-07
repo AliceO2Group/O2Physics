@@ -630,7 +630,7 @@ struct FemtoUniversePairTaskTrackNucleus {
 
     if (cfgProcessMP) {
       doSameEvent<false>(thegroupTrack, thegroupNucleus, parts, col.magField(), col.multV0M(), 4, fillQA);
-      fillQA = false;
+      // fillQA = false; // FIXME: unused
     }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackNucleus, processSameEvent, "Enable processing same event", true);
@@ -663,7 +663,7 @@ struct FemtoUniversePairTaskTrackNucleus {
 
     if (cfgProcessMP) {
       doSameEvent<false>(thegroupTrack, thegroupNucleus, parts, col.magField(), col.multV0M(), 4, fillQA);
-      fillQA = false;
+      // fillQA = false; // FIXME: unused
     }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackNucleus, processSameEventMC, "Enable processing same event for Monte Carlo", false);

@@ -1157,7 +1157,7 @@ struct RobustFluctuationObservables {
       orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF; // - 1;
       bcSOR = orbitSOR * nBCsPerOrbit;
 
-      magneticField = 1;
+      // magneticField = 1; // FIXME: unused
       static o2::parameters::GRPMagField* grpo = nullptr;
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", ts);
       if (grpo == nullptr) {
