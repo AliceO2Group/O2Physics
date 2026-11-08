@@ -43,6 +43,11 @@ o2physics_add_dpl_workflow(dpt-dpt-per-run-extra-qc
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(q-space-balance-function
+                           SOURCES qSpaceBalanceFunction.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(corr-reso
                            SOURCES corrReso.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::TwoPartCorrCore O2Physics::AnalysisCCDB
