@@ -623,7 +623,9 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"zorro"};
     // Zorro
-    Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
+    Configurable<bool> settingEnableTriggerSelection{"settingEnableTriggerSelection", false, "Enable Zorro event selection for the configured software triggers"};
+    Configurable<std::string> settingSoftwareTriggerNames{"settingSoftwareTriggerNames", "fHighFt0Mult", "Software trigger names, separated by commas (OR selection)"};
+    Configurable<std::string> settingBaseCCDBPathForTriggers{"settingBaseCCDBPathForTriggers", "EventFiltering/Zorro/", "CCDB path for Zorro trigger information"};
   } zorro;
 
   struct : o2::framework::ConfigurableGroup {
@@ -1041,8 +1043,9 @@ struct HadNucleiFemto {
       return;
     }
     if constexpr (!isMC) {
-      if (zorro.settingSkimmedProcessing) {
-        mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorroTriggerMask());
+      if (useZorroSelection()) {
+        mZorro.setBaseCCDBPath(zorro.settingBaseCCDBPathForTriggers.value);
+        mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorro.settingSoftwareTriggerNames.value);
         mZorro.populateHistRegistry(mQaRegistry, bc.runNumber());
       }
     }
@@ -1113,7 +1116,7 @@ struct HadNucleiFemto {
   template <typename Tcollision>
   bool passesZorroSelection(const Tcollision& collision)
   {
-    if (!zorro.settingSkimmedProcessing) {
+    if (!useZorroSelection()) {
       return true;
     }
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -1132,7 +1135,7 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hEvents"), 1);
 
     if constexpr (!isMC) {
-      if (zorro.settingSkimmedProcessing) {
+      if (useZorroSelection()) {
         if (!passesZorroSelection(collision)) {
           return false;
         }
@@ -1287,12 +1290,9 @@ struct HadNucleiFemto {
     return species.settingNuPDGCode.value == He3PDG;
   }
 
-  const char* zorroTriggerMask() const
+  bool useZorroSelection() const
   {
-    if (useTritonNucleus()) {
-      return "fTritonFemto";
-    }
-    return useHelium3Nucleus() ? "fHe" : "fDe";
+    return zorro.settingEnableTriggerSelection.value;
   }
 
   const char* nucleusBetheBlochLabel() const
