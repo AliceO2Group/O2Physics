@@ -12,7 +12,7 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_SYSHANDLER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_SYSHANDLER_H_
 
-#include "TH1.h"
+#include <TH1.h>
 
 #include <iostream>
 #include <map>
@@ -37,6 +37,9 @@ class SysHandler
     double max_allowed_syst;
     double fNbarlow;
     bool fUseBarlowCount;
+    bool reject_on_fit_significance = false;
+    double min_fit_significance = 1.96;
+    std::string syst_fit_function = "pol0";
   };
   struct SystematicVariation {
     int index;
@@ -54,6 +57,11 @@ class SysHandler
   };
   void setBarlowCriteria(int newval) { current_settings.fNbarlow = newval; }
   void setUseBarlowCount(bool newval) { current_settings.fUseBarlowCount = newval; }
+  void setFitSignificanceRejection(bool enabled, double minSignificance = 1.96)
+  {
+    current_settings.reject_on_fit_significance = enabled;
+    current_settings.min_fit_significance = minSignificance;
+  }
   void setSysMap(std::map<int, TH1*> sysmap)
   {
     clearSysMap();
@@ -103,7 +111,7 @@ class SysHandler
   bool passesBarlowSelection(const TH1* barlow) const;
   void clearSysMap();
 
-  ClassDef(SysHandler, 2);
+  ClassDef(SysHandler, 3);
 };
 
 #endif // PWGCF_GENERICFRAMEWORK_CORE_SYSHANDLER_H_

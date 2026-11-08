@@ -17,7 +17,7 @@
 #include "FlowContainer.h"
 #include "FlowPtContainer.h"
 
-#include "TH1.h"
+#include <TH1.h>
 
 #include <functional>
 #include <iostream>
@@ -242,6 +242,7 @@ class Calculator
   TH1D* getV0NumeratorWeighted(int i, int pidIndex, double min, double max);
   TH1D* getV02NumeratorWeighted(int i, int pidIndex, double min, double max);
   TH1D* getV0Weighted(int i, int pidIndex, double min, double max);
+  TH1D* getV00Weighted(int i, int pidIndex, double min, double max);
   TH1D* getV02Weighted(int i, int pidIndex, double min, double max);
   TH1D* getV0WeightedCh(int i, double min, double max) { return getV0Weighted(i, 0, min, max); }
   TH1D* getV0WeightedPi(int i, double min, double max) { return getV0Weighted(i, 1, min, max); }
@@ -249,6 +250,13 @@ class Calculator
   TH1D* getV0WeightedPr(int i, double min, double max) { return getV0Weighted(i, 3, min, max); }
   TH1D* getV0WeightedK0(int i, double min, double max) { return getV0Weighted(i, 4, min, max); }
   TH1D* getV0WeightedLambda(int i, double min, double max) { return getV0Weighted(i, 5, min, max); }
+  // New definition
+  TH1D* getV00WeightedCh(int i, double min, double max) { return getV00Weighted(i, 0, min, max); }
+  TH1D* getV00WeightedPi(int i, double min, double max) { return getV00Weighted(i, 1, min, max); }
+  TH1D* getV00WeightedKa(int i, double min, double max) { return getV00Weighted(i, 2, min, max); }
+  TH1D* getV00WeightedPr(int i, double min, double max) { return getV00Weighted(i, 3, min, max); }
+  TH1D* getV00WeightedK0(int i, double min, double max) { return getV00Weighted(i, 4, min, max); }
+  TH1D* getV00WeightedLambda(int i, double min, double max) { return getV00Weighted(i, 5, min, max); }
   TH1D* getV02WeightedCh(int i, double min, double max) { return getV02Weighted(i, 0, min, max); }
   TH1D* getV02WeightedPi(int i, double min, double max) { return getV02Weighted(i, 1, min, max); }
   TH1D* getV02WeightedKa(int i, double min, double max) { return getV02Weighted(i, 2, min, max); }
@@ -314,6 +322,9 @@ class Calculator
   // Two-component model
   TH1D* getAlpha(int i, double min, double max);
   TH1D* getBeta(int i, double min, double max);
+  // Based on <[mpt]> normalised v00
+  TH1D* getAlphaAlt(int i, double min, double max);
+  TH1D* getBetaAlt(int i, double min, double max);
 
   TH1D* getCorrVsPt(int nhar, int npar, std::string id, int i, double min, double max);
 

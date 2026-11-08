@@ -18,7 +18,7 @@
 #include "StatHandler.h"
 #include "SysHandler.h"
 
-#include "TH1.h"
+#include <TH1.h>
 
 #include <cstdio>
 #include <functional>
@@ -77,6 +77,7 @@ class OutputHandler : public TNamed
   void setInvMassFitCentralityBins(const std::vector<double>& centralityBins);
   void setAdditionalSystematicVariation(int index, TH1* variation);
   void setSystematicVariations(const std::vector<SysHandler::SystematicVariation>& variations);
+  void setFitSignificanceRejection(bool enabled, double minSignificance = 1.96);
   void setSystematicProgressCallback(std::function<void(std::size_t, std::size_t, int)> callback) { systematicProgressCallback = std::move(callback); }
   void setUseFSRebin(bool newval) { useFSRebin = newval; }
   void setUseLateCentralityRebin(bool newval) { useLateCentralityRebin = newval; }

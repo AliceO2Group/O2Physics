@@ -12,12 +12,12 @@
 // NOLINTBEGIN(readability/casting, readability/braces)
 #include "Calculator.h"
 
-#include "TDirectoryFile.h"
-#include "TF1.h"
-#include "TFile.h"
-#include "THashList.h"
-#include "TObjString.h"
-#include "TROOT.h"
+#include <TDirectoryFile.h>
+#include <TF1.h>
+#include <TFile.h>
+#include <THashList.h>
+#include <TObjString.h>
+#include <TROOT.h>
 
 #include <algorithm>
 #include <cmath>
@@ -2753,6 +2753,23 @@ TH1D* Calculator::getV0Weighted(int i, int pidIndex, double min, double max)
   return result.release();
 }
 
+TH1D* Calculator::getV00Weighted(int i, int pidIndex, double min, double max)
+{
+  std::unique_ptr<TH1D> result(getV0NumeratorWeighted(i, pidIndex, min, max));
+  std::unique_ptr<TH1D> nB(getFractionForSpecies(i, pidIndex, min, max, FractionScheme::V0, false));
+  std::unique_ptr<TH1D> mA(dynamic_cast<TH1D*>(flowptcont->getCorrHist(i, 1)));
+  if (!result || !nB || !mA)
+    return nullptr;
+  const double denominatorScale = getIntegratedValue(mA.get(), min, max);
+  if (!std::isfinite(denominatorScale))
+    return nullptr;
+  nB->Scale(denominatorScale);
+  result->Divide(nB.get());
+  result->SetName(Form("V00Weighted_%d_%d_%.1f_%.1f", pidIndex, i, min, max));
+  result->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+  return result.release();
+}
+
 TH1D* Calculator::getV02Weighted(int i, int pidIndex, double min, double max)
 {
   std::unique_ptr<TH1D> result(getV02NumeratorWeighted(i, pidIndex, min, max));
@@ -3336,6 +3353,80 @@ TH1D* Calculator::getBeta(int i, double min, double max)
   v02pt->Scale(sigmapt_const * v0_const * c22_const / denominator);
   TH1D* beta = dynamic_cast<TH1D*>(v02pt->Clone(Form("betapt_%i_%g%g", i, min, max)));
   beta->Add(v0pt.get(), -1);
+  beta->SetTitle("; #it{p}_{T} (GeV/#it{c}); #beta");
+  return beta;
+}
+
+TH1D* Calculator::getAlphaAlt(int i, double min, double max)
+{
+  // The integrated coefficients in Eqs. (19)--(20) must be moments of the
+  // same differential observables, fractional spectra and eta acceptances.
+  std::unique_ptr<TH1D> v00pt(getV00Weighted(i, 0, min, max));
+  std::unique_ptr<TH1D> v02pt(getV02Weighted(i, 0, min, max));
+  std::unique_ptr<TH1D> nV0(getFractionForSpecies(i, 0, min, max, FractionScheme::V0, false));
+  std::unique_ptr<TH1D> nV02(getFractionForSpecies(i, 0, min, max, FractionScheme::V02, false));
+  if (!v00pt || !v02pt || !nV0 || !nV02)
+    return nullptr;
+  const double v00_const = matchedIntegratedObservable(*v00pt, *nV0);
+  const double v02_const = matchedIntegratedObservable(*v02pt, *nV02);
+
+  std::unique_ptr<TH1D> cv22pt(getCV22pt(i));
+  std::unique_ptr<TH1D> varV22(getVarV22(i));
+  std::unique_ptr<TH1D> c22(getC22(i));
+  std::unique_ptr<TH1D> mA(dynamic_cast<TH1D*>(flowptcont->getCorrHist(i, 1)));
+  if (!cv22pt || !varV22 || !c22 || !mA)
+    return nullptr;
+
+  const double cv22pt_const = getIntegratedValue(cv22pt.get(), min, max);
+  const double varv22_const = getIntegratedValue(varV22.get(), min, max);
+  const double c22_const = getIntegratedValue(c22.get(), min, max);
+  const double mA_const = getIntegratedValue(mA.get(), min, max);
+  const double denominator = mA_const * varv22_const * v00_const -
+                             cv22pt_const * v02_const * c22_const;
+  if (!std::isfinite(denominator) ||
+      std::abs(denominator) <= std::numeric_limits<double>::epsilon())
+    return nullptr;
+
+  v00pt->Scale(varv22_const * mA_const / denominator);
+  v02pt->Scale(cv22pt_const * c22_const / denominator);
+  TH1D* alpha = dynamic_cast<TH1D*>(v00pt->Clone(Form("alphapt_%i_%g%g", i, min, max)));
+  alpha->Add(v02pt.get(), -1);
+  alpha->SetTitle("; #it{p}_{T} (GeV/#it{c}); #alpha");
+  return alpha;
+}
+
+TH1D* Calculator::getBetaAlt(int i, double min, double max)
+{
+  std::unique_ptr<TH1D> v00pt(getV00Weighted(i, 0, min, max));
+  std::unique_ptr<TH1D> v02pt(getV02Weighted(i, 0, min, max));
+  std::unique_ptr<TH1D> nV0(getFractionForSpecies(i, 0, min, max, FractionScheme::V0, false));
+  std::unique_ptr<TH1D> nV02(getFractionForSpecies(i, 0, min, max, FractionScheme::V02, false));
+  if (!v00pt || !v02pt || !nV0 || !nV02)
+    return nullptr;
+  const double v00_const = matchedIntegratedObservable(*v00pt, *nV0);
+  const double v02_const = matchedIntegratedObservable(*v02pt, *nV02);
+
+  std::unique_ptr<TH1D> cv22pt(getCV22pt(i));
+  std::unique_ptr<TH1D> varV22(getVarV22(i));
+  std::unique_ptr<TH1D> c22(getC22(i));
+  std::unique_ptr<TH1D> mA(dynamic_cast<TH1D*>(flowptcont->getCorrHist(i, 1)));
+  if (!cv22pt || !varV22 || !c22 || !mA)
+    return nullptr;
+
+  const double cv22pt_const = getIntegratedValue(cv22pt.get(), min, max);
+  const double varv22_const = getIntegratedValue(varV22.get(), min, max);
+  const double c22_const = getIntegratedValue(c22.get(), min, max);
+  const double mA_const = getIntegratedValue(mA.get(), min, max);
+  const double denominator = mA_const * varv22_const * v00_const -
+                             cv22pt_const * v02_const * c22_const;
+  if (!std::isfinite(denominator) ||
+      std::abs(denominator) <= std::numeric_limits<double>::epsilon())
+    return nullptr;
+
+  v00pt->Scale(mA_const * v02_const * c22_const / denominator);
+  v02pt->Scale(mA_const * v00_const * c22_const / denominator);
+  TH1D* beta = dynamic_cast<TH1D*>(v02pt->Clone(Form("betapt_%i_%g%g", i, min, max)));
+  beta->Add(v00pt.get(), -1);
   beta->SetTitle("; #it{p}_{T} (GeV/#it{c}); #beta");
   return beta;
 }

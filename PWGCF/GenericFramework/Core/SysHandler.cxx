@@ -12,9 +12,9 @@
 // NOLINTBEGIN(readability/casting, readability/braces)
 #include "SysHandler.h"
 
-#include "TF1.h"
-#include "TList.h"
-#include "TMath.h"
+#include <TF1.h>
+#include <TList.h>
+#include <TMath.h>
 
 #include <cstdio>
 #include <string>
@@ -89,7 +89,7 @@ SysHandler::SysHandler() : current_settings{{0., 90.}, true, 1, 1, true}
     {13, 10, -1, "c#tau", "Lifetime"},
     {14, 0, -1, "FT0M", "centEst"},
     {15, 11, -1, "Competing mass cut", "Competing mass cut"},
-    {16, 12, -1, "#cos(#theta_{p})", "Pointing Angle"},
+    {16, 12, -1, "cosPA", "Pointing Angle"},
     {17, 0, -1, "Daughter PID rejection", "Daughter PID rejection"},
     {18, 8, -1, "FitCentrality", "fitCentrality"},
     {19, 9, -1, "MassFitFunction", "fitFunction"},
@@ -239,21 +239,31 @@ TH1* SysHandler::getSystematicsFromFit(Int_t sys_index, Bool_t apply_barlow, boo
   } else {
     var->Add(nom, -1.);
   }
-  histOper(var, 0, 1, kTRUE, kFALSE);
   if (ratio) {
     delete nom;
     return var;
   }
-  var->Fit("pol0", "Q0+R", "", current_settings.sys_avg_range.first, current_settings.sys_avg_range.second);
-  TF1* func = (TF1*)var->GetListOfFunctions()->FindObject("pol0");
-  const double fittedUncertainty = relative ? TMath::Abs(1. - func->GetParameter(0)) : TMath::Abs(func->GetParameter(0));
+  const char* fitFunction = current_settings.syst_fit_function == "pol1" ? "pol1" : "pol0";
+  var->Fit(fitFunction, "Q0+R", "", current_settings.sys_avg_range.first, current_settings.sys_avg_range.second);
+  TF1* func = (TF1*)var->GetListOfFunctions()->FindObject(fitFunction);
+  const double fitError = func->GetParError(0);
+  const double fitReference = relative ? 1. : 0.;
+  const double fitSignificance = fitError > 0. ? TMath::Abs(func->GetParameter(0) - fitReference) / fitError : 0.;
   for (int i = 1; i <= var->GetNbinsX(); ++i) {
+    const double fittedValue = func->Eval(var->GetXaxis()->GetBinCenter(i));
+    const double fittedUncertainty = relative ? TMath::Abs(1. - fittedValue) : TMath::Abs(fittedValue);
     var->SetBinContent(i, isInSystematicRange(var, i, current_settings) ? fittedUncertainty : 0.);
   }
   histOper(var, 0, 1, kFALSE, kTRUE);
   delete nom;
   if (!apply_barlow)
     return var;
+  if (current_settings.reject_on_fit_significance && fitSignificance < current_settings.min_fit_significance) {
+    for (int i = 1; i <= var->GetNbinsX(); ++i) {
+      var->SetBinContent(i, 0.);
+    }
+    return var;
+  }
   TH1* barlow = getBarlowTest(sys_index, getCorrelationError(sys_index));
   if (!barlow)
     return var;

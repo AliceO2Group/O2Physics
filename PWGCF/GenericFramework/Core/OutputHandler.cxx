@@ -127,6 +127,15 @@ void OutputHandler::setSystematicVariations(const std::vector<SysHandler::System
   }
 }
 
+void OutputHandler::setFitSignificanceRejection(bool enabled, double minSignificance)
+{
+  if (!sysHandler) {
+    printf("Please initialise OutputHandler with systematics before setting fit-significance rejection\n");
+    return;
+  }
+  sysHandler->setFitSignificanceRejection(enabled, minSignificance);
+}
+
 void OutputHandler::initialise(std::string filename, std::string dirname, bool hasSystematics, SysHandler::SystSettings settings)
 {
   delete stathandler;
@@ -834,6 +843,10 @@ std::string OutputHandler::getLatexName(Calculator::PtDiffFunc func)
       func == &Calculator::getV0WeightedKa || func == &Calculator::getV0WeightedPr ||
       func == &Calculator::getV0WeightedK0 || func == &Calculator::getV0WeightedLambda)
     str = "v_{0}";
+  if (func == &Calculator::getV00WeightedCh || func == &Calculator::getV00WeightedPi ||
+      func == &Calculator::getV00WeightedKa || func == &Calculator::getV00WeightedPr ||
+      func == &Calculator::getV00WeightedK0 || func == &Calculator::getV00WeightedLambda)
+    str = "v_{00}";
   if (func == &Calculator::getV0K0Alt)
     str = "v_{0}";
   if (func == &Calculator::getV0LambdaAlt)
@@ -941,6 +954,10 @@ std::string OutputHandler::getLatexName(Calculator::PtDiffFunc func)
   if (func == &Calculator::getAlpha)
     str = "#alpha";
   if (func == &Calculator::getBeta)
+    str = "#beta";
+  if (func == &Calculator::getAlphaAlt)
+    str = "#alpha";
+  if (func == &Calculator::getBetaAlt)
     str = "#beta";
 
   return str;
@@ -1206,6 +1223,18 @@ std::string OutputHandler::getName(Calculator::PtDiffFunc func, double min, doub
     str = toplevelname ? "v0weightedk0" : Form("v0weightedk0_%g%g", min, max);
   if (func == &Calculator::getV0WeightedLambda)
     str = toplevelname ? "v0weightedlambda" : Form("v0weightedlambda_%g%g", min, max);
+  if (func == &Calculator::getV00WeightedCh)
+    str = toplevelname ? "v00weightedch" : Form("v00weightedch_%g%g", min, max);
+  if (func == &Calculator::getV00WeightedPi)
+    str = toplevelname ? "v00weightedpi" : Form("v00weightedpi_%g%g", min, max);
+  if (func == &Calculator::getV00WeightedKa)
+    str = toplevelname ? "v00weightedka" : Form("v00weightedka_%g%g", min, max);
+  if (func == &Calculator::getV00WeightedPr)
+    str = toplevelname ? "v00weightedpr" : Form("v00weightedpr_%g%g", min, max);
+  if (func == &Calculator::getV00WeightedK0)
+    str = toplevelname ? "v00weightedk0" : Form("v00weightedk0_%g%g", min, max);
+  if (func == &Calculator::getV00WeightedLambda)
+    str = toplevelname ? "v00weightedlambda" : Form("v00weightedlambda_%g%g", min, max);
   if (func == &Calculator::getV0K0Alt)
     str = toplevelname ? "v0k0alt" : Form("v0k0alt_%g%g", min, max);
   if (func == &Calculator::getV0LambdaAlt)
@@ -1322,7 +1351,10 @@ std::string OutputHandler::getName(Calculator::PtDiffFunc func, double min, doub
     str = toplevelname ? "alpha" : Form("alpha_%g%g", min, max);
   if (func == &Calculator::getBeta)
     str = toplevelname ? "beta" : Form("beta_%g%g", min, max);
-
+  if (func == &Calculator::getAlphaAlt)
+    str = toplevelname ? "alphaalt" : Form("alphaalt_%g%g", min, max);
+  if (func == &Calculator::getBetaAlt)
+    str = toplevelname ? "betaalt" : Form("betaalt_%g%g", min, max);
   return str;
 }
 void OutputHandler::PrintSystematics(bool relative)

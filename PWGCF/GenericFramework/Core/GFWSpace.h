@@ -142,6 +142,12 @@ Calculator::PtDiffFunc kV0WeightedKa = &Calculator::getV0WeightedKa;
 Calculator::PtDiffFunc kV0WeightedPr = &Calculator::getV0WeightedPr;
 Calculator::PtDiffFunc kV0WeightedK0 = &Calculator::getV0WeightedK0;
 Calculator::PtDiffFunc kV0WeightedLambda = &Calculator::getV0WeightedLambda;
+Calculator::PtDiffFunc kV00WeightedCh = &Calculator::getV00WeightedCh;
+Calculator::PtDiffFunc kV00WeightedPi = &Calculator::getV00WeightedPi;
+Calculator::PtDiffFunc kV00WeightedKa = &Calculator::getV00WeightedKa;
+Calculator::PtDiffFunc kV00WeightedPr = &Calculator::getV00WeightedPr;
+Calculator::PtDiffFunc kV00WeightedK0 = &Calculator::getV00WeightedK0;
+Calculator::PtDiffFunc kV00WeightedLambda = &Calculator::getV00WeightedLambda;
 Calculator::PtDiffFunc kV0K0Alt = &Calculator::getV0K0Alt;
 Calculator::PtDiffFunc kV0LambdaAlt = &Calculator::getV0LambdaAlt;
 
@@ -184,6 +190,8 @@ Calculator::PtDiffFunc kV02LambdaAlt = &Calculator::getV02LambdaAlt;
 // Two-component model
 Calculator::PtDiffFunc kAlpha = &Calculator::getAlpha;
 Calculator::PtDiffFunc kBeta = &Calculator::getBeta;
+Calculator::PtDiffFunc kAlphaAlt = &Calculator::getAlphaAlt;
+Calculator::PtDiffFunc kBetaAlt = &Calculator::getBetaAlt;
 
 Calculator::ObsFunc kVarV22 = &Calculator::getVarV22; // Var(v_2^2)
 
