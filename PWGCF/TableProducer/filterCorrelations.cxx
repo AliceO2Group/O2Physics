@@ -55,6 +55,7 @@
 #include <experimental/type_traits> // required for is_detected
 #include <limits>
 #include <memory>
+#include <random>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -120,6 +121,8 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyMultiplicity, std::string, "", "Multiplicity efficiency (RecoAll / MC): CCDB path or local ROOT file with a 4D ccdb_object (eta, pT, multiplicity, z-vtx); empty disables CFCollisionsExtra output");
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = CCDB efficiency, 1 = local ROOT efficiency");
   O2_DEFINE_CONFIGURABLE(cfgMultiplicityTrackBitMask, uint16_t, 0, "Required track-type bits for corrected multiplicity; match cfgTrackBitMask used to produce the efficiency (0 = all stored tracks)");
+  O2_DEFINE_CONFIGURABLE(cfgMultiplicityPoisson, bool, false, "Use (reproducibly) seeded 1 + Poisson(sum(1/eff - 1)) for multiplicity correction; skips eff > 1 tracks");
+  O2_DEFINE_CONFIGURABLE(cfgMultiplicityPoissonSeed, uint32_t, 1, "Base seed for reproducible per-collision Poisson multiplicity sampling");
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -160,6 +163,7 @@ struct FilterCF {
   // Own local histograms independently of their input file. CCDB owns its objects.
   std::unique_ptr<THn> localMultiplicityEfficiency;
   THn* mEfficiency = nullptr;
+  std::mt19937_64 mMultiplicityGenerator;
   static constexpr int MultiplicityEfficiencyDimensions = 4;
 
   // persistent caches
@@ -389,11 +393,12 @@ struct FilterCF {
   }
 
   template <typename TCollision, typename TTracks>
-  float getCorrectedMultiplicity(const TCollision& collision, const TTracks& tracks, uint64_t timestamp)
+  float getCorrectedMultiplicity(const TCollision& collision, const TTracks& tracks, uint64_t timestamp, uint64_t globalBC, int runNumber)
   {
     auto* efficiency = loadMultiplicityEfficiency(timestamp);
     double correctedMultiplicity = 0.;
     size_t skippedTracks = 0;
+    double totalMeanMissing = 0.;
     for (const auto& track : tracks) {
       // Match the tracks written by the corresponding data/MC producer path.
       if (!isTrackSelected(track, true)) {
@@ -403,14 +408,39 @@ struct FilterCF {
       // Keep the original estimator as the map coordinate, including for centrality.
       const std::array<double, MultiplicityEfficiencyDimensions> values{track.eta(), track.pt(), collision.multiplicity(), collision.posZ()};
       const double eff = efficiency->GetBinContent(efficiency->GetBin(values.data()));
-      if (!std::isfinite(eff) || eff <= 0.) {
+      if (!std::isfinite(eff) || eff <= 0. || (cfgMultiplicityPoisson && eff > 1.)) {
         ++skippedTracks;
         continue;
       }
-      correctedMultiplicity += 1. / eff;
+      if (cfgMultiplicityPoisson) {
+        correctedMultiplicity += 1.;
+        totalMeanMissing += 1. / eff - 1.;
+      } else {
+        correctedMultiplicity += 1. / eff;
+      }
+    }
+    if (cfgMultiplicityPoisson) {
+      if (!std::isfinite(totalMeanMissing) || totalMeanMissing >= static_cast<double>(std::numeric_limits<uint64_t>::max())) {
+        LOGF(fatal, "Poisson multiplicity mean exceeds the sampling range: %g", totalMeanMissing);
+        return 0.f;
+      }
+      // Sample from sum of missing count (Poisson sum rule)
+      if (totalMeanMissing > 0.) {
+        // Reseed per collision
+        const auto collisionIndex = static_cast<uint64_t>(collision.globalIndex());
+        std::seed_seq seed{cfgMultiplicityPoissonSeed.value, static_cast<uint32_t>(runNumber),
+                           static_cast<uint32_t>(globalBC), static_cast<uint32_t>(globalBC >> 32),
+                           static_cast<uint32_t>(collisionIndex), static_cast<uint32_t>(collisionIndex >> 32)};
+        // Speed up the seeding by creating one 64bit seed from the event information
+        std::array<uint32_t, 2> seedWords{};
+        seed.generate(seedWords.begin(), seedWords.end());
+        const uint64_t eventSeed = (static_cast<uint64_t>(seedWords[0]) << std::numeric_limits<uint32_t>::digits) | seedWords[1];
+        mMultiplicityGenerator.seed(eventSeed);
+        correctedMultiplicity += std::poisson_distribution<uint64_t>(totalMeanMissing)(mMultiplicityGenerator);
+      }
     }
     if (cfgVerbosity > 0 && skippedTracks > 0) {
-      LOGF(warning, "Skipped %zu tracks with invalid efficiency while correcting collision %lld", skippedTracks, static_cast<int64_t>(collision.globalIndex()));
+      LOGF(warning, "Skipped %zu tracks with invalid or unsupported efficiency while correcting collision %lld", skippedTracks, static_cast<int64_t>(collision.globalIndex()));
     }
     if (!std::isfinite(correctedMultiplicity) || correctedMultiplicity > std::numeric_limits<float>::max()) {
       LOGF(fatal, "Corrected multiplicity cannot be represented as a float: %g", correctedMultiplicity);
@@ -454,7 +484,7 @@ struct FilterCF {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
     if (!cfgEfficiencyMultiplicity.value.empty()) {
-      outputCollisionsExtra(getCorrectedMultiplicity(collision, tracks, bc.timestamp()));
+      outputCollisionsExtra(getCorrectedMultiplicity(collision, tracks, bc.timestamp(), bc.globalBC(), bc.runNumber()));
     }
 
     if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
@@ -652,7 +682,7 @@ struct FilterCF {
       // NOTE works only when we store all MC collisions (as we do here)
       outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
       if (!cfgEfficiencyMultiplicity.value.empty()) {
-        outputCollisionsExtra(getCorrectedMultiplicity(collision, groupedTracks, bc.timestamp()));
+        outputCollisionsExtra(getCorrectedMultiplicity(collision, groupedTracks, bc.timestamp(), bc.globalBC(), bc.runNumber()));
       }
 
       const auto mcCollisionId = collision.mcCollisionId();
