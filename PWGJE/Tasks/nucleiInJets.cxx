@@ -53,8 +53,6 @@
 #include <TPDGCode.h>
 #include <TVector2.h>
 
-#include <ReconstructionDataFormats/PID.h>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
