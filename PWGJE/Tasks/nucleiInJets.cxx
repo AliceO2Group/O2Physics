@@ -49,7 +49,10 @@
 #include <TH3.h>
 #include <THnSparse.h>
 #include <TMCProcess.h>
+#include <TPDGCode.h>
 #include <TVector2.h>
+
+#include <ReconstructionDataFormats/PID.h>
 
 #include <algorithm>
 #include <array>
@@ -303,7 +306,7 @@ struct nucleiInJets {
     if (doprocessJetTracksData && doprocessJetTracksDataLfPid) {
       LOGP(fatal, "only one process function should be enabled!!!");
     }
-    if (!(mcClosureTrainingFraction >= 0.f && mcClosureTrainingFraction <= 1.f)) {
+    if (!(mcClosureTrainingFraction >= 0.f) || !(mcClosureTrainingFraction <= 1.f)) {
       LOGP(fatal, "mcClosureTrainingFraction must be between 0 and 1, inclusive");
     }
     if (mcClosureSplitSeed == 0) {
@@ -368,7 +371,9 @@ struct nucleiInJets {
     if (isPOCollision) {
       for (const auto& sample : {std::string("tracksInc"), std::string("recInc")}) {
         for (const auto& species : {std::string("proton"), std::string("antiproton"), std::string("deuteron"), std::string("antideuteron")}) {
-          const auto base = sample + "/qa/rapidity/" + species;
+          auto base = sample;
+          base += "/qa/rapidity/";
+          base += species;
           const bool isMcTruth = sample == "recInc";
           const char* yLabTitle = isMcTruth ? "matched primary MC truth; #it{p}_{T} (GeV/#it{c}); #eta; y_{lab}" : "inclusive data; #it{p}_{T} (GeV/#it{c}); #eta; y_{lab}";
           const char* yCmsTitle = isMcTruth ? "matched primary MC truth; #it{p}_{T} (GeV/#it{c}); #eta; y_{CMS}" : "inclusive data; #it{p}_{T} (GeV/#it{c}); #eta; y_{CMS}";
@@ -1029,10 +1034,7 @@ struct nucleiInJets {
   bool isOccupancyAccepted(const coll& collision)
   {
     auto occupancy{collision.trackOccupancyInTimeRange()};
-    if (occupancy < cfgOccupancyRange->at(0) || occupancy > cfgOccupancyRange->at(1))
-      return false;
-    else
-      return true;
+    return !(occupancy < cfgOccupancyRange->at(0) || occupancy > cfgOccupancyRange->at(1));
   }
 
   int nEvents = 0;
