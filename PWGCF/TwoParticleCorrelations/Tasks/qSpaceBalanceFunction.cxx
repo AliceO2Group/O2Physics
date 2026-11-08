@@ -11,7 +11,7 @@
 
 /// \file qSpaceBalanceFunction.cxx
 /// \brief K+K- pair densities in Q_inv, Q_long, Q_out and Q_side, the inputs of q-space balance functions
-/// \author Lakshitha Fernando
+/// \author Lakshitha Fernando <lakshithafernando@wayne.edu>
 ///
 /// Reads the tables of dpt-dpt-filter, which must run in the same workflow with only kaons enabled,
 /// so that trackacceptedid is 0 for K+ and 1 for K-.

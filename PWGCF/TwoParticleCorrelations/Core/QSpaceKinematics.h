@@ -11,7 +11,7 @@
 
 /// \file QSpaceKinematics.h
 /// \brief Relative momentum of a particle pair in the pair rest frame (Q_inv, Q_long, Q_out, Q_side)
-/// \author Lakshitha Fernando
+/// \author Lakshitha Fernando <lakshithafernando@wayne.edu>
 ///
 /// Definitions follow Pratt and Cheng, PRC 68 (2003) 014907 and Pruneau et al., PRC 107 (2023) 014902.
 /// The projection steps follow newpairfunc() in PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h.
