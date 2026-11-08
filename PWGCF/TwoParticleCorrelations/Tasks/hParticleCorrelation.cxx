@@ -27,7 +27,6 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -48,6 +47,7 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <THnSparse.h>
 
 #include <algorithm>
 #include <array>
@@ -4437,7 +4437,7 @@ struct HParticleCorrelation4Block4 {
     }
 
     {
-      const double sqrtS = static_cast<double>(spinAlignment.beamEnergy);
+      const auto sqrtS = static_cast<double>(spinAlignment.beamEnergy);
       double beamMomentum = std::sqrt(sqrtS * sqrtS / 4. - static_cast<double>(ProtonMass) * static_cast<double>(ProtonMass));
       mBeam1Energy = static_cast<float>(sqrtS * 0.5);
       mBeam1Momentum = {0.f, 0.f, static_cast<float>(-beamMomentum)};
