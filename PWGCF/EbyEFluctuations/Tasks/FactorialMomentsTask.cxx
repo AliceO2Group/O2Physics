@@ -8,14 +8,15 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \file FactorialMomentsTask.cxx
 /// \brief This task is for Normalized Factorial Moments Analysis: Hwa and Yang, Phys. Rev. C 85, 044914 (2012)
 /// \author Salman Malik
 /// \author Balwan Singh
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -54,7 +55,8 @@ using namespace o2::framework::expressions;
 
 struct FactorialMomentsTask {
   Configurable<bool> useDcaCut{"useDcaCut", true, "Enable DCA cut"};
-  Configurable<bool> useTPCRefit{"useTPCRefit", true, "Enable TPC refit cut"};
+  Configurable<bool> usePVContributor{"usePVContributor", true,
+                                      "Require the track to contribute to the primary-vertex fit (Run 3)"};
   Configurable<bool> useTPCChi2{"useTPCChi2", true, "Enable TPC chi2 cut"};
   Configurable<bool> useTPCCluster{"useTPCCluster", false, "Select tracks with TPCCluster"};
   Configurable<bool> useITS{"useITS", false, "Select tracks with ITS"};
@@ -72,7 +74,6 @@ struct FactorialMomentsTask {
   Configurable<float> dcaZ{"dcaZ", 1.0f, "DCA z cut"};
   Configurable<float> maxTPCChi2NCl{"maxTPCChi2NCl", 4.0f, "Maximum TPCchi2NCl"};
   Configurable<float> maxITSChi2NCl{"maxITSChi2NCl", 40.0f, "Maximum ITSchi2NCl"};
-  Configurable<float> minTPCr{"minTPCr", 70.0f, "minimum number of TPC clusters"};
   Configurable<float> minTPCNCls{"minTPCNCls", 70.0f, "minimum number of TPC clusters"};
   Configurable<std::vector<int>> centLimits{"centLimits", {0, 5}, "centrality min and max"};
   Configurable<std::vector<float>> vertexXYZ{"vertexXYZ", {0.3f, 0.4f, 10.0f}, "vertex cuts"};
@@ -90,8 +91,7 @@ struct FactorialMomentsTask {
   Configurable<bool> includeITSTracks{"includeITSTracks", false, "ITS Tracks"};
   Configurable<int> nSlots{"nSlots", 1250, "Number of hash slots for merge-safe subsampling (slot = splitmix64(globalBC) % nSlots); must be identical for every job"};
   Configurable<bool> useMC{"useMC", false, "Use MC information"};
-  Configurable<bool> useCrossedRows{"useCrossedRows", true, "Require global track in filter"};
-  Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "Require global track in filter"};
+  Configurable<bool> useCrossedRows{"useCrossedRows", true, "Require minimum number of TPC crossed rows"};
   Configurable<int> minITSClusters{"minITSClusters", 6, "Minimum Number of ITS cluster"};
   Configurable<int> minTPCClusters{"minTPCClusters", 70, "Minimum Number of TPC cluster"};
   Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
@@ -138,15 +138,15 @@ struct FactorialMomentsTask {
     },
     OutputObjHandlingPolicy::AnalysisObject,
     true};
+  float collisionZ = 0.f;
+  static constexpr double DcaXY0 = 0.0105;
+  static constexpr double DcaXY1 = 0.035;
+  static constexpr double DcaXY2 = 1.1;
   static const int nBins = 52;
   static const int nCentLim = 2;
   static const int nPtVal = 2;
   static const int nVertexXYZ = 3;
   static constexpr int NPt = 5;
-  float collisionZ = 0.f;
-  static constexpr double DcaXY0 = 0.0105;
-  static constexpr double DcaXY1 = 0.035;
-  static constexpr double DcaXY2 = 1.1;
   static constexpr double MinCharge = 1e-6;
   static constexpr int MaxSlots = 1000000;
   static const int nfqOrder = 6;
@@ -182,17 +182,17 @@ struct FactorialMomentsTask {
   void init(o2::framework::InitContext&)
   {
     if (numPt.value < 1 || numPt.value > NPt) {
-      LOG(fatal) << "NPt must be between 1 and 5, got " << numPt.value;
+      LOG(fatal) << "numPt must be between 1 and " << NPt << ", got " << numPt.value;
     }
     if (static_cast<int>(ptCuts.value.size()) < nPtVal * numPt.value) {
       LOG(fatal) << "ptCuts needs " << nPtVal * numPt.value << " values for numPt=" << numPt.value
                  << ", got " << ptCuts.value.size();
     }
     if (nSlots.value < 1 || nSlots.value > MaxSlots) {
-      LOG(fatal) << "nSlots must be in [1, MaxSlots], got " << nSlots.value;
+      LOG(fatal) << "nSlots must be in [1, " << MaxSlots << "], got " << nSlots.value;
     }
     if (centLimits.value.size() != nCentLim || vertexXYZ.value.size() != nVertexXYZ) {
-      LOG(fatal) << "centLimits needs 2 and vertexXYZ needs 3 values";
+      LOG(fatal) << "centLimits needs " << nCentLim << " and vertexXYZ needs " << nVertexXYZ << " values";
     }
     if (applyCheckPtForRec.value == applyCheckPtForMC.value) {
       LOG(fatal) << "exactly one of applyCheckPtForRec / applyCheckPtForMC must be enabled";
@@ -205,6 +205,12 @@ struct FactorialMomentsTask {
     for (int i = 0; i < static_cast<int>(ptCuts.value.size()); i++) {
       cfg += Form("%s%g", i > 0 ? "," : "", ptCuts.value[i]);
     }
+    cfg += Form(" useDcaCut=%d usePVContributor=%d useTPCChi2=%d useTPCCluster=%d useCrossedRows=%d",
+                useDcaCut.value ? 1 : 0, usePVContributor.value ? 1 : 0, useTPCChi2.value ? 1 : 0,
+                useTPCCluster.value ? 1 : 0, useCrossedRows.value ? 1 : 0);
+    cfg += Form(" useITS=%d useTPC=%d useGlobal=%d maxTPCChi2NCl=%g minTPCClusters=%d minTPCCrossedRows=%d",
+                useITS.value ? 1 : 0, useTPC.value ? 1 : 0, useGlobal.value ? 1 : 0,
+                maxTPCChi2NCl.value, minTPCClusters.value, minTPCCrossedRows.value);
     histos.add("metaConfig", cfg.Data(), HistType::kTH1D, {{1, 0.5, 1.5}});
     auto mEventSelected = std::get<std::shared_ptr<TH1>>(histos.add("mEventSelected", "eventSelected", HistType::kTH1D, {{NEventSteps, 0.5, NEventSteps + 0.5}}));
     const std::array<const char*, NEventSteps> evLabels = {"all", "sel8", "kNoITSROFrameBorder", "kNoTimeFrameBorder", "kNoSameBunchPileup", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "kIsVertexITSTPC", "centrality", "accepted"};
@@ -456,6 +462,7 @@ struct FactorialMomentsTask {
     histos.fill(HIST("mEventSelected"), EvAccepted);
     return true;
   }
+
   template <typename T>
   bool selectTrack(const T& track)
   {
@@ -468,26 +475,24 @@ struct FactorialMomentsTask {
     if (useGlobal && !track.isGlobalTrack()) {
       return false;
     }
-    if (useCrossedRows && track.tpcNClsCrossedRows() < minTPCr) {
+    if (useCrossedRows && track.tpcNClsCrossedRows() < minTPCCrossedRows) {
       return false;
     }
     if (useDcaCut && !passDcaCut(track)) {
       return false;
     }
-
-    if (useTPCRefit && !(track.flags() & o2::aod::track::TPCrefit)) {
+    if (usePVContributor && !track.isPVContributor()) {
       return false;
     }
-
     if (useTPCChi2 && track.tpcChi2NCl() > maxTPCChi2NCl) {
       return false;
     }
-
     if (useTPCCluster && track.tpcNClsFound() < minTPCClusters) {
       return false;
     }
     return true;
   }
+
   void beginEvent()
   {
     for (int iPt = 0; iPt < numPt; ++iPt) {
