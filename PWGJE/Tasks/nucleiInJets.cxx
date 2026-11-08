@@ -43,6 +43,7 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -51,8 +52,6 @@
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 #include <TVector2.h>
-
-#include <ReconstructionDataFormats/PID.h>
 
 #include <algorithm>
 #include <array>
