@@ -235,6 +235,7 @@ enum KinkFilters {
   kPhiMax,
   kMassMin,
   kMassMax,
+  kPhiAtPv,
   kMlScoreMin,
   kKinkFiltersMax
 };
@@ -251,6 +252,7 @@ const std::unordered_map<KinkFilters, std::string> kinkFilterNames = {
   {kPhiMax, "phiMax"},
   {kMassMin, "massMin"},
   {kMassMax, "massMax"},
+  {kPhiAtPv, "kinkPhiAtPv"},
   {kMlScoreMin, "mlScoreMin"}};
 
 /// \class KinkCuts
@@ -319,6 +321,7 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
           {kinkFilterNames.at(kPhiMax), mPhiMax},
           {kinkFilterNames.at(kMassMin), mMassSigmaLowerLimit},
           {kinkFilterNames.at(kMassMax), mMassSigmaUpperLimit},
+          {kinkFilterNames.at(kPhiAtPv), static_cast<float>(mKinkPhiAtPv)},
         });
     }
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
@@ -333,6 +336,7 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
           {kinkFilterNames.at(kPhiMax), mPhiMax},
           {kinkFilterNames.at(kMassMin), mMassSigmaPlusLowerLimit},
           {kinkFilterNames.at(kMassMax), mMassSigmaPlusUpperLimit},
+          {kinkFilterNames.at(kPhiAtPv), static_cast<float>(mKinkPhiAtPv)},
         });
     }
   };
@@ -472,6 +476,8 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     p = mKinkMotherPhi < mPhiMax;
     this->template fillFilter<FilterHistName>(kPhiMax, p);
     pass &= p;
+
+    this->template fillFilter<FilterHistName>(kPhiAtPv, mKinkPhiAtPv);
 
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       float sigmaMass = kinkCand.mSigmaMinus();
@@ -859,6 +865,7 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
         {kinkFilterNames.at(kPhiMax), mPhiMax},
         {kinkFilterNames.at(kMassMin), mMassLowerLimit},
         {kinkFilterNames.at(kMassMax), mMassUpperLimit},
+        {kinkFilterNames.at(kPhiAtPv), static_cast<float>(mPhiAtPv)},
         {kinkFilterNames.at(kMlScoreMin), mMlScoreMin},
       });
   };
@@ -906,6 +913,8 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
     p = mPhi < mPhiMax;
     this->template fillFilter<FilterHistName>(kPhiMax, p);
     pass &= p;
+
+    this->template fillFilter<FilterHistName>(kPhiAtPv, mPhiAtPv);
 
     p = mMass > mMassLowerLimit;
     this->template fillFilter<FilterHistName>(kMassMin, p);

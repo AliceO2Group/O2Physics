@@ -16,6 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -180,15 +181,10 @@ concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typenam
 /// phiPV = 2*phiChord - phiDecay (independent of polarity).
 inline float phiAtPrimaryVertex(float phiDecay, float xDecay, float yDecay)
 {
-  constexpr float TwoPi = o2::constants::math::TwoPI;
-  if (xDecay == 0.f && yDecay == 0.f) {
+  if (std::abs(xDecay) < o2::constants::math::Epsilon && std::abs(yDecay) < o2::constants::math::Epsilon) {
     return phiDecay;
   }
-  float phi = std::fmod(2.f * std::atan2(yDecay, xDecay) - phiDecay, TwoPi);
-  if (phi < 0.f) {
-    phi += TwoPi;
-  }
-  return phi;
+  return RecoDecay::constrainAngle(2.f * std::atan2(yDecay, xDecay) - phiDecay);
 }
 
 /// Recalculate the pT of a kink mother from its direction and the charged daughter momentum
