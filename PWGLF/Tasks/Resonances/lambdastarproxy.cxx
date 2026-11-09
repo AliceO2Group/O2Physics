@@ -1739,7 +1739,7 @@ struct Lambdastarproxy {
       // the track has a valid TOF match. Tracks without TOF are kept with
       // the TPC-only decision, avoiding an additional TOF-matching efficiency loss.
       if (isDeuteron) {
-        if (std::abs(nsTPC) >= tpcCut) {
+        if (!std::isfinite(nsTPC) || std::abs(nsTPC) >= tpcCut) {
           return false;
         }
         if (lstarEnableTOFNsigmaCutDe.value != 0 && hasTof) {
