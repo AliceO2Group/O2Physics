@@ -11,9 +11,9 @@
 
 /// \file doubleOmegaTrackIndexSkimCreator.cxx
 /// \brief Table producer for V0s and Cascade tables from tracks selected by a track-level BDT.
-///        Designed to improve the efficiency in the double Omega search, the BDT is supposed to 
+///        Designed to improve the efficiency in the double Omega search, the BDT is supposed to
 ///        discriminate between primary tracks and daughters of Lambda and Omega decays,
-///        regardless of the fact that those particles are from a double Omega or not. 
+///        regardless of the fact that those particles are from a double Omega or not.
 ///        A table producer for the AO2Ds required for the training of the BDT is also provided.
 ///
 /// \author Giorgio Alberto Lucia (giorgio.alberto.lucia@cern.ch)
