@@ -120,7 +120,7 @@ struct SGExclOmega {
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
-    gapSide = truegapSide;
+    // gapSide = truegapSide;
     // if (gapSide!=2) return;
     int pvtracks = 0;
     int esign = 0;
