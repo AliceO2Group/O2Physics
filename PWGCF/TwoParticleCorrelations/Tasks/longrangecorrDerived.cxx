@@ -24,10 +24,8 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -380,7 +378,7 @@ struct LongrangecorrDerived {
     if (fLoadTrkEffCorr) {
       return;
     }
-    if (cfgSel.cfgEffccdbPath.value.empty() == false) {
+    if (!cfgSel.cfgEffccdbPath.value.empty()) {
       hTrkEff = ccdb->getForTimeStamp<TH3D>(cfgSel.cfgEffccdbPath, timestamp);
       if (hTrkEff == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgSel.cfgEffccdbPath.value.c_str());
@@ -388,7 +386,7 @@ struct LongrangecorrDerived {
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgEffccdbPath.value.c_str(), static_cast<void*>(hTrkEff));
     }
 
-    if (cfgSel.cfgAccccdbPath.value.empty() == false) {
+    if (!cfgSel.cfgAccccdbPath.value.empty()) {
       hTrkAcc = ccdb->getForTimeStamp<TH3D>(cfgSel.cfgAccccdbPath, timestamp);
       if (hTrkAcc == nullptr) {
         LOGF(fatal, "Could not load NUA histogram for trigger particles from %s", cfgSel.cfgAccccdbPath.value.c_str());
@@ -433,14 +431,18 @@ struct LongrangecorrDerived {
   bool isTrackSelected(TTrack const& track)
   {
     if constexpr (requires { track.tpcNClsFound(); }) {
-      if (track.tpcNClsFound() < cfgSel.cfgTpcMinNclsFound)
+      if (track.tpcNClsFound() < cfgSel.cfgTpcMinNclsFound) {
         return false;
-      if (track.tpcNClsCrossedRows() < cfgSel.cfgTpcMinNCrossedRows)
+      }
+      if (track.tpcNClsCrossedRows() < cfgSel.cfgTpcMinNCrossedRows) {
         return false;
-      if (track.tpcChi2NCl() > cfgSel.cfgTpcMaxChi2PerCluster)
+      }
+      if (track.tpcChi2NCl() > cfgSel.cfgTpcMaxChi2PerCluster) {
         return false;
-      if (std::abs(track.dcaZ()) > cfgSel.cfgTpcMaxDcaZ)
+      }
+      if (std::abs(track.dcaZ()) > cfgSel.cfgTpcMaxDcaZ) {
         return false;
+      }
       return true;
     } else {
       return true;
@@ -505,8 +507,9 @@ struct LongrangecorrDerived {
     if constexpr (fillHist) {
       histos.fill(HIST("hTrueGapSide"), truegapSide);
     }
-    if (truegapSide != cfgGapSideCut)
+    if (truegapSide != cfgGapSideCut) {
       return false;
+    }
     if constexpr (fillHist) {
       histos.fill(HIST("hTrueGapSide_AfterSel"), truegapSide);
     }
@@ -522,22 +525,27 @@ struct LongrangecorrDerived {
       auto trkeff = 1.0f;
       auto trkAcc = 1.0f;
 
-      if (!isTrackSelected(triggerTrack))
+      if (!isTrackSelected(triggerTrack)) {
         continue;
+      }
 
       if constexpr (requires { triggerTrack.trackType(); }) {
-        if (cfgSel.cfgPidMask != 0 && (cfgSel.cfgPidMask & (1u << static_cast<uint32_t>(triggerTrack.trackType()))) == 0u)
+        if (cfgSel.cfgPidMask != 0 && (cfgSel.cfgPidMask & (1u << static_cast<uint32_t>(triggerTrack.trackType()))) == 0u) {
           continue;
+        }
       } else if constexpr (requires { triggerTrack.v0Type(); }) {
-        if (cfgSel.cfgV0Mask != 0 && (cfgSel.cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u)
+        if (cfgSel.cfgV0Mask != 0 && (cfgSel.cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u) {
           continue;
+        }
       }
 
       if constexpr (requires { triggerTrack.channelID(); }) {
-        if (cfgSel.cfgRequireFt0aOuterRing && !triggerTrack.isTrackFT0Outer())
+        if (cfgSel.cfgRequireFt0aOuterRing && !triggerTrack.isTrackFT0Outer()) {
           continue;
-        if (cfgSel.cfgRequireFt0aInnerRing && triggerTrack.isTrackFT0Outer())
+        }
+        if (cfgSel.cfgRequireFt0aInnerRing && triggerTrack.isTrackFT0Outer()) {
           continue;
+        }
         trigAmpl = triggerTrack.amplitude();
       } else {
         trigAmpl = 1.0;
@@ -570,14 +578,17 @@ struct LongrangecorrDerived {
       for (auto const& assoTrack : assocs) {
         auto assoAmpl = 1.0f;
 
-        if (!isTrackSelected(assoTrack))
+        if (!isTrackSelected(assoTrack)) {
           continue;
+        }
 
         if constexpr (requires { assoTrack.channelID(); }) {
-          if (cfgSel.cfgRequireFt0cOuterRing && !assoTrack.isTrackFT0Outer())
+          if (cfgSel.cfgRequireFt0cOuterRing && !assoTrack.isTrackFT0Outer()) {
             continue;
-          if (cfgSel.cfgRequireFt0cInnerRing && assoTrack.isTrackFT0Outer())
+          }
+          if (cfgSel.cfgRequireFt0cInnerRing && assoTrack.isTrackFT0Outer()) {
             continue;
+          }
           assoAmpl = assoTrack.amplitude();
         } else {
           assoAmpl = 1.0f;
@@ -612,10 +623,11 @@ struct LongrangecorrDerived {
     fillCollQA(col);
     auto multiplicity = 1.0f;
     if constexpr (requires { col.centrality(); }) {
-      if (cfgSel.isUseCentEst)
+      if (cfgSel.isUseCentEst) {
         multiplicity = col.centrality();
-      else
+      } else {
         multiplicity = col.multiplicity();
+      }
     } else {
       multiplicity = col.multiplicity();
     }
@@ -639,10 +651,11 @@ struct LongrangecorrDerived {
       }
       auto multiplicity = 1.0f;
       if constexpr (requires { col.centrality(); }) {
-        if (cfgSel.isUseCentEst)
+        if (cfgSel.isUseCentEst) {
           multiplicity = col.centrality();
-        else
+        } else {
           multiplicity = col.multiplicity();
+        }
       } else {
         multiplicity = col.multiplicity();
       }
@@ -691,10 +704,11 @@ struct LongrangecorrDerived {
     auto multiplicity = mccollision.multiplicity();
     if (cfgSel.isUseDataLikeMult > 0) {
       for (const auto& collision : collisions) {
-        if (cfgSel.isUseCentEst)
+        if (cfgSel.isUseCentEst) {
           multiplicity = collision.centrality();
-        else
+        } else {
           multiplicity = collision.multiplicity();
+        }
       }
     }
     fillCorrHist<CorrelationContainer::kCFStepAll>(same, triggers, assocs, false, mccollision.posZ(), multiplicity, 1.0);
@@ -706,15 +720,17 @@ struct LongrangecorrDerived {
     bool useMCMultiplicity = (cfgSel.isUseDataLikeMult == 0);
     auto getMultiplicity =
       [&collisions, &useMCMultiplicity, this](auto& col) {
-        if (useMCMultiplicity)
+        if (useMCMultiplicity) {
           return col.multiplicity();
+        }
         auto groupedCollisions = collisions.sliceByCached(aod::lrcorrcolltable::lrMcCollisionId, col.globalIndex(), this->cache);
-        if (groupedCollisions.size() == 0)
+        if (groupedCollisions.size() == 0) {
           return -1.0f;
-        if (cfgSel.isUseCentEst)
+        }
+        if (cfgSel.isUseCentEst) {
           return groupedCollisions.begin().centrality();
-        else
-          return groupedCollisions.begin().multiplicity();
+        }
+        return groupedCollisions.begin().multiplicity();
       };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
@@ -960,29 +976,37 @@ struct LongrangecorrDerived {
   template <typename CheckCol>
   bool isEventSelected(CheckCol const& col)
   {
-    if (!col.sel8())
+    if (!col.sel8()) {
       return false;
-    if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    }
+    if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
-    if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
-    if (!col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+    }
+    if (!col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
-    if (std::abs(col.posZ()) >= cfgSel.cfgVtxCut)
+    }
+    if (std::abs(col.posZ()) >= cfgSel.cfgVtxCut) {
       return false;
+    }
     return true;
   }
 
   template <typename CheckGenPart>
   bool isGenPartSelected(CheckGenPart const& particle)
   {
-    if (!particle.isPhysicalPrimary() || !particle.producedByGenerator())
+    if (!particle.isPhysicalPrimary() || !particle.producedByGenerator()) {
       return false;
+    }
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-    if (pdgParticle == nullptr)
+    if (pdgParticle == nullptr) {
       return false;
-    if (std::abs(pdgParticle->Charge()) < KminCharge)
+    }
+    if (std::abs(pdgParticle->Charge()) < KminCharge) {
       return false;
+    }
     return true;
   }
 
@@ -994,18 +1018,21 @@ struct LongrangecorrDerived {
     }
     bool atLeastOne = false;
     for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol))
+      if (!isEventSelected(RecCol)) {
         continue;
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex())
+      }
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
+      }
       atLeastOne = true;
     }
     for (const auto& particle : mcparticles) {
       if (!isGenPartSelected(particle) ||
           std::abs(particle.eta()) > cfgSel.cfgEtaCut ||
           particle.pt() < cfgSel.cfgPtCutMin ||
-          particle.pt() > cfgSel.cfgPtCutMax)
+          particle.pt() > cfgSel.cfgPtCutMax) {
         continue;
+      }
       if (atLeastOne) {
         histos.fill(HIST("hGenMCdndpt"), mcCollision.posZ(), particle.eta(), particle.pt());
 
@@ -1024,21 +1051,27 @@ struct LongrangecorrDerived {
     }
 
     for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol))
+      if (!isEventSelected(RecCol)) {
         continue;
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex())
+      }
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
+      }
       auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
       for (const auto& track : recTracksPart) {
-        if (!track.isGlobalTrack())
+        if (!track.isGlobalTrack()) {
           continue;
-        if (!myTrackFilter.IsSelected(track))
+        }
+        if (!myTrackFilter.IsSelected(track)) {
           continue;
-        if (!track.has_mcParticle())
+        }
+        if (!track.has_mcParticle()) {
           continue;
+        }
         auto particle = track.mcParticle();
-        if (RecCol.mcCollisionId() != particle.mcCollisionId())
+        if (RecCol.mcCollisionId() != particle.mcCollisionId()) {
           continue;
+        }
         if (particle.isPhysicalPrimary()) {
           histos.fill(HIST("hRecMCdndpt"), mcCollision.posZ(), particle.eta(), particle.pt());
 
@@ -1089,7 +1122,7 @@ struct LongrangecorrDerived {
             isPion = isTofPion && isTpcPion;
             isKaon = isTofKaon && isTpcKaon;
             isProton = isTofProton && isTpcProton;
-          } else if (!(track.pt() > cfgSel.cfgTofPidPtCut && !track.hasTOF())) {
+          } else if (track.pt() <= cfgSel.cfgTofPidPtCut || track.hasTOF()) {
             isPion = isTpcPion;
             isKaon = isTpcKaon;
             isProton = isTpcProton;
@@ -1123,12 +1156,15 @@ struct LongrangecorrDerived {
   {
     float nTrk = 0.0f;
     for (auto const& trk : tracks) {
-      if (!trk.isGlobalTrack())
+      if (!trk.isGlobalTrack()) {
         continue;
-      if (!myTrackFilter.IsSelected(trk))
+      }
+      if (!myTrackFilter.IsSelected(trk)) {
         continue;
-      if (trk.pt() < cfgSel.cfgPtCutMinForMult || trk.pt() > cfgSel.cfgPtCutMaxForMult)
+      }
+      if (trk.pt() < cfgSel.cfgPtCutMinForMult || trk.pt() > cfgSel.cfgPtCutMaxForMult) {
         continue;
+      }
       nTrk += getTrkEffCorr(vz, trk.eta(), trk.pt());
     }
     return nTrk;
@@ -1137,24 +1173,31 @@ struct LongrangecorrDerived {
   template <typename TCollision, typename TV0, typename TTrack>
   void fillCleanV0Daughters(TCollision const& rawCol, TV0 const& v0, TTrack const& posTrack, TTrack const& negTrack, float multiplicity)
   {
-    if (!posTrack.hasTPC() || !negTrack.hasTPC())
+    if (!posTrack.hasTPC() || !negTrack.hasTPC()) {
       return;
-    if (posTrack.tpcNClsCrossedRows() < cfgSel.cfgTpcMinNCrossedRows || negTrack.tpcNClsCrossedRows() < cfgSel.cfgTpcMinNCrossedRows)
+    }
+    if (posTrack.tpcNClsCrossedRows() < cfgSel.cfgTpcMinNCrossedRows || negTrack.tpcNClsCrossedRows() < cfgSel.cfgTpcMinNCrossedRows) {
       return;
-    if (std::abs(v0.positiveeta()) > cfgSel.cfgEtaCut || std::abs(v0.negativeeta()) > cfgSel.cfgEtaCut)
+    }
+    if (std::abs(v0.positiveeta()) > cfgSel.cfgEtaCut || std::abs(v0.negativeeta()) > cfgSel.cfgEtaCut) {
       return;
-    if (v0.v0cosPA() < cfgSel.cfgCleanV0MinCosPA)
+    }
+    if (v0.v0cosPA() < cfgSel.cfgCleanV0MinCosPA) {
       return;
-    if (v0.dcaV0daughters() > cfgSel.cfgCleanV0MaxDcaDau)
+    }
+    if (v0.dcaV0daughters() > cfgSel.cfgCleanV0MaxDcaDau) {
       return;
-    if (v0.v0radius() < cfgSel.cfgCleanV0MinRadius || v0.v0radius() > cfgSel.cfgCleanV0MaxRadius)
+    }
+    if (v0.v0radius() < cfgSel.cfgCleanV0MinRadius || v0.v0radius() > cfgSel.cfgCleanV0MaxRadius) {
       return;
+    }
 
     float distOverP = v0.distovertotmom(rawCol.posX(), rawCol.posY(), rawCol.posZ());
 
     auto fillV0Probe = [&](double v0CleanType, TTrack const& probeTrack, float tpcNsig, float tofNsigReal, float expSigma, bool isPionProbe, bool isProtonProbe) {
-      if (!probeTrack.isGlobalTrack() || !myTrackFilter.IsSelected(probeTrack))
+      if (!probeTrack.isGlobalTrack() || !myTrackFilter.IsSelected(probeTrack)) {
         return;
+      }
 
       const float tofVal = probeTrack.hasTOF() ? tofNsigReal : -999.0f;
 
@@ -1166,8 +1209,8 @@ struct LongrangecorrDerived {
       if (cfgSel.cfgFillAfterCutWithV0 && cfgSel.cfgGetNsigmaQA) {
         const bool passTofForAfterCut = !cfgSel.cfgRequireTofForV0AfterCut ||
                                         (probeTrack.hasTOF() && tofNsigReal > cfgSel.cfgCleanNsigmaTofMin && tofNsigReal < cfgSel.cfgCleanNsigmaTofMax);
-        const bool matchWagon = ((cfgSel.cfgPidMask & KPidMaskPion) && isPionProbe) ||
-                                ((cfgSel.cfgPidMask & KPidMaskProton) && isProtonProbe);
+        const bool matchWagon = (((cfgSel.cfgPidMask & KPidMaskPion) != 0) && isPionProbe) ||
+                                (((cfgSel.cfgPidMask & KPidMaskProton) != 0) && isProtonProbe);
         if (matchWagon && passTofForAfterCut) {
           histos.fill(HIST("TofTpcNsigma_after"), multiplicity, probeTrack.pt(), tpcNsig, tofVal);
           if (cfgSel.cfgGetdEdx) {
@@ -1273,12 +1316,15 @@ struct LongrangecorrDerived {
       auto tracks = standardTracks.sliceByCached(aod::track::collisionId, rawCol.globalIndex(), this->cache);
 
       for (auto const& track : tracks) {
-        if (!track.isGlobalTrack())
+        if (!track.isGlobalTrack()) {
           continue;
-        if (!myTrackFilter.IsSelected(track))
+        }
+        if (!myTrackFilter.IsSelected(track)) {
           continue;
-        if (!track.hasTOF())
+        }
+        if (!track.hasTOF()) {
           continue;
+        }
 
         const float tpcNsigPi = track.tpcNSigmaPi(), tofNsigPi = track.tofNSigmaPi(), expSigPi = track.tpcExpSigmaPi();
         const float tpcNsigKa = track.tpcNSigmaKa(), tofNsigKa = track.tofNSigmaKa(), expSigKa = track.tpcExpSigmaKa();
@@ -1326,17 +1372,17 @@ struct LongrangecorrDerived {
           float tpcNsig = 0.0f, tofNsig = 0.0f, expSig = 0.0f;
           bool isTargetClean = false;
 
-          if (cfgSel.cfgPidMask & KPidMaskPion) {
+          if ((cfgSel.cfgPidMask & KPidMaskPion) != 0) {
             tpcNsig = tpcNsigPi;
             tofNsig = tofNsigPi;
             expSig = expSigPi;
             isTargetClean = isCleanPi;
-          } else if (cfgSel.cfgPidMask & KPidMaskKaon) {
+          } else if ((cfgSel.cfgPidMask & KPidMaskKaon) != 0) {
             tpcNsig = tpcNsigKa;
             tofNsig = tofNsigKa;
             expSig = expSigKa;
             isTargetClean = isCleanKa;
-          } else if (cfgSel.cfgPidMask & KPidMaskProton) {
+          } else if ((cfgSel.cfgPidMask & KPidMaskProton) != 0) {
             tpcNsig = tpcNsigPr;
             tofNsig = tofNsigPr;
             expSig = expSigPr;
@@ -1413,8 +1459,8 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processPIDQA, "process PID QA on standard AODs", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LongrangecorrDerived>(cfgc)};
+    adaptAnalysisTask<LongrangecorrDerived>(context)};
 }
