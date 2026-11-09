@@ -29,10 +29,16 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TH2.h>
 #include <TMCProcess.h>
-#include <TPDGCode.h>
+#include <TProfile.h>
+
+#include <fmt/format.h>
 
 #include <cstdint>
+#include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -302,7 +308,7 @@ void PccQa::processMeas(const C& collision, const T& tracks)
           auto mother = particle.template mothers_first_as<ParticleTableMC>();
 
           const int motherCategory = getMotherCategory(mother.pdgCode());
-          const std::string motherName = getMotherName(motherCategory);
+          //const std::string motherName = getMotherName(motherCategory);
 
           histos.fill(
             HIST("sec/dec/motherPDG"),

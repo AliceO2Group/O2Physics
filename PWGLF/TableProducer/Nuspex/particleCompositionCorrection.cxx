@@ -215,7 +215,7 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
       std::vector<std::vector<float>> input = {{dNdEta}, {particle.pt()}, {iterMapPID->second}};
       float fracData = particleFractionsData.evalModel(input)[0];
       float fracMC = particleFractionsMC.evalModel(input)[0];
-      float weight = (fracMC) ? fracData / fracMC : 1.f;
+      float weight = (fracMC != 0.f) ? fracData / fracMC : 1.f;
       std::tuple<float, float, float> weights = {weight, weight, weight};
       if (!skipSec && particle.has_daughters()) {
         storedWeights[particle.index()] = weights;
@@ -283,7 +283,7 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
       LOGF(error, "GLOBAL MOTHER IS INCIDING PROTON");
     }
 
-    if (storedWeights.find(refParticleID) == storedWeights.end()) {
+    if (!storedWeights.contains(refParticleID)) {
       // LOGP(info, "MCB:   no ref stored for mom {}, PDG: {}!!", particles.iteratorAt(refParticleID).index(),particles.iteratorAt(refParticleID).pdgCode());
       return noWeights;
     }
