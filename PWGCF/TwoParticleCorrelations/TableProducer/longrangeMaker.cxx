@@ -52,16 +52,13 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TH3.h>
 
 #include <sys/types.h>
 
-#include <algorithm>
 #include <array>
-#include <bitset>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -78,7 +75,6 @@ using namespace o2::aod::fwdtrack;
 using namespace o2::aod::evsel;
 using namespace o2::constants::math;
 
-auto static constexpr CintZero = 0;
 auto static constexpr KminFt0cCell = 96;
 auto static constexpr TotFt0Channels = 208;
 auto static constexpr MinFt0aDeadChannelOuter = 60;
@@ -92,8 +88,7 @@ auto static constexpr MinFt0cMirrorChannelOuter = 144;
 auto static constexpr MaxFt0cMirrorChannelOuter = 147;
 auto static constexpr MinFt0cOuterRing = 144;
 
-AxisSpec axisEvent{20, 0.5, 20.5, "#Event", "EventAxis"};
-AxisSpec axisTrackSel{10, 0.5, 10.5, "#Track", "TrackAxis"};
+const AxisSpec axisEvent{20, 0.5, 20.5, "#Event", "EventAxis"};
 auto static constexpr KminCharge = 3.0f;
 
 enum KindOfV0 {
@@ -230,8 +225,8 @@ struct LongrangeMaker {
   Configurable<float> cfgTofPidPtCut{"cfgTofPidPtCut", 0.3f, "Minimum pt to use TOF N-sigma"};
   Configurable<bool> isUseItsPid{"isUseItsPid", false, "Use ITS PID for particle identification"};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdg{};
   o2::ccdb::CcdbApi ccdbApi;
   o2::ft0::Geometry ft0Det;
   std::vector<o2::detectors::AlignParam>* offsetFT0{nullptr};
@@ -246,7 +241,7 @@ struct LongrangeMaker {
   // Create instance of the selector class which runs the gap selection algorithm
   SGSelector sgSelector;
   // Create instance of cut holder class to contain the user defined cuts
-  SGCutParHolder cfgSgCuts = SGCutParHolder();
+  SGCutParHolder cfgSgCuts;
   Configurable<SGCutParHolder> sgCuts{"sgCuts", {}, "SG event cuts"};
   Configurable<int> cfgGapSide{"cfgGapSide", 2, "cut on UPC events"};
 
@@ -320,9 +315,9 @@ struct LongrangeMaker {
                                                         TrackSelection::GlobalTrackRun3DCAxyCut::Default);
     myTrackFilter.SetPtRange(cfgtrksel.cfgPtCutMin, cfgtrksel.cfgPtCutMax);
     myTrackFilter.SetEtaRange(-cfgtrksel.cfgEtaCut, cfgtrksel.cfgEtaCut);
-    myTrackFilter.SetMinNCrossedRowsTPC(cfgtrksel.minNCrossedRowsTPC);
+    myTrackFilter.SetMinNCrossedRowsTPC(static_cast<int>(cfgtrksel.minNCrossedRowsTPC));
     myTrackFilter.SetMinNCrossedRowsOverFindableClustersTPC(cfgtrksel.minNCrossedRowsOverFindableClustersTPC);
-    myTrackFilter.SetMinNClustersTPC(cfgtrksel.minTPCNClsFound);
+    myTrackFilter.SetMinNClustersTPC(static_cast<int>(cfgtrksel.minTPCNClsFound));
     myTrackFilter.SetMaxChi2PerClusterTPC(cfgtrksel.maxChi2PerClusterTPC);
     myTrackFilter.SetMaxChi2PerClusterITS(cfgtrksel.maxChi2PerClusterITS);
     myTrackFilter.SetMaxDcaZ(cfgtrksel.maxDcaZ);
@@ -333,7 +328,7 @@ struct LongrangeMaker {
     itsNsigmaCut = itsNsigmaPidCut;
     tpcNsigmaCut = tpcNsigmaPidCut;
 
-    cfgSgCuts = (SGCutParHolder)sgCuts;
+    cfgSgCuts = SGCutParHolder(sgCuts);
   }
 
   Produces<aod::LRMcCollisions> lrmccollision;
@@ -364,7 +359,7 @@ struct LongrangeMaker {
   using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-  std::vector<float> ft0gainvalues{};
+  std::vector<float> ft0gainvalues;
   void processData(CollTable::iterator const& col,
                    TrksTable const& tracks,
                    aod::FT0s const&,
@@ -404,10 +399,12 @@ struct LongrangeMaker {
 
     // track loop
     for (const auto& track : tracks) {
-      if (!track.isGlobalTrack())
+      if (!track.isGlobalTrack()) {
         continue;
-      if (!myTrackFilter.IsSelected(track))
+      }
+      if (!myTrackFilter.IsSelected(track)) {
         continue;
+      }
       auto pid = getTrackPID(track);
       lrmidtracks(lrcollision.lastIndex(),
                   track.tpcNClsFound(),
@@ -584,9 +581,10 @@ struct LongrangeMaker {
     histos.fill(HIST("hSelectionResult"), isSGEvent.value);
 
     if (issgevent <= cfgGapSide) {
-      if (cfgSgCuts.minRgtrwTOF()) {
-        if (udhelpers::rPVtrwTOF<true>(tracks, col.numContrib()) < cfgSgCuts.minRgtrwTOF())
+      if (cfgSgCuts.minRgtrwTOF() != 0.0f) {
+        if (udhelpers::rPVtrwTOF<true>(tracks, col.numContrib()) < cfgSgCuts.minRgtrwTOF()) {
           return;
+        }
       }
 
       upchelpers::FITInfo fitInfo{};
@@ -603,10 +601,12 @@ struct LongrangeMaker {
 
       // track loop
       for (const auto& track : tracks) {
-        if (!track.isGlobalTrack())
+        if (!track.isGlobalTrack()) {
           continue;
-        if (!myTrackFilter.IsSelected(track))
+        }
+        if (!myTrackFilter.IsSelected(track)) {
           continue;
+        }
         auto pid = getTrackPID(track);
         upclrmidtracks(upclrcollision.lastIndex(),
                        track.tpcNClsFound(),
@@ -732,8 +732,9 @@ struct LongrangeMaker {
   {
     auto multiplicity = 0;
     for (const auto& particle : mcparticles) {
-      if (!isGenPartSelected(particle) || std::abs(particle.eta()) > cfgtrksel.cfgEtaCut || particle.pt() < cfgtrksel.cfgPtCutMinForMult || particle.pt() > cfgtrksel.cfgPtCutMaxForMult)
+      if (!isGenPartSelected(particle) || std::abs(particle.eta()) > cfgtrksel.cfgEtaCut || particle.pt() < cfgtrksel.cfgPtCutMinForMult || particle.pt() > cfgtrksel.cfgPtCutMaxForMult) {
         continue;
+      }
       multiplicity++;
     }
     lrmccollision(mcCollision.posZ(), multiplicity, mcCollision.multMCFT0A(), mcCollision.multMCFT0C());
@@ -771,15 +772,19 @@ struct LongrangeMaker {
 
       // track loop
       for (const auto& track : recTracksPart) {
-        if (!track.isGlobalTrack())
+        if (!track.isGlobalTrack()) {
           continue;
-        if (!myTrackFilter.IsSelected(track))
+        }
+        if (!myTrackFilter.IsSelected(track)) {
           continue;
-        if (!track.has_mcParticle())
+        }
+        if (!track.has_mcParticle()) {
           continue;
+        }
         auto mcpart = track.mcParticle();
-        if (RecCol.mcCollisionId() != mcpart.mcCollisionId())
+        if (RecCol.mcCollisionId() != mcpart.mcCollisionId()) {
           continue;
+        }
         auto pid = getTrackPID(track);
         lrmidtracks(lrcollision.lastIndex(),
                     track.tpcNClsFound(),
@@ -881,13 +886,16 @@ struct LongrangeMaker {
           continue;
         }
         // Fill midrapidity tracks
-        if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMax)
+        if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMax) {
           lrmidmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), particle.flags());
+        }
         // Fill FT0 tracks
-        if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax)
+        if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax) {
           lrft0amctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
-        if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax)
+        }
+        if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax) {
           lrft0cmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
+        }
       }
     }
   }
@@ -898,14 +906,18 @@ struct LongrangeMaker {
     auto multMCFT0A = 0;
     auto multMCFT0C = 0;
     for (const auto& particle : mcparticles) {
-      if (!isGenPartSelected(particle))
+      if (!isGenPartSelected(particle)) {
         continue;
-      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMinForMult && particle.pt() < cfgtrksel.cfgPtCutMaxForMult)
+      }
+      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMinForMult && particle.pt() < cfgtrksel.cfgPtCutMaxForMult) {
         multiplicity++;
-      if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax)
+      }
+      if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax) {
         multMCFT0C++;
-      if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax)
+      }
+      if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax) {
         multMCFT0A++;
+      }
     }
     lrmccollision(mcCollision.posZ(), multiplicity, multMCFT0A, multMCFT0C);
 
@@ -914,13 +926,16 @@ struct LongrangeMaker {
         continue;
       }
       // Fill midrapidity tracks
-      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMax)
+      if (std::abs(particle.eta()) < cfgtrksel.cfgEtaCut && particle.pt() > cfgtrksel.cfgPtCutMin && particle.pt() < cfgtrksel.cfgPtCutMax) {
         lrmidmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), particle.flags());
+      }
       // Fill FT0 tracks
-      if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax)
+      if (cfgfittrksel.cfgFt0aEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0aEtaMax) {
         lrft0amctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
-      if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax)
+      }
+      if (cfgfittrksel.cfgFt0cEtaMin < particle.eta() && particle.eta() < cfgfittrksel.cfgFt0cEtaMax) {
         lrft0cmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
+      }
     }
   }
 
@@ -935,9 +950,9 @@ struct LongrangeMaker {
       multiplicity = countNTracks(tracks, col.posZ());
     }
 
-    bool checkK0s = (cfgv0trksel.cfgQAV0Mask & 1);
-    bool checkLam = (cfgv0trksel.cfgQAV0Mask & 2);
-    bool checkALam = (cfgv0trksel.cfgQAV0Mask & 4);
+    bool checkK0s = (cfgv0trksel.cfgQAV0Mask & 1) != 0;
+    bool checkLam = (cfgv0trksel.cfgQAV0Mask & 2) != 0;
+    bool checkALam = (cfgv0trksel.cfgQAV0Mask & 4) != 0;
 
     for (const auto& v0 : V0s) {
       if (!isSelectV0Track(v0)) {
@@ -1091,16 +1106,19 @@ struct LongrangeMaker {
   {
     float nTrk = 0.f;
     for (const auto& track : tracks) {
-      if (!track.isGlobalTrack())
+      if (!track.isGlobalTrack()) {
         continue;
-      if (!myTrackFilter.IsSelected(track))
+      }
+      if (!myTrackFilter.IsSelected(track)) {
         continue;
+      }
       if (track.pt() < cfgtrksel.cfgPtCutMinForMult || track.pt() > cfgtrksel.cfgPtCutMaxForMult) {
         continue;
       }
       float trkeff = 1.0f;
-      if (cfgtrksel.applyEffCorr)
+      if (cfgtrksel.applyEffCorr) {
         trkeff = getTrkEffCorr(vz, track.eta(), track.pt());
+      }
       nTrk += trkeff;
     }
     return nTrk;
@@ -1134,7 +1152,9 @@ struct LongrangeMaker {
     std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
     std::array<float, 3> nSigmaToUse = isUseItsPid ? nSigmaITS : nSigmaTPC;            // Choose which nSigma to use: TPC or ITS
     std::vector<double> detectorNsigmaCut = isUseItsPid ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
-    bool isPion, isKaon, isProton;
+    bool isPion = false;
+    bool isKaon = false;
+    bool isProton = false;
     bool isDetectedPion = nSigmaToUse[0] < detectorNsigmaCut[0] && nSigmaToUse[0] > detectorNsigmaCut[0 + 3];
     bool isDetectedKaon = nSigmaToUse[1] < detectorNsigmaCut[1] && nSigmaToUse[1] > detectorNsigmaCut[1 + 3];
     bool isDetectedProton = nSigmaToUse[2] < detectorNsigmaCut[2] && nSigmaToUse[2] > detectorNsigmaCut[2 + 3];
@@ -1145,7 +1165,8 @@ struct LongrangeMaker {
 
     if (track.pt() > cfgTofPidPtCut && !track.hasTOF()) {
       return aod::lrcorrtrktable::kNoPid;
-    } else if (track.pt() > cfgTofPidPtCut && track.hasTOF()) {
+    }
+    if (track.pt() > cfgTofPidPtCut && track.hasTOF()) {
       isPion = isTofPion && isDetectedPion;
       isKaon = isTofKaon && isDetectedKaon;
       isProton = isTofProton && isDetectedProton;
@@ -1161,31 +1182,33 @@ struct LongrangeMaker {
 
     if (isPion) {
       return aod::lrcorrtrktable::kSpPion;
-    } else if (isKaon) {
-      return aod::lrcorrtrktable::kSpKaon;
-    } else if (isProton) {
-      return aod::lrcorrtrktable::kSpProton;
-    } else {
-      return aod::lrcorrtrktable::kNoPid; // no particle satisfies the criteria
     }
+    if (isKaon) {
+      return aod::lrcorrtrktable::kSpKaon;
+    }
+    if (isProton) {
+      return aod::lrcorrtrktable::kSpProton;
+    }
+    return aod::lrcorrtrktable::kNoPid; // no particle satisfies the criteria
   }
 
   int getFt0aDeadChannelId(int channelId)
   {
-    if (channelId >= MinFt0aMirrorChannelOuter && channelId <= MaxFt0aMirrorChannelOuter)
+    if (channelId >= MinFt0aMirrorChannelOuter && channelId <= MaxFt0aMirrorChannelOuter) {
       return MinFt0aDeadChannelOuter + (channelId - MinFt0aMirrorChannelOuter);
-    else
-      return -1;
+    }
+    return -1;
   }
 
   int getFt0cDeadChannelId(int channelId)
   {
-    if (channelId >= MinFt0cMirrorChannelOuter && channelId <= MaxFt0cMirrorChannelOuter)
+    if (channelId >= MinFt0cMirrorChannelOuter && channelId <= MaxFt0cMirrorChannelOuter) {
       return MinFt0cDeadChannelOuter + (channelId - MinFt0cMirrorChannelOuter);
-    else if (channelId == Ft0cMirrorChannelInner)
+    }
+    if (channelId == Ft0cMirrorChannelInner) {
       return Ft0cDeadChannelInner;
-    else
-      return -1;
+    }
+    return -1;
   }
 
   double getPhiFT0(uint chno, int i)
@@ -1202,8 +1225,9 @@ struct LongrangeMaker {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
-    if (chno >= KminFt0cCell)
+    if (chno >= KminFt0cCell) {
       z = -z;
+    }
     auto r = std::sqrt(x * x + y * y);
     auto theta = std::atan2(r, z);
     return -std::log(std::tan(0.5 * theta));
@@ -1337,7 +1361,7 @@ struct LongrangeMaker {
     if (fLoadTrkEffCorr) {
       return;
     }
-    if (cfgtrksel.cfgEffccdbPath.value.empty() == false) {
+    if (!cfgtrksel.cfgEffccdbPath.value.empty()) {
       hTrkEff = ccdb->getForTimeStamp<TH3D>(cfgtrksel.cfgEffccdbPath, timestamp);
       if (hTrkEff == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgtrksel.cfgEffccdbPath.value.c_str());
@@ -1369,8 +1393,8 @@ struct LongrangeMaker {
   PROCESS_SWITCH(LongrangeMaker, processV0QA, "process V0 QA histograms", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LongrangeMaker>(cfgc)};
+    adaptAnalysisTask<LongrangeMaker>(context)};
 }
