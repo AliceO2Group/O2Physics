@@ -5137,7 +5137,7 @@ struct AnalysisDileptonTrackTrack {
         }
 
         uint32_t CutDecision = 0;
-        for (int iCut = 0; iCut < fNQuadrupletCuts; iCut++) {
+        for (uint32_t iCut = 0; iCut < fNQuadrupletCuts; iCut++) {
           // apply dilepton-track-track cut
           if (fQuadrupletCuts[iCut].IsSelected(fValuesQuadruplet)) {
             CutDecision |= (static_cast<uint32_t>(1) << iCut);
