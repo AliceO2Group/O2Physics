@@ -53,6 +53,7 @@ struct ConfKinkFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  o2::framework::Configurable<bool> kinkPhiAtPv{"kinkPhiAtPv", true, "Kinks and PCM SigmaPlus: store the azimuth of the Sigma momentum at the primary vertex"};
   o2::framework::Configurable<float> massMinSigma{"massMinSigma", 1.1f, "Minimum mass for Sigma hypothesis"};
   o2::framework::Configurable<float> massMaxSigma{"massMaxSigma", 1.3f, "Maximum mass for Sigma hypothesis"};
   o2::framework::Configurable<float> massMinSigmaPlus{"massMinSigmaPlus", 1.1f, "Minimum mass for SigmaPlus hypothesis"};
@@ -272,6 +273,7 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     mEtaMax = filter.etaMax.value;
     mPhiMin = filter.phiMin.value;
     mPhiMax = filter.phiMax.value;
+    mKinkPhiAtPv = filter.kinkPhiAtPv.value;
 
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       mMassSigmaLowerLimit = filter.massMinSigma.value;
@@ -421,6 +423,9 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
 
     mKinkMotherEta = RecoDecay::eta(momMother);
     mKinkMotherPhi = RecoDecay::phi(momMother);
+    if (mKinkPhiAtPv) {
+      mKinkMotherPhi = utils::phiAtPrimaryVertex(mKinkMotherPhi, kinkCand.xDecVtx(), kinkCand.yDecVtx());
+    }
 
     // Recalculate pT using kinematic constraints of the decay channel
     float ptRecalc = -999.f;
@@ -517,6 +522,7 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
   float mEtaMax = 1.f;
   float mPhiMin = 0.f;
   float mPhiMax = o2::constants::math::TwoPI;
+  bool mKinkPhiAtPv = true;
 
   // mother kinematic
   float mKinkMotherPt = 0.f;         // recalculated pT (falls back to the original pT if the recalculation fails)
@@ -827,6 +833,7 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
     mEtaMax = filter.etaMax.value;
     mPhiMin = filter.phiMin.value;
     mPhiMax = filter.phiMax.value;
+    mPhiAtPv = filter.kinkPhiAtPv.value;
     mMassLowerLimit = filter.massMinSigmaPlusPcm.value;
     mMassUpperLimit = filter.massMaxSigmaPlusPcm.value;
     mMlScoreMin = filter.mlScoreMinSigmaPlusPcm.value;
@@ -856,13 +863,16 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
       });
   };
 
-  template <typename T>
-  void computeKinematics(T const& sigmaPlusPcmCand)
+  template <typename T1, typename T2>
+  void computeKinematics(T1 const& sigmaPlusPcmCand, T2 const& col)
   {
     std::array<float, 3> momMother = {sigmaPlusPcmCand.pxSigmaPlus(), sigmaPlusPcmCand.pySigmaPlus(), sigmaPlusPcmCand.pzSigmaPlus()};
     mPt = RecoDecay::pt(momMother);
     mEta = RecoDecay::eta(momMother);
     mPhi = RecoDecay::phi(momMother);
+    if (mPhiAtPv) {
+      mPhi = utils::phiAtPrimaryVertex(mPhi, sigmaPlusPcmCand.xDecVtx() - col.posX(), sigmaPlusPcmCand.yDecVtx() - col.posY());
+    }
     mMass = sigmaPlusPcmCand.massSigmaPlus();
     mMlScore = sigmaPlusPcmCand.mlScore();
   }
@@ -951,6 +961,7 @@ class SigmaPlusPcmSelection : public baseselection::BaseSelection<float, o2::ana
   float mEtaMin = -1.f;
   float mEtaMax = 1.f;
   float mPhiMin = 0.f;
+  bool mPhiAtPv = true;
   float mPhiMax = o2::constants::math::TwoPI;
 
   // mother kinematic
@@ -1015,7 +1026,7 @@ class SigmaPlusPcmBuilder
     int64_t daughterIndex = 0;
 
     for (const auto& sigmaPlusPcm : sigmaPlusPcms) {
-      mSigmaPlusPcmSelection.computeKinematics(sigmaPlusPcm);
+      mSigmaPlusPcmSelection.computeKinematics(sigmaPlusPcm, col);
       if (!mSigmaPlusPcmSelection.checkFilters(sigmaPlusPcm)) {
         continue;
       }
@@ -1041,7 +1052,7 @@ class SigmaPlusPcmBuilder
     int64_t daughterIndex = 0;
 
     for (const auto& sigmaPlusPcm : sigmaPlusPcms) {
-      mSigmaPlusPcmSelection.computeKinematics(sigmaPlusPcm);
+      mSigmaPlusPcmSelection.computeKinematics(sigmaPlusPcm, col);
       if (!mSigmaPlusPcmSelection.checkFilters(sigmaPlusPcm)) {
         continue;
       }
