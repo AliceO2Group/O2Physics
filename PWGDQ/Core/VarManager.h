@@ -156,11 +156,11 @@ class VarManager : public TObject
 
   enum PairCandidateType {
     // TODO: need to agree on a scheme to incorporate all various hypotheses (e.g. e - mu, jpsi - K+, Jpsi - pipi,...)
-    kDecayToEE = 0, // e.g. J/psi        -> e+ e-
-    kDecayToMuMu,   // e.g. J/psi        -> mu+ mu-
-    kDecayToPiPi,   // decay channel to pi+ pi-
-    kDecayToKchKch, // decay channel to K+ K-
-    kDecayToPrAPr,  // decay channel to p+ p-
+    kDecayToEE = 0,             // e.g. J/psi        -> e+ e-
+    kDecayToMuMu,               // e.g. J/psi        -> mu+ mu-
+    kDecayToPiPi,               // decay channel to pi+ pi-
+    kDecayToKchKch,             // decay channel to K+ K-
+    kDecayToPrAPr,              // decay channel to p+ p-
     kElectronMuon,              // e.g. Electron - muon correlations
     kBcToThreeMuons,            // e.g. Bc           -> mu+ mu- mu+
     kBtoJpsiEEK,                // e.g. B+           -> e+ e- K+
@@ -3843,7 +3843,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     m1 = o2::constants::physics::MassPionCharged;
     m2 = o2::constants::physics::MassPionCharged;
   }
-  
+
   if constexpr (pairType == kDecayToKchKch) {
     m1 = o2::constants::physics::MassKaonCharged;
     m2 = o2::constants::physics::MassKaonCharged;
