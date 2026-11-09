@@ -848,12 +848,7 @@ struct HfDataCreatorJpsiHadReduced {
       int8_t flag{0}, channel{0};
       if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
         // B+ → J/Psi K+ → (µ+µ-) K+
-        if (std::abs(particle.pdgCode()) == 521) {
-          LOGP(info, "Found {} decaying to:", particle.pdgCode());
-          for (const auto& dau : particle.template daughters_as<aod::McParticles>()) {
-            LOGP(info, " ---> {}", dau.pdgCode());
-          }
-        }
+        // Since J/Psi is self-conjugate, we need to set acceptAntiParticles to false
         if (RecoDecay::isMatchedMCGen(particlesMc, particle, sign * Pdg::kBPlus, std::array{static_cast<int>(Pdg::kJPsi), sign * kKPlus}, false)) {
           // Match J/Psi -> µ+µ-
           const auto& jpsiPart = particlesMc.rawIteratorAt(particle.daughtersIds().front());
@@ -862,11 +857,9 @@ struct HfDataCreatorJpsiHadReduced {
           std::vector<int> jpsiDauPdgs{};
           for (const auto& dau : jpsiPart.template daughters_as<aod::McParticles>()) {
             jpsiDauPdgs.push_back(dau.pdgCode());
-            LOGP(info, "     JPsi ---> {}", dau.pdgCode());
           }
           if (std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kMuonMinus) == 1 && std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), -kMuonMinus) && jpsiDauPdgs.size() - std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kGamma) == nProngsJpsi) {
             flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiKToMuMuK;
-            LOGP(info, "MATCHED");
           }
         }
 
@@ -894,6 +887,7 @@ struct HfDataCreatorJpsiHadReduced {
                             ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
       } else if constexpr (DecChannel == DecayChannel::B0ToJpsiK0Star) {
         // B0 → J/Psi K*0 → (µ+µ-) (K+pi-)
+        // Since J/Psi is self-conjugate, we need to set acceptAntiParticles to false
         if (RecoDecay::isMatchedMCGen(particlesMc, particle, sign * Pdg::kB0, std::array{static_cast<int>(Pdg::kJPsi), sign * kKPlus, -1 * sign * kPiPlus}, false, nullptr, 2)) {
           // Match J/Psi -> µ+µ- and K*0 -> K+pi-
           const auto& jpsiPart = particlesMc.rawIteratorAt(particle.daughtersIds().front());
@@ -937,6 +931,7 @@ struct HfDataCreatorJpsiHadReduced {
                             ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
       } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
         // Bs → J/Psi phi → (µ+µ-) (K+K-)
+        // Since J/Psi is self-conjugate, we need to set acceptAntiParticles to false
         if (RecoDecay::isMatchedMCGen(particlesMc, particle, sign * Pdg::kBS, std::array{static_cast<int>(Pdg::kJPsi), sign * kKPlus, -1 * sign * kKPlus}, false, nullptr, 2)) {
           // Match J/Psi -> µ+µ- and phi -> K+K-
           const auto& jpsiPart = particlesMc.rawIteratorAt(particle.daughtersIds().front());
