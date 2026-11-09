@@ -279,6 +279,7 @@ struct BJetTreeCreator {
   Configurable<bool> produceTree{"produceTree", true, "produce the jet TTree"};
 
   Configurable<float> vtxRes{"vtxRes", 0.01, "Vertex position resolution (cluster size) for GNN vertex predictions (cm)"};
+  Configurable<bool> searchUpToQuark{"searchUpToQuark", true, "Flag whether to search for track origins up to the quark level"};
 
   Configurable<int> trainingDatasetRatioParam{"trainingDatasetRatioParam", 0, "Parameter for splitting training/evaluation datasets by collisionId"};
   Configurable<bool> produceExtrbTableGnn{"produceExtrbTableGnn", false, "Flag whether to produce the extra table with track quality variables for GNN training"};
@@ -846,7 +847,7 @@ struct BJetTreeCreator {
 
       //+
       TrackLabelMap trkLabels{{"trkVtxIndex", {}}, {"trkOrigin", {}}};
-      int nVertices = jettaggingutilities::vertexClustering(collision.template mcCollision_as<AnalysisCollisionsMCPOutlier>(), analysisJet, allTracks, MCParticles, origParticles, trkLabels, true, vtxRes, trackPtMin);
+      int nVertices = jettaggingutilities::vertexClustering(collision.template mcCollision_as<AnalysisCollisionsMCPOutlier>(), analysisJet, allTracks, MCParticles, origParticles, trkLabels, searchUpToQuark, vtxRes, trackPtMin);
       analyzeJetTrackInfoForGNN(collision, analysisJet, allTracks, origTracks, indicesTracks, jetFlavor, eventWeight, &trkLabels);
 
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);

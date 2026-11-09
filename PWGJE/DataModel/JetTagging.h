@@ -187,7 +187,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TrackIds, trackIds, //! inverse of the triangular edg
 
 namespace jetgnnlabel
 {
-DECLARE_SOA_COLUMN(Origin, origin, uint8_t);           //! trkOrigin from vertexClustering() (0: not physical primary, 1: charm, 2: beauty, 3: primary vertex, 4: other secondary)
+DECLARE_SOA_COLUMN(Origin, origin, uint8_t);           //! trkOrigin from vertexClustering() (0: non-physical primary, 1: charm, 2: beauty, 3: primary vertex, 4: other secondary)
 DECLARE_SOA_COLUMN(VertexIndex, vertexIndex, uint8_t); //! trkVtxIndex from vertexClustering() (0: primary vertex, >0: secondary vertex, ranked by distance to PV)
 DECLARE_SOA_COLUMN(SameVertex, sameVertex, bool);      //! true if the (i,j) constituent-track pair of this edge share the same in-jet vertex cluster (same trkVtxIndex from vertexClustering())
 } // namespace jetgnnlabel
