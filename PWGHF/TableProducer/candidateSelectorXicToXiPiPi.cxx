@@ -655,7 +655,8 @@ struct HfCandidateSelectorXicToXiPiPi {
       if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
-          if (fillQAHistograms) registry.fill(HIST("hMassPtRecSig"), hfCandXic.invMassXicPlus(), hfCandXic.pt());
+          if (fillQAHistograms)
+            registry.fill(HIST("hMassPtRecSig"), hfCandXic.invMassXicPlus(), hfCandXic.pt());
         } else {
           registry.fill(HIST("hSelCandidatesRecBkg"), PidSelected);
         }

@@ -1350,7 +1350,8 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           // fill inclusive generated Xic+
-          if (fillMcHistograms) registry.fill(HIST("hYPtGen"), particle.y(), particle.pt());
+          if (fillMcHistograms)
+            registry.fill(HIST("hYPtGen"), particle.y(), particle.pt());
 
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
           // Calculate the decay length of the generated particle
