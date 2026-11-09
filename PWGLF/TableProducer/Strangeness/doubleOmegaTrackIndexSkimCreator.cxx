@@ -52,6 +52,7 @@
 #include <TH3.h>
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
