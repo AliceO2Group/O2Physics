@@ -308,7 +308,7 @@ void PccQa::processMeas(const C& collision, const T& tracks)
           auto mother = particle.template mothers_first_as<ParticleTableMC>();
 
           const int motherCategory = getMotherCategory(mother.pdgCode());
-          //const std::string motherName = getMotherName(motherCategory);
+          // const std::string motherName = getMotherName(motherCategory);
 
           histos.fill(
             HIST("sec/dec/motherPDG"),
