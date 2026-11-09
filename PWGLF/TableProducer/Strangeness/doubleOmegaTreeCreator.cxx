@@ -106,36 +106,6 @@ struct MixingSeed {
   BuiltKaonCandidate kaon;
 };
 
-struct BuiltKaonCandidate {
-  o2::track::TrackParCov track;
-  int64_t trackId = -1;
-  int8_t sign = 0;
-  float tpcNSigma = -999.f; // -999 when TPC is unavailable.
-  float tofNSigma = -999.f; // -999 when TOF is unavailable.
-  uint32_t detectorMap = 0;
-};
-
-// Omega, Lambda and kaon candidates of one collision, built once and paired afterwards.
-// Lambdas and kaons are stored per charge of the Omega they can be paired with (see chargeIndex).
-struct CollisionCandidates {
-  std::array<float, 3> primaryVertex{};
-  std::vector<BuiltOmegaCandidate> omegas;
-  std::array<std::vector<BuiltLambdaCandidate>, 2> lambdas;
-  std::array<std::vector<BuiltKaonCandidate>, 2> kaons;
-};
-
-// Same-event double-Omega candidate used as a seed of the candidate-level event mixing. Seeds are
-// kept in a pool across dataframes, so they store copies of their daughters, with the collision and
-// track indices made unique across dataframes (see uniqueIndex).
-struct MixingSeed {
-  int64_t collisionId = -1;
-  std::array<float, 3> primaryVertex{};
-  float bz = 0.f;
-  BuiltOmegaCandidate omega;
-  BuiltLambdaCandidate lambda;
-  BuiltKaonCandidate kaon;
-};
-
 struct doubleOmegaTreeCreator {
   Produces<aod::DoubleOmegaTable> doubleOmegaTable;
   Produces<aod::DoubleOmegaTableMC> doubleOmegaTableMC;
