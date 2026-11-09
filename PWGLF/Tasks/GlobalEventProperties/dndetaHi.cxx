@@ -1242,9 +1242,9 @@ struct DndetaHi {
     const FiLTracks& tracks)
   {
     struct TruthEvent {
-      float z;
-      float cent;
-      int64_t bestCollision;
+      float z = 0.f;
+      float cent = NoCentrality;
+      int64_t bestCollision = -1;
       bool inelg0 = false;
       bool fiducial = false;
       std::array<bool, TrigEnd> matched{};
