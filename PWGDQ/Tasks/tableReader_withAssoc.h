@@ -2581,7 +2581,7 @@ struct AnalysisSameEventPairing {
                     fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
                   }
                 }
-                
+
                 if (sign1 * sign2 < 0) {
                   if (fConfigNRotations.value == 1) {
                     VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, fConfigNRotations.value);
@@ -3250,13 +3250,15 @@ struct AnalysisSameEventPairing {
 
   void processBarrelOnlyDiKaons(MyEventsVtxCovSelected const& events,
                                 o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
-                                MyBarrelTracksWithCovWithAmbiguities const& barrelTracks) {
+                                MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
     runSameEventPairing<true, VarManager::kDecayToKchKch, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processBarrelOnlyDiProtons(MyEventsVtxCovSelected const& events,
                                   o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
-                                  MyBarrelTracksWithCovWithAmbiguities const& barrelTracks) {
+                                  MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
     runSameEventPairing<true, VarManager::kDecayToPrAPr, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
@@ -4900,12 +4902,12 @@ struct AnalysisDileptonTrackTrack {
   uint32_t fNDoubletCuts = 0;  // number of doublet track cuts
   std::vector<TString> fDoubletCutNames;
   std::vector<std::pair<uint32_t, uint32_t>> fDoubletCutMasks;
-  
+
   AnalysisCompositeCut fDileptonCut{};
   bool fApplyDileptonCut = false;
   std::vector<TString> fQuadrupletCutNames;
   std::vector<AnalysisCompositeCut> fQuadrupletCuts;
-  uint32_t fNQuadrupletCuts = 0;  // number of quadruplet track cuts
+  uint32_t fNQuadrupletCuts = 0; // number of quadruplet track cuts
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
@@ -4967,7 +4969,7 @@ struct AnalysisDileptonTrackTrack {
       }
     }
     std::unique_ptr<TObjArray> trackSelectionsUpstream(tempCutsStr.Tokenize(","));
-    
+
     // interpret the list of track cuts and build the filter mask for each of the two prongs
     TString trackCutsStr = fConfigTrackCuts.value;
     std::unique_ptr<TObjArray> doubletTrackSelections(trackCutsStr.Tokenize(","));
@@ -4988,7 +4990,7 @@ struct AnalysisDileptonTrackTrack {
       }
       uint32_t mask2 = (static_cast<uint32_t>(1) << trackSelectionsUpstream->IndexOf(obj));
 
-      fTrackCutMask1 |= mask1;      
+      fTrackCutMask1 |= mask1;
       fTrackCutMask2 |= mask2;
       fDoubletCutMasks.push_back(std::make_pair(mask1, mask2));
       fDoubletCutNames.push_back(cutName);
@@ -5008,7 +5010,7 @@ struct AnalysisDileptonTrackTrack {
       fApplyDileptonCut = true;
       fDileptonCut = *o2::aod::dqcuts::GetCompositeCut(configDileptonCutNamesStr.Data());
     }
-    
+
     TString configQuadruletCutNamesStr = fConfigQuadrupletCuts.value;
     std::unique_ptr<TObjArray> objArray(configQuadruletCutNamesStr.Tokenize(","));
     for (Int_t icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -5038,7 +5040,7 @@ struct AnalysisDileptonTrackTrack {
         if (fNQuadrupletCuts == 0) {
           DefineHistograms(fHistMan, Form("QuadrupletSEPM_%s", fDoubletCutNames[idcut].Data()), fConfigAddQuadrupletHistogram.value.data());
           if (fDoubletCutMasks[idcut].first != fDoubletCutMasks[idcut].second) {
-          DefineHistograms(fHistMan, Form("QuadrupletSEMP_%s", fDoubletCutNames[idcut].Data()), fConfigAddQuadrupletHistogram.value.data());
+            DefineHistograms(fHistMan, Form("QuadrupletSEMP_%s", fDoubletCutNames[idcut].Data()), fConfigAddQuadrupletHistogram.value.data());
           }
           DefineHistograms(fHistMan, Form("QuadrupletSEPP_%s", fDoubletCutNames[idcut].Data()), fConfigAddQuadrupletHistogram.value.data());
           DefineHistograms(fHistMan, Form("QuadrupletSEMM_%s", fDoubletCutNames[idcut].Data()), fConfigAddQuadrupletHistogram.value.data());
@@ -5087,7 +5089,7 @@ struct AnalysisDileptonTrackTrack {
         continue;
       }
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
-      
+
       // apply the dilepton cut
       if (fApplyDileptonCut && !fDileptonCut.IsSelected(fValuesQuadruplet)) {
         continue;
@@ -5161,34 +5163,34 @@ struct AnalysisDileptonTrackTrack {
                   fHistMan->FillHistClass(Form("QuadrupletSEPM_%s_%s", fDoubletCutNames[iDoubletCut].Data(), fQuadrupletCutNames[iQuadrupletCut].Data()), fValuesQuadruplet);
                 }
               } else {
-                if ((track1.sign() < 0) && (track2.sign() > 0)) {                  
+                if ((track1.sign() < 0) && (track2.sign() > 0)) {
                   fHistMan->FillHistClass(Form("QuadrupletSEMP_%s_%s", fDoubletCutNames[iDoubletCut].Data(), fQuadrupletCutNames[iQuadrupletCut].Data()), fValuesQuadruplet);
-                } else if ((track1.sign() > 0) && (track2.sign() < 0)) {                  
+                } else if ((track1.sign() > 0) && (track2.sign() < 0)) {
                   fHistMan->FillHistClass(Form("QuadrupletSEPM_%s_%s", fDoubletCutNames[iDoubletCut].Data(), fQuadrupletCutNames[iQuadrupletCut].Data()), fValuesQuadruplet);
                 }
               }
-              if ((track1.sign() > 0) && (track2.sign() > 0)) {                
+              if ((track1.sign() > 0) && (track2.sign() > 0)) {
                 fHistMan->FillHistClass(Form("QuadrupletSEPP_%s_%s", fDoubletCutNames[iDoubletCut].Data(), fQuadrupletCutNames[iQuadrupletCut].Data()), fValuesQuadruplet);
-              } else if ((track1.sign() < 0) && (track2.sign() < 0)) {                
+              } else if ((track1.sign() < 0) && (track2.sign() < 0)) {
                 fHistMan->FillHistClass(Form("QuadrupletSEMM_%s_%s", fDoubletCutNames[iDoubletCut].Data(), fQuadrupletCutNames[iQuadrupletCut].Data()), fValuesQuadruplet);
               }
             }
-          }  // end of loop over quadruplet cuts
+          } // end of loop over quadruplet cuts
           // in case there are no quadruplet cuts specified by the user
           if (isSameTrackCut) {
-            if (track1.sign() * track2.sign() < 0) {              
+            if (track1.sign() * track2.sign() < 0) {
               fHistMan->FillHistClass(Form("QuadrupletSEPM_%s", fDoubletCutNames[iDoubletCut].Data()), fValuesQuadruplet);
             }
           } else {
-            if ((track1.sign() < 0) && (track2.sign() > 0)) {              
+            if ((track1.sign() < 0) && (track2.sign() > 0)) {
               fHistMan->FillHistClass(Form("QuadrupletSEMP_%s", fDoubletCutNames[iDoubletCut].Data()), fValuesQuadruplet);
-            } else if ((track1.sign() > 0) && (track2.sign() < 0)) {              
+            } else if ((track1.sign() > 0) && (track2.sign() < 0)) {
               fHistMan->FillHistClass(Form("QuadrupletSEPM_%s", fDoubletCutNames[iDoubletCut].Data()), fValuesQuadruplet);
             }
           }
-          if ((track1.sign() > 0) && (track2.sign() > 0)) {            
+          if ((track1.sign() > 0) && (track2.sign() > 0)) {
             fHistMan->FillHistClass(Form("QuadrupletSEPP_%s", fDoubletCutNames[iDoubletCut].Data()), fValuesQuadruplet);
-          } else if ((track1.sign() < 0) && (track2.sign() < 0)) {            
+          } else if ((track1.sign() < 0) && (track2.sign() < 0)) {
             fHistMan->FillHistClass(Form("QuadrupletSEMM_%s", fDoubletCutNames[iDoubletCut].Data()), fValuesQuadruplet);
           }
         } // end of loop over doublet cuts
