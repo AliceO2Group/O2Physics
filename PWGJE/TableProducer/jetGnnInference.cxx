@@ -20,12 +20,10 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetTagging.h"
 
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 
 #include <CCDB/CcdbApi.h>
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
@@ -37,8 +35,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TF1.h>
-#include <TH1.h>
 #include <TH2.h>
 
 #include <onnxruntime_cxx_api.h>
@@ -46,8 +42,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <map>
-#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -58,36 +52,35 @@ using namespace o2::framework::expressions;
 
 namespace jet_gnn_inference
 {
-// Helper struct to define optional produces for JetGnnInferenceTask
+// Optional outputs for future track-origin and vertex prediction tables.
 template <typename T>
 struct OptionalProduces : Produces<T> {
 };
 template <>
 struct OptionalProduces<void> {
 };
-}; // namespace jet_gnn_inference
+} // namespace jet_gnn_inference
 
 template <bool isMCD, typename JetTable, typename JetTaggingTable, typename JetGnnInfTrackTable = void, typename JetGnnInfVertexTable = void>
 struct JetGnnInferenceTask {
-  static constexpr double DefaultCutsMl[1][2] = {{0.5, 0.5}};
+  static constexpr double DefaultCutsMl[1][3] = {{0.5, 0.5, 0.5}};
 
   Produces<JetTaggingTable> taggingTable;
   jet_gnn_inference::OptionalProduces<JetGnnInfTrackTable> gnnTrackTable;
   jet_gnn_inference::OptionalProduces<JetGnnInfVertexTable> gnnVertexTable;
 
-  // configuration topological cut for track and sv
-  Configurable<float> trackDcaXYMax{"trackDcaXYMax", 1, "minimum DCA xy acceptance for tracks [cm]"};
-  Configurable<float> trackDcaZMax{"trackDcaZMax", 2, "minimum DCA z acceptance for tracks [cm]"};
+  // Track selection for GNN inputs
+  Configurable<float> trackDcaXYMax{"trackDcaXYMax", 1, "maximum DCA xy acceptance for tracks [cm]"};
+  Configurable<float> trackDcaZMax{"trackDcaZMax", 2, "maximum DCA z acceptance for tracks [cm]"};
 
   // ML configuration
-  Configurable<int> nJetConst{"nJetConst", 100, "maximum number of jet consistuents to be used for ML evaluation"};
+  Configurable<int> nJetConst{"nJetConst", 100, "maximum number of jet constituents to be used for ML evaluation"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
 
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{5., 1000.}, "pT bin limits for ML application"};
-  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cuts_ml::CutSmaller, cuts_ml::CutNot}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCutsMl[0], 1, 2, {"pT bin 0"}, {"score for default b-jet tagging", "uncer 1"}}, "ML selections per pT bin"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cuts_ml::CutSmaller, cuts_ml::CutNot, cuts_ml::CutNot}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCutsMl[0], 1, 3, {"pT bin 0"}, {"b", "c", "lf"}}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", 3, "Number of classes in ML model"};
-  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/chchoi"}, "Paths of models on CCDB"};
@@ -101,7 +94,7 @@ struct JetGnnInferenceTask {
   Configurable<float> dbMax{"dbMax", 15., "maximum GNN Db"};
   Configurable<double> fC{"fC", 0.018, "Parameter f_c for D_b calculation"};
   Configurable<int64_t> nJetFeat{"nJetFeat", 4, "Number of jet GNN input features"};
-  Configurable<int64_t> nTrkFeat{"nTrkFeat", 13, "Number of track GNN input features"};
+  Configurable<int64_t> nTrkFeat{"nTrkFeat", 8, "Number of track GNN input features"};
   Configurable<int64_t> nTrkOrigin{"nTrkOrigin", 5, "Number of track origin categories"};
   Configurable<std::vector<float>> transformFeatureJetMean{"transformFeatureJetMean",
                                                            std::vector<float>{-999},
@@ -118,59 +111,47 @@ struct JetGnnInferenceTask {
   Configurable<std::string> tfFuncTypeGNN{"tfFuncTypeGNN", "asinh", "Transformation function type for GNN"};
 
   o2::analysis::MlResponseHfTagging<float> bMlResponse;
-  o2::ccdb::CcdbApi ccdbApi;
 
   using JetTracksExt = soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
-  using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov, aod::TracksExtra>;
-
-  std::vector<float> scoreML;
+  using AnalysisJets = std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>;
 
   o2::analysis::GNNBjetAllocator tensorAlloc;
 
-  template <bool isMC, typename T, typename U>
-  void fillTables(T const& jet, U const& tracks)
+  template <typename Jet>
+  void fillHistograms(Jet const& jet, float db)
   {
-    int origin = -1;
-    float jetProb = -1.0;
-    if constexpr (isMC) {
-      origin = jet.origin();
+    if (jet.pt() < jetpTMin) {
+      return;
     }
-    if (doprocessAlgorithmGNN) {
-      if (jet.pt() >= jetpTMin) {
-        float dbRange;
-        if (scoreML[jet.globalIndex()] < dbMin) {
-          dbRange = 0.5; // underflow
-        } else if (scoreML[jet.globalIndex()] < dbMax) {
-          dbRange = 1.5; // in range
-        } else {
-          dbRange = 2.5; // overflow
-        }
-        registry.fill(HIST("h2_count_db"), 3.5, dbRange); // incl jet
-        if constexpr (isMC) {
-          switch (origin) {
-            case 2:
-              registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
-              registry.fill(HIST("h2_count_db"), 0.5, dbRange); // b-jet
-              break;
-            case 1:
-              registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
-              registry.fill(HIST("h2_count_db"), 1.5, dbRange); // c-jet
-              break;
-            case 0:
-            case 3:
-              registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
-              registry.fill(HIST("h2_count_db"), 2.5, dbRange); // lf-jet
-              break;
-            default:
-              LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
-          }
-        }
-        registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
+    float dbRange;
+    if (db < dbMin) {
+      dbRange = 0.5; // underflow
+    } else if (db < dbMax) {
+      dbRange = 1.5; // in range
+    } else {
+      dbRange = 2.5; // overflow
+    }
+    registry.fill(HIST("h2_count_db"), 3.5, dbRange); // incl jet
+    if constexpr (isMCD) {
+      switch (jet.origin()) {
+        case 2:
+          registry.fill(HIST("h_db_b"), db);
+          registry.fill(HIST("h2_count_db"), 0.5, dbRange);
+          break;
+        case 1:
+          registry.fill(HIST("h_db_c"), db);
+          registry.fill(HIST("h2_count_db"), 1.5, dbRange);
+          break;
+        case 0:
+        case 3:
+          registry.fill(HIST("h_db_lf"), db);
+          registry.fill(HIST("h2_count_db"), 2.5, dbRange);
+          break;
+        default:
+          LOGF(debug, "GNN inference, unexpected origin value: %d (%d)", jet.origin(), jet.globalIndex());
       }
-      // gnnTrackTable(scoreMLAux1[])
-      // gnnVertexTable(scoreMLAux2[])
     }
-    taggingTable(0, jetProb, scoreML[jet.globalIndex()]);
+    registry.fill(HIST("h2_pt_db"), jet.pt(), db);
   }
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -178,14 +159,24 @@ struct JetGnnInferenceTask {
   void init(InitContext const&)
   {
     if (doprocessAlgorithmGNN) {
+      // analyzeJetTrackInfo4GNN supplies four jet features and eight track features.
+      if (nJetFeat != 4 || nTrkFeat != 8 || nClassesMl != 3 || nJetConst <= 0) {
+        LOG(fatal) << "GNN jet tagging requires nJetFeat=4, nTrkFeat=8, nClassesMl=3 and nJetConst>0.";
+      }
+      if (transformFeatureJetMean.value.size() != static_cast<std::size_t>(nJetFeat.value) ||
+          transformFeatureJetStdev.value.size() != static_cast<std::size_t>(nJetFeat.value) ||
+          transformFeatureTrkMean.value.size() != static_cast<std::size_t>(nTrkFeat.value) ||
+          transformFeatureTrkStdev.value.size() != static_cast<std::size_t>(nTrkFeat.value)) {
+        LOG(fatal) << "GNN normalization vectors must match nJetFeat and nTrkFeat.";
+      }
       bMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
+        o2::ccdb::CcdbApi ccdbApi;
         ccdbApi.init(ccdbUrl);
         bMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
       } else {
         bMlResponse.setModelPathsLocal(onnxFileNames);
       }
-      bMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       bMlResponse.init();
 
       tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst, tfFuncTypeGNN.value);
@@ -207,39 +198,28 @@ struct JetGnnInferenceTask {
     }
   }
 
-  template <typename AnyJets, typename AnyTracks>
-  void analyzeJetAlgorithmGNN(AnyJets const& jets, AnyTracks const& tracks)
+  template <typename Jet, typename Tracks>
+  float evaluateJet(Jet const& jet, Tracks const& tracks)
   {
-    for (const auto& jet : jets) {
-      std::vector<std::vector<float>> trkFeat;
-      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, trkFeat, trackPtMin, trackDcaXYMax, trackDcaZMax, nJetConst);
-
-      std::vector<float> jetFeat{jet.pt(), jet.phi(), jet.eta(), jet.mass()};
-
-      if (trkFeat.size() > 0) {
-        std::vector<float> feat;
-        std::vector<Ort::Value> gnnInput;
-        tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
-
-        auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
-        float db = jettaggingutilities::getDb(modelOutput, fC);
-        if (!std::isnan(db)) {
-          scoreML[jet.globalIndex()] = db;
-        } else {
-          scoreML[jet.globalIndex()] = 999.;
-          LOGF(debug, "doprocessAlgorithmGNN, Db is NaN (%d)", jet.globalIndex());
-        }
-      } else {
-        scoreML[jet.globalIndex()] = -999.;
-        LOGF(debug, "doprocessAlgorithmGNN, trkFeat.size() <= 0 (%d)", jet.globalIndex());
-      }
+    std::vector<std::vector<float>> trkFeat;
+    jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, trkFeat, trackPtMin, trackDcaXYMax, trackDcaZMax, nJetConst);
+    if (trkFeat.empty()) {
+      LOGF(debug, "GNN inference, no selected tracks (%d)", jet.globalIndex());
+      return -999.f;
     }
-  }
 
-  template <typename AnyJets, typename AnyTracks>
-  void analyzeJetAlgorithmGNNBatch(AnyJets const& jets, AnyTracks const& tracks)
-  {
-    // Implement batch inference logic here
+    std::vector<float> jetFeat{jet.pt(), jet.phi(), jet.eta(), jet.mass()};
+    std::vector<float> feat;
+    std::vector<Ort::Value> gnnInput;
+    tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
+
+    auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
+    float db = jettaggingutilities::getDb(modelOutput, fC);
+    if (std::isnan(db)) {
+      LOGF(debug, "GNN inference, Db is NaN (%d)", jet.globalIndex());
+      return 999.f;
+    }
+    return db;
   }
 
   void processDummy(aod::JetCollisions const&)
@@ -247,37 +227,21 @@ struct JetGnnInferenceTask {
   }
   PROCESS_SWITCH(JetGnnInferenceTask, processDummy, "Dummy process", true);
 
-  void processSetup(JetTable const& jets)
+  void processAlgorithmGNN(AnalysisJets const& jets, JetTracksExt const& tracks)
   {
-    scoreML.clear();
-    scoreML.resize(jets.size());
+    // Preserve a one-to-one positional join with Jets, including jets without
+    // selected tracks and jets below the QA pT threshold.
+    for (auto const& jet : jets) {
+      float db = evaluateJet(jet, tracks);
+      taggingTable(0, -1.f, db);
+      fillHistograms(jet, db);
+    }
   }
-  PROCESS_SWITCH(JetGnnInferenceTask, processSetup, "Setup initialization and size of jets for filling table", false);
-
-  void processAlgorithmGNN(JetTable const& jets, JetTracksExt const& jtracks)
-  {
-    analyzeJetAlgorithmGNN(jets, jtracks);
-  }
-  PROCESS_SWITCH(JetGnnInferenceTask, processAlgorithmGNN, "Fill GNN evaluation score (D_b) for charged jets", false);
-
-  void processAlgorithmGNNBatch(aod::JetCollisions::iterator const& /*coll*/, JetTable const& jets, JetTracksExt const& jtracks)
-  {
-    // Batch inference of GNN model per collision
-    analyzeJetAlgorithmGNNBatch(jets, jtracks);
-  }
-  PROCESS_SWITCH(JetGnnInferenceTask, processAlgorithmGNNBatch, "Fill GNN evaluation score (D_b) for charged jets, batch inference", false);
-
-  void processFillTables(std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>::iterator const& jet, JetTracksExt const& tracks)
-  {
-    fillTables<isMCD>(jet, tracks);
-  }
-  PROCESS_SWITCH(JetGnnInferenceTask, processFillTables, "Fill Tables for tagging decision, jet probability, and ML score on charged jets", false);
+  PROCESS_SWITCH(JetGnnInferenceTask, processAlgorithmGNN, "Run GNN inference and fill jet tagging tables", false);
 };
 
 using JetGnnTagInferenceDataCharged = JetGnnInferenceTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::ChargedJetTags>;
 using JetGnnTagInferenceMcdCharged = JetGnnInferenceTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetTags>;
-using JetGnnFullInferenceDataCharged = JetGnnInferenceTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::ChargedJetTags, ChargedJetGNNTrack, ChargedJetTrackTags, ChargedJetGNNEdge, ChargedJetEdgeTags>;
-using JetGnnFullInferenceMcdCharged = JetGnnInferenceTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetTags, ChargedMCDetectorLevelJetGNNTrack, ChargedMCDetectorLevelJetTrackTags, ChargedMCDetectorLevelJetGNNEdge, ChargedMCDetectorLevelJetEdgeTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -285,9 +249,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<JetGnnTagInferenceDataCharged>(
       cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-tag-inference-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
     adaptAnalysisTask<JetGnnTagInferenceMcdCharged>(
-      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-tag-inference-mcd-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
-    adaptAnalysisTask<JetGnnFullInferenceDataCharged>(
-      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-full-inference-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
-    adaptAnalysisTask<JetGnnFullInferenceMcdCharged>(
-      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-full-inference-mcd-charged"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-tag-inference-mcd-charged"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
 }
