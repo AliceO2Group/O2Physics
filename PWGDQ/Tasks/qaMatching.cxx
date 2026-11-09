@@ -31,7 +31,7 @@
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <CommonDataFormat/Timestamp.h>
+#include <CommonDataFormat/TimeStamp.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
