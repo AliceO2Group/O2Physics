@@ -62,7 +62,7 @@ struct GlobalTrackEstimator {
   Configurable<float> cfgExponentDCAxy{"cfgExponentDCAxy", 1.1, "Exponent of the pT dependency of the DCAxy paramterization"};
   Configurable<float> cfgMaxDCAz{"cfgMaxDCAz", 2.0, "Maximum DCAz"};
   Configurable<float> cfgMinPt{"cfgMinPt", 0.1, "Minimum required pT"};
-  Configurable<float> cfgEtaRange{"cfgEtaRange", 0.8, "Pseudorapidity range"};
+  Configurable<float> cfgEtaRange{"cfgEtaRange", 0.8, "Absolute pseudorapidity range"};
   Configurable<float> cfgMinTPCCluster{"cfgMinTPCCluster", 70, "Minimum number of crossed TPC rows"};
   Configurable<float> cfgRatioTPCClusterOverFindableCluster{"cfgRatioTPCClusterOverFindableCluster", 0.8, "Minimum ratio of crossed TPC rows over findable clusters"};
   Configurable<float> cfgMaxChi2TPC{"cfgMaxChi2TPC", 4.0, "Maximum chi2 per cluster in TPC"};
@@ -72,9 +72,6 @@ struct GlobalTrackEstimator {
 
   o2::framework::Preslice<o2::aod::ReducedTracksAssoc> preslice = o2::aod::reducedtrack_association::reducedeventId;
   o2::framework::Preslice<o2::aod::TrackAssoc> presliceDirect = o2::aod::track_association::collisionId;
-
-  o2::framework::expressions::Filter trackFilter = (o2::aod::reducedtrack::pt >= cfgMinPt) && (nabs(o2::aod::reducedtrack::eta) <= cfgEtaRange) && (o2::aod::track::tpcChi2NCl <= cfgMaxChi2TPC) && (o2::aod::track::itsChi2NCl <= cfgMaxChi2ITS);
-  o2::framework::expressions::Filter trackDirectFilter = (o2::aod::track::pt >= cfgMinPt) && (nabs(o2::aod::track::eta) <= cfgEtaRange) && (o2::aod::track::tpcChi2NCl <= cfgMaxChi2TPC) && (o2::aod::track::itsChi2NCl <= cfgMaxChi2ITS);
 
   void init(InitContext& context)
   {
@@ -110,6 +107,14 @@ struct GlobalTrackEstimator {
       VarManager::FillTrackCollision<fillMap>(track, event);
     }
 
+    if (track.pt() < cfgMinPt || abs(track.eta()) > cfgEtaRange) {
+      return false;
+    }
+
+    if (track.tpcChi2NCl() > cfgMaxChi2TPC || track.itsChi2NCl() > cfgMaxChi2ITS) {
+      return false;
+    }
+
     const int nFindable = track.tpcNClsFindable();
     const int nCrossedRows = track.tpcNClsCrossedRows();
 
@@ -142,7 +147,7 @@ struct GlobalTrackEstimator {
     return true;
   }
 
-  void processGlobalTracksSkimmed(MyEventsBasic const& events, o2::aod::ReducedTracksAssoc const& assocs, o2::soa::Filtered<MyBarrelTracks> const& tracks)
+  void processGlobalTracksSkimmed(MyEventsBasic const& events, o2::aod::ReducedTracksAssoc const& assocs, MyBarrelTracks const& tracks)
   {
     std::unordered_set<int64_t> selectedTrackIds;
     selectedTrackIds.reserve(tracks.size());
@@ -164,7 +169,7 @@ struct GlobalTrackEstimator {
           continue;
         }
 
-        auto track = assoc.template reducedtrack_as<o2::soa::Filtered<MyBarrelTracks>>();
+        auto track = assoc.template reducedtrack_as<MyBarrelTracks>();
 
         if (!isTrackSelected<GkTrackFillMap>(track, event)) {
           continue;
@@ -179,7 +184,7 @@ struct GlobalTrackEstimator {
 
   PROCESS_SWITCH(GlobalTrackEstimator, processGlobalTracksSkimmed, "Count global tracks from skimmed data model", false);
 
-  void processGlobalTracksDirect(MyEventsDirect const& events, TrackAssoc const& assocs, o2::soa::Filtered<MyTracksDirect> const& tracks)
+  void processGlobalTracksDirect(MyEventsDirect const& events, TrackAssoc const& assocs, MyTracksDirect const& tracks)
   {
     std::unordered_set<int64_t> selectedTrackIds;
     selectedTrackIds.reserve(tracks.size());
@@ -201,7 +206,7 @@ struct GlobalTrackEstimator {
           continue;
         }
 
-        auto track = assoc.template track_as<o2::soa::Filtered<MyTracksDirect>>();
+        auto track = assoc.template track_as<MyTracksDirect>();
 
         if (!isTrackSelected<GkTrackDirectFillMap>(track, event)) {
           continue;
