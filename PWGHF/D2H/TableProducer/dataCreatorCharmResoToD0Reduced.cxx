@@ -456,7 +456,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
                      aod::McParticles const& particlesMc,
                      BCsInfo const& bcs,
                      McCollisionsNoCents const& collInfos,
-                     aod::McCollisions const& mcCollisions)
+                     soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -495,7 +495,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
                         aod::McParticles const& particlesMc,
                         BCsInfo const& bcs,
                         McCollisionsNoCents const& collInfos,
-                        aod::McCollisions const& mcCollisions)
+                        soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -536,7 +536,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
                              aod::McParticles const& particlesMc,
                              BCsInfo const& bcs,
                              McCollisionsNoCents const& collInfos,
-                             aod::McCollisions const& mcCollisions)
+                             soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -577,7 +577,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
                            aod::McParticles const& particlesMc,
                            BCsInfo const& bcs,
                            McCollisionsNoCents const& collInfos,
-                           aod::McCollisions const& mcCollisions)
+                           soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -616,7 +616,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
                               aod::McParticles const& particlesMc,
                               BCsInfo const& bcs,
                               McCollisionsNoCents const& collInfos,
-                              aod::McCollisions const& mcCollisions)
+                              soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -657,7 +657,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
                                    aod::McParticles const& particlesMc,
                                    BCsInfo const& bcs,
                                    McCollisionsNoCents const& collInfos,
-                                   aod::McCollisions const& mcCollisions)
+                                   soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};

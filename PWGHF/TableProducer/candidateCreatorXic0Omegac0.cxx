@@ -2339,7 +2339,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
-  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
@@ -3263,7 +3263,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcXicToXiPi(aod::HfCandToXiPi const& candidates,
                           MyTracksWMc const& tracks,
                           aod::McParticles const& mcParticles,
-                          aod::McCollisions const& mcColls,
+                          soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                           McCollisionsNoCents const& collsWithMcLabels,
                           BCsInfo const& bcs)
   {
@@ -3274,7 +3274,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcXicToXiPiKf(aod::HfCandToXiPiKf const& candidates,
                             MyTracksWMc const& tracks,
                             aod::McParticles const& mcParticles,
-                            aod::McCollisions const& mcColls,
+                            soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                             McCollisionsNoCents const& collsWithMcLabels,
                             BCsInfo const& bcs)
   {
@@ -3305,7 +3305,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcXicToXiPiFT0c(aod::HfCandToXiPi const& candidates,
                               MyTracksWMc const& tracks,
                               aod::McParticles const& mcParticles,
-                              aod::McCollisions const& mcColls,
+                              soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                               McCollisionsFT0Cs const& collsWithMcLabels,
                               BCsInfo const& bcs)
   {
@@ -3316,7 +3316,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcOmegacToXiPi(aod::HfCandToXiPi const& candidates,
                              MyTracksWMc const& tracks,
                              aod::McParticles const& mcParticles,
-                             aod::McCollisions const& mcColls,
+                             soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                              McCollisionsNoCents const& collsWithMcLabels,
                              BCsInfo const& bcs)
   {
@@ -3338,7 +3338,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcOmegacToXiPiFT0c(aod::HfCandToXiPi const& candidates,
                                  MyTracksWMc const& tracks,
                                  aod::McParticles const& mcParticles,
-                                 aod::McCollisions const& mcColls,
+                                 soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                                  McCollisionsFT0Cs const& collsWithMcLabels,
                                  BCsInfo const& bcs)
   {
@@ -3349,7 +3349,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcOmegacToOmegaPi(aod::HfCandToOmegaPi const& candidates,
                                 MyTracksWMc const& tracks,
                                 aod::McParticles const& mcParticles,
-                                aod::McCollisions const& mcColls,
+                                soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                                 McCollisionsNoCents const& collsWithMcLabels,
                                 BCsInfo const& bcs)
   {
@@ -3371,7 +3371,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcOmegacToOmegaPiFT0c(aod::HfCandToOmegaPi const& candidates,
                                     MyTracksWMc const& tracks,
                                     aod::McParticles const& mcParticles,
-                                    aod::McCollisions const& mcColls,
+                                    soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                                     McCollisionsFT0Cs const& collsWithMcLabels,
                                     BCsInfo const& bcs)
   {
@@ -3382,7 +3382,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcOmegacToOmegaK(aod::HfCandToOmegaK const& candidates,
                                MyTracksWMc const& tracks,
                                aod::McParticles const& mcParticles,
-                               aod::McCollisions const& mcColls,
+                               soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                                McCollisionsNoCents const& collsWithMcLabels,
                                BCsInfo const& bcs)
   {
@@ -3404,7 +3404,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcOmegacToOmegaKFT0c(aod::HfCandToOmegaK const& candidates,
                                    MyTracksWMc const& tracks,
                                    aod::McParticles const& mcParticles,
-                                   aod::McCollisions const& mcColls,
+                                   soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
                                    McCollisionsFT0Cs const& collsWithMcLabels,
                                    BCsInfo const& bcs)
   {

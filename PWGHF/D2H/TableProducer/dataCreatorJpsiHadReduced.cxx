@@ -827,7 +827,7 @@ struct HfDataCreatorJpsiHadReduced {
   }
 
   template <uint8_t DecChannel>
-  void runMcGen(aod::McCollision const& mcCollision,
+  void runMcGen(soa::Join<aod::McCollisions, aod::MultsExtraMC>::iterator const& mcCollision,
                 aod::McParticles const& particlesMc,
                 CollisionsWCMcLabels const& collisions,
                 BCsInfo const&)
@@ -1578,7 +1578,7 @@ struct HfDataCreatorJpsiHadReduced {
                       TracksPidWithSelAndMc const& tracks,
                       aod::McParticles const& particlesMc,
                       BCsInfo const& bcs,
-                      McCollisions const& mcCollisions)
+                      soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
@@ -1613,7 +1613,7 @@ struct HfDataCreatorJpsiHadReduced {
                            TracksPidWithSelAndMc const& tracks,
                            aod::McParticles const& particlesMc,
                            BCsInfo const& bcs,
-                           McCollisions const& mcCollisions)
+                           soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
@@ -1648,7 +1648,7 @@ struct HfDataCreatorJpsiHadReduced {
                         TracksPidWithSelAndMc const& tracks,
                         aod::McParticles const& particlesMc,
                         BCsInfo const& bcs,
-                        McCollisions const& mcCollisions)
+                        soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
