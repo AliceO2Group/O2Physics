@@ -112,7 +112,7 @@ struct LambdaProtonBalanceFunction {
   HistogramRegistry registryEff{"Efficiency", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // ════════════════════════════════════════════════════════════════════════
-  // TaskState — ordinary C++ runtime/implementation state.
+  // TaskState — ordinary C++ runtime/implementation state..
   // Grouped into ONE nested object so that the number of direct data members of
   // this task struct stays well below the O2 StructToTuple / structured-binding
   // reflection limit. Contains NO O2 Framework objects (no Configurable,
