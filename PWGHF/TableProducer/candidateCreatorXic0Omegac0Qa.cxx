@@ -84,6 +84,8 @@ using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
 using namespace o2::hf_evsel;
 
+constexpr int nMcDecayChannels = hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::NChannelsMain;
+
 struct HfCandidateCreatorXic0Omegac0Qa {
   Produces<HfCandCascBachBaseQa> rowCandCascBatch;
   // Additional information for candidates created with KFParticle
@@ -1095,12 +1097,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processWithKFParticleCentFT0M, "Charm-baryon candidate reconstruction with KFParticle method, centrality on FT0M", false);
 
-  ///////////////////////////////////////////////////////////////
-  ///                                                         ///
-  ///        Process functions for Collision monitoring       ///
-  ///                                                         ///
-  ///////////////////////////////////////////////////////////////
-
+  // Process functions for Collision monitoring
   void processCollisionsNoCent(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                aod::BCsWithTimestamps const&)
   {
@@ -1162,22 +1159,24 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
     // Configurable<bool> matchDecayedPions{"matchedDecayedPions", true, "Match also candidates with daughter pion tracks that decay with kinked toploogy"};
   } configs;
 
-  std::array<int, 4> pdgOfCharmBaryon{+kXiC0, +kOmegaC0, +kOmegaC0, +kOmegaC0};
-  std::array<int, 4> pdgOfCascade{+kXiMinus, +kXiMinus, +kOmegaMinus, +kOmegaMinus};
-  std::array<int, 4> pdgOfCharmBachelor{+kPiPlus, +kPiPlus, +kPiPlus, +kKPlus};
-  std::array<int, 4> pdgOfBachelor{+kPiMinus, +kPiMinus, +kKMinus, +kKMinus};
+  std::array<int, nMcDecayChannels> pdgOfCharmBaryon{+kXiC0, +kXiC0, +kOmegaC0, +kOmegaC0, +kOmegaC0};
+  std::array<int, nMcDecayChannels> pdgOfCascade{+kXiMinus, +kOmegaMinus, +kOmegaMinus, +kOmegaMinus, +kXiMinus};
+  std::array<int, nMcDecayChannels> pdgOfCharmBachelor{+kPiPlus, +kKPlus, +kPiPlus, +kKPlus, +kPiPlus};
+  std::array<int, nMcDecayChannels> pdgOfBachelor{+kPiMinus, +kKMinus, +kKMinus, +kKMinus, +kPiMinus};
 
-  std::array<int8_t, 4> newDecayChannel{o2::hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToXiPi,
-                                        o2::hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToXiPi,
-                                        o2::hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi,
-                                        o2::hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaK};
+  std::array<int8_t, nMcDecayChannels> decayChannelFlags{hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToXiPi,
+                                                         hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToOmegaK,
+                                                         hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi,
+                                                         hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaK,
+                                                         hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToXiPi};
 
   // Table aliases
   using TracksWMcIU = soa::Join<aod::TracksIU, McTrackLabels>;
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
-  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>; // -> Used for subscription for process functions of centrality with FT0Ms
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
+  using McCollisionsCentFT0Cs = soa::Join<aod::McCollisions, aod::McCentFT0Cs, aod::MultsExtraMC>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
@@ -1199,7 +1198,7 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
     }
   }
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Colls, typename McCollisions>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Colls, typename McCollisions>
   void runXic0Omegac0Mc(TracksWMcIU const& tracks,
                         aod::McParticles const& mcParticles,
                         Colls const& collsWithMcLabels,
@@ -1252,24 +1251,27 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
         }
       }
 
-      // CharmBaryon -> Charm bachelor + Cascade
-      indexRecCharmBaryon = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCharmBachelor[decayChannel], pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &sign, 3);
+      for (int decayChannel = 0; decayChannel < nMcDecayChannels; ++decayChannel) {
+        // CharmBaryon -> Charm bachelor + Cascade
+        indexRecCharmBaryon = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCharmBachelor[decayChannel], pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &sign, 3);
 
-      if (indexRecCharmBaryon > -1) {
-        // Cascade -> Bachelor + V0
-        indexRecCascade = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgOfCascade[decayChannel], std::array{pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &signCasc, 2);
+        if (indexRecCharmBaryon > -1) {
+          // Cascade -> Bachelor + V0
+          indexRecCascade = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgOfCascade[decayChannel], std::array{pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &signCasc, 2);
 
-        if (indexRecCascade > -1) {
-          // V0 -> Pos + Neg
-          indexRecV0 = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
+          if (indexRecCascade > -1) {
+            // V0 -> Pos + Neg
+            indexRecV0 = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
 
-          if (indexRecV0 > -1) {
-            flagChannelMain = sign * newDecayChannel[decayChannel];
+            if (indexRecV0 > -1) {
+              flagChannelMain = sign * decayChannelFlags[decayChannel];
+              break;
+            }
           }
         }
       }
 
-      // Check if charm baryon is from b-hadron decay(prompt vs non-prompt)
+      // Check if charm baryon is from b-hadron decay (prompt vs non-prompt)
       if (flagChannelMain != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
@@ -1284,7 +1286,6 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
     // Match generated particles
     for (const auto& mcCollision : mcCollisions) {
-
       const auto& mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
 
       float centrality{-1.f};
@@ -1307,7 +1308,7 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
       hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
 
-      if (rejectionMask != 0) { // At least one event selection not satisfied --> Reject all particles from this event
+      if (rejectionMask != 0) {
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
           rowMcMatchGenCascBach(0, 0, 0, -1);
         }
@@ -1329,28 +1330,30 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
           continue;
         }
 
-        // Charm Baryon -> Cascade + Charm bachelor
-        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCascade[decayChannel], pdgOfCharmBachelor[decayChannel]}, true, &sign)) {
-          for (auto const& daughterCharm : particle.template daughters_as<aod::McParticles>()) {
-            if (std::abs(daughterCharm.pdgCode()) != pdgOfCascade[decayChannel]) {
-              continue;
-            }
+        for (int decayChannel = 0; decayChannel < nMcDecayChannels; ++decayChannel) {
+          // Charm Baryon -> Cascade + Charm bachelor
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCascade[decayChannel], pdgOfCharmBachelor[decayChannel]}, true, &sign)) {
+            for (auto const& daughterCharm : particle.template daughters_as<aod::McParticles>()) {
+              if (std::abs(daughterCharm.pdgCode()) != pdgOfCascade[decayChannel]) {
+                continue;
+              }
 
-            // Cascade -> Lambda + pi
-            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgOfCascade[decayChannel], std::array{+kLambda0, pdgOfBachelor[decayChannel]}, true)) {
-              for (auto const& daughterCascade : daughterCharm.template daughters_as<aod::McParticles>()) {
-                if (std::abs(daughterCascade.pdgCode()) != +kLambda0) {
-                  continue;
-                }
+              // Cascade -> Lambda + pi
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgOfCascade[decayChannel], std::array{+kLambda0, pdgOfBachelor[decayChannel]}, true)) {
+                for (auto const& daughterCascade : daughterCharm.template daughters_as<aod::McParticles>()) {
+                  if (std::abs(daughterCascade.pdgCode()) != +kLambda0) {
+                    continue;
+                  }
 
-                // Lambda -> p + pi
-                if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
-                  flagChannelMain = sign * newDecayChannel[decayChannel];
-                  ;
-                }
-              } // V0 daughter loop
-            } // cascade daughter loop
-          } // charm daughter loop
+                  // Lambda -> p + pi
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
+                    flagChannelMain = sign * decayChannelFlags[decayChannel];
+                    break;
+                  }
+                } // V0 daughter loop
+              } // cascade daughter loop
+            } // charm daughter loop
+          }
         }
 
         // Check if charm is prompt or non-prompt
@@ -1365,162 +1368,42 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
       } // particle loop
     } // end of collision loop
-  } // template run function
-
-  void processMcEmpty(aod::Collisions const&)
-  {
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcEmpty, "Empty process function to prevent workflow from getting stuck", true);
 
-  /////////////////////////////////////////////////////
-  ///                                               ///
-  ///        Process functions with DCAFitter       ///
-  ///                                               ///
-  /////////////////////////////////////////////////////
+  // void processMcEmpty(aod::Collisions const&)
+  // {
+  // }
+  // PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcEmpty, "Empty process function to prevent workflow from getting stuck", true);
 
-  //~~~~~~~~~~~~~~~~//
-  //~~~~To Xi Pi~~~~//
-  //~~~~~~~~~~~~~~~~//
-  void processMcXicToXiPiWithDCAFitterNoCent(TracksWMcIU const& tracks,
-                                             aod::McParticles const& mcParticles,
-                                             soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                             McCollisionsNoCents const& collsWithMcLabels,
-                                             BCsInfo const& bcs)
+  void processMcNoCent(TracksWMcIU const& tracks,
+                       aod::McParticles const& mcParticles,
+                       soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
+                       McCollisionsNoCents const& collsWithMcLabels,
+                       BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
+    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcXicToXiPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. No cents", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcNoCent, "Process MC - no centrality", false);
 
-  void processMcXicToXiPiWithDCAFitterCentFT0C(TracksWMcIU const& tracks,
-                                               aod::McParticles const& mcParticles,
-                                               soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                               McCollisionsFT0Cs const& collsWithMcLabels,
-                                               BCsInfo const& bcs)
+  void processMcCentFT0C(TracksWMcIU const& tracks,
+                         aod::McParticles const& mcParticles,
+                         McCollisionsCentFT0Cs const& mcCollisions,
+                         McCollisionsFT0Cs const& collsWithMcLabels,
+                         BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
+    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcXicToXiPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. Cents with FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcCentFT0C, "Process MC - centrality with FT0C", false);
 
-  void processMcXicToXiPiWithDCAFitterCentFT0M(TracksWMcIU const& tracks,
-                                               aod::McParticles const& mcParticles,
-                                               McCollisionsCentFT0Ms const& mcCollisions,
-                                               McCollisionsFT0Ms const& collsWithMcLabels,
-                                               BCsInfo const& bcs)
+  void processMcCentFT0M(TracksWMcIU const& tracks,
+                         aod::McParticles const& mcParticles,
+                         McCollisionsCentFT0Ms const& mcCollisions,
+                         McCollisionsFT0Ms const& collsWithMcLabels,
+                         BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
+    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcXicToXiPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. Cents with FT0M", false);
-
-  void processMcOmegacToXiPiWithDCAFitterNoCent(TracksWMcIU const& tracks,
-                                                aod::McParticles const& mcParticles,
-                                                soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                                McCollisionsNoCents const& collsWithMcLabels,
-                                                BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToXiPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Xi Pi. No cents", false);
-
-  void processMcOmegacToXiPiWithDCAFitterCentFT0C(TracksWMcIU const& tracks,
-                                                  aod::McParticles const& mcParticles,
-                                                  soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                                  McCollisionsFT0Cs const& collsWithMcLabels,
-                                                  BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToXiPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omeagc0 to Xi Pi. Cents with FT0C", false);
-
-  void processMcOmegacToXiPiWithDCAFitterCentFT0M(TracksWMcIU const& tracks,
-                                                  aod::McParticles const& mcParticles,
-                                                  McCollisionsCentFT0Ms const& mcCollisions,
-                                                  McCollisionsFT0Ms const& collsWithMcLabels,
-                                                  BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToXiPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Xi Pi. Cents with FT0M", false);
-
-  //~~~~~~~~~~~~~~~~~~~//
-  //~~~~To Omega Pi~~~~//
-  //~~~~~~~~~~~~~~~~~~~//
-  void processMcOmegacToOmegaPiWithDCAFitterNoCent(TracksWMcIU const& tracks,
-                                                   aod::McParticles const& mcParticles,
-                                                   soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                                   McCollisionsNoCents const& collsWithMcLabels,
-                                                   BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToOmegaPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. No cents", false);
-
-  void processMcOmegacToOmegaPiWithDCAFitterCentFT0C(TracksWMcIU const& tracks,
-                                                     aod::McParticles const& mcParticles,
-                                                     soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                                     McCollisionsFT0Cs const& collsWithMcLabels,
-                                                     BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToOmegaPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. Cents with FT0C", false);
-
-  void processMcOmegacToOmegaPiWithDCAFitterCentFT0M(TracksWMcIU const& tracks,
-                                                     aod::McParticles const& mcParticles,
-                                                     McCollisionsCentFT0Ms const& mcCollisions,
-                                                     McCollisionsFT0Ms const& collsWithMcLabels,
-                                                     BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToOmegaPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. Cents with FT0M", false);
-
-  //~~~~~~~~~~~~~~~~~~//
-  //~~~~To Omega Ka~~~~//
-  //~~~~~~~~~~~~~~~~~~//
-  void processMcOmegacToOmegaKaWithDCAFitterNoCent(TracksWMcIU const& tracks,
-                                                   aod::McParticles const& mcParticles,
-                                                   soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                                   McCollisionsNoCents const& collsWithMcLabels,
-                                                   BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToOmegaKaWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. No cents", false);
-
-  void processMcOmegacToOmegaKaWithDCAFitterCentFT0C(TracksWMcIU const& tracks,
-                                                     aod::McParticles const& mcParticles,
-                                                     soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                                     McCollisionsFT0Cs const& collsWithMcLabels,
-                                                     BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToOmegaKaWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. Cents with FT0C", false);
-
-  void processMcOmegacToOmegaKaWithDCAFitterCentFT0M(TracksWMcIU const& tracks,
-                                                     aod::McParticles const& mcParticles,
-                                                     McCollisionsCentFT0Ms const& mcCollisions,
-                                                     McCollisionsFT0Ms const& collsWithMcLabels,
-                                                     BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToOmegaKaWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. Cents with FT0M", false);
-
-  /////////////////////////////////////////////////////
-  ///                                               ///
-  ///        Process functions with KFParticle      ///
-  ///                                               ///
-  /////////////////////////////////////////////////////
-  void processMcXicToXiPiWithKFParticleNoCent(TracksWMcIU const& tracks,
-                                              aod::McParticles const& mcParticles,
-                                              soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
-                                              McCollisionsNoCents const& collsWithMcLabels,
-                                              BCsInfo const& bcs)
-  {
-    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
-  }
-  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcXicToXiPiWithKFParticleNoCent, "Perform MC matching of KFParticle reconstructed Xic0 to Xi Pi. No cents", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcCentFT0M, "Process MC - centrality with FT0M", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

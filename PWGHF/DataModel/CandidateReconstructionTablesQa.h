@@ -337,23 +337,6 @@ enum DecayChannelMain : HfDecayChannel {
   NChannelsMain = Omegac0ToXiPi // last channel
 };
 } // namespace hf_cand_casc_bach_qa
-
 } // namespace o2::hf_decay
-
-// TODO: remove once the MC candidate creator is updated
-namespace o2::aod
-{
-namespace hf_cand_xic0_omegac0
-{
-enum DecayType {
-  XiczeroToXiPi = 0,
-  OmegaczeroToXiPi,
-  OmegaczeroToOmegaPi,
-  OmegaczeroToOmegaK,
-  OmegaczeroToOmegaPiOneMu,
-  XiczeroToOmegaK
-};
-} // namespace hf_cand_xic0_omegac0
-} // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLESQA_H_
