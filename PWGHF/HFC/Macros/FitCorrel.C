@@ -259,13 +259,13 @@ void fitCorrelDs(const TString& cfgFileName = "config_CorrAnalysis.json")
       corrFitter[iBinPtHad][iBinPtCand]->setFuncType(static_cast<DhCorrelationFitter::FunctionType>(fitFunc[iBinPtCand]));
       corrFitter[iBinPtHad][iBinPtCand]->fitting(kTRUE, kTRUE); // the first term is for drawing the fit functions, the second argument is useExternalParams
 
-      TF1* fFit = corrFitter[iBinPtHad][iBinPtCand]->getFitFunction();
+      // TF1* fFit = corrFitter[iBinPtHad][iBinPtCand]->getFitFunction(); // FIXME: unused
 
       // Title of the histogram
       auto* pttext = new TPaveText(0.15, 0.9, 0.85, 0.95, "NDC");
       pttext->SetFillStyle(0);
       pttext->SetBorderSize(0);
-      TText* tpT = pttext->AddText(0., 0.8, Form("%.0f < p_{T}^{D_{s}} < %.0f GeV/c, p_{T}^{assoc} > %.1f GeV/c", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad]));
+      pttext->AddText(0., 0.8, Form("%.0f < p_{T}^{D_{s}} < %.0f GeV/c, p_{T}^{assoc} > %.1f GeV/c", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad]));
       // pttext -> Draw("same");
 
       // Fill the histograms with the fit parameters
