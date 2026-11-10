@@ -121,8 +121,8 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyMultiplicity, std::string, "", "Multiplicity efficiency (RecoAll / MC): CCDB path or local ROOT file with a 4D ccdb_object (eta, pT, multiplicity, z-vtx); empty disables CFCollisionsExtra output");
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = CCDB efficiency, 1 = local ROOT efficiency");
   O2_DEFINE_CONFIGURABLE(cfgMultiplicityTrackBitMask, uint16_t, 0, "Required track-type bits for corrected multiplicity; match cfgTrackBitMask used to produce the efficiency (0 = all stored tracks)");
-  O2_DEFINE_CONFIGURABLE(cfgMultiplicityPoisson, bool, false, "Use (reproducibly) seeded 1 + Poisson(sum(1/eff - 1)) for multiplicity correction; skips eff > 1 tracks");
-  O2_DEFINE_CONFIGURABLE(cfgMultiplicityPoissonSeed, uint32_t, 1, "Base seed for reproducible per-collision Poisson multiplicity sampling");
+  O2_DEFINE_CONFIGURABLE(cfgMultiplicityPoisson, bool, false, "Use reproducibly seeded Nvalid + Poisson(sum(1/eff - 1)) for multiplicity correction; skips eff > 1 tracks");
+  O2_DEFINE_CONFIGURABLE(cfgMultiplicityPoissonSeed, uint32_t, 1, "Base seed for reproducible per-dataframe Poisson multiplicity sampling");
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -172,6 +172,9 @@ struct FilterCF {
 
   void init(InitContext& initContext)
   {
+    if (cfgMultiplicityPoisson && !doprocessDataframeSeed) {
+      LOGF(fatal, "Poisson multiplicity sampling requires processDataframeSeed");
+    }
     if (!cfgEfficiencyMultiplicity.value.empty()) {
       bool processTracksEnabled = false;
       if (!o2::common::core::getTaskOptionValue(initContext, "multiplicity-selector", "processTracks", processTracksEnabled, false)) {
@@ -393,7 +396,7 @@ struct FilterCF {
   }
 
   template <typename TCollision, typename TTracks>
-  float getCorrectedMultiplicity(const TCollision& collision, const TTracks& tracks, uint64_t timestamp, uint64_t globalBC, int runNumber)
+  float getCorrectedMultiplicity(const TCollision& collision, const TTracks& tracks, uint64_t timestamp)
   {
     auto* efficiency = loadMultiplicityEfficiency(timestamp);
     double correctedMultiplicity = 0.;
@@ -426,16 +429,6 @@ struct FilterCF {
       }
       // Sample from sum of missing count (Poisson sum rule)
       if (totalMeanMissing > 0.) {
-        // Reseed per collision
-        const auto collisionIndex = static_cast<uint64_t>(collision.globalIndex());
-        std::seed_seq seed{cfgMultiplicityPoissonSeed.value, static_cast<uint32_t>(runNumber),
-                           static_cast<uint32_t>(globalBC), static_cast<uint32_t>(globalBC >> 32),
-                           static_cast<uint32_t>(collisionIndex), static_cast<uint32_t>(collisionIndex >> 32)};
-        // Speed up the seeding by creating one 64bit seed from the event information
-        std::array<uint32_t, 2> seedWords{};
-        seed.generate(seedWords.begin(), seedWords.end());
-        const uint64_t eventSeed = (static_cast<uint64_t>(seedWords[0]) << std::numeric_limits<uint32_t>::digits) | seedWords[1];
-        mMultiplicityGenerator.seed(eventSeed);
         correctedMultiplicity += std::poisson_distribution<uint64_t>(totalMeanMissing)(mMultiplicityGenerator);
       }
     }
@@ -464,6 +457,37 @@ struct FilterCF {
     return true;
   }
 
+  // This process must run before the collision processes below.
+  void processDataframeSeed(aod::Origins const& origins, aod::BCs const& bcs)
+  {
+    if (!cfgMultiplicityPoisson) {
+      return;
+    }
+    if (origins.size() == 0) {
+      LOGF(fatal, "Cannot seed Poisson multiplicity sampling without a dataframe ID");
+      return;
+    }
+
+    const uint32_t runNumber = bcs.size() > 0 ? static_cast<uint32_t>(bcs.iteratorAt(0).runNumber()) : 0u;
+    std::vector<uint32_t> seedInputs;
+    seedInputs.reserve(2 + 2 * origins.size());
+    seedInputs.push_back(cfgMultiplicityPoissonSeed.value);
+    seedInputs.push_back(runNumber);
+    for (const auto& origin : origins) {
+      const uint64_t dataframeId = origin.dataframeID();
+      seedInputs.push_back(static_cast<uint32_t>(dataframeId));
+      seedInputs.push_back(static_cast<uint32_t>(dataframeId >> std::numeric_limits<uint32_t>::digits));
+    }
+
+    std::seed_seq seed(seedInputs.begin(), seedInputs.end());
+    std::array<uint32_t, 2> seedWords{};
+    seed.generate(seedWords.begin(), seedWords.end());
+    // Speed up seeding by creating one 64-bit seed from the dataframe information.
+    const uint64_t dataframeSeed = (static_cast<uint64_t>(seedWords[0]) << std::numeric_limits<uint32_t>::digits) | seedWords[1];
+    mMultiplicityGenerator.seed(dataframeSeed);
+  }
+  PROCESS_SWITCH(FilterCF, processDataframeSeed, "Seed Poisson multiplicity sampling for each dataframe", false);
+
   template <class T>
   using HasMultTables = decltype(std::declval<T&>().multNTracksPV());
 
@@ -484,7 +508,7 @@ struct FilterCF {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
     if (!cfgEfficiencyMultiplicity.value.empty()) {
-      outputCollisionsExtra(getCorrectedMultiplicity(collision, tracks, bc.timestamp(), bc.globalBC(), bc.runNumber()));
+      outputCollisionsExtra(getCorrectedMultiplicity(collision, tracks, bc.timestamp()));
     }
 
     if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
@@ -682,7 +706,7 @@ struct FilterCF {
       // NOTE works only when we store all MC collisions (as we do here)
       outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
       if (!cfgEfficiencyMultiplicity.value.empty()) {
-        outputCollisionsExtra(getCorrectedMultiplicity(collision, groupedTracks, bc.timestamp(), bc.globalBC(), bc.runNumber()));
+        outputCollisionsExtra(getCorrectedMultiplicity(collision, groupedTracks, bc.timestamp()));
       }
 
       const auto mcCollisionId = collision.mcCollisionId();
