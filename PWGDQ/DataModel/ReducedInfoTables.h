@@ -194,7 +194,7 @@ DECLARE_SOA_TABLE(GlobalTrackMultiplicity, "AOD", "GLOBALTRKMULT",
 
 DECLARE_SOA_TABLE(ReducedEventsGlobalTrk, "AOD", "REGLOBALTRK",
                   globalmult::MultNtrkGlobal);
-                
+
 namespace mcglobalmult
 {
 DECLARE_SOA_COLUMN(MultMCGlobalParticles, multMCGlobalParticles, int);
