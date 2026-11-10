@@ -18,9 +18,9 @@
 
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/photonHistManager.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/v0HistManager.h"
-#include "PWGCF/Femto/Core/photonHistManager.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
@@ -158,29 +158,29 @@ constexpr std::array<histmanager::HistInfo<Sigma0Hist>, kSigma0HistLast> HistTab
   {kTruePtVsPt, {(conf).pt, (conf).pt}},       \
     {kTrueEtaVsEta, {(conf).eta, (conf).eta}}, \
     {kTruePhiVsPhi, {(conf).phi, (conf).phi}}, \
-    {kPdg, {(conf).pdgCodes}},                 
+    {kPdg, {(conf).pdgCodes}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SIGMA0_HIST_QA_MAP(confAnalysis, confQa)                                     \
-  {kCosPa, {(confQa).cosPa}},                                                        \
-    {kDecayVtxX, {(confQa).decayVertex}},                                            \
-    {kDecayVtxY, {(confQa).decayVertex}},                                            \
-    {kDecayVtxZ, {(confQa).decayVertex}},                                            \
-    {kDecayVtx, {(confQa).decayVertex}},                                             \
-    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                             \
-    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                             \
-    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},                           \
-    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},                               \
-    {kMassSigma0, {(confQa).massSigma0}},                                            \
-    {kMassAntiSigma0, {(confQa).massAntiSigma0}},                                    \
-    {kPtVsSigma0Mass, {(confAnalysis).pt, (confQa).massSigma0}},                     \
-    {kPtVsAntiSigma0Mass, {(confAnalysis).pt, (confQa).massAntiSigma0}},             \
+#define SIGMA0_HIST_QA_MAP(confAnalysis, confQa)                         \
+  {kCosPa, {(confQa).cosPa}},                                            \
+    {kDecayVtxX, {(confQa).decayVertex}},                                \
+    {kDecayVtxY, {(confQa).decayVertex}},                                \
+    {kDecayVtxZ, {(confQa).decayVertex}},                                \
+    {kDecayVtx, {(confQa).decayVertex}},                                 \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                 \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                 \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},               \
+    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},                   \
+    {kMassSigma0, {(confQa).massSigma0}},                                \
+    {kMassAntiSigma0, {(confQa).massAntiSigma0}},                        \
+    {kPtVsSigma0Mass, {(confAnalysis).pt, (confQa).massSigma0}},         \
+    {kPtVsAntiSigma0Mass, {(confAnalysis).pt, (confQa).massAntiSigma0}}, \
     {kSigma0MassVsAntiSigma0Mass, {(confQa).massSigma0, (confQa).massAntiSigma0}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SIGMA0_HIST_MC_QA_MAP(confAnalysis, confQa)             \
-  {kNoMcParticle, {(confAnalysis).pt, (confQa).cosPa}},         \
-    {kPrimary, {(confAnalysis).pt, (confQa).cosPa}},            
+#define SIGMA0_HIST_MC_QA_MAP(confAnalysis, confQa)     \
+  {kNoMcParticle, {(confAnalysis).pt, (confQa).cosPa}}, \
+    {kPrimary, {(confAnalysis).pt, (confQa).cosPa}},
 
 template <typename T>
 auto makeSigma0HistSpecMap(const T& confBinningAnalysis)
@@ -237,7 +237,7 @@ class Sigma0HistManager
   Sigma0HistManager() = default;
   ~Sigma0HistManager() = default;
 
-    // minimal init
+  // minimal init
   template <modes::Mode mode, typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<Sigma0Hist, std::vector<o2::framework::AxisSpec>> const& Sigma0Specs,
@@ -273,7 +273,7 @@ class Sigma0HistManager
       this->initQa(Sigma0Specs);
     }
   }
-    
+
   // init with qa + lambda and photon managers
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
   void init(o2::framework::HistogramRegistry* registry,
@@ -296,18 +296,18 @@ class Sigma0HistManager
   void fill(T1 const& sigma0candidate)
   {
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
-       this->fillAnalysis(sigma0candidate);
-     }
+      this->fillAnalysis(sigma0candidate);
+    }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-       this->fillQa(sigma0candidate);
+      this->fillQa(sigma0candidate);
     }
   }
 
-    // wrapper for tripletProcessHelpers
+  // wrapper for tripletProcessHelpers
   template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& sigma0candidate, T2 const& tracks)
   {
-       this->fillAnalysis(sigma0candidate);
+    this->fillAnalysis(sigma0candidate);
   }
 
   // fill sigma0 + lambda + photon
@@ -333,7 +333,7 @@ class Sigma0HistManager
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void fill(T1 const& sigma0candidate, T2 const& trackTable, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
-      this->template fillMc<mode>(sigma0candidate, col, mcParticles, mcMothers, mcPartonicMothers);
+    this->template fillMc<mode>(sigma0candidate, col, mcParticles, mcMothers, mcPartonicMothers);
   }
   // fill mc + lambda + photon
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>

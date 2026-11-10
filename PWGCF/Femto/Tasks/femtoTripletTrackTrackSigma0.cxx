@@ -21,14 +21,14 @@
 #include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
+#include "PWGCF/Femto/Core/photonHistManager.h"
+#include "PWGCF/Femto/Core/sigma0Builder.h"
+#include "PWGCF/Femto/Core/sigma0HistManager.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/tripletBuilder.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
-#include "PWGCF/Femto/Core/sigma0Builder.h"
-#include "PWGCF/Femto/Core/sigma0HistManager.h"
 #include "PWGCF/Femto/Core/v0HistManager.h"
-#include "PWGCF/Femto/Core/photonHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/ASoA.h>
@@ -44,8 +44,8 @@
 #include <Framework/runDataProcessing.h>
 
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2::analysis::femto;
 
@@ -80,8 +80,8 @@ struct FemtoTripletTrackTrackSigma0 {
   trackhistmanager::ConfTrackBinning1 confTrackBinning1;
   trackbuilder::ConfTrackSelection2 confTrackSelections2;
   trackhistmanager::ConfTrackBinning2 confTrackBinning2;
-  inline static constexpr std::string_view  PrefixTrack1 = "Track1/";
-  inline static constexpr std::string_view  PrefixTrack2 = "Track2/";
+  inline static constexpr std::string_view PrefixTrack1 = "Track1/";
+  inline static constexpr std::string_view PrefixTrack2 = "Track2/";
 
   // particle cleaners (mc only)
   particlecleaner::ConfTrackCleaner1 confTrackCleaner1;
@@ -98,9 +98,9 @@ struct FemtoTripletTrackTrackSigma0 {
 
   // setup for photon and lambda
   v0histmanager::ConfLambdaBinning1 confLambdaBinning;
-  inline static constexpr std::string_view  PrefixPhoton = "Sigma0/DauPhoton/";
+  inline static constexpr std::string_view PrefixPhoton = "Sigma0/DauPhoton/";
   photonhistmanager::ConfPhotonBinning confPhotonBinning;
-  inline static constexpr std::string_view  PrefixLambda = "Sigma0/DauLambda/";
+  inline static constexpr std::string_view PrefixLambda = "Sigma0/DauLambda/";
 
   // setup sigma0s
   sigma0builder::ConfSigma0SelectionDefault confSigma0Selection;
