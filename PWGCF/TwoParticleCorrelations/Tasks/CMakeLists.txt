@@ -144,7 +144,7 @@ o2physics_add_dpl_workflow(lambda-or-anti-lambda-producer-with-spin
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(fox-wolfram-correlation
-                           SOURCES FoxWolframCorrelation.cxx
+                           SOURCES foxWolframCorrelation.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
