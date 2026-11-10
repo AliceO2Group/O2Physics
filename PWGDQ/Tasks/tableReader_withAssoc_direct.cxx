@@ -224,10 +224,10 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
 
 // Using definitions (data-only)
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
-using MyEventsGlobalMult = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::ReducedEventsGlobalTrk>;
+using MyEventsGlobalMult = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::GlobalTrackMultiplicity>;
 using MyEventsQvectorCentr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::EventCuts>;
-using MyEventsGlobalMultSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::ReducedEventsGlobalTrk, aod::EventCuts>;
+using MyEventsGlobalMultSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::GlobalTrackMultiplicity, aod::EventCuts>;
 using MyEventsQvectorCentrSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::EventCuts>;
 using MyEventsHashSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::EventCuts, aod::MixingHashes>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::EventCuts, aod::MixingHashes>;
@@ -251,7 +251,6 @@ using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
-constexpr static uint32_t gkEventFillMapWithGlobalMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ReducedEventGlobalMult;
 constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::CollisionQvectCentr;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithCovPIDExtra = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
@@ -636,8 +635,8 @@ struct AnalysisEventSelection {
 
   void processDirectGlobalMult(MyEventsGlobalMult const& events, BCsWithTimestamps const& bcs)
   {
-    runEventSelection<gkEventFillMapWithGlobalMults>(events, bcs);
-    publishSelections<gkEventFillMapWithGlobalMults>(events);
+    runEventSelection<gkEventFillMapWithMults>(events, bcs);
+    publishSelections<gkEventFillMapWithMults>(events);
   }
 
   void processDirectWithQvectorCentr(MyEventsQvectorCentr const& events, BCsWithTimestamps const& bcs)
@@ -1399,7 +1398,7 @@ struct AnalysisSameEventPairing {
     }
     VarManager::SetDefaultVarNames();
 
-    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentr");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentr") || context.mOptions.get<bool>("processBarrelOnlyWithGlobalMults");
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonDirect");
 
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
@@ -2015,10 +2014,10 @@ struct AnalysisSameEventPairing {
   }
 
   void processBarrelOnlyWithGlobalMults(MyEventsGlobalMultSelected const& events, BCsWithTimestamps const& bcs,
-                         soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
-                         MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+                                        soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                        MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithGlobalMults, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processElectronMuonDirect(

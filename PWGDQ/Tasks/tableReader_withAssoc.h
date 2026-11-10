@@ -302,7 +302,6 @@ constexpr static uint32_t gkEventFillMapWithMultExtraWithQVector = VarManager::O
 // constexpr static uint32_t gkEventFillMapWithMultExtraWithQVector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkEventFillMapWithMultExtraZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ReducedZdc;
 constexpr static uint32_t gkEventFillMapWithMultExtraZdcFit = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ReducedZdc | VarManager::ReducedFit;
-constexpr static uint32_t gkEventFillMapGlobalMult = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedEventGlobalMult;
 constexpr static uint32_t gkEventFillMapWithCovZdcFitMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc | VarManager::ReducedFit | VarManager::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
 // constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector;
@@ -698,8 +697,8 @@ struct AnalysisEventSelection {
   }
   void processSkimmedWithGlobalMults(MyEventsVtxCovGlobalMult const& events)
   {
-    runEventSelection<gkEventFillMapGlobalMult>(events);
-    publishSelections<gkEventFillMapGlobalMult>(events);
+    runEventSelection<gkEventFillMapWithCov>(events);
+    publishSelections<gkEventFillMapWithCov>(events);
   }
   void processSkimmedWithMultExtra(MyEventsMultExtra const& events)
   {
@@ -3238,7 +3237,7 @@ struct AnalysisSameEventPairing {
                                               o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                               MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapGlobalMult, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processBarrelOnlySkimmedNoCovWithMultExtra(MyEventsMultExtraSelected const& events,
@@ -3317,7 +3316,7 @@ struct AnalysisSameEventPairing {
   void processMixingBarrelSkimmedGlobalMult(o2::soa::Filtered<MyEventsWithGlobalMultHash>& events, // o2-linter: disable=const-ref-in-process
                                             o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& trackAssocs, o2::aod::ReducedTracks const& tracks)
   {
-    runSameSideMixing<pairTypeEE, gkEventFillMapGlobalMult>(events, trackAssocs, tracks, trackAssocsPerCollision);
+    runSameSideMixing<pairTypeEE, gkEventFillMapWithCov>(events, trackAssocs, tracks, trackAssocsPerCollision);
   }
 
   void processMixingBarrelSkimmedFlow(o2::soa::Filtered<MyEventsVtxCovSelectedQvectorWithHash>& events, // o2-linter: disable=const-ref-in-process

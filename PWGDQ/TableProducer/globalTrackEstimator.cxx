@@ -24,6 +24,8 @@
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -31,6 +33,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
 #include <string>
@@ -46,6 +49,7 @@ using MyBarrelTracks = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTra
 
 using MyEventsDirect = o2::soa::Join<aod::Collisions, aod::EvSels>;
 using MyTracksDirect = o2::soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
+using MyEventsMcWithMults = soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras_001>;
 
 constexpr static uint32_t GkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t GkTrackFillMap = VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov;
@@ -54,29 +58,38 @@ constexpr static uint32_t GkEventDirectFillMap = VarManager::ObjTypes::Collision
 constexpr static uint32_t GkTrackDirectFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA;
 
 struct GlobalTrackEstimator {
-  Produces<o2::aod::ReducedEventsGlobalTrk> reducedEventsGlobalTrk;
-  Produces<o2::aod::ReducedEventsMultAzimuth> reducedEventsMultAzimuth;
+  Produces<ReducedEventsGlobalTrk> reducedEventsGlobalTrk;
+  Produces<GlobalTrackMultiplicity> globalTrackMultiplicity;
+
+  Produces<ReducedMCGlobalMultiplicities> reducedMCGlobalMultiplicities;
+  Produces<McGlobalMultiplicities> mcGlobalMultiplicities;
+
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  PresliceUnsorted<ReducedMCTracks> mcTracksPerReducedEvent = aod::reducedtrackMC::reducedMCeventId;
 
   Configurable<float> cfgShiftDCAxy{"cfgShiftDCAxy", 0.0105, "Constant shift of DCAxy paramterization"};
   Configurable<float> cfgPtMagnitudeDCAxy{"cfgPtMagnitudeDCAxy", 0.035, "Magnitude of the pT dependency of the DCAxy paramterization"};
   Configurable<float> cfgExponentDCAxy{"cfgExponentDCAxy", 1.1, "Exponent of the pT dependency of the DCAxy paramterization"};
   Configurable<float> cfgMaxDCAz{"cfgMaxDCAz", 2.0, "Maximum DCAz"};
   Configurable<float> cfgMinPt{"cfgMinPt", 0.1, "Minimum required pT"};
+  Configurable<float> cfgMinMCPt{"cfgMinMCPt", 0.0, "Minimum required pT for MC particles"};
   Configurable<float> cfgEtaRange{"cfgEtaRange", 0.8, "Absolute pseudorapidity range"};
   Configurable<float> cfgMinTPCCluster{"cfgMinTPCCluster", 70, "Minimum number of crossed TPC rows"};
   Configurable<float> cfgRatioTPCClusterOverFindableCluster{"cfgRatioTPCClusterOverFindableCluster", 0.8, "Minimum ratio of crossed TPC rows over findable clusters"};
   Configurable<float> cfgMaxChi2TPC{"cfgMaxChi2TPC", 4.0, "Maximum chi2 per cluster in TPC"};
   Configurable<float> cfgMaxChi2ITS{"cfgMaxChi2ITS", 36.0, "Maximum chi2 per cluster in ITS"};
   Configurable<bool> cfgRequireITSibAny{"cfgRequireITSibAny", true, "Require a hit in the ITS inner barrel"};
+  Configurable<bool> cfgRequirePVContributor{"cfgRequirePVContributor", false, "Require the track to be a PV contributor"};
   Configurable<bool> cfgRecalculateDCA{"cfgRecalculateDCA", true, "Recalculate DCA vector with associations"};
 
-  o2::framework::Preslice<o2::aod::ReducedTracksAssoc> preslice = o2::aod::reducedtrack_association::reducedeventId;
-  o2::framework::Preslice<o2::aod::TrackAssoc> presliceDirect = o2::aod::track_association::collisionId;
+  o2::framework::Preslice<ReducedTracksAssoc> preslice = o2::aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<TrackAssoc> presliceDirect = o2::aod::track_association::collisionId;
 
   void init(InitContext& context)
   {
-    bool isSkimmedEnabled = context.mOptions.get<bool>("processGlobalTracksSkimmed");
-    bool isDirectEnabled = context.mOptions.get<bool>("processGlobalTracksDirect");
+    bool isSkimmedEnabled = context.mOptions.get<bool>("processGlobalTracksSkimmed") || context.mOptions.get<bool>("processMCSkimmed");
+    bool isDirectEnabled = context.mOptions.get<bool>("processGlobalTracksDirect") || context.mOptions.get<bool>("processMCDirect");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -108,6 +121,10 @@ struct GlobalTrackEstimator {
     }
 
     if (track.pt() < cfgMinPt || abs(track.eta()) > cfgEtaRange) {
+      return false;
+    }
+
+    if (cfgRequirePVContributor && !track.isPVContributor()) {
       return false;
     }
 
@@ -147,7 +164,28 @@ struct GlobalTrackEstimator {
     return true;
   }
 
-  void processGlobalTracksSkimmed(MyEventsBasic const& events, o2::aod::ReducedTracksAssoc const& assocs, MyBarrelTracks const& tracks)
+  template <typename TParticles>
+  int countMCGlobalParticles(TParticles const& particles)
+  {
+    int count = 0;
+
+    for (auto const& particle : particles) {
+      if (!particle.isPhysicalPrimary() || particle.pt() < cfgMinMCPt.value || std::abs(particle.eta()) > cfgEtaRange.value) {
+        continue;
+      }
+
+      const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (pdgParticle == nullptr || std::abs(pdgParticle->Charge()) < 1.e-3) {
+        continue;
+      }
+
+      ++count;
+    }
+
+    return count;
+  }
+
+  void processGlobalTracksSkimmed(MyEventsBasic const& events, ReducedTracksAssoc const& assocs, MyBarrelTracks const& tracks)
   {
     std::unordered_set<int64_t> selectedTrackIds;
     selectedTrackIds.reserve(tracks.size());
@@ -215,11 +253,28 @@ struct GlobalTrackEstimator {
         ++nTrkGlobal;
       }
 
-      reducedEventsGlobalTrk(nTrkGlobal);
+      globalTrackMultiplicity(nTrkGlobal);
     }
   }
 
   PROCESS_SWITCH(GlobalTrackEstimator, processGlobalTracksDirect, "Count global tracks from unskimmed data", false);
+
+  void processMCSkimmed(ReducedMCEvents const& events, ReducedMCTracks const& particles)
+  {
+    for (auto const& event : events) {
+      auto eventParticles = particles.sliceBy(mcTracksPerReducedEvent, event.globalIndex());
+      reducedMCGlobalMultiplicities(countMCGlobalParticles(eventParticles));
+    }
+  }
+
+  PROCESS_SWITCH(GlobalTrackEstimator, processMCSkimmed, "Count primary charged particles in DQ skimmed MC", false);
+
+  void processMCDirect(McCollision const&, McParticles const& particles)
+  {
+    mcGlobalMultiplicities(countMCGlobalParticles(particles));
+  }
+
+  PROCESS_SWITCH(GlobalTrackEstimator, processMCDirect, "Count primary charged particles in unskimmed MC", false);
 
   void processDummy(MyEventsBasic const&)
   {

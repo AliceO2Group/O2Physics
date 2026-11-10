@@ -157,14 +157,6 @@ DECLARE_SOA_COLUMN(Psi2Random, psi2random, float); //!  Event plane angle from r
 DECLARE_SOA_COLUMN(Psi2A, psi2a, float);           //!  Event plane angle from Q-vector A
 DECLARE_SOA_COLUMN(Psi2B, psi2b, float);           //!  Event plane angle from Q-vector B
 DECLARE_SOA_COLUMN(Psi2C, psi2c, float);           //!  Event plane angle from Q-vector C
-
-DECLARE_SOA_COLUMN(MultNtrkGlobal, multNtrkGlobal, int);
-
-DECLARE_SOA_COLUMN(MultNtrkGlobalToward, multNtrkGlobalToward, int);
-DECLARE_SOA_COLUMN(MultNtrkGlobalTransverseRight, multNtrkGlobalTransverseRight, int);
-DECLARE_SOA_COLUMN(MultNtrkGlobalTransverseLeft, multNtrkGlobalTransverseLeft, int);
-DECLARE_SOA_COLUMN(MultNtrkGlobalBackward, multNtrkGlobalBackward, int);
-
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event information table
@@ -192,12 +184,27 @@ DECLARE_SOA_TABLE(ReducedEventsMultPV_000, "AOD", "REMULTPV", //!  Multiplicity 
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   evsel::NumTracksInTimeRange);
 
-DECLARE_SOA_TABLE(ReducedEventsGlobalTrk, "AOD", "REGLOBALTRK",
-                  reducedevent::MultNtrkGlobal);
+namespace globalmult
+{
+DECLARE_SOA_COLUMN(MultNtrkGlobal, multNtrkGlobal, int);
+} // namespace globalmult
 
-DECLARE_SOA_TABLE(ReducedEventsMultAzimuth, "AOD", "REMULTAZIMUTH",
-                  reducedevent::MultNtrkGlobalToward, reducedevent::MultNtrkGlobalTransverseRight,
-                  reducedevent::MultNtrkGlobalTransverseLeft, reducedevent::MultNtrkGlobalBackward);
+DECLARE_SOA_TABLE(GlobalTrackMultiplicity, "AOD", "GLOBALTRKMULT",
+                  globalmult::MultNtrkGlobal);
+
+DECLARE_SOA_TABLE(ReducedEventsGlobalTrk, "AOD", "REGLOBALTRK",
+                  globalmult::MultNtrkGlobal);
+                
+namespace mcglobalmult
+{
+DECLARE_SOA_COLUMN(MultMCGlobalParticles, multMCGlobalParticles, int);
+} // namespace mcglobalmult
+
+DECLARE_SOA_TABLE(McGlobalMultiplicities, "AOD", "MCGLOBALMULT",
+                  mcglobalmult::MultMCGlobalParticles);
+
+DECLARE_SOA_TABLE(ReducedMCGlobalMultiplicities, "AOD", "REMCGLOBALMULT",
+                  mcglobalmult::MultMCGlobalParticles);
 
 DECLARE_SOA_TABLE_VERSIONED(ReducedEventsMultPV_001, "AOD", "REMULTPV", 1, //!  Multiplicity information for primary vertex
                             mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,

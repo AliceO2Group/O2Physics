@@ -121,6 +121,7 @@ class VarManager : public TObject
     Fit = BIT(22),
     ReducedFit = BIT(23),
     ReducedEventGlobalMult = BIT(24),
+    ReducedEventGlobalMultMC = BIT(25),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -349,6 +350,7 @@ class VarManager : public TObject
     kMultMCNParticlesEta10,
     kMultMCNParticlesEta08,
     kMultMCNParticlesEta05,
+    kMultMCGlobalParticles,
     kQ1ZNAX,
     kQ1ZNAY,
     kQ1ZNCX,
@@ -2662,8 +2664,12 @@ void VarManager::FillEvent(T const& event, float* values)
     FillZDC(event, values);
   }
 
-  if constexpr ((fillMap & ReducedEventGlobalMult) > 0) {
+  if constexpr (requires { event.multNtrkGlobal(); }) {
     values[kMultNtrkGlobal] = event.multNtrkGlobal();
+  }
+
+  if constexpr (requires { event.multMCGlobalParticles(); }) {
+    values[kMultMCGlobalParticles] = event.multMCGlobalParticles();
   }
 
   if constexpr ((fillMap & ReducedFit) > 0) {
