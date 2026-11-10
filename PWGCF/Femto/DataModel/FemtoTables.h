@@ -1344,6 +1344,79 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmExtras_001, "FSIGMAPCMEXTRA", 1,
 using FSigmaPlusPcmExtras = FSigmaPlusPcmExtras_001;
 using StoredFSigmaPlusPcmExtras = StoredFSigmaPlusPcmExtras_001;
 
+namespace femtosigma0s
+{
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::Sigma0MaskType); //! Bitmask for track selections
+DECLARE_SOA_INDEX_COLUMN_FULL(Lambda, lambda, int32_t, FLambdas, "_lambda"); ///< row in FLambdas
+DECLARE_SOA_INDEX_COLUMN_FULL(Photon, photon, int32_t, FPhotons, "_photon"); ///< row in FPhotons
+// id columns for Lambda daughter tracks
+DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! index column for positive daughter track
+DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau"); //! index column for negative daughter track
+
+namespace lite
+{
+// Sigma0 1.192 +-100 MeV
+constexpr float SigmaMassMin = 1.1f;
+constexpr float SigmaMassMax = 1.3f;
+constexpr float SigmaMassStep = (SigmaMassMax - SigmaMassMin) / 65536.f;
+
+inline uint16_t binSigma0Mass(float mass) { return o2::analysis::femto::utils::binLinear<uint16_t>(mass, SigmaMassMin, SigmaMassMax, SigmaMassStep); }
+inline float unBinSigma0Mass(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, SigmaMassMin, SigmaMassStep); }
+
+DECLARE_SOA_COLUMN(BinnedSigma0Mass, binnedSigma0Mass, uint16_t);
+
+DECLARE_SOA_DYNAMIC_COLUMN(Mass, mass,
+                           [](uint16_t binnedSigmaMass) -> float {
+                             return unBinSigma0Mass(binnedSigmaMass);
+                           });
+
+// index for lite decay products
+DECLARE_SOA_INDEX_COLUMN_FULL(Lambda, lambda, int32_t, FLiteLambdas, "_lambda");
+DECLARE_SOA_INDEX_COLUMN_FULL(Photon, photon, int32_t, FLitePhotons, "_photon");
+} // namespace lite
+} // namespace femtosigma0s
+
+// Same collision index column as FLambdas/FPhotons, so Sigma0s can be sliced by femto collision
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigma0s_001, "FSIGMA0", 1,
+                  o2::soa::Index<>,
+                  femtobase::stored::FColId,
+                  femtobase::stored::SignedPt,
+                  femtobase::stored::Eta,
+                  femtobase::stored::Phi,
+                  femtobase::stored::Mass,
+                  femtosigma0s::LambdaId,
+                  femtosigma0s::PosDauId,
+                  femtosigma0s::NegDauId,
+                  femtosigma0s::PhotonId,
+                  femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                  femtobase::dynamic::Sign<femtobase::stored::SignedPt>);
+using FSigma0s = FSigma0s_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigma0Masks_001, "FSIGMA0MASK", 1, //! sigma0 masks
+                                   femtosigma0s::Mask);
+using FSigma0Masks = FSigma0Masks_001;
+// using StoredFSigma0Masks = StoredFSigma0Masks_001;
+
+// table for basic lambda information with compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigma0s_001, "FLITESIGMA0", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtosigma0s::lite::BinnedSigma0Mass,
+                                   femtosigma0s::lite::LambdaId,
+                                   femtosigma0s::lite::PhotonId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtosigma0s::lite::Mass<femtov0s::lite::BinnedLambdaMass>);
+using FLiteSigma0s = FLiteSigma0s_001;
+using FLiteSigma0 = FLiteSigma0s::iterator;
+using StoredFLiteSigma0s = StoredFLiteSigma0s_001;
+
 namespace femtocascades
 {
 // columns for cascade bit masks
@@ -1831,6 +1904,13 @@ using FSigmaPlusLabels = FSigmaPlusLabels_001;
 using FSigmaPlusLabel = FSigmaPlusLabels::iterator;
 using StoredFSigmaPlusLabels = StoredFSigmaPlusLabels_001;
 using StoredFSigmaPlusLabel = StoredFSigmaPlusLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigma0Labels_001, "FSIGMA0LABEL", 1, //! label from femto sigma to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FSigma0Labels = FSigma0Labels_001;
+using FSigma0Label = FSigma0Labels::iterator;
+using StoredFSigma0Labels = StoredFSigma0Labels_001;
+using StoredFSigma0Label = StoredFSigma0Labels::iterator;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmLabels_001, "FSIGMAPCMLABEL", 1, //! label from femto sigma plus (PCM) to femto mc particle
                                    femtolabels::FMcParticleId);

@@ -306,6 +306,9 @@ constexpr char PrefixMcParticleMcParticleMcParticleMe[] = "McParticleMcParticleM
 constexpr char PrefixTrackTrackCascadeSe[] = "TrackTrackCascade/SE/";
 constexpr char PrefixTrackTrackCascadeMe[] = "TrackTrackCascade/ME/";
 
+constexpr char PrefixTrackTrackSigma0Se[] = "TrackTrackSigma0/SE/";
+constexpr char PrefixTrackTrackSigma0Me[] = "TrackTrackSigma0/ME/";
+
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";
