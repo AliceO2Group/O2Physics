@@ -34,6 +34,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
@@ -46,7 +47,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <string>
-#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <math.h>
@@ -278,11 +279,7 @@ struct BJetTreeCreator {
   Configurable<bool> produceSVTree{"produceSVTree", true, "produce the SV-correlated jet TTree”"};
   Configurable<bool> produceTree{"produceTree", true, "produce the jet TTree"};
 
-  Configurable<float> vtxRes{"vtxRes", 0.01, "Vertex position resolution (cluster size) for GNN vertex predictions (cm)"};
-  Configurable<bool> searchUpToQuark{"searchUpToQuark", true, "Flag whether to search for track origins up to the quark level"};
-
   Configurable<int> trainingDatasetRatioParam{"trainingDatasetRatioParam", 0, "Parameter for splitting training/evaluation datasets by collisionId"};
-  Configurable<bool> produceExtrbTableGnn{"produceExtrbTableGnn", false, "Flag whether to produce the extra table with track quality variables for GNN training"};
 
   std::vector<int> eventSelectionBits;
 
@@ -292,6 +289,10 @@ struct BJetTreeCreator {
 
   void init(InitContext const&)
   {
+    if (doprocessMCJetsForGNN && doprocessMCJetsForGNNExtrb) {
+      LOGF(fatal, "Enable only one of processMCJetsForGNN and processMCJetsForGNNExtrb");
+    }
+
     // Seed the random number generator using current time
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
@@ -313,7 +314,7 @@ struct BJetTreeCreator {
     registry.add("h2_jetMass_jetpT", "Jet mass;#it{p}_{T,jet} (GeV/#it{c});#it{m}_{jet} (GeV/#it{c}^{2})", {HistType::kTH2F, {{200, 0., 200.}, {50, 0, 50.0}}});
     registry.add("h2_SVMass_jetpT", "Secondary vertex mass;#it{p}_{T,jet} (GeV/#it{c});#it{m}_{SV} (GeV/#it{c}^{2})", {HistType::kTH2F, {{200, 0., 200.}, {50, 0, 10}}});
 
-    if (doprocessMCJets || doprocessMCJetsForGNN) {
+    if (doprocessMCJets || doprocessMCJetsForGNN || doprocessMCJetsForGNNExtrb) {
       registry.add("h2_SIPs2D_jetpT_bjet", "2D IP significance b-jets;#it{p}_{T,jet} (GeV/#it{c});IPs", {HistType::kTH2F, {{200, 0., 200.}, {100, -50.0, 50.0}}});
       registry.add("h2_SIPs3D_jetpT_bjet", "3D IP significance b-jets;#it{p}_{T,jet} (GeV/#it{c});IPs", {HistType::kTH2F, {{200, 0., 200.}, {100, -50.0, 50.0}}});
       registry.add("h2_LxyS_jetpT_bjet", "Decay length in XY b-jets;#it{p}_{T,jet} (GeV/#it{c});S#it{L}_{xy}", {HistType::kTH2F, {{200, 0., 200.}, {100, 0., 100.0}}});
@@ -348,7 +349,7 @@ struct BJetTreeCreator {
       registry.add("h2_Response_DetjetpT_PartjetpT_lfjet", "Response matrix lf-jet;#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}});
     }
 
-    if (doprocessMCJetsForGNN) {
+    if (doprocessMCJetsForGNN || doprocessMCJetsForGNNExtrb) {
       //+jet
       registry.add("h_jet_pt", "jet_pt;#it{p}_{T}^{ch jet} (GeV/#it{c});Entries", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("h_jet_eta", "jet_eta;#it{#eta}_{ch jet};Entries", {HistType::kTH1F, {{200, -2., 2.}}});
@@ -371,7 +372,7 @@ struct BJetTreeCreator {
       registry.add("h_trk_dcaz", "trk_dcaxyz;#it{DCA}_{z} (cm);Entries", {HistType::kTH1F, {{200, -0.1, 0.1}}});
       registry.add("h_trk_sigmadcaxy", "trk_sigmadcaxy;#it{#sigma}_{#it{DCA}_{xy}} (cm);Entries", {HistType::kTH1F, {{200, 0., 0.1}}});
       registry.add("h_trk_sigmadcaz", "trk_sigmadcaxyz;#it{#sigma}_{#it{DCA}_{z}} (cm);Entries", {HistType::kTH1F, {{200, 0., 0.1}}});
-      if (produceExtrbTableGnn) {
+      if (doprocessMCJetsForGNNExtrb) {
         registry.add("h_trk_itsncls", "trk_itsncls;ITS NCls;Entries", {HistType::kTH1F, {{10, 0., 10.}}});
         registry.add("h_trk_tpcncls", "trk_tpcncls;TPC NCls (Found);Entries", {HistType::kTH1F, {{200, 0., 200.}}});
         registry.add("h_trk_tpcncrs", "trk_tpcncrs;TPC NCrossedRows;Entries", {HistType::kTH1F, {{200, 0., 200.}}});
@@ -399,6 +400,7 @@ struct BJetTreeCreator {
   using FilteredCollision = soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs>>;
   using JetTrackswID = soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>>;
   using JetTracksMCDwID = soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>>;
+  using JetTracksGNN = soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>>;
   using DataJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::DataSecondaryVertex3ProngIndices>>;
 
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov, aod::TracksExtra>;
@@ -514,8 +516,6 @@ struct BJetTreeCreator {
     return true;
   }
 
-  using TrackLabelMap = std::unordered_map<std::string, std::vector<int>>;
-
   template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
   void analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
   {
@@ -561,19 +561,23 @@ struct BJetTreeCreator {
     }
   }
 
-  template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename AnyOriginalTracks>
-  void analyzeJetTrackInfoForGNN(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, AnyOriginalTracks const&, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0, TrackLabelMap* trkLabels = nullptr)
+  template <bool withExtrb, typename AnalysisJet, typename AnyTracks>
+  int analyzeJetTrackInfoForGNN(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0)
   {
-    int trkIdx = -1;
-    for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
+    std::unordered_set<int> vertexIndices;
+    for (auto const& definition : analysisJet.template tracksGnn_as<soa::Join<aod::ChargedMCDetectorLevelJetGnnTracks, aod::ChargedMCDetectorLevelJetTrackOriginDef, aod::ChargedMCDetectorLevelJetVertexIndexDef>>()) {
+      auto const constituent = definition.template track_as<AnyTracks>();
 
-      trkIdx++;
-
-      // No DCA-acceptance cut here: matches BjetTaggingGnn::fillMCDJetHistograms(), which only applies
-      // a track pT cut (trackPtMinGnn) for GNN input tracks, so the training tree stays consistent with
-      // what is evaluated at inference time.
+      // Keep the tree's pT cut on the GNN tracks selected by jetGnnDefinition.
+      // The backbone supplies both track identity and model-node ordering.
       if (constituent.pt() < trackPtMin) {
         continue;
+      }
+
+      int trkVtxIndex = definition.vertexIndex();
+      int trkOrigin = definition.origin();
+      if (trkVtxIndex >= 0) {
+        vertexIndices.insert(trkVtxIndex);
       }
 
       double deltaRJetTrack = jetutilities::deltaR(analysisJet, constituent);
@@ -583,7 +587,7 @@ struct BJetTreeCreator {
       registry.fill(HIST("h2_SIPs2D_jetpT"), analysisJet.pt(), sign * std::abs(constituent.dcaXY()) / constituent.sigmadcaXY(), eventweight);
       registry.fill(HIST("h2_SIPs3D_jetpT"), analysisJet.pt(), sign * std::abs(constituent.dcaXYZ()) / constituent.sigmadcaXYZ(), eventweight);
 
-      if (doprocessMCJetsForGNN) {
+      if (doprocessMCJetsForGNN || doprocessMCJetsForGNNExtrb) {
         if (jetFlavor == JetTaggingSpecies::beauty) {
           registry.fill(HIST("h2_SIPs2D_jetpT_bjet"), analysisJet.pt(), sign * std::abs(constituent.dcaXY()) / constituent.sigmadcaXY(), eventweight);
           registry.fill(HIST("h2_SIPs3D_jetpT_bjet"), analysisJet.pt(), sign * std::abs(constituent.dcaXYZ()) / constituent.sigmadcaXYZ(), eventweight);
@@ -595,16 +599,6 @@ struct BJetTreeCreator {
           registry.fill(HIST("h2_SIPs3D_jetpT_lfjet"), analysisJet.pt(), sign * std::abs(constituent.dcaXYZ()) / constituent.sigmadcaXYZ(), eventweight);
         }
 
-        auto origConstit = constituent.template track_as<AnyOriginalTracks>();
-
-        //+
-        int trkVtxIndex = 0;
-        int trkOrigin = 0;
-        if (trkLabels != nullptr) {
-          trkVtxIndex = (*trkLabels)["trkVtxIndex"][trkIdx];
-          trkOrigin = (*trkLabels)["trkOrigin"][trkIdx];
-        }
-
         //+trk
         registry.fill(HIST("h_trk_pt"), constituent.pt(), eventweight);
         registry.fill(HIST("h_trk_eta"), constituent.eta(), eventweight);
@@ -614,21 +608,22 @@ struct BJetTreeCreator {
         registry.fill(HIST("h_trk_dcaz"), std::abs(constituent.dcaZ()) * sign, eventweight);
         registry.fill(HIST("h_trk_sigmadcaxy"), constituent.sigmadcaXY(), eventweight);
         registry.fill(HIST("h_trk_sigmadcaz"), constituent.sigmadcaZ(), eventweight);
-        if (produceExtrbTableGnn) {
+        registry.fill(HIST("h_trk_vtx_index"), trkVtxIndex);
+        registry.fill(HIST("h_trk_origin"), trkOrigin);
+
+        if constexpr (withExtrb) {
+          auto const origConstit = constituent.template track_as<OriginalTracks>();
           registry.fill(HIST("h_trk_itsncls"), origConstit.itsNCls(), eventweight);
           registry.fill(HIST("h_trk_tpcncls"), origConstit.tpcNClsFound(), eventweight);
           registry.fill(HIST("h_trk_tpcncrs"), origConstit.tpcNClsCrossedRows(), eventweight);
           registry.fill(HIST("h_trk_itschi2ncl"), origConstit.itsChi2NCl(), eventweight);
           registry.fill(HIST("h_trk_tpcchi2ncl"), origConstit.tpcChi2NCl(), eventweight);
           registry.fill(HIST("h2_trk_jtrackpt_vs_origtrackpt"), constituent.pt(), origConstit.pt(), eventweight); // jtrack & new extra table are well joined (linear correlation)
-        }
-        registry.fill(HIST("h_trk_vtx_index"), trkVtxIndex);
-        registry.fill(HIST("h_trk_origin"), trkOrigin);
-
-        if (produceTree) {
-          if (produceExtrbTableGnn) {
+          if (produceTree) {
             bjetTracksExtrbTable(/*bjetParamsTable.lastIndex() + 1, */ constituent.phi(), constituent.sign(), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl(), origConstit.itsNCls(), origConstit.tpcNClsFound(), origConstit.tpcNClsCrossedRows(), trkOrigin, trkVtxIndex); //+
-          } else {
+          }
+        } else {
+          if (produceTree) {
             bjetTracksExtraTable(/*bjetParamsTable.lastIndex() + 1, */ constituent.phi(), constituent.sign(), trkOrigin, trkVtxIndex); //+
           }
         }
@@ -639,6 +634,9 @@ struct BJetTreeCreator {
       }
       trackIndices.push_back(bjetTracksParamsTable.lastIndex());
     }
+    // Full-jet labels can have gaps after GNN selection and the tree pT cut.
+    // Count distinct vertices represented by the stored tracks, including PV.
+    return static_cast<int>(vertexIndices.size());
   }
 
   void processDummy(FilteredCollision::iterator const& /*collision*/)
@@ -800,14 +798,28 @@ struct BJetTreeCreator {
   PROCESS_SWITCH(BJetTreeCreator, processMCJets, "jet information in MC", false);
 
   using FilteredCollisionMCDOutlier = soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs, aod::JCollisionOutliers>>;
-  using MCDJetTableNoSV = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetFlavourDef>>;
   using AnalysisCollisionsMCPOutlier = soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs, aod::JMcCollisionOutliers>;
-  using JetParticleswID = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
 
-  // aod::McParticles::vx(), vy(), vz() are necessary for jettaggingutilities::vertexClustering()
-  void processMCJetsForGNN(FilteredCollisionMCDOutlier::iterator const& collision, MCDJetTableNoSV const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, JetParticleswID const& MCParticles, AnalysisCollisionsMCPOutlier const&, OriginalTracks const& origTracks, aod::McParticles const& origParticles)
+  template <bool isMCD, typename Collision>
+  bool isAcceptedCollision(Collision const& collision)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
+    if (!(std::abs(collision.posZ()) < vertexZCut) ||
+        !jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return false;
+    }
+    if constexpr (isMCD) {
+      if (collision.isOutlier() ||
+          (collision.has_mcCollision() && collision.template mcCollision_as<AnalysisCollisionsMCPOutlier>().isOutlier())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template <bool withExtrb, typename AnyTracks>
+  void fillMCJetsForGNN(FilteredCollisionMCDOutlier::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetGnnTrackIds, aod::ChargedMCDetectorLevelJetFlavourDef>> const& MCDjets, AnyTracks const& allTracks)
+  {
+    if (!isAcceptedCollision<true>(collision) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
       return;
     }
 
@@ -816,23 +828,12 @@ struct BJetTreeCreator {
       return;
     }
 
-    // Reject outlier MC collisions
-    if (collision.isOutlier()) {
-      return;
-    }
-    if (collision.has_mcCollision() && collision.template mcCollision_as<AnalysisCollisionsMCPOutlier>().isOutlier()) {
-      return;
-    }
-
     float eventWeight = collision.weight();
 
     registry.fill(HIST("h_vertexZ"), collision.posZ(), eventWeight);
 
-    auto const mcParticlesPerColl = MCParticles.sliceBy(mcParticlesPerCollision, collision.mcCollisionId());
-    auto const mcPJetsPerColl = MCPjets.sliceBy(mcpJetsPerCollision, collision.mcCollisionId());
-
     for (const auto& analysisJet : MCDjets) {
-      if (!isAcceptedJet<JetTracksMCDwID>(analysisJet)) {
+      if (!isAcceptedJet<AnyTracks>(analysisJet) || !analysisJet.has_tracksGnn()) {
         continue;
       }
 
@@ -845,10 +846,7 @@ struct BJetTreeCreator {
         continue;
       }
 
-      //+
-      TrackLabelMap trkLabels{{"trkVtxIndex", {}}, {"trkOrigin", {}}};
-      int nVertices = jettaggingutilities::vertexClustering(collision.template mcCollision_as<AnalysisCollisionsMCPOutlier>(), analysisJet, allTracks, MCParticles, origParticles, trkLabels, searchUpToQuark, vtxRes, trackPtMin);
-      analyzeJetTrackInfoForGNN(collision, analysisJet, allTracks, origTracks, indicesTracks, jetFlavor, eventWeight, &trkLabels);
+      int nVertices = analyzeJetTrackInfoForGNN<withExtrb>(analysisJet, allTracks, indicesTracks, jetFlavor, eventWeight);
 
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
       registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), indicesTracks.size(), eventWeight);
@@ -880,7 +878,18 @@ struct BJetTreeCreator {
       }
     }
   }
-  PROCESS_SWITCH(BJetTreeCreator, processMCJetsForGNN, "jet information in MC for GNN", false);
+
+  void processMCJetsForGNN(FilteredCollisionMCDOutlier::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetGnnTrackIds, aod::ChargedMCDetectorLevelJetFlavourDef>> const& MCDjets, JetTracksGNN const& allTracks, soa::Join<aod::ChargedMCDetectorLevelJetGnnTracks, aod::ChargedMCDetectorLevelJetTrackOriginDef, aod::ChargedMCDetectorLevelJetVertexIndexDef> const&, AnalysisCollisionsMCPOutlier const&)
+  {
+    fillMCJetsForGNN<false>(collision, MCDjets, allTracks);
+  }
+  PROCESS_SWITCH(BJetTreeCreator, processMCJetsForGNN, "jet information in MC for GNN using derived tracks", false);
+
+  void processMCJetsForGNNExtrb(FilteredCollisionMCDOutlier::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetGnnTrackIds, aod::ChargedMCDetectorLevelJetFlavourDef>> const& MCDjets, JetTrackswID const& allTracks, soa::Join<aod::ChargedMCDetectorLevelJetGnnTracks, aod::ChargedMCDetectorLevelJetTrackOriginDef, aod::ChargedMCDetectorLevelJetVertexIndexDef> const&, AnalysisCollisionsMCPOutlier const&, OriginalTracks const&)
+  {
+    fillMCJetsForGNN<true>(collision, MCDjets, allTracks);
+  }
+  PROCESS_SWITCH(BJetTreeCreator, processMCJetsForGNNExtrb, "jet information in MC for GNN with original-track quality variables", false);
 
   Filter mccollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
   using FilteredCollisionMCP = soa::Filtered<aod::JMcCollisions>;

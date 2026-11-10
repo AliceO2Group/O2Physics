@@ -14,6 +14,7 @@
 ///
 /// \author Changhwan Choi <changhwan.choi@cern.ch>
 
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetTaggingUtilities.h"
 #include "PWGJE/Core/MlResponseHfTagging.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -23,6 +24,7 @@
 #include "Tools/ML/MlResponse.h"
 
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -48,11 +50,10 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::framework::expressions;
 
 namespace jet_gnn_inference
 {
-// Optional outputs for future track-origin and vertex prediction tables.
+// Optional outputs for track-origin and future vertex prediction tables.
 template <typename T>
 struct OptionalProduces : Produces<T> {
 };
@@ -61,17 +62,33 @@ struct OptionalProduces<void> {
 };
 } // namespace jet_gnn_inference
 
-template <bool isMCD, typename JetTable, typename JetTaggingTable, typename JetGnnInfTrackTable = void, typename JetGnnInfVertexTable = void>
+template <bool isMCD, typename JetTable, typename JetTaggingTable, typename JetGnnTrackIdsTable, typename JetGnnTracksTable, typename JetGnnInfTrackTable = void, typename JetGnnInfVertexTable = void>
 struct JetGnnInferenceTask {
   static constexpr double DefaultCutsMl[1][3] = {{0.5, 0.5, 0.5}};
+  static constexpr float invalidGnnScore = -999.f;
+  static constexpr float largeNegativeNumber = -98.f;
+  static constexpr float largePositiveNumber = 9999.f;
 
   Produces<JetTaggingTable> taggingTable;
   jet_gnn_inference::OptionalProduces<JetGnnInfTrackTable> gnnTrackTable;
   jet_gnn_inference::OptionalProduces<JetGnnInfVertexTable> gnnVertexTable;
 
+  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  std::vector<int> eventSelectionBits;
+
   // Track selection for GNN inputs
   Configurable<float> trackDcaXYMax{"trackDcaXYMax", 1, "maximum DCA xy acceptance for tracks [cm]"};
   Configurable<float> trackDcaZMax{"trackDcaZMax", 2, "maximum DCA z acceptance for tracks [cm]"};
+
+  // Match the jetFilter and isAcceptedJet criteria in bjetTaggingGnn.cxx.
+  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
+  Configurable<float> jetPtMax{"jetPtMax", 300.0, "maximum jet pT"};
+  Configurable<float> jetEtaMin{"jetEtaMin", -0.9, "minimum jet pseudorapidity"};
+  Configurable<float> jetEtaMax{"jetEtaMax", 0.9, "maximum jet pseudorapidity"};
+  Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
+  Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
+  Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
 
   // ML configuration
   Configurable<int> nJetConst{"nJetConst", 100, "maximum number of jet constituents to be used for ML evaluation"};
@@ -89,10 +106,11 @@ struct JetGnnInferenceTask {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // GNN configuration
-  Configurable<float> jetpTMin{"jetpTMin", 5., "minimum jet pT"};
+  Configurable<float> jetpTMin{"jetpTMin", 5., "minimum jet pT for QA histograms"};
   Configurable<float> dbMin{"dbMin", -15., "minimum GNN Db"};
   Configurable<float> dbMax{"dbMax", 15., "maximum GNN Db"};
   Configurable<double> fC{"fC", 0.018, "Parameter f_c for D_b calculation"};
+  Configurable<double> trackFC{"trackFC", 0.018, "Charm fraction for the track-origin D_b calculation"};
   Configurable<int64_t> nJetFeat{"nJetFeat", 4, "Number of jet GNN input features"};
   Configurable<int64_t> nTrkFeat{"nTrkFeat", 8, "Number of track GNN input features"};
   Configurable<int64_t> nTrkOrigin{"nTrkOrigin", 5, "Number of track origin categories"};
@@ -114,11 +132,68 @@ struct JetGnnInferenceTask {
 
   using JetTracksExt = soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
   using AnalysisJets = std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>;
+  using Collisions = std::conditional_t<isMCD, soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>, aod::JetCollisions>;
+  using McCollisions = soa::Join<aod::JetMcCollisions, aod::JMcCollisionOutliers>;
+  // Data reuses the already subscribed JCollisions table; only MCD requires
+  // a separate context to dereference the matched MC collision's outlier flag.
+  using CollisionContext = std::conditional_t<isMCD, McCollisions, aod::JCollisions>;
 
   o2::analysis::GNNBjetAllocator tensorAlloc;
 
+  template <typename Collision>
+  bool isAcceptedCollision(Collision const& collision)
+  {
+    if (!(std::abs(collision.posZ()) < vertexZCut) ||
+        !jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return false;
+    }
+    if constexpr (isMCD) {
+      if (collision.isOutlier() ||
+          (collision.has_mcCollision() && collision.template mcCollision_as<McCollisions>().isOutlier())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template <typename Tracks, typename Jet>
+  bool isAcceptedJet(Jet const& jet)
+  {
+    // Apply the analysis jetFilter as a predicate rather than dropping rows
+    // with soa::Filtered: taggingTable must remain joinable to every input jet.
+    if (!(jet.pt() >= jetPtMin && jet.pt() < jetPtMax &&
+          jet.eta() < jetEtaMax - jet.r() / 100.f &&
+          jet.eta() > jetEtaMin + jet.r() / 100.f)) {
+      return false;
+    }
+
+    if (jetAreaFractionMin > largeNegativeNumber &&
+        jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+      return false;
+    }
+
+    bool checkConstituentMinPt = leadingConstituentPtMin > largeNegativeNumber;
+    bool checkConstituentMaxPt = leadingConstituentPtMax < largePositiveNumber;
+    if (!checkConstituentMinPt && !checkConstituentMaxPt) {
+      return true;
+    }
+
+    bool isMinLeadingConstituent = !checkConstituentMinPt;
+    bool isMaxLeadingConstituent = true;
+    for (auto const& constituent : jet.template tracks_as<Tracks>()) {
+      double pt = constituent.pt();
+      if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
+        isMinLeadingConstituent = true;
+      }
+      if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
+        isMaxLeadingConstituent = false;
+      }
+    }
+    return isMinLeadingConstituent && isMaxLeadingConstituent;
+  }
+
   template <typename Jet>
-  void fillHistograms(Jet const& jet, float db)
+  void fillHistograms(Jet const& jet, float db, std::vector<float> const* trackScores = nullptr)
   {
     if (jet.pt() < jetpTMin) {
       return;
@@ -152,16 +227,67 @@ struct JetGnnInferenceTask {
       }
     }
     registry.fill(HIST("h2_pt_db"), jet.pt(), db);
+
+    // The tag-only jet type has no GNN-track array. Compile this block only
+    // for full inference, and require MC truth only for the flavour split.
+    if constexpr (requires { jet.tracksGnnIds(); }) {
+      if (trackScores) {
+        auto const gnnTracks = jet.template tracksGnn_as<JetGnnTracksTable>();
+        if (trackScores->size() != gnnTracks.size()) {
+          LOG(fatal) << "Track QA requires one score per GNN backbone row.";
+        }
+        for (auto const& track : gnnTracks) {
+          std::size_t nodeIndex = track.trackIndex();
+          if (nodeIndex >= trackScores->size()) {
+            LOG(fatal) << "GNN trackIndex is out of range for the track QA scores.";
+          }
+          float score = (*trackScores)[nodeIndex];
+          if (score == invalidGnnScore || std::isnan(score)) {
+            continue;
+          }
+          registry.fill(HIST("h_trackDb"), score);
+          if constexpr (isMCD) {
+            switch (track.origin()) {
+              case 2:
+                registry.fill(HIST("h_trackDb_b"), score);
+                break;
+              case 1:
+                registry.fill(HIST("h_trackDb_c"), score);
+                break;
+              case 0:
+              case 3:
+              case 4:
+                registry.fill(HIST("h_trackDb_lf"), score);
+                break;
+              default:
+                LOGF(debug, "GNN inference, unexpected track origin value: %d", track.origin());
+            }
+          }
+        }
+      }
+    }
   }
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
-    if (doprocessAlgorithmGNN) {
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    if (doprocessGnnTag && doprocessGnnFull) {
+      LOG(fatal) << "Enable only one of processGnnTag and processGnnFull.";
+    }
+    if constexpr (std::is_void_v<JetGnnInfTrackTable>) {
+      if (doprocessGnnFull) {
+        LOG(fatal) << "processGnnFull requires a task with a track prediction output.";
+      }
+    }
+    if (doprocessGnnTag || doprocessGnnFull) {
       // analyzeJetTrackInfo4GNN supplies four jet features and eight track features.
       if (nJetFeat != 4 || nTrkFeat != 8 || nClassesMl != 3 || nJetConst <= 0) {
         LOG(fatal) << "GNN jet tagging requires nJetFeat=4, nTrkFeat=8, nClassesMl=3 and nJetConst>0.";
+      }
+      if (doprocessGnnFull && (nTrkOrigin != 5 || !std::isfinite(trackFC.value) || trackFC < 0. || trackFC > 1.)) {
+        LOG(fatal) << "Track-origin inference requires nTrkOrigin=5 and trackFC in [0, 1].";
       }
       if (transformFeatureJetMean.value.size() != static_cast<std::size_t>(nJetFeat.value) ||
           transformFeatureJetStdev.value.size() != static_cast<std::size_t>(nJetFeat.value) ||
@@ -196,16 +322,55 @@ struct JetGnnInferenceTask {
       registry.add("h_db_lf", "#it{D}_{b} lf-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -20., 30.}}});
       registry.add("h2_pt_db", "#it{p}_{T} vs. #it{D}_{b};#it{p}_{T}^{ch jet} (GeV/#it{c}^{2});#it{D}_{b}", {HistType::kTH2F, {{100, 0., 200.}, {50, -20., 30.}}});
     }
+    if (doprocessGnnFull) {
+      registry.add("h_trackDb", "#it{d}_{b} inclusive track;#it{d}_{b}", {HistType::kTH1F, {{50, -20., 30.}}});
+      if constexpr (isMCD) {
+        registry.add("h_trackDb_b", "#it{d}_{b} b-track;#it{d}_{b}", {HistType::kTH1F, {{50, -20., 30.}}});
+        registry.add("h_trackDb_c", "#it{d}_{b} c-track;#it{d}_{b}", {HistType::kTH1F, {{50, -20., 30.}}});
+        registry.add("h_trackDb_lf", "#it{d}_{b} lf-track;#it{d}_{b}", {HistType::kTH1F, {{50, -20., 30.}}});
+      }
+    }
   }
 
   template <typename Jet, typename Tracks>
-  float evaluateJet(Jet const& jet, Tracks const& tracks)
+  float evaluateJet(Jet const& jet, Tracks const& tracks, std::vector<float>* trackScores = nullptr)
   {
     std::vector<std::vector<float>> trkFeat;
-    jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, trkFeat, trackPtMin, trackDcaXYMax, trackDcaZMax, nJetConst);
-    if (trkFeat.empty()) {
-      LOGF(debug, "GNN inference, no selected tracks (%d)", jet.globalIndex());
-      return -999.f;
+    if (trackScores) {
+      trackScores->clear();
+      if constexpr (!std::is_void_v<JetGnnInfTrackTable> && requires { jet.tracksGnnIds(); }) {
+        // The definition backbone owns track selection and model-node order.
+        // Do not reapply inference-side cuts or select a different track subset.
+        auto const gnnTracks = jet.template tracksGnn_as<JetGnnTracksTable>();
+        trackScores->assign(gnnTracks.size(), invalidGnnScore);
+        if (gnnTracks.size() <= 1) {
+          return invalidGnnScore;
+        }
+        if (gnnTracks.size() > static_cast<std::size_t>(nJetConst.value)) {
+          LOG(fatal) << "GNN backbone contains " << gnnTracks.size() << " tracks, exceeding nJetConst=" << nJetConst.value << ". Increase the inference allocator limit to match jetGnnDefinition.";
+        }
+        trkFeat.reserve(gnnTracks.size());
+        for (std::size_t nodeIndex = 0; nodeIndex < gnnTracks.size(); ++nodeIndex) {
+          auto const& node = gnnTracks[nodeIndex];
+          if (node.trackIndex() != nodeIndex || node.jetId() != jet.globalIndex()) {
+            LOG(fatal) << "GNN backbone node order or jet reference does not match the jet's tracksGnnIds().";
+          }
+          auto const track = node.template track_as<Tracks>();
+          int sign = jettaggingutilities::getGeoSign(jet, track);
+          trkFeat.emplace_back(std::vector<float>{track.pt(), track.phi(), track.eta(), static_cast<float>(track.sign()), std::abs(track.dcaXY()) * sign, track.sigmadcaXY(), std::abs(track.dcaZ()) * sign, track.sigmadcaZ()});
+        }
+      } else {
+        LOG(fatal) << "Track-origin inference requires a task with a track prediction output.";
+      }
+    } else {
+      if (jet.tracksIds().size() <= 1 || !isAcceptedJet<Tracks>(jet)) {
+        return invalidGnnScore;
+      }
+      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, trkFeat, trackPtMin, trackDcaXYMax, trackDcaZMax, nJetConst);
+      if (trkFeat.size() <= 1) {
+        LOGF(debug, "GNN inference, fewer than two selected tracks (%d)", jet.globalIndex());
+        return invalidGnnScore;
+      }
     }
 
     std::vector<float> jetFeat{jet.pt(), jet.phi(), jet.eta(), jet.mass()};
@@ -213,8 +378,33 @@ struct JetGnnInferenceTask {
     std::vector<Ort::Value> gnnInput;
     tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
-    auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
-    float db = jettaggingutilities::getDb(modelOutput, fC);
+    float db;
+    if (trackScores) {
+      // Exported head order: edge_outputs, node_outputs, flav_preds.
+      // Retrieve jet and track logits in one model evaluation; leave edges unused.
+      auto const outputs = bMlResponse.getModelOutputs(gnnInput, 0);
+      if (outputs.empty()) {
+        LOG(error) << "GNN returned no outputs; keeping invalid jet and track scores.";
+        return invalidGnnScore;
+      }
+      if (outputs.size() != 3 || outputs.back().size() != static_cast<std::size_t>(nClassesMl.value) ||
+          outputs[1].size() != trkFeat.size() * static_cast<std::size_t>(nTrkOrigin.value)) {
+        LOG(fatal) << "Expected GNN outputs [edges, N*5 track-origin logits, 3 jet logits].";
+      }
+      db = jettaggingutilities::getDb(outputs.back(), fC);
+      auto const& nodeLogits = outputs[1];
+      std::vector<float> trackLogits(nTrkOrigin.value);
+      for (std::size_t nodeIndex = 0; nodeIndex < trkFeat.size(); ++nodeIndex) {
+        for (std::size_t category = 0; category < trackLogits.size(); ++category) {
+          trackLogits[category] = nodeLogits[nodeIndex * trackLogits.size() + category];
+        }
+        float score = jettaggingutilities::getTrackDb(trackLogits, trackFC);
+        (*trackScores)[nodeIndex] = std::isnan(score) ? invalidGnnScore : score;
+      }
+    } else {
+      auto const modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
+      db = jettaggingutilities::getDb(modelOutput, fC);
+    }
     if (std::isnan(db)) {
       LOGF(debug, "GNN inference, Db is NaN (%d)", jet.globalIndex());
       return 999.f;
@@ -222,32 +412,74 @@ struct JetGnnInferenceTask {
     return db;
   }
 
-  void processDummy(aod::JetCollisions const&)
+  void processDummy(aod::JetCollisions::iterator const&)
   {
   }
   PROCESS_SWITCH(JetGnnInferenceTask, processDummy, "Dummy process", true);
 
-  void processAlgorithmGNN(AnalysisJets const& jets, JetTracksExt const& tracks)
+  void processGnnTag(typename Collisions::iterator const& collision, AnalysisJets const& jets, JetTracksExt const& tracks, CollisionContext const&)
   {
-    // Preserve a one-to-one positional join with Jets, including jets without
-    // selected tracks and jets below the QA pT threshold.
+    bool acceptedCollision = isAcceptedCollision(collision);
+    // Preserve a one-to-one positional join with Jets, including jets rejected
+    // by collision/jet selection or with fewer than two GNN input tracks.
     for (auto const& jet : jets) {
-      float db = evaluateJet(jet, tracks);
+      if (taggingTable.lastIndex() + 1 != jet.globalIndex()) {
+        LOG(fatal) << "GNN inference requires jets ordered by collision with valid collision indices.";
+      }
+      float db = acceptedCollision ? evaluateJet(jet, tracks) : invalidGnnScore;
       taggingTable(0, -1.f, db);
-      fillHistograms(jet, db);
+      if (acceptedCollision) {
+        fillHistograms(jet, db);
+      }
     }
   }
-  PROCESS_SWITCH(JetGnnInferenceTask, processAlgorithmGNN, "Run GNN inference and fill jet tagging tables", false);
+  PROCESS_SWITCH(JetGnnInferenceTask, processGnnTag, "Run GNN inference and fill jet tagging tables", false);
+
+  void processGnnFull(typename Collisions::iterator const& collision, soa::Join<AnalysisJets, JetGnnTrackIdsTable> const& jets, JetTracksExt const& tracks, JetGnnTracksTable const&, CollisionContext const&)
+  {
+    if constexpr (!std::is_void_v<JetGnnInfTrackTable>) {
+      bool acceptedCollision = isAcceptedCollision(collision);
+      std::vector<float> trackScores;
+      for (auto const& jet : jets) {
+        if (taggingTable.lastIndex() + 1 != jet.globalIndex()) {
+          LOG(fatal) << "GNN inference requires jets ordered by collision with valid collision indices.";
+        }
+        float db = invalidGnnScore;
+        if (acceptedCollision) {
+          db = evaluateJet(jet, tracks, &trackScores);
+        } else {
+          // A different definition-side selection may have left backbone rows.
+          // Keep one invalid prediction per row instead of breaking the join.
+          trackScores.assign(jet.tracksGnnIds().size(), invalidGnnScore);
+        }
+        taggingTable(0, -1.f, db);
+        auto const nodes = jet.template tracksGnn_as<JetGnnTracksTable>();
+        for (std::size_t nodeIndex = 0; nodeIndex < nodes.size(); ++nodeIndex) {
+          // Thin prediction tables join positionally with the input backbone.
+          if (nodes[nodeIndex].globalIndex() != gnnTrackTable.lastIndex() + 1) {
+            LOG(fatal) << "GNN backbone rows are not in jet/node order; refusing a misaligned track prediction table.";
+          }
+          gnnTrackTable(trackScores[nodeIndex]);
+        }
+        if (acceptedCollision) {
+          fillHistograms(jet, db, &trackScores);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetGnnInferenceTask, processGnnFull, "Run GNN inference and fill jet tagging and track-origin prediction tables", false);
 };
 
-using JetGnnTagInferenceDataCharged = JetGnnInferenceTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::ChargedJetTags>;
-using JetGnnTagInferenceMcdCharged = JetGnnInferenceTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetTags>;
+// One task per jet type owns both outputs. Process switches select tag-only or
+// full inference without registering duplicate producers of the jet tags.
+using JetGnnInferenceData = JetGnnInferenceTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::ChargedJetTags, aod::ChargedJetGnnTrackIds, aod::ChargedJetGnnTracks, aod::ChargedJetGnnTrackOriginTags>;
+using JetGnnInferenceMcd = JetGnnInferenceTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCDetectorLevelJetGnnTrackIds, soa::Join<aod::ChargedMCDetectorLevelJetGnnTracks, aod::ChargedMCDetectorLevelJetTrackOriginDef>, aod::ChargedMCDetectorLevelJetGnnTrackOriginTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetGnnTagInferenceDataCharged>(
-      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-tag-inference-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
-    adaptAnalysisTask<JetGnnTagInferenceMcdCharged>(
-      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-tag-inference-mcd-charged"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetGnnInferenceData>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-inference-data"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetGnnInferenceMcd>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-gnn-inference-mcd"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
 }
