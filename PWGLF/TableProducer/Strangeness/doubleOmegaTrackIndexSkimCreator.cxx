@@ -21,7 +21,6 @@
 #include "PWGLF/DataModel/LFDoubleOmegaTrackTables.h"
 #include "PWGLF/Utils/doubleOmegaBuilderHelper.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -35,6 +34,7 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/Array2D.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -44,22 +44,28 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/Cartesian.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
+#include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
 #include <TPDGCode.h>
+#include <TString.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <random>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -242,6 +248,7 @@ struct doubleOmegaTrackIndexSkimCreator {
     const int nClasses = candOpts.nClasses;
     std::vector<double> noCuts(nClasses, 0.);
     std::vector<std::string> labelsClasses;
+    labelsClasses.reserve(nClasses);
     for (int iClass = 0; iClass < nClasses; ++iClass) {
       labelsClasses.push_back(Form("class %d", iClass));
     }
