@@ -865,7 +865,7 @@ struct doubleOmegaTreeCreator {
   void mix(CollisionCandidates const& reference, CollisionCandidates const& omegaSource,
            CollisionCandidates const& lambdaSource, CollisionCandidates const& kaonSource, MixingType mixingType)
   {
-    if (!(mixingOpts.mixingTypes & (1 << (mixingType - 1)))) {
+    if ((mixingOpts.mixingTypes & (1 << (mixingType - 1))) == 0) {
       return;
     }
     helper.combine(reference, omegaSource, lambdaSource, kaonSource, [&](DoubleOmegaCandidate const& cand, auto const&...) {
@@ -1304,7 +1304,13 @@ struct doubleOmegaTreeCreator {
   MixingSeed makeSeed(int64_t collisionId, CollisionCandidates const& candidates, BuiltOmegaCandidate const& omega,
                       BuiltLambdaCandidate const& lambda, BuiltKaonCandidate const& kaon) const
   {
-    return {uniqueIndex(collisionId), candidates.primaryVertex, candidates.runNumber, candidates.bz, omega, lambda, kaon};
+    return MixingSeed{.collisionId = uniqueIndex(collisionId),
+                      .primaryVertex = candidates.primaryVertex,
+                      .runNumber = candidates.runNumber,
+                      .bz = candidates.bz,
+                      .omega = omega,
+                      .lambda = lambda,
+                      .kaon = kaon};
   }
 
   // Mixed candidates whose reference seed was recorded with a field different from the current one:
@@ -1345,7 +1351,7 @@ struct doubleOmegaTreeCreator {
   void mixSeedDaughters(MixingSeed const& reference, BuiltOmegaCandidate const& omega, BuiltLambdaCandidate const& lambda,
                         BuiltKaonCandidate const& kaon, MixingType mixingType, std::set<MixedCombination>& written)
   {
-    if (!(mixingOpts.mixingTypes & (1 << (mixingType - 1)))) {
+    if ((mixingOpts.mixingTypes & (1 << (mixingType - 1))) == 0) {
       return;
     }
     const MixedCombination combination{omega.posTrackId, omega.negTrackId, omega.bachelorId, lambda.posTrackId, lambda.negTrackId, kaon.trackId};
@@ -1422,7 +1428,7 @@ struct doubleOmegaTreeCreator {
       partners.push_back(&*partner);
       mixSeedPair(seed, *partner, written);
     }
-    if (!(mixingOpts.mixingTypes & (1 << (kMixedAll - 1)))) {
+    if ((mixingOpts.mixingTypes & (1 << (kMixedAll - 1))) == 0) {
       return;
     }
     for (std::size_t j = 0; j < partners.size(); ++j) {
@@ -1465,9 +1471,9 @@ struct doubleOmegaTreeCreator {
       buildDeferredMixes();
       initCCDBForDerived(candidates.runNumber, candidates.bz);
     }
-    for (auto& [key, seed] : newSeeds) {
+    for (const auto& [key, seed] : newSeeds) {
       auto& pool = mSeedPool[key];
-      pool.push_back(std::move(seed));
+      pool.push_back(seed);
       ++mPoolSeeds;
       if (pool.size() > poolDepth) {
         pool.pop_front();
@@ -1661,7 +1667,7 @@ struct doubleOmegaTreeCreator {
       addPairJobs(jobs, collision0.globalIndex(), collision1.globalIndex(), relation);
     }
 
-    if (mixingOpts.mixingTypes & (1 << (kMixedAll - 1))) {
+    if (mixingOpts.mixingTypes & (1 << (kMixedAll - 1)) != 0) {
       for (const auto& [collision0, collision1, collision2] : selfTripleCombinations(binning, mixingOpts.nMixingCollisions, -1, collisions)) {
         histos.fill(HIST("Mixing/hMixedCollisions"), 2);
         const auto [minPVz, maxPVz] = std::minmax({collision0.posZ(), collision1.posZ(), collision2.posZ()});
