@@ -226,7 +226,7 @@ struct LumiFDDFT0 {
     Pvtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(),
                 collision.covXZ(), collision.covYZ(), collision.covZZ());
     // configure PVertexer
-    o2::dataformats::VertexBase PVbase_recalculated;
+    // o2::dataformats::VertexBase PVbase_recalculated; // FIXME: unused
     o2::vertexing::PVertexer vertexer;
     o2::conf::ConfigurableParam::updateFromString(
       "pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o

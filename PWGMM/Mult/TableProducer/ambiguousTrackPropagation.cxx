@@ -292,7 +292,7 @@ struct AmbiguousTrackPropagation {
     o2::track::TrackParCovFwd bestTrackPar;
 
     for (auto const& atrack : atracks) {
-      dcaInfo = 999; // DCAxy
+      // dcaInfo = 999; // DCAxy // FIXME: unused
       bestDCA = 999;
 
       auto track = atrack.mfttrack();
@@ -375,7 +375,7 @@ struct AmbiguousTrackPropagation {
     o2::track::TrackParCovFwd bestTrackPar;
 
     for (auto const& track : tracks) {
-      dcaInfo = 999; // DCAxy
+      // dcaInfo = 999; // DCAxy // FIXME: unused
       bestDCA = 999;
 
       auto bestCol = track.has_collision() ? track.collisionId() : -1;
