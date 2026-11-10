@@ -429,7 +429,7 @@ struct PidDiHadronWithCasc {
     float pvz = 0;
     float mult = 0;
     std::vector<ValidParticle> assocParticles;
-    void addValidParticle(float eta, float phi, float pt, short sign, int16_t globalIndex)
+    void addValidParticle(float eta, float phi, float pt, int16_t sign, int64_t globalIndex)
     {
       ValidParticle particle{eta, phi, pt, sign, globalIndex};
       assocParticles.push_back(particle);
