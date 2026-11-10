@@ -258,7 +258,7 @@ class CloseTripletRejectionTrackTrackSigma0
     bool isClose12 = mCtrTrack12.isClosePair(track1, track2, trackTable, tripletHistManager);
     bool isClose1Sigma0 = mCtrTrack1Sigma0.isClosePair(track1, sigma0, trackTable, tripletHistManager);
     bool isClose2Sigma0 = mCtrTrack2Sigma0.isClosePair(track2, sigma0, trackTable, tripletHistManager);
-    return isClose12 || isClose1Sigma0|| isClose2Sigma0;
+    return isClose12 || isClose1Sigma0 || isClose2Sigma0;
   }
 
  private:

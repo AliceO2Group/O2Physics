@@ -23,12 +23,12 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
+#include "PWGCF/Femto/Core/sigma0HistManager.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/tripletCleaner.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
 #include "PWGCF/Femto/Core/tripletProcessHelpers.h"
 #include "PWGCF/Femto/Core/v0HistManager.h"
-#include "PWGCF/Femto/Core/sigma0HistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/HistogramRegistry.h>
@@ -1283,7 +1283,6 @@ class TripletTrackTrackSigma0Builder
   std::mt19937 mRng;
   std::uniform_int_distribution<> mDist;
 };
-
 
 // builder for triplets of generated particles (mc truth only, kMc without kReco)
 // covers all triplet types, since e.g. a lambda is just another mc particle

@@ -1347,8 +1347,8 @@ using StoredFSigmaPlusPcmExtras = StoredFSigmaPlusPcmExtras_001;
 namespace femtosigma0s
 {
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::Sigma0MaskType); //! Bitmask for track selections
-DECLARE_SOA_INDEX_COLUMN_FULL(Lambda, lambda, int32_t, FLambdas, "_lambda"); ///< row in FLambdas
-DECLARE_SOA_INDEX_COLUMN_FULL(Photon, photon, int32_t, FPhotons, "_photon"); ///< row in FPhotons
+DECLARE_SOA_INDEX_COLUMN_FULL(Lambda, lambda, int32_t, FLambdas, "_lambda");    ///< row in FLambdas
+DECLARE_SOA_INDEX_COLUMN_FULL(Photon, photon, int32_t, FPhotons, "_photon");    ///< row in FPhotons
 // id columns for Lambda daughter tracks
 DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! index column for positive daughter track
 DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau"); //! index column for negative daughter track
@@ -1378,18 +1378,18 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Photon, photon, int32_t, FLitePhotons, "_photon");
 
 // Same collision index column as FLambdas/FPhotons, so Sigma0s can be sliced by femto collision
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigma0s_001, "FSIGMA0", 1,
-                  o2::soa::Index<>,
-                  femtobase::stored::FColId,
-                  femtobase::stored::SignedPt,
-                  femtobase::stored::Eta,
-                  femtobase::stored::Phi,
-                  femtobase::stored::Mass,
-                  femtosigma0s::LambdaId,
-                  femtosigma0s::PosDauId,
-                  femtosigma0s::NegDauId,
-                  femtosigma0s::PhotonId,
-                  femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
-                  femtobase::dynamic::Sign<femtobase::stored::SignedPt>);
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtosigma0s::LambdaId,
+                                   femtosigma0s::PosDauId,
+                                   femtosigma0s::NegDauId,
+                                   femtosigma0s::PhotonId,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>);
 using FSigma0s = FSigma0s_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigma0Masks_001, "FSIGMA0MASK", 1, //! sigma0 masks

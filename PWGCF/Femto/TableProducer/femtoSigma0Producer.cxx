@@ -57,4 +57,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<FemtoSigma0Producer>(cfgc)};
 }
-
