@@ -703,7 +703,7 @@ struct NchCumulantsId {
     double sumAll = 0; // sum of all weights (including dropped)
   };
 
-  //static constexpr float KmaxWeight = 10.0f; // secondary safeguard for pr and kaon
+  // static constexpr float KmaxWeight = 10.0f; // secondary safeguard for pr and kaon
 
   inline bool usableWeight(float weight) const
   {
