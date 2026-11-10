@@ -92,45 +92,46 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   Produces<HfCandCascBachKfQa> rowCandCascBatchKf;
 
   struct : ConfigurableGroup {
+    std::string prefix = "lfBuilding";
     // Options for internal cascade building - DCAFitter settings
     // ...Initial vaules taken from PWGLF/Utils/strangenessBuilderHelper
-    Configurable<bool> propagateToPCALF{"propagateToPCALF", true, "Create tracks version propagated to PCA"};
-    Configurable<double> maxRLF{"maxRLF", 200., "Reject PCA's above this radius"};
-    Configurable<double> maxDZIniLF{"maxDZIniLF", 1e9, "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
-    Configurable<double> maxDXYIniLF{"maxDXYIniLF", 4.0f, "Reject (if>0) PCA candidate if tracks DXY exceeds this threshold"};
-    Configurable<double> minParamChangeLF{"minParamChangeLF", 1.e-3, "Stop iteration if largest change of any X is smaller than this"};
-    Configurable<double> minRelChi2ChangeLF{"minRelChi2ChangeLF", 0.9, "Stop iteration if Chi2/Chi2old > this"};
-    Configurable<double> maxChi2LF{"maxChi2LF", 1e9, "Discard vertices with Chi2/Nprongs > this(or sum {DCAi^2}/Nprongs for abs. distance minimization)"};
-    Configurable<bool> useAbsDCALF{"useAbsDCALF", true, "Minimise abs. distance rather than chi2"};
-    Configurable<bool> useWeightedFinalPCALF{"useWeightedFinalPCALF", false, "Recalculate vertex position using track covariance, effective only if useAbsDCA is true"};
-    Configurable<bool> refitWithMaterialCorrectionLF{"refitWithMaterialCorrectionLF", false, "Do refit after material correction applied"};
+    Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
+    Configurable<double> maxR{"maxR", 200., "Reject PCA's above this radius"};
+    Configurable<double> maxDZIni{"maxDZIni", 1e9, "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
+    Configurable<double> maxDXYIni{"maxDXYIni", 4.0f, "Reject (if>0) PCA candidate if tracks DXY exceeds this threshold"};
+    Configurable<double> minParamChange{"minParamChange", 1.e-3, "Stop iteration if largest change of any X is smaller than this"};
+    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "Stop iteration if Chi2/Chi2old > this"};
+    Configurable<double> maxChi2{"maxChi2", 1e9, "Discard vertices with Chi2/Nprongs > this(or sum {DCAi^2}/Nprongs for abs. distance minimization)"};
+    Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+    Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariance, effective only if useAbsDCA is true"};
+    Configurable<bool> refitWithMaterialCorrection{"refitWithMaterialCorrection", false, "Do refit after material correction applied"};
     // Options for internal V0 building
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
     // ...Modified according to the configurable in core wagon
-    Configurable<int> minCrossedRowsFromLF{"minCrossedRowsFromLF", 50, "minimun TPC crossed rows for daughter tracks. Used for internal V0 Building"};
-    Configurable<float> dcanegtopvFromLF{"dcanegtopvFromLF", .1, "DCV Neg to PV"};
-    Configurable<float> dcapostopvFromLF{"dcapostopvFromLF", .1, "DCV Pos To PV"};
-    Configurable<double> v0cospaFromLF{"v0cospaFromLF", 0.95, "V0 CosPA"};
-    Configurable<float> dcav0dauFromLF{"dcav0dauFromLF", 1.0, "DCA V0 Daughters"};
-    Configurable<float> v0radiusFromLF{"v0radiusFromLF", 0.9, "v0radius"};
-    Configurable<float> maxDaughterEtaFromLF{"maxDaughterEtaFromLF", 5.0, "Maximun daughter eta (in abs value)"};
+    Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimun TPC crossed rows for daughter tracks. Used for internal V0 Building"};
+    Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCV Neg to PV"};
+    Configurable<float> dcapostopv{"dcapostopv", .1, "DCV Pos To PV"};
+    Configurable<double> v0cospa{"v0cospa", 0.95, "V0 CosPA"};
+    Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
+    Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
+    Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximun daughter eta (in abs value)"};
     // Options for internal cascade building
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
     // ...Modified according to the configurable in core wagon
-    Configurable<float> dcabachtopvFromLF{"dcabachtopvFromLF", .05, "DCV Bach to PV"};
-    Configurable<float> cascradiusFromLF{"cascradiusFromLF", .9, "DCV Bach to PV"};
-    Configurable<float> casccospaFromLF{"casccospaFromLF", 0.95, "Cascade CosPA"};
-    Configurable<float> dcacascdauFromLF{"dcacascdauFromLF", 1.0, "DCA cascade daughters"};
-    Configurable<float> lambdaMassWindowFromLF{"lambdaMassWindowFromLF", 0.01, "Distance from Lambda mass(does not apply to KF path)"};
+    Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCV Bach to PV"};
+    Configurable<float> cascradius{"cascradius", .9, "DCV Bach to PV"};
+    Configurable<float> casccospa{"casccospa", 0.95, "Cascade CosPA"};
+    Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade daughters"};
+    Configurable<float> lambdaMassWindow{"lambdaMassWindow", 0.01, "Distance from Lambda mass(does not apply to KF path)"};
     // Options for internal cascade building - KF Building specifics
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
-    Configurable<bool> kfTuneForOmegaFromLF{"kfTuneForOmegaFromLF", false, "if enabled, take main cascade properties from omega fit instread of Xi fit(=default)"};
-    Configurable<int> kfConstructMethodFromLF{"kfConstructMethodFromLF", 2, "2 : Daughter particle masses stay fixed in construction process"};
-    Configurable<bool> kfUseV0MassConstraintFromLF{"kfUseV0MassConstraintFromLF", true, "KF : Use Lambda mass constraint"};
-    Configurable<bool> kfUseCascadeMassConstraintFromLF{"kfUseCascadeMassConstraintFromLF", false, "KF : Use Cascade mass constraint - WARNING : Not adequate for inv mass analysis of Xi"};
-    Configurable<bool> kfDoDCAFitterPreMinimV0FromLF{"kfDoDCAFitterPreMinimV0FromLF", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for V0"};
-    Configurable<bool> kfDoDCAFitterPreMinimCascFromLF{"kfDoDCAFitterPreMinimCascFromLF", false, "KF : do DCAFitter pre-optimization before KF fit to include material correction for Xi"};
-  } LFConfigs;
+    Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from omega fit instread of Xi fit(=default)"};
+    Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "2 : Daughter particle masses stay fixed in construction process"};
+    Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", true, "KF : Use Lambda mass constraint"};
+    Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF : Use Cascade mass constraint - WARNING : Not adequate for inv mass analysis of Xi"};
+    Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for V0"};
+    Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", false, "KF : do DCAFitter pre-optimization before KF fit to include material correction for Xi"};
+  } lfConfigs;
 
   struct : ConfigurableGroup {
     // Switch for filling histograms
@@ -295,34 +296,34 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     // Initilization for strangeness builder helper
     // Settings for internal V0 building
-    straHelper.v0selections.minCrossedRows = LFConfigs.minCrossedRowsFromLF;
-    straHelper.v0selections.dcanegtopv = LFConfigs.dcanegtopvFromLF;
-    straHelper.v0selections.dcapostopv = LFConfigs.dcapostopvFromLF;
-    straHelper.v0selections.v0cospa = LFConfigs.v0cospaFromLF;
-    straHelper.v0selections.dcav0dau = LFConfigs.dcav0dauFromLF;
-    straHelper.v0selections.v0radius = LFConfigs.v0radiusFromLF;
-    straHelper.v0selections.maxDaughterEta = LFConfigs.maxDaughterEtaFromLF;
+    straHelper.v0selections.minCrossedRows = lfConfigs.minCrossedRows;
+    straHelper.v0selections.dcanegtopv = lfConfigs.dcanegtopv;
+    straHelper.v0selections.dcapostopv = lfConfigs.dcapostopv;
+    straHelper.v0selections.v0cospa = lfConfigs.v0cospa;
+    straHelper.v0selections.dcav0dau = lfConfigs.dcav0dau;
+    straHelper.v0selections.v0radius = lfConfigs.v0radius;
+    straHelper.v0selections.maxDaughterEta = lfConfigs.maxDaughterEta;
 
     // Settings for internal Cascade building
-    straHelper.cascadeselections.minCrossedRows = LFConfigs.minCrossedRowsFromLF;
-    straHelper.cascadeselections.dcabachtopv = LFConfigs.dcabachtopvFromLF;
-    straHelper.cascadeselections.cascradius = LFConfigs.cascradiusFromLF;
-    straHelper.cascadeselections.casccospa = LFConfigs.casccospaFromLF;
-    straHelper.cascadeselections.dcacascdau = LFConfigs.dcacascdauFromLF;
-    straHelper.cascadeselections.lambdaMassWindow = LFConfigs.lambdaMassWindowFromLF;
-    straHelper.cascadeselections.maxDaughterEta = LFConfigs.maxDaughterEtaFromLF;
+    straHelper.cascadeselections.minCrossedRows = lfConfigs.minCrossedRows;
+    straHelper.cascadeselections.dcabachtopv = lfConfigs.dcabachtopv;
+    straHelper.cascadeselections.cascradius = lfConfigs.cascradius;
+    straHelper.cascadeselections.casccospa = lfConfigs.casccospa;
+    straHelper.cascadeselections.dcacascdau = lfConfigs.dcacascdau;
+    straHelper.cascadeselections.lambdaMassWindow = lfConfigs.lambdaMassWindow;
+    straHelper.cascadeselections.maxDaughterEta = lfConfigs.maxDaughterEta;
 
     // Fitter setting
-    straHelper.fitter.setPropagateToPCA(LFConfigs.propagateToPCALF);
-    straHelper.fitter.setMaxR(LFConfigs.maxRLF);
-    straHelper.fitter.setMaxDZIni(LFConfigs.maxDZIniLF);
-    straHelper.fitter.setMaxDXYIni(LFConfigs.maxDXYIniLF);
-    straHelper.fitter.setMinParamChange(LFConfigs.minParamChangeLF);
-    straHelper.fitter.setMinRelChi2Change(LFConfigs.minRelChi2ChangeLF);
-    straHelper.fitter.setMaxChi2(LFConfigs.maxChi2LF);
-    straHelper.fitter.setUseAbsDCA(LFConfigs.useAbsDCALF);
-    straHelper.fitter.setWeightedFinalPCA(LFConfigs.useWeightedFinalPCALF);
-    straHelper.fitter.setRefitWithMatCorr(LFConfigs.refitWithMaterialCorrectionLF);
+    straHelper.fitter.setPropagateToPCA(lfConfigs.propagateToPCA);
+    straHelper.fitter.setMaxR(lfConfigs.maxR);
+    straHelper.fitter.setMaxDZIni(lfConfigs.maxDZIni);
+    straHelper.fitter.setMaxDXYIni(lfConfigs.maxDXYIni);
+    straHelper.fitter.setMinParamChange(lfConfigs.minParamChange);
+    straHelper.fitter.setMinRelChi2Change(lfConfigs.minRelChi2Change);
+    straHelper.fitter.setMaxChi2(lfConfigs.maxChi2);
+    straHelper.fitter.setUseAbsDCA(lfConfigs.useAbsDCA);
+    straHelper.fitter.setWeightedFinalPCA(lfConfigs.useWeightedFinalPCA);
+    straHelper.fitter.setRefitWithMatCorr(lfConfigs.refitWithMaterialCorrection);
 
     // Extra initialization for DCAFitter
     if (nProcessesDCA == 1) {
@@ -631,12 +632,12 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                                 negTrack,
                                                 bachTrack,
                                                 false, // calculateBachelorBaryonVariables
-                                                LFConfigs.kfConstructMethodFromLF,
-                                                LFConfigs.kfTuneForOmegaFromLF,
-                                                LFConfigs.kfUseV0MassConstraintFromLF,
-                                                LFConfigs.kfUseCascadeMassConstraintFromLF,
-                                                LFConfigs.kfDoDCAFitterPreMinimV0FromLF,
-                                                LFConfigs.kfDoDCAFitterPreMinimCascFromLF)) {
+                                                lfConfigs.kfConstructMethod,
+                                                lfConfigs.kfTuneForOmega,
+                                                lfConfigs.kfUseV0MassConstraint,
+                                                lfConfigs.kfUseCascadeMassConstraint,
+                                                lfConfigs.kfDoDCAFitterPreMinimV0,
+                                                lfConfigs.kfDoDCAFitterPreMinimCasc)) {
       return;
     } else {
       float storeMass = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
