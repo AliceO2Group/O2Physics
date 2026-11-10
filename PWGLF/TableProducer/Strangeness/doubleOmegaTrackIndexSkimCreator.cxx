@@ -46,7 +46,7 @@
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Cartesian.h>
+#include <GPUROOTCartesianFwd.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
