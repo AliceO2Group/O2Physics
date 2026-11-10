@@ -28,8 +28,10 @@
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Logger.h>
+#include <MathUtils/Cartesian.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
 #include <algorithm>
@@ -617,7 +619,7 @@ class DoubleOmegaBuilderHelper
   // is built with respect to the primary vertex of the reference collision.
   template <class F>
   void combine(CollisionCandidates const& reference, CollisionCandidates const& omegaSource,
-               CollisionCandidates const& lambdaSource, CollisionCandidates const& kaonSource, F&& onCandidate)
+               CollisionCandidates const& lambdaSource, CollisionCandidates const& kaonSource, F const& onCandidate)
   {
     for (const auto& omega : omegaSource.omegas) {
       for (const auto& lambda : lambdaSource.lambdas[chargeIndex(omega.sign)]) {
