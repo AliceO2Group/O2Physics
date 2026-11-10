@@ -423,13 +423,13 @@ struct PidDiHadronWithCasc {
       float eta;
       float phi;
       float pt;
-      short sign;
+      int16_t sign;
       int64_t globalIndex;
     };
     float pvz = 0;
     float mult = 0;
     std::vector<ValidParticle> assocParticles;
-    void addValidParticle(float eta, float phi, float pt, short sign, int64_t globalIndex)
+    void addValidParticle(float eta, float phi, float pt, short sign, int16_t globalIndex)
     {
       ValidParticle particle{eta, phi, pt, sign, globalIndex};
       assocParticles.push_back(particle);
@@ -861,7 +861,7 @@ struct PidDiHadronWithCasc {
     return true;
   }
 
-    template <typename TTrackCasc>
+  template <typename TTrackCasc>
   bool cascSelected(const TTrackCasc& casc, float posX, float posY, float posZ, bool isSideband)
   {
     if (std::abs(casc.eta()) > cfgTrkSel.cfgGlobalEta.value) {
@@ -2075,7 +2075,7 @@ struct PidDiHadronWithCasc {
       if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband)
         return;
     }
-    
+
     float weightCent = 1.0f;
     if (!cfgEvSel.cfgCentTableUnavailable)
       getCentralityWeight(weightCent, cent);
