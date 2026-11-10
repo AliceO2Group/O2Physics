@@ -24,6 +24,7 @@
 
 #include <onnxruntime_cxx_api.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -230,9 +231,9 @@ class OnnxModel
     return mSession;
   }
   int getNumInputNodes() const { return mInputShapes[0][1]; }
-  std::vector<std::vector<int64_t>> getInputShapes() const { return mInputShapes; }
+  const std::vector<std::vector<int64_t>>& getInputShapes() const { return mInputShapes; }
   int getNumOutputNodes() const { return mOutputShapes[0][1]; }
-  std::vector<std::vector<int64_t>> getOutputShapes() const { return mOutputShapes; }
+  const std::vector<std::vector<int64_t>>& getOutputShapes() const { return mOutputShapes; }
   uint64_t getValidityFrom() const { return validFrom; }
   uint64_t getValidityUntil() const { return validUntil; }
   void setActiveThreads(const int);
