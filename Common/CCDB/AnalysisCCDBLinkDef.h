@@ -14,8 +14,7 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch>
 
-#ifndef COMMON_CCDB_ANALYSISCCDBLINKDEF_H_
-#define COMMON_CCDB_ANALYSISCCDBLINKDEF_H_
+// NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -24,5 +23,3 @@
 #pragma link C++ class EventSelectionParams + ;
 #pragma link C++ class TriggerAliases + ;
 #pragma link C++ class std::map < uint64_t, uint32_t> + ;
-
-#endif // COMMON_CCDB_ANALYSISCCDBLINKDEF_H_

@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGEM_DILEPTON_CORE_EVSELFLAGS_H
-#define PWGEM_DILEPTON_CORE_EVSELFLAGS_H
+#ifndef PWGEM_DILEPTON_DATAMODEL_EVSELFLAGS_H_
+#define PWGEM_DILEPTON_DATAMODEL_EVSELFLAGS_H_
 
 namespace o2::aod::emevsel
 {
@@ -37,4 +37,4 @@ enum EventSelectionFlags {
 };
 } // namespace o2::aod::emevsel
 
-#endif // PWGEM_DILEPTON_CORE_EVSELFLAGS_H
+#endif // PWGEM_DILEPTON_DATAMODEL_EVSELFLAGS_H_

@@ -714,8 +714,8 @@ struct Kshortlambda {
   void processME(EventCandidates const& collisions, TrackCandidates const& /*tracks*/, V0TrackCandidate const& v0s)
   {
     auto tracksTuple = std::make_tuple(v0s);
-    BinningTypeVertexContributor binningOnPositions1{{mevz, memult}, true};
-    BinningTypeCentralityM binningOnPositions2{{mevz, memult}, true};
+    BinningTypeVertexContributor binningOnPositions1{{mevz, memult}};
+    BinningTypeCentralityM binningOnPositions2{{mevz, memult}};
 
     SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributor> pair1{binningOnPositions1, cfgNmixedEvents, -1, collisions, tracksTuple, &cache}; // for PbPb
     SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeCentralityM> pair2{binningOnPositions2, cfgNmixedEvents, -1, collisions, tracksTuple, &cache};       // for pp

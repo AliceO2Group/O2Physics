@@ -81,7 +81,7 @@ struct phitutorial_step3 {
   // PREAMBLE COMPLETE, NOW WE DO HELPER FCNS
   //**************************************//
   template <typename EventType>
-  bool eventSelection(const EventType event)
+  bool eventSelection(const EventType& event)
   {
     if (!event.sel8()) // This is required to extract good events
       return false;
@@ -90,7 +90,7 @@ struct phitutorial_step3 {
   };
   //********************************************//
   template <typename TracksType>
-  bool trackSelection(const TracksType track)
+  bool trackSelection(const TracksType& track)
   {
     if (!track.isGlobalTrack())
       return false;
@@ -188,7 +188,7 @@ struct phitutorial_step3 {
   std::vector<double> zBins{10, -10, 10};
   std::vector<double> multBins{VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningType binning{{zBins, multBins}, true};
+  BinningType binning{{zBins, multBins}};
   SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binning, 5, -1, &cache};
 
   void processDataMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks) // notice the collisions subscrition, it is not an iterator here!

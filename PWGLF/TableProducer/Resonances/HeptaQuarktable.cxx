@@ -262,7 +262,7 @@ struct heptaquarktable {
 
     auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    for (auto track1 : posThisColl) {
+    for (const auto& track1 : posThisColl) {
       if (!selectionTrack(track1))
         continue;
 
@@ -279,7 +279,7 @@ struct heptaquarktable {
               }
       */
       auto track1ID = track1.globalIndex();
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         if (!selectionTrack(track2))
           continue;
 

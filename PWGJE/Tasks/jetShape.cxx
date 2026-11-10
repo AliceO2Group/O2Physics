@@ -38,8 +38,12 @@
 #include <TRandom3.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -85,13 +89,30 @@ struct JetShapeTask {
   Configurable<float> tpcNSigmaPrMax{"tpcNSigmaPrMax", 2.0f, "Max value of tpcNsigmaProton"};
   Configurable<float> tpcNSigmaPiMin{"tpcNSigmaPiMin", -2.0f, "Min value of tpcNsigmaPion"};
   Configurable<float> tpcNSigmaPiMax{"tpcNSigmaPiMax", 2.0f, "Max value of tpcNsigmaPion"};
-  Configurable<float> randomConeDeltaPhiMin{"randomConeDeltaPhiMin", static_cast<float>(o2::constants::math::PIThird), "Minimum delta phi used only when randomConeFullAzimuth=false"};
-  Configurable<float> randomConeDeltaPhiMax{"randomConeDeltaPhiMax", static_cast<float>(2.0f * o2::constants::math::PIThird), "Maximum delta phi used only when randomConeFullAzimuth=false"};
+  Configurable<float> randomConeDeltaPhiMin{"randomConeDeltaPhiMin", +o2::constants::math::PIThird, "Minimum delta phi used only when randomConeFullAzimuth=false"};
+  Configurable<float> randomConeDeltaPhiMax{"randomConeDeltaPhiMax", 2.0f * o2::constants::math::PIThird, "Maximum delta phi used only when randomConeFullAzimuth=false"};
   Configurable<bool> enableRandomCone{"enableRandomCone", true, "Fill one accepted random cone per selected jet"};
   Configurable<bool> randomConeFullAzimuth{"randomConeFullAzimuth", true, "Generate random cones over the full azimuth instead of the old perpendicular-side window"};
   Configurable<int> randomConeMaxAttempts{"randomConeMaxAttempts", 100, "Maximum attempts for each random cone"};
   Configurable<unsigned int> randomConeSeed{"randomConeSeed", 0u, "TRandom3 seed; 0 lets ROOT choose a unique seed"};
   Configurable<bool> fillDetailedQA{"fillDetailedQA", false, "Fill high-volume dE/dx, beta and distance QA histograms"};
+  Configurable<bool> fillPidNsigmaQA{"fillPidNsigmaQA", true, "Fill the light centrality / TOF-matching / nSigma_TOF histograms used to validate the normalisation and the PID efficiency on data"};
+  Configurable<bool> fillPid2D{"fillPid2D", true, "Fill the dense (p, nSigma_TPC^p, nSigma_TOF^p) map of inclusive tracks with TOF of ALL selected events (no jet bias), without any PID cut"};
+  Configurable<bool> fillPid2DJet{"fillPid2DJet", true, "Fill dense (p, nSigma_TPC^p, nSigma_TOF^p, r x jet pT) maps for signal and perpendicular cones, plus the inclusive map of the same events, without any PID cut (shared-shape 2D fit)"};
+  Configurable<float> pid2DCentMin{"pid2DCentMin", 0.f, "Lower centrality edge for the pid2D jet maps"};
+  Configurable<float> pid2DCentMax{"pid2DCentMax", 10.f, "Upper centrality edge for the pid2D jet maps"};
+  Configurable<float> pid2DPMin{"pid2DPMin", 2.0f, "Lower momentum edge of all pid2D maps (GeV/c)"};
+  Configurable<float> pid2DPMax{"pid2DPMax", 7.4f, "Upper momentum edge of all pid2D maps (GeV/c); p_T <= 5 at |eta| < 0.9 needs p <= 7.2"};
+  Configurable<bool> fillPid2DMismatch{"fillPid2DMismatch", true, "Fill TOF-mismatch templates: nSigma_TOF^p recomputed with the TOF time of another (random / nearest) TOF track of the same collision"};
+  Configurable<bool> fillPid2DTpcOnly{"fillPid2DTpcOnly", true, "Fill the TPC-only (p, nSigma_TPC^p, hasTOF, region) map without TOF requirement (TOF matching of p+K relative to pi on data)"};
+  Configurable<bool> fillPid2DMc{"fillPid2DMc", true, "MC: fill the pid2D maps split by true species, origin and TOF-match quality (closure of the 2D fit)"};
+  Configurable<float> pid2DMcTofBadNSigma{"pid2DMcTofBadNSigma", 5.f, "MC: flag the TOF hit as mismatched when |nSigma_TOF| under the true mass hypothesis exceeds this"};
+  Configurable<bool> fillTofMismatchQA{"fillTofMismatchQA", true, "Fill the wide-range nSigma_TOF histograms used to measure the TOF-mismatch pedestal; the data side also needs fillPidNsigmaQA"};
+  Configurable<float> nSigmaWideMid{"nSigmaWideMid", 100.0f, "Boundary between the medium and the coarse part of the wide nSigma_TOF axis"};
+  Configurable<float> nSigmaWideMax{"nSigmaWideMax", 1000.0f, "Outer edge of the wide nSigma_TOF axis; one bunch crossing is about 625 sigma"};
+  Configurable<int> nBinsNSigmaWideMid{"nBinsNSigmaWideMid", 18, "Bins per side between nSigmaMax and nSigmaWideMid"};
+  Configurable<int> nBinsNSigmaWideOuter{"nBinsNSigmaWideOuter", 18, "Bins per side between nSigmaWideMid and nSigmaWideMax"};
+  Configurable<int> nBinsPForWide{"nBinsPForWide", 80, "Momentum bins of the wide nSigma_TOF histograms; nSigma depends on p, not on p_T, so these have to be fine"};
   Configurable<bool> applyCentralityCut{"applyCentralityCut", true, "Apply centralityMinForCut <= centrality < centralityMaxForCut inside this task"};
   Configurable<bool> useRapiditySelection{"useRapiditySelection", false, "Use species-dependent |y| cut in addition to the detector |eta| acceptance (cross-check only)"};
 
@@ -103,6 +124,8 @@ struct JetShapeTask {
   Configurable<std::string> eventSelections{"eventSelections", "sel8",
                                             "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "nominal track selection for yields and tracking efficiency"};
+  Configurable<bool> skipMbGapEvents{"skipMbGapEvents", true, "reject events whose sub-generator id is the MB gap one"};
+  Configurable<bool> applyRctSelection{"applyRctSelection", true, "apply the run-condition-table quality selection (has no meaning in MC)"};
   Configurable<std::string> trackSelectionsForDca{"trackSelectionsForDca", "QualityTracksWDCA", "wide-DCA track selection used only for data DCA distributions and MC DCA templates"};
 
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
@@ -132,17 +155,48 @@ struct JetShapeTask {
   TRandom3 randomNumber;
 
   std::vector<int> eventSelectionBits;
+  std::vector<int> emptyEventSelectionBits;
   int trackSelection = -1;
   int trackSelectionForDca = -1;
   std::vector<int> triggerMaskBits;
 
   void init(o2::framework::InitContext&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     trackSelectionForDca = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelectionsForDca));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
     randomNumber.SetSeed(randomConeSeed);
+
+    std::vector<double> nSigmaWideEdges;
+    {
+      const double fineEdge = nSigmaMax.value;
+      const double midEdge = nSigmaWideMid.value;
+      const double outerEdge = nSigmaWideMax.value;
+      const int nFine = nBinsNSigma.value;
+      const int nMid = nBinsNSigmaWideMid.value;
+      const int nOuter = nBinsNSigmaWideOuter.value;
+      nSigmaWideEdges.reserve(2 * (nOuter + nMid) + nFine + 1);
+      for (int i = 0; i <= nOuter; ++i) {
+        nSigmaWideEdges.push_back(-outerEdge + (outerEdge - midEdge) * i / nOuter);
+      }
+      for (int i = 1; i <= nMid; ++i) {
+        nSigmaWideEdges.push_back(-midEdge + (midEdge - fineEdge) * i / nMid);
+      }
+      for (int i = 1; i <= nFine; ++i) {
+        nSigmaWideEdges.push_back(-fineEdge + 2.0 * fineEdge * i / nFine);
+      }
+      for (int i = 1; i <= nMid; ++i) {
+        nSigmaWideEdges.push_back(fineEdge + (midEdge - fineEdge) * i / nMid);
+      }
+      for (int i = 1; i <= nOuter; ++i) {
+        nSigmaWideEdges.push_back(midEdge + (outerEdge - midEdge) * i / nOuter);
+      }
+    }
+    const AxisSpec axisNSigmaWide{nSigmaWideEdges, "n#sigma_{TOF}"};
+    const AxisSpec axisPWide{nBinsPForWide.value, 0., pMax.value, "#it{p} (GeV/#it{c})"};
+    const AxisSpec axisPtWide{nBinsPt.value, 0., ptMax.value, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisCentWide{nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value, "centrality (%)"};
 
     // Histograms definition
     registry.add("tpcTofPi", "tpcTofPi", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
@@ -165,6 +219,85 @@ struct JetShapeTask {
     registry.add("trackTpcChi2NCl", "trackTpcChi2NCl", HistType::kTH1F, {{100, 0, 50}});
     registry.add("trackTpcNClsFound", "trackTpcNClsFound", HistType::kTH1F, {{100, 0, 200}});
     registry.add("trackItsNCls", "trackItsNCls", HistType::kTH1F, {{10, 0, 10}});
+
+    if (fillPidNsigmaQA) {
+      // (1) Normalisation QA: every collision reaching processInclusiveProductionRatio,
+      //     BEFORE passCentrality().  A percentile estimator must be flat here.
+      registry.add("centralityAllInc", "centFT0M of every collision entering the inclusive process (before the centrality cut);centrality (%);events", HistType::kTH1F, {{110, -5., 105.}});
+      registry.add("eventCounterIncAll", "collisions entering the inclusive process, before the centrality cut", HistType::kTH1F, {{1, 0., 1.}});
+
+      // (2) PID-free charged-track yield and the data-driven TOF-matching efficiency.
+      registry.add("trackPtAllInc", "all nominal tracks (no PID, no TOF requirement);p_{T} (GeV/c);centrality (%)", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+      registry.add("trackPtTofInc", "nominal tracks with a TOF hit;p_{T} (GeV/c);centrality (%)", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+      // (3) Species-tagged TOF status: 0 = no TOF, 1 = finite nSigma_TOF, 2 = sentinel (no event time).
+      //     Same definition as mcTofNSigmaStatus* on the MC side.
+      registry.add("tofStatusPi", "TPC-tagged pion candidates;p_{T} (GeV/c);TOF status;centrality (%)", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {3, 0., 3.}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+      registry.add("tofStatusPr", "TPC-tagged proton candidates;p_{T} (GeV/c);TOF status;centrality (%)", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {3, 0., 3.}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+      // (4) nSigma_TOF of TPC-tagged candidates, WITHOUT the TOF window -> eps_TOFwin on data.
+      registry.add("tofNSigmaTaggedPi", "TPC-tagged pion candidates with TOF;p_{T} (GeV/c);n#sigma_{TOF}^{#pi};centrality (%)", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+      registry.add("tofNSigmaTaggedPr", "TPC-tagged proton candidates with TOF;p_{T} (GeV/c);n#sigma_{TOF}^{p};centrality (%)", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    }
+
+    if (fillTofMismatchQA) {
+      // (5) Same selection as (4) but on the wide axis: the mismatch pedestal is measured
+      //     where there is no signal and interpolated under the core, and the species
+      //     contamination peaks (whose positions follow from p_T and the path length)
+      //     become visible instead of piling up in the underflow.
+      registry.add("tofNSigmaWidePi", "TPC-tagged pion candidates with TOF, wide axis", HistType::kTH3F, {axisPWide, axisNSigmaWide, axisCentWide});
+      registry.add("tofNSigmaWidePr", "TPC-tagged proton candidates with TOF, wide axis", HistType::kTH3F, {axisPWide, axisNSigmaWide, axisCentWide});
+      // Response matrix p -> p_T for exactly the same tracks, needed to bring the yields
+      // extracted in p bins back onto the p_T axis. pVsPtFor* cannot be used for this:
+      // it is filled only for tracks that passed both nSigma windows.
+      registry.add("pVsPtWidePi", "TPC-tagged pion candidates with TOF;#it{p};#it{p}_{T};centrality (%)", HistType::kTH3F, {axisPWide, axisPtWide, axisCentWide});
+      registry.add("pVsPtWidePr", "TPC-tagged proton candidates with TOF;#it{p};#it{p}_{T};centrality (%)", HistType::kTH3F, {axisPWide, axisPtWide, axisCentWide});
+    }
+
+    // ---- 2D PID maps (nSigma_TPC^p x nSigma_TOF^p), dense THnF, no PID cut ----
+    // Binned in p, not p_T, because both nSigma depend on p. One proton-hypothesis map holds p, K and pi
+    // (pi lies at nSigma_TOF^p > -12 for p > 2.8 GeV/c). Dense on purpose: at full statistics a THnSparse
+    // of this size is filled to >50 % and costs far more per bin. Centrality is a window
+    // (pid2DCentMin/Max), not an axis: a THn keeps under/overflow bins on every axis.
+    const AxisSpec axisP2D{pid2DPEdges(), "#it{p} (GeV/#it{c})"};
+    const AxisSpec axisTpc2D{44, -4., 7., "n#sigma_{TPC}^{p}"};
+    const AxisSpec axisTof2D{72, -12., 6., "n#sigma_{TOF}^{p}"};
+    const AxisSpec axisRJet2D{28, 0., 28., "r bin + 7 #times jet p_{T} bin"};
+    const bool anyPid2D = fillPid2D || fillPid2DJet;
+
+    if (fillPid2D) {
+      registry.add("pid2DPr", "inclusive tracks with TOF, all events, no PID cut;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p}", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D});
+    }
+
+    if (fillPid2DJet) {
+      registry.add("pid2DJetPr", "signal cone, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};r bin + 7 jet bin", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisRJet2D});
+      registry.add("pid2DPerpPr", "perpendicular cones, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};r bin + 7 jet bin", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisRJet2D});
+      registry.add("pid2DRandPr", "random cones, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};r bin + 7 reference-jet bin", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisRJet2D});
+      registry.add("pid2DIncPr", "all tracks with TOF in events with an accepted jet;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p}", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D});
+    }
+
+    if (fillPid2DMismatch && anyPid2D) {
+      registry.add("pid2DMisPr", "TOF-mismatch template;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p} (borrowed time);source + 2 region", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, {10, 0., 10., "source + 2 #times region"}});
+    }
+
+    if (fillPid2DTpcOnly && anyPid2D) {
+      registry.add("pid2DTpcOnlyPr", "TPC only, no TOF requirement;#it{p};n#sigma_{TPC}^{p};hasTOF;region", HistType::kTHnF, {axisP2D, axisTpc2D, {2, 0., 2., "hasTOF"}, {3, 0., 3., "region"}});
+    }
+
+    if (anyPid2D) {
+      constexpr double PtMin2D = 1.0;
+      constexpr double PtBinWidth2D = 0.1;
+      const int nPt2D = static_cast<int>(std::lround((pid2DPMax.value - PtMin2D) / PtBinWidth2D));
+      registry.add("pid2DPVsPt", "tracks entering the pid2D maps;#it{p};#it{p}_{T};region", HistType::kTHnF, {axisP2D, {nPt2D, PtMin2D, PtMin2D + nPt2D * PtBinWidth2D, "#it{p}_{T} (GeV/#it{c})"}, {5, 0., 5., "region"}});
+    }
+
+    if (fillPid2DMc && doprocessEfficiencyAndPurity) {
+      const AxisSpec axisTruthInc2DMc{24, 0., 24., "species + 6 #times (origin + 2 #times tofBad)"};
+      const AxisSpec axisTruthCone2DMc{24, 0., 24., "species4 + 4 #times (tofBad + 2 #times r bin)"};
+      registry.add("mcPid2DIncPr", "MC: all tracks with TOF in events with a matched jet;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};truth index", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisTruthInc2DMc});
+      registry.add("mcPid2DJetPr", "MC: signal cone, tracks with TOF;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};truth index", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisTruthCone2DMc});
+      registry.add("mcPid2DPerpPr", "MC: perpendicular cones, tracks with TOF;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};truth index", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisTruthCone2DMc});
+    }
 
     registry.add("jetTpcPi", "jetTpcPi", HistType::kTH2F, {{nBinsP.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
     registry.add("jetTofPi", "jetTofPi", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
@@ -226,6 +359,10 @@ struct JetShapeTask {
     registry.add("ptVsCentrality", "ptvscentrality", HistType::kTH2F, {{100, 0, 100}, {300, 0, 300}});
     registry.add("ptResolution", "ptResolution", HistType::kTH2F, {{nBinsPt.value, 0, ptMax.value}, {100, -1.0, +1.0}});
     registry.add("mcCentralityReco", "mcCentralityReco", HistType::kTH1F, {{100, 0, 100}});
+    registry.add("mcCutFlow", "processEfficiencyAndPurity cut flow: 0 = called, 1 = selectCollision, 2 = has_mcCollision, 3 = passCentrality", HistType::kTH1F, {{4, 0., 4.}});
+    registry.add("mcSelDetail", "selectCollision breakdown: 0 = called, 1 = not MB gap, 2 = RCT, 3 = event selection bits", HistType::kTH1F, {{4, 0., 4.}});
+    registry.add("mcSubGeneratorId", "sub-generator id of the associated MC collision", HistType::kTH1F, {{6, -2.5, 3.5}});
+    registry.add("mcCentralityRaw", "centFT0M seen by processEfficiencyAndPurity, before the cut", HistType::kTH1F, {{124, -12., 112.}});
 
     // MC Efficiency Denominators
     // Jet (In-cone)
@@ -255,6 +392,28 @@ struct JetShapeTask {
     registry.add("effNumTofPrInc", "effNumTofPrInc", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
     registry.add("effNumPidPiInc", "True primary pion reconstructed with the full analysis PID selection", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
     registry.add("effNumPidPrInc", "True primary proton reconstructed with the full analysis PID selection", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    // nSigma window efficiency breakdown (inclusive only, ~0.3 MB each)
+    registry.add("effNumKinePiInc", "True primary pion, TOF matched, passing the species kinematics (denominator of the nSigma windows)", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTpcWinPiInc", "effNumKinePiInc and the |nSigma_TPC^pi| window ONLY", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofWinPiInc", "effNumKinePiInc and the |nSigma_TOF^pi| window ONLY", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumKinePrInc", "True primary proton, TOF matched, passing the species kinematics (denominator of the nSigma windows)", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTpcWinPrInc", "effNumKinePrInc and the |nSigma_TPC^p| window ONLY", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("effNumTofWinPrInc", "effNumKinePrInc and the |nSigma_TOF^p| window ONLY", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+
+    // nSigma response of true primary pions and protons in MC (~1.5 MB each)
+    registry.add("mcTpcNSigmaPi", "True primary pion: p vs nSigma_TPC^pi", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("mcTofNSigmaPi", "True primary pion: pT vs nSigma_TOF^pi", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("mcTpcNSigmaPr", "True primary proton: p vs nSigma_TPC^p", HistType::kTHnSparseD, {{nBinsPForCut.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("mcTofNSigmaPr", "True primary proton: pT vs nSigma_TOF^p", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
+    registry.add("mcTofNSigmaStatusPi", "True primary pion: 0 = no TOF, 1 = finite nSigma_TOF, 2 = unphysical nSigma_TOF", HistType::kTH1F, {{3, 0., 3.}});
+    registry.add("mcTofNSigmaStatusPr", "True primary proton: 0 = no TOF, 1 = finite nSigma_TOF, 2 = unphysical nSigma_TOF", HistType::kTH1F, {{3, 0., 3.}});
+
+    if (fillTofMismatchQA) {
+      registry.add("mcTofNSigmaWidePi", "True primary pion with TOF, wide axis", HistType::kTH3F, {axisPWide, axisNSigmaWide, axisCentWide});
+      registry.add("mcTofNSigmaWidePr", "True primary proton with TOF, wide axis", HistType::kTH3F, {axisPWide, axisNSigmaWide, axisCentWide});
+      registry.add("mcTofNSigmaWideKa", "True primary kaon with TOF, wide axis", HistType::kTH3F, {axisPWide, axisNSigmaWide, axisCentWide});
+    }
 
     // Jet (In-cone)
     registry.add("effNumTpcPiJet", "effNumTpcPiJet", HistType::kTHnSparseD, {{nBinsPt.value, 0, ptMax.value}, {nBinsDistance.value, 0, distanceMax.value}, {nBinsJetPt.value, jetPtMinForCut.value, jetPtMaxForCut.value}, {nBinsCentrality.value, centralityMinForCut.value, centralityMaxForCut.value}});
@@ -420,6 +579,133 @@ struct JetShapeTask {
     return std::asinh(pz / mt);
   }
 
+  std::vector<double> pid2DPEdges() const
+  {
+    constexpr double FineWidth = 0.2;
+    constexpr double CoarseWidth = 0.4;
+    constexpr double FineUpTo = 5.0;
+    constexpr double Tolerance = 1e-6;
+    constexpr double Rounding = 1000.;
+    std::vector<double> edges{static_cast<double>(pid2DPMin.value)};
+    double p = pid2DPMin.value;
+    while (p < pid2DPMax.value - Tolerance) {
+      p += (p < FineUpTo - Tolerance) ? FineWidth : CoarseWidth;
+      p = std::min(std::round(p * Rounding) / Rounding, static_cast<double>(pid2DPMax.value));
+      edges.push_back(p);
+    }
+    return edges;
+  }
+
+  // TOF hits of one collision, used to build the mismatch templates (8).
+  struct TofHit2D {
+    int64_t index;
+    float eta;
+    float phi;
+    float time; // t - t0 = L / (beta c), ps
+  };
+  static constexpr float SpeedOfLightCmPerPs = 0.0299792458f;
+
+  template <typename TrackT>
+  static bool tofTimeOfFlight(TrackT const& track, float& time)
+  {
+    if (!track.hasTOF() || track.beta() <= 0.f || track.length() <= 0.f) {
+      return false;
+    }
+    time = track.length() / (track.beta() * SpeedOfLightCmPerPs);
+    return true;
+  }
+
+  template <typename FullTrackT, typename JetTracksT>
+  void collectTofHits(JetTracksT const& tracks, std::vector<TofHit2D>& hits)
+  {
+    hits.clear();
+    for (const auto& jetTrack : tracks) {
+      const auto track = jetTrack.template track_as<FullTrackT>();
+      float time = 0.f;
+      if (tofTimeOfFlight(track, time)) {
+        hits.push_back({track.globalIndex(), track.eta(), track.phi(), time});
+      }
+    }
+  }
+
+  template <typename TrackT>
+  std::array<float, 2> mismatchNSigmaPr(TrackT const& track, std::vector<TofHit2D> const& hits)
+  {
+    constexpr int MaxAttempts = 10;
+    constexpr size_t MinHits = 2;
+    std::array<float, 2> out{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
+    float time = 0.f;
+    const float sigma = track.tofExpSigmaPr();
+    if (hits.size() < MinHits || sigma <= 0.f || !tofTimeOfFlight(track, time)) {
+      return out;
+    }
+    const int64_t self = track.globalIndex();
+    const float nSigma = track.tofNSigmaPr();
+    for (int attempt = 0; attempt < MaxAttempts; ++attempt) {
+      const auto& hit = hits[randomNumber.Integer(static_cast<uint32_t>(hits.size()))];
+      if (hit.index != self) {
+        out[0] = nSigma + (hit.time - time) / sigma;
+        break;
+      }
+    }
+    float best = std::numeric_limits<float>::max();
+    const TofHit2D* nearest = nullptr;
+    for (const auto& hit : hits) {
+      if (hit.index == self) {
+        continue;
+      }
+      const float dEta = hit.eta - track.eta();
+      const float dPhi = absDeltaPhi(hit.phi, track.phi());
+      const float d2 = dEta * dEta + dPhi * dPhi;
+      if (d2 < best) {
+        best = d2;
+        nearest = &hit;
+      }
+    }
+    if (nearest != nullptr) {
+      out[1] = nSigma + (nearest->time - time) / sigma;
+    }
+    return out;
+  }
+
+  // Regions of the pid2D maps (int constants, not an enum: they are combined with float bin centres).
+  static constexpr int RegIncAll = 0; // inclusive, all events
+  static constexpr int RegIncJet = 1; // inclusive, events with an accepted jet
+  static constexpr int RegSignal = 2;
+  static constexpr int RegPerp = 3;
+  static constexpr int RegRand = 4;
+
+  void fillMismatchTemplate(float p, float tpcPr, std::array<float, 2> const& mis, int region)
+  {
+    constexpr int NSources = 2;
+    for (int src = 0; src < NSources; ++src) {
+      if (std::isfinite(mis[src])) {
+        registry.fill(HIST("pid2DMisPr"), p, tpcPr, mis[src], src + NSources * region + 0.5f);
+      }
+    }
+  }
+
+  // Folded (r, jet pT) index of the pid2D jet maps; -1 if outside.
+  static int rJetIndex2D(float r, float jetPt)
+  {
+    constexpr int NRBins2D = 7;
+    constexpr int NJetPtBins2D = 4;
+    constexpr float RBinWidth2D = 0.1f;
+    constexpr float RMax2D = NRBins2D * RBinWidth2D;
+    constexpr int Outside = -1;
+    static constexpr std::array<float, NJetPtBins2D + 1> JetPtEdges2D = {20.f, 40.f, 60.f, 80.f, 140.f};
+    if (r < 0.f || r >= RMax2D) {
+      return Outside;
+    }
+    const int ir = std::min(NRBins2D - 1, static_cast<int>(r / RBinWidth2D));
+    for (int k = 0; k < NJetPtBins2D; ++k) {
+      if (jetPt >= JetPtEdges2D[k] && jetPt < JetPtEdges2D[k + 1]) {
+        return ir + NRBins2D * k;
+      }
+    }
+    return Outside;
+  }
+
   bool passSpeciesKinematics(float pt, float eta, float mass) const
   {
     if (std::abs(eta) >= etaTrUp.value) {
@@ -504,7 +790,7 @@ struct JetShapeTask {
       for (int attempt = 0; attempt < randomConeMaxAttempts; ++attempt) {
         rcEta = randomNumber.Uniform(etaMin, etaMax);
         if (randomConeFullAzimuth) {
-          rcPhi = randomNumber.Uniform(0.0f, static_cast<float>(o2::constants::math::TwoPI));
+          rcPhi = randomNumber.Uniform(0.0f, o2::constants::math::TwoPI);
         } else {
           float dPhi = randomNumber.Uniform(randomConeDeltaPhiMin, randomConeDeltaPhiMax);
           if (randomNumber.Uniform() < RandomConeNegativeSideProbability) {
@@ -792,9 +1078,11 @@ struct JetShapeTask {
 
     const float maxR2 = distanceMax * distanceMax;
 
-    // The jet finder remains configured with globalTracks. The nominal-yield
-    // sample and the wide-DCA sample are selected independently relative to
-    // the same reconstructed jet axes.
+    std::vector<TofHit2D> tofHits;
+    if (fillPid2DJet && fillPid2DMismatch) {
+      collectTofHits<FullTrackInfo>(tracks, tofHits);
+    }
+
     for (const auto& jetTrack : tracks) {
       const bool passesNominalBit = jetderiveddatautilities::selectTrack(jetTrack, trackSelection);
       const bool passesWideDcaBit = jetderiveddatautilities::selectTrack(jetTrack, trackSelectionForDca);
@@ -832,6 +1120,22 @@ struct JetShapeTask {
       const bool isTpcPiRange = (tpcPi > tpcNSigmaPiMin && tpcPi < tpcNSigmaPiMax);
       const bool isTpcPrRange = (tpcPr > tpcNSigmaPrMin && tpcPr < tpcNSigmaPrMax);
 
+      const bool inPid2DWindow = fillPid2DJet && passesNominal && passPrKinematics &&
+                                 centrality >= pid2DCentMin && centrality < pid2DCentMax &&
+                                 trkP >= pid2DPMin && trkP < pid2DPMax;
+      const bool fillPid2DTrack = inPid2DWindow && track.hasTOF();
+      const bool fillPid2DTpcOnlyTrack = inPid2DWindow && fillPid2DTpcOnly;
+      const float hasTofBin = track.hasTOF() ? 1.5f : 0.5f;
+      std::array<float, 2> misNSigma{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
+      if (fillPid2DTrack) {
+        registry.fill(HIST("pid2DIncPr"), trkP, tpcPr, tofPr);
+        registry.fill(HIST("pid2DPVsPt"), trkP, trkPt, RegIncJet + 0.5f);
+        if (fillPid2DMismatch) {
+          misNSigma = mismatchNSigmaPr(track, tofHits);
+          fillMismatchTemplate(trkP, tpcPr, misNSigma, RegIncJet);
+        }
+      }
+
       if (passesNominal && fillDetailedQA) {
         registry.fill(HIST("jetTpcPi"), trkP, tpcPi);
         registry.fill(HIST("jetTofPi"), trkPt, tofPi);
@@ -856,6 +1160,22 @@ struct JetShapeTask {
             return;
           }
           const float distBg = std::sqrt(distBgSq);
+
+          if (fillPid2DTpcOnlyTrack || fillPid2DTrack) {
+            const int idx2D = rJetIndex2D(distBg, jet.ptCorr);
+            if (idx2D >= 0) {
+              if (fillPid2DTpcOnlyTrack) {
+                registry.fill(HIST("pid2DTpcOnlyPr"), trkP, tpcPr, hasTofBin, 2.5f);
+              }
+              if (fillPid2DTrack) {
+                registry.fill(HIST("pid2DPerpPr"), trkP, tpcPr, tofPr, idx2D + 0.5f);
+                registry.fill(HIST("pid2DPVsPt"), trkP, trkPt, RegPerp + 0.5f);
+                if (fillPid2DMismatch) {
+                  fillMismatchTemplate(trkP, tpcPr, misNSigma, RegPerp);
+                }
+              }
+            }
+          }
 
           if (passesWideDca) {
             if (hasTofPr && isTpcPrRange) {
@@ -893,6 +1213,22 @@ struct JetShapeTask {
         }
         const float distance = std::sqrt(distanceSq);
 
+        if (fillPid2DTpcOnlyTrack || fillPid2DTrack) {
+          const int idx2D = rJetIndex2D(distance, jet.ptCorr);
+          if (idx2D >= 0) {
+            if (fillPid2DTpcOnlyTrack) {
+              registry.fill(HIST("pid2DTpcOnlyPr"), trkP, tpcPr, hasTofBin, 1.5f);
+            }
+            if (fillPid2DTrack) {
+              registry.fill(HIST("pid2DJetPr"), trkP, tpcPr, tofPr, idx2D + 0.5f);
+              registry.fill(HIST("pid2DPVsPt"), trkP, trkPt, RegSignal + 0.5f);
+              if (fillPid2DMismatch) {
+                fillMismatchTemplate(trkP, tpcPr, misNSigma, RegSignal);
+              }
+            }
+          }
+        }
+
         if (passesWideDca) {
           if (hasTofPr && isTpcPrRange) {
             registry.fill(HIST("jetDcaPr"), trkPt, track.dcaXY(), distance, jet.ptCorr, centrality);
@@ -924,8 +1260,6 @@ struct JetShapeTask {
         }
       }
 
-      // Random cones are outside the jet loop, so every track-cone pair is
-      // filled exactly once. Each cone is associated with one selected jet.
       for (const auto& cone : randomCones) {
         const float dEtaRC = trkEta - cone.eta;
         if (std::abs(dEtaRC) >= distanceMax) {
@@ -937,6 +1271,17 @@ struct JetShapeTask {
           continue;
         }
         const float distRC = std::sqrt(distRCSq);
+
+        if (fillPid2DTrack) {
+          const int idx2D = rJetIndex2D(distRC, cone.referenceJetPtCorr);
+          if (idx2D >= 0) {
+            registry.fill(HIST("pid2DRandPr"), trkP, tpcPr, tofPr, idx2D + 0.5f);
+            registry.fill(HIST("pid2DPVsPt"), trkP, trkPt, RegRand + 0.5f);
+            if (fillPid2DMismatch) {
+              fillMismatchTemplate(trkP, tpcPr, misNSigma, RegRand);
+            }
+          }
+        }
 
         if (passesWideDca) {
           if (hasTofPr && isTpcPrRange) {
@@ -991,10 +1336,19 @@ struct JetShapeTask {
       return;
     }
     const float centrality = collision.centFT0M();
+    if (fillPidNsigmaQA) {
+      registry.fill(HIST("centralityAllInc"), centrality);
+      registry.fill(HIST("eventCounterIncAll"), 0.5);
+    }
     if (!passCentrality(centrality)) {
       return;
     }
     registry.fill(HIST("eventCounterInc"), centrality);
+
+    std::vector<TofHit2D> tofHits;
+    if (fillPid2D && fillPid2DMismatch) {
+      collectTofHits<FullTrackInfo>(tracks, tofHits);
+    }
 
     for (const auto& jetTrack : tracks) {
       const bool passesNominalBit = jetderiveddatautilities::selectTrack(jetTrack, trackSelection);
@@ -1044,6 +1398,59 @@ struct JetShapeTask {
         continue;
       }
 
+      if (fillPidNsigmaQA) {
+        constexpr float MaxSaneNSigma = 10.f;
+        constexpr float NoTofBin = 0.5f;
+        constexpr float FiniteNSigmaBin = 1.5f;
+        constexpr float UnphysicalNSigmaBin = 2.5f;
+        const bool trackHasTof = track.hasTOF();
+
+        registry.fill(HIST("trackPtAllInc"), track.pt(), centrality);
+        if (trackHasTof) {
+          registry.fill(HIST("trackPtTofInc"), track.pt(), centrality);
+        }
+        if (passPiKinematics && isTpcPiRange) {
+          registry.fill(HIST("tofStatusPi"), track.pt(),
+                        !trackHasTof ? NoTofBin
+                                     : (std::abs(track.tofNSigmaPi()) < MaxSaneNSigma ? FiniteNSigmaBin : UnphysicalNSigmaBin),
+                        centrality);
+          if (trackHasTof) {
+            registry.fill(HIST("tofNSigmaTaggedPi"), track.pt(), track.tofNSigmaPi(), centrality);
+            if (fillTofMismatchQA) {
+              registry.fill(HIST("tofNSigmaWidePi"), track.p(), track.tofNSigmaPi(), centrality);
+              registry.fill(HIST("pVsPtWidePi"), track.p(), track.pt(), centrality);
+            }
+          }
+        }
+        if (passPrKinematics && isTpcPrRange) {
+          registry.fill(HIST("tofStatusPr"), track.pt(),
+                        !trackHasTof ? NoTofBin
+                                     : (std::abs(track.tofNSigmaPr()) < MaxSaneNSigma ? FiniteNSigmaBin : UnphysicalNSigmaBin),
+                        centrality);
+          if (trackHasTof) {
+            registry.fill(HIST("tofNSigmaTaggedPr"), track.pt(), track.tofNSigmaPr(), centrality);
+            if (fillTofMismatchQA) {
+              registry.fill(HIST("tofNSigmaWidePr"), track.p(), track.tofNSigmaPr(), centrality);
+              registry.fill(HIST("pVsPtWidePr"), track.p(), track.pt(), centrality);
+            }
+          }
+        }
+      }
+
+      if (fillPid2D && passPrKinematics && centrality >= pid2DCentMin && centrality < pid2DCentMax &&
+          track.p() >= pid2DPMin && track.p() < pid2DPMax) {
+        if (fillPid2DTpcOnly) {
+          registry.fill(HIST("pid2DTpcOnlyPr"), track.p(), track.tpcNSigmaPr(), track.hasTOF() ? 1.5f : 0.5f, 0.5f);
+        }
+        if (track.hasTOF()) {
+          registry.fill(HIST("pid2DPr"), track.p(), track.tpcNSigmaPr(), track.tofNSigmaPr());
+          registry.fill(HIST("pid2DPVsPt"), track.p(), track.pt(), RegIncAll + 0.5f);
+          if (fillPid2DMismatch) {
+            fillMismatchTemplate(track.p(), track.tpcNSigmaPr(), mismatchNSigmaPr(track, tofHits), RegIncAll);
+          }
+        }
+      }
+
       if (fillDetailedQA) {
         registry.fill(HIST("tpcPi"), track.p(), track.tpcNSigmaPi());
         registry.fill(HIST("tofPi"), track.pt(), track.tofNSigmaPi());
@@ -1070,6 +1477,99 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processInclusiveProductionRatio, "inclusive Production ratio", false);
 
+  template <typename JetTrackT, typename TrackT, typename JetT>
+  void fillPid2DMcTrack(JetTrackT const& jetTrack, TrackT const& track, std::vector<JetT> const& jets, float maxR2)
+  {
+    constexpr int SpPi = 0;
+    constexpr int SpKa = 1;
+    constexpr int SpPr = 2;
+    constexpr int SpEl = 3;
+    constexpr int SpMu = 4;
+    constexpr int SpOther = 5;
+    constexpr int NSpecies = 6;
+    constexpr int NSpeciesCone = 4;
+    constexpr float JetPtMin2D = 20.f;
+    constexpr float JetPtMax2D = 140.f;
+    constexpr float RMax2D = 0.7f;
+    constexpr float REdge1 = 0.2f;
+    constexpr float REdge2 = 0.4f;
+
+    const float trkP = track.p();
+    const float tpcPr = track.tpcNSigmaPr();
+    const float tofPr = track.tofNSigmaPr();
+
+    int species = SpOther;
+    int origin = 1;
+    float tofTrue = 0.f;
+    if (jetTrack.has_mcParticle()) {
+      const auto mcPart = jetTrack.template mcParticle_as<aod::JetParticles>();
+      origin = mcPart.isPhysicalPrimary() ? 0 : 1;
+      switch (std::abs(mcPart.pdgCode())) {
+        case PDG_t::kPiPlus:
+          species = SpPi;
+          tofTrue = track.tofNSigmaPi();
+          break;
+        case PDG_t::kKPlus:
+          species = SpKa;
+          tofTrue = track.tofNSigmaKa();
+          break;
+        case PDG_t::kProton:
+          species = SpPr;
+          tofTrue = tofPr;
+          break;
+        case PDG_t::kElectron: // beta ~ 1 at p > 2 GeV/c: the pion hypothesis is within 0.1 sigma
+          species = SpEl;
+          tofTrue = track.tofNSigmaPi();
+          break;
+        case PDG_t::kMuonMinus:
+          species = SpMu;
+          tofTrue = track.tofNSigmaPi();
+          break;
+        default:
+          break;
+      }
+    }
+    const int tofBad = (species != SpOther && std::abs(tofTrue) > pid2DMcTofBadNSigma) ? 1 : 0;
+    registry.fill(HIST("mcPid2DIncPr"), trkP, tpcPr, tofPr, species + NSpecies * (origin + 2 * tofBad) + 0.5f);
+
+    const int speciesCone = std::min(species, NSpeciesCone - 1);
+    auto coneIndex = [&](float r) {
+      const int ir = r < REdge1 ? 0 : (r < REdge2 ? 1 : 2);
+      return speciesCone + NSpeciesCone * (tofBad + 2 * ir) + 0.5f;
+    };
+
+    const float trkEta = track.eta();
+    const float trkPhi = track.phi();
+    for (const auto& jet : jets) {
+      if (jet.detPtCorr < JetPtMin2D || jet.detPtCorr >= JetPtMax2D) {
+        continue;
+      }
+      const float dEta = trkEta - jet.detEta;
+      if (std::abs(dEta) >= RMax2D) {
+        continue;
+      }
+      const float dPhi = absDeltaPhi(trkPhi, jet.detPhi);
+      const float distSq = dEta * dEta + dPhi * dPhi;
+      if (distSq < maxR2) {
+        const float r = std::sqrt(distSq);
+        if (r < RMax2D) {
+          registry.fill(HIST("mcPid2DJetPr"), trkP, tpcPr, tofPr, coneIndex(r));
+        }
+      }
+      // Both perpendicular cones, as for pid2DPerpPr in data.
+      for (const auto& conePhi : {jet.detPhiBg1, jet.detPhiBg2}) {
+        const float dPhiBg = absDeltaPhi(trkPhi, conePhi);
+        const float distBgSq = dEta * dEta + dPhiBg * dPhiBg;
+        if (distBgSq < maxR2) {
+          const float rBg = std::sqrt(distBgSq);
+          if (rBg < RMax2D) {
+            registry.fill(HIST("mcPid2DPerpPr"), trkP, tpcPr, tofPr, coneIndex(rBg));
+          }
+        }
+      }
+    }
+  }
+
   void processEfficiencyAndPurity(
     soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
     JetTracksWithPIMC const& jetTracks,
@@ -1078,20 +1578,47 @@ struct JetShapeTask {
     aod::ChargedMCParticleLevelJets const& mcpJets,
     aod::JetParticles const& mcParticles)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    constexpr float CutFlowCalled = 0.5f;
+    constexpr float CutFlowEventSelection = 1.5f;
+    constexpr float CutFlowHasMcCollision = 2.5f;
+    constexpr float CutFlowCentrality = 3.5f;
+
+    constexpr float SelDetailCalled = 0.5f;
+    constexpr float SelDetailNotMbGap = 1.5f;
+    constexpr float SelDetailRct = 2.5f;
+    constexpr float SelDetailEventBits = 3.5f;
+
+    registry.fill(HIST("mcCutFlow"), CutFlowCalled);
+    registry.fill(HIST("mcSelDetail"), SelDetailCalled);
+    registry.fill(HIST("mcSubGeneratorId"), collision.getSubGeneratorId());
+    if (collision.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      registry.fill(HIST("mcSelDetail"), SelDetailNotMbGap);
+    }
+    if (jetderiveddatautilities::selectCollision(collision, emptyEventSelectionBits, false, true)) {
+      registry.fill(HIST("mcSelDetail"), SelDetailRct);
+    }
+    if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, false, false)) {
+      registry.fill(HIST("mcSelDetail"), SelDetailEventBits);
+    }
+
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMbGapEvents, applyRctSelection)) {
       return;
     }
+    registry.fill(HIST("mcCutFlow"), CutFlowEventSelection);
     if (!collision.has_mcCollision()) {
       return;
     }
+    registry.fill(HIST("mcCutFlow"), CutFlowHasMcCollision);
 
     const auto reducedMcCollisionId = collision.mcCollisionId();
     (void)mcpJets;
 
     const float centrality = collision.centFT0M();
+    registry.fill(HIST("mcCentralityRaw"), centrality);
     if (!passCentrality(centrality)) {
       return;
     }
+    registry.fill(HIST("mcCutFlow"), CutFlowCentrality);
     const float rho = collision.rho();
     const float maxR2 = distanceMax * distanceMax;
 
@@ -1255,6 +1782,13 @@ struct JetShapeTask {
         continue;
       }
 
+      if (fillPid2DMc && passesNominal && track.hasTOF() && !validJets.empty() &&
+          centrality >= pid2DCentMin && centrality < pid2DCentMax &&
+          track.p() >= pid2DPMin && track.p() < pid2DPMax &&
+          passSpeciesKinematics(track.pt(), track.eta(), ProtonMass)) {
+        fillPid2DMcTrack(jetTrack, track, validJets, maxR2);
+      }
+
       if (!jetTrack.has_mcParticle()) {
         continue;
       }
@@ -1284,12 +1818,12 @@ struct JetShapeTask {
                              track.tpcNSigmaPi() < tpcNSigmaPiMax;
       const bool passTpcPr = track.tpcNSigmaPr() > tpcNSigmaPrMin &&
                              track.tpcNSigmaPr() < tpcNSigmaPrMax;
-      const bool isRecoPi = passSpeciesKinematics(recoPt, track.eta(), PionMass) &&
-                            passTpcPi && hasTof &&
-                            std::abs(track.tofNSigmaPi()) < nSigmaTofCut;
-      const bool isRecoPr = passSpeciesKinematics(recoPt, track.eta(), ProtonMass) &&
-                            passTpcPr && hasTof &&
-                            std::abs(track.tofNSigmaPr()) < nSigmaTofCut;
+      const bool passKineRecoPi = passSpeciesKinematics(recoPt, track.eta(), PionMass);
+      const bool passKineRecoPr = passSpeciesKinematics(recoPt, track.eta(), ProtonMass);
+      const bool passTofPi = hasTof && std::abs(track.tofNSigmaPi()) < nSigmaTofCut;
+      const bool passTofPr = hasTof && std::abs(track.tofNSigmaPr()) < nSigmaTofCut;
+      const bool isRecoPi = passKineRecoPi && passTpcPi && passTofPi;
+      const bool isRecoPr = passKineRecoPr && passTpcPr && passTofPr;
 
       float originBin = 2.5f;
       if (isPrimary) {
@@ -1478,10 +2012,30 @@ struct JetShapeTask {
 
       registry.fill(HIST("ptResolution"), track.pt(), track.pt() - mcPt);
 
+      constexpr float MaxSaneNSigma = 10.f; // nSigma_TOF is filled with a sentinel value when the event time is missing
+      constexpr float NoTofBin = 0.5f;
+      constexpr float FiniteNSigmaBin = 1.5f;
+      constexpr float UnphysicalNSigmaBin = 2.5f;
+
       if (isTruePi) {
         registry.fill(HIST("effNumTpcPiInc"), mcPt, centrality);
+        registry.fill(HIST("mcTofNSigmaStatusPi"), !hasTof ? NoTofBin : (std::abs(track.tofNSigmaPi()) < MaxSaneNSigma ? FiniteNSigmaBin : UnphysicalNSigmaBin));
         if (hasTof) {
           registry.fill(HIST("effNumTofPiInc"), mcPt, centrality);
+          registry.fill(HIST("mcTpcNSigmaPi"), track.p(), track.tpcNSigmaPi(), centrality);
+          registry.fill(HIST("mcTofNSigmaPi"), mcPt, track.tofNSigmaPi(), centrality);
+          if (fillTofMismatchQA) {
+            registry.fill(HIST("mcTofNSigmaWidePi"), track.p(), track.tofNSigmaPi(), centrality);
+          }
+          if (passKineRecoPi) {
+            registry.fill(HIST("effNumKinePiInc"), mcPt, centrality);
+            if (passTpcPi) {
+              registry.fill(HIST("effNumTpcWinPiInc"), mcPt, centrality);
+            }
+            if (passTofPi) {
+              registry.fill(HIST("effNumTofWinPiInc"), mcPt, centrality);
+            }
+          }
         }
         if (isRecoPi) {
           registry.fill(HIST("effNumPidPiInc"), mcPt, centrality);
@@ -1490,11 +2044,29 @@ struct JetShapeTask {
         registry.fill(HIST("effNumTpcKaInc"), mcPt, centrality);
         if (hasTof) {
           registry.fill(HIST("effNumTofKaInc"), mcPt, centrality);
+          if (fillTofMismatchQA) {
+            registry.fill(HIST("mcTofNSigmaWideKa"), track.p(), track.tofNSigmaKa(), centrality);
+          }
         }
       } else {
         registry.fill(HIST("effNumTpcPrInc"), mcPt, centrality);
+        registry.fill(HIST("mcTofNSigmaStatusPr"), !hasTof ? NoTofBin : (std::abs(track.tofNSigmaPr()) < MaxSaneNSigma ? FiniteNSigmaBin : UnphysicalNSigmaBin));
         if (hasTof) {
           registry.fill(HIST("effNumTofPrInc"), mcPt, centrality);
+          registry.fill(HIST("mcTpcNSigmaPr"), track.p(), track.tpcNSigmaPr(), centrality);
+          registry.fill(HIST("mcTofNSigmaPr"), mcPt, track.tofNSigmaPr(), centrality);
+          if (fillTofMismatchQA) {
+            registry.fill(HIST("mcTofNSigmaWidePr"), track.p(), track.tofNSigmaPr(), centrality);
+          }
+          if (passKineRecoPr) {
+            registry.fill(HIST("effNumKinePrInc"), mcPt, centrality);
+            if (passTpcPr) {
+              registry.fill(HIST("effNumTpcWinPrInc"), mcPt, centrality);
+            }
+            if (passTofPr) {
+              registry.fill(HIST("effNumTofWinPrInc"), mcPt, centrality);
+            }
+          }
         }
         if (isRecoPr) {
           registry.fill(HIST("effNumPidPrInc"), mcPt, centrality);

@@ -40,7 +40,7 @@ using CFMcCollisionWithExtra = CFMcCollisionsWithExtra::iterator;
 
 namespace cfmcparticle
 {
-DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision); //! Index to reduced MC collision
+DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision); //! Index to reduced MC collision; o2-linter: disable=name/o2-column (preserve the established derived-table API)
 DECLARE_SOA_COLUMN(Pt, pt, float);                      //! pT (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                    //! Pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                    //! Phi angle
@@ -58,31 +58,42 @@ using CFMcParticle = CFMcParticles::iterator;
 namespace cfmultiplicity
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
-}
+} // namespace cfmultiplicity
 DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity);
 
 using CFMultiplicity = CFMultiplicities::iterator;
 
 namespace cfcollision
 {
-DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision); //! Index to reduced MC collision
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);  //! Centrality/multiplicity value
+DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision);         //! Index to reduced MC collision; o2-linter: disable=name/o2-column (preserve the established derived-table API)
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);          //! Centrality/multiplicity value
+DECLARE_SOA_COLUMN(BestRecoCollision, bestRecoCollision, bool); //! Whether this is the best reconstructed collision for the associated MC collision (largest number of contributors)
 } // namespace cfcollision
 DECLARE_SOA_TABLE(CFCollisions, "AOD", "CFCOLLISION", //! Reduced collision table
                   o2::soa::Index<>,
                   bc::RunNumber, collision::PosZ,
                   cfcollision::Multiplicity, timestamp::Timestamp);
 DECLARE_SOA_TABLE(CFCollLabels, "AOD", "CFCOLLLABEL", //! Labels for reduced collision table
-                  cfcollision::CFMcCollisionId);
+                  cfcollision::CFMcCollisionId, cfcollision::BestRecoCollision);
 using CFCollision = CFCollisions::iterator;
 using CFCollLabel = CFCollLabels::iterator;
 using CFCollisionsWithLabel = soa::Join<CFCollisions, CFCollLabels>;
 using CFCollisionWithLabel = CFCollisionsWithLabel::iterator;
 
+namespace cfcollisionextra
+{
+DECLARE_SOA_COLUMN(MultiplicityCorrected, multiplicityCorrected, float); //! Efficiency-corrected track count
+} // namespace cfcollisionextra
+DECLARE_SOA_TABLE(CFCollisionsExtra, "AOD", "CFCOLLSEXTRA", //! Row-aligned extension of CFCollisions; filled only when multiplicity efficiency is configured
+                  cfcollisionextra::MultiplicityCorrected);
+using CFCollisionExtra = CFCollisionsExtra::iterator;
+using CFCollisionsWithExtra = soa::Join<CFCollisions, CFCollisionsExtra>;
+using CFCollisionWithExtra = CFCollisionsWithExtra::iterator;
+
 namespace cftrack
 {
-DECLARE_SOA_INDEX_COLUMN(CFCollision, cfCollision);   //! Index to collision
-DECLARE_SOA_INDEX_COLUMN(CFMcParticle, cfMCParticle); //! Index to MC particle
+DECLARE_SOA_INDEX_COLUMN(CFCollision, cfCollision);   //! Index to collision; o2-linter: disable=name/o2-column (preserve the established derived-table API)
+DECLARE_SOA_INDEX_COLUMN(CFMcParticle, cfMCParticle); //! Index to MC particle; o2-linter: disable=name/o2-column (preserve the established derived-table API)
 DECLARE_SOA_COLUMN(Pt, pt, float);                    //! pT (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                  //! Pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //! Phi angle
@@ -114,7 +125,6 @@ enum MultiplicityEstimators : uint8_t {
   MultNTracksGlobal = 0x8,
   CentFT0M = 0x10,
 };
-
 inline constexpr uint32_t NMultiplicityEstimators = __builtin_ctz(CentFT0M) + 1;
 
 } // namespace cfmultset
@@ -147,8 +157,8 @@ using CFMcParticleRef = CFMcParticleRefs::iterator;
 
 namespace cf2prongtrack
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(CFTrackProng0, cfTrackProng0, int, CFTracks, "_0"); //! Index to prong 1 CFTrack
-DECLARE_SOA_INDEX_COLUMN_FULL(CFTrackProng1, cfTrackProng1, int, CFTracks, "_1"); //! Index to prong 2 CFTrack
+DECLARE_SOA_INDEX_COLUMN_FULL(CFTrackProng0, cfTrackProng0, int, CFTracks, "_0"); //! Index to prong 1 CFTrack; o2-linter: disable=name/o2-column (preserve the established derived-table API)
+DECLARE_SOA_INDEX_COLUMN_FULL(CFTrackProng1, cfTrackProng1, int, CFTracks, "_1"); //! Index to prong 2 CFTrack; o2-linter: disable=name/o2-column (preserve the established derived-table API)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                //! pT (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                                              //! Pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                                              //! Phi angle
@@ -201,8 +211,8 @@ using CF2ProngTrackml = CF2ProngTrackmls::iterator;
 
 namespace cf2prongmcpart
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0");         //! Index to prong 1 CFMcParticle
-DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1");         //! Index to prong 2 CFMcParticle
+DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0");         //! Index to prong 1 CFMcParticle; o2-linter: disable=name/o2-column (preserve the established derived-table API)
+DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1");         //! Index to prong 2 CFMcParticle; o2-linter: disable=name/o2-column (preserve the established derived-table API)
 DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                                           //! Particle decay and flags
 DECLARE_SOA_DYNAMIC_COLUMN(McDecay, mcDecay, [](uint8_t decay) -> uint8_t { return decay & 0x3f; }); //! MC particle decay
 enum ParticleDecayFlags {

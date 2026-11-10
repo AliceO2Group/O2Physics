@@ -63,6 +63,9 @@ DECLARE_SOA_COLUMN(PionDCAz, pionDCAz, float);
 DECLARE_SOA_COLUMN(BachDCAxy, bachDCAxy, float);
 DECLARE_SOA_COLUMN(BachDCAz, bachDCAz, float);
 
+DECLARE_SOA_COLUMN(CascDCADaughters, cascDCADaughters, float); // DCA between V0 and bachelor
+DECLARE_SOA_COLUMN(V0DCADaughters, v0DCADaughters, float);     // DCA between proton and pion
+
 DECLARE_SOA_COLUMN(CascCosPA, casccosPA, float);
 DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);
 
@@ -167,6 +170,8 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::PionDCAz,
                   NPCascadeTable::BachDCAxy,
                   NPCascadeTable::BachDCAz,
+                  NPCascadeTable::CascDCADaughters,
+                  NPCascadeTable::V0DCADaughters,
                   NPCascadeTable::CascCosPA,
                   NPCascadeTable::V0CosPA,
                   NPCascadeTable::MassXi,
@@ -235,6 +240,8 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::PionDCAz,
                   NPCascadeTable::BachDCAxy,
                   NPCascadeTable::BachDCAz,
+                  NPCascadeTable::CascDCADaughters,
+                  NPCascadeTable::V0DCADaughters,
                   NPCascadeTable::CascCosPA,
                   NPCascadeTable::V0CosPA,
                   NPCascadeTable::MassXi,
@@ -309,6 +316,8 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::PionDCAz,
                   NPCascadeTable::BachDCAxy,
                   NPCascadeTable::BachDCAz,
+                  NPCascadeTable::CascDCADaughters,
+                  NPCascadeTable::V0DCADaughters,
                   NPCascadeTable::CascCosPA,
                   NPCascadeTable::V0CosPA,
                   NPCascadeTable::MassXi,
@@ -396,6 +405,8 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::PionDCAz,
                   NPCascadeTable::BachDCAxy,
                   NPCascadeTable::BachDCAz,
+                  NPCascadeTable::CascDCADaughters,
+                  NPCascadeTable::V0DCADaughters,
                   NPCascadeTable::CascCosPA,
                   NPCascadeTable::V0CosPA,
                   NPCascadeTable::MassXi,

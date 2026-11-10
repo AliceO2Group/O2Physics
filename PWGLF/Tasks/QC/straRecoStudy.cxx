@@ -45,6 +45,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <numeric>
 #include <vector>
@@ -328,7 +329,7 @@ struct straRecoStudy {
                    kEvSelVtxZ,
                    kEvSelAllSteps };
 
-  std::array<long, kEvSelAllSteps> evselstats;
+  std::array<int64_t, kEvSelAllSteps> evselstats;
 
   void resetCounters()
   {
@@ -592,7 +593,7 @@ struct straRecoStudy {
   PROCESS_SWITCH(straRecoStudy, processV0RealData, "Regular V0 analysis in real data", false);
 
   template <typename TCascCandidate>
-  void processCascadeCandidate(TCascCandidate casc)
+  void processCascadeCandidate(const TCascCandidate& casc)
   {
     // MC association
     if (!casc.has_collision()) {

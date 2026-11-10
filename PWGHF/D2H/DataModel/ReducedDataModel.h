@@ -247,6 +247,14 @@ DECLARE_SOA_COLUMN(TOFNSigmaKaProng2, tofNSigmaKaProng2, float); //! NsigmaTOFKa
 DECLARE_SOA_COLUMN(TOFNSigmaPrProng0, tofNSigmaPrProng0, float); //! NsigmaTOFPr for prong0, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TOFNSigmaPrProng1, tofNSigmaPrProng1, float); //! NsigmaTOFPr for prong1, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TOFNSigmaPrProng2, tofNSigmaPrProng2, float); //! NsigmaTOFPr for prong2, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TPCNSigmaMuPos, tpcNSigmaMuPos, float);       //! NsigmaTPCMu for positive J/psi daughter, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TPCNSigmaMuNeg, tpcNSigmaMuNeg, float);       //! NsigmaTPCMu for negative J/psi daughter, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TPCNSigmaElPos, tpcNSigmaElPos, float);       //! NsigmaTPCEl for positive J/psi daughter, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TPCNSigmaElNeg, tpcNSigmaElNeg, float);       //! NsigmaTPCEl for negative J/psi daughter, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TOFNSigmaMuPos, tofNSigmaMuPos, float);       //! NsigmaTPCMu for positive J/psi daughter, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TOFNSigmaMuNeg, tofNSigmaMuNeg, float);       //! NsigmaTPCMu for negative J/psi daughter, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TOFNSigmaElPos, tofNSigmaElPos, float);       //! NsigmaTPCEl for positive J/psi daughter, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TOFNSigmaElNeg, tofNSigmaElNeg, float);       //! NsigmaTPCEl for negative J/psi daughter, o2-linter: disable=name/o2-column (written to disk)
 // dynamic columns
 DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPi, tpcTofNSigmaPi, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
@@ -272,6 +280,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPrProng1, tpcTofNSigmaPrProng1, //! Combi
                            [](float tpcNSigmaPr, float tofNSigmaPr) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr, tofNSigmaPr); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPrProng2, tpcTofNSigmaPrProng2, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
                            [](float tpcNSigmaPr, float tofNSigmaPr) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr, tofNSigmaPr); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaMuPos, tpcTofNSigmaMuPos, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
+                           [](float tpcNSigmaMu, float tofNSigmaMu) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaMu, tofNSigmaMu); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaMuNeg, tpcTofNSigmaMuNeg, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
+                           [](float tpcNSigmaMu, float tofNSigmaMu) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaMu, tofNSigmaMu); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaElPos, tpcTofNSigmaElPos, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
+                           [](float tpcNSigmaEl, float tofNSigmaEl) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaEl, tofNSigmaEl); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaElNeg, tpcTofNSigmaElNeg, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
+                           [](float tpcNSigmaEl, float tofNSigmaEl) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaEl, tofNSigmaEl); });
 } // namespace hf_track_pid_reduced
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
@@ -667,6 +683,20 @@ DECLARE_SOA_TABLE(HfRedJpsiCov, "AOD", "HFREDJPSICOV", //! Table with J/Psi cand
                   hf_jpsi_cand_reduced::C1PtSnpDauPos, hf_jpsi_cand_reduced::C1PtSnpDauNeg,
                   hf_jpsi_cand_reduced::C1PtTglDauPos, hf_jpsi_cand_reduced::C1PtTglDauNeg,
                   hf_jpsi_cand_reduced::C1Pt21Pt2DauPos, hf_jpsi_cand_reduced::C1Pt21Pt2DauNeg);
+
+DECLARE_SOA_TABLE(HfRedJpsiDauPid, "AOD", "HFREDJPSIDAUPID", //! Table with J/Psi daughter PID information (muon, electron) for reduced workflow
+                  hf_track_pid_reduced::TPCNSigmaMuPos,
+                  hf_track_pid_reduced::TPCNSigmaMuNeg,
+                  hf_track_pid_reduced::TPCNSigmaElPos,
+                  hf_track_pid_reduced::TPCNSigmaElNeg,
+                  hf_track_pid_reduced::TOFNSigmaMuPos,
+                  hf_track_pid_reduced::TOFNSigmaMuNeg,
+                  hf_track_pid_reduced::TOFNSigmaElPos,
+                  hf_track_pid_reduced::TOFNSigmaElNeg,
+                  hf_track_pid_reduced::TPCTOFNSigmaMuPos<hf_track_pid_reduced::TPCNSigmaMuPos, hf_track_pid_reduced::TOFNSigmaMuPos>,
+                  hf_track_pid_reduced::TPCTOFNSigmaMuNeg<hf_track_pid_reduced::TPCNSigmaMuNeg, hf_track_pid_reduced::TOFNSigmaMuNeg>,
+                  hf_track_pid_reduced::TPCTOFNSigmaElPos<hf_track_pid_reduced::TPCNSigmaElPos, hf_track_pid_reduced::TOFNSigmaElPos>,
+                  hf_track_pid_reduced::TPCTOFNSigmaElNeg<hf_track_pid_reduced::TPCNSigmaElNeg, hf_track_pid_reduced::TOFNSigmaElNeg>);
 
 DECLARE_SOA_TABLE(HfRedPidDau0s_000, "AOD", "HFREDPIDDAU0", //!
                   hf_track_pid_reduced::TPCNSigmaPiProng0,

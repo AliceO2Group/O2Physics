@@ -57,6 +57,8 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <THn.h>
 #include <TPDGCode.h>
 #include <TString.h>
@@ -384,7 +386,7 @@ struct he3HadronFemto {
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for multiplicity"};
   ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  BinningType binningPolicy{{axisVertex, axisCentrality}, true};
+  BinningType binningPolicy{{axisVertex, axisCentrality}};
   SliceCache cache;
   SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, settingNoMixedEvents, -1, &cache};
 

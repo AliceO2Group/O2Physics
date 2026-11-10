@@ -21,6 +21,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TBufferFile.h> // IWYU pragma: keep (needed by DECLARE_SOA_CCDB_COLUMN...)
+#include <TClass.h>      // IWYU pragma: keep (needed by DECLARE_SOA_CCDB_COLUMN...)
+
 using namespace o2::framework;
 using namespace o2::header;
 using namespace o2;

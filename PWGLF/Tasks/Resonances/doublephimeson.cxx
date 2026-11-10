@@ -2329,7 +2329,7 @@ struct doublephimeson {
   {
     auto tracksTuple = std::make_tuple(phitracks);
 
-    BinningTypeVertexContributor binningOnPositions{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVertexContributor binningOnPositions{{CfgVtxBins, CfgMultBins}};
 
     SameKindPair<aod::RedPhiEvents, aod::PhiTracks, BinningTypeVertexContributor> pair{
       binningOnPositions, nEvtMixing, -1, collisions, tracksTuple, &cache};
@@ -2587,7 +2587,7 @@ struct doublephimeson {
   void processMixedEvent(aod::RedPhiEvents& collisions, aod::PhiTracks& phitracks)
   {
     auto tracksTuple = std::make_tuple(phitracks);
-    BinningTypeVertexContributor binningOnPositions{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVertexContributor binningOnPositions{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::RedPhiEvents, aod::PhiTracks, BinningTypeVertexContributor> pair{
       binningOnPositions, nEvtMixing, -1, collisions, tracksTuple, &cache};
 

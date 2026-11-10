@@ -222,7 +222,7 @@ struct PhotonChargedTriggerCorrelation {
       resultVec.insert(resultVec.end(), vec.begin(), vec.end());
       return resultVec;
     };
-  BinningZPvMult binningZPvMult{{prependValueToVector(binsZPvBinning.value, VARIABLE_WIDTH), prependValueToVector(binsMultBinning.value, VARIABLE_WIDTH)}, true};
+  BinningZPvMult binningZPvMult{{prependValueToVector(binsZPvBinning.value, VARIABLE_WIDTH), prependValueToVector(binsMultBinning.value, VARIABLE_WIDTH)}};
 
   // declare analysis variables
 

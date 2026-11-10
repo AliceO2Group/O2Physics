@@ -591,7 +591,7 @@ struct highmasslambda {
     histos.fill(HIST("hVtxZ"), collision.posZ());
     histos.fill(HIST("hOccupancy"), occupancy);
     auto firstprimarytrack = 0;
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -626,7 +626,7 @@ struct highmasslambda {
         histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr(), track1.pt());
       }
       auto track1ID = track1.globalIndex();
-      for (auto v0 : V0s) {
+      for (const auto& v0 : V0s) {
         if (firstprimarytrack == 0) {
           histos.fill(HIST("hInvMassKs0before"), v0.mK0Short());
         }
@@ -714,7 +714,7 @@ struct highmasslambda {
   void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks, AllTrackCandidates const&, ResoV0s const& V0s)
   {
     auto tracksV0sTuple = std::make_tuple(tracks, V0s);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}};
     Pair<EventCandidates, TrackCandidates, ResoV0s, BinningTypeVertexContributor> pairs{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
@@ -872,7 +872,7 @@ struct highmasslambda {
     histos.fill(HIST("hVtxZ"), collision.posZ());
     histos.fill(HIST("hOccupancy"), occupancy);
     auto firstprimarytrack = 0;
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -906,7 +906,7 @@ struct highmasslambda {
       auto trackParCovBach = getTrackParCov(track1);
       // auto trackParCovBach = getTrackParCov(bach);
 
-      for (auto v0 : V0s) {
+      for (const auto& v0 : V0s) {
         if (!SelectionV0(collision, v0)) {
           continue;
         }

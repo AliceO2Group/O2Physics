@@ -331,7 +331,7 @@ struct kstar892analysis {
   float massPi = MassPionCharged;
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // TPC
     if (track.tpcNClsFound() < cfgTPCcluster)
@@ -886,7 +886,7 @@ struct kstar892analysis {
   void processMELight(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -904,7 +904,7 @@ struct kstar892analysis {
   void processMELightWithTof(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -922,7 +922,7 @@ struct kstar892analysis {
   void processMELightTPCLowPt(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -940,7 +940,7 @@ struct kstar892analysis {
   void processMELightTOFHighPt(o2::aod::ResoCollisions& collisions, soa::Filtered<aod::ResoTracks> const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}};
     SameKindPair<aod::ResoCollisions, soa::Filtered<aod::ResoTracks>, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {

@@ -60,7 +60,7 @@ struct CFTutorialTask0 {
     }
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
 
-    for (auto track : inputTracks) { // Loop over tracks
+    for (const auto& track : inputTracks) { // Loop over tracks
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());
     }

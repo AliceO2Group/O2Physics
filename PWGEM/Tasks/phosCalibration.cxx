@@ -44,6 +44,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace o2;

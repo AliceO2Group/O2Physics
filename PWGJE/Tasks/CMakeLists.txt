@@ -9,6 +9,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 add_library(JetSubstructureHFPCH OBJECT jetSubstructureHFPCH.cxx)
+# The PCH compile is one of the heaviest translation units in the tree -- it
+# instantiates the whole data model up front -- but add_library() does not put
+# it in the 'analysis' job pool that o2physics_add_dpl_workflow() uses for the
+# workflows. Left out, it runs unthrottled alongside the pooled compilations
+# and defeats the per-job memory budget the pool exists to enforce.
+set_property(TARGET JetSubstructureHFPCH PROPERTY JOB_POOL_COMPILE analysis)
 target_link_libraries(JetSubstructureHFPCH
   PUBLIC O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore)
 if(NOT DEFINED ENV{USE_RECC})
@@ -29,6 +35,12 @@ target_precompile_headers(JetSubstructureHFPCH PRIVATE
 endif()
 
 add_library(JetSubstructureHFOutputPCH OBJECT jetSubstructureHFOutputPCH.cxx)
+# The PCH compile is one of the heaviest translation units in the tree -- it
+# instantiates the whole data model up front -- but add_library() does not put
+# it in the 'analysis' job pool that o2physics_add_dpl_workflow() uses for the
+# workflows. Left out, it runs unthrottled alongside the pooled compilations
+# and defeats the per-job memory budget the pool exists to enforce.
+set_property(TARGET JetSubstructureHFOutputPCH PROPERTY JOB_POOL_COMPILE analysis)
 target_link_libraries(JetSubstructureHFOutputPCH
   PUBLIC O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore)
 if(NOT DEFINED ENV{USE_RECC})
@@ -86,6 +98,7 @@ o2physics_add_dpl_workflow(photon-isolation-qa
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(photon-charged-trigger-correlation
                     SOURCES photonChargedTriggerCorrelation.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(task-emc-extensive-mc-qa
@@ -94,10 +107,12 @@ o2physics_add_dpl_workflow(task-emc-extensive-mc-qa
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(photon-charged-trigger-producer
                     SOURCES photonChargedTriggerProducer.cxx
+                    REUSE_FROM JetDataModelPCH
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(hadron-photon-correlation
 										SOURCES hadronPhotonCorrelation.cxx
+										REUSE_FROM JetDataModelPCH
 										PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
 										COMPONENT_NAME Analysis)
 
@@ -222,6 +237,11 @@ if(FastJet_FOUND)
                         REUSE_FROM JetSubstructureHFPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(lf-jet-spectra
+                        SOURCES lfJetSpectra.cxx
+                        REUSE_FROM JetSubstructureHFPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-finder-charged-qa
                         SOURCES jetFinderQA.cxx
                         REUSE_FROM JetSubstructureHFPCH
@@ -299,6 +319,7 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-spectra-charged-gen
                         SOURCES jetSpectraChargedGen.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(charged-jet-hadron
@@ -397,6 +418,11 @@ if(FastJet_FOUND)
                         REUSE_FROM JetSubstructureHFPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(dq-fragmentation-function
+                        SOURCES DqFragmentationFunction.cxx
+                        REUSE_FROM JetSubstructureHFPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-planarflow
                         SOURCES jetPlanarFlow.cxx
                         REUSE_FROM JetSubstructureHFPCH
@@ -436,7 +462,7 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-cross-section-efficiency
                         SOURCES jetCrossSectionEfficiency.cxx
                         REUSE_FROM JetSubstructureHFPCH
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsITSMFT O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(gamma-jet-tree-producer
                         SOURCES gammaJetTreeProducer.cxx
@@ -467,6 +493,11 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-correlation-d0
                         SOURCES jetCorrelationD0.cxx
                         REUSE_FROM JetSubstructureHFPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-correlation-dmeson
+                        SOURCES jetCorrelationDmeson.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(hf-debug
@@ -501,14 +532,26 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-hadrons-pid
                         SOURCES jetHadronsPid.cxx
+                        REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-hf-ang-substructure
                         SOURCES jetHFAngularity.cxx
+						REUSE_FROM JetDataModelPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-upc-qa
                         SOURCES jetUpcQa.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils O2Physics::SGCutParHolder
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(embedding-qa
+                        SOURCES embeddingQA.cxx
+                        REUSE_FROM JetDataModelPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(baryon-pair-in-jets
+                        SOURCES baryonPairInJets.cxx
+                        REUSE_FROM JetDataModelPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
 endif()

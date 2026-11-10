@@ -290,8 +290,8 @@ struct MultiplicityQa {
       return;
     }
 
-    long NcontribsTOF = 0;
-    long NcontribsTRD = 0;
+    int64_t NcontribsTOF = 0;
+    int64_t NcontribsTRD = 0;
     for (auto& track : tracks) {
       if (track.isPVContributor()) {
         if (track.hasTRD())
@@ -347,7 +347,7 @@ struct MultiplicityQa {
   Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
 
   using Run3Tracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
-  Partition<Run3Tracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<Run3Tracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
 
   void processMCCollisions(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, aod::McParticles const& mcParticles, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::MultZeqs, aod::Collisions>> const& collisions, Run3Tracks const&)
   {

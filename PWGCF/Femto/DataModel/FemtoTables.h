@@ -18,6 +18,7 @@
 
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
+#include "PWGCF/Femto/Core/modes.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -26,6 +27,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
 
 #include <cmath>
 #include <cstdint>
@@ -141,6 +143,18 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMasks_001, "FCOLMASK", 1, //! collision m
 using FColMasks = FColMasks_001;
 using StoredFColMasks = StoredFColMasks_001;
 
+// table for collision tags: one bit per (wagon, pair type) combination the collision tagger was
+// self-configured to check, set if the collision has what it takes to form at least one pair of
+// that type (both particle-1-role and particle-2-role candidates present, or, for a same-species
+// pair, at least 2 distinct candidates passing the one shared selection). Used to pre-filter the
+// mixed-event pool instead of discovering empty collisions only after slicing. Which bit means
+// what is assigned at self-configuration time and logged by the tagger; see
+// PWGCF/Femto/TableProducer/femtoProducerCollisionTagger.cxx.
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColTags_001, "FCOLTAG", 1, //! collision tags
+                                   femtocollisions::CollisionTag);
+using FColTags = FColTags_001;
+using StoredFColTags = StoredFColTags_001;
+
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColSphericities_001, "FCOLSPHERICITY", 1, //! sphericity
                                    femtocollisions::Sphericity);
 using FColSphericities = FColSphericities_001;
@@ -168,12 +182,14 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColPos_001, "FCOLPOS", 1, //! full vertex po
 using FColPos = FColPos_001;
 
 // table for different multiplicity estimators
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMults_001, "FCOLMULT", 1,   //! multiplicities
-                                   mult::MultFT0A, mult::MultFT0C, //! FIT detectors
-                                   mult::MultNTracksPVeta1,        //! number of PV contribs total
-                                   mult::MultNTracksPVetaHalf,     //! global track multiplicities
-                                   evsel::NumTracksInTimeRange,    //! occupancy (number of track in time range)
-                                   evsel::SumAmpFT0CInTimeRange);  //! occupancy (FT0C amplitude in time range)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMults_001, "FCOLMULT", 1,  //! multiplicities
+                                   mult::MultFT0A,                //! FT0A detectors
+                                   mult::MultFT0C,                //! FT0C detectors
+                                   collision::NumContrib,         //! number of tracks used tto find PV
+                                   mult::MultNTracksPVeta1,       //! number of PV contribs total
+                                   mult::MultNTracksPVetaHalf,    //! global track multiplicities
+                                   evsel::NumTracksInTimeRange,   //! occupancy (number of tracks from different collisions in time range)
+                                   evsel::SumAmpFT0CInTimeRange); //! occupancy (FT0C amplitude in time range)
 using FColMults = FColMults_001;
 
 // table for different centrality (multiplicity percentile) estimators
@@ -212,11 +228,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! transverse momentum
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! momentum in x
                            [](float pt, float phi) -> float {
-                             return std::fabs(pt) * std::sin(phi);
+                             return std::fabs(pt) * std::cos(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! momentum in y
                            [](float pt, float phi) -> float {
-                             return std::fabs(pt) * std::cos(phi);
+                             return std::fabs(pt) * std::sin(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! momentum in z
                            [](float pt, float eta) -> float {
@@ -328,6 +344,17 @@ DECLARE_SOA_DYNAMIC_COLUMN(TpcSharedOverFound, tpcSharedOverFound, //! Number of
                            [](uint8_t tpcNclsFound, uint8_t tpcNClsShared) -> float { return static_cast<float>(tpcNClsShared) / static_cast<float>(tpcNclsFound); });
 DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float); //! Tpc chi2
 
+// detector map and row type
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);                                                                     //! Detector map of the track (same bit layout as o2::aod::track::DetectorMap)
+DECLARE_SOA_DYNAMIC_COLUMN(HasIts, hasIts, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; }); //! Track has ITS
+DECLARE_SOA_DYNAMIC_COLUMN(HasTpc, hasTpc, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; }); //! Track has TPC
+DECLARE_SOA_DYNAMIC_COLUMN(HasTof, hasTof, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; }); //! Track has TOF
+DECLARE_SOA_COLUMN(FillType, fillType, o2::analysis::femto::datatypes::TrackType);                                         //! modes::Track this row was written as (kTrack = selected track, otherwise daughter-only row)
+DECLARE_SOA_DYNAMIC_COLUMN(IsDaughterOnly, isDaughterOnly,                                                                 //! True if the row was only written to resolve a daughter index (not a selected track)
+                           [](o2::analysis::femto::datatypes::TrackType fillType) -> bool {
+                             return fillType != static_cast<o2::analysis::femto::datatypes::TrackType>(o2::analysis::femto::modes::Track::kTrack);
+                           });
+
 // tof related information
 DECLARE_SOA_COLUMN(TofBeta, tofBeta, float); //! Tof beta
 // tof mass will be stored in mass column
@@ -375,6 +402,38 @@ DECLARE_SOA_DYNAMIC_COLUMN(TpctofNSigmaPr, tpctofNSigmaPr, [](float tpc, float t
 DECLARE_SOA_DYNAMIC_COLUMN(TpctofNSigmaDe, tpctofNSigmaDe, [](float tpc, float tof) -> float { return std::hypot(tpc, tof); }); //! Combined Nsigma separation with Tpc and Tof for deuteron
 DECLARE_SOA_DYNAMIC_COLUMN(TpctofNSigmaTr, tpctofNSigmaTr, [](float tpc, float tof) -> float { return std::hypot(tpc, tof); }); //! Combined Nsigma separation with Tpc and Tof for triton
 DECLARE_SOA_DYNAMIC_COLUMN(TpctofNSigmaHe, tpctofNSigmaHe, [](float tpc, float tof) -> float { return std::hypot(tpc, tof); }); //! Combined Nsigma separation with Tpc and Tof for helium3
+
+// ---------------------------------------------------------------------------
+// purity: up to 4 species' nSigma (per detector: Its, Tpc, Tof) packed into a
+// single int64_t column each, see utils::packPurity4/unpackPurity4. Which
+// species occupies which of the 4 slots is decided at producer init time
+// (from the active requirePidXxx flags, in canonical species order) and
+// exposed via a self-documenting histogram -- it is not stored per-row.
+// ---------------------------------------------------------------------------
+constexpr float NSigmaPurityMagMin = 1e-3f; // resolution floor near the signal peak
+constexpr float NSigmaPurityMagMax = 50.f;  // clamp for the tails
+
+DECLARE_SOA_COLUMN(ItsPackedNSigma, itsPackedNSigma, int64_t); //! 4 species' Its nSigma, log-binned and packed
+DECLARE_SOA_COLUMN(TpcPackedNSigma, tpcPackedNSigma, int64_t); //! 4 species' Tpc nSigma, log-binned and packed
+DECLARE_SOA_COLUMN(TofPackedNSigma, tofPackedNSigma, int64_t); //! 4 species' Tof nSigma, log-binned and packed
+// if false, all 4 Tof slots are meaningless placeholders (producer writes 0 to all of them) --
+// check this flag before reading any TofNSigmaSlotN; never infer missingness from the slot value
+DECLARE_SOA_COLUMN(PurityHasTof, purityHasTof, bool); //! whether the Tof slots are meaningful for this track (species-independent)
+
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+// each dynamic column below is bound to its PackedNSigma column at the table-declaration
+// site, e.g. femtotracks::ItsNSigmaSlot0<femtotracks::ItsPackedNSigma>
+#define FEMTO_PURITY_SLOT_COLUMN(Detector, detector)                                                                                                                                                                    \
+  DECLARE_SOA_DYNAMIC_COLUMN(Detector##NSigmaSlot0, detector##NSigmaSlot0, [](int64_t packed) -> float { return o2::analysis::femto::utils::unpackPurityNSigma4(packed, 0, NSigmaPurityMagMin, NSigmaPurityMagMax); }); \
+  DECLARE_SOA_DYNAMIC_COLUMN(Detector##NSigmaSlot1, detector##NSigmaSlot1, [](int64_t packed) -> float { return o2::analysis::femto::utils::unpackPurityNSigma4(packed, 1, NSigmaPurityMagMin, NSigmaPurityMagMax); }); \
+  DECLARE_SOA_DYNAMIC_COLUMN(Detector##NSigmaSlot2, detector##NSigmaSlot2, [](int64_t packed) -> float { return o2::analysis::femto::utils::unpackPurityNSigma4(packed, 2, NSigmaPurityMagMin, NSigmaPurityMagMax); }); \
+  DECLARE_SOA_DYNAMIC_COLUMN(Detector##NSigmaSlot3, detector##NSigmaSlot3, [](int64_t packed) -> float { return o2::analysis::femto::utils::unpackPurityNSigma4(packed, 3, NSigmaPurityMagMin, NSigmaPurityMagMax); });
+
+FEMTO_PURITY_SLOT_COLUMN(Its, its)
+FEMTO_PURITY_SLOT_COLUMN(Tpc, tpc)
+FEMTO_PURITY_SLOT_COLUMN(Tof, tof)
+#undef FEMTO_PURITY_SLOT_COLUMN
+// NOLINTEND(cppcoreguidelines-macro-usage)
 
 } // namespace femtotracks
 
@@ -430,6 +489,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackDcas_001, "FTRACKDCAS", 1, //! track dc
                                    femtotracks::DcaZ,
                                    femtotracks::Dca<femtotracks::DcaXY, femtotracks::DcaZ>);
 using FTrackDcas = FTrackDcas_001;
+using StoredFTrackDcas = StoredFTrackDcas_001;
 
 // table for extra track information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackExtras_001, "FTRACKEXTRA", 1, //! track extra information
@@ -444,8 +504,15 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackExtras_001, "FTRACKEXTRA", 1, //! track
                                    femtotracks::TpcNClsCrossedRows,
                                    femtotracks::TpcNClsShared,
                                    femtotracks::TofBeta,
+                                   femtotracks::TpcChi2NCl,
+                                   femtotracks::DetectorMap,
+                                   femtotracks::FillType,
                                    femtotracks::TpcCrossedRowsOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsCrossedRows>,
-                                   femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>);
+                                   femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>,
+                                   femtotracks::HasIts<femtotracks::DetectorMap>,
+                                   femtotracks::HasTpc<femtotracks::DetectorMap>,
+                                   femtotracks::HasTof<femtotracks::DetectorMap>,
+                                   femtotracks::IsDaughterOnly<femtotracks::FillType>);
 using FTrackExtras = FTrackExtras_001;
 
 // table for extra PID information
@@ -501,6 +568,39 @@ using FHeliumPids = FHeliumPids_001;
 
 using FTrackPids = soa::Join<FElectronPids, FPionPids, FKaonPids, FProtonPids, FDeuteronPids, FTritonPids, FHeliumPids>;
 
+// tables for track purity extraction: up to 4 species' nSigma packed per detector (see
+// femtotracks::PurityNSlots / utils::packPurity4). Slot assignment is not stored here --
+// it is exposed separately via a self-documenting histogram at producer init time.
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FItsPurity_001, "FITSPURITY", 1, //! up to 4 species' Its nSigma, packed
+                                   femtotracks::ItsPackedNSigma,
+                                   femtotracks::ItsNSigmaSlot0<femtotracks::ItsPackedNSigma>,
+                                   femtotracks::ItsNSigmaSlot1<femtotracks::ItsPackedNSigma>,
+                                   femtotracks::ItsNSigmaSlot2<femtotracks::ItsPackedNSigma>,
+                                   femtotracks::ItsNSigmaSlot3<femtotracks::ItsPackedNSigma>);
+using FItsPurity = FItsPurity_001;
+using StoredFItsPurity = StoredFItsPurity_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FTpcPurity_001, "FTPCPURITY", 1, //! up to 4 species' Tpc nSigma, packed
+                                   femtotracks::TpcPackedNSigma,
+                                   femtotracks::TpcNSigmaSlot0<femtotracks::TpcPackedNSigma>,
+                                   femtotracks::TpcNSigmaSlot1<femtotracks::TpcPackedNSigma>,
+                                   femtotracks::TpcNSigmaSlot2<femtotracks::TpcPackedNSigma>,
+                                   femtotracks::TpcNSigmaSlot3<femtotracks::TpcPackedNSigma>);
+using FTpcPurity = FTpcPurity_001;
+using StoredFTpcPurity = StoredFTpcPurity_001;
+
+// also carries PurityHasTof (species-independent: whether this track reached Tof at all) --
+// the most natural home for it, since it only matters for interpreting the Tof slots
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FTofPurity_001, "FTOFPURITY", 1, //! up to 4 species' Tof nSigma, packed
+                                   femtotracks::TofPackedNSigma,
+                                   femtotracks::PurityHasTof,
+                                   femtotracks::TofNSigmaSlot0<femtotracks::TofPackedNSigma>,
+                                   femtotracks::TofNSigmaSlot1<femtotracks::TofPackedNSigma>,
+                                   femtotracks::TofNSigmaSlot2<femtotracks::TofPackedNSigma>,
+                                   femtotracks::TofNSigmaSlot3<femtotracks::TofPackedNSigma>);
+using FTofPurity = FTofPurity_001;
+using StoredFTofPurity = StoredFTofPurity_001;
+
 namespace femtotwotrackresonances
 {
 // columns for resonance bit masks
@@ -530,12 +630,14 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhis_001, "FPHI", 1, //! femto phis
                                    femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FPhis = FPhis_001;
+using StoredFPhis = StoredFPhis_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhiMasks_001, "FPHIMASK", 1, //! mask for phis
                                    femtotwotrackresonances::MaskPosDau,
                                    femtotwotrackresonances::PosDauHasHighMomentum,
                                    femtotwotrackresonances::MaskNegDau,
                                    femtotwotrackresonances::NegDauHasHighMomentum);
 using FPhiMasks = FPhiMasks_001;
+using StoredFPhiMasks = StoredFPhiMasks_001;
 
 // table for kstars
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FKstar0s_001, "FKSTAR0", 1, //! femto k0star
@@ -577,12 +679,14 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FRho0s_001, "FRHO0", 1, //! femto rho0s
                                    femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FRho0s = FRho0s_001;
+using StoredFRho0s = StoredFRho0s_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FRho0Masks_001, "FRHO0MASK", 1, //! rho0s masks
                                    femtotwotrackresonances::MaskPosDau,
                                    femtotwotrackresonances::PosDauHasHighMomentum,
                                    femtotwotrackresonances::MaskNegDau,
                                    femtotwotrackresonances::NegDauHasHighMomentum);
 using FRho0Masks = FRho0Masks_001;
+using StoredFRho0Masks = StoredFRho0Masks_001;
 
 namespace femtov0s
 {
@@ -615,6 +719,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(DecayVtx, decayVtx,                 //! distance of d
                            [](float vtxX, float vtxY, float vtxZ) -> float {
                              return std::hypot(vtxX, vtxY, vtxZ);
                            });
+DECLARE_SOA_COLUMN(Alpha, alpha, float); //! Armenteros-Podolanski alpha
+DECLARE_SOA_COLUMN(QtArm, qtArm, float); //! Armenteros-Podolanski qt
 
 // id columns for Lambda daughter tracks
 DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! index column for positive daughter track
@@ -718,10 +824,17 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaExtras_001, "FLAMBDAEXTRA", 1, //! lam
                                    femtov0s::DecayVtxX,
                                    femtov0s::DecayVtxY,
                                    femtov0s::DecayVtxZ,
+                                   femtov0s::Alpha,
+                                   femtov0s::QtArm,
                                    femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>,
                                    femtov0s::Pa<femtov0s::CosPa>);
 
 using FLambdaExtras = FLambdaExtras_001;
+
+// table for lambda fraction extraction (cpa only -- mass is already in FLambdas, no need to duplicate it)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaFrac_001, "FLAMBDAFRAC", 1, //! lambda cpa for fraction extraction
+                                   femtov0s::CosPa);
+using FLambdaFrac = FLambdaFrac_001;
 
 // table for basic k0short information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shorts_001, "FK0SHORT", 1, //! femto k0shorts
@@ -778,10 +891,203 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortExtras_001, "FK0SHORTEXTRA", 1, //! k
                                    femtov0s::DecayVtxX,
                                    femtov0s::DecayVtxY,
                                    femtov0s::DecayVtxZ,
+                                   femtov0s::Alpha,
+                                   femtov0s::QtArm,
                                    femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>,
                                    femtov0s::Pa<femtov0s::CosPa>);
 
 using FK0shortExtras = FK0shortExtras_001;
+
+// table for k0short fraction extraction (cpa only -- mass is already in FK0shorts, no need to duplicate it)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortFrac_001, "FK0SHORTFRAC", 1, //! k0short cpa for fraction extraction
+                                   femtov0s::CosPa);
+using FK0shortFrac = FK0shortFrac_001;
+
+namespace femtophotons
+{
+// columns for bit masks
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for photon (PCM) selections
+
+// columns for debug information
+DECLARE_SOA_COLUMN(CosPa, cosPa, float); //! Cosine of pointing angle of the V0 (conversion) to the primary vertex
+DECLARE_SOA_DYNAMIC_COLUMN(Pa, pa,       //! pointing angle
+                           [](float cosPa) -> float {
+                             return std::acos(cosPa);
+                           });
+DECLARE_SOA_COLUMN(DcaToPvXY, dcaToPvXY, float);                     //! DCAxy of the photon (V0) to the primary vertex
+DECLARE_SOA_COLUMN(DcaToPvZ, dcaToPvZ, float);                       //! DCAz of the photon (V0) to the primary vertex
+DECLARE_SOA_COLUMN(Chi2Ndf, chi2Ndf, float);                         //! Chi2 / NDF of the reconstructed conversion vertex (KF)
+DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);                       //! Transverse radius of the conversion point
+DECLARE_SOA_COLUMN(PosDauTpcNSigmaEl, posDauTpcNSigmaEl, float);     //! TPC electron nSigma of the positive daughter
+DECLARE_SOA_COLUMN(NegDauTpcNSigmaEl, negDauTpcNSigmaEl, float);     //! TPC electron nSigma of the negative daughter
+DECLARE_SOA_COLUMN(PosDauPt, posDauPt, float);                       //! pT of the positive daughter (at the conversion point)
+DECLARE_SOA_COLUMN(NegDauPt, negDauPt, float);                       //! pT of the negative daughter (at the conversion point)
+DECLARE_SOA_COLUMN(PosDauTpcInnerParam, posDauTpcInnerParam, float); //! momentum of the positive daughter at the inner wall of the TPC
+DECLARE_SOA_COLUMN(NegDauTpcInnerParam, negDauTpcInnerParam, float); //! momentum of the negative daughter at the inner wall of the TPC
+DECLARE_SOA_COLUMN(PosDauTpcSignal, posDauTpcSignal, float);         //! TPC dE/dx of the positive daughter
+DECLARE_SOA_COLUMN(NegDauTpcSignal, negDauTpcSignal, float);         //! TPC dE/dx of the negative daughter
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                     //! x coordinate of conversion point
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                     //! y coordinate of conversion point
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                     //! z coordinate of conversion point
+DECLARE_SOA_DYNAMIC_COLUMN(DecayVtx, decayVtx,                       //! distance of conversion point from nominal interaction point
+                           [](float vtxX, float vtxY, float vtxZ) -> float {
+                             return std::hypot(vtxX, vtxY, vtxZ);
+                           });
+} // namespace femtophotons
+
+// table for basic PCM photon information (mass is fixed to 0 by construction, not stored)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhotons_001, "FPHOTON", 1, //! femto PCM photons
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::Pt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FPhotons = FPhotons_001;
+using StoredFPhotons = StoredFPhotons_001;
+
+// table for basic PCM photon information with compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLitePhotons_001, "FLITEPHOTON", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::UnsignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtobase::lite::unsignedpt::Pt<femtobase::lite::UnsignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>);
+using FLitePhotons = FLitePhotons_001;
+using FLitePhoton = FLitePhotons::iterator;
+using StoredFLitePhotons = StoredFLitePhotons_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhotonMasks_001, "FPHOTONMASK", 1, //! photon (PCM) masks
+                                   femtophotons::Mask);
+using FPhotonMasks = FPhotonMasks_001;
+using StoredFPhotonMasks = StoredFPhotonMasks_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhotonExtras_001, "FPHOTONEXTRA", 1, //! photon (PCM) extra information
+                                   femtophotons::CosPa,
+                                   femtophotons::DcaToPvXY,
+                                   femtophotons::DcaToPvZ,
+                                   femtophotons::Chi2Ndf,
+                                   femtophotons::V0Radius,
+                                   femtophotons::PosDauPt,
+                                   femtophotons::NegDauPt,
+                                   femtophotons::PosDauTpcInnerParam,
+                                   femtophotons::NegDauTpcInnerParam,
+                                   femtophotons::PosDauTpcSignal,
+                                   femtophotons::NegDauTpcSignal,
+                                   femtophotons::PosDauTpcNSigmaEl,
+                                   femtophotons::NegDauTpcNSigmaEl,
+                                   femtophotons::DecayVtxX,
+                                   femtophotons::DecayVtxY,
+                                   femtophotons::DecayVtxZ,
+                                   femtophotons::DecayVtx<femtophotons::DecayVtxX, femtophotons::DecayVtxY, femtophotons::DecayVtxZ>,
+                                   femtophotons::Pa<femtophotons::CosPa>);
+using FPhotonExtras = FPhotonExtras_001;
+using StoredFPhotonExtras = StoredFPhotonExtras_001;
+
+namespace femtotwophotonresonances
+{
+// column for the daughter (photon) bit mask -- no momentum-threshold bit: photon daughters have no
+// momentum-dependent PID switch the way charged-track daughters do in femtotwotrackresonances. Both
+// legs are plain photons with the same selection requirement, so only the AND of both legs' own
+// masks is stored (not one column per leg): requiring a set of bits in the AND is equivalent to
+// requiring that same set of bits in both legs individually.
+DECLARE_SOA_COLUMN(MaskDau, maskDau, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for the photon daughters (AND of both legs' own masks)
+
+// id columns for the two photon daughters (unordered, no pos/neg distinction)
+DECLARE_SOA_INDEX_COLUMN_FULL(Dau1, dau1, int32_t, FPhotons, "_Dau1"); //! index column for first photon daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(Dau2, dau2, int32_t, FPhotons, "_Dau2"); //! index column for second photon daughter
+} // namespace femtotwophotonresonances
+
+// table for pi0s (-> gamma gamma)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FPi0s_001, "FPI0", 1, //! femto pi0s
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::Pt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtotwophotonresonances::Dau1Id,
+                                   femtotwophotonresonances::Dau2Id,
+                                   femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FPi0s = FPi0s_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FPi0Masks_001, "FPI0MASK", 1, //! mask for pi0s
+                                   femtotwophotonresonances::MaskDau);
+using FPi0Masks = FPi0Masks_001;
+
+// table for etas (-> gamma gamma)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FEtas_001, "FETA", 1, //! femto etas
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::Pt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtotwophotonresonances::Dau1Id,
+                                   femtotwophotonresonances::Dau2Id,
+                                   femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FEtas = FEtas_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FEtaMasks_001, "FETAMASK", 1, //! mask for etas
+                                   femtotwophotonresonances::MaskDau);
+using FEtaMasks = FEtaMasks_001;
+
+namespace femtotrackstwophotonresonances
+{
+// columns for daughter bit masks, copied onto the candidate at build time -- same pattern as
+// femtotwotrackresonances: systematic reselection happens on the candidate itself, not by rejoining
+// the daughter tables. The two charged daughters keep their own momentum-threshold PID switch; the
+// neutral (pi0/eta) daughter has no such switch and no dedicated mask of its own -- it is a direct
+// copy of its FPi0Masks/FEtaMasks maskDau (itself already the AND of its two photon legs).
+DECLARE_SOA_COLUMN(MaskPosDau, maskPosDau, o2::analysis::femto::datatypes::TrackMaskType);          //! Bitmask for positive charged-track daughter
+DECLARE_SOA_COLUMN(PosDauHasHighMomentum, posDauHasHighMomentum, bool);                             //! switch for pid threshold
+DECLARE_SOA_COLUMN(MaskNegDau, maskNegDau, o2::analysis::femto::datatypes::TrackMaskType);          //! Bitmask for negative charged-track daughter
+DECLARE_SOA_COLUMN(NegDauHasHighMomentum, negDauHasHighMomentum, bool);                             //! switch for pid threshold
+DECLARE_SOA_COLUMN(MaskNeutralDau, maskNeutralDau, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for the two-photon-resonance daughter (copy of its own maskDau)
+
+// id columns for the two charged-track daughters and the two-photon-resonance daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau");           //! index column for the positive charged-track daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau");           //! index column for the negative charged-track daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(NeutralDau, neutralDau, int32_t, FPi0s, "_NeutralDau"); //! index column for the two-photon-resonance daughter
+} // namespace femtotrackstwophotonresonances
+
+// table for resonances built from two tracks and a two-photon resonance (e.g. omega(782) -> pi+ pi- pi0)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMesons_001, "FOMEMES", 1, //! femto omega mesons
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::Pt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtotrackstwophotonresonances::PosDauId,
+                                   femtotrackstwophotonresonances::NegDauId,
+                                   femtotrackstwophotonresonances::NeutralDauId,
+                                   femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FOmegaMesons = FOmegaMesons_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMesonMasks_001, "FOMEMESMASK", 1, //! mask for omega mesons
+                                   femtotrackstwophotonresonances::MaskPosDau,
+                                   femtotrackstwophotonresonances::PosDauHasHighMomentum,
+                                   femtotrackstwophotonresonances::MaskNegDau,
+                                   femtotrackstwophotonresonances::NegDauHasHighMomentum,
+                                   femtotrackstwophotonresonances::MaskNeutralDau);
+using FOmegaMesonMasks = FOmegaMesonMasks_001;
 
 namespace femtokinks
 {
@@ -796,6 +1102,23 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! x coordinate of decay v
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! y coordinate of decay vertex (relative to PV)
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! z coordinate of decay vertex (relative to PV)
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse decay radius from PV
+DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float);
+DECLARE_SOA_COLUMN(DauTpcNSigmaPr, dauTpcNSigmaPr, float);
+DECLARE_SOA_COLUMN(DauTpcNSigmaPi, dauTpcNSigmaPi, float);
+DECLARE_SOA_COLUMN(DauTofNSigmaPr, dauTofNSigmaPr, float);
+DECLARE_SOA_COLUMN(PtOriginal, ptOriginal, float);
+
+// columns for sigma plus reconstructed with a PCM photon
+DECLARE_SOA_COLUMN(MlScore, mlScore, float);                               //! BDT score of the candidate
+DECLARE_SOA_COLUMN(FlightDirTilt, flightDirTilt, float);                   //! Tilt of the flight direction needed for a real solution of the missing photon
+DECLARE_SOA_COLUMN(DauDcaXY, dauDcaXY, float);                             //! DCAxy of the charged daughter to the primary vertex
+DECLARE_SOA_COLUMN(DauDcaZ, dauDcaZ, float);                               //! DCAz of the charged daughter to the primary vertex
+DECLARE_SOA_COLUMN(PhotonDcaXYToPV, photonDcaXYToPV, float);               //! Transverse DCA of the photon flight line to the primary vertex
+DECLARE_SOA_COLUMN(PhotonDcaZToPV, photonDcaZToPV, float);                 //! Longitudinal DCA of the photon flight line to the primary vertex
+DECLARE_SOA_COLUMN(PhotonCosPAToPV, photonCosPAToPV, float);               //! Cosine of the photon pointing angle to the primary vertex
+DECLARE_SOA_COLUMN(PhotonConvRadius, photonConvRadius, float);             //! Conversion radius of the photon
+DECLARE_SOA_COLUMN(AntiSigmaPointingAngle, antiSigmaPointingAngle, float); //! Angle between the unbent proton momentum and the flight direction
+DECLARE_SOA_COLUMN(DcaDauPhoton, dcaDauPhoton, float);                     //! DCA between charged daughter and photon at the decay vertex
 
 // id column for charged daughter track
 DECLARE_SOA_INDEX_COLUMN_FULL(ChaDau, chaDau, int32_t, FTracks, "_ChaDau"); //!
@@ -949,7 +1272,89 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_001, "FSIGMAPLUSEXTRAS", 1,
                                    femtokinks::DecayVtxZ,
                                    femtokinks::TransRadius);
 
-using FSigmaPlusExtras = FSigmaPlusExtras_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_002, "FSIGMAPLUSEXTRAS", 2,
+                                   femtokinks::KinkAngle,
+                                   femtokinks::DcaDaugToPV,
+                                   femtokinks::DcaMothToPV,
+                                   femtokinks::DecayVtxX,
+                                   femtokinks::DecayVtxY,
+                                   femtokinks::DecayVtxZ,
+                                   femtokinks::TransRadius,
+                                   femtokinks::DcaKinkTopo,
+                                   femtokinks::DauTpcNSigmaPr,
+                                   femtokinks::DauTpcNSigmaPi,
+                                   femtokinks::DauTofNSigmaPr,
+                                   femtokinks::PtOriginal,
+                                   femtotracks::ItsClusterSizes);
+
+using FSigmaPlusExtras = FSigmaPlusExtras_002;
+using StoredFSigmaPlusExtras = StoredFSigmaPlusExtras_002;
+
+// table for basic sigma plus information, sigma plus reconstructed with a PCM photon
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcm_001, "FSIGMAPLUSPCM", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, // use sign to differentiate between sigma plus (+1) and anti sigma plus (-1)
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtokinks::ChaDauId,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FSigmaPlusPcm = FSigmaPlusPcm_001;
+using FSigmaPlusPcmRow = FSigmaPlusPcm::iterator;
+using StoredFSigmaPlusPcm = StoredFSigmaPlusPcm_001;
+
+// table for basic sigma plus information, sigma plus reconstructed with a PCM photon, compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmaPlusPcm_001, "FLITESIGMAPCM", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtokinks::lite::BinnedSigmaMass,
+                                   femtokinks::lite::ChaDauId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
+using FLiteSigmaPlusPcm = FLiteSigmaPlusPcm_001;
+using FLiteSigmaPlusPcmRow = FLiteSigmaPlusPcm::iterator;
+using StoredFLiteSigmaPlusPcm = StoredFLiteSigmaPlusPcm_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmMasks_001, "FSIGMAPCMMASKS", 1,
+                                   femtokinks::Mask);
+using FSigmaPlusPcmMasks = FSigmaPlusPcmMasks_001;
+using StoredFSigmaPlusPcmMasks = StoredFSigmaPlusPcmMasks_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmMlScores_001, "FSIGMAPCMML", 1,
+                                   femtokinks::MlScore);
+using FSigmaPlusPcmMlScores = FSigmaPlusPcmMlScores_001;
+using StoredFSigmaPlusPcmMlScores = StoredFSigmaPlusPcmMlScores_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmExtras_001, "FSIGMAPCMEXTRA", 1,
+                                   femtokinks::FlightDirTilt,
+                                   femtokinks::DcaMothToPV,
+                                   femtokinks::DauDcaXY,
+                                   femtokinks::DauDcaZ,
+                                   femtokinks::DauTpcNSigmaPr,
+                                   femtokinks::DauTofNSigmaPr,
+                                   femtokinks::PhotonDcaXYToPV,
+                                   femtokinks::PhotonDcaZToPV,
+                                   femtokinks::PhotonCosPAToPV,
+                                   femtokinks::PhotonConvRadius,
+                                   femtokinks::AntiSigmaPointingAngle,
+                                   femtokinks::DcaDauPhoton,
+                                   femtokinks::TransRadius);
+using FSigmaPlusPcmExtras = FSigmaPlusPcmExtras_001;
+using StoredFSigmaPlusPcmExtras = StoredFSigmaPlusPcmExtras_001;
 
 namespace femtocascades
 {
@@ -1084,6 +1489,12 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra in
                                    femtocascades::CascadePa<femtocascades::CascadeCosPa>);
 using FXiExtras = FXiExtras_001;
 
+// table for xi fraction extraction (cascade cpa only -- mass is already in FXis, and the daughter
+// lambda's own cpa is not needed here)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiFrac_001, "FXIFRAC", 1, //! xi cpa for fraction extraction
+                                   femtocascades::CascadeCosPa);
+using FXiFrac = FXiFrac_001;
+
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
                                    o2::soa::Index<>,
                                    femtobase::stored::FColId,
@@ -1149,6 +1560,12 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega
                                    femtov0s::StrangeTofNegDau,
                                    femtocascades::CascadePa<femtocascades::CascadeCosPa>);
 using FOmegaExtras = FOmegaExtras_001;
+
+// table for omega fraction extraction (cascade cpa only -- mass is already in FOmegas, and the daughter
+// lambda's own cpa is not needed here)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaFrac_001, "FOMEGAFRAC", 1, //! omega cpa for fraction extraction
+                                   femtocascades::CascadeCosPa);
+using FOmegaFrac = FOmegaFrac_001;
 
 namespace femtocharmhadrons
 {
@@ -1295,11 +1712,13 @@ namespace femtomccollisions
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcCols_001, "FMCCOL", 1, //! femto mc collisions
                                    o2::soa::Index<>,
-                                   femtocollisions::PosZ, //! Multiplicity of the event as given by the generator in |eta|<0.8
+                                   femtocollisions::PosZ,
                                    femtocollisions::Mult,
                                    femtocollisions::Cent);
 using FMcCols = FMcCols_001;
 using FMcCol = FMcCols_001::iterator;
+using StoredFMcCols = StoredFMcCols_001;
+using StoredFMcCol = StoredFMcCols_001::iterator;
 
 namespace femtomcparticle
 {
@@ -1326,6 +1745,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcParticles_001, "FMCPARTICLE", 1, //! femto
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FMcParticles = FMcParticles_001;
 using FMcParticle = FMcParticles::iterator;
+using StoredFMcParticles = StoredFMcParticles_001;
+using StoredFMcParticle = StoredFMcParticles::iterator;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first direct mother of the monte carlo particle
                                    o2::soa::Index<>,               // no collision index needed since the mother is retrieved from the daughter mc particle
@@ -1344,12 +1765,16 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first dir
 
 using FMcMothers = FMcMothers_001;
 using FMcMother = FMcMothers::iterator;
+using StoredFMcMothers = StoredFMcMothers_001;
+using StoredFMcMother = StoredFMcMothers::iterator;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMCPARTMOTH", 1, //! first partonic mother of the monte carlo particle after hadronization
                                    o2::soa::Index<>,
                                    femtomcparticle::PdgCode);
 using FMcPartMoths = FMcPartMoths_001;
 using FMcPartMoth = FMcPartMoths::iterator;
+using StoredFMcPartMoths = StoredFMcPartMoths_001;
+using StoredFMcPartMoth = StoredFMcPartMoths::iterator;
 
 namespace femtolabels
 {
@@ -1360,30 +1785,94 @@ DECLARE_SOA_INDEX_COLUMN(FMcMother, fMcMother);     //!
 DECLARE_SOA_INDEX_COLUMN(FMcPartMoth, fMcPartMoth); //!
 } // namespace femtolabels
 
-DECLARE_SOA_TABLE(FColLabels, "AOD", "FCOLMCLABEL", femtolabels::FMcColId);
+// Labels are staged like the tables they point into: the derived-to-derived
+// producer writes the Stored* variant, so MC information survives a second
+// derived-data pass.
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColLabels_001, "FCOLMCLABEL", 1, //! label from femto collision to femto mc collision
+                                   femtolabels::FMcColId);
+using FColLabels = FColLabels_001;
+using FColLabel = FColLabels::iterator;
+using StoredFColLabels = StoredFColLabels_001;
+using StoredFColLabel = StoredFColLabels::iterator;
 
-DECLARE_SOA_TABLE(FTrackLabels, "AOD", "FTRACKLABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackLabels_001, "FTRACKLABEL", 1, //! label from femto track to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FTrackLabels = FTrackLabels_001;
+using FTrackLabel = FTrackLabels::iterator;
+using StoredFTrackLabels = StoredFTrackLabels_001;
+using StoredFTrackLabel = StoredFTrackLabels::iterator;
 
-DECLARE_SOA_TABLE(FLambdaLabels, "AOD", "FLAMBDALABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaLabels_001, "FLAMBDALABEL", 1, //! label from femto lambda to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FLambdaLabels = FLambdaLabels_001;
+using FLambdaLabel = FLambdaLabels::iterator;
+using StoredFLambdaLabels = StoredFLambdaLabels_001;
+using StoredFLambdaLabel = StoredFLambdaLabels::iterator;
 
-DECLARE_SOA_TABLE(FK0shortLabels, "AOD", "FK0SHORTLABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortLabels_001, "FK0SHORTLABEL", 1, //! label from femto k0short to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FK0shortLabels = FK0shortLabels_001;
+using FK0shortLabel = FK0shortLabels::iterator;
+using StoredFK0shortLabels = StoredFK0shortLabels_001;
+using StoredFK0shortLabel = StoredFK0shortLabels::iterator;
 
-DECLARE_SOA_TABLE(FD0Labels, "AOD", "FD0LABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0Labels_001, "FD0LABEL", 1, //! label from femto d0 to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FD0Labels = FD0Labels_001;
+using FD0Label = FD0Labels::iterator;
+using StoredFD0Labels = StoredFD0Labels_001;
+using StoredFD0Label = StoredFD0Labels::iterator;
 
-DECLARE_SOA_TABLE(FLcLabels, "AOD", "FLCLABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLcLabels_001, "FLCLABEL", 1, //! label from femto lc to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FLcLabels = FLcLabels_001;
+using FLcLabel = FLcLabels::iterator;
+using StoredFLcLabels = StoredFLcLabels_001;
+using StoredFLcLabel = StoredFLcLabels::iterator;
 
-DECLARE_SOA_TABLE(FSigmaLabels, "AOD", "FSIGMALABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaLabels_001, "FSIGMALABEL", 1, //! label from femto sigma to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FSigmaLabels = FSigmaLabels_001;
+using FSigmaLabel = FSigmaLabels::iterator;
+using StoredFSigmaLabels = StoredFSigmaLabels_001;
+using StoredFSigmaLabel = StoredFSigmaLabels::iterator;
 
-DECLARE_SOA_TABLE(FSigmaPlusLabels, "AOD", "FSIGMAPLUSLABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusLabels_001, "FSIGMAPLUSLABEL", 1, //! label from femto sigma plus to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FSigmaPlusLabels = FSigmaPlusLabels_001;
+using FSigmaPlusLabel = FSigmaPlusLabels::iterator;
+using StoredFSigmaPlusLabels = StoredFSigmaPlusLabels_001;
+using StoredFSigmaPlusLabel = StoredFSigmaPlusLabels::iterator;
 
-DECLARE_SOA_TABLE(FXiLabels, "AOD", "FXILABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcmLabels_001, "FSIGMAPCMLABEL", 1, //! label from femto sigma plus (PCM) to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FSigmaPlusPcmLabels = FSigmaPlusPcmLabels_001;
+using FSigmaPlusPcmLabel = FSigmaPlusPcmLabels::iterator;
+using StoredFSigmaPlusPcmLabels = StoredFSigmaPlusPcmLabels_001;
+using StoredFSigmaPlusPcmLabel = StoredFSigmaPlusPcmLabels::iterator;
 
-DECLARE_SOA_TABLE(FOmegaLabels, "AOD", "FOMEGALABEL", femtolabels::FMcParticleId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiLabels_001, "FXILABEL", 1, //! label from femto xi to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FXiLabels = FXiLabels_001;
+using FXiLabel = FXiLabels::iterator;
+using StoredFXiLabels = StoredFXiLabels_001;
+using StoredFXiLabel = StoredFXiLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaLabels_001, "FOMEGALABEL", 1, //! label from femto omega to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FOmegaLabels = FOmegaLabels_001;
+using FOmegaLabel = FOmegaLabels::iterator;
+using StoredFOmegaLabels = StoredFOmegaLabels_001;
+using StoredFOmegaLabel = StoredFOmegaLabels::iterator;
 
 // for mc only processing, we also need Labels pointing from mc particles to mothers and partonic mothers
-DECLARE_SOA_TABLE(FMcMotherLabels, "AOD", "FMCMOTHERLABEL",
-                  femtolabels::FMcMotherId,
-                  femtolabels::FMcPartMothId);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMotherLabels_001, "FMCMOTHERLABEL", 1, //! labels from femto mc particle to its mother and partonic mother
+                                   femtolabels::FMcMotherId,
+                                   femtolabels::FMcPartMothId);
+using FMcMotherLabels = FMcMotherLabels_001;
+using FMcMotherLabel = FMcMotherLabels::iterator;
+using StoredFMcMotherLabels = StoredFMcMotherLabels_001;
+using StoredFMcMotherLabel = StoredFMcMotherLabels::iterator;
 
 } // namespace o2::aod
 #endif // PWGCF_FEMTO_DATAMODEL_FEMTOTABLES_H_

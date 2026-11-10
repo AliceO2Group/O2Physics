@@ -23,7 +23,7 @@
 
 #include <string>
 
-void selectivityPlot(int runNumber = 550781, TString inputfile = "AnalysisResults_550781.root", TString outputfolder = "")
+void selectivityPlot(int runNumber = 550781, const TString& inputfile = "AnalysisResults_550781.root", const TString& outputfolder = "")
 {
   TCanvas* Canvas_1 = new TCanvas("Canvas_1", "Canvas_1", 928, 592);
   gStyle->SetOptFit(0);
@@ -45,7 +45,7 @@ void selectivityPlot(int runNumber = 550781, TString inputfile = "AnalysisResult
   Canvas_1->SetFrameBorderMode(0);
 
   TFile* file = new TFile(inputfile.Data());
-  TH1D* mFiltered = (TH1D*)file->Get("central-event-filter-task/scalers/mFiltered");
+  TH1D* mFiltered = dynamic_cast<TH1D*>(file->Get("central-event-filter-task/scalers/mFiltered"));
   double nEvents = mFiltered->GetBinContent(1);
   mFiltered->Scale(1. / nEvents);
   mFiltered->SetLineColor(2);

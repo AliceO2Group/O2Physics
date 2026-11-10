@@ -41,7 +41,7 @@ struct ALICE3MultTask {
 
   void init(InitContext&)
   {
-    const AxisSpec axisMult{MaxMult.value > 10000.f ? 10000 : (int)MaxMult, 0, MaxMult, "Reconstructed tracks"};
+    const AxisSpec axisMult{MaxMult.value > 10000.f ? 10000 : static_cast<int>(MaxMult), 0, MaxMult, "Reconstructed tracks"};
     TString tit = Form("%.3f < #it{#eta} < %.3f", MinEta.value, MaxEta.value);
     histos.add("multiplicity/numberOfTracksNoCut", tit, kTH1D, {axisMult});
     histos.add("multiplicity/numberOfTracks", tit, kTH1D, {axisMult});

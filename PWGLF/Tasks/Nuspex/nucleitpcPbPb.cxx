@@ -22,6 +22,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -70,7 +71,7 @@ using namespace o2::framework::expressions;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, o2::aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl, aod::TOFSignal, aod::TOFEvTime, aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
-
+using McCollisionMults = soa::Join<aod::McCollisions, aod::MultMCExtras>;
 //===================================================================================
 // Static configuration tables (species definitions, PID/quality defaults, and
 // track/DCA correction parameters). None of the values below are changed by
@@ -221,6 +222,7 @@ struct NucleitpcPbPb {
 
   // ---- MC-only configurables -----------------------------------------------
   Configurable<bool> cfgmccorrectionhe4Require{"cfgmccorrectionhe4Require", true, "MC correction for pp he4 particle"};
+  Configurable<bool> cfgUseEvtSelInNumer{"cfgUseEvtSelInNumer", true, "Event-/signal-loss numerator: require the reco vertex to pass the event selection (true) or merely to exist (false)"};
 
   // ---- DCA cut configurables -------------------------------------------------
   Configurable<bool> cfgUseDCAxyCorrection{"cfgUseDCAxyCorrection", true, "Use pT-dependent DCAxy cut"};
@@ -261,6 +263,9 @@ struct NucleitpcPbPb {
   ConfigurableAxis axisDCA{"axisDCA", {400, -10., 10.}, "DCA axis"};
   ConfigurableAxis particleAntiAxis{"particleAntiAxis", {2, -0.5, 1.5}, "Particle/Anti-particle"}; // 0 = particle, 1 = anti-particle
   ConfigurableAxis decayTypeAxis{"decayTypeAxis", {3, -0.5, 2.5}, "Decay type"};                   // 0 = primary, 1 = from decay, 2 = material
+  ConfigurableAxis axisMultMC{"axisMultMC", {500, 0., 5000.}, "N_{ch}^{gen} in |#eta| < 0.5"};
+  ConfigurableAxis speciesAxis{"speciesAxis", {NParticles, -0.5, NParticles - 0.5}, "species index"};
+  ConfigurableAxis axisImpactPar{"axisImpactPar", {200, 0., 20.}, "impact parameter #it{b} (fm)"};
 
   // ---- CCDB -------------------------------------------------------------------
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -342,23 +347,105 @@ struct NucleitpcPbPb {
     histos.add("Tpcsignal", "Tpcsignal", kTH2F, {axisRigidity, axisdEdx});
 
     if (doprocessMC) {
-      histomc.add<THnSparse>("hSpectramc", " ", HistType::kTHnSparseF, {particleAntiAxis, axisCent, ptAxis, ptAxis});
+      histomc.add<THnSparse>("hSpectramc", " ", HistType::kTHnSparseF, {particleAntiAxis, speciesAxis, axisCent, ptAxis, ptAxis});
 
       // Efficiency x Acceptance
       histomc.add("hDenomEffAcc", "Denominator for Efficiency x Acceptance",
-                  {HistType::kTHnSparseF, {ptAxis, axisCent, particleAntiAxis, decayTypeAxis}});
+                  {HistType::kTHnSparseF, {ptAxis, axisCent, speciesAxis, particleAntiAxis, decayTypeAxis}});
       histomc.add("hNumerEffAcc", "Numerator for Efficiency x Acceptance",
-                  {HistType::kTHnSparseF, {ptAxis, axisCent, particleAntiAxis, decayTypeAxis}});
+                  {HistType::kTHnSparseF, {ptAxis, axisCent, speciesAxis, particleAntiAxis, decayTypeAxis}});
 
-      // Signal loss correction
-      histomc.add("hSignalLossDenom", "Signal Loss Denominator", kTH2F, {axisCent, ptAxis});
-      histomc.add("hSignalLossNumer", "Signal Loss Numerator", kTH2F, {axisCent, ptAxis});
-      histomc.add("haSignalLossDenom", "anti particle Signal Loss Denominator", kTH2F, {axisCent, ptAxis});
-      histomc.add("haSignalLossNumer", "antiparticle Signal Loss Numerator", kTH2F, {axisCent, ptAxis});
+      // ---- Event loss, multiplicity method -------------------------------------
+      histomc.add("hEventLossDenomVsMult",
+                  "All generated events;N_{ch}^{gen} (|#eta|<0.5)",
+                  kTH1F,
+                  {axisMultMC});
 
-      // Event loss correction
-      histomc.add("hEventLossDenom", "Event loss denominator", kTH1F, {axisCent});
-      histomc.add("hEventLossNumer", "Event loss numerator", kTH1F, {axisCent});
+      histomc.add("hEventLossNumerVsMult",
+                  "Generated events with a selected reco vertex;N_{ch}^{gen} (|#eta|<0.5)",
+                  kTH1F,
+                  {axisMultMC});
+
+      // ---- Event loss, impact-parameter method ---------------------------------
+      histomc.add("hEventLossDenomVsImpactPar",
+                  "All generated events;#it{b} (fm)",
+                  kTH1F,
+                  {axisImpactPar});
+
+      histomc.add("hEventLossNumerVsImpactPar",
+                  "Generated events with a selected reco vertex;#it{b} (fm)",
+                  kTH1F,
+                  {axisImpactPar});
+
+      // ---- Event splitting, Eq. (14) of the analysis note -----------------------
+      //      splitting = hEventSplittingNgenWithRecoVsCent / hEventSplittingNrecoPassedVsCent
+      histomc.add("hEventSplittingNgenWithRecoVsCent",
+                  "N_{gen. evt}^{#geq 1 reco evt passed evtsel};centrality (%)",
+                  kTH1F,
+                  {axisCent});
+
+      histomc.add("hEventSplittingNrecoPassedVsCent",
+                  "N_{reco evt passed evtsel};centrality (%)",
+                  kTH1F,
+                  {axisCent});
+
+      // ---- Signal loss, multiplicity method: mult vs pT vs species --------------
+      histomc.add("hSignalLossDenomVsMult",
+                  ";N_{ch}^{gen};#it{p}_{T} (GeV/#it{c});species",
+                  kTH3F,
+                  {axisMultMC, ptAxis, speciesAxis});
+
+      histomc.add("hSignalLossNumerVsMult",
+                  ";N_{ch}^{gen};#it{p}_{T} (GeV/#it{c});species",
+                  kTH3F,
+                  {axisMultMC, ptAxis, speciesAxis});
+
+      histomc.add("haSignalLossDenomVsMult",
+                  ";N_{ch}^{gen};#it{p}_{T} (GeV/#it{c});species",
+                  kTH3F,
+                  {axisMultMC, ptAxis, speciesAxis});
+
+      histomc.add("haSignalLossNumerVsMult",
+                  ";N_{ch}^{gen};#it{p}_{T} (GeV/#it{c});species",
+                  kTH3F,
+                  {axisMultMC, ptAxis, speciesAxis});
+
+      // ---- Signal loss, impact-parameter method: b vs pT vs species -------------
+      histomc.add("hSignalLossDenomVsImpactPar",
+                  ";#it{b} (fm);#it{p}_{T} (GeV/#it{c});species",
+                  kTH3F,
+                  {axisImpactPar, ptAxis, speciesAxis});
+
+      histomc.add("hSignalLossNumerVsImpactPar",
+                  ";#it{b} (fm);#it{p}_{T} (GeV/#it{c});species",
+                  kTH3F,
+                  {axisImpactPar, ptAxis, speciesAxis});
+
+      histomc.add("haSignalLossDenomVsImpactPar",
+                  ";#it{b} (fm);#it{p}_{T} (GeV/#it{c});species",
+                  kTH3F,
+                  {axisImpactPar, ptAxis, speciesAxis});
+
+      histomc.add("haSignalLossNumerVsImpactPar",
+                  ";#it{b} (fm);#it{p}_{T} (GeV/#it{c});species",
+                  kTH3F,
+                  {axisImpactPar, ptAxis, speciesAxis});
+
+      // ---- Maps from the generated quantities to centrality ---------------------
+      histomc.add("hCentralityVsGenMultEta05",
+                  "FT0C centrality vs generated multiplicity;centrality (%);N_{ch}^{gen} (|#eta|<0.5)",
+                  kTH2F,
+                  {axisCent, axisMultMC});
+
+      histomc.add("hCentralityVsImpactParameter",
+                  "FT0C centrality vs impact parameter;centrality (%);#it{b} (fm)",
+                  kTH2F,
+                  {axisCent, axisImpactPar});
+
+      histomc.add("hImpactParameter",
+                  "Impact parameter of generated MC events;#it{b} (fm)",
+                  kTH1F,
+                  {axisImpactPar});
 
       histomc.add("histVtxZgen", "histVtxZgen", kTH1F, {axisVtxZ});
       histomc.add("histVtxZReco", "histVtxZReco", kTH1F, {axisVtxZ});
@@ -537,17 +624,36 @@ struct NucleitpcPbPb {
   PROCESS_SWITCH(NucleitpcPbPb, processData, "data analysis", false);
 
   //====================================================================================
-  // processMC: MC reco+gen, for efficiency x acceptance, signal-loss and event-loss
+  // processMC: MC reco+gen, for efficiency x acceptance, signal-loss, event-loss and
+  // event-splitting corrections.
+  //
+  // Two event classes, used consistently everywhere:
+  //   truth class    = generated collisions passing the generated |z| cut
+  //   selected class = truth class + >= 1 reco vertex passing evtsel and reco |z| cut
+  //
+  //   event loss      = numer / denom, binned in multMCNParticlesEta05 (multiplicity
+  //                     method) and in the impact parameter (impact-parameter method)
+  //   event splitting = N_gen(>=1 selected reco) / N_reco(passed evtsel), Eq. (14)
+  //   signal loss     = generated primaries of the selected class over the truth class
+  //
+  // Everything per-species sits inside a fillsparsh loop, as in processData; event
+  // loss and event splitting are species independent.
   //====================================================================================
   struct McCollInfo {
-    bool passedEvSel = false;
-    float centrality = -1.0f;
-    bool passedEvSelVtZ = false;
+    bool hasRecoCollision = false; // >= 1 reco vertex, before any selection
+    bool passedEvSel = false;      // >= 1 reco vertex passing event selection
+    bool passedEvSelVtZ = false;   // ... and passing the reco |z| cut
+    bool genVtxZok = false;        // generated |z| inside the cut
+    float centrality = -1.0f;      // FT0C of the highest-numContrib selected vertex
+    float mult = -1.0f;            // multMCNParticlesEta05
+    float impactPar = -1.0f;       // generated impact parameter (fm)
+    int bestCollisionId = -1;      // globalIndex of that vertex (split-vertex safe)
+    int biggestNContribs = -1;
   };
   std::vector<McCollInfo> mcCollInfos;
 
   void processMC(CollisionsFullMC const& collisions,
-                 aod::McCollisions const& mcCollisions,
+                 McCollisionMults const& mcCollisions,
                  soa::Join<TracksFull, aod::McTrackLabels> const& tracks,
                  aod::McParticles const& particlesMC,
                  aod::BCsWithTimestamps const&)
@@ -555,18 +661,42 @@ struct NucleitpcPbPb {
     mcCollInfos.clear();
     mcCollInfos.resize(mcCollisions.size());
 
-    // ---- Pass 1: store centrality and event-selection flags per MC collision ----
+    //--------------------------------------------------------------------------------
+    // PASS 1: generated collisions. Generated multiplicity, impact parameter and the
+    // generated |z| cut. Runs first so genVtxZok is available to every later pass,
+    // including the splitting numerator which is filled per reconstructed vertex.
+    //--------------------------------------------------------------------------------
+    for (auto const& mcCollision : mcCollisions) {
+      size_t idx = mcCollision.globalIndex();
+      if (idx >= mcCollInfos.size())
+        continue;
+
+      auto& info = mcCollInfos[idx];
+      info.mult = static_cast<float>(mcCollision.multMCNParticlesEta05());
+      info.impactPar = mcCollision.impactParameter();
+
+      histomc.fill(HIST("histVtxZgen"), mcCollision.posZ());
+
+      if (cfgZvertexRequireMC && std::abs(mcCollision.posZ()) > cfgZvertex)
+        continue;
+      info.genVtxZok = true;
+    }
+
+    //--------------------------------------------------------------------------------
+    // PASS 2: reco -> MC association. Flags are only ever raised, so several reco
+    // vertices pointing at the same MC collision collapse correctly instead of the
+    // last one overwriting the earlier ones. The reco |z| cut is applied
+    // unconditionally, as in processData.
+    //--------------------------------------------------------------------------------
     for (auto const& collision : collisions) {
       int mcCollIdx = collision.mcCollisionId();
-      if (mcCollIdx < 0 || mcCollIdx >= static_cast<int>(mcCollisions.size())) {
+      if (mcCollIdx < 0 || mcCollIdx >= static_cast<int>(mcCollInfos.size()))
         continue;
-      }
 
-      mcCollInfos[mcCollIdx].centrality = collision.centFT0C(); // stored without cuts
+      auto& info = mcCollInfos[mcCollIdx];
+      info.hasRecoCollision = true;
 
       if (!collision.sel8() && cfgsel8Require)
-        continue;
-      if (collision.centFT0C() > centcut)
         continue;
       if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
         continue;
@@ -577,199 +707,245 @@ struct NucleitpcPbPb {
       if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
 
-      mcCollInfos[mcCollIdx].passedEvSel = true;
+      info.passedEvSel = true;
 
-      if (std::abs(collision.posZ()) > cfgZvertex && cfgZvertexRequireMC)
+      if (std::abs(collision.posZ()) > cfgZvertex)
         continue;
-      mcCollInfos[mcCollIdx].passedEvSelVtZ = true;
-    }
+      info.passedEvSelVtZ = true;
 
-    // ---- Event-loss and signal-loss denominators/numerators ----
-    for (size_t i = 0; i < mcCollInfos.size(); i++) {
-      if (mcCollInfos[i].centrality < 0)
-        continue; // no matching reconstructed collision found
-
-      histomc.fill(HIST("hEventLossDenom"), mcCollInfos[i].centrality);
-      if (mcCollInfos[i].passedEvSel) {
-        histomc.fill(HIST("hEventLossNumer"), mcCollInfos[i].centrality);
+      // Splitting numerator: every selected reco vertex, inside the truth class only.
+      if (info.genVtxZok) {
+        histomc.fill(HIST("hEventSplittingNrecoPassedVsCent"), collision.centFT0C());
       }
 
-      for (auto const& mcParticle : particlesMC) {
-        if (mcParticle.mcCollisionId() != static_cast<int>(i))
-          continue;
-        if (!mcParticle.isPhysicalPrimary())
-          continue;
-
-        int particleType = findParticleTypeIndex(mcParticle.pdgCode());
-        if (!speciesEnabled(particleType))
-          continue;
-
-        if (mcParticle.pdgCode() == particlePdgCodes.at(particleType)) {
-          histomc.fill(HIST("hSignalLossDenom"), mcCollInfos[i].centrality, mcParticle.pt());
-        } else if (mcParticle.pdgCode() == -particlePdgCodes.at(particleType)) {
-          histomc.fill(HIST("haSignalLossDenom"), mcCollInfos[i].centrality, mcParticle.pt());
-        }
-
-        if (mcCollInfos[i].passedEvSel) {
-          if (mcParticle.pdgCode() == particlePdgCodes.at(particleType)) {
-            histomc.fill(HIST("hSignalLossNumer"), mcCollInfos[i].centrality, mcParticle.pt());
-          } else if (mcParticle.pdgCode() == -particlePdgCodes.at(particleType)) {
-            histomc.fill(HIST("haSignalLossNumer"), mcCollInfos[i].centrality, mcParticle.pt());
-          }
-        }
+      if (collision.numContrib() > info.biggestNContribs) {
+        info.biggestNContribs = collision.numContrib();
+        info.centrality = collision.centFT0C();
+        info.bestCollisionId = collision.globalIndex();
       }
     }
 
-    // ---- Generated particles: efficiency x acceptance denominator, and reco pass ----
+    //--------------------------------------------------------------------------------
+    // PASS 3: event level. Species independent -- no fillsparsh loop here.
+    // Event loss in both methods, splitting denominator, and the two maps used to
+    // express the generated-quantity-binned corrections as a function of centrality.
+    //--------------------------------------------------------------------------------
     for (auto const& mcCollision : mcCollisions) {
       size_t idx = mcCollision.globalIndex();
       if (idx >= mcCollInfos.size())
         continue;
 
-      float centrality = mcCollInfos[idx].centrality;
-      bool passedEvSelVtZ = mcCollInfos[idx].passedEvSelVtZ;
+      auto const& info = mcCollInfos[idx];
+      if (!info.genVtxZok)
+        continue;
 
-      histomc.fill(HIST("histVtxZgen"), mcCollision.posZ());
+      bool numerOk = cfgUseEvtSelInNumer ? info.passedEvSelVtZ : info.hasRecoCollision;
 
-      for (auto const& mcParticle : particlesMC) {
-        if (mcParticle.mcCollisionId() != mcCollision.globalIndex())
+      histomc.fill(HIST("hImpactParameter"), info.impactPar);
+
+      // Event loss: the denominator is every generated event of the truth class,
+      // including those with no reconstructed vertex at all -- that population is
+      // exactly what is being corrected for.
+      histomc.fill(HIST("hEventLossDenomVsMult"), info.mult);
+      histomc.fill(HIST("hEventLossDenomVsImpactPar"), info.impactPar);
+      if (numerOk) {
+        histomc.fill(HIST("hEventLossNumerVsMult"), info.mult);
+        histomc.fill(HIST("hEventLossNumerVsImpactPar"), info.impactPar);
+      }
+
+      if (info.passedEvSelVtZ) {
+        // Splitting denominator: generated events with >= 1 selected reco vertex.
+        histomc.fill(HIST("hEventSplittingNgenWithRecoVsCent"), info.centrality);
+        histomc.fill(HIST("hCentralityVsGenMultEta05"), info.centrality, info.mult);
+        histomc.fill(HIST("hCentralityVsImpactParameter"), info.centrality, info.impactPar);
+      }
+    }
+
+    //--------------------------------------------------------------------------------
+    // PASS 4: generated particles. Per-species, gated on fillsparsh exactly like
+    // processData. Signal loss (rapidity only, following the analysis note) and the
+    // efficiency x acceptance denominator.
+    //--------------------------------------------------------------------------------
+    for (auto const& mcParticle : particlesMC) {
+      int mcCollIdx = mcParticle.mcCollisionId();
+      if (mcCollIdx < 0 || mcCollIdx >= static_cast<int>(mcCollInfos.size()))
+        continue;
+
+      auto const& info = mcCollInfos[mcCollIdx];
+      if (!info.genVtxZok)
+        continue;
+
+      bool numerOk = cfgUseEvtSelInNumer ? info.passedEvSelVtZ : info.hasRecoCollision;
+
+      int pdgCode = mcParticle.pdgCode();
+      int particleAnti = (pdgCode > 0) ? 0 : 1;
+
+      for (size_t i = 0; i < primaryParticles.size(); i++) {
+        if (cfgTrackPIDsettings2->get(i, "fillsparsh") != 1)
+          continue;
+        if (std::abs(pdgCode) != std::abs(particlePdgCodes.at(i)))
           continue;
 
-        int pdgCode = mcParticle.pdgCode();
-        int particleType = findParticleTypeIndex(pdgCode);
-        if (!speciesEnabled(particleType))
-          continue;
-
-        if (std::abs(mcParticle.eta()) > cfgCutEta && cfgetaRequireMC)
-          continue;
         float rapidity = mcParticle.y();
         if ((rapidity < cfgCutRapiditymin || rapidity > cfgCutRapiditymax) && cfgRapidityRequireMC)
           continue;
 
-        int particleAnti = (pdgCode > 0) ? 0 : 1;
+        float pt = mcParticle.pt();
+        float fSpecies = static_cast<float>(i);
+
+        // ---- Signal loss: physical primaries only. Denominator = truth class,
+        // numerator = selected class. Same particle, same cuts, same iteration.
+        if (mcParticle.isPhysicalPrimary()) {
+          if (pdgCode > 0) {
+            histomc.fill(HIST("hSignalLossDenomVsMult"), info.mult, pt, fSpecies);
+            histomc.fill(HIST("hSignalLossDenomVsImpactPar"), info.impactPar, pt, fSpecies);
+            if (numerOk) {
+              histomc.fill(HIST("hSignalLossNumerVsMult"), info.mult, pt, fSpecies);
+              histomc.fill(HIST("hSignalLossNumerVsImpactPar"), info.impactPar, pt, fSpecies);
+            }
+          } else {
+            histomc.fill(HIST("haSignalLossDenomVsMult"), info.mult, pt, fSpecies);
+            histomc.fill(HIST("haSignalLossDenomVsImpactPar"), info.impactPar, pt, fSpecies);
+            if (numerOk) {
+              histomc.fill(HIST("haSignalLossNumerVsMult"), info.mult, pt, fSpecies);
+              histomc.fill(HIST("haSignalLossNumerVsImpactPar"), info.impactPar, pt, fSpecies);
+            }
+          }
+        }
+
+        if (!info.passedEvSelVtZ)
+          continue;
+        if (std::abs(mcParticle.eta()) > cfgCutEta && cfgetaRequireMC)
+          continue;
         int decayType = classifyDecayType(mcParticle);
         if (decayType == DecayTypeTransport)
-          continue; // transported secondaries are not part of the denominator
+          continue;
+        histomc.fill(HIST("hDenomEffAcc"), pt, info.centrality, fSpecies, particleAnti, decayType);
+      } // species loop
+    } // generated particle loop
 
-        if (passedEvSelVtZ) {
-          histomc.fill(HIST("hDenomEffAcc"), mcParticle.pt(), centrality, particleAnti, decayType);
-        }
-      }
-
-      if (!passedEvSelVtZ)
+    //--------------------------------------------------------------------------------
+    // PASS 5: reconstructed tracks. Only the highest-numContrib selected vertex of
+    // each generated collision is used, so split vertices are not counted twice.
+    //--------------------------------------------------------------------------------
+    for (auto const& collision : collisions) {
+      int mcCollIdx = collision.mcCollisionId();
+      if (mcCollIdx < 0 || mcCollIdx >= static_cast<int>(mcCollInfos.size()))
         continue;
 
-      // ---- Find the reconstructed collision matching this MC collision ----
-      for (auto const& collision : collisions) {
-        if (collision.mcCollisionId() != static_cast<int>(idx))
+      auto const& info = mcCollInfos[mcCollIdx];
+      if (!info.genVtxZok)
+        continue;
+      if (collision.globalIndex() != info.bestCollisionId)
+        continue;
+
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      histomc.fill(HIST("histVtxZReco"), collision.posZ());
+
+      auto tracksInColl = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
+      for (auto const& track : tracksInColl) {
+        if (!track.has_mcParticle())
+          continue; // skip un-matched reco tracks
+
+        auto const& matchedMCParticle = track.mcParticle_as<aod::McParticles>();
+        if (matchedMCParticle.mcCollisionId() != mcCollIdx)
           continue;
 
-        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-        initCCDB(bc);
-        histomc.fill(HIST("histVtxZReco"), collision.posZ());
+        int pdg = matchedMCParticle.pdgCode();
+        int decayType = classifyDecayType(matchedMCParticle);
 
-        auto tracksInColl = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
-        for (auto const& track : tracksInColl) {
-          if (!track.has_mcParticle())
-            continue; // skip un-matched reco tracks
+        if (!passesBasicRecoTrackCuts(track))
+          continue;
 
-          auto const& matchedMCParticle = track.mcParticle_as<aod::McParticles>();
-          if (matchedMCParticle.mcCollisionId() != mcCollision.globalIndex())
+        for (size_t i = 0; i < primaryParticles.size(); i++) {
+          if (cfgTrackPIDsettings2->get(i, "fillsparsh") != 1)
+            continue;
+          if (std::abs(pdg) != std::abs(particlePdgCodes.at(i)))
             continue;
 
-          int pdg = matchedMCParticle.pdgCode();
-          int decayType = classifyDecayType(matchedMCParticle);
+          float ptReco = computeSpeciesPt(track, i);
+          ptReco = applyHe34PtCorrection(track, pdg, i, ptReco);
 
-          if (!passesBasicRecoTrackCuts(track))
+          int particleAnti = (pdg > 0) ? 0 : 1;
+          float fSpecies = static_cast<float>(i);
+
+          float rapidity = getRapidity(track, i);
+          if ((rapidity < cfgCutRapiditymin || rapidity > cfgCutRapiditymax) && cfgRapidityRequire)
             continue;
 
-          for (size_t i = 0; i < primaryParticles.size(); i++) {
-            if (std::abs(pdg) != std::abs(particlePdgCodes.at(i)))
-              continue;
-            if (cfgTrackPIDsettings2->get(i, "fillsparsh") != 1)
-              continue;
+          if (!passesTrackQualityCuts(track, i))
+            continue;
+          if (!passesDCACuts(track, i, ptReco))
+            continue;
 
-            float ptReco = computeSpeciesPt(track, i);
-            ptReco = applyHe34PtCorrection(track, pdg, i, ptReco);
+          float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
+          bool passesNsigma = !((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire);
 
-            int particleAnti = (pdg > 0) ? 0 : 1;
+          // Single fill per track: axis pTReco always gets the reco pT, with all
+          // cuts applied except TPC nsigma and hasTOF -- this is the denominator
+          // population for the TOF matching efficiency. Axis pTOF gets the same pT
+          // value only for tracks that both pass the TPC nsigma cut and have TOF --
+          // the numerator population -- otherwise it gets a sentinel (-1, landing
+          // in the pTOF axis underflow bin since ptAxis starts at 0) so it's
+          // excluded from any real-pT projection of that axis. Filling once (not
+          // twice) avoids double-counting TOF-matched tracks in the pTReco axis
+          // relative to non-matched tracks.
+          bool isTOFmatched = passesNsigma && track.hasTOF();
+          float ptTOF = isTOFmatched ? ptReco : -1.0f;
+          histomc.fill(HIST("hSpectramc"), particleAnti, fSpecies, collision.centFT0C(), ptReco, ptTOF);
 
-            float rapidity = getRapidity(track, i);
-            if ((rapidity < cfgCutRapiditymin || rapidity > cfgCutRapiditymax) && cfgRapidityRequire)
-              continue;
+          if (!passesNsigma)
+            continue;
 
-            if (!passesTrackQualityCuts(track, i))
-              continue;
-            if (!passesDCACuts(track, i, ptReco))
-              continue;
+          // Efficiency x Acceptance numerator. Same transport veto as the
+          // denominator, otherwise the ratio mixes two different populations.
+          if (decayType == DecayTypeTransport)
+            continue;
+          histomc.fill(HIST("hNumerEffAcc"), ptReco, collision.centFT0C(), fSpecies, particleAnti, decayType);
 
-            float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
-            bool passesNsigma = !((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire);
+          if (decayType == DecayTypePrimary) {
+            histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
+            histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
+            histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
+          }
 
-            // Single fill per track: axis 2 (pTReco) always gets the reco pT,
-            // with all cuts applied except TPC nsigma and hasTOF -- this is
-            // the denominator population for the TOF matching efficiency.
-            // Axis 3 (pTOF) gets the same pT value only for tracks that both
-            // pass the TPC nsigma cut and have TOF -- the numerator
-            // population -- otherwise it gets a sentinel (-1, landing in the
-            // pTOF axis underflow bin since ptAxis starts at 0) so it's
-            // excluded from any real-pT projection of that axis. Filling
-            // once (not twice) avoids double-counting TOF-matched tracks in
-            // the pTReco axis relative to non-matched tracks.
-            bool isTOFmatched = passesNsigma && track.hasTOF();
-            float ptTOF = isTOFmatched ? ptReco : -1.0f;
-            histomc.fill(HIST("hSpectramc"), particleAnti, collision.centFT0C(), ptReco, ptTOF);
+          float ptGen = matchedMCParticle.pt();
+          float deltaPt = ptReco - ptGen;
+          if (pdg == -particlePdgCodes.at(i) && decayType == DecayTypePrimary) { // anti-particle
+            histomc.fill(HIST("histDeltaPtVsPtGenanti"), ptReco, deltaPt);
+            histomc.fill(HIST("histPIDtrackanti"), ptReco, track.pidForTracking());
+          }
+          if (pdg == particlePdgCodes.at(i) && decayType == DecayTypePrimary) { // particle
+            histomc.fill(HIST("histDeltaPtVsPtGen"), ptReco, deltaPt);
+            histomc.fill(HIST("histPIDtrack"), ptReco, track.pidForTracking());
+          }
 
-            if (!passesNsigma)
-              continue;
+          // Mass^2/z^2 for MC, split by particle/anti-particle.
+          if (track.hasTOF()) {
+            float beta = o2::pid::tof::Beta::GetBeta(track);
+            const float eps = 1e-6f;
+            if (beta >= eps && beta <= 1.0f - eps) {
+              float charge = (i == he3 || i == he4) ? 2.f : 1.f;
+              float p = getRigidity(track);
+              float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
+              float massSquareOverChargeSquare = (massTOF * massTOF) / (charge * charge);
 
-            // Efficiency x Acceptance numerator (only after the TPC nsigma cut).
-            histomc.fill(HIST("hNumerEffAcc"), ptReco, collision.centFT0C(), particleAnti, decayType);
+              bool skipHe4 = (std::abs(pdg) == particlePdgCodes.at(5)) && cfghe3massrejreq &&
+                             (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection);
 
-            if (decayType == DecayTypePrimary) {
-              histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
-              histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
-              histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
-            }
-
-            float ptGen = matchedMCParticle.pt();
-            float deltaPt = ptReco - ptGen;
-            if (pdg == -particlePdgCodes.at(i) && decayType == DecayTypePrimary) { // anti-particle
-              histomc.fill(HIST("histDeltaPtVsPtGenanti"), ptReco, deltaPt);
-              histomc.fill(HIST("histPIDtrackanti"), ptReco, track.pidForTracking());
-            }
-            if (pdg == particlePdgCodes.at(i) && decayType == DecayTypePrimary) { // particle
-              histomc.fill(HIST("histDeltaPtVsPtGen"), ptReco, deltaPt);
-              histomc.fill(HIST("histPIDtrack"), ptReco, track.pidForTracking());
-            }
-
-            // Mass^2/z^2 for MC, split by particle/anti-particle.
-            if (track.hasTOF()) {
-              float beta = o2::pid::tof::Beta::GetBeta(track);
-              const float eps = 1e-6f;
-              if (beta >= eps && beta <= 1.0f - eps) {
-                float charge = (i == he3 || i == he4) ? 2.f : 1.f;
-                float p = getRigidity(track);
-                float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
-                float massSquareOverChargeSquare = (massTOF * massTOF) / (charge * charge);
-
-                bool skipHe4 = (std::abs(pdg) == particlePdgCodes.at(5)) && cfghe3massrejreq &&
-                               (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection);
-
-                if (!skipHe4 && decayType == DecayTypePrimary) {
-                  if (pdg > 0) {
-                    histomc.fill(HIST("hMassVsPtMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
-                  } else {
-                    histomc.fill(HIST("hMassVsPtAntiMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
-                  }
+              if (!skipHe4 && decayType == DecayTypePrimary) {
+                if (pdg > 0) {
+                  histomc.fill(HIST("hMassVsPtMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
+                } else {
+                  histomc.fill(HIST("hMassVsPtAntiMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
                 }
               }
             }
-          } // species loop
-        } // track loop
-        break; // matching reconstructed collision found and processed
-      } // collision loop
-    } // mcCollision loop
+          }
+        } // species loop
+      } // track loop
+    } // collision loop
   }
   PROCESS_SWITCH(NucleitpcPbPb, processMC, "MC reco+gen analysis with efficiency corrections", false);
 

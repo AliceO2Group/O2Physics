@@ -56,7 +56,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 namespace
 {
-constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr std::array<double, 6> betheBlochDefault[1]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleName{"He3"};
 o2::base::MatLayerCylSet* matLUT = nullptr;
@@ -101,6 +101,9 @@ struct he3LambdaAnalysis {
   Produces<o2::aod::LFEvents> lfHe3V0Collision;
   Produces<o2::aod::LFHe3_001> lfHe3;
   Produces<o2::aod::LFLambda_001> lfLambda;
+  Produces<o2::aod::LFK0s> lfK0s;
+
+  Configurable<bool> cfgStoreK0s{"cfgStoreK0s", false, "Select and store K0s candidates, including He3-K0s events without a selected Lambda"};
 
   // Configurables for event selection
   struct : ConfigurableGroup {
@@ -122,7 +125,7 @@ struct he3LambdaAnalysis {
     Configurable<float> dcazMax{"dcazMax", 0.5f, "Maximum He3 DCA z"};
     Configurable<int> tpcClusMin{"tpcClusMin", 100, "Minimum He3 TPC clusters"};
     Configurable<int> itsClusMin{"itsClusMin", 5, "Minimum He3 ITS clusters"};
-    Configurable<LabeledArray<double>> betheBlochParams{"betheBlochParams", {betheBlochDefault[0], 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
+    Configurable<LabeledArray<double>> betheBlochParams{"betheBlochParams", {betheBlochDefault[0].data(), 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   } cfgHe3;
 
   // Lambda selection criteria
@@ -131,6 +134,8 @@ struct he3LambdaAnalysis {
     Configurable<float> ptMin{"ptMin", 0.5f, "Minimum Lambda pT"};
     Configurable<float> ptMax{"ptMax", 10.0f, "Maximum Lambda pT"};
     Configurable<float> massWindow{"massWindow", 0.015f, "Lambda mass window"};
+    Configurable<float> ctMin{"ctMin", 0.f, "Minimum Lambda proper decay length (cm)"};
+    Configurable<float> ctMax{"ctMax", 30.f, "Maximum Lambda proper decay length (cm)"};
     Configurable<float> cosPAMin{"cosPAMin", 0.99f, "Minimum Lambda cosPA"};
     Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f, "Maximum Lambda DCA V0 daughters"};
     Configurable<float> v0RadiusMin{"v0RadiusMin", 0.5f, "Minimum Lambda V0 radius"};
@@ -139,6 +144,22 @@ struct he3LambdaAnalysis {
     Configurable<float> protonNSigmaTPCMax{"protonNSigmaTPCMax", 4.0f, "Maximum proton TPC nSigma"};
     Configurable<float> pionNSigmaTPCMax{"pionNSigmaTPCMax", 4.0f, "Maximum pion TPC nSigma"};
   } cfgLambda;
+
+  // K0s selection criteria
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgK0s";
+    Configurable<float> ptMin{"ptMin", 0.5f, "Minimum K0s pT"};
+    Configurable<float> ptMax{"ptMax", 10.f, "Maximum K0s pT"};
+    Configurable<float> massWindow{"massWindow", 0.015f, "K0s mass window"};
+    Configurable<float> ctMin{"ctMin", 0.f, "Minimum K0s proper decay length (cm)"};
+    Configurable<float> ctMax{"ctMax", 20.f, "Maximum K0s proper decay length (cm)"};
+    Configurable<float> cosPAMin{"cosPAMin", 0.99f, "Minimum K0s cosPA"};
+    Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f, "Maximum K0s DCA V0 daughters"};
+    Configurable<float> v0RadiusMin{"v0RadiusMin", 0.5f, "Minimum K0s V0 radius"};
+    Configurable<float> v0RadiusMax{"v0RadiusMax", 35.f, "Maximum K0s V0 radius"};
+    Configurable<int> tpcNClsMin{"tpcNClsMin", 70, "Minimum TPC clusters for K0s daughters"};
+    Configurable<float> pionNSigmaTPCMax{"pionNSigmaTPCMax", 4.f, "Maximum pion TPC nSigma"};
+  } cfgK0s;
 
   // Pair selection criteria
   struct : ConfigurableGroup {
@@ -156,7 +177,7 @@ struct he3LambdaAnalysis {
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   } ccdbOptions;
 
-  std::array<double, 6> mBBparamsHe;
+  std::array<double, 6> mBBparamsHe = betheBlochDefault[0];
   float mBz = 0.0f; // Magnetic field in T
   HistogramRegistry mRegistry{"He3LambdaAnalysis"};
   int mRunNumber = 0; // Current run number
@@ -186,7 +207,7 @@ struct he3LambdaAnalysis {
     zorroSummary.setObject(zorro.getZorroSummary());
 
     mRegistry.add("hEventSelection", "Event Selection", {HistType::kTH1L, {{6, -.5, 5.5}}});
-    std::vector<std::string> labels{"Total Events", "Sel8 Events", "Z-Vertex OK", "Additional Event Selections", "He3 Candidates Found", "He3 and Lambda Candidates Found"};
+    std::vector<std::string> labels{"Total Events", "Sel8 Events", "Z-Vertex OK", "Additional Event Selections", "He3 Candidates Found", "He3 and V0 Candidates Found"};
     for (size_t i = 1; i <= labels.size(); ++i) {
       mRegistry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(i, labels[i - 1].c_str());
     }
@@ -202,6 +223,8 @@ struct he3LambdaAnalysis {
 
     hArmenterosPodolanskiAll = mRegistry.add<TH2>("hArmenterosPodolanskiAll", "Armenteros-Podolanski All", {HistType::kTH2D, {{100, -1., 1.}, {100, 0., 0.5}}});
     hArmenterosPodolanskiSelected = mRegistry.add<TH2>("hArmenterosPodolanskiSelected", "Armenteros-Podolanski Selected", {HistType::kTH2D, {{100, -1., 1.}, {100, 0., 0.5}}});
+
+    mRegistry.add("hMassK0s", "Selected K0s;pT (GeV/c);mass (GeV/c^{2})", {HistType::kTH2F, {{100, 0., 10.}, {100, MassK0Short - 0.025, MassK0Short + 0.025}}});
 
     constexpr double ConstituentsMass = o2::constants::physics::MassProton + o2::constants::physics::MassNeutron * 2 + o2::constants::physics::MassSigmaPlus;
     hInvariantMassUS = mRegistry.add<TH2>("hInvariantMassUS", "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
@@ -298,8 +321,9 @@ struct he3LambdaAnalysis {
     }
     mRegistry.get<TH1>(HIST("hEventSelection"))->Fill(4); // He3 candidates found
 
-    // Process Lambda candidates
+    // Fit each V0 once and evaluate the K0s and Lambda hypotheses independently.
     std::vector<lambdaCandidate> lambdaCandidates;
+    std::vector<k0sCandidate> k0sCandidates;
     for (auto const& v0 : v0s) {
       if (v0.v0Type() != 1) {
         continue;
@@ -307,7 +331,9 @@ struct he3LambdaAnalysis {
       const auto posTrack = v0.posTrack_as<TracksFull>();
       const auto negTrack = v0.negTrack_as<TracksFull>();
 
-      if (posTrack.tpcNClsFound() < cfgLambda.tpcNClsMin || negTrack.tpcNClsFound() < cfgLambda.tpcNClsMin) {
+      const bool lambdaTrackQuality = posTrack.tpcNClsFound() >= cfgLambda.tpcNClsMin && negTrack.tpcNClsFound() >= cfgLambda.tpcNClsMin;
+      const bool k0sTrackQuality = cfgStoreK0s && posTrack.tpcNClsFound() >= cfgK0s.tpcNClsMin && negTrack.tpcNClsFound() >= cfgK0s.tpcNClsMin;
+      if (!lambdaTrackQuality && !k0sTrackQuality) {
         continue; // Skip V0s with insufficient TPC clusters
       }
       auto trackParPos = getTrackParCov(posTrack);
@@ -332,6 +358,49 @@ struct he3LambdaAnalysis {
       float qt = qtAP(momV0, momPos);
       hArmenterosPodolanskiAll->Fill(alpha, qt);
 
+      const auto sv = fitter.getPCACandidate(0);
+      const float decayLength = std::hypot(sv[0] - collVtx.x(), sv[1] - collVtx.y(), sv[2] - collVtx.z());
+      const float momentum = std::hypot(momV0[0], momV0[1], momV0[2]);
+      if (momentum <= 0.f || decayLength <= 0.f) {
+        continue;
+      }
+      const float cosPA = ((sv[0] - collVtx.x()) * momV0[0] + (sv[1] - collVtx.y()) * momV0[1] + (sv[2] - collVtx.z()) * momV0[2]) / (decayLength * momentum);
+      const float dcaDaughters = std::sqrt(fitter.getChi2AtPCACandidate(0));
+      const float radius = std::hypot(sv[0], sv[1]);
+      std::array<float, 2> dcaInfoPos{}, dcaInfoNeg{};
+      if (!o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParPos, mBz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &dcaInfoPos) ||
+          !o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParNeg, mBz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &dcaInfoNeg)) {
+        continue;
+      }
+
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>> posPionMom4D(momPos[0], momPos[1], momPos[2], MassPionCharged);
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>> negPionMom4D(momNeg[0], momNeg[1], momNeg[2], MassPionCharged);
+      const auto k0sMom4D = posPionMom4D + negPionMom4D;
+      const float ctK0s = decayLength * MassK0Short / momentum;
+      if (k0sTrackQuality && std::abs(posTrack.tpcNSigmaPi()) <= cfgK0s.pionNSigmaTPCMax && std::abs(negTrack.tpcNSigmaPi()) <= cfgK0s.pionNSigmaTPCMax &&
+          std::abs(k0sMom4D.M() - MassK0Short) <= cfgK0s.massWindow && k0sMom4D.Pt() >= cfgK0s.ptMin && k0sMom4D.Pt() <= cfgK0s.ptMax &&
+          ctK0s >= cfgK0s.ctMin && ctK0s <= cfgK0s.ctMax && cosPA >= cfgK0s.cosPAMin && dcaDaughters <= cfgK0s.dcaV0DaughtersMax &&
+          radius >= cfgK0s.v0RadiusMin && radius <= cfgK0s.v0RadiusMax) {
+        k0sCandidate candidate;
+        candidate.momentum.SetCoordinates(k0sMom4D.Pt(), k0sMom4D.Eta(), k0sMom4D.Phi(), MassK0Short);
+        candidate.mass = k0sMom4D.M();
+        candidate.ct = ctK0s;
+        candidate.cosPA = cosPA;
+        candidate.dcaV0Daughters = dcaDaughters;
+        candidate.dcaPosToPV = std::hypot(dcaInfoPos[0], dcaInfoPos[1]);
+        candidate.dcaNegToPV = std::hypot(dcaInfoNeg[0], dcaInfoNeg[1]);
+        candidate.v0Radius = radius;
+        candidate.posPionNSigmaTPC = posTrack.tpcNSigmaPi();
+        candidate.negPionNSigmaTPC = negTrack.tpcNSigmaPi();
+        k0sCandidates.push_back(candidate);
+        mRegistry.fill(HIST("hMassK0s"), k0sMom4D.Pt(), candidate.mass);
+      }
+
+      const float ctLambda = decayLength * MassLambda0 / momentum;
+      if (!lambdaTrackQuality || ctLambda < cfgLambda.ctMin || ctLambda > cfgLambda.ctMax || cosPA < cfgLambda.cosPAMin ||
+          dcaDaughters > cfgLambda.dcaV0DaughtersMax || radius < cfgLambda.v0RadiusMin || radius > cfgLambda.v0RadiusMax) {
+        continue;
+      }
       bool matter = alpha > 0;
       const auto& protonTrack = matter ? posTrack : negTrack;
       const auto& pionTrack = matter ? negTrack : posTrack;
@@ -347,37 +416,30 @@ struct he3LambdaAnalysis {
       auto lambdaMom4D = protonMom4D + pionMom4D;
       float massLambda = lambdaMom4D.M();
 
-      if (std::abs(massLambda - o2::constants::physics::MassLambda0) > cfgLambda.massWindow) {
+      if (std::abs(massLambda - o2::constants::physics::MassLambda0) > cfgLambda.massWindow || lambdaMom4D.Pt() < cfgLambda.ptMin || lambdaMom4D.Pt() > cfgLambda.ptMax) {
         continue; // Skip V0s outside mass window
       }
       hArmenterosPodolanskiSelected->Fill(alpha, qt);
 
-      std::array<float, 2> dcaInfoProton, dcaInfoPion;
-      o2::base::Propagator::Instance()->propagateToDCA(collVtx, matter ? trackParPos : trackParNeg, mBz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &dcaInfoProton);
-      o2::base::Propagator::Instance()->propagateToDCA(collVtx, matter ? trackParNeg : trackParPos, mBz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &dcaInfoPion);
-
-      const auto sv = fitter.getPCACandidate(0);
-
+      const auto& dcaInfoProton = matter ? dcaInfoPos : dcaInfoNeg;
+      const auto& dcaInfoPion = matter ? dcaInfoNeg : dcaInfoPos;
       lambdaCandidate candidate;
-      candidate.momentum.SetCoordinates(lambdaMom4D.Pt(), lambdaMom4D.Eta(), lambdaMom4D.Phi(), o2::constants::physics::MassLambda0);
+      candidate.momentum.SetCoordinates(lambdaMom4D.Pt(), lambdaMom4D.Eta(), lambdaMom4D.Phi(), MassLambda0);
       candidate.mass = massLambda;
-      candidate.cosPA = (sv[0] - collVtx.x()) * lambdaMom4D.Px() +
-                        (sv[1] - collVtx.y()) * lambdaMom4D.Py() +
-                        (sv[2] - collVtx.z()) * lambdaMom4D.Pz();
-      candidate.cosPA /= std::hypot(sv[0] - collVtx.x(), sv[1] - collVtx.y(), sv[2] - collVtx.z()) * lambdaMom4D.P();
-      candidate.dcaV0Daughters = std::sqrt(fitter.getChi2AtPCACandidate(0));
+      candidate.cosPA = cosPA;
+      candidate.dcaV0Daughters = dcaDaughters;
       candidate.dcaProtonToPV = std::hypot(dcaInfoProton[0], dcaInfoProton[1]);
       candidate.dcaPionToPV = std::hypot(dcaInfoPion[0], dcaInfoPion[1]);
-      candidate.v0Radius = std::hypot(sv[0], sv[1]);
+      candidate.v0Radius = radius;
       candidate.protonNSigmaTPC = protonTrack.tpcNSigmaPr();
       candidate.pionNSigmaTPC = pionTrack.tpcNSigmaPi();
       candidate.sign = matter ? 1 : -1; // Positive sign for Lambda, negative for anti-Lambda
       lambdaCandidates.push_back(candidate);
     }
-    if (lambdaCandidates.empty()) {
-      return; // No valid Lambda candidates found
+    if (lambdaCandidates.empty() && (!cfgStoreK0s || k0sCandidates.empty())) {
+      return; // Require a Lambda, or a K0s when cfgStoreK0s is enabled
     }
-    mRegistry.get<TH1>(HIST("hEventSelection"))->Fill(5); // He3 and Lambda candidates found
+    mRegistry.get<TH1>(HIST("hEventSelection"))->Fill(5); // He3 and V0 candidates found
     mRegistry.get<TH1>(HIST("hCentralitySelected"))->Fill(collision.centFT0C());
 
     // Fill output tables
@@ -385,6 +447,10 @@ struct he3LambdaAnalysis {
     for (const auto& he3 : he3Candidates) {
       lfHe3(lfHe3V0Collision.lastIndex(), he3.momentum.Pt(), he3.momentum.Eta(), he3.momentum.Phi(),
             he3.dcaXY, he3.dcaZ, he3.tpcNClsFound, he3.tpcNClsPID, he3.itsClusterSizes, he3.nSigmaTPC, he3.sign);
+    }
+    for (const auto& k0s : k0sCandidates) {
+      lfK0s(lfHe3V0Collision.lastIndex(), k0s.momentum.Pt(), k0s.momentum.Eta(), k0s.momentum.Phi(),
+            k0s.mass, k0s.ct, k0s.cosPA, k0s.dcaV0Daughters, k0s.dcaPosToPV, k0s.dcaNegToPV, k0s.v0Radius, k0s.posPionNSigmaTPC, k0s.negPionNSigmaTPC);
     }
     for (const auto& lambda : lambdaCandidates) {
       lfLambda(lfHe3V0Collision.lastIndex(), lambda.momentum.Pt(), lambda.momentum.Eta(), lambda.momentum.Phi(),

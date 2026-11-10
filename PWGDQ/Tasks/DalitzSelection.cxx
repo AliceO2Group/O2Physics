@@ -129,6 +129,7 @@ struct DalitzSelection {
     Configurable<bool> fUseRemoteField{"cfgUseRemoteField", true, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
     Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<int> fConfigBitsToPropagate{"cfgBitsToPropagate", 0, "bits to propagate for further analysis (e.g. MC true analysis): 0 = only probe bits (checking selected signals), 1 = tag and probe bits (checking pairs), 2 = tag and probe bits selected from like-sign (checking LS pairs)"};
   } fConfigOptions;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB{};
@@ -142,6 +143,7 @@ struct DalitzSelection {
   std::map<int, uint8_t> fTrackmapProbe;  // whether it is selected with probe cut
   std::map<int, uint8_t> fDalitzmap;      // whether it is selected as dalitz decay daughter with symmetric or tag cut
   std::map<int, uint8_t> fDalitzmapProbe; // whether it is selected as dalitz decay daughter with probe cut
+  std::map<int, uint8_t> fDalitzmapLS;    // whether it is selected as decay daughter of a LS pair
 
   // maps to remove ambiguities
   std::map<int, uint8_t> fDalitzmapAmbiguity;
@@ -375,8 +377,8 @@ struct DalitzSelection {
   {
     fSkipEvent = true;
     for (const auto& track1 : tracksBarrel) {
-      auto filterMap = uint8_t(0);
-      auto filterMapProbe = uint8_t(0);
+      auto filterMap = static_cast<uint8_t>(0);
+      auto filterMapProbe = static_cast<uint8_t>(0);
       int fullTrackIdx = 0;
       if constexpr (isReassoc) {
         auto const& fullTrack = track1.template track_as<TFullTracks>();
@@ -415,7 +417,7 @@ struct DalitzSelection {
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
         if ((*cut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
-          filterMap |= (uint8_t(1) << i);
+          filterMap |= (static_cast<uint8_t>(1) << i);
           fSkipEvent = false;
         }
       }
@@ -423,7 +425,7 @@ struct DalitzSelection {
         i = 0;
         for (auto cut = fTrackCutsProbe.begin(); cut != fTrackCutsProbe.end(); ++cut, ++i) {
           if ((*cut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
-            filterMapProbe |= (uint8_t(1) << i);
+            filterMapProbe |= (static_cast<uint8_t>(1) << i);
           }
         }
       }
@@ -530,7 +532,7 @@ struct DalitzSelection {
         int icut = 0;
         auto trackCut = fTrackCuts.begin();
         for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
-          if (!(twoTracksFilterMap & (uint8_t(1) << icut))) {
+          if (!(twoTracksFilterMap & (static_cast<uint8_t>(1) << icut))) {
             continue;
           }
           if ((*pairCut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
@@ -552,24 +554,24 @@ struct DalitzSelection {
             if (!isLikeSign) {
               if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
                 // if we want to remove double-counting, we fill separately the map for this event and for previous ones, in order to check if it was previously selected
-                fDalitzmapAmbiguity[trackIdx1] |= (uint8_t(1) << icut);
+                fDalitzmapAmbiguity[trackIdx1] |= (static_cast<uint8_t>(1) << icut);
               } else {
-                fDalitzmap[trackIdx1] |= (uint8_t(1) << icut);
+                fDalitzmap[trackIdx1] |= (static_cast<uint8_t>(1) << icut);
               }
               if (fIsTagAndProbe) {
                 if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
-                  fDalitzmapProbeAmbiguity[trackIdx2] |= (uint8_t(1) << icut);
+                  fDalitzmapProbeAmbiguity[trackIdx2] |= (static_cast<uint8_t>(1) << icut);
                 } else {
-                  fDalitzmapProbe[trackIdx2] |= (uint8_t(1) << icut);
+                  fDalitzmapProbe[trackIdx2] |= (static_cast<uint8_t>(1) << icut);
                 }
                 if (fConfigOptions.fQA && !isPairAlreadySelected) {
                   fHistMan->FillHistClass(Form("Pair_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
                 }
               } else {
                 if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
-                  fDalitzmapAmbiguity[trackIdx2] |= (uint8_t(1) << icut);
+                  fDalitzmapAmbiguity[trackIdx2] |= (static_cast<uint8_t>(1) << icut);
                 } else {
-                  fDalitzmap[trackIdx2] |= (uint8_t(1) << icut);
+                  fDalitzmap[trackIdx2] |= (static_cast<uint8_t>(1) << icut);
                 }
                 if (fConfigOptions.fQA && !isPairAlreadySelected) {
                   fHistMan->FillHistClass(Form("Pair_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
@@ -578,6 +580,10 @@ struct DalitzSelection {
             } else {
               if (fConfigOptions.fQA && !isPairAlreadySelected) {
                 fHistMan->FillHistClass(fIsTagAndProbe ? Form("PairLS_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("PairLS_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
+                if (fConfigOptions.fConfigBitsToPropagate == 2) {
+                  fDalitzmapLS[trackIdx1] |= (static_cast<uint8_t>(1) << icut);
+                  fDalitzmapLS[trackIdx2] |= (static_cast<uint8_t>(1) << icut);
+                }
               }
             } // end if like-sign
           } // end if isSelected
@@ -588,8 +594,8 @@ struct DalitzSelection {
     // Fill Hists
     if (fConfigOptions.fQA && !fSkipEvent) {
       for (const auto& track : tracks1) {
-        auto filterMap = uint8_t(0);
-        auto filterMapProbe = uint8_t(0);
+        auto filterMap = static_cast<uint8_t>(0);
+        auto filterMapProbe = static_cast<uint8_t>(0);
         if constexpr (isReassoc) {
           auto const& fullTrack = track.template track_as<TFullTracks>();
           filterMap = fDalitzmap[fullTrack.globalIndex()];           // cppcheck-suppress redundantInitialization
@@ -651,12 +657,12 @@ struct DalitzSelection {
         int icut = 0;
         auto trackCut = fTrackCuts.begin();
         for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
-          if (filterMap & (uint8_t(1) << icut)) {
-            static_cast<TH1I*>(fStatsList->At(0))->Fill(fIsTagAndProbe ? 2 * icut + 1 : icut + 1);
+          if (filterMap & (static_cast<uint8_t>(1) << icut)) {
+            dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(fIsTagAndProbe ? 2 * icut + 1 : icut + 1);
             fHistMan->FillHistClass(fIsTagAndProbe ? Form("TrackBarrelTag_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("TrackBarrel_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
           }
-          if (filterMapProbe & (uint8_t(1) << icut)) {
-            static_cast<TH1I*>(fStatsList->At(0))->Fill(2 * icut + 2);
+          if (filterMapProbe & (static_cast<uint8_t>(1) << icut)) {
+            dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(2 * icut + 2);
             fHistMan->FillHistClass(Form("TrackBarrelProbe_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
           }
         }
@@ -673,7 +679,7 @@ struct DalitzSelection {
     uint32_t bitMask = (static_cast<uint32_t>(1) << 8);
     fMixingEvent->ClearFilteringMask(bitMask);
 
-    for (auto& poolEvent : pool.events) {
+    for (auto& poolEvent : pool.events) { // o2-linter: disable=const-ref-in-for-loop (false positive, it cannot be made const since it is modified within the loop)
       if ((poolEvent.filteringMask & static_cast<uint32_t>(255)) == 0) {
         // all other bits have been erased, so we can also mark bit 8 for deletion
         poolEvent.filteringMask |= bitMask;
@@ -730,6 +736,8 @@ struct DalitzSelection {
               VarManager::fgValues[VarManager::kPt2] = t2.pt;
               VarManager::fgValues[VarManager::kEta2] = t2.eta;
               VarManager::fgValues[VarManager::kPhi2] = t2.phi;
+              VarManager::fgValues[VarManager::kDeltaEtaPair2] = t1.eta - t2.eta;
+              VarManager::fgValues[VarManager::kDeltaPhiPair] = t1.phi - t2.phi;
             }
             bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
             for (uint32_t icut = 0; icut < fPairCuts.size(); icut++) {
@@ -801,6 +809,7 @@ struct DalitzSelection {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
     fDalitzmapProbe.clear();
+    fDalitzmapLS.clear();
 
     bool initDFDone = false; // some quantities might need to be updated for each dataframe
 
@@ -812,7 +821,7 @@ struct DalitzSelection {
       bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
-        static_cast<TH1I*>(fStatsList->At(0))->Fill(0);
+        dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(0);
 
         auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
@@ -847,8 +856,20 @@ struct DalitzSelection {
     }
 
     if (fIsOutputRequested) {
-      for (const auto& track : tracks) { // Fill dalitz bits
-        dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+      if (fConfigOptions.fConfigBitsToPropagate == 0) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 1) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapProbe[track.globalIndex()] | fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 2) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapLS[track.globalIndex()]);
+        }
       }
     }
   }
@@ -859,6 +880,7 @@ struct DalitzSelection {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
     fDalitzmapProbe.clear();
+    fDalitzmapLS.clear();
     fDalitzmapAmbiguity.clear();
     fDalitzmapProbeAmbiguity.clear();
     fAmbiguousPairs.clear();
@@ -874,7 +896,7 @@ struct DalitzSelection {
 
       if (isEventSelected) {
 
-        static_cast<TH1I*>(fStatsList->At(0))->Fill(0);
+        dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(0);
 
         auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
@@ -909,8 +931,20 @@ struct DalitzSelection {
     }
 
     if (fIsOutputRequested) {
-      for (const auto& track : tracks) { // Fill dalitz bits
-        dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+      if (fConfigOptions.fConfigBitsToPropagate == 0) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 1) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapProbe[track.globalIndex()] | fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 2) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapLS[track.globalIndex()]);
+        }
       }
     }
   }
@@ -921,6 +955,7 @@ struct DalitzSelection {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
     fDalitzmapProbe.clear();
+    fDalitzmapLS.clear();
     fDalitzmapAmbiguity.clear();
     fDalitzmapProbeAmbiguity.clear();
     fAmbiguousPairs.clear();
@@ -936,7 +971,7 @@ struct DalitzSelection {
 
       if (isEventSelected) {
 
-        static_cast<TH1I*>(fStatsList->At(0))->Fill(0);
+        dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(0);
 
         auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
@@ -971,8 +1006,20 @@ struct DalitzSelection {
     }
 
     if (fIsOutputRequested) {
-      for (const auto& track : tracks) { // Fill dalitz bits
-        dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+      if (fConfigOptions.fConfigBitsToPropagate == 0) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 1) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapProbe[track.globalIndex()] | fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 2) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapLS[track.globalIndex()]);
+        }
       }
     }
   }

@@ -27,6 +27,10 @@
 
 namespace o2::analysis::femto::pairprocesshelpers
 {
+// NOTE: all processSameEvent helpers return true if at least one pair in the event passed
+//       the pair cleaner, the close pair rejection and the pair cuts (e.g. kstarMax).
+//       This allows to use them as a pair trigger.
+
 enum PairOrder : uint8_t {
   kOrder12,
   kOrder21
@@ -41,7 +45,7 @@ template <modes::Mode mode,
           typename T5,
           typename T6,
           typename T7>
-void processSameEvent(T1 const& SliceParticle,
+bool processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& Collision,
                       T4& ParticleHistManager,
@@ -51,6 +55,7 @@ void processSameEvent(T1 const& SliceParticle,
                       PairOrder pairOrder)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
+  bool foundPair = false;
   for (auto const& part : SliceParticle) {
     ParticleHistManager.template fill<mode>(part, TrackTable);
   }
@@ -78,9 +83,11 @@ void processSameEvent(T1 const& SliceParticle,
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
+      foundPair = true;
     }
   }
   PairHistManager.fillMixingQaSe();
+  return foundPair;
 }
 
 // process same event for identical particles with mc information
@@ -97,7 +104,7 @@ template <modes::Mode mode,
           typename T10,
           typename T11,
           typename T12>
-void processSameEvent(T1 const& SliceParticle,
+bool processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& mcParticles,
                       T4 const& mcMothers,
@@ -112,6 +119,7 @@ void processSameEvent(T1 const& SliceParticle,
                       PairOrder pairOrder)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
+  bool foundPair = false;
   for (auto const& part : SliceParticle) {
     if (!ParticleCleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
@@ -147,9 +155,11 @@ void processSameEvent(T1 const& SliceParticle,
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
+      foundPair = true;
     }
   }
   PairHistManager.fillMixingQaSe();
+  return foundPair;
 }
 
 // process same event for non-identical particles
@@ -163,7 +173,7 @@ template <modes::Mode mode,
           typename T7,
           typename T8,
           typename T9>
-void processSameEvent(T1 const& SliceParticle1,
+bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& TrackTable,
                       T4 const& Collision,
@@ -174,6 +184,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       T9& PcManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
+  bool foundPair = false;
   // Fill single particle histograms
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable);
@@ -195,9 +206,11 @@ void processSameEvent(T1 const& SliceParticle1,
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
+      foundPair = true;
     }
   }
   PairHistManager.fillMixingQaSe();
+  return foundPair;
 }
 
 // process same event for non-identical particles with mc information
@@ -217,7 +230,7 @@ template <modes::Mode mode,
           typename T13,
           typename T14,
           typename T15>
-void processSameEvent(T1 const& SliceParticle1,
+bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& TrackTable,
                       T4 const& mcParticles,
@@ -234,6 +247,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       T15& PcManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
+  bool foundPair = false;
   // Fill single particle histograms
   for (auto const& part : SliceParticle1) {
     if (!ParticleCleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -266,9 +280,11 @@ void processSameEvent(T1 const& SliceParticle1,
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
+      foundPair = true;
     }
   }
   PairHistManager.fillMixingQaSe();
+  return foundPair;
 }
 // process same event for identical particles, mc truth only (no track table, no reco collisions)
 template <modes::Mode mode,
@@ -282,7 +298,7 @@ template <modes::Mode mode,
           typename T8,
           typename T9,
           typename T10>
-void processSameEvent(T1 const& SliceParticle,
+bool processSameEvent(T1 const& SliceParticle,
                       T2 const& /*mcParticles*/,
                       T3 const& mcMothers,
                       T4 const& mcPartonicMothers,
@@ -295,6 +311,7 @@ void processSameEvent(T1 const& SliceParticle,
                       PairOrder pairOrder)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
+  bool foundPair = false;
   for (auto const& part : SliceParticle) {
     if (!ParticleCleaner.isClean(part, mcMothers, mcPartonicMothers)) {
       continue;
@@ -324,12 +341,14 @@ void processSameEvent(T1 const& SliceParticle,
     if (CprManager.isClosePair(p1, p2, PairHistManager)) {
       continue;
     }
-    if (PairHistManager.checkPairCuts()) {
+    if (PairHistManager.checkPairCutsMcTruth()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
+      foundPair = true;
     }
   }
   PairHistManager.fillMixingQaSe();
+  return foundPair;
 }
 
 // process same event for non-identical particles, mc truth only
@@ -347,7 +366,7 @@ template <modes::Mode mode,
           typename T11,
           typename T12,
           typename T13>
-void processSameEvent(T1 const& SliceParticle1,
+bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& /*mcParticles*/,
                       T4 const& mcMothers,
@@ -362,6 +381,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       T13& PcManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
+  bool foundPair = false;
   for (auto const& part : SliceParticle1) {
     if (!ParticleCleaner1.isClean(part, mcMothers, mcPartonicMothers)) {
       continue;
@@ -388,12 +408,14 @@ void processSameEvent(T1 const& SliceParticle1,
     if (CprManager.isClosePair(p1, p2, PairHistManager)) {
       continue;
     }
-    if (PairHistManager.checkPairCuts()) {
+    if (PairHistManager.checkPairCutsMcTruth()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
+      foundPair = true;
     }
   }
   PairHistManager.fillMixingQaSe();
+  return foundPair;
 }
 
 // mixed event in data
@@ -407,7 +429,9 @@ template <modes::Mode mode,
           typename T7,
           typename T8,
           typename T9,
-          typename T10>
+          typename T10,
+          typename T11,
+          typename T12>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -417,11 +441,18 @@ void processMixedEvent(T1 const& Collisions,
                        T7 const& depth,
                        T8& PairHistManager,
                        T9& CprManager,
-                       T10& PcManager)
+                       T10& PcManager,
+                       int eventStride,
+                       T11& ParticleHistManagerMe1,
+                       T12& ParticleHistManagerMe2)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual anchor windows encountered (not raw collision IDs, which may have gaps from
+  // upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 is fixed across each mixing window, so its track slice is
   // materialized once per window and reused for every mixing partner, instead
@@ -433,13 +464,24 @@ void processMixedEvent(T1 const& Collisions,
 
     // --- new window ---
     if (collision1.globalIndex() != lastCollisionIndex) {
-      if (lastCollisionIndex != -1) {
+      if (lastCollisionIndex != -1 && !skipThisWindow) {
         PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire anchor windows to reduce mixed-event combinatorics without truncating any
+      // single event's particle content -- every anchor that IS processed still gets its full
+      // `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     ++windowSizeRaw;
@@ -480,6 +522,11 @@ void processMixedEvent(T1 const& Collisions,
         hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
         PairHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event
+        // pair -- filled once per accepted pair (not deduplicated), so a particle contributes
+        // here exactly as often as it actually contributes to the mixed-event pair sample.
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
       }
     }
 
@@ -513,7 +560,9 @@ template <modes::Mode mode,
           typename T13,
           typename T14,
           typename T15,
-          typename T16>
+          typename T16,
+          typename T17,
+          typename T18>
 void processMixedEvent(T1 const& Collisions,
                        T2 const& mcCollisions,
                        T3& Partition1,
@@ -529,11 +578,18 @@ void processMixedEvent(T1 const& Collisions,
                        T13& ParticleCleaner1,
                        T14& ParticleCleaner2,
                        T15& CprManager,
-                       T16& PcManager)
+                       T16& PcManager,
+                       int eventStride,
+                       T17& ParticleHistManagerMe1,
+                       T18& ParticleHistManagerMe2)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual anchor windows encountered (not raw collision IDs, which may have gaps from
+  // upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 is fixed across each mixing window, so its track slice is
   // materialized once per window and reused for every mixing partner, instead
@@ -543,13 +599,24 @@ void processMixedEvent(T1 const& Collisions,
 
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
     if (collision1.globalIndex() != lastCollisionIndex) {
-      if (lastCollisionIndex != -1) {
+      if (lastCollisionIndex != -1 && !skipThisWindow) {
         PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire anchor windows to reduce mixed-event combinatorics without truncating any
+      // single event's particle content -- every anchor that IS processed still gets its full
+      // `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     ++windowSizeRaw;
@@ -596,6 +663,9 @@ void processMixedEvent(T1 const& Collisions,
         hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
         PairHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event pair
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable, collision1, mcParticles, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable, collision2, mcParticles, mcMothers, mcPartonicMothers);
       }
     }
 
@@ -625,7 +695,9 @@ template <modes::Mode mode,
           typename T11,
           typename T12,
           typename T13,
-          typename T14>
+          typename T14,
+          typename T15,
+          typename T16>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -639,29 +711,47 @@ void processMixedEvent(T1 const& Collisions,
                        T11& ParticleCleaner1,
                        T12& ParticleCleaner2,
                        T13& CprManager,
-                       T14& PcManager)
+                       T14& PcManager,
+                       int eventStride,
+                       T15& ParticleHistManagerMe1,
+                       T16& ParticleHistManagerMe2)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual anchor windows encountered (not raw collision IDs, which may have gaps from
+  // upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
-  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
+  std::optional<decltype(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
 
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
 
     if (collision1.globalIndex() != lastCollisionIndex) {
-      if (lastCollisionIndex != -1) {
+      if (lastCollisionIndex != -1 && !skipThisWindow) {
         PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire anchor windows to reduce mixed-event combinatorics without truncating any
+      // single event's particle content -- every anchor that IS processed still gets its full
+      // `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     ++windowSizeRaw;
 
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache);
+    auto sliceParticle2 = Partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache);
 
     PairHistManager.resetTrackedParticlesPerEvent();
 
@@ -692,10 +782,13 @@ void processMixedEvent(T1 const& Collisions,
         continue;
       }
 
-      if (PairHistManager.checkPairCuts()) {
+      if (PairHistManager.checkPairCutsMcTruth()) {
         hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
         PairHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event pair
+        ParticleHistManagerMe1.fill(p1, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe2.fill(p2, mcMothers, mcPartonicMothers);
       }
     }
 

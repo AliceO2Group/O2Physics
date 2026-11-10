@@ -42,6 +42,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/ProcessingContext.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Track.h>
@@ -110,6 +111,8 @@ struct NPCascCandidate {
   float pionDCAz;
   float bachDCAxy;
   float bachDCAz;
+  float cascDCADaughters;
+  float v0DCADaughters;
   float casccosPA;
   float v0cosPA;
   double massXi;
@@ -233,6 +236,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMaxMult{"cfgMaxMult", 8000.f, "Upper range of multiplicty histo"};
   Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
   Configurable<std::string> cfgPtEdgesdNdeta{"ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
+  Configurable<int> cfgDownscaleCascTF{"cfgDownscaleCascTF", 1, "Keep one in every N input timeframes for cascade reco and generator output (1 keeps all)"};
   Configurable<int> cfgDownscaleMB{"cfgDownscaleMB", 1, "Downscaling for pile up study sample"};
   Configurable<double> cfgEtaCutdNdeta{"cfgEtaCutdNdeta", 0.8, "Eta cut for charged tracks"};
 
@@ -241,6 +245,8 @@ struct NonPromptCascadeTask {
   SliceCache cache;
 
   Service<o2::ccdb::BasicCCDBManager> mCCDB;
+  uint64_t mTimeframeCount = 0;
+  bool mKeepTimeframe = true;
   int mRunNumber = 0;
   float mBz = 0.f;
   o2::vertexing::DCAFitterN<2> mDCAFitter;
@@ -272,8 +278,21 @@ struct NonPromptCascadeTask {
     }
   }
 
+  // The framework calls run once before all enabled process functions for a timeframe.
+  void run(ProcessingContext&)
+  {
+    mKeepTimeframe = (mTimeframeCount++ % static_cast<uint64_t>(cfgDownscaleCascTF.value)) == 0;
+    mRegistry.fill(HIST("hTimeframeSelection"), mKeepTimeframe ? 1.f : 0.f);
+  }
+
   void init(InitContext& context)
   {
+    if (cfgDownscaleCascTF.value < 1) {
+      LOG(fatal) << "cfgDownscaleCascTF must be at least 1";
+    }
+    auto timeframeSelection = mRegistry.add<TH1>("hTimeframeSelection", ";Timeframe selection;Timeframes", HistType::kTH1D, {{2, -0.5, 1.5}});
+    timeframeSelection->GetXaxis()->SetBinLabel(1, "Skipped");
+    timeframeSelection->GetXaxis()->SetBinLabel(2, "Kept");
     mZorroSummary.setObject(mZorro.getZorroSummary());
     mCCDB->setURL(ccdbUrl);
     mCCDB->setFatalWhenNull(true);
@@ -529,11 +548,14 @@ struct NonPromptCascadeTask {
       o2::math_utils::SVector<double, 3> cascadePos, v0Pos;
 
       float cascCpa = -1, v0Cpa = -1;
+      float cascDCADaughters = -1.f, v0DCADaughters = -1.f;
       o2::track::TrackParCov ntCascadeTrack;
       if (mDCAFitter.process(pionTrkParCov, protonTrkParCov)) {
+        v0DCADaughters = std::sqrt(mDCAFitter.getChi2AtPCACandidate());
         auto trackParCovV0 = mDCAFitter.createParentTrackParCov(0); // V0 track retrieved from p and pi daughters
         v0Pos = mDCAFitter.getPCACandidate();
         if (mDCAFitter.process(trackParCovV0, bachTrkParCov)) {
+          cascDCADaughters = std::sqrt(mDCAFitter.getChi2AtPCACandidate());
           mDCAFitter.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
           mDCAFitter.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
           ntCascadeTrack = mDCAFitter.createParentTrackParCov();
@@ -655,7 +677,7 @@ struct NonPromptCascadeTask {
                                               cascadeLvector.pt(), cascadeLvector.eta(), cascadeLvector.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               motherDCA.getY(), motherDCA.getZ(), protonDCA.getY(), protonDCA.getZ(), pionDCA.getY(), pionDCA.getZ(), bachDCA.getY(), bachDCA.getZ(),
-                                              cascCpa, v0Cpa, massXi, massOmega, v0mass,
+                                              cascDCADaughters, v0DCADaughters, cascCpa, v0Cpa, massXi, massOmega, v0mass,
                                               static_cast<float>(std::hypot(cascadePos[0], cascadePos[1])), static_cast<float>(std::hypot(v0Pos[0], v0Pos[1])), static_cast<float>(std::hypot(cascadePos[0], cascadePos[1], cascadePos[2])), static_cast<float>(std::hypot(v0Pos[0], v0Pos[1], v0Pos[2])),
                                               cascITSclusters, protonTrack.itsNCls(), pionTrack.itsNCls(), bachelor.itsNCls(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachelor.tpcNClsFound(),
                                               protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
@@ -673,7 +695,7 @@ struct NonPromptCascadeTask {
                                   c.cascPt, c.cascEta, c.cascPhi,
                                   c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                                   c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
-                                  c.casccosPA, c.v0cosPA,
+                                  c.cascDCADaughters, c.v0DCADaughters, c.casccosPA, c.v0cosPA,
                                   c.massXi, c.massOmega, c.massV0,
                                   c.cascRadius, c.v0radius, c.cascLength, c.v0length,
                                   c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC,
@@ -712,7 +734,7 @@ struct NonPromptCascadeTask {
                                 c.pvContributors, c.cascPVContribs, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ, c.cascPt, c.cascEta, c.cascPhi,
                                 c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                                 c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
-                                c.casccosPA, c.v0cosPA, c.massXi, c.massOmega, c.massV0, c.cascRadius, c.v0radius, c.cascLength, c.v0length,
+                                c.cascDCADaughters, c.v0DCADaughters, c.casccosPA, c.v0cosPA, c.massXi, c.massOmega, c.massV0, c.cascRadius, c.v0radius, c.cascLength, c.v0length,
                                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC, c.protonTPCNSigma,
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
@@ -748,6 +770,9 @@ struct NonPromptCascadeTask {
                                 aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
                                 aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     fillCandidatesVector<TracksExtMC>(collisions, tracks, trackedCascades, gCandidates);
     fillMCtable<aod::AssignedTrackedCascades>(mcParticles, collisions, gCandidates);
   }
@@ -757,6 +782,9 @@ struct NonPromptCascadeTask {
                          aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
                          aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     fillCandidatesVector<TracksExtMC>(collisions, tracks, cascades, gCandidatesNT);
     fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNT);
     // fillMultHistos<CollisionCandidatesRun3MC>(collisions);
@@ -765,6 +793,9 @@ struct NonPromptCascadeTask {
 
   void processGenParticles(aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     for (const auto& p : mcParticles) {
       auto absCode = std::abs(p.pdgCode());
       if (absCode != 3312 && absCode != 3334) {
@@ -795,6 +826,9 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     mProcessCounter[0]++;
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates);
@@ -806,6 +840,9 @@ struct NonPromptCascadeTask {
                            aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                            aod::BCsWithTimestamps const&)
   {
+    if (!mKeepTimeframe) {
+      return;
+    }
     mProcessCounter[1]++;
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);

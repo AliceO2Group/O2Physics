@@ -41,9 +41,9 @@ class multMCCalibrator : public TNamed
   // Interface: steering functions to be used in calibration macro
 
   // Set Filenames
-  void SetDataInputFile(TString lFile) { fDataInputFileName = lFile.Data(); }
-  void SetSimInputFile(TString lFile) { fSimInputFileName = lFile.Data(); }
-  void SetOutputFile(TString lFile) { fOutputFileName = lFile.Data(); }
+  void SetDataInputFile(const TString& lFile) { fDataInputFileName = lFile.Data(); }
+  void SetSimInputFile(const TString& lFile) { fSimInputFileName = lFile.Data(); }
+  void SetOutputFile(const TString& lFile) { fOutputFileName = lFile.Data(); }
 
   // Master Function in this Class: To be called once filenames are set
   Bool_t Calibrate();

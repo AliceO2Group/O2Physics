@@ -229,7 +229,7 @@ struct cascadeXiAnalysis {
 
   // kinematic cuts method
   template <typename U, typename K, typename T>
-  bool kinCuts(U trk1, K trk2, T p, float& alpha)
+  bool kinCuts(const U& trk1, const K& trk2, const T& p, float& alpha)
   {
     // initialize
     std::vector<float> kinCutsPt = static_cast<std::vector<float>>(cKinCutsPt);

@@ -76,7 +76,7 @@ struct FemtoPairMcParticleMcParticle {
 
   o2::framework::Partition<FemtoMcParticles> mcParticlesPartition2 = MAKE_MC_PARTICLE_PARTITION(confMcParticleSelection2);
 
-  o2::framework::Preslice<FemtoMcParticles> perColParticles = o2::aod::femtomcparticle::fMcColId;
+  o2::framework::PresliceUnsorted<FemtoMcParticles> perColParticles = o2::aod::femtomcparticle::fMcColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
@@ -86,8 +86,10 @@ struct FemtoPairMcParticleMcParticle {
   closepairrejection::ConfCprTrackTrack confCpr;
 
   pairbuilder::PairMcParticleMcParticleBuilder<
-    mcparticlehistmanager::PrefixMcParticle1,
-    mcparticlehistmanager::PrefixMcParticle2,
+    mcparticlehistmanager::PrefixMcParticle1Se,
+    mcparticlehistmanager::PrefixMcParticle2Se,
+    mcparticlehistmanager::PrefixMcParticle1Me,
+    mcparticlehistmanager::PrefixMcParticle2Me,
     pairhistmanager::PrefixMcParticleMcParticleSe,
     pairhistmanager::PrefixMcParticleMcParticleMe,
     closepairrejection::PrefixMcParticleMcParticleSe,
@@ -98,9 +100,9 @@ struct FemtoPairMcParticleMcParticle {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoMcParticleMcParticle", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -109,9 +111,9 @@ struct FemtoPairMcParticleMcParticle {
   {
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histogram specs
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
@@ -130,9 +132,16 @@ struct FemtoPairMcParticleMcParticle {
     hRegistry.print();
   };
 
-  void processSameEvent(FilteredFemtoMcCollision const& col, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  // deliberately takes the full (ungrouped) FilteredFemtoMcCollisions table rather than its ::iterator:
+  // pairing an ::iterator first argument with FemtoMcParticles as a second table argument would make
+  // DPL auto-register a sorted per-collision slicing cache for fMcColId, which then collides with the
+  // manual sliceByCachedUnsorted() used inside the builder (see the same workaround in
+  // femtoDndetaPair.cxx/femtoDndetaTriplet.cxx); we run the per-collision loop ourselves instead
+  void processSameEvent(FilteredFemtoMcCollisions const& cols, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(col, mcParticles, mcMothers, mcPartonicMothers, mcParticlesPartition1, mcParticlesPartition2, cache);
+    for (auto const& col : cols) {
+      pairMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(col, mcParticles, mcMothers, mcPartonicMothers, mcParticlesPartition1, mcParticlesPartition2, cache);
+    }
   }
   PROCESS_SWITCH(FemtoPairMcParticleMcParticle, processSameEvent, "Enable processing same event processing", true);
 

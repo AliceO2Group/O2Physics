@@ -39,6 +39,7 @@
 #include <Math/GenVector/PxPyPzE4D.h>
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <TNamed.h>
 #include <TObjArray.h>
@@ -159,6 +160,7 @@ struct FlowCumulantsUpc {
   TRandom3* fRndmMc = new TRandom3(0);
   int lastRunNumber = -1;
   std::vector<int> runNumbers;
+  std::map<std::string, int> neventsIdBins;
   std::map<int, std::shared_ptr<TH3>> th3sPerRun; // map of TH3 histograms for all runs
 
   using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
@@ -319,6 +321,26 @@ struct FlowCumulantsUpc {
           oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
         }
       }
+    }
+
+    // One Y bin for every FlowContainer IDName already stored in oba.
+    const int nIdNames = oba->GetEntries();
+
+    const AxisSpec axisIdName{nIdNames, 0.5, static_cast<double>(nIdNames) + 0.5, "ID name"};
+
+    registry.add("hNeventsVsNch", "Selected events;N_{ch};ID name", {HistType::kTH2D, {axisIndependent, axisIdName}});
+
+    auto hNeventsVsNch = registry.get<TH2>(HIST("hNeventsVsNch"));
+
+    for (int i = 0; i < nIdNames; ++i) {
+      auto* observable = dynamic_cast<TNamed*>(oba->At(i));
+      if (!observable) {
+        continue;
+      }
+      const std::string idName = observable->GetName();
+      const int yBin = i + 1;
+      neventsIdBins[idName] = yBin;
+      hNeventsVsNch->GetYaxis()->SetBinLabel(yBin, idName.c_str());
     }
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
@@ -520,6 +542,16 @@ struct FlowCumulantsUpc {
     fGFW->CreateRegions();
   }
 
+  void fillNeventsVsNch(const std::string& idName, double independent)
+  {
+    const auto it = neventsIdBins.find(idName);
+    if (it == neventsIdBins.end()) {
+      return;
+    }
+
+    registry.fill(HIST("hNeventsVsNch"), independent, static_cast<double>(it->second));
+  }
+
   void createOutputObjectsForRun(int runNumber)
   {
     const AxisSpec axisPhi{60, 0.0, constants::math::TwoPI, "#varphi"};
@@ -538,6 +570,7 @@ struct FlowCumulantsUpc {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (std::fabs(val) < 1) {
         fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+        fillNeventsVsNch(corrconf.Head, cent);
       }
       return;
     }
@@ -738,12 +771,12 @@ struct FlowCumulantsUpc {
       registry.fill(HIST("neutronClass"), 0, 0);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
-      neutronClass = 1;
-      registry.fill(HIST("neutronClass"), 0, 1);
-    }
-    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
       neutronClass = 2;
       registry.fill(HIST("neutronClass"), 1, 0);
+    }
+    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
+      neutronClass = 1;
+      registry.fill(HIST("neutronClass"), 0, 1);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
       neutronClass = 3;

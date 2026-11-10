@@ -456,7 +456,7 @@ struct DgCandProducer {
     ccdb->setFatalWhenNull(false);
 
     // DGCuts
-    diffCuts = (DGCutparHolder)DGCuts;
+    diffCuts = DGCutparHolder(DGCuts);
 
     // add histograms for the different process functions
     histPointers.clear();

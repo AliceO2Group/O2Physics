@@ -1534,10 +1534,9 @@ struct tofSpectra {
         continue;
       }
       // trackwoCut++;
-      if (std::abs(track.dcaXY()) > 0.05) { // Skipping tracks that don't pass the standard cuts
-        return;
+      if (!passesDCAxyCut(track)) { // Skipping tracks that don't pass the standard cuts
+        continue;
       }
-
       // trackwCut++;
       const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
       const auto& mcParticle = mcParticles.iteratorAt(mcLabel.mcParticleId());
@@ -1562,7 +1561,7 @@ struct tofSpectra {
       double rapidityKa = track.rapidity(PID::getMass(3));
       double rapidityPr = track.rapidity(PID::getMass(4));
       if (track.eta() < trkselOptions.cfgCutEtaMin || track.eta() > trkselOptions.cfgCutEtaMax) {
-        return;
+        continue;
       }
       if (mcParticle.isPhysicalPrimary()) {
         if (isTPCPion && rapidityPi >= trkselOptions.cfgCutYMin && rapidityPi <= trkselOptions.cfgCutYMax) {
@@ -1603,6 +1602,70 @@ struct tofSpectra {
         }
 
         // TOF Selection and Histogram Filling
+        // RL TOF selections: same cut for TRD as inclusive analysis.
+        if (!track.hasTOF()) {
+          continue;
+        }
+
+        if (trkselOptions.requireTrdOnly && !track.hasTRD()) {
+          continue;
+        }
+
+        if (trkselOptions.requireNoTrd && track.hasTRD()) {
+          continue;
+        }
+
+        if (track.hasTRD() && trkselOptions.lastRequiredTrdCluster > 0) {
+          int lastLayer = 0;
+          for (int layer = 7; layer >= 0; --layer) {
+            if (track.trdPattern() & (1 << layer)) {
+              lastLayer = layer;
+              break;
+            }
+          }
+
+          if (lastLayer < trkselOptions.lastRequiredTrdCluster) {
+            continue;
+          }
+        }
+
+        // RL: add an selection in the selection event time
+
+        switch (trkselOptions.selectEvTime) {
+          case 0:
+            break; // No selection
+          case 1:
+            if (!track.isEvTimeDefined()) {
+              continue;
+            }
+            break;
+          case 2:
+            if (!track.isEvTimeTOF()) {
+              continue;
+            }
+            break;
+          case 3:
+            if (!track.isEvTimeT0AC()) {
+              continue;
+            }
+            break;
+          case 4:
+            if (!track.isEvTimeTOFT0AC()) {
+              continue;
+            }
+            break;
+          case 5:
+            if (track.isEvTimeDefined()) {
+              continue;
+            }
+            break;
+          default:
+            LOG(fatal) << "Valore selectEvTime non riconosciuto: "
+                       << trkselOptions.selectEvTime;
+        }
+
+        //
+
         if (isTOFPion && rapidityPi >= trkselOptions.cfgCutYMin && rapidityPi <= trkselOptions.cfgCutYMax) {
           if (usePDGcode) {
             if (pdgCode == kPiPlus) {
@@ -2149,9 +2212,7 @@ struct tofSpectra {
     if (!mcParticle.isPhysicalPrimary()) {      // Is not physical primary
       if (mcParticle.getProcess() == kPDecay) { // Is from decay
         if (includeCentralityMC) {
-          if (includeCentralityMC) {
-            histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
-          }
+          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
         } else {
           histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity);
         }
@@ -2686,8 +2747,6 @@ struct tofSpectra {
       }
       histos.fill(HIST("MC/Multiplicity"), getMultiplicityMC(mcCollision));
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-      bool hasParticleInFT0C = false;
-      bool hasParticleInFT0A = false;
       if (evselOptions.cfgINELCut.value == EvSelInelGt0Cut) {
         if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) {
           continue;
@@ -2713,9 +2772,6 @@ struct tofSpectra {
       }
       if (mcCollision.isInelGt1()) {
         histos.fill(HIST("MC/GenRecoCollisions"), 4.f);
-      }
-      if (hasParticleInFT0C && hasParticleInFT0A) {
-        histos.fill(HIST("MC/GenRecoCollisions"), 5.f);
       }
     }
   }

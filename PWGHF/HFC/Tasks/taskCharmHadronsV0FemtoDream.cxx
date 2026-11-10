@@ -195,7 +195,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
   Preslice<FilteredCharmCandDstars> perHfDstarByCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Partitions for particle Lambda
-  Partition<FDV0Particles> partitionLambda = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<FDV0Particles> partitionLambda = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                              ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
                                              (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
                                              (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
@@ -206,7 +206,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                                              (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
                                              (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
-  Partition<FDMcV0Particles> partitionMcLambda = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<FDMcV0Particles> partitionMcLambda = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                                  ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
                                                  (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
                                                  (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
@@ -218,7 +218,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                                                  (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
   /// Partitions for particle K0Short
-  Partition<FDV0Particles> partitionK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
+  Partition<FDV0Particles> partitionK0Short = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
                                               ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
                                               (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
                                               (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
@@ -229,7 +229,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                                               (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
                                               (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
-  Partition<FDMcV0Particles> partitionMcK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
+  Partition<FDMcV0Particles> partitionMcK0Short = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
                                                   ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
                                                   (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
                                                   (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
@@ -279,9 +279,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
     ConfigurableAxis mixingBinVztx{"mixingBinVztx", {VARIABLE_WIDTH, -10.0f, -4.f, 0.f, 4.f, 10.f}, "Mixing bins - z-vertex"};
   } AxisBinning;
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -330,9 +330,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
     bool processDstar = doprocessDataDstarV0;
 
     // setup columnpolicy for binning
-    colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}, true};
-    colBinningMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}, true};
-    colBinningMultMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}, true};
+    colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
+    colBinningMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}};
+    colBinningMultMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}};
     eventHisto.init(&registry);
     v0HistoPartOne.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binInvMassV0, AxisBinning.binInvMassV0, isMc, v0Sel.pdgCodeV0, true);
     v0HistoPartOneSelected.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binInvMassV0, AxisBinning.binInvMassV0, isMc, v0Sel.pdgCodeV0, true);

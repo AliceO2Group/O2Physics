@@ -1178,10 +1178,10 @@ struct DileptonHadronMPC {
       std::tuple<int, int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin, occbin);
 
       // make a vector of selected electrons in this collision.
-      auto selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
-      auto selected_negTracks_in_this_event = emh_neg->GetTracksPerCollision(key_df_collision);
+      const auto& selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
+      const auto& selected_negTracks_in_this_event = emh_neg->GetTracksPerCollision(key_df_collision);
 
-      auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
+      const auto& collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
 
       // LOGF(info, "selected_posTracks_in_this_event.size() = %d, selected_negTracks_in_this_event.size() = %d, collisionIds_in_mixing_pool.size() = %d", selected_posTracks_in_this_event.size(), selected_negTracks_in_this_event.size(), collisionIds_in_mixing_pool.size());
 
@@ -1201,8 +1201,8 @@ struct DileptonHadronMPC {
           continue;
         }
 
-        auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
-        auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
         // LOGF(info, "posTracks_from_event_pool.size() = %d, negTracks_from_event_pool.size() = %d", posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
 
         for (const auto& pos : selected_posTracks_in_this_event) { // ULS mix
@@ -1233,8 +1233,8 @@ struct DileptonHadronMPC {
       } // end of loop over mixed event pool for lepton-lepton
 
       if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation)) {
-        auto selected_refTracks_in_this_event = emh_ref->GetTracksPerCollision(key_df_collision);
-        auto collisionIds_in_mixing_pool_hadron = emh_ref->GetCollisionIdsFromEventPool(key_bin);
+        const auto& selected_refTracks_in_this_event = emh_ref->GetTracksPerCollision(key_df_collision);
+        const auto& collisionIds_in_mixing_pool_hadron = emh_ref->GetCollisionIdsFromEventPool(key_bin);
 
         // for ULS and hadron mix
         for (const auto& pos : selected_posTracks_in_this_event) {
@@ -1253,7 +1253,7 @@ struct DileptonHadronMPC {
                 continue;
               }
 
-              auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+              const auto& refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
               for (const auto& ref : refTracks_from_event_pool) {
                 fillDileptonHadron<1>(pos, neg, cut, ref);
               }
@@ -1283,7 +1283,7 @@ struct DileptonHadronMPC {
                   continue;
                 }
 
-                auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+                const auto& refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
                 for (const auto& ref : refTracks_from_event_pool) {
                   fillDileptonHadron<1>(pos1, pos2, cut, ref);
                 }
@@ -1311,7 +1311,7 @@ struct DileptonHadronMPC {
                   continue;
                 }
 
-                auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+                const auto& refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
                 for (const auto& ref : refTracks_from_event_pool) {
                   fillDileptonHadron<1>(neg1, neg2, cut, ref);
                 }
@@ -1335,7 +1335,7 @@ struct DileptonHadronMPC {
             continue;
           }
 
-          auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+          const auto& refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "selected_refTracks_in_this_event.size() = %d, collisionIds_in_mixing_pool_hadron.size() = %d, refTracks_from_event_pool.size() = %d", selected_refTracks_in_this_event.size(), collisionIds_in_mixing_pool_hadron.size(), refTracks_from_event_pool.size());
           for (const auto& ref1 : selected_refTracks_in_this_event) { // ref-ref mix
             for (const auto& ref2 : refTracks_from_event_pool) {

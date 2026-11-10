@@ -667,7 +667,7 @@ struct FlowGfwLightIons {
   }
 
   template <typename TTrack>
-  double getAcceptance(TTrack track, const double& vtxz)
+  double getAcceptance(const TTrack& track, const double& vtxz)
   {
     double wacc = 1;
     if (cfg.mAcceptance)
@@ -676,7 +676,7 @@ struct FlowGfwLightIons {
   }
 
   template <typename TTrack>
-  double getEfficiency(TTrack track)
+  double getEfficiency(const TTrack& track)
   {
     double eff = 1.;
     if (cfg.mEfficiency)
@@ -688,7 +688,7 @@ struct FlowGfwLightIons {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
+  bool eventSelected(const TCollision& collision, const int& multTrk, const float& centrality, const int& run)
   {
     if (cfgEventCutFlags.cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
@@ -829,7 +829,7 @@ struct FlowGfwLightIons {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt())))
       return false;
@@ -842,7 +842,7 @@ struct FlowGfwLightIons {
   };
 
   template <typename TTrack>
-  void fillWeights(const TTrack track, const double vtxz, const int& run)
+  void fillWeights(const TTrack& track, const double vtxz, const int& run)
   {
     if (cfgRunByRun)
       th3sList[run][hNUAref]->Fill(track.phi(), track.eta(), vtxz);
@@ -966,7 +966,7 @@ struct FlowGfwLightIons {
   };
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const XAxis& xaxis, const int& run)
+  void processCollision(const TCollision& collision, const TTracks& tracks, const XAxis& xaxis, const int& run)
   {
     if (tracks.size() < 1)
       return;
@@ -1071,7 +1071,7 @@ struct FlowGfwLightIons {
   }
 
   template <typename TTrack>
-  void fillAcceptedTracks(TTrack track, AcceptedTracks& acceptedTracks)
+  void fillAcceptedTracks(const TTrack& track, AcceptedTracks& acceptedTracks)
   {
     if (posRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[posRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[posRegionIndex])
       ++acceptedTracks.nPos;
@@ -1159,7 +1159,7 @@ struct FlowGfwLightIons {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillGFW(TTrack track, const double& vtxz, DensityCorr densitycorrections)
+  inline void fillGFW(const TTrack& track, const double& vtxz, DensityCorr densitycorrections)
   {
     bool withinPtRef = (track.pt() > o2::analysis::gfw::ptreflow && track.pt() < o2::analysis::gfw::ptrefup);
     bool withinPtPOI = (track.pt() > o2::analysis::gfw::ptpoilow && track.pt() < o2::analysis::gfw::ptpoiup);
@@ -1191,7 +1191,7 @@ struct FlowGfwLightIons {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillPtSums(TTrack track)
+  inline void fillPtSums(const TTrack& track)
   {
     if (track.pt() < o2::analysis::gfw::ptreflow || track.pt() > o2::analysis::gfw::ptrefup)
       return;
@@ -1225,7 +1225,7 @@ struct FlowGfwLightIons {
   }
 
   template <DataType dt, QAFillTime ft, typename TTrack>
-  inline void fillTrackQA(TTrack track, const float vtxz)
+  inline void fillTrackQA(const TTrack& track, const float vtxz)
   {
     if constexpr (dt == kGen) {
       registry.fill(HIST("MCGen/trackQA/phi_eta_vtxZ"), track.phi(), track.eta(), vtxz);
@@ -1250,7 +1250,7 @@ struct FlowGfwLightIons {
   }
 
   template <typename TCollision>
-  float getCentrality(TCollision collision)
+  float getCentrality(const TCollision& collision)
   {
     switch (cfgCentEstimator) {
       case kCentFT0C:
@@ -1273,7 +1273,7 @@ struct FlowGfwLightIons {
   }
 
   template <QAFillTime ft, typename TCollision>
-  inline void fillEventQA(TCollision collision, XAxis xaxis)
+  inline void fillEventQA(const TCollision& collision, XAxis xaxis)
   {
     if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename TCollision::all_columns>) {
       registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_centT0C"), collision.centFT0C(), xaxis.multiplicity);

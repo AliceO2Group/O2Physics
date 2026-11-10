@@ -16,8 +16,10 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
@@ -93,6 +95,9 @@ inline double getPdgMass(int pdgCode)
     case kKPlus:
       mass = o2::constants::physics::MassKPlus;
       break;
+    case kK0Short:
+      mass = o2::constants::physics::MassK0Short;
+      break;
     case kProton:
       mass = o2::constants::physics::MassProton;
       break;
@@ -138,6 +143,12 @@ inline double getPdgMass(int pdgCode)
     case kOmegaMinus:
       mass = o2::constants::physics::MassOmegaMinus;
       break;
+    case kPi0:
+      mass = o2::constants::physics::MassPi0;
+      break;
+    case o2::constants::physics::kEta:
+      mass = o2::constants::physics::MassEta;
+      break;
     default:
       LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
   }
@@ -164,14 +175,26 @@ concept HasEventShapeRow = requires(T row) {
 template <typename T>
 concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typename std::decay_t<T>::iterator; } && HasEventShapeRow<typename std::decay_t<T>::iterator>);
 
-/// Recalculate pT for Kinks (Sigmas) using kinematic constraints
-inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
+/// Azimuth of the momentum of a charged particle at the primary vertex, from its azimuth at the decay vertex.
+/// The decay vertex (xDecay, yDecay) has to be given relative to the primary vertex. In a solenoidal field the transverse
+/// trajectory is a circle through both points, and the tangents at the two ends of a chord make the same angle with it:
+/// phiPV = 2*phiChord - phiDecay (independent of polarity).
+inline float phiAtPrimaryVertex(float phiDecay, float xDecay, float yDecay)
+{
+  if (std::abs(xDecay) < o2::constants::math::Epsilon && std::abs(yDecay) < o2::constants::math::Epsilon) {
+    return phiDecay;
+  }
+  return RecoDecay::constrainAngle(2.f * std::atan2(yDecay, xDecay) - phiDecay);
+}
+
+/// Recalculate the pT of a kink mother from its direction and the charged daughter momentum
+inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter,
+                       float massMother, float massChargedDaughter, float massNeutralDaughter)
 {
   float almost0 = 1e-6f;
-  // Particle masses in GeV/c^2
-  auto massPion = o2::constants::physics::MassPionCharged;
-  auto massNeutron = o2::constants::physics::MassNeutron;
-  auto massSigmaMinus = o2::constants::physics::MassSigmaMinus;
+  const float massPion = massChargedDaughter;
+  const float massNeutron = massNeutralDaughter;
+  const float massSigmaMinus = massMother;
 
   // Calculate mother momentum and direction versor
   float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);
@@ -345,6 +368,59 @@ float unBinLogUnsigned(T binned, float magMin, float magMax)
   float step = (logHi - logLo) / static_cast<float>(Levels - 1);
   float mag = std::exp(logLo + static_cast<float>(idx) * step);
   return mag;
+}
+
+// ---------------------------------------------------------------------------
+// purity/fraction packing: up to 4 species' log-binned nSigma values (see
+// binLogSigned<uint16_t>) packed bitwise into a single int64_t column. Slot
+// assignment (which species occupies which of the 4 slots) is decided at
+// producer init time from which requirePidXxx flags are active, and exposed
+// via a self-documenting histogram -- these functions only do the fixed-slot
+// bit shifting, nothing species-specific.
+// ---------------------------------------------------------------------------
+
+constexpr int PurityNSlots = 4;
+
+/// pack 4 already-binned uint16_t codes (one per slot) into a single int64_t
+inline int64_t packPurity4(uint16_t slot0, uint16_t slot1, uint16_t slot2, uint16_t slot3)
+{
+  return (static_cast<int64_t>(slot0) << 48) |
+         (static_cast<int64_t>(slot1) << 32) |
+         (static_cast<int64_t>(slot2) << 16) |
+         static_cast<int64_t>(slot3);
+}
+
+/// extract the raw uint16_t code of one of the 4 slots (0..3) from a packed int64_t
+inline uint16_t unpackPurity4(int64_t packed, int slot)
+{
+  switch (slot) {
+    case 0:
+      return static_cast<uint16_t>((packed >> 48) & 0xFFFF);
+    case 1:
+      return static_cast<uint16_t>((packed >> 32) & 0xFFFF);
+    case 2:
+      return static_cast<uint16_t>((packed >> 16) & 0xFFFF);
+    case 3:
+      return static_cast<uint16_t>(packed & 0xFFFF);
+    default:
+      LOG(fatal) << "unpackPurity4: invalid slot " << slot << " (must be 0-3). Breaking...";
+      return 0;
+  }
+}
+
+/// pack 4 raw signed nSigma values (one per slot, unused slots pass 0) directly into a packed int64_t
+inline int64_t packPurityNSigma4(float nSigma0, float nSigma1, float nSigma2, float nSigma3, float magMin, float magMax)
+{
+  return packPurity4(binLogSigned<uint16_t>(nSigma0, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma1, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma2, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma3, magMin, magMax));
+}
+
+/// unpack the nSigma value of one of the 4 slots (0..3) from a packed int64_t
+inline float unpackPurityNSigma4(int64_t packed, int slot, float magMin, float magMax)
+{
+  return unBinLogSigned<uint16_t>(unpackPurity4(packed, slot), magMin, magMax);
 }
 
 }; // namespace utils

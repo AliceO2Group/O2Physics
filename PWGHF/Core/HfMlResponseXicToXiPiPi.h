@@ -17,19 +17,21 @@
 #define PWGHF_CORE_HFMLRESPONSEXICTOXIPIPI_H_
 
 #include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Tools/ML/MlResponse.h"
 
 #include <cstdint>
+#include <map>
+#include <string>
 #include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_XICTOXIPIPI(FEATURE)                                 \
-  {                                                                   \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesXicToXiPiPi::FEATURE) \
-  }
+#define FILL_MAP_XICTOXIPIPI(FEATURE) \
+  {                                   \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesXicToXiPiPi::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -88,10 +90,31 @@ enum class InputFeaturesXicToXiPiPi : uint8_t {
   nSigTofPiFromXicPlus1,
   nSigTofBachelorPi,
   nSigTofPiFromLambda,
-  nSigTofPrFromLambda
+  nSigTofPrFromLambda,
+  // kf-specific variables
+  kfDecayLength,
+  kfDecayLengthNormalised,
+  kfDecayLengthXY,
+  kfDecayLengthXYNormalised,
+  kfCascadeChi2,
+  kfV0Chi2,
+  chi2XicPlusToPV,
+  chi2TopoXicPlusToPV,
+  chi2XiToPV,
+  chi2Pi0ToPV,
+  chi2Pi1ToPV,
+  chi2DevPi0Pi1,
+  chi2DevPi0Xi,
+  chi2DevPi1Xi,
+  dcaPi0Pi1,
+  dcaPi0Xi,
+  dcaPi1Xi,
+  dcaXYPi0Pi1,
+  dcaXYPi0Xi,
+  dcaXYPi1Xi
 };
 
-template <typename TypeOutputScore = float>
+template <typename TypeOutputScore = float, aod::hf_cand::VertexerType ReconstructionType = aod::hf_cand::VertexerType::DCAFitter>
 class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
 {
  public:
@@ -147,6 +170,30 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPiFromLambda);
         CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPrFromLambda);
       }
+      if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+        switch (idx) {
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(kfDecayLength);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(kfDecayLengthNormalised);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(kfDecayLengthXY);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(kfDecayLengthXYNormalised);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(kfCascadeChi2);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(kfV0Chi2);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2XicPlusToPV);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2TopoXicPlusToPV);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2XiToPV);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2Pi0ToPV);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2Pi1ToPV);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2DevPi0Pi1);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2DevPi0Xi);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2DevPi1Xi);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaPi0Pi1);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaPi0Xi);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaPi1Xi);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaXYPi0Pi1);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaXYPi0Xi);
+          CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaXYPi1Xi);
+        }
+      }
     }
 
     return inputFeatures;
@@ -193,6 +240,30 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XICTOXIPIPI(nSigTofBachelorPi),
       FILL_MAP_XICTOXIPIPI(nSigTofPiFromLambda),
       FILL_MAP_XICTOXIPIPI(nSigTofPrFromLambda)};
+    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      std::map<std::string, uint8_t> mapKfFeatures{
+        FILL_MAP_XICTOXIPIPI(kfDecayLength),
+        FILL_MAP_XICTOXIPIPI(kfDecayLengthNormalised),
+        FILL_MAP_XICTOXIPIPI(kfDecayLengthXY),
+        FILL_MAP_XICTOXIPIPI(kfDecayLengthXYNormalised),
+        FILL_MAP_XICTOXIPIPI(kfCascadeChi2),
+        FILL_MAP_XICTOXIPIPI(kfV0Chi2),
+        FILL_MAP_XICTOXIPIPI(chi2XicPlusToPV),
+        FILL_MAP_XICTOXIPIPI(chi2TopoXicPlusToPV),
+        FILL_MAP_XICTOXIPIPI(chi2XiToPV),
+        FILL_MAP_XICTOXIPIPI(chi2Pi0ToPV),
+        FILL_MAP_XICTOXIPIPI(chi2Pi1ToPV),
+        FILL_MAP_XICTOXIPIPI(chi2DevPi0Pi1),
+        FILL_MAP_XICTOXIPIPI(chi2DevPi0Xi),
+        FILL_MAP_XICTOXIPIPI(chi2DevPi1Xi),
+        FILL_MAP_XICTOXIPIPI(dcaPi0Pi1),
+        FILL_MAP_XICTOXIPIPI(dcaPi0Xi),
+        FILL_MAP_XICTOXIPIPI(dcaPi1Xi),
+        FILL_MAP_XICTOXIPIPI(dcaXYPi0Pi1),
+        FILL_MAP_XICTOXIPIPI(dcaXYPi0Xi),
+        FILL_MAP_XICTOXIPIPI(dcaXYPi1Xi)};
+      MlResponse<TypeOutputScore>::mAvailableInputFeatures.insert(mapKfFeatures.begin(), mapKfFeatures.end());
+    }
   }
 };
 

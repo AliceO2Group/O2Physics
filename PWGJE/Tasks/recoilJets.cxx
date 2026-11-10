@@ -1377,7 +1377,7 @@ struct RecoilJets {
     spectra.fill(HIST("hCentFT0M_FT0MStar"), centFT0M, scaledFT0M, weight);
 
     // Correlation: centrality FT0C vs scaled FT0C
-    spectra.fill(HIST("hCentFT0C_ScaledFT0C"), centFT0C, ft0Metrics.multFT0C, weight);
+    spectra.fill(HIST("hCentFT0C_ScaledFT0C"), centFT0C, scaledFT0C, weight);
 
     // Z vertex position vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_vertexZ"), scaledFT0C, vertexZ, weight);

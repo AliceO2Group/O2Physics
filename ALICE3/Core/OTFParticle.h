@@ -40,21 +40,20 @@ class OTFParticle
   OTFParticle() = default;
 
   template <typename TParticle>
-  explicit OTFParticle(const TParticle& particle)
+  explicit OTFParticle(const TParticle& particle) : mPdgCode(particle.pdgCode()),
+                                                    mGlobalIndex(particle.globalIndex()),
+                                                    mCollisionId(particle.mcCollisionId()),
+                                                    mVx(particle.vx()),
+                                                    mVy(particle.vy()),
+                                                    mVz(particle.vz()),
+                                                    mVt(particle.vt()),
+                                                    mPx(particle.px()),
+                                                    mPy(particle.py()),
+                                                    mPz(particle.pz()),
+                                                    mE(particle.e()),
+                                                    mStatusCode(particle.statusCode()),
+                                                    mFlag(particle.flags())
   {
-    mPdgCode = particle.pdgCode();
-    mGlobalIndex = particle.globalIndex();
-    mCollisionId = particle.mcCollisionId();
-    mPx = particle.px();
-    mPy = particle.py();
-    mPz = particle.pz();
-    mE = particle.e();
-    mVx = particle.vx();
-    mVy = particle.vy();
-    mVz = particle.vz();
-    mVt = particle.vt();
-    mFlag = particle.flags();
-    mStatusCode = particle.statusCode();
     setBitOff(DecayerBits::ProducedByDecayer);
     if (particle.has_mothers()) {
       mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
@@ -102,84 +101,82 @@ class OTFParticle
   }
 
   // Getters
-  int pdgCode() const { return mPdgCode; }
-  int globalIndex() const { return mGlobalIndex; }
-  int collisionId() const { return mCollisionId; }
-  bool isAlive() const { return checkBit(DecayerBits::IsAlive); }
-  bool isPrimary() const { return checkBit(DecayerBits::IsPrimary); }
-  bool isFromMcParticles() const { return !checkBit(DecayerBits::ProducedByDecayer); }
-  float weight() const
+  [[nodiscard]] int pdgCode() const { return mPdgCode; }
+  [[nodiscard]] int globalIndex() const { return mGlobalIndex; }
+  [[nodiscard]] int collisionId() const { return mCollisionId; }
+  [[nodiscard]] bool isAlive() const { return checkBit(DecayerBits::IsAlive); }
+  [[nodiscard]] bool isPrimary() const { return checkBit(DecayerBits::IsPrimary); }
+  [[nodiscard]] bool isFromMcParticles() const { return !checkBit(DecayerBits::ProducedByDecayer); }
+  [[nodiscard]] float weight() const
   {
     static constexpr float Weight = 1.f;
     return Weight;
   }
-  uint8_t flags() const { return mFlag; }
-  int statusCode() const { return mStatusCode; }
-  float vx() const { return mVx; }
-  float vy() const { return mVy; }
-  float vz() const { return mVz; }
-  float vt() const { return mVt; }
-  float px() const { return mPx; }
-  float py() const { return mPy; }
-  float pz() const { return mPz; }
-  float e() const { return mE; }
-  float radius() const { return std::hypot(mVx, mVy); }
-  float decayRadius() const { return mDecayRadius; }
-  float r() const { return radius(); }
-  float pt() const { return std::hypot(mPx, mPy); }
-  float p() const { return std::hypot(mPx, mPy, mPz); }
-  float phi() const { return o2::constants::math::PI + std::atan2(-1.0f * py(), -1.0f * px()); }
-  float eta() const
+  [[nodiscard]] uint8_t flags() const { return mFlag; }
+  [[nodiscard]] int statusCode() const { return mStatusCode; }
+  [[nodiscard]] float vx() const { return mVx; }
+  [[nodiscard]] float vy() const { return mVy; }
+  [[nodiscard]] float vz() const { return mVz; }
+  [[nodiscard]] float vt() const { return mVt; }
+  [[nodiscard]] float px() const { return mPx; }
+  [[nodiscard]] float py() const { return mPy; }
+  [[nodiscard]] float pz() const { return mPz; }
+  [[nodiscard]] float e() const { return mE; }
+  [[nodiscard]] float radius() const { return std::hypot(mVx, mVy); }
+  [[nodiscard]] float decayRadius() const { return mDecayRadius; }
+  [[nodiscard]] float r() const { return radius(); }
+  [[nodiscard]] float pt() const { return std::hypot(mPx, mPy); }
+  [[nodiscard]] float p() const { return std::hypot(mPx, mPy, mPz); }
+  [[nodiscard]] float phi() const { return o2::constants::math::PI + std::atan2(-1.0f * py(), -1.0f * px()); }
+  [[nodiscard]] float eta() const
   {
     // Conditionally defined to avoid FPEs
     // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1959
     static constexpr float Tolerance = 1e-7f;
     if ((p() - mPz) < Tolerance) {
       return (mPz < 0.0f) ? -100.0f : 100.0f;
-    } else {
-      return 0.5f * std::log((p() + mPz) / (p() - mPz));
     }
+    return 0.5f * std::log((p() + mPz) / (p() - mPz));
   }
-  float y() const
+  [[nodiscard]] float y() const
   {
     // Conditionally defined to avoid FPEs
     // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1980
     static constexpr float Tolerance = 1e-7f;
     if ((e() - mPz) < Tolerance) {
       return (mPz < 0.0f) ? -100.0f : 100.0f;
-    } else {
-      return 0.5f * std::log((mE + mPz) / (mE - mPz));
     }
+    return 0.5f * std::log((mE + mPz) / (mE - mPz));
   }
-  int getMotherIndexStart() const { return mIndicesMother[0]; }
-  int getMotherIndexStop() const { return mIndicesMother[1]; }
-  int getDaughterIndexStart() const { return mIndicesDaughter[0]; }
-  int getDaughterIndexStop() const { return mIndicesDaughter[1]; }
-  const std::array<int, 2>& getMothers() const { return mIndicesMother; }
-  const std::array<int, 2>& getDaughters() const { return mIndicesDaughter; }
-  std::span<const int> getMotherSpan() const { return hasMothers() ? std::span<const int>(mIndicesMother.data(), 2) : std::span<const int>(); }
+  [[nodiscard]] int getMotherIndexStart() const { return mIndicesMother[0]; }
+  [[nodiscard]] int getMotherIndexStop() const { return mIndicesMother[1]; }
+  [[nodiscard]] int getDaughterIndexStart() const { return mIndicesDaughter[0]; }
+  [[nodiscard]] int getDaughterIndexStop() const { return mIndicesDaughter[1]; }
+  [[nodiscard]] const std::array<int, 2>& getMothers() const { return mIndicesMother; }
+  [[nodiscard]] const std::array<int, 2>& getDaughters() const { return mIndicesDaughter; }
+  [[nodiscard]] std::span<const int> getMotherSpan() const { return hasMothers() ? std::span<const int>(mIndicesMother.data(), 2) : std::span<const int>(); }
 
   // Checks
-  bool hasDaughters() const { return (mIndicesDaughter[0] >= 0); }
-  bool hasMothers() const { return (mIndicesMother[0] >= 0); }
-  bool hasNaN() const
+  [[nodiscard]] bool hasDaughters() const { return (mIndicesDaughter[0] >= 0); }
+  [[nodiscard]] bool hasMothers() const { return (mIndicesMother[0] >= 0); }
+  [[nodiscard]] bool hasNaN() const
   {
     return std::isnan(mPx) || std::isnan(mPy) || std::isnan(mPz) || std::isnan(mE) ||
            std::isnan(mVx) || std::isnan(mVy) || std::isnan(mVz);
   }
-  bool hasIndex() const
+  [[nodiscard]] bool hasIndex() const
   {
     return (mGlobalIndex != -1);
   }
 
   // Bits
-  bool checkBit(DecayerBits bit) const { return mBits.test(static_cast<size_t>(bit)); }
+  [[nodiscard]] bool checkBit(DecayerBits bit) const { return mBits.test(static_cast<size_t>(bit)); }
   void setBit(DecayerBits bit, bool value = true) { mBits.set(static_cast<size_t>(bit), value); }
   void setBitOn(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), true); }
   void setBitOff(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), false); }
 
-  const std::bitset<8>& getBits() const { return mBits; }
-  uint8_t getBitsValue() const { return static_cast<uint8_t>(mBits.to_ulong()); }
+  [[nodiscard]] const std::bitset<8>& getBits() const { return mBits; }
+  [[nodiscard]] uint8_t getBitsValue() const { return static_cast<uint8_t>(mBits.to_ulong()); }
   void setBits(std::bitset<8> bits) { mBits = bits; }
 
  private:
@@ -191,7 +188,7 @@ class OTFParticle
 
   int mStatusCode{};
   uint8_t mFlag{};
-  std::bitset<8> mBits{};
+  std::bitset<8> mBits;
   std::array<int, 2> mIndicesMother{-1, -1}, mIndicesDaughter{-1, -1};
 };
 

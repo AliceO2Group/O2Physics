@@ -80,7 +80,7 @@ struct MCGeneratorStudies {
     hBCCounter->GetXaxis()->SetBinLabel(2, "+TVX");
     hBCCounter->GetXaxis()->SetBinLabel(3, "+Collision");
 
-    TString mesonLatexString = (TString)mSelectedParticleCode;
+    TString mesonLatexString = TString(mSelectedParticleCode);
     switch (mSelectedParticleCode) {
       case 0:
         mesonLatexString = "particles";

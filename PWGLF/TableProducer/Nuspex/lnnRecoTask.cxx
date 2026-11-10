@@ -46,7 +46,6 @@
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TPDGCode.h>
 #include <TString.h>
 
 #include <algorithm>

@@ -34,6 +34,7 @@ struct FemtoProducerLiteConverter {
   o2::framework::Produces<o2::aod::FOmegas> producedOmegas;
   o2::framework::Produces<o2::aod::FSigmas> producedSigmas;
   o2::framework::Produces<o2::aod::FSigmaPlus> producedSigmaPlus;
+  o2::framework::Produces<o2::aod::FSigmaPlusPcm> producedSigmaPlusPcm;
 
   void init(o2::framework::InitContext&)
   {
@@ -138,6 +139,17 @@ struct FemtoProducerLiteConverter {
                       liteSigmaPlus.chaDauId());
   }
   PROCESS_SWITCH(FemtoProducerLiteConverter, processLiteSigmaPlus, "Convert FLiteSigmaPlus to FSigmaPlus", false);
+
+  void processLiteSigmaPlusPcm(o2::aod::FLiteSigmaPlusPcm::iterator const& liteSigmaPlusPcm)
+  {
+    producedSigmaPlusPcm(liteSigmaPlusPcm.fLiteColId(),
+                         liteSigmaPlusPcm.signedPt(),
+                         liteSigmaPlusPcm.eta(),
+                         liteSigmaPlusPcm.phi(),
+                         liteSigmaPlusPcm.sigmaMass(),
+                         liteSigmaPlusPcm.chaDauId());
+  }
+  PROCESS_SWITCH(FemtoProducerLiteConverter, processLiteSigmaPlusPcm, "Convert FLiteSigmaPlusPcm to FSigmaPlusPcm", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

@@ -20,6 +20,7 @@
 
 #include <Rtypes.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -68,7 +69,7 @@ class TrackSelection
     ppPass3
   };
 
-  static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
+  static const std::array<std::string, static_cast<int>(TrackCuts::kNCuts)> mCutNames;
 
   // True for Run 2 track types. Hoisted out of the per-cut IsSelected() so that
   // the trackType() column is dereferenced once per track instead of once per cut.
@@ -249,8 +250,8 @@ class TrackSelection
   void SetMaxDcaXY(float maxDcaXY);
   void SetMaxDcaZ(float maxDcaZ);
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
-  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers);
-  void SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers);
+  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers);
+  void SetRequireNoHitsInITSLayers(const std::set<uint8_t>& excludedLayers);
   /// @brief Reset ITS requirements
   void ResetITSRequirements() { mRequiredITSHits.clear(); }
   void SetMaxTPCFractionSharedCls(float maxTPCFractionSharedCls);

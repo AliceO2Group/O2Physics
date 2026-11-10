@@ -27,14 +27,18 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 
 #include <algorithm>
@@ -508,8 +512,7 @@ struct xi1530kaonreducedtable {
   {
     auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("/GLO/Config/GRPMagField", timestamp);
     if (grpo == nullptr) {
-      LOGF(fatal, "GRPMagField object not found in CCDB for timestamp %llu",
-           static_cast<unsigned long long>(timestamp));
+      LOGF(fatal, "GRPMagField object not found in CCDB for timestamp %llu", timestamp);
       return 0.f;
     }
     return 0.1f * grpo->getNominalL3Field(); // kG -> T

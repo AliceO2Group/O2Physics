@@ -39,6 +39,16 @@ o2physics_add_dpl_workflow(epdzeroflow-analysis
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(j-v02-dmeson-analysis
+                    SOURCES jV02DmesonAnalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::JCorran
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(j-v02-dmeson-toy
+                    SOURCES jV02DmesonToy.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(j-fluc-efficiency-task
                     SOURCES jFlucEfficiencyTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran

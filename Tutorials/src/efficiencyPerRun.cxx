@@ -31,6 +31,7 @@
 #include <TH1.h>
 
 #include <chrono>
+#include <cstdint>
 #include <string>
 
 using namespace o2::framework;
@@ -40,7 +41,7 @@ struct EfficiencyPerRun {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "Users/j/jgrosseo/tutorial/efficiency/simple", "base path to the ccdb object"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   OutputObj<TH1F> pt{TH1F("pt", "pt", 20, 0., 10.)};
 

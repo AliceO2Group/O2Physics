@@ -86,8 +86,8 @@ void FFitWeights::init()
   fW_data->Add(new TProfile("pMeanPt", "", centBin, 0, centBin));
   fW_data->Add(new TH2D("hPtWeight", "", centBin, 0, centBin, ptBin, ptAxis->GetXmin(), ptAxis->GetXmax()));
 
-  ptProfCent = reinterpret_cast<TProfile*>(fW_data->FindObject("pMeanPt"));
-  h2ptCent = reinterpret_cast<TH2D*>(fW_data->FindObject("hPtWeight"));
+  ptProfCent = dynamic_cast<TProfile*>(fW_data->FindObject("pMeanPt"));
+  h2ptCent = dynamic_cast<TH2D*>(fW_data->FindObject("hPtWeight"));
 };
 
 void FFitWeights::fillWeights(float centrality, float qn, int nh, const char* pf)
@@ -98,10 +98,10 @@ void FFitWeights::fillWeights(float centrality, float qn, int nh, const char* pf
   if (!tar)
     return;
 
-  TH2D* th2 = reinterpret_cast<TH2D*>(tar->FindObject(this->getQName(nh, pf)));
+  TH2D* th2 = dynamic_cast<TH2D*>(tar->FindObject(this->getQName(nh, pf)));
   if (!th2) {
     tar->Add(new TH2D(this->getQName(nh, pf), this->getAxisName(nh, pf), centBin, 0, centBin, qAxis->GetNbins(), qAxis->GetXmin(), qAxis->GetXmax()));
-    th2 = reinterpret_cast<TH2D*>(tar->At(tar->GetEntries() - 1));
+    th2 = dynamic_cast<TH2D*>(tar->At(tar->GetEntries() - 1));
   }
   th2->Fill(centrality, qn);
 };
@@ -117,7 +117,7 @@ void FFitWeights::fillPt(float centrality, float pt, float weight, bool first)
 float FFitWeights::getPtMult(float centrality)
 {
   if (!ptProfCent) {
-    ptProfCent = reinterpret_cast<TProfile*>(fW_data->FindObject("pMeanPt"));
+    ptProfCent = dynamic_cast<TProfile*>(fW_data->FindObject("pMeanPt"));
   }
   return ptProfCent->GetBinContent(ptProfCent->FindBin(centrality));
 };
@@ -132,7 +132,7 @@ Long64_t FFitWeights::Merge(TCollection* collist)
   }
   FFitWeights* lW = 0;
   TIter allW(collist);
-  while ((lW = (reinterpret_cast<FFitWeights*>(allW())))) {
+  while ((lW = (dynamic_cast<FFitWeights*>(allW())))) {
     addArray(fW_data, lW->getDataArray());
     nmerged++;
   }
@@ -150,7 +150,7 @@ void FFitWeights::addArray(TObjArray* targ, TObjArray* sour)
 
     auto* tObj = targ->FindObject(obj->GetName());
     if (!tObj) {
-      auto* clone = static_cast<TObject*>(obj->Clone(obj->GetName()));
+      auto* clone = obj->Clone(obj->GetName());
       if (auto* h = dynamic_cast<TH1*>(clone))
         h->SetDirectory(0);
       targ->Add(clone);
@@ -168,7 +168,7 @@ void FFitWeights::mptSel()
   if (!tar)
     return;
 
-  TH2D* th2 = reinterpret_cast<TH2D*>(tar->FindObject("hPtWeight"));
+  TH2D* th2 = dynamic_cast<TH2D*>(tar->FindObject("hPtWeight"));
   if (!th2) {
     return;
   }
@@ -198,7 +198,7 @@ void FFitWeights::qSelection(const std::vector<int>& nhv, const std::vector<std:
 
   for (const auto& pf : stv) {
     for (const auto& nh : nhv) {
-      TH2D* th2{reinterpret_cast<TH2D*>(tar->FindObject(this->getQName(nh, pf.c_str())))};
+      TH2D* th2{dynamic_cast<TH2D*>(tar->FindObject(this->getQName(nh, pf.c_str())))};
       if (!th2) {
         LOGF(info, "FFitWeights qh not found!");
         return;

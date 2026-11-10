@@ -105,7 +105,7 @@ struct HfTaskCorrelationDsHadrons {
   // Configurable<bool> doMcCollisionCheck{"doMcCollisionCheck", false, "Flag for applying the collision check and selection based on MC collision info"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds (avoid the case of flag = 0, no outputMlScore)"};
-  Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
+  Configurable<int> nTpcCrossedRows{"nTpcCrossedRows", 70, "Number of crossed TPC Rows"};
   // Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
   Configurable<int> decayChannel{"decayChannel", 1, "Resonant decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<float> cutCollPosZMc{"cutCollPosZMc", 10., "max z-vertex position for collision acceptance"};
@@ -196,9 +196,9 @@ struct HfTaskCorrelationDsHadrons {
     AxisSpec axisDetlaEta = {binsEta, "#it{#eta}^{Hadron}-#it{#eta}^{D}"};
     AxisSpec axisEta = {binsEta, "#it{#eta}"};
     AxisSpec axisDetlaPhi = {binsPhi, "#it{#varphi}^{Hadron}-#it{#varphi}^{D} (rad)"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T}^{D} (GeV/#it{c})"};
-    AxisSpec axisCentrality = {(std::vector<double>)binsCentrality, "centrality FT0M (%)"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtD), "#it{p}_{T}^{D} (GeV/#it{c})"};
+    AxisSpec axisCentrality = {std::vector<double>(binsCentrality), "centrality FT0M (%)"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
     AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
     AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
@@ -535,7 +535,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (std::abs(trackDcaXY) >= dcaXYTrackMax || std::abs(trackDcaZ) >= dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
 
@@ -645,7 +645,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (std::abs(trackDcaXY) > dcaXYTrackMax || std::abs(trackDcaZ) > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
 
@@ -762,7 +762,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (std::abs(trackDcaXY) > dcaXYTrackMax || std::abs(trackDcaZ) > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
 
@@ -901,7 +901,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (std::abs(trackDcaXY) > dcaXYTrackMax || std::abs(trackDcaZ) > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
 
@@ -1246,7 +1246,7 @@ struct HfTaskCorrelationDsHadrons {
 
         // reconstructed track loop
         for (const auto& track : groupedTracks) {
-          if (!track.isGlobalTrackWoDCA() || track.tpcNClsCrossedRows() < nTpcCrossedRaws) {
+          if (!track.isGlobalTrackWoDCA() || track.tpcNClsCrossedRows() < nTpcCrossedRows) {
             continue;
           }
           if (track.has_mcParticle()) {

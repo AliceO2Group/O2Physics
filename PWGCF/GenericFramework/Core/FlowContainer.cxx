@@ -36,6 +36,7 @@
 
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 ClassImp(FlowContainer);
@@ -71,7 +72,7 @@ FlowContainer::~FlowContainer()
   delete fProf;
   delete fProfRand;
 };
-void FlowContainer::Initialize(TObjArray* inputList, const o2::framework::AxisSpec axis, int nRandom)
+void FlowContainer::Initialize(TObjArray* inputList, const o2::framework::AxisSpec& axis, int nRandom)
 {
   std::vector<double> multiBins = axis.binEdges;
   int nMultiBins = axis.nBins.value_or(0);
@@ -390,7 +391,7 @@ bool FlowContainer::CreateStatisticsProfile(StatisticsType StatType, int arg)
 }
 void FlowContainer::SetIDName(TString newname)
 {
-  fIDName = newname;
+  fIDName = std::move(newname);
 }
 TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
 {
@@ -413,6 +414,10 @@ TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
       retSubset->Add(rethist);
     }
     delete rethist;
+  }
+  if (!retSubset) {
+    LOGF(error, "Correlation profile is null");
+    return nullptr;
   }
   if (fMultiRebin > 0) {
     TString temp_name(retSubset->GetName());
@@ -524,9 +529,9 @@ TH1D* FlowContainer::GetCN2VsX(int n, bool onPt, double arg1, double arg2)
     corrN2 = GetHistCorrXXVsMulti(Form("%i2", n), static_cast<int>(arg1));
   corrN2->SetName(Form("Corr_%s", corrN2->GetName()));
   TH1D* rethist = GetCN2(corrN2);
-  TString* nam = new TString(corrN2->GetName());
+  const TString nam(corrN2->GetName());
   delete corrN2;
-  rethist->SetName(nam->Data());
+  rethist->SetName(nam.Data());
   if (onPt) {
     int bins = fProf->GetXaxis()->FindBin(arg1);
     int bins2 = fProf->GetXaxis()->FindBin(arg2);
@@ -542,10 +547,10 @@ TH1D* FlowContainer::GetCN2VsX(int n, bool onPt, double arg1, double arg2)
 TH1D* FlowContainer::GetVN2VsX(int n, bool onPt, double arg1, double arg2)
 {
   TH1D* corrh = GetCN2VsX(n, onPt, arg1, arg2);
-  TString* nam = new TString(corrh->GetName());
+  const TString nam(corrh->GetName());
   TH1D* rethist = GetVN2(corrh);
   delete corrh;
-  rethist->SetName(nam->Data());
+  rethist->SetName(nam.Data());
   if (onPt) {
     int bins = fProf->GetXaxis()->FindBin(arg1);
     int bins2 = fProf->GetXaxis()->FindBin(arg2);
@@ -555,7 +560,6 @@ TH1D* FlowContainer::GetVN2VsX(int n, bool onPt, double arg1, double arg2)
   } else {
     rethist->SetTitle(Form(";#it{N}_{tr};v_{%i}{2}", n));
   }
-  delete nam;
   return rethist;
 }
 
@@ -705,10 +709,10 @@ TH1D* FlowContainer::GetCN4VsX(int n, bool onPt, double arg1, double arg2)
     corrN4->SetName(Form("Corr_%s", corrN4->GetName()));
   }
   TH1D* rethist = GetCN4(corrN4, corrN2);
-  TString* nam = new TString(corrN4->GetName());
+  const TString nam(corrN4->GetName());
   delete corrN2;
   delete corrN4;
-  rethist->SetName(nam->Data());
+  rethist->SetName(nam.Data());
   if (onPt) {
     int bins = fProf->GetXaxis()->FindBin(arg1);
     int bins2 = fProf->GetXaxis()->FindBin(arg2);
@@ -779,9 +783,9 @@ TH1D* FlowContainer::GetVN4VsX(int n, bool onPt, double arg1, double arg2)
 {
   TH1D* temph = GetCN4VsX(n, onPt, arg1, arg2);
   TH1D* rethist = GetVN4(temph);
-  TString* nam = new TString(temph->GetName());
+  const TString nam(temph->GetName());
   delete temph;
-  rethist->SetName(nam->Data());
+  rethist->SetName(nam.Data());
   if (onPt) {
     int bins = fProf->GetXaxis()->FindBin(arg1);
     int bins2 = fProf->GetXaxis()->FindBin(arg2);
@@ -811,9 +815,9 @@ TH1D* FlowContainer::GetCN6VsX(int n, bool onPt, double arg1, double arg2)
   TH1D* rethist = GetCN6(corrN6, corrN4, corrN2);
   delete corrN2;
   delete corrN4;
-  TString* nam = new TString(corrN6->GetName());
+  const TString nam(corrN6->GetName());
   delete corrN6;
-  rethist->SetName(nam->Data());
+  rethist->SetName(nam.Data());
   if (onPt) {
     int bins = fProf->GetXaxis()->FindBin(arg1);
     int bins2 = fProf->GetXaxis()->FindBin(arg2);
@@ -829,9 +833,9 @@ TH1D* FlowContainer::GetVN6VsX(int n, bool onPt, double arg1, double arg2)
 {
   TH1D* temph = GetCN6VsX(n, onPt, arg1, arg2);
   TH1D* rethist = GetVN6(temph);
-  TString* nam = new TString(temph->GetName());
+  const TString nam(temph->GetName());
   delete temph;
-  rethist->SetName(nam->Data());
+  rethist->SetName(nam.Data());
   if (onPt) {
     int bins = fProf->GetXaxis()->FindBin(arg1);
     int bins2 = fProf->GetXaxis()->FindBin(arg2);
@@ -865,9 +869,9 @@ TH1D* FlowContainer::GetCN8VsX(int n, bool onPt, double arg1, double arg2)
   delete corrN2;
   delete corrN4;
   delete corrN6;
-  TString* nam = new TString(corrN8->GetName());
+  const TString nam(corrN8->GetName());
   delete corrN8;
-  rethist->SetName(nam->Data());
+  rethist->SetName(nam.Data());
   if (onPt) {
     int bins = fProf->GetXaxis()->FindBin(arg1);
     int bins2 = fProf->GetXaxis()->FindBin(arg2);
@@ -883,9 +887,9 @@ TH1D* FlowContainer::GetVN8VsX(int n, bool onPt, double arg1, double arg2)
 {
   TH1D* temph = GetCN8VsX(n, onPt, arg1, arg2);
   TH1D* rethist = GetVN8(temph);
-  TString* nam = new TString(temph->GetName());
+  const TString nam(temph->GetName());
   delete temph;
-  rethist->SetName(nam->Data());
+  rethist->SetName(nam.Data());
   if (onPt) {
     int bins = fProf->GetXaxis()->FindBin(arg1);
     int bins2 = fProf->GetXaxis()->FindBin(arg2);
@@ -927,7 +931,7 @@ TProfile* FlowContainer::GetRefFlowProfile(const char* order, double m1, double 
   if (nStopBin < nStartBin)
     nStopBin = fProf->GetXaxis()->GetNbins();
   int nBins = nStopBin - nStartBin + 1;
-  double* l_bins = new double[nBins + 1];
+  std::vector<double> l_bins(nBins + 1);
   for (int i = 0; i <= nBins; i++)
     l_bins[i] = i;
   TProfile* retpf = 0;
@@ -938,7 +942,7 @@ TProfile* FlowContainer::GetRefFlowProfile(const char* order, double m1, double 
   while (fIDName.Tokenize(l_name, l_pos)) {
     l_name.Append(order);
     int ybin = fProf->GetYaxis()->FindBin(l_name.Data());
-    TProfile* tempprof = rhSubset->GetSubset(kTRUE, "tempprof", ybin, ybin, nBins, l_bins);
+    TProfile* tempprof = rhSubset->GetSubset(kTRUE, "tempprof", ybin, ybin, nBins, l_bins.data());
     if (!retpf)
       retpf = dynamic_cast<TProfile*>(tempprof->Clone("RefFlowProf"));
     else
@@ -1236,5 +1240,5 @@ double* FlowContainer::GetMultiRebin(int& nbins)
   double* retBins = new double[fMultiRebin + 1];
   for (int i = 0; i <= nbins; i++)
     retBins[i] = fMultiRebinEdges[i];
-  return fMultiRebinEdges;
+  return retBins;
 }

@@ -110,7 +110,7 @@ struct HfTaskXicToXiPiPi {
 
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisMassXiRes = {300, 1.4, 2.7, "inv. mass (GeV/#it{c}^{2})"};
-    static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    static const AxisSpec axisPt = {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"};
     static const AxisSpec axisDecLength = {binsDecLength};
     static const AxisSpec axisErrDecLength = {binsErrDecLength};
     static const AxisSpec axisDCA = {binsDCA};

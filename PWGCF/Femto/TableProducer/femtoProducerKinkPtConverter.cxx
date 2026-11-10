@@ -16,6 +16,7 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -73,7 +74,9 @@ struct FemtoProducerKinkPtConverter {
         float pyMoth = sigma.pt() * std::sin(sigma.phi());
         float pzMoth = sigma.pt() * std::sinh(sigma.eta());
 
-        float ptRecalc = utils::calcPtnew(pxMoth, pyMoth, pzMoth, pxDaug, pyDaug, pzDaug);
+        // Sigma- -> pi- n
+        float ptRecalc = utils::calcPtnew(pxMoth, pyMoth, pzMoth, pxDaug, pyDaug, pzDaug,
+                                          o2::constants::physics::MassSigmaMinus, o2::constants::physics::MassPionCharged, o2::constants::physics::MassNeutron);
 
         ROOT::Math::PtEtaPhiMVector recalcVec(ptRecalc, sigma.eta(), sigma.phi(), sigma.mass());
         float ptFrom4Vec = recalcVec.Pt();

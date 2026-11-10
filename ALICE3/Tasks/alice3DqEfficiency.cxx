@@ -775,7 +775,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
   std::vector<MCSignal*> fGenMCSignals;
 
   std::vector<AnalysisCompositeCut> fPairCuts;
-  AnalysisCompositeCut fMCGenAccCut;
+  AnalysisCompositeCut fMCGenAccCut{};
   bool fUseMCGenAccCut = false;
 
   uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
@@ -983,7 +983,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     fHistMan->SetUseDefaultVariableNames(true);
     fHistMan->SetDefaultVarNames(dqefficiency_helpers::varNames(), dqefficiency_helpers::varUnits());
 
-    VarManager::SetCollisionSystem((TString)fConfigOptions.syst, fConfigOptions.energy); // set collision system and center of mass energy
+    VarManager::SetCollisionSystem(TString(fConfigOptions.syst), fConfigOptions.energy); // set collision system and center of mass energy
 
     defineHistograms(fHistMan, histNames.Data(), cfgAddSEPHistogram.value.data());     // define all histograms
     dqhistograms::AddHistogramsFromJSON(fHistMan, cfgAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON

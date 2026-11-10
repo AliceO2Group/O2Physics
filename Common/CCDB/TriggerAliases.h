@@ -15,6 +15,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <array>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -51,7 +52,7 @@ enum triggerAliases {
   kNaliases
 };
 
-extern std::string aliasLabels[kNaliases];
+extern const std::array<std::string, kNaliases> aliasLabels;
 
 class TriggerAliases
 {

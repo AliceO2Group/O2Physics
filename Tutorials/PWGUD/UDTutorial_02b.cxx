@@ -62,7 +62,7 @@ struct UDTutorial02b {
 
   void init(InitContext&)
   {
-    anaPars = (DGAnaparHolder)DGPars;
+    anaPars = DGAnaparHolder(DGPars);
     pidsel.init(anaPars);
     if (verbose) {
       LOGF(info, "<UDTutorial02>");

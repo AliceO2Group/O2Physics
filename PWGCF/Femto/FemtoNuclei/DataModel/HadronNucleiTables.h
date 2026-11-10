@@ -24,6 +24,64 @@
 
 namespace o2::aod
 {
+// Independent mixed-event audit output. IDs are unique only together with the
+// two UUID words identifying the task instance. Not an extension of pair rows.
+namespace hnmediag
+{
+DECLARE_SOA_COLUMN(InstanceHi, instanceHi, uint64_t);
+DECLARE_SOA_COLUMN(InstanceLo, instanceLo, uint64_t);
+DECLARE_SOA_COLUMN(CallId, callId, uint64_t);
+DECLARE_SOA_COLUMN(Timeslice, timeslice, uint64_t);
+DECLARE_SOA_COLUMN(TfCounter, tfCounter, uint32_t);
+DECLARE_SOA_COLUMN(TfRun, tfRun, uint32_t);
+DECLARE_SOA_COLUMN(Kind, kind, uint8_t);
+DECLARE_SOA_COLUMN(Status, status, uint8_t);
+DECLARE_SOA_COLUMN(PoolEpoch, poolEpoch, uint64_t);
+DECLARE_SOA_COLUMN(Run, run, int32_t);
+DECLARE_SOA_COLUMN(PreviousRun, previousRun, int32_t);
+DECLARE_SOA_COLUMN(EventId, eventId, int64_t);
+DECLARE_SOA_COLUMN(PartnerId, partnerId, int64_t);
+DECLARE_SOA_COLUMN(InputCollisionId, inputCollisionId, int64_t);
+DECLARE_SOA_COLUMN(GlobalBc, globalBc, uint64_t);
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(PvMultiplicity, pvMultiplicity, float);
+DECLARE_SOA_COLUMN(NumContrib, numContrib, uint32_t);
+DECLARE_SOA_COLUMN(NNuclei, nNuclei, uint32_t);
+DECLARE_SOA_COLUMN(NHadrons, nHadrons, uint32_t);
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int32_t);
+DECLARE_SOA_COLUMN(PoolBefore, poolBefore, uint32_t);
+DECLARE_SOA_COLUMN(PoolAfter, poolAfter, uint32_t);
+DECLARE_SOA_COLUMN(BufferedEvents, bufferedEvents, uint64_t);
+DECLARE_SOA_COLUMN(OccupiedBins, occupiedBins, uint32_t);
+DECLARE_SOA_COLUMN(ExpectedPairs, expectedPairs, uint64_t);
+DECLARE_SOA_COLUMN(AcceptedPairs, acceptedPairs, uint64_t);
+DECLARE_SOA_COLUMN(RejectedPairs, rejectedPairs, uint64_t);
+DECLARE_SOA_COLUMN(Combinations, combinations, uint64_t);
+DECLARE_SOA_COLUMN(InputCollisions, inputCollisions, uint64_t);
+DECLARE_SOA_COLUMN(PassedEventSelection, passedEventSelection, uint64_t);
+DECLARE_SOA_COLUMN(PassedZorro, passedZorro, uint64_t);
+} // namespace hnmediag
+DECLARE_SOA_TABLE(HadNucleiMEDiag, "AOD", "HNMEDIAG",
+                  hnmediag::InstanceHi, hnmediag::InstanceLo, hnmediag::CallId,
+                  hnmediag::Timeslice, hnmediag::TfCounter, hnmediag::TfRun,
+                  hnmediag::Kind, hnmediag::Status, hnmediag::PoolEpoch,
+                  hnmediag::Run, hnmediag::PreviousRun, hnmediag::EventId,
+                  hnmediag::InputCollisionId, hnmediag::GlobalBc, hnmediag::Timestamp,
+                  hnmediag::ZVertex, hnmediag::Centrality, hnmediag::PvMultiplicity,
+                  hnmediag::NumContrib, hnmediag::NNuclei, hnmediag::NHadrons,
+                  hnmediag::PoolBin, hnmediag::PoolBefore, hnmediag::PoolAfter,
+                  hnmediag::BufferedEvents, hnmediag::OccupiedBins,
+                  hnmediag::ExpectedPairs, hnmediag::AcceptedPairs, hnmediag::RejectedPairs,
+                  hnmediag::Combinations, hnmediag::InputCollisions,
+                  hnmediag::PassedEventSelection, hnmediag::PassedZorro);
+DECLARE_SOA_TABLE(HadNucleiMEDiagLinks, "AOD", "HNMEDIAGLINK",
+                  hnmediag::InstanceHi, hnmediag::InstanceLo, hnmediag::CallId,
+                  hnmediag::PoolEpoch, hnmediag::Run, hnmediag::EventId,
+                  hnmediag::PartnerId, hnmediag::PoolBin,
+                  hnmediag::ExpectedPairs, hnmediag::AcceptedPairs);
+
 namespace hadron_nuclei_tables
 {
 
@@ -71,8 +129,8 @@ DECLARE_SOA_COLUMN(MassTOFNu, massTOFNu, float);
 DECLARE_SOA_COLUMN(MassTOFHad, massTOFHad, float);
 DECLARE_SOA_COLUMN(PidTrkNu, pidTrkNu, uint32_t);
 DECLARE_SOA_COLUMN(PidTrkHad, pidTrkHad, uint32_t);
-DECLARE_SOA_COLUMN(TrackIDHad, trackIDHad, int);
-DECLARE_SOA_COLUMN(TrackIDNu, trackIDNu, int);
+DECLARE_SOA_COLUMN(TrackIDHad, trackIDHad, int64_t);
+DECLARE_SOA_COLUMN(TrackIDNu, trackIDNu, int64_t);
 
 DECLARE_SOA_COLUMN(ItsClusterSizeNu, itsClusterSizeNu, uint32_t);
 DECLARE_SOA_COLUMN(ItsClusterSizeHad, itsClusterSizeHad, uint32_t);
@@ -82,6 +140,23 @@ DECLARE_SOA_COLUMN(SharedClustersHad, sharedClustersHad, uint8_t);
 
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
+DECLARE_SOA_COLUMN(MagneticField, magneticField, float);
+DECLARE_SOA_COLUMN(CollisionIdNu, collisionIdNu, int64_t);
+DECLARE_SOA_COLUMN(CollisionIdHad, collisionIdHad, int64_t);
+DECLARE_SOA_COLUMN(NClsFindableTPCNu, nClsFindableTPCNu, uint8_t);
+DECLARE_SOA_COLUMN(NClsFindableTPCHad, nClsFindableTPCHad, uint8_t);
+DECLARE_SOA_COLUMN(FractionSharedTPCNu, fractionSharedTPCNu, float);
+DECLARE_SOA_COLUMN(FractionSharedTPCHad, fractionSharedTPCHad, float);
+DECLARE_SOA_COLUMN(NClsITSNu, nClsITSNu, uint8_t);
+DECLARE_SOA_COLUMN(NClsITSHad, nClsITSHad, uint8_t);
+DECLARE_SOA_COLUMN(NClsITSInnerBarrelNu, nClsITSInnerBarrelNu, uint8_t);
+DECLARE_SOA_COLUMN(NClsITSInnerBarrelHad, nClsITSInnerBarrelHad, uint8_t);
+DECLARE_SOA_COLUMN(Chi2ITSNu, chi2ITSNu, float);
+DECLARE_SOA_COLUMN(Chi2ITSHad, chi2ITSHad, float);
+DECLARE_SOA_COLUMN(NSigmaTPCNuDe, nSigmaTPCNuDe, float);
+DECLARE_SOA_COLUMN(NSigmaTPCNuPr, nSigmaTPCNuPr, float);
+DECLARE_SOA_COLUMN(NSigmaTPCNuPi, nSigmaTPCNuPi, float);
 
 // Reconstructed-MC pair information. The signed generated pT follows the
 // convention used by PtNu/PtHad: particles are positive and antiparticles
@@ -108,6 +183,7 @@ DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, uint16_t);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
+DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int32_t);
 
 } // namespace hadron_nuclei_tables
 
@@ -154,7 +230,26 @@ DECLARE_SOA_TABLE(HadronNucleiTable, "AOD", "HADNUCLEITABLE",
                   hadron_nuclei_tables::NSigmaTOFNu,
                   hadron_nuclei_tables::NSigmaITSNu,
                   hadron_nuclei_tables::NSigmaTOFHad,
-                  hadron_nuclei_tables::NSigmaITSHad)
+                  hadron_nuclei_tables::NSigmaITSHad,
+                  hadron_nuclei_tables::RunNumber,
+                  hadron_nuclei_tables::MagneticField,
+                  hadron_nuclei_tables::TrackIDNu,
+                  hadron_nuclei_tables::TrackIDHad,
+                  hadron_nuclei_tables::CollisionIdNu,
+                  hadron_nuclei_tables::CollisionIdHad,
+                  hadron_nuclei_tables::NClsFindableTPCNu,
+                  hadron_nuclei_tables::NClsFindableTPCHad,
+                  hadron_nuclei_tables::FractionSharedTPCNu,
+                  hadron_nuclei_tables::FractionSharedTPCHad,
+                  hadron_nuclei_tables::NClsITSNu,
+                  hadron_nuclei_tables::NClsITSHad,
+                  hadron_nuclei_tables::NClsITSInnerBarrelNu,
+                  hadron_nuclei_tables::NClsITSInnerBarrelHad,
+                  hadron_nuclei_tables::Chi2ITSNu,
+                  hadron_nuclei_tables::Chi2ITSHad,
+                  hadron_nuclei_tables::NSigmaTPCNuDe,
+                  hadron_nuclei_tables::NSigmaTPCNuPr,
+                  hadron_nuclei_tables::NSigmaTPCNuPi)
 DECLARE_SOA_TABLE(HadronNucleiTableMC, "AOD", "HADNUCLEIMC",
                   hadron_nuclei_tables::PtNuMC,
                   hadron_nuclei_tables::EtaNuMC,
@@ -174,7 +269,8 @@ DECLARE_SOA_TABLE(HadronNucleiMult, "AOD", "HADNUCLEIMULT",
                   hadron_nuclei_tables::ZVertex,
                   hadron_nuclei_tables::Multiplicity,
                   hadron_nuclei_tables::CentFT0C,
-                  hadron_nuclei_tables::MultiplicityFT0C)
+                  hadron_nuclei_tables::MultiplicityFT0C,
+                  hadron_nuclei_tables::MultNTracksPV)
 
 // Reduced hadron-hypertriton pair output. Reconstructable quantities such as
 // k*, invariant mass and pointing variables are intentionally derived offline.

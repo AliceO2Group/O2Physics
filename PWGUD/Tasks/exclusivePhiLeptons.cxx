@@ -259,7 +259,7 @@ struct ExclusivePhiLeptons {
         registry.fill(HIST("hEta1"), onlyElectronTracks[1].Eta());
         resonance += onlyElectronTracks[0];
         resonance += onlyElectronTracks[1];
-        sigmaTotal = 0;
+        // sigmaTotal = 0; // FIXME: unused
         sigmaTotal = onlyElectronSigma[0] * onlyElectronSigma[0] + onlyElectronSigma[1] * onlyElectronSigma[1];
         ;
         registry.fill(HIST("hNsigEvsKa1"), onlyElectronSigma[0], onlyElectronSigma[1]);
@@ -285,7 +285,7 @@ struct ExclusivePhiLeptons {
         registry.fill(HIST("hEta1"), onlyElectronTracksTOF[0].Eta());
         resonance += onlyElectronTracks[0];
         resonance += onlyElectronTracksTOF[0];
-        sigmaTotal = 0;
+        // sigmaTotal = 0; // FIXME: unused
         sigmaTotal = onlyElectronSigma[0] * onlyElectronSigma[0] + onlyElectronSigmaTOF[0] * onlyElectronSigmaTOF[0];
         ;
         registry.fill(HIST("hNsigEvsKa1"), onlyElectronSigma[0], onlyElectronSigmaTOF[0]);
@@ -311,7 +311,7 @@ struct ExclusivePhiLeptons {
         registry.fill(HIST("hEta1"), onlyElectronTracksTOF[1].Eta());
         resonance += onlyElectronTracksTOF[0];
         resonance += onlyElectronTracksTOF[1];
-        sigmaTotal = 0;
+        // sigmaTotal = 0; // FIXME: unused
         sigmaTotal = onlyElectronSigmaTOF[0] * onlyElectronSigmaTOF[0] + onlyElectronSigmaTOF[1] * onlyElectronSigmaTOF[1];
         ;
         registry.fill(HIST("hNsigEvsKa1"), onlyElectronSigmaTOF[0], onlyElectronSigmaTOF[1]);

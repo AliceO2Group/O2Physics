@@ -15,6 +15,12 @@
 
 #include "PWGEM/PhotonMeson/TableProducer/skimmerPrimaryElectronFromDalitzEE.h"
 
+#include "PID/PIDTOFParamService.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/WorkflowSpec.h>
+
 using namespace o2::framework;
 using namespace o2::aod;
 using namespace o2::framework::expressions;

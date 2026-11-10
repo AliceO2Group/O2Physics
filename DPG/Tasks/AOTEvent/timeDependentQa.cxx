@@ -227,7 +227,12 @@ struct TimeDependentQaTask {
       histos.add("hSecondsCollisions", "", kTH1D, {axisSeconds});
       histos.add("hSecondsCollisionsNoPileup", "", kTH1D, {axisSeconds});
       histos.add("hSecondsIR", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVzBeforeAllCuts", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVxBeforeAllCuts", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVyBeforeAllCuts", "", kTH1D, {axisSeconds});
       histos.add("hSecondsVz", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVx", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsVy", "", kTH1D, {axisSeconds});
       histos.add("hSecondsFT0Camlp", "", kTH1D, {axisSeconds});
       histos.add("hSecondsFT0CamlpByColMult", "", kTH1D, {axisSeconds});
       histos.add("hSecondsFT0AamlpByColMult", "", kTH1D, {axisSeconds});
@@ -289,7 +294,7 @@ struct TimeDependentQaTask {
       // ### QA event selection bits
       int nEvSelBits = enNumEvSelBits;
       histos.add("hSecondsEventSelBits", "", kTH2F, {axisSecondsWideBins, {nEvSelBits, -0.5, nEvSelBits - 0.5, "Monitoring of event selection bits"}});
-      TAxis* axSelBits = reinterpret_cast<TAxis*>(histos.get<TH2>(HIST("hSecondsEventSelBits"))->GetYaxis());
+      TAxis* axSelBits = histos.get<TH2>(HIST("hSecondsEventSelBits"))->GetYaxis();
       axSelBits->SetBinLabel(1 + enCollisionsAll, "collisionsAll");
       axSelBits->SetBinLabel(1 + enIsTriggerTVX, "IsTriggerTVX");
       axSelBits->SetBinLabel(1 + enNoTimeFrameBorder, "NoTimeFrameBorder");
@@ -325,7 +330,7 @@ struct TimeDependentQaTask {
       // ### QA RCT flags
       int nRctFlagsTotal = enNumRctFlagsTotal;
       histos.add("hSecondsRCTflags", "", kTH2F, {axisSecondsWideBins, {nRctFlagsTotal + 2, -0.5, nRctFlagsTotal + 2 - 0.5, "Monitoring of RCT flags"}});
-      axRctFlags = reinterpret_cast<TAxis*>(histos.get<TH2>(HIST("hSecondsRCTflags"))->GetYaxis());
+      axRctFlags = histos.get<TH2>(HIST("hSecondsRCTflags"))->GetYaxis();
       axRctFlags->SetBinLabel(1, "NcollisionsSel8");
       axRctFlags->SetBinLabel(2, "CcdbNotFound");
       axRctFlags->SetBinLabel(3 + kCPVBad, "CPVBad");
@@ -527,6 +532,10 @@ struct TimeDependentQaTask {
 
       histos.fill(HIST("hSecondsUPCverticesBeforeAllCuts"), secFromSOR, isVertexUPC ? 1 : 0);
 
+      histos.fill(HIST("hSecondsVzBeforeAllCuts"), secFromSOR, col.posZ());
+      histos.fill(HIST("hSecondsVxBeforeAllCuts"), secFromSOR, col.posX());
+      histos.fill(HIST("hSecondsVyBeforeAllCuts"), secFromSOR, col.posY());
+
       if (std::fabs(col.posZ()) > 10)
         continue;
 
@@ -546,6 +555,8 @@ struct TimeDependentQaTask {
       if (col.selection_bit(kNoSameBunchPileup))
         histos.fill(HIST("hSecondsCollisionsNoPileup"), secFromSOR);
       histos.fill(HIST("hSecondsVz"), secFromSOR, col.posZ());
+      histos.fill(HIST("hSecondsVx"), secFromSOR, col.posX());
+      histos.fill(HIST("hSecondsVy"), secFromSOR, col.posY());
       histos.fill(HIST("hSecondsFT0Camlp"), secFromSOR, bc.foundFT0().sumAmpC());
       histos.fill(HIST("hSecondsFT0CamlpByColMult"), secFromSOR, col.multFT0C());
       histos.fill(HIST("hSecondsFT0AamlpByColMult"), secFromSOR, col.multFT0A());

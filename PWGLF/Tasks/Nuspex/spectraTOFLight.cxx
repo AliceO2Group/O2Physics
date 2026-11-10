@@ -22,7 +22,6 @@
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -37,7 +36,6 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -49,10 +47,8 @@
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>
-#include <TH2.h>
 #include <TH3.h>
 #include <TMCProcess.h>
-#include <TPDGCode.h>
 #include <TString.h>
 
 #include <array>
@@ -372,7 +368,7 @@ struct SpectraTOFLight {
           histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
           histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
 
-          histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
+          histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
 
         } else {
           histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
@@ -387,7 +383,7 @@ struct SpectraTOFLight {
           histos.add(hpt_den_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
 
-          histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH2D, {ptAxis, etaAxis});
+          histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
         }
         histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
         if (enableDCAxyzHistograms) {
@@ -860,7 +856,8 @@ struct SpectraTOFLight {
       return; // Skips processing if no corresponding MC collision is found (rare case!)
     }
 
-    const float multiplicity = getMultiplicity(collision);
+    const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
+    const float multiplicity = getMultiplicityMC(mcCollision);
 
     if (mcParticle.pdgCode() != PDGs[i]) {
       return;
@@ -1032,9 +1029,9 @@ struct SpectraTOFLight {
     if (mcParticle.isPhysicalPrimary()) {
       if (isEventSelected<false, false>(collision)) {
         if (includeCentralityMC) {
-          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), multiplicity);
         } else {
-          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt());
         }
       }
     }

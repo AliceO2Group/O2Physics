@@ -639,7 +639,7 @@ struct bayesPidQa {
     histos.fill(HIST("event/vertexz"), collision.posZ());
     histos.fill(HIST("event/colltime"), collisionTime_ps);
 
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       //
       if (!t.hasTOF()) { // Skipping tracks without TOF
         continue;
