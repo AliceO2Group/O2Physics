@@ -17,6 +17,7 @@
 #define PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_
 
 #include "PWGCF/Femto/Core/histManager.h"
+#include "PWGCF/Femto/Core/modes.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -61,7 +62,8 @@ enum CprHist {
 
 // template configurable group for Cpr
 // DefaultCutAverage: default of cutAverage (e.g. false for pairs of generated particles, where no detector effects are present)
-template <auto& Prefix, bool DefaultCutAverage = true>
+// DefaultKinematicVariable: default of kinematicVariable (e.g. Q3 for triplets, kstar for pairs)
+template <auto& Prefix, bool DefaultCutAverage = true, modes::KinematicVariable DefaultKinematicVariable = modes::KinematicVariable::kKstar>
 struct ConfCpr : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> cutAverage{"cutAverage", DefaultCutAverage, "Apply CPR if the average deta-dphistar is below the configured values"};
@@ -71,6 +73,7 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotAverage{"plotAverage", true, "Plot average deta dphi distribution"};
   o2::framework::Configurable<bool> plotAngularCorrelation{"plotAngularCorrelation", false, "Plot angular correlation of particles (eta1 vs eta2 & phi1 vs phi2)"};
   o2::framework::Configurable<bool> plotKinematic{"plotKinematic", true, "Plot kinematic (kstar/Q3) distribution of blocked pairs/triplets"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(DefaultKinematicVariable), "Type of kinematic variable (0->kstar, 1->kT, 2->mT, 3->Q3) reported by the kinematic plot"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
   o2::framework::Configurable<float> detaCenter{"detaCenter", 0.f, "Center of deta cut"};
@@ -241,6 +244,7 @@ class CloseTrackRejection
 
     mPlotAngularCorrelation = confCpr.plotAngularCorrelation.value;
     mPlotKinematic = confCpr.plotKinematic.value;
+    mKinematicVariable = static_cast<modes::KinematicVariable>(confCpr.kinematicVariable.value);
 
     if (confCpr.seed.value >= 0) {
       uint64_t randomSeed = 0;
@@ -259,7 +263,8 @@ class CloseTrackRejection
     mHistogramRegistry = registry;
 
     if (mPlotKinematic) {
-      mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kKinematic, HistTable), getHistDesc(kKinematic, HistTable), getHistType(kKinematic, HistTable), {specs.at(kKinematic)});
+      std::string kinematicDesc = histmanager::replaceFirstAxisTitle(getHistDesc(kKinematic, HistTable), modes::kinematicVariableToAxisTitle(mKinematicVariable));
+      mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kKinematic, HistTable), kinematicDesc.c_str(), getHistType(kKinematic, HistTable), {specs.at(kKinematic)});
     }
 
     if (mPlotAverage) {
@@ -301,9 +306,9 @@ class CloseTrackRejection
     bool isClose = mUseEpisoidalCut ? isClosePairEpisoidalCut() : isClosePairRectengularCut();
 
     if (isClose) {
-      fillBlocked(pairHistManager.getKinematic());
+      fillBlocked(pairHistManager.getKinematic(mKinematicVariable));
     } else {
-      fillPassed(pairHistManager.getKinematic());
+      fillPassed(pairHistManager.getKinematic(mKinematicVariable));
     }
 
     return isClose;
@@ -493,6 +498,7 @@ class CloseTrackRejection
   bool mPlotAverage = false;
   bool mPlotAngularCorrelation = false;
   bool mPlotKinematic = false;
+  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kKstar;
 
   float mKinematicMin = -1.f;
   float mKinematicMax = -1.f;
@@ -531,10 +537,10 @@ template <auto& prefix>
 class ClosePairRejectionTrackTrack
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr,
+            T1 const& confCpr,
             int absChargeTrack1,
             int absChargeTrack2)
   {
@@ -597,10 +603,10 @@ template <auto& prefixTrackV0>
 class ClosePairRejectionTrackV0 // can also be used for any particle type that has pos/neg daughters, like resonances
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr,
+            T1 const& confCpr,
             int absChargeTrack)
   {
     mCtr.init(registry, specs, confCpr, absChargeTrack, 1);
@@ -719,10 +725,10 @@ template <auto& prefix>
 class ClosePairRejectionTrackKink
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr,
+            T1 const& confCpr,
             int absChargeTrack)
   {
     mCtr.init(registry, specs, confCpr, absChargeTrack, 1);
@@ -753,10 +759,10 @@ template <auto& prefix>
 class ClosePairRejectionTrackTwoPhotonResonance
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* /*registry*/,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& /*specs*/,
-            T const& /*confCpr*/,
+            T1 const& /*confCpr*/,
             int /*absChargeTrack*/)
   {
   }
@@ -774,10 +780,10 @@ template <auto& prefix>
 class ClosePairRejectionMcParticleMcParticle
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr)
+            T1 const& confCpr)
   {
     mCtr.init(registry, specs, confCpr, 1, 1);
     mCtr.setMagField(confCpr.magField.value);

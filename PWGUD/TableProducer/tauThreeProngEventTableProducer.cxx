@@ -260,9 +260,6 @@ struct TauThreeProngEventTableProducer {
 
       registrySkim.add("skim/gapSide", ";Gap;events", {HistType::kTH1D, {{10, -1., 9.}}});
       registrySkim.add("skim/trueGapSide", ";TrueGap;events", {HistType::kTH1D, {{10, -1., 9.}}});
-      registrySkim.add("skim/etaTrk", ";#eta^{trk};events", {HistType::kTH1F, {{100, -1.5, 1.5}}});
-      registrySkim.add("skim/ptTrk", ";p_{T}^{trk};events", {HistType::kTH1F, {{100, 0., 5.}}});
-      registrySkim.add("skim/phiTrk", ";#phi^{trk};events", {HistType::kTH1F, {{128, -3.2, 3.2}}});
       registrySkim.add("skim/nTof", ";N_{TOFtrk};events", {HistType::kTH1F, {{10, -1., 9.}}});
     }
     if (doprocessMonteCarlo) {
@@ -298,6 +295,23 @@ struct TauThreeProngEventTableProducer {
       registrySkim.add("skim/daughterEtaMC", ";#eta^{daughter};events", {HistType::kTH1F, {{100, -4., 4.}}});
       registrySkim.add("skim/daughterPtMC", ";p_{T}^{daughter};events", {HistType::kTH1F, {{100, 0, 5.0}}});
     }
+    // common histos for doprocessDoSkim and doprocessMonteCarlo
+    if (doprocessDoSkim || doprocessMonteCarlo) {
+      registrySkim.add("rec/zvertex_SGP", ";#it{V}_{z};events", {HistType::kTH1D, {{100, -15., 15.}}});
+      registrySkim.add("rec/nPVtrack_SGP", ";#it{N}_{PVtrack};events", {HistType::kTH1D, {{100, 0., 100.}}});
+      registrySkim.add("rec/qtot_SGP", ";#it{Q}_{tot};events", {HistType::kTH1D, {{30, -15., 15.}}});
+      // registrySkim.add("skim/etaTrk", ";#eta^{trk};events", {HistType::kTH1F, {{100, -1.5, 1.5}}});
+      // registrySkim.add("skim/ptTrk", ";p_{T}^{trk};events", {HistType::kTH1F, {{100, 0., 5.}}});
+      // registrySkim.add("skim/phiTrk", ";#phi^{trk};events", {HistType::kTH1F, {{128, -3.2, 3.2}}});
+      registrySkim.add("rec/phiPVtrack_SGP", ";#phi^{PVtrack};events", {HistType::kTH1F, {{128, -3.2, 3.2}}});
+      registrySkim.add("rec/etaPVtrack_SGP", ";#eta^{PVtrack};events", {HistType::kTH1F, {{100, -1.5, 1.5}}});
+      registrySkim.add("rec/ptPVtrack_SGP", ";#it{p}_{T}^{PVtrack};events", {HistType::kTH1F, {{100, 0, 5.0}}});
+      registrySkim.add("rec/nTOFtrack_SGP", ";#it{N}_{TOFtrack};events", {HistType::kTH1F, {{50, 0, 50}}});
+      registrySkim.add("rec/FT0A_SGP", ";#it{E}_{FT0A};events", {HistType::kTH1F, {{100, 0, 500}}});
+      registrySkim.add("rec/FT0C_SGP", ";#it{E}_{FT0C};events", {HistType::kTH1F, {{100, 0, 500}}});
+      registrySkim.add("rec/FV0A_SGP", ";#it{E}_{FV0A};events", {HistType::kTH1F, {{100, 0, 500}}});
+    }
+
     if (doprocessGenerated) {
       registrySkim.add("gen/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{16, -1., 15.}}});
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "All");
@@ -758,44 +772,19 @@ struct TauThreeProngEventTableProducer {
 
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(0., 1.);
 
-    int gapSide = dgcand.gapSide();
-    registrySkim.get<TH1>(HIST("skim/gapSide"))->Fill(gapSide);
-    //    if (gapSide < 0 || gapSide > 2)
-    if (gapSide < o2::aod::sgselector::SingleGapA || gapSide > o2::aod::sgselector::DoubleGap)
-      return;
-    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(1., 1.);
-
-    int truegapSide = sgSelector.trueGap(dgcand, cutFV0, cutFT0A, cutFT0C, cutZDC);
-    gapSide = truegapSide;
-    registrySkim.get<TH1>(HIST("skim/trueGapSide"))->Fill(gapSide);
-    if (gapSide != mGapSide)
-      return;
-    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(2., 1.);
-
-    // zdc information
-    float energyZNA = dgcand.energyCommonZNA();
-    float energyZNC = dgcand.energyCommonZNC();
-    if (energyZNA < 0)
-      energyZNA = -1.;
-    if (energyZNC < 0)
-      energyZNC = -1.;
-    float timeZNA = dgcand.timeZNA();
-    float timeZNC = dgcand.timeZNC();
-
+    // set up PV track features
     int nTofTrk = 0;
     int nEtaIn15 = 0;
     int npT100 = 0;
-    // //   int qtot = 0;
-    // int8_t qtot = 0;
-    // TLorentzVector p;
+    int qtot = 0;
     ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p;
     for (const auto& trk : PVContributors) {
-      // qtot += trk.sign();
+      qtot += trk.sign();
       // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
       p.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassPiPlus));
-      registrySkim.get<TH1>(HIST("skim/etaTrk"))->Fill(p.Eta());
-      registrySkim.get<TH1>(HIST("skim/ptTrk"))->Fill(trk.pt());
-      registrySkim.get<TH1>(HIST("skim/phiTrk"))->Fill(p.Phi());
+      registrySkim.get<TH1>(HIST("rec/etaPVtrack_SGP"))->Fill(p.Eta());
+      registrySkim.get<TH1>(HIST("rec/ptPVtrack_SGP"))->Fill(trk.pt());
+      registrySkim.get<TH1>(HIST("rec/phiPVtrack_SGP"))->Fill(p.Phi());
 
       if (std::abs(p.Eta()) < trkEtacut)
         nEtaIn15++;               // 0.9 is a default
@@ -805,7 +794,38 @@ struct TauThreeProngEventTableProducer {
         nTofTrk++;
     } // end of loop over PV tracks
 
+    //
+    // plots after Single Gap producer without any further cuts
+    //
+    registrySkim.get<TH1>(HIST("rec/zvertex_SGP"))->Fill(dgcand.posZ());
+    registrySkim.get<TH1>(HIST("rec/nPVtrack_SGP"))->Fill(PVContributors.size());
+    registrySkim.get<TH1>(HIST("rec/qtot_SGP"))->Fill(qtot);
+    registrySkim.get<TH1>(HIST("rec/nTOFtrack_SGP"))->Fill(nTofTrk);
+    registrySkim.get<TH1>(HIST("rec/FT0A_SGP"))->Fill(dgcand.totalFT0AmplitudeA());
+    registrySkim.get<TH1>(HIST("rec/FT0C_SGP"))->Fill(dgcand.totalFT0AmplitudeC());
+    registrySkim.get<TH1>(HIST("rec/FV0A_SGP"))->Fill(dgcand.totalFV0AmplitudeA());
+    //
+    // end of plots after Single Gap producer
+    //
+
+    // check number of PV tracks
     if (PVContributors.size() != nPVtrackscut) // 4 or 6
+      return;
+    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(1., 1.);
+
+    // check gap side
+    int gapSide = dgcand.gapSide();
+    registrySkim.get<TH1>(HIST("skim/gapSide"))->Fill(gapSide);
+    //    if (gapSide < 0 || gapSide > 2)
+    if (gapSide < o2::aod::sgselector::SingleGapA || gapSide > o2::aod::sgselector::DoubleGap)
+      return;
+    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(2., 1.);
+
+    // check true gap side
+    int truegapSide = sgSelector.trueGap(dgcand, cutFV0, cutFT0A, cutFT0C, cutZDC);
+    gapSide = truegapSide;
+    registrySkim.get<TH1>(HIST("skim/trueGapSide"))->Fill(gapSide);
+    if (gapSide != mGapSide)
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(3., 1.);
 
@@ -845,6 +865,16 @@ struct TauThreeProngEventTableProducer {
     if (mFITvetoFlag && flagFITveto)
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(7., 1.);
+
+    // zdc information
+    float energyZNA = dgcand.energyCommonZNA();
+    float energyZNC = dgcand.energyCommonZNC();
+    if (energyZNA < 0)
+      energyZNA = -1.;
+    if (energyZNC < 0)
+      energyZNC = -1.;
+    float timeZNA = dgcand.timeZNA();
+    float timeZNC = dgcand.timeZNC();
 
     // RCT variable
     int rct = 0;
@@ -1396,7 +1426,7 @@ struct TauThreeProngEventTableProducer {
       float trueDaugZ[6] = {-998., -998., -998., -998., -998., -998.};
       int trueDaugPdgCode[6] = {-999, -999, -999, -999, -999, -999};
 
-      int8_t problemBits[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
+      bool problemBits[8] = {false, false, false, false, false, false, false, false};
       uint8_t problemBitsFlag = 0;
       // MyRecoProblem problem = NO_PROBLEM;
       registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_PROBLEM);
@@ -1595,6 +1625,20 @@ struct TauThreeProngEventTableProducer {
           // timesFIT[1] = collFromMcColl.timeFT0C();
           // timesFIT[2] = collFromMcColl.timeFV0A();
 
+          //
+          // plots after Single Gap producer without any further cuts
+          //
+          registrySkim.get<TH1>(HIST("rec/zvertex_SGP"))->Fill(zVertex);
+          registrySkim.get<TH1>(HIST("rec/nPVtrack_SGP"))->Fill(nPVcontrib);
+          // registrySkim.get<TH1>(HIST("rec/qtot_SGP"))->Fill(qtot);
+          // registrySkim.get<TH1>(HIST("rec/nTOFtrack_SGP"))->Fill(nTofTrk);
+          registrySkim.get<TH1>(HIST("rec/FT0A_SG"))->Fill(amplitudesFIT[0]);
+          registrySkim.get<TH1>(HIST("rec/FT0C_SGP"))->Fill(amplitudesFIT[1]);
+          registrySkim.get<TH1>(HIST("rec/FV0A_SGP"))->Fill(amplitudesFIT[2]);
+          //
+          // end of plots after Single Gap producer
+          //
+
           // get particles associated to generated collision
           auto const& partsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
           if (verbose)
@@ -1741,10 +1785,10 @@ struct TauThreeProngEventTableProducer {
         } // end of loop over collisions associated to MC collision
 
         // set up problem bits
-        problemBitsFlag = problemBits[0]; // initialization
+        problemBitsFlag = static_cast<uint8_t>(problemBits[0]); // initialization
         for (int ibit = 1; ibit < nBitsMax; ibit++) {
-          problemBitsFlag = (problemBitsFlag << offset); // shift by 1 position towards left
-          problemBitsFlag += problemBits[ibit];          // add next bit to the pool
+          problemBitsFlag = (problemBitsFlag << offset);              // shift by 1 position towards left
+          problemBitsFlag += static_cast<uint8_t>(problemBits[ibit]); // add next bit to the pool
         }
 
         // decide the channel and set the variable.

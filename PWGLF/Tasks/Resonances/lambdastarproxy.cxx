@@ -74,6 +74,16 @@ struct Lambdastarproxy {
   static constexpr float CutPtMinDefault = 0.5f;
   static constexpr float CutEtaMaxDefault = 0.8f;
 
+  static constexpr int FT0MPercentileBins = 100;
+  static constexpr float FT0MPercentileMax = 100.f;
+  enum class FT0MEventStatus : int {
+    Valid = 1,
+    Negative,
+    OutOfRange,
+    NonFinite,
+    Unavailable
+  };
+
   static constexpr float CutMCPtMinDefault = 0.1f;
   static constexpr float CutMCEtaMaxDefault = 0.8f;
   static constexpr int FillMCTruthDefault = 1;
@@ -352,6 +362,37 @@ struct Lambdastarproxy {
     return fallback;
   }
 
+  template <typename TCollision>
+  void fillEventMultiplicityCounters(TCollision const& collision, float eventMult)
+  {
+    // Use the exact estimator of the pair maps, including the legacy track-count
+    // fallback. Nonfinite values have no percentile and are counted in overflow.
+    histos.fill(HIST("hEventMultiplicity"), std::isfinite(eventMult) ? eventMult : FT0MPercentileMax);
+
+    // Keep the raw FT0M denominator separate: fallback track counts must never
+    // acquire an FT0M percentile label. Missing/nonfinite FT0M goes to overflow;
+    // finite negative and >=100 values retain their underflow/overflow meaning.
+    float ft0m = FT0MPercentileMax;
+    auto status = FT0MEventStatus::Unavailable;
+    if constexpr (requires { collision.centFT0M(); }) {
+      const float value = collision.centFT0M();
+      if (!std::isfinite(value)) {
+        status = FT0MEventStatus::NonFinite;
+      } else {
+        ft0m = value;
+        if (value < 0.f) {
+          status = FT0MEventStatus::Negative;
+        } else if (value >= FT0MPercentileMax) {
+          status = FT0MEventStatus::OutOfRange;
+        } else {
+          status = FT0MEventStatus::Valid;
+        }
+      }
+    }
+    histos.fill(HIST("hEventFT0M"), ft0m);
+    histos.fill(HIST("hEventFT0MStatus"), static_cast<int>(status));
+  }
+
   int chargeFromPdg(int pdg) const
   {
     const int apdg = std::abs(pdg);
@@ -529,12 +570,27 @@ struct Lambdastarproxy {
     AxisSpec dcaXYAxis{200, -0.2, 0.2, "DCA_{xy} (cm)"};
     AxisSpec dcaZAxis{200, -0.2, 0.2, "DCA_{z} (cm)"};
 
-    // Count reconstructed collisions received by the data process, before any
+    // Count reconstructed collisions received by the data or reco-MC process, before any
     // task event cuts and after all of them, independently of track candidates.
     histos.add("hEventSelection", "Proxy event selection;Selection stage;Events",
                HistType::kTH1D, {AxisSpec{2, 0.5, 2.5, "Selection stage"}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "Before event selection");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "After event selection");
+
+    // Small event-level denominators, independent of candidate and QA switches.
+    // Double storage and Sumw2 preserve large merged event counts and errors.
+    histos.add("hEventFT0M", "Selected reconstructed events;Raw FT0M percentile;Events",
+               HistType::kTH1D, {AxisSpec{FT0MPercentileBins, 0., FT0MPercentileMax, "Raw FT0M percentile"}}, true);
+    histos.add("hEventMultiplicity", "Selected reconstructed events (same estimator as pair maps);Multiplicity/centrality;Events",
+               HistType::kTH1D, {centAxis}, true);
+    histos.add("hEventFT0MStatus", "Selected reconstructed events;Raw FT0M status;Events",
+               HistType::kTH1D, {AxisSpec{static_cast<int>(FT0MEventStatus::Unavailable), 0.5, static_cast<int>(FT0MEventStatus::Unavailable) + 0.5, "Raw FT0M status"}}, true);
+    auto* ft0mStatusAxis = histos.get<TH1>(HIST("hEventFT0MStatus"))->GetXaxis();
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::Valid), "Finite FT0M [0,100)");
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::Negative), "Negative FT0M");
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::OutOfRange), "FT0M >= 100");
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::NonFinite), "Nonfinite FT0M");
+    ft0mStatusAxis->SetBinLabel(static_cast<int>(FT0MEventStatus::Unavailable), "FT0M unavailable");
 
     // Invariant-mass spectra
     histos.add("hInvMassPKUnlike",
@@ -1008,9 +1064,9 @@ struct Lambdastarproxy {
   static constexpr double MultMax = 100.;
   static constexpr std::array<const char*, 2> PairSigns{"Unlike", "Like"};
   static constexpr std::array<const char*, 2> ProbeRoles{"De", "Ka"};
-  static constexpr std::array<const char*, ParentClasses> ParentNames{
-    "no retained common mother", "K0S", "Lambda1115", "Kstar", "phi", "Lambda1520",
-    "other retained common mother", "multiple retained common mothers", "same MC particle", "invalid truth labels"};
+  // Parent tags: 0=no common mother, 1=K0S, 2=Lambda1115, 3=Kstar, 4=phi,
+  // 5=Lambda1520, 6=other common mother, 7=multiple common mothers,
+  // 8=same MC particle, 9=invalid truth labels.
 
   std::array<std::shared_ptr<TH3>, 2> mcProxySpecies{};
   std::array<std::shared_ptr<TH3>, 2> mcProxyOtherParents{};
@@ -1166,6 +1222,8 @@ struct Lambdastarproxy {
     const AxisSpec mcMass{DiagnosticMassBins, 1.4, 1.8, "M_(d/2)K (GeV/c2)"};
     const AxisSpec probeMass{ProbeMassBins, 1.4, 1.8, "M_(d/2)K (GeV/c2)"};
     uint64_t payload = 0;
+    // Keep these numerically filled TH3 axes unlabelled.
+    // For SpeciesNames see comment above, the parent-tag comments and packed-axis formulas define the decoder.
     auto add3 = [&](std::string const& name, std::string const& title, std::vector<AxisSpec> const& axes) {
       auto h = histos.add<TH3>(name.c_str(), title.c_str(), HistType::kTH3D, axes, true);
       payload += static_cast<uint64_t>(h->GetNcells()) * 2 * sizeof(double);
@@ -1176,17 +1234,8 @@ struct Lambdastarproxy {
       if (lstarEnableMCProxySpecies.value != 0) {
         mcProxySpecies[sign] = add3("hMCProxySpecies" + suffix, "Selected proxy;species+51*(dTOF+2*kTOF+4*pTPC+8*regularMult)",
                                     {mcMass, pairPt, AxisSpec{SpeciesTagCount * SelectedPIDStates, -0.5, SpeciesTagCount * SelectedPIDStates - 0.5, "Species and detector state"}});
-        for (int state = 0; state < SelectedPIDStates; ++state) {
-          for (int tag = 0; tag < SpeciesTagCount; ++tag) {
-            const std::string label = speciesTagName(tag) + ";state=" + std::to_string(state);
-            mcProxySpecies[sign]->GetZaxis()->SetBinLabel(tag + SpeciesTagCount * state + 1, label.c_str());
-          }
-        }
         mcProxyOtherParents[sign] = add3("hMCProxyOtherParents" + suffix, "Selected Other: retained immediate common-mother class only",
                                          {mcMass, pairPt, AxisSpec{ParentClasses, -0.5, ParentClasses - 0.5, "Retained parent class"}});
-        for (int parent = 0; parent < ParentClasses; ++parent) {
-          mcProxyOtherParents[sign]->GetZaxis()->SetBinLabel(parent + 1, ParentNames[parent]);
-        }
       }
       if (lstarEnableProxyPIDProbes.value == 0) {
         continue;
@@ -1200,27 +1249,10 @@ struct Lambdastarproxy {
         probeMass2[role][sign] = add3(std::string(stem).append("Mass2").append(suffix), "Loose both-TOF proxy probes;TPC/TOF envelopes;regular multiplicity", {probeMass, m2, packed});
         probeTPC[role][sign] = add3(std::string(stem).append("TPC").append(suffix), "Same loose both-TOF proxy probes;TPC nSigma;regular multiplicity", {probeMass, AxisSpec{60, -ProbeTPCMax, ProbeTPCMax, "TPC nSigma for slot hypothesis"}, packed});
         probeTOF[role][sign] = add3(std::string(stem).append("TOF").append(suffix), "Same loose both-TOF proxy probes;TOF nSigma;regular multiplicity", {probeMass, AxisSpec{80, -ProbeTOFMax, ProbeTOFMax, "TOF nSigma for slot hypothesis"}, packed});
-        for (int region = 0; region < ProbeRegions; ++region) {
-          for (int momentum = 0; momentum < ProbeMomentumBins; ++momentum) {
-            for (int pair = 0; pair < ProbePairPtBins; ++pair) {
-              const int tag = pair + ProbePairPtBins * (momentum + ProbeMomentumBins * region);
-              const std::string label = "pair=" + std::to_string(pair) + ";p=" + std::to_string(momentum) + ";region=" + std::to_string(region);
-              probeMass2[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
-              probeTPC[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
-              probeTOF[role][sign]->GetZaxis()->SetBinLabel(tag + 1, label.c_str());
-            }
-          }
-        }
       }
       if (doprocessMCReco) {
         mcProbeSpecies[sign] = add3("hMCProxyPIDProbeSpecies" + suffix, "Same loose probe pairs;species+51*nominalRegion;regular multiplicity",
                                     {probeMass, pairPt, AxisSpec{SpeciesTagCount * ProbeRegions, -0.5, SpeciesTagCount * ProbeRegions - 0.5, "Species plus nominal region"}});
-        for (int region = 0; region < ProbeRegions; ++region) {
-          for (int tag = 0; tag < SpeciesTagCount; ++tag) {
-            const std::string label = speciesTagName(tag) + ";region=" + std::to_string(region);
-            mcProbeSpecies[sign]->GetZaxis()->SetBinLabel(tag + SpeciesTagCount * region + 1, label.c_str());
-          }
-        }
       }
     }
     if (lstarEnableProxyPIDProbes.value != 0) {
@@ -1707,7 +1739,7 @@ struct Lambdastarproxy {
       // the track has a valid TOF match. Tracks without TOF are kept with
       // the TPC-only decision, avoiding an additional TOF-matching efficiency loss.
       if (isDeuteron) {
-        if (std::abs(nsTPC) >= tpcCut) {
+        if (!std::isfinite(nsTPC) || std::abs(nsTPC) >= tpcCut) {
           return false;
         }
         if (lstarEnableTOFNsigmaCutDe.value != 0 && hasTof) {
@@ -1945,6 +1977,8 @@ struct Lambdastarproxy {
 
     // Compute event multiplicity (FT0M or fallback)
     const float eventMult = eventMultiplicityFT0MOrFallback(collision, eventMultFallback);
+    // Exactly once after event cuts, before PID probes or candidate requirements.
+    fillEventMultiplicityCounters(collision, eventMult);
     if (lstarEnableProxyPIDProbes.value != 0) {
       if constexpr (IsMC) {
         fillProxyPIDProbes<true>(tracks, eventMult, collision.mcCollisionId());

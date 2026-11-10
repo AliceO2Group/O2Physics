@@ -950,7 +950,7 @@ struct DiffQA {
     for (const auto& col : collisions) {
       bc1 = -1;
       bc2 = -2;
-      bc3 = -3;
+      // bc3 = -3; // FIXME: unused
       if (col.has_foundBC()) {
         auto bc = col.foundBC_as<BCs>();
         bc1 = bc.globalBC();

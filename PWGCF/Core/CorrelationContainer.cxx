@@ -105,6 +105,7 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
   //
   // efficiencyAxis has to provide a 3 length list of AxisSpec which contains:
   //   eta (for efficiency), pt (for efficiency), vertex (for efficiency)
+  //   and can provide a fourth one, e.g. phi (for efficiency)
   //   The third axis of correlationAxis (multiplicity/centrality) is used also for the efficiency
   //
   // (optional) userAxis can contain optional user axes which are added to pair and trigger histogram and are
@@ -128,7 +129,11 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
   triggerAxis.insert(triggerAxis.end(), userAxis.begin(), userAxis.end());
   mTriggerHist = HistFactory::createHist<StepTHnF>({"mTriggerHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, triggerAxis, fgkCFSteps}}).release();
 
-  mTrackHistEfficiency = HistFactory::createHist<StepTHnF>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnF, {efficiencyAxis[0], efficiencyAxis[1], {5, -0.5, 4.5, "species"}, correlationAxis[3], efficiencyAxis[2], efficiencyAxis[3]}, fgkCFSteps}}).release();
+  std::vector<o2::framework::AxisSpec> trackEfficiencyAxis({efficiencyAxis[0], efficiencyAxis[1], {5, -0.5, 4.5, "species"}, correlationAxis[3], efficiencyAxis[2]});
+  if (efficiencyAxis.size() > 3) {
+    trackEfficiencyAxis.push_back(efficiencyAxis[3]);
+  }
+  mTrackHistEfficiency = HistFactory::createHist<StepTHnF>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnF, trackEfficiencyAxis, fgkCFSteps}}).release();
 
   mEventCount = HistFactory::createHist<TH2F>({"mEventCount", ";step;centrality;count", {HistType::kTH2F, {{fgkCFSteps + 2, -2.5, -0.5 + fgkCFSteps, "step"}, correlationAxis[3]}}}).release();
 }

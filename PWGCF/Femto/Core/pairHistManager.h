@@ -249,7 +249,6 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
-  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kKstar), "Type of kinematic variable (0->kstar, 1->kT, 2->mT) for PC and CPR plots"};
   o2::framework::ConfigurableAxis binningDeltaEta{"binningDeltaEta", {{35, -1.6, 1.6}}, "Delta eta"};
   o2::framework::ConfigurableAxis binningDeltaPhi{"binningDeltaPhi", {{35, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}}, "Delta phi"};
   o2::framework::Configurable<bool> plotBertschPratt{"plotBertschPratt", false, "(Reco/Mc) Enable 1D projections and 3D (q_out, q_side, q_long) Bertsch-Pratt histograms in LCMS"};
@@ -282,6 +281,7 @@ struct ConfPairCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common ancestor (in the same event)"};
   o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common ancestor (in the same event)"};
   o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kKstar), "Type of kinematic variable (0->kstar, 1->kT, 2->mT) reported by the pair-cleaner kinematic plot"};
 };
 
 // the enum gives the correct index in the array
@@ -667,9 +667,6 @@ class PairHistManager
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
 
-    // kinematic variable
-    mKinematicVariable = static_cast<modes::KinematicVariable>(ConfPairBinning.kinematicVariable.value);
-
     // values for cuts
     mKstarMin = ConfPairCuts.kstarMin.value;
     mKstarMax = ConfPairCuts.kstarMax.value;
@@ -943,9 +940,11 @@ class PairHistManager
     }
   }
 
-  float getKinematic() const
+  // kinematicVariable is supplied by the caller (CPR/pair cleaner), each of which carries its own
+  // Configurable for it -- this manager has no opinion of its own on which variable to report
+  float getKinematic(modes::KinematicVariable kinematicVariable) const
   {
-    switch (mKinematicVariable) {
+    switch (kinematicVariable) {
       case modes::KinematicVariable::kKstar:
         return mKstar;
         break;
@@ -1614,7 +1613,6 @@ class PairHistManager
   double mPdgMassNegDau2 = 0;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
-  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kKstar;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;

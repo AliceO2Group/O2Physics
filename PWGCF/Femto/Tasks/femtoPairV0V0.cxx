@@ -16,6 +16,8 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/collisionTagger.h"
+#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
 #include "PWGCF/Femto/Core/pairCleaner.h"
@@ -32,11 +34,13 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <map>
@@ -72,12 +76,23 @@ struct FemtoPairV0V0 {
 
   using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
+  // opt-in: carries FColTags, only needed by the processXxxMixedEventWithTagging functions below.
+  using FemtoCollisionsWithTags = o2::soa::Join<FemtoCollisions, o2::aod::FColTags>;
+  using FilteredFemtoCollisionsWithTags = o2::soa::Filtered<FemtoCollisionsWithTags>;
+
   o2::framework::SliceCache cache;
 
   // setup collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+
+  // opt-in, only needed by the processXxxMixedEventWithTagging functions below -- three separate
+  // instances since lambda-lambda/k0short-k0short/lambda-k0short are mutually exclusive on one
+  // instance, but tagged independently (see init()).
+  collisiontagger::ConfTagging<collisiontagger::role::LambdaLambdaPair> confTaggingLambdaLambda;
+  collisiontagger::ConfTagging<collisiontagger::role::K0shortK0shortPair> confTaggingK0shortK0short;
+  collisiontagger::ConfTagging<collisiontagger::role::LambdaK0shortPair> confTaggingLambdaK0short;
 
   // setup for daughters
   // separate binning per v0 slot, so that e.g. lambda (proton/pion daughters) and
@@ -208,11 +223,11 @@ struct FemtoPairV0V0 {
   closepairrejection::ConfCprV0DaugherV0DaughterPos confCprPos;
   closepairrejection::ConfCprV0DaugherV0DaughterNeg confCprNeg;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
-    bool processData = doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent ||
-                       doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent ||
-                       doprocessLambdaK0shortSameEvent || doprocessLambdaK0shortMixedEvent;
+    bool processData = doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent || doprocessLambdaLambdaMixedEventWithTagging ||
+                       doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent || doprocessK0shortK0shortMixedEventWithTagging ||
+                       doprocessLambdaK0shortSameEvent || doprocessLambdaK0shortMixedEvent || doprocessLambdaK0shortMixedEventWithTagging;
     bool processMc = doprocessLambdaLambdaSameEventMc || doprocessLambdaLambdaMixedEventMc ||
                      doprocessK0shortK0shortSameEventMc || doprocessK0shortK0shortMixedEventMc ||
                      doprocessLambdaK0shortSameEventMc || doprocessLambdaK0shortMixedEventMc;
@@ -224,15 +239,49 @@ struct FemtoPairV0V0 {
       LOG(fatal) << "Neither data nor mc processing is enabled. Breaking...";
     }
 
-    bool processLambdaLambda = doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent ||
+    bool processLambdaLambda = doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent || doprocessLambdaLambdaMixedEventWithTagging ||
                                doprocessLambdaLambdaSameEventMc || doprocessLambdaLambdaMixedEventMc;
-    bool processK0shortK0short = doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent ||
+    bool processK0shortK0short = doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent || doprocessK0shortK0shortMixedEventWithTagging ||
                                  doprocessK0shortK0shortSameEventMc || doprocessK0shortK0shortMixedEventMc;
-    bool processLambdaK0short = doprocessLambdaK0shortSameEvent || doprocessLambdaK0shortMixedEvent ||
+    bool processLambdaK0short = doprocessLambdaK0shortSameEvent || doprocessLambdaK0shortMixedEvent || doprocessLambdaK0shortMixedEventWithTagging ||
                                 doprocessLambdaK0shortSameEventMc || doprocessLambdaK0shortMixedEventMc;
 
     if (static_cast<int>(processLambdaLambda) + static_cast<int>(processK0shortK0short) + static_cast<int>(processLambdaK0short) > 1) {
       LOG(fatal) << "Only one of lambda-lambda, k0short-k0short or lambda-k0short processing can be enabled. Breaking...";
+    }
+
+    // Each pair type discovers its own tag bit independently (see Core/collisionTagger.h).
+    if (doprocessLambdaLambdaMixedEventWithTagging || doprocessK0shortK0shortMixedEventWithTagging || doprocessLambdaK0shortMixedEventWithTagging) {
+      auto const& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
+      auto const& ownDevice = context.services().get<o2::framework::DeviceSpec const>();
+      auto roles = collisiontagger::discoverTaggedRoles(workflows);
+      if (doprocessLambdaLambdaMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingLambdaLambda.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processLambdaLambdaMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0V0 enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingLambdaLambda.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (LambdaLambda): " << bit;
+      }
+      if (doprocessK0shortK0shortMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingK0shortK0short.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processK0shortK0shortMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0V0 enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingK0shortK0short.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (K0shortK0short): " << bit;
+      }
+      if (doprocessLambdaK0shortMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingLambdaK0short.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processLambdaK0shortMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processV0V0 enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingLambdaK0short.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (LambdaK0short): " << bit;
+      }
     }
 
     // setup columnpolicy for binning
@@ -322,6 +371,16 @@ struct FemtoPairV0V0 {
   }
   PROCESS_SWITCH(FemtoPairV0V0, processLambdaLambdaSameEventMc, "Enable processing same event processing for lambda-lambda with mc information", false);
 
+  // Opt-in counterpart of processLambdaLambdaMixedEvent() below -- same "Partition declared and
+  // bound inside process()" idiom as femtoPairTrackTrack.cxx's processMixedEventWithTagging.
+  void processLambdaLambdaMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingLambdaLambda.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairLambdaLambdaBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, lambdaPartition1, lambdaPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0V0, processLambdaLambdaMixedEventWithTagging, "Enable processing mixed event processing for lambda-lambda, pre-filtered using the collision tagger", false);
+
   void processLambdaLambdaMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
     pairLambdaLambdaBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, lambdaPartition1, lambdaPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -346,6 +405,16 @@ struct FemtoPairV0V0 {
   }
   PROCESS_SWITCH(FemtoPairV0V0, processK0shortK0shortSameEventMc, "Enable processing same event processing for k0short-k0short with mc information", false);
 
+  // Opt-in counterpart of processK0shortK0shortMixedEvent() below -- same idiom as
+  // processLambdaLambdaMixedEventWithTagging above.
+  void processK0shortK0shortMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingK0shortK0short.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairK0shortK0shortBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, k0shortPartition1, k0shortPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0V0, processK0shortK0shortMixedEventWithTagging, "Enable processing mixed event processing for k0short-k0short, pre-filtered using the collision tagger", false);
+
   void processK0shortK0shortMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/)
   {
     pairK0shortK0shortBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, k0shortPartition1, k0shortPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -369,6 +438,16 @@ struct FemtoPairV0V0 {
     pairLambdaK0shortBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, lambdas, lambdaWithLabelPartition1, k0shortWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairV0V0, processLambdaK0shortSameEventMc, "Enable processing same event processing for lambda-k0short with mc information", false);
+
+  // Opt-in counterpart of processLambdaK0shortMixedEvent() below -- same idiom as
+  // processLambdaLambdaMixedEventWithTagging above.
+  void processLambdaK0shortMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoK0shorts const& /*k0shorts*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingLambdaK0short.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairLambdaK0shortBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, lambdaPartition1, k0shortPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairV0V0, processLambdaK0shortMixedEventWithTagging, "Enable processing mixed event processing for lambda-k0short, pre-filtered using the collision tagger", false);
 
   void processLambdaK0shortMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoK0shorts const& /*k0shorts*/)
   {

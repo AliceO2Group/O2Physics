@@ -102,6 +102,9 @@ class BasePairCleaner
   BasePairCleaner() = default;
   virtual ~BasePairCleaner() = default;
 
+  // pairCuts is the pair/triplet histogram manager's own ConfPairCuts/ConfTripletCuts group, which
+  // carries this cleaner's own kinematicVariable Configurable (independent from CPR's and from
+  // whatever the pair/triplet histogram manager itself may be plotting elsewhere).
   template <modes::Mode mode, typename T1, typename T2>
   void init(o2::framework::HistogramRegistry* registry,
             T1 const& specs,
@@ -122,7 +125,9 @@ class BasePairCleaner
     mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kStats, HistTable), getHistDesc(kStats, HistTable), getHistType(kStats, HistTable), {axisStats});
     mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(histmanager::getHistName(kStats, HistTable)))->GetXaxis()->SetBinLabel(1, "All analyzed reco pairs");
     mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(histmanager::getHistName(kStats, HistTable)))->GetXaxis()->SetBinLabel(2, "All blocked reco pairs");
-    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kKinematic, HistTable), getHistDesc(kKinematic, HistTable), getHistType(kKinematic, HistTable), {specs.at(kKinematic)});
+    mKinematicVariable = static_cast<modes::KinematicVariable>(pairCuts.kinematicVariable.value);
+    std::string kinematicDesc = histmanager::replaceFirstAxisTitle(getHistDesc(kKinematic, HistTable), modes::kinematicVariableToAxisTitle(mKinematicVariable));
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kKinematic, HistTable), kinematicDesc.c_str(), getHistType(kKinematic, HistTable), {specs.at(kKinematic)});
   }
 
  protected:
@@ -206,6 +211,7 @@ class BasePairCleaner
 
   bool mMixPairsWithCommonAncestor = false;
   bool mMixPairsWithNonCommonAncestor = false;
+  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kKstar;
 
  private:
   // require both particles to originate from the same partonic mother
@@ -253,7 +259,7 @@ class TrackTrackPairCleaner : public BasePairCleaner<prefix>
     this->fillAll();
     bool isClean = this->isCleanParticlePair(track1, track2);
     if (!isClean) {
-      this->fillBlocked(pairHistManager.getKinematic());
+      this->fillBlocked(pairHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -294,7 +300,7 @@ class V0V0PairCleaner : public BasePairCleaner<prefix> // also works for particl
                    this->isCleanParticlePair(posDaughter1, posDaughter2) && this->isCleanParticlePair(negDaughter1, negDaughter2) &&
                    this->isCleanParticlePair(posDaughter1, negDaughter2) && this->isCleanParticlePair(negDaughter1, posDaughter2);
     if (!isClean) {
-      this->fillBlocked(pairHistManager.getKinematic());
+      this->fillBlocked(pairHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -331,7 +337,7 @@ class TrackV0PairCleaner : public BasePairCleaner<prefix> // also works for part
     auto negDaughter = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
     bool isClean = this->isCleanParticlePair(posDaughter, track) && this->isCleanParticlePair(negDaughter, track);
     if (!isClean) {
-      this->fillBlocked(pairHistManager.getKinematic());
+      this->fillBlocked(pairHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -367,7 +373,7 @@ class TrackKinkPairCleaner : public BasePairCleaner<prefix>
     auto chaDaughter = trackTable.rawIteratorAt(kink.chaDauId() - trackTable.offset());
     bool isClean = this->isCleanParticlePair(chaDaughter, track);
     if (!isClean) {
-      this->fillBlocked(pairHistManager.getKinematic());
+      this->fillBlocked(pairHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -405,7 +411,7 @@ class TrackCascadePairCleaner : public BasePairCleaner<prefix>
     auto negDaughter = trackTable.rawIteratorAt(cascade.negDauId() - trackTable.offset());
     bool isClean = this->isCleanParticlePair(bachelor, track) && this->isCleanParticlePair(posDaughter, track) && this->isCleanParticlePair(negDaughter, track);
     if (!isClean) {
-      this->fillBlocked(pairHistManager.getKinematic());
+      this->fillBlocked(pairHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -443,7 +449,7 @@ class TrackLcPairCleaner : public BasePairCleaner<prefix>
     auto prong2 = trackTable.rawIteratorAt(lc.prong2DauId() - trackTable.offset());
     bool isClean = this->isCleanParticlePair(prong0, track) && this->isCleanParticlePair(prong1, track) && this->isCleanParticlePair(prong2, track);
     if (!isClean) {
-      this->fillBlocked(pairHistManager.getKinematic());
+      this->fillBlocked(pairHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -478,7 +484,7 @@ class McParticleMcParticlePairCleaner : public BasePairCleaner<prefix>
     this->fillAll();
     bool isClean = this->isCleanParticlePair(particle1, particle2);
     if (!isClean) {
-      this->fillBlocked(pairHistManager.getKinematic());
+      this->fillBlocked(pairHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }

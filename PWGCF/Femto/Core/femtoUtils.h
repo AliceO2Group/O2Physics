@@ -16,8 +16,10 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
@@ -172,6 +174,18 @@ concept HasEventShapeRow = requires(T row) {
 /// accepts either a row/iterator or a table (Filtered<Join<...>> etc.)
 template <typename T>
 concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typename std::decay_t<T>::iterator; } && HasEventShapeRow<typename std::decay_t<T>::iterator>);
+
+/// Azimuth of the momentum of a charged particle at the primary vertex, from its azimuth at the decay vertex.
+/// The decay vertex (xDecay, yDecay) has to be given relative to the primary vertex. In a solenoidal field the transverse
+/// trajectory is a circle through both points, and the tangents at the two ends of a chord make the same angle with it:
+/// phiPV = 2*phiChord - phiDecay (independent of polarity).
+inline float phiAtPrimaryVertex(float phiDecay, float xDecay, float yDecay)
+{
+  if (std::abs(xDecay) < o2::constants::math::Epsilon && std::abs(yDecay) < o2::constants::math::Epsilon) {
+    return phiDecay;
+  }
+  return RecoDecay::constrainAngle(2.f * std::atan2(yDecay, xDecay) - phiDecay);
+}
 
 /// Recalculate the pT of a kink mother from its direction and the charged daughter momentum
 inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter,

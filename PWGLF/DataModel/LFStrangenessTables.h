@@ -585,7 +585,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_003, "AOD", "DAUTRACKEXTRA", 3, //! d
                             track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
                             track::v001::ITSClusterMap<track::ITSClusterSizes>,
                             track::v001::ITSNCls<track::ITSClusterSizes>,
-                            track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
+                            track::v001::IsITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
                             /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
                             /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
 

@@ -68,6 +68,9 @@ static std::vector<std::string> antilambdaPtBins;
 std::vector<std::shared_ptr<TH2>> kaonSplit;
 std::vector<std::shared_ptr<TH2>> lambdaSplit;
 std::vector<std::shared_ptr<TH2>> antilambdaSplit;
+std::vector<std::shared_ptr<TH2>> kaonSplitFeeddown;
+std::vector<std::shared_ptr<TH2>> lambdaSplitFeeddown;
+std::vector<std::shared_ptr<TH2>> antilambdaSplitFeeddown;
 } // namespace pthistos
 using namespace o2;
 using namespace o2::framework;
@@ -224,12 +227,15 @@ struct V0PtInvMassPlots {
     int nLambdaHistograms = pthistos::lambdaPtBins.size() - 1;
     int nAntilambdaHistograms = pthistos::antilambdaPtBins.size() - 1;
 
-    pthistos::kaonPt.resize(nKaonHistograms);                // number of Kaon Pt histograms to expect
-    pthistos::lambdaPt.resize(nLambdaHistograms);            // number of Lambda histograms to expect
-    pthistos::antilambdaPt.resize(nAntilambdaHistograms);    // number of AntiLambda histograms to expect
-    pthistos::kaonSplit.resize(nKaonHistograms);             // number of Kaon Split Pt histograms to expect
-    pthistos::lambdaSplit.resize(nLambdaHistograms);         // number of Lambda Split Pt histograms to expect
-    pthistos::antilambdaSplit.resize(nAntilambdaHistograms); // number of AntiLambda Split Pt histograms to expect
+    pthistos::kaonPt.resize(nKaonHistograms);                        // number of Kaon Pt histograms to expect
+    pthistos::lambdaPt.resize(nLambdaHistograms);                    // number of Lambda histograms to expect
+    pthistos::antilambdaPt.resize(nAntilambdaHistograms);            // number of AntiLambda histograms to expect
+    pthistos::kaonSplit.resize(nKaonHistograms);                     // number of Kaon Split Pt histograms to expect
+    pthistos::lambdaSplit.resize(nLambdaHistograms);                 // number of Lambda Split Pt histograms to expect
+    pthistos::antilambdaSplit.resize(nAntilambdaHistograms);         // number of AntiLambda Split Pt histograms to expect
+    pthistos::kaonSplitFeeddown.resize(nKaonHistograms);             // number of Kaon Split Pt histograms to expect
+    pthistos::lambdaSplitFeeddown.resize(nLambdaHistograms);         // number of Lambda Split Pt histograms to expect
+    pthistos::antilambdaSplitFeeddown.resize(nAntilambdaHistograms); // number of AntiLambda Split Pt histograms to expect
 
     // initialize and convert tokenized strings into vector of doubles for AxisSpec
     std::vector<double> kaonptedgevalues(pthistos::kaonPtBins.size());
@@ -310,6 +316,7 @@ struct V0PtInvMassPlots {
       for (int i = 0; i < nKaonHistograms; i++) {
         pthistos::kaonPt[i] = rK0shMassPlotsPerPtBin.add<TH2>(fmt::format("hK0shPt_vs_Cent_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("K0s mass vs centrality, pT from {0} to {1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH2D, {{k0ShortMassAxis}, {centAxis}}});
         pthistos::kaonSplit[i] = rK0shSplitMassPlotsPerPtBin.add<TH2>(fmt::format("hK0shSplitPt_vs_Cent_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("Split K0s mass vs centrality, pT from {0} to {1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH2D, {{k0ShortMassAxis}, {centAxis}}});
+        pthistos::kaonSplitFeeddown[i] = rK0shSplitMassPlotsPerPtBin.add<TH2>(fmt::format("hK0shSplitFeeddownPt_vs_Cent_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("Feeddown Split K0s mass vs centrality, pT from {0} to {1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH2D, {{k0ShortMassAxis}, {centAxis}}});
       }
       rFeeddownMatrices.add("hK0shFeeddownMatrix", "hK0shFeeddownMatrix", {HistType::kTH3D, {k0ShortPtAxis, k0ShortPtAxis, centAxis}});
       rFeeddownMatrices.add("hK0shPhiFeeddownMatrix", "hK0shPhiFeeddownMatrix", {HistType::kTH3D, {k0ShortPtAxis, k0ShortPtAxis, centAxis}});
@@ -317,7 +324,7 @@ struct V0PtInvMassPlots {
     // Adding Lambda Histograms
     if (lambdaAnalysis == true) {
       // same method as in K0sh above
-      rPtAnalysis.add("hMassLambdavsCuts", "hMassLambdavsCuts", {HistType::kTH2F, {{partCutsAxis}, {k0ShortMassAxis}}});
+      rPtAnalysis.add("hMassLambdavsCuts", "hMassLambdavsCuts", {HistType::kTH2F, {{partCutsAxis}, {lambdaMassAxis}}});
       rPtAnalysis.add("hArmenterosPodolanskiPlotLambda", "hArmenterosPodolanskiPlotLambda", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
       rPtAnalysis.add("hNSigmaPosProtonFromLambdas", "hNSigmaPosProtonFromLambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {lambdaPtAxis}}});
       rPtAnalysis.add("hNSigmaNegPionFromLambdas", "hNSigmaNegPionFromLambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {lambdaPtAxis}}});
@@ -330,6 +337,7 @@ struct V0PtInvMassPlots {
       for (int i = 0; i < nLambdaHistograms; i++) {
         pthistos::lambdaPt[i] = rLambdaMassPlotsPerPtBin.add<TH2>(fmt::format("hLambdaPt_vs_Cent_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("Lambda mass vs centrality, pT from {0} to {1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH2D, {{lambdaMassAxis}, {centAxis}}});
         pthistos::lambdaSplit[i] = rLambdaSplitMassPlotsPerPtBin.add<TH2>(fmt::format("hLambdaSplitPt_vs_Cent_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("Split Lambda mass vs centrality, pT from {0} to {1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH2D, {{lambdaMassAxis}, {centAxis}}});
+        pthistos::lambdaSplitFeeddown[i] = rLambdaSplitMassPlotsPerPtBin.add<TH2>(fmt::format("hLambdaSplitFeeddownPt_vs_Cent_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("Feeddown Split Lambda mass vs centrality, pT from {0} to {1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH2D, {{lambdaMassAxis}, {centAxis}}});
       }
       // lambdafeeddown matrices
       rFeeddownMatrices.add("hLambdaFeeddownMatrix", "hLambdaFeeddownMatrix", {HistType::kTH3D, {lambdaPtAxis, lambdaPtAxis, centAxis}});
@@ -340,7 +348,7 @@ struct V0PtInvMassPlots {
     // Adding AntiLambda Histograms
     if (antiLambdaAnalysis == true) {
       // same method as in Lambda and K0sh above
-      rPtAnalysis.add("hMassAntiLambdavsCuts", "hMassAntiLambdavsCuts", {HistType::kTH2F, {{partCutsAxis}, {k0ShortMassAxis}}});
+      rPtAnalysis.add("hMassAntiLambdavsCuts", "hMassAntiLambdavsCuts", {HistType::kTH2F, {{partCutsAxis}, {antiLambdaMassAxis}}});
       rPtAnalysis.add("hArmenterosPodolanskiPlotAntiLambda", "hArmenterosPodolanskiPlotAntiLambda", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
       rPtAnalysis.add("hNSigmaPosPionFromAntiLambdas", "hNSigmaPosPionFromAntiLambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {antilambdaPtAxis}}});
       rPtAnalysis.add("hNSigmaNegProtonFromAntiLambdas", "hNSigmaNegProtonFromAntiLambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {antilambdaPtAxis}}});
@@ -352,6 +360,7 @@ struct V0PtInvMassPlots {
       for (int i = 0; i < nAntilambdaHistograms; i++) {
         pthistos::antilambdaPt[i] = rAntilambdaMassPlotsPerPtBin.add<TH2>(fmt::format("hAntiLambdaPt_vs_Cent_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("AntiLambda mass vs centrality, pT from {0} to {1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH2D, {{antiLambdaMassAxis}, {centAxis}}});
         pthistos::antilambdaSplit[i] = rAntilambdaSplitMassPlotsPerPtBin.add<TH2>(fmt::format("hAntiLambdaSplitPt_vs_Cent_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("Split AntiLambda mass vs centrality, pT from {0} to {1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH2D, {{antiLambdaMassAxis}, {centAxis}}});
+        pthistos::antilambdaSplitFeeddown[i] = rAntilambdaSplitMassPlotsPerPtBin.add<TH2>(fmt::format("hAntiLambdaSplitFeeddownPt_vs_Cent_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("Feeddown Split AntiLambda mass vs centrality, pT from {0} to {1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH2D, {{antiLambdaMassAxis}, {centAxis}}});
       }
       // antilambdafeeddown matrices
       rFeeddownMatrices.add("hAntiLambdaFeeddownMatrix", "hAntiLambdaFeeddownMatrix", {HistType::kTH3D, {antilambdaPtAxis, antilambdaPtAxis, centAxis}});
@@ -1012,7 +1021,7 @@ struct V0PtInvMassPlots {
               pthistos::kaonSplit[i]->Fill(v0.mK0Short(), mcCollision.centFT0M());     // filling the k0s namespace histograms for K0sh Splitting Numerator
             }
           }
-          // K0sh Signla Split Numerator End
+          // K0sh Signal Split Numerator End
           if (v0.has_mcParticle()) {
             auto v0mcParticle = v0.mcParticle();
             if (k0shSelection.dotruthK0sh && (v0mcParticle.pdgCode() == kK0Short)) { // kzero matched
@@ -1024,6 +1033,13 @@ struct V0PtInvMassPlots {
                 }
               }
               if (!v0mcParticle.isPhysicalPrimary()) {
+                // Split Feeddown Start
+                for (int i = 0; i < nKaonHistograms; i++) {
+                  if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) {
+                    pthistos::kaonSplitFeeddown[i]->Fill(v0.mK0Short(), mcCollision.centFT0M());
+                  }
+                }
+                // Split Feeddown End
                 auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
                 if (!v0mothers.empty()) {
                   auto& v0mcParticleMother = v0mothers.front(); // First mother
@@ -1058,6 +1074,13 @@ struct V0PtInvMassPlots {
                 }
               }
               if (!v0mcParticle.isPhysicalPrimary()) {
+                // Split Feeddown Start
+                for (int i = 0; i < nLambdaHistograms; i++) {
+                  if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+                    pthistos::lambdaSplitFeeddown[i]->Fill(v0.mLambda(), mcCollision.centFT0M());
+                  }
+                }
+                // Split Feeddown End
                 auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
                 if (!v0mothers.empty()) {
                   auto& v0mcParticleMother = v0mothers.front(); // First mother
@@ -1080,7 +1103,7 @@ struct V0PtInvMassPlots {
       // antilambda analysis
       if (antiLambdaAnalysis == true) {
         if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, mcCollision)) { // AntiLambda Selections
-          // AntiLambda Signal Split Numerator End
+          // AntiLambda Signal Split Numerator Start
           for (int i = 0; i < nAntilambdaHistograms; i++) {
             if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
               pthistos::antilambdaSplit[i]->Fill(v0.mAntiLambda(), mcCollision.centFT0M());
@@ -1098,6 +1121,13 @@ struct V0PtInvMassPlots {
                 }
               }
               if (!v0mcParticle.isPhysicalPrimary()) {
+                // Split Feeddown Start
+                for (int i = 0; i < nAntilambdaHistograms; i++) {
+                  if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
+                    pthistos::antilambdaSplitFeeddown[i]->Fill(v0.mAntiLambda(), mcCollision.centFT0M());
+                  }
+                }
+                // Split Feeddown End
                 auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
                 if (!v0mothers.empty()) {
                   auto& v0mcParticleMother = v0mothers.front(); // First mother
@@ -1271,7 +1301,8 @@ struct V0PtInvMassPlots {
   }
   void recMCProcessDerived(soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels, aod::StraCents>::iterator const& collision,
                            soa::Join<aod::StraMCCollisions, aod::McCentFT0Ms> const& /*mcCollisions*/,
-                           soa::Join<aod::V0CollRefs, aod::V0MCCores, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels, aod::V0MCMothers> const& V0s,
+                           soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels, aod::V0MCMothers> const& V0s,
+                           aod::V0MCCores const&,
                            DaughterTracksDerived const&)
   {
     // tokenise strings into individual values
@@ -1312,16 +1343,16 @@ struct V0PtInvMassPlots {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracksDerived>(); // Positive Daughter track
       const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracksDerived>(); // Negative Daughter track
-      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack, collision)) {            // V0 Selections
+      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack, mcCollision)) {          // V0 Selections
         continue;
       }
       // K0sh Analysis
       if (kzeroAnalysis == true) {
-        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack, collision)) { // K0sh Selection
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack, mcCollision)) { // K0sh Selection
           // K0sh Signal Split Numerator Start
           for (int i = 0; i < nKaonHistograms; i++) {
-            if (kaonptedgevalues[i] <= v0.ptMC() && v0.ptMC() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
-              pthistos::kaonSplit[i]->Fill(v0.mK0Short(), mcCollision.centFT0M());         // filling the k0s namespace histograms for K0sh Splitting Numerator
+            if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
+              pthistos::kaonSplit[i]->Fill(v0.mK0Short(), mcCollision.centFT0M());     // filling the k0s namespace histograms for K0sh Splitting Numerator
             }
           }
           // K0sh SignaL Split Numerator End
@@ -1330,12 +1361,19 @@ struct V0PtInvMassPlots {
             if (k0shSelection.dotruthK0sh && (v0mcParticle.pdgCode() == kK0Short)) { // kzero matched
               if (v0mcParticle.isPhysicalPrimary()) {
                 for (int i = 0; i < nKaonHistograms; i++) {
-                  if (kaonptedgevalues[i] <= v0.ptMC() && v0.ptMC() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
-                    pthistos::kaonPt[i]->Fill(v0.mK0Short(), mcCollision.centFT0M());            // filling the k0s namespace histograms
+                  if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
+                    pthistos::kaonPt[i]->Fill(v0.mK0Short(), mcCollision.centFT0M());        // filling the k0s namespace histograms
                   }
                 }
               }
               if (!v0mcParticle.isPhysicalPrimary()) {
+                // Split Feeddown Start
+                for (int i = 0; i < nKaonHistograms; i++) {
+                  if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) {
+                    pthistos::kaonSplitFeeddown[i]->Fill(v0.mK0Short(), mcCollision.centFT0M());
+                  }
+                }
+                // Split Feeddown End
                 auto v0mother = v0.motherMCPart(); // Get mothers
                 rFeeddownMatrices.fill(HIST("hK0shPhiFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), mcCollision.centFT0M());
                 if (v0mother.pdgCode() == kPhi) { // Phi Mother Matched
@@ -1348,10 +1386,10 @@ struct V0PtInvMassPlots {
       }
       // Lambda analysis
       if (lambdaAnalysis == true) {
-        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack, collision)) { // Lambda Selections
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack, mcCollision)) { // Lambda Selections
           // Lambda Signal Split Numerator Start
           for (int i = 0; i < nLambdaHistograms; i++) {
-            if (lambdaptedgevalues[i] <= v0.ptMC() && v0.ptMC() < lambdaptedgevalues[i + 1]) {
+            if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
               pthistos::lambdaSplit[i]->Fill(v0.mLambda(), mcCollision.centFT0M());
             }
           }
@@ -1361,12 +1399,19 @@ struct V0PtInvMassPlots {
             if (lambdaSelection.dotruthLambda && (v0mcParticle.pdgCode() == kLambda0)) { // lambda matched
               if (v0mcParticle.isPhysicalPrimary()) {
                 for (int i = 0; i < nLambdaHistograms; i++) {
-                  if (lambdaptedgevalues[i] <= v0.ptMC() && v0.ptMC() < lambdaptedgevalues[i + 1]) {
+                  if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
                     pthistos::lambdaPt[i]->Fill(v0.mLambda(), mcCollision.centFT0M());
                   }
                 }
               }
               if (!v0mcParticle.isPhysicalPrimary()) {
+                // Split Feeddown Start
+                for (int i = 0; i < nLambdaHistograms; i++) {
+                  if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+                    pthistos::lambdaSplitFeeddown[i]->Fill(v0.mLambda(), mcCollision.centFT0M());
+                  }
+                }
+                // Split Feeddown End
                 auto v0mother = v0.motherMCPart(); // Get mothers
                 rFeeddownMatrices.fill(HIST("hLambdaFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), mcCollision.centFT0M());
                 if (v0mother.pdgCode() == kXiMinus) { // Xi Minus Mother Matched
@@ -1385,10 +1430,10 @@ struct V0PtInvMassPlots {
       }
       // AntiLambda analysis
       if (antiLambdaAnalysis == true) {
-        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, collision)) { // AntiLambda Selections
-          // AntiLambda Signal Split Numerator End
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, mcCollision)) { // AntiLambda Selections
+          // AntiLambda Signal Split Numerator Start
           for (int i = 0; i < nAntilambdaHistograms; i++) {
-            if (antilambdaptedgevalues[i] <= v0.ptMC() && v0.ptMC() < antilambdaptedgevalues[i + 1]) {
+            if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
               pthistos::antilambdaSplit[i]->Fill(v0.mAntiLambda(), mcCollision.centFT0M());
             }
           }
@@ -1398,12 +1443,19 @@ struct V0PtInvMassPlots {
             if (antilambdaSelection.dotruthAntiLambda && (v0mcParticle.pdgCode() == kLambda0Bar)) { // antilambda matched
               if (v0mcParticle.isPhysicalPrimary()) {
                 for (int i = 0; i < nAntilambdaHistograms; i++) {
-                  if (antilambdaptedgevalues[i] <= v0.ptMC() && v0.ptMC() < antilambdaptedgevalues[i + 1]) {
+                  if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
                     pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), mcCollision.centFT0M());
                   }
                 }
               }
               if (!v0mcParticle.isPhysicalPrimary()) {
+                // Split Feeddown Start
+                for (int i = 0; i < nAntilambdaHistograms; i++) {
+                  if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
+                    pthistos::antilambdaSplitFeeddown[i]->Fill(v0.mAntiLambda(), mcCollision.centFT0M());
+                  }
+                }
+                // Split Feeddown End
                 auto v0mother = v0.motherMCPart(); // Get mothers
                 rFeeddownMatrices.fill(HIST("hAntiLambdaFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), mcCollision.centFT0M());
                 if (v0mother.pdgCode() == kXiPlusBar) { // Xi Plus Mother Matched
@@ -1424,12 +1476,10 @@ struct V0PtInvMassPlots {
   }
   // This ii the process for the MC generated derived data
   void genMCProcessDerived(
-    soa::Join<aod::StraMCCollisions, aod::McCentFT0Ms, aod::MultMCExtras>::iterator const& mcCollision,
-    // soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraEvSels, aod::McCollisionLabels, aod::StraCents>> const& collision,
-    soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels, aod::PVMults, aod::StraCents>> const& collisions,
-    aod::V0MCCores const& V0s,
-    aod::CascMCCores const& cascs,
-    DaughterTracksDerived const&)
+    soa::Join<aod::StraMCCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
+    soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels, aod::StraCents>> const& collisions,
+    soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>> const& V0s,
+    soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>> const& cascs)
   {
     // Event Efficiency, Event Split and V0 Signal Loss Corrections
     rMCCorrections.fill(HIST("hNEvents_Corrections"), 0.5, mcCollision.centFT0M()); // All Events
@@ -1506,38 +1556,46 @@ struct V0PtInvMassPlots {
       }
     } // End of MCParticle Loop For Signal Loss Denominator
 
-    // Signal Loss Numenator Loop
+    bool hasSelectedInelGt0Collision = false;
     for (const auto& collision : collisions) {
       rMCCorrections.fill(HIST("hNEvents_Corrections"), 2.5, mcCollision.centFT0M()); // Number of Events Reconsctructed
       if (!acceptEvent(collision)) {                                                  // Event Selection
         continue;
       }
-      rMCCorrections.fill(HIST("hNEvents_Corrections"), 3.5, mcCollision.centFT0M()); // Event Split Denomimator and Event Efficiency Numenator
-      for (const auto& v0 : V0s) {
-        if (!v0.isPhysicalPrimary()) {
-          continue;
+      rMCCorrections.fill(HIST("hNEvents_Corrections"), 3.5, mcCollision.centFT0M()); // Selected reconstructed collisions
+      if (collision.multNTracksPVeta1() > 0) {
+        hasSelectedInelGt0Collision = true;
+      }
+    }
+
+    if (!hasSelectedInelGt0Collision) {
+      return;
+    }
+
+    // Fill the signal-loss numerator once per MC collision.
+    for (const auto& v0 : V0s) {
+      if (!v0.isPhysicalPrimary()) {
+        continue;
+      }
+      if (v0.pdgCode() == kK0Short) // kzero matched
+      {
+        if (std::abs(v0.rapidityMC(0)) < rapidityCut) {
+          rMCCorrections.fill(HIST("hK0shGeneratedRecoPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
         }
-        if (v0.pdgCode() == kK0Short) // kzero matched
-        {
-          if (std::abs(v0.rapidityMC(0)) < rapidityCut) {
-            rMCCorrections.fill(HIST("hK0shGeneratedRecoPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
-          }
+      }
+      if (v0.pdgCode() == kLambda0) // lambda matched
+      {
+        if (std::abs(v0.rapidityMC(1)) < rapidityCut) {
+          rMCCorrections.fill(HIST("hLambdaGeneratedRecoPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
         }
-        if (v0.pdgCode() == kLambda0) // lambda matched
-        {
-          if (std::abs(v0.rapidityMC(1)) < rapidityCut) {
-            rMCCorrections.fill(HIST("hLambdaGeneratedRecoPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
-          }
-        }
-        if (v0.pdgCode() == kLambda0Bar) // antilambda matched
-        {
-          if (std::abs(v0.rapidityMC(2)) < rapidityCut) {
-            rMCCorrections.fill(HIST("hAntiLambdaGeneratedRecoPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
-          }
+      }
+      if (v0.pdgCode() == kLambda0Bar) // antilambda matched
+      {
+        if (std::abs(v0.rapidityMC(2)) < rapidityCut) {
+          rMCCorrections.fill(HIST("hAntiLambdaGeneratedRecoPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
         }
       }
     }
-    // End of Signal Loss Numenator Loop
   }
   // This is the process for Real Data MC Closure Test
   void dataProcessClosureTest(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::MultsGlobal, aod::McCollisionLabels, aod::CentFT0Ms, aod::MultsExtra>::iterator const& collision,
@@ -1618,6 +1676,92 @@ struct V0PtInvMassPlots {
       }
     }
   }
+  // This is the process for Real Derived Data MC Closure Test
+  void dataProcessDerivedClosureTest(
+    soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels, aod::StraCents>::iterator const& collision,
+    soa::Join<aod::StraMCCollisions, aod::McCentFT0Ms> const& /*mcCollisions*/,
+    soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras> const& V0s,
+    DaughterTracksDerived const&)
+  {
+    // Tokenise strings into individual values
+    pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
+    pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdaSettingPtBinsString, ',');
+    pthistos::antilambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingPtBinsString, ',');
+
+    // Calculate number of histograms for each particle type
+    int nKaonHistograms = pthistos::kaonPtBins.size() - 1;
+    int nLambdaHistograms = pthistos::lambdaPtBins.size() - 1;
+    int nAntilambdaHistograms = pthistos::antilambdaPtBins.size() - 1;
+
+    // Initialize and convert tokenized strings into vector of doubles for Pt Bin Edges
+    std::vector<double> kaonptedgevalues(nKaonHistograms + 1);
+    std::vector<double> lambdaptedgevalues(nLambdaHistograms + 1);
+    std::vector<double> antilambdaptedgevalues(nAntilambdaHistograms + 1);
+
+    for (int i = 0; i < nKaonHistograms + 1; i++) {
+      kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
+    }
+    for (int i = 0; i < nLambdaHistograms + 1; i++) {
+      lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
+    }
+    for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
+      antilambdaptedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
+    }
+
+    // For MC centrality estimation
+    const auto& mcCollision = collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::McCentFT0Ms>>();
+
+    if (!acceptEvent(collision)) { // Event Selection
+      return;
+    }
+
+    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, mcCollision.centFT0M());                               // Number of recorded events
+    rNchAnalysis.fill(HIST("hNchCentrality"), mcCollision.centFT0M(), collision.multNTracksGlobal()); // Nch vs Centrality
+    // rNchAnalysis.fill(HIST("hNchCentralityEtaHalf"), mcCollision.centFT0M(), collision.multNGlobalTracksPVetaHalf()); // Nch vs Centrality EtaHalfCut
+
+    for (const auto& v0 : V0s) {
+      // Checking the V0 candidates and filling the parameter histograms and invariant mass plots
+      const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracksDerived>(); // Positive Daughter track
+      const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracksDerived>(); // Negative Daughter track
+
+      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack, collision)) { // V0 Selection
+        continue;
+      }
+
+      // K0sh analysis
+      if (kzeroAnalysis == true) {
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack, collision)) { // K0sh Selection
+          for (int i = 0; i < nKaonHistograms; i++) {
+            if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) {
+              pthistos::kaonPt[i]->Fill(v0.mK0Short(), mcCollision.centFT0M());
+            }
+          }
+        }
+      }
+
+      // Lambda analysis
+      if (lambdaAnalysis == true) {
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack, collision)) { // Lambda Selection
+          for (int i = 0; i < nLambdaHistograms; i++) {
+            if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+              pthistos::lambdaPt[i]->Fill(v0.mLambda(), mcCollision.centFT0M());
+            }
+          }
+        }
+      }
+
+      // Anti-Lambda analysis
+      if (antiLambdaAnalysis == true) {
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, collision)) { // AntiLambda Selection
+          for (int i = 0; i < nAntilambdaHistograms; i++) {
+            if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
+              pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), mcCollision.centFT0M());
+            }
+          }
+        }
+      }
+    }
+  }
   PROCESS_SWITCH(V0PtInvMassPlots, genMCProcess, "Process Run 3 MC Generated", false);
   PROCESS_SWITCH(V0PtInvMassPlots, recMCProcess, "Process Run 3 MC Reconstructed", false);
   PROCESS_SWITCH(V0PtInvMassPlots, dataProcess, "Process Run 3 Data", false);
@@ -1625,6 +1769,7 @@ struct V0PtInvMassPlots {
   PROCESS_SWITCH(V0PtInvMassPlots, recMCProcessDerived, "Process Run 3 MC Reconstructed Derived", false);
   PROCESS_SWITCH(V0PtInvMassPlots, dataProcessDerived, "Process Run 3 Data Derived", false);
   PROCESS_SWITCH(V0PtInvMassPlots, dataProcessClosureTest, "Process Run 3 Data Closure Test", false);
+  PROCESS_SWITCH(V0PtInvMassPlots, dataProcessDerivedClosureTest, "Process Run 3 Data Derived Closure Test", false)
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

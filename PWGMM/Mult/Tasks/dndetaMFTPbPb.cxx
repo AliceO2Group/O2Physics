@@ -524,7 +524,7 @@ struct DndetaMFTPbPb {
         doprocessMcEfficiencyBestInclusive || doprocessMcEfficiencyBestCentFT0C ||
         doprocessMcEfficiencyIdxBestInlusive || doprocessMcEfficiencyIdxBestCentFT0C ||
         doprocessMcEfficiencyIdxBestLightInlusive || doprocessMcEfficiencyIdxBestLightCentFT0C ||
-        doprocessDataCorrelationwBestTracksInclusive) {
+        doprocessDataCorrelationwBestTracksInclusive || doprocessMcReassocDCA) {
       registryQC.add("Tracks/hBestTrkSel", "Number of best tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{static_cast<int>(TrkBestSel::nTrkBestSel), -0.5, +static_cast<int>(TrkBestSel::nTrkBestSel) - 0.5}}});
       std::array<std::string_view, static_cast<int>(TrkBestSel::nTrkBestSel)> labelTrkTrkBestSel{
         "All",
@@ -881,7 +881,6 @@ struct DndetaMFTPbPb {
   using Colls = soa::Join<aod::Collisions, aod::EvSels>;
   using CollsCentFT0C = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
   using CollsGenCentFT0C = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
-  using CollsGenCentFT0CExtra = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels, aod::MultMCExtras, aod::McCollsExtra>;
   using CollsCorr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
   using CollsMCExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
   using CollsMCExtraMult = soa::Join<aod::McCollisions, aod::MultMCExtras, aod::McCollsExtra>;
@@ -977,10 +976,10 @@ struct DndetaMFTPbPb {
   std::unordered_map<int, int> mapRecToMc;
   std::unordered_map<int, int> mapMcToRec;
 
-  PresliceUnsorted<CollsGenCentFT0CExtra> perCollMcRec = aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<CollsGenCentFT0C> perCollMcRec = aod::mccollisionlabel::mcCollisionId;
 
   template <typename MC, typename P>
-  void createMCIds(MC const& mcCollisions, CollsGenCentFT0CExtra const& collisions, P const& particles)
+  void createMCIds(MC const& mcCollisions, CollsGenCentFT0C const& collisions, P const& particles)
   {
     const auto& nMcColls = mcCollisions.size();
     LOG(info) << "MC collisions: " << nMcColls;
@@ -3245,7 +3244,7 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMcSgnEvtLossCentFT0C, "Process Signal/event loss based on MC (in FT0C centrality bins)", false);
 
-  void processMcReassocDCA(CollsGenCentFT0CExtra const& collisions,
+  void processMcReassocDCA(CollsGenCentFT0C const& collisions,
                            CollsMCExtra const& mcCollisions,
                            aod::McParticles const& particles,
                            MftBestTracksLabeled const& besttracks,
@@ -3256,7 +3255,7 @@ struct DndetaMFTPbPb {
     int nNoMC{0};
     for (const auto& collision : collisions) {
       auto crec = getRecoCent(collision);
-      registryMC.fill(HIST("Events/Centrality/EvtGenRecReassoc"), 2., crec);
+      registryMC.fill(HIST("Events/Centrality/EvtGenRecReassoc"), 1., crec);
       if (gConf.useEvtSel && !isGoodEvent<true>(collision)) {
         continue;
       }
@@ -3270,7 +3269,7 @@ struct DndetaMFTPbPb {
         nNoMC++;
         continue;
       }
-      registryMC.fill(HIST("Events/Centrality/EvtGenRecReassoc"), 3., crec);
+      registryMC.fill(HIST("Events/Centrality/EvtGenRecReassoc"), 2., crec);
       if (gConf.rmSplitVertex && (!setRecCollSel.contains(collision.globalIndex()))) {
         continue;
       }
@@ -3278,7 +3277,7 @@ struct DndetaMFTPbPb {
       if (eventCuts.useZVtxCutMC && (std::abs(mcColl.posZ()) >= eventCuts.maxZvtx)) {
         continue;
       }
-      registryMC.fill(HIST("Events/Centrality/EvtGenRecReassoc"), 4., crec);
+      registryMC.fill(HIST("Events/Centrality/EvtGenRecReassoc"), 3., crec);
 
       auto perCollisionASample = besttracks.sliceBy(perColBestTrks, collision.globalIndex());
       for (auto const& atrack : perCollisionASample) {
@@ -3287,7 +3286,6 @@ struct DndetaMFTPbPb {
         }
         const float bestDcaZ = getDCAz(atrack);
         auto itrack = atrack.template mfttrack_as<MftTracksLabeled>();
-
         if (!isTrackSelected<true>(itrack)) {
           continue;
         }

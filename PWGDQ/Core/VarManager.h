@@ -158,9 +158,11 @@ class VarManager : public TObject
 
   enum PairCandidateType {
     // TODO: need to agree on a scheme to incorporate all various hypotheses (e.g. e - mu, jpsi - K+, Jpsi - pipi,...)
-    kDecayToEE = 0, // e.g. J/psi        -> e+ e-
-    kDecayToMuMu,   // e.g. J/psi        -> mu+ mu-
-    kDecayToPiPi,
+    kDecayToEE = 0,             // e.g. J/psi        -> e+ e-
+    kDecayToMuMu,               // e.g. J/psi        -> mu+ mu-
+    kDecayToPiPi,               // decay channel to pi+ pi-
+    kDecayToKchKch,             // decay channel to K+ K-
+    kDecayToPrAPr,              // decay channel to p+ p-
     kElectronMuon,              // e.g. Electron - muon correlations
     kBcToThreeMuons,            // e.g. Bc           -> mu+ mu- mu+
     kBtoJpsiEEK,                // e.g. B+           -> e+ e- K+
@@ -168,6 +170,7 @@ class VarManager : public TObject
     kXtoJpsiPiPi,               // e.g. X(3872)      -> J/psi pi+ pi-
     kPsi2StoJpsiPiPi,           // e.g. Psi(2S)      -> J/psi pi+ pi-
     kChictoJpsiEE,              // e.g. Chi_c1      -> J/psi e+ e-
+    kNonResonantToKpKmPiPi,     // e.g. J/psi -> K+ K- pi+ pi+
     kDstarToD0KPiPi,            // e.g. D*+ -> D0 pi+ -> K- pi+ pi+
     kTripleCandidateToEEPhoton, // e.g. chi_c   -> e+ e- photon or pi0 -> e+ e- photon
     kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
@@ -896,6 +899,7 @@ class VarManager : public TObject
     kQuadDCAsigXYZ,
     kSignQuadDCAsigXY,
     kCosPointingAngle,
+    kVertexingImpactParameter,
     kD0ImpParProduct,
     kD0DcaDaughters,
     kImpParXYJpsi,
@@ -3852,6 +3856,16 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassPionCharged;
   }
 
+  if constexpr (pairType == kDecayToKchKch) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassKaonCharged;
+  }
+
+  if constexpr (pairType == kDecayToPrAPr) {
+    m1 = o2::constants::physics::MassProton;
+    m2 = o2::constants::physics::MassProton;
+  }
+
   if constexpr (pairType == kDecayToKPi) {
     m1 = o2::constants::physics::MassKaonCharged;
     m2 = o2::constants::physics::MassPionCharged;
@@ -5330,6 +5344,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
       values[kCosPointingAngle] = (dx * v12.Px() + dy * v12.Py() + dz * v12.Pz()) /
                                   (v12.P() * values[VarManager::kVertexingLxyz]);
+      values[kVertexingImpactParameter] = values[VarManager::kVertexingLxyz] * std::sqrt(1 - values[VarManager::kCosPointingAngle] * values[VarManager::kCosPointingAngle]);
       // Decay length defined as in Run 2
       values[kVertexingLzProjected] = (dz * v12.Pz()) / TMath::Sqrt(v12.Pz() * v12.Pz());
       values[kVertexingLxyProjected] = (dx * v12.Px()) + (dy * v12.Py());
@@ -5410,6 +5425,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
                                      std::sqrt(dyPair2PV * dyPair2PV) * v12.Py() +
                                      std::sqrt(dzPair2PV * dzPair2PV) * v12.Pz()) /
                                     (v12.P() * values[VarManager::kVertexingLxyz]);
+        values[kVertexingImpactParameter] = values[VarManager::kVertexingLxyz] * std::sqrt(1 - values[VarManager::kCosPointingAngle] * values[VarManager::kCosPointingAngle]);
       }
       // As defined in Run 2 (projected onto momentum)
       if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || fgUsedVars[kVertexingLzProjected]) {
@@ -6918,6 +6934,11 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
     defaultDileptonMass = o2::constants::physics::MassJPsi;
     hadronMass1 = o2::constants::physics::MassElectron;
     hadronMass2 = o2::constants::physics::MassElectron;
+  }
+  if (candidateType == kNonResonantToKpKmPiPi) {
+    defaultDileptonMass = dilepton.mass();
+    hadronMass1 = o2::constants::physics::MassPionCharged;
+    hadronMass2 = o2::constants::physics::MassPionCharged;
   }
 
   ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());

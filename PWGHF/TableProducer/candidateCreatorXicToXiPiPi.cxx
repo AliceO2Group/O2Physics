@@ -151,6 +151,8 @@ struct HfCandidateCreatorXicToXiPiPi {
   HistogramRegistry registry{"registry"};
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
+  static constexpr float cmToMicrometer{10000.};
+
   void init(InitContext const&)
   {
     if ((doprocessNoCentXicplusWithDcaFitter + doprocessCentFT0CXicplusWithDcaFitter + doprocessCentFT0MXicplusWithDcaFitter + doprocessNoCentXicplusWithKFParticle + doprocessCentFT0CXicplusWithKFParticle + doprocessCentFT0MXicplusWithKFParticle) != 1) {
@@ -541,12 +543,12 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCovSVXZ"), covMatrixSV[3]);
         registry.fill(HIST("hCovSVZZ"), covMatrixSV[5]);
         // DCAs of prongs
-        registry.fill(HIST("hDcaXYProngs"), trackCasc.getPt(), impactParameterCasc.getY());
-        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor0.pt(), impactParameter0.getY());
-        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor1.pt(), impactParameter1.getY());
-        registry.fill(HIST("hDcaZProngs"), trackCasc.getPt(), impactParameterCasc.getZ());
-        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor0.pt(), impactParameter0.getZ());
-        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor1.pt(), impactParameter1.getZ());
+        registry.fill(HIST("hDcaXYProngs"), trackCasc.getPt(), impactParameterCasc.getY() * cmToMicrometer);
+        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor0.pt(), impactParameter0.getY() * cmToMicrometer);
+        registry.fill(HIST("hDcaXYProngs"), trackCharmBachelor1.pt(), impactParameter1.getY() * cmToMicrometer);
+        registry.fill(HIST("hDcaZProngs"), trackCasc.getPt(), impactParameterCasc.getZ() * cmToMicrometer);
+        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor0.pt(), impactParameter0.getZ() * cmToMicrometer);
+        registry.fill(HIST("hDcaZProngs"), trackCharmBachelor1.pt(), impactParameter1.getZ() * cmToMicrometer);
       }
 
       //---------------------------------fill candidate table rows-------------------------------------------------------------------------------------------
@@ -873,9 +875,9 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCovSVXZ"), covMatrixXicPlus[3]);
         registry.fill(HIST("hCovSVZZ"), covMatrixXicPlus[5]);
         // DCAs of prongs
-        registry.fill(HIST("hDcaXYProngs"), kfXi.GetPt(), impactParameterXiXY);
-        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor0.GetPt(), impactParameterPi0XY);
-        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor1.GetPt(), impactParameterPi1XY);
+        registry.fill(HIST("hDcaXYProngs"), kfXi.GetPt(), impactParameterXiXY * cmToMicrometer);
+        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor0.GetPt(), impactParameterPi0XY * cmToMicrometer);
+        registry.fill(HIST("hDcaXYProngs"), kfCharmBachelor1.GetPt(), impactParameterPi1XY * cmToMicrometer);
       }
 
       //------------------------------fill candidate table rows--------------------------------------
@@ -1093,7 +1095,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       registry.add("hDecayedPions", "hDecayedPions", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("hInteractionsWithMaterial", "hInteractionsWithMaterial", {HistType::kTH1F, {{6, -0.5, 5.5}}});
       registry.add("hDebugRec", "hDebugRec", {HistType::kTH1F, {{4, -0.5, 3.5}}});
-      registry.add("hy_pt_gen", "Generated MC", {HistType::kTH2F, {{20, -1.0, 1.0}, {200, 0, 20}}});
+      registry.add("hYPtGen", "Generated MC", {HistType::kTH2F, {{20, -1.0, 1.0}, {200, 0, 20}}});
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + TotalRec, "total");
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + XicToFinalState, "#Xi^{+}_{c} #rightarrow #pi^{#plus} #pi^{#plus} #pi^{#minus} p #pi^{#minus}");
       registry.get<TH1>(HIST("hDebugRec"))->GetXaxis()->SetBinLabel(1 + XiToPiPPi, "#Xi^{#minus} #rightarrow #pi^{#minus} p #pi^{#minus}");
@@ -1348,7 +1350,8 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           // fill inclusive generated Xic+
-          registry.fill(HIST("hy_pt_gen"), particle.y(), particle.pt());
+          if (fillMcHistograms)
+            registry.fill(HIST("hYPtGen"), particle.y(), particle.pt());
 
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
           // Calculate the decay length of the generated particle

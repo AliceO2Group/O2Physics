@@ -97,10 +97,15 @@ struct Cha01710analysis {
     Configurable<float> cfgV0DaughterPtMin{"cfgV0DaughterPtMin", 0.1f, "minimum daughter pT"};
     Configurable<int> cfgV0DaughterTPCNClsMin{"cfgV0DaughterTPCNClsMin", 70, "minimum daughter TPC clusters"};
     Configurable<float> cfgV0DaughterTPCNSigmaPiMax{"cfgV0DaughterTPCNSigmaPiMax", 5.f, "maximum daughter |TPC nSigma(pi)|"};
+    Configurable<bool> cfgApplyV0DaughterTOFPID{"cfgApplyV0DaughterTOFPID", false, "Apply pion TOF PID to V0 daughters with TOF"};
     Configurable<float> cfgV0DaughterTOFNSigmaPiMax{"cfgV0DaughterTOFNSigmaPiMax", 5.f, "maximum daughter |TOF nSigma(pi)|"};
     Configurable<float> cfgKsMassWindow{"cfgKsMassWindow", 0.01, "K short mass window"};
     Configurable<bool> cfgRejectLambda{"cfgRejectLambda", true, "reject Lambda/anti-Lambda competitors"};
     Configurable<float> cfgLambdaMassWindow{"cfgLambdaMassWindow", 0.005f, "Lambda rejection window (GeV/c2)"};
+    Configurable<bool> cfgApplyArmenterosCut{"cfgApplyArmenterosCut", false, "Apply Armenteros-Podolanski cut"};
+    Configurable<float> cfgArmenterosCut{"cfgArmenterosCut", 0.2f, "Minimum qT / |alpha|"};
+    Configurable<bool> cfgApplyV0DaughterDeltaR{"cfgApplyV0DaughterDeltaR", false, "Apply minimum deltaR between V0 daughters"};
+    Configurable<float> cfgV0DaughterDeltaRMin{"cfgV0DaughterDeltaRMin", 0.001f, "Minimum deltaR between pion daughters"};
   } v0Cuts;
 
   struct : ConfigurableGroup {
@@ -262,6 +267,9 @@ struct Cha01710analysis {
     if (!track.isPVContributor() || !track.isGlobalTrackWoDCA() || !track.isPrimaryTrack()) {
       return false;
     }
+    if (track.pt() < kaonCuts.cfgPtMin || std::abs(track.eta()) > kaonCuts.cfgEtaMax) {
+      return false;
+    }
     if (track.tpcNClsCrossedRows() < kaonCuts.cfgTPCCrossedRowsMin ||
         track.tpcCrossedRowsOverFindableCls() < kaonCuts.cfgCrossedRowsRatioMin ||
         track.tpcChi2NCl() > kaonCuts.cfgTPCChi2Max || track.itsChi2NCl() > kaonCuts.cfgITSChi2Max ||
@@ -298,7 +306,19 @@ struct Cha01710analysis {
   template <typename T>
   bool selectPionDaughter(T const& track)
   {
-    return !(track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin || track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax || std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax);
+    if (track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin) {
+      return false;
+    }
+    if (track.pt() < v0Cuts.cfgV0DaughterPtMin) {
+      return false;
+    }
+    if (std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax) {
+      return false;
+    }
+    if (std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax) {
+      return false;
+    }
+    return true;
   }
 
   template <typename C, typename V>
@@ -317,15 +337,44 @@ struct Cha01710analysis {
          std::abs(v0.mAntiLambda() - constants::physics::MassLambda0) < v0Cuts.cfgLambdaMassWindow)) {
       return V0MassRegion::kReject;
     }
+    if (v0Cuts.cfgApplyArmenterosCut && v0.qtarm() < v0Cuts.cfgArmenterosCut) {
+      return V0MassRegion::kReject;
+    }
+
     auto pos = v0.template posTrack_as<Tracks>();
     auto neg = v0.template negTrack_as<Tracks>();
     if (!selectPionDaughter(pos) || !selectPionDaughter(neg)) {
       return V0MassRegion::kReject;
     }
+    if (v0Cuts.cfgApplyV0DaughterTOFPID) {
+      if (!v0.positiveHasTOF()) {
+        return V0MassRegion::kReject;
+      }
+      if (!v0.negativeHasTOF()) {
+        return V0MassRegion::kReject;
+      }
+      if (std::abs(v0.tofNSigmaK0PiPlus()) > v0Cuts.cfgV0DaughterTOFNSigmaPiMax) {
+        return V0MassRegion::kReject;
+      }
+      if (std::abs(v0.tofNSigmaK0PiMinus()) > v0Cuts.cfgV0DaughterTOFNSigmaPiMax) {
+        return V0MassRegion::kReject;
+      }
+    }
+
     ROOT::Math::PxPyPzMVector k0(v0.px(), v0.py(), v0.pz(), constants::physics::MassK0Short);
     if (std::abs(k0.Rapidity()) > v0Cuts.cfgV0RapidityMax) {
       return V0MassRegion::kReject;
     }
+
+    if (v0Cuts.cfgApplyV0DaughterDeltaR) {
+      float dEta = pos.eta() - neg.eta();
+      float dPhi = TVector2::Phi_mpi_pi(pos.phi() - neg.phi());
+      float deltaR = std::hypot(dEta, dPhi);
+      if (deltaR < v0Cuts.cfgV0DaughterDeltaRMin) {
+        return V0MassRegion::kReject;
+      }
+    }
+
     float dm = std::abs(v0.mK0Short() - constants::physics::MassK0Short);
     histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
 

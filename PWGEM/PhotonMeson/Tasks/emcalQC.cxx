@@ -20,7 +20,6 @@
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/ClusterHistograms.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -118,6 +117,7 @@ struct EmcalQC {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetTrackOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void defineEMCCut()
@@ -159,7 +159,7 @@ struct EmcalQC {
     const AxisSpec thAxisdEta{200, -0.06, 0.06, "#Delta#eta"};
     const AxisSpec thAxisdPhi{200, -0.06, 0.06, "#Delta#varphi (rad)"};
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    fEMEventCut.addEventHistograms(&fRegistry);
     auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1D, {{7, 0.5, 7.5}}, false);
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(2, "+TVX");         // TVX
@@ -210,17 +210,13 @@ struct EmcalQC {
       }
     }
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, collision.weight());
+    fEMEventCut.fillEventInfo<0>(&fRegistry, collision, collision.weight());
     if (!fEMEventCut.IsSelected(collision)) {
       return false;
     }
-    if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange()) || !(collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
-      return false;
-    }
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, collision.weight());
-    fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, collision.weight()); // accepted
-    fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, collision.weight());  // accepted
+    fEMEventCut.fillEventInfo<1>(&fRegistry, collision, collision.weight());
+    fEMEventCut.fillAccepted(&fRegistry, collision.weight());
     return true;
   }
 
