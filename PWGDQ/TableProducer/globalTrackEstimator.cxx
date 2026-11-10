@@ -53,6 +53,8 @@ constexpr static uint32_t GkTrackFillMap = VarManager::ObjTypes::ReducedTrackBar
 constexpr static uint32_t GkEventDirectFillMap = VarManager::ObjTypes::Collision;
 constexpr static uint32_t GkTrackDirectFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA;
 
+constexpr float MaxChargeTolerated = 1e-3;
+
 struct GlobalTrackEstimator {
   Produces<ReducedEventsGlobalTrk> reducedEventsGlobalTrk;
   Produces<GlobalTrackMultiplicity> globalTrackMultiplicity;
@@ -116,7 +118,7 @@ struct GlobalTrackEstimator {
       VarManager::FillTrackCollision<fillMap>(track, event);
     }
 
-    if (track.pt() < cfgMinPt || abs(track.eta()) > cfgEtaRange) {
+    if (track.pt() < cfgMinPt || std::abs(track.eta()) > cfgEtaRange) {
       return false;
     }
 
@@ -153,7 +155,7 @@ struct GlobalTrackEstimator {
       return false;
     }
 
-    if (std::abs(VarManager::fgValues[VarManager::kTrackDCAxy]) > cfgShiftDCAxy + cfgPtMagnitudeDCAxy / pow(track.pt(), cfgExponentDCAxy)) {
+    if (std::abs(VarManager::fgValues[VarManager::kTrackDCAxy]) > cfgShiftDCAxy + cfgPtMagnitudeDCAxy / std::pow(track.pt(), cfgExponentDCAxy)) {
       return false;
     }
 
@@ -171,7 +173,7 @@ struct GlobalTrackEstimator {
       }
 
       const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle == nullptr || std::abs(pdgParticle->Charge()) < 1.e-3) {
+      if (pdgParticle == nullptr || std::abs(pdgParticle->Charge()) < MaxChargeTolerated) {
         continue;
       }
 
