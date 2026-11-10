@@ -1428,7 +1428,7 @@ struct doubleOmegaTreeCreator {
       partners.push_back(&*partner);
       mixSeedPair(seed, *partner, written);
     }
-    if ((mixingOpts.mixingTypes & (1 << (kMixedAll - 1))) == 0) {
+    if ((mixingOpts.mixingTypes & (1 << (mixingType - 1))) == 0) {
       return;
     }
     for (std::size_t j = 0; j < partners.size(); ++j) {
@@ -1667,7 +1667,7 @@ struct doubleOmegaTreeCreator {
       addPairJobs(jobs, collision0.globalIndex(), collision1.globalIndex(), relation);
     }
 
-    if (mixingOpts.mixingTypes & (1 << (kMixedAll - 1)) != 0) {
+    if ((mixingOpts.mixingTypes & (1 << (kMixedAll - 1))) != 0) {
       for (const auto& [collision0, collision1, collision2] : selfTripleCombinations(binning, mixingOpts.nMixingCollisions, -1, collisions)) {
         histos.fill(HIST("Mixing/hMixedCollisions"), 2);
         const auto [minPVz, maxPVz] = std::minmax({collision0.posZ(), collision1.posZ(), collision2.posZ()});
