@@ -110,3 +110,8 @@ o2physics_target_root_dictionary(FFitWeights
         HEADERS FFitWeights.h
         LINKDEF FFitWeightsLinkDef.h)
 
+# Shared matching implementation for the data and MC entry points.
+o2physics_add_header_only_library(MftMchMatching
+    HEADERS MftMchMatching.h
+    INTERFACE_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::DataModel
+                            O2::GlobalTracking O2::MCHGeometryTransformer O2::DCAFitter O2Physics::PWGDQCore O2Physics::MLCore ROOT::RIO ROOT::Net)
