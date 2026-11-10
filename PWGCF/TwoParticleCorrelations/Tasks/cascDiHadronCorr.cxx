@@ -409,8 +409,8 @@ struct CascDiHadronCorr {
     }
 
     if (cfgOutputCascQA) {
-      registry.add("QAhisto/hqaTPCNClsbefore", "", {HistType::kTH1D, {{100, 0, 200}}});
-      registry.add("QAhisto/hqaTPCCrossedRowsbefore", "", {HistType::kTH1D, {{100, 0, 200}}});
+      registry.add("QAhisto/hqaTPCNClsbefore", "", {HistType::kTH1D, {{100, 0, 300}}});
+      registry.add("QAhisto/hqaTPCCrossedRowsbefore", "", {HistType::kTH1D, {{100, 0, 300}}});
       registry.add("QAhisto/hqaChi2prTPCclsbefore", "", {HistType::kTH1D, {{100, 0, 10}}});
       registry.add("QAhisto/hqaTPCNClsafter", "", {HistType::kTH1D, {{100, 0, 200}}});
       registry.add("QAhisto/hqaTPCCrossedRowsafter", "", {HistType::kTH1D, {{100, 0, 200}}});
@@ -1459,11 +1459,11 @@ struct CascDiHadronCorr {
     }
     if (fillCounter && cfgEvSel.cfgEvSelkIsGoodITSLayersAll.value)
       registry.fill(HIST("hEventCountSpecific"), 6.5);
-    if (cfgEvSel.cfgEvSelkIsGoodITSLayersAll.value && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (cfgEvSel.cfgEvSelkNoCollInRofStandard.value && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return 0;
     }
-    if (fillCounter && cfgEvSel.cfgEvSelkIsGoodITSLayersAll.value)
+    if (fillCounter && cfgEvSel.cfgEvSelkNoCollInRofStandard.value)
       registry.fill(HIST("hEventCountSpecific"), 7.5);
     if (cfgEvSel.cfgEvSelkNoHighMultCollInPrevRof.value && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
