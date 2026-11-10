@@ -2017,6 +2017,11 @@ struct Kstarqa {
         continue;
 
       rEventSelection.fill(HIST("hEventCutMC"), 5.5);
+
+      if (rctCut.requireRCTFlagChecker && !rctChecker(RecCollision))
+        continue;
+
+       rEventSelection.fill(HIST("hEventCutMC"), 6.5);
     }
 
     bool isINELgt0true = false;
