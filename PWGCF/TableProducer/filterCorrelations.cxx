@@ -458,7 +458,7 @@ struct FilterCF {
   }
 
   // This process must run before the collision processes below.
-  void processDataframeSeed(aod::Origins const& origins, aod::BCs const& bcs)
+  void processDataframeSeed(aod::Origins const& origins)
   {
     if (!cfgMultiplicityPoisson) {
       return;
@@ -467,19 +467,9 @@ struct FilterCF {
       LOGF(fatal, "Cannot seed Poisson multiplicity sampling without a dataframe ID");
       return;
     }
-
-    const uint32_t runNumber = bcs.size() > 0 ? static_cast<uint32_t>(bcs.iteratorAt(0).runNumber()) : 0u;
-    std::vector<uint32_t> seedInputs;
-    seedInputs.reserve(2 + 2 * origins.size());
-    seedInputs.push_back(cfgMultiplicityPoissonSeed.value);
-    seedInputs.push_back(runNumber);
-    for (const auto& origin : origins) {
-      const uint64_t dataframeId = origin.dataframeID();
-      seedInputs.push_back(static_cast<uint32_t>(dataframeId));
-      seedInputs.push_back(static_cast<uint32_t>(dataframeId >> std::numeric_limits<uint32_t>::digits));
-    }
-
-    std::seed_seq seed(seedInputs.begin(), seedInputs.end());
+    const uint64_t dataframeId = origins.iteratorAt(0).dataframeID();
+    std::seed_seq seed{cfgMultiplicityPoissonSeed.value, static_cast<uint32_t>(dataframeId),
+                       static_cast<uint32_t>(dataframeId >> std::numeric_limits<uint32_t>::digits)};
     std::array<uint32_t, 2> seedWords{};
     seed.generate(seedWords.begin(), seedWords.end());
     // Speed up seeding by creating one 64-bit seed from the dataframe information.
