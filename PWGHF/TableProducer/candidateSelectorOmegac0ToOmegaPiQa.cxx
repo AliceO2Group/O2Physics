@@ -63,7 +63,7 @@ enum PidInfoStored {
   PiFromCharm
 };
 
-enum {
+enum RecoMethod {
   doDcaFitter = 0,
   doKfParticle
 };
@@ -460,7 +460,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusLf"), 13.0);
 
     // Extra cuts for KFParticle
-    if constexpr (svReco == doKfParticle) {
+    if constexpr (svReco == RecoMethod::doKfParticle) {
       if (kfConfigurableGroup.applyKFpreselections) {
         // Cosine of Pointing angle
         if (candidate.cpaV0ToCascade() < kfConfigurableGroup.cosPaV0ToCascMin) {
@@ -581,7 +581,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.fill(HIST("hSelStatusHf"), 3.0);
 
     // specific selections with KFParticle output
-    if constexpr (svReco == doKfParticle) {
+    if constexpr (svReco == RecoMethod::doKfParticle) {
       if (kfConfigurableGroup.applyKFpreselections) {
         // Omegac Pt selection
         if (std::abs(candidate.pt()) <= ptCandMin || std::abs(candidate.pt()) >= ptCandMax) {
@@ -790,10 +790,10 @@ struct HfCandidateSelectorToOmegaPiQa {
         // ML selections
         bool isSelectedMlOmegac = false;
 
-        if constexpr (svReco == doKfParticle) {
+        if constexpr (svReco == RecoMethod::doKfParticle) {
           std::vector<float> inputFeaturesOmegaC = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
           isSelectedMlOmegac = hfMlResponseKf.isSelectedMl(inputFeaturesOmegaC, candidate.pt(), outputMlOmegac);
-        } else if constexpr (svReco == doDcaFitter) {
+        } else if constexpr (svReco == RecoMethod::doDcaFitter) {
           std::vector<float> inputFeaturesOmegaC = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
           isSelectedMlOmegac = hfMlResponseDca.isSelectedMl(inputFeaturesOmegaC, candidate.pt(), outputMlOmegac);
         }
@@ -823,7 +823,7 @@ struct HfCandidateSelectorToOmegaPiQa {
                                            TracksSel const& tracks,
                                            TracksSelLf const& lfTracks)
   {
-    runOmegac0Selector<doDcaFitter>(candidates, tracks, lfTracks);
+    runOmegac0Selector<RecoMethod::doDcaFitter>(candidates, tracks, lfTracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorToOmegaPiQa, processOmegac0SelectorWithDCAFitter, "Omegac0 candidate selection with DCAFitter output", true);
 
@@ -834,7 +834,7 @@ struct HfCandidateSelectorToOmegaPiQa {
                                             TracksSel const& tracks,
                                             TracksSelLf const& lfTracks)
   {
-    runOmegac0Selector<doKfParticle>(candidates, tracks, lfTracks);
+    runOmegac0Selector<RecoMethod::doKfParticle>(candidates, tracks, lfTracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorToOmegaPiQa, processOmegac0SelectorWithKFParticle, "Omegac0 candidate selection with KFParticle output", false);
 
