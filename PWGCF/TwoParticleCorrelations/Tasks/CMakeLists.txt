@@ -162,3 +162,8 @@ o2physics_add_dpl_workflow(pid-long-range
                            SOURCES pidLongRange.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::TwoPartCorrCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pid-di-hadron
+                           SOURCES pidDiHadronWithCasc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::TwoPartCorrCore O2Physics::AnalysisCCDB
+                           COMPONENT_NAME Analysis)
