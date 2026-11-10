@@ -892,7 +892,7 @@ struct HfDataCreatorJpsiHadReduced {
           // Match J/Psi -> µ+µ- and K*0 -> K+pi-
           const auto& jpsiPart = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           // Now we check that subtracting gammas from bremsstrahlung, the number of daughters of the J/Psi is 2 (µ+µ-)
-          // In EVTGEN, bremmstralhung photons are considered as daughters of the J/Psi
+          // In EVTGEN bremmstralhung photons are considered as daughters of the J/Psi
           std::vector<int> jpsiDauPdgs{};
           for (const auto& dau : jpsiPart.template daughters_as<aod::McParticles>()) {
             jpsiDauPdgs.push_back(dau.pdgCode());
