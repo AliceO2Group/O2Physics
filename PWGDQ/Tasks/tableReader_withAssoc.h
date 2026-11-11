@@ -257,8 +257,11 @@ using MyEventsMultExtraZdcFit = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::R
 using MyEventsSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::EventCuts>;
 using MyEventsMultExtraSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::EventCuts>;
 using MyEventsVtxCovSelectedMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
+using MyEventsWithGlobalMultHash = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedEventsGlobalTrk, o2::aod::EventCuts, o2::aod::MixingHashes>;
 using MyEventsHashSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::MixingHashes>;
 using MyEventsVtxCov = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov>;
+using MyEventsVtxCovGlobalMult = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedEventsGlobalTrk>;
+using MyEventsVtxCovGlobalMultSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedEventsGlobalTrk, o2::aod::EventCuts>;
 using MyEventsVtxCovSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts>;
 using MyEventsVtxCovSelectedInfo = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsInfo>;
 using MyEventsVtxCovSelectedQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra>;
@@ -393,7 +396,7 @@ struct AnalysisEventSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr") || context.mOptions.get<bool>("processSkimmedWithQvectorCentrMerge");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr") || context.mOptions.get<bool>("processSkimmedWithQvectorCentrMerge") || context.mOptions.get<bool>("processSkimmedWithGlobalMults");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -723,6 +726,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithQvectorCentr>(events);
     publishSelections<gkEventFillMapWithQvectorCentr>(events);
   }
+  void processSkimmedWithGlobalMults(MyEventsVtxCovGlobalMult const& events)
+  {
+    runEventSelection<gkEventFillMapWithCov>(events);
+    publishSelections<gkEventFillMapWithCov>(events);
+  }
   void processFillEvents(MyEventsBasic const& events) // Used to forward the event table from tablemaker, typical use for now is jet analysis.
   {
     for (auto const& event : events) {
@@ -750,6 +758,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdcFit, "Run event selection on DQ skimmed events, with mult extra, ZDC and FIT", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentrMerge, "Run event selection on DQ skimmed events, with Q-vector and ReducedEventsMergingTable", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithGlobalMults, "Run event selection with global track multiplicity estimation", false);
   PROCESS_SWITCH(AnalysisEventSelection, processFillEvents, "Fill storedReducedEvents table for use in JE framework", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
@@ -1575,8 +1584,8 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrVtxCovSkimmed") || context.mOptions.get<bool>("processBarrelOnlyDiKaons") || context.mOptions.get<bool>("processBarrelOnlyDiProtons");
-    fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmed") || context.mOptions.get<bool>("processBarrelOnlyDiKaons") || context.mOptions.get<bool>("processBarrelOnlyDiProtons") || context.mOptions.get<bool>("processBarrelOnlySkimmedWithGlobalMult");
+    fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processMixingBarrelSkimmedGlobalMult");
     fEnableBarrelMixingHistos |= fConfigRunMixingAcrossTFs;
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow") || context.mOptions.get<bool>("processMuonOnlyVertexingSkimmed");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmedFlow");
@@ -3269,6 +3278,11 @@ struct AnalysisSameEventPairing {
                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCovQvectorCentr, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  void processBarrelOnlySkimmedWithGlobalMult(MyEventsVtxCovGlobalMultSelected const& events,
+                                              o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
+                                              MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
@@ -3328,6 +3342,12 @@ struct AnalysisSameEventPairing {
     runSameSideMixing<pairTypeEE, gkEventFillMapWithQvectorCentr>(events, trackAssocs, tracks, trackAssocsPerCollision);
   }
 
+  void processMixingBarrelSkimmedGlobalMult(o2::soa::Filtered<MyEventsWithGlobalMultHash>& events, // o2-linter: disable=const-ref-in-process
+                                            o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& trackAssocs, o2::aod::ReducedTracks const& tracks)
+  {
+    runSameSideMixing<pairTypeEE, gkEventFillMapWithCov>(events, trackAssocs, tracks, trackAssocsPerCollision);
+  }
+
   void processMixingMuonSkimmed(o2::soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
                                 o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
@@ -3362,6 +3382,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedFlow, "Run barrel only pairing, with skimmed tracks and with flow", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyDiKaons, "Run barrel only pairing for di-kaons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyDiProtons, "Run barrel only pairing for di-protons", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedWithGlobalMult, "Run barrel only pairing, with skimmed tracks and global track estimation", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedMultExtra, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedFlow, "Run muon only pairing, with skimmed tracks and flow", false);
@@ -3371,6 +3392,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelSkimmed, "Run barrel type mixing pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelSkimmedFlow, "Run barrel type mixing pairing, with flow, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelWithQvectorCentrSkimmedNoCov, "Run barrel type mixing pairing, with skimmed tracks and with Qvector from central framework", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelSkimmedGlobalMult, "Run barrel type mixing pairing, with global tracks, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingMuonSkimmed, "Run muon type mixing pairing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingMuonSkimmedFlow, "Run muon type mixing pairing, with skimmed muons and flow", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingElectronMuonSkimmed, "Run electron-muon mixing pairing, with skimmed tracks/muons", false);
@@ -4907,7 +4929,7 @@ struct AnalysisDileptonTrackTrack {
 
   o2::framework::Produces<o2::aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
 
-  int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = -1;        // needed to detect if the run changed and trigger update of calibrations etc.
   uint32_t fTrackCutMask1 = 0; // track cut bit mask to be used in the selection of tracks
   uint32_t fTrackCutMask2 = 0; // track cut bit mask to be used in the selection of tracks
   uint32_t fNDoubletCuts = 0;  // number of doublet track cuts
