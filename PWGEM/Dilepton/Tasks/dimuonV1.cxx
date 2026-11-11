@@ -529,8 +529,8 @@ struct dimuonV1 {
   using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
   using FilteredMyMuon = FilteredMyMuons::iterator;
 
-  o2::framework::Partition<FilteredMyMuons> positive_muons = o2::aod::emprimarymuon::sign > int8_t(0);
-  o2::framework::Partition<FilteredMyMuons> negative_muons = o2::aod::emprimarymuon::sign < int8_t(0);
+  o2::framework::Partition<FilteredMyMuons> positive_muons = o2::aod::emprimarymuon::sign > static_cast<int8_t>(0);
+  o2::framework::Partition<FilteredMyMuons> negative_muons = o2::aod::emprimarymuon::sign < static_cast<int8_t>(0);
 
   // MyEMH_muon* emh_pos = nullptr;
   // MyEMH_muon* emh_neg = nullptr;
