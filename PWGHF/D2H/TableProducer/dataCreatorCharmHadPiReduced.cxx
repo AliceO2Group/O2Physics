@@ -257,6 +257,7 @@ struct HfDataCreatorCharmHadPiReduced {
   using CollisionsWCentAndMcLabels = soa::Join<CollisionsWCent, aod::McCollisionLabels>;
   using CollisionsWCentAndQvectors = soa::Join<CollisionsWCent, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls>;
   using BCsInfo = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+  using McCollisionsWMult = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
 
   Filter filterSelectDplusCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= hfflagConfigurations.selectionFlagDplus);
   Filter filterSelectDsCandidates = (aod::hf_sel_candidate_ds::isSelDsToKKPi >= hfflagConfigurations.selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= hfflagConfigurations.selectionFlagDs);
@@ -1570,7 +1571,7 @@ struct HfDataCreatorCharmHadPiReduced {
   }
 
   template <uint8_t DecayChannel>
-  void runMcGen(aod::McCollision const& mcCollision,
+  void runMcGen(McCollisionsWMult::iterator const& mcCollision,
                 aod::McParticles const& particlesMc,
                 CollisionsWCentAndMcLabels const& collisions,
                 BCsInfo const&)
@@ -2346,7 +2347,7 @@ struct HfDataCreatorCharmHadPiReduced {
                         TracksPidWithSelAndMc const& tracks,
                         aod::McParticles const& particlesMc,
                         BCsInfo const& bcs,
-                        McCollisions const& mcCollisions)
+                        McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for B0 workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2381,7 +2382,7 @@ struct HfDataCreatorCharmHadPiReduced {
                               TracksPidWithSelAndMc const& tracks,
                               aod::McParticles const& particlesMc,
                               BCsInfo const& bcs,
-                              McCollisions const& mcCollisions)
+                              McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for B0 workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2416,7 +2417,7 @@ struct HfDataCreatorCharmHadPiReduced {
                         TracksPidWithSelAndMc const& tracks,
                         aod::McParticles const& particlesMc,
                         BCsInfo const& bcs,
-                        McCollisions const& mcCollisions,
+                        McCollisionsWMult const& mcCollisions,
                         aod::Hf2Prongs const&)
   {
     // store configurables needed for B0 workflow
@@ -2452,7 +2453,7 @@ struct HfDataCreatorCharmHadPiReduced {
                               TracksPidWithSelAndMc const& tracks,
                               aod::McParticles const& particlesMc,
                               BCsInfo const& bcs,
-                              McCollisions const& mcCollisions,
+                              McCollisionsWMult const& mcCollisions,
                               aod::Hf2Prongs const&)
   {
     // store configurables needed for B0 workflow
@@ -2488,7 +2489,7 @@ struct HfDataCreatorCharmHadPiReduced {
                      TracksPidWithSelAndMc const& tracks,
                      aod::McParticles const& particlesMc,
                      BCsInfo const& bcs,
-                     McCollisions const& mcCollisions)
+                     McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for Bs workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2523,7 +2524,7 @@ struct HfDataCreatorCharmHadPiReduced {
                            TracksPidWithSelAndMc const& tracks,
                            aod::McParticles const& particlesMc,
                            BCsInfo const& bcs,
-                           McCollisions const& mcCollisions)
+                           McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for Bs workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2558,7 +2559,7 @@ struct HfDataCreatorCharmHadPiReduced {
                      TracksPidWithSelAndMc const& tracks,
                      aod::McParticles const& particlesMc,
                      BCsInfo const& bcs,
-                     McCollisions const& mcCollisions)
+                     McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2593,7 +2594,7 @@ struct HfDataCreatorCharmHadPiReduced {
                            TracksPidWithSelAndMc const& tracks,
                            aod::McParticles const& particlesMc,
                            BCsInfo const& bcs,
-                           McCollisions const& mcCollisions)
+                           McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2628,7 +2629,7 @@ struct HfDataCreatorCharmHadPiReduced {
                      TracksPidWithSelAndMc const& tracks,
                      aod::McParticles const& particlesMc,
                      BCsInfo const& bcs,
-                     McCollisions const& mcCollisions)
+                     McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for Lb workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2663,7 +2664,7 @@ struct HfDataCreatorCharmHadPiReduced {
                            TracksPidWithSelAndMc const& tracks,
                            aod::McParticles const& particlesMc,
                            BCsInfo const& bcs,
-                           McCollisions const& mcCollisions)
+                           McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for Lb workflow
     if (!isHfCandBhadConfigFilled) {

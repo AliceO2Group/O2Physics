@@ -139,7 +139,7 @@ struct HfTaskCorrelationsEfficiencies {
   std::unique_ptr<TF1> funcDcaXYPtCutPrimTrk{nullptr};
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  using McCollisionsWMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using McCollisionsWMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
   using RecoCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
   using McCandsDs = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi, aod::HfCand3ProngMcRec>>;
   using McCandsDplus = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi, aod::HfCand3ProngMcRec>>;
