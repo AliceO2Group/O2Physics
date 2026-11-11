@@ -23,6 +23,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Array2D.h>
 // #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 // #include <Framework/AnalysisHelpers.h>
@@ -31,7 +32,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/LabeledArray.h>
 // #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
