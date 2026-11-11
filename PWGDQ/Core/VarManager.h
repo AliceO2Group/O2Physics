@@ -3785,9 +3785,9 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
 
   float deltaphitrans = RecoDecay::constrainAngle(track.phi() - t1.phi(), o2::constants::math::PI);
   if ((deltaphitrans > -Transhigh * o2::constants::math::PI && deltaphitrans < -Translow * o2::constants::math::PI) || (deltaphitrans > Translow * o2::constants::math::PI && deltaphitrans < Transhigh * o2::constants::math::PI)) {
-    randomPhi_trans = gRandom->Uniform(o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-    randomPhi_toward = gRandom->Uniform(o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-    randomPhi_away = gRandom->Uniform(o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+    randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+    randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+    randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
 
     values[kMCHadronpt_randomPhi_trans] = v2.pt();
     ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, MassHadron);
@@ -3802,9 +3802,9 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
     values[kMCCosChi_randomPhi_away] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_away);
     values[kMCWeight_randomPhi_away] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_away) / v1.M() * Accweight;
 
-    values[kMCdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, o2::constants::math::PIHalf);
-    values[kMCdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, o2::constants::math::PIHalf);
-    values[kMCdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, -o2::constants::math::PIHalf);
   }
 }
 
@@ -7146,9 +7146,9 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
 
     if constexpr (candidateType == kPsi2StoJpsiPiPi) {
       KFPTrack kfpTrack0 = createKFPTrackFromTrack(lepton1);
-      lepton1KF = KFParticle(kfpTrack0, PDG_t::kElectron * lepton1.sign());
+      lepton1KF = KFParticle(kfpTrack0, PDG_t::kPositron * lepton1.sign());
       KFPTrack kfpTrack1 = createKFPTrackFromTrack(lepton2);
-      lepton2KF = KFParticle(kfpTrack1, PDG_t::kElectron * lepton2.sign());
+      lepton2KF = KFParticle(kfpTrack1, PDG_t::kPositron * lepton2.sign());
       KFPTrack kfpTrack2 = createKFPTrackFromTrack(track1);
       trk1KF = KFParticle(kfpTrack2, PDG_t::kPiPlus * track1.sign());
       KFPTrack kfpTrack3 = createKFPTrackFromTrack(track2);
