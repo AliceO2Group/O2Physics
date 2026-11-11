@@ -48,6 +48,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -246,15 +247,15 @@ struct DeltaAnalysis {
     mPionDCAPtEdges = dcaCuts.pionDCAPtBinEdges.value;
     mPionMaxDCAxy = dcaCuts.pionMaxDCAxyPerPtBin.value;
 
-    const AxisSpec ptAxis{50, 0., 20., "p_{T} (GeV/c)"};
+    const AxisSpec ptAxis{50, 0., 12., "p_{T} (GeV/c)"};
     const AxisSpec massAxis{trackCuts.numberOfInvMassBins, 1.0, 6.0, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{axes.cfgCentAxis, "Centrality (%)"};
     const AxisSpec vtxAxis{axes.cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{axes.cfgRapAxis, "Rapidity y"};
     const AxisSpec nSigmaTPCaxis{100, -5., 5., "n#sigma^{TPC}"};
     const AxisSpec nSigmaTOFaxis{100, -5., 5., "n#sigma^{TOF}"};
-    const AxisSpec momentumAxis{50, 0., 20., "p (GeV/#it{c})"};
-    const AxisSpec ptForPIDAxis{50, 0., 20., "p_{T} (GeV/#it{c})"};
+    const AxisSpec momentumAxis{50, 0., 12., "p (GeV/#it{c})"};
+    const AxisSpec ptForPIDAxis{50, 0., 12., "p_{T} (GeV/#it{c})"};
     const AxisSpec dcaXYaxis{200, -0.2f, 0.2f, "DCA_{xy} (cm)"};
     const AxisSpec dcaZaxis{200, -1.2f, 1.2f, "DCA_{z} (cm)"};
     const AxisSpec tpcClusAxis{200, 0, 200, "N_{clusters}^{TPC}"};
@@ -1429,18 +1430,6 @@ struct DeltaAnalysis {
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
   using BinningTypeNTPV = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentNTPV>;
 
-  BinningTypeFT0M binningFT0M{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-  BinningTypeFT0A binningFT0A{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-  BinningTypeFT0C binningFT0C{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-  BinningTypeFV0A binningFV0A{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-  BinningTypeNTPV binningNTPV{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0M> pairFT0M{binningFT0M, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pairFT0A{binningFT0A, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0C> pairFT0C{binningFT0C, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFV0A> pairFV0A{binningFV0A, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeNTPV> pairNTPV{binningNTPV, mixingCfg.cfgNoMixedEvents, -1, &cache};
-
   std::vector<TrackCandidate> mProtonPool;
   std::vector<TrackCandidate> mPionPool;
 
@@ -1524,31 +1513,6 @@ struct DeltaAnalysis {
     }
   }
 
-  void processMixedEvent(EventCandidates const&, TrackCandidates const&)
-  {
-    switch (evSel.cfgCentralityEstimator) {
-      case delta_analysis::kFT0M:
-        runMixedEvent(pairFT0M);
-        break;
-      case delta_analysis::kFT0A:
-        runMixedEvent(pairFT0A);
-        break;
-      case delta_analysis::kFT0C:
-        runMixedEvent(pairFT0C);
-        break;
-      case delta_analysis::kFV0A:
-        runMixedEvent(pairFV0A);
-        break;
-      case delta_analysis::kNTPV:
-        runMixedEvent(pairNTPV);
-        break;
-      default:
-        runMixedEvent(pairFT0M);
-        break;
-    }
-  }
-  PROCESS_SWITCH(DeltaAnalysis, processMixedEvent, "Process mixed event", true);
-
   // ── MC reconstructed event mixing ────────────────────────────────────────────────────────
   // Mirrors runMixedEvent()/processMixedEvent() above exactly (same event-selection call, same
   // "protons1+pions2" / "protons2+pions1" combinatorics, same centrality-estimator dispatch),
@@ -1574,31 +1538,56 @@ struct DeltaAnalysis {
     }
   }
 
-  void processMCEventMixing(EventCandidates const&, TrackCandidates const&)
+  template <typename BinningType>
+  void runMixingWithBinning(EventCandidates const& collisions, TrackCandidates const& tracks, bool isMC)
+  {
+    BinningType binning{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
+    const int nMixedEvents = mixingCfg.cfgNoMixedEvents;
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<EventCandidates, TrackCandidates, BinningType> mixingPair{binning, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    if (isMC) {
+      runMixedEventMC(mixingPair);
+    } else {
+      runMixedEvent(mixingPair);
+    }
+  }
+
+  void dispatchMixing(EventCandidates const& collisions, TrackCandidates const& tracks, bool isMC)
+  {
+    switch (evSel.cfgCentralityEstimator) {
+      case delta_analysis::kFT0M:
+        runMixingWithBinning<BinningTypeFT0M>(collisions, tracks, isMC);
+        break;
+      case delta_analysis::kFT0A:
+        runMixingWithBinning<BinningTypeFT0A>(collisions, tracks, isMC);
+        break;
+      case delta_analysis::kFT0C:
+        runMixingWithBinning<BinningTypeFT0C>(collisions, tracks, isMC);
+        break;
+      case delta_analysis::kFV0A:
+        runMixingWithBinning<BinningTypeFV0A>(collisions, tracks, isMC);
+        break;
+      case delta_analysis::kNTPV:
+        runMixingWithBinning<BinningTypeNTPV>(collisions, tracks, isMC);
+        break;
+      default:
+        runMixingWithBinning<BinningTypeFT0M>(collisions, tracks, isMC);
+        break;
+    }
+  }
+
+  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    dispatchMixing(collisions, tracks, false);
+  }
+  PROCESS_SWITCH(DeltaAnalysis, processMixedEvent, "Process mixed event", true);
+
+  void processMCEventMixing(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     if (!mixingCfg.enableMCEventMixing) {
       return;
     }
-    switch (evSel.cfgCentralityEstimator) {
-      case delta_analysis::kFT0M:
-        runMixedEventMC(pairFT0M);
-        break;
-      case delta_analysis::kFT0A:
-        runMixedEventMC(pairFT0A);
-        break;
-      case delta_analysis::kFT0C:
-        runMixedEventMC(pairFT0C);
-        break;
-      case delta_analysis::kFV0A:
-        runMixedEventMC(pairFV0A);
-        break;
-      case delta_analysis::kNTPV:
-        runMixedEventMC(pairNTPV);
-        break;
-      default:
-        runMixedEventMC(pairFT0M);
-        break;
-    }
+    dispatchMixing(collisions, tracks, true);
   }
   PROCESS_SWITCH(DeltaAnalysis, processMCEventMixing, "Process MC reconstructed event mixing (reuses DATA mixing pairs; no truth matching)", false);
 
