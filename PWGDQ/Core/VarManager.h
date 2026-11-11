@@ -914,9 +914,8 @@ class VarManager : public TObject
     kU2Q2,
     kU2Q2POS,
     kU2Q2NEG,
-    //Magnus, Variable definition of U2Q2 for FT0A and FT0C
-    kU2Q2FT0A,
-    kU2Q2FT0C,
+    kU2Q2FT0A, // New U2Q2-variable for FT0A
+    kU2Q2FT0C, // New U2Q2-variable for FT0C
     kU3Q3,
     kQ42XA,
     kQ42YA,
