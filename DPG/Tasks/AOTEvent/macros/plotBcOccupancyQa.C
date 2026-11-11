@@ -61,7 +61,10 @@ T* getHist(const char* name)
     return nullptr;
   }
   h->SetDirectory(nullptr);
-  h->SetStats(false); // also when the saved canvases are drawn later
+  h->SetStats(false);        // also when the saved canvases are drawn later
+  TString uniqueName = name; // histograms from subdirectories (e.g. "BcOccs/hBcCounter"): unique names in the output file
+  uniqueName.ReplaceAll("/", "_");
+  h->SetName(uniqueName);
   return h;
 }
 
@@ -109,6 +112,9 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
 
   auto* hBcCounter = getHist<TH1>("hBcCounter");
   auto* hNumCollsInBC = getHist<TH1>("hNumCollsInBC");
+  auto* hNumCollsInRof = getHist<TH1>("hNumCollsInRof");
+  auto* hNumCollsInRofVsInBC = getHist<TH2>("hNumCollsInRofVsInBC");
+  auto* hNumCollsInRofUpcMode = getHist<TH1>("hNumCollsInRofUpcMode");
   auto* hBcInTF = getHist<TH1>("hBcInTF");
   auto* hBcInTFDefined = getHist<TH1>("hBcInTFOccupancyDefined");
   auto* hOccTracks = getHist<TH1>("hOccupancyByTracks");
@@ -120,6 +126,12 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
   auto* hFlags = getHist<TH1>("hOccupancyFlags");
   auto* hFlagsVsOcc = getHist<TH2>("hOccupancyFlagsVsOccupancyByTracks");
   auto* hBcIndexCheck = getHist<TH1>("hBcIndexCheck");
+  // aod::BcOccs, and its comparison with aod::BcOccsAll
+  auto* hBcOccsCounter = getHist<TH1>("BcOccs/hBcCounter");
+  auto* hBcOccsOccTracks = getHist<TH1>("BcOccs/hOccupancyByTracks");
+  auto* hBcOccsOccTracksVsFT0C = getHist<TH2>("BcOccs/hOccupancyByTracksVsFT0C");
+  auto* hBcOccsFlags = getHist<TH1>("BcOccs/hOccupancyFlags");
+  auto* hBcOccsVsBcOccsAll = getHist<TH1>("BcOccsVsBcOccsAll/hCheck");
 
   // ### summary
   std::printf("\n=== BC occupancy QA: %s ===\n", fileName);
@@ -136,6 +148,15 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
                 nAll > 0 ? 100. * hNumCollsInBC->Integral(hNumCollsInBC->FindBin(1), hNumCollsInBC->GetNbinsX() + 1) / nAll : 0.,
                 nAll > 0 ? 100. * hNumCollsInBC->Integral(hNumCollsInBC->FindBin(2), hNumCollsInBC->GetNbinsX() + 1) / nAll : 0.);
   }
+  if (hNumCollsInRof && hNumCollsInRof->GetEntries() > 0) {
+    const double nAll = hNumCollsInRof->GetEntries();
+    const double nNotAvailable = hNumCollsInRof->GetBinContent(hNumCollsInRof->FindBin(-1));
+    std::printf("collisions in the ITS ROF of a BC: mean %.3f, BCs in ROFs with >= 2 collisions: %.2f%%, not available (-1): %.0f\n",
+                hNumCollsInRof->GetMean(), 100. * hNumCollsInRof->Integral(hNumCollsInRof->FindBin(2), hNumCollsInRof->GetNbinsX() + 1) / nAll, nNotAvailable);
+    if (hNumCollsInRofUpcMode) {
+      std::printf("BCs in ITS ROFs in UPC mode (kUpcMode): %.2f%%\n", 100. * hNumCollsInRofUpcMode->GetEntries() / nAll);
+    }
+  }
   if (hFlags && hFlags->GetBinContent(1) > 0) {
     std::printf("fraction of BCs (with calculated occupancy) passing each flag:\n");
     for (int i = 2; i <= hFlags->GetNbinsX(); i++) {
@@ -149,6 +170,18 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
     std::printf("lookup by global BC (BcOccAllIndex): rows found %.0f / %.0f, BCs of aod::BCs found %.0f / %.0f (not found %.0f), with the same global BC %.0f -> %s\n",
                 hBcIndexCheck->GetBinContent(2), hBcIndexCheck->GetBinContent(1), hBcIndexCheck->GetBinContent(4), hBcIndexCheck->GetBinContent(3),
                 hBcIndexCheck->GetBinContent(6), hBcIndexCheck->GetBinContent(5), ok ? "OK" : "MISMATCH");
+  }
+
+  if (hBcOccsCounter && hBcOccsCounter->GetBinContent(1) > 0) {
+    const double nAll = hBcOccsCounter->GetBinContent(1), nDef = hBcOccsCounter->GetBinContent(2);
+    std::printf("BcOccs: BCs %.0f, with calculated occupancy: %.0f (%.2f%%)\n", nAll, nDef, 100. * nDef / nAll);
+  }
+  if (hBcOccsVsBcOccsAll && hBcOccsVsBcOccsAll->GetBinContent(1) > 0) {
+    // all BCs found in BcOccsAll should have identical values
+    const auto bin = [hBcOccsVsBcOccsAll](int i) { return hBcOccsVsBcOccsAll->GetBinContent(i); };
+    const bool ok = bin(3) == bin(2) && bin(4) == bin(2) && bin(6) == bin(5);
+    std::printf("BcOccs vs BcOccsAll: BCs found %.0f / %.0f (not found %.0f), same collision counts %.0f, same kUpcMode %.0f, same occupancy and flags %.0f / %.0f -> %s\n",
+                bin(2), bin(1), bin(7), bin(3), bin(4), bin(6), bin(5), ok ? "OK" : "MISMATCH");
   }
 
   // ### plots
@@ -165,8 +198,8 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
   };
   TCanvas* c = nullptr;
 
-  // page 1: BC counters and the cross-check of the lookup by global BC
-  c = newPage("cBcCounters", "BC counters", 1500, 550, 3, 1);
+  // page 1: BC counters, collisions in the BC and in the ITS ROF, and the cross-check of the lookup by global BC
+  c = newPage("cBcCounters", "BC counters", 1500, 1000, 3, 2);
   if (hBcCounter) {
     c->cd(1)->SetLeftMargin(0.15);
     hBcCounter->SetTitle("number of BCs");
@@ -184,6 +217,28 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
     hBcIndexCheck->GetXaxis()->LabelsOption("v");
     hBcIndexCheck->SetMinimum(0.5);
     hBcIndexCheck->Draw("hist text");
+  }
+  const double maxNumCollsInRof = hNumCollsInRof ? upperEdgeOfFilledRange(hNumCollsInRof) + 1. : 0.;
+  if (hNumCollsInRof) {
+    c->cd(4)->SetLogy();
+    c->cd(4)->SetLeftMargin(0.15);
+    hNumCollsInRof->SetTitle("all BCs;number of collisions in the ITS ROF of the BC;N BCs");
+    hNumCollsInRof->GetXaxis()->SetRangeUser(-1.5, maxNumCollsInRof);
+    hNumCollsInRof->Draw("hist");
+    if (hNumCollsInRofUpcMode) {
+      hNumCollsInRofUpcMode->SetLineColor(kRed + 1);
+      hNumCollsInRofUpcMode->Draw("hist same");
+      auto* legRof = new TLegend(0.5, 0.75, 0.89, 0.89);
+      legRof->AddEntry(hNumCollsInRof, "all BCs", "l");
+      legRof->AddEntry(hNumCollsInRofUpcMode, "BCs in UPC-mode ROFs", "l");
+      legRof->Draw();
+    }
+  }
+  if (hNumCollsInRofVsInBC) {
+    c->cd(5)->SetLogz();
+    hNumCollsInRofVsInBC->SetTitle("all BCs;number of collisions in the BC;number of collisions in the ITS ROF of the BC");
+    hNumCollsInRofVsInBC->GetYaxis()->SetRangeUser(-1.5, maxNumCollsInRof);
+    hNumCollsInRofVsInBC->Draw("colz");
   }
 
   // page 2: occupancy distributions
@@ -272,6 +327,48 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
     pOccVsBcInOrbit->Draw("hist"); // 3564 bins: error bars would hide the pattern
   }
 
+  // page 5: aod::BcOccs and its comparison with aod::BcOccsAll
+  c = newPage("cBcOccs", "BcOccs and comparison with BcOccsAll", 1500, 1000, 3, 2);
+  if (hBcOccsCounter) {
+    c->cd(1)->SetLeftMargin(0.15);
+    hBcOccsCounter->SetTitle("BcOccs: number of BCs");
+    hBcOccsCounter->Draw("hist text");
+  }
+  if (hBcOccsFlags && hBcOccsFlags->GetBinContent(1) > 0) {
+    c->cd(2)->SetBottomMargin(0.3);
+    auto* hFlagsFracBcOccs = static_cast<TH1*>(hBcOccsFlags->Clone("BcOccs_hFlagsFrac"));
+    hFlagsFracBcOccs->Scale(1. / hBcOccsFlags->GetBinContent(1));
+    hFlagsFracBcOccs->SetTitle("BcOccs: fraction of BCs passing each flag;;fraction of BCs");
+    hFlagsFracBcOccs->GetXaxis()->LabelsOption("v");
+    hFlagsFracBcOccs->SetMinimum(0.);
+    hFlagsFracBcOccs->SetMaximum(1.1);
+    hFlagsFracBcOccs->Draw("hist text");
+    derivedHists.push_back(hFlagsFracBcOccs);
+  }
+  if (hBcOccsVsBcOccsAll) {
+    c->cd(3)->SetBottomMargin(0.35);
+    c->cd(3)->SetLogy();
+    hBcOccsVsBcOccsAll->SetTitle("BcOccs vs BcOccsAll (BCs of aod::BCs);;counts");
+    hBcOccsVsBcOccsAll->GetXaxis()->LabelsOption("v");
+    hBcOccsVsBcOccsAll->SetMinimum(0.5);
+    hBcOccsVsBcOccsAll->Draw("hist text");
+  }
+  if (hBcOccsOccTracks) {
+    c->cd(4)->SetLeftMargin(0.15);
+    c->cd(4)->SetLogy();
+    hBcOccsOccTracks->SetTitle("BcOccs: occupancy by ITS tracks;occupancy by ITS tracks;N BCs");
+    hBcOccsOccTracks->GetXaxis()->SetRangeUser(0., maxOccTracks);
+    hBcOccsOccTracks->Draw("hist");
+  }
+  if (hBcOccsOccTracksVsFT0C) {
+    c->cd(5)->SetLeftMargin(0.15);
+    c->cd(5)->SetLogz();
+    hBcOccsOccTracksVsFT0C->SetTitle("BcOccs: occupancy, ITS tracks vs FT0C;occupancy by FT0C amplitudes;occupancy by ITS tracks");
+    hBcOccsOccTracksVsFT0C->GetXaxis()->SetRangeUser(0., maxOccFT0C);
+    hBcOccsOccTracksVsFT0C->GetYaxis()->SetRangeUser(0., maxOccTracks);
+    hBcOccsOccTracksVsFT0C->Draw("colz");
+  }
+
   // PDF: each page with the aspect ratio of its canvas
   for (size_t i = 0; i < canvases.size(); i++) {
     gStyle->SetPaperSize(30., 30. * canvases[i]->GetWh() / canvases[i]->GetWw());
@@ -304,8 +401,9 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
     canvas->Write();
   }
   fOut->mkdir("histograms")->cd();
-  for (TH1* h : {static_cast<TH1*>(hBcCounter), hNumCollsInBC, hBcInTF, hBcInTFDefined, hOccTracks, hOccFT0C, static_cast<TH1*>(hOccTracksVsFT0C), hMedianTime,
-                 static_cast<TH1*>(pOccVsBcInTF), static_cast<TH1*>(pOccVsBcInOrbit), hFlags, static_cast<TH1*>(hFlagsVsOcc), hBcIndexCheck}) {
+  for (TH1* h : {static_cast<TH1*>(hBcCounter), hNumCollsInBC, hNumCollsInRof, static_cast<TH1*>(hNumCollsInRofVsInBC), hNumCollsInRofUpcMode, hBcInTF, hBcInTFDefined, hOccTracks, hOccFT0C, static_cast<TH1*>(hOccTracksVsFT0C), hMedianTime,
+                 static_cast<TH1*>(pOccVsBcInTF), static_cast<TH1*>(pOccVsBcInOrbit), hFlags, static_cast<TH1*>(hFlagsVsOcc), hBcIndexCheck,
+                 hBcOccsCounter, hBcOccsOccTracks, static_cast<TH1*>(hBcOccsOccTracksVsFT0C), hBcOccsFlags, hBcOccsVsBcOccsAll}) {
     if (h) {
       h->Write();
     }
