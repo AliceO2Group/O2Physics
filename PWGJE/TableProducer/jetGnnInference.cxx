@@ -243,7 +243,7 @@ struct JetGnnInferenceTask {
             LOG(fatal) << "GNN trackIndex is out of range for the track QA scores.";
           }
           float score = (*trackScores)[nodeIndex];
-          if (score == invalidGnnScore || std::isnan(score)) {
+          if (score == invalidGnnScore || !std::isfinite(score)) {
             continue;
           }
           registry.fill(HIST("h_trackDb"), score);
@@ -400,14 +400,14 @@ struct JetGnnInferenceTask {
           trackLogits[category] = nodeLogits[nodeIndex * trackLogits.size() + category];
         }
         float score = jettaggingutilities::getTrackDb(trackLogits, trackFC);
-        (*trackScores)[nodeIndex] = std::isnan(score) ? invalidGnnScore : score;
+        (*trackScores)[nodeIndex] = !std::isfinite(score) ? invalidGnnScore : score;
       }
     } else {
       auto const modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
       db = jettaggingutilities::getDb(modelOutput, fC);
     }
-    if (std::isnan(db)) {
-      LOGF(debug, "GNN inference, Db is NaN (%d)", jet.globalIndex());
+    if (!std::isfinite(db)) {
+      LOGF(debug, "GNN inference, Db is non-finite (%d)", jet.globalIndex());
       return 999.f;
     }
     return db;
