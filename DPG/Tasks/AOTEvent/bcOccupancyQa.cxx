@@ -40,16 +40,17 @@ struct BcOccupancyQaTask {
   Configurable<float> maxOccupancyByTracks{"maxOccupancyByTracks", 25000., "upper edge of the axis for the occupancy by ITS tracks"};
   Configurable<int> nBinsOccupancyByFT0C{"nBinsOccupancyByFT0C", 500, "number of bins for the occupancy by FT0C amplitudes"};
   Configurable<float> maxOccupancyByFT0C{"maxOccupancyByFT0C", 250000., "upper edge of the axis for the occupancy by FT0C amplitudes"};
+  Configurable<int> nBinsNumCollsInRof{"nBinsNumCollsInRof", 50, "number of bins for the number of collisions in the ITS ROF (also the upper edge of the axis)"};
   Configurable<int> nBinsBcInTF{"nBinsBcInTF", 1188, "number of bins for the BC position in the TF"};
   Configurable<int> nOrbitsPerTF{"nOrbitsPerTF", 32, "number of orbits per TF, for the histograms vs BC position in the TF (128 in 2022)"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  static constexpr int NFlags = 6;
+  static constexpr int NFlags = 7;
   static constexpr std::array<int, NFlags> FlagBits = {aod::bcocc::kNoCollInTimeRangeNarrow, aod::bcocc::kNoCollInTimeRangeStrict, aod::bcocc::kNoCollInTimeRangeStandard,
-                                                       aod::bcocc::kNoCollInRofStrict, aod::bcocc::kNoCollInRofStandard, aod::bcocc::kNoHighMultCollInPrevRof};
+                                                       aod::bcocc::kNoCollInRofStrict, aod::bcocc::kNoCollInRofStandard, aod::bcocc::kNoHighMultCollInPrevRof, aod::bcocc::kUpcMode};
   static constexpr std::array<const char*, NFlags> FlagNames = {"NoCollInTimeRangeNarrow", "NoCollInTimeRangeStrict", "NoCollInTimeRangeStandard",
-                                                                "NoCollInRofStrict", "NoCollInRofStandard", "NoHighMultCollInPrevRof"};
+                                                                "NoCollInRofStrict", "NoCollInRofStandard", "NoHighMultCollInPrevRof", "UpcMode"};
   static constexpr int NBCsPerOrbit = 3564;
   int64_t nBCsPerTF = 0;
 
@@ -60,6 +61,7 @@ struct BcOccupancyQaTask {
     const AxisSpec axisOccupancyByFT0C{nBinsOccupancyByFT0C.value, 0., maxOccupancyByFT0C.value, "occupancy by FT0C amplitudes"};
     const AxisSpec axisMedianTime{280, -40., 100., "median time of the occupancy (#mus)"};
     const AxisSpec axisNumCollsInBC{11, -0.5, 10.5, "number of collisions found in the BC"};
+    const AxisSpec axisNumCollsInRof{nBinsNumCollsInRof.value + 1, -1.5, nBinsNumCollsInRof.value - 0.5, "number of collisions found in the ITS ROF of the BC"};
     const AxisSpec axisBcInTF{nBinsBcInTF.value, 0., static_cast<double>(nBCsPerTF), "BC in TF"};
     const AxisSpec axisBcInOrbit{NBCsPerOrbit, -0.5, NBCsPerOrbit - 0.5, "BC in orbit"};
     const AxisSpec axisFlags{NFlags + 1, -0.5, NFlags + 0.5, ""};
@@ -69,6 +71,9 @@ struct BcOccupancyQaTask {
     // all BCs
     histos.add("hBcCounter", "number of BCs", kTH1D, {axisBcCounter});
     histos.add("hNumCollsInBC", "all BCs", kTH1D, {axisNumCollsInBC});
+    histos.add("hNumCollsInRof", "all BCs", kTH1D, {axisNumCollsInRof});
+    histos.add("hNumCollsInRofVsInBC", "all BCs", kTH2D, {axisNumCollsInBC, axisNumCollsInRof});
+    histos.add("hNumCollsInRofUpcMode", "all BCs in ITS ROFs in UPC mode (kUpcMode)", kTH1D, {axisNumCollsInRof});
     histos.add("hBcInTF", "all BCs", kTH1D, {axisBcInTF});
     // BCs with calculated occupancy
     histos.add("hBcInTFOccupancyDefined", "BCs with calculated occupancy", kTH1D, {axisBcInTF});
@@ -103,9 +108,39 @@ struct BcOccupancyQaTask {
     hBcIndexCheck->GetXaxis()->SetBinLabel(4, "BC found in BcOccsAll");
     hBcIndexCheck->GetXaxis()->SetBinLabel(5, "BC found, same global BC");
     hBcIndexCheck->GetXaxis()->SetBinLabel(6, "BC not found");
+
+    // aod::BcOccs (joinable with aod::BCs)
+    histos.add("BcOccs/hBcCounter", "number of BCs", kTH1D, {axisBcCounter});
+    histos.add("BcOccs/hNumCollsInBC", "all BCs", kTH1D, {axisNumCollsInBC});
+    histos.add("BcOccs/hNumCollsInRof", "all BCs", kTH1D, {axisNumCollsInRof});
+    histos.add("BcOccs/hOccupancyByTracks", "BCs with calculated occupancy", kTH1D, {axisOccupancyByTracks});
+    histos.add("BcOccs/hOccupancyByFT0C", "BCs with calculated occupancy", kTH1D, {axisOccupancyByFT0C});
+    histos.add("BcOccs/hOccupancyByTracksVsFT0C", "BCs with calculated occupancy", kTH2D, {axisOccupancyByFT0C, axisOccupancyByTracks});
+    histos.add("BcOccs/hOccupancyFlags", "BCs with calculated occupancy", kTH1D, {axisFlags});
+    auto hBcCounterBcOccs = histos.get<TH1>(HIST("BcOccs/hBcCounter"));
+    hBcCounterBcOccs->GetXaxis()->SetBinLabel(1, "all");
+    hBcCounterBcOccs->GetXaxis()->SetBinLabel(2, "occupancy calculated");
+    hBcCounterBcOccs->GetXaxis()->SetBinLabel(3, "occupancy not available");
+    auto hFlagsBcOccs = histos.get<TH1>(HIST("BcOccs/hOccupancyFlags"));
+    hFlagsBcOccs->GetXaxis()->SetBinLabel(1, "all");
+    for (int i = 0; i < NFlags; i++) {
+      hFlagsBcOccs->GetXaxis()->SetBinLabel(i + 2, FlagNames[i]);
+    }
+
+    // comparison of aod::BcOccs with aod::BcOccsAll for the BCs of aod::BCs
+    histos.add("BcOccsVsBcOccsAll/hCheck", "BcOccs vs BcOccsAll", kTH1D, {{7, -0.5, 6.5, ""}});
+    auto hCheck = histos.get<TH1>(HIST("BcOccsVsBcOccsAll/hCheck"));
+    hCheck->GetXaxis()->SetBinLabel(1, "BCs in BcOccs");
+    hCheck->GetXaxis()->SetBinLabel(2, "found in BcOccsAll");
+    hCheck->GetXaxis()->SetBinLabel(3, "same numCollsInBC, numCollsInRof");
+    hCheck->GetXaxis()->SetBinLabel(4, "same kUpcMode");
+    hCheck->GetXaxis()->SetBinLabel(5, "occupancy calculated in both");
+    hCheck->GetXaxis()->SetBinLabel(6, "same occupancy and flags");
+    hCheck->GetXaxis()->SetBinLabel(7, "not found in BcOccsAll");
   }
 
-  void process(aod::BcOccsAll const& bcOccs, aod::BCs const& bcs)
+  // QA of aod::BcOccsAll (all BCs of the TFs), with the cross-check of the lookup by global BC
+  void processBcOccsAll(aod::BcOccsAll const& bcOccs, aod::BCs const& bcs)
   {
     // cross-check of the lookup by global BC: every BC of the BC table should be found, with the same global BC
     // (not found: BCs before the start of run, or no BcOccsAll entries for this DF)
@@ -140,6 +175,11 @@ struct BcOccupancyQaTask {
       const int bcInOrbit = static_cast<int>(globalBC % NBCsPerOrbit);
       histos.fill(HIST("hBcCounter"), 0);
       histos.fill(HIST("hNumCollsInBC"), bcOcc.numCollsInBC());
+      histos.fill(HIST("hNumCollsInRof"), bcOcc.numCollsInRof());
+      histos.fill(HIST("hNumCollsInRofVsInBC"), bcOcc.numCollsInBC(), bcOcc.numCollsInRof());
+      if (bcOcc.occupancyFlags_bit(aod::bcocc::kUpcMode)) { // set for all BCs, also without calculated occupancy
+        histos.fill(HIST("hNumCollsInRofUpcMode"), bcOcc.numCollsInRof());
+      }
       histos.fill(HIST("hBcIndexCheck"), 0);
       if (bcOccAllIndexed.contains(globalBC) && bcOccAllIndexed[globalBC].globalBC() == globalBC) { // global BCs are unique: same row
         histos.fill(HIST("hBcIndexCheck"), 1);
@@ -176,6 +216,64 @@ struct BcOccupancyQaTask {
       }
     }
   }
+  PROCESS_SWITCH(BcOccupancyQaTask, processBcOccsAll, "QA of aod::BcOccsAll (all BCs of the TFs)", true);
+
+  // QA of aod::BcOccs (joinable with aod::BCs)
+  void processBcOccs(soa::Join<aod::BCs, aod::BcOccs> const& bcs)
+  {
+    for (const auto& bc : bcs) {
+      histos.fill(HIST("BcOccs/hBcCounter"), 0);
+      histos.fill(HIST("BcOccs/hNumCollsInBC"), bc.numCollsInBC());
+      histos.fill(HIST("BcOccs/hNumCollsInRof"), bc.numCollsInRof());
+      const int occByTracks = bc.trackOccupancyInTimeRange();
+      const float occByFT0C = bc.ft0cOccupancyInTimeRange();
+      if (occByTracks < 0 || occByFT0C < 0) {
+        histos.fill(HIST("BcOccs/hBcCounter"), 2);
+        continue;
+      }
+      histos.fill(HIST("BcOccs/hBcCounter"), 1);
+      histos.fill(HIST("BcOccs/hOccupancyByTracks"), occByTracks);
+      histos.fill(HIST("BcOccs/hOccupancyByFT0C"), occByFT0C);
+      histos.fill(HIST("BcOccs/hOccupancyByTracksVsFT0C"), occByFT0C, occByTracks);
+      histos.fill(HIST("BcOccs/hOccupancyFlags"), 0);
+      for (int i = 0; i < NFlags; i++) {
+        if (bc.occupancyFlags_bit(FlagBits[i])) {
+          histos.fill(HIST("BcOccs/hOccupancyFlags"), i + 1);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(BcOccupancyQaTask, processBcOccs, "QA of aod::BcOccs (joinable with aod::BCs)", true);
+
+  // comparison of aod::BcOccs with aod::BcOccsAll for the BCs of aod::BCs: the same calculation, so the values should be identical
+  // (occupancy and flags are compared only if calculated in both, since bcsForOccupancy can differ for the two tables)
+  void processBcOccsVsBcOccsAll(soa::Join<aod::BCs, aod::BcOccs> const& bcs, aod::BcOccsAll const& bcOccsAll)
+  {
+    aod::bcocc::BcOccAllIndex bcOccAllIndexed(bcOccsAll);
+    for (const auto& bc : bcs) {
+      histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 0);
+      if (!bcOccAllIndexed.contains(bc.globalBC())) {
+        histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 6);
+        continue;
+      }
+      histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 1);
+      const auto occAll = bcOccAllIndexed[bc.globalBC()];
+      if (bc.numCollsInBC() == occAll.numCollsInBC() && bc.numCollsInRof() == occAll.numCollsInRof()) {
+        histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 2);
+      }
+      if (bc.occupancyFlags_bit(aod::bcocc::kUpcMode) == occAll.occupancyFlags_bit(aod::bcocc::kUpcMode)) {
+        histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 3);
+      }
+      if (bc.trackOccupancyInTimeRange() >= 0 && occAll.trackOccupancyInTimeRange() >= 0) {
+        histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 4);
+        if (bc.trackOccupancyInTimeRange() == occAll.trackOccupancyInTimeRange() && bc.ft0cOccupancyInTimeRange() == occAll.ft0cOccupancyInTimeRange() &&
+            bc.occupancyMedianTime() == occAll.occupancyMedianTime() && bc.occupancyFlags() == occAll.occupancyFlags()) {
+          histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 5);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(BcOccupancyQaTask, processBcOccsVsBcOccsAll, "comparison of aod::BcOccs with aod::BcOccsAll for the BCs of aod::BCs (requires both tables)", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
