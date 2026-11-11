@@ -14,7 +14,8 @@
 ///
 /// Usage:
 ///   root -l -b -q 'plotBcOccupancyQa.C("AnalysisResults.root")'
-///   root -l -b -q 'plotBcOccupancyQa.C("AnalysisResults.root", "bcOccupancyQa.pdf", "bc-occupancy-qa-task")'
+///   root -l -b -q 'plotBcOccupancyQa.C("AnalysisResults.root", "bcOccupancyQa.pdf", "bc-occupancy-qa-task", "bcOccupancyQa.root")'
+/// Output: multi-page PDF, and a ROOT file with the canvases and the histograms (by default: name of the PDF with .root)
 ///
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
@@ -60,6 +61,7 @@ T* getHist(const char* name)
     return nullptr;
   }
   h->SetDirectory(nullptr);
+  h->SetStats(false); // also when the saved canvases are drawn later
   return h;
 }
 
@@ -69,6 +71,7 @@ TH1D* makeRatio(const TH1* num, const TH1* den, const char* name, const char* ti
   auto* r = static_cast<TH1D*>(num->Clone(name));
   r->SetTitle(title);
   r->Divide(num, den, 1., 1., "B");
+  r->SetStats(false);
   return r;
 }
 
@@ -86,13 +89,12 @@ double upperEdgeOfFilledRange(const TH1* h)
 }
 } // namespace bcoccqa
 
-void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char* outPdf = "bcOccupancyQa.pdf", const char* dirName = "bc-occupancy-qa-task")
+void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char* outPdf = "bcOccupancyQa.pdf", const char* dirName = "bc-occupancy-qa-task", const char* outRoot = "")
 {
   using namespace bcoccqa;
   TH1::AddDirectory(kFALSE);
   gStyle->SetOptStat(0);
   gStyle->SetPalette(kViridis);
-  gStyle->SetPaperSize(30., 20.); // landscape pages, same aspect ratio as the canvas
 
   std::unique_ptr<TFile> f(TFile::Open(fileName, "READ"));
   if (!f || f->IsZombie()) {
@@ -152,67 +154,69 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
   // ### plots
   const double maxOccTracks = hOccTracks ? upperEdgeOfFilledRange(hOccTracks) : 0.;
   const double maxOccFT0C = hOccFT0C ? upperEdgeOfFilledRange(hOccFT0C) : 0.;
-  TCanvas c("c", "BC occupancy QA", 1200, 800);
-  c.Print(Form("%s[", outPdf));
-  auto newPage = [&c](int nx, int ny) {
-    c.Clear();
-    c.Divide(nx, ny);
+  // one canvas per page, with the size adapted to the number of pads
+  std::vector<TCanvas*> canvases;
+  std::vector<TH1*> derivedHists; // histograms made here (fractions), also saved to the ROOT file
+  auto newPage = [&canvases](const char* name, const char* title, int width, int height, int nx, int ny) {
+    auto* canvas = new TCanvas(name, title, width, height);
+    canvas->Divide(nx, ny);
+    canvases.push_back(canvas);
+    return canvas;
   };
+  TCanvas* c = nullptr;
 
   // page 1: BC counters and the cross-check of the lookup by global BC
-  newPage(3, 1);
+  c = newPage("cBcCounters", "BC counters", 1500, 550, 3, 1);
   if (hBcCounter) {
-    c.cd(1)->SetLeftMargin(0.15);
+    c->cd(1)->SetLeftMargin(0.15);
     hBcCounter->SetTitle("number of BCs");
     hBcCounter->Draw("hist text");
   }
   if (hNumCollsInBC) {
-    c.cd(2)->SetLogy();
+    c->cd(2)->SetLogy();
     hNumCollsInBC->SetTitle("all BCs;number of collisions found in the BC;N BCs");
     hNumCollsInBC->Draw("hist");
   }
   if (hBcIndexCheck) {
-    c.cd(3)->SetBottomMargin(0.3);
-    c.cd(3)->SetLogy(); // rows of BcOccsAll vs (much fewer) BCs of aod::BCs
+    c->cd(3)->SetBottomMargin(0.3);
+    c->cd(3)->SetLogy(); // rows of BcOccsAll vs (much fewer) BCs of aod::BCs
     hBcIndexCheck->SetTitle("lookup in BcOccsAll by global BC;;counts");
     hBcIndexCheck->GetXaxis()->LabelsOption("v");
     hBcIndexCheck->SetMinimum(0.5);
     hBcIndexCheck->Draw("hist text");
   }
-  c.Print(outPdf);
 
   // page 2: occupancy distributions
-  newPage(2, 2);
+  c = newPage("cOccupancy", "occupancy distributions", 1200, 800, 2, 2);
   if (hOccTracks) {
-    c.cd(1)->SetLogy();
+    c->cd(1)->SetLogy();
     hOccTracks->SetTitle("occupancy by ITS tracks;occupancy by ITS tracks;N BCs");
     hOccTracks->GetXaxis()->SetRangeUser(0., maxOccTracks);
     hOccTracks->Draw("hist");
   }
   if (hOccFT0C) {
-    c.cd(2)->SetLogy();
+    c->cd(2)->SetLogy();
     hOccFT0C->SetTitle("occupancy by FT0C;occupancy by FT0C amplitudes;N BCs");
     hOccFT0C->GetXaxis()->SetRangeUser(0., maxOccFT0C);
     hOccFT0C->Draw("hist");
   }
   if (hOccTracksVsFT0C) {
-    c.cd(3)->SetLogz();
+    c->cd(3)->SetLogz();
     hOccTracksVsFT0C->SetTitle("occupancy: ITS tracks vs FT0C;occupancy by FT0C amplitudes;occupancy by ITS tracks");
     hOccTracksVsFT0C->GetXaxis()->SetRangeUser(0., maxOccFT0C);
     hOccTracksVsFT0C->GetYaxis()->SetRangeUser(0., maxOccTracks);
     hOccTracksVsFT0C->Draw("colz");
   }
   if (hMedianTime) {
-    c.cd(4)->SetLogy();
+    c->cd(4)->SetLogy();
     hMedianTime->SetTitle("median time of the occupancy;#Deltat (#mus);N BCs");
     hMedianTime->Draw("hist");
   }
-  c.Print(outPdf);
 
   // page 3: occupancy flags
-  newPage(2, 1);
+  c = newPage("cOccupancyFlags", "occupancy flags", 1200, 550, 2, 1);
   if (hFlags && hFlags->GetBinContent(1) > 0) {
-    c.cd(1)->SetBottomMargin(0.3);
+    c->cd(1)->SetBottomMargin(0.3);
     auto* hFlagsFrac = static_cast<TH1*>(hFlags->Clone("hFlagsFrac"));
     hFlagsFrac->Scale(1. / hFlags->GetBinContent(1));
     hFlagsFrac->SetTitle("fraction of BCs passing each flag;;fraction of BCs");
@@ -220,17 +224,18 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
     hFlagsFrac->SetMinimum(0.);
     hFlagsFrac->SetMaximum(1.1);
     hFlagsFrac->Draw("hist text");
+    derivedHists.push_back(hFlagsFrac);
   }
   if (hFlagsVsOcc) {
     // fraction of BCs passing each flag vs occupancy
-    c.cd(2);
+    c->cd(2);
     TLegend* leg = new TLegend(0.45, 0.6, 0.89, 0.89);
     TH1D* hAll = hFlagsVsOcc->ProjectionY("hFlagsAll", 1, 1);
     const int colors[] = {kRed + 1, kOrange + 7, kGreen + 2, kAzure + 2, kBlue + 2, kMagenta + 1, kBlack};
     bool first = true;
     for (int i = 2; i <= hFlagsVsOcc->GetNbinsX(); i++) {
       TH1D* hPass = hFlagsVsOcc->ProjectionY(Form("hFlagPass%d", i), i, i);
-      TH1D* hFrac = makeRatio(hPass, hAll, Form("hFlagFrac%d", i), "fraction of BCs passing the flags vs occupancy;occupancy by ITS tracks;fraction of BCs");
+      TH1D* hFrac = makeRatio(hPass, hAll, Form("hFracVsOccupancy_%s", hFlagsVsOcc->GetXaxis()->GetBinLabel(i)), "fraction of BCs passing the flags vs occupancy;occupancy by ITS tracks;fraction of BCs");
       hFrac->SetLineColor(colors[(i - 2) % 7]);
       hFrac->SetMarkerColor(colors[(i - 2) % 7]);
       hFrac->SetMarkerStyle(20);
@@ -239,34 +244,74 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
       hFrac->SetMaximum(1.1);
       hFrac->GetXaxis()->SetRangeUser(0., maxOccTracks);
       hFrac->Draw(first ? "p" : "p same");
+      derivedHists.push_back(hFrac);
       leg->AddEntry(hFrac, hFlagsVsOcc->GetXaxis()->GetBinLabel(i), "p");
       first = false;
     }
     leg->Draw();
   }
-  c.Print(outPdf);
 
   // page 4: BC position in the TF and in the orbit
-  newPage(1, 3);
+  c = newPage("cBcPosition", "BC position in the TF and in the orbit", 1200, 800, 1, 3);
   if (hBcInTF && hBcInTFDefined) {
-    c.cd(1);
+    c->cd(1);
     TH1D* hFracDefined = makeRatio(hBcInTFDefined, hBcInTF, "hFracDefined", "fraction of BCs with calculated occupancy;BC in TF;fraction");
     hFracDefined->SetMinimum(0.);
     hFracDefined->SetMaximum(1.1);
     hFracDefined->Draw("hist");
+    derivedHists.push_back(hFracDefined);
   }
   if (pOccVsBcInTF) {
-    c.cd(2);
+    c->cd(2);
     pOccVsBcInTF->SetTitle("mean occupancy vs BC in TF;BC in TF;mean occupancy by ITS tracks");
     pOccVsBcInTF->Draw();
   }
   if (pOccVsBcInOrbit) {
-    c.cd(3);
+    c->cd(3);
     pOccVsBcInOrbit->SetTitle("mean occupancy vs BC in orbit;BC in orbit;mean occupancy by ITS tracks");
     pOccVsBcInOrbit->Draw("hist"); // 3564 bins: error bars would hide the pattern
   }
-  c.Print(outPdf);
 
-  c.Print(Form("%s]", outPdf));
+  // PDF: each page with the aspect ratio of its canvas
+  for (size_t i = 0; i < canvases.size(); i++) {
+    gStyle->SetPaperSize(30., 30. * canvases[i]->GetWh() / canvases[i]->GetWw());
+    if (i == 0) {
+      canvases[i]->Print(Form("%s[", outPdf));
+    }
+    canvases[i]->Print(outPdf);
+    if (i == canvases.size() - 1) {
+      canvases[i]->Print(Form("%s]", outPdf));
+    }
+  }
   std::printf("plots saved in %s\n", outPdf);
+
+  // ROOT file: canvases and histograms (from the QA task and the fractions made here)
+  TString rootName = outRoot;
+  if (rootName.IsNull()) {
+    rootName = outPdf;
+    if (rootName.EndsWith(".pdf")) {
+      rootName.Resize(rootName.Length() - 4);
+    }
+    rootName += ".root";
+  }
+  std::unique_ptr<TFile> fOut(TFile::Open(rootName, "RECREATE"));
+  if (!fOut || fOut->IsZombie()) {
+    std::printf("cannot create %s\n", rootName.Data());
+    return;
+  }
+  fOut->mkdir("canvases")->cd();
+  for (auto* canvas : canvases) {
+    canvas->Write();
+  }
+  fOut->mkdir("histograms")->cd();
+  for (TH1* h : {static_cast<TH1*>(hBcCounter), hNumCollsInBC, hBcInTF, hBcInTFDefined, hOccTracks, hOccFT0C, static_cast<TH1*>(hOccTracksVsFT0C), hMedianTime,
+                 static_cast<TH1*>(pOccVsBcInTF), static_cast<TH1*>(pOccVsBcInOrbit), hFlags, static_cast<TH1*>(hFlagsVsOcc), hBcIndexCheck}) {
+    if (h) {
+      h->Write();
+    }
+  }
+  for (TH1* h : derivedHists) {
+    h->Write();
+  }
+  std::printf("canvases and histograms saved in %s\n", rootName.Data());
 }
