@@ -1900,7 +1900,7 @@ struct BjetTaggingGnn {
       return;
     }
     // Uses only collisionId % trainingDatasetRatioParam != 0 for evaluation.
-    if (trainingDatasetRatioParam && collision.collisionId() % trainingDatasetRatioParam == 0) {
+    if (trainingDatasetRatioParam != 0 && collision.collisionId() % trainingDatasetRatioParam == 0) {
       return;
     }
     bool matchedMcColl = collision.has_mcCollision();

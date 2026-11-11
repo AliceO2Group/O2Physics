@@ -220,7 +220,8 @@ DECLARE_SOA_COLUMN(ScoreML, scoreML, float); //! GNN discriminant: one track-ori
   DECLARE_SOA_TABLE(_jet_type_##GnnTrackIds, "AOD", _description_ "I",                                        \
                     _jet_type_##gnntrackindices::_jet_type_##GnnTrackIds);
 
-// #define DECLARE_JET_GNNEDGEINDEX_TABLE(_jet_type_, _description_)          \
+/*
+#define DECLARE_JET_GNNEDGEINDEX_TABLE(_jet_type_, _description_)          \
   namespace _jet_type_##gnnedgeindextable                                 \
   {                                                                       \
     DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                           \
@@ -236,6 +237,7 @@ DECLARE_SOA_COLUMN(ScoreML, scoreML, float); //! GNN discriminant: one track-ori
   }                                                                     \
   DECLARE_SOA_TABLE(_jet_type_##GnnEdgeIds, "AOD", _description_ "I", \
                     _jet_type_##gnnedgeindices::_jet_type_##GnnEdgeIds);
+*/
 
 // In-jet track/edge index backbone tables (own the in-jet ordering + the back-reference to the original track)
 DECLARE_JET_GNNTRACKINDEX_TABLE(ChargedJet, "CJGNT");

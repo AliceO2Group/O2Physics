@@ -41,6 +41,7 @@
 
 #include <onnxruntime_cxx_api.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -64,7 +65,7 @@ struct OptionalProduces<void> {
 
 template <bool isMCD, typename JetTable, typename JetTaggingTable, typename JetGnnTrackIdsTable, typename JetGnnTracksTable, typename JetGnnInfTrackTable = void, typename JetGnnInfVertexTable = void>
 struct JetGnnInferenceTask {
-  static constexpr double DefaultCutsMl[1][3] = {{0.5, 0.5, 0.5}};
+  static constexpr std::array<double, 3> defaultCutsMl = {0.5, 0.5, 0.5};
   static constexpr float invalidGnnScore = -999.f;
   static constexpr float largeNegativeNumber = -98.f;
   static constexpr float largePositiveNumber = 9999.f;
@@ -96,7 +97,7 @@ struct JetGnnInferenceTask {
 
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{5., 1000.}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cuts_ml::CutSmaller, cuts_ml::CutNot, cuts_ml::CutNot}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCutsMl[0], 1, 3, {"pT bin 0"}, {"b", "c", "lf"}}, "ML selections per pT bin"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCutsMl.data(), 1, 3, {"pT bin 0"}, {"b", "c", "lf"}}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", 3, "Number of classes in ML model"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -198,7 +199,7 @@ struct JetGnnInferenceTask {
     if (jet.pt() < jetpTMin) {
       return;
     }
-    float dbRange;
+    float dbRange = -0.5;
     if (db < dbMin) {
       dbRange = 0.5; // underflow
     } else if (db < dbMax) {
@@ -378,7 +379,7 @@ struct JetGnnInferenceTask {
     std::vector<Ort::Value> gnnInput;
     tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
-    float db;
+    float db = invalidGnnScore;
     if (trackScores) {
       // Exported head order: edge_outputs, node_outputs, flav_preds.
       // Retrieve jet and track logits in one model evaluation; leave edges unused.
