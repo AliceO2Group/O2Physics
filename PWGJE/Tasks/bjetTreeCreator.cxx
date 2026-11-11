@@ -483,7 +483,7 @@ struct BJetTreeCreator {
   {
 
     if (jetAreaFractionMin > -98.0) {
-      if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+      if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
