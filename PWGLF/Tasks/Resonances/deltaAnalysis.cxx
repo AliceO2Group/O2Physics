@@ -128,7 +128,8 @@ struct DeltaAnalysis {
     Configurable<bool> applyTPCChi2NClCut{"applyTPCChi2NClCut", true, "Enable/disable maximum TPC chi2/NCl cut"};
     Configurable<bool> applyITSChi2NClCut{"applyITSChi2NClCut", true, "Enable/disable maximum ITS chi2/NCl cut"};
     Configurable<bool> requirePrimaryTrack{"requirePrimaryTrack", true, "Require isPrimaryTrack flag"};
-    Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Require global track"};
+    Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Require global track (includes the DCA cuts of the standard global-track selection)"};
+    Configurable<bool> requireGlobalTrackWoDCA{"requireGlobalTrackWoDCA", false, "Require global track without DCA cuts (isGlobalTrackWoDCA). Mutually exclusive with requireGlobalTrack"};
     Configurable<bool> requirePVContributor{"requirePVContributor", true, "Require PV-contributor flag"};
   } trackCuts;
 
@@ -227,6 +228,11 @@ struct DeltaAnalysis {
                    << ", bins=" << binsVec.size() << ")";
       }
     };
+    if (trackCuts.requireGlobalTrack && trackCuts.requireGlobalTrackWoDCA) {
+      LOG(fatal) << "requireGlobalTrack and requireGlobalTrackWoDCA are mutually exclusive: "
+                 << "enable only one of them (or neither).";
+    }
+
     chkSz(protonPID.protonTPCNSigmaCutPerBin, protonPID.protonTPCPIDMomentumBins, "proton TPC PID");
     chkSz(protonPID.protonTOFNSigmaCutPerBin, protonPID.protonTOFPIDMomentumBins, "proton TOF PID");
     chkSz(pionPID.pionTPCNSigmaCutPerBin, pionPID.pionTPCPIDMomentumBins, "pion TPC PID");
@@ -756,6 +762,9 @@ struct DeltaAnalysis {
       return false;
     }
     if (trackCuts.requireGlobalTrack && !track.isGlobalTrack()) {
+      return false;
+    }
+    if (trackCuts.requireGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
       return false;
     }
     if (trackCuts.requirePVContributor && !track.isPVContributor()) {
