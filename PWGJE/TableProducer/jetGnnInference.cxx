@@ -199,7 +199,7 @@ struct JetGnnInferenceTask {
     if (jet.pt() < jetpTMin) {
       return;
     }
-    float dbRange = -0.5;
+    float dbRange;
     if (db < dbMin) {
       dbRange = 0.5; // underflow
     } else if (db < dbMax) {
@@ -379,7 +379,7 @@ struct JetGnnInferenceTask {
     std::vector<Ort::Value> gnnInput;
     tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
-    float db = invalidGnnScore;
+    float db;
     if (trackScores) {
       // Exported head order: edge_outputs, node_outputs, flav_preds.
       // Retrieve jet and track logits in one model evaluation; leave edges unused.
