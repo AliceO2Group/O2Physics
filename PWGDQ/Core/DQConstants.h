@@ -41,7 +41,7 @@ inline constexpr int FourProng = 4;
 inline constexpr int TPCCalibTypeStart = 0;
 inline constexpr int TPCCalibTypeEnd = 2;
 
-inline constexpr int InvalidDCA = 999;
+inline constexpr float InvalidDCA = 998.0f;
 
 // Checks
 inline constexpr auto IsCoordinateInvalid = [](float value) constexpr -> bool {
@@ -125,7 +125,7 @@ inline constexpr int NumTPCPostCalibrationTypes = 4;
 // Track defaults
 inline constexpr int NumDCAPars = 2;
 inline constexpr int IndexDCAxy = 0;
-inline constexpr int IndexDCAz = 0;
+inline constexpr int IndexDCAz = 1;
 inline constexpr double InitialDCA = 1e10;
 
 inline constexpr int RotationType1 = 1;
@@ -133,7 +133,7 @@ inline constexpr int RotationType2 = 2;
 inline constexpr int RotationType3 = 3;
 
 inline constexpr int BdtSingleClassOutput = 1;
-inline constexpr int BdtMultiClassOutput = 1;
+inline constexpr int BdtMultiClassOutput = 3;
 
 // Bimodality defaults
 inline constexpr int BimodalMinDataSize = 3;
