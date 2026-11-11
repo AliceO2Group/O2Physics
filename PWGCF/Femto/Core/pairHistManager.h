@@ -328,13 +328,13 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c});"},
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity;"},
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%);"},
-      {kKstarVsMtVsMinvVsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c})"},
-      {kKstarVsMtVsMinvVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity"},
-      {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%)"},
-      {kKstarVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMinvVsKtVsMult", "k* vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity"},
-      {kKstarVsMtVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity"},
-      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity"},
-      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%)"},
+      {kKstarVsMtVsMinvVsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c});"},
+      {kKstarVsMtVsMinvVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity;"},
+      {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%);"},
+      {kKstarVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMinvVsKtVsMult", "k* vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity;"},
+      {kKstarVsMtVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity;"},
+      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity;"},
+      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%);"},
       {kDalitz, o2::framework::HistType::kTHnSparseF, "hDalitz", "Dalitz plot; k* (GeV/#it{c}); m^{2}_{123} (GeV/#it{c}^{2})^{2}; m^{2}_{12} (GeV/#it{c}^{2})^{2}; m^{2}_{13} (GeV/#it{c}^{2})^{2};"},
       // reco-vs-mc-truth correlation
       {kTrueKstarVsKstar, o2::framework::HistType::kTH2F, "hTrueKstarVsKstar", "k*_{True} vs k*; k*_{True} (GeV/#it{c});  k* (GeV/#it{c})"},
@@ -374,7 +374,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kMeMixingWindowRaw, o2::framework::HistType::kTH1F, "hMeMixingWindowRaw", "Raw Mixing Window; Raw Mixing Window; Entries"},
       {kMeMixingWindowEffective, o2::framework::HistType::kTH1F, "hMeMixingWindowEffective", "Effective Mixing Window; Effective Mixing Window; Entries"},
       {kMeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hMeNpart1VsNpart2", "# unique particle 1 vs # unique particle 2 in each mixing bin; # particle 1; # particle 2"},
-      {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%)"},
+      {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%);"},
       // angular
       {kDeltaEtaDeltaPhi, o2::framework::HistType::kTH2F, "hDeltaEtaDeltaPhi", "#Delta#phi vs #Delta#eta; #Delta#phi; #Delta#eta"},
       // angles
@@ -881,6 +881,12 @@ class PairHistManager
   template <modes::Mode mode>
   void fill()
   {
+    // track the closest (minimum) kstar among accepted pairs this event -- used by the dN/deta
+    // trigger (see dndetaBuilder.h) to tag its per-track entries with the triggering kinematic,
+    // independent of which mode (data/mc/mc-truth) accepted this particular pair
+    if (mMinimumAcceptedKstar < 0.f || mKstar < mMinimumAcceptedKstar) {
+      mMinimumAcceptedKstar = mKstar;
+    }
     if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis();
     }
@@ -891,6 +897,10 @@ class PairHistManager
       fillMcTruth();
     }
   }
+
+  /// minimum kstar among pairs accepted since the last resetTrackedParticlesPerEvent() call, or -1
+  /// if no pair was accepted this event -- used by the dN/deta trigger (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedKstar() const { return mMinimumAcceptedKstar; }
 
   template <typename T1, typename T2>
   void trackParticlesPerEvent(T1 const& particle1, T2 const& particle2)
@@ -916,6 +926,7 @@ class PairHistManager
     mParticles1PerEvent.reserve(100);
     mParticles2PerEvent.clear();
     mParticles2PerEvent.reserve(100);
+    mMinimumAcceptedKstar = -1.f;
   }
 
   void fillMixingQaSe()
@@ -1621,6 +1632,7 @@ class PairHistManager
   float mRecoMass1 = 0.f;
   float mRecoMass2 = 0.f;
   float mKstar = 0.f;
+  float mMinimumAcceptedKstar = -1.f; ///< minimum kstar among pairs accepted this event, see getMinimumAcceptedKstar()
   float mKt = 0.f;
   float mMt = 0.f;
   float mMassInv = 0.f;

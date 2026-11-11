@@ -82,6 +82,15 @@ float itsSignal(T const& track)
   return static_cast<float>(signal);
 };
 
+// Delta(1232) baryons: no kXxx enum entry exists for these in TPDGCode.h (only the raw codes used
+// internally by TDatabasePDG's particle-table construction) and no mass constant exists in
+// PhysicsConstants.h either, so both the codes and the mass are hardcoded here, same as kRho770_0/
+// kRho770Plus below.
+constexpr int DeltaMinus1232 = 1114;
+constexpr int Delta01232 = 2114;
+constexpr int DeltaPlus1232 = 2214;
+constexpr int DeltaPlusPlus1232 = 2224;
+
 inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
@@ -148,6 +157,12 @@ inline double getPdgMass(int pdgCode)
       break;
     case o2::constants::physics::kEta:
       mass = o2::constants::physics::MassEta;
+      break;
+    case DeltaMinus1232:
+    case Delta01232:
+    case DeltaPlus1232:
+    case DeltaPlusPlus1232:
+      mass = 1.232; // not defined in O2?
       break;
     default:
       LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
