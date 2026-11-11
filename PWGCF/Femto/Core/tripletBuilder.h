@@ -375,6 +375,10 @@ class TripletTrackTrackTrackBuilder
     }
   }
 
+  /// minimum Q3 among triplets accepted in the last processSameEvent() call, or -1 if none were
+  /// accepted -- used as the dN/deta trigger kinematic (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedQ3() const { return mTripletHistManagerSe.getMinimumAcceptedQ3(); }
+
  private:
   colhistmanager::CollisionHistManager<colhistmanager::PrefixSe> mColHistManagerSe;
   colhistmanager::CollisionHistManager<colhistmanager::PrefixMe> mColHistManagerMe;
@@ -667,6 +671,10 @@ class TripletTrackTrackV0Builder
       }
     }
   }
+
+  /// minimum Q3 among triplets accepted in the last processSameEvent() call, or -1 if none were
+  /// accepted -- used as the dN/deta trigger kinematic (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedQ3() const { return mTripletHistManagerSe.getMinimumAcceptedQ3(); }
 
  private:
   colhistmanager::CollisionHistManager<colhistmanager::PrefixSe> mColHistManagerSe;
@@ -1205,6 +1213,10 @@ class TripletMcParticleMcParticleMcParticleBuilder
       }
     }
   }
+
+  /// minimum Q3 among triplets accepted in the last processSameEvent() call, or -1 if none were
+  /// accepted -- used as the dN/deta trigger kinematic (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedQ3() const { return mTripletHistManagerSe.getMinimumAcceptedQ3(); }
 
  private:
   colhistmanager::CollisionHistManager<colhistmanager::PrefixSe> mColHistManagerSe;

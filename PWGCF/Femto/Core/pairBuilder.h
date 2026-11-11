@@ -304,6 +304,10 @@ class PairTrackTrackBuilder
     }
   }
 
+  /// minimum kstar among pairs accepted in the last processSameEvent() call, or -1 if none were
+  /// accepted -- used as the dN/deta trigger kinematic (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedKstar() const { return mPairHistManagerSe.getMinimumAcceptedKstar(); }
+
  private:
   colhistmanager::CollisionHistManager<colhistmanager::PrefixSe> mColHistManagerSe;
   colhistmanager::CollisionHistManager<colhistmanager::PrefixMe> mColHistManagerMe;
@@ -1423,6 +1427,10 @@ class PairTrackV0Builder
     }
   }
 
+  /// minimum kstar among pairs accepted in the last processSameEvent() call, or -1 if none were
+  /// accepted -- used as the dN/deta trigger kinematic (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedKstar() const { return mPairHistManagerSe.getMinimumAcceptedKstar(); }
+
  private:
   colhistmanager::CollisionHistManager<colhistmanager::PrefixSe> mColHistManagerSe;
   colhistmanager::CollisionHistManager<colhistmanager::PrefixMe> mColHistManagerMe;
@@ -2354,6 +2362,10 @@ class PairMcParticleMcParticleBuilder
       }
     }
   }
+
+  /// minimum kstar among pairs accepted in the last processSameEvent() call, or -1 if none were
+  /// accepted -- used as the dN/deta trigger kinematic (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedKstar() const { return mPairHistManagerSe.getMinimumAcceptedKstar(); }
 
  private:
   colhistmanager::CollisionHistManager<colhistmanager::PrefixSe> mColHistManagerSe;

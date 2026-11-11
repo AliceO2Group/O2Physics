@@ -881,6 +881,12 @@ class PairHistManager
   template <modes::Mode mode>
   void fill()
   {
+    // track the closest (minimum) kstar among accepted pairs this event -- used by the dN/deta
+    // trigger (see dndetaBuilder.h) to tag its per-track entries with the triggering kinematic,
+    // independent of which mode (data/mc/mc-truth) accepted this particular pair
+    if (mMinimumAcceptedKstar < 0.f || mKstar < mMinimumAcceptedKstar) {
+      mMinimumAcceptedKstar = mKstar;
+    }
     if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis();
     }
@@ -891,6 +897,10 @@ class PairHistManager
       fillMcTruth();
     }
   }
+
+  /// minimum kstar among pairs accepted since the last resetTrackedParticlesPerEvent() call, or -1
+  /// if no pair was accepted this event -- used by the dN/deta trigger (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedKstar() const { return mMinimumAcceptedKstar; }
 
   template <typename T1, typename T2>
   void trackParticlesPerEvent(T1 const& particle1, T2 const& particle2)
@@ -916,6 +926,7 @@ class PairHistManager
     mParticles1PerEvent.reserve(100);
     mParticles2PerEvent.clear();
     mParticles2PerEvent.reserve(100);
+    mMinimumAcceptedKstar = -1.f;
   }
 
   void fillMixingQaSe()
@@ -1621,6 +1632,7 @@ class PairHistManager
   float mRecoMass1 = 0.f;
   float mRecoMass2 = 0.f;
   float mKstar = 0.f;
+  float mMinimumAcceptedKstar = -1.f; ///< minimum kstar among pairs accepted this event, see getMinimumAcceptedKstar()
   float mKt = 0.f;
   float mMt = 0.f;
   float mMassInv = 0.f;

@@ -173,22 +173,22 @@ constexpr std::array<histmanager::HistInfo<DndetaHist>, kDndetaHistLast> HistTab
     {kCent, o2::framework::HistType::kTH1F, "hCent", "Centrality; Centrality (%); Entries"},
     {kPosZVsCent, o2::framework::HistType::kTH2F, "hPosZVsCent", "Vertex z vs centrality; V_{Z} (cm); Centrality (%)"},
     // data
-    {kDataDndeta, o2::framework::HistType::kTHnSparseF, "hDndeta", "Tracks; V_{Z} (cm); Centrality (%); #eta; #varphi; Track type;"},
-    {kDataDndetaMb, o2::framework::HistType::kTHnSparseF, "hDndetaMb", "Tracks (MB); V_{Z} (cm); #eta; #varphi;"},
+    {kDataDndeta, o2::framework::HistType::kTHnSparseF, "hDndeta", "Tracks; V_{Z} (cm); Centrality (%); #eta; #varphi; Track type; k*/Q_{3} (GeV/#it{c});"},
+    {kDataDndetaMb, o2::framework::HistType::kTHnSparseF, "hDndetaMb", "Tracks (MB); V_{Z} (cm); #eta; #varphi; k*/Q_{3} (GeV/#it{c});"},
     // mc: generated
     {kGenPosZ, o2::framework::HistType::kTH1F, "hPosZ", "Generated vertex z; V_{Z,gen} (cm); Entries"},
     {kGenPosZVsCent, o2::framework::HistType::kTH2F, "hPosZVsCent", "Generated vertex z vs centrality; V_{Z,gen} (cm); Centrality_{gen} (%)"},
     {kGenAssocRecoPosZ, o2::framework::HistType::kTH1F, "hAssocRecoPosZ", "Generated vertex z (with selected reco); V_{Z,gen} (cm); Entries"},
     {kGenAssocRecoPosZVsCent, o2::framework::HistType::kTH2F, "hAssocRecoPosZVsCent", "Generated vertex z vs centrality (with selected reco); V_{Z,gen} (cm); Centrality_{gen} (%)"},
-    {kGenDndeta, o2::framework::HistType::kTHnSparseF, "hDndeta", "Generated primaries; V_{Z,gen} (cm); Centrality_{gen} (%); #eta; #varphi;"},
-    {kGenAssocRecoDndeta, o2::framework::HistType::kTHnSparseF, "hAssocRecoDndeta", "Generated primaries (with selected reco); V_{Z,gen} (cm); Centrality_{gen} (%); #eta; #varphi; Species; p_{T} variation;"},
-    {kGenAssocRecoDndetaMb, o2::framework::HistType::kTHnSparseF, "hAssocRecoDndetaMb", "Generated primaries (with selected reco, MB); V_{Z,gen} (cm); #eta; #varphi; Species;"},
+    {kGenDndeta, o2::framework::HistType::kTHnSparseF, "hDndeta", "Generated primaries; V_{Z,gen} (cm); Centrality_{gen} (%); #eta; #varphi; k*/Q_{3} (GeV/#it{c});"},
+    {kGenAssocRecoDndeta, o2::framework::HistType::kTHnSparseF, "hAssocRecoDndeta", "Generated primaries (with selected reco); V_{Z,gen} (cm); Centrality_{gen} (%); #eta; #varphi; Species; p_{T} variation; k*/Q_{3} (GeV/#it{c});"},
+    {kGenAssocRecoDndetaMb, o2::framework::HistType::kTHnSparseF, "hAssocRecoDndetaMb", "Generated primaries (with selected reco, MB); V_{Z,gen} (cm); #eta; #varphi; Species; k*/Q_{3} (GeV/#it{c});"},
     // mc: reconstructed
     {kRecoPosZ, o2::framework::HistType::kTH1F, "hPosZ", "Reconstructed vertex z; V_{Z} (cm); Entries"},
     {kRecoCent, o2::framework::HistType::kTH1F, "hCent", "Reconstructed centrality; Centrality (%); Entries"},
     {kRecoPosZVsCent, o2::framework::HistType::kTH2F, "hPosZVsCent", "Reconstructed vertex z vs centrality; V_{Z} (cm); Centrality (%)"},
-    {kRecoDndeta, o2::framework::HistType::kTHnSparseF, "hDndeta", "Reconstructed tracks; V_{Z} (cm); Centrality (%); #eta; #varphi; Track class;"},
-    {kRecoDndetaMb, o2::framework::HistType::kTHnSparseF, "hDndetaMb", "Reconstructed tracks (MB); V_{Z} (cm); #eta; #varphi; Track class;"},
+    {kRecoDndeta, o2::framework::HistType::kTHnSparseF, "hDndeta", "Reconstructed tracks; V_{Z} (cm); Centrality (%); #eta; #varphi; Track class; k*/Q_{3} (GeV/#it{c});"},
+    {kRecoDndetaMb, o2::framework::HistType::kTHnSparseF, "hDndetaMb", "Reconstructed tracks (MB); V_{Z} (cm); #eta; #varphi; Track class; k*/Q_{3} (GeV/#it{c});"},
     // mc: event and signal loss
     {kLossEvents, o2::framework::HistType::kTH1F, "hEvents", "Generated events; ; Entries"},
     {kLossCentGen, o2::framework::HistType::kTH1F, "hCentGen", "Generated events; Centrality_{gen} (%); Entries"},
@@ -231,6 +231,11 @@ struct ConfDndetaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis ft0c{"ft0c", {501, -0.5, 500.5}, "FT0C amplitude binning (correlations)"};
   o2::framework::ConfigurableAxis massK0short{"massK0short", {200, 0.4, 0.6}, "K0short mass binning"};
   o2::framework::ConfigurableAxis massLambda{"massLambda", {200, 1.07, 1.17}, "Lambda mass binning"};
+  // trigger kinematic: k* for a pair trigger, Q3 for a triplet trigger (-1 for minimum bias, i.e.
+  // no trigger pair/triplet was required) -- carried as an extra axis on the dN/deta histograms so
+  // a k*/Q3-differential multiplicity can be computed by projecting/cutting post-hoc, without
+  // rerunning the production for every limit
+  o2::framework::ConfigurableAxis kstarQ3{"kstarQ3", {402, -0.02, 2.0}, "Trigger kinematic (k* or Q3) binning"};
 };
 
 namespace detail
@@ -260,22 +265,22 @@ auto makeDndetaHistSpecMap(T const& conf)
     {kCent, {conf.centFine}},
     {kPosZVsCent, {conf.vtxZ, conf.cent}},
     // data
-    {kDataDndeta, {conf.vtxZ, conf.cent, conf.eta, conf.phi, axisTrackType}},
-    {kDataDndetaMb, {conf.vtxZ, conf.eta, conf.phi}},
+    {kDataDndeta, {conf.vtxZ, conf.cent, conf.eta, conf.phi, axisTrackType, conf.kstarQ3}},
+    {kDataDndetaMb, {conf.vtxZ, conf.eta, conf.phi, conf.kstarQ3}},
     // mc: generated
     {kGenPosZ, {conf.vtxZ}},
     {kGenPosZVsCent, {conf.vtxZ, conf.cent}},
     {kGenAssocRecoPosZ, {conf.vtxZ}},
     {kGenAssocRecoPosZVsCent, {conf.vtxZ, conf.cent}},
-    {kGenDndeta, {conf.vtxZ, conf.cent, conf.eta, conf.phi}},
-    {kGenAssocRecoDndeta, {conf.vtxZ, conf.cent, conf.eta, conf.phi, axisGenType, axisPtVariation}},
-    {kGenAssocRecoDndetaMb, {conf.vtxZ, conf.eta, conf.phi, axisGenType}},
+    {kGenDndeta, {conf.vtxZ, conf.cent, conf.eta, conf.phi, conf.kstarQ3}},
+    {kGenAssocRecoDndeta, {conf.vtxZ, conf.cent, conf.eta, conf.phi, axisGenType, axisPtVariation, conf.kstarQ3}},
+    {kGenAssocRecoDndetaMb, {conf.vtxZ, conf.eta, conf.phi, axisGenType, conf.kstarQ3}},
     // mc: reconstructed
     {kRecoPosZ, {conf.vtxZ}},
     {kRecoCent, {conf.centFine}},
     {kRecoPosZVsCent, {conf.vtxZ, conf.cent}},
-    {kRecoDndeta, {conf.vtxZ, conf.cent, conf.eta, conf.phi, axisRecoType}},
-    {kRecoDndetaMb, {conf.vtxZ, conf.eta, conf.phi, axisRecoType}},
+    {kRecoDndeta, {conf.vtxZ, conf.cent, conf.eta, conf.phi, axisRecoType, conf.kstarQ3}},
+    {kRecoDndetaMb, {conf.vtxZ, conf.eta, conf.phi, axisRecoType, conf.kstarQ3}},
     // mc: event and signal loss
     {kLossEvents, {axisLossEvent}},
     {kLossCentGen, {conf.centFine}},
@@ -361,12 +366,15 @@ class DndetaHistManager
   // ---- data ---------------------------------------------------------------
 
   /// fill a selected data track (track QA is done with the track histogram managers)
-  void fillDataTrack(float posZ, float cent, float eta, float phi, bool hasTpc)
+  /// \param triggerKinematic k*/Q3 of the triggering pair/triplet (minimum over the event, see
+  ///        PairHistManager::getMinimumAcceptedKstar()/TripletHistManager::getMinimumAcceptedQ3()),
+  ///        or -1 for minimum bias (no trigger pair/triplet required)
+  void fillDataTrack(float posZ, float cent, float eta, float phi, bool hasTpc, float triggerKinematic)
   {
-    mHistogramRegistry->fill(HIST(DataDir) + HIST(getHistName(kDataDndetaMb, HistTable)), posZ, eta, phi);
-    mHistogramRegistry->fill(HIST(DataDir) + HIST(getHistName(kDataDndeta, HistTable)), posZ, cent, eta, phi, static_cast<double>(kGlobalPlusIts));
+    mHistogramRegistry->fill(HIST(DataDir) + HIST(getHistName(kDataDndetaMb, HistTable)), posZ, eta, phi, triggerKinematic);
+    mHistogramRegistry->fill(HIST(DataDir) + HIST(getHistName(kDataDndeta, HistTable)), posZ, cent, eta, phi, static_cast<double>(kGlobalPlusIts), triggerKinematic);
     const DataTrackType type = hasTpc ? kGlobalOnly : kItsOnly;
-    mHistogramRegistry->fill(HIST(DataDir) + HIST(getHistName(kDataDndeta, HistTable)), posZ, cent, eta, phi, static_cast<double>(type));
+    mHistogramRegistry->fill(HIST(DataDir) + HIST(getHistName(kDataDndeta, HistTable)), posZ, cent, eta, phi, static_cast<double>(type), triggerKinematic);
   }
 
   // ---- mc: generated ------------------------------------------------------
@@ -384,21 +392,24 @@ class DndetaHistManager
   /// fill a selected generated primary
   /// weightUp/weightDown are the weights of the pT variations (uncertainty of the extrapolation to pT = 0),
   /// they are computed by the dndeta builder
-  void fillGenParticle(float posZ, float cent, float eta, float phi, GenType species, bool hasSelectedReco, double weightUp, double weightDown)
+  /// \param triggerKinematic k*/Q3 of the reco-side triggering pair/triplet matched to this mc
+  ///        collision (or -1 for minimum bias) -- the same value used for fillRecoTrack() of that
+  ///        collision, so gen and reco can be compared/efficiency-corrected differentially in k*/Q3
+  void fillGenParticle(float posZ, float cent, float eta, float phi, GenType species, bool hasSelectedReco, double weightUp, double weightDown, float triggerKinematic)
   {
-    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenDndeta, HistTable)), posZ, cent, eta, phi);
+    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenDndeta, HistTable)), posZ, cent, eta, phi, triggerKinematic);
     if (!hasSelectedReco) {
       return;
     }
     const auto all = static_cast<double>(kGenAll);
-    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndeta, HistTable)), posZ, cent, eta, phi, all, static_cast<double>(kPtNominal));
-    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndetaMb, HistTable)), posZ, eta, phi, all);
-    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndeta, HistTable)), posZ, cent, eta, phi, all, static_cast<double>(kPtUp), weightUp);
-    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndeta, HistTable)), posZ, cent, eta, phi, all, static_cast<double>(kPtDown), weightDown);
+    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndeta, HistTable)), posZ, cent, eta, phi, all, static_cast<double>(kPtNominal), triggerKinematic);
+    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndetaMb, HistTable)), posZ, eta, phi, all, triggerKinematic);
+    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndeta, HistTable)), posZ, cent, eta, phi, all, static_cast<double>(kPtUp), triggerKinematic, weightUp);
+    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndeta, HistTable)), posZ, cent, eta, phi, all, static_cast<double>(kPtDown), triggerKinematic, weightDown);
 
     const auto spec = static_cast<double>(species);
-    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndeta, HistTable)), posZ, cent, eta, phi, spec, static_cast<double>(kPtNominal));
-    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndetaMb, HistTable)), posZ, eta, phi, spec);
+    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndeta, HistTable)), posZ, cent, eta, phi, spec, static_cast<double>(kPtNominal), triggerKinematic);
+    mHistogramRegistry->fill(HIST(GenDir) + HIST(getHistName(kGenAssocRecoDndetaMb, HistTable)), posZ, eta, phi, spec, triggerKinematic);
   }
 
   // ---- mc: reconstructed --------------------------------------------------
@@ -410,11 +421,13 @@ class DndetaHistManager
     mHistogramRegistry->fill(HIST(RecoDir) + HIST(getHistName(kRecoPosZVsCent, HistTable)), posZ, cent);
   }
 
-  /// eta/phi are the reconstructed ones for kRecoAll and kRecoBkg, the generated ones otherwise (as in the legacy task)
-  void fillRecoTrack(float posZ, float cent, float eta, float phi, RecoType type)
+  /// eta/phi are the reconstructed ones for kRecoAll and kRecoBkg, the generated ones otherwise
+  /// \param triggerKinematic k*/Q3 of the triggering pair/triplet for this reconstructed collision
+  ///        (minimum over the event), or -1 for minimum bias
+  void fillRecoTrack(float posZ, float cent, float eta, float phi, RecoType type, float triggerKinematic)
   {
-    mHistogramRegistry->fill(HIST(RecoDir) + HIST(getHistName(kRecoDndeta, HistTable)), posZ, cent, eta, phi, static_cast<double>(type));
-    mHistogramRegistry->fill(HIST(RecoDir) + HIST(getHistName(kRecoDndetaMb, HistTable)), posZ, eta, phi, static_cast<double>(type));
+    mHistogramRegistry->fill(HIST(RecoDir) + HIST(getHistName(kRecoDndeta, HistTable)), posZ, cent, eta, phi, static_cast<double>(type), triggerKinematic);
+    mHistogramRegistry->fill(HIST(RecoDir) + HIST(getHistName(kRecoDndetaMb, HistTable)), posZ, eta, phi, static_cast<double>(type), triggerKinematic);
   }
 
   // ---- mc: event and signal loss ------------------------------------------

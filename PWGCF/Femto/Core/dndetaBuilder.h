@@ -173,9 +173,13 @@ class DndetaBuilder
   // data
   // ---------------------------------------------------------------------------
 
+  /// \param triggerKinematic k*/Q3 of the triggering pair/triplet (minimum over the event), written
+  ///        by the trigger callable as a side effect on itself returning true; -1 (or whatever the
+  ///        caller initializes it to) for minimum bias. Read only after trigger() has run, i.e.
+  ///        only meaningful once this function returns true.
   /// \return true if the collision was selected (including the trigger)
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool processData(T1 const& col, T2& partitionGlobal, T3& partitionItsOnly, T4& cache, T5 const& trigger)
+  bool processData(T1 const& col, T2& partitionGlobal, T3& partitionItsOnly, T4& cache, T5 const& trigger, float triggerKinematic = -1.f)
   {
     if (!selectCollision(col, trigger)) {
       return false;
@@ -194,7 +198,7 @@ class DndetaBuilder
       }
       nch++;
       mTrackHistManagerGlobal.template fill<modes::Mode::kReco_Qa>(track, tracksGlobal);
-      mHistManager.fillDataTrack(posZ, cent, track.eta(), track.phi(), true);
+      mHistManager.fillDataTrack(posZ, cent, track.eta(), track.phi(), true, triggerKinematic);
     }
     for (auto const& track : tracksItsOnly) {
       if (!isTrackAccepted(track, false)) {
@@ -202,7 +206,7 @@ class DndetaBuilder
       }
       nch++;
       mTrackHistManagerItsOnly.template fill<modes::Mode::kReco_Qa>(track, tracksItsOnly);
-      mHistManager.fillDataTrack(posZ, cent, track.eta(), track.phi(), false);
+      mHistManager.fillDataTrack(posZ, cent, track.eta(), track.phi(), false, triggerKinematic);
     }
     if (mDoCorrelation) {
       mHistManager.fillCorrelation(static_cast<float>(nch), col.mult(), col.multFT0A(), col.multFT0C());
@@ -234,7 +238,11 @@ class DndetaBuilder
   /// - gen:  efficiency histograms for all generated collisions, loss histograms for the generated event class
   ///         (optional INEL>0, optional generator-level trigger); the loss block's reco requirement is Sel8
   ///         only (no vtxZ, see isSelectedByMaskOnly), the vtxZ cut only gates the efficiency block above
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
+  /// \param triggerKinematicScratch scratch variable the recoTrigger callable writes the
+  ///        triggering k*/Q3 into as a side effect when it returns true (minimum over the event);
+  ///        read back immediately after each recoTrigger() call, so its value right before the
+  ///        call is irrelevant and it is freely reused across collisions
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
   void processMc(T1 const& cols,
                  T2 const& mcCols,
                  T3& partitionGlobal,
@@ -245,7 +253,8 @@ class DndetaBuilder
                  T8 const& perMcColParticles,
                  T9& pdg,
                  T10 const& recoTrigger,
-                 T11 const& genTrigger)
+                 T11 const& genTrigger,
+                 T12& triggerKinematicScratch)
   {
     const auto nMcCols = static_cast<std::size_t>(mcCols.size());
 
@@ -270,6 +279,7 @@ class DndetaBuilder
     // not implemented (every Run3 event with a vertex is already within the stored range), so the loss-block
     // reco requirement must not carry the vtxZ cut like the Ctrk-side "selvtx" one does
     std::vector<int64_t> selectedReco(nMcCols, -1);
+    std::vector<float> selectedRecoTriggerKinematic(nMcCols, -1.f);
     std::vector<bool> hasSel8Reco(nMcCols, false);
     for (auto const& col : cols) {
       if (!col.has_fMcCol() || bestReco[static_cast<std::size_t>(col.fMcColId())] != col.globalIndex()) {
@@ -284,10 +294,11 @@ class DndetaBuilder
         continue;
       }
       selectedReco[static_cast<std::size_t>(col.fMcColId())] = col.globalIndex();
+      selectedRecoTriggerKinematic[static_cast<std::size_t>(col.fMcColId())] = triggerKinematicScratch;
       if (mDoMcEfficiency) {
         auto tracksGlobal = partitionGlobal->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
         auto tracksItsOnly = partitionItsOnly->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-        fillRecoMc(col, tracksGlobal, tracksItsOnly, mcParticles, mcMothers);
+        fillRecoMc(col, tracksGlobal, tracksItsOnly, mcParticles, mcMothers, triggerKinematicScratch);
       }
     }
 
@@ -300,13 +311,14 @@ class DndetaBuilder
       // efficiency: centrality of the selected reconstructed collision (underflow if there is none)
       if (mDoMcEfficiency) {
         const float recoCent = hasSelectedReco ? cols.rawIteratorAt(selectedReco[mcColIndex]).cent() : -1.f;
+        const float triggerKinematic = hasSelectedReco ? selectedRecoTriggerKinematic[mcColIndex] : -1.f;
         mHistManager.fillGenCollision(mcCol.posZ(), recoCent, hasSelectedReco);
         for (auto const& particle : particles) {
           if (!isGenParticleSelected(particle, pdg)) {
             continue;
           }
           mHistManager.fillGenParticle(mcCol.posZ(), recoCent, particle.eta(), particle.phi(), genType(particle.pdgCode()), hasSelectedReco,
-                                       ptVariationWeight(particle.pt(), mPtVariationUp), ptVariationWeight(particle.pt(), mPtVariationDown));
+                                       ptVariationWeight(particle.pt(), mPtVariationUp), ptVariationWeight(particle.pt(), mPtVariationDown), triggerKinematic);
         }
       }
 
@@ -492,20 +504,22 @@ class DndetaBuilder
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
-  void fillRecoMcTrack(T1 const& col, T2 const& track, T3 const& /*mcParticles*/, T4 const& /*mcMothers*/, std::vector<int64_t>& usedLabels)
+  void fillRecoMcTrack(T1 const& col, T2 const& track, T3 const& /*mcParticles*/, T4 const& /*mcMothers*/, std::vector<int64_t>& usedLabels, float triggerKinematic)
   {
     const float posZ = col.posZ();
     const float cent = col.cent();
     if (!track.has_fMcParticle()) {
-      mHistManager.fillRecoTrack(posZ, cent, track.eta(), track.phi(), dndetahistmanager::kRecoBkg);
+      mHistManager.fillRecoTrack(posZ, cent, track.eta(), track.phi(), dndetahistmanager::kRecoBkg, triggerKinematic);
       return;
     }
     auto mcParticle = track.template fMcParticle_as<T3>();
-    // tracks matched to a particle from another mc collision are skipped (as in the legacy task)
+    // a track whose matched mc particle belongs to a different mc collision is a mis-association
+    // (e.g. an ambiguous/pileup-adjacent match); counting it here would attribute it to the wrong
+    // collision's efficiency, so it is skipped
     if (mcParticle.fMcColId() != col.fMcColId()) {
       return;
     }
-    mHistManager.fillRecoTrack(posZ, cent, track.eta(), track.phi(), dndetahistmanager::kRecoAll);
+    mHistManager.fillRecoTrack(posZ, cent, track.eta(), track.phi(), dndetahistmanager::kRecoAll, triggerKinematic);
 
     dndetahistmanager::RecoType type = dndetahistmanager::kRecoSecondary;
     if (isPhysicalPrimary(mcParticle)) {
@@ -521,11 +535,11 @@ class DndetaBuilder
       type = dndetahistmanager::kRecoFake;
     }
     usedLabels.push_back(track.fMcParticleId());
-    mHistManager.fillRecoTrack(posZ, cent, mcParticle.eta(), mcParticle.phi(), type);
+    mHistManager.fillRecoTrack(posZ, cent, mcParticle.eta(), mcParticle.phi(), type, triggerKinematic);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillRecoMc(T1 const& col, T2 const& tracksGlobal, T3 const& tracksItsOnly, T4 const& mcParticles, T5 const& mcMothers)
+  void fillRecoMc(T1 const& col, T2 const& tracksGlobal, T3 const& tracksItsOnly, T4 const& mcParticles, T5 const& mcMothers, float triggerKinematic)
   {
     mHistManager.fillRecoCollision(col.posZ(), col.cent());
     // labels are tracked over both partitions, so a fake is also found if the other track comes from the other partition
@@ -533,13 +547,13 @@ class DndetaBuilder
     for (auto const& track : tracksGlobal) {
       if (isTrackAccepted(track, true)) {
         mTrackHistManagerGlobal.template fill<modes::Mode::kReco_Qa>(track, tracksGlobal);
-        fillRecoMcTrack(col, track, mcParticles, mcMothers, usedLabels);
+        fillRecoMcTrack(col, track, mcParticles, mcMothers, usedLabels, triggerKinematic);
       }
     }
     for (auto const& track : tracksItsOnly) {
       if (isTrackAccepted(track, false)) {
         mTrackHistManagerItsOnly.template fill<modes::Mode::kReco_Qa>(track, tracksItsOnly);
-        fillRecoMcTrack(col, track, mcParticles, mcMothers, usedLabels);
+        fillRecoMcTrack(col, track, mcParticles, mcMothers, usedLabels, triggerKinematic);
       }
     }
   }
