@@ -1353,7 +1353,7 @@ class VarManager : public TObject
 
   static void GetFwdShiftForY(float y, float& xShift, float& yShift, float& zShift)
   {
-    if (fgUseTopBottomShift && o2::dqconstants::IsCoordinateValid(y)) {
+    if (fgUseTopBottomShift && o2::dqconstants::IsCoordinateInvalid(y)) {
       xShift = fgxShiftFwdBottom;
       yShift = fgyShiftFwdBottom;
       zShift = fgzShiftFwdBottom;

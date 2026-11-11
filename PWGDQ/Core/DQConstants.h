@@ -44,8 +44,8 @@ inline constexpr int TPCCalibTypeEnd = 2;
 inline constexpr int InvalidDCA = 999;
 
 // Checks
-inline constexpr auto IsCoordinateValid = [](float value) constexpr -> bool {
-  return value >= 0.f;
+inline constexpr auto IsCoordinateInvalid = [](float value) constexpr -> bool {
+  return value < 0.f;
 };
 
 inline constexpr auto IsDCAInvalid = [](float value) constexpr -> bool {
