@@ -246,6 +246,7 @@ struct HfTreeCreatorToOmegaPiQa {
   using CollsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   using McCollsWithFT0M = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
+  Filter filterOmegaCMatchedRec = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi);
   Filter filterSelectCandidates = aod::hf_sel_candidate_omegac0_qa::isSelOmegaC0ToOmegaPi >= selectionFlagOmegac0;
 
   void init(InitContext const&)
@@ -369,12 +370,12 @@ struct HfTreeCreatorToOmegaPiQa {
       rowKfCandidate(centrality,
                      candidate.template collision_as<CollTable>().numContrib(),
                      trackPiFromCharm.tpcNSigmaPi(),
-                     trackKaFromCasc.tpcNSigmaKa(),
-                     trackPiFromLam.tpcNSigmaPi(),
-                     trackPrFromLam.tpcNSigmaPr(),
                      trackPiFromCharm.tofNSigmaPi(),
+                     trackKaFromCasc.tpcNSigmaKa(),
                      trackKaFromCasc.tofNSigmaKa(),
+                     trackPiFromLam.tpcNSigmaPi(),
                      trackPiFromLam.tofNSigmaPi(),
+                     trackPrFromLam.tpcNSigmaPr(),
                      trackPrFromLam.tofNSigmaPr(),
                      candidate.impactParameter1(),
                      candidate.dcaCascadeDaughters(),

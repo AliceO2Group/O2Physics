@@ -75,9 +75,9 @@ struct HfTaskOmegac0ToOmegaPiQa {
 
   using McCollisionsWithFT0M = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
-  Filter filterOmegaCToOmegaPiFlag = (aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) != static_cast<uint8_t>(0);
   Filter filterOmegaCMatchedRec = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi);
   Filter filterOmegaCMatchedGen = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi);
+  Filter filterSelectCandidates = aod::hf_sel_candidate_omegac0_qa::isSelOmegaC0ToOmegaPi >= selectionFlagOmegac0;
 
   Preslice<Omegac0Cands> candOmegacPerCollision = aod::hf_cand::collisionId;
   Preslice<Omegac0CandsKF> candOmegacKFPerCollision = aod::hf_cand::collisionId;
@@ -164,10 +164,6 @@ struct HfTaskOmegac0ToOmegaPiQa {
   void runDataAnalysis(const CandType& candidates)
   {
     for (const auto& candidate : candidates) {
-      if (candidate.isSelOmegaC0ToOmegaPi() < selectionFlagOmegac0) {
-        continue;
-      }
-
       const auto yOmegac = HfHelperQa::yOmegaczero(candidate);
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
         continue;
@@ -184,10 +180,6 @@ struct HfTaskOmegac0ToOmegaPiQa {
   template <bool UseCentrality, bool ApplyMl, typename CandType, typename CollType>
   void runDataAnalysisCentPerCandidate(const CandType& candidate, CollType const& collision)
   {
-    if (candidate.isSelOmegaC0ToOmegaPi() < selectionFlagOmegac0) {
-      return;
-    }
-
     const double yOmegac = HfHelperQa::yOmegaczero(candidate);
     if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
       return;
@@ -215,10 +207,6 @@ struct HfTaskOmegac0ToOmegaPiQa {
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (candidate.isSelOmegaC0ToOmegaPi() < selectionFlagOmegac0) {
-        continue;
-      }
-
       const double yOmegac = HfHelperQa::yOmegaczero(candidate);
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
         continue;
@@ -255,10 +243,6 @@ struct HfTaskOmegac0ToOmegaPiQa {
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (candidate.isSelOmegaC0ToOmegaPi() < selectionFlagOmegac0) {
-        continue;
-      }
-
       const double yOmegac = HfHelperQa::yOmegaczero(candidate);
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
         continue;
