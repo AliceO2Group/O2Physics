@@ -126,7 +126,7 @@ struct FemtoProducerCollisionTagger {
     // enabled, each would try to write its own row for the same collision. Until FColTags is
     // extended to carry one column per wagon type, only one process function may run at a time --
     // run separate tagger instances (with separate output files/merges) for separate wagon types.
-    int activeProcesses = static_cast<int>(doprocessTrackTrack) + static_cast<int>(doprocessTrackV0) + static_cast<int>(doprocessTrackCascade) + static_cast<int>(doprocessTrackKink) + static_cast<int>(doprocessTrackSigmaPlusPcm) + static_cast<int>(doprocessTrackD0) + static_cast<int>(doprocessTrackLc) + static_cast<int>(doprocessV0V0) + static_cast<int>(doprocessD0D0) + static_cast<int>(doprocessTrackTwoTrackResonance) + static_cast<int>(doprocessTrackTwoPhotonResonance) + static_cast<int>(doprocessV0TwoTrackResonance) + static_cast<int>(doprocessTripletTrackTrackTrack) + static_cast<int>(doprocessTripletTrackTrackV0) + static_cast<int>(doprocessTripletTrackTrackCascade);
+    int activeProcesses = static_cast<int>(doprocessTrackTrack) + static_cast<int>(doprocessTrackLambda) + static_cast<int>(doprocessTrackK0short) + static_cast<int>(doprocessTrackXi) + static_cast<int>(doprocessTrackOmega) + static_cast<int>(doprocessTrackSigma) + static_cast<int>(doprocessTrackSigmaPlus) + static_cast<int>(doprocessTrackSigmaPlusPcm) + static_cast<int>(doprocessTrackD0) + static_cast<int>(doprocessTrackLc) + static_cast<int>(doprocessLambdaLambda) + static_cast<int>(doprocessK0shortK0short) + static_cast<int>(doprocessLambdaK0short) + static_cast<int>(doprocessD0D0) + static_cast<int>(doprocessTrackTwoTrackResonance) + static_cast<int>(doprocessTrackTwoPhotonResonance) + static_cast<int>(doprocessLambdaTwoTrackResonance) + static_cast<int>(doprocessK0shortTwoTrackResonance) + static_cast<int>(doprocessTripletTrackTrackTrack) + static_cast<int>(doprocessTripletTrackTrackV0) + static_cast<int>(doprocessTripletTrackTrackXi) + static_cast<int>(doprocessTripletTrackTrackOmega);
     if (activeProcesses != 1) {
       LOG(fatal) << "Exactly one process function must be enabled on the collision tagger, found " << activeProcesses << ". Breaking...";
     }
@@ -168,51 +168,51 @@ struct FemtoProducerCollisionTagger {
         v.sel2 = v.sameSpecies ? v.sel1 : collisiontagger::readTrackSelection(device, "TrackSelection2");
         v.bit = r.bit;
         mTrackTrackVariants.push_back(v);
-      } else if (doprocessTrackV0 && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackV0) != std::string::npos) {
+      } else if (doprocessTrackLambda && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackV0) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::TrackLambdaPair)) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == static_cast<char const*>(collisiontagger::role::TrackLambdaPair)) {
-          collisiontagger::TrackV0Variant v;
-          v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
-          v.sel2 = collisiontagger::readV0Selection(device, "LambdaSelection1");
-          v.bit = r.bit;
-          mTrackLambdaVariants.push_back(v);
-        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackK0shortPair)) {
-          collisiontagger::TrackV0Variant v;
-          v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
-          v.sel2 = collisiontagger::readV0Selection(device, "K0shortSelection1");
-          v.bit = r.bit;
-          mTrackK0shortVariants.push_back(v);
-        }
-      } else if (doprocessTrackCascade && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackCascade) != std::string::npos) {
+        collisiontagger::TrackV0Variant v;
+        v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
+        v.sel2 = collisiontagger::readV0Selection(device, "LambdaSelection1");
+        v.bit = r.bit;
+        mTrackLambdaVariants.push_back(v);
+      } else if (doprocessTrackK0short && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackV0) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::TrackK0shortPair)) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == static_cast<char const*>(collisiontagger::role::TrackXiPair)) {
-          collisiontagger::TrackV0Variant v;
-          v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
-          v.sel2 = collisiontagger::readV0Selection(device, "XiSelection");
-          v.bit = r.bit;
-          mTrackXiVariants.push_back(v);
-        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackOmegaPair)) {
-          collisiontagger::TrackV0Variant v;
-          v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
-          v.sel2 = collisiontagger::readV0Selection(device, "OmegaSelection");
-          v.bit = r.bit;
-          mTrackOmegaVariants.push_back(v);
-        }
-      } else if ((doprocessTrackKink || doprocessTrackSigmaPlusPcm) && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackKink) != std::string::npos) {
+        collisiontagger::TrackV0Variant v;
+        v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
+        v.sel2 = collisiontagger::readV0Selection(device, "K0shortSelection1");
+        v.bit = r.bit;
+        mTrackK0shortVariants.push_back(v);
+      } else if (doprocessTrackXi && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackCascade) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::TrackXiPair)) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPair)) {
-          collisiontagger::TrackV0Variant v;
-          v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
-          v.sel2 = collisiontagger::readV0Selection(device, "SigmaSelection1");
-          v.bit = r.bit;
-          mTrackSigmaVariants.push_back(v);
-        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPlusPair)) {
-          collisiontagger::TrackV0Variant v;
-          v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
-          v.sel2 = collisiontagger::readV0Selection(device, "SigmaPlusSelection1");
-          v.bit = r.bit;
-          mTrackSigmaPlusVariants.push_back(v);
-        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPlusPcmPair)) {
+        collisiontagger::TrackV0Variant v;
+        v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
+        v.sel2 = collisiontagger::readV0Selection(device, "XiSelection");
+        v.bit = r.bit;
+        mTrackXiVariants.push_back(v);
+      } else if (doprocessTrackOmega && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackCascade) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::TrackOmegaPair)) {
+        o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
+        collisiontagger::TrackV0Variant v;
+        v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
+        v.sel2 = collisiontagger::readV0Selection(device, "OmegaSelection");
+        v.bit = r.bit;
+        mTrackOmegaVariants.push_back(v);
+      } else if (doprocessTrackSigma && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackKink) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPair)) {
+        o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
+        collisiontagger::TrackV0Variant v;
+        v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
+        v.sel2 = collisiontagger::readV0Selection(device, "SigmaSelection1");
+        v.bit = r.bit;
+        mTrackSigmaVariants.push_back(v);
+      } else if (doprocessTrackSigmaPlus && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackKink) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPlusPair)) {
+        o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
+        collisiontagger::TrackV0Variant v;
+        v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
+        v.sel2 = collisiontagger::readV0Selection(device, "SigmaPlusSelection1");
+        v.bit = r.bit;
+        mTrackSigmaPlusVariants.push_back(v);
+      } else if (doprocessTrackSigmaPlusPcm && r.deviceName.find(collisiontagger::devicename::FemtoPairTrackKink) != std::string::npos) {
+        o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
+        if (r.role == static_cast<char const*>(collisiontagger::role::TrackSigmaPlusPcmPair)) {
           collisiontagger::TrackKinkPcmVariant v;
           v.sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
           v.sel2 = collisiontagger::readKinkPcmSelection(device, "SigmaPlusPcmSelection1");
@@ -234,32 +234,32 @@ struct FemtoProducerCollisionTagger {
           v.bit = r.bit;
           mTrackLcVariants.push_back(v);
         }
-      } else if (doprocessV0V0 && r.deviceName.find(collisiontagger::devicename::FemtoPairV0V0) != std::string::npos) {
+      } else if (doprocessLambdaLambda && r.deviceName.find(collisiontagger::devicename::FemtoPairV0V0) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::LambdaLambdaPair)) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
-        if (r.role == static_cast<char const*>(collisiontagger::role::LambdaLambdaPair)) {
-          collisiontagger::V0V0Variant v;
-          v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
-          v.sameSpecies = collisiontagger::hasEnabledOption(device, "Mixing.sameSpecies");
-          // Mirror PairV0V0Builder::processMixedEvent(), which uses partition1 for BOTH roles and
-          // never consults LambdaSelection2 at all when sameSpecies -- same override as
-          // TrackTrackPair above.
-          v.sel2 = v.sameSpecies ? v.sel1 : collisiontagger::readV0Selection(device, "LambdaSelection2");
-          v.bit = r.bit;
-          mLambdaLambdaVariants.push_back(v);
-        } else if (r.role == static_cast<char const*>(collisiontagger::role::K0shortK0shortPair)) {
-          collisiontagger::V0V0Variant v;
-          v.sel1 = collisiontagger::readV0Selection(device, "K0shortSelection1");
-          v.sameSpecies = collisiontagger::hasEnabledOption(device, "Mixing.sameSpecies");
-          v.sel2 = v.sameSpecies ? v.sel1 : collisiontagger::readV0Selection(device, "K0shortSelection2");
-          v.bit = r.bit;
-          mK0shortK0shortVariants.push_back(v);
-        } else if (r.role == static_cast<char const*>(collisiontagger::role::LambdaK0shortPair)) {
-          collisiontagger::V0V0Variant v;
-          v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
-          v.sel2 = collisiontagger::readV0Selection(device, "K0shortSelection2");
-          v.bit = r.bit;
-          mLambdaK0shortVariants.push_back(v);
-        }
+        collisiontagger::V0V0Variant v;
+        v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
+        v.sameSpecies = collisiontagger::hasEnabledOption(device, "Mixing.sameSpecies");
+        // Mirror PairV0V0Builder::processMixedEvent(), which uses partition1 for BOTH roles and
+        // never consults LambdaSelection2 at all when sameSpecies -- same override as
+        // TrackTrackPair above.
+        v.sel2 = v.sameSpecies ? v.sel1 : collisiontagger::readV0Selection(device, "LambdaSelection2");
+        v.bit = r.bit;
+        mLambdaLambdaVariants.push_back(v);
+      } else if (doprocessK0shortK0short && r.deviceName.find(collisiontagger::devicename::FemtoPairV0V0) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::K0shortK0shortPair)) {
+        o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
+        collisiontagger::V0V0Variant v;
+        v.sel1 = collisiontagger::readV0Selection(device, "K0shortSelection1");
+        v.sameSpecies = collisiontagger::hasEnabledOption(device, "Mixing.sameSpecies");
+        v.sel2 = v.sameSpecies ? v.sel1 : collisiontagger::readV0Selection(device, "K0shortSelection2");
+        v.bit = r.bit;
+        mK0shortK0shortVariants.push_back(v);
+      } else if (doprocessLambdaK0short && r.deviceName.find(collisiontagger::devicename::FemtoPairV0V0) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::LambdaK0shortPair)) {
+        o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
+        collisiontagger::V0V0Variant v;
+        v.sel1 = collisiontagger::readV0Selection(device, "LambdaSelection1");
+        v.sel2 = collisiontagger::readV0Selection(device, "K0shortSelection2");
+        v.bit = r.bit;
+        mLambdaK0shortVariants.push_back(v);
       } else if (doprocessD0D0 && r.deviceName.find(collisiontagger::devicename::FemtoPairD0D0) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
         collisiontagger::V0V0Variant v;
@@ -309,7 +309,7 @@ struct FemtoProducerCollisionTagger {
           v.bit = r.bit;
           mTrackEtaVariants.push_back(v);
         }
-      } else if (doprocessV0TwoTrackResonance && r.deviceName.find(collisiontagger::devicename::FemtoPairV0TwoTrackResonance) != std::string::npos) {
+      } else if (doprocessLambdaTwoTrackResonance && r.deviceName.find(collisiontagger::devicename::FemtoPairV0TwoTrackResonance) != std::string::npos) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
         if (r.role == static_cast<char const*>(collisiontagger::role::LambdaPhiPair)) {
           collisiontagger::V0TwoTrackResonanceVariant v;
@@ -329,7 +329,10 @@ struct FemtoProducerCollisionTagger {
           v.sel2 = collisiontagger::readTwoTrackResonanceSelection(device, "Rho0Selection");
           v.bit = r.bit;
           mLambdaRho0Variants.push_back(v);
-        } else if (r.role == static_cast<char const*>(collisiontagger::role::K0shortPhiPair)) {
+        }
+      } else if (doprocessK0shortTwoTrackResonance && r.deviceName.find(collisiontagger::devicename::FemtoPairV0TwoTrackResonance) != std::string::npos) {
+        o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
+        if (r.role == static_cast<char const*>(collisiontagger::role::K0shortPhiPair)) {
           collisiontagger::V0TwoTrackResonanceVariant v;
           v.sel1 = collisiontagger::readV0Selection(device, "K0shortSelection1");
           v.sel2 = collisiontagger::readTwoTrackResonanceSelection(device, "PhiSelection");
@@ -374,29 +377,30 @@ struct FemtoProducerCollisionTagger {
         v.sel3 = collisiontagger::readV0Selection(device, "LambdaSelection1");
         v.bit = r.bit;
         mTrackTrackLambdaVariants.push_back(v);
-      } else if (doprocessTripletTrackTrackCascade && r.deviceName.find(collisiontagger::devicename::FemtoTripletTrackTrackCascade) != std::string::npos) {
+      } else if (doprocessTripletTrackTrackXi && r.deviceName.find(collisiontagger::devicename::FemtoTripletTrackTrackCascade) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::TrackTrackXiTriplet)) {
         o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
         collisiontagger::TrackSelectionValues sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
         collisiontagger::TrackSelectionValues sel2Raw = collisiontagger::readTrackSelection(device, "TrackSelection2");
         bool same12 = collisiontagger::hasEnabledOption(device, "Mixing.particle12AreSameSpecies");
-        collisiontagger::TrackSelectionValues sel2 = same12 ? sel1 : sel2Raw;
-        if (r.role == static_cast<char const*>(collisiontagger::role::TrackTrackXiTriplet)) {
-          collisiontagger::TrackTrackV0Variant v;
-          v.sel1 = sel1;
-          v.sel2 = sel2;
-          v.same12 = same12;
-          v.sel3 = collisiontagger::readV0Selection(device, "XiSelection");
-          v.bit = r.bit;
-          mTrackTrackXiVariants.push_back(v);
-        } else if (r.role == static_cast<char const*>(collisiontagger::role::TrackTrackOmegaTriplet)) {
-          collisiontagger::TrackTrackV0Variant v;
-          v.sel1 = sel1;
-          v.sel2 = sel2;
-          v.same12 = same12;
-          v.sel3 = collisiontagger::readV0Selection(device, "OmegaSelection");
-          v.bit = r.bit;
-          mTrackTrackOmegaVariants.push_back(v);
-        }
+        collisiontagger::TrackTrackV0Variant v;
+        v.sel1 = sel1;
+        v.sel2 = same12 ? sel1 : sel2Raw;
+        v.same12 = same12;
+        v.sel3 = collisiontagger::readV0Selection(device, "XiSelection");
+        v.bit = r.bit;
+        mTrackTrackXiVariants.push_back(v);
+      } else if (doprocessTripletTrackTrackOmega && r.deviceName.find(collisiontagger::devicename::FemtoTripletTrackTrackCascade) != std::string::npos && r.role == static_cast<char const*>(collisiontagger::role::TrackTrackOmegaTriplet)) {
+        o2::framework::DeviceSpec const& device = findDevice(r.deviceName);
+        collisiontagger::TrackSelectionValues sel1 = collisiontagger::readTrackSelection(device, "TrackSelection1");
+        collisiontagger::TrackSelectionValues sel2Raw = collisiontagger::readTrackSelection(device, "TrackSelection2");
+        bool same12 = collisiontagger::hasEnabledOption(device, "Mixing.particle12AreSameSpecies");
+        collisiontagger::TrackTrackV0Variant v;
+        v.sel1 = sel1;
+        v.sel2 = same12 ? sel1 : sel2Raw;
+        v.same12 = same12;
+        v.sel3 = collisiontagger::readV0Selection(device, "OmegaSelection");
+        v.bit = r.bit;
+        mTrackTrackOmegaVariants.push_back(v);
       }
       // TODO: add the remaining triplet task types (mc-particle triplets, ...), following the
       // same pattern.
@@ -405,17 +409,29 @@ struct FemtoProducerCollisionTagger {
     if (doprocessTrackTrack && mTrackTrackVariants.empty()) {
       LOG(fatal) << "processTrackTrack is enabled, but no femto-pair-track-track device was found in this workflow.";
     }
-    if (doprocessTrackV0 && mTrackLambdaVariants.empty() && mTrackK0shortVariants.empty()) {
-      LOG(fatal) << "processTrackV0 is enabled, but no femto-pair-track-v0 device (with processLambdaMixedEventWithTagging "
-                 << "or processK0shortMixedEventWithTagging enabled) was found in this workflow.";
+    if (doprocessTrackLambda && mTrackLambdaVariants.empty()) {
+      LOG(fatal) << "processTrackLambda is enabled, but no femto-pair-track-v0 device (with processLambdaMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
     }
-    if (doprocessTrackCascade && mTrackXiVariants.empty() && mTrackOmegaVariants.empty()) {
-      LOG(fatal) << "processCascade is enabled, but no femto-pair-track-cascade device (with processXiMixedEventWithTagging "
-                 << "or processOmegaMixedEventWithTagging enabled) was found in this workflow.";
+    if (doprocessTrackK0short && mTrackK0shortVariants.empty()) {
+      LOG(fatal) << "processTrackK0short is enabled, but no femto-pair-track-v0 device (with processK0shortMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
     }
-    if (doprocessTrackKink && mTrackSigmaVariants.empty() && mTrackSigmaPlusVariants.empty()) {
-      LOG(fatal) << "processTrackKink is enabled, but no femto-pair-track-kink device (with processSigmaMixedEventWithTagging/"
-                 << "processSigmaPlusMixedEventWithTagging enabled) was found in this workflow.";
+    if (doprocessTrackXi && mTrackXiVariants.empty()) {
+      LOG(fatal) << "processTrackXi is enabled, but no femto-pair-track-cascade device (with processXiMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
+    }
+    if (doprocessTrackOmega && mTrackOmegaVariants.empty()) {
+      LOG(fatal) << "processTrackOmega is enabled, but no femto-pair-track-cascade device (with processOmegaMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
+    }
+    if (doprocessTrackSigma && mTrackSigmaVariants.empty()) {
+      LOG(fatal) << "processTrackSigma is enabled, but no femto-pair-track-kink device (with processSigmaMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
+    }
+    if (doprocessTrackSigmaPlus && mTrackSigmaPlusVariants.empty()) {
+      LOG(fatal) << "processTrackSigmaPlus is enabled, but no femto-pair-track-kink device (with processSigmaPlusMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
     }
     if (doprocessTrackSigmaPlusPcm && mTrackSigmaPlusPcmVariants.empty()) {
       LOG(fatal) << "processTrackSigmaPlusPcm is enabled, but no femto-pair-track-kink device (with "
@@ -429,9 +445,17 @@ struct FemtoProducerCollisionTagger {
       LOG(fatal) << "processTrackLc is enabled, but no femto-pair-track-charm-hadron device (with processLcMixedEventWithTagging "
                  << "enabled) was found in this workflow.";
     }
-    if (doprocessV0V0 && mLambdaLambdaVariants.empty() && mK0shortK0shortVariants.empty() && mLambdaK0shortVariants.empty()) {
-      LOG(fatal) << "processV0V0 is enabled, but no femto-pair-v0-v0 device (with processLambdaLambdaMixedEventWithTagging/"
-                 << "processK0shortK0shortMixedEventWithTagging/processLambdaK0shortMixedEventWithTagging enabled) was found in this workflow.";
+    if (doprocessLambdaLambda && mLambdaLambdaVariants.empty()) {
+      LOG(fatal) << "processLambdaLambda is enabled, but no femto-pair-v0-v0 device (with processLambdaLambdaMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
+    }
+    if (doprocessK0shortK0short && mK0shortK0shortVariants.empty()) {
+      LOG(fatal) << "processK0shortK0short is enabled, but no femto-pair-v0-v0 device (with processK0shortK0shortMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
+    }
+    if (doprocessLambdaK0short && mLambdaK0shortVariants.empty()) {
+      LOG(fatal) << "processLambdaK0short is enabled, but no femto-pair-v0-v0 device (with processLambdaK0shortMixedEventWithTagging "
+                 << "enabled) was found in this workflow.";
     }
     if (doprocessD0D0 && mD0D0Variants.empty()) {
       LOG(fatal) << "processD0D0 is enabled, but no femto-pair-d0-d0 device (with processMixedEventWithTagging enabled) was found in this workflow.";
@@ -445,10 +469,15 @@ struct FemtoProducerCollisionTagger {
       LOG(fatal) << "processTrackTwoPhotonResonance is enabled, but no femto-pair-track-two-photon-resonance device (with "
                  << "processPi0MixedEventWithTagging/processEtaMixedEventWithTagging enabled) was found in this workflow.";
     }
-    if (doprocessV0TwoTrackResonance && mLambdaPhiVariants.empty() && mLambdaKstar0Variants.empty() && mLambdaRho0Variants.empty() &&
-        mK0shortPhiVariants.empty() && mK0shortKstar0Variants.empty() && mK0shortRho0Variants.empty()) {
-      LOG(fatal) << "processV0TwoTrackResonance is enabled, but no femto-pair-v0-two-track-resonance device (with one of the "
-                 << "processXxxMixedEventWithTagging switches enabled) was found in this workflow.";
+    if (doprocessLambdaTwoTrackResonance && mLambdaPhiVariants.empty() && mLambdaKstar0Variants.empty() && mLambdaRho0Variants.empty()) {
+      LOG(fatal) << "processLambdaTwoTrackResonance is enabled, but no femto-pair-v0-two-track-resonance device (with one of "
+                 << "processLambdaPhiMixedEventWithTagging/processLambdaKstar0MixedEventWithTagging/"
+                 << "processLambdaRho0MixedEventWithTagging enabled) was found in this workflow.";
+    }
+    if (doprocessK0shortTwoTrackResonance && mK0shortPhiVariants.empty() && mK0shortKstar0Variants.empty() && mK0shortRho0Variants.empty()) {
+      LOG(fatal) << "processK0shortTwoTrackResonance is enabled, but no femto-pair-v0-two-track-resonance device (with one of "
+                 << "processK0shortPhiMixedEventWithTagging/processK0shortKstar0MixedEventWithTagging/"
+                 << "processK0shortRho0MixedEventWithTagging enabled) was found in this workflow.";
     }
     if (doprocessTripletTrackTrackTrack && mTrackTrackTrackVariants.empty()) {
       LOG(fatal) << "processTripletTrackTrackTrack is enabled, but no femto-triplet-track-track-track device (with "
@@ -458,9 +487,13 @@ struct FemtoProducerCollisionTagger {
       LOG(fatal) << "processTripletTrackTrackV0 is enabled, but no femto-triplet-track-track-v0 device (with "
                  << "processMixedEventWithTagging enabled) was found in this workflow.";
     }
-    if (doprocessTripletTrackTrackCascade && mTrackTrackXiVariants.empty() && mTrackTrackOmegaVariants.empty()) {
-      LOG(fatal) << "processTripletTrackTrackCascade is enabled, but no femto-triplet-track-track-cascade device (with "
-                 << "processXiMixedEventWithTagging/processOmegaMixedEventWithTagging enabled) was found in this workflow.";
+    if (doprocessTripletTrackTrackXi && mTrackTrackXiVariants.empty()) {
+      LOG(fatal) << "processTripletTrackTrackXi is enabled, but no femto-triplet-track-track-cascade device (with "
+                 << "processXiMixedEventWithTagging enabled) was found in this workflow.";
+    }
+    if (doprocessTripletTrackTrackOmega && mTrackTrackOmegaVariants.empty()) {
+      LOG(fatal) << "processTripletTrackTrackOmega is enabled, but no femto-triplet-track-track-cascade device (with "
+                 << "processOmegaMixedEventWithTagging enabled) was found in this workflow.";
     }
     if (!roles.empty() && roles.back().bit >= collisiontagger::MaxTagBits) {
       LOG(fatal) << "Too many tag bits requested (" << (roles.back().bit + 1) << "); collision tagger supports up to " << collisiontagger::MaxTagBits << ".";
@@ -478,60 +511,79 @@ struct FemtoProducerCollisionTagger {
   }
   PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackTrack, "Tag collisions for femto-pair-track-track wagon(s)", false);
 
-  // Two species checked independently, both contributing to the one tag this collision gets --
-  // can't collapse to a single tagAndProduce() call like processTrackTrack above (that helper
-  // assumes exactly one check per row), but each cross-type check (track role + v0 role) is
-  // still just one call to tagCrossVariants().
-  void processTrackV0(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoLambdas const& lambdasThisCol, FemtoK0shorts const& k0shortsThisCol)
+  // Lambda and K0short are split into two separate process functions (rather than one combined
+  // processTrackV0 reading both FemtoLambdas and FemtoK0shorts unconditionally) because the
+  // consuming femto-pair-track-v0 task itself enforces that a single instance only ever tags
+  // Lambda OR K0short, never both (see its init(): "Both lambda-track and k0short-track
+  // processing is enabled" is fatal there) -- so requiring both tables as DPL inputs here would
+  // make the tagger unusable against any input file that only has one of the two V0 species
+  // derived (e.g. Lambda-only productions with no FK0shorts table at all: DPL subscribes to a
+  // process function's full argument list regardless of whether the branch using it is actually
+  // reached at runtime, so the AOD reader fails outright looking for a tree that was never
+  // produced, instead of this cleanly tagging zero K0short pairs).
+  void processTrackLambda(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoLambdas const& lambdasThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
     auto trackPassesFn = [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); };
-    if (!mTrackLambdaVariants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mTrackLambdaVariants, tracksThisCol, trackPassesFn, lambdasThisCol,
-                                        [](auto const& lambda, auto const& sel) { return collisiontagger::lambdaPasses(lambda, sel); });
-    }
-    if (!mTrackK0shortVariants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mTrackK0shortVariants, tracksThisCol, trackPassesFn, k0shortsThisCol,
-                                        [](auto const& k0short, auto const& sel) { return collisiontagger::k0shortPasses(k0short, sel); });
-    }
+    collisiontagger::tagCrossVariants(tag, mTrackLambdaVariants, tracksThisCol, trackPassesFn, lambdasThisCol,
+                                      [](auto const& lambda, auto const& sel) { return collisiontagger::signedV0Passes(lambda, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
-  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackV0, "Tag collisions for femto-pair-track-v0 wagon(s)", false);
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackLambda, "Tag collisions for femto-pair-track-v0 wagon(s) (Lambda)", false);
 
-  void processTrackCascade(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoXis const& xisThisCol, FemtoOmegas const& omegasThisCol)
+  void processTrackK0short(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoK0shorts const& k0shortsThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
     auto trackPassesFn = [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); };
-    auto cascadePassesFn = [](auto const& cascade, auto const& sel) { return collisiontagger::lambdaPasses(cascade, sel); };
-    if (!mTrackXiVariants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mTrackXiVariants, tracksThisCol, trackPassesFn, xisThisCol, cascadePassesFn);
-    }
-    if (!mTrackOmegaVariants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mTrackOmegaVariants, tracksThisCol, trackPassesFn, omegasThisCol, cascadePassesFn);
-    }
+    collisiontagger::tagCrossVariants(tag, mTrackK0shortVariants, tracksThisCol, trackPassesFn, k0shortsThisCol,
+                                      [](auto const& k0short, auto const& sel) { return collisiontagger::k0shortPasses(k0short, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
-  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackCascade, "Tag collisions for femto-pair-track-cascade wagon(s)", false);
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackK0short, "Tag collisions for femto-pair-track-v0 wagon(s) (K0short)", false);
 
-  // Sigma and SigmaPlus (kink) tables are always filled together by the producer, but SigmaPlusPcm
-  // comes from a mutually exclusive producer process function (processTracksSigmaPlusPcmsRun3pp/Mc) --
-  // so it gets its own process function below instead of joining this one, otherwise enabling this
-  // process would force the producer to supply a table combination it can never actually produce.
-  void processTrackKink(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoSigmas const& sigmasThisCol, FemtoSigmaPlus const& sigmaPlusThisCol)
+  // Xi and Omega are split into separate process functions (rather than one combined
+  // processTrackCascade reading both FemtoXis and FemtoOmegas unconditionally): same reasoning as
+  // processTrackLambda/processTrackK0short above -- femtoProducerDerivedToDerived.cxx's
+  // processTracksOmegas has no corresponding "always comes with Xi" guarantee (Xi and Omega are
+  // each their own independently-switchable, default-off producer process function), so a
+  // Xi-only (or Omega-only) derived file would otherwise make the AOD reader fail looking for a
+  // tree that was never produced.
+  void processTrackXi(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoXis const& xisThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    auto trackPassesFn = [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); };
-    if (!mTrackSigmaVariants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mTrackSigmaVariants, tracksThisCol, trackPassesFn, sigmasThisCol,
-                                        [](auto const& sigma, auto const& sel) { return collisiontagger::lambdaPasses(sigma, sel); });
-    }
-    if (!mTrackSigmaPlusVariants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mTrackSigmaPlusVariants, tracksThisCol, trackPassesFn, sigmaPlusThisCol,
-                                        [](auto const& sigmaPlus, auto const& sel) { return collisiontagger::lambdaPasses(sigmaPlus, sel); });
-    }
+    collisiontagger::tagCrossVariants(tag, mTrackXiVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, xisThisCol, [](auto const& cascade, auto const& sel) { return collisiontagger::signedV0Passes(cascade, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
-  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackKink, "Tag collisions for femto-pair-track-kink wagon(s) (Sigma/SigmaPlus)", false);
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackXi, "Tag collisions for femto-pair-track-cascade wagon(s) (Xi)", false);
+
+  void processTrackOmega(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoOmegas const& omegasThisCol)
+  {
+    collisiontagger::CollisionTagBitset tag;
+    collisiontagger::tagCrossVariants(tag, mTrackOmegaVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, omegasThisCol, [](auto const& cascade, auto const& sel) { return collisiontagger::signedV0Passes(cascade, sel); });
+    producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
+  }
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackOmega, "Tag collisions for femto-pair-track-cascade wagon(s) (Omega)", false);
+
+  // Sigma and SigmaPlus are likewise split: femtoProducerDerivedToDerived.cxx's processTracksSigma
+  // and processTracksSigmaPlus are each their own independently-switchable, default-off process
+  // function, not bundled -- same risk as Xi/Omega and Lambda/K0short above. SigmaPlusPcm already
+  // had its own process function below (comes from a genuinely separate, mutually exclusive
+  // producer process function), unaffected by this split.
+  void processTrackSigma(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoSigmas const& sigmasThisCol)
+  {
+    collisiontagger::CollisionTagBitset tag;
+    collisiontagger::tagCrossVariants(tag, mTrackSigmaVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, sigmasThisCol, [](auto const& sigma, auto const& sel) { return collisiontagger::signedV0Passes(sigma, sel); });
+    producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
+  }
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackSigma, "Tag collisions for femto-pair-track-kink wagon(s) (Sigma)", false);
+
+  void processTrackSigmaPlus(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoSigmaPlus const& sigmaPlusThisCol)
+  {
+    collisiontagger::CollisionTagBitset tag;
+    collisiontagger::tagCrossVariants(tag, mTrackSigmaPlusVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, sigmaPlusThisCol, [](auto const& sigmaPlus, auto const& sel) { return collisiontagger::signedV0Passes(sigmaPlus, sel); });
+    producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
+  }
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackSigmaPlus, "Tag collisions for femto-pair-track-kink wagon(s) (SigmaPlus)", false);
 
   void processTrackSigmaPlusPcm(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoSigmaPlusPcm const& sigmaPlusPcmThisCol)
   {
@@ -547,7 +599,7 @@ struct FemtoProducerCollisionTagger {
   void processTrackD0(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoD0s const& d0sThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    collisiontagger::tagCrossVariants(tag, mTrackD0Variants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, d0sThisCol, [](auto const& d0, auto const& sel) { return collisiontagger::lambdaPasses(d0, sel); });
+    collisiontagger::tagCrossVariants(tag, mTrackD0Variants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, d0sThisCol, [](auto const& d0, auto const& sel) { return collisiontagger::signedV0Passes(d0, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
   PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackD0, "Tag collisions for femto-pair-track-charm-hadron wagon(s) (D0)", false);
@@ -555,35 +607,48 @@ struct FemtoProducerCollisionTagger {
   void processTrackLc(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoLcs const& lcsThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    collisiontagger::tagCrossVariants(tag, mTrackLcVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, lcsThisCol, [](auto const& lc, auto const& sel) { return collisiontagger::lambdaPasses(lc, sel); });
+    collisiontagger::tagCrossVariants(tag, mTrackLcVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, lcsThisCol, [](auto const& lc, auto const& sel) { return collisiontagger::signedV0Passes(lc, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
   PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackLc, "Tag collisions for femto-pair-track-charm-hadron wagon(s) (Lc)", false);
 
   // No track table involved here at all -- v0-v0 is checked purely between the two v0 tables
   // themselves (lambda/k0short), same as D0D0 below is checked purely within FemtoD0s.
-  void processV0V0(FemtoCollision const& /*col*/, FemtoLambdas const& lambdasThisCol, FemtoK0shorts const& k0shortsThisCol)
+  // Split by which table(s) are actually needed: LambdaLambda only needs FemtoLambdas,
+  // K0shortK0short only needs FemtoK0shorts -- same reasoning as the other splits above
+  // (femtoProducerDerivedToDerived.cxx's processTracksLambdas/processTracksK0shorts are each
+  // independently switchable, default off). LambdaK0short is a genuine cross-species pair, so it
+  // legitimately needs both tables and stays as-is.
+  void processLambdaLambda(FemtoCollision const& /*col*/, FemtoLambdas const& lambdasThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    if (!mLambdaLambdaVariants.empty()) {
-      collisiontagger::tagPairVariants(tag, mLambdaLambdaVariants, lambdasThisCol,
-                                       [](auto const& v0, auto const& sel) { return collisiontagger::lambdaPasses(v0, sel); });
-    }
-    if (!mK0shortK0shortVariants.empty()) {
-      collisiontagger::tagPairVariants(tag, mK0shortK0shortVariants, k0shortsThisCol,
-                                       [](auto const& v0, auto const& sel) { return collisiontagger::k0shortPasses(v0, sel); });
-    }
-    if (!mLambdaK0shortVariants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mLambdaK0shortVariants, lambdasThisCol, [](auto const& v0, auto const& sel) { return collisiontagger::lambdaPasses(v0, sel); }, k0shortsThisCol, [](auto const& v0, auto const& sel) { return collisiontagger::k0shortPasses(v0, sel); });
-    }
+    collisiontagger::tagPairVariants(tag, mLambdaLambdaVariants, lambdasThisCol,
+                                     [](auto const& v0, auto const& sel) { return collisiontagger::signedV0Passes(v0, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
-  PROCESS_SWITCH(FemtoProducerCollisionTagger, processV0V0, "Tag collisions for femto-pair-v0-v0 wagon(s)", false);
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processLambdaLambda, "Tag collisions for femto-pair-v0-v0 wagon(s) (Lambda-Lambda)", false);
+
+  void processK0shortK0short(FemtoCollision const& /*col*/, FemtoK0shorts const& k0shortsThisCol)
+  {
+    collisiontagger::CollisionTagBitset tag;
+    collisiontagger::tagPairVariants(tag, mK0shortK0shortVariants, k0shortsThisCol,
+                                     [](auto const& v0, auto const& sel) { return collisiontagger::k0shortPasses(v0, sel); });
+    producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
+  }
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processK0shortK0short, "Tag collisions for femto-pair-v0-v0 wagon(s) (K0short-K0short)", false);
+
+  void processLambdaK0short(FemtoCollision const& /*col*/, FemtoLambdas const& lambdasThisCol, FemtoK0shorts const& k0shortsThisCol)
+  {
+    collisiontagger::CollisionTagBitset tag;
+    collisiontagger::tagCrossVariants(tag, mLambdaK0shortVariants, lambdasThisCol, [](auto const& v0, auto const& sel) { return collisiontagger::signedV0Passes(v0, sel); }, k0shortsThisCol, [](auto const& v0, auto const& sel) { return collisiontagger::k0shortPasses(v0, sel); });
+    producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
+  }
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processLambdaK0short, "Tag collisions for femto-pair-v0-v0 wagon(s) (Lambda-K0short)", false);
 
   void processD0D0(FemtoCollision const& /*col*/, FemtoD0s const& d0sThisCol)
   {
     collisiontagger::tagAndProduce(producedTags, mD0D0Variants, d0sThisCol,
-                                   [](auto const& d0, auto const& sel) { return collisiontagger::lambdaPasses(d0, sel); });
+                                   [](auto const& d0, auto const& sel) { return collisiontagger::signedV0Passes(d0, sel); });
   }
   PROCESS_SWITCH(FemtoProducerCollisionTagger, processD0D0, "Tag collisions for femto-pair-d0-d0 wagon(s)", false);
 
@@ -627,25 +692,36 @@ struct FemtoProducerCollisionTagger {
   }
   PROCESS_SWITCH(FemtoProducerCollisionTagger, processTrackTwoPhotonResonance, "Tag collisions for femto-pair-track-two-photon-resonance wagon(s)", false);
 
-  // No track table involved here at all -- same as processV0V0 above, checked purely between the
-  // v0 tables (lambda/k0short) and the resonance tables (phi/kstar0/rho0) themselves.
-  void processV0TwoTrackResonance(FemtoCollision const& /*col*/, FemtoLambdas const& lambdasThisCol, FemtoK0shorts const& k0shortsThisCol, FemtoPhis const& phisThisCol, FemtoKstar0s const& kstar0sThisCol, FemtoRho0s const& rho0sThisCol)
+  // No track table involved here at all -- checked purely between the v0 tables (lambda/k0short)
+  // and the resonance tables (phi/kstar0/rho0) themselves. Split by V0 species (Lambda vs
+  // K0short) for the same reason as processLambdaLambda/processK0shortK0short above -- each
+  // needs only its own V0 table. Phi/Kstar0/Rho0 stay combined within each (that axis is safe:
+  // femtoProducerResonances.cxx builds all three by default with no mutual-exclusivity gate, see
+  // processTrackTwoTrackResonance below).
+  void processLambdaTwoTrackResonance(FemtoCollision const& /*col*/, FemtoLambdas const& lambdasThisCol, FemtoPhis const& phisThisCol, FemtoKstar0s const& kstar0sThisCol, FemtoRho0s const& rho0sThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    auto lambdaPassesFn = [](auto const& lambda, auto const& sel) { return collisiontagger::lambdaPasses(lambda, sel); };
-    auto k0shortPassesFn = [](auto const& k0short, auto const& sel) { return collisiontagger::k0shortPasses(k0short, sel); };
+    auto signedV0PassesFn = [](auto const& lambda, auto const& sel) { return collisiontagger::signedV0Passes(lambda, sel); };
     if (!mLambdaPhiVariants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mLambdaPhiVariants, lambdasThisCol, lambdaPassesFn, phisThisCol,
+      collisiontagger::tagCrossVariants(tag, mLambdaPhiVariants, lambdasThisCol, signedV0PassesFn, phisThisCol,
                                         [](auto const& phi, auto const& sel) { return collisiontagger::twoTrackResonancePasses(phi, sel); });
     }
     if (!mLambdaKstar0Variants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mLambdaKstar0Variants, lambdasThisCol, lambdaPassesFn, kstar0sThisCol,
+      collisiontagger::tagCrossVariants(tag, mLambdaKstar0Variants, lambdasThisCol, signedV0PassesFn, kstar0sThisCol,
                                         [](auto const& kstar0, auto const& sel) { return collisiontagger::kstar0Passes(kstar0, sel); });
     }
     if (!mLambdaRho0Variants.empty()) {
-      collisiontagger::tagCrossVariants(tag, mLambdaRho0Variants, lambdasThisCol, lambdaPassesFn, rho0sThisCol,
+      collisiontagger::tagCrossVariants(tag, mLambdaRho0Variants, lambdasThisCol, signedV0PassesFn, rho0sThisCol,
                                         [](auto const& rho0, auto const& sel) { return collisiontagger::twoTrackResonancePasses(rho0, sel); });
     }
+    producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
+  }
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processLambdaTwoTrackResonance, "Tag collisions for femto-pair-v0-two-track-resonance wagon(s) (Lambda)", false);
+
+  void processK0shortTwoTrackResonance(FemtoCollision const& /*col*/, FemtoK0shorts const& k0shortsThisCol, FemtoPhis const& phisThisCol, FemtoKstar0s const& kstar0sThisCol, FemtoRho0s const& rho0sThisCol)
+  {
+    collisiontagger::CollisionTagBitset tag;
+    auto k0shortPassesFn = [](auto const& k0short, auto const& sel) { return collisiontagger::k0shortPasses(k0short, sel); };
     if (!mK0shortPhiVariants.empty()) {
       collisiontagger::tagCrossVariants(tag, mK0shortPhiVariants, k0shortsThisCol, k0shortPassesFn, phisThisCol,
                                         [](auto const& phi, auto const& sel) { return collisiontagger::twoTrackResonancePasses(phi, sel); });
@@ -660,7 +736,7 @@ struct FemtoProducerCollisionTagger {
     }
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
-  PROCESS_SWITCH(FemtoProducerCollisionTagger, processV0TwoTrackResonance, "Tag collisions for femto-pair-v0-two-track-resonance wagon(s)", false);
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processK0shortTwoTrackResonance, "Tag collisions for femto-pair-v0-two-track-resonance wagon(s) (K0short)", false);
 
   void processTripletTrackTrackTrack(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol)
   {
@@ -674,25 +750,27 @@ struct FemtoProducerCollisionTagger {
   void processTripletTrackTrackV0(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoLambdas const& lambdasThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    collisiontagger::tagCrossTripletVariants(tag, mTrackTrackLambdaVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, lambdasThisCol, [](auto const& lambda, auto const& sel) { return collisiontagger::lambdaPasses(lambda, sel); });
+    collisiontagger::tagCrossTripletVariants(tag, mTrackTrackLambdaVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, lambdasThisCol, [](auto const& lambda, auto const& sel) { return collisiontagger::signedV0Passes(lambda, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
   PROCESS_SWITCH(FemtoProducerCollisionTagger, processTripletTrackTrackV0, "Tag collisions for femto-triplet-track-track-v0 wagon(s)", false);
 
-  void processTripletTrackTrackCascade(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoXis const& xisThisCol, FemtoOmegas const& omegasThisCol)
+  // Split by Xi/Omega for the same reason as processTrackXi/processTrackOmega above.
+  void processTripletTrackTrackXi(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoXis const& xisThisCol)
   {
     collisiontagger::CollisionTagBitset tag;
-    auto trackPassesFn = [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); };
-    auto cascadePassesFn = [](auto const& cascade, auto const& sel) { return collisiontagger::lambdaPasses(cascade, sel); };
-    if (!mTrackTrackXiVariants.empty()) {
-      collisiontagger::tagCrossTripletVariants(tag, mTrackTrackXiVariants, tracksThisCol, trackPassesFn, xisThisCol, cascadePassesFn);
-    }
-    if (!mTrackTrackOmegaVariants.empty()) {
-      collisiontagger::tagCrossTripletVariants(tag, mTrackTrackOmegaVariants, tracksThisCol, trackPassesFn, omegasThisCol, cascadePassesFn);
-    }
+    collisiontagger::tagCrossTripletVariants(tag, mTrackTrackXiVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, xisThisCol, [](auto const& cascade, auto const& sel) { return collisiontagger::signedV0Passes(cascade, sel); });
     producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
   }
-  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTripletTrackTrackCascade, "Tag collisions for femto-triplet-track-track-cascade wagon(s)", false);
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTripletTrackTrackXi, "Tag collisions for femto-triplet-track-track-cascade wagon(s) (Xi)", false);
+
+  void processTripletTrackTrackOmega(FemtoCollision const& /*col*/, FemtoTracks const& tracksThisCol, FemtoOmegas const& omegasThisCol)
+  {
+    collisiontagger::CollisionTagBitset tag;
+    collisiontagger::tagCrossTripletVariants(tag, mTrackTrackOmegaVariants, tracksThisCol, [](auto const& track, auto const& sel) { return collisiontagger::trackPasses(track, sel); }, omegasThisCol, [](auto const& cascade, auto const& sel) { return collisiontagger::signedV0Passes(cascade, sel); });
+    producedTags(static_cast<datatypes::CollisionTagType>(tag.to_ullong()));
+  }
+  PROCESS_SWITCH(FemtoProducerCollisionTagger, processTripletTrackTrackOmega, "Tag collisions for femto-triplet-track-track-cascade wagon(s) (Omega)", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

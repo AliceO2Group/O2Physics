@@ -239,6 +239,9 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
   int nSelectedV0s = 0;
   for (auto const& v0 : v0s) {
     if constexpr (jetv0utilities::isV0McTable<T>()) {
+      if (!v0.isPhysicalPrimary()) {
+        continue;
+      }
       v0Mass = v0.m();
       v0Y = v0.y();
     } else {

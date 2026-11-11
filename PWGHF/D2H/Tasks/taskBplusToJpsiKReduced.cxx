@@ -303,7 +303,7 @@ struct HfTaskBplusToJpsiKReduced {
     const AxisSpec axisImpactPar{200, -0.05, 0.05};
     const AxisSpec axisPtJpsi{100, 0., 50.};
     const AxisSpec axisRapidity{100, -2., 2.};
-    const AxisSpec axisPtB{std::vector<double>(binsPt), "#it{p}_{T}^{B^{+}} (GeV/#it{c})"};
+    const AxisSpec axisPtB{500, 0., 50., "#it{p}_{T}^{B^{0}} (GeV/#it{c})"};
     const AxisSpec axisPtKa{100, 0.f, 10.f};
 
     registry.add("hMass", bPlusCandTitle + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassBplus, axisPtB}});
@@ -314,7 +314,8 @@ struct HfTaskBplusToJpsiKReduced {
     if (doprocessMc || doprocessMcWithBplusMl) {
       registry.add("hPtJpsiGen", mcParticleMatched + "J/#Psi #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
       registry.add("hPtKGen", mcParticleMatched + "Kaon #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
-      registry.add("hYGenWithProngsInAcceptance", mcParticleMatched + "B^{+} #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} #it{y}", {HistType::kTH2F, {axisPtProng, axisRapidity}});
+      registry.add("hPtYGenSig", mcParticleMatched + "B^{+} #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} #it{y}", {HistType::kTH2F, {axisPtB, axisRapidity}});
+      registry.add("hPtYWithProngsInAccepanceGenSig", mcParticleMatched + "B^{+} #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} #it{y}", {HistType::kTH2F, {axisPtB, axisRapidity}});
       registry.add("hMassRecSig", bPlusCandMatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B^{+} " + stringPt, {HistType::kTH2F, {axisMassBplus, axisPtB}});
       registry.add("hMassJpsiRecSig", bPlusCandMatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
       registry.add("hd0KRecSig", bPlusCandMatch + "Kaon DCAxy to prim. vertex (cm); K^{+} " + stringPt, {HistType::kTH2F, {axisImpactPar, axisPtKa}});
@@ -526,9 +527,10 @@ struct HfTaskBplusToJpsiKReduced {
     registry.fill(HIST("hPtJpsiGen"), ptProngs[0], ptParticle);
     registry.fill(HIST("hPtKGen"), ptProngs[1], ptParticle);
 
+    registry.fill(HIST("hPtYGenSig"), ptParticle, yParticle);
     // generated B+ with daughters in geometrical acceptance
     if (prongsInAcc) {
-      registry.fill(HIST("hYGenWithProngsInAcceptance"), ptParticle, yParticle);
+      registry.fill(HIST("hPtYWithProngsInAccepanceGenSig"), ptParticle, yParticle);
     }
   }
 

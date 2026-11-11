@@ -75,7 +75,7 @@ struct TrackSelectionValues {
 // V0-specific: MAKE_CASCADE_PARTITION, MAKE_SIGMA_PARTITION, MAKE_SIGMAPLUS_PARTITION,
 // MAKE_D0_PARTITION, and MAKE_CHARM3PRONG_PARTITION in Core/partitions.h are all byte-for-byte
 // identical to MAKE_LAMBDA_PARTITION, and CascadeMaskType/KinkMaskType/CharmHadronMaskType are
-// all, like V0MaskType, uint32_t -- so this one struct (and lambdaPasses()/readV0Selection()
+// all, like V0MaskType, uint32_t -- so this one struct (and signedV0Passes()/readV0Selection()
 // below) is reused verbatim for Xi/Omega (cascade), Sigma/SigmaPlus (kink), and D0/Lc
 // (charm hadron) selections too, not just Lambda. Only SigmaPlusPcm needs its own struct
 // (KinkPcmSelectionValues below), for the one extra mlScoreMin field it has beyond this shape.
@@ -506,7 +506,7 @@ bool trackPasses(T const& track, TrackSelectionValues const& sel)
 // as-is for Xi/Omega, Sigma/SigmaPlus, and D0/Lc candidates too (see the comment on
 // V0SelectionValues above).
 template <typename T>
-bool lambdaPasses(T const& v0, V0SelectionValues const& sel)
+bool signedV0Passes(T const& v0, V0SelectionValues const& sel)
 {
   if (sel.sign != 0 && ((sel.sign > 0) != (v0.signedPt() > 0.f))) {
     return false;
@@ -527,7 +527,7 @@ bool lambdaPasses(T const& v0, V0SelectionValues const& sel)
   return (v0.mask() & sel.mask) == sel.mask;
 }
 
-// mirrors MAKE_SIGMAPLUSPCM_PARTITION(selection) in Core/partitions.h -- lambdaPasses() above
+// mirrors MAKE_SIGMAPLUSPCM_PARTITION(selection) in Core/partitions.h -- signedV0Passes() above
 // plus the one extra mlScoreMin check.
 template <typename T>
 bool kinkPcmPasses(T const& kink, KinkPcmSelectionValues const& sel)
@@ -654,7 +654,7 @@ using CollisionTagBitset = std::bitset<MaxTagBits>;
 
 // true if at least `needed` entries in `range` satisfy `passes(entry, sel)`. The one primitive
 // every per-collision tagging check below is built from; a new particle type only ever needs a
-// new `passes` function (trackPasses/lambdaPasses/k0shortPasses above are examples), never a new
+// new `passes` function (trackPasses/signedV0Passes/k0shortPasses above are examples), never a new
 // copy of this loop.
 template <typename Range, typename Selection, typename PassesFn>
 inline bool hasAtLeast(Range const& range, Selection const& sel, PassesFn const& passes, int needed = 1)

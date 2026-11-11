@@ -280,9 +280,17 @@ struct Alice3strangenessFinder {
     hPtRes1DPosDau->GetXaxis()->SetTitle("(p_{T}^{gen} - p_{T}^{reco})/p_{T}^{gen}");
 
     auto hV0Building = histos.add<TH1>("hV0Building", "hV0Building", kTH1D, {{10, 0.5, 10.5}});
-    hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
-    hV0Building->GetXaxis()->SetBinLabel(2, "Pdg check");
-    hV0Building->GetXaxis()->SetBinLabel(3, "DCA Fitter");
+    if (doprocessFindV0CandidateOTF || doprocessFindV0CandidateACTS) {
+      hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
+      hV0Building->GetXaxis()->SetBinLabel(2, "Pdg check");
+      hV0Building->GetXaxis()->SetBinLabel(3, "DCA Fitter");
+    }
+    if (doprocessMCTrueFromACTS) {
+      hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
+      hV0Building->GetXaxis()->SetBinLabel(2, "PID");
+      hV0Building->GetXaxis()->SetBinLabel(3, "Mother Check");
+      hV0Building->GetXaxis()->SetBinLabel(4, "DCA Fitter");
+    }
 
     auto hCascadeBuilding = histos.add<TH1>("hCascadeBuilding", "hCascadeBuilding", kTH1D, {{10, 0.5, 10.5}});
     hCascadeBuilding->GetXaxis()->SetBinLabel(1, "Attempts");
@@ -394,14 +402,17 @@ struct Alice3strangenessFinder {
     return returnValue;
   }
   template <typename TMCParticle>
-  bool checkSameMotherGen(TMCParticle const& mcParticle1, TMCParticle const& mcParticle2)
+  bool checkSameMotherGen(TMCParticle const& mcParticle1, TMCParticle const& mcParticle2, Alice3MCParticles const& mcParticles)
   {
     bool returnValue = false;
     if (mcParticle1.has_mothers() && mcParticle2.has_mothers()) {
       auto motherIds1 = mcParticle1.mothersIds();
       auto motherIds2 = mcParticle2.mothersIds();
       if (!motherIds1.empty() && !motherIds2.empty() && motherIds1[0] == motherIds2[0]) {
-        returnValue = true;
+        auto mother = mcParticles.rawIteratorAt(motherIds1[0] - mcParticles.rawIteratorAt(0).globalIndex());
+        if (mother.isPhysicalPrimary()) {
+          returnValue = true;
+        }
       }
     } // end association check
     return returnValue;
@@ -778,7 +789,7 @@ struct Alice3strangenessFinder {
     } // end posTrack
   }
 
-  void processMCTrueFromACTS(aod::McCollision const& collision, Alice3MCParticles const&, aod::McParticles const&)
+  void processMCTrueFromACTS(aod::McCollision const& collision, Alice3MCParticles const& mcParticles)
   {
 
     auto negativeMCParticlesGrouped = negativeMCParticles->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
@@ -791,21 +802,66 @@ struct Alice3strangenessFinder {
     bool isLambda = false;
     bool isAntiLambda = false;
     int iPosPart = 0;
+    auto posMotherPdgCode = 0;
+    auto negMotherPdgCode = 0;
     for (auto const& posParticle : positiveMCParticlesGrouped) {
-      radiusPos = std::hypot(posParticle.vx(), posParticle.vy());
-      histos.fill(HIST("hRadiusVsHitsPos"), radiusPos, posParticle.nHits());
+      if (posParticle.pdgCode() != kPiPlus && posParticle.pdgCode() != kProton) {
+        continue;
+      }
+
+      if (posParticle.has_mothers()) {
+        auto motherIds = posParticle.mothersIds();
+        if (!motherIds.empty()) {
+          auto mother = mcParticles.rawIteratorAt(motherIds[0] - mcParticles.rawIteratorAt(0).globalIndex());
+          if (mother.isPhysicalPrimary()) {
+            radiusPos = std::hypot(posParticle.vx(), posParticle.vy());
+            histos.fill(HIST("hRadiusVsHitsPos"), radiusPos, posParticle.nHits());
+            posMotherPdgCode = mother.pdgCode();
+            if (posMotherPdgCode == kK0Short) {
+              histos.fill(HIST("K0Short/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
+            }
+            if (posMotherPdgCode == kLambda0) {
+              histos.fill(HIST("Lambda/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
+            }
+            if (posMotherPdgCode == kLambda0Bar) {
+              histos.fill(HIST("AntiLambda/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
+            }
+          }
+        }
+      }
+
       for (auto const& negParticle : negativeMCParticlesGrouped) {
         if (negParticle.pdgCode() != kPiMinus && negParticle.pdgCode() != kProtonBar) {
           continue;
         }
         radiusNeg = std::hypot(negParticle.vx(), negParticle.vy());
         if (iPosPart == 0) {
-          histos.fill(HIST("hRadiusVsHitsNeg"), radiusNeg, negParticle.nHits());
+          if (negParticle.has_mothers()) {
+            auto motherIds = negParticle.mothersIds();
+            if (!motherIds.empty()) {
+              auto mother = mcParticles.rawIteratorAt(motherIds[0] - mcParticles.rawIteratorAt(0).globalIndex());
+              if (mother.isPhysicalPrimary()) {
+                radiusNeg = std::hypot(negParticle.vx(), negParticle.vy());
+                histos.fill(HIST("hRadiusVsHitsNeg"), radiusNeg, negParticle.nHits());
+                negMotherPdgCode = mother.pdgCode();
+                if (negMotherPdgCode == kK0Short) {
+                  histos.fill(HIST("K0Short/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
+                }
+                if (negMotherPdgCode == kLambda0) {
+                  histos.fill(HIST("Lambda/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
+                }
+                if (negMotherPdgCode == kLambda0Bar) {
+                  histos.fill(HIST("AntiLambda/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
+                }
+              }
+            }
+          }
         }
         if (radiusPos == radiusNeg) {
-          isK0s = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kPiMinus);
-          isLambda = (posParticle.pdgCode() == kProton && negParticle.pdgCode() == kPiMinus);
-          isAntiLambda = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kProtonBar);
+          histos.fill(HIST("hV0Building"), 1.0);
+          isK0s = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kPiMinus && posMotherPdgCode == kK0Short && negMotherPdgCode == kK0Short);
+          isLambda = (posParticle.pdgCode() == kProton && negParticle.pdgCode() == kPiMinus && posMotherPdgCode == kLambda0 && negMotherPdgCode == kLambda0);
+          isAntiLambda = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kProtonBar && posMotherPdgCode == kLambda0Bar && negMotherPdgCode == kLambda0Bar);
           if (isK0s || isLambda || isAntiLambda) {
             if (!isK0s && isK0Gun) {
               continue;
@@ -813,19 +869,11 @@ struct Alice3strangenessFinder {
             if (!isLambda && isLambdaGun) {
               continue;
             }
-            if (isK0s && checkSameMotherGen(posParticle, negParticle)) {
-              histos.fill(HIST("K0Short/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
-              histos.fill(HIST("K0Short/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
+            histos.fill(HIST("hV0Building"), 2.0);
+            if (mcSameMotherCheck && !checkSameMotherGen(posParticle, negParticle, mcParticles)) {
+              continue;
             }
-            if (isLambda && checkSameMotherGen(posParticle, negParticle)) {
-              histos.fill(HIST("Lambda/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
-              histos.fill(HIST("Lambda/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
-            }
-            if (isAntiLambda && checkSameMotherGen(posParticle, negParticle)) {
-              histos.fill(HIST("AntiLambda/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
-              histos.fill(HIST("AntiLambda/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
-            }
-
+            histos.fill(HIST("hV0Building"), 3.0);
             Candidate v0cand;
             std::vector<double> v0DecayVertex;
             v0DecayVertex.push_back(negParticle.vx());
@@ -840,6 +888,7 @@ struct Alice3strangenessFinder {
             if (!buildDecayCandidateTwoBody(posParCov, negParCov, vtx, v0cand)) {
               continue;
             }
+            histos.fill(HIST("hV0Building"), 4.0);
             v0CandidateIndices(collision.globalIndex(),
                                posParticle.globalIndex(),
                                negParticle.globalIndex(),
@@ -860,8 +909,10 @@ struct Alice3strangenessFinder {
             }
           }
         }
+        negMotherPdgCode = 0;
       }
       iPosPart++;
+      posMotherPdgCode = 0;
     }
   }
   template <typename TTracksGrouped>
@@ -880,7 +931,7 @@ struct Alice3strangenessFinder {
       auto mcParticle = track.template mcParticle_as<aod::McParticles>();
       if (mcParticle.has_mothers()) {
         for (const auto& m1 : mcParticle.template mothers_as<aod::McParticles>()) {
-          if (daughEff.analyseK0Daughters && m1.pdgCode() == kK0Short) {
+          if (daughEff.analyseK0Daughters && m1.pdgCode() == kK0Short && m1.isPhysicalPrimary()) {
             if (daughterType == 0 && mcParticle.pdgCode() == kPiMinus) {
               histos.fill(HIST("K0Short/hNegDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
               histos.fill(HIST("K0Short/hNegDaughterRecoPtEta"), pt, eta);
@@ -894,7 +945,7 @@ struct Alice3strangenessFinder {
               histos.fill(HIST("hPtRes1DPosDau"), (mcParticle.pt() - pt) / mcParticle.pt());
             }
           }
-          if (daughEff.analyseLambdaDaughters && m1.pdgCode() == kLambda0) {
+          if (daughEff.analyseLambdaDaughters && m1.pdgCode() == kLambda0 && m1.isPhysicalPrimary()) {
             if (daughterType == 0 && mcParticle.pdgCode() == kPiMinus) {
               histos.fill(HIST("Lambda/hNegDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
               histos.fill(HIST("Lambda/hNegDaughterRecoPtEta"), pt, eta);
@@ -908,7 +959,7 @@ struct Alice3strangenessFinder {
               histos.fill(HIST("hPtRes1DPosDau"), (mcParticle.pt() - pt) / mcParticle.pt());
             }
           }
-          if (daughEff.analyseAntiLambdaDaughters && m1.pdgCode() == kLambda0Bar) {
+          if (daughEff.analyseAntiLambdaDaughters && m1.pdgCode() == kLambda0Bar && m1.isPhysicalPrimary()) {
             if (daughterType == 0 && mcParticle.pdgCode() == kProtonBar) {
               histos.fill(HIST("AntiLambda/hNegDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
               histos.fill(HIST("AntiLambda/hNegDaughterRecoPtEta"), pt, eta);

@@ -13,8 +13,13 @@
 /// \brief Compact forward-muon skim for offline MCH and MCH-MID efficiency studies
 /// \author Nazar Burmasov (JINR)
 
+#include "Common/CCDB/EventSelectionParams.h"
+
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsFT0/Digit.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
@@ -24,8 +29,11 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHTracking/TrackExtrap.h>
@@ -34,9 +42,13 @@
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 #include <TGeoManager.h>
+#include <TH1.h>
+#include <TH2.h>
 
 #include <array>
+#include <bitset>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -98,6 +110,7 @@ struct MuonEfficiencyProducer {
   static constexpr float MaxEta = -2.5f;
   static constexpr float NoAmplitude = -1.f;
   static constexpr float MaxFITTime = 30.f;
+  static constexpr int BCsPerOrbit = constants::lhc::LHCMaxBunches;
 
   using Tracks = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
   using Matrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
@@ -105,9 +118,13 @@ struct MuonEfficiencyProducer {
 
   Produces<aod::MchEffBCs> outputBCs;
   Produces<aod::MchEffSkims> output;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<ccdb::BasicCCDBManager> ccdb{};
   globaltracking::MatchGlobalFwd matcher;
-  int cachedFieldRun = -1;
+  bool conditionsInitialized = false;
+  std::bitset<BCsPerOrbit> collidingBCs;
+  float zncBBLower = 0.f;
+  float zncBBUpper = 0.f;
 
   Configurable<float> minPt{"minPt", 0.4f, "Minimum track pT (Gev/c)"};
   Configurable<float> minRAbs{"minRAbs", 17.6f, "Minimum absorber-end radius (cm)"};
@@ -118,11 +135,19 @@ struct MuonEfficiencyProducer {
   void init(InitContext&)
   {
     ccdb->setLocalObjectValidityChecking();
+    const AxisSpec runAxis{1, 0.5, 1.5, "Run"};
+    const AxisSpec bcAxis{BCsPerOrbit, -0.5, BCsPerOrbit - 0.5, "BC in orbit"};
+    histos.add("hCounterTVX", "TVX;Run;BC in orbit;Counts", HistType::kTH2D, {runAxis, bcAxis});
+    histos.add("hCounterTCE", "TCE;Run;BC in orbit;Counts", HistType::kTH2D, {runAxis, bcAxis});
+    histos.add("hCounterZNC", "ZNC;Run;BC in orbit;Counts", HistType::kTH2D, {runAxis, bcAxis});
+    histos.get<TH2>(HIST("hCounterTVX"))->SetCanExtend(TH1::kXaxis);
+    histos.get<TH2>(HIST("hCounterTCE"))->SetCanExtend(TH1::kXaxis);
+    histos.get<TH2>(HIST("hCounterZNC"))->SetCanExtend(TH1::kXaxis);
   }
 
-  void setField(int run)
+  void initRunConditions(int run)
   {
-    if (cachedFieldRun == run) {
+    if (conditionsInitialized) {
       return;
     }
     const auto runInfo = parameters::AggregatedRunInfo::buildAggregatedRunInfo(ccdb->instance(), run);
@@ -136,7 +161,21 @@ struct MuonEfficiencyProducer {
       ccdb->get<TGeoManager>("GLO/Config/GeometryAligned");
     }
     mch::TrackExtrap::setField();
-    cachedFieldRun = run;
+    if (!runInfo.grpLHC) {
+      LOGF(fatal, "GRPLHCIFData not found for run %d", run);
+    }
+    collidingBCs = runInfo.grpLHC->getBunchFilling().getBCPattern();
+    auto* params = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+    if (!params) {
+      LOGF(fatal, "EventSelectionParams not found for run %d", run);
+    }
+    zncBBLower = params->fZNCBBlower;
+    zncBBUpper = params->fZNCBBupper;
+    const auto label = std::to_string(run);
+    histos.get<TH2>(HIST("hCounterTVX"))->GetXaxis()->SetBinLabel(1, label.c_str());
+    histos.get<TH2>(HIST("hCounterTCE"))->GetXaxis()->SetBinLabel(1, label.c_str());
+    histos.get<TH2>(HIST("hCounterZNC"))->GetXaxis()->SetBinLabel(1, label.c_str());
+    conditionsInitialized = true;
   }
 
   struct Kinematics {
@@ -165,6 +204,7 @@ struct MuonEfficiencyProducer {
   }
 
   void process(aod::BCs const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as,
+               aod::Zdcs const& zdcs,
                Tracks const& tracks, aod::Collisions const& collisions,
                aod::AmbiguousFwdTracks const& ambiguous)
   {
@@ -172,12 +212,15 @@ struct MuonEfficiencyProducer {
       return;
     }
     const int run = bcs.begin().runNumber();
-
+    initRunConditions(run);
+    std::vector<uint8_t> ft0TriggersByBC(bcs.size(), 0);
+    std::vector<uint8_t> zncIsBBByBC(bcs.size(), 0);
     std::vector<float> ft0aByBC(bcs.size(), NoAmplitude);
     std::vector<float> ft0cByBC(bcs.size(), NoAmplitude);
     std::vector<float> fv0aByBC(bcs.size(), NoAmplitude);
     std::vector<int32_t> skimBCIds(bcs.size(), -1);
     for (const auto& ft0 : ft0s) {
+      ft0TriggersByBC[ft0.bcId()] |= ft0.triggerMask();
       if (ft0.timeA() < MaxFITTime) {
         ft0aByBC[ft0.bcId()] = ft0.sumAmpA();
       }
@@ -196,6 +239,33 @@ struct MuonEfficiencyProducer {
         }
       }
       fv0aByBC[fv0.bcId()] = amplitude;
+    }
+
+    for (const auto& zdc : zdcs) {
+      if (zdc.timeZNC() > zncBBLower && zdc.timeZNC() < zncBBUpper) {
+        zncIsBBByBC[zdc.bcId()] = 1;
+      }
+    }
+
+    auto hTVX = histos.get<TH2>(HIST("hCounterTVX"));
+    auto hTCE = histos.get<TH2>(HIST("hCounterTCE"));
+    auto hZNC = histos.get<TH2>(HIST("hCounterZNC"));
+    for (const auto& bc : bcs) {
+      const auto slot = bc.globalBC() % BCsPerOrbit;
+      if (!collidingBCs[slot]) {
+        continue;
+      }
+      const auto mask = ft0TriggersByBC[bc.globalIndex()];
+      const bool tvx = (mask & (1u << o2::ft0::Triggers::bitVertex)) != 0;
+      if (tvx) {
+        hTVX->Fill(1., static_cast<double>(slot));
+        if ((mask & (1u << o2::ft0::Triggers::bitCen)) != 0) {
+          hTCE->Fill(1., static_cast<double>(slot));
+        }
+      }
+      if (zncIsBBByBC[bc.globalIndex()] != 0u) {
+        hZNC->Fill(1., static_cast<double>(slot));
+      }
     }
 
     std::vector<int32_t> ambiguousBCIds(tracks.size(), -1);
@@ -226,7 +296,6 @@ struct MuonEfficiencyProducer {
         vtxCov = {col.covXX(), col.covYY()};
         referenceBCId = col.bcId();
       }
-      setField(run);
       if (!propagateMCH(t, vtx, vtxCov, k)) {
         continue;
       }

@@ -14,13 +14,14 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
 #include "PWGHF/HFC/Utils/utilsFlow.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -29,20 +30,22 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
+#include <THnSparse.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <cmath>
@@ -127,13 +130,17 @@ struct HfTaskCorrelationsEfficiencies {
   Configurable<float> downSampleCharm{"downSampleCharm", 1., "Fraction of pairs to keep"};
   Configurable<float> ptMaxDownSampleCharm{"ptMaxDownSampleCharm", 10., "Maximum pt for the application of the downsampling factor"};
 
+  HfEventSelection hfEvSel; // event selection and monitoring
+  HfEventSelectionMc hfEvSelMc;
   HfcFlowHelper hfcFlowHelper; // flow utilities
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   SliceCache cache;
 
   std::unique_ptr<TF1> funcDcaXYPtCutPrimTrk{nullptr};
 
-  using RecoCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  using McCollisionsWMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
+  using RecoCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
   using McCandsDs = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi, aod::HfCand3ProngMcRec>>;
   using McCandsDplus = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi, aod::HfCand3ProngMcRec>>;
   using McCandsD0 = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngMcRec>>;
@@ -152,6 +159,7 @@ struct HfTaskCorrelationsEfficiencies {
   Preslice<McCandsLc> candsLcPerColl = aod::hf_cand::collisionId;
   Preslice<McTracks> trackIndicesPerColl = aod::track::collisionId;
 
+  PresliceUnsorted<aod::McParticles> mcPartsPerMcCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   ConfigurableAxis binsPtCharm{"binsPtCharm", {VARIABLE_WIDTH, 0., 2., 4., 6., 8., 24.}, ""};
@@ -165,9 +173,18 @@ struct HfTaskCorrelationsEfficiencies {
 
   HistogramRegistry registry{"registry", {}};
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
 
+    hfEvSel.init(registry);
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name == "hf-task-correlations-efficiencies") {
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
+        break;
+      }
+    }
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -186,7 +203,7 @@ struct HfTaskCorrelationsEfficiencies {
       return;
     }
 
-    hfcFlowHelper.init(ccdb, registry, classesMl, yCandMax.value);
+    hfcFlowHelper.init(classesMl, yCandMax.value);
 
     // Setup pt-dependent DCAxy cut function
     if (usePtDiffDcaXYCut) {
@@ -304,7 +321,8 @@ struct HfTaskCorrelationsEfficiencies {
         continue;
       }
       float cent{-1.}, mult{-1.};
-      if (!hfcFlowHelper.checkCollision<o2::hf_centrality::CentralityEstimator::None>(coll, cent, mult)) {
+      CentralityEstimator centDetector = CentralityEstimator::None;
+      if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
         continue;
       }
       fillCharmEfficiencies<TriggerChannels::DplusToPiKPi>(candsInColl, coll.numContrib());
@@ -357,20 +375,27 @@ struct HfTaskCorrelationsEfficiencies {
   void processEffAssTracks(RecoCollisions const& recoCollisions,
                            McTracks const& recoTracks,
                            aod::McParticles const& genParticles,
-                           aod::McCollisions const&)
+                           McCollisionsWMult const& genCollisions,
+                           BCsInfo const&)
   {
     for (const auto& coll : recoCollisions) {
       float cent{-1.}, mult{-1.};
-      if (!hfcFlowHelper.checkCollision<o2::hf_centrality::CentralityEstimator::None>(coll, cent, mult)) {
+      CentralityEstimator centDetector = CentralityEstimator::None;
+      if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
         continue;
       }
       if (!coll.has_mcCollision()) {
         continue;
       }
-      auto mcCollision = coll.template mcCollision_as<aod::McCollisions>();
+      auto mcCollision = coll.template mcCollision_as<McCollisionsWMult>();
 
       auto tracksInColl = recoTracks.sliceBy(trackIndicesPerColl, coll.globalIndex());
       for (const auto& assTrk : tracksInColl) {
+
+        if (!assTrk.isGlobalTrackWoDCA() || assTrk.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
+          continue;
+        }
+
         if (!assTrk.has_mcParticle()) {
           continue;
         }
@@ -410,29 +435,39 @@ struct HfTaskCorrelationsEfficiencies {
     }
 
     // Fill histograms for generated associated tracks
-    for (const auto& genTrk : genParticles) {
-      int matchedSpecie = getAssocTrkSpecie(genTrk);
-      if (matchedSpecie < 0) {
-        continue;
-      }
-      if (!genTrk.has_mcCollision()) {
+    for (const auto& mcColl : genCollisions) {
+
+      float cent{-1.}, mult{-1.};
+      const auto recoColls = recoCollisions.sliceBy(colPerMcCollision, mcColl.globalIndex());
+      CentralityEstimator centDetector = CentralityEstimator::None;
+      if (!hfcFlowHelper.selectGenCollision<BCsInfo>(hfEvSelMc, mcColl, recoColls, centDetector, cent, mult)) {
         continue;
       }
 
-      // Pt and eta selection
-      if (genTrk.pt() < ptTrkMin || genTrk.pt() > ptTrkMax || std::fabs(genTrk.eta()) > etaTrkMax) {
-        continue;
-      }
+      const auto groupedMcParticles = genParticles.sliceBy(mcPartsPerMcCollision, mcColl.globalIndex());
+      for (const auto& genTrk : groupedMcParticles) {
+        int matchedSpecie = getAssocTrkSpecie(genTrk);
+        if (matchedSpecie < 0) {
+          continue;
+        }
+        if (!genTrk.has_mcCollision()) {
+          // Should never happen because we group on the generated collisions
+          continue;
+        }
 
-      int genTrkOrigin = genTrk.isPhysicalPrimary() ? 0 : 1; // 0 for primary, 1 for secondary
-      auto genCollision = genTrk.template mcCollision_as<aod::McCollisions>();
-      registry.fill(HIST("hAssTrackGen"), genTrk.pt(), genTrk.eta(), genTrk.phi(), genCollision.posZ(), matchedSpecie, genTrkOrigin);
+        // Pt and eta selection
+        if (genTrk.pt() < ptTrkMin || genTrk.pt() > ptTrkMax || std::fabs(genTrk.eta()) > etaTrkMax) {
+          continue;
+        }
+        int genTrkOrigin = genTrk.isPhysicalPrimary() ? 0 : 1; // 0 for primary, 1 for secondary
+        registry.fill(HIST("hAssTrackGen"), genTrk.pt(), genTrk.eta(), genTrk.phi(), mcColl.posZ(), matchedSpecie, genTrkOrigin);
+      }
     }
   }
   PROCESS_SWITCH(HfTaskCorrelationsEfficiencies, processEffAssTracks, "Process efficiencies for associated tracks", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationsEfficiencies>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationsEfficiencies>(context)};
 }

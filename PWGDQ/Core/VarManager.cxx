@@ -768,6 +768,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxNcontrib] = "";
   fgVariableNames[kVtxNcontribReal] = "Real Vtx contrib.";
   fgVariableUnits[kVtxNcontribReal] = "";
+  fgVariableNames[kMultNtrkGlobal] = "Global tracks";
+  fgVariableUnits[kMultNtrkGlobal] = "";
   fgVariableNames[kVtxCovXX] = "Vtx covXX";
   fgVariableUnits[kVtxCovXX] = "cm";
   fgVariableNames[kVtxCovXY] = "Vtx covXY";
@@ -829,6 +831,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMultMCNParticlesEta05] = "MC Multiplicity Central Barrel for |eta| < 0.5";
   fgVariableNames[kMultMCNParticlesEta08] = "MC Multiplicity Central Barrel for |eta| < 0.8";
   fgVariableNames[kMultMCNParticlesEta10] = "MC Multiplicity Central Barrel for |eta| < 1.0";
+  fgVariableNames[kMultMCGlobalParticles] = "MC Multiplicity corresponding to global track definition";
   fgVariableUnits[kMCEventGeneratorId] = "";
   fgVariableUnits[kMCEventSubGeneratorId] = "";
   fgVariableUnits[kMCVtxX] = "cm";
@@ -842,6 +845,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultMCNParticlesEta05] = "Multiplicity_eta05";
   fgVariableUnits[kMultMCNParticlesEta08] = "Multiplicity_eta08";
   fgVariableUnits[kMultMCNParticlesEta10] = "Multiplicity_eta10";
+  fgVariableUnits[kMultMCGlobalParticles] = "Multiplicity_globalTrk";
   fgVariableNames[kTwoEvPosZ1] = "vtx-z_{1}";
   fgVariableUnits[kTwoEvPosZ1] = "cm";
   fgVariableNames[kTwoEvPosZ2] = "vtx-z_{2}";
@@ -2125,6 +2129,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVtxZ"] = kVtxZ;
   fgVarNamesMap["kVtxNcontrib"] = kVtxNcontrib;
   fgVarNamesMap["kVtxNcontribReal"] = kVtxNcontribReal;
+  fgVarNamesMap["kMultNtrkGlobal"] = kMultNtrkGlobal;
   fgVarNamesMap["kVtxCovXX"] = kVtxCovXX;
   fgVarNamesMap["kVtxCovXY"] = kVtxCovXY;
   fgVarNamesMap["kVtxCovXZ"] = kVtxCovXZ;
@@ -2219,6 +2224,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMultMCNParticlesEta05"] = kMultMCNParticlesEta05;
   fgVarNamesMap["kMultMCNParticlesEta08"] = kMultMCNParticlesEta08;
   fgVarNamesMap["kMultMCNParticlesEta10"] = kMultMCNParticlesEta10;
+  fgVarNamesMap["kMultMCGlobalParticles"] = kMultMCGlobalParticles;
   fgVarNamesMap["kQ1ZNAX"] = kQ1ZNAX;
   fgVarNamesMap["kQ1ZNAY"] = kQ1ZNAY;
   fgVarNamesMap["kQ1ZNCX"] = kQ1ZNCX;
