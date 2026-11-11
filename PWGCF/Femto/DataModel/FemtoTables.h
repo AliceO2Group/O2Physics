@@ -249,7 +249,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! theta
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! rapidity -- mass is not a stored column, so it is passed in as an
                                  //! extra free argument at the call site, e.g. mother.y(mass)
                            [](float signedPt, float eta, float mass) -> float {
-                             return RecoDecay::y(std::fabs(signedPt), eta, mass);
+                             return RecoDecayPtEtaPhi::y(std::fabs(signedPt), eta, mass);
                            });
 } // namespace dynamic
 
