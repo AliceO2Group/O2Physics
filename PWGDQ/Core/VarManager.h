@@ -254,6 +254,7 @@ class VarManager : public TObject
     kVtxZ,
     kVtxNcontrib,
     kVtxNcontribReal,
+    kMultNtrkGlobal,
     kVtxCovXX,
     kVtxCovXY,
     kVtxCovXZ,
@@ -350,6 +351,7 @@ class VarManager : public TObject
     kMultMCNParticlesEta10,
     kMultMCNParticlesEta08,
     kMultMCNParticlesEta05,
+    kMultMCGlobalParticles,
     kQ1ZNAX,
     kQ1ZNAY,
     kQ1ZNCX,
@@ -2724,6 +2726,14 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kDCAzFracAbove2mm] = event.dcazFracAbove2mm();
     values[kDCAzFracAbove5mm] = event.dcazFracAbove5mm();
     values[kDCAzFracAbove10mm] = event.dcazFracAbove10mm();
+  }
+
+  if constexpr (requires { event.multNtrkGlobal(); }) {
+    values[kMultNtrkGlobal] = event.multNtrkGlobal();
+  }
+
+  if constexpr (requires { event.multMCGlobalParticles(); }) {
+    values[kMultMCGlobalParticles] = event.multMCGlobalParticles();
   }
 
   // FillEventDerived(values);
