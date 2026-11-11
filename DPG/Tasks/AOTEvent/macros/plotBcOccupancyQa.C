@@ -15,7 +15,7 @@
 /// Usage:
 ///   root -l -b -q 'plotBcOccupancyQa.C("AnalysisResults.root")'
 ///   root -l -b -q 'plotBcOccupancyQa.C("AnalysisResults.root", "bcOccupancyQa.pdf", "bc-occupancy-qa-task", "bcOccupancyQa.root")'
-/// Output: multi-page PDF, and a ROOT file with the canvases and the histograms (by default: name of the PDF with .root)
+/// Output: multi-page PDF, and a ROOT file with the canvases and the histograms
 ///
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
