@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file TrackSelectionFilterAndAnalysis.h
+/// \brief TrackSelectionFilterAndAnalysis class for track filter and selection
+/// once filtered
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_
 
@@ -30,7 +35,7 @@ namespace o2
 {
 namespace analysis
 {
-namespace PWGCF
+namespace pwgcf
 {
 /* forward de declaration */
 class TrackSelectionFilterAndAnalysis;
@@ -99,19 +104,19 @@ class TrackSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 {
  public:
   TrackSelectionFilterAndAnalysis();
-  TrackSelectionFilterAndAnalysis(const TString&, selmodes);
-  TrackSelectionFilterAndAnalysis(const TrackSelectionConfigurable&, selmodes);
+  TrackSelectionFilterAndAnalysis(const TString&, Selmodes);
+  TrackSelectionFilterAndAnalysis(const TrackSelectionConfigurable&, Selmodes);
 
-  void SetPtRange(const TString&);
-  void SetEtaRange(const TString&);
+  void setPtRange(const TString&);
+  void setEtaRange(const TString&);
 
   template <typename TrackToFilter>
-  uint64_t Filter(TrackToFilter const& track);
+  uint64_t filter(TrackToFilter const& track);
 
  private:
-  void ConstructCutFromString(const TString&);
-  int CalculateMaskLength();
-  void StoreArmedMask();
+  void constructCutFromString(const TString&);
+  int calculateMaskLength();
+  void storeArmedMask();
 
   TList mTrackSign;                                         /// the track charge sign list
   TList mTrackTypes;                                        /// the track types to select list
@@ -131,21 +136,21 @@ class TrackSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
 /// \brief Fills the filter cuts mask
 template <typename TrackToFilter>
-uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
+uint64_t TrackSelectionFilterAndAnalysis::filter(TrackToFilter const& track)
 {
   uint64_t selectedMask = 0UL;
   int bit = 0;
 
   auto filterTrackType = [&](TrackSelectionBrick* ttype, auto trk) {
-    if (ttype->Filter(trk)) {
+    if (ttype->filter(trk)) {
       SETBIT(selectedMask, bit);
     }
     bit++;
   };
 
   auto filterBrickValue = [&](auto brick, auto value) {
-    std::vector<bool> res = brick->Filter(value);
-    for (auto b : res) {
+    std::vector<bool> res = brick->filter(value);
+    for (const auto& b : res) {
       if (b) {
         SETBIT(selectedMask, bit);
       }
@@ -154,8 +159,8 @@ uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
   };
 
   auto filterBrickValueNoMask = [](auto brick, auto value) {
-    std::vector<bool> res = brick->Filter(value);
-    for (auto b : res) {
+    std::vector<bool> res = brick->filter(value);
+    for (const auto& b : res) {
       if (b) {
         return true;
       }
@@ -206,7 +211,7 @@ uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
   return mSelectedMask = selectedMask;
 }
 
-} // namespace PWGCF
+} // namespace pwgcf
 } // namespace analysis
 } // namespace o2
 

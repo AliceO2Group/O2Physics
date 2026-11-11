@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file SkimmingConfigurableCuts.cxx
+/// \brief Implementation of the set of Brick classes which configures the
+/// derived data filtering framework
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
 
 #include <Framework/DataTypes.h>
@@ -30,7 +35,7 @@
 #include <vector>
 
 using namespace o2;
-using namespace o2::analysis::PWGCF;
+using namespace o2::analysis::pwgcf;
 
 /// \brief These are the implemented basic bricks
 /// If more are implemented the list must be expanded and the
@@ -46,7 +51,7 @@ CutBrick<TValueToFilter>* CutBrick<TValueToFilter>::constructBrick(const char* n
   CutBrick<TValueToFilter>* thebrick = nullptr;
 
   bool found = false;
-  for (auto& bname : allowed) {
+  for (const auto& bname : allowed) {
     if (TString(regex).BeginsWith(bname)) {
       found = true;
       break;
@@ -130,7 +135,7 @@ CutBrickLimit<TValueToFilter>::CutBrickLimit(const TString& cutstr)
   : CutBrick<TValueToFilter>(),
     mLimit(TValueToFilter(0))
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -140,7 +145,7 @@ CutBrickLimit<TValueToFilter>::CutBrickLimit(const TString& cutstr)
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickLimit<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -149,8 +154,9 @@ void CutBrickLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 3)) {
-    LOGF(fatal, "CutBrickLimit<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{lim{2.0}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 3;
+  if (m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickLimit<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{lim{2.0}} for instance", cutstr.Data());
   } else {
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -161,7 +167,7 @@ void CutBrickLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated
 template <typename TValueToFilter>
-std::vector<bool> CutBrickLimit<TValueToFilter>::IsArmed()
+std::vector<bool> CutBrickLimit<TValueToFilter>::isArmed()
 {
   std::vector<bool> res;
   if (this->mMode == this->kSELECTED) {
@@ -173,8 +179,8 @@ std::vector<bool> CutBrickLimit<TValueToFilter>::IsArmed()
 }
 
 templateClassImp(CutBrickLimit);
-template class o2::analysis::PWGCF::CutBrickLimit<int>;
-template class o2::analysis::PWGCF::CutBrickLimit<float>;
+template class o2::analysis::pwgcf::CutBrickLimit<int>;
+template class o2::analysis::pwgcf::CutBrickLimit<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -203,7 +209,7 @@ CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit(const TString& cutstr)
   : CutBrickLimit<TValueToFilter>(),
     mFunction{}
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -213,7 +219,7 @@ CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit(const TString& cutstr)
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickFnLimit<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickFnLimit<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -222,21 +228,22 @@ void CutBrickFnLimit<TValueToFilter>::ConstructCutFromString(const TString& cuts
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 4)) {
-    LOGF(fatal, "CutBrickFnLimit<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnlim{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 4;
+  if (m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickFnLimit<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{fnlim{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
   } else {
     this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
     mFunction = TF1(m[1].str().c_str(), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     if (not mFunction.IsValid()) {
-      LOGF(fatal, "CutBrickFnLimit<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnlim{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
+      LOGF(fatal, "CutBrickFnLimit<TValueToFilter>::constructCutFromString", "Wrong function expression: %s, use pT{fnlim{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
     }
   }
 }
 
 templateClassImp(CutBrickFnLimit);
-template class o2::analysis::PWGCF::CutBrickFnLimit<int>;
-template class o2::analysis::PWGCF::CutBrickFnLimit<float>;
+template class o2::analysis::pwgcf::CutBrickFnLimit<int>;
+template class o2::analysis::pwgcf::CutBrickFnLimit<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -264,7 +271,7 @@ CutBrickThreshold<TValueToFilter>::CutBrickThreshold(const TString& cutstr)
   : CutBrick<TValueToFilter>(),
     mThreshold(0)
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -274,7 +281,7 @@ CutBrickThreshold<TValueToFilter>::CutBrickThreshold(const TString& cutstr)
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickThreshold<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickThreshold<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -283,8 +290,9 @@ void CutBrickThreshold<TValueToFilter>::ConstructCutFromString(const TString& cu
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 3)) {
-    LOGF(fatal, "CutBrickThreshold<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{th{0.2}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 3;
+  if (m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickThreshold<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{th{0.2}} for instance", cutstr.Data());
   } else {
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -295,7 +303,7 @@ void CutBrickThreshold<TValueToFilter>::ConstructCutFromString(const TString& cu
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated
 template <typename TValueToFilter>
-std::vector<bool> CutBrickThreshold<TValueToFilter>::IsArmed()
+std::vector<bool> CutBrickThreshold<TValueToFilter>::isArmed()
 {
   std::vector<bool> res;
   if (this->mMode == this->kSELECTED) {
@@ -307,8 +315,8 @@ std::vector<bool> CutBrickThreshold<TValueToFilter>::IsArmed()
 }
 
 templateClassImp(CutBrickThreshold);
-template class o2::analysis::PWGCF::CutBrickThreshold<int>;
-template class o2::analysis::PWGCF::CutBrickThreshold<float>;
+template class o2::analysis::pwgcf::CutBrickThreshold<int>;
+template class o2::analysis::pwgcf::CutBrickThreshold<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -337,7 +345,7 @@ CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold(const TString& cutstr)
   : CutBrickThreshold<TValueToFilter>(),
     mFunction{}
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -347,7 +355,7 @@ CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold(const TString& cutstr)
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickFnThreshold<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -356,21 +364,22 @@ void CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString(const TString& 
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 4)) {
-    LOGF(fatal, "CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnth{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 4;
+  if (m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickFnThreshold<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{fnth{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
   } else {
     this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
     mFunction = TF1(m[1].str().c_str(), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     if (not mFunction.IsValid()) {
-      LOGF(fatal, "CutBrickFnThreshold<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnth{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
+      LOGF(fatal, "CutBrickFnThreshold<TValueToFilter>::constructCutFromString", "Wrong function expression: %s, use pT{fnth{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
     }
   }
 }
 
 templateClassImp(CutBrickFnThreshold);
-template class o2::analysis::PWGCF::CutBrickFnThreshold<int>;
-template class o2::analysis::PWGCF::CutBrickFnThreshold<float>;
+template class o2::analysis::pwgcf::CutBrickFnThreshold<int>;
+template class o2::analysis::pwgcf::CutBrickFnThreshold<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -402,7 +411,7 @@ CutBrickRange<TValueToFilter>::CutBrickRange(const TString& cutstr)
     mLow(0),
     mUp(0)
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -412,7 +421,7 @@ CutBrickRange<TValueToFilter>::CutBrickRange(const TString& cutstr)
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickRange<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -421,8 +430,9 @@ void CutBrickRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 4)) {
-    LOGF(fatal, "CutBrickRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{rg{0.2,2.0}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 4;
+  if (m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickRange<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{rg{0.2,2.0}} for instance", cutstr.Data());
   } else {
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -434,7 +444,7 @@ void CutBrickRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated
 template <typename TValueToFilter>
-std::vector<bool> CutBrickRange<TValueToFilter>::IsArmed()
+std::vector<bool> CutBrickRange<TValueToFilter>::isArmed()
 {
   std::vector<bool> res;
   if (this->mMode == this->kSELECTED) {
@@ -446,8 +456,8 @@ std::vector<bool> CutBrickRange<TValueToFilter>::IsArmed()
 }
 
 templateClassImp(CutBrickRange);
-template class o2::analysis::PWGCF::CutBrickRange<int>;
-template class o2::analysis::PWGCF::CutBrickRange<float>;
+template class o2::analysis::pwgcf::CutBrickRange<int>;
+template class o2::analysis::pwgcf::CutBrickRange<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -480,7 +490,7 @@ CutBrickFnRange<TValueToFilter>::CutBrickFnRange(const TString& cutstr)
     mLowFunction{},
     mUpFunction{}
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -490,7 +500,7 @@ CutBrickFnRange<TValueToFilter>::CutBrickFnRange(const TString& cutstr)
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickFnRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickFnRange<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -499,22 +509,23 @@ void CutBrickFnRange<TValueToFilter>::ConstructCutFromString(const TString& cuts
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 5)) {
-    LOGF(fatal, "CutBrickFnRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 5;
+  if (m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickFnRange<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{fnrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
   } else {
     this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
     mLowFunction = TF1(TString::Format("%s_low", m[1].str().c_str()), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     mUpFunction = TF1(TString::Format("%s_up", m[1].str().c_str()), m[4].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     if (not mLowFunction.IsValid() or not mUpFunction.IsValid()) {
-      LOGF(fatal, "CutBrickFnRange<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
+      LOGF(fatal, "CutBrickFnRange<TValueToFilter>::constructCutFromString", "Wrong function expression: %s, use pT{fnrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
     }
   }
 }
 
 templateClassImp(CutBrickFnRange);
-template class o2::analysis::PWGCF::CutBrickFnRange<int>;
-template class o2::analysis::PWGCF::CutBrickFnRange<float>;
+template class o2::analysis::pwgcf::CutBrickFnRange<int>;
+template class o2::analysis::pwgcf::CutBrickFnRange<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -546,7 +557,7 @@ CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange(const TString& cutstr)
     mLow(0),
     mUp(0)
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -556,7 +567,7 @@ CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange(const TString& cutstr)
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickExtToRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickExtToRange<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -565,8 +576,9 @@ void CutBrickExtToRange<TValueToFilter>::ConstructCutFromString(const TString& c
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 4)) {
-    LOGF(fatal, "CutBrickExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use minv{xrg{0.02,0.04}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 4;
+  if (m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickExtToRange<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use minv{xrg{0.02,0.04}} for instance", cutstr.Data());
   } else {
     this->SetName(m[1].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -578,7 +590,7 @@ void CutBrickExtToRange<TValueToFilter>::ConstructCutFromString(const TString& c
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated
 template <typename TValueToFilter>
-std::vector<bool> CutBrickExtToRange<TValueToFilter>::IsArmed()
+std::vector<bool> CutBrickExtToRange<TValueToFilter>::isArmed()
 {
   std::vector<bool> res;
   if (this->mMode == this->kSELECTED) {
@@ -590,8 +602,8 @@ std::vector<bool> CutBrickExtToRange<TValueToFilter>::IsArmed()
 }
 
 templateClassImp(CutBrickExtToRange);
-template class o2::analysis::PWGCF::CutBrickExtToRange<int>;
-template class o2::analysis::PWGCF::CutBrickExtToRange<float>;
+template class o2::analysis::pwgcf::CutBrickExtToRange<int>;
+template class o2::analysis::pwgcf::CutBrickExtToRange<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -623,7 +635,7 @@ CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const TString& cutstr
     mLowFunction{},
     mUpFunction{}
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -633,7 +645,7 @@ CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const TString& cutstr
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickFnExtToRange<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -642,22 +654,23 @@ void CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString(const TString&
   std::smatch m;
 
   std::regex_search(in, m, cutregex);
-  if (m.empty() or (m.size() < 5)) {
-    LOGF(fatal, "CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{fnxrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 5;
+  if (m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickFnExtToRange<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{fnxrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
   } else {
     this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
     mLowFunction = TF1(TString::Format("%s_low", m[1].str().c_str()), m[3].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     mUpFunction = TF1(TString::Format("%s_up", m[1].str().c_str()), m[4].str().c_str(), 0, 1, TF1::EAddToList::kNo);
     if (not mLowFunction.IsValid() or not mUpFunction.IsValid()) {
-      LOGF(fatal, "CutBrickFnExtToRange<TValueToFilter>::ConstructCutFromString", "Wrong function expression: %s, use pT{fnxrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
+      LOGF(fatal, "CutBrickFnExtToRange<TValueToFilter>::constructCutFromString", "Wrong function expression: %s, use pT{fnxrg{myfn=2.0*sin(x)/x}} for instance", cutstr.Data());
     }
   }
 }
 
 templateClassImp(CutBrickFnExtToRange);
-template class o2::analysis::PWGCF::CutBrickFnExtToRange<int>;
-template class o2::analysis::PWGCF::CutBrickFnExtToRange<float>;
+template class o2::analysis::pwgcf::CutBrickFnExtToRange<int>;
+template class o2::analysis::pwgcf::CutBrickFnExtToRange<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -677,7 +690,7 @@ CutBrickSelectorMultipleRanges<TValueToFilter>::CutBrickSelectorMultipleRanges(c
   TString title = name;
   title += "{";
   bool first = true;
-  for (auto edge : edges) {
+  for (const auto& edge : edges) {
     mEdges.push_back(edge);
     if (first) {
       title += TString::Format("%.2f", float(edge));
@@ -698,7 +711,7 @@ template <typename TValueToFilter>
 CutBrickSelectorMultipleRanges<TValueToFilter>::CutBrickSelectorMultipleRanges(const TString& cutstr)
   : CutBrick<TValueToFilter>()
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -708,7 +721,7 @@ CutBrickSelectorMultipleRanges<TValueToFilter>::CutBrickSelectorMultipleRanges(c
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutBrickSelectorMultipleRanges<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
 
@@ -717,8 +730,9 @@ void CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString(cons
   std::smatch m;
 
   bool res = std::regex_search(in, m, cutregex);
-  if (not res or m.empty() or (m.size() < 5)) {
-    LOGF(fatal, "CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use centmult{mrg{V0M,0,5,10,20,30,40,50,60,70,80}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 5;
+  if (not res or m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutBrickSelectorMultipleRanges<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use centmult{mrg{V0M,0,5,10,20,30,40,50,60,70,80}} for instance", cutstr.Data());
   } else {
     this->SetName(m[2].str().c_str());
     this->SetTitle(cutstr.Data());
@@ -737,10 +751,10 @@ void CutBrickSelectorMultipleRanges<TValueToFilter>::ConstructCutFromString(cons
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated
 template <typename TValueToFilter>
-std::vector<bool> CutBrickSelectorMultipleRanges<TValueToFilter>::IsArmed()
+std::vector<bool> CutBrickSelectorMultipleRanges<TValueToFilter>::isArmed()
 {
   std::vector<bool> res;
-  res.reserve(Length());
+  res.reserve(length());
   if (this->mMode == this->kSELECTED) {
     for (unsigned int i = 0; i < mActive.size(); ++i) {
       res.push_back(true);
@@ -753,11 +767,11 @@ std::vector<bool> CutBrickSelectorMultipleRanges<TValueToFilter>::IsArmed()
   return res;
 }
 
-/// \brief Filter the passed value to update the brick status accordingly
+/// \brief filter the passed value to update the brick status accordingly
 /// \param value The value to filter
 /// \return true if the value passed the cut false otherwise
 template <typename TValueToFilter>
-std::vector<bool> CutBrickSelectorMultipleRanges<TValueToFilter>::Filter(const TValueToFilter& value)
+std::vector<bool> CutBrickSelectorMultipleRanges<TValueToFilter>::filter(const TValueToFilter& value)
 {
   if ((mEdges.front() <= value) and (value < mEdges.back())) {
     this->mState = this->kACTIVE;
@@ -784,8 +798,8 @@ std::vector<bool> CutBrickSelectorMultipleRanges<TValueToFilter>::Filter(const T
 }
 
 templateClassImp(CutBrickSelectorMultipleRanges);
-template class o2::analysis::PWGCF::CutBrickSelectorMultipleRanges<int>;
-template class o2::analysis::PWGCF::CutBrickSelectorMultipleRanges<float>;
+template class o2::analysis::pwgcf::CutBrickSelectorMultipleRanges<int>;
+template class o2::analysis::pwgcf::CutBrickSelectorMultipleRanges<float>;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// Default constructor
@@ -820,7 +834,7 @@ CutWithVariations<TValueToFilter>::CutWithVariations(const TString& cutstr)
     mDefaultBricks{},
     mVariationBricks{}
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Construct the cut from a cut string
@@ -831,7 +845,7 @@ CutWithVariations<TValueToFilter>::CutWithVariations(const TString& cutstr)
 /// If the cut string is correctly parsed the cut is correctly built
 /// if not a fatal exception is raised
 template <typename TValueToFilter>
-void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cutstr)
+void CutWithVariations<TValueToFilter>::constructCutFromString(const TString& cutstr)
 {
   /* let's catch the first level */
   LOGF(info, "Cut with variations: cut string: %s", cutstr.Data());
@@ -841,16 +855,18 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
   std::smatch m;
 
   bool res = std::regex_search(in, m, cutregex);
-  if (not res or m.empty() or (m.size() < 3)) {
-    LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
+  constexpr int MinExpectedComponents = 3;
+  if (not res or m.empty() or (m.size() < MinExpectedComponents)) {
+    LOGF(fatal, "CutWithVariations<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
   }
   this->SetName(m[1].str().c_str());
   this->SetTitle(cutstr.Data());
 
   /* let's split default and variations */
   TObjArray* lev1toks = TString(m[2]).Tokenize(":");
-  if (lev1toks->GetEntries() > 2) {
-    LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
+  constexpr int MaxExpectedComponents = 2;
+  if (lev1toks->GetEntries() > MaxExpectedComponents) {
+    LOGF(fatal, "CutWithVariations<TValueToFilter>::constructCutFromString", "Wrong RE: %s, use pT{cwv{rg{0.2,10.0}}} for instance", cutstr.Data());
   }
   bool atleastonearmed = false;
   auto addCuts = [&](TList& cutlist, std::string cuttxt, bool reqflag) {
@@ -859,8 +875,9 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
       std::set<std::string> allowed = {"lim", "th", "rg", "xrg", "mrg", "fnlim", "fnth", "fnrg", "fnxrg"};
       std::regex cutregex("(\\w+\\{[\\w.,=\\-\\+\\*\\/]+}(?:-(?:no|yes))*)");
       bool res = regex_search(cuttxt, m, cutregex);
-      if (not res or m.empty() or m.size() != 2) {
-        LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Cut with variations malformed RE %s", cuttxt.c_str());
+      constexpr int ExpectedComponents = 2;
+      if (not res or m.empty() or m.size() != ExpectedComponents) {
+        LOGF(fatal, "CutWithVariations<TValueToFilter>::constructCutFromString", "Cut with variations malformed RE %s", cuttxt.c_str());
       }
       TString brickre = m[1].str().c_str();
       bool isarmed = brickre.EndsWith("-yes");
@@ -869,10 +886,10 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
       } else if (brickre.EndsWith("-no")) {
         brickre.Remove(brickre.Index("-no"), strlen("-no"));
       } else if (reqflag) {
-        LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, alternatives not correctly flagged", cuttxt.c_str());
+        LOGF(fatal, "CutWithVariations<TValueToFilter>::constructCutFromString", "Wrong RE: %s, alternatives not correctly flagged", cuttxt.c_str());
       }
       CutBrick<TValueToFilter>* brick = CutBrick<TValueToFilter>::constructBrick(this->GetName(), brickre, allowed);
-      brick->Arm(isarmed);
+      brick->arm(isarmed);
       atleastonearmed = atleastonearmed || isarmed;
       cutlist.Add(brick);
       cuttxt = m.suffix();
@@ -884,7 +901,7 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
     addCuts(mDefaultBricks, lev1toks->At(0)->GetName(), true);
     if (mDefaultBricks.GetEntries() > 1) {
       /* TODO: several default options for track type and for track pid selection */
-      LOGF(fatal, "CutWithVariations<TValueToFilter>::ConstructCutFromString", "Wrong RE: %s, several defaults only for trktype or trkpid pending of implementation", cutstr.Data());
+      LOGF(fatal, "CutWithVariations<TValueToFilter>::constructCutFromString", "Wrong RE: %s, several defaults only for trktype or trkpid pending of implementation", cutstr.Data());
     }
   }
   /* let's now handle the variations if any */
@@ -892,7 +909,7 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
     LOGF(info, "Cut with variations, extracting variations: cut string: %s", lev1toks->At(1)->GetName());
     addCuts(mVariationBricks, lev1toks->At(1)->GetName(), true);
   }
-  this->Arm(atleastonearmed);
+  this->arm(atleastonearmed);
   delete lev1toks;
 }
 
@@ -906,7 +923,7 @@ void CutWithVariations<TValueToFilter>::ConstructCutFromString(const TString& cu
 /// If any of the above conditions fails the brick is not
 /// added and false is returned
 template <typename TValueToFilter>
-bool CutWithVariations<TValueToFilter>::AddDefaultBrick(CutBrick<TValueToFilter>* brick)
+bool CutWithVariations<TValueToFilter>::addDefaultBrick(CutBrick<TValueToFilter>* brick)
 {
   if (mAllowSeveralDefaults) {
     if (mDefaultBricks.FindObject(brick->GetName())) {
@@ -930,7 +947,7 @@ bool CutWithVariations<TValueToFilter>::AddDefaultBrick(CutBrick<TValueToFilter>
 /// \returns true if the brick was successfully added
 /// It is required that the brick name were unique in the list of variation values brick
 template <typename TValueToFilter>
-bool CutWithVariations<TValueToFilter>::AddVariationBrick(CutBrick<TValueToFilter>* brick)
+bool CutWithVariations<TValueToFilter>::addVariationBrick(CutBrick<TValueToFilter>* brick)
 {
   if (mVariationBricks.FindObject(brick->GetName())) {
     return false;
@@ -943,36 +960,36 @@ bool CutWithVariations<TValueToFilter>::AddVariationBrick(CutBrick<TValueToFilte
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated
 template <typename TValueToFilter>
-std::vector<bool> CutWithVariations<TValueToFilter>::IsArmed()
+std::vector<bool> CutWithVariations<TValueToFilter>::isArmed()
 {
   std::vector<bool> res;
-  res.reserve(Length());
+  res.reserve(length());
   if (this->mMode == this->kSELECTED) {
     int nArmedDefaults = 0;
     int nArmedVariants = 0;
     for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->IsArmed();
+      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->isArmed();
       res.insert(res.end(), tmp.begin(), tmp.end());
-      for (bool iarmed : tmp) {
+      for (const bool& iarmed : tmp) {
         if (iarmed) {
           nArmedDefaults++;
         }
       }
     }
     for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->IsArmed();
+      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->isArmed();
       res.insert(res.end(), tmp.begin(), tmp.end());
-      for (bool iarmed : tmp) {
+      for (const bool& iarmed : tmp) {
         if (iarmed) {
           nArmedVariants++;
         }
       }
     }
     if (nArmedDefaults > 1 or nArmedVariants > 1 or (nArmedDefaults + nArmedVariants) > 1) {
-      LOGF(fatal, "CutWithVariations<TValueToFilter>::IsArmed(%s), More than one alternative selected. Default armed %d, variants armed %d", this->GetName(), nArmedDefaults, nArmedVariants);
+      LOGF(fatal, "CutWithVariations<TValueToFilter>::isArmed(%s), More than one alternative selected. Default armed %d, variants armed %d", this->GetName(), nArmedDefaults, nArmedVariants);
     }
   } else {
-    for (int i = 0; i < Length(); ++i) {
+    for (int i = 0; i < length(); ++i) {
       res.push_back(false);
     }
   }
@@ -986,16 +1003,16 @@ std::vector<bool> CutWithVariations<TValueToFilter>::IsArmed()
 /// \returns true if the value activated any of the bricks
 
 template <typename TValueToFilter>
-std::vector<bool> CutWithVariations<TValueToFilter>::Filter(const TValueToFilter& value)
+std::vector<bool> CutWithVariations<TValueToFilter>::filter(const TValueToFilter& value)
 {
   std::vector<bool> res;
-  res.reserve(Length());
+  res.reserve(length());
   for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-    std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->Filter(value);
+    std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->filter(value);
     res.insert(res.end(), tmp.begin(), tmp.end());
   }
   for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-    std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->Filter(value);
+    std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->filter(value);
     res.insert(res.end(), tmp.begin(), tmp.end());
   }
   return res;
@@ -1005,15 +1022,15 @@ std::vector<bool> CutWithVariations<TValueToFilter>::Filter(const TValueToFilter
 /// The length is in brick units. The actual length is implementation dependent
 /// \returns Cut length in units of bricks
 template <typename TValueToFilter>
-int CutWithVariations<TValueToFilter>::Length()
+int CutWithVariations<TValueToFilter>::length()
 {
   /* TODO: should a single default cut without variations return zero length? */
   int length = 0;
   for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-    length += ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->Length();
+    length += ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->length();
   }
   for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-    length += ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->Length();
+    length += ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->length();
   }
   return length;
 }
@@ -1029,8 +1046,8 @@ int CutWithVariations<TValueToFilter>::getArmedIndex()
       bool found = false;
       for (int i = 0; not found and i < brklst.GetEntries(); ++i) {
         index++;
-        std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)brklst.At(i))->IsArmed();
-        for (bool iarmed : tmp) {
+        std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)brklst.At(i))->isArmed();
+        for (const bool& iarmed : tmp) {
           if (iarmed) {
             found = true;
             break;
@@ -1050,8 +1067,8 @@ int CutWithVariations<TValueToFilter>::getArmedIndex()
 }
 
 templateClassImp(o2::analysis::CutWithVariations);
-template class o2::analysis::PWGCF::CutWithVariations<float>;
-template class o2::analysis::PWGCF::CutWithVariations<int>;
+template class o2::analysis::pwgcf::CutWithVariations<float>;
+template class o2::analysis::pwgcf::CutWithVariations<int>;
 
 /// Default constructor
 SpecialCutBrick::SpecialCutBrick()
@@ -1101,35 +1118,35 @@ TrackSelectionBrick::TrackSelectionBrick(const TString& regex) : SpecialCutBrick
   } else {
     LOGF(fatal, "TrackSelectionBrick::TrackSelectionBrick", "Wrong RE: %s, trying to construct an unknown track type selector", regex.Data());
   }
-  this->Arm(armed);
+  this->arm(armed);
 }
 
 // Default TPC only track selection according to LHC2010
 void TrackSelectionBrick::constructFB1LHC2010()
 {
-  SetTrackType(o2::aod::track::Run2Track);
-  SetRequireGoldenChi2(true);
-  SetMinNClustersTPC(50);
-  SetMaxChi2PerClusterTPC(4.f);
-  SetMaxDcaXY(2.4f);
-  SetMaxDcaZ(3.2f);
+  setTrackType(o2::aod::track::Run2Track);
+  setRequireGoldenChi2(true);
+  setMinNClustersTPC(50);
+  setMaxChi2PerClusterTPC(4.f);
+  setMaxDcaXY(2.4f);
+  setMaxDcaZ(3.2f);
   /* TODO: 2D DCA cut */
 }
 
 // Default track selection requiring one hit in the SPD DCAxy according to LHC2010
 void TrackSelectionBrick::constructFB32LHC2010()
 {
-  SetTrackType(o2::aod::track::Run2Track);
-  SetRequireITSRefit(true);
-  SetRequireTPCRefit(true);
-  SetRequireGoldenChi2(true);
-  SetMinNCrossedRowsTPC(70);
-  SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-  SetMaxChi2PerClusterTPC(4.f);
-  SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
-  SetMaxChi2PerClusterITS(36.f);
-  SetMaxDcaXYPtDep([](float pt) { return 0.0182f + 0.0350f / pow(pt, 1.01f); });
-  SetMaxDcaZ(2.f);
+  setTrackType(o2::aod::track::Run2Track);
+  setRequireITSRefit(true);
+  setRequireTPCRefit(true);
+  setRequireGoldenChi2(true);
+  setMinNCrossedRowsTPC(70);
+  setMinNCrossedRowsOverFindableClustersTPC(0.8f);
+  setMaxChi2PerClusterTPC(4.f);
+  setRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+  setMaxChi2PerClusterITS(36.f);
+  setMaxDcaXYPtDep([](float pt) { return 0.0182f + 0.0350f / std::pow(pt, 1.01f); });
+  setMaxDcaZ(2.f);
 }
 
 // Default track selection requiring no hit in the SPD and one in the innermost DCAxy according to LHC2010
@@ -1137,9 +1154,9 @@ void TrackSelectionBrick::constructFB32LHC2010()
 void TrackSelectionBrick::constructFB64LHC2010()
 {
   constructFB32LHC2010();
-  ResetITSRequirements();
-  SetRequireNoHitsInITSLayers({0, 1}); // no hit in SPD layers
-  SetRequireHitsInITSLayers(1, {2});   // one hit in first SDD layer
+  resetITSRequirements();
+  setRequireNoHitsInITSLayers({0, 1}); // no hit in SPD layers
+  setRequireHitsInITSLayers(1, {2});   // one hit in first SDD layer
 }
 
 // Default TPC only track selection according to LHC2011
@@ -1152,17 +1169,17 @@ void TrackSelectionBrick::constructFB1LHC2011()
 // Default track selection requiring one hit in the SPD DCAxy according to LHC2011
 void TrackSelectionBrick::constructFB32LHC2011()
 {
-  SetTrackType(o2::aod::track::Run2Track);
-  SetRequireITSRefit(true);
-  SetRequireTPCRefit(true);
-  SetRequireGoldenChi2(true);
-  SetMinNCrossedRowsTPC(70);
-  SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-  SetMaxChi2PerClusterTPC(4.f);
-  SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
-  SetMaxChi2PerClusterITS(36.f);
-  SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
-  SetMaxDcaZ(2.f);
+  setTrackType(o2::aod::track::Run2Track);
+  setRequireITSRefit(true);
+  setRequireTPCRefit(true);
+  setRequireGoldenChi2(true);
+  setMinNCrossedRowsTPC(70);
+  setMinNCrossedRowsOverFindableClustersTPC(0.8f);
+  setMaxChi2PerClusterTPC(4.f);
+  setRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+  setMaxChi2PerClusterITS(36.f);
+  setMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
+  setMaxDcaZ(2.f);
 }
 
 // Default track selection requiring no hit in the SPD and one in the innermost DCAxy according to LHC2011
@@ -1170,16 +1187,16 @@ void TrackSelectionBrick::constructFB32LHC2011()
 void TrackSelectionBrick::constructFB64LHC2011()
 {
   constructFB32LHC2011();
-  ResetITSRequirements();
-  SetRequireNoHitsInITSLayers({0, 1}); // no hit in SPD layers
-  SetRequireHitsInITSLayers(1, {2});   // one hit in first SDD layer
+  resetITSRequirements();
+  setRequireNoHitsInITSLayers({0, 1}); // no hit in SPD layers
+  setRequireHitsInITSLayers(1, {2});   // one hit in first SDD layer
 }
 
-bool TrackSelectionBrick::FulfillsITSHitRequirements(uint8_t itsClusterMap)
+bool TrackSelectionBrick::fulfillsITSHitRequirements(uint8_t itsClusterMap)
 {
-  constexpr uint8_t bit = 1;
-  for (auto& itsRequirement : mRequiredITSHits) {
-    auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
+  constexpr uint8_t One = 1;
+  for (const auto& itsRequirement : mRequiredITSHits) {
+    auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (One << requiredLayer); });
     if ((itsRequirement.first == -1) && (hits > 0)) {
       return false; // no hits were required in specified layers
     } else if (hits < itsRequirement.first) {
@@ -1204,7 +1221,7 @@ const std::array<std::string, static_cast<int>(TrackSelectionBrick::TrackCuts::k
 
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated
-std::vector<bool> TrackSelectionBrick::IsArmed()
+std::vector<bool> TrackSelectionBrick::isArmed()
 {
   std::vector<bool> res;
   if (this->mMode == this->kSELECTED) {

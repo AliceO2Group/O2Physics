@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file SelectionFilterAndAnalysis.h
+/// \brief SelectionFilterAndAnalysis class for filter and selection
+/// once filtered
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_SELECTIONFILTERANDANALYSIS_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_CORE_SELECTIONFILTERANDANALYSIS_H_
 
@@ -24,22 +29,22 @@ namespace o2
 {
 namespace analysis
 {
-namespace PWGCF
+namespace pwgcf
 {
 
 /// \brief Base class for filter and selection once filetered
 class SelectionFilterAndAnalysis : public TNamed
 {
  public:
-  /// \enum selmodes
+  /// \enum Selmodes
   /// \brief the modes in which the selection can operate
-  enum selmodes {
-    kFilter = 0, ///< filter mode to produce skimmed data
-    kAnalysis    ///< analysis mode over already skimmed data
+  enum Selmodes {
+    KFilter = 0, ///< filter mode to produce skimmed data
+    KAnalysis    ///< analysis mode over already skimmed data
   };
 
   SelectionFilterAndAnalysis();
-  SelectionFilterAndAnalysis(const TString& name, selmodes mode);
+  SelectionFilterAndAnalysis(const TString& name, Selmodes mode);
 
   /// \brief get the valid (armed) mask associated to the configuration
   /// \return the armed mask
@@ -59,11 +64,11 @@ class SelectionFilterAndAnalysis : public TNamed
   const TString& getCutStringSignature() { return mCutStringSignature; }
 
  private:
-  virtual int CalculateMaskLength() = 0;
-  virtual void StoreArmedMask() = 0;
+  virtual int calculateMaskLength() = 0;
+  virtual void storeArmedMask() = 0;
 
  protected:
-  selmodes mMode = kFilter;                 /// the operating mode of the selection instance
+  Selmodes mMode = KFilter;                 /// the operating mode of the selection instance
   TString mCutStringSignature;              /// the signature of the cut string, i.e. without the alternative selection tags
   int mMaskLength = 0;                      /// the length of the mask needed to filter the selection cuts
   uint64_t mSelectedMask = 0UL;             /// the selection mask for the current passed collision
@@ -75,7 +80,7 @@ class SelectionFilterAndAnalysis : public TNamed
   ClassDefNV(SelectionFilterAndAnalysis, 1)
 };
 
-} // namespace PWGCF
+} // namespace pwgcf
 } // namespace analysis
 } // namespace o2
 

@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FilterAndAnalysisFramework.h
+/// \brief FilterAndAnalysisFramework class for filtering collisions for derived data production
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_FILTERANDANALYSISFRAMEWORK_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_CORE_FILTERANDANALYSISFRAMEWORK_H_
 
@@ -30,7 +34,7 @@ namespace o2
 {
 namespace analysis
 {
-namespace PWGCF
+namespace pwgcf
 {
 
 /// \brief Base class for filter and selection once filetered
@@ -43,13 +47,13 @@ class FilterAndAnalysisFramework : public TNamed
   FilterAndAnalysisFramework(std::string& url, std::string& path, std::string& date, bool force = false)
     : ccdburl(url), ccdbpath(path), filterdate(date), forceupdate(force) {}
 
-  void SetConfiguration(EventSelectionConfigurable&, TrackSelectionConfigurable&, PIDSelectionConfigurable&, SelectionFilterAndAnalysis::selmodes mode);
+  void setConfiguration(EventSelectionConfigurable&, TrackSelectionConfigurable&, PIDSelectionConfigurable&, SelectionFilterAndAnalysis::Selmodes mode);
 
  protected:
-  void RegisterConfiguration();
+  void registerConfiguration();
 
  public:
-  void Init();
+  void init();
 
   /// \brief get the valid (armed) mask associated to the configuration of the different objects
   /// \return the corresponding armed mask
@@ -76,22 +80,22 @@ class FilterAndAnalysisFramework : public TNamed
   uint64_t getPIDForcedMask() { return fPIDFilter->getForcedMask(); }
   /// \brief filter the different objects
   template <typename CollisionToFilter, typename AssociatedTracks>
-  uint64_t FilterCollision(CollisionToFilter const& col, AssociatedTracks const& trks, int bfield)
+  uint64_t filterCollision(CollisionToFilter const& col, AssociatedTracks const& trks, int bfield)
   {
-    return fEventFilter->Filter(col, trks, bfield);
+    return fEventFilter->filter(col, trks, bfield);
   }
   template <typename TrackToFilter>
-  uint64_t FilterTrack(TrackToFilter const& track)
+  uint64_t filterTrack(TrackToFilter const& track)
   {
-    return fTrackFilter->Filter(track);
+    return fTrackFilter->filter(track);
   }
   template <typename TrackToFilter>
-  uint64_t FilterTrackPID(TrackToFilter const& track)
+  uint64_t filterTrackPID(TrackToFilter const& track)
   {
-    return fPIDFilter->Filter(track);
+    return fPIDFilter->filter(track);
   }
   /// \brief get the event multiplicities
-  std::vector<float> GetCollisionMultiplicities() { return fEventFilter->GetMultiplicities(); }
+  std::vector<float> getCollisionMultiplicities() { return fEventFilter->getMultiplicities(); }
   /// \brief Gets the index of the active multiplicity value within the multiplicities array
   int getCollisionMultiplicityIndex() { return fEventFilter->getMultiplicityIndex(); }
 
@@ -105,19 +109,19 @@ class FilterAndAnalysisFramework : public TNamed
   std::string ccdbpath = "";
   std::string filterdate = "";
   bool forceupdate = false;
-  PWGCF::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;  /// the track filter
-  PWGCF::EventSelectionFilterAndAnalysis* fEventFilter = nullptr;  /// the event filter
-  PWGCF::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;      /// the PID filter
-  PWGCF::TrackSelectionFilterAndAnalysis* _fTrackFilter = nullptr; /// the track filter temporal storage until initialized
-  PWGCF::EventSelectionFilterAndAnalysis* _fEventFilter = nullptr; /// the event filter temporal storage until initialized
-  PWGCF::PIDSelectionFilterAndAnalysis* _fPIDFilter = nullptr;     /// the PID filter temporal storage until initialized
+  pwgcf::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;   /// the track filter
+  pwgcf::EventSelectionFilterAndAnalysis* fEventFilter = nullptr;   /// the event filter
+  pwgcf::PIDSelectionFilterAndAnalysis* fPIDFilter = nullptr;       /// the PID filter
+  pwgcf::TrackSelectionFilterAndAnalysis* tmpTrackFilter = nullptr; /// the track filter temporal storage until initialized
+  pwgcf::EventSelectionFilterAndAnalysis* tmpEventFilter = nullptr; /// the event filter temporal storage until initialized
+  pwgcf::PIDSelectionFilterAndAnalysis* tmpPIDFilter = nullptr;     /// the PID filter temporal storage until initialized
 
   ClassDefNV(FilterAndAnalysisFramework, 1)
 };
 
-extern void registerConfiguration(o2::analysis::PWGCF::FilterAndAnalysisFramework*);
+extern void registerConfiguration(o2::analysis::pwgcf::FilterAndAnalysisFramework*);
 
-} // namespace PWGCF
+} // namespace pwgcf
 } // namespace analysis
 } // namespace o2
 

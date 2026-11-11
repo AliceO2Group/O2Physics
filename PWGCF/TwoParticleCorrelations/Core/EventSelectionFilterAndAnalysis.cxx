@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file EventSelectionFilterAndAnalysis.cxx
+/// \brief Implementation of the EventSelectionFilterAndAnalysis class for
+/// filtering collisions for derived data production
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #include "EventSelectionFilterAndAnalysis.h"
 
 #include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
@@ -35,7 +40,7 @@
 #include <vector>
 
 using namespace o2;
-using namespace o2::analysis::PWGCF;
+using namespace o2::analysis::pwgcf;
 using namespace boost;
 
 EventSelectionConfigurable::EventSelectionConfigurable(const std::vector<std::string>& bfieldsel,
@@ -83,7 +88,7 @@ EventSelectionConfigurable::EventSelectionConfigurable(const std::vector<std::st
   {
     TString bfield = "bfield{";
     bool first = true;
-    for (auto& pol : bfieldsel) {
+    for (const auto& pol : bfieldsel) {
       if (not first) {
         bfield += ',';
       }
@@ -118,7 +123,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis()
 }
 
 /// \brief Constructor from regular expression
-EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& cutstr, selmodes mode)
+EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& cutstr, Selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
     mBFieldSelection{},
     mMultiplicityClasses(nullptr),
@@ -126,11 +131,11 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& 
     mZVertex(nullptr),
     mPileUpRejection(nullptr)
 {
-  ConstructCutFromString(cutstr);
+  constructCutFromString(cutstr);
 }
 
 /// \brief Constructor from the event selection configurable
-EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSelectionConfigurable& evtsel, selmodes mode)
+EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSelectionConfigurable& evtsel, Selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
     mBFieldSelection{},
     mMultiplicityClasses(nullptr),
@@ -140,6 +145,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSele
 {
   TString cutString = "eventsel{";
   bool first = true;
+  constexpr int MaskMaxLength = 64;
 
   auto appendCut = [&cutString, &first](const std::string& str) {
     if (str.size() > 0) {
@@ -158,29 +164,29 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSele
   appendCut(evtsel.mPileUpRejection);
 
   cutString += "}";
-  ConstructCutFromString(cutString);
-  if (mMaskLength > 64) {
-    LOGF(fatal, "EventSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just 64 available for the time being", mMaskLength);
+  constructCutFromString(cutString);
+  if (mMaskLength > MaskMaxLength) {
+    LOGF(fatal, "EventSelectionFilterAndAnalysis not ready for filter mask of %d bits. Just %d available for the time being", mMaskLength, MaskMaxLength);
   }
   mCutStringSignature = cutString.ReplaceAll("-yes", "").ReplaceAll("-no", "");
-  if (mode == kAnalysis) {
-    StoreArmedMask();
+  if (mode == KAnalysis) {
+    storeArmedMask();
   }
 }
 
 /// \brief Calculates the length of the mask needed to store the selection cuts
-int EventSelectionFilterAndAnalysis::CalculateMaskLength()
+int EventSelectionFilterAndAnalysis::calculateMaskLength()
 {
   int length = 0;
   auto addLength = [&length](auto& brick) {
     if (brick != nullptr) {
-      length += brick->Length();
-      LOGF(info, "EventSelectionFilterAndAnalysis::CalculateMaskLength, cumulated length: %d", length);
+      length += brick->length();
+      LOGF(info, "EventSelectionFilterAndAnalysis::calculateMaskLength, cumulated length: %d", length);
     }
   };
 
-  for (auto brick : mBFieldSelection) {
-    length += brick->Length();
+  for (const auto& brick : mBFieldSelection) {
+    length += brick->length();
   }
   addLength(mMultiplicityClasses);
   addLength(mTriggerSelection);
@@ -303,7 +309,7 @@ void EventSelectionFilterAndAnalysis::PileUpRejBrick::initialize()
   }
 }
 
-void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cutstr)
+void EventSelectionFilterAndAnalysis::constructCutFromString(const TString& cutstr)
 {
   LOGF(info, "Cut string: %s", cutstr.Data());
   /* let's catch the first level */
@@ -312,8 +318,9 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
   smatch m;
 
   bool res = regex_search(in, m, cutregex);
-  if (not res or m.empty() or (m.size() > 2)) {
-    LOGF(fatal, "EventSelectionFilterAndAnalysis::ConstructCutFromString", "Wrong RE: %s, try eventsel{bfield{positive-yes,negative-yes},zvtx{cwv{rg{-7.0,7.0}-yes:rg{-10.0,10.0}-no,rg{-3.0,3.0}-no}}} for instance", cutstr.Data());
+  constexpr int ExpectedMaxLength = 2;
+  if (not res || m.empty() || (m.size() > ExpectedMaxLength)) {
+    LOGF(fatal, "EventSelectionFilterAndAnalysis::constructCutFromString", "Wrong RE: %s, try eventsel{bfield{positive-yes,negative-yes},zvtx{cwv{rg{-7.0,7.0}-yes:rg{-10.0,10.0}-no,rg{-3.0,3.0}-no}}} for instance", cutstr.Data());
   }
   this->SetName("EventSelectionFilterAndAnalysisCuts");
   this->SetTitle(cutstr.Data());
@@ -334,9 +341,10 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
       std::string in(lev2str.Data());
       smatch m;
       bool res = regex_search(in, m, cutregex);
+      constexpr int ExpectedComponents = 3;
 
-      if (not res or m.empty() or (m.size() != 3)) {
-        Fatal("EventSelectionFilterAndAnalysis::::ConstructCutFromString", "Wrong RE: %s, try tracksel{ttype{FB32,FB96};nclstpc{th{70}},nxr{cwv{th{70},th{80}}}} for instance", cutstr.Data());
+      if (not res or m.empty() or (m.size() != ExpectedComponents)) {
+        Fatal("EventSelectionFilterAndAnalysis::::constructCutFromString", "Wrong RE: %s, try tracksel{ttype{FB32,FB96};nclstpc{th{70}},nxr{cwv{th{70},th{80}}}} for instance", cutstr.Data());
       }
       LOGF(info, "Captured %s", m[1].str().c_str());
       auto storeIntCut = [&m, &allowed](CutBrick<int>*& brickvar) {
@@ -358,7 +366,7 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
           auto addBFieldBrick = [&brickvector](auto name, auto regex, bool arm) {
             std::set<std::string> allowed = {"lim", "th"};
             CutBrick<float>* brick = CutBrick<float>::constructBrick(name, regex, allowed);
-            brick->Arm(arm);
+            brick->arm(arm);
             brickvector.push_back(brick);
           };
           if (TString(regex).Contains("positive")) {
@@ -394,15 +402,15 @@ void EventSelectionFilterAndAnalysis::ConstructCutFromString(const TString& cuts
       lev2str.Remove(0, m[0].length());
     }
   }
-  mMaskLength = CalculateMaskLength();
+  mMaskLength = calculateMaskLength();
 }
 
 ///
 void EventSelectionFilterAndAnalysis::ComplexBrickHelper::armedBrick(uint64_t& armedmask, uint64_t& optmask, uint64_t& forcedmask, int& bit)
 {
   auto armedBrick = [&](auto brick, bool opt = false) {
-    std::vector<bool> res = brick->IsArmed();
-    for (auto b : res) {
+    std::vector<bool> res = brick->isArmed();
+    for (const auto& b : res) {
       if (b) {
         SETBIT(armedmask, bit);
         if (opt) {
@@ -418,12 +426,12 @@ void EventSelectionFilterAndAnalysis::ComplexBrickHelper::armedBrick(uint64_t& a
   if (mAlternateEstimatorIndex.size() > 0) {
     /* we have alternative estimators so our brick is of kind cwv */
     if (mBrick->IsA() != CutWithVariations<float>::Class()) {
-      LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected class with variations cut but it is not there");
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::filter() expected class with variations cut but it is not there");
     }
     /* first the default */
     TList& deflst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getDefaultBricks();
     if (deflst.GetEntries() > 1) {
-      LOGF(fatal, "EventSelectionFilterAndAnalysis::Filter() expected only one default multiplicity class estimator");
+      LOGF(fatal, "EventSelectionFilterAndAnalysis::filter() expected only one default multiplicity class estimator");
     }
     armedBrick((CutBrick<float>*)deflst.At(0), true);
     /* and now the variants */
@@ -438,7 +446,7 @@ void EventSelectionFilterAndAnalysis::ComplexBrickHelper::armedBrick(uint64_t& a
 }
 
 /// \brief Fills the filter cuts mask
-void EventSelectionFilterAndAnalysis::StoreArmedMask()
+void EventSelectionFilterAndAnalysis::storeArmedMask()
 {
   uint64_t armedMask = 0UL;
   uint64_t optMask = 0UL;
@@ -449,8 +457,8 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
   int bit = 0;
 
   auto armedBrick = [&](auto brick, bool opt = false) {
-    std::vector<bool> res = brick->IsArmed();
-    for (auto b : res) {
+    std::vector<bool> res = brick->isArmed();
+    for (const auto& b : res) {
       if (b) {
         SETBIT(armedMask, bit);
         if (opt) {
@@ -464,7 +472,7 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
   };
 
   optMask = 0UL;
-  for (auto brick : mBFieldSelection) {
+  for (const auto& brick : mBFieldSelection) {
     armedBrick(brick, true);
   }
   mOptArmedMask.push_back(optMask);
@@ -480,7 +488,7 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
   if (mPileUpRejection != nullptr) {
     mPileUpRejection->armedBrick(armedMask, optMask, forcedMask, bit);
   }
-  LOGF(info, "EventSelectionFilterAndAnalysis::StoreArmedMask(), masks 0x%016lx, %s, 0x%016lx", armedMask, printOptionalMasks().Data(), forcedMask);
+  LOGF(info, "EventSelectionFilterAndAnalysis::storeArmedMask(), masks 0x%016lx, %s, 0x%016lx", armedMask, printOptionalMasks().Data(), forcedMask);
   mArmedMask = armedMask;
   mForcedArmedMask = forcedMask;
 }

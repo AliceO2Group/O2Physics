@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file PIDSelectionFilterAndAnalysis.h
+/// \brief PIDSelectionFilterAndAnalysis class for PID filtering tracks
+/// for derived data production
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_PIDSELECTIONFILTERANDANALYSIS_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_CORE_PIDSELECTIONFILTERANDANALYSIS_H_
 
@@ -30,7 +35,7 @@ namespace o2
 {
 namespace analysis
 {
-namespace PWGCF
+namespace pwgcf
 {
 /* forward declaration */
 class PIDSelectionFilterAndAnalysis;
@@ -45,7 +50,7 @@ class PIDSelectionConfigurable
   PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
                            std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "",
                            std::string pidbayel = "", std::string pidbaymu = "", std::string pidbaypi = "", std::string pidbayka = "", std::string pidbaypr = "")
-    : mPidTpcSel_el{pidtpcel}, mPidTpcSel_mu{pidtpcmu}, mPidTpcSel_pi{pidtpcpi}, mPidTpcSel_ka{pidtpcka}, mPidTpcSel_pr{pidtpcpr}, mPidTofSel_el{pidtofel}, mPidTofSel_mu{pidtofmu}, mPidTofSel_pi{pidtofpi}, mPidTofSel_ka{pidtofka}, mPidTofSel_pr{pidtofpr}, mPidBaySel_el{pidbayel}, mPidBaySel_mu{pidbaymu}, mPidBaySel_pi{pidbaypi}, mPidBaySel_ka{pidbayka}, mPidBaySel_pr{pidbaypr}
+    : mPidTpcSelEl{pidtpcel}, mPidTpcSelMu{pidtpcmu}, mPidTpcSelPi{pidtpcpi}, mPidTpcSelKa{pidtpcka}, mPidTpcSelPr{pidtpcpr}, mPidTofSelEl{pidtofel}, mPidTofSelMu{pidtofmu}, mPidTofSelPi{pidtofpi}, mPidTofSelKa{pidtofka}, mPidTofSelPr{pidtofpr}, mPidBaySelEl{pidbayel}, mPidBaySelMu{pidbaymu}, mPidBaySelPi{pidbaypi}, mPidBaySelKa{pidbayka}, mPidBaySelPr{pidbaypr}
   {
   }
   PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
@@ -54,16 +59,16 @@ class PIDSelectionConfigurable
 #else
   PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
                            std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "")
-    : mPidTpcSel_el{std::move(pidtpcel)},
-      mPidTpcSel_mu{std::move(pidtpcmu)},
-      mPidTpcSel_pi{std::move(pidtpcpi)},
-      mPidTpcSel_ka{std::move(pidtpcka)},
-      mPidTpcSel_pr{std::move(pidtpcpr)},
-      mPidTofSel_el{std::move(pidtofel)},
-      mPidTofSel_mu{std::move(pidtofmu)},
-      mPidTofSel_pi{std::move(pidtofpi)},
-      mPidTofSel_ka{std::move(pidtofka)},
-      mPidTofSel_pr{std::move(pidtofpr)}
+    : mPidTpcSelEl{std::move(pidtpcel)},
+      mPidTpcSelMu{std::move(pidtpcmu)},
+      mPidTpcSelPi{std::move(pidtpcpi)},
+      mPidTpcSelKa{std::move(pidtpcka)},
+      mPidTpcSelPr{std::move(pidtpcpr)},
+      mPidTofSelEl{std::move(pidtofel)},
+      mPidTofSelMu{std::move(pidtofmu)},
+      mPidTofSelPi{std::move(pidtofpi)},
+      mPidTofSelKa{std::move(pidtofka)},
+      mPidTofSelPr{std::move(pidtofpr)}
   {
   }
   PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
@@ -71,21 +76,21 @@ class PIDSelectionConfigurable
 #endif
 
  private:
-  std::string mPidTpcSel_el = "";
-  std::string mPidTpcSel_mu = "";
-  std::string mPidTpcSel_pi = "";
-  std::string mPidTpcSel_ka = "";
-  std::string mPidTpcSel_pr = "";
-  std::string mPidTofSel_el = "";
-  std::string mPidTofSel_mu = "";
-  std::string mPidTofSel_pi = "";
-  std::string mPidTofSel_ka = "";
-  std::string mPidTofSel_pr = "";
-  std::string mPidBaySel_el = "";
-  std::string mPidBaySel_mu = "";
-  std::string mPidBaySel_pi = "";
-  std::string mPidBaySel_ka = "";
-  std::string mPidBaySel_pr = "";
+  std::string mPidTpcSelEl = "";
+  std::string mPidTpcSelMu = "";
+  std::string mPidTpcSelPi = "";
+  std::string mPidTpcSelKa = "";
+  std::string mPidTpcSelPr = "";
+  std::string mPidTofSelEl = "";
+  std::string mPidTofSelMu = "";
+  std::string mPidTofSelPi = "";
+  std::string mPidTofSelKa = "";
+  std::string mPidTofSelPr = "";
+  std::string mPidBaySelEl = "";
+  std::string mPidBaySelMu = "";
+  std::string mPidBaySelPi = "";
+  std::string mPidBaySelKa = "";
+  std::string mPidBaySelPr = "";
 
  private:
   ClassDefNV(PIDSelectionConfigurable, 1);
@@ -96,16 +101,16 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 {
  public:
   PIDSelectionFilterAndAnalysis();
-  PIDSelectionFilterAndAnalysis(const TString&, selmodes);
-  PIDSelectionFilterAndAnalysis(const PIDSelectionConfigurable& pidsel, selmodes mode);
+  PIDSelectionFilterAndAnalysis(const TString&, Selmodes);
+  PIDSelectionFilterAndAnalysis(const PIDSelectionConfigurable& pidsel, Selmodes mode);
   ~PIDSelectionFilterAndAnalysis() override;
 
-  void SetPTOF(float ptof) { mPTOF = ptof; }
-  void SetRequireTOF(bool requiretof = false) { mRequireTOF = requiretof; }
-  void SetEllipticTPCTOF(bool elliptic = false) { mEllipticTPCTOF = elliptic; }
+  void setPTOF(float ptof) { mPTOF = ptof; }
+  void setRequireTOF(bool requiretof = false) { mRequireTOF = requiretof; }
+  void setEllipticTPCTOF(bool elliptic = false) { mEllipticTPCTOF = elliptic; }
 
   template <typename TrackToFilter>
-  uint64_t Filter(TrackToFilter const& track);
+  uint64_t filter(TrackToFilter const& track);
 
   enum PIDSpecies {
     kElectron = 0, ///< electron
@@ -132,9 +137,9 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   static const std::vector<std::string> mSpeciesNames;
 
  private:
-  void ConstructCutFromString(const TString&);
-  int CalculateMaskLength() override;
-  void StoreArmedMask() override;
+  void constructCutFromString(const TString&);
+  int calculateMaskLength() override;
+  void storeArmedMask() override;
 
   float mPTOF = 0.8f;           ///< the p threshold for cheking TOF information
   bool mRequireTOF = false;     ///< is TOF required
@@ -150,7 +155,7 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
 /// \brief Fills the filter cuts mask
 template <typename TrackToFilter>
-inline uint64_t PIDSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
+inline uint64_t PIDSelectionFilterAndAnalysis::filter(TrackToFilter const& track)
 {
   uint64_t selectedMask = 0UL;
   mSelectedMask = 0UL;
@@ -158,8 +163,8 @@ inline uint64_t PIDSelectionFilterAndAnalysis::Filter(TrackToFilter const& track
 
   auto filterBrickValue = [&](auto brick, auto value) {
     if (brick != nullptr) {
-      std::vector<bool> res = brick->Filter(value);
-      for (auto b : res) {
+      std::vector<bool> res = brick->filter(value);
+      for (const auto& b : res) {
         if (b) {
           SETBIT(selectedMask, bit);
         }
@@ -189,7 +194,7 @@ inline uint64_t PIDSelectionFilterAndAnalysis::Filter(TrackToFilter const& track
   return mSelectedMask;
 }
 
-} // namespace PWGCF
+} // namespace pwgcf
 } // namespace analysis
 } // namespace o2
 
