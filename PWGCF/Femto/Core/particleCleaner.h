@@ -16,6 +16,10 @@
 #ifndef PWGCF_FEMTO_CORE_PARTICLECLEANER_H_
 #define PWGCF_FEMTO_CORE_PARTICLECLEANER_H_
 
+#include "PWGCF/Femto/Core/femtoUtils.h"
+
+#include "Common/Core/RecoDecay.h"
+
 #include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
 
@@ -45,6 +49,11 @@ struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> motherPtMax{"motherPtMax", 1e6f, "Maximum pT of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherEtaMin{"motherEtaMin", -1e6f, "Minimum eta of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherEtaMax{"motherEtaMax", 1e6f, "Maximum eta of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  // Rapidity cut on the mother. FMcMothers has no mass column, so the mass is looked up from
+  // PdgCode via utils::getPdgMass() (the same lookup pairHistManager.h uses for kstar/Q3) and
+  // combined with the mother's pt/eta to get y -- see RecoDecay::y(pt, eta, m).
+  o2::framework::Configurable<float> motherRapidityMin{"motherRapidityMin", -1e6f, "Minimum rapidity of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  o2::framework::Configurable<float> motherRapidityMax{"motherRapidityMax", 1e6f, "Maximum rapidity of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherPhiMin{"motherPhiMin", 0.f, "Minimum phi of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherPhiMax{"motherPhiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched -- not one window per pdg code."};
   o2::framework::Configurable<std::vector<int>> requiredPartonicMotherPdgCodes{"requiredPartonicMotherPdgCodes", {}, "Only consider particles whose partonic mothers have one of the supplied pdg codes (including the sign!)"};
@@ -135,6 +144,8 @@ class ParticleCleaner
     mMotherEtaMax = confMpc.motherEtaMax.value;
     mMotherPhiMin = confMpc.motherPhiMin.value;
     mMotherPhiMax = confMpc.motherPhiMax.value;
+    mMotherRapidityMin = confMpc.motherRapidityMin.value;
+    mMotherRapidityMax = confMpc.motherRapidityMax.value;
 
     mRequiredPartonicMotherPdgCodes = confMpc.requiredPartonicMotherPdgCodes.value;
     mRejectedPartonicMotherPdgCodes = confMpc.rejectPartonicMotherPdgCodes.value;
@@ -231,13 +242,22 @@ class ParticleCleaner
         }
       }
 
-      // One shared pt/eta/phi window, applied to the mother regardless of which (if any)
+      // One shared pt/eta/phi/rapidity window, applied to the mother regardless of which (if any)
       // requiredMotherPdgCodes/rejectMotherPdgCodes entry it matched above -- see the comment on
       // ConfParticleCleaner's motherPtMin et al.
       if (!(mother.pt() > mMotherPtMin && mother.pt() < mMotherPtMax &&
             mother.eta() > mMotherEtaMin && mother.eta() < mMotherEtaMax &&
             mother.phi() > mMotherPhiMin && mother.phi() < mMotherPhiMax)) {
         motherKinematicsOk = false;
+      }
+
+      // rapidity needs the mother's mass, which FMcMothers does not store directly -- look it up
+      // from its pdg code (same mechanism as the kstar/Q3 mass lookup in pairHistManager.h)
+      if (mMotherRapidityMin > -1e6f || mMotherRapidityMax < 1e6f) {
+        double motherRapidity = RecoDecay::y(mother.pt(), mother.eta(), utils::getPdgMass(mother.pdgCode()));
+        if (!(motherRapidity > mMotherRapidityMin && motherRapidity < mMotherRapidityMax)) {
+          motherKinematicsOk = false;
+        }
       }
     }
 
@@ -291,6 +311,8 @@ class ParticleCleaner
   float mMotherEtaMax = 1e6f;
   float mMotherPhiMin = 0.f;
   float mMotherPhiMax = 1.f * o2::constants::math::TwoPI;
+  float mMotherRapidityMin = -1e6f;
+  float mMotherRapidityMax = 1e6f;
   std::vector<int> mRequiredPartonicMotherPdgCodes;
   std::vector<int> mRejectedPartonicMotherPdgCodes;
 };
