@@ -18,8 +18,6 @@
 
 #include "PWGCF/Femto/Core/femtoUtils.h"
 
-#include "Common/Core/RecoDecay.h"
-
 #include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
 
@@ -251,10 +249,11 @@ class ParticleCleaner
         motherKinematicsOk = false;
       }
 
-      // rapidity needs the mother's mass, which FMcMothers does not store directly -- look it up
-      // from its pdg code (same mechanism as the kstar/Q3 mass lookup in pairHistManager.h)
+      // rapidity needs the mother's mass, which FMcMothers does not store directly -- its Y()
+      // dynamic column takes mass as a free argument, looked up from the pdg code (same mechanism
+      // as the kstar/Q3 mass lookup in pairHistManager.h)
       if (mMotherRapidityMin > -1e6f || mMotherRapidityMax < 1e6f) {
-        double motherRapidity = RecoDecay::y(mother.pt(), mother.eta(), utils::getPdgMass(mother.pdgCode()));
+        double motherRapidity = mother.y(utils::getPdgMass(mother.pdgCode()));
         if (!(motherRapidity > mMotherRapidityMin && motherRapidity < mMotherRapidityMax)) {
           motherKinematicsOk = false;
         }
