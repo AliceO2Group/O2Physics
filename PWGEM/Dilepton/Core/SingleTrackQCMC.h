@@ -187,8 +187,8 @@ struct SingleTrackQCMC {
     o2::framework::Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif = 4, kPIDML = 5]"};
     o2::framework::Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
     o2::framework::Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
-    // o2::framework::Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
-    // o2::framework::Configurable<float> cfg_max_TPCNsigmaMu{"cfg_max_TPCNsigmaMu", +0.0, "max. TPC n sigma for muon exclusion"};
+    o2::framework::Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
+    o2::framework::Configurable<float> cfg_max_TPCNsigmaMu{"cfg_max_TPCNsigmaMu", +0.0, "max. TPC n sigma for muon exclusion"};
     o2::framework::Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"};
     o2::framework::Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3.0, "max. TPC n sigma for pion exclusion"};
     o2::framework::Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3.0, "min. TPC n sigma for kaon exclusion"};
@@ -550,7 +550,7 @@ struct SingleTrackQCMC {
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
     fDielectronCut.SetTPCNsigmaElRange(dielectroncuts.cfg_min_TPCNsigmaEl, dielectroncuts.cfg_max_TPCNsigmaEl);
-    // fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
+    fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
     fDielectronCut.SetTPCNsigmaPiRange(dielectroncuts.cfg_min_TPCNsigmaPi, dielectroncuts.cfg_max_TPCNsigmaPi);
     fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
     fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
@@ -694,7 +694,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-        // fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+        fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
@@ -740,7 +740,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-        // fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+        fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
