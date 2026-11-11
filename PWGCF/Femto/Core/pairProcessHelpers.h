@@ -44,7 +44,8 @@ template <modes::Mode mode,
           typename T4,
           typename T5,
           typename T6,
-          typename T7>
+          typename T7,
+          typename T8>
 bool processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& Collision,
@@ -52,13 +53,11 @@ bool processSameEvent(T1 const& SliceParticle,
                       T5& PairHistManager,
                       T6& CprManager,
                       T7& PcManager,
-                      PairOrder pairOrder)
+                      PairOrder pairOrder,
+                      T8& ColHistManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
   bool foundPair = false;
-  for (auto const& part : SliceParticle) {
-    ParticleHistManager.template fill<mode>(part, TrackTable);
-  }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
     // Randomize pair order if enabled, then compute the kinematic (kstar) for this pair
     switch (pairOrder) {
@@ -86,6 +85,14 @@ bool processSameEvent(T1 const& SliceParticle,
       foundPair = true;
     }
   }
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted pair -- same acceptance as the mixed-event side
+  if (foundPair) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle) {
+      ParticleHistManager.template fill<mode>(part, TrackTable);
+    }
+  }
   PairHistManager.fillMixingQaSe();
   return foundPair;
 }
@@ -103,7 +110,8 @@ template <modes::Mode mode,
           typename T9,
           typename T10,
           typename T11,
-          typename T12>
+          typename T12,
+          typename T13>
 bool processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& mcParticles,
@@ -116,16 +124,11 @@ bool processSameEvent(T1 const& SliceParticle,
                       T10& ParticleCleaner,
                       T11& CprManager,
                       T12& PcManager,
-                      PairOrder pairOrder)
+                      PairOrder pairOrder,
+                      T13& ColHistManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
   bool foundPair = false;
-  for (auto const& part : SliceParticle) {
-    if (!ParticleCleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
     // check if particles are clean
     if (!ParticleCleaner.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
@@ -158,6 +161,17 @@ bool processSameEvent(T1 const& SliceParticle,
       foundPair = true;
     }
   }
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted pair
+  if (foundPair) {
+    ColHistManager.template fill<mode>(Collision, mcCollisions);
+    for (auto const& part : SliceParticle) {
+      if (!ParticleCleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+  }
   PairHistManager.fillMixingQaSe();
   return foundPair;
 }
@@ -172,7 +186,8 @@ template <modes::Mode mode,
           typename T6,
           typename T7,
           typename T8,
-          typename T9>
+          typename T9,
+          typename T10>
 bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& TrackTable,
@@ -181,17 +196,11 @@ bool processSameEvent(T1 const& SliceParticle1,
                       T6& ParticleHistManager2,
                       T7& PairHistManager,
                       T8& CprManager,
-                      T9& PcManager)
+                      T9& PcManager,
+                      T10& ColHistManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
   bool foundPair = false;
-  // Fill single particle histograms
-  for (auto const& part : SliceParticle1) {
-    ParticleHistManager1.template fill<mode>(part, TrackTable);
-  }
-  for (auto const& part : SliceParticle2) {
-    ParticleHistManager2.template fill<mode>(part, TrackTable);
-  }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
     // compute the kinematic (kstar) for this pair
     PairHistManager.setPair(p1, p2, TrackTable, Collision);
@@ -207,6 +216,17 @@ bool processSameEvent(T1 const& SliceParticle1,
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
       foundPair = true;
+    }
+  }
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted pair -- same acceptance as the mixed-event side
+  if (foundPair) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle1) {
+      ParticleHistManager1.template fill<mode>(part, TrackTable);
+    }
+    for (auto const& part : SliceParticle2) {
+      ParticleHistManager2.template fill<mode>(part, TrackTable);
     }
   }
   PairHistManager.fillMixingQaSe();
@@ -229,7 +249,8 @@ template <modes::Mode mode,
           typename T12,
           typename T13,
           typename T14,
-          typename T15>
+          typename T15,
+          typename T16>
 bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& TrackTable,
@@ -244,23 +265,11 @@ bool processSameEvent(T1 const& SliceParticle1,
                       T12& ParticleCleaner1,
                       T13& ParticleCleaner2,
                       T14& CprManager,
-                      T15& PcManager)
+                      T15& PcManager,
+                      T16& ColHistManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
   bool foundPair = false;
-  // Fill single particle histograms
-  for (auto const& part : SliceParticle1) {
-    if (!ParticleCleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
-  for (auto const& part : SliceParticle2) {
-    if (!ParticleCleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager2.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
     // check if particles are clean
     if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
@@ -283,6 +292,23 @@ bool processSameEvent(T1 const& SliceParticle1,
       foundPair = true;
     }
   }
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted pair -- same acceptance as the mixed-event side
+  if (foundPair) {
+    ColHistManager.template fill<mode>(Collision, mcCollisions);
+    for (auto const& part : SliceParticle1) {
+      if (!ParticleCleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+    for (auto const& part : SliceParticle2) {
+      if (!ParticleCleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager2.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+  }
   PairHistManager.fillMixingQaSe();
   return foundPair;
 }
@@ -297,7 +323,8 @@ template <modes::Mode mode,
           typename T7,
           typename T8,
           typename T9,
-          typename T10>
+          typename T10,
+          typename T11>
 bool processSameEvent(T1 const& SliceParticle,
                       T2 const& /*mcParticles*/,
                       T3 const& mcMothers,
@@ -308,16 +335,11 @@ bool processSameEvent(T1 const& SliceParticle,
                       T8& ParticleCleaner,
                       T9& CprManager,
                       T10& PcManager,
-                      PairOrder pairOrder)
+                      PairOrder pairOrder,
+                      T11& ColHistManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
   bool foundPair = false;
-  for (auto const& part : SliceParticle) {
-    if (!ParticleCleaner.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager.fill(part, mcMothers, mcPartonicMothers);
-  }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
     if (!ParticleCleaner.isClean(p1, mcMothers, mcPartonicMothers) ||
         !ParticleCleaner.isClean(p2, mcMothers, mcPartonicMothers)) {
@@ -347,6 +369,17 @@ bool processSameEvent(T1 const& SliceParticle,
       foundPair = true;
     }
   }
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted pair -- same acceptance as the mixed-event side
+  if (foundPair) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle) {
+      if (!ParticleCleaner.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager.fill(part, mcMothers, mcPartonicMothers);
+    }
+  }
   PairHistManager.fillMixingQaSe();
   return foundPair;
 }
@@ -365,7 +398,8 @@ template <modes::Mode mode,
           typename T10,
           typename T11,
           typename T12,
-          typename T13>
+          typename T13,
+          typename T14>
 bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& /*mcParticles*/,
@@ -378,22 +412,11 @@ bool processSameEvent(T1 const& SliceParticle1,
                       T10& ParticleCleaner1,
                       T11& ParticleCleaner2,
                       T12& CprManager,
-                      T13& PcManager)
+                      T13& PcManager,
+                      T14& ColHistManager)
 {
   PairHistManager.resetTrackedParticlesPerEvent();
   bool foundPair = false;
-  for (auto const& part : SliceParticle1) {
-    if (!ParticleCleaner1.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager1.fill(part, mcMothers, mcPartonicMothers);
-  }
-  for (auto const& part : SliceParticle2) {
-    if (!ParticleCleaner2.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager2.fill(part, mcMothers, mcPartonicMothers);
-  }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
     if (!ParticleCleaner1.isClean(p1, mcMothers, mcPartonicMothers) ||
         !ParticleCleaner2.isClean(p2, mcMothers, mcPartonicMothers)) {
@@ -414,6 +437,23 @@ bool processSameEvent(T1 const& SliceParticle1,
       foundPair = true;
     }
   }
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted pair -- same acceptance as the mixed-event side
+  if (foundPair) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle1) {
+      if (!ParticleCleaner1.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager1.fill(part, mcMothers, mcPartonicMothers);
+    }
+    for (auto const& part : SliceParticle2) {
+      if (!ParticleCleaner2.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager2.fill(part, mcMothers, mcPartonicMothers);
+    }
+  }
   PairHistManager.fillMixingQaSe();
   return foundPair;
 }
@@ -431,7 +471,8 @@ template <modes::Mode mode,
           typename T9,
           typename T10,
           typename T11,
-          typename T12>
+          typename T12,
+          typename T13>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -444,7 +485,8 @@ void processMixedEvent(T1 const& Collisions,
                        T10& PcManager,
                        int eventStride,
                        T11& ParticleHistManagerMe1,
-                       T12& ParticleHistManagerMe2)
+                       T12& ParticleHistManagerMe2,
+                       T13& ColHistManager)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
@@ -532,6 +574,12 @@ void processMixedEvent(T1 const& Collisions,
 
     if (hasValidPair) {
       ++windowSizeEffective;
+      // collision histograms only get filled for collisions that actually contributed at least
+      // one accepted mixed-event pair -- both real collisions go into the same manager used by
+      // the same-event side, so its multiplicity/centrality/vertex histograms reflect every
+      // collision that contributed a pair, regardless of whether it came from SE or ME
+      ColHistManager.template fill<mode>(collision1);
+      ColHistManager.template fill<mode>(collision2);
     }
 
     PairHistManager.fillMixingQaMePerEvent();
@@ -562,7 +610,8 @@ template <modes::Mode mode,
           typename T15,
           typename T16,
           typename T17,
-          typename T18>
+          typename T18,
+          typename T19>
 void processMixedEvent(T1 const& Collisions,
                        T2 const& mcCollisions,
                        T3& Partition1,
@@ -581,7 +630,8 @@ void processMixedEvent(T1 const& Collisions,
                        T16& PcManager,
                        int eventStride,
                        T17& ParticleHistManagerMe1,
-                       T18& ParticleHistManagerMe2)
+                       T18& ParticleHistManagerMe2,
+                       T19& ColHistManager)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
@@ -671,6 +721,11 @@ void processMixedEvent(T1 const& Collisions,
 
     if (hasValidPair) {
       ++windowSizeEffective;
+      // collision histograms only get filled for collisions that actually contributed at least
+      // one accepted mixed-event pair -- both real collisions go into the same manager used by
+      // the same-event side
+      ColHistManager.template fill<mode>(collision1, mcCollisions);
+      ColHistManager.template fill<mode>(collision2, mcCollisions);
     }
 
     PairHistManager.fillMixingQaMePerEvent();
@@ -697,7 +752,8 @@ template <modes::Mode mode,
           typename T13,
           typename T14,
           typename T15,
-          typename T16>
+          typename T16,
+          typename T17>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -714,7 +770,8 @@ void processMixedEvent(T1 const& Collisions,
                        T14& PcManager,
                        int eventStride,
                        T15& ParticleHistManagerMe1,
-                       T16& ParticleHistManagerMe2)
+                       T16& ParticleHistManagerMe2,
+                       T17& ColHistManager)
 {
   int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
