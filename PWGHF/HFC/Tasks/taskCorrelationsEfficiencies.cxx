@@ -122,6 +122,7 @@ struct HfTaskCorrelationsEfficiencies {
   Configurable<bool> usePtDiffDcaXYCut{"usePtDiffDcaXYCut", false, "Use pt-differential DCAxy cut for associated tracks"};
   Configurable<float> dcaXYTrkNSigmaMax{"dcaXYTrkNSigmaMax", 7, "Cut on number of sigma deviations from expected DCA in the transverse direction"};
   Configurable<std::string> dcaXYPtPrimTrkFunc{"dcaXYPtPrimTrkFunc", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
+  Configurable<bool> rejNonRecoCollisions{"rejNonRecoCollisions", false, "Reject generated collisions that are not reconstructed"};
 
   // Configurables for tree filling
   Configurable<bool> fillRecoTrees{"fillRecoTrees", false, "Fill trees of reconstructed charmed hadrons and associated tracks"};
@@ -316,13 +317,13 @@ struct HfTaskCorrelationsEfficiencies {
                        aod::McCollisions const&)
   {
     for (const auto& coll : recoCollisions) {
-      auto candsInColl = candsDplus.sliceBy(candsDplusPerColl, coll.globalIndex());
-      if (candsInColl.size() < 1) {
-        continue;
-      }
       float cent{-1.}, mult{-1.};
       CentralityEstimator centDetector = CentralityEstimator::None;
       if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
+        continue;
+      }
+      auto candsInColl = candsDplus.sliceBy(candsDplusPerColl, coll.globalIndex());
+      if (candsInColl.size() < 1) {
         continue;
       }
       fillCharmEfficiencies<TriggerChannels::DplusToPiKPi>(candsInColl, coll.numContrib());
@@ -441,6 +442,11 @@ struct HfTaskCorrelationsEfficiencies {
       const auto recoColls = recoCollisions.sliceBy(colPerMcCollision, mcColl.globalIndex());
       CentralityEstimator centDetector = CentralityEstimator::None;
       if (!hfcFlowHelper.selectGenCollision<BCsInfo>(hfEvSelMc, mcColl, recoColls, centDetector, cent, mult)) {
+        continue;
+      }
+      // If rejNonRecoCollisions==false, the pure tracking efficiency
+      // is convoluted with the event reconstruction efficiency
+      if (rejNonRecoCollisions && recoColls.size() < 1) { // Skipping MC events that have no reconstructed collisions
         continue;
       }
 
