@@ -71,6 +71,12 @@ inline float getMass(int pdgCode)
     case o2::constants::physics::Pdg::kDS:
       mass = o2::constants::physics::MassDS;
       break;
+    case o2::constants::physics::Pdg::kSigmaC0:
+      mass = o2::constants::physics::MassSigmaC0;
+      break;
+    case o2::constants::physics::Pdg::kSigmaCPlusPlus:
+      mass = o2::constants::physics::MassSigmaCPlusPlus;
+      break;
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
       break;

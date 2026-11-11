@@ -411,6 +411,55 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //!
                                                                                                                                                                       o2::constants::physics::MassXiCPlus); }); //! Rapidity distribution of Xic candidates
 } // namespace fdhf_xic
 
+namespace fdhf_sigmac
+{
+DECLARE_SOA_COLUMN(SoftPiId, softPiId, int);         //! original soft-pion track ID
+DECLARE_SOA_COLUMN(SoftPiPt, softPiPt, float);       //! soft-pion pT
+DECLARE_SOA_COLUMN(SoftPiEta, softPiEta, float);     //! soft-pion eta
+DECLARE_SOA_COLUMN(SoftPiPhi, softPiPhi, float);     //! soft-pion phi
+DECLARE_SOA_COLUMN(ChargeLc, chargeLc, int8_t);      //! LambdaC charge, also particle/antiparticle tag for neutral SigmaC
+DECLARE_SOA_COLUMN(MassLc, massLc, float);           //! LambdaC mass for the accepted hypothesis
+DECLARE_SOA_COLUMN(DeltaMass, deltaMass, float);     //! M(Lc_reco pi) - M(Lc_reco)
+DECLARE_SOA_COLUMN(SourceScId, sourceScId, int64_t); //! source HF SigmaC candidate, shared by its hypotheses
+DECLARE_SOA_COLUMN(SoftPiDcaXY, softPiDcaXY, float); //! DCA to the SigmaC collision, including reassociation
+DECLARE_SOA_COLUMN(SoftPiDcaZ, softPiDcaZ, float);   //! DCA to the SigmaC collision, including reassociation
+} // namespace fdhf_sigmac
+
+DECLARE_SOA_TABLE(FDHfCandSc, "AOD", "FDHFCANDSC", //! SigmaC(2455) -> Lc(p K pi) pi, one row per accepted Lc hypothesis
+                  o2::soa::Index<>,
+                  femtodreamparticle::FDCollisionId,
+                  fdhf::TimeStamp,
+                  fdhf::Charge,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Prong2Id,
+                  fdhf::Prong0Pt,
+                  fdhf::Prong1Pt,
+                  fdhf::Prong2Pt,
+                  fdhf::Prong0Eta,
+                  fdhf::Prong1Eta,
+                  fdhf::Prong2Eta,
+                  fdhf::Prong0Phi,
+                  fdhf::Prong1Phi,
+                  fdhf::Prong2Phi,
+                  fdhf::CandidateSelFlag,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  femtodreamparticle::Pt,
+                  femtodreamparticle::Eta,
+                  femtodreamparticle::Phi,
+                  fdhf_sigmac::SoftPiId,
+                  fdhf_sigmac::SoftPiPt,
+                  fdhf_sigmac::SoftPiEta,
+                  fdhf_sigmac::SoftPiPhi,
+                  fdhf_sigmac::ChargeLc,
+                  fdhf_sigmac::MassLc,
+                  fdhf_sigmac::DeltaMass,
+                  fdhf_sigmac::SourceScId,
+                  fdhf_sigmac::SoftPiDcaXY,
+                  fdhf_sigmac::SoftPiDcaZ);
+
 DECLARE_SOA_TABLE(FDHfCand3Prong, "AOD", "FDHFCAND3PRONG", //! Table to store the derived data for charm 3prong candidates
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
@@ -598,6 +647,28 @@ DECLARE_SOA_TABLE(FDHfCharmDstar, "AOD", "FDHFCHARMDSTAR", //! table to store re
                   fdhf::Prong0Id,
                   fdhf::Prong1Id,
                   fdhf::Prong2Id,
+                  fdhf::Charge,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
+
+DECLARE_SOA_TABLE(FDHfCharmSc, "AOD", "FDHFCHARMSC", //! table to store results for HF femtoscopy
+                  fdhf::GIndexCol,
+                  fdhf::TimeStamp,
+                  fdhf::CharmM,
+                  fdhf::CharmDaughM,
+                  fdhf::CharmPt,
+                  fdhf::CharmEta,
+                  fdhf::CharmPhi,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Prong2Id,
+                  fdhf_sigmac::SoftPiId,
+                  fdhf_sigmac::ChargeLc,
+                  fdhf_sigmac::SourceScId,
+                  fdhf::CandidateSelFlag,
                   fdhf::Charge,
                   fdhf::BDTBkg,
                   fdhf::BDTPrompt,
