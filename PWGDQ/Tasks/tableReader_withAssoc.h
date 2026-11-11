@@ -261,7 +261,6 @@ using MyEventsHashSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::Redu
 using MyEventsVtxCov = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts>;
 using MyEventsVtxCovSelectedInfo = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsInfo>;
-// Magnus, Declaration of name for event table with vertex covariance and Qvector information.
 using MyEventsVtxCovSelectedQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsVtxCovSelectedQvectorWithHash = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::MixingHashes>;
 using MyEventsVtxCovZdcFitSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedZdcs, o2::aod::ReducedFITs, o2::aod::EventCuts>;
@@ -288,7 +287,6 @@ using MyMuonTracksWithCov = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::Reduce
 using MyMuonTracksWithCovWithAmbiguities = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra, o2::aod::ReducedMuonsCov, o2::aod::MuonAmbiguities>;
 using MyMuonTracksSelectedWithColl = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra, o2::aod::ReducedMuonsInfo, o2::aod::MuonTrackCuts>;
 
-// Magnus, Added a new fillmap for event with Qvector and centrality.
 constexpr static uint32_t gkEventFillMapWithCovQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
@@ -1577,7 +1575,6 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    // Magnus, Added new process function to enabled histograms.
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrVtxCovSkimmed") || context.mOptions.get<bool>("processBarrelOnlyDiKaons") || context.mOptions.get<bool>("processBarrelOnlyDiProtons");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov");
     fEnableBarrelMixingHistos |= fConfigRunMixingAcrossTFs;
@@ -3266,7 +3263,7 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToPrAPr, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
-  // Magnus, Defined a new process function with Qvector, Centrality and Vertex Covariance.
+  // New process function with Qvector, Centrality and Vertex Covariance.
   void processBarrelOnlyWithQvectorCentrVtxCovSkimmed(MyEventsVtxCovSelectedQvector const& events,
                                     o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
@@ -3377,7 +3374,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingMuonSkimmed, "Run muon type mixing pairing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingMuonSkimmedFlow, "Run muon type mixing pairing, with skimmed muons and flow", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingElectronMuonSkimmed, "Run electron-muon mixing pairing, with skimmed tracks/muons", false);
-  // Magnus, Added process switch for pairing with Qvector from central framework and event vertex covariance
+  // Process switch added for pairing with Qvector from central framework and event vertex covariance
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentrVtxCovSkimmed, "Run barrel only pairing, with skimmed tracks with covariances, event vertex covariance, and Qvector from central framework", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
 };
