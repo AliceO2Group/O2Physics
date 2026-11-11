@@ -179,7 +179,7 @@ struct lumiTask {
                 collision.covXZ(), collision.covYZ(), collision.covZZ());
     // configure PVertexer
 
-    o2::dataformats::VertexBase PVbase_recalculated;
+    // o2::dataformats::VertexBase PVbase_recalculated; // FIXME: unused
 
     o2::vertexing::PVertexer vertexer;
     o2::conf::ConfigurableParam::updateFromString(

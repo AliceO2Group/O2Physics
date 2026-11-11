@@ -9,12 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FoxWolframCorrelation.cxx
+/// \file foxWolframCorrelation.cxx
 /// \author Andreicovici Iulian Florin
 /// \brief RECO-level event shape analysis using Fox-Wolfram Moments for O+O collisions.
 ///        Classifies events by topology (triangular), fills correlation histograms,
 ///        and produces custom SOA tables for mixed-event background estimation.
-/// \since 06 Nov 2026
+/// \since 10 Nov 2026
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
@@ -117,11 +117,13 @@ template <typename Track, typename TLead>
 bool passesLeadAssoc(int mode, bool foundPart, Track const& track1, Track const& track2,
                      TLead const& triggTrk, TLead const& triggTrkPart)
 {
+  auto ptUpperLim1 = 3.f, ptUpperLim2 = 2.f; // low and high limits in pt
+
   if (mode == kAllPairs) { // all i-j pairs
-    return (track1.pt() < 3.f) && (track2.pt() < 3.f);
+    return (track1.pt() < ptUpperLim1) && (track2.pt() < ptUpperLim1);
   }
   if (mode == kpTLeadConstrain) { // L-A: Leading pt in (2,3), Assoc pt < 2
-    return foundPart && (track1.globalIndex() == triggTrkPart.globalIndex()) && (track2.pt() < 2.f);
+    return foundPart && (track1.globalIndex() == triggTrkPart.globalIndex()) && (track2.pt() < ptUpperLim2);
   }
   if (mode == kpTLeadFree) { // L-A
     return (track1.globalIndex() == triggTrk.globalIndex()) && (track2.pt() < track1.pt());
@@ -140,6 +142,8 @@ auto findLeadingPart(T const& tracks)
   double ptMaxAll = -1., ptMaxPart = -1.;
   bool foundPart = false;
 
+  auto ptLim1 = 2.f, ptLim2 = 3.f; // low and high limits in pt
+
   for (const auto& track : tracks) {
     // pT Leading (no constraint)
     if (track.pt() > ptMaxAll) {
@@ -148,7 +152,7 @@ auto findLeadingPart(T const& tracks)
     }
 
     // pT Leading in (2,3)
-    if (track.pt() > 2.f && track.pt() < 3.f && track.pt() > ptMaxPart) {
+    if (track.pt() > ptLim1 && track.pt() < ptLim2 && track.pt() > ptMaxPart) {
       ptMaxPart = track.pt();
       leadingPartId = i;
       foundPart = true;
@@ -189,6 +193,9 @@ struct FoxWolframCorrelation {
   Configurable<bool> doFWMCorrelations{"doFWMCorrelations", false, "Fill H_i-H_j corr. hist"};
   Configurable<int> topologyMode{"topologyMode", kTriEvSetNom,
                                  "SelOpt: 0 AllEv, 1 TriNom, 2 IsoNom, 3 TriSet1p, 4 TriSet2p, 5 TriSet3p, 6 TriSet1m, 7 TriSet2m, 8 TriSet3m"};
+
+  //// Minimum associated pT included in mean-pT profiles ////
+  Configurable<double> meanPtMin{"meanPtMin", 0.5, "Associated pT threshold for mean-pT profiles (GeV/c)"};
 
   // Choose the pair selection for same-event correlations.
   Configurable<int> leadAssocMode{"leadAssocMode", 2, "0: ALL i-j pairs (pT<3); 1: pTLead in (2,3) & pTAssoc < 2; 2: pTAssoc < pTLead"};
@@ -241,39 +248,48 @@ struct FoxWolframCorrelation {
   static constexpr int MaxMultBins = 10;
   int nMultBins = 0; // set in init() from multLower/multUpper
 
-  static constexpr std::array<std::string_view, 10> binNames = {
+  static constexpr std::array<std::string_view, 10> BinNames = {
     "BIN1", "BIN2", "BIN3", "BIN4", "BIN5",
     "BIN6", "BIN7", "BIN8", "BIN9", "BIN10"};
 
   //// Class-level names for compile-time HIST lookups in nested loops ////
-  static constexpr std::array<std::string_view, 6> nearNames = {
+  static constexpr std::array<std::string_view, 6> NearNames = {
     "nearPtD0_", "nearPtD1_", "nearPtD2_",
     "nearPtD3_", "nearPtD4_", "nearPtD5_"};
 
-  static constexpr std::array<std::string_view, 6> awayNames = {
+  static constexpr std::array<std::string_view, 6> AwayNames = {
     "awayPtD0_", "awayPtD1_", "awayPtD2_",
     "awayPtD3_", "awayPtD4_", "awayPtD5_"};
 
-  static constexpr std::array<std::string_view, 3> allLRNames = {
+  //// Profile names match the folded LR declarations ////
+  static constexpr std::array<std::string_view, 6> NearMeanNames = {
+    "nearPtDMean0_", "nearPtDMean1_", "nearPtDMean2_",
+    "nearPtDMean3_", "nearPtDMean4_", "nearPtDMean5_"};
+
+  static constexpr std::array<std::string_view, 6> AwayMeanNames = {
+    "awayPtDMean0_", "awayPtDMean1_", "awayPtDMean2_",
+    "awayPtDMean3_", "awayPtDMean4_", "awayPtDMean5_"};
+
+  static constexpr std::array<std::string_view, 3> AllLrNames = {
     "allLRNear", "allLRValley", "allLRAway"};
 
-  static constexpr std::array<std::string_view, 3> allSRNames = {
+  static constexpr std::array<std::string_view, 3> AllSrNames = {
     "allSRNear", "allSRValley", "allSRAway"};
 
-  static constexpr std::array<std::string_view, 4> triLRNames = {
+  static constexpr std::array<std::string_view, 4> TriLrNames = {
     "triLRPeak1", "triLRPeak2", "triLRPeak3", "triLRValleys"};
 
-  static constexpr std::array<std::string_view, 4> triSRNames = {
+  static constexpr std::array<std::string_view, 4> TriSrNames = {
     "triSRPeak1", "triSRPeak2", "triSRPeak3", "triSRValleys"};
 
   // Map each unique pair of Fox-Wolfram moments to its histogram.
-  static constexpr std::array<std::string_view, 3> fwmRangeNames = {"FWM_BIN1/", "FWM_BIN2/", "FWM_BIN3/"};
-  static constexpr std::array<std::string_view, 8> fwmHNames = {"H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8"};
-  static constexpr std::array<std::string_view, 8> fwmMultHNames = {"Multip_H1", "Multip_H2", "Multip_H3", "Multip_H4", "Multip_H5", "Multip_H6", "Multip_H7", "Multip_H8"};
+  static constexpr std::array<std::string_view, 3> FwmRangeNames = {"FWM_BIN1/", "FWM_BIN2/", "FWM_BIN3/"};
+  static constexpr std::array<std::string_view, 8> FwmHlNames = {"H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8"};
+  static constexpr std::array<std::string_view, 8> FwmMulthNames = {"Multip_H1", "Multip_H2", "Multip_H3", "Multip_H4", "Multip_H5", "Multip_H6", "Multip_H7", "Multip_H8"};
 
-  static constexpr std::array<std::string_view, 28> fwmCorrelationNames = {"H1_H2", "H1_H3", "H1_H4", "H1_H5", "H1_H6", "H1_H7", "H1_H8", "H2_H3", "H2_H4", "H2_H5", "H2_H6", "H2_H7", "H2_H8", "H3_H4", "H3_H5", "H3_H6", "H3_H7", "H3_H8", "H4_H5", "H4_H6", "H4_H7", "H4_H8", "H5_H6", "H5_H7", "H5_H8", "H6_H7", "H6_H8", "H7_H8"};
-  static constexpr std::array<int, 28> fwmCorrelationFirst = {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 6};
-  static constexpr std::array<int, 28> fwmCorrelationSecond = {1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6, 7, 3, 4, 5, 6, 7, 4, 5, 6, 7, 5, 6, 7, 6, 7, 7};
+  static constexpr std::array<std::string_view, 28> FwmCorrelationNames = {"H1_H2", "H1_H3", "H1_H4", "H1_H5", "H1_H6", "H1_H7", "H1_H8", "H2_H3", "H2_H4", "H2_H5", "H2_H6", "H2_H7", "H2_H8", "H3_H4", "H3_H5", "H3_H6", "H3_H7", "H3_H8", "H4_H5", "H4_H6", "H4_H7", "H4_H8", "H5_H6", "H5_H7", "H5_H8", "H6_H7", "H6_H8", "H7_H8"};
+  static constexpr std::array<int, 28> FwmCorrelationFirst = {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 6};
+  static constexpr std::array<int, 28> FwmCorrelationSecond = {1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6, 7, 3, 4, 5, 6, 7, 4, 5, 6, 7, 5, 6, 7, 6, 7, 7};
 
   // Register event, track, moment, and correlation histograms.
   void init(InitContext const&)
@@ -288,9 +304,7 @@ struct FoxWolframCorrelation {
       LOGF(fatal, "multLower/multUpper must have the same size, between 1 and %d entries", MaxMultBins);
     }
     nMultBins = static_cast<int>(multLower.value.size());
-    if (nMultBins < 3) {
-      LOGF(fatal, "At least three broad multiplicity ranges are required");
-    }
+
     for (int i = 0; i < nMultBins; ++i) {
       if (multLower.value[i] > multUpper.value[i]) {
         LOGF(fatal, "Multiplicity bin %d has multLower (%d) > multUpper (%d)", i + 1, multLower.value[i], multUpper.value[i]);
@@ -417,10 +431,14 @@ struct FoxWolframCorrelation {
       histos.add(fmt::format("Spectra/etaphiTriEv_BIN{}", i).c_str(), fmt::format("etaphiTriEv_BIN{}", i).c_str(), kTH2D, {axisPhi, axisEta});
       histos.add(fmt::format("Spectra/ptphiTriEv_BIN{}", i).c_str(), fmt::format("ptphiTriEv_BIN{}", i).c_str(), kTH2D, {axisPhi, axispT});
 
-      //// Six near spectra and six combined 120/240-degree spectra per multiplicity bin ////
-      for (int angularBin = 0; angularBin < 6; ++angularBin) {
-        foldedHistos.add(fmt::format("triEvFoldedLR/nearPtD{}_BIN{}", angularBin, i).c_str(), fmt::format("LR near: {}-{} deg from 0", 10 * angularBin, 10 * (angularBin + 1)).c_str(), kTH1D, {axispT});
-        foldedHistos.add(fmt::format("triEvFoldedLR/awayPtD{}_BIN{}", angularBin, i).c_str(), fmt::format("LR away: {}-{} deg from 120 and 240", 10 * angularBin, 10 * (angularBin + 1)).c_str(), kTH1D, {axispT});
+      //// Folded LR pT spectra and mean pT versus multiplicity ////
+      for (int AngBin = 0; AngBin < 6; ++AngBin) {
+
+        foldedHistos.add(fmt::format("triEvFoldedLR/nearPtD{}_BIN{}", AngBin, i).c_str(), fmt::format("LR near: {}-{} deg from 0", 10 * AngBin, 10 * (AngBin + 1)).c_str(), kTH1D, {axispT});
+        foldedHistos.add(fmt::format("triEvFoldedLR/nearPtDMean{}_BIN{}", AngBin, i).c_str(), fmt::format("LR near: {}-{} deg from 0", 10 * AngBin, 10 * (AngBin + 1)).c_str(), kTProfile, {axisMultip});
+
+        foldedHistos.add(fmt::format("triEvFoldedLR/awayPtD{}_BIN{}", AngBin, i).c_str(), fmt::format("LR away: {}-{} deg from 120 and 240", 10 * AngBin, 10 * (AngBin + 1)).c_str(), kTH1D, {axispT});
+        foldedHistos.add(fmt::format("triEvFoldedLR/awayPtDMean{}_BIN{}", AngBin, i).c_str(), fmt::format("LR away: {}-{} deg from 120 and 240", 10 * AngBin, 10 * (AngBin + 1)).c_str(), kTProfile, {axisMultip});
       }
 
       //// ALL: pT spectra (TH1D) and mean associated pT versus multiplicity (TProfile) ////
@@ -478,14 +496,13 @@ struct FoxWolframCorrelation {
     // Register optional pairwise moment correlations.
     if (doFWMCorrelations) {
 
-      for (size_t k = 0; k < fwmCorrelationNames.size(); ++k) {
+      for (size_t k = 0; k < FwmCorrelationNames.size(); ++k) {
+        const int first = FwmCorrelationFirst[k] + 1;
+        const int second = FwmCorrelationSecond[k] + 1;
 
-        const int first = fwmCorrelationFirst[k] + 1;
-        const int second = fwmCorrelationSecond[k] + 1;
-
-        histos.add(fmt::format("FWM_BIN1/{}", fwmCorrelationNames[k]).c_str(), fmt::format("H_{{{}}} vs H_{{{}}}", first, second).c_str(), kTH2D, {axisHlfine, axisHlfine});
-        histos.add(fmt::format("FWM_BIN2/{}", fwmCorrelationNames[k]).c_str(), fmt::format("H_{{{}}} vs H_{{{}}}", first, second).c_str(), kTH2D, {axisHlfine, axisHlfine});
-        histos.add(fmt::format("FWM_BIN3/{}", fwmCorrelationNames[k]).c_str(), fmt::format("H_{{{}}} vs H_{{{}}}", first, second).c_str(), kTH2D, {axisHlfine, axisHlfine});
+        histos.add(fmt::format("FWM_BIN1/{}", FwmCorrelationNames[k]).c_str(), fmt::format("H_{{{}}} vs H_{{{}}}", first, second).c_str(), kTH2D, {axisHlfine, axisHlfine});
+        histos.add(fmt::format("FWM_BIN2/{}", FwmCorrelationNames[k]).c_str(), fmt::format("H_{{{}}} vs H_{{{}}}", first, second).c_str(), kTH2D, {axisHlfine, axisHlfine});
+        histos.add(fmt::format("FWM_BIN3/{}", FwmCorrelationNames[k]).c_str(), fmt::format("H_{{{}}} vs H_{{{}}}", first, second).c_str(), kTH2D, {axisHlfine, axisHlfine});
       }
     }
   }
@@ -635,61 +652,68 @@ struct FoxWolframCorrelation {
 
     // Fill inclusive spectra and selected-topology spectra for this interval.
     static_for<0, 9>([&](auto i) {
-      constexpr int idx = i.value;
+      constexpr int IdxVal = i.value;
 
-      if (binIndex == idx + 1) {
+      if (binIndex == IdxVal + 1) {
 
         for (const auto& track : tracks) {
 
-          histos.fill(HIST("Spectra/etaphiAllEv_") + HIST(binNames[idx]), track.phi(), track.eta());
-          histos.fill(HIST("Spectra/ptphiAllEv_") + HIST(binNames[idx]), track.phi(), track.pt());
+          histos.fill(HIST("Spectra/etaphiAllEv_") + HIST(BinNames[IdxVal]), track.phi(), track.eta());
+          histos.fill(HIST("Spectra/ptphiAllEv_") + HIST(BinNames[IdxVal]), track.phi(), track.pt());
 
           if (!isSelectedTopology) {
             continue;
           } // TRI Ev.
 
-          histos.fill(HIST("Spectra/etaphiTriEv_") + HIST(binNames[idx]), track.phi(), track.eta());
-          histos.fill(HIST("Spectra/ptphiTriEv_") + HIST(binNames[idx]), track.phi(), track.pt());
+          histos.fill(HIST("Spectra/etaphiTriEv_") + HIST(BinNames[IdxVal]), track.phi(), track.eta());
+          histos.fill(HIST("Spectra/ptphiTriEv_") + HIST(BinNames[IdxVal]), track.phi(), track.pt());
         }
       }
     }); // per Multip Bin
   }
 
-  //// Helper for one multiplicity bin (Idx is a template parameter, not a captured lambda variable) ////
+  //// Helper for one multiplicity bin (IdxVal is a template parameter, not a captured lambda variable) ////
   //// Avoids the GCC 14 ICE in tsubst_expr caused by nested generic static_for lambdas ////
-  template <int Idx>
-  void fillFoldedBin(double deltaPhi, double pt)
+  template <int IdxVal>
+  void fillFoldedBin(int nTracks, double deltaPhi, double pt)
   {
     const double degToRad = constants::math::PI / 180.;
 
-    //// Adjacent windows include the lower edge and exclude the upper edge ////
+    //// Six angular intervals with the existing strict boundary cuts ////
     static_for<0, 5>([&](auto j) {
-      constexpr int angularBin = j.value;
-      constexpr double lo = 10. * angularBin;
-      constexpr double hi = 10. * (angularBin + 1);
+      constexpr int AngBin = j.value;
+      constexpr double LowLim = 10. * AngBin;
+      constexpr double HighLim = 10. * (AngBin + 1);
 
       //// Combine the two sides of the near peak at zero ////
-      const bool inNear = (deltaPhi > -hi * degToRad && deltaPhi < -lo * degToRad) || (deltaPhi > lo * degToRad && deltaPhi < hi * degToRad);
+      const bool inNear = (deltaPhi > -HighLim * degToRad && deltaPhi < -LowLim * degToRad) || (deltaPhi > LowLim * degToRad && deltaPhi < HighLim * degToRad);
 
       if (inNear) {
-        foldedHistos.fill(HIST("triEvFoldedLR/") + HIST(nearNames[angularBin]) + HIST(binNames[Idx]), pt);
-      }
+        if (pt > meanPtMin.value) {
+          foldedHistos.fill(HIST("triEvFoldedLR/") + HIST(NearNames[AngBin]) + HIST(BinNames[IdxVal]), pt);
+          foldedHistos.fill(HIST("triEvFoldedLR/") + HIST(NearMeanNames[AngBin]) + HIST(BinNames[IdxVal]), nTracks, pt);
+        } // for pt > meanPtMin
+      } // PEAK 1
 
       //// Combine both sides of 120 and 240 degrees ////
       //// The final window maps angles above 270 degrees to negative deltaPhi ////
-      const bool inAway = (deltaPhi > (120. - hi) * degToRad && deltaPhi < (120. - lo) * degToRad) || (deltaPhi > (120. + lo) * degToRad && deltaPhi < (120. + hi) * degToRad) ||
-                          (deltaPhi > (240. - hi) * degToRad && deltaPhi < (240. - lo) * degToRad) || (deltaPhi > (240. + lo) * degToRad && deltaPhi < (240. + hi) * degToRad) ||
-                          (deltaPhi > (240. + lo - 360.) * degToRad && deltaPhi < (240. + hi - 360.) * degToRad);
+      const bool inAway = (deltaPhi > (120. - HighLim) * degToRad && deltaPhi < (120. - LowLim) * degToRad) || (deltaPhi > (120. + LowLim) * degToRad && deltaPhi < (120. + HighLim) * degToRad) ||
+                          (deltaPhi > (240. - HighLim) * degToRad && deltaPhi < (240. - LowLim) * degToRad) || (deltaPhi > (240. + LowLim) * degToRad && deltaPhi < (240. + HighLim) * degToRad) ||
+                          (deltaPhi > (240. + LowLim - 360.) * degToRad && deltaPhi < (240. + HighLim - 360.) * degToRad);
 
       if (inAway) {
-        foldedHistos.fill(HIST("triEvFoldedLR/") + HIST(awayNames[angularBin]) + HIST(binNames[Idx]), pt);
-      }
+        if (pt > meanPtMin.value) {
+          foldedHistos.fill(HIST("triEvFoldedLR/") + HIST(AwayNames[AngBin]) + HIST(BinNames[IdxVal]), pt);
+          foldedHistos.fill(HIST("triEvFoldedLR/") + HIST(AwayMeanNames[AngBin]) + HIST(BinNames[IdxVal]), nTracks, pt);
+        } // for pt > meanPtMin
+      } // PEAKS 2 AND 3
     });
   }
 
   //// TRI LR pT spectra in six symmetric angular intervals ////
   template <typename Track>
   void fillSameEventFoldedLR(int binIndex,
+                             int nTracks,
                              Track const& associatedTrack,
                              double deltaPhi,
                              double deltaEta,
@@ -716,18 +740,18 @@ struct FoxWolframCorrelation {
 
     //// Fill only the requested multiplicity interval ////
     static_for<0, 9>([&](auto i) {
-      constexpr int idx = i.value;
+      constexpr int IdxVal = i.value;
 
-      if (binIndex != idx + 1) {
+      if (binIndex != IdxVal + 1) {
         return;
       }
 
-      fillFoldedBin<idx>(deltaPhi, associatedTrack.pt());
+      fillFoldedBin<IdxVal>(nTracks, deltaPhi, associatedTrack.pt());
     });
   }
 
-  //// Helper for one multiplicity bin (Idx is a template parameter, not a captured lambda variable) ////
-  template <int Idx>
+  //// Helper for one multiplicity bin (IdxVal is a template parameter, not a captured lambda variable) ////
+  template <int IdxVal>
   void fillPtBin(bool isAll, bool isTri,
                  const std::array<bool, 3>& allWindows, const std::array<bool, 4>& triWindows,
                  bool inLR, bool inSR, int nTracks, double pt)
@@ -735,20 +759,25 @@ struct FoxWolframCorrelation {
     //// Fill ALL spectra and profiles with one entry per accepted pair ////
     if (isAll) {
       static_for<0, 2>([&](auto j) {
-        constexpr int region = j.value;
+        constexpr int RegionVal = j.value;
 
-        if (!allWindows[region]) {
+        if (!allWindows[RegionVal]) {
           return;
         }
 
         if (inLR) {
-          histos.fill(HIST("allEvPkVall/") + HIST(allLRNames[region]) + HIST("Pt_") + HIST(binNames[Idx]), pt);
-          histos.fill(HIST("allEvPkVall/") + HIST(allLRNames[region]) + HIST("PtMultip_") + HIST(binNames[Idx]), nTracks, pt);
+          if (pt > meanPtMin.value) {
+            histos.fill(HIST("allEvPkVall/") + HIST(AllLrNames[RegionVal]) + HIST("Pt_") + HIST(BinNames[IdxVal]), pt);
+            histos.fill(HIST("allEvPkVall/") + HIST(AllLrNames[RegionVal]) + HIST("PtMultip_") + HIST(BinNames[IdxVal]), nTracks, pt);
+          } // for pt > meanPtMin
         }
 
         if (inSR) {
-          histos.fill(HIST("allEvPkVall/") + HIST(allSRNames[region]) + HIST("Pt_") + HIST(binNames[Idx]), pt);
-          histos.fill(HIST("allEvPkVall/") + HIST(allSRNames[region]) + HIST("PtMultip_") + HIST(binNames[Idx]), nTracks, pt);
+
+          if (pt > meanPtMin.value) {
+            histos.fill(HIST("allEvPkVall/") + HIST(AllSrNames[RegionVal]) + HIST("Pt_") + HIST(BinNames[IdxVal]), pt);
+            histos.fill(HIST("allEvPkVall/") + HIST(AllSrNames[RegionVal]) + HIST("PtMultip_") + HIST(BinNames[IdxVal]), nTracks, pt);
+          } // for pt > meanPtMin
         }
       });
     }
@@ -756,20 +785,24 @@ struct FoxWolframCorrelation {
     //// Fill TRI spectra and profiles with one entry per accepted pair ////
     if (isTri) {
       static_for<0, 3>([&](auto j) {
-        constexpr int region = j.value;
+        constexpr int RegionVal = j.value;
 
-        if (!triWindows[region]) {
+        if (!triWindows[RegionVal]) {
           return;
         }
 
         if (inLR) {
-          histos.fill(HIST("triEvPkVall/") + HIST(triLRNames[region]) + HIST("Pt_") + HIST(binNames[Idx]), pt);
-          histos.fill(HIST("triEvPkVall/") + HIST(triLRNames[region]) + HIST("PtMultip_") + HIST(binNames[Idx]), nTracks, pt);
+          if (pt > meanPtMin.value) {
+            histos.fill(HIST("triEvPkVall/") + HIST(TriLrNames[RegionVal]) + HIST("Pt_") + HIST(BinNames[IdxVal]), pt);
+            histos.fill(HIST("triEvPkVall/") + HIST(TriLrNames[RegionVal]) + HIST("PtMultip_") + HIST(BinNames[IdxVal]), nTracks, pt);
+          } // for pt > meanPtMin
         }
 
         if (inSR) {
-          histos.fill(HIST("triEvPkVall/") + HIST(triSRNames[region]) + HIST("Pt_") + HIST(binNames[Idx]), pt);
-          histos.fill(HIST("triEvPkVall/") + HIST(triSRNames[region]) + HIST("PtMultip_") + HIST(binNames[Idx]), nTracks, pt);
+          if (pt > meanPtMin.value) {
+            histos.fill(HIST("triEvPkVall/") + HIST(TriSrNames[RegionVal]) + HIST("Pt_") + HIST(BinNames[IdxVal]), pt);
+            histos.fill(HIST("triEvPkVall/") + HIST(TriSrNames[RegionVal]) + HIST("PtMultip_") + HIST(BinNames[IdxVal]), nTracks, pt);
+          } // for pt > meanPtMin
         }
       });
     }
@@ -797,8 +830,8 @@ struct FoxWolframCorrelation {
     const bool inSR = absEta < 0.35;
 
     //// Preserve the original open angular windows ////
-    const auto inPhi = [&](double lo, double hi) {
-      return deltaPhi > lo * degToRad && deltaPhi < hi * degToRad;
+    const auto inPhi = [&](double lowLim, double highLim) {
+      return deltaPhi > lowLim * degToRad && deltaPhi < highLim * degToRad;
     };
 
     //// Event topology ////
@@ -822,13 +855,13 @@ struct FoxWolframCorrelation {
 
     //// Fill only the requested multiplicity interval ////
     static_for<0, 9>([&](auto i) {
-      constexpr int idx = i.value;
+      constexpr int IdxVal = i.value;
 
-      if (binIndex != idx + 1) {
+      if (binIndex != IdxVal + 1) {
         return;
       }
 
-      fillPtBin<idx>(isAll, isTri, allWindows, triWindows, inLR, inSR, nTracks, pt);
+      fillPtBin<IdxVal>(isAll, isTri, allWindows, triWindows, inLR, inSR, nTracks, pt);
     });
   }
 
@@ -842,9 +875,9 @@ struct FoxWolframCorrelation {
   {
 
     static_for<0, 9>([&](auto i) {
-      constexpr int idx = i.value;
+      constexpr int IdxVal = i.value;
 
-      if (binIndex != idx + 1) {
+      if (binIndex != IdxVal + 1) {
         return;
       }
 
@@ -854,8 +887,8 @@ struct FoxWolframCorrelation {
 
       //// Count the pair and fill its original angular coordinates ////
       histos.fill(HIST("SamePairs/SamePairsNoLA"), binIndex);
-      histos.fill(HIST("Corelations/sProjTRI_") + HIST(binNames[idx]), deltaPhi);
-      histos.fill(HIST("Corelations/sTRI_") + HIST(binNames[idx]), deltaPhi, deltaEta);
+      histos.fill(HIST("Corelations/sProjTRI_") + HIST(BinNames[IdxVal]), deltaPhi);
+      histos.fill(HIST("Corelations/sTRI_") + HIST(BinNames[IdxVal]), deltaPhi, deltaEta);
     });
   }
 
@@ -865,15 +898,15 @@ struct FoxWolframCorrelation {
   {
     // H[0] = H0 (normalizare), H[1..8] = H1..H8
     static_for<0, 7>([&](auto j) {
-      constexpr int jj = j.value;
-      histos.fill(HIST(fwmRangeNames[R]) + HIST(fwmHNames[jj]), H[jj + 1]);
-      histos.fill(HIST(fwmRangeNames[R]) + HIST(fwmMultHNames[jj]), nTrk, H[jj + 1]);
+      constexpr int JjIt = j.value;
+      histos.fill(HIST(FwmRangeNames[R]) + HIST(FwmHlNames[JjIt]), H[JjIt + 1]);
+      histos.fill(HIST(FwmRangeNames[R]) + HIST(FwmMulthNames[JjIt]), nTrk, H[JjIt + 1]);
     });
 
     if (doFWMCorrelations) {
       static_for<0, 27>([&](auto k) {
-        constexpr int kk = k.value;
-        histos.fill(HIST(fwmRangeNames[R]) + HIST(fwmCorrelationNames[kk]), H[fwmCorrelationFirst[kk] + 1], H[fwmCorrelationSecond[kk] + 1]);
+        constexpr int KkIt = k.value;
+        histos.fill(HIST(FwmRangeNames[R]) + HIST(FwmCorrelationNames[KkIt]), H[FwmCorrelationFirst[KkIt] + 1], H[FwmCorrelationSecond[KkIt] + 1]);
       });
     }
   }
@@ -1041,7 +1074,7 @@ struct FoxWolframCorrelation {
             //// Fixed-window spectra and mean-pT profiles ////
             fillSameEventPtHist(i + 1, nGlobalTracks, track2, deltaPhi, deltaEta, isLeadAssocPair);
             //// TRI LR spectra in symmetric 10-degree windows ////
-            fillSameEventFoldedLR(i + 1, track2, deltaPhi, deltaEta, isLeadAssocPair);
+            fillSameEventFoldedLR(i + 1, nGlobalTracks, track2, deltaPhi, deltaEta, isLeadAssocPair);
           }
         }
       }
@@ -1122,12 +1155,12 @@ struct FoxWolframCorrelation {
 // Build mixed-event backgrounds from the selected event tables.
 struct FoxWolframCorrelationMixing {
 
-  SliceCache cache_bin1, cache_bin2, cache_bin3, cache_bin4, cache_bin5, cache_bin6, cache_bin7, cache_bin8, cache_bin9, cache_bin10;
+  SliceCache cacheBin1, cacheBin2, cacheBin3, cacheBin4, cacheBin5, cacheBin6, cacheBin7, cacheBin8, cacheBin9, cacheBin10;
   Preslice<aod::TriangleTracks> triCol = aod::track_tri::triangleCollisionId;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  static constexpr std::array<std::string_view, 10> mixedBinNames = {
+  static constexpr std::array<std::string_view, 10> MixedBinNames = {
     "BIN1", "BIN2", "BIN3", "BIN4", "BIN5", "BIN6", "BIN7", "BIN8", "BIN9", "BIN10"};
 
   Configurable<int> nBin{"nBin", 100, "No of bis per axis"};
@@ -1176,12 +1209,12 @@ struct FoxWolframCorrelationMixing {
     //// Each mixing axis must cover its configured integer multiplicity interval ////
     for (int i = 0; i < nMultBins; ++i) {
       const auto& edges = axisEdges[i];
-      const double lo = multLower.value[i] - 0.5;
-      const double hi = multUpper.value[i] + 0.5;
+      const double lowLim = multLower.value[i] - 0.5;
+      const double highLim = multUpper.value[i] + 0.5;
       if (multLower.value[i] > multUpper.value[i] || edges.size() < 2 ||
-          std::abs(edges[edges.size() - 2] - lo) > 1.e-6 ||
-          std::abs(edges.back() - hi) > 1.e-6) {
-        LOGF(fatal, "axisMult%d must match multiplicity limits [%.1f, %.1f]", i + 1, lo, hi);
+          std::abs(edges[edges.size() - 2] - lowLim) > 1.e-6 ||
+          std::abs(edges.back() - highLim) > 1.e-6) {
+        LOGF(fatal, "axisMult%d must match multiplicity limits [%.1f, %.1f]", i + 1, lowLim, highLim);
       }
     }
 
@@ -1221,16 +1254,16 @@ struct FoxWolframCorrelationMixing {
   BinningType binningOnPosMultip10{{axisVtx, axisMult10}};
 
   // Create independent mixing pools for the ten multiplicity intervals.
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN1{binningOnPosMultip1, nMixedEvents, -1, &cache_bin1};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN2{binningOnPosMultip2, nMixedEvents, -1, &cache_bin2};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN3{binningOnPosMultip3, nMixedEvents, -1, &cache_bin3};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN4{binningOnPosMultip4, nMixedEvents, -1, &cache_bin4};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN5{binningOnPosMultip5, nMixedEvents, -1, &cache_bin5};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN6{binningOnPosMultip6, nMixedEvents, -1, &cache_bin6};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN7{binningOnPosMultip7, nMixedEvents, -1, &cache_bin7};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN8{binningOnPosMultip8, nMixedEvents, -1, &cache_bin8};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN9{binningOnPosMultip9, nMixedEvents, -1, &cache_bin9};
-  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN10{binningOnPosMultip10, nMixedEvents, -1, &cache_bin10};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN1{binningOnPosMultip1, nMixedEvents, -1, &cacheBin1};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN2{binningOnPosMultip2, nMixedEvents, -1, &cacheBin2};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN3{binningOnPosMultip3, nMixedEvents, -1, &cacheBin3};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN4{binningOnPosMultip4, nMixedEvents, -1, &cacheBin4};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN5{binningOnPosMultip5, nMixedEvents, -1, &cacheBin5};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN6{binningOnPosMultip6, nMixedEvents, -1, &cacheBin6};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN7{binningOnPosMultip7, nMixedEvents, -1, &cacheBin7};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN8{binningOnPosMultip8, nMixedEvents, -1, &cacheBin8};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN9{binningOnPosMultip9, nMixedEvents, -1, &cacheBin9};
+  SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN10{binningOnPosMultip10, nMixedEvents, -1, &cacheBin10};
 
   // Pointers to the pools so they can be processed in a loop (filled in init()).
   using MixPair = SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType>;
@@ -1265,10 +1298,10 @@ struct FoxWolframCorrelationMixing {
         // Count accepted pairs in the corresponding multiplicity interval.
         histos.fill(HIST("MixingPairs/MixingPairsNoLA"), binIndex);
         static_for<0, 9>([&](auto i) {
-          constexpr int idx = i.value;
-          if (binIndex == idx + 1) {
-            histos.fill(HIST("Corelations/bProjTRI_") + HIST(mixedBinNames[idx]), deltaPhi);
-            histos.fill(HIST("Corelations/bTRI_") + HIST(mixedBinNames[idx]), deltaPhi, deltaEta);
+          constexpr int IdxVal = i.value;
+          if (binIndex == IdxVal + 1) {
+            histos.fill(HIST("Corelations/bProjTRI_") + HIST(MixedBinNames[IdxVal]), deltaPhi);
+            histos.fill(HIST("Corelations/bTRI_") + HIST(MixedBinNames[IdxVal]), deltaPhi, deltaEta);
           }
         });
       }

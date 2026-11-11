@@ -1851,7 +1851,7 @@ struct lambdapolsp {
           continue;
 
         int taga = LambdaTag;
-        int tagb = aLambdaTag;
+        int tagb{}; // = aLambdaTag; // FIXME: unused
 
         if (useAccCorr) {
           accprofileL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathL.value, bc.timestamp());
@@ -2220,7 +2220,7 @@ struct lambdapolsp {
       }
 
       int taga = LambdaTag;
-      int tagb = aLambdaTag;
+      int tagb{}; // = aLambdaTag; // FIXME: unused
       int tagc = K0sTag;
 
       if (analyzeK0s && K0sTag) {
