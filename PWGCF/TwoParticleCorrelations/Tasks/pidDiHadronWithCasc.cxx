@@ -54,6 +54,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -259,7 +260,7 @@ struct PidDiHadronWithCasc {
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEvSel.cfgGlobalCutVertex);
   Filter mcCollisionFilter = (nabs(aod::mccollision::posZ) < cfgEvSel.cfgGlobalCutVertex);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkSel.cfgGlobalEta) && (aod::track::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::track::pt < cfgTrkSel.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgTrkSel.cfgGlobalChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgTrkSel.cfgGlobalDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkSel.cfgGlobalEta) && (aod::track::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::track::pt < cfgTrkSel.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgTrkSel.cfgGlobalChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgTrkSel.cfgGlobalDCAz);
   Filter mcTrackFilter = (nabs(aod::mcparticle::eta) < cfgTrkSel.cfgGlobalEta) && (aod::mcparticle::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::mcparticle::pt < cfgTrkSel.cfgGlobalPtMax);
 
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
@@ -431,7 +432,7 @@ struct PidDiHadronWithCasc {
     std::vector<ValidParticle> assocParticles;
     void addValidParticle(float eta, float phi, float pt, int16_t sign, int64_t globalIndex)
     {
-      ValidParticle particle{eta, phi, pt, sign, globalIndex};
+      ValidParticle particle{.eta = eta, .phi = phi, .pt = pt, .sign = sign, .globalIndex = globalIndex};
       assocParticles.push_back(particle);
     }
   };
@@ -875,145 +876,208 @@ struct PidDiHadronWithCasc {
     auto posdau = casc.template posTrack_as<DaughterTracks>();
     auto negdau = casc.template negTrack_as<DaughterTracks>();
 
-    if (bachelor.pt() < trkQualityOpts.cfgCutPtDauMin.value || bachelor.pt() > trkQualityOpts.cfgCutPtDauMax.value)
+    if (bachelor.pt() < trkQualityOpts.cfgCutPtDauMin.value || bachelor.pt() > trkQualityOpts.cfgCutPtDauMax.value) {
       return false;
-    if (posdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || posdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
+    }
+    if (posdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || posdau.pt() > trkQualityOpts.cfgCutPtDauMax.value) {
       return false;
-    if (negdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || negdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
+    }
+    if (negdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || negdau.pt() > trkQualityOpts.cfgCutPtDauMax.value) {
       return false;
-    if (std::fabs(bachelor.eta()) > trkQualityOpts.cfgCutEta.value)
+    }
+    if (std::fabs(bachelor.eta()) > trkQualityOpts.cfgCutEta.value) {
       return false;
-    if (std::fabs(posdau.eta()) > trkQualityOpts.cfgCutEta.value)
+    }
+    if (std::fabs(posdau.eta()) > trkQualityOpts.cfgCutEta.value) {
       return false;
-    if (std::fabs(negdau.eta()) > trkQualityOpts.cfgCutEta.value)
+    }
+    if (std::fabs(negdau.eta()) > trkQualityOpts.cfgCutEta.value) {
       return false;
+    }
 
     // track quality check
-    if (bachelor.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
+    if (bachelor.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value) {
       return false;
-    if (posdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
+    }
+    if (posdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value) {
       return false;
-    if (negdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value)
+    }
+    if (negdau.itsNCls() <= trkQualityOpts.cfgMinITSNCls.value) {
       return false;
-    if (bachelor.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+    }
+    if (bachelor.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value) {
       return false;
-    if (posdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+    }
+    if (posdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value) {
       return false;
-    if (negdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value)
+    }
+    if (negdau.itsNCls() >= trkQualityOpts.cfgMaxITSNCls.value) {
       return false;
+    }
 
-    if (bachelor.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+    if (bachelor.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value) {
       return false;
-    if (posdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+    }
+    if (posdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value) {
       return false;
-    if (negdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+    }
+    if (negdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value) {
       return false;
-    if (bachelor.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
+    }
+    if (bachelor.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value) {
       return false;
-    if (posdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
+    }
+    if (posdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value) {
       return false;
-    if (negdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
+    }
+    if (negdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value) {
       return false;
-    if (bachelor.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value)
+    }
+    if (bachelor.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value) {
       return false;
-    if (posdau.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value)
+    }
+    if (posdau.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value) {
       return false;
-    if (negdau.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value)
+    }
+    if (negdau.tpcChi2NCl() >= trkQualityOpts.cfgCutChi2prTPCcls.value) {
       return false;
+    }
 
     if (cfgEvSel.cfgEvSelHaveXi.value) {
-      if (!isSideband && (casc.mXi() > cascBuilderOpts.cfgcasc_massEdgeRight.value || casc.mXi() < cascBuilderOpts.cfgcasc_massEdgeLeft.value))
+      if (!isSideband && (casc.mXi() > cascBuilderOpts.cfgcasc_massEdgeRight.value || casc.mXi() < cascBuilderOpts.cfgcasc_massEdgeLeft.value)) {
         return false;
-      if (isSideband && (casc.mXi() < cascBuilderOpts.cfgcasc_massEdgePeakRight.value && casc.mXi() > cascBuilderOpts.cfgcasc_massEdgePeakLeft.value))
-        return false;
-      if (isSideband && (casc.mXi() > cascBuilderOpts.cfgcasc_massEdgeSideBandRight.value || casc.mXi() < cascBuilderOpts.cfgcasc_massEdgeSideBandLeft.value))
-        return false;
-      if (casc.sign() < 0) {
-        if (std::fabs(bachelor.tpcNSigmaPi()) > cfgNSigma[0])
-          return false;
-        if (std::fabs(posdau.tpcNSigmaPr()) > cfgNSigma[1])
-          return false;
-        if (std::fabs(negdau.tpcNSigmaPi()) > cfgNSigma[0])
-          return false;
-        if (std::fabs(casc.dcapostopv()) < cascBuilderOpts.cfgcasc_dcaLaprtopv.value)
-          return false;
-        if (std::fabs(casc.dcanegtopv()) < cascBuilderOpts.cfgcasc_dcaLapitopv.value)
-          return false;
-      } else if (casc.sign() > 0) {
-        if (std::fabs(bachelor.tpcNSigmaPi()) > cfgNSigma[0])
-          return false;
-        if (std::fabs(negdau.tpcNSigmaPr()) > cfgNSigma[1])
-          return false;
-        if (std::fabs(posdau.tpcNSigmaPi()) > cfgNSigma[0])
-          return false;
-        if (std::fabs(casc.dcanegtopv()) < cascBuilderOpts.cfgcasc_dcaLaprtopv.value)
-          return false;
-        if (std::fabs(casc.dcapostopv()) < cascBuilderOpts.cfgcasc_dcaLapitopv.value)
-          return false;
       }
-      if (casc.cascradius() < cascBuilderOpts.cfgcasc_radius.value)
+      if (isSideband && (casc.mXi() < cascBuilderOpts.cfgcasc_massEdgePeakRight.value && casc.mXi() > cascBuilderOpts.cfgcasc_massEdgePeakLeft.value)) {
         return false;
-      if (casc.casccosPA(posX, posY, posZ) < cascBuilderOpts.cfgcasc_casccospa.value)
+      }
+      if (isSideband && (casc.mXi() > cascBuilderOpts.cfgcasc_massEdgeSideBandRight.value || casc.mXi() < cascBuilderOpts.cfgcasc_massEdgeSideBandLeft.value)) {
         return false;
-      if (casc.v0cosPA(posX, posY, posZ) < cascBuilderOpts.cfgcasc_v0cospa.value)
+      }
+      if (casc.sign() < 0) {
+        if (std::fabs(bachelor.tpcNSigmaPi()) > cfgNSigma[0]) {
+          return false;
+        }
+        if (std::fabs(posdau.tpcNSigmaPr()) > cfgNSigma[1]) {
+          return false;
+        }
+        if (std::fabs(negdau.tpcNSigmaPi()) > cfgNSigma[0]) {
+          return false;
+        }
+        if (std::fabs(casc.dcapostopv()) < cascBuilderOpts.cfgcasc_dcaLaprtopv.value) {
+          return false;
+        }
+        if (std::fabs(casc.dcanegtopv()) < cascBuilderOpts.cfgcasc_dcaLapitopv.value) {
+          return false;
+        }
+      } else if (casc.sign() > 0) {
+        if (std::fabs(bachelor.tpcNSigmaPi()) > cfgNSigma[0]) {
+          return false;
+        }
+        if (std::fabs(negdau.tpcNSigmaPr()) > cfgNSigma[1]) {
+          return false;
+        }
+        if (std::fabs(posdau.tpcNSigmaPi()) > cfgNSigma[0]) {
+          return false;
+        }
+        if (std::fabs(casc.dcanegtopv()) < cascBuilderOpts.cfgcasc_dcaLaprtopv.value) {
+          return false;
+        }
+        if (std::fabs(casc.dcapostopv()) < cascBuilderOpts.cfgcasc_dcaLapitopv.value) {
+          return false;
+        }
+      }
+      if (casc.cascradius() < cascBuilderOpts.cfgcasc_radius.value) {
         return false;
-      if (std::fabs(casc.dcav0topv(posX, posY, posZ)) < cascBuilderOpts.cfgcasc_dcav0topv.value)
+      }
+      if (casc.casccosPA(posX, posY, posZ) < cascBuilderOpts.cfgcasc_casccospa.value) {
         return false;
-      if (std::fabs(casc.dcabachtopv()) < cascBuilderOpts.cfgcasc_dcabachtopv.value)
+      }
+      if (casc.v0cosPA(posX, posY, posZ) < cascBuilderOpts.cfgcasc_v0cospa.value) {
         return false;
-      if (casc.dcacascdaughters() > cascBuilderOpts.cfgcasc_dcacascdau.value)
+      }
+      if (std::fabs(casc.dcav0topv(posX, posY, posZ)) < cascBuilderOpts.cfgcasc_dcav0topv.value) {
         return false;
-      if (casc.dcaV0daughters() > cascBuilderOpts.cfgcasc_dcav0dau.value)
+      }
+      if (std::fabs(casc.dcabachtopv()) < cascBuilderOpts.cfgcasc_dcabachtopv.value) {
         return false;
-      if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascBuilderOpts.cfgcasc_mlambdawindow.value)
+      }
+      if (casc.dcacascdaughters() > cascBuilderOpts.cfgcasc_dcacascdau.value) {
         return false;
+      }
+      if (casc.dcaV0daughters() > cascBuilderOpts.cfgcasc_dcav0dau.value) {
+        return false;
+      }
+      if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascBuilderOpts.cfgcasc_mlambdawindow.value) {
+        return false;
+      }
     }
     if (cfgEvSel.cfgEvSelHaveOmega.value) {
-      if (!isSideband && (casc.mOmega() > cascBuilderOpts.cfgcasc_massEdgeRight.value || casc.mOmega() < cascBuilderOpts.cfgcasc_massEdgeLeft.value))
+      if (!isSideband && (casc.mOmega() > cascBuilderOpts.cfgcasc_massEdgeRight.value || casc.mOmega() < cascBuilderOpts.cfgcasc_massEdgeLeft.value)) {
         return false;
-      if (isSideband && (casc.mOmega() < cascBuilderOpts.cfgcasc_massEdgePeakRight.value && casc.mOmega() > cascBuilderOpts.cfgcasc_massEdgePeakLeft.value))
-        return false;
-      if (isSideband && (casc.mOmega() > cascBuilderOpts.cfgcasc_massEdgeSideBandRight.value || casc.mOmega() < cascBuilderOpts.cfgcasc_massEdgeSideBandLeft.value))
-        return false;
-      if (casc.sign() < 0) {
-        if (std::fabs(bachelor.tpcNSigmaKa()) > cfgNSigma[2])
-          return false;
-        if (std::fabs(posdau.tpcNSigmaPr()) > cfgNSigma[1])
-          return false;
-        if (std::fabs(negdau.tpcNSigmaPi()) > cfgNSigma[0])
-          return false;
-        if (std::fabs(casc.dcapostopv()) < cascBuilderOpts.cfgcasc_dcaLaprtopv.value)
-          return false;
-        if (std::fabs(casc.dcanegtopv()) < cascBuilderOpts.cfgcasc_dcaLapitopv.value)
-          return false;
-      } else if (casc.sign() > 0) {
-        if (std::fabs(bachelor.tpcNSigmaKa()) > cfgNSigma[2])
-          return false;
-        if (std::fabs(negdau.tpcNSigmaPr()) > cfgNSigma[1])
-          return false;
-        if (std::fabs(posdau.tpcNSigmaPi()) > cfgNSigma[0])
-          return false;
-        if (std::fabs(casc.dcanegtopv()) < cascBuilderOpts.cfgcasc_dcaLaprtopv.value)
-          return false;
-        if (std::fabs(casc.dcapostopv()) < cascBuilderOpts.cfgcasc_dcaLapitopv.value)
-          return false;
       }
-      if (casc.cascradius() < cascBuilderOpts.cfgcasc_radius.value)
+      if (isSideband && (casc.mOmega() < cascBuilderOpts.cfgcasc_massEdgePeakRight.value && casc.mOmega() > cascBuilderOpts.cfgcasc_massEdgePeakLeft.value)) {
         return false;
-      if (casc.casccosPA(posX, posY, posZ) < cascBuilderOpts.cfgcasc_casccospa.value)
+      }
+      if (isSideband && (casc.mOmega() > cascBuilderOpts.cfgcasc_massEdgeSideBandRight.value || casc.mOmega() < cascBuilderOpts.cfgcasc_massEdgeSideBandLeft.value)) {
         return false;
-      if (casc.v0cosPA(posX, posY, posZ) < cascBuilderOpts.cfgcasc_v0cospa.value)
+      }
+      if (casc.sign() < 0) {
+        if (std::fabs(bachelor.tpcNSigmaKa()) > cfgNSigma[2]) {
+          return false;
+        }
+        if (std::fabs(posdau.tpcNSigmaPr()) > cfgNSigma[1]) {
+          return false;
+        }
+        if (std::fabs(negdau.tpcNSigmaPi()) > cfgNSigma[0]) {
+          return false;
+        }
+        if (std::fabs(casc.dcapostopv()) < cascBuilderOpts.cfgcasc_dcaLaprtopv.value) {
+          return false;
+        }
+        if (std::fabs(casc.dcanegtopv()) < cascBuilderOpts.cfgcasc_dcaLapitopv.value) {
+          return false;
+        }
+      } else if (casc.sign() > 0) {
+        if (std::fabs(bachelor.tpcNSigmaKa()) > cfgNSigma[2]) {
+          return false;
+        }
+        if (std::fabs(negdau.tpcNSigmaPr()) > cfgNSigma[1]) {
+          return false;
+        }
+        if (std::fabs(posdau.tpcNSigmaPi()) > cfgNSigma[0]) {
+          return false;
+        }
+        if (std::fabs(casc.dcanegtopv()) < cascBuilderOpts.cfgcasc_dcaLaprtopv.value) {
+          return false;
+        }
+        if (std::fabs(casc.dcapostopv()) < cascBuilderOpts.cfgcasc_dcaLapitopv.value) {
+          return false;
+        }
+      }
+      if (casc.cascradius() < cascBuilderOpts.cfgcasc_radius.value) {
         return false;
-      if (std::fabs(casc.dcav0topv(posX, posY, posZ)) < cascBuilderOpts.cfgcasc_dcav0topv.value)
+      }
+      if (casc.casccosPA(posX, posY, posZ) < cascBuilderOpts.cfgcasc_casccospa.value) {
         return false;
-      if (std::fabs(casc.dcabachtopv()) < cascBuilderOpts.cfgcasc_dcabachtopv.value)
+      }
+      if (casc.v0cosPA(posX, posY, posZ) < cascBuilderOpts.cfgcasc_v0cospa.value) {
         return false;
-      if (casc.dcacascdaughters() > cascBuilderOpts.cfgcasc_dcacascdau.value)
+      }
+      if (std::fabs(casc.dcav0topv(posX, posY, posZ)) < cascBuilderOpts.cfgcasc_dcav0topv.value) {
         return false;
-      if (casc.dcaV0daughters() > cascBuilderOpts.cfgcasc_dcav0dau.value)
+      }
+      if (std::fabs(casc.dcabachtopv()) < cascBuilderOpts.cfgcasc_dcabachtopv.value) {
         return false;
-      if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascBuilderOpts.cfgcasc_mlambdawindow.value)
+      }
+      if (casc.dcacascdaughters() > cascBuilderOpts.cfgcasc_dcacascdau.value) {
         return false;
+      }
+      if (casc.dcaV0daughters() > cascBuilderOpts.cfgcasc_dcav0dau.value) {
+        return false;
+      }
+      if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascBuilderOpts.cfgcasc_mlambdawindow.value) {
+        return false;
+      }
     }
     return true;
   }
@@ -1111,7 +1175,7 @@ struct PidDiHadronWithCasc {
       } else {
         mEfficiencyNch = ccdb->getForTimeStamp<TH1D>(cfgEffWeights.cfgEfficiencyNch, timestamp);
       }
-      if (!mEfficiencyNch) {
+      if (mEfficiencyNch == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEffWeights.cfgEfficiencyNch.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEffWeights.cfgEfficiencyNch.value.c_str(), static_cast<void*>(mEfficiencyNch));
@@ -1129,7 +1193,7 @@ struct PidDiHadronWithCasc {
   bool getEfficiencyCorrectionNch(float& weightNch, float pt)
   {
     float effNch = 1.;
-    if (mEfficiencyNch) {
+    if (mEfficiencyNch != nullptr) {
       int ptBin = mEfficiencyNch->FindBin(pt);
       effNch = mEfficiencyNch->GetBinContent(ptBin);
     } else {
@@ -1145,7 +1209,7 @@ struct PidDiHadronWithCasc {
   bool getEfficiencyCorrection(float& weight_nue, float eta, float pt, float posZ)
   {
     float eff = 1.;
-    if (mEfficiency) {
+    if (mEfficiency != nullptr) {
       int etaBin = mEfficiency->GetXaxis()->FindBin(eta);
       int ptBin = mEfficiency->GetYaxis()->FindBin(pt);
       int zBin = mEfficiency->GetZaxis()->FindBin(posZ);
@@ -1163,7 +1227,7 @@ struct PidDiHadronWithCasc {
   bool getCentralityWeight(float& weightCent, const double centrality)
   {
     float weight = 1.;
-    if (mCentralityWeight) {
+    if (mCentralityWeight != nullptr) {
       weight = mCentralityWeight->GetBinContent(mCentralityWeight->FindBin(centrality));
     } else {
       weight = 1.0;
@@ -1432,8 +1496,9 @@ struct PidDiHadronWithCasc {
   {
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
-    if (currentCollision.assocParticles.size() == 0)
+    if (currentCollision.assocParticles.size() == 0) {
       return;
+    }
     // loop over all  validCollisions in buffer
     for (const auto& collision : validCollisions[bin]) {
       int fSampleIndex = static_cast<int>(fRandom.Uniform(0.0, cfgGeneral.cfgSampleSize));
@@ -1895,12 +1960,15 @@ struct PidDiHadronWithCasc {
           }
         }
       }
-      if (!cfgEvSel.cfgEvSelIsSideband.value && !haveCasc)
+      if (!cfgEvSel.cfgEvSelIsSideband.value && !haveCasc) {
         return;
-      if (cfgEvSel.cfgEvSelIsSideband.value && haveCasc)
+      }
+      if (cfgEvSel.cfgEvSelIsSideband.value && haveCasc) {
         return;
-      if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband)
+      }
+      if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband) {
         return;
+      }
     }
 
     loadCorrection(bc.timestamp());
@@ -2028,12 +2096,14 @@ struct PidDiHadronWithCasc {
     binMult = histos.get<TH1>(HIST("Nch"))->GetXaxis()->FindBin(tracks.size()) - 1;
     nBinsVtxZ = histos.get<TH1>(HIST("zVtx"))->GetNbinsX();
     binVtxZ = histos.get<TH1>(HIST("zVtx"))->GetXaxis()->FindBin(collision.posZ()) - 1;
-    if (binVtxZ < 0 || binVtxZ > nBinsVtxZ - 1 || binMult < 0 || binMult > nBinsMult - 1)
+    if (binVtxZ < 0 || binVtxZ > nBinsVtxZ - 1 || binMult < 0 || binMult > nBinsMult - 1) {
       return;
+    }
     int bin = binMult * nBinsVtxZ + binVtxZ;
 
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return;
+    }
 
     auto multiplicity = static_cast<double>(tracks.size());
     if (cfgGeneral.cfgStrictTrackCounter) {
@@ -2048,8 +2118,9 @@ struct PidDiHadronWithCasc {
       return;
     }
 
-    if (cfgEvSel.cfgUseAdditionalEventCut.value && !selectionEvent(collision, tracks.size(), cent, false))
+    if (cfgEvSel.cfgUseAdditionalEventCut.value && !selectionEvent(collision, tracks.size(), cent, false)) {
       return;
+    }
 
     if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
       bool haveCasc = false;
@@ -2068,21 +2139,26 @@ struct PidDiHadronWithCasc {
           }
         }
       }
-      if (!cfgEvSel.cfgEvSelIsSideband.value && !haveCasc)
+      if (!cfgEvSel.cfgEvSelIsSideband.value && !haveCasc) {
         return;
-      if (cfgEvSel.cfgEvSelIsSideband.value && haveCasc)
+      }
+      if (cfgEvSel.cfgEvSelIsSideband.value && haveCasc) {
         return;
-      if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband)
+      }
+      if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband) {
         return;
+      }
     }
 
     float weightCent = 1.0f;
-    if (!cfgEvSel.cfgCentTableUnavailable)
+    if (!cfgEvSel.cfgCentTableUnavailable) {
       getCentralityWeight(weightCent, cent);
+    }
 
     for (const auto& track : tracks) {
-      if (!trackSelected(track))
+      if (!trackSelected(track)) {
         continue;
+      }
       currentCollision.addValidParticle(track.eta(), track.phi(), track.pt(), track.sign(), track.globalIndex());
     }
     auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity : cent;
@@ -2593,12 +2669,15 @@ struct PidDiHadronWithCasc {
           }
         }
       }
-      if (!cfgEvSel.cfgEvSelIsSideband.value && !haveCasc)
+      if (!cfgEvSel.cfgEvSelIsSideband.value && !haveCasc) {
         return;
-      if (cfgEvSel.cfgEvSelIsSideband.value && haveCasc)
+      }
+      if (cfgEvSel.cfgEvSelIsSideband.value && haveCasc) {
         return;
-      if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband)
+      }
+      if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband) {
         return;
+      }
     }
 
     // loop over all tracks
