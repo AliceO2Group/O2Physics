@@ -1345,7 +1345,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingLxyzProjected] = "cm";
   fgVariableNames[kVertexingTauzProjected] = "Pair pseudo-proper Tauz";
   fgVariableUnits[kVertexingTauzProjected] = "ns";
-  // Magnus, Change of incorrect unit labeling (from ns to cm)
+  // Change of incorrect unit labeling (from ns to cm)
   fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper decay length";
   fgVariableUnits[kVertexingTauxyProjected] = "cm";
   fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper decay length (with pole JPsi mass)";
@@ -1515,10 +1515,9 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ4Y0C] = "";
   fgVariableNames[kU2Q2] = "u_{2}Q_{2}^{A} ";
   fgVariableUnits[kU2Q2] = "";
-  // Magnus, Added variable for the U2Q2-values for FT0A and FT0C
-  fgVariableNames[kU2Q2FT0A] = "u_{2}Q_{2}^{FT0A} ";
+  fgVariableNames[kU2Q2FT0A] = "u_{2}Q_{2}^{FT0A} "; // Added variable for the U2Q2-values for FT0A
   fgVariableUnits[kU2Q2FT0A] = "";
-  fgVariableNames[kU2Q2FT0C] = "u_{2}Q_{2}^{FT0C} ";
+  fgVariableNames[kU2Q2FT0C] = "u_{2}Q_{2}^{FT0C} "; // Added variable for the U2Q2-values for FT0C
   fgVariableUnits[kU2Q2FT0C] = "";
   fgVariableNames[kU3Q3] = "u_{3}Q_{3}^{A} ";
   fgVariableUnits[kU3Q3] = "";
@@ -2718,9 +2717,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kWV2SP"] = kWV2SP;
   fgVarNamesMap["kWV2EP"] = kWV2EP;
   fgVarNamesMap["kU2Q2"] = kU2Q2;
-  // Magnus, Added variable names for U2Q2 in FT0A and FT0C
-  fgVarNamesMap["kU2Q2FT0A"] = kU2Q2FT0A;
-  fgVarNamesMap["kU2Q2FT0C"] = kU2Q2FT0C;
+  fgVarNamesMap["kU2Q2FT0A"] = kU2Q2FT0A; // Added variable names for U2Q2 in FT0A
+  fgVarNamesMap["kU2Q2FT0C"] = kU2Q2FT0C; // Added variable names for U2Q2 in FT0C
   fgVarNamesMap["kU3Q3"] = kU3Q3;
   fgVarNamesMap["kQ42XA"] = kQ42XA;
   fgVarNamesMap["kQ42YA"] = kQ42YA;
