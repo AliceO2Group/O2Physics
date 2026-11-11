@@ -3497,8 +3497,8 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
     }
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0 || (fillMap & ReducedMuonCov) > 0) {
-    float dcaX = o2::dqconstants::InvalidValue;
-    float dcaY = o2::dqconstants::InvalidValue;
+    float dcaX;
+    float dcaY;
     if (static_cast<int>(track.trackType()) <= o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack) {
       // Global / MCH-MID: helix DCA only (for globals, kMuonPDca is filled from the matched MCH in skimMuons)
       float xShift = o2::dqconstants::defaults::InitialShift;
@@ -7296,7 +7296,7 @@ float VarManager::calculatePhiV(T1 const& t1, T2 const& t2)
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-  float pairPhiV = o2::dqconstants::InvalidNum;
+  float pairPhiV;
   float bz = fgMagField;
 
   bool swapTracks = false;
