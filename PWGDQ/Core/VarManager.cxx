@@ -8,8 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \author Ionut Cristian Arsene  <iarsene@cern.ch, i.c.arsene@fys.uio.no>, Oslo
+/// \brief Class to handle analysis variables
+/// \file VarManager.cxx
 
 #include "PWGDQ/Core/VarManager.h"
+
+#include "PWGDQ/Core/DQConstants.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Tools/KFparticle/KFUtilities.h"
@@ -146,7 +152,7 @@ void VarManager::ResetValues(int startValue, int endValue, float* values)
   if (!values) {
     values = fgValues;
   }
-  for (Int_t i = startValue; i < endValue; ++i) {
+  for (int i = startValue; i < endValue; ++i) {
     values[i] = -9999.;
   }
 }
@@ -259,37 +265,37 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
   // species: 0 - electron, 1 - pion, 2 - kaon, 3 - proton
   // Depending on the PID calibration type, we use different types of calibration histograms
 
-  if (fgCalibrationType == 1) {
+  if (fgCalibrationType == o2::dqconstants::defaults::TPCPIDCalibrationMeanSigma) {
     // get the calibration histograms
     CalibObjects calibMean = kTPCElectronMean;
     CalibObjects calibSigma = kTPCElectronSigma;
     switch (species) {
-      case 0:
+      case o2::dqconstants::defaults::PostCalibElectron:
         calibMean = kTPCElectronMean;
         calibSigma = kTPCElectronSigma;
         break;
-      case 1:
+      case o2::dqconstants::defaults::PostCalibPion:
         calibMean = kTPCPionMean;
         calibSigma = kTPCPionSigma;
         break;
-      case 2:
+      case o2::dqconstants::defaults::PostCalibKaon:
         calibMean = kTPCKaonMean;
         calibSigma = kTPCKaonSigma;
         break;
-      case 3:
+      case o2::dqconstants::defaults::PostCalibProton:
         calibMean = kTPCProtonMean;
         calibSigma = kTPCProtonSigma;
         break;
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
-        return -999.0; // Return zero if species is invalid
+        return o2::dqconstants::InvalidValue; // Return zero if species is invalid
     }
 
     TH3F* calibMeanHist = dynamic_cast<TH3F*>(fgCalibs[calibMean]);
     TH3F* calibSigmaHist = dynamic_cast<TH3F*>(fgCalibs[calibSigma]);
     if (!calibMeanHist || !calibSigmaHist) {
       LOG(fatal) << "Calibration histograms not found for species: " << species;
-      return -999.0; // Return zero if histograms are not found
+      return o2::dqconstants::InvalidValue; // Return zero if histograms are not found
     }
 
     // Get the bin indices for the calibration histograms
@@ -306,35 +312,35 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     double mean = calibMeanHist->GetBinContent(binTPCncls, binPin, binEta);
     double sigma = calibSigmaHist->GetBinContent(binTPCncls, binPin, binEta);
     return (nSigmaValue - mean) / sigma; // Return the calibrated nSigma value
-  } else if (fgCalibrationType == 2) {
+  } else if (fgCalibrationType == o2::dqconstants::defaults::TPCPIDCalibrationMeanSigmaStatus) {
     // get the calibration histograms
     CalibObjects calibMean = kTPCElectronMean;
     CalibObjects calibSigma = kTPCElectronSigma;
     CalibObjects calibStatus = kTPCElectronStatus;
     switch (species) {
-      case 0:
+      case o2::dqconstants::defaults::PostCalibElectron:
         calibMean = kTPCElectronMean;
         calibSigma = kTPCElectronSigma;
         calibStatus = kTPCElectronStatus;
         break;
-      case 1:
+      case o2::dqconstants::defaults::PostCalibPion:
         calibMean = kTPCPionMean;
         calibSigma = kTPCPionSigma;
         calibStatus = kTPCPionStatus;
         break;
-      case 2:
+      case o2::dqconstants::defaults::PostCalibKaon:
         calibMean = kTPCKaonMean;
         calibSigma = kTPCKaonSigma;
         calibStatus = kTPCKaonStatus;
         break;
-      case 3:
+      case o2::dqconstants::defaults::PostCalibProton:
         calibMean = kTPCProtonMean;
         calibSigma = kTPCProtonSigma;
         calibStatus = kTPCProtonStatus;
         break;
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
-        return -999.0; // Return zero if species is invalid
+        return o2::dqconstants::InvalidValue; // Return zero if species is invalid
     }
 
     THnF* calibMeanHist = dynamic_cast<THnF*>(fgCalibs[calibMean]);
@@ -342,7 +348,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     THnF* calibStatusHist = dynamic_cast<THnF*>(fgCalibs[calibStatus]);
     if (!calibMeanHist || !calibSigmaHist || !calibStatusHist) {
       LOG(fatal) << "Calibration histograms not found for species: " << species;
-      return -999.0; // Return zero if histograms are not found
+      return o2::dqconstants::InvalidValue; // Return zero if histograms are not found
     }
 
     // Get the bin indices for the calibration histograms
@@ -540,7 +546,7 @@ std::tuple<float, float, float, float, float> VarManager::BimodalityCoefficientU
   // Bimodality coefficient = (skewness^2 + 1) / kurtosis
   // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
   size_t n = data.size();
-  if (n < 3) {
+  if (n < o2::dqconstants::defaults::BimodalMinDataSize) {
     return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
   }
   float mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
@@ -725,7 +731,7 @@ void VarManager::SetDefaultVarNames()
   //
   // Set default variable names
   //
-  for (Int_t ivar = 0; ivar < kNVars; ++ivar) {
+  for (int ivar = 0; ivar < kNVars; ++ivar) {
     fgVariableNames[ivar] = "DEFAULT NOT DEFINED";
     fgVariableUnits[ivar] = "n/a";
   }
