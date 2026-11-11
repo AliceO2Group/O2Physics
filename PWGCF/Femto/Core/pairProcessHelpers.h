@@ -851,6 +851,11 @@ void processMixedEvent(T1 const& Collisions,
 
     if (hasValidPair) {
       ++windowSizeEffective;
+      // collision histograms only get filled for collisions that actually contributed at least
+      // one accepted mixed-event pair -- both real collisions go into the same manager used by
+      // the same-event side
+      ColHistManager.template fill<mode>(collision1);
+      ColHistManager.template fill<mode>(collision2);
     }
 
     PairHistManager.fillMixingQaMePerEvent();
