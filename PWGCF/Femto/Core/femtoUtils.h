@@ -86,10 +86,10 @@ float itsSignal(T const& track)
 // internally by TDatabasePDG's particle-table construction) and no mass constant exists in
 // PhysicsConstants.h either, so both the codes and the mass are hardcoded here, same as kRho770_0/
 // kRho770Plus below.
-constexpr int kDeltaMinus1232 = 1114;
-constexpr int kDelta01232 = 2114;
-constexpr int kDeltaPlus1232 = 2214;
-constexpr int kDeltaPlusPlus1232 = 2224;
+constexpr int DeltaMinus1232 = 1114;
+constexpr int Delta01232 = 2114;
+constexpr int DeltaPlus1232 = 2214;
+constexpr int DeltaPlusPlus1232 = 2224;
 
 inline double getPdgMass(int pdgCode)
 {
@@ -158,10 +158,10 @@ inline double getPdgMass(int pdgCode)
     case o2::constants::physics::kEta:
       mass = o2::constants::physics::MassEta;
       break;
-    case kDeltaMinus1232:
-    case kDelta01232:
-    case kDeltaPlus1232:
-    case kDeltaPlusPlus1232:
+    case DeltaMinus1232:
+    case Delta01232:
+    case DeltaPlus1232:
+    case DeltaPlusPlus1232:
       mass = 1.232; // not defined in O2?
       break;
     default:

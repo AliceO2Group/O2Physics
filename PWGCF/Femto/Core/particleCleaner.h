@@ -47,9 +47,6 @@ struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> motherPtMax{"motherPtMax", 1e6f, "Maximum pT of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherEtaMin{"motherEtaMin", -1e6f, "Minimum eta of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherEtaMax{"motherEtaMax", 1e6f, "Maximum eta of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
-  // Rapidity cut on the mother. FMcMothers has no mass column, so the mass is looked up from
-  // PdgCode via utils::getPdgMass() (the same lookup pairHistManager.h uses for kstar/Q3) and
-  // combined with the mother's pt/eta to get y -- see RecoDecay::y(pt, eta, m).
   o2::framework::Configurable<float> motherRapidityMin{"motherRapidityMin", -1e6f, "Minimum rapidity of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherRapidityMax{"motherRapidityMax", 1e6f, "Maximum rapidity of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherPhiMin{"motherPhiMin", 0.f, "Minimum phi of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
@@ -240,23 +237,14 @@ class ParticleCleaner
         }
       }
 
-      // One shared pt/eta/phi/rapidity window, applied to the mother regardless of which (if any)
-      // requiredMotherPdgCodes/rejectMotherPdgCodes entry it matched above -- see the comment on
-      // ConfParticleCleaner's motherPtMin et al.
+      // One shared pt/eta/phi window, applied to the mother regardless of which (if any)
+      // requiredMotherPdgCodes/rejectMotherPdgCodes entry it matched above
+      double motherRapidity = mother.y(utils::getPdgMass(mother.pdgCode()));
       if (!(mother.pt() > mMotherPtMin && mother.pt() < mMotherPtMax &&
             mother.eta() > mMotherEtaMin && mother.eta() < mMotherEtaMax &&
+            motherRapidity > mMotherRapidityMin && motherRapidity < mMotherRapidityMax &&
             mother.phi() > mMotherPhiMin && mother.phi() < mMotherPhiMax)) {
         motherKinematicsOk = false;
-      }
-
-      // rapidity needs the mother's mass, which FMcMothers does not store directly -- its Y()
-      // dynamic column takes mass as a free argument, looked up from the pdg code (same mechanism
-      // as the kstar/Q3 mass lookup in pairHistManager.h)
-      if (mMotherRapidityMin > -1e6f || mMotherRapidityMax < 1e6f) {
-        double motherRapidity = mother.y(utils::getPdgMass(mother.pdgCode()));
-        if (!(motherRapidity > mMotherRapidityMin && motherRapidity < mMotherRapidityMax)) {
-          motherKinematicsOk = false;
-        }
       }
     }
 
