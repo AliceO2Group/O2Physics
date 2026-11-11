@@ -129,7 +129,7 @@ enum EOccupancyEstimator {
 };
 
 // *) Main task:
-struct MultiparticleCorrelationsDm { // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
+struct MultiparticleCorrelationsDm { // this name is used in lower-case format, to name the TDirectoryFile in AnalysisResults.root
 
   // *) Base TList to hold all output objects:
   TString sBaseListName = "Default list name"; // yes, I declare it separately, because I need it also later in BailOut() function
