@@ -221,7 +221,7 @@ struct HfTaskCorrelationsEfficiencies {
     const AxisSpec axisPhiTrig = {binsPhi, "#it{#varphi}"};
     const AxisSpec axisMlScore0 = {binsMlOne, "ML score 0"};
     const AxisSpec axisMlScore1 = {binsMlTwo, "ML score 1"};
-    std::vector<AxisSpec> axesCharmReco = {axisPtTrig, axisPvContrib, axisEtaTrig, axisPhiTrig, axisMlScore0, axisMlScore1};
+    std::vector<AxisSpec> axesCharmReco = {axisPtTrig, axisEtaTrig, axisPhiTrig, axisPvContrib, axisMlScore0, axisMlScore1};
 
     registry.add("hCharmPromptGen", "Generated prompt charm-hadron candidates;;", HistType::kTHnSparseF, {{axisPtTrig}, {axisEtaTrig}, {axisPhiTrig}});
     registry.add("hCharmFdGen", "Generated non-prompt charm-hadron candidates;;", HistType::kTHnSparseF, {{axisPtTrig}, {axisEtaTrig}, {axisPhiTrig}});
@@ -291,10 +291,10 @@ struct HfTaskCorrelationsEfficiencies {
       // Fill the sparse
       std::array<float, 2> outputMl = hfcFlowHelper.getCandMlScores<CandType>(cand);
       if (cand.originMcRec() == RecoDecay::OriginType::Prompt) {
-        registry.fill(HIST("hCharmPromptReco"), cand.pt(), numContrib, cand.eta(), cand.phi(), outputMl[0], outputMl[1]);
+        registry.fill(HIST("hCharmPromptReco"), cand.pt(), cand.eta(), cand.phi(), numContrib, outputMl[0], outputMl[1]);
       }
       if (cand.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-        registry.fill(HIST("hCharmFdReco"), cand.pt(), numContrib, cand.eta(), cand.phi(), outputMl[0], outputMl[1]);
+        registry.fill(HIST("hCharmFdReco"), cand.pt(), cand.eta(), cand.phi(), numContrib, outputMl[0], outputMl[1]);
       }
 
       if (fillRecoTrees) {
