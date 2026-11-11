@@ -28,11 +28,12 @@
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Logger.h>
-#include <MathUtils/Cartesian.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/Vertex.h>
+
+#include <GPUROOTCartesianFwd.h>
 
 #include <algorithm>
 #include <array>
