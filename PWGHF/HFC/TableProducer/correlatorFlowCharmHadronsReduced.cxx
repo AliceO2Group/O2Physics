@@ -309,7 +309,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
     mPtEdgesTrig.assign(binsPtTrig.value.begin() + 1, binsPtTrig.value.end());
     if ((mPtEdgesTrig.size() != (bdtScore0PtMaxs.value.size() + 1) ||
-        mPtEdgesTrig.size() != (bdtScore1PtMins.value.size() + 1))) {
+         mPtEdgesTrig.size() != (bdtScore1PtMins.value.size() + 1))) {
       LOG(info) << "mPtEdgesTrig.size(): " << mPtEdgesTrig.size();
       LOG(info) << "bdtScore0PtMaxs.value.size(): " << bdtScore0PtMaxs.value.size();
       LOG(info) << "bdtScore1PtMins.value.size(): " << bdtScore1PtMins.value.size();

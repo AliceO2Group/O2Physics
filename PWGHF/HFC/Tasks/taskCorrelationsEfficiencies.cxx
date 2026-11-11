@@ -315,7 +315,7 @@ struct HfTaskCorrelationsEfficiencies {
                        McCandsDplus const& candsDplus,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& genParticles,
                        aod::McCollisions const&)
-  { 
+  {
     for (const auto& coll : recoCollisions) {
       float cent{-1.}, mult{-1.};
       CentralityEstimator centDetector = CentralityEstimator::None;
