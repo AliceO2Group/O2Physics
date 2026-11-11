@@ -103,13 +103,15 @@ enum BcOccupancyFlags {         // bits of occupancyFlags
   kNoCollInTimeRangeStandard,   // no other collisions in specified time range with per-collision multiplicity above threshold
   kNoCollInRofStrict,           // no other collisions in this ITS Readout Frame
   kNoCollInRofStandard,         // no other collisions in this ITS Readout Frame with per-collision multiplicity above threshold (no veto on collisions with close vZ)
-  kNoHighMultCollInPrevRof      // FT0C amplitude in previous ITS ROF is below threshold
+  kNoHighMultCollInPrevRof,     // FT0C amplitude in previous ITS ROF is below threshold
+  kUpcMode                      // ITS ROF of this BC is in UPC mode: no collisions in the ROF, or collisions reconstructed in the UPC mode (set for all BCs, also without calculated occupancy)
 };
 DECLARE_SOA_COLUMN(NumTracksInTimeRange, trackOccupancyInTimeRange, int);   //! Occupancy in specified time interval by a number of tracks from nearby collisions (-1 if not available) // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(SumAmpFT0CInTimeRange, ft0cOccupancyInTimeRange, float); //! Occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions (-1 if not available) // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(OccupancyMedianTime, occupancyMedianTime, float);        //! Median time for the occupancy in specified time interval (the delta-time wrt to the BC at which occupancy crosses 1/2 of its full value)
 DECLARE_SOA_BITMAP_COLUMN(OccupancyFlags, occupancyFlags, 8);               //! Bitmask of occupancy flags (see BcOccupancyFlags), check with occupancyFlags_bit(bit)
 DECLARE_SOA_COLUMN(NumCollsInBC, numCollsInBC, int16_t);                    //! Number of collisions found in this BC (excluded from the occupancy)
+DECLARE_SOA_COLUMN(NumCollsInRof, numCollsInRof, int16_t);                  //! Number of collisions found in the ITS ROF of this BC (within the TF), including the collisions in this BC (-1 if the ROF parameters are not available)
 } // namespace bcocc
 
 // bc-joinable occupancy
@@ -118,7 +120,8 @@ DECLARE_SOA_TABLE(BcOccs, "AOD", "BCOCC", //!
                   bcocc::SumAmpFT0CInTimeRange,
                   bcocc::OccupancyMedianTime,
                   bcocc::OccupancyFlags,
-                  bcocc::NumCollsInBC);
+                  bcocc::NumCollsInBC,
+                  bcocc::NumCollsInRof);
 using BcOcc = BcOccs::iterator;
 
 // occupancy wrt every BC of the TFs present in the DF (not joinable): for each TF (in increasing order) all its BCs, in increasing order of global BC
@@ -129,7 +132,8 @@ DECLARE_SOA_TABLE(BcOccsAll, "AOD", "BCOCCALL", //!
                   bcocc::SumAmpFT0CInTimeRange,
                   bcocc::OccupancyMedianTime,
                   bcocc::OccupancyFlags,
-                  bcocc::NumCollsInBC);
+                  bcocc::NumCollsInBC,
+                  bcocc::NumCollsInRof);
 using BcOccAll = BcOccsAll::iterator;
 
 namespace bcocc
@@ -146,10 +150,12 @@ class BcOccAllIndex
   explicit BcOccAllIndex(TBcOccsAll const& bcOccsAll) : mTable(&bcOccsAll)
   {
     const int64_t nRows = static_cast<int64_t>(bcOccsAll.size());
+    // offset globalBC - row: constant along consecutive BCs, changes only where TFs are missing in the DF
     auto offsetAt = [&bcOccsAll](int64_t row) { return static_cast<int64_t>(bcOccsAll.iteratorAt(row).globalBC()) - row; };
     for (int64_t first = 0, end = 0; first < nRows; first = end) {
       // the offset is non-decreasing (global BCs are strictly increasing): the segment ends at the first row with a larger offset
       const int64_t offset = offsetAt(first);
+      // binary search over the rows [first, nRows) for the end of the segment: the first row with a different offset
       end = *std::ranges::partition_point(std::views::iota(first, nRows), [&](int64_t row) { return offsetAt(row) == offset; });
       mSegments.push_back({offset + first, offset + end, offset});
     }
