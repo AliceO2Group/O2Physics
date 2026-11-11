@@ -20,6 +20,7 @@
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
 #include <TCanvas.h>
+#include <TColor.h>
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TH1.h>
@@ -30,24 +31,28 @@
 #include <TString.h>
 #include <TStyle.h>
 
+#include <Rtypes.h>
+
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <memory>
-#include <string>
 #include <vector>
 
 namespace bcoccqa
 {
-TDirectory* gDir = nullptr;
-
 // histogram from the task directory (or from one of its subdirectories), detached from the file
 template <typename T>
-T* getHist(const char* name)
+T* getHist(TDirectory* dir, const char* name)
 {
-  TObject* obj = gDir->Get(name);
+  TObject* obj = dir->Get(name);
   if (!obj) {
-    for (TObject* key : *gDir->GetListOfKeys()) {
-      if (auto* sub = dynamic_cast<TDirectory*>(static_cast<TKey*>(key)->ReadObj())) {
+    for (TObject* key : *dir->GetListOfKeys()) {
+      auto* tkey = dynamic_cast<TKey*>(key);
+      if (!tkey) {
+        continue;
+      }
+      if (auto* sub = dynamic_cast<TDirectory*>(tkey->ReadObj())) {
         obj = sub->Get(name);
         if (obj) {
           break;
@@ -69,9 +74,9 @@ T* getHist(const char* name)
 }
 
 // fraction of BCs per bin: numerator / denominator (binomial errors)
-TH1D* makeRatio(const TH1* num, const TH1* den, const char* name, const char* title)
+TH1* makeRatio(const TH1* num, const TH1* den, const char* name, const char* title)
 {
-  auto* r = static_cast<TH1D*>(num->Clone(name));
+  auto* r = dynamic_cast<TH1*>(num->Clone(name));
   r->SetTitle(title);
   r->Divide(num, den, 1., 1., "B");
   r->SetStats(false);
@@ -95,7 +100,7 @@ double upperEdgeOfFilledRange(const TH1* h)
 void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char* outPdf = "bcOccupancyQa.pdf", const char* dirName = "bc-occupancy-qa-task", const char* outRoot = "")
 {
   using namespace bcoccqa;
-  TH1::AddDirectory(kFALSE);
+  TH1::AddDirectory(false);
   gStyle->SetOptStat(0);
   gStyle->SetPalette(kViridis);
 
@@ -104,34 +109,34 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
     std::printf("cannot open %s\n", fileName);
     return;
   }
-  gDir = f->GetDirectory(dirName);
-  if (!gDir) {
+  TDirectory* dir = f->GetDirectory(dirName);
+  if (!dir) {
     std::printf("directory %s not found in %s\n", dirName, fileName);
     return;
   }
 
-  auto* hBcCounter = getHist<TH1>("hBcCounter");
-  auto* hNumCollsInBC = getHist<TH1>("hNumCollsInBC");
-  auto* hNumCollsInRof = getHist<TH1>("hNumCollsInRof");
-  auto* hNumCollsInRofVsInBC = getHist<TH2>("hNumCollsInRofVsInBC");
-  auto* hNumCollsInRofUpcMode = getHist<TH1>("hNumCollsInRofUpcMode");
-  auto* hBcInTF = getHist<TH1>("hBcInTF");
-  auto* hBcInTFDefined = getHist<TH1>("hBcInTFOccupancyDefined");
-  auto* hOccTracks = getHist<TH1>("hOccupancyByTracks");
-  auto* hOccFT0C = getHist<TH1>("hOccupancyByFT0C");
-  auto* hOccTracksVsFT0C = getHist<TH2>("hOccupancyByTracksVsFT0C");
-  auto* hMedianTime = getHist<TH1>("hMedianTime");
-  auto* pOccVsBcInTF = getHist<TProfile>("pOccupancyByTracksVsBcInTF");
-  auto* pOccVsBcInOrbit = getHist<TProfile>("pOccupancyByTracksVsBcInOrbit");
-  auto* hFlags = getHist<TH1>("hOccupancyFlags");
-  auto* hFlagsVsOcc = getHist<TH2>("hOccupancyFlagsVsOccupancyByTracks");
-  auto* hBcIndexCheck = getHist<TH1>("hBcIndexCheck");
+  auto* hBcCounter = getHist<TH1>(dir, "hBcCounter");
+  auto* hNumCollsInBC = getHist<TH1>(dir, "hNumCollsInBC");
+  auto* hNumCollsInRof = getHist<TH1>(dir, "hNumCollsInRof");
+  auto* hNumCollsInRofVsInBC = getHist<TH2>(dir, "hNumCollsInRofVsInBC");
+  auto* hNumCollsInRofUpcMode = getHist<TH1>(dir, "hNumCollsInRofUpcMode");
+  auto* hBcInTF = getHist<TH1>(dir, "hBcInTF");
+  auto* hBcInTFDefined = getHist<TH1>(dir, "hBcInTFOccupancyDefined");
+  auto* hOccTracks = getHist<TH1>(dir, "hOccupancyByTracks");
+  auto* hOccFT0C = getHist<TH1>(dir, "hOccupancyByFT0C");
+  auto* hOccTracksVsFT0C = getHist<TH2>(dir, "hOccupancyByTracksVsFT0C");
+  auto* hMedianTime = getHist<TH1>(dir, "hMedianTime");
+  auto* pOccVsBcInTF = getHist<TProfile>(dir, "pOccupancyByTracksVsBcInTF");
+  auto* pOccVsBcInOrbit = getHist<TProfile>(dir, "pOccupancyByTracksVsBcInOrbit");
+  auto* hFlags = getHist<TH1>(dir, "hOccupancyFlags");
+  auto* hFlagsVsOcc = getHist<TH2>(dir, "hOccupancyFlagsVsOccupancyByTracks");
+  auto* hBcIndexCheck = getHist<TH1>(dir, "hBcIndexCheck");
   // aod::BcOccs, and its comparison with aod::BcOccsAll
-  auto* hBcOccsCounter = getHist<TH1>("BcOccs/hBcCounter");
-  auto* hBcOccsOccTracks = getHist<TH1>("BcOccs/hOccupancyByTracks");
-  auto* hBcOccsOccTracksVsFT0C = getHist<TH2>("BcOccs/hOccupancyByTracksVsFT0C");
-  auto* hBcOccsFlags = getHist<TH1>("BcOccs/hOccupancyFlags");
-  auto* hBcOccsVsBcOccsAll = getHist<TH1>("BcOccsVsBcOccsAll/hCheck");
+  auto* hBcOccsCounter = getHist<TH1>(dir, "BcOccs/hBcCounter");
+  auto* hBcOccsOccTracks = getHist<TH1>(dir, "BcOccs/hOccupancyByTracks");
+  auto* hBcOccsOccTracksVsFT0C = getHist<TH2>(dir, "BcOccs/hOccupancyByTracksVsFT0C");
+  auto* hBcOccsFlags = getHist<TH1>(dir, "BcOccs/hOccupancyFlags");
+  auto* hBcOccsVsBcOccsAll = getHist<TH1>(dir, "BcOccsVsBcOccsAll/hCheck");
 
   // ### summary
   std::printf("\n=== BC occupancy QA: %s ===\n", fileName);
@@ -272,7 +277,7 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
   c = newPage("cOccupancyFlags", "occupancy flags", 1200, 550, 2, 1);
   if (hFlags && hFlags->GetBinContent(1) > 0) {
     c->cd(1)->SetBottomMargin(0.3);
-    auto* hFlagsFrac = static_cast<TH1*>(hFlags->Clone("hFlagsFrac"));
+    auto* hFlagsFrac = dynamic_cast<TH1*>(hFlags->Clone("hFlagsFrac"));
     hFlagsFrac->Scale(1. / hFlags->GetBinContent(1));
     hFlagsFrac->SetTitle("fraction of BCs passing each flag;;fraction of BCs");
     hFlagsFrac->GetXaxis()->LabelsOption("v");
@@ -284,13 +289,13 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
   if (hFlagsVsOcc) {
     // fraction of BCs passing each flag vs occupancy
     c->cd(2);
-    TLegend* leg = new TLegend(0.45, 0.6, 0.89, 0.89);
+    auto* leg = new TLegend(0.45, 0.6, 0.89, 0.89);
     TH1D* hAll = hFlagsVsOcc->ProjectionY("hFlagsAll", 1, 1);
-    const int colors[] = {kRed + 1, kOrange + 7, kGreen + 2, kAzure + 2, kBlue + 2, kMagenta + 1, kBlack};
+    const std::array<int, 7> colors = {kRed + 1, kOrange + 7, kGreen + 2, kAzure + 2, kBlue + 2, kMagenta + 1, kBlack};
     bool first = true;
     for (int i = 2; i <= hFlagsVsOcc->GetNbinsX(); i++) {
       TH1D* hPass = hFlagsVsOcc->ProjectionY(Form("hFlagPass%d", i), i, i);
-      TH1D* hFrac = makeRatio(hPass, hAll, Form("hFracVsOccupancy_%s", hFlagsVsOcc->GetXaxis()->GetBinLabel(i)), "fraction of BCs passing the flags vs occupancy;occupancy by ITS tracks;fraction of BCs");
+      TH1* hFrac = makeRatio(hPass, hAll, Form("hFracVsOccupancy_%s", hFlagsVsOcc->GetXaxis()->GetBinLabel(i)), "fraction of BCs passing the flags vs occupancy;occupancy by ITS tracks;fraction of BCs");
       hFrac->SetLineColor(colors[(i - 2) % 7]);
       hFrac->SetMarkerColor(colors[(i - 2) % 7]);
       hFrac->SetMarkerStyle(20);
@@ -310,7 +315,7 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
   c = newPage("cBcPosition", "BC position in the TF and in the orbit", 1200, 800, 1, 3);
   if (hBcInTF && hBcInTFDefined) {
     c->cd(1);
-    TH1D* hFracDefined = makeRatio(hBcInTFDefined, hBcInTF, "hFracDefined", "fraction of BCs with calculated occupancy;BC in TF;fraction");
+    TH1* hFracDefined = makeRatio(hBcInTFDefined, hBcInTF, "hFracDefined", "fraction of BCs with calculated occupancy;BC in TF;fraction");
     hFracDefined->SetMinimum(0.);
     hFracDefined->SetMaximum(1.1);
     hFracDefined->Draw("hist");
@@ -336,7 +341,7 @@ void plotBcOccupancyQa(const char* fileName = "AnalysisResults.root", const char
   }
   if (hBcOccsFlags && hBcOccsFlags->GetBinContent(1) > 0) {
     c->cd(2)->SetBottomMargin(0.3);
-    auto* hFlagsFracBcOccs = static_cast<TH1*>(hBcOccsFlags->Clone("BcOccs_hFlagsFrac"));
+    auto* hFlagsFracBcOccs = dynamic_cast<TH1*>(hBcOccsFlags->Clone("BcOccs_hFlagsFrac"));
     hFlagsFracBcOccs->Scale(1. / hBcOccsFlags->GetBinContent(1));
     hFlagsFracBcOccs->SetTitle("BcOccs: fraction of BCs passing each flag;;fraction of BCs");
     hFlagsFracBcOccs->GetXaxis()->LabelsOption("v");
