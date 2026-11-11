@@ -1428,7 +1428,7 @@ struct doubleOmegaTreeCreator {
       partners.push_back(&*partner);
       mixSeedPair(seed, *partner, written);
     }
-    if ((mixingOpts.mixingTypes & (1 << (mixingType - 1))) == 0) {
+    if ((mixingOpts.mixingTypes & (1 << (kMixedAll - 1))) == 0) {
       return;
     }
     for (std::size_t j = 0; j < partners.size(); ++j) {
