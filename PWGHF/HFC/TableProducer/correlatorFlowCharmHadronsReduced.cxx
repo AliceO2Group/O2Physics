@@ -412,7 +412,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     // 3 cases: charm triggers, track triggers and associated particles
     if constexpr (IsTrigger) {
       if constexpr (IsCharm) {
-        kineFeatures = {cand.ptTrig(), cand.bdtScore0Trig(), cand.bdtScore1Trig(), cand.etaTrig(), cand.phiTrig()};
+        kineFeatures = {cand.ptTrig(), cand.etaTrig(), cand.phiTrig(), cand.bdtScore0Trig(), cand.bdtScore1Trig()};
       } else {
         // Track trigger from SameEvtPairsHadHadWEffInfo
         if constexpr (requires { cand.ptTrig(); }) {
