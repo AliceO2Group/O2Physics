@@ -427,8 +427,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   {
     // define constants for decay channel (default to values for Xic0/Omegac0 -> Xi pi)
     int trackPidOfCascade = o2::track::PID::XiMinus;
-    int massOfCascade = o2::constants::physics::MassXiMinus;
-    int massOfCharmBach = o2::constants::physics::MassPiPlus;
+    double massOfCascade = o2::constants::physics::MassXiMinus;
+    double massOfCharmBach = o2::constants::physics::MassPiPlus;
 
     if (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
       trackPidOfCascade = o2::track::PID::OmegaMinus;
@@ -603,14 +603,14 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     int pdgIdOfV0DauPos = kProton;
     int pdgIdOfV0DauNeg = kPiMinus;
     int pdgIdOfV0 = kLambda0;
-    int massOfV0 = o2::constants::physics::MassLambda;
+    double massOfV0 = o2::constants::physics::MassLambda;
 
     int pdgIdOfBach = kPiMinus;
     int pdgIdOfBachRej = kKMinus; // -> Not used in XiPi channel
     int pdgIdOfCharmBach = kPiPlus;
     int pdgIdOfCascade = kXiMinus;
     int pdgIdOfCharmBaryon = kXiC0;
-    int massOfCascade = o2::constants::physics::MassXiMinus;
+    double massOfCascade = o2::constants::physics::MassXiMinus;
 
     if (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
       pdgIdOfBach = kKMinus;
