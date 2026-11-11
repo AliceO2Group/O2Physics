@@ -131,7 +131,7 @@ void checkBCRange(const char* filename, const char* rangeFileName)
     }
   }
 
-  TList* directoryList = inputFile.GetListOfKeys();
+  // TList* directoryList = inputFile.GetListOfKeys(); // FIXME: unused
   std::vector<InteractionRecord> bcids;
   for (auto key : *inputFile.GetListOfKeys()) {
     TTree* treeDecision = dynamic_cast<TTree*>(inputFile.Get(Form("%s/O2cefpdecision", key->GetName())));
