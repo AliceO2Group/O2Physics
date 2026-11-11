@@ -164,7 +164,7 @@ struct BcOccupancyQaTask {
     // so bcInTF = (globalBC - globalBC of the first row) % nBCsPerTF; check that nOrbitsPerTF is consistent with the table
     const uint64_t firstGlobalBC = bcOccs.iteratorAt(0).globalBC();
     const uint64_t lastGlobalBC = bcOccs.iteratorAt(bcOccs.size() - 1).globalBC();
-    const bool isBcInTFValid = (static_cast<int64_t>(bcOccs.size()) % nBCsPerTF == 0) && (static_cast<int64_t>((lastGlobalBC - firstGlobalBC) % nBCsPerTF) == nBCsPerTF - 1);
+    const bool isBcInTFValid = (bcOccs.size() % nBCsPerTF == 0) && (static_cast<int64_t>((lastGlobalBC - firstGlobalBC) % nBCsPerTF) == nBCsPerTF - 1);
     if (!isBcInTFValid) {
       LOGP(warning, "BC occupancy QA: table size {} is not consistent with {} orbits per TF, no histograms vs BC in TF for this DF", bcOccs.size(), nOrbitsPerTF.value);
     }
@@ -267,7 +267,7 @@ struct BcOccupancyQaTask {
       if (bc.trackOccupancyInTimeRange() >= 0 && occAll.trackOccupancyInTimeRange() >= 0) {
         histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 4);
         if (bc.trackOccupancyInTimeRange() == occAll.trackOccupancyInTimeRange() && bc.ft0cOccupancyInTimeRange() == occAll.ft0cOccupancyInTimeRange() &&
-            bc.occupancyMedianTime() == occAll.occupancyMedianTime() && bc.occupancyFlags() == occAll.occupancyFlags()) {
+            bc.occupancyMedianTime() == occAll.occupancyMedianTime() && bc.occupancyFlags_raw() == occAll.occupancyFlags_raw()) {
           histos.fill(HIST("BcOccsVsBcOccsAll/hCheck"), 5);
         }
       }
