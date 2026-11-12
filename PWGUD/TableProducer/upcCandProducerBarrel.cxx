@@ -274,6 +274,7 @@ struct UpcCandProducerBarrel {
   Configurable<float> minAmpFDDA{"minAmpFDDA", 1000.f, "Minimum amplitude for FDDA veto"};
   Configurable<float> minAmpFDDC{"minAmpFDDC", 1000.f, "Minimum amplitude for FDDC veto"};
 
+  Configurable<float> maxTF{"maxTF", 4.e7, "Maximum TF id"};
   Configurable<int> maxStoredDistance{"maxStoredDistance", 32, "Maximum stored veto distance"};
   Configurable<int> nBinsOccupancy{"nBinsOccupancy", 25, "Number of occupancy bins"};
   Configurable<int> nBinsTF{"nBinsTF", 100, "Number of TF bins"};
@@ -337,15 +338,13 @@ struct UpcCandProducerBarrel {
     const AxisSpec axisBCs{NBCsPerOrbit, 0., NBCsPerOrbit, "BC in orbit"};
     const AxisSpec axisVeto{maxStoredDistance + 1, -0.5, maxStoredDistance + 0.5, "veto range in BCs"};
     const AxisSpec axisOccupancy{nBinsOccupancy, 0., 250000., "FT0-based occupancy"};
-    const AxisSpec axisTFs{nBinsTF, 0., 4.e7, "TFs"}; // 100 bins -> 400000 TFs per bin (1 bin ~ 1140 seconds for 32 orbits per TF)
+    const AxisSpec axisTFs{nBinsTF, 0., maxTFs, "TFs"};
 
     registry.add("hTF", "TF counts", HistType::kTH1D, {axisTFs});
     registry.add("hTVX", "TVX counts", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXRCT", "TVX counts after RCT selection", HistType::kTH2D, {axisBCs, axisTFs});
-    registry.add("hTVXRCTnoPileupROF", "TVX counts after RCT and ROF pileup selection", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXupc", "TVX counts in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXRCTupc", "TVX counts after RCT selection in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
-    registry.add("hTVXRCTnoPileupROFupc", "TVX counts after RCT and ROF pileup selection in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
 
     registry.add("hVetoT00", "no RCT selection", HistType::kTH3D, {axisBCs, axisTFs, axisVeto});
     registry.add("hVetoTV0", "no RCT selection", HistType::kTH3D, {axisBCs, axisTFs, axisVeto});
@@ -386,8 +385,7 @@ struct UpcCandProducerBarrel {
     const auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(ccdb->instance(), runNumber);
     const int64_t orbitsPerTF = configuredOrbitsPerTF < 0 ? runInfo.orbitsPerTF : configuredOrbitsPerTF;
     const bool needsEventSelectionParams = configuredTFStartBorder < 0 || configuredTFEndBorder < 0;
-    const auto ts = (runInfo.sor + runInfo.eor) / 2;
-    const auto* eventSelectionParams = needsEventSelectionParams ? ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts) : nullptr;
+    const auto* eventSelectionParams = needsEventSelectionParams ? ccdb->getForRun<EventSelectionParams>("EventSelection/EventSelectionParams", runNumber) : nullptr;
     if (orbitsPerTF <= 0 || !runInfo.grpLHC || (needsEventSelectionParams && !eventSelectionParams)) {
       LOGF(fatal, "Incomplete run information for run %d", runNumber);
     }
@@ -398,7 +396,7 @@ struct UpcCandProducerBarrel {
     collidingBCs = runInfo.grpLHC->getBunchFilling().getBCPattern();
 
     // get ITS ROF parameters
-    auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
+    auto alppar = ccdb->getForRun<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", runNumber);
     rofOffset = alppar->roFrameBiasInBC;
     rofLength = alppar->roFrameLengthInBC;
     nRofPerTF = nBCsPerTF / rofLength;
