@@ -43,6 +43,9 @@ struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   // allowed by those two lists, this same pt/eta/phi range is what its kinematics are checked
   // against -- the window does not vary per pdg code. Defaults are wide open (no-op) like every
   // other kinematic window in this codebase, so setting these has no effect unless narrowed.
+  // activateMotherKinematics gates the whole check (default off), so it has zero cost -- no
+  // mass lookup, no rapidity computation -- unless explicitly turned on.
+  o2::framework::Configurable<bool> activateMotherKinematics{"activateMotherKinematics", false, "Activate the pt/eta/phi/rapidity kinematic cut on the mother"};
   o2::framework::Configurable<float> motherPtMin{"motherPtMin", 0.f, "Minimum pT of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherPtMax{"motherPtMax", 1e6f, "Maximum pT of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
   o2::framework::Configurable<float> motherEtaMin{"motherEtaMin", -1e6f, "Minimum eta of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
@@ -133,6 +136,7 @@ class ParticleCleaner
     mRequiredMotherPdgCodes = confMpc.requiredMotherPdgCodes.value;
     mRejectedMotherPdgCodes = confMpc.rejectMotherPdgCodes.value;
 
+    mActivateMotherKinematics = confMpc.activateMotherKinematics.value;
     mMotherPtMin = confMpc.motherPtMin.value;
     mMotherPtMax = confMpc.motherPtMax.value;
     mMotherEtaMin = confMpc.motherEtaMin.value;
@@ -237,14 +241,18 @@ class ParticleCleaner
         }
       }
 
-      // One shared pt/eta/phi window, applied to the mother regardless of which (if any)
-      // requiredMotherPdgCodes/rejectMotherPdgCodes entry it matched above
-      double motherRapidity = mother.y(utils::getPdgMass(mother.pdgCode()));
-      if (!(mother.pt() > mMotherPtMin && mother.pt() < mMotherPtMax &&
-            mother.eta() > mMotherEtaMin && mother.eta() < mMotherEtaMax &&
-            motherRapidity > mMotherRapidityMin && motherRapidity < mMotherRapidityMax &&
-            mother.phi() > mMotherPhiMin && mother.phi() < mMotherPhiMax)) {
-        motherKinematicsOk = false;
+      // One shared pt/eta/phi/rapidity window, applied to the mother regardless of which (if
+      // any) requiredMotherPdgCodes/rejectMotherPdgCodes entry it matched above. Gated behind
+      // activateMotherKinematics so it costs nothing (no mass lookup, no rapidity computation)
+      // unless explicitly turned on.
+      if (mActivateMotherKinematics) {
+        double motherRapidity = mother.y(utils::getPdgMass(mother.pdgCode()));
+        if (!(mother.pt() > mMotherPtMin && mother.pt() < mMotherPtMax &&
+              mother.eta() > mMotherEtaMin && mother.eta() < mMotherEtaMax &&
+              motherRapidity > mMotherRapidityMin && motherRapidity < mMotherRapidityMax &&
+              mother.phi() > mMotherPhiMin && mother.phi() < mMotherPhiMax)) {
+          motherKinematicsOk = false;
+        }
       }
     }
 
@@ -292,6 +300,7 @@ class ParticleCleaner
   std::vector<int> mRejectedPdgCodes;
   std::vector<int> mRequiredMotherPdgCodes;
   std::vector<int> mRejectedMotherPdgCodes;
+  bool mActivateMotherKinematics = false;
   float mMotherPtMin = 0.f;
   float mMotherPtMax = 1e6f;
   float mMotherEtaMin = -1e6f;
