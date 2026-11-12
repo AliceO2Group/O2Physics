@@ -317,6 +317,18 @@ DECLARE_SOA_TABLE(HfSelOmegaC0ToOmegaPi, "AOD", "HFSELOMEGAC0", //!
 
 DECLARE_SOA_TABLE(HfMlOmegaC0ToOmegaPi, "AOD", "HFMLOMEGAC0", //!
                   hf_sel_candidate_omegac0_qa::MlProbOmegaC0ToOmegaPi);
+
+namespace hf_sel_candidate_to_xi_pi_qa
+{
+DECLARE_SOA_COLUMN(IsSelToXiPi, isSelToXiPi, int);                  //!
+DECLARE_SOA_COLUMN(MlProbToXiPi, mlProbToXiPi, std::vector<float>); //!
+} // namespace hf_sel_candidate_to_xi_pi_qa
+
+DECLARE_SOA_TABLE(HfSelToXiPiQa, "AOD", "HFSELTOXIPIQA", //!
+                  hf_sel_candidate_to_xi_pi_qa::IsSelToXiPi);
+
+DECLARE_SOA_TABLE(HfMlToXiPiQa, "AOD", "HFMLTOXIPIQA", //!
+                  hf_sel_candidate_to_xi_pi_qa::MlProbToXiPi);
 } // namespace o2::aod
 
 namespace o2::hf_decay
