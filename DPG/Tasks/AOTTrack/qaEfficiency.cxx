@@ -1802,10 +1802,10 @@ struct QaEfficiency {
       }
       float centrality = -1.;
       float occupancy = -1.;
-      if (doOccupancy) {
-        centrality = getCentralityColl(groupedCollisions);
-        occupancy = getOccupancyColl(groupedCollisions);
-      }
+      // if (doOccupancy) {
+      //   centrality = getCentralityColl(groupedCollisions); // FIXME: unused
+      //   occupancy = getOccupancyColl(groupedCollisions); // FIXME: unused
+      // }
       histos.fill(HIST("MC/generatedCollisions"), 2);
       if (skipEventsWithoutTPCTracks) {
         int nTPCTracks = 0;

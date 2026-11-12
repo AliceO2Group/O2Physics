@@ -13,6 +13,8 @@
 /// \brief Dipion-based half-momentum kaon proxies with kaon/phi and pion/K*0 bachelors, in data and MC.
 /// \author Sushanta Tripathy
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -34,7 +36,9 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <THnSparse.h>
 #include <TPDGCode.h>
 #include <TParticlePDG.h>
@@ -46,10 +50,12 @@
 #include <cstdint>
 #include <deque>
 #include <initializer_list>
+#include <limits>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -57,7 +63,7 @@ using namespace o2;
 using namespace o2::framework;
 
 struct F0phiproxy {
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
   using Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                            aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi,
                            aod::pidTPCFullKa, aod::pidTOFFullKa>;
@@ -72,6 +78,10 @@ struct F0phiproxy {
   Configurable<float> vertexMax{"vertexMax", 10.f, "Maximum absolute vertex z (cm)"};
   Configurable<bool> requireSel8{"requireSel8", true, "Require sel8"};
   Configurable<bool> requireINELgt0{"requireINELgt0", true, "Require at least one PV track in |eta|<1; MC gen uses charged physical primaries"};
+  Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", false, "Require kNoSameBunchPileup, as in Lambda-star trigger mode 4"};
+  Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, "Require kIsGoodZvtxFT0vsPV, as in Lambda-star trigger mode 4"};
+  Configurable<bool> useFT0M{"useFT0M", true, "Use calibrated FT0M percentiles for reconstructed data/MC; false retains legacy NPV axes and mixing"};
+  ConfigurableAxis ft0mAxis{"ft0mAxis", {0., 0., 1., 5., 10., 15., 20., 30., 40., 50., 70., 100.}, "FT0M percentile classes; first zero selects variable-width bins; must cover [0,100]"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15f, "Minimum track pT (GeV/c)"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.8f, "Maximum track |eta|"};
   Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Require global track selection"};
@@ -88,6 +98,7 @@ struct F0phiproxy {
   Configurable<int> mixDepth{"mixDepth", 5, "Previous events per mixing bin; zero disables ME booking and mixing"};
   Configurable<float> mixZWidth{"mixZWidth", 2.f, "Vertex bin width (cm)"};
   Configurable<float> mixMultWidth{"mixMultWidth", 20.f, "PV multiplicity bin width"};
+  Configurable<float> mixFT0MWidth{"mixFT0MWidth", 1.f, "FT0M mixing width in percentage points; pools also respect analysis-class boundaries"};
 
   Configurable<bool> enablePhiProxy{"enablePhiProxy", true, "Dipion/2 as on-shell K plus bachelor K"};
   Configurable<bool> enableKstarProxy{"enableKstarProxy", false, "Dipion/2 as on-shell K plus bachelor pion; use the dedicated Kstar configuration"};
@@ -119,7 +130,11 @@ struct F0phiproxy {
   static constexpr int IonCodeThreshold = 1000000000;
   static constexpr int IonZDivisor = 10000;
   static constexpr int IonZModulo = 1000;
+  static constexpr float FT0MPercentileMax = 100.f;
+  static constexpr size_t MinAxisSpecificationSize = 3;
+  static constexpr double MaxUniformFT0MBins = 10000.;
   int resolvedF0Code = 0;
+  std::vector<double> ft0mEdges{};
 
   struct TruthInfo {
     int64_t id = -1;
@@ -141,12 +156,28 @@ struct F0phiproxy {
     std::vector<TrackCandidate> pions{}, kaons{};
   };
 
+  using MixingKey = std::tuple<int, int, int, int>;
+  enum EventStage : int { Received = 1,
+                          VertexAccepted,
+                          Sel8Accepted,
+                          InelAccepted,
+                          QualityAccepted,
+                          ActivityAccepted,
+                          NEventStages = ActivityAccepted };
+  std::shared_ptr<TH1> eventSelection{}, eventStages{}, selectedEvents{}, ft0mStatusQA{}, mixPartners{};
+  std::shared_ptr<TH2> eventStagesByActivity{}, activityVsNPV{}, activityVsVertex{}, mixPartnersByActivity{};
+  std::array<std::shared_ptr<TH2>, 4> pidQA{};
+  std::array<std::shared_ptr<TH3>, 4> pidQAByActivity{};
+
   std::array<std::shared_ptr<THnSparse>, NMixClasses> dipionSpectra{};
   std::array<std::array<std::shared_ptr<THnSparse>, NMixClasses>, NChannels> compactProxy{}, fullProxy{};
   std::array<std::array<std::array<std::shared_ptr<THnSparse>, NCharges>, NMixClasses>, NChannels> controls{};
   std::array<std::array<std::shared_ptr<TH2>, NTruthClasses>, NChannels> recoComponents{};
   std::array<std::shared_ptr<TH2>, NChannels> recoTrueParent{}, recoPtResponse{}, proxyPtResponse{};
   std::shared_ptr<TH2> recoTrueF0{};
+  std::array<std::array<std::shared_ptr<THnSparse>, NTruthClasses>, NChannels> recoComponentsByActivity{};
+  std::array<std::shared_ptr<THnSparse>, NChannels> recoTrueParentByActivity{}, recoPtResponseByActivity{}, proxyPtResponseByActivity{};
+  std::shared_ptr<THnSparse> recoTrueF0ByActivity{};
   enum GenSpectrum : size_t { GenDipion,
                               GenF0,
                               GenPhi,
@@ -166,17 +197,96 @@ struct F0phiproxy {
   static double bachelorMass(size_t channel) { return channel == Phi ? constants::physics::MassKaonCharged : constants::physics::MassPionCharged; }
   static int bachelorPdg(size_t channel) { return channel == Phi ? PdgKaon : PdgPion; }
 
+  std::string recoName(std::string const& name) const
+  {
+    return useFT0M.value ? std::string("FT0M/").append(name) : name;
+  }
+
+  static int ft0mStatus(float percentile)
+  {
+    if (!std::isfinite(percentile)) {
+      return 1;
+    }
+    if (percentile < 0.f) {
+      return 2;
+    }
+    return percentile < FT0MPercentileMax ? 0 : 3;
+  }
+
+  static std::vector<double> resolveFT0MEdges(std::vector<double> const& specification)
+  {
+    if (specification.size() < MinAxisSpecificationSize ||
+        !std::all_of(specification.begin(), specification.end(), [](double x) { return std::isfinite(x); })) {
+      throw std::runtime_error("Invalid FT0M axis specification");
+    }
+    std::vector<double> edges;
+    if (specification.front() == 0.) {
+      edges.assign(specification.begin() + 1, specification.end());
+    } else {
+      const double bins = specification.front();
+      if (specification.size() != MinAxisSpecificationSize || bins < 1. || bins > MaxUniformFT0MBins || std::floor(bins) != bins) {
+        throw std::runtime_error("Invalid uniform FT0M axis specification");
+      }
+      for (int i = 0; i <= static_cast<int>(bins); ++i) {
+        edges.push_back(specification[1] + (specification[2] - specification[1]) * i / bins);
+      }
+    }
+    if (edges.front() != 0. || edges.back() != FT0MPercentileMax ||
+        std::adjacent_find(edges.begin(), edges.end(), [](double a, double b) { return a >= b; }) != edges.end()) {
+      throw std::runtime_error("FT0M classes must have increasing edges covering [0,100]");
+    }
+    return edges;
+  }
+
+  AxisSpec activityAxis(bool compact = false) const
+  {
+    if (useFT0M.value) {
+      return AxisSpec{ft0mEdges, "FT0M percentile (MB>0), calibrated"};
+    }
+    return compact ? AxisSpec{proxyMultiplicityAxis, "N_{PV}(|#eta|<1), grouped"} : AxisSpec{multiplicityBins.value, 0., 200., "N_{PV}(|#eta|<1)"};
+  }
+
+  int ft0mClass(float percentile) const
+  {
+    if (ft0mStatus(percentile) != 0) {
+      return -1;
+    }
+    return static_cast<int>(std::upper_bound(ft0mEdges.begin(), ft0mEdges.end(), percentile) - ft0mEdges.begin()) - 1;
+  }
+
+  MixingKey mixingKey(int run, float vertex, float mult) const
+  {
+    const int activityClass = useFT0M.value ? ft0mClass(mult) : 0;
+    if (useFT0M.value && activityClass < 0) {
+      throw std::runtime_error("Invalid FT0M event cannot enter a mixing pool");
+    }
+    const float width = useFT0M.value ? mixFT0MWidth.value : mixMultWidth.value;
+    auto bin = [](float value, float binWidth) {
+      const double index = std::floor(value / binWidth);
+      if (!std::isfinite(index) || index < std::numeric_limits<int>::min() || index > std::numeric_limits<int>::max()) {
+        throw std::runtime_error("Mixing coordinate cannot be represented by the configured bin width");
+      }
+      return static_cast<int>(index);
+    };
+    return {run, bin(vertex, mixZWidth.value), activityClass, bin(mult, width)};
+  }
+
   void init(InitContext const&)
   {
     if (doprocess && doprocessMCReco) {
       throw std::runtime_error("Enable either process (data) or processMCReco, never both");
     }
-    if (mixDepth.value < 0 || mixZWidth.value <= 0.f || mixMultWidth.value <= 0.f ||
+    if (mixDepth.value < 0 || !std::isfinite(mixZWidth.value) || mixZWidth.value <= 0.f ||
+        !std::isfinite(mixMultWidth.value) || mixMultWidth.value <= 0.f ||
+        !std::isfinite(mixFT0MWidth.value) || mixFT0MWidth.value <= 0.f ||
         vertexMax.value <= 0.f || trackPtMin.value < 0.f || trackEtaMax.value <= 0.f ||
         pionTPC.value <= 0.f || pionTOF.value <= 0.f || kaonTPC.value <= 0.f || kaonTOF.value <= 0.f ||
         dipionMassMin.value >= dipionMassMax.value || dipionYMax.value <= 0.f || proxyYMax.value <= 0.f ||
         multiplicityBins.value <= 0 || proxyDipionMassBins.value <= 0 || kstarMassBins.value <= 0 || mcF0PdgCode.value < 0) {
       throw std::runtime_error("Invalid F0PhiProxy configuration");
+    }
+    if (useFT0M.value) {
+      ft0mEdges = resolveFT0MEdges(ft0mAxis.value);
     }
     if (doprocess || doprocessMCReco) {
       if ((enablePhiProxy.value || enableKstarProxy.value) && !enableCompactProxy.value && !enableFullProxySparse.value) {
@@ -202,28 +312,57 @@ struct F0phiproxy {
     const AxisSpec massPi{300, 0.2, 1.7, "m_{#pi#pi} (GeV/c^{2})"};
     const AxisSpec compactMassPi{proxyDipionMassBins.value, 0.2, 1.7, "m_{#pi#pi} (GeV/c^{2})"};
     const AxisSpec pt{100, 0., 10., "p_{T} (GeV/c)"};
-    const AxisSpec mult{multiplicityBins.value, 0., 200., "N_{PV}(|#eta|<1)"};
-    const AxisSpec compactMult{proxyMultiplicityAxis, "N_{PV}(|#eta|<1), grouped"};
+    const AxisSpec mult = activityAxis();
+    const AxisSpec compactMult = activityAxis(true);
     const AxisSpec compactPt{proxyPtAxis, "proxy pair p_{T} (GeV/c), grouped"};
     const AxisSpec charge{3, -0.5, 2.5, "dipion: 0=unlike, 1=++, 2=--"};
     const AxisSpec bachelorCharge{2, -1.5, 1.5, "bachelor charge"};
     const AxisSpec tof{2, -0.5, 1.5, "bachelor has TOF"};
-    histos.add("hEventSelection", "Received; selected", HistType::kTH1D, {{2, 0.5, 2.5}});
+    eventSelection = histos.add<TH1>(recoName("hEventSelection").c_str(), "Received; selected including activity validity", HistType::kTH1D, {{2, 0.5, 2.5}});
+    eventSelection->GetXaxis()->SetBinLabel(1, "Received");
+    eventSelection->GetXaxis()->SetBinLabel(2, "Selected");
+    const AxisSpec stages{NEventStages, 0.5, static_cast<double>(NEventStages) + 0.5, "Event selection stage"};
+    eventStages = histos.add<TH1>(recoName("hEventSelectionSteps").c_str(), "Reconstructed event cut flow", HistType::kTH1D, {stages});
+    eventStagesByActivity = histos.add<TH2>(recoName("hEventSelectionVsMultiplicity").c_str(), "Valid-activity collisions;activity;selection stage", HistType::kTH2D, {compactMult, stages});
+    const std::array<const char*, NEventStages> stageNames{"Received", "Vertex", "sel8 or disabled", "INEL>0 or disabled", "Quality flags or disabled", "Valid activity selected"};
+    for (int i = 0; i < NEventStages; ++i) {
+      eventStages->GetXaxis()->SetBinLabel(i + 1, stageNames[i]);
+      eventStagesByActivity->GetYaxis()->SetBinLabel(i + 1, stageNames[i]);
+    }
+    selectedEvents = histos.add<TH1>(recoName("hSelectedEvents").c_str(), "Selected collisions counted once, including zero-candidate events;activity;Events", HistType::kTH1D, {compactMult});
+    activityVsNPV = histos.add<TH2>(recoName("hMultiplicityVsNPV").c_str(), "Selected collisions;activity;N_{PV}(|#eta|<1), overflow retained", HistType::kTH2D, {compactMult, {400, 0., 400.}});
+    activityVsVertex = histos.add<TH2>(recoName("hMultiplicityVsVertex").c_str(), "Selected collisions;activity;vertex z (cm)", HistType::kTH2D, {compactMult, {100, -vertexMax.value, vertexMax.value}});
+    auto estimator = histos.add<TH1>("hMultiplicityEstimator", "Configured reconstructed estimator;mode;Workers", HistType::kTH1D, {{2, -0.5, 1.5}});
+    estimator->GetXaxis()->SetBinLabel(1, "NPV");
+    estimator->GetXaxis()->SetBinLabel(2, "FT0M");
+    estimator->Fill(useFT0M.value ? 1. : 0.);
+    if (useFT0M.value) {
+      ft0mStatusQA = histos.add<TH1>("FT0M/hPercentileStatus", "After base event selection;FT0M status;Events", HistType::kTH1D, {{4, -0.5, 3.5}});
+      const std::array<const char*, 4> statusNames{"Valid [0,100)", "Nonfinite", "Below zero", "At or above 100"};
+      for (size_t i = 0; i < statusNames.size(); ++i) {
+        ft0mStatusQA->GetXaxis()->SetBinLabel(static_cast<int>(i + 1), statusNames[i]);
+      }
+    }
     if (mixingEnabled()) {
-      histos.add("hMixPartners", "Mixing partners;N", HistType::kTH1D, {{101, -0.5, 100.5}});
+      mixPartnersByActivity = histos.add<TH2>(recoName("hMixPartnersVsMultiplicity").c_str(), "Available previous events;activity;mixing partners", HistType::kTH2D, {compactMult, {101, -0.5, 100.5}});
+      mixPartners = histos.add<TH1>(recoName("hMixPartners").c_str(), "Mixing partners;N", HistType::kTH1D, {{101, -0.5, 100.5}});
     }
     if (enablePidQA.value) {
-      histos.add("hPionTPC", "Quality-selected tracks;pT;nSigmaTPC pion", HistType::kTH2F, {pt, {100, -10., 10.}});
-      histos.add("hPionTOF", "TOF-matched quality tracks;pT;nSigmaTOF pion", HistType::kTH2F, {pt, {100, -10., 10.}});
-      histos.add("hKaonTPC", "Quality-selected tracks;pT;nSigmaTPC kaon", HistType::kTH2F, {pt, {100, -10., 10.}});
-      histos.add("hKaonTOF", "TOF-matched quality tracks;pT;nSigmaTOF kaon", HistType::kTH2F, {pt, {100, -10., 10.}});
+      const std::array<const char*, 4> names{"hPionTPC", "hPionTOF", "hKaonTPC", "hKaonTOF"};
+      for (size_t i = 0; i < names.size(); ++i) {
+        pidQA[i] = histos.add<TH2>(recoName(names[i]).c_str(), "Quality-selected tracks, before PID;pT;nSigma", HistType::kTH2F, {pt, {100, -10., 10.}});
+        if (useFT0M.value) {
+          const std::string name = std::string(names[i]).append("ByMultiplicity");
+          pidQAByActivity[i] = histos.add<TH3>(recoName(name).c_str(), "Quality-selected tracks, before PID;pT;nSigma;FT0M percentile", HistType::kTH3F, {pt, {100, -10., 10.}, compactMult});
+        }
+      }
     }
     const std::array<const char*, NMixClasses> dipionNames{"hDipionSE", "hDipionME"};
     for (size_t mix = 0; mix < dipionNames.size(); ++mix) {
       if (mix != 0 && !mixingEnabled()) {
         continue;
       }
-      dipionSpectra[mix] = histos.add<THnSparse>(dipionNames[mix], "Dipion SE or raw ME", HistType::kTHnSparseF, {massPi, pt, mult, charge});
+      dipionSpectra[mix] = histos.add<THnSparse>(recoName(dipionNames[mix]).c_str(), "Dipion SE or raw ME", HistType::kTHnSparseF, {massPi, pt, mult, charge});
     }
     const std::array<std::array<const char*, NMixClasses>, NChannels> compactNames{{{"hProxyCompactSE", "hProxyCompactME"}, {"hKstarProxyCompactSE", "hKstarProxyCompactME"}}};
     const std::array<std::array<const char*, NMixClasses>, NChannels> fullNames{{{"hProxySE", "hProxyME"}, {"hKstarProxySE", "hKstarProxyME"}}};
@@ -238,15 +377,15 @@ struct F0phiproxy {
         if (channelEnabled(channel)) {
           // The measured dipion mass is retained; a mass window is not an f0 tag.
           if (enableCompactProxy.value) {
-            compactProxy[channel][mix] = histos.add<THnSparse>(compactNames[channel][mix], "Grouped-pT/multiplicity proxy; no constituent charge is measured", HistType::kTHnSparseF, {mass, compactPt, compactMassPi, compactMult, charge, bachelorCharge, tof});
+            compactProxy[channel][mix] = histos.add<THnSparse>(recoName(compactNames[channel][mix]).c_str(), "Grouped-pT/multiplicity proxy; no constituent charge is measured", HistType::kTHnSparseF, {mass, compactPt, compactMassPi, compactMult, charge, bachelorCharge, tof});
           }
           if (enableFullProxySparse.value) {
-            fullProxy[channel][mix] = histos.add<THnSparse>(fullNames[channel][mix], "Diagnostic full proxy", HistType::kTHnSparseF, {mass, pt, massPi, mult, charge, bachelorCharge, tof});
+            fullProxy[channel][mix] = histos.add<THnSparse>(recoName(fullNames[channel][mix]).c_str(), "Diagnostic full proxy", HistType::kTHnSparseF, {mass, pt, massPi, mult, charge, bachelorCharge, tof});
           }
         }
         if (controlEnabled(channel)) {
           for (size_t sign = 0; sign < NCharges; ++sign) {
-            controls[channel][mix][sign] = histos.add<THnSparse>(controlNames[channel][mix][sign], "Standard control SE or raw ME", HistType::kTHnSparseF, {mass, pt, mult});
+            controls[channel][mix][sign] = histos.add<THnSparse>(recoName(controlNames[channel][mix][sign]).c_str(), "Standard control SE or raw ME", HistType::kTHnSparseF, {mass, pt, mult});
           }
         }
       }
@@ -263,27 +402,40 @@ struct F0phiproxy {
       const std::array<const char*, NGenSpectra> names{"hMCGenDipion", "hMCGenTrueF0", "hMCGenPhiKK", "hMCGenTruePhi", "hMCGenKstarKPi", "hMCGenTrueKstar", "hMCGenProxyPhi", "hMCGenProxyPhiTrueF0", "hMCGenProxyKstar", "hMCGenProxyKstarTrueF0"};
       for (size_t i = 0; i < names.size(); ++i) {
         const AxisSpec axis = i <= GenF0 ? pionMass : (i == GenKstar || i == GenKstarTrue || i >= GenProxyKstar ? mass[Kstar] : mass[Phi]);
-        generated[i] = histos.add<TH2>(names[i], "Generated unweighted fiducial spectrum", HistType::kTH2D, {axis, pt}, true);
+        generated[i] = histos.add<TH2>(names[i], "Generated unweighted fiducial spectrum; no detector FT0M selection", HistType::kTH2D, {axis, pt}, true);
       }
     }
     if (doprocessMCReco) {
-      recoTrueF0 = histos.add<TH2>("hMCRecoTrueF0", "Selected common-parent f0 -> pi pi", HistType::kTH2D, {pionMass, pt}, true);
+      recoTrueF0 = histos.add<TH2>(recoName("hMCRecoTrueF0").c_str(), "Selected common-parent f0 -> pi pi", HistType::kTH2D, {pionMass, pt}, true);
+      if (useFT0M.value) {
+        recoTrueF0ByActivity = histos.add<THnSparse>("FT0M/hMCRecoTrueF0ByMultiplicity", "Selected common-parent f0;dipion mass;pair pT;FT0M percentile", HistType::kTHnSparseD, {pionMass, pt, activityAxis(true)}, true);
+      }
       const std::array<const char*, NChannels> channelNames{"Phi", "Kstar"};
       const std::array<const char*, NTruthClasses> classNames{"TrueF0", "Combinatorial", "MisID", "Unmatched"};
       for (size_t channel = 0; channel < NChannels; ++channel) {
         if (channelEnabled(channel)) {
           for (size_t category = 0; category < classNames.size(); ++category) {
-            const std::string name = std::string("hMCRecoProxy") + channelNames[channel] + classNames[category];
-            recoComponents[channel][category] = histos.add<TH2>(name.c_str(), "Exclusive proxy truth component; not a coalescence ancestry tag", HistType::kTH2D, {mass[channel], pt}, true);
+            const std::string name = std::string("hMCRecoProxy").append(channelNames[channel]).append(classNames[category]);
+            recoComponents[channel][category] = histos.add<TH2>(recoName(name).c_str(), "Exclusive proxy truth component; not a coalescence ancestry tag", HistType::kTH2D, {mass[channel], pt}, true);
+            if (useFT0M.value) {
+              recoComponentsByActivity[channel][category] = histos.add<THnSparse>(recoName(std::string(name).append("ByMultiplicity")).c_str(), "Exclusive proxy truth component; not coalescence ancestry", HistType::kTHnSparseD, {mass[channel], pt, activityAxis(true)}, true);
+            }
           }
-          const std::string name = std::string("hMCRecoProxy") + channelNames[channel] + "PtResponse";
-          proxyPtResponse[channel] = histos.add<TH2>(name.c_str(), "Primary true f0 daughters and true bachelor;generated proxy pair pT;reconstructed proxy pair pT", HistType::kTH2D, {pt, pt}, true);
+          const std::string name = std::string("hMCRecoProxy").append(channelNames[channel]).append("PtResponse");
+          proxyPtResponse[channel] = histos.add<TH2>(recoName(name).c_str(), "Primary true f0 daughters and true bachelor;generated proxy pair pT;reconstructed proxy pair pT", HistType::kTH2D, {pt, pt}, true);
+          if (useFT0M.value) {
+            proxyPtResponseByActivity[channel] = histos.add<THnSparse>(recoName(std::string(name).append("ByMultiplicity")).c_str(), "Selected true-f0 proxy response;generated pair pT;reconstructed pair pT;FT0M percentile", HistType::kTHnSparseD, {pt, pt, activityAxis(true)}, true);
+          }
         }
         if (controlEnabled(channel)) {
-          const std::string truthName = std::string("hMCRecoTrue") + channelNames[channel];
-          const std::string responseName = std::string("hMCReco") + channelNames[channel] + "PtResponse";
-          recoTrueParent[channel] = histos.add<TH2>(truthName.c_str(), "Selected exact common-parent standard control", HistType::kTH2D, {mass[channel], pt}, true);
-          recoPtResponse[channel] = histos.add<TH2>(responseName.c_str(), "Selected standard control;generated pair pT;reconstructed pair pT", HistType::kTH2D, {pt, pt}, true);
+          const std::string truthName = std::string("hMCRecoTrue").append(channelNames[channel]);
+          const std::string responseName = std::string("hMCReco").append(channelNames[channel]).append("PtResponse");
+          recoTrueParent[channel] = histos.add<TH2>(recoName(truthName).c_str(), "Selected exact common-parent standard control", HistType::kTH2D, {mass[channel], pt}, true);
+          recoPtResponse[channel] = histos.add<TH2>(recoName(responseName).c_str(), "Selected standard control;generated pair pT;reconstructed pair pT", HistType::kTH2D, {pt, pt}, true);
+          if (useFT0M.value) {
+            recoTrueParentByActivity[channel] = histos.add<THnSparse>(recoName(std::string(truthName).append("ByMultiplicity")).c_str(), "Selected exact common-parent standard control", HistType::kTHnSparseD, {mass[channel], pt, activityAxis(true)}, true);
+            recoPtResponseByActivity[channel] = histos.add<THnSparse>(recoName(std::string(responseName).append("ByMultiplicity")).c_str(), "Selected standard response;generated pair pT;reconstructed pair pT;FT0M percentile", HistType::kTHnSparseD, {pt, pt, activityAxis(true)}, true);
+          }
         }
       }
     }
@@ -398,11 +550,13 @@ struct F0phiproxy {
       if (mc && !mixed) {
         const size_t truthClass = proxyTruthClass(first, second, bachelor, channel);
         recoComponents[channel][truthClass]->Fill(pair.M(), pair.Pt());
+        fillSparse(recoComponentsByActivity[channel][truthClass], {pair.M(), pair.Pt(), mult});
         if (truthClass == 0 && first.truth.primary && second.truth.primary && bachelor.truth.primary &&
             bachelor.truth.id != first.truth.id && bachelor.truth.id != second.truth.id) {
           const double px = ProxyMomentumScale * (first.truth.px + second.truth.px) + bachelor.truth.px;
           const double py = ProxyMomentumScale * (first.truth.py + second.truth.py) + bachelor.truth.py;
           proxyPtResponse[channel]->Fill(std::hypot(px, py), pair.Pt());
+          fillSparse(proxyPtResponseByActivity[channel], {std::hypot(px, py), pair.Pt(), mult});
         }
       }
     }
@@ -422,6 +576,8 @@ struct F0phiproxy {
     if (mc && !mixed && first.sign != second.sign && identified(first, PdgKaon) && identified(second, bachelorPdg(channel)) && commonParent(first.truth, second.truth, parent)) {
       recoTrueParent[channel]->Fill(pair.M(), pair.Pt());
       recoPtResponse[channel]->Fill(truthPairPt(first.truth, second.truth), pair.Pt());
+      fillSparse(recoTrueParentByActivity[channel], {pair.M(), pair.Pt(), mult});
+      fillSparse(recoPtResponseByActivity[channel], {truthPairPt(first.truth, second.truth), pair.Pt(), mult});
     }
   }
   void fillControls(Event const& event, std::deque<Event> const& pool, float mult, bool mc)
@@ -467,21 +623,56 @@ struct F0phiproxy {
   void processReco(TCollisions const& collisions, TTracks const& tracks, TSlice const& slice)
   {
     // Pools reset at each dataframe; the key also separates runs, z and multiplicity.
-    std::map<std::pair<int, std::pair<int, int>>, std::deque<Event>> pools;
+    std::map<MixingKey, std::deque<Event>> pools;
     const std::deque<Event> emptyPool;
     for (auto const& collision : collisions) {
-      histos.fill(HIST("hEventSelection"), 1.);
-      if (std::abs(collision.posZ()) >= vertexMax.value || (requireSel8.value && !collision.sel8()) ||
-          (requireINELgt0.value && collision.multNTracksPVeta1() < 1)) {
+      const float npv = collision.multNTracksPVeta1();
+      const float mult = useFT0M.value ? collision.centFT0M() : npv;
+      const bool validActivity = useFT0M.value ? ft0mStatus(mult) == 0 : std::isfinite(mult) && mult >= 0.f;
+      auto stage = [&](int step) {
+        eventStages->Fill(step);
+        if (validActivity) {
+          eventStagesByActivity->Fill(mult, step);
+        }
+      };
+      eventSelection->Fill(1.);
+      stage(Received);
+      if (!std::isfinite(collision.posZ()) || std::abs(collision.posZ()) >= vertexMax.value) {
         continue;
       }
-      histos.fill(HIST("hEventSelection"), 2.);
-      const float mult = collision.multNTracksPVeta1();
+      stage(VertexAccepted);
+      if (requireSel8.value && !collision.sel8()) {
+        continue;
+      }
+      stage(Sel8Accepted);
+      if (requireINELgt0.value && npv < 1.f) {
+        continue;
+      }
+      stage(InelAccepted);
+      if ((requireNoSameBunchPileup.value && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) ||
+          (requireGoodZvtxFT0vsPV.value && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      stage(QualityAccepted);
+      if (useFT0M.value) {
+        // Missing calibration (105) and non-INEL markers (100.5) are not percentiles.
+        // Never substitute NPV in an FT0M histogram or pool.
+        ft0mStatusQA->Fill(ft0mStatus(mult));
+      }
+      if (!validActivity) {
+        continue;
+      }
+      stage(ActivityAccepted);
+      eventSelection->Fill(2.);
+      selectedEvents->Fill(mult);
+      activityVsNPV->Fill(mult, npv);
+      activityVsVertex->Fill(mult, collision.posZ());
       std::deque<Event>* activePool = nullptr;
       if (mixingEnabled()) {
         const int run = collision.template bc_as<aod::BCsWithTimestamps>().runNumber();
-        activePool = &pools[{run, {static_cast<int>(std::floor(collision.posZ() / mixZWidth.value)), static_cast<int>(std::floor(mult / mixMultWidth.value))}}];
-        histos.fill(HIST("hMixPartners"), activePool->size());
+        activePool = &pools[mixingKey(run, collision.posZ(), mult)];
+        mixPartners->Fill(activePool->size());
+        mixPartnersByActivity->Fill(mult, activePool->size());
       }
       auto const& pool = activePool ? *activePool : emptyPool;
       Event event;
@@ -493,11 +684,17 @@ struct F0phiproxy {
         }
         const bool tof = track.hasTOF();
         if (enablePidQA.value) {
-          histos.fill(HIST("hPionTPC"), track.pt(), track.tpcNSigmaPi());
-          histos.fill(HIST("hKaonTPC"), track.pt(), track.tpcNSigmaKa());
+          auto fillPID = [&](size_t index, float value) {
+            pidQA[index]->Fill(track.pt(), value);
+            if (pidQAByActivity[index]) {
+              pidQAByActivity[index]->Fill(track.pt(), value, mult);
+            }
+          };
+          fillPID(0, track.tpcNSigmaPi());
+          fillPID(2, track.tpcNSigmaKa());
           if (tof) {
-            histos.fill(HIST("hPionTOF"), track.pt(), track.tofNSigmaPi());
-            histos.fill(HIST("hKaonTOF"), track.pt(), track.tofNSigmaKa());
+            fillPID(1, track.tofNSigmaPi());
+            fillPID(3, track.tofNSigmaKa());
           }
         }
         TrackCandidate candidate{.id = track.globalIndex(), .sign = track.sign(), .px = track.px(), .py = track.py(), .pz = track.pz(), .hasTOF = tof, .truth = {}};
@@ -543,6 +740,7 @@ struct F0phiproxy {
         fillSparse(dipionSpectra[0], {pair.M(), pair.Pt(), mult, static_cast<double>(chargeCategory(first.sign, second.sign))});
         if (mc && trueF0(first, second)) {
           recoTrueF0->Fill(pair.M(), pair.Pt());
+          fillSparse(recoTrueF0ByActivity, {pair.M(), pair.Pt(), mult});
         }
         if (pair.M() < dipionMassMin.value || pair.M() >= dipionMassMax.value) {
           continue;

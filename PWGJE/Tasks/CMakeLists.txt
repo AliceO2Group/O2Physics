@@ -237,6 +237,11 @@ if(FastJet_FOUND)
                         REUSE_FROM JetSubstructureHFPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(lf-jet-spectra
+                        SOURCES lfJetSpectra.cxx
+                        REUSE_FROM JetSubstructureHFPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-finder-charged-qa
                         SOURCES jetFinderQA.cxx
                         REUSE_FROM JetSubstructureHFPCH
@@ -410,6 +415,11 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(hf-fragmentation-function
                         SOURCES hfFragmentationFunction.cxx
+                        REUSE_FROM JetSubstructureHFPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(dq-fragmentation-function
+                        SOURCES DqFragmentationFunction.cxx
                         REUSE_FROM JetSubstructureHFPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)

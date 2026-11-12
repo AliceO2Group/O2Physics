@@ -1601,7 +1601,7 @@ struct V0QA {
       if (!v0.has_mcParticle())
         continue;
 
-      int pdg = v0.mcParticle().pdgCode();
+      // int pdg = v0.mcParticle().pdgCode(); // FIXME: unused
 
       // Check V0 decay kinematics
       if (v0.isRejectedCandidate())
@@ -1612,7 +1612,7 @@ struct V0QA {
 
       auto pv0 = v0.mcParticle();
       auto mother = v0.mcMotherParticle();
-      pdg = mother.pdgCode();
+      auto pdg = mother.pdgCode();
 
       if (pdg == PDG_t::kXiMinus) {
         registry.fill(HIST("feeddown/XiMinusPtYLambdaPt"), mother.pt(), mother.y(), pv0.pt(), weight);
@@ -1638,7 +1638,7 @@ struct V0QA {
         if (!v0.has_mcParticle())
           continue;
 
-        int pdg = v0.mcParticle().pdgCode();
+        // int pdg = v0.mcParticle().pdgCode(); // FIXME: unused
 
         // Check V0 decay kinematics
         if (v0.isRejectedCandidate())
@@ -1649,7 +1649,7 @@ struct V0QA {
 
         auto pv0 = v0.mcParticle();
         auto mother = v0.mcMotherParticle();
-        pdg = mother.pdgCode();
+        auto pdg = mother.pdgCode();
 
         if (pdg == PDG_t::kXiMinus) {
           registry.fill(HIST("feeddown/JetPtXiMinusPtLambdaPt"), mcdjet.pt(), mother.pt(), pv0.pt(), weight);
@@ -1683,14 +1683,14 @@ struct V0QA {
             if (!v0sAreMatched(v0, pv0, jTracks))
               continue;
 
-            int pdg = v0.mcParticle().pdgCode();
+            // int pdg = v0.mcParticle().pdgCode(); // FIXME: unused
 
             // Check V0 decay kinematics
             if (v0.isRejectedCandidate())
               continue;
 
             auto mother = v0.mcMotherParticle();
-            pdg = mother.pdgCode();
+            auto pdg = mother.pdgCode();
             if (pdg == PDG_t::kXiMinus) {
               registry.fill(HIST("feeddown/JetsPtXiMinusPtLambdaPt"), mcpjet.pt(), mcdjet.pt(), mother.pt(), pv0.pt(), weight);
             }

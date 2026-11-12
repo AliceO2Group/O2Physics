@@ -116,6 +116,8 @@ struct AnalysisEnergyCorrelator {
     Configurable<float> fConfigJpsiPtMin{"cfgJpsiPtMin", 0.0, "J/psi pt minimum"};
     Configurable<float> fConfigJpsiPtMax{"cfgJpsiPtMax", 100.0, "J/psi pt maximum"};
     Configurable<float> fConfigJpsiRapMax{"cfgJpsiRapMax", 0.9, "J/psi rapidity maximum"};
+    Configurable<float> fConfigJpsiTauxyMin{"cfgJpsiTauxyMin", -10000, "J/psi tauxy minimum"};
+    Configurable<float> fConfigJpsiTauxyMax{"cfgJpsiTauxyMax", 10000.0, "J/psi tauxy maximum"};
     Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> recSignals{"cfgMCRecSignals", "eeFromJpsi", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> recSignalsJSON{"cfgMCRecSignalsJSON", "", "Comma separated list of MC signals (reconstructed) via JSON"};
@@ -627,8 +629,8 @@ struct AnalysisEnergyCorrelator {
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
-  template <uint32_t TTrackFillMap, int TPairType, typename TTrack1, typename TTrack2>
-  void runSameEventPairing(TTrack1 const& t1, TTrack2 const& t2, int iEleCut, aod::McParticles const& /*mcParticles*/)
+  template <uint32_t TTrackFillMap, int TPairType, typename TTrack1, typename TTrack2, typename TEvent>
+  void runSameEventPairing(TTrack1 const& t1, TTrack2 const& t2, int iEleCut, TEvent const& event, aod::McParticles const& /*mcParticles*/)
   {
     std::map<int, std::vector<TString>> histNames = fTrackHistNames;
     std::map<int, std::vector<TString>> histNamesMC = fBarrelHistNamesMCmatched;
@@ -647,6 +649,7 @@ struct AnalysisEnergyCorrelator {
     } // end loop over MC signals
 
     VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
+    VarManager::FillPairVertexing<TPairType, gkEventFillMapWithMults, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
 
     if (sign1 * sign2 < 0) {                                                       // +- pairs
       fHistMan->FillHistClass(histNames[iEleCut][0].Data(), VarManager::fgValues); // reconstructed, unmatched
@@ -802,18 +805,20 @@ struct AnalysisEnergyCorrelator {
           // Fill pair histograms for all cuts that both tracks pass
           for (size_t iCut = 0; iCut < fTrackCuts.size(); iCut++) {
             if (twoTrackFilter & (static_cast<uint32_t>(1) << iCut)) {
-              runSameEventPairing<gkTrackFillMapWithCov, VarManager::kDecayToEE>(t1, t2, iCut, mcParticles);
+              runSameEventPairing<gkTrackFillMapWithCov, VarManager::kDecayToEE>(t1, t2, iCut, event, mcParticles);
             }
           }
 
           float mass = VarManager::fgValues[VarManager::kMass];
           float pt = VarManager::fgValues[VarManager::kPt];
           float rap = VarManager::fgValues[VarManager::kRap];
+          float tauxy = VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass];
 
           // Apply J/psi cuts
           if (mass < fConfigPairOptions.fConfigJpsiMassMin.value || mass > fConfigPairOptions.fConfigJpsiMassMax.value ||
               pt < fConfigPairOptions.fConfigJpsiPtMin.value || pt > fConfigPairOptions.fConfigJpsiPtMax.value ||
-              std::abs(rap) > fConfigPairOptions.fConfigJpsiRapMax.value) {
+              std::abs(rap) > fConfigPairOptions.fConfigJpsiRapMax.value ||
+              tauxy < fConfigPairOptions.fConfigJpsiTauxyMin.value || tauxy > fConfigPairOptions.fConfigJpsiTauxyMax.value) {
             continue;
           }
 
@@ -928,13 +933,17 @@ struct AnalysisEnergyCorrelator {
           }
           // Fill pair variables for cut
           VarManager::FillPair<VarManager::kDecayToEE, gkTrackFillMapWithCov>(t1, t2, VarManager::fgValues);
+          VarManager::FillPairVertexing<VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event1, t1, t2, VarManager::fgValues);
           float mass = VarManager::fgValues[VarManager::kMass];
           float pt = VarManager::fgValues[VarManager::kPt];
           float rap = VarManager::fgValues[VarManager::kRap];
+          float tauxy = VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass];
+
           // Apply J/psi cuts
           if (mass < fConfigPairOptions.fConfigJpsiMassMin.value || mass > fConfigPairOptions.fConfigJpsiMassMax.value ||
               pt < fConfigPairOptions.fConfigJpsiPtMin.value || pt > fConfigPairOptions.fConfigJpsiPtMax.value ||
-              std::abs(rap) > fConfigPairOptions.fConfigJpsiRapMax.value) {
+              std::abs(rap) > fConfigPairOptions.fConfigJpsiRapMax.value ||
+              tauxy < fConfigPairOptions.fConfigJpsiTauxyMin.value || tauxy > fConfigPairOptions.fConfigJpsiTauxyMax.value) {
             continue;
           }
           if (t1.sign() * t2.sign() >= 0) {

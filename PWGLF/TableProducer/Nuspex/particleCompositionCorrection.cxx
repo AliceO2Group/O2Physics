@@ -38,6 +38,8 @@
 #include <tuple>
 #include <vector>
 
+// #include "Framework/Logger.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::ml;
@@ -64,6 +66,7 @@ struct ParticleCompositionCorrection {
 
   Configurable<bool> skipAll{"skipAll", false, "run table producer in dummy mode, i.e. skip all computations and fill with 1"};
   Configurable<bool> skipSec{"skipSec", false, "dont calculate weights for secondaries"};
+  Configurable<bool> skipNeutralSec{"skipNeutralSec", true, "dont calculate weights for neutral secondaries"};
   Configurable<bool> skipNonPhysicalPrim{"skipNonPhysicalPrim", true, "dont calculate weights for particles that are not (originating from) physical primaries; i.e. reject (decays of) pi0 etc."};
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
   Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
@@ -118,6 +121,7 @@ void ParticleCompositionCorrection::init(InitContext const&)
     const int maxMult = 100;
     const int nBinsMult = maxMult + 1;
     const AxisSpec multAxis = {nBinsMult, -0.5, nBinsMult - 0.5, "#it{N}_{ch}", "mult"};
+    const AxisSpec processAxis = {51, -0.5, 50.5, "process", "process"};
 
     histos.add("multDist_INELg0", "", kTH1D, {multAxis});
     histos.add("multDist_fid", "", kTH1D, {multAxis});
@@ -127,25 +131,15 @@ void ParticleCompositionCorrection::init(InitContext const&)
     histos.add("frac/data/proton", "", kTProfile, {ptAxis});
     histos.add("frac/data/sigma", "", kTProfile, {ptAxis});
 
-    histos.add("frac/data/kaon_mult", "", kTProfile2D, {multAxis, ptAxis});
-    histos.add("frac/data/proton_mult", "", kTProfile2D, {multAxis, ptAxis});
-    histos.add("frac/data/sigma_mult", "", kTProfile2D, {multAxis, ptAxis});
-
     histos.addClone("frac/data/", "frac/mc/");
 
     histos.add("weight/kaon", "", kTProfile, {ptAxis});
     histos.add("weight/proton", "", kTProfile, {ptAxis});
     histos.add("weight/sigma", "", kTProfile, {ptAxis});
 
-    histos.add("weight/kaon_mult", "", kTProfile2D, {multAxis, ptAxis});
-    histos.add("weight/proton_mult", "", kTProfile2D, {multAxis, ptAxis});
-    histos.add("weight/sigma_mult", "", kTProfile2D, {multAxis, ptAxis});
-
+    histos.add("weight/prim", "", kTProfile, {ptAxis});
     histos.add("weight/secDec", "", kTProfile, {ptAxis});
     histos.add("weight/secMat", "", kTProfile, {ptAxis});
-
-    histos.add("weight/secDec_mult", "", kTProfile2D, {multAxis, ptAxis});
-    histos.add("weight/secMat_mult", "", kTProfile2D, {multAxis, ptAxis});
   }
 }
 
@@ -153,20 +147,47 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
 {
   static const std::tuple<float, float, float> noWeights = {1.f, 1.f, 1.f};
 
-  if (skipAll || std::abs(particle.eta()) > etaCut || particle.pt() < ptMinCut || particle.pt() > ptMaxCut) {
+  static constexpr int kXi0PDG = 3322;
+
+  /* if (skipAll || std::abs(particle.eta()) > etaCut || particle.pt() < ptMinCut || particle.pt() > ptMaxCut) {
+    return noWeights;
+  } */
+
+  if (skipAll) {
     return noWeights;
   }
 
-  if (particle.producedByGenerator()) {
+  if (!particle.has_mothers()) {
+    return noWeights;
+  }
+
+  auto particleMother = particle.mothersIds()[0] - particles.offset();
+
+  // if (particle.producedByGenerator()) {
+
+  if (particleMother == 0. || particleMother == 1. ||
+      (particle.isPhysicalPrimary() && skipNonPhysicalPrim)) {
+
+    auto absPDGCode = std::abs(particle.pdgCode());
+
+    if (absPDGCode == PDG_t::kPiPlus || absPDGCode == PDG_t::kPi0) {
+
+      return noWeights;
+    }
+
     if (skipNonPhysicalPrim && !particle.isPhysicalPrimary()) {
       return noWeights;
     }
-    auto absPDGCode = std::abs(particle.pdgCode());
-    // translate abs PDG code to PID variable of neural networks (0: pion, 1: kaon, 2: proton, 3: sigma)
 
-    if (absPDGCode == PDG_t::kPiPlus || absPDGCode == PDG_t::kPi0) {
-      return noWeights;
+    if (!particle.has_daughters()) {
+
+      if (particle.eta() > etaCut || particle.pt() > ptMaxCut || particle.pt() < ptMinCut) {
+
+        return noWeights;
+      }
     }
+
+    // translate abs PDG code to PID variable of neural networks (0: pion, 1: kaon, 2: proton, 3: sigma)
 
     static const std::map<int, float> mapPID = {
       {PDG_t::kPiPlus, 0.f},
@@ -181,79 +202,106 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
       {PDG_t::kLambda0, 3.f},
       {PDG_t::kSigma0, 3.f},
       {PDG_t::kXiMinus, 3.f},
-      // TODO: potentially extend by xi0/eta/omega/rho/phi/Delta...
+      {kXi0PDG, 3.f}, // Xi0
+      {PDG_t::kOmegaMinus, 3.f},
+      // TODO: potentially extend by eta/omega/rho/phi/Delta...
       // pdg codes defined in AliceO2/Common/Constants/include/CommonConstants/PhysicsConstants.h
       // e.g. o2::constants::physics::Pdg::kEta
     };
 
     if (auto iterMapPID = mapPID.find(absPDGCode); iterMapPID != mapPID.end()) {
-      // LOGP(info, "scaling a {} with status code {} from process {}", particle.pdgCode(), particle.getGenStatusCode(), particle.getProcess());
-      float pt = particle.pt();
 
       // calculate particle fractions and corresponding weight for given reference particle
-      std::vector<std::vector<float>> input = {{dNdEta}, {pt}, {iterMapPID->second}};
+      std::vector<std::vector<float>> input = {{dNdEta}, {particle.pt()}, {iterMapPID->second}};
       float fracData = particleFractionsData.evalModel(input)[0];
       float fracMC = particleFractionsMC.evalModel(input)[0];
-      float weight = (fracMC) ? fracData / fracMC : 1.f;
+      float weight = (fracMC != 0.f) ? fracData / fracMC : 1.f;
       std::tuple<float, float, float> weights = {weight, weight, weight};
       if (!skipSec && particle.has_daughters()) {
         storedWeights[particle.index()] = weights;
       }
-      if (enableQAHistos && particle.isPhysicalPrimary() && std::abs(particle.eta()) < 0.8) { // o2-linter: disable=magic-number (usual range of charged-partilce measurements)
+      if (enableQAHistos && particle.isPhysicalPrimary() && std::abs(particle.eta()) < etaCut) {
         if (iterMapPID->first == PDG_t::kKPlus) {
-          histos.fill(HIST("frac/data/kaon"), pt, fracData);
-          histos.fill(HIST("frac/mc/kaon"), pt, fracMC);
-          histos.fill(HIST("frac/data/kaon_mult"), dNdEta, pt, fracData);
-          histos.fill(HIST("frac/mc/kaon_mult"), dNdEta, pt, fracMC);
-          histos.fill(HIST("weight/kaon"), pt, weight);
-          histos.fill(HIST("weight/kaon_mult"), dNdEta, pt, weight);
+          histos.fill(HIST("frac/data/kaon"), particle.pt(), fracData);
+          histos.fill(HIST("frac/mc/kaon"), particle.pt(), fracMC);
+          histos.fill(HIST("weight/kaon"), particle.pt(), weight);
         }
         if (iterMapPID->first == PDG_t::kProton) {
-          histos.fill(HIST("frac/data/proton"), pt, fracData);
-          histos.fill(HIST("frac/mc/proton"), pt, fracMC);
-          histos.fill(HIST("frac/data/proton_mult"), dNdEta, pt, fracData);
-          histos.fill(HIST("frac/mc/proton_mult"), dNdEta, pt, fracMC);
-          histos.fill(HIST("weight/proton"), pt, weight);
-          histos.fill(HIST("weight/proton_mult"), dNdEta, pt, weight);
+          histos.fill(HIST("frac/data/proton"), particle.pt(), fracData);
+          histos.fill(HIST("frac/mc/proton"), particle.pt(), fracMC);
+          histos.fill(HIST("weight/proton"), particle.pt(), weight);
         }
         if (iterMapPID->first == PDG_t::kSigmaPlus || iterMapPID->first == PDG_t::kSigmaMinus) {
-          histos.fill(HIST("frac/data/sigma"), pt, fracData);
-          histos.fill(HIST("frac/mc/sigma"), pt, fracMC);
-          histos.fill(HIST("frac/data/sigma_mult"), dNdEta, pt, fracData);
-          histos.fill(HIST("frac/mc/sigma_mult"), dNdEta, pt, fracMC);
-          histos.fill(HIST("weight/sigma"), pt, weight);
-          histos.fill(HIST("weight/sigma_mult"), dNdEta, pt, weight);
+          histos.fill(HIST("frac/data/sigma"), particle.pt(), fracData);
+          histos.fill(HIST("frac/mc/sigma"), particle.pt(), fracMC);
+          histos.fill(HIST("weight/sigma"), particle.pt(), weight);
         }
+
+        histos.fill(HIST("weight/prim"), particle.pt(), weight);
       }
+
       return weights;
     }
+
   } else if (!skipSec) {
+
     auto refParticleID = particle.index();
-    // LOGP(error, "Particle [{}] {} from process {}", refParticleID, particle.pdgCode(), particle.getProcess());
-    while (!particles.iteratorAt(refParticleID).producedByGenerator() && particles.iteratorAt(refParticleID).has_mothers()) {
-      auto motherID = particles.iteratorAt(refParticleID).mothersIds()[0] - particles.offset();
-      // LOGP(error, "-> mom [{}] {} from process {}", motherID, particles.iteratorAt(motherID).pdgCode(), particles.iteratorAt(motherID).getProcess());
-      refParticleID = motherID;
+    auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+
+    if (!pdgParticle) {
+      // LOGP(info, "Unknown PDG code: {}", particle.pdgCode());
+      // return noWeights;
+    } else {
+
+      if (skipNeutralSec && pdgParticle->Charge() == 0.) {
+        return noWeights;
+      }
     }
 
-    if (storedWeights.find(refParticleID) == storedWeights.end()) {
-      // LOGP(error, "  no ref particle stored for particle {} from process {}!!", particle.pdgCode(), particle.getProcess());
+    if (particle.eta() > etaCut || particle.pt() > ptMaxCut || particle.pt() < ptMinCut) {
+      return noWeights;
+    }
+
+    while (particles.iteratorAt(refParticleID).has_mothers()) {
+
+      auto motherID = particles.iteratorAt(refParticleID).mothersIds()[0] - particles.offset();
+
+      auto mom = particles.iteratorAt(motherID);
+
+      if (!mom.has_mothers()) {
+        break;
+      }
+
+      refParticleID = motherID;
+
+      if (mom.isPhysicalPrimary() && skipNonPhysicalPrim) {
+        break;
+      }
+    }
+
+    if (refParticleID == 0 || refParticleID == 1) {
+      LOGF(error, "GLOBAL MOTHER IS INCIDING PROTON");
+    }
+
+    if (!storedWeights.contains(refParticleID)) {
+      // LOGP(info, "MCB:   no ref stored for mom {}, PDG: {}!!", particles.iteratorAt(refParticleID).index(),particles.iteratorAt(refParticleID).pdgCode());
       return noWeights;
     }
 
     if (enableQAHistos) {
+
       float weight = get<0>(storedWeights.at(refParticleID));
-      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+
       if (pdgParticle && pdgParticle->Charge() != 0.) {
-        if (particle.getProcess() == TMCProcess::kPDecay) {
+        if (particle.getProcess() == TMCProcess::kPDecay || particle.getProcess() == TMCProcess::kPPrimary) {
           histos.fill(HIST("weight/secDec"), particle.pt(), weight);
-          histos.fill(HIST("weight/secDec_mult"), dNdEta, particle.pt(), weight);
-        } else if (particle.getProcess() == TMCProcess::kPHInhelastic || particle.getProcess() == TMCProcess::kPHadronic || particle.getProcess() == TMCProcess::kPHElastic) {
+          // } else if (particle.getProcess() == TMCProcess::kPHInhelastic || particle.getProcess() == TMCProcess::kPHadronic || particle.getProcess() == TMCProcess::kPHElastic) {
+        } else {
           histos.fill(HIST("weight/secMat"), particle.pt(), weight);
-          histos.fill(HIST("weight/secMat_mult"), dNdEta, particle.pt(), weight);
         }
       }
     }
+
     return storedWeights.at(refParticleID);
   }
   return noWeights;
@@ -266,6 +314,7 @@ void ParticleCompositionCorrection::process(aod::McCollisions::iterator const&, 
   float dNdEtafid = 0.f;
 
   for (const auto& particle : particles) {
+
     if (!particle.isPhysicalPrimary()) {
       continue;
     }
@@ -287,6 +336,8 @@ void ParticleCompositionCorrection::process(aod::McCollisions::iterator const&, 
     histos.fill(HIST("multDist_fid"), dNdEtafid);
     histos.fill(HIST("multDist_fidVsINELg0"), dNdEta, dNdEtafid);
   }
+
+  // LOGP(info, "MCB: ------- New event with dNdeta = {} in |eta| < 0.8 -------", dNdEtafid);
 
   std::map<int32_t, std::tuple<float, float, float>> storedWeights;
   for (const auto& particle : particles) {

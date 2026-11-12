@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/modes.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -143,6 +144,18 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMasks_001, "FCOLMASK", 1, //! collision m
 using FColMasks = FColMasks_001;
 using StoredFColMasks = StoredFColMasks_001;
 
+// table for collision tags: one bit per (wagon, pair type) combination the collision tagger was
+// self-configured to check, set if the collision has what it takes to form at least one pair of
+// that type (both particle-1-role and particle-2-role candidates present, or, for a same-species
+// pair, at least 2 distinct candidates passing the one shared selection). Used to pre-filter the
+// mixed-event pool instead of discovering empty collisions only after slicing. Which bit means
+// what is assigned at self-configuration time and logged by the tagger; see
+// PWGCF/Femto/TableProducer/femtoProducerCollisionTagger.cxx.
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColTags_001, "FCOLTAG", 1, //! collision tags
+                                   femtocollisions::CollisionTag);
+using FColTags = FColTags_001;
+using StoredFColTags = StoredFColTags_001;
+
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColSphericities_001, "FCOLSPHERICITY", 1, //! sphericity
                                    femtocollisions::Sphericity);
 using FColSphericities = FColSphericities_001;
@@ -233,6 +246,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! momentum
 DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! theta
                            [](float eta) -> float {
                              return 2.f * std::atan(std::exp(-eta));
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! rapidity -- mass is not a stored column, so it is passed in as an
+                                 //! extra free argument at the call site, e.g. mother.y(mass)
+                           [](float signedPt, float eta, float mass) -> float {
+                             return RecoDecayPtEtaPhi::y(std::fabs(signedPt), eta, mass);
                            });
 } // namespace dynamic
 
@@ -1822,7 +1840,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first dir
                                    femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>,
+                                   femtobase::dynamic::Y<femtobase::stored::SignedPt, femtobase::stored::Eta>); // mass is a free argument, e.g. mother.y(mass)
 
 using FMcMothers = FMcMothers_001;
 using FMcMother = FMcMothers::iterator;

@@ -183,7 +183,7 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       // n-D
       {kPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hPt1VsPt2VsPt3", "p_{T,1} vs p_{T,2} vs p_{T,3}; p_{T,1} (GeV/#it{c});p_{T,2} (GeV/#it{c});p_{T,3} (GeV/#it{c});"},
       {kQ3VsPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hQ3VsPt1VsPt2VsPt3", "Q_{3} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c});"},
-      {kQ3VsMtVsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
+      {kQ3VsMtVsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity;"},
       {kQ3VsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMultVsCent", "Q_{3} vs m_{T} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality (%);"},
       // n-D with mass
       {kQ3VsMtVsPt1VsPt2VsPt3VsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMult", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}); Multiplicity;"},
@@ -573,6 +573,12 @@ class TripletHistManager
   template <modes::Mode mode>
   void fill()
   {
+    // track the closest (minimum) Q3 among accepted triplets this event -- used by the dN/deta
+    // trigger (see dndetaBuilder.h) to tag its per-track entries with the triggering kinematic,
+    // independent of which mode (data/mc/mc-truth) accepted this particular triplet
+    if (mMinimumAcceptedQ3 < 0.f || mQ3 < mMinimumAcceptedQ3) {
+      mMinimumAcceptedQ3 = mQ3;
+    }
     if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis();
     }
@@ -583,6 +589,10 @@ class TripletHistManager
       fillMcTruth();
     }
   }
+
+  /// minimum Q3 among triplets accepted since the last resetTrackedParticlesPerEvent() call, or -1
+  /// if no triplet was accepted this event -- used by the dN/deta trigger (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedQ3() const { return mMinimumAcceptedQ3; }
 
   // kinematicVariable is supplied by the caller (CPR/triplet cleaner), each of which carries its
   // own Configurable for it -- this manager has no opinion of its own on which variable to report.
@@ -635,6 +645,7 @@ class TripletHistManager
     mParticles2PerEvent.reserve(100);
     mParticles3PerEvent.clear();
     mParticles3PerEvent.reserve(100);
+    mMinimumAcceptedQ3 = -1.f;
   }
 
   void fillMixingQaSe()
@@ -851,6 +862,7 @@ class TripletHistManager
   float mMass2 = 0.f;
   float mMass3 = 0.f;
   float mQ3 = 0.f;
+  float mMinimumAcceptedQ3 = -1.f; ///< minimum Q3 among triplets accepted this event, see getMinimumAcceptedQ3()
   float mMt = 0.f;
   float mMult = 0.f;
   float mCent = 0.f;

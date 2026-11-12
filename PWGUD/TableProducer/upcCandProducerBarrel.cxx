@@ -525,11 +525,9 @@ struct UpcCandProducerBarrel {
 
     auto hTVX = registry.get<TH2>(HIST("hTVX"));
     auto hTVXRCT = registry.get<TH2>(HIST("hTVXRCT"));
-    auto hTVXRCTnoPileupROF = registry.get<TH2>(HIST("hTVXRCTnoPileupROF"));
 
     auto hTVXupc = registry.get<TH2>(HIST("hTVXupc"));
     auto hTVXRCTupc = registry.get<TH2>(HIST("hTVXRCTupc"));
-    auto hTVXRCTnoPileupROFupc = registry.get<TH2>(HIST("hTVXRCTnoPileupROFupc"));
 
     std::vector<int64_t> bcsWithFT0, bcsWithFV0, bcsWithFDD;
     bcsWithFT0.reserve(ft0s.size());
@@ -547,7 +545,6 @@ struct UpcCandProducerBarrel {
       const auto iTF = localTFIndex[bc.globalIndex()];
       const auto tfID = tfIDs[iTF];
       const int32_t rofInTF = getRofInTF(bcInTF);
-      bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] > 1;
       bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
 
       // Multiplicity for FT0C-based occupancy estimates
@@ -575,15 +572,6 @@ struct UpcCandProducerBarrel {
       hTVXRCT->Fill(bcInOrbit, tfID);
       if (upcMode) {
         hTVXRCTupc->Fill(bcInOrbit, tfID);
-      }
-
-      if (pileupInROF) {
-        continue;
-      }
-
-      hTVXRCTnoPileupROF->Fill(bcInOrbit, tfID);
-      if (upcMode) {
-        hTVXRCTnoPileupROFupc->Fill(bcInOrbit, tfID);
       }
     }
 
@@ -677,7 +665,7 @@ struct UpcCandProducerBarrel {
         const int bcInOrbit = globalBC % NBCsPerOrbit;
         const int32_t rofInTF = getRofInTF(bcInTF);
         bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
-        bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] > 1;
+        bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] >= 1;
         const auto distanceFT0 = minDistanceFT0[iTF][bcInTF];
         const auto distanceFV0 = minDistanceFV0[iTF][bcInTF];
         const auto distanceFDD = minDistanceFDD[iTF][bcInTF];

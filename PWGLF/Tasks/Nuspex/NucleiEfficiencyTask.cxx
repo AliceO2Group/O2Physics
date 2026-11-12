@@ -333,7 +333,7 @@ struct NucleiEfficiencyTask {
               pdgbin = 13;
               break;
             default:
-              pdgbin = -10;
+              // pdgbin = -10; // FIXME: unused
               continue;
               break;
           }
@@ -453,7 +453,7 @@ struct NucleiEfficiencyTask {
               pdgbin = 13;
               break;
             default:
-              pdgbin = -10;
+              // pdgbin = -10; // FIXME: unused
               continue;
               break;
           }
@@ -539,7 +539,7 @@ struct NucleiEfficiencyTask {
             pdgbin = 13;
             break;
           default:
-            pdgbin = -10;
+            // pdgbin = -10; // FIXME: unused
             continue;
             break;
         }

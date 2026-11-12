@@ -19,6 +19,9 @@
 
 #include <Rtypes.h>
 
+#include <string>
+#include <vector>
+
 ClassImp(EMPhotonEventCut);
 
 void EMPhotonEventCut::SetRequireSel8(bool flag)
@@ -133,4 +136,46 @@ void EMPhotonEventCut::SetRequireEMCHardwareTriggered(bool flag)
 {
   mRequireEMCHardwareTriggered = flag;
   LOG(info) << "EM Photon Event Cut, require the EMC to be triggered by requiring kEMC7 or kDMC7: " << mRequireEMCHardwareTriggered;
+}
+
+void EMPhotonEventCut::SetTrackOccupancyRange(float min, float max)
+{
+  mMinTrackOcc = min;
+  mMaxTrackOcc = max;
+  LOG(info) << "EM Photon Event Cut, set track occupancy range: " << mMinTrackOcc << " - " << mMaxTrackOcc;
+}
+
+void EMPhotonEventCut::SetFT0COccupancyRange(float min, float max)
+{
+  mMinFT0COcc = min;
+  mMaxFT0COcc = max;
+  LOG(info) << "EM Photon Event Cut, set FT0C occupancy range: " << mMinFT0COcc << " - " << mMaxFT0COcc;
+}
+
+void EMPhotonEventCut::SetRequireGoodQvec(bool flag)
+{
+  mRequireGoodQvec = flag;
+  LOG(info) << "EM Photon Event Cut, require good Q vectors (only applied if the collision table has Q vectors): " << mRequireGoodQvec;
+}
+
+void EMPhotonEventCut::SetQvecHarmonic(int harmonic)
+{
+  mQvecHarmonic = harmonic;
+  LOG(info) << "EM Photon Event Cut, set Q vector harmonic: " << mQvecHarmonic;
+}
+
+void EMPhotonEventCut::SetMaxQvec(float max)
+{
+  mMaxQvec = max;
+  LOG(info) << "EM Photon Event Cut, set max. absolute Q vector component: " << mMaxQvec;
+}
+
+void EMPhotonEventCut::SetQvecDetectors(std::vector<int> const& detectors)
+{
+  mQvecDetectors = detectors;
+  std::string list;
+  for (const auto& detector : mQvecDetectors) {
+    list += std::to_string(detector) + " ";
+  }
+  LOG(info) << "EM Photon Event Cut, set Q vector detectors for Q vector cut: " << list;
 }

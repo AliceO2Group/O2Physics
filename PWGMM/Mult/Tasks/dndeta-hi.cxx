@@ -835,7 +835,7 @@ struct MultiplicityCounter {
         auto pTrack = v0.template posTrack_as<DaughterTracks>();
         auto nTrack = v0.template negTrack_as<DaughterTracks>();
 
-        if (0 && v0.v0radius() > v0radius &&
+        if (0 && v0.v0radius() > v0radius && // FIXME: always false
             v0.v0cosPA() > v0cospa &&
             abs(pTrack.eta()) < etadau &&
             abs(nTrack.eta()) < etadau) {

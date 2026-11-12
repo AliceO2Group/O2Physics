@@ -55,6 +55,7 @@
 #include <experimental/type_traits> // required for is_detected
 #include <limits>
 #include <memory>
+#include <random>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -120,6 +121,8 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyMultiplicity, std::string, "", "Multiplicity efficiency (RecoAll / MC): CCDB path or local ROOT file with a 4D ccdb_object (eta, pT, multiplicity, z-vtx); empty disables CFCollisionsExtra output");
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = CCDB efficiency, 1 = local ROOT efficiency");
   O2_DEFINE_CONFIGURABLE(cfgMultiplicityTrackBitMask, uint16_t, 0, "Required track-type bits for corrected multiplicity; match cfgTrackBitMask used to produce the efficiency (0 = all stored tracks)");
+  O2_DEFINE_CONFIGURABLE(cfgMultiplicityPoisson, bool, false, "Use reproducibly seeded Nvalid + Poisson(sum(1/eff - 1)) for multiplicity correction; skips eff > 1 tracks");
+  O2_DEFINE_CONFIGURABLE(cfgMultiplicityPoissonSeed, uint32_t, 1, "Base seed for reproducible per-dataframe Poisson multiplicity sampling");
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -127,7 +130,7 @@ struct FilterCF {
 
   // TODO how to have this in the second task? For now they are copied
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true));
 
   Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
 
@@ -160,6 +163,7 @@ struct FilterCF {
   // Own local histograms independently of their input file. CCDB owns its objects.
   std::unique_ptr<THn> localMultiplicityEfficiency;
   THn* mEfficiency = nullptr;
+  std::mt19937_64 mMultiplicityGenerator;
   static constexpr int MultiplicityEfficiencyDimensions = 4;
 
   // persistent caches
@@ -168,6 +172,9 @@ struct FilterCF {
 
   void init(InitContext& initContext)
   {
+    if (cfgMultiplicityPoisson && !doprocessDataframeSeed) {
+      LOGF(fatal, "Poisson multiplicity sampling requires processDataframeSeed");
+    }
     if (!cfgEfficiencyMultiplicity.value.empty()) {
       bool processTracksEnabled = false;
       if (!o2::common::core::getTaskOptionValue(initContext, "multiplicity-selector", "processTracks", processTracksEnabled, false)) {
@@ -394,6 +401,7 @@ struct FilterCF {
     auto* efficiency = loadMultiplicityEfficiency(timestamp);
     double correctedMultiplicity = 0.;
     size_t skippedTracks = 0;
+    double totalMeanMissing = 0.;
     for (const auto& track : tracks) {
       // Match the tracks written by the corresponding data/MC producer path.
       if (!isTrackSelected(track, true)) {
@@ -403,14 +411,29 @@ struct FilterCF {
       // Keep the original estimator as the map coordinate, including for centrality.
       const std::array<double, MultiplicityEfficiencyDimensions> values{track.eta(), track.pt(), collision.multiplicity(), collision.posZ()};
       const double eff = efficiency->GetBinContent(efficiency->GetBin(values.data()));
-      if (!std::isfinite(eff) || eff <= 0.) {
+      if (!std::isfinite(eff) || eff <= 0. || (cfgMultiplicityPoisson && eff > 1.)) {
         ++skippedTracks;
         continue;
       }
-      correctedMultiplicity += 1. / eff;
+      if (cfgMultiplicityPoisson) {
+        correctedMultiplicity += 1.;
+        totalMeanMissing += 1. / eff - 1.;
+      } else {
+        correctedMultiplicity += 1. / eff;
+      }
+    }
+    if (cfgMultiplicityPoisson) {
+      if (!std::isfinite(totalMeanMissing) || totalMeanMissing >= static_cast<double>(std::numeric_limits<uint64_t>::max())) {
+        LOGF(fatal, "Poisson multiplicity mean exceeds the sampling range: %g", totalMeanMissing);
+        return 0.f;
+      }
+      // Sample from sum of missing count (Poisson sum rule)
+      if (totalMeanMissing > 0.) {
+        correctedMultiplicity += std::poisson_distribution<uint64_t>(totalMeanMissing)(mMultiplicityGenerator);
+      }
     }
     if (cfgVerbosity > 0 && skippedTracks > 0) {
-      LOGF(warning, "Skipped %zu tracks with invalid efficiency while correcting collision %lld", skippedTracks, static_cast<int64_t>(collision.globalIndex()));
+      LOGF(warning, "Skipped %zu tracks with invalid or unsupported efficiency while correcting collision %lld", skippedTracks, static_cast<int64_t>(collision.globalIndex()));
     }
     if (!std::isfinite(correctedMultiplicity) || correctedMultiplicity > std::numeric_limits<float>::max()) {
       LOGF(fatal, "Corrected multiplicity cannot be represented as a float: %g", correctedMultiplicity);
@@ -433,6 +456,27 @@ struct FilterCF {
     }
     return true;
   }
+
+  // This process must run before the collision processes below.
+  void processDataframeSeed(aod::Origins const& origins)
+  {
+    if (!cfgMultiplicityPoisson) {
+      return;
+    }
+    if (origins.size() == 0) {
+      LOGF(fatal, "Cannot seed Poisson multiplicity sampling without a dataframe ID");
+      return;
+    }
+    const uint64_t dataframeId = origins.iteratorAt(0).dataframeID();
+    std::seed_seq seed{cfgMultiplicityPoissonSeed.value, static_cast<uint32_t>(dataframeId),
+                       static_cast<uint32_t>(dataframeId >> std::numeric_limits<uint32_t>::digits)};
+    std::array<uint32_t, 2> seedWords{};
+    seed.generate(seedWords.begin(), seedWords.end());
+    // Speed up seeding by creating one 64-bit seed from the dataframe information.
+    const uint64_t dataframeSeed = (static_cast<uint64_t>(seedWords[0]) << std::numeric_limits<uint32_t>::digits) | seedWords[1];
+    mMultiplicityGenerator.seed(dataframeSeed);
+  }
+  PROCESS_SWITCH(FilterCF, processDataframeSeed, "Seed Poisson multiplicity sampling for each dataframe", false);
 
   template <class T>
   using HasMultTables = decltype(std::declval<T&>().multNTracksPV());
@@ -815,7 +859,7 @@ struct MultiplicitySelector {
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks");
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true));
 
   void init(InitContext&)
   {

@@ -16,8 +16,10 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
@@ -80,6 +82,20 @@ float itsSignal(T const& track)
   return static_cast<float>(signal);
 };
 
+// Delta(1232) baryons: no kXxx enum entry exists for these in TPDGCode.h (only the raw codes used
+// internally by TDatabasePDG's particle-table construction) and no mass constant exists in
+// PhysicsConstants.h either, so both the codes and the mass are hardcoded here, same as kRho770_0/
+// kRho770Plus below.
+constexpr int DeltaMinus1232 = 1114;
+constexpr int Delta01232 = 2114;
+constexpr int DeltaPlus1232 = 2214;
+constexpr int DeltaPlusPlus1232 = 2224;
+
+// Xi(1530) baryons: same situation as Delta(1232) above -- no enum entry and no mass constant
+// exists anywhere in O2, so both are hardcoded here.
+constexpr int Xi01530 = 3324;
+constexpr int XiMinus1530 = 3314;
+
 inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
@@ -114,6 +130,12 @@ inline double getPdgMass(int pdgCode)
     case o2::constants::physics::Pdg::kK0Star892:
       mass = o2::constants::physics::MassK0Star892;
       break;
+    case o2::constants::physics::Pdg::kKPlusStar892:
+      mass = o2::constants::physics::MassKPlusStar892;
+      break;
+    case o2::constants::physics::Pdg::kOmega:
+      mass = o2::constants::physics::MassOmega;
+      break;
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
       break;
@@ -141,6 +163,9 @@ inline double getPdgMass(int pdgCode)
     case kXiMinus:
       mass = o2::constants::physics::MassXiMinus;
       break;
+    case o2::constants::physics::Pdg::kXi0:
+      mass = o2::constants::physics::MassXi0;
+      break;
     case kOmegaMinus:
       mass = o2::constants::physics::MassOmegaMinus;
       break;
@@ -149,6 +174,25 @@ inline double getPdgMass(int pdgCode)
       break;
     case o2::constants::physics::kEta:
       mass = o2::constants::physics::MassEta;
+      break;
+    case kNeutron:
+      mass = o2::constants::physics::MassNeutron;
+      break;
+    case kK0:
+      mass = o2::constants::physics::MassK0;
+      break;
+    case kLambda1520:
+      mass = o2::constants::physics::MassLambda1520;
+      break;
+    case DeltaMinus1232:
+    case Delta01232:
+    case DeltaPlus1232:
+    case DeltaPlusPlus1232:
+      mass = 1.232; // not defined in O2?
+      break;
+    case Xi01530:
+    case XiMinus1530:
+      mass = 1.532; // not defined in O2?
       break;
     default:
       LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
@@ -175,6 +219,18 @@ concept HasEventShapeRow = requires(T row) {
 /// accepts either a row/iterator or a table (Filtered<Join<...>> etc.)
 template <typename T>
 concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typename std::decay_t<T>::iterator; } && HasEventShapeRow<typename std::decay_t<T>::iterator>);
+
+/// Azimuth of the momentum of a charged particle at the primary vertex, from its azimuth at the decay vertex.
+/// The decay vertex (xDecay, yDecay) has to be given relative to the primary vertex. In a solenoidal field the transverse
+/// trajectory is a circle through both points, and the tangents at the two ends of a chord make the same angle with it:
+/// phiPV = 2*phiChord - phiDecay (independent of polarity).
+inline float phiAtPrimaryVertex(float phiDecay, float xDecay, float yDecay)
+{
+  if (std::abs(xDecay) < o2::constants::math::Epsilon && std::abs(yDecay) < o2::constants::math::Epsilon) {
+    return phiDecay;
+  }
+  return RecoDecay::constrainAngle(2.f * std::atan2(yDecay, xDecay) - phiDecay);
+}
 
 /// Recalculate the pT of a kink mother from its direction and the charged daughter momentum
 inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter,

@@ -337,7 +337,7 @@ struct Cha01710analysis {
          std::abs(v0.mAntiLambda() - constants::physics::MassLambda0) < v0Cuts.cfgLambdaMassWindow)) {
       return V0MassRegion::kReject;
     }
-    if (v0Cuts.cfgApplyArmenterosCut && v0.qtarm() < v0Cuts.cfgArmenterosCut) {
+    if (v0Cuts.cfgApplyArmenterosCut && v0.qtarm() < v0Cuts.cfgArmenterosCut * std::fabs(v0.alpha())) {
       return V0MassRegion::kReject;
     }
 

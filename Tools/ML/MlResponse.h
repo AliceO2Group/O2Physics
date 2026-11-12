@@ -109,10 +109,10 @@ class MlResponse
   void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, const std::vector<std::string>& pathsCCDB, int64_t timestampCCDB)
   {
     if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
     if (pathsCCDB.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
     }
 
     // check that the path is unique for each BDT model (otherwise CCDB download does not work as expected)
@@ -140,7 +140,7 @@ class MlResponse
   void setModelPathsLocal(const std::vector<std::string>& onnxFiles)
   {
     if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
     mPaths = onnxFiles;
   }
