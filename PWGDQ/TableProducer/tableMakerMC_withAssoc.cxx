@@ -264,9 +264,9 @@ struct TableMakerMC {
   o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
-  AnalysisCompositeCut* fEventCut = nullptr;     //! Event selection cut
-  std::vector<AnalysisCut*> fTrackCuts; //! Barrel track cuts
-  std::vector<AnalysisCut*> fMuonCuts;  //! Muon track cuts
+  AnalysisCompositeCut* fEventCut = nullptr; //! Event selection cut
+  std::vector<AnalysisCut*> fTrackCuts;      //! Barrel track cuts
+  std::vector<AnalysisCut*> fMuonCuts;       //! Muon track cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun = -1;       // needed to detect if the run changed and trigger update of calibrations etc.
