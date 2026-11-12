@@ -15,11 +15,10 @@
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University
 /// \author Krista Smith <krista.lizbeth.smith@cern.ch>, Pusan National University
 
-#include "PWGHF/Core/HfMlResponseXic0ToXiPi.h"
-#include "PWGHF/Core/HfMlResponseXic0ToXiPiKf.h"
+#include "PWGHF/Core/HfMlResponseXic0ToXiPiQa.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
@@ -44,6 +43,7 @@
 
 #include <Rtypes.h>
 
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -69,12 +69,8 @@ enum {
 /// Struct for applying Omegac0/Xic0 selection cuts
 struct HfCandidateSelectorToXiPiQa {
 
-  // DCAFitter
-  Produces<aod::HfSelToXiPi> hfSelToXiPi;
-  // KFParticle
-  Produces<aod::HfSelToXiPiKf> hfSelToXiPiKf;
-  // ML selection - Filled with both DCAFitter and KFParticle
-  Produces<aod::HfMlToXiPi> hfMlToXiPi;
+  Produces<aod::HfSelToXiPiQa> hfSelToXiPi;
+  Produces<aod::HfMlToXiPiQa> hfMlToXiPi;
 
   // cuts from SelectorCuts.h - pT dependent cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi::vecBinsPt}, "pT bin limits"};
@@ -142,21 +138,25 @@ struct HfCandidateSelectorToXiPiQa {
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
-  o2::analysis::HfMlResponseXic0ToXiPi<float> hfMlResponseDca;
-  o2::analysis::HfMlResponseXic0ToXiPiKf<float> hfMlResponseKf;
+  o2::analysis::HfMlResponseXic0ToXiPiQa<float, aod::hf_cand_casc_lf::ConstructMethod::DcaFitter> hfMlResponseDca;
+  o2::analysis::HfMlResponseXic0ToXiPiQa<float, aod::hf_cand_casc_lf::ConstructMethod::KfParticle> hfMlResponseKf;
   std::vector<float> outputMlXic0ToXiPi;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
 
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr>;
+  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidPr>;
   using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr>;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
   void init(InitContext const&)
   {
+    if (doprocessSelectionDCAFitter && doprocessSelectionKFParticle) {
+      LOGF(fatal, "Enable only one XiPi selector mode");
+    }
+
     selectorPion.setRangePtTpc(ptPiPidTpcMin, ptPiPidTpcMax);
     selectorPion.setRangeNSigmaTpc(-nSigmaTpcPiMax, nSigmaTpcPiMax);
     selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
@@ -295,15 +295,18 @@ struct HfCandidateSelectorToXiPiQa {
   // Selection on LF related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool selectOnLf(const T& candidate, const int& inputPtBin)
+  bool selectOnLf(const T& candidate, const int& inputPtBin, TracksSelLf const& lfTracks)
   {
+    auto trackV0PosDau = lfTracks.rawIteratorAt(candidate.posTrackId());
+    auto trackV0NegDau = lfTracks.rawIteratorAt(candidate.negTrackId());
+    auto trackPiFromCasc = lfTracks.rawIteratorAt(candidate.bachelorId());
 
     registry.fill(HIST("hSelStatusLf"), 0.0);
 
     // Eta selection of V0, Cascade daughters
-    double etaV0PosDau = candidate.etaV0PosDau();
-    double etaV0NegDau = candidate.etaV0NegDau();
-    double etaPiFromCasc = candidate.etaBachFromCasc();
+    double etaV0PosDau = trackV0PosDau.eta();
+    double etaV0NegDau = trackV0NegDau.eta();
+    double etaPiFromCasc = trackPiFromCasc.eta();
 
     if (std::abs(etaV0PosDau) > etaTrackLFDauMax || std::abs(etaV0NegDau) > etaTrackLFDauMax || std::abs(etaPiFromCasc) > etaTrackLFDauMax) {
       return false;
@@ -311,8 +314,8 @@ struct HfCandidateSelectorToXiPiQa {
     registry.fill(HIST("hSelStatusLf"), 1.0);
 
     // Minimum radius cut
-    double radiusV0 = RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxV0(), candidate.yDecayVtxV0());
-    double radiusCasc = RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxCascade(), candidate.yDecayVtxCascade());
+    double radiusV0 = RecoDecay::sqrtSumOfSquares(candidate.xV0Vertex(), candidate.yV0Vertex());
+    double radiusCasc = RecoDecay::sqrtSumOfSquares(candidate.xCascadeVertex(), candidate.yCascadeVertex());
 
     if (radiusV0 < radiusV0Min) {
       return false;
@@ -324,44 +327,43 @@ struct HfCandidateSelectorToXiPiQa {
     registry.fill(HIST("hSelStatusLf"), 3.0);
 
     // Cosine of pointing angle
-    if (candidate.cosPAV0() < cuts->get(inputPtBin, "cosPAV0")) {
+    if (candidate.cpaV0() < cuts->get(inputPtBin, "cosPAV0")) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 4.0);
-    if (candidate.cosPACasc() < cuts->get(inputPtBin, "cosPACasc")) {
+    if (candidate.cpaCascade() < cuts->get(inputPtBin, "cosPACasc")) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 5.0);
 
     // Distance of Closest Approach(DCA)
-    if (candidate.dcaV0Dau() > cuts->get(inputPtBin, "dcaV0Dau")) {
+    if (candidate.dcaV0Daughters() > cuts->get(inputPtBin, "dcaV0Dau")) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 6.0);
 
-    if (candidate.dcaCascDau() > cuts->get(inputPtBin, "dcaCascDau")) {
+    if (candidate.dcaCascadeDaughters() > cuts->get(inputPtBin, "dcaCascDau")) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 7.0);
 
-    if (std::abs(candidate.dcaXYToPvV0Dau0()) < cuts->get(inputPtBin, "dcaXYToPvV0Dau0")) {
+    if (std::abs(candidate.impactParameterXYV0PosDau()) < cuts->get(inputPtBin, "dcaXYToPvV0Dau0")) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 8.0);
 
-    if (std::abs(candidate.dcaXYToPvV0Dau1()) < cuts->get(inputPtBin, "dcaXYToPvV0Dau1")) {
+    if (std::abs(candidate.impactParameterXYV0NegDau()) < cuts->get(inputPtBin, "dcaXYToPvV0Dau1")) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 9.0);
 
-    if (std::abs(candidate.dcaXYToPvCascDau()) < cuts->get(inputPtBin, "dcaXYToPvCascDau")) {
+    if (std::abs(candidate.impactParameterXYCascadeBach()) < cuts->get(inputPtBin, "dcaXYToPvCascDau")) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 10.0);
 
     // pT: Bachelor
-    double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
-    if (std::abs(ptPiFromCasc) < ptPiFromCascMin) {
+    if (std::abs(trackPiFromCasc.pt()) < ptPiFromCascMin) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 11.0);
@@ -369,13 +371,13 @@ struct HfCandidateSelectorToXiPiQa {
     // Extra cuts for KFParticle
     if constexpr (svReco == doKfParticle) {
       // Cosine of Pointing angle
-      if (candidate.cosPaV0ToCasc() < cuts->get(inputPtBin, "cosPaV0ToCasc")) {
+      if (candidate.cpaV0ToCascade() < cuts->get(inputPtBin, "cosPaV0ToCasc")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 12.0);
 
       // DCA
-      if (std::abs(candidate.kfDcaXYCascToPv()) > cuts->get(inputPtBin, "kfDcaXYCascToPv")) {
+      if (std::abs(candidate.impactParameter0()) > cuts->get(inputPtBin, "kfDcaXYCascToPv")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 13.0);
@@ -385,50 +387,50 @@ struct HfCandidateSelectorToXiPiQa {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 14.0);
-      if (candidate.chi2GeoCasc() < 0 || candidate.chi2GeoCasc() > cuts->get(inputPtBin, "chi2GeoCasc")) {
+      if (candidate.chi2GeoCascade() < 0 || candidate.chi2GeoCascade() > cuts->get(inputPtBin, "chi2GeoCasc")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 15.0);
-      if (candidate.chi2TopoV0ToPv() > 0 && candidate.chi2TopoV0ToPv() < cuts->get(inputPtBin, "chi2TopoV0ToPv")) {
+      if (candidate.chi2TopoOverNdfV0ToPv() > 0 && candidate.chi2TopoOverNdfV0ToPv() < cuts->get(inputPtBin, "chi2TopoV0ToPv")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 16.0);
-      if (candidate.chi2TopoCascToPv() < 0 || candidate.chi2TopoCascToPv() > cuts->get(inputPtBin, "chi2TopoCascToPv")) {
+      if (candidate.chi2TopoOverNdfCascadeToPv() < 0 || candidate.chi2TopoOverNdfCascadeToPv() > cuts->get(inputPtBin, "chi2TopoCascToPv")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 17.0);
-      if (candidate.chi2TopoV0ToCasc() < 0 || candidate.chi2TopoV0ToCasc() > cuts->get(inputPtBin, "chi2TopoV0ToCasc")) {
+      if (candidate.chi2TopoOverNdfV0ToCascade() < 0 || candidate.chi2TopoOverNdfV0ToCascade() > cuts->get(inputPtBin, "chi2TopoV0ToCasc")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 18.0);
 
       // ldl
-      if (candidate.v0ldl() < cuts->get(inputPtBin, "v0ldl")) {
+      if (candidate.decayLengthNormKfV0() < cuts->get(inputPtBin, "v0ldl")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 19.0);
-      if (candidate.cascldl() < cuts->get(inputPtBin, "cascldl")) {
+      if (candidate.decayLengthNormKfCascade() < cuts->get(inputPtBin, "cascldl")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 20.0);
 
       // Decay length
-      if (std::abs(candidate.decayLenXYLambda()) < cuts->get(inputPtBin, "decayLenXYLambda")) {
+      if (std::abs(candidate.decayLengthXYV0()) < cuts->get(inputPtBin, "decayLenXYLambda")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 21.0);
-      if (std::abs(candidate.decayLenXYCasc()) < cuts->get(inputPtBin, "decayLenXYCasc")) {
+      if (std::abs(candidate.decayLengthXYCascade()) < cuts->get(inputPtBin, "decayLenXYCasc")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 22.0);
 
     } else {
       // Impact parameter(DCA?)
-      if (std::abs(candidate.impactParCascXY()) < impactParXYCascMin || std::abs(candidate.impactParCascXY()) > impactParXYCascMax) {
+      if (std::abs(candidate.impactParameter0()) < impactParXYCascMin || std::abs(candidate.impactParameter0()) > impactParXYCascMax) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 12.0);
-      if (std::abs(candidate.impactParCascZ()) < impactParZCascMin || std::abs(candidate.impactParCascZ()) > impactParZCascMax) {
+      if (std::abs(candidate.impactParameterZ0()) < impactParZCascMin || std::abs(candidate.impactParameterZ0()) > impactParZCascMax) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 13.0);
@@ -442,24 +444,25 @@ struct HfCandidateSelectorToXiPiQa {
   // Apply cuts with charm baryon & charm bachelor related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool selectOnHf(const T& candidate, const int& inputPtBin)
+  bool selectOnHf(const T& candidate, const int& inputPtBin, TracksSel const& tracks)
   {
+    auto trackPiFromCharm = tracks.rawIteratorAt(candidate.prong1Id());
 
     registry.fill(HIST("hSelStatusHf"), 0.0);
 
     // eta selection on charm bayron bachelor
-    if (std::abs(candidate.etaBachFromCharmBaryon()) > etaTrackCharmBachMax) {
+    if (std::abs(trackPiFromCharm.eta()) > etaTrackCharmBachMax) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 1.0);
     // Distance of Closest Approach(DCA)
-    if (candidate.dcaCharmBaryonDau() > cuts->get(inputPtBin, "dcaCharmBaryonDau")) {
+    if (candidate.dcaDaughters() > cuts->get(inputPtBin, "dcaCharmBaryonDau")) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 2.0);
 
     // pT: Charm Bachelor
-    double ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
+    double ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxProng1(), candidate.pyProng1());
     if (ptPiFromCharmBaryon < cuts->get(inputPtBin, "ptPiFromCharmBaryon")) {
       return false;
     }
@@ -468,53 +471,54 @@ struct HfCandidateSelectorToXiPiQa {
     // specific selections with KFParticle output
     if constexpr (svReco == doKfParticle) {
       // Cosine of pointing angle
-      if (candidate.cosPaCascToXic() < cuts->get(inputPtBin, "cosPaCascToXic")) {
+      if (candidate.cpaCascadeToCharmHadron() < cuts->get(inputPtBin, "cosPaCascToXic")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 4.0);
 
       // DCA
-      if (std::abs(candidate.kfDcaXYPiFromXic()) > cuts->get(inputPtBin, "kfDcaXYPiFromXic")) {
+      if (std::abs(candidate.impactParameter1()) > cuts->get(inputPtBin, "kfDcaXYPiFromXic")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 5.0);
 
       // Chi2
-      if (candidate.chi2GeoXic() < 0 || candidate.chi2GeoXic() > cuts->get(inputPtBin, "chi2GeoXic")) {
+      if (candidate.chi2Geo() < 0 || candidate.chi2Geo() > cuts->get(inputPtBin, "chi2GeoXic")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 6.0);
-      if (candidate.chi2TopoXicToPv() < 0 || candidate.chi2TopoXicToPv() > cuts->get(inputPtBin, "chi2TopoXicToPv")) {
+      if (candidate.chi2TopoOverNdfToPv() < 0 || candidate.chi2TopoOverNdfToPv() > cuts->get(inputPtBin, "chi2TopoXicToPv")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 7.0);
-      if (candidate.chi2TopoPiFromXicToPv() < 0 || candidate.chi2TopoPiFromXicToPv() > cuts->get(inputPtBin, "chi2TopoPiFromXicToPv")) {
-        return false;
-      }
-      registry.fill(HIST("hSelStatusHf"), 8.0);
-      if (candidate.chi2TopoCascToXic() < 0 || candidate.chi2TopoCascToXic() > cuts->get(inputPtBin, "chi2TopoCascToXic")) {
+      // TODO: check if this is needed
+      // The QA KF table has no dedicated charm-bachelor-to-PV topological chi2 column.
+      // if (candidate.chi2TopoPiFromXicToPv() < 0 || candidate.chi2TopoPiFromXicToPv() > cuts->get(inputPtBin, "chi2TopoPiFromXicToPv")) {
+      //   return false;
+      // }
+      // registry.fill(HIST("hSelStatusHf"), 8.0);
+      if (candidate.chi2TopoOverNdfCascadeToCharmHadron() < 0 || candidate.chi2TopoOverNdfCascadeToCharmHadron() > cuts->get(inputPtBin, "chi2TopoCascToXic")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 9.0);
 
       // Decay Length
-      if (std::abs(candidate.decayLenXYXic()) > cuts->get(inputPtBin, "decayLenXYXic")) {
+      if (std::abs(candidate.decayLengthXY()) > cuts->get(inputPtBin, "decayLenXYXic")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 10.0);
 
       // ctau
-      if (std::abs(candidate.cTauXic()) > cuts->get(inputPtBin, "cTauXic")) {
+      if (std::abs(HfHelperQa::ctXiczero(candidate)) > cuts->get(inputPtBin, "cTauXic")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 11.0);
     } else {
-      // Impact parameter(DCA?)
-      if ((std::abs(candidate.impactParBachFromCharmBaryonXY()) < impactParXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonXY()) > impactParXYPiFromCharmBaryonMax)) {
+      if ((std::abs(candidate.impactParameter1()) < impactParXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParameter1()) > impactParXYPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 4.0);
-      if ((std::abs(candidate.impactParBachFromCharmBaryonZ()) < impactParZPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonZ()) > impactParZPiFromCharmBaryonMax)) {
+      if ((std::abs(candidate.impactParameterZ1()) < impactParZPiFromCharmBaryonMin) || (std::abs(candidate.impactParameterZ1()) > impactParZPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 5.0);
@@ -531,21 +535,27 @@ struct HfCandidateSelectorToXiPiQa {
   {
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
-
-      bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
+      int selectionStatus = 0;
       outputMlXic0ToXiPi.clear();
+
+      if (!TESTBIT(candidate.hfflag(), hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
+        hfSelToXiPi(selectionStatus);
+        if (applyMl) {
+          hfMlToXiPi(outputMlXic0ToXiPi);
+        }
+        continue;
+      }
+      SETBIT(selectionStatus, aod::SelectionStep::RecoSkims);
 
       auto trackV0PosDau = lfTracks.rawIteratorAt(candidate.posTrackId());
       auto trackV0NegDau = lfTracks.rawIteratorAt(candidate.negTrackId());
       auto trackPiFromCasc = lfTracks.rawIteratorAt(candidate.bachelorId());
-      auto trackPiFromCharm = tracks.rawIteratorAt(candidate.bachelorFromCharmBaryonId());
+      auto trackPiFromCharm = tracks.rawIteratorAt(candidate.prong1Id());
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
-
-      if (signDecay > 0) {
+      if (trackPiFromCharm.sign() < 0) {
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
         registry.fill(HIST("hSelSignDec"), 1); // anti-particle decay
@@ -554,106 +564,88 @@ struct HfCandidateSelectorToXiPiQa {
       }
 
       // pT selection
-      auto ptCandXic0 = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+      auto ptCandXic0 = candidate.pt();
       int pTBin = findBin(binsPt, ptCandXic0);
       if (pTBin == -1) {
-        resultSelections = false;
+        hfSelToXiPi(selectionStatus);
+        if (applyMl) {
+          hfMlToXiPi(outputMlXic0ToXiPi);
+        }
+        continue;
       }
 
       // Topological selection
-      const bool selectionResOnLF = selectOnLf<svReco>(candidate, pTBin);
-      const bool selectionResOnHF = selectOnHf<svReco>(candidate, pTBin);
-      if (!selectionResOnLF || !selectionResOnHF) {
-        resultSelections = false;
-      }
+      const bool selectionResOnLF = selectOnLf<svReco>(candidate, pTBin, lfTracks);
+      const bool selectionResOnHF = selectOnHf<svReco>(candidate, pTBin, tracks);
 
       //  TPC clusters selections
-      if (resultSelections) {
-        registry.fill(HIST("hSelStatusCluster"), 0.0);
-      }
+      bool selectedTrackQuality = true;
+      registry.fill(HIST("hSelStatusCluster"), 0.0);
       if (applyTrkSelLf) {
         if (!isSelectedTrackTpcQuality(trackPiFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
-          resultSelections = false;
+          selectedTrackQuality = false;
         } else {
-          if (resultSelections) {
-            registry.fill(HIST("hSelStatusCluster"), 1.0);
-          }
+          registry.fill(HIST("hSelStatusCluster"), 1.0);
         }
 
         if (!isSelectedTrackTpcQuality(trackPrFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
-          resultSelections = false;
+          selectedTrackQuality = false;
         } else {
-          if (resultSelections) {
-            registry.fill(HIST("hSelStatusCluster"), 2.0);
-          }
+          registry.fill(HIST("hSelStatusCluster"), 2.0);
         }
 
         if (!isSelectedTrackTpcQuality(trackPiFromCasc, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
-          resultSelections = false;
+          selectedTrackQuality = false;
         } else {
-          if (resultSelections) {
-            registry.fill(HIST("hSelStatusCluster"), 3.0);
-          }
+          registry.fill(HIST("hSelStatusCluster"), 3.0);
         }
       }
 
       if (!isSelectedTrackTpcQuality(trackPiFromCharm, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
-        resultSelections = false;
+        selectedTrackQuality = false;
       } else {
-        if (resultSelections) {
-          registry.fill(HIST("hSelStatusCluster"), 4.0);
-        }
+        registry.fill(HIST("hSelStatusCluster"), 4.0);
       }
 
       //  ITS clusters selection
       if (!isSelectedTrackItsQuality(trackPiFromCharm, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
-        resultSelections = false;
+        selectedTrackQuality = false;
       } else {
-        if (resultSelections) {
-          registry.fill(HIST("hSelStatusCluster"), 5.0);
-        }
+        registry.fill(HIST("hSelStatusCluster"), 5.0);
       }
+
+      const double invMassCharmBaryon = HfHelperQa::invMassXiczeroToXiPi(candidate);
+      if (selectionResOnLF && selectionResOnHF && selectedTrackQuality) {
+        registry.fill(HIST("hInvMassCharmBaryonWoPidInvMassCut"), invMassCharmBaryon);
+      }
+
+      const bool statusInvMassLambda = std::abs(candidate.massLambda() - o2::constants::physics::MassLambda0) < v0MassWindow;
+      const bool statusInvMassCascade = std::abs(candidate.massCascade() - o2::constants::physics::MassXiMinus) < cascMassWindow;
+
+      bool statusInvMassCharmBaryon = (invMassCharmBaryon >= invMassCharmBaryonMin) && (invMassCharmBaryon <= invMassCharmBaryonMax);
+
+      if (!selectionResOnLF || !selectionResOnHF || !selectedTrackQuality || !statusInvMassLambda || !statusInvMassCascade || !statusInvMassCharmBaryon) {
+        hfSelToXiPi(selectionStatus);
+        if (applyMl) {
+          hfMlToXiPi(outputMlXic0ToXiPi);
+        }
+        registry.fill(HIST("hInvMassCharmBaryonBkg"), invMassCharmBaryon);
+
+        continue;
+      }
+      SETBIT(selectionStatus, aod::SelectionStep::RecoTopol);
 
       // Track level PID selection
-      if (resultSelections) {
-        registry.fill(HIST("hSelStatusPID"), 0.0);
-      }
-      int statusPidPrFromLam = -999;
-      int statusPidPiFromLam = -999;
-      int statusPidPiFromCasc = -999;
-      int statusPidPiFromCharmBaryon = -999;
-
-      int infoTpcStored = 0;
-      int infoTofStored = 0;
+      registry.fill(HIST("hSelStatusPID"), 0.0);
 
       if (usePidTpcOnly == usePidTpcTofCombined) {
         LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
       }
 
-      if (trackPiFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, PiFromLam);
-      }
-      if (trackPrFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, PrFromLam);
-      }
-      if (trackPiFromCasc.hasTPC()) {
-        SETBIT(infoTpcStored, PiFromCasc);
-      }
-      if (trackPiFromCharm.hasTPC()) {
-        SETBIT(infoTpcStored, PiFromCharm);
-      }
-      if (trackPiFromLam.hasTOF()) {
-        SETBIT(infoTofStored, PiFromLam);
-      }
-      if (trackPrFromLam.hasTOF()) {
-        SETBIT(infoTofStored, PrFromLam);
-      }
-      if (trackPiFromCasc.hasTOF()) {
-        SETBIT(infoTofStored, PiFromCasc);
-      }
-      if (trackPiFromCharm.hasTOF()) {
-        SETBIT(infoTofStored, PiFromCharm);
-      }
+      TrackSelectorPID::Status statusPidPrFromLam{};
+      TrackSelectorPID::Status statusPidPiFromLam{};
+      TrackSelectorPID::Status statusPidPiFromCasc{};
+      TrackSelectorPID::Status statusPidPiFromCharmBaryon{};
 
       if (usePidTpcOnly) {
         statusPidPrFromLam = selectorProton.statusTpc(trackPrFromLam);
@@ -667,80 +659,50 @@ struct HfCandidateSelectorToXiPiQa {
         statusPidPiFromCharmBaryon = selectorPion.statusTpcOrTof(trackPiFromCharm);
       }
 
-      bool statusPidLambda = (statusPidPrFromLam == TrackSelectorPID::Accepted) && (statusPidPiFromLam == TrackSelectorPID::Accepted);
-      if (statusPidLambda && resultSelections) {
+      const bool statusPidLambda = (statusPidPrFromLam == TrackSelectorPID::Accepted) && (statusPidPiFromLam == TrackSelectorPID::Accepted);
+      if (statusPidLambda) {
         registry.fill(HIST("hSelStatusPID"), 1.0);
       }
-      bool statusPidCascade = (statusPidLambda && statusPidPiFromCasc == TrackSelectorPID::Accepted);
-      if (statusPidCascade && resultSelections) {
+      const bool statusPidCascade = statusPidLambda && statusPidPiFromCasc == TrackSelectorPID::Accepted;
+      if (statusPidCascade) {
         registry.fill(HIST("hSelStatusPID"), 2.0);
       }
-      bool statusPidCharmBaryon = (statusPidCascade && statusPidPiFromCharmBaryon == TrackSelectorPID::Accepted);
-      if (statusPidCharmBaryon && resultSelections) {
+      const bool statusPidCharmBaryon = statusPidCascade && statusPidPiFromCharmBaryon == TrackSelectorPID::Accepted;
+      if (statusPidCharmBaryon) {
         registry.fill(HIST("hSelStatusPID"), 3.0);
       }
 
-      // invariant mass cuts
-      bool statusInvMassLambda = false;
-      bool statusInvMassCascade = false;
-      bool statusInvMassCharmBaryon = false;
-
-      double invMassLambda = candidate.invMassLambda();
-      double invMassCascade = candidate.invMassCascade();
-      double invMassCharmBaryon = candidate.invMassCharmBaryon();
-
-      if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
-        statusInvMassLambda = true;
-      }
-      if (std::abs(invMassCascade - o2::constants::physics::MassXiMinus) < cascMassWindow) {
-        statusInvMassCascade = true;
-      }
-      if ((invMassCharmBaryon >= invMassCharmBaryonMin) && (invMassCharmBaryon <= invMassCharmBaryonMax)) {
-        statusInvMassCharmBaryon = true;
-      }
-
-      // Fill in selection result
-      if constexpr (svReco == doDcaFitter) {
-        hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
-                    trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
-                    trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
-      } else {
-        // Convert resultSelectrions to false if one of pid status and inv status is false
-        // This is only needed for KF(currently) since output selection table doesn't contain those information
-        if (!statusPidCharmBaryon || !statusInvMassLambda || !statusInvMassCascade || !statusInvMassCharmBaryon) {
-          resultSelections = false;
+      if (!statusPidCharmBaryon) {
+        hfSelToXiPi(selectionStatus);
+        if (applyMl) {
+          hfMlToXiPi(outputMlXic0ToXiPi);
         }
-        hfSelToXiPiKf(resultSelections,
-                      trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
-                      trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
+        registry.fill(HIST("hInvMassCharmBaryonBkg"), invMassCharmBaryon);
+        continue;
       }
+      SETBIT(selectionStatus, aod::SelectionStep::RecoPID);
 
       // ML BDT selection if required
-      if (applyMl) {
+      if (applyMl && findBin(binsPtMl, ptCandXic0) != -1) {
         bool isSelectedMlXic0 = false;
         if constexpr (svReco == doDcaFitter) {
-          auto inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          auto inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPrFromLam, trackPiFromCasc, trackPiFromCharm);
           isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
         } else {
           auto inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPrFromLam, trackPiFromCasc, trackPiFromCharm);
           isSelectedMlXic0 = hfMlResponseKf.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
         }
 
-        hfMlToXiPi(outputMlXic0ToXiPi);
-
-        if (!isSelectedMlXic0) {
-          continue;
+        if (isSelectedMlXic0) {
+          SETBIT(selectionStatus, aod::SelectionStep::RecoMl);
         }
       }
 
-      // Fill in invariant mass histogram
-      if (resultSelections) {
-        registry.fill(HIST("hInvMassCharmBaryonWoPidInvMassCut"), invMassCharmBaryon);
-      }
-      if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && statusInvMassCharmBaryon && resultSelections) {
-        registry.fill(HIST("hInvMassCharmBaryon"), invMassCharmBaryon);
-      } else {
-        registry.fill(HIST("hInvMassCharmBaryonBkg"), invMassCharmBaryon);
+      registry.fill(HIST("hInvMassCharmBaryon"), invMassCharmBaryon);
+
+      hfSelToXiPi(selectionStatus);
+      if (applyMl) {
+        hfMlToXiPi(outputMlXic0ToXiPi);
       }
 
     } // end of candidate loop
@@ -749,7 +711,7 @@ struct HfCandidateSelectorToXiPiQa {
   ///////////////////////////////////
   ///    Process with DCAFitter    //
   ///////////////////////////////////
-  void processSelectionDCAFitter(aod::HfCandToXiPi const& candidates, TracksSel const& tracks, TracksSelLf const& lfTracks)
+  void processSelectionDCAFitter(aod::HfCandCascBachQa const& candidates, TracksSel const& tracks, TracksSelLf const& lfTracks)
   {
     runSelection<doDcaFitter>(candidates, tracks, lfTracks);
   }
@@ -758,7 +720,7 @@ struct HfCandidateSelectorToXiPiQa {
   ////////////////////////////////////
   ///    Process with KFParticle    //
   ////////////////////////////////////
-  void processSelectionKFParticle(aod::HfCandToXiPiKf const& candidates, TracksSel const& tracks, TracksSelLf const& lfTracks)
+  void processSelectionKFParticle(soa::Join<aod::HfCandCascBachQa, aod::HfCandCascBachKfQa> const& candidates, TracksSel const& tracks, TracksSelLf const& lfTracks)
   {
     runSelection<doKfParticle>(candidates, tracks, lfTracks);
   }
