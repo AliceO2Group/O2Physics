@@ -507,7 +507,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   /// \return the origin according to ParticleOriginMCTruth (kPrimary, kMaterial,
   /// kSecondaryFromHF, kSecondaryFromLF or kSecondaryFromPhi)
   template <typename T>
-  static ParticleOriginMCTruth getK0sOrigin(T const& mcParticles, typename T::iterator const& particleMc, const bool isFromPhi)
+  static aod::femtodreamMCparticle::ParticleOriginMCTruth getK0sOrigin(T const& mcParticles, typename T::iterator const& particleMc, const bool isFromPhi)
   {
     using namespace o2::aod::femtodreamMCparticle;
     constexpr int GenFromTransport = -1;

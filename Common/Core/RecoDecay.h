@@ -1183,15 +1183,19 @@ struct RecoDecay {
 
   /// Check whether the PDG code corresponds to a diquark state (e.g. 4101, 4201, 5101).
   /// Diquarks are constituents used by the generators during the hadronisation and are not
-  /// hadrons, but their PDG codes satisfy the pdg / 1000 == 4 or 5 condition that is used
-  /// to identify charm and beauty baryons in getParticleOrigin.
+  /// hadrons. A diquark carrying a charm or beauty quark has a PDG code that satisfies the
+  /// pdg / 1000 == 4 or 5 condition used to identify charm and beauty baryons in
+  /// getParticleOrigin, so such a state would be misidentified as a heavy-flavour baryon there.
+  /// This check therefore validates the diquark structure: two quark flavours in
+  /// PDG_t::kDown..kTop (any quark pair, not only a heavy-flavour one), the first flavour not
+  /// smaller than the second, and a spin-0 or spin-1 code.
   /// \param pdgCode PDG code of the particle
   /// \return true if the PDG code belongs to a diquark state
   static bool isDiquark(const int pdgCode)
   {
-    // a diquark PDG code is composed as quark1 * PdgDivisorBaryon + quark2 * PdgDivisorMeson +
-    // spinCode, with quark1 >= quark2 the quark flavours and spinCode either PdgDiquarkSpin0Code
-    // or PdgDiquarkSpin1Code
+    // a diquark PDG code is composed as pdgQuark1 * PdgDivisorBaryon + pdgQuark2 * PdgDivisorMeson
+    // + spinCode, with pdgQuark1 >= pdgQuark2 the quark flavours and spinCode either
+    // PdgDiquarkSpin0Code or PdgDiquarkSpin1Code
     const int absPdgCode = std::abs(pdgCode);
     const int spinCode = absPdgCode % PdgDivisorMeson;
     if (spinCode != PdgDiquarkSpin0Code && spinCode != PdgDiquarkSpin1Code) {
@@ -1199,7 +1203,7 @@ struct RecoDecay {
     }
     const int pdgQuark1 = absPdgCode / PdgDivisorBaryon;
     const int pdgQuark2 = (absPdgCode % PdgDivisorBaryon) / PdgDivisorMeson;
-    return pdgQuark1 >= PDG_t::kDown && pdgQuark1 <= PDG_t::kTop && pdgQuark2 >= PDG_t::kDown && pdgQuark1 >= pdgQuark2;
+    return pdgQuark1 >= PDG_t::kDown && pdgQuark1 <= PDG_t::kTop && pdgQuark2 >= PDG_t::kDown && pdgQuark2 <= PDG_t::kTop && pdgQuark1 >= pdgQuark2;
   }
 
   /// based on getCharmHardronOrigin in order to extend general particle
