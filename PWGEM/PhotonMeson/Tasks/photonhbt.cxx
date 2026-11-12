@@ -1327,7 +1327,7 @@ struct Photonhbt {
       fRegistryPairMC.add((spBase + "hEtaPt").c_str(), "#eta vs p_{T};#eta;p_{T} (GeV/c)", kTH2F, {axisEta, axisPt}, true);
       fRegistryPairMC.add((spBase + "hLegOriginMatrix").c_str(), "pos-leg origin vs neg-leg origin;pos leg;neg leg", kTH2F, {axisLegOrigin, axisLegOrigin}, true);
     }
-    fRegistryPairMC.add("SinglePhotonMC/Response/hResponse", "true reconstructed photons: response (MC)", kTHnSparseF,{{40, 0.f, 4.f, "#it{p}_{T}^{true} (GeV/#it{c})"},{60, 0.3f, 1.5f, "#it{E}^{rec} / #it{E}^{true}"}, {40, 0.f, 0.04f, "angle(rec, true) (rad)"},{18, 0.f, 90.f, "#it{R}_{conv} (cm)"},{21, -0.05f, 1.f, "hardest photon radiated by a leg: #it{E} / #it{E}^{true} (first bin: none)"},{2, -0.5f, 1.5f, "that radiated photon reconstructed in this event"},{3, -0.5f, 2.5f, "this photon radiated by a conversion e^{#pm}: 0 no, 1 yes and parent #gamma lost, 2 yes and parent reconstructed"},{21, -0.05f, 1.f, "#it{E}^{true} / #it{E}(parent #gamma) (first bin: n/a)"},{51, -0.005f, 0.25f, "angle(this, parent #gamma) MC (rad) (first bin: n/a)"}},true);
+    fRegistryPairMC.add("SinglePhotonMC/Response/hResponse", "true reconstructed photons: response (MC)", kTHnSparseF, {{40, 0.f, 4.f, "#it{p}_{T}^{true} (GeV/#it{c})"}, {60, 0.3f, 1.5f, "#it{E}^{rec} / #it{E}^{true}"}, {40, 0.f, 0.04f, "angle(rec, true) (rad)"}, {18, 0.f, 90.f, "#it{R}_{conv} (cm)"}, {21, -0.05f, 1.f, "hardest photon radiated by a leg: #it{E} / #it{E}^{true} (first bin: none)"}, {2, -0.5f, 1.5f, "that radiated photon reconstructed in this event"}, {3, -0.5f, 2.5f, "this photon radiated by a conversion e^{#pm}: 0 no, 1 yes and parent #gamma lost, 2 yes and parent reconstructed"}, {21, -0.05f, 1.f, "#it{E}^{true} / #it{E}(parent #gamma) (first bin: n/a)"}, {51, -0.005f, 0.25f, "angle(this, parent #gamma) MC (rad) (first bin: n/a)"}}, true);
     fRegistryPairMC.add("SinglePhotonMC/Response/hGenPt", "generated primary photons of the selected collisions, |#eta| < cfgMaxEtaV0;#it{p}_{T} (GeV/#it{c})", kTH1F, {{80, 0.f, 4.f}}, true);
 
     const AxisSpec axisFakeSubtype{3, -0.5f, 2.5f, "0=ordinary, 1=swap doublet, 2=partial swap"};
@@ -2987,7 +2987,6 @@ struct Photonhbt {
     }
   }
 
-
   template <typename TLegs, typename TCollision, typename TPhotons, typename TMCParticles, typename TCut>
   void fillSinglePhotonResponse(TCollision const& collision, TPhotons const& photonsColl, TMCParticles const& mcParticles, TCut const& cut)
   {
@@ -4490,7 +4489,7 @@ struct Photonhbt {
     }
     fRegistryPairMC.add("PairClass/Pairs/hPhotonKF", "photons of the pairs by MC class (each photon once per pair)", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {2, -0.5f, 1.5f, "0 photon radiated by an e^{#pm} (MC mother e^{#pm}), 1 other"}, {50, 0.f, 25.f, "KF #chi^{2}/ndf of the conversion-vertex fit"}, {60, 0.f, 300.f, "KF #chi^{2} to the primary vertex"}, {40, -0.2f, 0.2f, "#psi_{pair} (rad)"}});
     fRegistryPairMC.add("PairClass/Pairs/hHiddenBrems", "true distinct pairs (class 13) with a photon radiated by an e^{#pm} (MC)", kTHnSparseF, {axSample, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {3, -0.5f, 2.5f, "photons of the pair radiated by an e^{#pm}"}, {4, -0.5f, 3.5f, "partner vs the radiating e^{#pm}: 0 unrelated, 1 same mother (e.g. Dalitz #gamma), 2 same root ancestor, 3 partner is itself radiated"}, {6, -0.5f, 5.5f, "radiating e^{#pm} from: 0 photon conversion, 1 #pi^{0} Dalitz, 2 #eta Dalitz, 3 heavy flavour (D, B), 4 other hadron, 5 none / unknown"}, {3, -0.5f, 2.5f, "partner vs the radiating e^{#pm}: 0 different first physical primary, 1 same first physical primary, 2 n/a"}});
-    fRegistryPairMC.add("PairClass/Pairs/hPairSep", "photon pairs with q_{inv} < 100 MeV: minimum same-sign leg distance in the TPC by MC class", kTHnSparseF,{axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {50, 0.f, 10.f, "min #sqrt{#Delta(r#varphi)^{2} + #Delta z^{2}} of the same-sign legs (cm)"}, {25, 0.f, 5.f, "min #Delta(r#varphi) of the same-sign legs (cm)"}, {10, 0.f, 0.5f, "|#it{E}_{1} #minus #it{E}_{2}| (GeV)"}});
+    fRegistryPairMC.add("PairClass/Pairs/hPairSep", "photon pairs with q_{inv} < 100 MeV: minimum same-sign leg distance in the TPC by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {50, 0.f, 10.f, "min #sqrt{#Delta(r#varphi)^{2} + #Delta z^{2}} of the same-sign legs (cm)"}, {25, 0.f, 5.f, "min #Delta(r#varphi) of the same-sign legs (cm)"}, {10, 0.f, 0.5f, "|#it{E}_{1} #minus #it{E}_{2}| (GeV)"}});
     fRegistryPairMC.add("PairClass/Photons/hLegTrueDist", "stored photons: distance of the true production vertices of the two legs;0 same event, 1 mixed event;0 SVertexer original, 1 finder original, 2 crossed pairing;distance (cm)", kTH3F, {{2, -0.5f, 1.5f}, {3, -0.5f, 2.5f}, {104, -2.f, 50.f}});
     auto hEv = fRegistryPairMC.add<TH1>("PairClass/Events/hArtificialEvents", "artificial events;;events", kTH1F, {{4, -0.5f, 3.5f}});
     hEv->GetXaxis()->SetBinLabel(1, "same event");

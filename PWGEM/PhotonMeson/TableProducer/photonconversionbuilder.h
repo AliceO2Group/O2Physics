@@ -2887,8 +2887,8 @@ struct PhotonConversionBuilder {
   }
   struct BremsPointing {
     float dMin = 999.f, angle = 3.15f, rEmit = -1.f, outward = 0.f, ptB = 0.f;
-    int order = -1, leg = -1;                   //  0 = a radiates b, 1 = b radiates a; leg 0 positive, 1 negative
-    float ptLeg = 0.f, arc = 0.f, leverD = 0.f; 
+    int order = -1, leg = -1; //  0 = a radiates b, 1 = b radiates a; leg 0 positive, 1 negative
+    float ptLeg = 0.f, arc = 0.f, leverD = 0.f;
     float score = 1.e9f, missT = 999.f, thetaB = 3.15f, ptBV = 0.f, lever = 0.f;
     int orderV = -1, legV = -1;
   };
