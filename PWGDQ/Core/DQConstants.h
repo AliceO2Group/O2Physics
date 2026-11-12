@@ -21,15 +21,14 @@
 namespace o2::dqconstants
 {
 // Numerical conventions
-inline constexpr float InvalidValue = -9999.f;
-inline constexpr int InvalidNum = -9999;
+inline constexpr float InvalidValueF = -9999.f;
+inline constexpr int InvalidValueI = -9999;
 inline constexpr int InvalidIndex = -1;
 
 inline constexpr std::uint8_t Flag8 = 0u;
 inline constexpr std::uint32_t Flag32 = 0u;
 inline constexpr std::uint64_t Flag64 = 0ull;
 
-inline constexpr float InvalidFloat = -1.0f;
 inline constexpr float EmptyVariable = 0.0f;
 
 inline constexpr double MillisecondsPerMinute = 60000.0;
@@ -42,6 +41,7 @@ inline constexpr int TPCCalibTypeStart = 0;
 inline constexpr int TPCCalibTypeEnd = 2;
 
 inline constexpr float InvalidDCA = 998.0f;
+inline constexpr float InvalidStdDev = -1.0;
 
 // Checks
 inline constexpr auto IsCoordinateInvalid = [](float value) constexpr -> bool {
@@ -50,6 +50,10 @@ inline constexpr auto IsCoordinateInvalid = [](float value) constexpr -> bool {
 
 inline constexpr auto IsDCAInvalid = [](float value) constexpr -> bool {
   return value > InvalidDCA;
+};
+
+inline constexpr auto IsStdDevValid = [](float value) constexpr -> bool {
+  return value < 0.f;
 };
 
 inline constexpr auto IsProcCodeInvalid = [](int procCode) constexpr -> bool {
