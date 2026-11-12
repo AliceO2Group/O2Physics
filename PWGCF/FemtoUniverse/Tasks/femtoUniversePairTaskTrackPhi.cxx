@@ -783,7 +783,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processMCReco, "Process MC reco data", false);
 
-  void processMinvBackground()
+  void processMinvBackground(aod::Tracks const& tracks, aod::Collisions const& collisions)
   {
     if (!confFillMinvBackground) {
       return;
