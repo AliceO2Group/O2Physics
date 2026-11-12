@@ -1462,7 +1462,7 @@ class VarManager : public TObject
 
   static float getDeltaPsiInRange(float psi1, float psi2, unsigned int harmonic)
   {
-    return RecoDecay::constrainAngle(psi1 - psi2, o2::constants::math::PI / harmonic, harmonic);
+    return RecoDecay::constrainAngle(psi1 - psi2, -o2::constants::math::PI / harmonic, harmonic);
   }
   template <typename T, typename T1>
   static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
@@ -2079,7 +2079,7 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if (fgUsedVars[kRandomPsi2]) {
-    values[kRandomPsi2] = gRandom->Uniform(o2::constants::math::PIHalf, o2::constants::math::PIHalf);
+    values[kRandomPsi2] = gRandom->Uniform(-o2::constants::math::PIHalf, o2::constants::math::PIHalf);
   }
 
   if constexpr ((fillMap & Collision) > 0) {
@@ -3752,7 +3752,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
     MassHadron = std::sqrt(t1.e() * t1.e() - t1.p() * t1.p());
   }
   ROOT::Math::PtEtaPhiMVector v1(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
-  float deltaphi = RecoDecay::constrainAngle(track.phi() - t1.phi(), o2::constants::math::PIHalf);
+  float deltaphi = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PIHalf);
   float deltaeta = t1.eta() - track.eta();
   ROOT::Math::PtEtaPhiMVector v2(t1.pt(), t1.eta(), t1.phi(), MassHadron);
   float E_boost = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2);
@@ -3767,7 +3767,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   values[kMCdeltaeta] = deltaeta;
   values[kMCHadronPt] = t1.pt();
   values[kMCHadronEta] = t1.eta();
-  values[kMCHadronPhi] = RecoDecay::constrainAngle(t1.phi(), o2::constants::math::PIHalf);
+  values[kMCHadronPhi] = RecoDecay::constrainAngle(t1.phi(), -o2::constants::math::PIHalf);
   values[kMCHadronPdgCode] = t1.pdgCode();
   values[kMCWeight] = E_boost / o2::constants::physics::MassJPsi * Accweight;
 
@@ -3783,7 +3783,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   float randomPhi_toward = o2::constants::math::PIHalf;
   float randomPhi_away = o2::constants::math::PIHalf;
 
-  float deltaphitrans = RecoDecay::constrainAngle(track.phi() - t1.phi(), o2::constants::math::PI);
+  float deltaphitrans = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PI);
   if ((deltaphitrans > -Transhigh * o2::constants::math::PI && deltaphitrans < -Translow * o2::constants::math::PI) || (deltaphitrans > Translow * o2::constants::math::PI && deltaphitrans < Transhigh * o2::constants::math::PI)) {
     randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
@@ -3898,7 +3898,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
-    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), o2::constants::math::PIHalf);
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
   }
 
   if (fgUsedVars[kDeltaEtaPair2]) {
@@ -4482,7 +4482,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
-    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), o2::constants::math::PIHalf);
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
   }
 
   if (fgUsedVars[kDeltaEtaPair2]) {
@@ -4700,7 +4700,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
       float R2EP = t1.sign() > 0 ? values[kTwoR2EP1] : values[kTwoR2EP2];
 
       // reaction plane
-      float phi = RecoDecay::constrainAngle(v_daughter.Phi(), o2::constants::math::PI);
+      float phi = RecoDecay::constrainAngle(v_daughter.Phi(), -o2::constants::math::PI);
       values[kDeltaPhiME_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
       values[kDeltaPhiME_TPC] = values[kDeltaPhiME_TPC] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiME_TPC] : values[kDeltaPhiME_TPC];
       values[kDeltaPhiME_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
@@ -4845,7 +4845,7 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
     float Psi2C = values[kPsi2C];
 
     // reaction plane
-    float phi = RecoDecay::constrainAngle(v_daughter.Phi(), o2::constants::math::PI);
+    float phi = RecoDecay::constrainAngle(v_daughter.Phi(), -o2::constants::math::PI);
     values[kDeltaPhi_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
     values[kDeltaPhi_TPC] = values[kDeltaPhi_TPC] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhi_TPC] : values[kDeltaPhi_TPC];
     values[kDeltaPhi_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
@@ -5097,7 +5097,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
     ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.pdgCode() > 0 ? v1 : v2);
 
     // reaction plane
-    float phi = RecoDecay::constrainAngle(v_daughter.Phi(), o2::constants::math::PI);
+    float phi = RecoDecay::constrainAngle(v_daughter.Phi(), -o2::constants::math::PI);
     values[kDeltaPhi_Random] = phi - values[kRandomPsi2];
     values[kDeltaPhi_Random] = values[kDeltaPhi_Random] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhi_Random] : values[kDeltaPhi_Random];
     values[kDeltaPhi_MC] = phi - values[kMCEventPlaneAngle];
@@ -5395,15 +5395,15 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         if (std::fabs(values[kVertexingLxy]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
           values[kVertexingLxy] = o2::dqconstants::defaults::VertexingLxyzTolerance;
         }
-        values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
+        values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
         if (std::fabs(values[kVertexingLz]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
           values[kVertexingLz] = o2::dqconstants::defaults::VertexingLxyzTolerance;
         }
-        values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
+        values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
         if (std::fabs(values[kVertexingLxyz]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
           values[kVertexingLxyz] = o2::dqconstants::defaults::VertexingLxyzTolerance;
         }
-        values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
+        values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
         values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, KFGeoTwoProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingTauz] = -1 * dzPair2PV * KFGeoTwoProng.GetMass() / (std::abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingPz] = std::abs(KFGeoTwoProng.GetPz());
@@ -5773,15 +5773,15 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       if (std::fabs(values[kVertexingLxy]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
         values[kVertexingLxy] = o2::dqconstants::defaults::VertexingLxyzTolerance;
       }
-      values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
+      values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
       if (std::fabs(values[kVertexingLz]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
         values[kVertexingLz] = o2::dqconstants::defaults::VertexingLxyzTolerance;
       }
-      values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
+      values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
       if (std::fabs(values[kVertexingLxyz]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
         values[kVertexingLxyz] = o2::dqconstants::defaults::VertexingLxyzTolerance;
       }
-      values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
+      values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
 
       values[kVertexingTauxy] = KFGeoThreeProng.GetPseudoProperDecayTime(KFPV, KFGeoThreeProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauz] = -1 * dzTriplet2PV * KFGeoThreeProng.GetMass() / (std::abs(KFGeoThreeProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
@@ -6033,15 +6033,15 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
           if (std::fabs(values[kVertexingLxy]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
             values[kVertexingLxy] = o2::dqconstants::defaults::VertexingLxyzTolerance;
           }
-          values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
+          values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
           if (std::fabs(values[kVertexingLz]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
             values[kVertexingLz] = o2::dqconstants::defaults::VertexingLxyzTolerance;
           }
-          values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
+          values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
           if (std::fabs(values[kVertexingLxyz]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
             values[kVertexingLxyz] = o2::dqconstants::defaults::VertexingLxyzTolerance;
           }
-          values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
+          values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
 
           if (fgUsedVars[kVertexingTauxy]) {
             values[kVertexingTauxy] = KFGeoThreeProng.GetPseudoProperDecayTime(KFPV, KFGeoThreeProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
@@ -6675,7 +6675,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
   }
 
   if (fgUsedVars[kDeltaPhi]) {
-    values[kDeltaPhi] = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), o2::constants::math::PIHalf);
+    values[kDeltaPhi] = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), -o2::constants::math::PIHalf);
   }
   if (fgUsedVars[kDeltaPhiSym]) {
     double delta = std::abs(dilepton.phi() - hadron.phi());
@@ -6727,10 +6727,10 @@ void VarManager::FillEnergyCorrelatorTriple(C const& collision, T1 const& lepton
     values[kWeight_before] = v2.Pt() / v1.M() * weight;
     values[kPtDau] = v2.pt();
     values[kEtaDau] = v2.eta();
-    values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), o2::constants::math::PIHalf);
+    values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), -o2::constants::math::PIHalf);
 
-    float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), o2::constants::math::PI);
-    values[kDeltaPhi] = RecoDecay::constrainAngle(v1.phi() - v2.phi(), o2::constants::math::PIHalf);
+    float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PI);
+    values[kDeltaPhi] = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PIHalf);
     values[kDeltaEta] = v1.eta() - v2.eta();
     values[kCosChi_randomPhi_trans] = o2::dqconstants::InvalidValue;
     values[kCosChi_randomPhi_toward] = o2::dqconstants::InvalidValue;
@@ -6745,9 +6745,9 @@ void VarManager::FillEnergyCorrelatorTriple(C const& collision, T1 const& lepton
     float randomPhi_away = o2::constants::math::PIHalf;
 
     if ((deltaphi > -Transhigh * o2::constants::math::PI && deltaphi < -Translow * o2::constants::math::PI) || (deltaphi > Translow * o2::constants::math::PI && deltaphi < Transhigh * o2::constants::math::PI)) {
-      randomPhi_trans = gRandom->Uniform(o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-      randomPhi_toward = gRandom->Uniform(o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-      randomPhi_away = gRandom->Uniform(o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       values[kPtDau_randomPhi_trans] = v2.pt();
       ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, o2::constants::physics::MassPionCharged);
       values[kCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
@@ -6760,9 +6760,9 @@ void VarManager::FillEnergyCorrelatorTriple(C const& collision, T1 const& lepton
       values[kCosChi_randomPhi_away] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_away);
       values[kWeight_randomPhi_away] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_away) / v1.M() * weight;
 
-      values[kdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, o2::constants::math::PIHalf);
-      values[kdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, o2::constants::math::PIHalf);
-      values[kdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, o2::constants::math::PIHalf);
+      values[kdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, -o2::constants::math::PIHalf);
+      values[kdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, -o2::constants::math::PIHalf);
+      values[kdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, -o2::constants::math::PIHalf);
     }
   }
 }
@@ -6804,10 +6804,10 @@ void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 cons
 
     values[kMCCosChi_randomPhi_trans_rec] = o2::dqconstants::InvalidValue;
     values[kMCCosChi_randomPhi_trans_gen] = o2::dqconstants::InvalidValue;
-    float deltaphi_rec = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), o2::constants::math::PIHalf);
+    float deltaphi_rec = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), -o2::constants::math::PIHalf);
 
     if ((deltaphi_rec > -Transhigh * o2::constants::math::PI && deltaphi_rec < -Translow * o2::constants::math::PI) || (deltaphi_rec > Translow * o2::constants::math::PI && deltaphi_rec < Transhigh * o2::constants::math::PI)) {
-      float randomPhi_trans_rec = gRandom->Uniform(o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      float randomPhi_trans_rec = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_rec(v2_rec.pt(), v2_rec.eta(), randomPhi_trans_rec, o2::constants::physics::MassPionCharged);
       values[kMCCosChi_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_randomPhi_trans_rec);
       values[kMCWeight_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_randomPhi_trans_rec) / v1_rec.M() * Effweight_rec;
@@ -7196,15 +7196,15 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     if (std::fabs(values[kVertexingLxy]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
       values[kVertexingLxy] = o2::dqconstants::defaults::VertexingLxyzTolerance;
     }
-    values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
+    values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
     if (std::fabs(values[kVertexingLz]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
       values[kVertexingLz] = o2::dqconstants::defaults::VertexingLxyzTolerance;
     }
-    values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
+    values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
     if (std::fabs(values[kVertexingLxyz]) < o2::dqconstants::defaults::VertexingLxyzTolerance) {
       values[kVertexingLxyz] = o2::dqconstants::defaults::VertexingLxyzTolerance;
     }
-    values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? o2::dqconstants::defaults::VertexingLxyzTolerance : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
+    values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? o2::dqconstants::defaults::InvalidVertexingError : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
 
     values[kVertexingTauxy] = KFGeoFourProng.GetPseudoProperDecayTime(KFPV, KFGeoFourProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
     values[kVertexingTauz] = -1 * dzQuadlet2PV * KFGeoFourProng.GetMass() / (std::abs(KFGeoFourProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
@@ -7772,7 +7772,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
-    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), o2::constants::math::PIHalf);
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
   }
 
   if (fgUsedVars[kDeltaEtaPair2]) {
