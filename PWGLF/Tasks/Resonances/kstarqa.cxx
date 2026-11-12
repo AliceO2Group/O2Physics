@@ -394,8 +394,8 @@ struct Kstarqa {
       hShift.add("h2D_dpz_vs_pt_Phi", "Pion from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
       hShift.add("h2D_dpt_vs_pt_Phi", "Pion from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h1D_MassPhiGen", "Invariant mass of generated Phi meson", kTH1F, {{300, 1.0, 1.06}});
-      hShift.add("h1D_MassPhiRec", "Invariant mass of reconstructed Phi meson", kTH1F, {{300, 1.0, 1.06}});
+      hShift.add("h2D_MassPhiGenVsPt", "Invariant mass of generated Phi meson", kTH2F, {{300, 1.0, 1.06}, {ptAxis}});
+      hShift.add("h2D_MassPhiRecVsPt", "Invariant mass of reconstructed Phi meson", kTH2F, {{300, 1.0, 1.06}, {ptAxis}});
       hShift.add("h2D_pt_massShiftPhi", "pT vs mass shift of Phi meson", kTH2F, {{ptAxis}, {300, -0.1, 0.1}});
     }
 
@@ -3294,8 +3294,8 @@ struct Kstarqa {
               recMass = mother.M();
               genMass = genMother.M();
 
-              hShift.fill(HIST("h1D_MassPhiGen"), genMass);
-              hShift.fill(HIST("h1D_MassPhiRec"), recMass);
+              hShift.fill(HIST("h2D_MassPhiGenVsPt"), genMass, genMother.pt());
+              hShift.fill(HIST("h2D_MassPhiRecVsPt"), recMass, mother.pt());
               hShift.fill(HIST("h2D_pt_massShiftPhi"), mother.pt(), genMass - recMass);
 
               auto genpTPhi = mothertrack1.pt();
