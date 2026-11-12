@@ -18,7 +18,7 @@
 #include "PWGHF/Core/HfMlResponseXic0ToXiPiQa.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
@@ -509,7 +509,7 @@ struct HfCandidateSelectorToXiPiQa {
       registry.fill(HIST("hSelStatusHf"), 10.0);
 
       // ctau
-      if (std::abs(HfHelperQa::ctXiczero(candidate)) > cuts->get(inputPtBin, "cTauXic")) {
+      if (std::abs(HfHelper::ctXiczero(candidate)) > cuts->get(inputPtBin, "cTauXic")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 11.0);
@@ -614,7 +614,7 @@ struct HfCandidateSelectorToXiPiQa {
         registry.fill(HIST("hSelStatusCluster"), 5.0);
       }
 
-      const double invMassCharmBaryon = HfHelperQa::invMassXiczeroToXiPi(candidate);
+      const double invMassCharmBaryon = HfHelper::invMassXiczeroToXiPi(candidate);
       if (selectionResOnLF && selectionResOnHF && selectedTrackQuality) {
         registry.fill(HIST("hInvMassCharmBaryonWoPidInvMassCut"), invMassCharmBaryon);
       }

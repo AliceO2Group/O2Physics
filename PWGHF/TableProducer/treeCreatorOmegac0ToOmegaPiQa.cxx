@@ -18,7 +18,7 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/AliasTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
@@ -330,7 +330,7 @@ struct HfTreeCreatorToOmegaPiQa {
                    candidate.errorImpactParameter1(),
                    candidate.massLambda(),
                    candidate.massCascade(),
-                   HfHelperQa::invMassOmegaczeroToOmegaPi(candidate),
+                   HfHelper::invMassOmegaczeroToOmegaPi(candidate),
                    candidate.cpaV0(),
                    candidate.cpa(),
                    candidate.cpaCascade(),
@@ -406,10 +406,10 @@ struct HfTreeCreatorToOmegaPiQa {
                      candidate.cpa(),
                      candidate.massLambda(),
                      candidate.massCascade(),
-                     HfHelperQa::invMassOmegaczeroToOmegaPi(candidate),
+                     HfHelper::invMassOmegaczeroToOmegaPi(candidate),
                      RecoDecay::pt(candidate.pxProng1(), candidate.pyProng1()),
                      candidate.pt(),
-                     HfHelperQa::cosThetaStarOmegaczeroToOmegaPi(candidate),
+                     HfHelper::cosThetaStarOmegaczeroToOmegaPi(candidate),
                      candidate.eta(),
                      candidate.ndfGeoV0(),
                      candidate.ndfGeoCascade(),
