@@ -176,8 +176,8 @@ struct HfCandidateSelectorToOmegaPiQa {
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
   // TODO: is it needed to have separate ML response for DCAFitter and KFParticle?
-  o2::analysis::HfMlResponseOmegacToOmegaPi<float, aod::hf_cand_casc_lf::ConstructMethod::DcaFitter> hfMlResponseDca;
-  o2::analysis::HfMlResponseOmegacToOmegaPi<float, aod::hf_cand_casc_lf::ConstructMethod::KfParticle> hfMlResponseKf;
+  o2::analysis::HfMlResponseOmegacToOmegaPiQa<float, aod::hf_cand_casc_lf::ConstructMethod::DcaFitter> hfMlResponseDca;
+  o2::analysis::HfMlResponseOmegacToOmegaPiQa<float, aod::hf_cand_casc_lf::ConstructMethod::KfParticle> hfMlResponseKf;
   std::vector<float> outputMlOmegac;
   o2::ccdb::CcdbApi ccdbApi;
 
