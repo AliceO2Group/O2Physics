@@ -52,6 +52,7 @@
 #include <numeric>
 #include <random>
 #include <set>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -122,6 +123,7 @@ struct PhotonMixedEventProducer {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "centrality estimator: 0 FT0M, 1 FT0A, 2 FT0C"};
   Configurable<float> cfgCentMin{"cfgCentMin", 10.f, "min centrality (one class)"};
   Configurable<float> cfgCentMax{"cfgCentMax", 20.f, "max centrality"};
+  Configurable<float> cfgCentBinWidth{"cfgCentBinWidth", 0.f, "pool centrality bin width (%) inside [cfgCentMin, cfgCentMax); 0 = one bin. Partner events are then matched in centrality, which removes the Delta E tilt of the mixed event (same-event pairs share the spectrum of their event)"};
   Configurable<float> cfgZMax{"cfgZMax", 10.f, "max |z_vtx| (cm)"};
   Configurable<float> cfgZBinWidth{"cfgZBinWidth", 2.f, "pool z bin width (cm)"};
   Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "occupancy: 0 trackOccupancyInTimeRange, 1 ft0cOccupancyInTimeRange"};
@@ -139,7 +141,7 @@ struct PhotonMixedEventProducer {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  std::map<std::pair<int, int>, std::deque<EventCopy>> mPools;
+  std::map<std::tuple<int, int, int>, std::deque<EventCopy>> mPools; // (z bin, occupancy bin, centrality bin)
   std::mt19937 mRandom;
   int mRunNumber = -1;
   int64_t mEventUid = 0;
@@ -173,6 +175,7 @@ struct PhotonMixedEventProducer {
     registry.add("Event/hOccupancy", "accepted events;occupancy", kTH1D, {{200, 0.f, 20000.f}});
     registry.add("Pool/hDepthVsZ", "pool size when used;z_{vtx} (cm);events in the pool", kTH2D, {{nZ, -cfgZMax, cfgZMax}, {cfgPoolDepth + 1, -0.5f, cfgPoolDepth + 0.5f}});
     registry.add("Pool/hDepthVsOccBin", "pool size when used;occupancy bin;events in the pool", kTH2D, {{static_cast<int>(cfgOccupancyBins->size()) - 1, -0.5f, cfgOccupancyBins->size() - 1.5f}, {cfgPoolDepth + 1, -0.5f, cfgPoolDepth + 0.5f}});
+    registry.add("Pool/hDepthVsCentBin", "pool size when used;centrality bin;events in the pool", kTH2D, {{std::max(1, nCentBins()), -0.5f, std::max(1, nCentBins()) - 0.5f}, {cfgPoolDepth + 1, -0.5f, cfgPoolDepth + 0.5f}});
     registry.add("Pool/hPartnersVsN", "partner events available vs needed;N of the current event;events in the pool", kTH2D, {axN, {cfgPoolDepth + 1, -0.5f, cfgPoolDepth + 0.5f}});
     registry.add("Pool/hNPooledPhotons", "photons in all pools (memory), per event;photons", kTH1D, {{500, 0.f, 5.e5f}});
     registry.add("Pool/hNPools", "filled pools, per event;pools", kTH1D, {{1000, 0.f, 10000.f}});
@@ -224,6 +227,20 @@ struct PhotonMixedEventProducer {
     return cfgOccupancyEstimator.value == 1 ? collision.ft0cOccupancyInTimeRange() : static_cast<float>(collision.trackOccupancyInTimeRange());
   }
 
+  int nCentBins() const
+  {
+    if (cfgCentBinWidth.value <= 0.f) {
+      return 1;
+    }
+    return std::max(1, static_cast<int>(std::ceil((cfgCentMax.value - cfgCentMin.value) / cfgCentBinWidth.value - 1e-4f))); // o2-linter: disable=magic-number (rounding guard)
+  }
+  int centralityBin(const float cent) const
+  {
+    if (cfgCentBinWidth.value <= 0.f) {
+      return 0;
+    }
+    return std::clamp(static_cast<int>(std::floor((cent - cfgCentMin.value) / cfgCentBinWidth.value)), 0, nCentBins() - 1);
+  }
   int occupancyBin(const float occ) const
   {
     const auto& edges = cfgOccupancyBins.value;
@@ -590,8 +607,10 @@ struct PhotonMixedEventProducer {
       const int nPhotons = static_cast<int>(current.photons.size());
       registry.fill(HIST("Event/hNPhotons"), nPhotons);
 
-      auto& pool = mPools[{zBin, occBin}];
+      const int centBin = centralityBin(cent);
+      auto& pool = mPools[{zBin, occBin, centBin}];
       const int depth = static_cast<int>(pool.size());
+      registry.fill(HIST("Pool/hDepthVsCentBin"), centBin, depth);
       registry.fill(HIST("Pool/hPartnersVsN"), nPhotons, depth);
       registry.fill(HIST("Pool/hDepthVsZ"), collision.posZ(), depth);
       registry.fill(HIST("Pool/hDepthVsOccBin"), occBin, depth);

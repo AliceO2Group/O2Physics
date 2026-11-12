@@ -373,6 +373,7 @@ struct PhotonConversionBuilder {
     Configurable<int> freeLegRuleMask{"freeLegRuleMask", 5, "with freeLegRun1Rules: which run-1 rules a crossed pairing with a pooled free leg gets: bit 0 AP cut, bit 1 purity gate (pairings with a leg without ITS), bit 2 finder fit options (side-based drift correction, finder PCA; pairings with a leg without ITS); 7 = all run-1 rules, 0 = the lenient crossed fit"};
     Configurable<float> freeLegMinPurity{"freeLegMinPurity", -999.f, "with freeLegRun1Rules and bit 1 of freeLegRuleMask: purity threshold for crossed pairings with a pooled free leg; below -998 recovery.finderMinScore (as run 1)"};
     Configurable<bool> mixedDiagnostics{"mixedDiagnostics", false, "MC diagnostics of run 2 (hCrossedFit, four-leg decisions, matched configurations, mixed pair classes, fake classes, hQSym, swap/brems pointing, alternative pairings): CPU on data, no effect on the stored photons"};
+    Configurable<bool> fillBremsJoint{"fillBremsJoint", false, "pairs of stored photons after run 2, same and mixed artificial events, data and MC: Mixed/Pairs/hBremsJoint = q_inv x |Delta E| x k_T x centrality x bremsstrahlung pointing (distance category incl. no allowed point, angle category, vertex-anchored score) x MC class (15 without labels); Mixed/Pairs/hBremsJointNorm (every pair below 500 MeV/c without the pointing, for the mixed-event normalisation); Mixed/Pairs/hBremsAngle (measured angle of the pointing against the momenta and extrapolation lengths that set its resolution); Mixed/hNStoredVsCent (stored photons per event vs centrality). For the data-driven bremsstrahlung template: every pair is filled once, no selection"};
     Configurable<bool> diagFreeLegFits{"diagFreeLegFits", false, "diagnostic: every crossed pairing with a pooled free leg is fitted twice as a trial, with the lenient crossed options and with the run-1 rules, and Mixed/Decision/hFreeLegFit records both results (accepted or the rejection line), split by MC truth; the trial candidates are removed again, the real fit follows the configuration (CPU and QA side effect: V0 QA histograms count the trial fits)"};
     Configurable<bool> freeLegRun1Rules{"freeLegRun1Rules", true, "crossed pairings of a pooled free leg (sourceV0Id -2) with a stored leg are fitted as run 1 would have fitted them: with a leg without ITS as a finder candidate (side-based drift correction, AP cut, purity gate), with both legs with ITS as an SVertexer V0 (AP cut, no purity gate); stored x stored pairings keep crossedRelaxAP (overlay mixed event)"};
     Configurable<bool> freeFreeFinderOnly{"freeFreeFinderOnly", false, "with skipFreeFreeCrossed off: a crossed pairing of two pooled free legs is formed only if at least one leg has no ITS (the run-1 finder domain); free x free with both legs with ITS could only have been an SVertexer V0 in run 1 and is skipped (overlay mixed event)"};
@@ -799,6 +800,17 @@ struct PhotonConversionBuilder {
     registry.add("Mixed/Pairs/hQClean", "photon pairs, all legs TPC shared fraction < 0.4;artificial event;0 before / 1 after run 2;q_{inv} (GeV/c)", kTH3F, {axType, {2, -0.5f, 1.5f}, {500, 0.f, 0.5f}});
     registry.add("Mixed/Pairs/hBrems", "photon pairs, bremsstrahlung pointing;artificial event;0 before / 1 after run 2;class (see mixFakeClass);MC relation (0 none, 1 radiated by a leg, 2 siblings, 3 leg daughter of a leg);q_{inv} (GeV/c);log_{10} d_{min} (cm);log_{10} angle to the leg (rad);radius of the closest point (cm);B converts further out;p_{T} of B (GeV/c);all legs TPC shared fraction < 0.4", kTHnSparseF, {axType, {2, -0.5f, 1.5f}, {18, -0.5f, 17.5f}, {4, -0.5f, 3.5f}, {50, 0.f, 0.1f}, {40, -3.f, 2.f}, {40, -4.f, 0.5f}, {45, 0.f, 90.f}, {2, -0.5f, 1.5f}, {20, 0.f, 1.f}, {2, -0.5f, 1.5f}});
     registry.add("Mixed/Pairs/hSwapDecision", "full swaps after run 2 (classes 14 and 17);artificial event;0 created in run 2, 1 carried from run 1, 2 one of each;0 true pairings scored better, 1 swap scored better, 2 a true pairing failed the fit;q_{inv} (GeV/c);all legs TPC shared fraction < 0.4", kTHnSparseF, {axType, {3, -0.5f, 2.5f}, {3, -0.5f, 2.5f}, {50, 0.f, 0.1f}, {2, -0.5f, 1.5f}});
+    // prototype 2026-11-11: vertex-anchored pointing score next to the d_min tag, on the same pairs (after run 2, q < 50 MeV/c), with the MC check
+    // of the matched leg
+    registry.add("Mixed/Pairs/hBremsVtx", "photon pairs after run 2, pointing: d_{min} tag vs vertex-anchored score;artificial event;class (see mixFakeClass);q_{inv} (GeV/c);d_{min}: 0 < 0.1, 1 0.1-0.3, 2 0.3-1 cm, 3 > 1 cm or no point;angle < 0.1 rad;log_{10} tangent miss at B's conversion point (cm);log_{10} angle of B to the line emission point - conversion point (rad);p_{T} of B (GeV/c);d_{min} match: 0 pair not radiated, 1 leg is the true emitter, 2 wrong leg or role;score match: same;score (#sigma)", kTHnSparseF, {axType, {18, -0.5f, 17.5f}, {5, 0.f, 0.05f}, {4, -0.5f, 3.5f}, {2, -0.5f, 1.5f}, {16, -3.f, 1.f}, {16, -4.f, 0.f}, {std::vector<double>{0., 0.3, 0.6, 1., 10.}, "pT B"}, {3, -0.5f, 2.5f}, {3, -0.5f, 2.5f}, {20, 0.f, 10.f}, {std::vector<double>{0., 2., 5., 10., 20., 50., 200.}, "lever arm emission point - conversion point of B (cm)"}});
+    // data-driven bremsstrahlung template (mixed_group.fillBremsJoint): every pair of stored photons after run 2 below 100 MeV/c, once
+    const AxisSpec axCentJoint{std::vector<double>{0., 10., 20., 30., 40., 50., 60., 70., 80., 100.}, "centrality FT0C (%)"};
+    const AxisSpec axDEJoint{std::vector<double>{0., 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.5, 10.}, "|#Delta E| (GeV)"};
+    const AxisSpec axKtJoint{std::vector<double>{0., 0.3, 0.6, 1., 10.}, "k_{T} (GeV/c)"};
+    registry.add("Mixed/Pairs/hBremsJointNorm", "photon pairs after run 2 below 500 MeV/c, no pointing (mixed-event normalisation of hBremsJoint);artificial event;class (see mixFakeClass, 15 without labels);q_{inv} (GeV/c);|#Delta E| (GeV);k_{T} (GeV/c);centrality FT0C (%)", kTHnSparseF, {axType, {18, -0.5f, 17.5f}, {100, 0.f, 0.5f}, axDEJoint, axKtJoint, axCentJoint});
+    registry.add("Mixed/Pairs/hBremsAngle", "photon pairs after run 2 below 50 MeV/c with an allowed emission point at d_{min} < 1 cm: measured angle of the pointing and what sets its resolution;artificial event;class (see mixFakeClass, 15 without labels);q_{inv} (GeV/c);log_{10} angle of B to the leg tangent at the closest point (rad);p_{T} of B (GeV/c);p_{T} of the matched leg (GeV/c);closest point -> conversion point of B (cm);arc length from the leg's reference point to the closest point (cm)", kTHnSparseF, {axType, {18, -0.5f, 17.5f}, {10, 0.f, 0.05f}, {30, -3.f, 0.f}, {std::vector<double>{0., 0.2, 0.4, 0.6, 1., 10.}, "pT B"}, {std::vector<double>{0., 0.1, 0.2, 0.4, 1., 10.}, "pT leg"}, {std::vector<double>{0., 2., 5., 10., 20., 50., 200.}, "lever"}, {std::vector<double>{0., 5., 10., 20., 40., 100.}, "arc"}});
+    registry.add("Mixed/Pairs/hBremsJoint", "photon pairs after run 2 (data and MC);artificial event;class (see mixFakeClass, 15 without labels);q_{inv} (GeV/c);|#Delta E| (GeV);k_{T} (GeV/c);centrality FT0C (%);d_{min}: 0 < 0.1, 1 0.1-0.3, 2 0.3-1, 3 > 1 cm, 4 no allowed point;angle: 0 < 0.03, 1 0.03-0.1, 2 > 0.1 rad;vertex-anchored score (#sigma), last bin: none", kTHnSparseF, {axType, {18, -0.5f, 17.5f}, {20, 0.f, 0.1f}, {std::vector<double>{0., 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.5, 10.}, "dE"}, {std::vector<double>{0., 0.3, 0.6, 1., 10.}, "kT"}, axCentJoint, {5, -0.5f, 4.5f}, {3, -0.5f, 2.5f}, {std::vector<double>{0., 1., 2., 3., 5., 10., 12.}, "score"}});
+    registry.add("Mixed/hNStoredVsCent", "stored photons after run 2;artificial event;centrality FT0C (%);photons per event", kTH3F, {axType, {20, 0.f, 100.f}, {101, -0.5f, 100.5f}});
   }
 
   void initCCDB(MyBCs::iterator const& bc)
@@ -2875,11 +2887,16 @@ struct PhotonConversionBuilder {
   }
   struct BremsPointing {
     float dMin = 999.f, angle = 3.15f, rEmit = -1.f, outward = 0.f, ptB = 0.f;
+    int order = -1, leg = -1;                   //  0 = a radiates b, 1 = b radiates a; leg 0 positive, 1 negative
+    float ptLeg = 0.f, arc = 0.f, leverD = 0.f; 
+    float score = 1.e9f, missT = 999.f, thetaB = 3.15f, ptBV = 0.f, lever = 0.f;
+    int orderV = -1, legV = -1;
   };
   template <typename TLegs>
   BremsPointing mixBremsPointing(MixPairPhoton const& a, MixPairPhoton const& b, TLegs const& legs) const
   {
     constexpr float StepCm = 0.25f, MaxArcCm = 100.f, MarginCm = 2.f;
+    constexpr float MinLeverCm = 0.5f, SigB0 = 0.0066f, SigBPow = -0.3f, MinPtB = 0.1f, SigT0 = 0.004f, SigVtxCm = 0.4f;
     BremsPointing best;
     for (int order = 0; order < 2; ++order) {
       const auto& emitter = order == 0 ? a : b;
@@ -2890,7 +2907,9 @@ struct PhotonConversionBuilder {
       }
       const std::array<float, 3> u{brems.px / pB, brems.py / pB, brems.pz / pB};
       const float rA = std::hypot(emitter.vx, emitter.vy), rB = std::hypot(brems.vx, brems.vy);
+      int iLeg = -1;
       for (const int64_t row : {emitter.posRow, emitter.eleRow}) {
+        ++iLeg;
         const auto leg = legs.rawIteratorAt(row);
         const o2::track::TrackPar par(leg.x(), leg.alpha(), std::array<float, 5>{leg.y(), leg.z(), leg.snp(), leg.tgl(), leg.signed1Pt()});
         o2::math_utils::CircleXYf_t circle;
@@ -2927,6 +2946,31 @@ struct PhotonConversionBuilder {
             best.rEmit = rH;
             best.outward = rB > rA ? 1.f : 0.f;
             best.ptB = std::hypot(brems.px, brems.py);
+            best.order = order;
+            best.leg = iLeg;
+            best.ptLeg = std::fabs(leg.signed1Pt()) > 0.f ? 1.f / std::fabs(leg.signed1Pt()) : 0.f;
+            best.arc = std::fabs(s);
+            best.leverD = -t;
+          }
+          const float lever = std::hypot(d[0], d[1], d[2]); // emission point -> B's conversion point (d = point - conversion point)
+          if (lever > MinLeverCm) {
+            const std::array<float, 3> tanV{-sense * std::sin(psi) / norm, sense * std::cos(psi) / norm, tgl / norm};
+            const std::array<float, 3> chord{-d[0] / lever, -d[1] / lever, -d[2] / lever};
+            const float thT = std::acos(std::clamp(tanV[0] * chord[0] + tanV[1] * chord[1] + tanV[2] * chord[2], -1.f, 1.f));
+            const float thB = std::acos(std::clamp(u[0] * chord[0] + u[1] * chord[1] + u[2] * chord[2], -1.f, 1.f));
+            const float ptBrems = std::hypot(brems.px, brems.py);
+            const float sigB = std::hypot(SigB0 * std::pow(std::max(ptBrems, MinPtB), SigBPow), SigVtxCm / lever);
+            const float sigT = std::hypot(SigT0, SigVtxCm / lever);
+            const float sc = std::hypot(thT / sigT, thB / sigB);
+            if (sc < best.score) {
+              best.score = sc;
+              best.missT = lever * std::sin(thT);
+              best.thetaB = thB;
+              best.ptBV = ptBrems;
+              best.lever = lever;
+              best.orderV = order;
+              best.legV = iLeg;
+            }
           }
         }
       }
@@ -3018,11 +3062,45 @@ struct PhotonConversionBuilder {
     return 15.f;
   }
 
+  // data-driven bremsstrahlung template: all pairs of stored photons of one artificial event after run 2 below 500 MeV/c (normalisation), below 100 MeV/c with the
+  template <typename TLegs>
+  void fillBremsJoint(const float type, const float cent, std::vector<MixPairPhoton> const& photons, TLegs const& legs)
+  {
+    constexpr float MaxQNorm = 0.5f, MaxQ = 0.1f, MaxQAngle = 0.05f, DVTight = 0.1f, DTight = 0.3f, DLoose = 1.f, DNone = 100.f, AngleTight = 0.03f, AngleLoose = 0.1f, ScoreNone = 11.f, Half = 0.5f, LogFloorA = 1e-3f;
+    for (size_t i = 0; i < photons.size(); ++i) {
+      for (size_t j = i + 1; j < photons.size(); ++j) {
+        const auto& a = photons[i];
+        const auto& b = photons[j];
+        if (skipSameSourcePair(type, a, b)) {
+          continue;
+        }
+        const float q = qInv(a.px, a.py, a.pz, b.px, b.py, b.pz);
+        if (q >= MaxQNorm) {
+          continue;
+        }
+        const float cls = mixPairClass(a, b);
+        const float dE = std::fabs(std::hypot(a.px, a.py, a.pz) - std::hypot(b.px, b.py, b.pz));
+        const float kT = Half * std::hypot(a.px + b.px, a.py + b.py);
+        registry.fill(HIST("Mixed/Pairs/hBremsJointNorm"), type, cls, q, dE, kT, cent);
+        if (q >= MaxQ) {
+          continue;
+        }
+        const auto bp = mixBremsPointing(a, b, legs);
+        const float dCat = bp.dMin < DVTight ? 0.f : (bp.dMin < DTight ? 1.f : (bp.dMin < DLoose ? 2.f : (bp.dMin < DNone ? 3.f : 4.f)));
+        const float aCat = bp.angle < AngleTight ? 0.f : (bp.angle < AngleLoose ? 1.f : 2.f);
+        registry.fill(HIST("Mixed/Pairs/hBremsJoint"), type, cls, q, dE, kT, cent, dCat, aCat, std::min(bp.score, ScoreNone));
+        if (q < MaxQAngle && bp.dMin < DLoose) {
+          registry.fill(HIST("Mixed/Pairs/hBremsAngle"), type, cls, q, std::log10(std::max(bp.angle, LogFloorA)), bp.ptB, bp.ptLeg, bp.leverD, bp.arc);
+        }
+      }
+    }
+  }
   template <typename TLegs>
   void fillMixSwapBrems(const float type, const float stage, const int64_t colId, std::vector<MixPairPhoton> const& photons,
                         std::map<std::tuple<int64_t, int64_t, int64_t>, float> const& candScore, TLegs const& legs)
   {
     constexpr float MaxQ = 0.1f, MaxShared = 0.4f;
+    constexpr float MaxQVtx = 0.05f, DTagVTight = 0.1f, DTagTight = 0.3f, DTagLoose = 1.f, AngleTag = 0.1f, ScoreClip = 9.99f, StageAfter = 0.5f, LogFloorD = 1e-3f, LogFloorA = 1e-4f;
     auto score = [&](int64_t pos, int64_t ele) {
       const auto it = candScore.find({colId, pos, ele});
       return it == candScore.end() ? -1.f : it->second;
@@ -3041,6 +3119,25 @@ struct PhotonConversionBuilder {
         const float cls = mixPairClass(a, b);
         const float clean = mixPairGeometry(a, b)[2] < MaxShared ? 1.f : 0.f;
         const auto bp = mixBremsPointing(a, b, legs);
+        if (stage > StageAfter && q < MaxQVtx) {
+          auto match = [&](const int order, const int iLeg) {
+            if (order < 0) {
+              return 0.f;
+            }
+            const auto& emitter = order == 0 ? a : b;
+            const auto& brems = order == 0 ? b : a;
+            const auto& y = iLeg == 0 ? emitter.posMC : emitter.eleMC;
+            for (const auto& x : {&brems.posMC, &brems.eleMC}) {
+              if (x->evt == y.evt && x->gmid >= 0 && x->gmid == y.pid) {
+                return 1.f;
+              }
+            }
+            return mixRelKind(a, b) == 1 ? 2.f : 0.f;
+          };
+          const float dCat = bp.dMin < DTagVTight ? 0.f : (bp.dMin < DTagTight ? 1.f : (bp.dMin < DTagLoose ? 2.f : 3.f));
+          registry.fill(HIST("Mixed/Pairs/hBremsVtx"), type, cls, q, dCat, bp.angle < AngleTag ? 1.f : 0.f, std::log10(std::max(bp.missT, LogFloorD)), std::log10(std::max(bp.thetaB, LogFloorA)),
+                        bp.ptBV, match(bp.order, bp.leg), match(bp.orderV, bp.legV), std::min(bp.score, ScoreClip), bp.lever);
+        }
         registry.fill(HIST("Mixed/Pairs/hBrems"), type, stage, cls, static_cast<float>(mixRelKind(a, b)), q,
                       std::log10(std::max(bp.dMin, 1e-3f)), std::log10(std::max(bp.angle, 1e-4f)), bp.rEmit, bp.outward, bp.ptB, clean); // o2-linter: disable=magic-number (log floors)
         if (stage < 0.5f || (cls != 14.f && cls != 17.f)) {                                                                              // o2-linter: disable=magic-number (swap classes)
@@ -3806,6 +3903,12 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("Mixed/hNStoredVsIn"), type, nIn, n[0] + n[1]);
       registry.fill(HIST("Mixed/hNOriginalLost"), type, nIn - n[0]);
       registry.fill(HIST("Mixed/hNCrossedStored"), type, n[1]);
+      if (mixed.fillBremsJoint) {
+        registry.fill(HIST("Mixed/hNStoredVsCent"), type, collision.centFT0C(), n[0] + n[1]);
+        if (const auto itJ = after.find(collision.globalIndex()); itJ != after.end()) {
+          fillBremsJoint(type, collision.centFT0C(), itJ->second, legs);
+        }
+      }
       if (const auto itA = after.find(collision.globalIndex()); mixed.mixedDiagnostics && itA != after.end()) {
         fillMixPairs<true>(type, itA->second);
         fillSameSourcePairs(type, itA->second);
