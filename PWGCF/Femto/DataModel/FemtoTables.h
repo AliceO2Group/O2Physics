@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/modes.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -245,6 +246,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! momentum
 DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! theta
                            [](float eta) -> float {
                              return 2.f * std::atan(std::exp(-eta));
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! rapidity -- mass is not a stored column, so it is passed in as an
+                                 //! extra free argument at the call site, e.g. mother.y(mass)
+                           [](float signedPt, float eta, float mass) -> float {
+                             return RecoDecayPtEtaPhi::y(std::fabs(signedPt), eta, mass);
                            });
 } // namespace dynamic
 
@@ -1761,7 +1767,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first dir
                                    femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>,
+                                   femtobase::dynamic::Y<femtobase::stored::SignedPt, femtobase::stored::Eta>); // mass is a free argument, e.g. mother.y(mass)
 
 using FMcMothers = FMcMothers_001;
 using FMcMother = FMcMothers::iterator;
