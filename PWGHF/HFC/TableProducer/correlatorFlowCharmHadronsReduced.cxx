@@ -35,7 +35,6 @@
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
-#include <RtypesCore.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
@@ -43,8 +42,10 @@
 #include <TObject.h>
 #include <TString.h>
 
-#include <cmath>
+#include <RtypesCore.h>
+
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
