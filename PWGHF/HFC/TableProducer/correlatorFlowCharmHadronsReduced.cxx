@@ -22,6 +22,7 @@
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
@@ -34,13 +35,16 @@
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH3F.h>
+#include <RtypesCore.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <THnSparse.h>
 #include <TObject.h>
+#include <TString.h>
 
 #include <cmath>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -99,24 +103,24 @@ struct HadHadPairFromCharmTables {
   void setDcaZAssoc(float val) { fDcaZAssoc = val; }
 
   // Access methods to mimic the HfcRedSEHadHads table structure
-  float ptTrig() const { return fPtTrig; }
-  float ptAssoc() const { return fPtAssoc; }
-  float etaTrig() const { return fEtaTrig; }
-  float etaAssoc() const { return fEtaAssoc; }
-  float deltaEta() const { return fDeltaEta; }
-  float phiTrig() const { return fPhiTrig; }
-  float phiAssoc() const { return fPhiAssoc; }
-  float deltaPhi() const { return fDeltaPhi; }
-  int nTpcCrossedRowsTrig() const { return fNTpcCrossedRowsTrig; }
-  int itsClsMapTrig() const { return fItsClsMapTrig; }
-  int itsNClsTrig() const { return fItsNClsTrig; }
-  float dcaXYTrig() const { return fDcaXYTrig; }
-  float dcaZTrig() const { return fDcaZTrig; }
-  int nTpcCrossedRowsAssoc() const { return fNTpcCrossedRowsAssoc; }
-  int itsClsMapAssoc() const { return fItsClsMapAssoc; }
-  int itsNClsAssoc() const { return fItsNClsAssoc; }
-  float dcaXYAssoc() const { return fDcaXYAssoc; }
-  float dcaZAssoc() const { return fDcaZAssoc; }
+  [[nodiscard]] float ptTrig() const { return fPtTrig; }
+  [[nodiscard]] float ptAssoc() const { return fPtAssoc; }
+  [[nodiscard]] float etaTrig() const { return fEtaTrig; }
+  [[nodiscard]] float etaAssoc() const { return fEtaAssoc; }
+  [[nodiscard]] float deltaEta() const { return fDeltaEta; }
+  [[nodiscard]] float phiTrig() const { return fPhiTrig; }
+  [[nodiscard]] float phiAssoc() const { return fPhiAssoc; }
+  [[nodiscard]] float deltaPhi() const { return fDeltaPhi; }
+  [[nodiscard]] int nTpcCrossedRowsTrig() const { return fNTpcCrossedRowsTrig; }
+  [[nodiscard]] int itsClsMapTrig() const { return fItsClsMapTrig; }
+  [[nodiscard]] int itsNClsTrig() const { return fItsNClsTrig; }
+  [[nodiscard]] float dcaXYTrig() const { return fDcaXYTrig; }
+  [[nodiscard]] float dcaZTrig() const { return fDcaZTrig; }
+  [[nodiscard]] int nTpcCrossedRowsAssoc() const { return fNTpcCrossedRowsAssoc; }
+  [[nodiscard]] int itsClsMapAssoc() const { return fItsClsMapAssoc; }
+  [[nodiscard]] int itsNClsAssoc() const { return fItsNClsAssoc; }
+  [[nodiscard]] float dcaXYAssoc() const { return fDcaXYAssoc; }
+  [[nodiscard]] float dcaZAssoc() const { return fDcaZAssoc; }
 };
 
 /// Get charm candidate or hadron track pT
@@ -430,7 +434,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
       case kTH1: {
         auto* h = dynamic_cast<TH1*>(hist);
-        if (!h || kineFeatures.size() < 1) {
+        if (!h || kineFeatures.empty()) {
           return 0.;
         }
         return h->GetBinContent(h->FindBin(kineFeatures[0]));
@@ -797,7 +801,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   HadHadPairFromCharmTables buildHadHadPair(TAssTrk const& trigger,
                                             TAssTrk const& assoc)
   {
-    HadHadPairFromCharmTables pair;
+    HadHadPairFromCharmTables pair{};
 
     pair.setPtTrig(trigger.ptAssoc());
     pair.setPtAssoc(assoc.ptAssoc());
@@ -985,7 +989,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processCharmTriggersWEffInfo, "Process charm trigger info with efficiency", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorFlowCharmHadronsReduced>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorFlowCharmHadronsReduced>(context)};
 }
