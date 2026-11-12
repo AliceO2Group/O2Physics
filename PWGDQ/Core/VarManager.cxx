@@ -134,6 +134,10 @@ void VarManager::SetVariableDependencies()
   }
   if (fgUsedVars[kTrackIsInsideTPCModule]) {
     fgUsedVars[kPhiTPCOuter] = true;
+    fgUsedVars[kLocalSectorPhi] = true;
+  }
+  if (fgUsedVars[kLocalSectorPhi]) {
+    fgUsedVars[kPhiTPCOuter] = true;
   }
 }
 
@@ -1020,6 +1024,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kEta] = "";
   fgVariableNames[kPhi] = "#varphi";
   fgVariableUnits[kPhi] = "rad.";
+  fgVariableNames[kLocalSectorPhi] = "local sector #varphi";
+  fgVariableUnits[kLocalSectorPhi] = "rad.";
   fgVariableNames[kRap] = "y";
   fgVariableUnits[kRap] = "";
   fgVariableNames[kMass] = "mass";
@@ -1079,6 +1085,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCnCRoverFindCls] = "";
   fgVariableNames[kTPCchi2] = "TPC chi2";
   fgVariableUnits[kTPCchi2] = "";
+  fgVariableNames[kTPCFractionSharedCls] = "TPC fraction shared clusters";
+  fgVariableUnits[kTPCFractionSharedCls] = "";
   fgVariableNames[kTPCsignal] = "TPC dE/dx";
   fgVariableUnits[kTPCsignal] = "";
   fgVariableNames[kPhiTPCOuter] = "#varphi_{TPCout}";
@@ -2407,6 +2415,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kUsedKF"] = kUsedKF;
   fgVarNamesMap["kKFMass"] = kKFMass;
   fgVarNamesMap["kKFMassGeoTop"] = kKFMassGeoTop;
+  fgVarNamesMap["kLocalSectorPhi"] = kLocalSectorPhi;
   fgVarNamesMap["kPt1"] = kPt1;
   fgVarNamesMap["kEta1"] = kEta1;
   fgVarNamesMap["kPhi1"] = kPhi1;
@@ -2462,6 +2471,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTPCnclsCR"] = kTPCnclsCR;
   fgVarNamesMap["kTPCnCRoverFindCls"] = kTPCnCRoverFindCls;
   fgVarNamesMap["kTPCchi2"] = kTPCchi2;
+  fgVarNamesMap["kTPCFractionSharedCls"] = kTPCFractionSharedCls;
   fgVarNamesMap["kTPCsignal"] = kTPCsignal;
   fgVarNamesMap["kPhiTPCOuter"] = kPhiTPCOuter;
   fgVarNamesMap["kTrackIsInsideTPCModule"] = kTrackIsInsideTPCModule;
