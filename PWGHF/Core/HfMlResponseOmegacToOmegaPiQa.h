@@ -75,6 +75,7 @@ enum class InputFeaturesOmegacToOmegaPiQa : uint8_t {
   cpaCascade,
   cpaCascadeToCharmHadron,
   cosThetaStarPiFromOmegac,
+  decayLengthNormalised,
   decayLengthXY,
   decayLengthXYNormalised,
   decayLengthXYCascade,
@@ -127,6 +128,7 @@ class HfMlResponseOmegacToOmegaPiQa : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_OMEGAC0(cpaCascade);
         CHECK_AND_FILL_VEC_OMEGAC0(cpaCascadeToCharmHadron);
         CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER(candidate, cosThetaStarPiFromOmegac, cosThetaStarOmegaczeroToOmegaPi);
+        CHECK_AND_FILL_VEC_OMEGAC0(decayLengthNormalised);
         CHECK_AND_FILL_VEC_OMEGAC0(decayLengthXY);
         CHECK_AND_FILL_VEC_OMEGAC0(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_OMEGAC0(decayLengthXYCascade);
@@ -170,6 +172,7 @@ class HfMlResponseOmegacToOmegaPiQa : public HfMlResponse<TypeOutputScore>
       FILL_MAP_OMEGAC0(cpaCascade),
       FILL_MAP_OMEGAC0(cpaCascadeToCharmHadron),
       FILL_MAP_OMEGAC0(cosThetaStarPiFromOmegac),
+      FILL_MAP_OMEGAC0(decayLengthNormalised),
       FILL_MAP_OMEGAC0(decayLengthXY),
       FILL_MAP_OMEGAC0(decayLengthXYNormalised),
       FILL_MAP_OMEGAC0(decayLengthXYCascade),
