@@ -155,8 +155,8 @@ struct AnalysisEnergyCorrelator {
   MixingHandler* fMixHandler = nullptr;
 
   AnalysisCompositeCut* fEventCut = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;  // Electron cuts
-  std::vector<AnalysisCompositeCut*> fHadronCuts; // Hadron cuts
+  std::vector<AnalysisCut*> fTrackCuts;  // Electron cuts
+  std::vector<AnalysisCut*> fHadronCuts; // Hadron cuts
 
   std::vector<TString> fTrackCutNames;
   std::vector<TString> fHadronCutNames;
@@ -240,7 +240,7 @@ struct AnalysisEnergyCorrelator {
     if (trackCutsJSON != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(trackCutsJSON.Data());
       for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
         fTrackCutNames.push_back(t->GetName());
         trackCutStr += Form(",%s", t->GetName());
       }
@@ -313,7 +313,7 @@ struct AnalysisEnergyCorrelator {
     if (hadronCutsJSON != "") {
       std::vector<AnalysisCut*> addHadronCuts = dqcuts::GetCutsFromJSON(hadronCutsJSON.Data());
       for (auto& t : addHadronCuts) {
-        fHadronCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fHadronCuts.push_back(t);
         fHadronCutNames.push_back(t->GetName());
         hadronCutStr += Form(",%s", t->GetName());
       }

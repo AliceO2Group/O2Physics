@@ -676,7 +676,7 @@ struct AnalysisTrackSelection {
   Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
   std::vector<MCSignal*> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
@@ -706,7 +706,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto const& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
