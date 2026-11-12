@@ -1104,8 +1104,8 @@ struct Lambdastarproxy {
   static constexpr int PdgLambdaStar = static_cast<int>(PDG_t::kLambda1520);
   static constexpr int PdgDeuteron = static_cast<int>(o2::constants::physics::Pdg::kDeuteron);
   enum class TrackSpectrumSpecies : size_t { Deuteron,
-                                            Proton,
-                                            Kaon };
+                                             Proton,
+                                             Kaon };
   static constexpr size_t TrackSpectrumSpeciesCount = 3;
   static constexpr size_t TrackSpectrumChargeCount = 2;
   static constexpr int TrackSpectrumPtBins = 200;
@@ -1114,10 +1114,10 @@ struct Lambdastarproxy {
   static constexpr std::array<double, TrackSpectrumSpeciesCount> TrackSpectrumMasses{o2::constants::physics::MassDeuteron, o2::constants::physics::MassProton, o2::constants::physics::MassKaonCharged};
   static constexpr std::array<int, TrackSpectrumSpeciesCount> TrackSpectrumPdgs{PdgDeuteron, PdgProton, PdgKaon};
   enum class TrackSpectrumTruth : int { Unmatched,
-                                       WrongIdentity,
-                                       WrongCollision,
-                                       NonPrimary,
-                                       Primary };
+                                        WrongIdentity,
+                                        WrongCollision,
+                                        NonPrimary,
+                                        Primary };
   static constexpr int TrackSpectrumTruthClasses = 5;
   struct TrackSpectraHistograms {
     std::array<std::array<std::shared_ptr<TH1>, TrackSpectrumChargeCount>, TrackSpectrumSpeciesCount> pt{};
@@ -1144,8 +1144,7 @@ struct Lambdastarproxy {
     trackSpectra.eventsFT0M = histos.add<TH1>("hTrackSpectraEventsVsFT0M", "Selected events for pT-versus-FT0M normalization, including zero candidates;regular raw FT0M percentile;Events", HistType::kTH1D, {ft0m}, true);
     if (doprocessMCReco) {
       trackSpectra.mcTruth = histos.add<TH3>("hMCTrackSpectraTruth", "Same raw selected tracks:0=unmatched,1=wrong species/charge,2=wrong MC collision,3=correct nonprimary,4=correct primary;full pT;role=2*species+negativeCharge (d=0,p=1,K=2);truth class",
-                                            HistType::kTH3D, {pt, AxisSpec{TrackSpectrumSpeciesCount * TrackSpectrumChargeCount, -0.5, TrackSpectrumSpeciesCount * TrackSpectrumChargeCount - 0.5, "Species/charge role"},
-                                                             AxisSpec{TrackSpectrumTruthClasses, -0.5, TrackSpectrumTruthClasses - 0.5, "Truth class"}}, true);
+                                             HistType::kTH3D, {pt, AxisSpec{TrackSpectrumSpeciesCount * TrackSpectrumChargeCount, -0.5, TrackSpectrumSpeciesCount * TrackSpectrumChargeCount - 0.5, "Species/charge role"}, AxisSpec{TrackSpectrumTruthClasses, -0.5, TrackSpectrumTruthClasses - 0.5, "Truth class"}}, true);
     }
   }
 
@@ -1393,7 +1392,7 @@ struct Lambdastarproxy {
       dePurity.dePurityMass2AfterTPC[sign] = add("hDeuteronPurityMass2AfterTPC" + suffix, "After only TPC-d window and common track quality;valid TOF;before d-only and TOF PID cuts", mass2);
       dePurity.dePurityMass2Selected[sign] = add("hDeuteronPurityMass2Selected" + suffix, "Final selected proxy tracks;valid TOF beta only", mass2);
       dePurity.dePurityTrackStages[sign] = add("hDeuteronPurityTrackStages" + suffix, "Unique track rows per stage;full p;hasTOF+2*stage (0=common quality,1=TPC window,2=final proxy selection)",
-                                      AxisSpec{DeuteronPIDStatesPerCharge, -0.5, DeuteronPIDStatesPerCharge - 0.5, "hasTOF+2*stage"});
+                                               AxisSpec{DeuteronPIDStatesPerCharge, -0.5, DeuteronPIDStatesPerCharge - 0.5, "hasTOF+2*stage"});
     }
     if (doprocessMCReco) {
       dePurity.dePurityMCSpecies = histos.add<TH3>("hMCDeuteronPurityTrackSpecies", "Unique track rows: e,mu,pi,K,p,d,other,unmatched,wrong-charge;full p;species;hasTOF+2*stage+6*negativeCharge",
