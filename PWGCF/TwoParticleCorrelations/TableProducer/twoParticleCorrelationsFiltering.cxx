@@ -69,7 +69,7 @@ struct TwoParticleCorrelationsFiltering {
 
 #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
-  int nReportedTracks;
+  int nReportedTracks{};
   //  HistogramRegistry historeg;
 
   void init(InitContext const&)
@@ -132,7 +132,7 @@ struct TwoParticleCorrelationsFiltering {
 
     if ((collision.selFlags() & collisionmaskForced) == collisionmaskForced && passOptions(collisionmaskOptional, collision.selFlags())) {
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selFlags(), tracks.size());
-      acceptedcollisions(collision.centMult()[fMultiplicityIndex], uint8_t(true));
+      acceptedcollisions(collision.centMult()[fMultiplicityIndex], static_cast<uint8_t>(true));
       int nAcceptedTracks = 0;
       for (const auto& track : tracks) {
         if ((track.trackFlags() & trackmaskForced) == trackmaskForced && passOptions(trackmaskOptional, track.trackFlags())) {
@@ -144,7 +144,7 @@ struct TwoParticleCorrelationsFiltering {
       }
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %d accepted tracks", collision.selFlags(), nAcceptedTracks);
     } else {
-      acceptedcollisions(collision.centMult()[fMultiplicityIndex], uint8_t(false));
+      acceptedcollisions(collision.centMult()[fMultiplicityIndex], static_cast<uint8_t>(false));
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsFiltering, processRun2, "Process Run 2, i.e. over NOT stored derived data, two particle correlations filtering", true);
@@ -163,7 +163,7 @@ struct TwoParticleCorrelationsFiltering {
 
     if ((collision.selFlags() & collisionmaskForced) == collisionmaskForced && passOptions(collisionmaskOptional, collision.selFlags())) {
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %ld unfiltered tracks", collision.selFlags(), tracks.size());
-      acceptedcollisions(collision.centMult()[fMultiplicityIndex], uint8_t(true));
+      acceptedcollisions(collision.centMult()[fMultiplicityIndex], static_cast<uint8_t>(true));
       int nAcceptedTracks = 0;
       for (const auto& track : tracks) {
         if ((track.trackFlags() & trackmaskForced) == trackmaskForced && passOptions(trackmaskOptional, track.trackFlags())) {
@@ -175,7 +175,7 @@ struct TwoParticleCorrelationsFiltering {
       }
       LOGF(TWOPFILTERLOGCOLLISIONS, ">> Accepted collision with mask 0x%016lx and %d accepted tracks", collision.selFlags(), nAcceptedTracks);
     } else {
-      acceptedcollisions(collision.centMult()[fMultiplicityIndex], uint8_t(false));
+      acceptedcollisions(collision.centMult()[fMultiplicityIndex], static_cast<uint8_t>(false));
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsFiltering, processRun3, "Process Run 3, i.e. over stored derived data, two particle correlations filtering", false);

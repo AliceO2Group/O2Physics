@@ -36,11 +36,7 @@
 #include <utility>
 #include <vector>
 
-namespace o2
-{
-namespace analysis
-{
-namespace pwgcf
+namespace o2::analysis::pwgcf
 {
 /// \class CutBrick
 /// \brief Virtual class which implements the base component of the selection cuts
@@ -55,7 +51,6 @@ class CutBrick : public TNamed
   ~CutBrick() override = default;
   CutBrick& operator=(const CutBrick&) = delete;
 
- public:
   /// Returns whether the cut brick is active allowing the selection
   /// \return true if the brick is active
   bool isActive() { return mState == kACTIVE; }
@@ -476,7 +471,6 @@ class SpecialCutBrick : public TNamed
   ~SpecialCutBrick() override = default;
   SpecialCutBrick& operator=(const SpecialCutBrick&) = delete;
 
- public:
   /// Returns whether the cut brick is active allowing the selection
   /// \return true if the brick is active
   bool isActive() { return mState == kACTIVE; }
@@ -492,7 +486,6 @@ class SpecialCutBrick : public TNamed
   /// Set the status of the cut significative (or not) for the selection chain
   void arm(bool doit = true) { doit ? mMode = kSELECTED : mMode = kUNSELECTED; }
 
- protected:
   /// \enum BrickStatus
   /// \brief The status of the brick
   enum BrickStatus {
@@ -557,10 +550,9 @@ class TrackSelectionBrick : public SpecialCutBrick
         (mCheckMaxDcaZ && (std::abs(track.dcaZ()) <= mMaxDcaZ))) {
       this->mState = this->kACTIVE;
       return true;
-    } else {
-      this->mState = this->kPASSIVE;
-      return false;
     }
+    this->mState = this->kPASSIVE;
+    return false;
   }
 
   int length() override { return 1; }
@@ -612,9 +604,9 @@ class TrackSelectionBrick : public SpecialCutBrick
   float mMaxChi2PerClusterITS{1e10f};                 // max its fit chi2 per ITS cluster
   float mMinNCrossedRowsOverFindableClustersTPC{0.f}; // min ratio crossed rows / findable clusters
 
-  float mMaxDcaXY{1e10f};                       // max dca in xy plane
-  float mMaxDcaZ{1e10f};                        // max dca in z direction
-  std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  float mMaxDcaXY{1e10f};                     // max dca in xy plane
+  float mMaxDcaZ{1e10f};                      // max dca in z direction
+  std::function<float(float)> mMaxDcaXYPtDep; // max dca in xy plane as function of pT
 
   bool mRequireITSRefit{false};   // require refit in ITS
   bool mRequireTPCRefit{false};   // require refit in TPC
@@ -630,13 +622,11 @@ class TrackSelectionBrick : public SpecialCutBrick
   bool mCheckMaxDcaZ{true};                                // check max dca in z direction
 
   // vector of ITS requirements (minNRequiredHits in specific requiredLayers)
-  std::vector<std::pair<int8_t, std::set<uint8_t>>> mRequiredITSHits{};
+  std::vector<std::pair<int8_t, std::set<uint8_t>>> mRequiredITSHits;
 
   ClassDefOverride(TrackSelectionBrick, 1);
 };
 
-} // namespace pwgcf
-} // namespace analysis
-} // namespace o2
+} // namespace o2::analysis::pwgcf
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_SKIMMINGCONFIGURABLECUTS_H_

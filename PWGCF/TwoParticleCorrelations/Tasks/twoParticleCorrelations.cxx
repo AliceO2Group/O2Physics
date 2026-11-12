@@ -135,7 +135,7 @@ struct TwoParticleCorrelations {
     // The TwoParticleCorrelationsAnalysisTask output objects
     //============================================================================================
     /* histograms */
-    TH1F* fhVertexZA;                                       //!<! the z vertex distribution for the current multiplicity/centrality class
+    TH1F* fhVertexZA{};                                     //!<! the z vertex distribution for the current multiplicity/centrality class
     std::vector<TH1F*> fhN1VsPt;                            //!<! weighted single particle distribution vs \f$p_T\f$
     std::vector<TH2F*> fhN1VsEtaPhi;                        //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$
     std::vector<TH2F*> fhSum1PtVsEtaPhi;                    //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$
@@ -166,7 +166,7 @@ struct TwoParticleCorrelations {
 
     float isCCDBstored()
     {
-      return ccdbstored;
+      return static_cast<float>(ccdbstored);
     }
 
     /// \brief Returns the potentially phi origin shifted phi
@@ -177,9 +177,8 @@ struct TwoParticleCorrelations {
       using namespace twopcorrelations;
       if (!(phi < phiup)) {
         return phi - constants::math::TwoPI;
-      } else {
-        return phi;
       }
+      return phi;
     }
 
     /// \brief Returns the zero based bin index of the eta phi passed track
@@ -431,7 +430,7 @@ struct TwoParticleCorrelations {
       /* load the species names */
       for (const auto& id : idnames) {
         LOGF(info, "Adding particle species %s", id.c_str());
-        tname.push_back(std::string(id.c_str()));
+        tname.push_back(std::string(id));
       }
       /* reserve the histograms place holders */
       for (uint i = 0; i < tname.size(); ++i) {
@@ -605,7 +604,7 @@ struct TwoParticleCorrelations {
 /* the skimming configuration */
 #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   /* the data memebers for this task */
   /* the centrality / multiplicity limits for collecting data in this task instance */
@@ -631,7 +630,7 @@ struct TwoParticleCorrelations {
   Configurable<std::string> cfgCentSpec{"cfgCentSpec", "00-05,05-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
 
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"cfgBinning",
-                                                           {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
+                                                           {.mZVtxbins = 28, .mZVtxmin = -7.0, .mZVtxmax = 7.0, .mPTbins = 18, .mPTmin = 0.2, .mPTmax = 2.0, .mEtabins = 16, .mEtamin = -0.8, .mEtamax = 0.8, .mPhibins = 72, .mPhibinshift = 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
   struct : ConfigurableGroup {
     Configurable<std::string> cfgCCDBUrl{"cfgCCDBUrl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
@@ -661,7 +660,7 @@ struct TwoParticleCorrelations {
     phiup = constants::math::TwoPI;
     phibinshift = cfgBinning->mPhibinshift;
     processpairs = cfgProcessPairs.value;
-    loadfromccdb = cfginputfile.cfgCCDBPathName->length() > 0;
+    loadfromccdb = !cfginputfile.cfgCCDBPathName->empty();
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
     phibinwidth = (phiup - philow) / static_cast<float>(phibins);
@@ -676,7 +675,7 @@ struct TwoParticleCorrelations {
     deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
     /* create the output directory which will own the task output */
-    TList* fGlobalOutputList = new TList();
+    auto* fGlobalOutputList = new TList();
     fGlobalOutputList->SetOwner(true);
     fOutput.setObject(fGlobalOutputList);
 
@@ -717,7 +716,7 @@ struct TwoParticleCorrelations {
         dataCE[i] = new DataCollectingEngine();
 
         /* create the output list for the current centrality range */
-        TList* fOutputList = new TList();
+        auto* fOutputList = new TList();
         fOutputList->SetName(TString::Format("DptDptCorrelationsData-%s", tokens->At(i)->GetName()));
         fOutputList->SetOwner(true);
         /* init the data collection instance */
@@ -812,7 +811,7 @@ struct TwoParticleCorrelations {
     cfgtm.tm_hour = 12;
     uint64_t timestamp = std::mktime(&cfgtm) * 1000;
 
-    TList* lst = ccdb->getForTimeStamp<TList>(ccdbpath, timestamp);
+    auto* lst = ccdb->getForTimeStamp<TList>(ccdbpath, timestamp);
     if (lst != nullptr) {
       LOGF(info, "Correctly loaded CCDB input object");
     } else {
@@ -883,10 +882,10 @@ struct TwoParticleCorrelations {
         int ixDCE = getDCEindex(collision);
         if (!(ixDCE < 0)) {
           if (ccdblst != nullptr && !dataCE[ixDCE]->isCCDBstored()) {
-            dataCE[ixDCE]->storeTrackCorrections(std::vector<TH3*>{static_cast<TH3*>(ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())),
-                                                                   static_cast<TH3*>(ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()))});
-            dataCE[ixDCE]->storePtAverages(std::vector<TH2*>{static_cast<TH2*>(ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())),
-                                                             static_cast<TH2*>(ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()))});
+            dataCE[ixDCE]->storeTrackCorrections(std::vector<TH3*>{dynamic_cast<TH3*>(ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())),
+                                                                   dynamic_cast<TH3*>(ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()))});
+            dataCE[ixDCE]->storePtAverages(std::vector<TH2*>{dynamic_cast<TH2*>(ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data())),
+                                                             dynamic_cast<TH2*>(ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE])).Data()))});
           }
         }
         /* magnetic field equal to zero for the time being */

@@ -48,49 +48,33 @@ PIDSelectionConfigurable::PIDSelectionConfigurable(std::vector<std::string> pidt
 PIDSelectionConfigurable::PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,
                                                    std::vector<std::string> pidtofel, std::vector<std::string> pidtofmu, std::vector<std::string> pidtofpi, std::vector<std::string> pidtofka, std::vector<std::string> pidtofpr)
 #endif
-  : mPidTpcSelEl{},
-    mPidTpcSelMu{},
-    mPidTpcSelPi{},
-    mPidTpcSelKa{},
-    mPidTpcSelPr{},
-    mPidTofSelEl{},
-    mPidTofSelMu{},
-    mPidTofSelPi{},
-    mPidTofSelKa{},
-    mPidTofSelPr{},
-    mPidBaySelEl{},
-    mPidBaySelMu{},
-    mPidBaySelPi{},
-    mPidBaySelKa{},
-    mPidBaySelPr{}
+
 {
   auto storeCutString = [](auto& selvector, const std::string& selname) {
     if (selvector.size() != 0) {
       if (selvector.size() == 1) {
         if (selvector[0].size() != 0) {
           return TString::Format("%s{%s}", selname.c_str(), selvector[0].c_str());
-        } else {
-          return TString("");
         }
-      } else {
-        TString scut = selname + "{cwv{";
-        bool def = true;
-        bool firstvar = true;
-        for (const auto& cut : selvector) {
-          if (def) {
-            scut += cut + ':';
-            def = false;
-          } else {
-            if (not firstvar) {
-              scut += ',';
-            }
-            scut += cut;
-            firstvar = false;
-          }
-        }
-        scut += "}}";
-        return scut;
+        return TString("");
       }
+      TString scut = selname + "{cwv{";
+      bool def = true;
+      bool firstvar = true;
+      for (const auto& cut : selvector) {
+        if (def) {
+          scut += cut + ':';
+          def = false;
+        } else {
+          if (not firstvar) {
+            scut += ',';
+          }
+          scut += cut;
+          firstvar = false;
+        }
+      }
+      scut += "}}";
+      return scut;
     }
     return TString("");
   };
@@ -120,11 +104,7 @@ const std::vector<std::string> PIDSelectionFilterAndAnalysis::mSpeciesNames = {"
 
 /// \brief Default constructor
 PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis()
-  : SelectionFilterAndAnalysis(),
-    mPTOF(0.8f),
-    mRequireTOF(false),
-    mEllipticTPCTOF(false),
-    mCloseNsigmasTPC(kNoOfSpecies, nullptr),
+  : mCloseNsigmasTPC(kNoOfSpecies, nullptr),
     mCloseNsigmasTOF(kNoOfSpecies, nullptr),
     mBayesProbability(kNoOfSpecies, nullptr)
 {
@@ -133,9 +113,7 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis()
 /// \brief Constructor from regular expression
 PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const TString& cutstr, Selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
-    mPTOF(0.8f),
-    mRequireTOF(false),
-    mEllipticTPCTOF(false),
+
     mCloseNsigmasTPC(kNoOfSpecies, nullptr),
     mCloseNsigmasTOF(kNoOfSpecies, nullptr),
     mBayesProbability(kNoOfSpecies, nullptr)
@@ -146,9 +124,7 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const TString& cuts
 /// \brief Constructor from the PID selection configurable
 PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const PIDSelectionConfigurable& pidsel, Selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
-    mPTOF(0.8f),
-    mRequireTOF(false),
-    mEllipticTPCTOF(false),
+
     mCloseNsigmasTPC(kNoOfSpecies, nullptr),
     mCloseNsigmasTOF(kNoOfSpecies, nullptr),
     mBayesProbability(kNoOfSpecies, nullptr)
@@ -158,7 +134,7 @@ PIDSelectionFilterAndAnalysis::PIDSelectionFilterAndAnalysis(const PIDSelectionC
   constexpr int MaxLength = 64;
 
   auto appendCut = [&cutString, &first](const std::string& str) {
-    if (str.size() > 0) {
+    if (!str.empty()) {
       if (first) {
         cutString += str;
         first = false;
@@ -275,9 +251,8 @@ void PIDSelectionFilterAndAnalysis::constructCutFromString(const TString& cutstr
           regex cutregex3l("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
           smatch m3l;
           auto storeCut = [&m3l, &allowed](CutBrick<float>*& brickvar) {
-            if (brickvar != nullptr) {
-              delete brickvar;
-            }
+            delete brickvar;
+
             brickvar = CutBrick<float>::constructBrick(m3l[1].str().c_str(), m3l[2].str().c_str(), allowed);
           };
           lev3str.Remove(TString::kLeading, ' ');

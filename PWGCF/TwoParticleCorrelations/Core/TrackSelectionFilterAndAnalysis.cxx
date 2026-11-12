@@ -52,45 +52,33 @@ TrackSelectionConfigurable::TrackSelectionConfigurable(const std::vector<std::st
                                                        std::vector<std::string> dcaz,
                                                        std::vector<std::string> ptrange,
                                                        std::vector<std::string> etarange)
-  : mTrackTypes{},
-    mNClustersTPC{},
-    mNCrossedRowsTPC{},
-    mNClustersITS{},
-    mMaxChi2PerClusterTPC{},
-    mMaxChi2PerClusterITS{},
-    mMinNCrossedRowsOverFindableClustersTPC{},
-    mMaxDcaXY{},
-    mMaxDcaZ{},
-    mPtRange{},
-    mEtaRange{}
+
 {
   auto storeCutString = [](auto& selvector, const std::string& selname) {
     if (selvector.size() != 0) {
       if (selvector.size() == 1) {
         if (selvector[0].size() != 0) {
           return TString::Format("%s{%s}", selname.c_str(), selvector[0].c_str());
-        } else {
-          return TString("");
         }
-      } else {
-        TString scut = selname + "{cwv{";
-        bool def = true;
-        bool firstvar = true;
-        for (const auto& cut : selvector) {
-          if (def) {
-            scut += cut + ':';
-            def = false;
-          } else {
-            if (not firstvar) {
-              scut += ',';
-            }
-            scut += cut;
-            firstvar = false;
-          }
-        }
-        scut += "}}";
-        return scut;
+        return TString("");
       }
+      TString scut = selname + "{cwv{";
+      bool def = true;
+      bool firstvar = true;
+      for (const auto& cut : selvector) {
+        if (def) {
+          scut += cut + ':';
+          def = false;
+        } else {
+          if (not firstvar) {
+            scut += ',';
+          }
+          scut += cut;
+          firstvar = false;
+        }
+      }
+      scut += "}}";
+      return scut;
     }
     return TString("");
   };
@@ -124,8 +112,7 @@ ClassImp(TrackSelectionFilterAndAnalysis);
 
 /// \brief Default constructor
 TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis()
-  : SelectionFilterAndAnalysis(),
-    mNClustersTPC(nullptr),
+  : mNClustersTPC(nullptr),
     mNCrossedRowsTPC(nullptr),
     mNClustersITS(nullptr),
     mMaxChi2PerClusterTPC(nullptr),
@@ -184,21 +171,21 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis(const TrackSele
   mTrackTypes.SetOwner(true);
 
   TString cutString = "tracksel{" + trcksel.mTrackTypes;
-  if (trcksel.mNClustersTPC.size() > 0 or
-      trcksel.mNCrossedRowsTPC.size() > 0 or
-      trcksel.mNClustersITS.size() > 0 or
-      trcksel.mMaxChi2PerClusterTPC.size() > 0 or
-      trcksel.mMaxChi2PerClusterITS.size() > 0 or
-      trcksel.mMinNCrossedRowsOverFindableClustersTPC.size() > 0 or
-      trcksel.mMaxDcaXY.size() > 0 or
-      trcksel.mMaxDcaZ.size() > 0 or
-      trcksel.mPtRange.size() > 0 or
-      trcksel.mEtaRange.size() > 0) {
+  if (!trcksel.mNClustersTPC.empty() or
+      !trcksel.mNCrossedRowsTPC.empty() or
+      !trcksel.mNClustersITS.empty() or
+      !trcksel.mMaxChi2PerClusterTPC.empty() or
+      !trcksel.mMaxChi2PerClusterITS.empty() or
+      !trcksel.mMinNCrossedRowsOverFindableClustersTPC.empty() or
+      !trcksel.mMaxDcaXY.empty() or
+      !trcksel.mMaxDcaZ.empty() or
+      !trcksel.mPtRange.empty() or
+      !trcksel.mEtaRange.empty()) {
     cutString += ";";
     bool first = true;
 
     auto appendCut = [&cutString, &first](const std::string& str) {
-      if (str.size() > 0) {
+      if (!str.empty()) {
         if (first) {
           cutString += str;
           first = false;
@@ -235,10 +222,10 @@ int TrackSelectionFilterAndAnalysis::calculateMaskLength()
 {
   int length = 0;
   for (int i = 0; i < mTrackSign.GetEntries(); ++i) {
-    length += ((CutBrick<float>*)mTrackSign.At(i))->length();
+    length += (dynamic_cast<CutBrick<float>*>(mTrackSign.At(i)))->length();
   }
   for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-    length += ((SpecialCutBrick*)mTrackTypes.At(i))->length();
+    length += (dynamic_cast<SpecialCutBrick*>(mTrackTypes.At(i)))->length();
   }
   if (mNClustersTPC != nullptr) {
     length += mNClustersTPC->length();
@@ -275,18 +262,18 @@ int TrackSelectionFilterAndAnalysis::calculateMaskLength()
 
 void TrackSelectionFilterAndAnalysis::setPtRange(const TString& regex)
 {
-  if (mPtRange != nullptr) {
-    delete mPtRange;
-  }
+
+  delete mPtRange;
+
   mPtRange = CutBrick<float>::constructBrick("pT", regex.Data(), std::set<std::string>{"rg", "th", "lim", "xrg"});
   mMaskLength = calculateMaskLength();
 }
 
 void TrackSelectionFilterAndAnalysis::setEtaRange(const TString& regex)
 {
-  if (mEtaRange != nullptr) {
-    delete mEtaRange;
-  }
+
+  delete mEtaRange;
+
   mEtaRange = CutBrick<float>::constructBrick("eta", regex.Data(), std::set<std::string>{"rg", "th", "lim", "xrg"});
   mMaskLength = calculateMaskLength();
 }
@@ -351,56 +338,54 @@ void TrackSelectionFilterAndAnalysis::constructCutFromString(const TString& cuts
       }
       LOGF(info, "Captured %s", m[1].str().c_str());
       auto storeIntCut = [&m, &allowed](CutBrick<int>*& brickvar) {
-        if (brickvar != nullptr) {
-          delete brickvar;
-        }
+        delete brickvar;
+
         brickvar = CutBrick<int>::constructBrick(m[1].str().c_str(), m[2].str().c_str(), allowed);
       };
       auto storeFloatCut = [&m, &allowed](CutBrick<float>*& brickvar) {
-        if (brickvar != nullptr) {
-          delete brickvar;
-        }
+        delete brickvar;
+
         brickvar = CutBrick<float>::constructBrick(m[1].str().c_str(), m[2].str().c_str(), allowed);
       };
       if (m[1].str() == "nclstpc") {
         storeIntCut(mNClustersTPC);
         for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-          ((TrackSelectionBrick*)mTrackTypes.At(i))->disableNClustersTPCCheck();
+          (dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)))->disableNClustersTPCCheck();
         }
       } else if (m[1].str() == "nclsits") {
         storeIntCut(mNClustersITS);
         for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-          ((TrackSelectionBrick*)mTrackTypes.At(i))->disableNClustersITSCheck();
+          (dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)))->disableNClustersITSCheck();
         }
       } else if (m[1].str() == "nxrtpc") {
         storeIntCut(mNCrossedRowsTPC);
         for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-          ((TrackSelectionBrick*)mTrackTypes.At(i))->disableNCrossedRowsTPCCheck();
+          (dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)))->disableNCrossedRowsTPCCheck();
         }
       } else if (m[1].str() == "chi2clustpc") {
         storeFloatCut(mMaxChi2PerClusterTPC);
         for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-          ((TrackSelectionBrick*)mTrackTypes.At(i))->disableMaxChi2PerClusterTPCCheck();
+          (dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)))->disableMaxChi2PerClusterTPCCheck();
         }
       } else if (m[1].str() == "chi2clusits") {
         storeFloatCut(mMaxChi2PerClusterITS);
         for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-          ((TrackSelectionBrick*)mTrackTypes.At(i))->disableMaxChi2PerClusterITSCheck();
+          (dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)))->disableMaxChi2PerClusterITSCheck();
         }
       } else if (m[1].str() == "xrofctpc") {
         storeFloatCut(mMinNCrossedRowsOverFindableClustersTPC);
         for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-          ((TrackSelectionBrick*)mTrackTypes.At(i))->disableMinNCrossedRowsOverFindableClustersTPCCheck();
+          (dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)))->disableMinNCrossedRowsOverFindableClustersTPCCheck();
         }
       } else if (m[1].str() == "dcaxy") {
         storeFloatCut(mMaxDcaXY);
         for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-          ((TrackSelectionBrick*)mTrackTypes.At(i))->disableMaxDcaXYCheck();
+          (dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)))->disableMaxDcaXYCheck();
         }
       } else if (m[1].str() == "dcaz") {
         storeFloatCut(mMaxDcaZ);
         for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-          ((TrackSelectionBrick*)mTrackTypes.At(i))->disableMaxDcaZCheck();
+          (dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)))->disableMaxDcaZCheck();
         }
       } else if (m[1].str() == "pT") {
         storeFloatCut(mPtRange);
@@ -444,12 +429,12 @@ void TrackSelectionFilterAndAnalysis::storeArmedMask()
 
   optMask = 0UL;
   for (int i = 0; i < mTrackSign.GetEntries(); ++i) {
-    armedBrick((CutBrick<float>*)mTrackSign.At(i), true);
+    armedBrick(dynamic_cast<CutBrick<float>*>(mTrackSign.At(i)), true);
   }
   mOptArmedMask.push_back(optMask);
   optMask = 0UL;
   for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-    armedBrick((TrackSelectionBrick*)mTrackTypes.At(i), true);
+    armedBrick(dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)), true);
   }
   mOptArmedMask.push_back(optMask);
   optMask = 0UL;

@@ -22,9 +22,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace o2
-{
-namespace aod
+namespace o2::aod
 {
 /* we have to change from int to bool when bool columns work properly */
 namespace cfskim
@@ -106,7 +104,6 @@ DECLARE_SOA_TABLE(CFMCCollisionLbls, "AOD", "CFMCCOLLISONLBL",
 DECLARE_SOA_TABLE(CFMCTrackLabels, "AOD", "CFMCTRACKLABEL",
                   cfskim::McParticleId,
                   mctracklabel::McMask);
-} // namespace aod
-} // namespace o2
+} // namespace o2::aod
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSSKIMMED_H_

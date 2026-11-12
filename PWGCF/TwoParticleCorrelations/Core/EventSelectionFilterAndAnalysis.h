@@ -32,11 +32,7 @@
 #include <utility>
 #include <vector>
 
-namespace o2
-{
-namespace analysis
-{
-namespace pwgcf
+namespace o2::analysis::pwgcf
 {
 /* forward declaration */
 class EventSelectionFilterAndAnalysis;
@@ -62,13 +58,12 @@ class EventSelectionConfigurable
                              std::vector<std::string> pileuprej);
 
  private:
-  std::string mBFiledSel = "";       //! the magnetic field selection cuts
-  std::string mMultSel = "";         //! the multiplicity selection cuts
-  std::string mTriggerSel = "";      //! the trigger selection cuts
-  std::string mZVertexSel = "";      //! the z vertex selection cuts
-  std::string mPileUpRejection = ""; //! the pile-up rejection criteria
+  std::string mBFiledSel;       //! the magnetic field selection cuts
+  std::string mMultSel;         //! the multiplicity selection cuts
+  std::string mTriggerSel;      //! the trigger selection cuts
+  std::string mZVertexSel;      //! the z vertex selection cuts
+  std::string mPileUpRejection; //! the pile-up rejection criteria
 
- private:
   ClassDefNV(EventSelectionConfigurable, 1);
 };
 
@@ -91,8 +86,8 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
     virtual ~ComplexBrickHelper() = default;
     CutBrick<float>* mBrick = nullptr;
     int mDefaultEstimatorIndex = -1;
-    std::vector<int> mAlternateEstimatorIndex = std::vector<int>{};
-    std::vector<float> mValues = std::vector<float>{};
+    std::vector<int> mAlternateEstimatorIndex;
+    std::vector<float> mValues;
     int length() { return mBrick->length(); }
     virtual void initialize() = 0;
     virtual bool filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index) = 0;
@@ -107,7 +102,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   };
   struct PileUpRejBrick : public ComplexBrickHelper {
     void initialize() override;
-    std::vector<float> mIndepVar = std::vector<float>{};
+    std::vector<float> mIndepVar;
     bool filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index) override;
   };
 
@@ -115,8 +110,8 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   void constructCutFromString(const TString&);
   template <typename CollisionToFilter, typename AssociatedTracks>
   void storeMultiplicities(CollisionToFilter const&, AssociatedTracks const&);
-  int calculateMaskLength() override;
-  void storeArmedMask() override;
+  int calculateMaskLength() final;
+  void storeArmedMask() final;
 
   std::vector<CutBrick<float>*> mBFieldSelection; //! the magnetic field selection cuts
   MultiplicityBrick* mMultiplicityClasses;        //! the multiplicity classes cuts
@@ -180,19 +175,19 @@ inline bool EventSelectionFilterAndAnalysis::filterBrickValue(uint64_t& mask, in
 inline bool EventSelectionFilterAndAnalysis::ComplexBrickHelper::filter(uint64_t& mask, int& bit)
 {
   bool acceptcollision = true;
-  if (mAlternateEstimatorIndex.size() > 0) {
+  if (!mAlternateEstimatorIndex.empty()) {
     bool atleastonealternative = false;
     /*   if (mBrick->IsA() != CutWithVariations<float>::Class()) {
           LOGF(fatal, "EventSelectionFilterAndAnalysis::filter() expected class with variations cut but it is not there");
         } */
     /* first the default */
     TList& deflst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getDefaultBricks();
-    bool acc = filter(mask, bit, (CutBrick<float>*)deflst.At(0), mDefaultEstimatorIndex);
+    bool acc = filter(mask, bit, dynamic_cast<CutBrick<float>*>(deflst.At(0)), mDefaultEstimatorIndex);
     atleastonealternative = atleastonealternative || acc;
     /* and now the variants */
     TList& varlst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getVariantBricks();
     for (int i = 0; i < varlst.GetEntries(); ++i) {
-      bool acc = filter(mask, bit, (CutBrick<float>*)varlst.At(i), mAlternateEstimatorIndex[i]);
+      bool acc = filter(mask, bit, dynamic_cast<CutBrick<float>*>(varlst.At(i)), mAlternateEstimatorIndex[i]);
       atleastonealternative = atleastonealternative || acc;
     }
     acceptcollision = acceptcollision && atleastonealternative;
@@ -226,7 +221,7 @@ inline uint64_t EventSelectionFilterAndAnalysis::filter(CollisionToFilter const&
 
   /* we require the collision be accepted by the whole set of filters */
   bool acceptcollision = true;
-  if (mBFieldSelection.size() > 0) {
+  if (!mBFieldSelection.empty()) {
     bool oneatleast = false;
     for (const auto& brick : mBFieldSelection) {
       bool acc = filterBrickValue(selectedMask, bit, brick, bfield);
@@ -258,7 +253,7 @@ inline std::vector<float> EventSelectionFilterAndAnalysis::MultiplicityBrick::ge
 {
   std::vector<float> res;
 
-  if (mAlternateEstimatorIndex.size() > 0) {
+  if (!mAlternateEstimatorIndex.empty()) {
     /* first the default */
     res.push_back(mValues[mDefaultEstimatorIndex]);
     /* and now the variants */
@@ -273,8 +268,6 @@ inline std::vector<float> EventSelectionFilterAndAnalysis::MultiplicityBrick::ge
   return res;
 }
 
-} // namespace pwgcf
-} // namespace analysis
-} // namespace o2
+} // namespace o2::analysis::pwgcf
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_EVENTSELECTIONFILTERANDANALYSIS_H_

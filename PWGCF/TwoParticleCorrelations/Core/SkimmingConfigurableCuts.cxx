@@ -19,6 +19,8 @@
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
 
+#include <TF1.h>
+#include <TList.h>
 #include <TNamed.h>
 #include <TObjArray.h>
 
@@ -186,8 +188,8 @@ template class o2::analysis::pwgcf::CutBrickLimit<float>;
 /// Default constructor
 template <typename TValueToFilter>
 CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit()
-  : CutBrickLimit<TValueToFilter>(),
-    mFunction{}
+  : CutBrickLimit<TValueToFilter>()
+
 {
 }
 
@@ -206,8 +208,8 @@ CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit(const char* name, const TF1& fn
 /// \param cutstr The cuts string
 template <typename TValueToFilter>
 CutBrickFnLimit<TValueToFilter>::CutBrickFnLimit(const TString& cutstr)
-  : CutBrickLimit<TValueToFilter>(),
-    mFunction{}
+  : CutBrickLimit<TValueToFilter>()
+
 {
   constructCutFromString(cutstr);
 }
@@ -322,8 +324,8 @@ template class o2::analysis::pwgcf::CutBrickThreshold<float>;
 /// Default constructor
 template <typename TValueToFilter>
 CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold()
-  : CutBrickThreshold<TValueToFilter>(),
-    mFunction{}
+  : CutBrickThreshold<TValueToFilter>()
+
 {
 }
 
@@ -342,8 +344,8 @@ CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold(const char* name, const
 /// \param cutstr The cuts string
 template <typename TValueToFilter>
 CutBrickFnThreshold<TValueToFilter>::CutBrickFnThreshold(const TString& cutstr)
-  : CutBrickThreshold<TValueToFilter>(),
-    mFunction{}
+  : CutBrickThreshold<TValueToFilter>()
+
 {
   constructCutFromString(cutstr);
 }
@@ -463,9 +465,8 @@ template class o2::analysis::pwgcf::CutBrickRange<float>;
 /// Default constructor
 template <typename TValueToFilter>
 CutBrickFnRange<TValueToFilter>::CutBrickFnRange()
-  : CutBrickRange<TValueToFilter>(),
-    mLowFunction{},
-    mUpFunction{}
+  : CutBrickRange<TValueToFilter>()
+
 {
 }
 
@@ -486,9 +487,8 @@ CutBrickFnRange<TValueToFilter>::CutBrickFnRange(const char* name, const TF1& lo
 /// \param cutstr The cuts string
 template <typename TValueToFilter>
 CutBrickFnRange<TValueToFilter>::CutBrickFnRange(const TString& cutstr)
-  : CutBrickRange<TValueToFilter>(),
-    mLowFunction{},
-    mUpFunction{}
+  : CutBrickRange<TValueToFilter>()
+
 {
   constructCutFromString(cutstr);
 }
@@ -609,9 +609,8 @@ template class o2::analysis::pwgcf::CutBrickExtToRange<float>;
 /// Default constructor
 template <typename TValueToFilter>
 CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange()
-  : CutBrickExtToRange<TValueToFilter>(),
-    mLowFunction{},
-    mUpFunction{}
+  : CutBrickExtToRange<TValueToFilter>()
+
 {
 }
 
@@ -631,9 +630,8 @@ CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const char*, const TF
 /// \param cutstr The cuts string
 template <typename TValueToFilter>
 CutBrickFnExtToRange<TValueToFilter>::CutBrickFnExtToRange(const TString& cutstr)
-  : CutBrickExtToRange<TValueToFilter>(),
-    mLowFunction{},
-    mUpFunction{}
+  : CutBrickExtToRange<TValueToFilter>()
+
 {
   constructCutFromString(cutstr);
 }
@@ -781,9 +779,8 @@ std::vector<bool> CutBrickSelectorMultipleRanges<TValueToFilter>::filter(const T
         mActive[i] = true;
         last = i;
         break;
-      } else {
-        mActive[i] = false;
       }
+      mActive[i] = false;
     }
     for (unsigned int i = last + 1; i < mActive.size(); ++i) {
       mActive[i] = false;
@@ -806,9 +803,8 @@ template class o2::analysis::pwgcf::CutBrickSelectorMultipleRanges<float>;
 template <typename TValueToFilter>
 CutWithVariations<TValueToFilter>::CutWithVariations()
   : CutBrick<TValueToFilter>(),
-    mAllowSeveralDefaults(false),
-    mDefaultBricks{},
-    mVariationBricks{}
+    mAllowSeveralDefaults(false)
+
 {
 }
 
@@ -819,9 +815,8 @@ CutWithVariations<TValueToFilter>::CutWithVariations()
 template <typename TValueToFilter>
 CutWithVariations<TValueToFilter>::CutWithVariations(const char* name, const char* cutstr, bool severaldefaults)
   : CutBrick<TValueToFilter>(name, cutstr),
-    mAllowSeveralDefaults(severaldefaults),
-    mDefaultBricks{},
-    mVariationBricks{}
+    mAllowSeveralDefaults(severaldefaults)
+
 {
 }
 
@@ -830,9 +825,8 @@ CutWithVariations<TValueToFilter>::CutWithVariations(const char* name, const cha
 template <typename TValueToFilter>
 CutWithVariations<TValueToFilter>::CutWithVariations(const TString& cutstr)
   : CutBrick<TValueToFilter>(),
-    mAllowSeveralDefaults(false),
-    mDefaultBricks{},
-    mVariationBricks{}
+    mAllowSeveralDefaults(false)
+
 {
   constructCutFromString(cutstr);
 }
@@ -871,7 +865,7 @@ void CutWithVariations<TValueToFilter>::constructCutFromString(const TString& cu
   bool atleastonearmed = false;
   auto addCuts = [&](TList& cutlist, std::string cuttxt, bool reqflag) {
     std::smatch m;
-    while (cuttxt.length() > 0) {
+    while (!cuttxt.empty()) {
       std::set<std::string> allowed = {"lim", "th", "rg", "xrg", "mrg", "fnlim", "fnth", "fnrg", "fnxrg"};
       std::regex cutregex("(\\w+\\{[\\w.,=\\-\\+\\*\\/]+}(?:-(?:no|yes))*)");
       bool res = regex_search(cuttxt, m, cutregex);
@@ -928,18 +922,15 @@ bool CutWithVariations<TValueToFilter>::addDefaultBrick(CutBrick<TValueToFilter>
   if (mAllowSeveralDefaults) {
     if (mDefaultBricks.FindObject(brick->GetName())) {
       return false;
-    } else {
-      mDefaultBricks.Add(brick);
-      return true;
     }
-  } else {
-    if (mDefaultBricks.GetEntries() > 0) {
-      return false;
-    } else {
-      mDefaultBricks.Add(brick);
-      return true;
-    }
+    mDefaultBricks.Add(brick);
+    return true;
   }
+  if (mDefaultBricks.GetEntries() > 0) {
+    return false;
+  }
+  mDefaultBricks.Add(brick);
+  return true;
 }
 
 /// \brief Stores the brick with the variation to the default value for the cut
@@ -951,10 +942,9 @@ bool CutWithVariations<TValueToFilter>::addVariationBrick(CutBrick<TValueToFilte
 {
   if (mVariationBricks.FindObject(brick->GetName())) {
     return false;
-  } else {
-    mVariationBricks.Add(brick);
-    return true;
   }
+  mVariationBricks.Add(brick);
+  return true;
 }
 
 /// \brief Returns wether the cut brick is incorporated in the selection chain
@@ -968,18 +958,18 @@ std::vector<bool> CutWithVariations<TValueToFilter>::isArmed()
     int nArmedDefaults = 0;
     int nArmedVariants = 0;
     for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->isArmed();
+      std::vector<bool> tmp = static_cast<CutBrick<TValueToFilter>*>(mDefaultBricks.At(i))->isArmed();
       res.insert(res.end(), tmp.begin(), tmp.end());
-      for (const bool& iarmed : tmp) {
+      for (const auto& iarmed : tmp) {
         if (iarmed) {
           nArmedDefaults++;
         }
       }
     }
     for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-      std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->isArmed();
+      std::vector<bool> tmp = static_cast<CutBrick<TValueToFilter>*>(mVariationBricks.At(i))->isArmed();
       res.insert(res.end(), tmp.begin(), tmp.end());
-      for (const bool& iarmed : tmp) {
+      for (const auto& iarmed : tmp) {
         if (iarmed) {
           nArmedVariants++;
         }
@@ -1008,11 +998,11 @@ std::vector<bool> CutWithVariations<TValueToFilter>::filter(const TValueToFilter
   std::vector<bool> res;
   res.reserve(length());
   for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-    std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->filter(value);
+    std::vector<bool> tmp = static_cast<CutBrick<TValueToFilter>*>(mDefaultBricks.At(i))->filter(value);
     res.insert(res.end(), tmp.begin(), tmp.end());
   }
   for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-    std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->filter(value);
+    std::vector<bool> tmp = static_cast<CutBrick<TValueToFilter>*>(mVariationBricks.At(i))->filter(value);
     res.insert(res.end(), tmp.begin(), tmp.end());
   }
   return res;
@@ -1027,10 +1017,10 @@ int CutWithVariations<TValueToFilter>::length()
   /* TODO: should a single default cut without variations return zero length? */
   int length = 0;
   for (int i = 0; i < mDefaultBricks.GetEntries(); ++i) {
-    length += ((CutBrick<TValueToFilter>*)mDefaultBricks.At(i))->length();
+    length += static_cast<CutBrick<TValueToFilter>*>(mDefaultBricks.At(i))->length();
   }
   for (int i = 0; i < mVariationBricks.GetEntries(); ++i) {
-    length += ((CutBrick<TValueToFilter>*)mVariationBricks.At(i))->length();
+    length += static_cast<CutBrick<TValueToFilter>*>(mVariationBricks.At(i))->length();
   }
   return length;
 }
@@ -1046,8 +1036,8 @@ int CutWithVariations<TValueToFilter>::getArmedIndex()
       bool found = false;
       for (int i = 0; not found and i < brklst.GetEntries(); ++i) {
         index++;
-        std::vector<bool> tmp = ((CutBrick<TValueToFilter>*)brklst.At(i))->isArmed();
-        for (const bool& iarmed : tmp) {
+        std::vector<bool> tmp = static_cast<CutBrick<TValueToFilter>*>(brklst.At(i))->isArmed();
+        for (const auto& iarmed : tmp) {
           if (iarmed) {
             found = true;
             break;
@@ -1072,25 +1062,21 @@ template class o2::analysis::pwgcf::CutWithVariations<int>;
 
 /// Default constructor
 SpecialCutBrick::SpecialCutBrick()
-  : TNamed(),
-    mState(kPASSIVE),
-    mMode(kUNSELECTED)
-{
-}
+
+  = default;
 
 /// Named constructor
 /// \param name The name of the brick
 SpecialCutBrick::SpecialCutBrick(const char* name, const char* title)
-  : TNamed(name, title),
-    mState(kPASSIVE),
-    mMode(kUNSELECTED)
+  : TNamed(name, title)
+
 {
 }
 
 ClassImp(SpecialCutBrick);
 
 /// \brief Constructor from regular expression
-TrackSelectionBrick::TrackSelectionBrick(const TString& regex) : SpecialCutBrick()
+TrackSelectionBrick::TrackSelectionBrick(const TString& regex)
 {
   bool armed = false;
   TString name = regex;
@@ -1199,7 +1185,8 @@ bool TrackSelectionBrick::fulfillsITSHitRequirements(uint8_t itsClusterMap)
     auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (One << requiredLayer); });
     if ((itsRequirement.first == -1) && (hits > 0)) {
       return false; // no hits were required in specified layers
-    } else if (hits < itsRequirement.first) {
+    }
+    if (hits < itsRequirement.first) {
       return false; // not enough hits found in specified layers
     }
   }

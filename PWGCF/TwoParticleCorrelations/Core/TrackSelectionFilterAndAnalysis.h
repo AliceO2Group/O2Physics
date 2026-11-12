@@ -31,11 +31,7 @@
 #include <utility>
 #include <vector>
 
-namespace o2
-{
-namespace analysis
-{
-namespace pwgcf
+namespace o2::analysis::pwgcf
 {
 /* forward de declaration */
 class TrackSelectionFilterAndAnalysis;
@@ -83,19 +79,18 @@ class TrackSelectionConfigurable
                              std::vector<std::string> etarange);
 
  private:
-  std::string mTrackTypes = "";                             /// the track types to select list
-  std::string mNClustersTPC = "";                           //! the number of TPC clusters cuts
-  std::string mNCrossedRowsTPC = "";                        //! the number of TPC crossed rows cuts
-  std::string mNClustersITS = "";                           //! the number of ITS clusters cuts
-  std::string mMaxChi2PerClusterTPC = "";                   //! the max Chi2 per TPC cluster cuts
-  std::string mMaxChi2PerClusterITS = "";                   //! the max Chi2 per ITS cluster cuts
-  std::string mMinNCrossedRowsOverFindableClustersTPC = ""; //! the min ration crossed TPC rows over findable TPC clusters cuts
-  std::string mMaxDcaXY = "";                               //! the DCAxy cuts
-  std::string mMaxDcaZ = "";                                //! the DCAz cuts
-  std::string mPtRange = "";                                //! the pT range cuts
-  std::string mEtaRange = "";                               //! the eta range cuts
+  std::string mTrackTypes;                             /// the track types to select list
+  std::string mNClustersTPC;                           //! the number of TPC clusters cuts
+  std::string mNCrossedRowsTPC;                        //! the number of TPC crossed rows cuts
+  std::string mNClustersITS;                           //! the number of ITS clusters cuts
+  std::string mMaxChi2PerClusterTPC;                   //! the max Chi2 per TPC cluster cuts
+  std::string mMaxChi2PerClusterITS;                   //! the max Chi2 per ITS cluster cuts
+  std::string mMinNCrossedRowsOverFindableClustersTPC; //! the min ration crossed TPC rows over findable TPC clusters cuts
+  std::string mMaxDcaXY;                               //! the DCAxy cuts
+  std::string mMaxDcaZ;                                //! the DCAz cuts
+  std::string mPtRange;                                //! the pT range cuts
+  std::string mEtaRange;                               //! the eta range cuts
 
- private:
   ClassDefNV(TrackSelectionConfigurable, 1);
 };
 
@@ -115,8 +110,8 @@ class TrackSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
  private:
   void constructCutFromString(const TString&);
-  int calculateMaskLength();
-  void storeArmedMask();
+  int calculateMaskLength() final;
+  void storeArmedMask() final;
 
   TList mTrackSign;                                         /// the track charge sign list
   TList mTrackTypes;                                        /// the track types to select list
@@ -169,10 +164,10 @@ uint64_t TrackSelectionFilterAndAnalysis::filter(TrackToFilter const& track)
   };
 
   for (int i = 0; i < mTrackSign.GetEntries(); ++i) {
-    filterBrickValue((CutBrick<float>*)mTrackSign.At(i), track.sign());
+    filterBrickValue(dynamic_cast<CutBrick<float>*>(mTrackSign.At(i)), track.sign());
   }
   for (int i = 0; i < mTrackTypes.GetEntries(); ++i) {
-    filterTrackType((TrackSelectionBrick*)mTrackTypes.At(i), track);
+    filterTrackType(dynamic_cast<TrackSelectionBrick*>(mTrackTypes.At(i)), track);
   }
   if (mNClustersTPC != nullptr) {
     filterBrickValue(mNClustersTPC, track.tpcNClsFound());
@@ -211,8 +206,6 @@ uint64_t TrackSelectionFilterAndAnalysis::filter(TrackToFilter const& track)
   return mSelectedMask = selectedMask;
 }
 
-} // namespace pwgcf
-} // namespace analysis
-} // namespace o2
+} // namespace o2::analysis::pwgcf
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_

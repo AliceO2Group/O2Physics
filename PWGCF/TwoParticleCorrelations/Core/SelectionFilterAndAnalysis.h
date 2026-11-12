@@ -25,11 +25,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace o2
-{
-namespace analysis
-{
-namespace pwgcf
+namespace o2::analysis::pwgcf
 {
 
 /// \brief Base class for filter and selection once filetered
@@ -54,7 +50,7 @@ class SelectionFilterAndAnalysis : public TNamed
   /// A clear example of the optional part mask is the mask of the multiplicity classes
   /// where only one of the available in the whole mask will be flagged
   std::vector<uint64_t>& getOptMask() { return mOptArmedMask; }
-  TString printOptionalMasks() const;
+  [[nodiscard]] TString printOptionalMasks() const;
   /// \brief get the valid (armed) mandatory part mask associated to the configuration
   /// \return the armed optional mask
   /// A clear example of the mandatory part mask is the mask of the zvertex and their
@@ -68,20 +64,18 @@ class SelectionFilterAndAnalysis : public TNamed
   virtual void storeArmedMask() = 0;
 
  protected:
-  Selmodes mMode = KFilter;                 /// the operating mode of the selection instance
-  TString mCutStringSignature;              /// the signature of the cut string, i.e. without the alternative selection tags
-  int mMaskLength = 0;                      /// the length of the mask needed to filter the selection cuts
-  uint64_t mSelectedMask = 0UL;             /// the selection mask for the current passed collision
-  uint64_t mArmedMask = 0UL;                /// the complete armed mask identifying the applicable selection cuts
-  std::vector<uint64_t> mOptArmedMask = {}; /// the list of armed masks for options of the applicable selection cuts
-                                            /// all of them have to have at least one option active
-  uint64_t mForcedArmedMask = 0UL;          /// the mandatory armed mask of the applicable selection cuts
+  Selmodes mMode = KFilter;            /// the operating mode of the selection instance
+  TString mCutStringSignature;         /// the signature of the cut string, i.e. without the alternative selection tags
+  int mMaskLength = 0;                 /// the length of the mask needed to filter the selection cuts
+  uint64_t mSelectedMask = 0UL;        /// the selection mask for the current passed collision
+  uint64_t mArmedMask = 0UL;           /// the complete armed mask identifying the applicable selection cuts
+  std::vector<uint64_t> mOptArmedMask; /// the list of armed masks for options of the applicable selection cuts
+                                       /// all of them have to have at least one option active
+  uint64_t mForcedArmedMask = 0UL;     /// the mandatory armed mask of the applicable selection cuts
 
   ClassDefNV(SelectionFilterAndAnalysis, 1)
 };
 
-} // namespace pwgcf
-} // namespace analysis
-} // namespace o2
+} // namespace o2::analysis::pwgcf
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_SELECTIONFILTERANDANALYSIS_H_

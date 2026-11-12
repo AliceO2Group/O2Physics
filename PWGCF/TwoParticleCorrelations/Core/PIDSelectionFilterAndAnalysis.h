@@ -31,11 +31,7 @@
 
 #undef INCORPORATEBAYESIANPID
 
-namespace o2
-{
-namespace analysis
-{
-namespace pwgcf
+namespace o2::analysis::pwgcf
 {
 /* forward declaration */
 class PIDSelectionFilterAndAnalysis;
@@ -76,23 +72,22 @@ class PIDSelectionConfigurable
 #endif
 
  private:
-  std::string mPidTpcSelEl = "";
-  std::string mPidTpcSelMu = "";
-  std::string mPidTpcSelPi = "";
-  std::string mPidTpcSelKa = "";
-  std::string mPidTpcSelPr = "";
-  std::string mPidTofSelEl = "";
-  std::string mPidTofSelMu = "";
-  std::string mPidTofSelPi = "";
-  std::string mPidTofSelKa = "";
-  std::string mPidTofSelPr = "";
-  std::string mPidBaySelEl = "";
-  std::string mPidBaySelMu = "";
-  std::string mPidBaySelPi = "";
-  std::string mPidBaySelKa = "";
-  std::string mPidBaySelPr = "";
+  std::string mPidTpcSelEl;
+  std::string mPidTpcSelMu;
+  std::string mPidTpcSelPi;
+  std::string mPidTpcSelKa;
+  std::string mPidTpcSelPr;
+  std::string mPidTofSelEl;
+  std::string mPidTofSelMu;
+  std::string mPidTofSelPi;
+  std::string mPidTofSelKa;
+  std::string mPidTofSelPr;
+  std::string mPidBaySelEl;
+  std::string mPidBaySelMu;
+  std::string mPidBaySelPi;
+  std::string mPidBaySelKa;
+  std::string mPidBaySelPr;
 
- private:
   ClassDefNV(PIDSelectionConfigurable, 1);
 };
 
@@ -113,12 +108,12 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   uint64_t filter(TrackToFilter const& track);
 
   enum PIDSpecies {
-    kElectron = 0, ///< electron
-    kMuon,         ///< muon
-    kPion,         ///< pion
-    kKaon,         ///< kaon
-    kProton,       ///< proton
-    kNoOfSpecies,  ///< the number of considered species
+    kElectron = 0,    ///< electron
+    kMuon = 1,        ///< muon
+    kPion = 2,        ///< pion
+    kKaon = 3,        ///< kaon
+    kProton = 4,      ///< proton
+    kNoOfSpecies = 5, ///< the number of considered species
     kWrongSpecies = -1
   };
 
@@ -138,8 +133,8 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
  private:
   void constructCutFromString(const TString&);
-  int calculateMaskLength() override;
-  void storeArmedMask() override;
+  int calculateMaskLength() final;
+  void storeArmedMask() final;
 
   float mPTOF = 0.8f;           ///< the p threshold for cheking TOF information
   bool mRequireTOF = false;     ///< is TOF required
@@ -194,8 +189,6 @@ inline uint64_t PIDSelectionFilterAndAnalysis::filter(TrackToFilter const& track
   return mSelectedMask;
 }
 
-} // namespace pwgcf
-} // namespace analysis
-} // namespace o2
+} // namespace o2::analysis::pwgcf
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_PIDSELECTIONFILTERANDANALYSIS_H_

@@ -21,9 +21,7 @@
 
 #include <cstdint>
 
-namespace o2
-{
-namespace aod
+namespace o2::aod
 {
 /* we have to change from int to bool when bool columns work properly */
 namespace twopfilter
@@ -49,7 +47,6 @@ DECLARE_SOA_TABLE(TwoPFilteredTracks, "AOD", "FILTEREDTRKS", //! The reconstruct
                   twopfilter::AcceptedAs);
 DECLARE_SOA_TABLE(TwoPFilteredParticles, "AOD", "FILTEREDGENTRKS", //! The generated particles filtered table
                   twopfilter::McAcceptedAs);
-} // namespace aod
-} // namespace o2
+} // namespace o2::aod
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_TWOPARTICLECORRELATIONSFILTERED_H_

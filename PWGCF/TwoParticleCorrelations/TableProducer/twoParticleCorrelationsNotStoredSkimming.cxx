@@ -120,11 +120,11 @@ struct TwoParticleCorrelationsNotStoredSkimming {
   Produces<aod::CFCollMask> collisionmask;
   Produces<aod::CFMCCollMasks> gencollisionmask;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
 #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
-  int nReportedTracks;
+  int nReportedTracks{};
   int runNumber = 0;
   int bfield = 0;
   HistogramRegistry historeg;
@@ -229,9 +229,8 @@ struct TwoParticleCorrelationsNotStoredSkimming {
     }
     if (accepted) {
       return fFilterFramework->filterCollision(collision, tracks, bfield);
-    } else {
-      return 0UL;
     }
+    return 0UL;
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::Mults>::iterator const& collision,

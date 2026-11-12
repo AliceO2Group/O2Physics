@@ -29,27 +29,14 @@ ClassImp(SelectionFilterAndAnalysis);
 
 /// \brief Default constructor
 SelectionFilterAndAnalysis::SelectionFilterAndAnalysis()
-  : TNamed(),
-    mMode(KFilter),
-    mCutStringSignature(),
-    mMaskLength(0),
-    mSelectedMask(0UL),
-    mArmedMask(0UL),
-    mOptArmedMask{},
-    mForcedArmedMask(0UL)
-{
-}
+
+  = default;
 
 /// \brief Named constructor for a concrete operating mode
 SelectionFilterAndAnalysis::SelectionFilterAndAnalysis(const TString& name, Selmodes mode)
   : TNamed(name, name),
-    mMode(mode),
-    mCutStringSignature(),
-    mMaskLength(0),
-    mSelectedMask(0UL),
-    mArmedMask(0UL),
-    mOptArmedMask{},
-    mForcedArmedMask(0UL)
+    mMode(mode)
+
 {
 }
 
@@ -62,7 +49,7 @@ TString SelectionFilterAndAnalysis::printOptionalMasks() const
       str += ", ";
     }
     first = false;
-    str += TString::Format("0x%016lx", u_long(option));
+    str += TString::Format("0x%016lx", static_cast<u_long>(option));
   }
   str += ")";
   return str;

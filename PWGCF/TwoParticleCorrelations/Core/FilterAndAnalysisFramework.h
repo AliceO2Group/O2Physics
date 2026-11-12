@@ -30,11 +30,7 @@
 #include <string>
 #include <vector>
 
-namespace o2
-{
-namespace analysis
-{
-namespace pwgcf
+namespace o2::analysis::pwgcf
 {
 
 /// \brief Base class for filter and selection once filetered
@@ -68,9 +64,9 @@ class FilterAndAnalysisFramework : public TNamed
   std::vector<uint64_t>& getTrackOptMask() { return fTrackFilter->getOptMask(); }
   std::vector<uint64_t>& getPIDOptMask() { return fPIDFilter->getOptMask(); }
   /// \brief provides the optional part mask of the different objects in a printable shape
-  TString printCollisionOptionalMasks() const { return fEventFilter->printOptionalMasks(); }
-  TString printTrackOptionalMasks() const { return fTrackFilter->printOptionalMasks(); }
-  TString printPIDOptionalMasks() const { return fPIDFilter->printOptionalMasks(); }
+  [[nodiscard]] TString printCollisionOptionalMasks() const { return fEventFilter->printOptionalMasks(); }
+  [[nodiscard]] TString printTrackOptionalMasks() const { return fTrackFilter->printOptionalMasks(); }
+  [[nodiscard]] TString printPIDOptionalMasks() const { return fPIDFilter->printOptionalMasks(); }
   /// \brief get the valid (armed) mandatory part mask associated to the configuration of the different objects
   /// \return the corresponding armed forced mask
   /// A clear example of the mandatory part mask is the mask of the zvertex and their
@@ -105,9 +101,9 @@ class FilterAndAnalysisFramework : public TNamed
   const TString& getPIDFilterCutStringSignature() { return fPIDFilter->getCutStringSignature(); }
 
  private:
-  std::string ccdburl = "";
-  std::string ccdbpath = "";
-  std::string filterdate = "";
+  std::string ccdburl;
+  std::string ccdbpath;
+  std::string filterdate;
   bool forceupdate = false;
   pwgcf::TrackSelectionFilterAndAnalysis* fTrackFilter = nullptr;   /// the track filter
   pwgcf::EventSelectionFilterAndAnalysis* fEventFilter = nullptr;   /// the event filter
@@ -121,8 +117,6 @@ class FilterAndAnalysisFramework : public TNamed
 
 extern void registerConfiguration(o2::analysis::pwgcf::FilterAndAnalysisFramework*);
 
-} // namespace pwgcf
-} // namespace analysis
-} // namespace o2
+} // namespace o2::analysis::pwgcf
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_FILTERANDANALYSISFRAMEWORK_H_

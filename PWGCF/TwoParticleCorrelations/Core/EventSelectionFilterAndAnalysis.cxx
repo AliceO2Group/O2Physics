@@ -48,39 +48,33 @@ EventSelectionConfigurable::EventSelectionConfigurable(const std::vector<std::st
                                                        std::vector<std::string> trigsel,
                                                        std::vector<std::string> zvtxsel,
                                                        std::vector<std::string> pileuprej)
-  : mBFiledSel(""),
-    mMultSel(""),
-    mTriggerSel(""),
-    mZVertexSel(""),
-    mPileUpRejection("")
+
 {
   auto storeCutString = [](auto& selvector, const std::string& selname) {
     if (selvector.size() != 0) {
       if (selvector.size() == 1) {
         if (selvector[0].size() != 0) {
           return TString::Format("%s{%s}", selname.c_str(), selvector[0].c_str());
-        } else {
-          return TString("");
         }
-      } else {
-        TString scut = selname + "{cwv{";
-        bool def = true;
-        bool firstvar = true;
-        for (const auto& cut : selvector) {
-          if (def) {
-            scut += cut + ':';
-            def = false;
-          } else {
-            if (not firstvar) {
-              scut += ',';
-            }
-            scut += cut;
-            firstvar = false;
-          }
-        }
-        scut += "}}";
-        return scut;
+        return TString("");
       }
+      TString scut = selname + "{cwv{";
+      bool def = true;
+      bool firstvar = true;
+      for (const auto& cut : selvector) {
+        if (def) {
+          scut += cut + ':';
+          def = false;
+        } else {
+          if (not firstvar) {
+            scut += ',';
+          }
+          scut += cut;
+          firstvar = false;
+        }
+      }
+      scut += "}}";
+      return scut;
     }
     return TString("");
   };
@@ -113,9 +107,7 @@ const char* multiplicityCorrelators[nNoOfPileUpCorrelators] = {"V0M_TPCOUT", "V0
 
 /// \brief Default constructor
 EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis()
-  : SelectionFilterAndAnalysis(),
-    mBFieldSelection{},
-    mMultiplicityClasses(nullptr),
+  : mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
     mPileUpRejection(nullptr)
@@ -125,7 +117,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis()
 /// \brief Constructor from regular expression
 EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& cutstr, Selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
-    mBFieldSelection{},
+
     mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
@@ -137,7 +129,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const TString& 
 /// \brief Constructor from the event selection configurable
 EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSelectionConfigurable& evtsel, Selmodes mode)
   : SelectionFilterAndAnalysis("", mode),
-    mBFieldSelection{},
+
     mMultiplicityClasses(nullptr),
     mTriggerSelection(nullptr),
     mZVertex(nullptr),
@@ -148,7 +140,7 @@ EventSelectionFilterAndAnalysis::EventSelectionFilterAndAnalysis(const EventSele
   constexpr int MaskMaxLength = 64;
 
   auto appendCut = [&cutString, &first](const std::string& str) {
-    if (str.size() > 0) {
+    if (!str.empty()) {
       if (first) {
         cutString += str;
         first = false;
@@ -246,7 +238,7 @@ void EventSelectionFilterAndAnalysis::MultiplicityBrick::initialize()
         }
       }
     }
-    if (mAlternateEstimatorIndex.size() != (uint)(varlst.GetEntries())) {
+    if (mAlternateEstimatorIndex.size() != static_cast<uint>(varlst.GetEntries())) {
       LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() variant multiplicity class estimators not all implemented");
     }
   }
@@ -303,7 +295,7 @@ void EventSelectionFilterAndAnalysis::PileUpRejBrick::initialize()
         }
       }
     }
-    if (mAlternateEstimatorIndex.size() != (uint)(varlst.GetEntries())) {
+    if (mAlternateEstimatorIndex.size() != static_cast<uint>(varlst.GetEntries())) {
       LOGF(fatal, "EventSelectionFilterAndAnalysis::InitializeMultiplicityFilter() variant pile-up correlator estimators not all implemented");
     }
   }
@@ -348,15 +340,13 @@ void EventSelectionFilterAndAnalysis::constructCutFromString(const TString& cuts
       }
       LOGF(info, "Captured %s", m[1].str().c_str());
       auto storeIntCut = [&m, &allowed](CutBrick<int>*& brickvar) {
-        if (brickvar != nullptr) {
-          delete brickvar;
-        }
+        delete brickvar;
+
         brickvar = CutBrick<int>::constructBrick(m[1].str().c_str(), m[2].str().c_str(), allowed);
       };
       auto storeFloatCut = [&m, &allowed](CutBrick<float>*& brickvar) {
-        if (brickvar != nullptr) {
-          delete brickvar;
-        }
+        delete brickvar;
+
         brickvar = CutBrick<float>::constructBrick(m[1].str().c_str(), m[2].str().c_str(), allowed);
       };
       /* b-field requires speciat treatment */
@@ -423,7 +413,7 @@ void EventSelectionFilterAndAnalysis::ComplexBrickHelper::armedBrick(uint64_t& a
     }
   };
 
-  if (mAlternateEstimatorIndex.size() > 0) {
+  if (!mAlternateEstimatorIndex.empty()) {
     /* we have alternative estimators so our brick is of kind cwv */
     if (mBrick->IsA() != CutWithVariations<float>::Class()) {
       LOGF(fatal, "EventSelectionFilterAndAnalysis::filter() expected class with variations cut but it is not there");
@@ -433,11 +423,11 @@ void EventSelectionFilterAndAnalysis::ComplexBrickHelper::armedBrick(uint64_t& a
     if (deflst.GetEntries() > 1) {
       LOGF(fatal, "EventSelectionFilterAndAnalysis::filter() expected only one default multiplicity class estimator");
     }
-    armedBrick((CutBrick<float>*)deflst.At(0), true);
+    armedBrick(dynamic_cast<CutBrick<float>*>(deflst.At(0)), true);
     /* and now the variants */
     TList& varlst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getVariantBricks();
     for (int i = 0; i < varlst.GetEntries(); ++i) {
-      armedBrick((CutBrick<float>*)varlst.At(i), true);
+      armedBrick(dynamic_cast<CutBrick<float>*>(varlst.At(i)), true);
     }
   } else {
     /* no alternative estimators, just the default */

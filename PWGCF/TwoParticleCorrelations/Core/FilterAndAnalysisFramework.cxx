@@ -26,7 +26,6 @@
 #include <Framework/Logger.h>
 
 #include <TList.h>
-#include <TNamed.h>
 #include <TObjString.h>
 
 #include <Rtypes.h>
@@ -45,19 +44,8 @@ ClassImp(FilterAndAnalysisFramework);
 
 /// \brief Default constructor
 FilterAndAnalysisFramework::FilterAndAnalysisFramework()
-  : TNamed(),
-    ccdburl(""),
-    ccdbpath(""),
-    filterdate(""),
-    forceupdate(false),
-    fTrackFilter(nullptr),
-    fEventFilter(nullptr),
-    fPIDFilter(nullptr),
-    tmpTrackFilter(nullptr),
-    tmpEventFilter(nullptr),
-    tmpPIDFilter(nullptr)
-{
-}
+
+  = default;
 
 /// \brief Named constructor for a concrete operating mode
 void FilterAndAnalysisFramework::setConfiguration(EventSelectionConfigurable& evtf, TrackSelectionConfigurable& trkf, PIDSelectionConfigurable& pidf, SelectionFilterAndAnalysis::Selmodes mode)
@@ -96,7 +84,7 @@ void FilterAndAnalysisFramework::registerConfiguration()
   uint64_t eot = timestamp + (12 * 60 * 60 * 1000 - 1000); /* one second before the end of the day */
 
   /* get access to the CCDB */
-  o2::ccdb::CcdbApi* ccdb = new o2::ccdb::CcdbApi();
+  auto* ccdb = new o2::ccdb::CcdbApi();
   ccdb->init(ccdburl);
   o2::ccdb::BasicCCDBManager* ccdbm = &o2::ccdb::BasicCCDBManager::instance();
   ccdbm->setFatalWhenNull(false); /* we need to check the availability of objects */
@@ -104,7 +92,7 @@ void FilterAndAnalysisFramework::registerConfiguration()
   signatures = ccdbm->getForTimeStamp<TList>(ccdbpath, timestamp);
 
   auto storesignatures = [&]() {
-    TList* siglst = new TList();
+    auto* siglst = new TList();
     siglst->SetOwner();
     siglst->SetName("Skimming signatures");
     siglst->Add(new TObjString(tmpEventFilter->getCutStringSignature().Data()));
