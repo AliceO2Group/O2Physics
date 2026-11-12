@@ -373,6 +373,7 @@ struct PidDiHadronWithCasc {
     UseOccupancy,
     UseMultCorrCut,
     UseT0AV0ACut,
+    UseHasCascCut,
     NumEventCuts
   };
   enum TrackCuts {
@@ -499,9 +500,15 @@ struct PidDiHadronWithCasc {
       axisEventClass = {axisCentForCorr, "Centrality"};
     }
 
+    o2::framework::AxisSpec axisMult = axisMultMix;
+    o2::framework::AxisSpec axisVtx = axisVtxMix;
+    int nMultBins = axisMult.binEdges.size() - 1;
+    int nVtxBins = axisVtx.binEdges.size() - 1;
+    validCollisions.resize(nMultBins * nVtxBins);
+
     // Event Counter
     if ((doprocessSame || doprocessSameReso || doprocessMCPID) && cfgEvSel.cfgUseAdditionalEventCut) {
-      histos.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{15, -0.5, 14.5}}});
+      histos.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{16, -0.5, 15.5}}});
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvents + 1, "Filtered events");
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(AfterSel8 + 1, "After sel8");
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
@@ -516,6 +523,7 @@ struct PidDiHadronWithCasc {
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseOccupancy + 1, "Occupancy Cut");
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseMultCorrCut + 1, "MultCorrelation Cut");
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseT0AV0ACut + 1, "T0AV0A cut");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseHasCascCut + 1, "Cascades Event cut");
     }
 
     if (cfgPIDConfigs.cfgPIDUseReso && cfgPIDConfigs.cfgPIDParticle == UseK0) { // For K0
@@ -632,6 +640,9 @@ struct PidDiHadronWithCasc {
       histos.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
       histos.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
     }
+    if (doprocessMixedBuffer) {
+      histos.add("EventPoolMixed", "", {HistType::kTH2D, {axisMultMix, axisVtxMix}});
+    }
 
     if (doprocessSame) {
       if (cfgGeneral.cfgQABasic) {
@@ -686,7 +697,7 @@ struct PidDiHadronWithCasc {
       }
     }
 
-    if (doprocessMixed || doprocessMixedReso || doprocessMixedMC) {
+    if (doprocessMixed || doprocessMixedReso || doprocessMixedMC || doprocessMixedBuffer) {
       histos.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
     }
 
@@ -1969,6 +1980,9 @@ struct PidDiHadronWithCasc {
       if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband) {
         return;
       }
+      if (cfgEvSel.cfgUseAdditionalEventCut) {
+        histos.fill(HIST("hEventCount"), UseHasCascCut);
+      }
     }
 
     loadCorrection(bc.timestamp());
@@ -2081,7 +2095,7 @@ struct PidDiHadronWithCasc {
   PROCESS_SWITCH(PidDiHadronWithCasc, processMixed, "Process mixed events", true);
 
   // the process for filling the mixed events by buffer
-  void processMixedBuffer(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::CascDatas const& cascades, DaughterTracks const&)
+  void processMixedBuffer(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::CascDatas const& cascades, aod::BCsWithTimestamps const&, DaughterTracks const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     ValidCollision currentCollision;
@@ -2092,10 +2106,10 @@ struct PidDiHadronWithCasc {
     currentCollision.pvz = collision.posZ();
     currentCollision.mult = tracks.size();
 
-    nBinsMult = histos.get<TH1>(HIST("Nch"))->GetNbinsX();
-    binMult = histos.get<TH1>(HIST("Nch"))->GetXaxis()->FindBin(tracks.size()) - 1;
-    nBinsVtxZ = histos.get<TH1>(HIST("zVtx"))->GetNbinsX();
-    binVtxZ = histos.get<TH1>(HIST("zVtx"))->GetXaxis()->FindBin(collision.posZ()) - 1;
+    nBinsMult = histos.get<TH2>(HIST("EventPoolMixed"))->GetNbinsX();
+    binMult = histos.get<TH2>(HIST("EventPoolMixed"))->GetXaxis()->FindBin(tracks.size()) - 1;
+    nBinsVtxZ = histos.get<TH2>(HIST("EventPoolMixed"))->GetNbinsY();
+    binVtxZ = histos.get<TH2>(HIST("EventPoolMixed"))->GetYaxis()->FindBin(collision.posZ()) - 1;
     if (binVtxZ < 0 || binVtxZ > nBinsVtxZ - 1 || binMult < 0 || binMult > nBinsMult - 1) {
       return;
     }
@@ -2677,6 +2691,9 @@ struct PidDiHadronWithCasc {
       }
       if (cfgEvSel.cfgEvSelIsSideband.value && !haveCascSideband) {
         return;
+      }
+      if (cfgEvSel.cfgUseAdditionalEventCut) {
+        histos.fill(HIST("hEventCount"), UseHasCascCut);
       }
     }
 
