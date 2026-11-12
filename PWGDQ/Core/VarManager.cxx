@@ -288,14 +288,14 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
         break;
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
-        return o2::dqconstants::InvalidValue; // Return zero if species is invalid
+        return o2::dqconstants::InvalidValueI; // Return zero if species is invalid
     }
 
     TH3F* calibMeanHist = dynamic_cast<TH3F*>(fgCalibs[calibMean]);
     TH3F* calibSigmaHist = dynamic_cast<TH3F*>(fgCalibs[calibSigma]);
     if (!calibMeanHist || !calibSigmaHist) {
       LOG(fatal) << "Calibration histograms not found for species: " << species;
-      return o2::dqconstants::InvalidValue; // Return zero if histograms are not found
+      return o2::dqconstants::InvalidValueI; // Return zero if histograms are not found
     }
 
     // Get the bin indices for the calibration histograms
@@ -340,7 +340,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
         break;
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
-        return o2::dqconstants::InvalidValue; // Return zero if species is invalid
+        return o2::dqconstants::InvalidValueI; // Return zero if species is invalid
     }
 
     THnF* calibMeanHist = dynamic_cast<THnF*>(fgCalibs[calibMean]);
@@ -348,7 +348,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     THnF* calibStatusHist = dynamic_cast<THnF*>(fgCalibs[calibStatus]);
     if (!calibMeanHist || !calibSigmaHist || !calibStatusHist) {
       LOG(fatal) << "Calibration histograms not found for species: " << species;
-      return o2::dqconstants::InvalidValue; // Return zero if histograms are not found
+      return o2::dqconstants::InvalidValueI; // Return zero if histograms are not found
     }
 
     // Get the bin indices for the calibration histograms

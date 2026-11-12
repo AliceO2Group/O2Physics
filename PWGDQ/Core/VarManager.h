@@ -2768,7 +2768,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
 
   // compute the unbinned bimodality coefficient and related statistics
   auto [bimodalityCoefficient, mean, stddev, skewness, kurtosis, nPeaks] = BimodalityCoefficientAndNPeaks(dcazValues, o2::dqconstants::defaults::BimodalityInvalidBinWidth);
-  if (IsStdDevValid(stddev)) {
+  if (o2::dqconstants::IsStdDevValid(stddev)) {
     values[kDCAzBimodalityCoefficient] = bimodalityCoefficient;
     values[kDCAzMean] = mean;
     values[kDCAzRMS] = stddev;
@@ -2785,7 +2785,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
   }
   // compute the binned bimodality coefficient and related statistics with a bin width of 50um
   auto [bimodalityCoefficientBin, meanBin, stddevBin, skewnessBin, kurtosisBin, nPeaksBin] = BimodalityCoefficientAndNPeaks(dcazValues, o2::dqconstants::defaults::BimodalityBinWidth);
-  if (IsStdDevValid(stddevBin)) {
+  if (o2::dqconstants::IsStdDevValid(stddevBin)) {
     values[kDCAzBimodalityCoefficientBinned] = bimodalityCoefficientBin;
   } else {
     values[kDCAzBimodalityCoefficientBinned] = o2::dqconstants::InvalidValueF;
@@ -2795,7 +2795,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
   // compute the binned bimodality coefficient and related statistics with a bin width of 50um and different trimming versions
   // more then 3 counts per bin
   auto [bimodalityCoefficientBinTrimmed1, meanBinTrimmed1, stddevBinTrimmed1, skewnessBinTrimmed1, kurtosisBinTrimmed1, nPeaksBinTrimmed1] = BimodalityCoefficientAndNPeaks(dcazValues, o2::dqconstants::defaults::BimodalityBinWidth, 4);
-  if (IsStdDevValid(stddevBinTrimmed1)) {
+  if (o2::dqconstants::IsStdDevValid(stddevBinTrimmed1)) {
     values[kDCAzBimodalityCoefficientBinnedTrimmed1] = bimodalityCoefficientBinTrimmed1;
     values[kDCAzMeanBinnedTrimmed1] = meanBinTrimmed1;
     values[kDCAzRMSBinnedTrimmed1] = stddevBinTrimmed1;
@@ -2808,7 +2808,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
   // cout << "Bimodality coefficient (trimmed 1): " << bimodalityCoefficientBinTrimmed1 << ", mean: " << meanBinTrimmed1 << ", stddev: " << stddevBinTrimmed1 << ", skewness: " << skewnessBinTrimmed1 << ", kurtosis: " << kurtosisBinTrimmed1 << ", nPeaks: " << nPeaksBinTrimmed1 << endl;
   // more than 3% of the entries per peak
   auto [bimodalityCoefficientBinTrimmed2, meanBinTrimmed2, stddevBinTrimmed2, skewnessBinTrimmed2, kurtosisBinTrimmed2, nPeaksBinTrimmed2] = BimodalityCoefficientAndNPeaks(dcazValues, o2::dqconstants::defaults::BimodalityBinWidth, -100);
-  if (IsStdDevValid(stddevBinTrimmed2)) {
+  if (o2::dqconstants::IsStdDevValid(stddevBinTrimmed2)) {
     values[kDCAzBimodalityCoefficientBinnedTrimmed2] = bimodalityCoefficientBinTrimmed2;
     values[kDCAzMeanBinnedTrimmed2] = meanBinTrimmed2;
     values[kDCAzRMSBinnedTrimmed2] = stddevBinTrimmed2;
@@ -2821,7 +2821,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
   // cout << "Bimodality coefficient (trimmed 2): " << bimodalityCoefficientBinTrimmed2 << ", mean: " << meanBinTrimmed2 << ", stddev: " << stddevBinTrimmed2 << ", skewness: " << skewnessBinTrimmed2 << ", kurtosis: " << kurtosisBinTrimmed2 << ", nPeaks: " << nPeaksBinTrimmed2 << endl;
   // more than 5% of the entries per peak
   auto [bimodalityCoefficientBinTrimmed3, meanBinTrimmed3, stddevBinTrimmed3, skewnessBinTrimmed3, kurtosisBinTrimmed3, nPeaksBinTrimmed3] = BimodalityCoefficientAndNPeaks(dcazValues, o2::dqconstants::defaults::BimodalityBinWidth, -20);
-  if (IsStdDevValid(stddevBinTrimmed3)) {
+  if (o2::dqconstants::IsStdDevValid(stddevBinTrimmed3)) {
     values[kDCAzBimodalityCoefficientBinnedTrimmed3] = bimodalityCoefficientBinTrimmed3;
     values[kDCAzMeanBinnedTrimmed3] = meanBinTrimmed3;
     values[kDCAzRMSBinnedTrimmed3] = stddevBinTrimmed3;
