@@ -255,6 +255,40 @@ inline float getPairPhiFromEventPlaneAngle(const ROOT::Math::PtEtaPhiMVector& pa
   return phi;
 }
 
+/// Rotate the transverse components of the pair relative momentum from the
+/// out-side frame (q_out, q_side) to the event-plane frame (q_x, q_y).
+///
+/// Conventions (q = p1 - p2, components in GeV/c):
+///  - out-side frame (computeBertschPrattLCMS): q_out is along the pair
+///    transverse momentum K_T = p1,T + p2,T (azimuth phi_pair), q_side is
+///    perpendicular to K_T in the transverse plane, q_long is along the beam
+///    in the LCMS.
+///  - event-plane frame: x-axis along the event-plane direction Psi_EP
+///    (col.eventPlaneAngle(), i.e. Psi_n of the harmonic and detector
+///    configured in the collision builder), z-axis along the beam,
+///    y = z cross x, i.e. at Psi_EP + pi/2.
+///    q_x: in-plane component (along Psi_EP),
+///    q_y: out-of-plane component (perpendicular to Psi_EP),
+///    q_z: identical to q_long (not rotated, not returned here).
+///  - The rotation angle is the signed pair angle
+///    phi = phi_pair - Psi_EP (getPairPhiFromEventPlaneAngle), so
+///      q_x = q_out cos(phi) - q_side sin(phi)
+///      q_y = q_out sin(phi) + q_side cos(phi)
+///    Since the longitudinal boost to the LCMS leaves the transverse plane
+///    unchanged, (q_x, q_y) equal the lab transverse components of p1 - p2
+///    projected onto the event-plane axes.
+///  - The sign of (q_x, q_y) flips with the pair ordering and, for the
+///    2nd harmonic (Psi_2 defined modulo pi), with Psi_EP -> Psi_EP + pi;
+///    only quantities invariant under (q_x, q_y) -> (-q_x, -q_y)
+///    (e.g. |q_x|, |q_y|, q_x^2, q_y^2, q_x q_y) are physically meaningful.
+/// \return {q_x, q_y}
+inline std::tuple<float, float> rotateToEventPlane(float qOut, float qSide, float pairPhiFromEventPlaneAngle)
+{
+  const float cosPhi = std::cos(pairPhiFromEventPlaneAngle);
+  const float sinPhi = std::sin(pairPhiFromEventPlaneAngle);
+  return {qOut * cosPhi - qSide * sinPhi, qOut * sinPhi + qSide * cosPhi};
+}
+
 // triplet-only helpers
 
 inline ROOT::Math::PxPyPzEVector getqij(ROOT::Math::PxPyPzEVector const& vi, ROOT::Math::PxPyPzEVector const& vj)
