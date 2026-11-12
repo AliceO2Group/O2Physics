@@ -916,6 +916,8 @@ class VarManager : public TObject
     kU2Q2,
     kU2Q2POS,
     kU2Q2NEG,
+    kU2Q2FT0A, // New U2Q2-variable for FT0A
+    kU2Q2FT0C, // New U2Q2-variable for FT0C
     kU3Q3,
     kQ42XA,
     kQ42YA,
@@ -6426,6 +6428,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kU2Q2] = values[kQ2X0A] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0A] * TMath::Sin(2 * v12.Phi());
   values[kU2Q2POS] = values[kQ2X0APOS] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0APOS] * TMath::Sin(2 * v12.Phi());
   values[kU2Q2NEG] = values[kQ2X0ANEG] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0ANEG] * TMath::Sin(2 * v12.Phi());
+  values[kU2Q2FT0A] = values[kQ2X0B] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0B] * TMath::Sin(2 * v12.Phi()); // Addition of new U2Q2 values for FT0A
+  values[kU2Q2FT0C] = values[kQ2X0C] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0C] * TMath::Sin(2 * v12.Phi()); // Addition of new U2Q2 values for FT0C
   values[kU3Q3] = values[kQ3X0A] * TMath::Cos(3 * v12.Phi()) + values[kQ3Y0A] * TMath::Sin(3 * v12.Phi());
   values[kR2SP_AB] = (values[kQ2X0A] * values[kQ2X0B] + values[kQ2Y0A] * values[kQ2Y0B]);
   values[kR2SP_AC] = (values[kQ2X0A] * values[kQ2X0C] + values[kQ2Y0A] * values[kQ2Y0C]);

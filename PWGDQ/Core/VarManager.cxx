@@ -1349,12 +1349,16 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingLxyzProjected] = "cm";
   fgVariableNames[kVertexingTauzProjected] = "Pair pseudo-proper Tauz";
   fgVariableUnits[kVertexingTauzProjected] = "ns";
-  fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper Tauxy";
-  fgVariableUnits[kVertexingTauxyProjected] = "ns";
-  fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper Tauxy (with pole JPsi mass)";
-  fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "ns";
-  fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
-  fgVariableUnits[kVertexingTauxyzProjected] = "ns";
+  // Change of incorrect unit labeling (from ns to cm)
+  fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper decay length";
+  fgVariableUnits[kVertexingTauxyProjected] = "cm";
+  fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper decay length (with pole JPsi mass)";
+  fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "cm";
+  fgVariableNames[kVertexingTauxyProjectedNs] = "Pair pseudo-proper decay time";
+  fgVariableUnits[kVertexingTauxyProjectedNs] = "ns";
+  fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper decay length";
+  fgVariableUnits[kVertexingTauxyzProjected] = "cm";
+
   fgVariableNames[kMCVertexingLxyProjected] = "MC Lxy_{proj}";
   fgVariableUnits[kMCVertexingLxyProjected] = "cm";
   fgVariableNames[kMCVertexingLzProjected] = "MC Lz_{proj}";
@@ -1515,6 +1519,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ4Y0C] = "";
   fgVariableNames[kU2Q2] = "u_{2}Q_{2}^{A} ";
   fgVariableUnits[kU2Q2] = "";
+  fgVariableNames[kU2Q2FT0A] = "u_{2}Q_{2}^{FT0A} "; // Added variable for the U2Q2-values for FT0A
+  fgVariableUnits[kU2Q2FT0A] = "";
+  fgVariableNames[kU2Q2FT0C] = "u_{2}Q_{2}^{FT0C} "; // Added variable for the U2Q2-values for FT0C
+  fgVariableUnits[kU2Q2FT0C] = "";
   fgVariableNames[kU3Q3] = "u_{3}Q_{3}^{A} ";
   fgVariableUnits[kU3Q3] = "";
   fgVariableNames[kQ42XA] = "Q_{42,x}^{A} ";
@@ -2715,6 +2723,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kWV2SP"] = kWV2SP;
   fgVarNamesMap["kWV2EP"] = kWV2EP;
   fgVarNamesMap["kU2Q2"] = kU2Q2;
+  fgVarNamesMap["kU2Q2FT0A"] = kU2Q2FT0A; // Added variable names for U2Q2 in FT0A
+  fgVarNamesMap["kU2Q2FT0C"] = kU2Q2FT0C; // Added variable names for U2Q2 in FT0C
   fgVarNamesMap["kU3Q3"] = kU3Q3;
   fgVarNamesMap["kQ42XA"] = kQ42XA;
   fgVarNamesMap["kQ42YA"] = kQ42YA;
