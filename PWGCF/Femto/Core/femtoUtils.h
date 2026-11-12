@@ -96,6 +96,12 @@ constexpr int DeltaPlusPlus1232 = 2224;
 constexpr int Xi01530 = 3324;
 constexpr int XiMinus1530 = 3314;
 
+// Sigma(1385) baryons: same situation as Delta(1232)/Xi(1530) above -- no enum entry and no
+// mass constant exists anywhere in O2, so both are hardcoded here.
+constexpr int SigmaMinus1385 = 3114;
+constexpr int Sigma01385 = 3214;
+constexpr int SigmaPlus1385 = 3224;
+
 inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
@@ -184,6 +190,30 @@ inline double getPdgMass(int pdgCode)
     case kLambda1520:
       mass = o2::constants::physics::MassLambda1520;
       break;
+    case kDown:
+      mass = o2::constants::physics::MassDown;
+      break;
+    case kUp:
+      mass = o2::constants::physics::MassUp;
+      break;
+    case kStrange:
+      mass = o2::constants::physics::MassStrange;
+      break;
+    case kCharm:
+      mass = o2::constants::physics::MassCharm;
+      break;
+    case kBottom:
+      mass = o2::constants::physics::MassBottom;
+      break;
+    case kTop:
+      mass = o2::constants::physics::MassTop;
+      break;
+    case kGluon:
+      mass = o2::constants::physics::MassGluon;
+      break;
+    case kElectron:
+      mass = o2::constants::physics::MassElectron;
+      break;
     case DeltaMinus1232:
     case Delta01232:
     case DeltaPlus1232:
@@ -193,6 +223,11 @@ inline double getPdgMass(int pdgCode)
     case Xi01530:
     case XiMinus1530:
       mass = 1.532; // not defined in O2?
+      break;
+    case SigmaMinus1385:
+    case Sigma01385:
+    case SigmaPlus1385:
+      mass = 1.3837; // not defined in O2?
       break;
     default:
       LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
