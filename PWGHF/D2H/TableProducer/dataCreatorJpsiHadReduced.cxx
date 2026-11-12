@@ -491,7 +491,7 @@ struct HfDataCreatorJpsiHadReduced {
                            int8_t& flagWrongCollision)
   {
 
-    if (particleMother.mcCollision().globalIndex() != collision.mcCollisionId()) {
+    if (particleMother.mcCollisionId() != collision.mcCollisionId()) {
       flagWrongCollision = WrongCollisionType::WrongAssociation;
     } else {
       if (collision.globalIndex() != indexCollisionMaxNumContrib) {
@@ -858,7 +858,7 @@ struct HfDataCreatorJpsiHadReduced {
           for (const auto& dau : jpsiPart.template daughters_as<aod::McParticles>()) {
             jpsiDauPdgs.push_back(dau.pdgCode());
           }
-          if (std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kMuonMinus) == 1 && std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), -kMuonMinus) && jpsiDauPdgs.size() - std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kGamma) == nProngsJpsi) {
+          if (std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kMuonMinus) == 1 && std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), -kMuonMinus) == 1 && jpsiDauPdgs.size() - std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kGamma) == nProngsJpsi) {
             flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiKToMuMuK;
           }
         }
@@ -897,7 +897,7 @@ struct HfDataCreatorJpsiHadReduced {
           for (const auto& dau : jpsiPart.template daughters_as<aod::McParticles>()) {
             jpsiDauPdgs.push_back(dau.pdgCode());
           }
-          if (std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kMuonMinus) == 1 && std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), -kMuonMinus) && jpsiDauPdgs.size() - std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kGamma) == nProngsJpsi) {
+          if (std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kMuonMinus) == 1 && std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), -kMuonMinus) == 1 && jpsiDauPdgs.size() - std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kGamma) == nProngsJpsi) {
             flag = sign * o2::hf_decay::hf_cand_beauty::B0ToJpsiPiKToMuMuPiK;
           }
           const auto& kStarPart = particlesMc.rawIteratorAt(particle.daughtersIds().back());
@@ -941,7 +941,7 @@ struct HfDataCreatorJpsiHadReduced {
           for (const auto& dau : jpsiPart.template daughters_as<aod::McParticles>()) {
             jpsiDauPdgs.push_back(dau.pdgCode());
           }
-          if (std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kMuonMinus) == 1 && std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), -kMuonMinus) && jpsiDauPdgs.size() - std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kGamma) == nProngsJpsi) {
+          if (std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kMuonMinus) == 1 && std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), -kMuonMinus) == 1 && jpsiDauPdgs.size() - std::count(jpsiDauPdgs.begin(), jpsiDauPdgs.end(), kGamma) == nProngsJpsi) {
             flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiKKToMuMuKK;
           }
           const auto& phiPart = particlesMc.rawIteratorAt(particle.daughtersIds().back());
