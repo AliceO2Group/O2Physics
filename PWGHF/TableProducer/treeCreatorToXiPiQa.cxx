@@ -18,7 +18,7 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/AliasTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -434,7 +434,7 @@ struct HfTreeCreatorToXiPiQa {
                          candidate.errorImpactParameter1(),
                          candidate.massLambda(),
                          candidate.massCascade(),
-                         HfHelperQa::invMassXiczeroToXiPi(candidate),
+                         HfHelper::invMassXiczeroToXiPi(candidate),
                          candidate.cpaV0(),
                          candidate.cpa(),
                          candidate.cpaCascade(),
@@ -513,14 +513,14 @@ struct HfTreeCreatorToXiPiQa {
                          candidate.errorImpactParameter1(),
                          candidate.massLambda(),
                          candidate.massCascade(),
-                         HfHelperQa::invMassXiczeroToXiPi(candidate),
+                         HfHelper::invMassXiczeroToXiPi(candidate),
                          candidate.cpaV0(),
                          candidate.cpa(),
                          candidate.cpaCascade(),
                          candidate.cpaXYV0(),
                          candidate.cpaXY(),
                          candidate.cpaXYCascade(),
-                         HfHelperQa::ctXiczero(candidate),
+                         HfHelper::ctXiczero(candidate),
                          trackV0PosDau.eta(),
                          trackV0NegDau.eta(),
                          trackPiFromCasc.eta(),
@@ -602,12 +602,12 @@ struct HfTreeCreatorToXiPiQa {
                        candidate.cpaCascade(),
                        candidate.massLambda(),
                        candidate.massCascade(),
-                       HfHelperQa::invMassXiczeroToXiPi(candidate),
-                       HfHelperQa::yXiczero(candidate),
+                       HfHelper::invMassXiczeroToXiPi(candidate),
+                       HfHelper::yXiczero(candidate),
                        RecoDecay::sqrtSumOfSquares(candidate.pxProng1(), candidate.pyProng1()),
                        candidate.pt(),
-                       HfHelperQa::cosThetaStarXiczeroToXiPi(candidate),
-                       HfHelperQa::ctXiczero(candidate),
+                       HfHelper::cosThetaStarXiczeroToXiPi(candidate),
+                       HfHelper::ctXiczero(candidate),
                        candidate.eta(),
                        candidate.ndfGeoV0(),
                        candidate.ndfGeoCascade(),

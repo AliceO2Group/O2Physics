@@ -18,7 +18,7 @@
 #include "PWGHF/Core/HfMlResponseOmegacToOmegaPiQa.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -616,7 +616,7 @@ struct HfCandidateSelectorToOmegaPiQa {
         registry.fill(HIST("hSelStatusHf"), 9.0);
 
         // ctau
-        if (std::abs(HfHelperQa::ctOmegaczero(candidate)) > kfConfigurableGroup.cTauOmegacMax) {
+        if (std::abs(HfHelper::ctOmegaczero(candidate)) > kfConfigurableGroup.cTauOmegacMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 10.0);
@@ -639,7 +639,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       registry.fill(HIST("hSelStatusHf"), 5.0);
     }
 
-    double const invMassCharmBaryon = HfHelperQa::invMassOmegaczeroToOmegaPi(candidate);
+    double const invMassCharmBaryon = HfHelper::invMassOmegaczeroToOmegaPi(candidate);
     if ((invMassCharmBaryon < invMassCharmBaryonMin) || (invMassCharmBaryon > invMassCharmBaryonMax)) {
       return false;
     }
@@ -809,7 +809,7 @@ struct HfCandidateSelectorToOmegaPiQa {
         SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoMl);
       }
 
-      registry.fill(HIST("hInvMassCharmBaryon"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate));
+      registry.fill(HIST("hInvMassCharmBaryon"), HfHelper::invMassOmegaczeroToOmegaPi(candidate));
       registry.fill(HIST("hPtCharmBaryon"), candidate.pt());
 
       hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);

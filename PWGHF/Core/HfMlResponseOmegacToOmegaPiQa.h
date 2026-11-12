@@ -19,7 +19,7 @@
 #define PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPIQA_H_
 
 #include "PWGHF/Core/HfMlResponse.h"
-#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Tools/ML/MlResponse.h"
 
@@ -57,7 +57,7 @@
 // where GETTER is a method of HfHelper
 #define CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER(OBJECT, FEATURE, GETTER)    \
   case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPiQa::FEATURE): { \
-    inputFeatures.emplace_back(HfHelperQa::GETTER(OBJECT));             \
+    inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));               \
     break;                                                              \
   }
 

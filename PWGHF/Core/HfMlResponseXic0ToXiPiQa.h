@@ -17,7 +17,7 @@
 #define PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIQA_H_
 
 #include "PWGHF/Core/HfMlResponse.h"
-#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Tools/ML/MlResponse.h"
 
@@ -52,7 +52,7 @@
 // Variation of CHECK_AND_FILL_VEC_XIC0_FULL for HfHelper methods
 #define CHECK_AND_FILL_VEC_XIC0_HFHELPER(OBJECT, FEATURE, GETTER)  \
   case static_cast<uint8_t>(InputFeaturesXic0ToXiPiQa::FEATURE): { \
-    inputFeatures.emplace_back(HfHelperQa::GETTER(OBJECT));        \
+    inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));          \
     break;                                                         \
   }
 

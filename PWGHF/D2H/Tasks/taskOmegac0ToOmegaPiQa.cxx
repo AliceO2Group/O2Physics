@@ -16,7 +16,7 @@
 /// \author Maria Fernanda Torres Cabrera <maria.fernanda.torres.cabrera@cern.ch>, University of Houston
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/DataModel/CandidateReconstructionTablesQa.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
@@ -164,15 +164,15 @@ struct HfTaskOmegac0ToOmegaPiQa {
   void runDataAnalysis(const CandType& candidates)
   {
     for (const auto& candidate : candidates) {
-      const auto yOmegac = HfHelperQa::yOmegaczero(candidate);
+      const auto yOmegac = HfHelper::yOmegaczero(candidate);
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
         continue;
       }
 
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegaC0ToOmegaPi()[0]);
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac);
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac);
       }
     }
   }
@@ -180,7 +180,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
   template <bool UseCentrality, bool ApplyMl, typename CandType, typename CollType>
   void runDataAnalysisCentPerCandidate(const CandType& candidate, CollType const& collision)
   {
-    const double yOmegac = HfHelperQa::yOmegaczero(candidate);
+    const double yOmegac = HfHelper::yOmegaczero(candidate);
     if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
       return;
     }
@@ -189,15 +189,15 @@ struct HfTaskOmegac0ToOmegaPiQa {
     if constexpr (UseCentrality) {
       float const cent = o2::hf_centrality::getCentralityColl(collision);
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, cent, numPvContributors, candidate.mlProbOmegaC0ToOmegaPi()[0]);
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, cent, numPvContributors, candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, cent, numPvContributors);
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, cent, numPvContributors);
       }
     } else {
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegaC0ToOmegaPi()[0]);
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac);
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac);
       }
     }
   }
@@ -207,15 +207,15 @@ struct HfTaskOmegac0ToOmegaPiQa {
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      const double yOmegac = HfHelperQa::yOmegaczero(candidate);
+      const double yOmegac = HfHelper::yOmegaczero(candidate);
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
         continue;
       }
 
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegaC0ToOmegaPi()[0]);
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
       }
     }
 
@@ -243,7 +243,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      const double yOmegac = HfHelperQa::yOmegaczero(candidate);
+      const double yOmegac = HfHelper::yOmegaczero(candidate);
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
         continue;
       }
@@ -253,9 +253,9 @@ struct HfTaskOmegac0ToOmegaPiQa {
       float const mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
 
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegaC0ToOmegaPi()[0]);
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
-        registry.fill(HIST("hReco"), HfHelperQa::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
+        registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
       }
     }
 
