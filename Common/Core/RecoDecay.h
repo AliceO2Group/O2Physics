@@ -1197,9 +1197,9 @@ struct RecoDecay {
     if (spinCode != PdgDiquarkSpin0Code && spinCode != PdgDiquarkSpin1Code) {
       return false;
     }
-    const int quark1 = absPdgCode / PdgDivisorBaryon;
-    const int quark2 = (absPdgCode % PdgDivisorBaryon) / PdgDivisorMeson;
-    return quark1 >= PDG_t::kDown && quark1 <= PDG_t::kTop && quark2 >= PDG_t::kDown && quark1 >= quark2;
+    const int pdgQuark1 = absPdgCode / PdgDivisorBaryon;
+    const int pdgQuark2 = (absPdgCode % PdgDivisorBaryon) / PdgDivisorMeson;
+    return pdgQuark1 >= PDG_t::kDown && pdgQuark1 <= PDG_t::kTop && pdgQuark2 >= PDG_t::kDown && pdgQuark1 >= pdgQuark2;
   }
 
   /// based on getCharmHardronOrigin in order to extend general particle
