@@ -394,6 +394,12 @@ struct PhiStrangeCorrelation {
 
     histos.add("phi/h3PhiData", "Invariant mass of Phi in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis}, true);
 
+    // Entries dropped because an efficiency could not be computed (see computeWeight), in the coordinates of the
+    // particle whose efficiency failed: SE counts phi candidates (each with all its pairs) and pairs lost to the
+    // associated efficiency, ME counts pairs
+    histos.add("zeroEfficiency/SE/h3Phi", "Phi candidates dropped for zero Phi efficiency, SE", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+    histos.add("zeroEfficiency/ME/h3Phi", "Phi-associated pairs dropped for zero Phi efficiency, ME", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+
     histos.add("phi/h4PhiMCReco", "Phi in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPhiAxis, yAxis});
     histos.add("phi/h3PhiMCGen", "Phi in MC Gen", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
     histos.add("phi/h4PhiMCGenAssocReco", "Phi in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPhiAxis, yAxis});
@@ -419,6 +425,9 @@ struct PhiStrangeCorrelation {
         histos.add(fmt::format("phi{}/h5Phi{}Data{}", pName, pName, label).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in Data", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, deltaphiAxis}, true);
         histos.add(fmt::format("phi{}/h5Phi{}DataME{}", pName, pName, label).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in Data ME", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, deltaphiAxis}, true);
       }
+
+      histos.add(fmt::format("zeroEfficiency/SE/h3{}", pName).c_str(), fmt::format("Phi-{} pairs dropped for zero {} efficiency, SE", pTitle, pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
+      histos.add(fmt::format("zeroEfficiency/ME/h3{}", pName).c_str(), fmt::format("Phi-{} pairs dropped for zero {} efficiency, ME", pTitle, pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
 
       histos.add(fmt::format("{}/h4{}MCReco", dir, pName).c_str(), fmt::format("{} in MC Reco", pTitle).c_str(), kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTAxes[i], yAxis});
       histos.add(fmt::format("{}/h3{}MCGen", dir, pName).c_str(), fmt::format("{} in MC Gen", pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
@@ -506,9 +515,14 @@ struct PhiStrangeCorrelation {
   // Weight of an entry: the inverse of the product of the efficiencies of the maps it reads. Only the weight goes into
   // the histograms, whose Sumw2 then gives the statistical variance, sum of w^2. The uncertainty of the maps is not
   // added per entry: it is the same for every entry reading a map bin, so it adds linearly within the bin, which a
-  // per-entry sum in quadrature underestimates by sqrt(N); it is propagated offline
+  // per-entry sum in quadrature underestimates by sqrt(N); it is propagated offline.
+  //
+  // Empty when an efficiency cannot be computed: a map bin without reconstructed MC, or a candidate outside the map,
+  // reads 0, and interpolation near such bins can give a non-positive or non-finite value. Such an entry is dropped and
+  // counted (zeroEfficiency/), as the candidates beyond the last pT bin of the maps already are: a weight of 1 instead
+  // would mix corrected and uncorrected entries in one bin
   template <typename... BoundEffMaps>
-  float computeWeight(const BoundEffMaps&... boundEffMaps)
+  std::optional<float> computeWeight(const BoundEffMaps&... boundEffMaps)
   {
     if (!efficiencyConfigs.applyEfficiency) {
       return 1.0f;
@@ -517,20 +531,23 @@ struct PhiStrangeCorrelation {
     float effTot = 1.0f;
 
     auto processMap = [&](const auto& boundMap) {
-      effTot *= efficiencyConfigs.useEffInterpolation ? boundMap.interpolateEfficiency() : boundMap.getBinEfficiency();
+      const float eff = efficiencyConfigs.useEffInterpolation ? boundMap.interpolateEfficiency() : boundMap.getBinEfficiency();
+      if (!(eff > 0.0f) || !std::isfinite(eff)) {
+        return false;
+      }
+      effTot *= eff;
+      return true;
     };
 
-    (processMap(boundEffMaps), ...); // Fold expression to process all bound efficiency maps
-
-    if (effTot <= 0.0f) {
-      return 1.0f;
+    if (!(processMap(boundEffMaps) && ...)) { // Fold expression, stops at the first efficiency that cannot be computed
+      return std::nullopt;
     }
 
     return 1.0f / effTot;
   }
 
   template <AssociatedParticleType PartType>
-  float computeAssocWeight(float multiplicity, const auto& phiCand, const auto& assocCand)
+  std::optional<float> computePhiAssocWeight(float multiplicity, const auto& phiCand, const auto& assocCand)
   {
     return computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
                          BoundEfficiencyMap(effMapsAssoc[PartType], multiplicity, assocCand.pt(), assocCand.y()));
@@ -711,8 +728,19 @@ struct PhiStrangeCorrelation {
       return;
     }
 
-    auto weight = computeAssocWeight<PartType>(multiplicity, phiCand, assoc);
-    fillPhiAssocCorrelation<PartType, IsME>(phiCand, assoc, multiplicity, weight);
+    // The callers have already checked the phi efficiency, so a weight that cannot be computed here comes from the
+    // associated one
+    const auto weight = computePhiAssocWeight<PartType>(multiplicity, phiCand, assoc);
+    if (!weight) {
+      if constexpr (IsME) {
+        histos.fill(HIST("zeroEfficiency/ME/h3") + HIST(AssocParticleLabels[PartType]), multiplicity, assoc.pt(), assoc.y());
+      } else {
+        histos.fill(HIST("zeroEfficiency/SE/h3") + HIST(AssocParticleLabels[PartType]), multiplicity, assoc.pt(), assoc.y());
+      }
+      return;
+    }
+
+    fillPhiAssocCorrelation<PartType, IsME>(phiCand, assoc, multiplicity, *weight);
   }
 
   template <AssociatedParticleType PartType, typename TPhiCand, typename TAssocCands>
@@ -742,8 +770,14 @@ struct PhiStrangeCorrelation {
         continue;
       }
 
-      auto weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
-      histos.fill(HIST("phi/h3PhiData"), multiplicity, phiCand.pt(), phiCand.m(), weightPhi);
+      // Checked once per candidate, before the trigger count and the pairs, so that both see the same phi candidates
+      const auto weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
+      if (!weightPhi) {
+        histos.fill(HIST("zeroEfficiency/SE/h3Phi"), multiplicity, phiCand.pt(), phiCand.y());
+        continue;
+      }
+
+      histos.fill(HIST("phi/h3PhiData"), multiplicity, phiCand.pt(), phiCand.m(), *weightPhi);
 
       // Fold expression: elaborate the correlation for each associated particle type in the parameter pack
       (processOneAssocSpeciesSE<TAssocInputs::Type>(phiCand, *assocInputs.candidates, multiplicity), ...);
@@ -808,6 +842,11 @@ struct PhiStrangeCorrelation {
 
       for (const auto& [phiCand, assoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, assocRed))) {
         if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back()) {
+          continue;
+        }
+
+        if (!computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()))) {
+          histos.fill(HIST("zeroEfficiency/ME/h3Phi"), multiplicity, phiCand.pt(), phiCand.y());
           continue;
         }
 
