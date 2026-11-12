@@ -45,6 +45,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <memory>
 #include <vector>
 
 using namespace o2;
