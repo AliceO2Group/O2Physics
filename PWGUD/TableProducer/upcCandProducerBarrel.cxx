@@ -338,7 +338,7 @@ struct UpcCandProducerBarrel {
     const AxisSpec axisBCs{NBCsPerOrbit, 0., NBCsPerOrbit, "BC in orbit"};
     const AxisSpec axisVeto{maxStoredDistance + 1, -0.5, maxStoredDistance + 0.5, "veto range in BCs"};
     const AxisSpec axisOccupancy{nBinsOccupancy, 0., 250000., "FT0-based occupancy"};
-    const AxisSpec axisTFs{nBinsTF, 0., maxTFs, "TFs"};
+    const AxisSpec axisTFs{nBinsTF, 0., maxTF, "TFs"};
 
     registry.add("hTF", "TF counts", HistType::kTH1D, {axisTFs});
     registry.add("hTVX", "TVX counts", HistType::kTH2D, {axisBCs, axisTFs});
