@@ -3203,9 +3203,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kITSchi2] = track.itsChi2NCl();
     values[kTPCncls] = track.tpcNClsFound();
     values[kTPCchi2] = track.tpcChi2NCl();
-    if constexpr ((fillMap & TrackExtra) > 0) {
-      values[kTPCFractionSharedCls] = track.tpcFractionSharedCls();
-    }
+    values[kTPCFractionSharedCls] = track.tpcFractionSharedCls();
     values[kTrackLength] = track.length();
     values[kTPCnclsCR] = track.tpcNClsCrossedRows();
     values[kTRDPattern] = track.trdPattern();
