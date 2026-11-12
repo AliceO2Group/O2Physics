@@ -628,7 +628,7 @@ struct MultiparticleCorrelationsDm { // this name is used in lower-case format, 
     }
   }
 
-  // Q(n,p), including negative harmonics: Q(-n,p) = conjugate of Q(n,p)
+  // Q(n,p), including negative harmonics: Q(-n,p) = conjugate of Q(n,p) !!
   std::complex<double> qv(int n, int p)
   {
     if (std::abs(n) > KMaxHarmonic || p < 1 || p > KMaxPower) {
