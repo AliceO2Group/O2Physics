@@ -161,7 +161,7 @@ inline constexpr int NumTrkCovParsNoX = 5;
 inline constexpr int NumTrkComponents = 3;
 
 // Vertexing defaults
-inline constexpr float InvalidVertexingError  = 1.e8f;
+inline constexpr float InvalidVertexingError = 1.e8f;
 inline constexpr float VertexingLxyzTolerance = 1.0e-8f;
 inline constexpr float InitialShift = 0.0f;
 
