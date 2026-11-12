@@ -246,7 +246,7 @@ struct pidTOFGeneric {
           // Reset the event time
           eventTime = 0.f;
           sumOfWeights = 0.f;
-          weight = 0.f;
+          // weight = 0.f; // FIXME: unused
           // Remove the bias on TOF ev. time
           if constexpr (kRemoveTOFEvTimeBias) {
             evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);

@@ -34,6 +34,11 @@ class SpherHarMath
   static constexpr int TrigCacheSize = MaxSupportedL + 1; // sin/cos powers cache size (indices 0..5)
   static constexpr double SmallLength = 1e-10;            // numerical guard for |r|, |z|
 
+  // thresholds for legendreUpToYlm(): the l=N block is only filled once lmax reaches N
+  static constexpr int MinLmaxForL3Block = 3;
+  static constexpr int MinLmaxForL4Block = 4;
+  static constexpr int MinLmaxForL5Block = 5;
+
   /// Values of various coefficients
   void initializeYlms()
   {
@@ -138,7 +143,7 @@ class SpherHarMath
     }
 
     // Legendre polynomials l=3
-    if (lmax > 2) { // o2-linter: disable=magic-number (l index, mirrors lmax>0/1 above)
+    if (lmax >= MinLmaxForL3Block) {
       lbuf[6] = sins[3];
       lbuf[7] = sins[2] * coss[1];
       lbuf[8] = (5 * coss[2] - 1) * sins[1];
@@ -146,7 +151,7 @@ class SpherHarMath
     }
 
     // Legendre polynomials l=4
-    if (lmax > 3) { // o2-linter: disable=magic-number (l index)
+    if (lmax >= MinLmaxForL4Block) {
       lbuf[10] = sins[4];
       lbuf[11] = sins[3] * coss[1];
       lbuf[12] = (7 * coss[2] - 1) * sins[2];
@@ -155,7 +160,7 @@ class SpherHarMath
     }
 
     // Legendre polynomials l=5
-    if (lmax > 4) { // o2-linter: disable=magic-number (l index)
+    if (lmax >= MinLmaxForL5Block) {
       lbuf[15] = sins[5];
       lbuf[16] = sins[4] * coss[1];
       lbuf[17] = (9 * coss[2] - 1) * sins[3];

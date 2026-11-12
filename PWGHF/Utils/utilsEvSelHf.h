@@ -197,6 +197,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> occupancyMax{"occupancyMax", 1000000, "Maximum occupancy"};
   o2::framework::Configurable<bool> requireINEL0{"requireINEL0", false, "Require INEL > 0"};
   o2::framework::Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "Minimum number of PV contributors"};
+  o2::framework::Configurable<int> nPvContributorsMax{"nPvContributorsMax", 1000000, "Maximum number of PV contributors"};
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
@@ -224,6 +225,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   // histogram names
   static constexpr char NameHistCollisions[] = "hCollisions";
   static constexpr char NameHistSelCollisionsCent[] = "hSelCollisionsCent";
+  static constexpr char NameHistSelCollisionsCentNoPileupRej[] = "hSelCollisionsCentNoPileupRej";
   static constexpr char NameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
   static constexpr char NameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
   static constexpr char NameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
@@ -233,7 +235,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   static constexpr char NameHistCollisionsCentIR[] = "hCollisionsCentIR";
   static constexpr char NameHistUpCollisions[] = "hUpCollisions";
 
-  std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hUpCollisions;
+  std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hSelCollisionsCentNoPileupRej, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hUpCollisions;
   std::shared_ptr<TH2> hCollisionsCentOcc;
   std::shared_ptr<TH2> hCollisionsCentIR;
 
@@ -276,6 +278,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   {
     hCollisions = registry.add<TH1>(NameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
     hSelCollisionsCent = registry.add<TH1>(NameHistSelCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hSelCollisionsCentNoPileupRej = registry.add<TH1>(NameHistSelCollisionsCentNoPileupRej, "HF event counter;T0M;# of accepted collisions w.o. pileup rejection", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
     hPosZBeforeEvSel = registry.add<TH1>(NameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosZAfterEvSel = registry.add<TH1>(NameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosXAfterEvSel = registry.add<TH1>(NameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
@@ -410,7 +413,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
 
     /// number of PV contributors
-    if (collision.numContrib() < nPvContributorsMin) {
+    if (collision.numContrib() < nPvContributorsMin || collision.numContrib() > nPvContributorsMax) {
       SETBIT(rejectionMask, EventRejection::NContrib);
     }
 
@@ -504,6 +507,13 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     const auto posZ = collision.posZ();
     hPosZBeforeEvSel->Fill(posZ);
 
+    // mask ignoring the same-bunch pileup rejection
+    auto rejectionMaskNoSBPileup = rejectionMask;
+    CLRBIT(rejectionMaskNoSBPileup, EventRejection::NoSameBunchPileup);
+    if (rejectionMaskNoSBPileup == 0) {
+      hSelCollisionsCentNoPileupRej->Fill(centrality);
+    }
+
     for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
       if (TESTBIT(rejectionMask, reason)) {
         return;
@@ -544,6 +554,7 @@ struct HfEventSelectionMc {
   bool useTvxTrigger{false};                  // Apply the TVX trigger
   bool useTimeFrameBorderCut{true};           // Apply TF border cut
   bool useItsRofBorderCut{false};             // Apply the ITS RO frame border cut
+  bool requireINEL0{false};                   // Apply INEL > 0
   float zPvPosMin{-1000.f};                   // Minimum PV posZ (cm)
   float zPvPosMax{1000.f};                    // Maximum PV posZ (cm)
   float centralityMin{-10.f};                 // Minimum centrality
@@ -599,6 +610,8 @@ struct HfEventSelectionMc {
         useTimeFrameBorderCut = option.defaultValue.get<bool>();
       } else if (option.name == "hfEvSel.useItsRofBorderCut") {
         useItsRofBorderCut = option.defaultValue.get<bool>();
+      } else if (option.name == "hfEvSel.requireINEL0") {
+        requireINEL0 = option.defaultValue.get<bool>();
       } else if (option.name == "hfEvSel.zPvPosMin") {
         zPvPosMin = option.defaultValue.get<float>();
       } else if (option.name == "hfEvSel.zPvPosMax") {
@@ -688,6 +701,10 @@ struct HfEventSelectionMc {
     if (useItsRofBorderCut && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       SETBIT(rejectionMask, EventRejection::ItsRofBorderCut);
     }
+    /// INEL > 0 cut
+    if (requireINEL0 && !mcCollision.isInelGt0()) {
+      SETBIT(rejectionMask, EventRejection::Inel0);
+    }
     /// primary vertex z
     if (zPv < zPvPosMin || zPv > zPvPosMax) {
       SETBIT(rejectionMask, EventRejection::PositionZ);
@@ -712,7 +729,11 @@ struct HfEventSelectionMc {
     hGenCollisions->Fill(EventRejection::None);
 
     if constexpr (CentEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-      if (!TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) && !TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) && !TESTBIT(rejectionMask, EventRejection::PositionZ)) {
+      if (!TESTBIT(rejectionMask, EventRejection::Rct) &&
+          !TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) &&
+          !TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) &&
+          !TESTBIT(rejectionMask, EventRejection::Inel0) &&
+          !TESTBIT(rejectionMask, EventRejection::PositionZ)) {
         hGenCollisionsCent->Fill(mcCollision.centFT0M());
       }
     }

@@ -377,7 +377,7 @@ struct HfTreeCreatorToOmegaPiQa {
                    candidate.errorDecayLengthCharmBaryon(),
                    candidate.impactParCascXY() / candidate.errImpactParCascXY(),
                    candidate.impactParBachFromCharmBaryonXY() / candidate.errImpactParBachFromCharmBaryonXY(),
-                   candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
+                   candidate.normDecayLenCharmBar(),
                    candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
                    candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().itsNCls(),
                    candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().tpcNClsCrossedRows(),

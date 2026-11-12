@@ -256,8 +256,8 @@ struct prefilterDimuon {
 
   SliceCache cache;
   Preslice<MyTracks> perCollision_track = aod::emprimarymuon::emeventId;
-  Partition<MyTracks> posTracks = o2::aod::emprimarymuon::sign > int8_t(0);
-  Partition<MyTracks> negTracks = o2::aod::emprimarymuon::sign < int8_t(0);
+  Partition<MyTracks> posTracks = o2::aod::emprimarymuon::sign > static_cast<int8_t>(0);
+  Partition<MyTracks> negTracks = o2::aod::emprimarymuon::sign < static_cast<int8_t>(0);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;

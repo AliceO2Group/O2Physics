@@ -25,11 +25,11 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
@@ -48,6 +48,7 @@
 #include <map>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -57,7 +58,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::constants::physics;
 
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PMEvSels>;
+using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PMEvSels, aod::EMEoIs>;
 using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
 using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 using MyEMCClusters = soa::Join<aod::MinClusters, aod::EMCClusterMCLabels_001>;
@@ -95,6 +96,11 @@ struct AssociateMCInfoPhoton {
   Configurable<float> maxY{"maxY", 0.9f, "max |rapidity| for BinnedGenPts table"};
   Configurable<bool> doStoreAllDaughters{"doStoreAllDaughters", false, "flag to enable storing of all photon, pi0, eta, eta' and omega daughters. This will increase the dervied data size!"};
   Configurable<bool> useIsSelected{"useIsSelected", true, "flag to enable the usage of isSelected from our EM event selection. Disabling this will increase the derived data size!"};
+  Configurable<bool> useIsEOI{"useIsEOI", true, "flag to enable the usage of the EOI table"};
+
+  Configurable<bool> fillBremsChain{"fillBremsChain", false, "MC truth histograms of the bremsstrahlung chain: photon conversion, radiation by a leg, conversion of the radiated photon (BremsChain/)"};
+  Configurable<float> bremsChainMaxR{"bremsChainMaxR", 90.f, "max conversion radius (cm) for the bremsstrahlung chain histograms"};
+  Configurable<float> bremsChainMinX{"bremsChainMinX", 0.05f, "min energy fraction E(radiated photon) / E(parent photon) for the bremsstrahlung chain histograms"};
 
   HistogramRegistry registry{"EMMCEvent"};
 
@@ -130,6 +136,19 @@ struct AssociateMCInfoPhoton {
     for (uint i = 0; i < NParticleNames; i++) {
       registry.add<TH2>(Form("Generated/h2PtY_%s", ParticleNames[i].data()), Form("Generated %s", ParticleNames[i].data()), kTH2F, {axisPt, axisRapidity}, true);
       registry.add<TH2>(Form("Generated/h2PtY_Accepted_%s", ParticleNames[i].data()), Form("Generated %s", ParticleNames[i].data()), kTH2F, {axisPt, axisRapidity}, true);
+    }
+
+    if (fillBremsChain) {
+      const AxisSpec axR{45, 0.f, 90.f, "#it{R}_{conv}(A) (cm)"};
+      const AxisSpec axPhi{360, 0.f, 360.f, "#varphi_{conv}(A) (deg)"};
+      const AxisSpec axPtA{{0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 10.0}, "#it{p}_{T}(A) (GeV/#it{c})"};
+      const AxisSpec axX{{0.05, 0.1, 0.3, 0.5, 1.0}, "#it{E}(B) / #it{E}(A)"};
+      registry.add("BremsChain/hGenPhiPt", "generated primary photons, |#eta| < cfg_max_eta_gamma;#varphi of the momentum (deg);#it{p}_{T} (GeV/#it{c})", kTH2F, {{360, 0.f, 360.f}, axPtA}, false);
+      registry.add("BremsChain/hConvA", "true conversions of primary photons", kTH3F, {axR, axPhi, axPtA}, false);
+      registry.add("BremsChain/hConvARec", "true conversions of primary photons, photon reconstructed", kTH3F, {axR, axPhi, axPtA}, false);
+      registry.add("BremsChain/hChain", "photons radiated by a leg of A, cumulative stages", kTHnSparseF, {axR, axPhi, axPtA, axX, {4, -0.5f, 3.5f, "stage: 0 radiated (in the MC stack), 1 B converts, 2 B reconstructed, 3 B and A reconstructed"}}, false);
+      registry.add("BremsChain/hGeometry", "radiated photons that convert: where, relative to A", kTHnSparseF, {{18, 0.f, 90.f, "#it{R}_{conv}(A) (cm)"}, {40, -5.f, 95.f, "#it{R}_{conv}(B) #minus #it{R}_{conv}(A) (cm)"}, {40, -20.f, 20.f, "#varphi_{conv}(B) #minus #varphi_{conv}(A) (deg)"}, axX, {3, 0.5f, 3.5f, "stage: 1 B converts, 2 B reconstructed, 3 B and A reconstructed"}}, false);
+      registry.add("BremsChain/hEmission", "radiated photons with #it{E}(B) / #it{E}(A) > 0.1: emission point;#it{R}_{conv}(A) (cm);#it{R}_{emission} #minus #it{R}_{conv}(A) (cm)", kTH2F, {axR, {50, 0.f, 100.f}}, false);
     }
 
     // reserve space for generated vectors if that process enabled
@@ -172,10 +191,14 @@ struct AssociateMCInfoPhoton {
   template <soa::is_iterator TCollision>
   bool passesCollisionGate(TCollision const& collisionIter)
   {
+    // event selection same as in createEMEventPhoton
     if (!collisionIter.has_mcCollision()) {
       return false;
     }
     if (useIsSelected.value && !collisionIter.isSelected()) {
+      return false;
+    }
+    if (useIsEOI.value && !collisionIter.isEoI()) {
       return false;
     }
     return true;
@@ -225,6 +248,108 @@ struct AssociateMCInfoPhoton {
     } // end of mother chain loop
   }
 
+  // conversion point of a photon: production vertex of its e+ e- daughters; false if the photon did not convert into e+ e- (in the MC stack)
+  template <typename TMCParticle, typename TMCParticles>
+  bool conversionPoint(TMCParticle const& photon, TMCParticles const& mcParticles, float& vx, float& vy, int64_t& idEle, int64_t& idPos)
+  {
+    idEle = -1;
+    idPos = -1;
+    if (!photon.has_daughters()) {
+      return false;
+    }
+    for (int id = photon.daughtersIds()[0]; id <= photon.daughtersIds()[1]; ++id) {
+      if (id < 0 || id >= mcParticles.size()) {
+        continue;
+      }
+      const auto d = mcParticles.rawIteratorAt(id);
+      if (d.pdgCode() == PDG_t::kElectron && idEle < 0) {
+        idEle = id;
+        vx = d.vx();
+        vy = d.vy();
+      } else if (d.pdgCode() == PDG_t::kPositron && idPos < 0) {
+        idPos = id;
+      }
+    }
+    return idEle >= 0 && idPos >= 0;
+  }
+
+  // MC truth of the bremsstrahlung chain for one MC collision (see the histogram definitions in init)
+  template <typename TGroupedMCParticles, typename TMCParticles>
+  void fillBremsChainTruth(TGroupedMCParticles const& groupedMcParticles, TMCParticles const& mcParticles, std::unordered_set<int64_t> const& recoPhotons)
+  {
+    static constexpr float RadToDeg = 57.29578f;
+    static constexpr float FullTurn = 360.f, HalfTurn = 180.f;
+    auto phiDeg = [](float y, float x) {
+      const float phi = std::atan2(y, x) * RadToDeg;
+      return phi < 0.f ? phi + FullTurn : phi;
+    };
+    for (const auto& photon : groupedMcParticles) {
+      if (photon.pdgCode() != PDG_t::kGamma || !(photon.isPhysicalPrimary() || photon.producedByGenerator()) || std::fabs(photon.eta()) > cfg_max_eta_photon) {
+        continue;
+      }
+      registry.fill(HIST("BremsChain/hGenPhiPt"), phiDeg(photon.py(), photon.px()), photon.pt());
+      float vxA = 0.f, vyA = 0.f;
+      int64_t idEle = -1, idPos = -1;
+      if (!conversionPoint(photon, mcParticles, vxA, vyA, idEle, idPos)) {
+        continue;
+      }
+      const float rA = std::hypot(vxA, vyA);
+      if (rA > bremsChainMaxR) {
+        continue;
+      }
+      const float phiA = phiDeg(vyA, vxA);
+      const bool recA = recoPhotons.contains(photon.globalIndex());
+      registry.fill(HIST("BremsChain/hConvA"), rA, phiA, photon.pt());
+      if (recA) {
+        registry.fill(HIST("BremsChain/hConvARec"), rA, phiA, photon.pt());
+      }
+      for (const auto& idLeg : {idEle, idPos}) {
+        const auto leg = mcParticles.rawIteratorAt(idLeg);
+        if (!leg.has_daughters()) {
+          continue;
+        }
+        for (int id = leg.daughtersIds()[0]; id <= leg.daughtersIds()[1]; ++id) {
+          if (id < 0 || id >= mcParticles.size()) {
+            continue;
+          }
+          const auto radiated = mcParticles.rawIteratorAt(id);
+          if (radiated.pdgCode() != PDG_t::kGamma) {
+            continue;
+          }
+          const float x = std::min(radiated.e() / std::max(photon.e(), 1.e-6f), 0.9999f);
+          if (x < bremsChainMinX) {
+            continue;
+          }
+          registry.fill(HIST("BremsChain/hChain"), rA, phiA, photon.pt(), x, 0.f);
+          if (x > 0.1f) { // o2-linter: disable=magic-number (energy fraction of the calculation)
+            registry.fill(HIST("BremsChain/hEmission"), rA, std::hypot(radiated.vx(), radiated.vy()) - rA);
+          }
+          float vxB = 0.f, vyB = 0.f;
+          int64_t idEleB = -1, idPosB = -1;
+          if (!conversionPoint(radiated, mcParticles, vxB, vyB, idEleB, idPosB)) {
+            continue;
+          }
+          const float rB = std::hypot(vxB, vyB);
+          if (rB > bremsChainMaxR) {
+            continue;
+          }
+          float dPhi = phiDeg(vyB, vxB) - phiA;
+          if (dPhi > HalfTurn) {
+            dPhi -= FullTurn;
+          } else if (dPhi < -HalfTurn) {
+            dPhi += FullTurn;
+          }
+          const bool recB = recoPhotons.contains(radiated.globalIndex());
+          const int lastStage = recB ? (recA ? 3 : 2) : 1;
+          for (int stage = 1; stage <= lastStage; ++stage) {
+            registry.fill(HIST("BremsChain/hChain"), rA, phiA, photon.pt(), x, static_cast<float>(stage));
+            registry.fill(HIST("BremsChain/hGeometry"), rA, std::clamp(rB - rA, -4.99f, 94.99f), std::clamp(dPhi, -19.99f, 19.99f), x, static_cast<float>(stage));
+          }
+        }
+      }
+    }
+  }
+
   template <uint8_t system, typename TTracks, typename TFwdTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons>
   void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, TTracks const& o2tracks, TFwdTracks const&, TPCMs const& v0photons, TPCMLegs const& legs, TPHOSs const&, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons)
   {
@@ -252,6 +377,33 @@ struct AssociateMCInfoPhoton {
 
     // mc collision iter
     auto mcCollisionIter = mcCollisions.begin();
+
+    // MC photons reconstructed as a stored V0 photon (both legs point to the same photon), for the bremsstrahlung chain histograms
+    std::unordered_set<int64_t> recoPhotons;
+    if constexpr (static_cast<bool>(system & kPCM) && !std::is_same_v<TPCMLegs, std::nullptr_t>) {
+      if (fillBremsChain) {
+        auto legIter = legs.begin();
+        auto trackIter = o2tracks.begin();
+        for (const auto& v0 : v0photons) {
+          std::array<int64_t, 2> mother{-1, -2};
+          int i = 0;
+          for (const auto& legId : {v0.posTrackId(), v0.negTrackId()}) {
+            legIter.setCursor(legId);
+            trackIter.setCursor(legIter.trackId());
+            if (trackIter.has_mcParticle()) {
+              mcParticleIter.setCursor(trackIter.mcParticleId());
+              if (mcParticleIter.has_mothers()) {
+                mother[i] = mcParticleIter.mothersIds()[0];
+              }
+            }
+            ++i;
+          }
+          if (mother[0] == mother[1] && mother[0] >= 0) {
+            recoPhotons.insert(mother[0]);
+          }
+        }
+      }
+    }
 
     for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
@@ -315,6 +467,9 @@ struct AssociateMCInfoPhoton {
 
       // make an entry for this MC event only if it was not already added to the table
       if (!fEventLabels.contains(mcCollisionIter.globalIndex())) {
+        if (fillBremsChain) {
+          fillBremsChainTruth(groupedMcParticles, mcParticles, recoPhotons);
+        }
         mcevents(mcCollisionIter.globalIndex(), mcCollisionIter.generatorsID(), mcCollisionIter.posX(), mcCollisionIter.posY(), mcCollisionIter.posZ(), mcCollisionIter.impactParameter(), mcCollisionIter.eventPlaneAngle());
         fEventLabels[mcCollisionIter.globalIndex()] = fCounter.events;
         fCounter.events++;

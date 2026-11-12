@@ -157,6 +157,8 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<datatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
+  // which species slot this selection corresponds to in the packed purity tables (FitVars only)
+  o2::framework::Configurable<int> puritySlotMask{"puritySlotMask", 1, "Bitmask (bit N = slot N) selecting which purity slot to plot, read off hPuritySlotAssignment in the producer output."};
 };
 
 // Define unique prefixes as constexpr string literals
@@ -760,6 +762,19 @@ class TrackBuilder
   {
     if (!mProduceTracks && !mProduceLiteTracks) {
       return false;
+    }
+    // getDaughterIndex() already checks indexMap and skips calling fillTrack() when the track is
+    // already present, so reaching this point with an existing entry only happens via the direct
+    // standalone-track path (fillTracks()/fillMcTracks()). Two distinct causes land here: the track
+    // was already registered as someone's daughter before its own collision was processed, or the
+    // track is itself associated with more than one collision and was already filled for an earlier
+    // one. Either way, keep the earlier row rather than writing a duplicate; its mask/fillType
+    // reflects whichever collision/role filled it first, not necessarily this one.
+    if (utils::getIndex(track.globalIndex(), indexMap)) {
+      LOG(warn) << "Track " << track.globalIndex() << " was already filled (as a daughter, or under another "
+                << "collision it is associated with); skipping the duplicate standalone fill. Its mask/fillType "
+                << "reflects whichever fill happened first, not necessarily this collision's selection.";
+      return true;
     }
     int64_t lastIndex = 0;
     if (mProduceTracks) {

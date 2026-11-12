@@ -30,6 +30,7 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -47,6 +48,7 @@
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
+#include <TGeoGlobalMagField.h>
 #include <TTree.h>
 
 #include <RtypesCore.h>
@@ -279,6 +281,8 @@ struct mftMchMatcher { // o2-linter: disable=name/struct (keep temporarily)
 
   o2::parameters::GRPMagField* fGrpMag = nullptr;
 
+  double mBzAtMftCenter{0};
+
   std::uniform_real_distribution<double> mDistribution{0.0, 1.0};
   std::mt19937 mGenerator;
 
@@ -302,6 +306,7 @@ struct mftMchMatcher { // o2-linter: disable=name/struct (keep temporarily)
     o2::track::TrackParCovFwd trackparCov{track.z(), tpars, tcovs, chi2};
     o2::dataformats::GlobalFwdTrack fwdtrack;
     fwdtrack.setParameters(trackparCov.getParameters());
+    fwdtrack.setZ(trackparCov.getZ());
     fwdtrack.setCovariances(trackparCov.getCovariances());
     return fwdtrack;
   }
@@ -422,6 +427,12 @@ struct mftMchMatcher { // o2-linter: disable=name/struct (keep temporarily)
       o2::base::Propagator::initFieldFromGRP(fGrpMag);
       VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
       VarManager::SetupMuonMagField();
+
+      auto* fieldB = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+      if (fieldB) {
+        const std::array<double, 3> centerMft{0, 0, -61.4}; // Field at center of MFT
+        mBzAtMftCenter = fieldB->getBz(centerMft.data());
+      }
     }
     mRunNumber = bc.runNumber();
   }
@@ -647,6 +658,42 @@ struct mftMchMatcher { // o2-linter: disable=name/struct (keep temporarily)
     return attempts;
   }
 
+  void propagateToZ(o2::track::TrackParCovFwd& mft, o2::dataformats::GlobalFwdTrack& muon, const double z)
+  {
+    auto mchTrack = mExtrap.FwdtoMCH(muon);
+
+    // MCH track extrapolation
+    // The multiple scattering effect is fully associated to the MCH track
+    // independently of the position of the matching plane
+    constexpr float absFront = -90.f;
+    constexpr float absBack = -505.f;
+    if (muon.getZ() < absBack) {
+      // the track origin is downstream of the absorber
+      if (z > absFront) {
+        // the destination is upstream of the absorber
+        // full extrapolation through the absorber in the upstream direction
+        o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, z);
+      } else {
+        // the destination is inside or downstream of the absorber
+        // 1. do a full extrapolation through the absorber to estimate the MS effect
+        o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, absFront + 0.1f);
+        // 2. extrapolate from there back to the destination z
+        o2::mch::TrackExtrap::extrapToZCov(mchTrack, z);
+      }
+    } else {
+      // all other cases
+      o2::mch::TrackExtrap::extrapToZCov(mchTrack, z);
+    }
+
+    auto proptrack = mExtrap.MCHtoFwd(mchTrack);
+    muon.setParameters(proptrack.getParameters());
+    muon.setZ(proptrack.getZ());
+    muon.setCovariances(proptrack.getCovariances());
+
+    // MFT extrapolation without MS effects, as they are fully included in the MCH track extrapolation
+    mft.propagateToZhelix(z, mBzAtMftCenter);
+  }
+
   template <bool isMc, class TCOLLS, class TBCS, class TMUONS, class TMFTS, class TCOVS>
   void fillTable(TCOLLS const& collisions,
                  TBCS const& bcs,
@@ -707,8 +754,7 @@ struct mftMchMatcher { // o2-linter: disable=name/struct (keep temporarily)
       o2::track::TrackParCovFwd mftprop = VarManager::FwdToTrackPar(mfttrack, mfttrackcov);
       o2::dataformats::GlobalFwdTrack muonprop = trackToGlobalFwd(muontrack, muontrack);
       if (cfgzMatching.value < 0.) {
-        mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, cfgzMatching.value);
-        muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
+        propagateToZ(mftprop, muonprop, cfgzMatching.value);
       }
       auto muonpropCov = muonprop.getCovariances();
       auto mftpropCov = mftprop.getCovariances();

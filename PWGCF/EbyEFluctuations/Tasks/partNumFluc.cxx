@@ -38,7 +38,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
-#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TFormula.h>
@@ -73,17 +72,8 @@
 #include <utility>
 #include <vector>
 
-#define C_CS(cs) /* NOLINT(cppcoreguidelines-macro-usage) */                                                            \
-  []<std::size_t... indices>(const std::index_sequence<indices...>&) constexpr noexcept -> ConstStr<(cs)[indices]...> { \
-    static_assert(std::is_array_v<std::remove_cvref_t<decltype(cs)>> &&                                                 \
-                  std::same_as<std::remove_extent_t<std::remove_cvref_t<decltype(cs)>>, char>);                         \
-    return ConstStr<(cs)[indices]...>{};                                                                                \
-  }(std::make_index_sequence<sizeof(cs) - 1>{})
-#define C_SV(sv) /* NOLINT(cppcoreguidelines-macro-usage) */                                                            \
-  []<std::size_t... indices>(const std::index_sequence<indices...>&) constexpr noexcept -> ConstStr<(sv)[indices]...> { \
-    static_assert(std::same_as<std::remove_cvref_t<decltype(sv)>, std::string_view>);                                   \
-    return ConstStr<(sv)[indices]...>{};                                                                                \
-  }(std::make_index_sequence<(sv).size()>{})
+#define C_CS(cs) HIST(cs) // NOLINT(cppcoreguidelines-macro-usage)
+#define C_SV(sv) HIST(sv) // NOLINT(cppcoreguidelines-macro-usage)
 
 using namespace o2;
 using namespace o2::framework;

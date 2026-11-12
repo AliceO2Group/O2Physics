@@ -23,6 +23,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -42,12 +43,14 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
 #include <THnSparse.h>
 #include <TMCProcess.h>
+#include <TPDGCode.h>
 #include <TVector2.h>
 
 #include <algorithm>
@@ -90,9 +93,9 @@ struct nucleiInJets {
       case -321: // k-
         return -Particle::kKaon;
 
-      case 2212: // p
+      case PDG_t::kProton: // p
         return Particle::kProton;
-      case -2212: // antip
+      case PDG_t::kProtonBar: // antip
         return -Particle::kProton;
 
       case Pdg::kDeuteron: // Deuteron
@@ -164,6 +167,17 @@ struct nucleiInJets {
   Configurable<int> cfgnTPCPIDDeTOF{"cfgnTPCPIDDeTOF", 3, "nTPC PID De"};
   Configurable<int> cfgnTPCPIDHeTOF{"cfgnTPCPIDHeTOF", 3, "nTPC PID He"};
   Configurable<int> cfgnTPCPIDTrTOF{"cfgnTPCPIDTrTOF", 3, "nTPC PID Tr"};
+
+  // Enable an ITS nSigma veto on inclusive TPC PID selections; disabled by default.
+  struct ItsPid : ConfigurableGroup {
+    std::string prefix = "itsPid";
+    Configurable<bool> applyItsPidInc{"applyItsPidInc", false, "apply ITS PID veto to inclusive TPC selections"};
+    Configurable<double> ptMaxItsPidProt{"ptMaxItsPidProt", 1.0, "maximum pT for proton ITS PID"};
+    Configurable<double> ptMaxItsPidDeut{"ptMaxItsPidDeut", 1.0, "maximum pT for deuteron ITS PID"};
+    Configurable<double> ptMaxItsPidHel{"ptMaxItsPidHel", 1.0, "maximum pT for helium ITS PID"};
+    Configurable<double> nSigmaItsMin{"nSigmaItsMin", -3.0, "minimum ITS nSigma"};
+    Configurable<double> nSigmaItsMax{"nSigmaItsMax", 3.0, "maximum ITS nSigma"};
+  } itsPid;
 
   Configurable<bool> cEnableProtonQA{"cEnableProtonQA", true, "nTPC PID Pr"};
   Configurable<bool> cEnableDeuteronQA{"cEnableDeuteronQA", true, "nTPC PID De"};
@@ -284,10 +298,14 @@ struct nucleiInJets {
   void init(o2::framework::InitContext&)
   {
 
+    if (isMC) {
+      o2::aod::ITSResponse::setMCDefaultParameters();
+    }
+
     if (doprocessJetTracksData && doprocessJetTracksDataLfPid) {
       LOGP(fatal, "only one process function should be enabled!!!");
     }
-    if (!(mcClosureTrainingFraction >= 0.f && mcClosureTrainingFraction <= 1.f)) {
+    if (!(mcClosureTrainingFraction >= 0.f) || !(mcClosureTrainingFraction <= 1.f)) {
       LOGP(fatal, "mcClosureTrainingFraction must be between 0 and 1, inclusive");
     }
     if (mcClosureSplitSeed == 0) {
@@ -308,6 +326,8 @@ struct nucleiInJets {
     const AxisSpec dedxAxis{binsdEdx, "d#it{E}/d#it{x} A.U."};
     const AxisSpec vzAxis{300, -15.f, 15.f, "Vz (cm)"};
     const AxisSpec EtaAxis{40, -1.f, 1.f, "#eta"};
+    const AxisSpec RapidityQAAxis{60, -2.f, 2.f, "y"};
+    const AxisSpec PtRapidityQAAxis{50, 0.f, 10.f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ParticleOriginAxis{3, 0.5, 3.5, "origin: 1 primary, 2 secondary/material, 3 weak decay"};
 
     const AxisSpec betaAxis{binsBeta, "TOF #beta"};
@@ -345,6 +365,31 @@ struct nucleiInJets {
     jetHist.add<TH3>("tracksInc/antiProton/h3PtVsantiProtonNSigmaTPCVsPt", "pT(#bar{p}) vs NSigmaTPC (#bar{p}) vs centrality; #it{p}_{T} (GeV/#it{c}); NSigmaTPC; centrality", HistType::kTH3F, {PtAxis, {200, -10, 10}, CentAxis});
     jetHist.add<TH3>("tracksInc/deuteron/h3PtVsDeuteronNSigmaTPCVsPt", "pT(d) vs NSigmaTPC (d) vs centrality; #it{p}_{T} (GeV/#it{c}); NSigmaTPC; centrality", HistType::kTH3F, {PtAxis, {200, -10, 10}, CentAxis});
     jetHist.add<TH3>("tracksInc/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPt", "pT(#bar{d}) vs NSigmaTPC (#bar{d}) vs centrality; #it{p}_{T} (GeV/#it{c}); NSigmaTPC; centrality", HistType::kTH3F, {PtAxis, {200, -10, 10}, CentAxis});
+
+    // Compare lab and shifted rapidity before the rapidity selection, for pO QA.
+    if (isPOCollision) {
+      for (const auto& sample : {std::string("tracksInc"), std::string("recInc")}) {
+        for (const auto& species : {std::string("proton"), std::string("antiproton"), std::string("deuteron"), std::string("antideuteron")}) {
+          auto base = sample;
+          base += "/qa/rapidity/";
+          base += species;
+          const bool isMcTruth = sample == "recInc";
+          const char* yLabTitle = isMcTruth ? "matched primary MC truth; #it{p}_{T} (GeV/#it{c}); #eta; y_{lab}" : "inclusive data; #it{p}_{T} (GeV/#it{c}); #eta; y_{lab}";
+          const char* yCmsTitle = isMcTruth ? "matched primary MC truth; #it{p}_{T} (GeV/#it{c}); #eta; y_{CMS}" : "inclusive data; #it{p}_{T} (GeV/#it{c}); #eta; y_{CMS}";
+          jetHist.add<TH3>(base + "YLabVsPtEta", yLabTitle, HistType::kTH3F, {PtRapidityQAAxis, EtaAxis, RapidityQAAxis});
+          jetHist.add<TH3>(base + "YCmsVsPtEta", yCmsTitle, HistType::kTH3F, {PtRapidityQAAxis, EtaAxis, RapidityQAAxis});
+        }
+      }
+    }
+
+    if (itsPid.applyItsPidInc) {
+      jetHist.add<TH2>("tracksInc/qa/h2ITSNsigmaProtonVsPt", "inclusive proton ITS PID before veto; #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(p)", HistType::kTH2F, {PtAxis, {200, -10, 10}});
+      jetHist.add<TH2>("tracksInc/qa/h2ITSNsigmaDeuteronVsPt", "inclusive deuteron ITS PID before veto; #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(d)", HistType::kTH2F, {PtAxis, {200, -10, 10}});
+      jetHist.add<TH2>("tracksInc/qa/h2ITSNsigmaHeliumVsPt", "inclusive helium ITS PID before veto; #it{p}_{T}/|z| (GeV/#it{c}); n#sigma_{ITS}(He)", HistType::kTH2F, {PtAxis, {200, -10, 10}});
+      jetHist.add<TH2>("recInc/qa/h2ITSNsigmaProtonVsPt", "reconstructed MC proton ITS PID before veto; #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(p)", HistType::kTH2F, {PtAxis, {200, -10, 10}});
+      jetHist.add<TH2>("recInc/qa/h2ITSNsigmaDeuteronVsPt", "reconstructed MC deuteron ITS PID before veto; #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(d)", HistType::kTH2F, {PtAxis, {200, -10, 10}});
+      jetHist.add<TH2>("recInc/qa/h2ITSNsigmaHeliumVsPt", "reconstructed MC helium ITS PID before veto; #it{p}_{T}/|z| (GeV/#it{c}); n#sigma_{ITS}(He)", HistType::kTH2F, {PtAxis, {200, -10, 10}});
+    }
 
     // jet property
     jetHist.add("jet/h1JetPt", "jet_{p_{T}}", kTH1F, {PtJetAxis});
@@ -988,10 +1033,7 @@ struct nucleiInJets {
   bool isOccupancyAccepted(const coll& collision)
   {
     auto occupancy{collision.trackOccupancyInTimeRange()};
-    if (occupancy < cfgOccupancyRange->at(0) || occupancy > cfgOccupancyRange->at(1))
-      return false;
-    else
-      return true;
+    return !(occupancy < cfgOccupancyRange->at(0) || occupancy > cfgOccupancyRange->at(1));
   }
 
   int nEvents = 0;
@@ -2078,21 +2120,36 @@ struct nucleiInJets {
         continue;
       }
 
-      auto rapidityData = [&](float m2z) {
-        return isRapiditySelectedForPID(trk.rapidity(m2z));
-      };
+      double nSigmaITSPr = 0.0;
+      double nSigmaITSDe = 0.0;
+      double nSigmaITSHe = 0.0;
+      if (itsPid.applyItsPidInc) {
+        nSigmaITSPr = o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Proton>(trk);
+        nSigmaITSDe = o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Deuteron>(trk);
+        nSigmaITSHe = o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Helium3>(trk);
+      }
+      const bool passItsPidPr = !itsPid.applyItsPidInc || trk.pt() >= itsPid.ptMaxItsPidProt || (nSigmaITSPr >= itsPid.nSigmaItsMin && nSigmaITSPr <= itsPid.nSigmaItsMax);
+      const bool passItsPidDe = !itsPid.applyItsPidInc || trk.pt() >= itsPid.ptMaxItsPidDeut || (nSigmaITSDe >= itsPid.nSigmaItsMin && nSigmaITSDe <= itsPid.nSigmaItsMax);
+      const bool passItsPidHe = !itsPid.applyItsPidInc || 2.0 * trk.pt() >= itsPid.ptMaxItsPidHel || (nSigmaITSHe >= itsPid.nSigmaItsMin && nSigmaITSHe <= itsPid.nSigmaItsMax);
 
-      auto prRapidityWithinRange = rapidityData(o2::constants::physics::MassProton);
-      auto deRapidityWithinRange = rapidityData(o2::constants::physics::MassDeuteron);
+      const double yLabPr = trk.rapidity(o2::constants::physics::MassProton);
+      const double yLabDe = trk.rapidity(o2::constants::physics::MassDeuteron);
+      auto prRapidityWithinRange = isRapiditySelectedForPID(yLabPr);
+      auto deRapidityWithinRange = isRapiditySelectedForPID(yLabDe);
 
       if (std::fabs(trk.eta()) > cfgtrkMaxEta)
         continue;
 
-      bool hasTOF = trk.hasTOF();
+      if (itsPid.applyItsPidInc) {
+        jetHist.fill(HIST("tracksInc/qa/h2ITSNsigmaProtonVsPt"), trk.pt(), nSigmaITSPr);
+        jetHist.fill(HIST("tracksInc/qa/h2ITSNsigmaDeuteronVsPt"), trk.pt(), nSigmaITSDe);
+        jetHist.fill(HIST("tracksInc/qa/h2ITSNsigmaHeliumVsPt"), 2.0 * trk.pt(), nSigmaITSHe);
+      }
 
+      bool hasTOF = trk.hasTOF();
       if (trk.sign() > 0) { // particles
 
-        if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
+        if (passItsPidPr && std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
           jetHist.fill(HIST("tracksInc/dcaxy/rec/proton/tpcPtVsDcaxy3D"), trk.pt(), centrality, trk.dcaXY());
           if (useTOFVeto && hasTOF) {
             if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF) {
@@ -2104,7 +2161,7 @@ struct nucleiInJets {
           }
         } // proton
 
-        if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
+        if (passItsPidDe && std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
           jetHist.fill(HIST("tracksInc/dcaxy/rec/deuteron/tpcPtVsDcaxy3D"), trk.pt(), centrality, trk.dcaXY());
           if (useTOFVeto && hasTOF) {
             if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF) {
@@ -2128,7 +2185,7 @@ struct nucleiInJets {
           }
         } // Triton
 
-        if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (passItsPidHe && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
           jetHist.fill(HIST("tracksInc/dcaxy/rec/helium/tpcPtVsDcaxy3D"), trk.pt(), centrality, trk.dcaXY());
           if (useTOFVeto && hasTOF) {
             if (std::abs(trk.tofNSigmaHe()) < cfgnTPCPIDHeTOF) {
@@ -2142,7 +2199,7 @@ struct nucleiInJets {
 
       } else { // antiparticles
 
-        if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
+        if (passItsPidPr && std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
           jetHist.fill(HIST("tracksInc/dcaxy/rec/antiProton/tpcPtVsDcaxy3D"), trk.pt(), centrality, trk.dcaXY());
           if (useTOFVeto && hasTOF) {
             if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF) {
@@ -2154,7 +2211,7 @@ struct nucleiInJets {
           }
         } // proton
 
-        if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
+        if (passItsPidDe && std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
           jetHist.fill(HIST("tracksInc/dcaxy/rec/antiDeuteron/tpcPtVsDcaxy3D"), trk.pt(), centrality, trk.dcaXY());
           if (useTOFVeto && hasTOF) {
             if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF) {
@@ -2178,7 +2235,7 @@ struct nucleiInJets {
           }
         } // Triton
 
-        if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (passItsPidHe && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
           jetHist.fill(HIST("tracksInc/dcaxy/rec/antiHelium/tpcPtVsDcaxy3D"), trk.pt(), centrality, trk.dcaXY());
           if (useTOFVeto && hasTOF) {
             if (std::abs(trk.tofNSigmaHe()) < cfgnTPCPIDHeTOF) {
@@ -2198,38 +2255,52 @@ struct nucleiInJets {
       if (std::fabs(trk.dcaXY()) > dcaXYPtDepCut(trk.pt()) && useDcaxyPtDepCut)
         continue;
 
+      if (isPOCollision) {
+        if (trk.sign() > 0) {
+          jetHist.fill(HIST("tracksInc/qa/rapidity/protonYLabVsPtEta"), trk.pt(), trk.eta(), yLabPr);
+          jetHist.fill(HIST("tracksInc/qa/rapidity/protonYCmsVsPtEta"), trk.pt(), trk.eta(), rapidityInSelectedFrame(yLabPr));
+          jetHist.fill(HIST("tracksInc/qa/rapidity/deuteronYLabVsPtEta"), trk.pt(), trk.eta(), yLabDe);
+          jetHist.fill(HIST("tracksInc/qa/rapidity/deuteronYCmsVsPtEta"), trk.pt(), trk.eta(), rapidityInSelectedFrame(yLabDe));
+        } else {
+          jetHist.fill(HIST("tracksInc/qa/rapidity/antiprotonYLabVsPtEta"), trk.pt(), trk.eta(), yLabPr);
+          jetHist.fill(HIST("tracksInc/qa/rapidity/antiprotonYCmsVsPtEta"), trk.pt(), trk.eta(), rapidityInSelectedFrame(yLabPr));
+          jetHist.fill(HIST("tracksInc/qa/rapidity/antideuteronYLabVsPtEta"), trk.pt(), trk.eta(), yLabDe);
+          jetHist.fill(HIST("tracksInc/qa/rapidity/antideuteronYCmsVsPtEta"), trk.pt(), trk.eta(), rapidityInSelectedFrame(yLabDe));
+        }
+      }
+
       if (trk.sign() > 0) { // particle info
         if (useTOFNsigmaPreSel && trk.hasTOF()) {
-          if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF && (!useRapidityCutForPID || prRapidityWithinRange)) {
+          if (passItsPidPr && std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF && (!useRapidityCutForPID || prRapidityWithinRange)) {
             jetHist.fill(HIST("tracksInc/proton/h3PtVsProtonNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaPr(), centrality);
           }
-          if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF && (!useRapidityCutForPID || deRapidityWithinRange)) {
+          if (passItsPidDe && std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF && (!useRapidityCutForPID || deRapidityWithinRange)) {
             jetHist.fill(HIST("tracksInc/deuteron/h3PtVsDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
           }
         } else if (!useTOFNsigmaPreSel && !useTOFVeto) {
-          if (!useRapidityCutForPID || prRapidityWithinRange) {
+          if (passItsPidPr && (!useRapidityCutForPID || prRapidityWithinRange)) {
             jetHist.fill(HIST("tracksInc/proton/h3PtVsProtonNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaPr(), centrality);
           }
-          if (!useRapidityCutForPID || deRapidityWithinRange) {
+          if (passItsPidDe && (!useRapidityCutForPID || deRapidityWithinRange)) {
             jetHist.fill(HIST("tracksInc/deuteron/h3PtVsDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
           }
         } else if (!useTOFNsigmaPreSel && useTOFVeto) {
           if (trk.hasTOF()) {
             if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF) {
-              if (!useRapidityCutForPID || prRapidityWithinRange)
+              if (passItsPidPr && (!useRapidityCutForPID || prRapidityWithinRange))
                 jetHist.fill(HIST("tracksInc/proton/h3PtVsProtonNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaPr(), centrality);
             }
           } else {
-            if (!useRapidityCutForPID || prRapidityWithinRange)
+            if (passItsPidPr && (!useRapidityCutForPID || prRapidityWithinRange))
               jetHist.fill(HIST("tracksInc/proton/h3PtVsProtonNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaPr(), centrality);
           }
           if (trk.hasTOF()) {
             if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF) {
-              if (!useRapidityCutForPID || deRapidityWithinRange)
+              if (passItsPidDe && (!useRapidityCutForPID || deRapidityWithinRange))
                 jetHist.fill(HIST("tracksInc/deuteron/h3PtVsDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
             }
           } else {
-            if (!useRapidityCutForPID || deRapidityWithinRange)
+            if (passItsPidDe && (!useRapidityCutForPID || deRapidityWithinRange))
               jetHist.fill(HIST("tracksInc/deuteron/h3PtVsDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
           }
         }
@@ -2247,12 +2318,12 @@ struct nucleiInJets {
               jetHist.fill(HIST("tracksInc/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
             }
           } else {
-            if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr && (!useRapidityCutForPID || prRapidityWithinRange)) {
+            if (passItsPidPr && std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr && (!useRapidityCutForPID || prRapidityWithinRange)) {
               jetHist.fill(HIST("tracksInc/proton/h2TOFmassProtonVsPt"), massTOF, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/proton/h2TofNsigmaProtonVsPt"), trk.tofNSigmaPr(), trk.pt(), centrality);
             }
-            if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe && (!useRapidityCutForPID || deRapidityWithinRange)) {
+            if (passItsPidDe && std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe && (!useRapidityCutForPID || deRapidityWithinRange)) {
               jetHist.fill(HIST("tracksInc/deuteron/h2TOFmassDeuteronVsPt"), massTOF, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
@@ -2260,41 +2331,41 @@ struct nucleiInJets {
           }
         }
 
-        if (cEnableProtonQA && std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr && (!useRapidityCutForPID || prRapidityWithinRange)) {
+        if (cEnableProtonQA && passItsPidPr && std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr && (!useRapidityCutForPID || prRapidityWithinRange)) {
           jetHist.fill(HIST("tracksInc/proton/dca/after/hDCAxyVsPtProton"), trk.dcaXY(), trk.pt(), centrality);
           jetHist.fill(HIST("tracksInc/proton/dca/after/hDCAzVsPtProton"), trk.dcaZ(), trk.pt(), centrality);
         }
-        if (cEnableDeuteronQA && std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe && (!useRapidityCutForPID || deRapidityWithinRange)) {
+        if (cEnableDeuteronQA && passItsPidDe && std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe && (!useRapidityCutForPID || deRapidityWithinRange)) {
           jetHist.fill(HIST("tracksInc/deuteron/dca/after/hDCAxyVsPtDeuteron"), trk.dcaXY(), trk.pt(), centrality);
           jetHist.fill(HIST("tracksInc/deuteron/dca/after/hDCAzVsPtDeuteron"), trk.dcaZ(), trk.pt(), centrality);
         }
 
       } else { // anti-particle info
         if (useTOFNsigmaPreSel && trk.hasTOF()) {
-          if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF && (!useRapidityCutForPID || prRapidityWithinRange))
+          if (passItsPidPr && std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF && (!useRapidityCutForPID || prRapidityWithinRange))
             jetHist.fill(HIST("tracksInc/antiProton/h3PtVsantiProtonNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaPr(), centrality);
-          if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF && (!useRapidityCutForPID || deRapidityWithinRange))
+          if (passItsPidDe && std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF && (!useRapidityCutForPID || deRapidityWithinRange))
             jetHist.fill(HIST("tracksInc/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
         } else if (!useTOFNsigmaPreSel && !useTOFVeto) {
-          if (!useRapidityCutForPID || prRapidityWithinRange)
+          if (passItsPidPr && (!useRapidityCutForPID || prRapidityWithinRange))
             jetHist.fill(HIST("tracksInc/antiProton/h3PtVsantiProtonNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaPr(), centrality);
-          if (!useRapidityCutForPID || deRapidityWithinRange)
+          if (passItsPidDe && (!useRapidityCutForPID || deRapidityWithinRange))
             jetHist.fill(HIST("tracksInc/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
         } else if (!useTOFNsigmaPreSel && useTOFVeto) {
           if (trk.hasTOF()) {
-            if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF && (!useRapidityCutForPID || prRapidityWithinRange)) {
+            if (passItsPidPr && std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF && (!useRapidityCutForPID || prRapidityWithinRange)) {
               jetHist.fill(HIST("tracksInc/antiProton/h3PtVsantiProtonNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaPr(), centrality);
             }
           } else {
-            if (!useRapidityCutForPID || prRapidityWithinRange)
+            if (passItsPidPr && (!useRapidityCutForPID || prRapidityWithinRange))
               jetHist.fill(HIST("tracksInc/antiProton/h3PtVsantiProtonNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaPr(), centrality);
           }
           if (trk.hasTOF()) {
-            if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF && (!useRapidityCutForPID || deRapidityWithinRange)) {
+            if (passItsPidDe && std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF && (!useRapidityCutForPID || deRapidityWithinRange)) {
               jetHist.fill(HIST("tracksInc/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
             }
           } else {
-            if (!useRapidityCutForPID || deRapidityWithinRange)
+            if (passItsPidDe && (!useRapidityCutForPID || deRapidityWithinRange))
               jetHist.fill(HIST("tracksInc/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
           }
         }
@@ -2312,12 +2383,12 @@ struct nucleiInJets {
               jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
             }
           } else {
-            if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr && (!useRapidityCutForPID || prRapidityWithinRange)) {
+            if (passItsPidPr && std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr && (!useRapidityCutForPID || prRapidityWithinRange)) {
               jetHist.fill(HIST("tracksInc/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt(), centrality);
             }
-            if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe && (!useRapidityCutForPID || deRapidityWithinRange)) {
+            if (passItsPidDe && std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe && (!useRapidityCutForPID || deRapidityWithinRange)) {
               jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
@@ -2692,7 +2763,7 @@ struct nucleiInJets {
         int origin = 4;
         if (track.has_mcParticle()) {
           const auto mcTrack = track.mcParticle_as<aod::JetParticles>();
-          if (mcTrack.pdgCode() == -2212)
+          if (mcTrack.pdgCode() == PDG_t::kProtonBar)
             origin = getParticleOriginType(mcTrack);
         }
         const bool tofPassed = completeTrack.hasTOF() && std::abs(completeTrack.tofNSigmaPr()) < cfgnTPCPIDPrTOF;
@@ -3253,9 +3324,26 @@ struct nucleiInJets {
       if (!isTrackSelectedWithoutDcaxy(track)) {
         continue;
       }
-      if (!track.has_mcParticle())
-        continue;
       if (std::fabs(track.eta()) > cfgtrkMaxEta)
+        continue;
+
+      double nSigmaITSPr = 0.0;
+      double nSigmaITSDe = 0.0;
+      double nSigmaITSHe = 0.0;
+      if (itsPid.applyItsPidInc) {
+        nSigmaITSPr = o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Proton>(track);
+        nSigmaITSDe = o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Deuteron>(track);
+        nSigmaITSHe = o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Helium3>(track);
+      }
+      const bool passItsPidPr = !itsPid.applyItsPidInc || track.pt() >= itsPid.ptMaxItsPidProt || (nSigmaITSPr >= itsPid.nSigmaItsMin && nSigmaITSPr <= itsPid.nSigmaItsMax);
+      const bool passItsPidDe = !itsPid.applyItsPidInc || track.pt() >= itsPid.ptMaxItsPidDeut || (nSigmaITSDe >= itsPid.nSigmaItsMin && nSigmaITSDe <= itsPid.nSigmaItsMax);
+      const bool passItsPidHe = !itsPid.applyItsPidInc || 2.0 * track.pt() >= itsPid.ptMaxItsPidHel || (nSigmaITSHe >= itsPid.nSigmaItsMin && nSigmaITSHe <= itsPid.nSigmaItsMax);
+      if (itsPid.applyItsPidInc) {
+        jetHist.fill(HIST("recInc/qa/h2ITSNsigmaProtonVsPt"), track.pt(), nSigmaITSPr);
+        jetHist.fill(HIST("recInc/qa/h2ITSNsigmaDeuteronVsPt"), track.pt(), nSigmaITSDe);
+        jetHist.fill(HIST("recInc/qa/h2ITSNsigmaHeliumVsPt"), 2.0 * track.pt(), nSigmaITSHe);
+      }
+      if (!track.has_mcParticle())
         continue;
 
       auto mcTrack = track.mcParticle_as<o2::aod::JMcParticles>();
@@ -3281,7 +3369,7 @@ struct nucleiInJets {
 
       // Fill DCAxy histograms
       jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
-      if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr)
+      if (passItsPidPr && std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr)
         jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
 
       if (!isMcPrimary)
@@ -3293,16 +3381,36 @@ struct nucleiInJets {
       if (std::fabs(track.dcaXY()) > dcaXYPtDepCut(track.pt()) && useDcaxyPtDepCut)
         continue;
 
+      if (isPOCollision && isMcPrimary) {
+        if (mcTrack.pdgCode() == PDG_t::kProton) {
+          const double yLab = mcTrack.y();
+          jetHist.fill(HIST("recInc/qa/rapidity/protonYLabVsPtEta"), mcTrack.pt(), mcTrack.eta(), yLab);
+          jetHist.fill(HIST("recInc/qa/rapidity/protonYCmsVsPtEta"), mcTrack.pt(), mcTrack.eta(), rapidityInSelectedFrame(yLab));
+        } else if (mcTrack.pdgCode() == PDG_t::kProtonBar) {
+          const double yLab = mcTrack.y();
+          jetHist.fill(HIST("recInc/qa/rapidity/antiprotonYLabVsPtEta"), mcTrack.pt(), mcTrack.eta(), yLab);
+          jetHist.fill(HIST("recInc/qa/rapidity/antiprotonYCmsVsPtEta"), mcTrack.pt(), mcTrack.eta(), rapidityInSelectedFrame(yLab));
+        } else if (mcTrack.pdgCode() == Pdg::kDeuteron) {
+          const double yLab = mcTrack.y();
+          jetHist.fill(HIST("recInc/qa/rapidity/deuteronYLabVsPtEta"), mcTrack.pt(), mcTrack.eta(), yLab);
+          jetHist.fill(HIST("recInc/qa/rapidity/deuteronYCmsVsPtEta"), mcTrack.pt(), mcTrack.eta(), rapidityInSelectedFrame(yLab));
+        } else if (mcTrack.pdgCode() == -Pdg::kDeuteron) {
+          const double yLab = mcTrack.y();
+          jetHist.fill(HIST("recInc/qa/rapidity/antideuteronYLabVsPtEta"), mcTrack.pt(), mcTrack.eta(), yLab);
+          jetHist.fill(HIST("recInc/qa/rapidity/antideuteronYCmsVsPtEta"), mcTrack.pt(), mcTrack.eta(), rapidityInSelectedFrame(yLab));
+        }
+      }
+
       // auto mass = TDatabasePDG::Instance()->GetParticle(abs(mcTrack.pdgCode()))->Mass();
       // auto rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass);
       if (!isRapiditySelectedForPID(mcTrack.y()))
         continue;
       // Proton
-      if (std::abs(mcTrack.pdgCode()) == 2212) { // Proton
+      if (std::abs(mcTrack.pdgCode()) == PDG_t::kProton) { // Proton
         jetHist.fill(HIST("recInc/eff/tpcTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         if (track.hasTOF())
           jetHist.fill(HIST("recInc/eff/tpcTofTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
-        if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr) {
+        if (passItsPidPr && std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr) {
           jetHist.fill(HIST("recInc/pt/PtParticleTypeTPC"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         }
       }
@@ -3311,7 +3419,7 @@ struct nucleiInJets {
         jetHist.fill(HIST("recInc/eff/tpcTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         if (track.hasTOF())
           jetHist.fill(HIST("recInc/eff/tpcTofTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
-        if (std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe) {
+        if (passItsPidDe && std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe) {
           jetHist.fill(HIST("recInc/pt/PtParticleTypeTPC"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         }
       }
@@ -3320,49 +3428,49 @@ struct nucleiInJets {
         jetHist.fill(HIST("recInc/eff/tpcTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         if (track.hasTOF())
           jetHist.fill(HIST("recInc/eff/tpcTofTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
-        if (std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (passItsPidHe && std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe) {
           jetHist.fill(HIST("recInc/pt/PtParticleTypeTPC"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         }
       }
 
       // TPCTOF and TPCTOFVeto histograms
       // Proton
-      if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr && track.hasTOF()) {
-        if (std::abs(mcTrack.pdgCode()) == 2212) {
+      if (passItsPidPr && std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr && track.hasTOF()) {
+        if (std::abs(mcTrack.pdgCode()) == PDG_t::kProton) {
           jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
           if (std::abs(track.tofNSigmaPr()) < cfgnTPCPIDPrTOF)
             jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         }
       } else {
-        if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr) {
-          if (std::abs(mcTrack.pdgCode()) == 2212) {
+        if (passItsPidPr && std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr) {
+          if (std::abs(mcTrack.pdgCode()) == PDG_t::kProton) {
             jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
           }
         }
       }
       // Deuteron
-      if (std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe && track.hasTOF()) {
+      if (passItsPidDe && std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe && track.hasTOF()) {
         if (std::abs(mcTrack.pdgCode()) == Pdg::kDeuteron) {
           jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
           if (std::abs(track.tofNSigmaDe()) < cfgnTPCPIDDeTOF)
             jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         }
       } else {
-        if (std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe) {
+        if (passItsPidDe && std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe) {
           if (std::abs(mcTrack.pdgCode()) == Pdg::kDeuteron) {
             jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
           }
         }
       }
       // Helium
-      if (std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe && track.hasTOF()) {
+      if (passItsPidHe && std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe && track.hasTOF()) {
         if (std::abs(mcTrack.pdgCode()) == Pdg::kHelium3) {
           jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
           if (std::abs(track.tofNSigmaHe()) < cfgnTPCPIDHeTOF)
             jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
         }
       } else {
-        if (std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (passItsPidHe && std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe) {
           if (std::abs(mcTrack.pdgCode()) == Pdg::kHelium3) {
             jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
           }

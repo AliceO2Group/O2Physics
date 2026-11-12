@@ -65,9 +65,17 @@ enum ColHist {
   kColHistLast
 };
 
-constexpr std::string_view AnalysisDir = "Collisions/Analysis/";
-constexpr std::string_view QaDir = "Collisions/QA/";
-constexpr std::string_view McDir = "Collisions/MC/";
+constexpr std::string_view AnalysisDir = "Analysis/";
+constexpr std::string_view QaDir = "QA/";
+constexpr std::string_view McDir = "MC/";
+
+// prefixes: dedicated to the collision histograms, independent of whatever pair/triplet-type
+// prefix the enclosing builder uses for its other managers -- keeps every collision histogram
+// under one shared "Collision/" directory regardless of which pair/triplet type produced it.
+// Standalone QA tasks have no SE/ME split, so they use PrefixQa directly.
+constexpr char PrefixQa[] = "Collision/";
+constexpr char PrefixSe[] = "Collision/SE/";
+constexpr char PrefixMe[] = "Collision/ME/";
 
 constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
   {
@@ -192,6 +200,7 @@ struct ConfCollisionQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis occupancy{"occupancy", {500, 0.f, 5000.f}, "Occupancy Binning"};
 };
 
+template <auto& prefix>
 class CollisionHistManager
 {
  public:
@@ -270,7 +279,7 @@ class CollisionHistManager
  private:
   void initAnalysis(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string analysisDir = std::string(AnalysisDir);
+    std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
     mHistogramRegistry->add(analysisDir + getHistNameV2(kPosZ, HistTable), getHistDesc(kPosZ, HistTable), getHistType(kPosZ, HistTable), {Specs.at(kPosZ)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMult, HistTable), getHistDesc(kMult, HistTable), getHistType(kMult, HistTable), {Specs.at(kMult)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kCent, HistTable), getHistDesc(kCent, HistTable), getHistType(kCent, HistTable), {Specs.at(kCent)});
@@ -284,7 +293,7 @@ class CollisionHistManager
 
   void initQa(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string qaDir = std::string(QaDir);
+    std::string qaDir = std::string(prefix) + std::string(QaDir);
     mHistogramRegistry->add(qaDir + getHistNameV2(kPosX, HistTable), getHistDesc(kPosX, HistTable), getHistType(kPosX, HistTable), {Specs.at(kPosX)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kPosY, HistTable), getHistDesc(kPosY, HistTable), getHistType(kPosY, HistTable), {Specs.at(kPosY)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kPos, HistTable), getHistDesc(kPos, HistTable), getHistType(kPos, HistTable), {Specs.at(kPos)});
@@ -303,7 +312,7 @@ class CollisionHistManager
   // reco-vs-truth correlation histograms (kReco and kMc both set)
   void initMc(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string mcDir = std::string(McDir);
+    std::string mcDir = std::string(prefix) + std::string(McDir);
     mHistogramRegistry->add(mcDir + getHistNameV2(kTruePosZVsPosZ, HistTable), getHistDesc(kTruePosZVsPosZ, HistTable), getHistType(kTruePosZVsPosZ, HistTable), {Specs.at(kTruePosZVsPosZ)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
@@ -312,7 +321,7 @@ class CollisionHistManager
   // pure mc-truth collision: 1D only, no reco collision exists (kMc without kReco)
   void initMcTruth(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string mcDir = std::string(McDir);
+    std::string mcDir = std::string(prefix) + std::string(McDir);
     mHistogramRegistry->add(mcDir + getHistNameV2(kTruePosZ, HistTable), getHistDesc(kTruePosZ, HistTable), getHistType(kTruePosZ, HistTable), {Specs.at(kTruePosZ)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCent, HistTable), getHistDesc(kTrueCent, HistTable), getHistType(kTrueCent, HistTable), {Specs.at(kTrueCent)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMult, HistTable), getHistDesc(kTrueMult, HistTable), getHistType(kTrueMult, HistTable), {Specs.at(kTrueMult)});
@@ -321,15 +330,15 @@ class CollisionHistManager
   template <typename T>
   void fillAnalysis(T const& col)
   {
-    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kPosZ, HistTable)), col.posZ());
-    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
-    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
-    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPosZ, HistTable)), col.posZ());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
 
     if (mPlotEventShape) {
       if constexpr (utils::HasEventShape<T>) {
-        mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kQvector, HistTable)), col.qvec());
-        mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kEventPlaneAngle, HistTable)), col.eventPlaneAngle());
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQvector, HistTable)), col.qvec());
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kEventPlaneAngle, HistTable)), col.eventPlaneAngle());
       }
     }
   }
@@ -337,18 +346,18 @@ class CollisionHistManager
   template <typename T>
   void fillQa(T const& col)
   {
-    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPosX, HistTable)), col.posX());
-    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPosY, HistTable)), col.posY());
-    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPos, HistTable)), std::hypot(col.posX(), col.posY(), col.posZ()));
-    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kSphericity, HistTable)), col.sphericity());
-    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kOccupancy, HistTable)), col.trackOccupancyInTimeRange());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPosX, HistTable)), col.posX());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPosY, HistTable)), col.posY());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPos, HistTable)), std::hypot(col.posX(), col.posY(), col.posZ()));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kSphericity, HistTable)), col.sphericity());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kOccupancy, HistTable)), col.trackOccupancyInTimeRange());
     if (mPlot2d) {
-      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPoszVsMult, HistTable)), col.posZ(), col.mult());
-      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPoszVsCent, HistTable)), col.posZ(), col.cent());
-      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
-      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
-      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
-      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kFT0AvsFT0C, HistTable)), col.centFT0A(), col.centFT0C());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPoszVsMult, HistTable)), col.posZ(), col.mult());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPoszVsCent, HistTable)), col.posZ(), col.cent());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kFT0AvsFT0C, HistTable)), col.centFT0A(), col.centFT0C());
     }
   }
 
@@ -360,18 +369,18 @@ class CollisionHistManager
       return;
     }
     auto mcCol = col.template fMcCol_as<T2>();
-    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTruePosZVsPosZ, HistTable)), mcCol.posZ(), col.posZ());
-    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
-    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePosZVsPosZ, HistTable)), mcCol.posZ(), col.posZ());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
   }
 
   // pure mc-truth collision: 'col' here IS the truth collision, no reco object exists
   template <typename T>
   void fillMc(T const& col)
   {
-    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTruePosZ, HistTable)), col.posZ());
-    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueCent, HistTable)), col.cent());
-    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMult, HistTable)), col.mult());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePosZ, HistTable)), col.posZ());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueCent, HistTable)), col.cent());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueMult, HistTable)), col.mult());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;

@@ -768,6 +768,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxNcontrib] = "";
   fgVariableNames[kVtxNcontribReal] = "Real Vtx contrib.";
   fgVariableUnits[kVtxNcontribReal] = "";
+  fgVariableNames[kMultNtrkGlobal] = "Global tracks";
+  fgVariableUnits[kMultNtrkGlobal] = "";
   fgVariableNames[kVtxCovXX] = "Vtx covXX";
   fgVariableUnits[kVtxCovXX] = "cm";
   fgVariableNames[kVtxCovXY] = "Vtx covXY";
@@ -829,6 +831,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMultMCNParticlesEta05] = "MC Multiplicity Central Barrel for |eta| < 0.5";
   fgVariableNames[kMultMCNParticlesEta08] = "MC Multiplicity Central Barrel for |eta| < 0.8";
   fgVariableNames[kMultMCNParticlesEta10] = "MC Multiplicity Central Barrel for |eta| < 1.0";
+  fgVariableNames[kMultMCGlobalParticles] = "MC Multiplicity corresponding to global track definition";
   fgVariableUnits[kMCEventGeneratorId] = "";
   fgVariableUnits[kMCEventSubGeneratorId] = "";
   fgVariableUnits[kMCVtxX] = "cm";
@@ -842,6 +845,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultMCNParticlesEta05] = "Multiplicity_eta05";
   fgVariableUnits[kMultMCNParticlesEta08] = "Multiplicity_eta08";
   fgVariableUnits[kMultMCNParticlesEta10] = "Multiplicity_eta10";
+  fgVariableUnits[kMultMCGlobalParticles] = "Multiplicity_globalTrk";
   fgVariableNames[kTwoEvPosZ1] = "vtx-z_{1}";
   fgVariableUnits[kTwoEvPosZ1] = "cm";
   fgVariableNames[kTwoEvPosZ2] = "vtx-z_{2}";
@@ -1345,12 +1349,16 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingLxyzProjected] = "cm";
   fgVariableNames[kVertexingTauzProjected] = "Pair pseudo-proper Tauz";
   fgVariableUnits[kVertexingTauzProjected] = "ns";
-  fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper Tauxy";
-  fgVariableUnits[kVertexingTauxyProjected] = "ns";
-  fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper Tauxy (with pole JPsi mass)";
-  fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "ns";
-  fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
-  fgVariableUnits[kVertexingTauxyzProjected] = "ns";
+  // Change of incorrect unit labeling (from ns to cm)
+  fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper decay length";
+  fgVariableUnits[kVertexingTauxyProjected] = "cm";
+  fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper decay length (with pole JPsi mass)";
+  fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "cm";
+  fgVariableNames[kVertexingTauxyProjectedNs] = "Pair pseudo-proper decay time";
+  fgVariableUnits[kVertexingTauxyProjectedNs] = "ns";
+  fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper decay length";
+  fgVariableUnits[kVertexingTauxyzProjected] = "cm";
+
   fgVariableNames[kMCVertexingLxyProjected] = "MC Lxy_{proj}";
   fgVariableUnits[kMCVertexingLxyProjected] = "cm";
   fgVariableNames[kMCVertexingLzProjected] = "MC Lz_{proj}";
@@ -1365,6 +1373,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCVertexingTauxyzProjected] = "ns";
   fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
   fgVariableUnits[kCosPointingAngle] = "";
+  fgVariableNames[kVertexingImpactParameter] = "d_{0}";
+  fgVariableUnits[kVertexingImpactParameter] = "cm";
   fgVariableNames[kMCCosPointingAngle] = "MC cos(#theta_{pointing})";
   fgVariableUnits[kMCCosPointingAngle] = "";
   fgVariableNames[kD0DcaDaughters] = "DCA of D0 daughters";
@@ -1509,6 +1519,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ4Y0C] = "";
   fgVariableNames[kU2Q2] = "u_{2}Q_{2}^{A} ";
   fgVariableUnits[kU2Q2] = "";
+  fgVariableNames[kU2Q2FT0A] = "u_{2}Q_{2}^{FT0A} "; // Added variable for the U2Q2-values for FT0A
+  fgVariableUnits[kU2Q2FT0A] = "";
+  fgVariableNames[kU2Q2FT0C] = "u_{2}Q_{2}^{FT0C} "; // Added variable for the U2Q2-values for FT0C
+  fgVariableUnits[kU2Q2FT0C] = "";
   fgVariableNames[kU3Q3] = "u_{3}Q_{3}^{A} ";
   fgVariableUnits[kU3Q3] = "";
   fgVariableNames[kQ42XA] = "Q_{42,x}^{A} ";
@@ -2123,6 +2137,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVtxZ"] = kVtxZ;
   fgVarNamesMap["kVtxNcontrib"] = kVtxNcontrib;
   fgVarNamesMap["kVtxNcontribReal"] = kVtxNcontribReal;
+  fgVarNamesMap["kMultNtrkGlobal"] = kMultNtrkGlobal;
   fgVarNamesMap["kVtxCovXX"] = kVtxCovXX;
   fgVarNamesMap["kVtxCovXY"] = kVtxCovXY;
   fgVarNamesMap["kVtxCovXZ"] = kVtxCovXZ;
@@ -2217,6 +2232,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMultMCNParticlesEta05"] = kMultMCNParticlesEta05;
   fgVarNamesMap["kMultMCNParticlesEta08"] = kMultMCNParticlesEta08;
   fgVarNamesMap["kMultMCNParticlesEta10"] = kMultMCNParticlesEta10;
+  fgVarNamesMap["kMultMCGlobalParticles"] = kMultMCGlobalParticles;
   fgVarNamesMap["kQ1ZNAX"] = kQ1ZNAX;
   fgVarNamesMap["kQ1ZNAY"] = kQ1ZNAY;
   fgVarNamesMap["kQ1ZNCX"] = kQ1ZNCX;
@@ -2687,6 +2703,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kQuadDCAsigXYZ"] = kQuadDCAsigXYZ;
   fgVarNamesMap["kSignQuadDCAsigXY"] = kSignQuadDCAsigXY;
   fgVarNamesMap["kCosPointingAngle"] = kCosPointingAngle;
+  fgVarNamesMap["kVertexingImpactParameter"] = kVertexingImpactParameter;
   fgVarNamesMap["kMCCosPointingAngle"] = kMCCosPointingAngle;
   fgVarNamesMap["kD0ImpParProduct"] = kD0ImpParProduct;
   fgVarNamesMap["kD0DcaDaughters"] = kD0DcaDaughters;
@@ -2706,6 +2723,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kWV2SP"] = kWV2SP;
   fgVarNamesMap["kWV2EP"] = kWV2EP;
   fgVarNamesMap["kU2Q2"] = kU2Q2;
+  fgVarNamesMap["kU2Q2FT0A"] = kU2Q2FT0A; // Added variable names for U2Q2 in FT0A
+  fgVarNamesMap["kU2Q2FT0C"] = kU2Q2FT0C; // Added variable names for U2Q2 in FT0C
   fgVarNamesMap["kU3Q3"] = kU3Q3;
   fgVarNamesMap["kQ42XA"] = kQ42XA;
   fgVarNamesMap["kQ42YA"] = kQ42YA;

@@ -311,7 +311,7 @@ struct ExclusiveTwoProtonsSG {
         resonance += onlyProtonTracksTOF[0];
         a = onlyProtonTracks[0];
         b = onlyProtonTracksTOF[0];
-        sigmaTotal = 0;
+        // sigmaTotal = 0; // FIXME: unused
         sigmaTotal = onlyProtonSigma[0] * onlyProtonSigma[0] + onlyProtonSigmaTOF[0] * onlyProtonSigmaTOF[0];
         ;
         registry.fill(HIST("hNsigEvsKa1"), onlyProtonSigma[0], onlyProtonSigmaTOF[0]);
@@ -355,7 +355,7 @@ struct ExclusiveTwoProtonsSG {
         resonance += onlyProtonTracksTOF[1];
         a = onlyProtonTracksTOF[0];
         b = onlyProtonTracksTOF[1];
-        sigmaTotal = 0;
+        // sigmaTotal = 0; // FIXME: unused
         sigmaTotal = onlyProtonSigmaTOF[0] * onlyProtonSigmaTOF[0] + onlyProtonSigmaTOF[1] * onlyProtonSigmaTOF[1];
         ;
         registry.fill(HIST("hNsigEvsKa1"), onlyProtonSigmaTOF[0], onlyProtonSigmaTOF[1]);

@@ -14,11 +14,13 @@
 /// \author hyungjun lee <leehy@cern.ch>, joonsuk bae <jbae@cern.ch>
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGMM/Mult/DataModel/Index.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -40,9 +42,12 @@
 #include <TPDGCode.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -51,13 +56,15 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod;
 
-using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+using BCsRun3Cent = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse, aod::BCCentFT0Ms>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::Mults>;
 using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using DaughterTrack = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, DaughterTrack>;
 using FiTracks = soa::Filtered<ExTracks>;
+using ExDataTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
+using FiDataTracks = soa::Filtered<ExDataTracks>;
 using Particles = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
@@ -74,6 +81,12 @@ enum EventCategory {
   EvtDd,
   EvtSd,
   EvtNd,
+  // Append only: preserve existing category indices for nominal results.
+  // Combined with TrigSel8g0 these give MB>0 process-resolved corrections
+  // with the same generated INEL>0 target as the nominal correction.
+  EvtInelg0Dd,
+  EvtInelg0Sd,
+  EvtInelg0Nd,
   EvtEnd
 };
 
@@ -153,6 +166,67 @@ constexpr float PtWeightInterceptDown = 0.5f;
 // Sentinel value used as centrality when no centrality information is available
 constexpr float NoCentrality = -1.0f;
 
+// Source used to assign the detector-level centrality of an MC collision.
+// The BC fallback is deliberately restricted to generated collisions with no
+// reconstructed collision.  All other nominal entries retain the official
+// collision-level (vertex-z equalized) FT0M percentile.
+enum CentralitySource {
+  CentSourceRecoFT0M = 1,
+  CentSourceZeroRecoBCFT0M,
+  CentSourceZeroRecoNoFT0,
+  CentSourceZeroRecoInvalidBCFT0M,
+  CentSourceZeroRecoNoBC,
+  CentSourceInvalidRecoFT0M
+};
+
+enum ZeroRecoCentralityClass {
+  ZeroRecoCent0To1 = 1,
+  ZeroRecoCent1To5,
+  ZeroRecoCent5To10,
+  ZeroRecoCent10To15,
+  ZeroRecoCent15To20,
+  ZeroRecoCent20To30,
+  ZeroRecoCent30To40,
+  ZeroRecoCent40To50,
+  ZeroRecoCent50To70,
+  ZeroRecoCent70To100,
+  ZeroRecoCentNoFT0,
+  ZeroRecoCentInvalid,
+  ZeroRecoCentNoBC
+};
+
+ZeroRecoCentralityClass getZeroRecoCentralityClass(float cent)
+{
+  if (cent < 1.f) {
+    return ZeroRecoCent0To1;
+  }
+  if (cent < 5.f) {
+    return ZeroRecoCent1To5;
+  }
+  if (cent < 10.f) {
+    return ZeroRecoCent5To10;
+  }
+  if (cent < 15.f) {
+    return ZeroRecoCent10To15;
+  }
+  if (cent < 20.f) {
+    return ZeroRecoCent15To20;
+  }
+  if (cent < 30.f) {
+    return ZeroRecoCent20To30;
+  }
+  if (cent < 40.f) {
+    return ZeroRecoCent30To40;
+  }
+  if (cent < 50.f) {
+    return ZeroRecoCent40To50;
+  }
+  if (cent < 70.f) {
+    return ZeroRecoCent50To70;
+  }
+  return ZeroRecoCent70To100;
+}
+
 // Bin indices of the "Selection" counter histogram — values must match SetBinLabel calls in init()
 enum SelectionStep {
   SelBegin = 0,
@@ -191,13 +265,16 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDCA =
 struct DndetaHi {
   SliceCache cache;
   Preslice<Particles> perMCCol = aod::mcparticle::mcCollisionId;
-  Preslice<FiTracks> perCol = aod::track::collisionId;
+  Preslice<FiDataTracks> perDataCol = aod::track::collisionId;
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 2.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> isPbPb{"isPbPb", false, "Is Pb-Pb"};
+  Configurable<bool> bookFactorizedCorrections{"bookFactorizedCorrections", true, "Additional event/signal-loss inputs in MCCounting; leaves nominal corrections unchanged"};
+  Configurable<bool> bookMultiplicityCalibration{"bookMultiplicityCalibration", false, "Independent raw generated-FT0 multiplicity calibration and correction inputs; no change to nominal classes"};
+  ConfigurableAxis calibrationRecoCentrality{"calibrationRecoCentrality", {1000, 0., 100.}, "Data FT0M percentile axis for offline class boundaries"};
 
   Configurable<float> dcaV0Dau{"dcaV0Dau", 1.5, "DCA V0 Daughters"};
   Configurable<float> dcaNegToPV{"dcaNegToPV", 0.06, "DCA Neg To PV"};
@@ -208,6 +285,10 @@ struct DndetaHi {
   Configurable<float> v0Rapidity{"v0Rapidity", 0.5, "V0 rapidity"};
   ConfigurableAxis centrality{"centrality", {VARIABLE_WIDTH, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100}, ""};
   Configurable<bool> zvtxcut{"zvtxcut", false, "z vtx cut < 10cm"};
+  // Only used by processMCUnfolding. Neither the nominal centrality nor any
+  // nominal histogram depends on these options or on McCentFT0Ms.
+  ConfigurableAxis unfoldingCentrality{"unfoldingCentrality", {VARIABLE_WIDTH, 0, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100}, "Independent generator/reconstructed FT0M response binning"};
+  Configurable<float> unfoldingZMax{"unfoldingZMax", 10.f, "Truth AND measured |z| limit for the separate unfolding sample"};
 
   HistogramRegistry registry{
     "registry",
@@ -245,12 +326,91 @@ struct DndetaHi {
 
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
   Partition<aod::Tracks> tSample = nabs(aod::track::eta) < estimatorEta;
-  Partition<FiTracks> tSample3 = nabs(aod::track::eta) < estimatorEta;
+  Partition<FiDataTracks> tSampleData = nabs(aod::track::eta) < estimatorEta;
 
   void init(InitContext&)
   {
+    if (doprocessMCCounting && doprocessMCCountingPVCalibrated) {
+      LOGP(fatal, "Choose either detector-level MCCounting or PV-calibrated MCCounting, never both");
+    }
+    if (doprocessMCCountingPVCalibrated) {
+      if (isPbPb || doprocessGen || doprocessMCUnfolding) {
+        LOGP(fatal, "PV-matched classes support pp corrections only; disable processGen and quantile unfolding");
+      }
+      registry.add("pvMatched/hGenClassINELgt0", "PV-matched class, generated INEL>0;class;events", HistType::kTH1D, {{centrality, "PV-matched FT0M class (%)"}});
+    }
+    if (bookMultiplicityCalibration) {
+      if (isPbPb) {
+        LOGP(fatal, "bookMultiplicityCalibration currently supports pp FT0M only");
+      }
+      const AxisSpec nForwardAxis{5001, -0.5, 5000.5, "N_{FT0M,gen} (charged physical primaries)"};
+      const AxisSpec nPVAxis{1001, -0.5, 1000.5, "Reconstructed PV contributors"};
+      const AxisSpec calibCentAxis{calibrationRecoCentrality, "Reconstructed FT0M percentile (%)"};
+      const AxisSpec recoCountAxis{11, -0.5, 10.5, "Number of reconstructed collisions"};
+      // Raw integer N_forward, NOT a preassigned percentile. Retain all event
+      // classes (including non-INEL>0) so event contamination can be audited.
+      if (doprocessCounting) {
+        registry.add("multCalib/hDataEvents", "Selected data;trigger;z_rec;cent_rec;N_PV", HistType::kTHnSparseD, {trigClassAxis, zAxis, calibCentAxis, nPVAxis});
+        registry.add("multCalib/hDataTracks", "Selected data tracks;trigger;z_rec;eta_rec;cent_rec", HistType::kTHnSparseD, {trigClassAxis, zAxis, etaAxis, calibCentAxis});
+      }
+      if (doprocessMCCounting || doprocessMCCountingPVCalibrated) {
+        registry.add("multCalib/hGenEvents", "All truth including zero reco;eventClass;z_gen;N_forward;N_reco", HistType::kTHnSparseD, {evtClassAxis, zAxis, nForwardAxis, recoCountAxis});
+        registry.add("multCalib/hGenParticles", "All charged primaries;eventClass;z_gen;eta_gen;N_forward", HistType::kTHnSparseD, {evtClassAxis, zAxis, etaAxis, nForwardAxis});
+        registry.add("multCalib/hSelectedEvents", "Selected best reco;eventClass;trigger;z_gen;z_rec;N_forward;N_PV", HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, zAxis, nForwardAxis, nPVAxis});
+        registry.add("multCalib/hSelectedGenParticles", "All charged primaries in selected event;eventClass;trigger;z_gen;z_rec;eta_gen;N_forward", HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, zAxis, etaAxis, nForwardAxis});
+        registry.add("multCalib/hSelectedRecTracks", "All filtered tracks in selected best reco;eventClass;trigger;z_gen;z_rec;eta_rec;N_forward", HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, zAxis, etaAxis, nForwardAxis});
+        registry.add("multCalib/hClassCorrelation", "Selected best reco;trigger;z_gen;z_rec;N_forward;cent_rec", HistType::kTHnSparseD, {trigClassAxis, zAxis, zAxis, nForwardAxis, calibCentAxis});
+      }
+    }
+    if (doprocessMCUnfoldingCalib) {
+      const AxisSpec trueMultAxis{5001, -0.5, 5000.5, "Generated charged-primary FT0A+FT0C multiplicity"};
+      registry.add("unfoldingCalib/hFT0MInelGt0", "Generated INEL>0, all z", HistType::kTH1D, {trueMultAxis});
+      registry.add("unfoldingCalib/hFT0MInelGt0Z10", "Generated INEL>0, |z_gen|<10 cm", HistType::kTH1D, {trueMultAxis});
+    }
+    if (doprocessMCCounting && doprocessGen) {
+      LOGP(fatal, "processMCCounting and processGen both fill the nominal generator histograms; enable only processMCCounting for MC corrections");
+    }
+    if (doprocessMCUnfolding) {
+      if (isPbPb || !std::isfinite(unfoldingZMax.value) || unfoldingZMax <= 0.f || unfoldingZMax > 30.f ||
+          !std::isfinite(estimatorEta.value) || estimatorEta <= 0.f || estimatorEta > 4.f) {
+        LOGP(fatal, "processMCUnfolding requires pp, 0 < unfoldingZMax <= 30 cm and 0 < estimatorEta <= 4");
+      }
+      const AxisSpec responseCentAxis = {unfoldingCentrality, "FT0M percentile (%)"};
+      const AxisSpec extraReasonAxis = {9, 0.5, 9.5, "1:no collision label;2:outside truth event sample;3:split non-best;4:invalid reco percentile;5:no particle label;6:other MC collision;7:not charged primary;8:outside truth eta;9:duplicate track"};
+      // Full truth denominators include zero-reco and failed-selection events.
+      // Primary particles use unit weights; this is an independent nominal
+      // unfolding input, not a replacement for the legacy pT-variation maps.
+      registry.add("unfolding/hGenEvents", "Generated INEL>0;z_gen;cent_gen", HistType::kTHnSparseD, {zAxis, responseCentAxis});
+      registry.add("unfolding/hGenParticles", "Generated charged primaries;z_gen;eta_gen;cent_gen;species", HistType::kTHnSparseD, {zAxis, etaAxis, responseCentAxis, particleTypeAxis});
+      registry.add("unfolding/hRecEvents", "All selected MC reconstructed collisions;trigger;z_rec;cent_rec", HistType::kTHnSparseD, {trigClassAxis, zAxis, responseCentAxis});
+      registry.add("unfolding/hRecParticles", "All selected MC tracks;trigger;z_rec;eta_rec;cent_rec", HistType::kTHnSparseD, {trigClassAxis, zAxis, etaAxis, responseCentAxis});
+      registry.add("unfolding/hEventResponse", "One best collision per generated event;trigger;z_gen;z_rec;cent_gen;cent_rec", HistType::kTHnSparseD, {trigClassAxis, zAxis, zAxis, responseCentAxis, responseCentAxis});
+      registry.add("unfolding/hParticleResponse", "Unique primary track matches;trigger;z_gen;z_rec;eta_gen;eta_rec;cent_gen;cent_rec;species", HistType::kTHnSparseD, {trigClassAxis, zAxis, zAxis, etaAxis, etaAxis, responseCentAxis, responseCentAxis, particleTypeAxis});
+      registry.add("unfolding/hMissEvents", "Truth events without a selected match;trigger;z_gen;cent_gen", HistType::kTHnSparseD, {trigClassAxis, zAxis, responseCentAxis});
+      registry.add("unfolding/hMissParticles", "Truth particles without a selected match;trigger;z_gen;eta_gen;cent_gen;species", HistType::kTHnSparseD, {trigClassAxis, zAxis, etaAxis, responseCentAxis, particleTypeAxis});
+      registry.add("unfolding/hExtraEvents", "Measured collisions outside the one-to-one signal response;trigger;z_rec;cent_rec;reason", HistType::kTHnSparseD, {trigClassAxis, zAxis, responseCentAxis, extraReasonAxis});
+      registry.add("unfolding/hExtraParticles", "Measured tracks outside the one-to-one signal response;trigger;z_rec;eta_rec;cent_rec;reason", HistType::kTHnSparseD, {trigClassAxis, zAxis, etaAxis, responseCentAxis, extraReasonAxis});
+    }
     AxisSpec centAxis = {centrality, "", "centrality"};
     AxisSpec centAxisPbPb = {centrality, "", "centrality"};
+    if ((doprocessMCCounting || doprocessMCCountingPVCalibrated) && bookFactorizedCorrections) {
+      // Independent inputs for detector correction followed by f_event/f_signal.
+      // All truth includes zero-reco. Selected truth counts ALL charged primaries
+      // in the selected best collision's MC event, not only track-matched ones.
+      // Keep both vertex coordinates to permit explicit, consistent acceptance.
+      const AxisSpec lossCentAxis = {centrality, "Nominal detector percentile (%)"};
+      registry.add("factorized/hGenEvents", "INEL>0 before selection;z_gen;cent", HistType::kTHnSparseD, {zAxis, lossCentAxis});
+      registry.add("factorized/hGenParticles", "Charged primaries before selection;z_gen;eta_gen;cent", HistType::kTHnSparseD, {zAxis, etaAxis, lossCentAxis});
+      registry.add("factorized/hSelectedEvents", "Unique INEL>0 events with selected best reco;trigger;z_gen;z_rec;cent", HistType::kTHnSparseD, {trigClassAxis, zAxis, zAxis, lossCentAxis});
+      registry.add("factorized/hSelectedGenParticles", "ALL charged primaries in selected events;trigger;z_gen;z_rec;eta_gen;cent", HistType::kTHnSparseD, {trigClassAxis, zAxis, zAxis, etaAxis, lossCentAxis});
+      registry.add("factorized/hSelectedRecParticles", "ALL filtered tracks in selected events;trigger;z_gen;z_rec;eta_rec;cent", HistType::kTHnSparseD, {trigClassAxis, zAxis, zAxis, etaAxis, lossCentAxis});
+    }
+    if (doprocessMCCounting || doprocessMCCountingPVCalibrated) {
+      registry.add("selectionLoss/hAllEvents", "All INEL>0;z_gen;cent", HistType::kTHnSparseD, {zAxis, centAxis});
+      registry.add("selectionLoss/hSelectedEvents", "Selected INEL>0;trigger;z_gen;z_rec;cent", HistType::kTHnSparseD, {trigClassAxis, zAxis, zAxis, centAxis});
+      registry.add("selectionLoss/hAllParticles", "All INEL>0 primaries;z_gen;eta;cent;species;ptvar;phi", HistType::kTHnSparseD, {zAxis, etaAxis, centAxis, particleTypeAxis, ptVarAxis, phiBin});
+      registry.add("selectionLoss/hSelectedParticles", "All primaries in selected INEL>0 events;trigger;z_gen;z_rec;eta;cent;species;ptvar;phi", HistType::kTHnSparseD, {trigClassAxis, zAxis, zAxis, etaAxis, centAxis, particleTypeAxis, ptVarAxis, phiBin});
+    }
     registry.add({"hetaresponse", ";etaresponse", {HistType::kTH2D, {{80, -4, 4}, {80, -4, 4}}}});
     registry.add({"hft0multiplicity", ";multiplicity", {HistType::kTH1D, {{10000, 0, 100000}}}});
     registry.add({"hcentrality", isPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH1F, {{10000, 0, 100}}}});
@@ -274,6 +434,15 @@ struct DndetaHi {
     registry.add({"genzINELg0", ";z", {HistType::kTH1D, {zAxis}}});
     registry.add({"hcentmult", ";status;events", {HistType::kTH1D, {{100, 0, 100}}}});
 
+    // MC-only bookkeeping for the zero-reconstructed-vertex FT0M fallback.
+    // These histograms are filled for generated INEL>0 collisions with
+    // |z_gen| < 10 cm, i.e. the event sample relevant to the correction.
+    registry.add({"hMCRecoCollisionsPerGenINELg0", ";N_{reco collisions};events", {HistType::kTH1D, {{6, -0.5, 5.5}}}});
+    registry.add({"hMCCentralitySourceINELg0", ";centrality source;events", {HistType::kTH1D, {{6, 0.5, 6.5}}}});
+    registry.add({"hZeroRecoBCFT0MPercentileINELg0", ";BC FT0M percentile;events", {HistType::kTH1D, {{103, -1.5, 101.5}}}});
+    registry.add({"hZeroRecoBCFT0MClassINELg0", ";BC FT0M class;events", {HistType::kTH1D, {{13, 0.5, 13.5}}}});
+    registry.add({"hBCFT0MvsRecoFT0MINELg0", ";collision FT0M percentile;BC FT0M percentile", {HistType::kTH2D, {{100, 0, 100}, {102, 0, 102}}}});
+
     constexpr int NLogBins = 50;
     constexpr double PtLogLow = 0.01;
     constexpr double PtLogHigh = 10.0;
@@ -283,6 +452,17 @@ struct DndetaHi {
       logBins[i] = PtLogLow * std::exp(i * logBinWidth);
     }
     AxisSpec ptBins = {logBins, "pT (GeV/c)", "pt bin"};
+
+    if (doprocessMCCounting || doprocessMCCountingPVCalibrated) {
+      std::vector<double> trackingPtEdges;
+      for (int i = 0; i <= 100; ++i) {
+        trackingPtEdges.push_back(0.01 * std::pow(200.0 / 0.01, i / 100.0));
+      }
+      const AxisSpec trackingPtAxis{trackingPtEdges, "p_{T}^{gen} (GeV/c)"};
+      registry.add("trackingPt/hAllGenerated", "Charged physical primaries;eventClass;FT0M;pt_gen", HistType::kTHnSparseD, {evtClassAxis, isPbPb ? centAxisPbPb : centAxis, trackingPtAxis});
+      registry.add("trackingPt/hSelectedGenerated", "Denominator: same selected best collision;eventClass;trigger;FT0M;pt_gen", HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, isPbPb ? centAxisPbPb : centAxis, trackingPtAxis});
+      registry.add("trackingPt/hMatchedPrimary", "Numerator: unique matched physical primaries;eventClass;trigger;FT0M;pt_gen", HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, isPbPb ? centAxisPbPb : centAxis, trackingPtAxis});
+    }
 
     registry.add({"hrecdndpt", " pt", {HistType::kTH1D, {ptBins}}});
     registry.add({"hdndptefficiency", " pt", {HistType::kTH1D, {ptBins}}});
@@ -309,6 +489,29 @@ struct DndetaHi {
     x->SetBinLabel(SelInelSel8Recz10, "INELSel8recz10");
     x->SetBinLabel(SelInelg0Sel8g0Recz10, "INELg0Sel8g0recz10");
     x->SetBinLabel(SelK0sz10Eta05, "K0Sz10eta05");
+
+    auto* centSourceAxis = registry.get<TH1>(HIST("hMCCentralitySourceINELg0"))->GetXaxis();
+    centSourceAxis->SetBinLabel(CentSourceRecoFT0M, "reco FT0M");
+    centSourceAxis->SetBinLabel(CentSourceZeroRecoBCFT0M, "zero reco: BC FT0M");
+    centSourceAxis->SetBinLabel(CentSourceZeroRecoNoFT0, "zero reco: no FT0");
+    centSourceAxis->SetBinLabel(CentSourceZeroRecoInvalidBCFT0M, "zero reco: invalid BC FT0M");
+    centSourceAxis->SetBinLabel(CentSourceZeroRecoNoBC, "zero reco: no BC");
+    centSourceAxis->SetBinLabel(CentSourceInvalidRecoFT0M, "invalid reco FT0M");
+
+    auto* zeroRecoClassAxis = registry.get<TH1>(HIST("hZeroRecoBCFT0MClassINELg0"))->GetXaxis();
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent0To1, "0-1%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent1To5, "1-5%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent5To10, "5-10%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent10To15, "10-15%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent15To20, "15-20%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent20To30, "20-30%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent30To40, "30-40%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent40To50, "40-50%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent50To70, "50-70%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCent70To100, "70-100%");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCentNoFT0, "no FT0");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCentInvalid, "invalid percentile");
+    zeroRecoClassAxis->SetBinLabel(ZeroRecoCentNoBC, "no associated BC");
   }
 
   void processEventStat(
@@ -346,13 +549,13 @@ struct DndetaHi {
   template <typename C>
   void runCounting(
     const C& collisions,
-    const FiTracks& /*tracks*/)
+    const FiDataTracks& /*tracks*/)
   {
     for (const auto& collision : collisions) {
       BoolVector btrigc(TrigEnd, false);
       registry.fill(HIST("Selection"), SelAll);
       auto z = collision.posZ();
-      auto pertracks = tSample3->sliceBy(perCol, collision.globalIndex());
+      auto pertracks = tSampleData->sliceBy(perDataCol, collision.globalIndex());
       auto nTrk = 0;
 
       if (collision.sel8()) {
@@ -392,6 +595,19 @@ struct DndetaHi {
         }
       }
 
+      if (bookMultiplicityCalibration) {
+        const auto calibCent = std::isfinite(cent) && cent >= 0.f && cent <= 100.f ? std::min(cent, std::nextafter(100.f, 0.f)) : -1.f;
+        for (auto trigger = 1u; trigger < static_cast<unsigned>(TrigEnd); ++trigger) {
+          if (!btrigc[trigger]) {
+            continue;
+          }
+          registry.fill(HIST("multCalib/hDataEvents"), trigger, z, calibCent, collision.multNTracksPV());
+          for (const auto& track : pertracks) {
+            registry.fill(HIST("multCalib/hDataTracks"), trigger, z, track.eta(), calibCent);
+          }
+        }
+      }
+
       if (isPbPb) {
         if (std::abs(z) < CutZ && btrigc[TrigSel8]) {
           registry.fill(HIST("hcentrality"), cent);
@@ -428,11 +644,21 @@ struct DndetaHi {
   PresliceUnsorted<soa::Join<MyCollisions, aod::McCollisionLabels>> perMcCol = o2::aod::mccollisionlabel::mcCollisionId;
   Preslice<aod::McParticles> perMCColparticles = aod::mcparticle::mcCollisionId;
   Preslice<FiLTracks> perColFiLTracks = aod::track::collisionId;
-  using MCex = soa::Join<aod::McCollisions, aod::HepMCXSections>;
+  // McCollsExtra provides one deterministic reconstructed collision for split
+  // MC collisions (the collision with the largest number of contributors).
+  // Select exactly one correction mode through the process switches below:
+  // processMCCounting: official reconstructed FT0M + zero-reco BC fallback.
+  // processMCCountingPVCalibrated: McCentFT0Ms for both truth and reco.
+  // Both modes always fill ND/SD/DD INEL>0 categories, selectionLoss and
+  // trackingPt inputs; no separate booking switches are required.
+  using MCex = soa::Join<aod::McCollisions, aod::HepMCXSections, aod::McCollsExtra>;
 
-  void processMCCounting(
-    const MCex& mcCollisions,
+  template <typename MCCollisions>
+  void runMCCounting(
+    const MCCollisions& mcCollisions,
     const soa::Join<MyCollisionsCent, aod::McCollisionLabels>& collisions,
+    const BCsRun3Cent& /*bcs*/,
+    const aod::FT0s& /*ft0s*/,
     const Particles& mcParticles,
     const FiLTracks& tracks)
   {
@@ -452,6 +678,7 @@ struct DndetaHi {
       auto mcz = mcCollision.posZ();
       auto genz = mcz;
       auto nTrkGen = 0;
+      int nForwardGen = 0;
       auto particles = mcParticles.sliceBy(perMCCol, mcCollision.globalIndex());
 
       for (const auto& particle : particles) {
@@ -461,6 +688,9 @@ struct DndetaHi {
         auto kp = pdg->GetParticle(particle.pdgCode());
         if (kp != nullptr) {
           if (std::abs(kp->Charge()) >= CutCharge) {
+            if (bookMultiplicityCalibration && ((particle.eta() > 3.5f && particle.eta() < 4.9f) || (particle.eta() > -3.3f && particle.eta() < -2.1f))) {
+              ++nForwardGen;
+            }
             if (std::abs(particle.eta()) < CutEta1) {
               nTrkGen++;
             }
@@ -470,6 +700,10 @@ struct DndetaHi {
       if (nTrkGen > 0) {
         registry.fill(HIST("Selection"), SelGeneratedInelGt0);
         bevtc[EvtInelg0] = true;
+        // Mandatory process-resolved INEL>0 correction categories in BOTH modes.
+        bevtc[EvtInelg0Dd] = bevtc[EvtDd];
+        bevtc[EvtInelg0Sd] = bevtc[EvtSd];
+        bevtc[EvtInelg0Nd] = bevtc[EvtNd];
       }
       if (bevtc[EvtInel]) {
         registry.fill(HIST("Selection"), SelInel);
@@ -506,30 +740,119 @@ struct DndetaHi {
       }
 
       auto collisionsample = collisions.sliceBy(perMcCol, mcCollision.globalIndex());
-      auto centMC = -1.f;
-      if (collisionsample.size() != 1) {
-        centMC = -1.0;
-      } else {
+      const auto nRecoCollisions = collisionsample.size();
+      const bool hasRecoCollision = nRecoCollisions > 0;
+      const bool isCorrectionSample = bevtc[EvtInelg0] && std::abs(mcz) < CutZ;
+
+      if (isCorrectionSample) {
+        registry.fill(HIST("hMCRecoCollisionsPerGenINELg0"), nRecoCollisions);
+      }
+
+      // Detector-level definition:
+      //   * >=1 reconstructed collision: official collision FT0M percentile;
+      //   * 0 reconstructed collisions: use valid FT0M information from the
+      //     associated BC, so these generated events and particles remain in
+      //     a detector-estimator class even though reconstruction failed.
+      //     If no usable BC FT0M exists, retain underflow and record the reason.
+      // BC FT0M and collision FT0M have different vertex-equalization inputs;
+      // the fallback applies only to zero-reco events and is monitored below.
+      // For split vertices only the deterministic best reconstructed collision
+      // defines the nominal class and contributes to reconstructed histograms.
+      auto centForCorrection = NoCentrality;
+      auto centSource = CentSourceInvalidRecoFT0M;
+      auto zeroRecoClass = ZeroRecoCentInvalid;
+      auto rawZeroRecoBCCent = NoCentrality;
+
+      if (hasRecoCollision && mcCollision.bestCollisionIndex() >= 0) {
         for (const auto& collision : collisionsample) {
-          if (isPbPb) {
-            if constexpr (MyCollisionsCent::template contains<aod::CentFT0Cs>()) {
-              centMC = collision.centFT0C();
+          if (collision.globalIndex() == mcCollision.bestCollisionIndex()) {
+            if (isPbPb) {
+              if constexpr (MyCollisionsCent::template contains<aod::CentFT0Cs>()) {
+                centForCorrection = collision.centFT0C();
+                centSource = CentSourceRecoFT0M;
+              }
+            } else {
+              if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>()) {
+                const auto centBest = collision.centFT0M();
+                if (std::isfinite(centBest) && centBest >= 0.f && centBest <= 100.f) {
+                  centForCorrection = std::min(centBest, std::nextafter(100.f, 0.f));
+                  centSource = CentSourceRecoFT0M;
+                } else {
+                  LOGP(warn, "Invalid reconstructed FT0M percentile {} for best collision {}; keeping this event in the centrality underflow", centBest, collision.globalIndex());
+                }
+              }
             }
-          } else {
-            if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>()) {
-              centMC = collision.centFT0M();
-            }
+            break;
           }
+        }
+      } else if (!hasRecoCollision && !isPbPb) {
+        // As in the Run-2 event-level estimator approach, a failed vertex
+        // reconstruction must not discard otherwise available detector
+        // percentile information from the generated correction denominator.
+        // Use the BC estimator only when it has a matched FT0 and a valid
+        // percentile; do not invent a class for missing detector information.
+        centSource = CentSourceZeroRecoNoBC;
+        zeroRecoClass = ZeroRecoCentNoBC;
+        if (mcCollision.has_bc()) {
+          const auto mcBC = mcCollision.template bc_as<BCsRun3Cent>();
+          rawZeroRecoBCCent = mcBC.centFT0M();
+          if (!mcBC.has_foundFT0()) {
+            centSource = CentSourceZeroRecoNoFT0;
+            zeroRecoClass = ZeroRecoCentNoFT0;
+          } else if (std::isfinite(rawZeroRecoBCCent) && rawZeroRecoBCCent >= 0.f && rawZeroRecoBCCent <= 100.f) {
+            centForCorrection = std::min(rawZeroRecoBCCent, std::nextafter(100.f, 0.f));
+            centSource = CentSourceZeroRecoBCFT0M;
+            zeroRecoClass = getZeroRecoCentralityClass(rawZeroRecoBCCent);
+          } else {
+            centSource = CentSourceZeroRecoInvalidBCFT0M;
+            zeroRecoClass = ZeroRecoCentInvalid;
+          }
+        }
+      }
+
+      if (isCorrectionSample) {
+        registry.fill(HIST("hMCCentralitySourceINELg0"), centSource);
+        if (!hasRecoCollision) {
+          if (std::isfinite(rawZeroRecoBCCent)) {
+            registry.fill(HIST("hZeroRecoBCFT0MPercentileINELg0"), rawZeroRecoBCCent);
+          }
+          registry.fill(HIST("hZeroRecoBCFT0MClassINELg0"), zeroRecoClass);
+        } else if (!isPbPb && centSource == CentSourceRecoFT0M && mcCollision.has_bc()) {
+          const auto mcBC = mcCollision.template bc_as<BCsRun3Cent>();
+          const auto bcCent = mcBC.centFT0M();
+          if (mcBC.has_foundFT0() && std::isfinite(bcCent) && bcCent >= 0.f && bcCent <= 100.f) {
+            registry.fill(HIST("hBCFT0MvsRecoFT0MINELg0"), centForCorrection, std::min(bcCent, std::nextafter(100.f, 0.f)));
+          }
+        }
+      }
+
+      // Preserve detector QA and raw calibration correlation. In the optional
+      // PV-matched branch, ALL correction inputs use one MC-table class,
+      // including events with no reconstructed collision. Nominal path unchanged.
+      const auto detectorCentrality = centForCorrection;
+      if constexpr (MCCollisions::template contains<aod::McCentFT0Ms>()) {
+        const auto calibrated = mcCollision.centFT0M();
+        if (!std::isfinite(calibrated) || calibrated < 0.f || calibrated >= 100.f) {
+          LOGP(fatal, "Invalid PV-matched MC centrality {} for MC collision {}", calibrated, mcCollision.globalIndex());
+        }
+        centForCorrection = calibrated;
+        if (bevtc[EvtInelg0]) {
+          registry.fill(HIST("pvMatched/hGenClassINELgt0"), calibrated);
         }
       }
 
       for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EvtEnd); ievtc++) {
         if (bevtc[ievtc]) {
-          registry.fill(HIST("hgenzvtx"), ievtc, genz, centMC);
+          registry.fill(HIST("hgenzvtx"), ievtc, genz, centForCorrection);
         }
       }
 
       int pid = 0;
+      struct LossParticle {
+        double eta, phi, pt;
+        int species;
+      };
+      std::vector<LossParticle> lossParticles;
       std::vector<double> particleetas;
       for (const auto& particle : particles) {
         auto p = pdg->GetParticle(particle.pdgCode());
@@ -558,34 +881,73 @@ struct DndetaHi {
           if (std::abs(p->Charge()) >= CutCharge) {
             for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EvtEnd); ievtc++) {
               if (bevtc[ievtc]) {
-                registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centMC, pid, PtVarNone, particle.phi());
+                if (std::abs(genz) < CutZ && std::abs(particle.eta()) < CutEta08) {
+                  registry.fill(HIST("trackingPt/hAllGenerated"), ievtc, centForCorrection, particle.pt());
+                }
+                registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centForCorrection, pid, PtVarNone, particle.phi());
                 if (particle.pt() < CutPt) {
-                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centMC, pid, PtVarUp, particle.phi(), PtWeightSlopeUp * particle.pt() + PtWeightInterceptUp);
-                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centMC, pid, PtVarDown, particle.phi(), PtWeightSlopeDown * particle.pt() + PtWeightInterceptDown);
+                  const auto weightUp = PtWeightSlopeUp * particle.pt() + PtWeightInterceptUp;
+                  const auto weightDown = PtWeightSlopeDown * particle.pt() + PtWeightInterceptDown;
+                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centForCorrection, pid, PtVarUp, particle.phi(), weightUp);
+                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centForCorrection, pid, PtVarDown, particle.phi(), weightDown);
                 } else {
-                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centMC, pid, PtVarUp, particle.phi());
-                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centMC, pid, PtVarDown, particle.phi());
+                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centForCorrection, pid, PtVarUp, particle.phi());
+                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), centForCorrection, pid, PtVarDown, particle.phi());
                 }
               }
             }
             if (pid >= PartPion && pid <= PartOther) {
               particleetas.push_back(particle.eta());
+              if (bevtc[EvtInelg0]) {
+                lossParticles.push_back({particle.eta(), particle.phi(), particle.pt(), pid});
+                registry.fill(HIST("selectionLoss/hAllParticles"), genz, particle.eta(), centForCorrection, pid, PtVarNone, particle.phi());
+                const double up = particle.pt() < CutPt ? PtWeightSlopeUp * particle.pt() + PtWeightInterceptUp : 1.;
+                const double down = particle.pt() < CutPt ? PtWeightSlopeDown * particle.pt() + PtWeightInterceptDown : 1.;
+                registry.fill(HIST("selectionLoss/hAllParticles"), genz, particle.eta(), centForCorrection, pid, PtVarUp, particle.phi(), up);
+                registry.fill(HIST("selectionLoss/hAllParticles"), genz, particle.eta(), centForCorrection, pid, PtVarDown, particle.phi(), down);
+              }
             }
           }
         }
       }
 
-      for (const auto& collision : collisionsample) {
-        auto centRec = -1.f;
-        if (isPbPb) {
-          if constexpr (MyCollisionsCent::template contains<aod::CentFT0Cs>()) {
-            centRec = collision.centFT0C();
+      // Full generated INEL>0 denominator. This must not depend on whether the
+      // event has zero, one, or several reconstructed collisions.
+      if (bookMultiplicityCalibration) {
+        for (auto eventClass = 1u; eventClass < static_cast<unsigned>(EvtEnd); ++eventClass) {
+          if (!bevtc[eventClass]) {
+            continue;
           }
-        } else {
-          if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>()) {
-            centRec = collision.centFT0M();
+          registry.fill(HIST("multCalib/hGenEvents"), eventClass, genz, nForwardGen, nRecoCollisions);
+          for (const auto& eta : particleetas) {
+            registry.fill(HIST("multCalib/hGenParticles"), eventClass, genz, eta, nForwardGen);
           }
         }
+      }
+      if (bevtc[EvtInelg0]) {
+        for (const auto& eta : particleetas) {
+          registry.fill(HIST("genetaINELg0genz10"), eta, mcz);
+        }
+        registry.fill(HIST("genzINELg0"), genz);
+        registry.fill(HIST("selectionLoss/hAllEvents"), genz, centForCorrection);
+        if (bookFactorizedCorrections) {
+          registry.fill(HIST("factorized/hGenEvents"), genz, centForCorrection);
+          for (const auto& eta : particleetas) {
+            registry.fill(HIST("factorized/hGenParticles"), genz, eta, centForCorrection);
+          }
+        }
+      }
+
+      for (const auto& collision : collisionsample) {
+        // A generated collision contributes at most one reconstructed
+        // collision to the correction sample.
+        const bool isBestCollision = collision.globalIndex() == mcCollision.bestCollisionIndex();
+        if (!isBestCollision) {
+          continue;
+        }
+        // The loop contains only the best reconstructed collision, so use the
+        // same sanitized official collision centrality as the MC denominator.
+        const auto centRec = centForCorrection;
 
         BoolVector btrigc(TrigEnd, false);
         auto z = collision.posZ();
@@ -600,19 +962,13 @@ struct DndetaHi {
           registry.fill(HIST("hft0multiplicity"), collision.multFT0C());
           registry.fill(HIST("Selection"), SelInelSel8Mcz10);
         }
-        if (collisionsample.size() == 1 && bevtc[EvtInelg0] && btrigc[TrigSel8]) {
+        if (isBestCollision && bevtc[EvtInelg0] && btrigc[TrigSel8]) {
           for (const auto& eta : particleetas) {
             registry.fill(HIST("genetaINELg0Sel8recz10"), eta, z);
             registry.fill(HIST("genetaINELg0Sel8genz10"), eta, mcz);
           }
           registry.fill(HIST("reczINELg0Sel8"), z);
           registry.fill(HIST("genzINELg0Sel8"), genz);
-        }
-        if (collisionsample.size() == 1 && bevtc[EvtInelg0]) {
-          for (const auto& eta : particleetas) {
-            registry.fill(HIST("genetaINELg0genz10"), eta, mcz);
-          }
-          registry.fill(HIST("genzINELg0"), genz);
         }
 
         auto nTrkRec = 0;
@@ -626,6 +982,101 @@ struct DndetaHi {
         if (nTrkRec > 0) {
           if (btrigc[TrigSel8]) {
             btrigc[TrigSel8g0] = true;
+          }
+        }
+        if (bookMultiplicityCalibration) {
+          for (auto trigger = 1u; trigger < static_cast<unsigned>(TrigEnd); ++trigger) {
+            if (!btrigc[trigger]) {
+              continue;
+            }
+            registry.fill(HIST("multCalib/hClassCorrelation"), trigger, genz, z, nForwardGen, detectorCentrality);
+            for (auto eventClass = 1u; eventClass < static_cast<unsigned>(EvtEnd); ++eventClass) {
+              if (!bevtc[eventClass]) {
+                continue;
+              }
+              registry.fill(HIST("multCalib/hSelectedEvents"), eventClass, trigger, genz, z, nForwardGen, collision.multNTracksPV());
+              for (const auto& eta : particleetas) {
+                registry.fill(HIST("multCalib/hSelectedGenParticles"), eventClass, trigger, genz, z, eta, nForwardGen);
+              }
+              for (const auto& track : trackspart) {
+                registry.fill(HIST("multCalib/hSelectedRecTracks"), eventClass, trigger, genz, z, track.eta(), nForwardGen);
+              }
+            }
+          }
+        }
+
+        if (bevtc[EvtInelg0]) {
+          for (unsigned trigger = 1; trigger < static_cast<unsigned>(TrigEnd); ++trigger) {
+            if (!btrigc[trigger])
+              continue;
+            registry.fill(HIST("selectionLoss/hSelectedEvents"), trigger, genz, z, centRec);
+            for (const auto& p : lossParticles) {
+              registry.fill(HIST("selectionLoss/hSelectedParticles"), trigger, genz, z, p.eta, centRec, p.species, PtVarNone, p.phi);
+              const double up = p.pt < CutPt ? PtWeightSlopeUp * p.pt + PtWeightInterceptUp : 1.;
+              const double down = p.pt < CutPt ? PtWeightSlopeDown * p.pt + PtWeightInterceptDown : 1.;
+              registry.fill(HIST("selectionLoss/hSelectedParticles"), trigger, genz, z, p.eta, centRec, p.species, PtVarUp, p.phi, up);
+              registry.fill(HIST("selectionLoss/hSelectedParticles"), trigger, genz, z, p.eta, centRec, p.species, PtVarDown, p.phi, down);
+            }
+          }
+        }
+
+        // Independent diagnostic: identical selected event and truth fiducial
+        // denominator for every reconstructed numerator particle. Deduplicate
+        // only these new counts; do not change nominal track categorization.
+        if (std::abs(genz) < CutZ && std::abs(z) < CutZ) {
+          std::unordered_set<int64_t> matchedPrimaryIds;
+          for (const auto& track : trackspart) {
+            if (!track.has_mcParticle() || std::abs(track.eta()) >= CutEta08) {
+              continue;
+            }
+            const auto particle = track.template mcParticle_as<Particles>();
+            if (particle.mcCollisionId() != mcCollision.globalIndex() || !particle.isPhysicalPrimary() || std::abs(particle.eta()) >= CutEta08) {
+              continue;
+            }
+            const auto kp = pdg->GetParticle(particle.pdgCode());
+            if (kp != nullptr && std::abs(kp->Charge()) >= CutCharge) {
+              matchedPrimaryIds.insert(particle.globalIndex());
+            }
+          }
+          for (const auto& particle : particles) {
+            if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) >= CutEta08) {
+              continue;
+            }
+            const auto kp = pdg->GetParticle(particle.pdgCode());
+            if (kp == nullptr || std::abs(kp->Charge()) < CutCharge) {
+              continue;
+            }
+            const bool matched = matchedPrimaryIds.count(particle.globalIndex()) != 0;
+            for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EvtEnd); ++ievtc) {
+              if (!bevtc[ievtc])
+                continue;
+              for (auto itrigc = 1u; itrigc < static_cast<unsigned>(TrigEnd); ++itrigc) {
+                if (!btrigc[itrigc])
+                  continue;
+                registry.fill(HIST("trackingPt/hSelectedGenerated"), ievtc, itrigc, centRec, particle.pt());
+                if (matched) {
+                  registry.fill(HIST("trackingPt/hMatchedPrimary"), ievtc, itrigc, centRec, particle.pt());
+                }
+              }
+            }
+          }
+        }
+        if (bookFactorizedCorrections && bevtc[EvtInelg0]) {
+          // Best-collision guard above ensures each generated event is counted
+          // at most once per trigger. No additional vertex/centrality cuts here.
+          for (auto itrigc = 1u; itrigc < static_cast<unsigned>(TrigEnd); ++itrigc) {
+            if (!btrigc[itrigc]) {
+              continue;
+            }
+            registry.fill(HIST("factorized/hSelectedEvents"), itrigc, genz, z, centRec);
+            for (const auto& eta : particleetas) {
+              registry.fill(HIST("factorized/hSelectedGenParticles"), itrigc, genz, z, eta, centRec);
+            }
+            // Include backgrounds, duplicates and unlabelled tracks, as in raw
+            // data. Their net effect belongs in the detector correction ratio.
+            for (const auto& track : trackspart) {
+              registry.fill(HIST("factorized/hSelectedRecParticles"), itrigc, genz, z, track.eta(), centRec);
+            }
           }
         }
         if (isPbPb) {
@@ -724,7 +1175,232 @@ struct DndetaHi {
     }
   }
 
-  PROCESS_SWITCH(DndetaHi, processMCCounting, "MC Count tracks", false);
+  void processMCCounting(const MCex& mcCollisions,
+                         const soa::Join<MyCollisionsCent, aod::McCollisionLabels>& collisions,
+                         const BCsRun3Cent& bcs, const aod::FT0s& ft0s,
+                         const Particles& particles, const FiLTracks& tracks)
+  {
+    runMCCounting(mcCollisions, collisions, bcs, ft0s, particles, tracks);
+  }
+  PROCESS_SWITCH(DndetaHi, processMCCounting, "MC Count tracks (detector FT0M with BC fallback)", false);
+
+  using MCWithPVCalibration = soa::Join<MCex, aod::McCentFT0Ms>;
+  void processMCCountingPVCalibrated(const MCWithPVCalibration& mcCollisions,
+                                     const soa::Join<MyCollisionsCent, aod::McCollisionLabels>& collisions,
+                                     const BCsRun3Cent& bcs, const aod::FT0s& ft0s,
+                                     const Particles& particles, const FiLTracks& tracks)
+  {
+    runMCCounting(mcCollisions, collisions, bcs, ft0s, particles, tracks);
+  }
+  PROCESS_SWITCH(DndetaHi, processMCCountingPVCalibrated, "MC corrections using PV-matched McCentFT0Ms for both generated and reconstructed entries", false);
+
+  // Optional second-pass branch. Enabling this alongside processMCCounting
+  // records BOTH methods' inputs without filling any nominal histogram twice.
+  // Only this signature requests the generator-percentile table/calibration.
+  using MCWithUnfoldingCent = soa::Join<MCex, aod::McCentFT0Ms>;
+
+  // First pass: independent of reconstructed vertices and percentile tables.
+  void processMCUnfoldingCalib(aod::McCollisions const& collisions, aod::McParticles const& particles)
+  {
+    std::unordered_map<int64_t, std::array<int, 2>> counts;
+    for (const auto& collision : collisions) {
+      counts.emplace(collision.globalIndex(), std::array<int, 2>{0, 0});
+    }
+    for (const auto& particle : particles) {
+      auto event = counts.find(particle.mcCollisionId());
+      if (event == counts.end() || !particle.isPhysicalPrimary()) {
+        continue;
+      }
+      const auto* definition = pdg->GetParticle(particle.pdgCode());
+      if (!definition || std::abs(definition->Charge()) < CutCharge) {
+        continue;
+      }
+      const auto eta = particle.eta();
+      if (std::abs(eta) < CutEta1) {
+        ++event->second[0];
+      }
+      if ((eta > 3.5f && eta < 4.9f) || (eta > -3.3f && eta < -2.1f)) {
+        ++event->second[1];
+      }
+    }
+    for (const auto& collision : collisions) {
+      const auto& count = counts.at(collision.globalIndex());
+      if (count[0] > 0) {
+        registry.fill(HIST("unfoldingCalib/hFT0MInelGt0"), count[1]);
+        if (std::abs(collision.posZ()) < CutZ) {
+          registry.fill(HIST("unfoldingCalib/hFT0MInelGt0Z10"), count[1]);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(DndetaHi, processMCUnfoldingCalib, "First pass: generated INEL>0 FT0 multiplicity without percentile calibration", false);
+
+  void processMCUnfolding(
+    const MCWithUnfoldingCent& mcCollisions,
+    const soa::Join<MyCollisionsCent, aod::McCollisionLabels>& collisions,
+    const Particles& mcParticles,
+    const FiLTracks& tracks)
+  {
+    struct TruthEvent {
+      float z = 0.f;
+      float cent = NoCentrality;
+      int64_t bestCollision = -1;
+      bool inelg0 = false;
+      bool fiducial = false;
+      std::array<bool, TrigEnd> matched{};
+    };
+    std::unordered_map<int64_t, TruthEvent> truth;
+    truth.reserve(mcCollisions.size());
+    std::array<std::unordered_set<int64_t>, TrigEnd> matchedParticles;
+
+    auto isChargedPrimary = [this](const auto& particle) {
+      if (!particle.isPhysicalPrimary()) {
+        return false;
+      }
+      const auto* definition = pdg->GetParticle(particle.pdgCode());
+      return definition != nullptr && std::abs(definition->Charge()) >= CutCharge;
+    };
+    auto species = [](const auto& particle) {
+      switch (std::abs(particle.pdgCode())) {
+        case kPiPlus:
+          return PartPion;
+        case kKPlus:
+          return PartKaon;
+        case kProton:
+          return PartProton;
+        default:
+          return PartOther;
+      }
+    };
+    auto validPercentile = [](float percentile) {
+      return std::isfinite(percentile) && percentile >= 0.f && percentile <= 100.f;
+    };
+    auto insidePercentile = [](float percentile) {
+      return std::min(percentile, std::nextafter(100.f, 0.f));
+    };
+
+    // Use global IDs, not row numbers: input slices may have nonzero offsets.
+    for (const auto& collision : mcCollisions) {
+      truth.emplace(collision.globalIndex(), TruthEvent{collision.posZ(), collision.centFT0M(), collision.bestCollisionIndex()});
+    }
+    for (const auto& particle : mcParticles) {
+      auto event = truth.find(particle.mcCollisionId());
+      if (event != truth.end() && isChargedPrimary(particle) && std::abs(particle.eta()) < CutEta1) {
+        event->second.inelg0 = true;
+      }
+    }
+    for (auto& [id, event] : truth) {
+      event.fiducial = event.inelg0 && std::abs(event.z) < unfoldingZMax;
+      if (!event.fiducial) {
+        continue;
+      }
+      if (!validPercentile(event.cent)) {
+        LOGP(fatal, "Invalid generated INEL>0 percentile {} for MC collision {}: processMCUnfolding requires the FIRST-PASS FT0M INEL>0 calibration, not reconstructed/BC fallback percentiles", event.cent, id);
+      }
+      event.cent = insidePercentile(event.cent);
+      registry.fill(HIST("unfolding/hGenEvents"), event.z, event.cent);
+    }
+
+    // Traverse ALL measured collisions, including non-best split collisions
+    // and collisions with no MC label. Data cannot apply the MC best label.
+    for (const auto& collision : collisions) {
+      const auto z = collision.posZ();
+      if (!collision.sel8() || !(std::abs(z) < unfoldingZMax)) {
+        continue;
+      }
+      const auto perTracks = tracks.sliceBy(perColFiLTracks, collision.globalIndex());
+      bool hasTrackEta1 = false;
+      for (const auto& track : perTracks) {
+        if (std::abs(track.eta()) < estimatorEta && std::abs(track.eta()) < CutEta1) {
+          hasTrackEta1 = true;
+          break;
+        }
+      }
+      const auto rawCent = collision.centFT0M();
+      const bool validRecoCent = validPercentile(rawCent);
+      const auto centRec = validRecoCent ? insidePercentile(rawCent) : NoCentrality;
+      auto event = truth.find(collision.mcCollisionId());
+      int eventExtraReason = 0;
+      if (!collision.has_mcCollision() || event == truth.end()) {
+        eventExtraReason = 1;
+      } else if (!event->second.fiducial) {
+        eventExtraReason = 2;
+      } else if (collision.globalIndex() != event->second.bestCollision) {
+        eventExtraReason = 3;
+      } else if (!validRecoCent) {
+        eventExtraReason = 4;
+      }
+      for (int trigger = TrigSel8; trigger < TrigEnd; ++trigger) {
+        if (trigger == TrigSel8g0 && !hasTrackEta1) {
+          continue;
+        }
+        registry.fill(HIST("unfolding/hRecEvents"), trigger, z, centRec);
+        if (eventExtraReason != 0) {
+          registry.fill(HIST("unfolding/hExtraEvents"), trigger, z, centRec, eventExtraReason);
+        } else {
+          event->second.matched[trigger] = true;
+          registry.fill(HIST("unfolding/hEventResponse"), trigger, event->second.z, z, event->second.cent, centRec);
+        }
+        for (const auto& track : perTracks) {
+          // Identical measured eta acceptance to runCounting/tSampleData.
+          if (!(std::abs(track.eta()) < estimatorEta)) {
+            continue;
+          }
+          registry.fill(HIST("unfolding/hRecParticles"), trigger, z, track.eta(), centRec);
+          int extraReason = eventExtraReason;
+          if (extraReason == 0 && !track.has_mcParticle()) {
+            extraReason = 5;
+          }
+          if (extraReason == 0) {
+            const auto particle = track.template mcParticle_as<Particles>();
+            if (particle.mcCollisionId() != collision.mcCollisionId()) {
+              extraReason = 6;
+            } else if (!isChargedPrimary(particle)) {
+              extraReason = 7;
+            } else if (!(std::abs(particle.eta()) < estimatorEta)) {
+              extraReason = 8;
+            } else if (!matchedParticles[trigger].insert(particle.globalIndex()).second) {
+              extraReason = 9;
+            } else {
+              registry.fill(HIST("unfolding/hParticleResponse"), trigger, event->second.z, z, particle.eta(), track.eta(), event->second.cent, centRec, species(particle));
+            }
+          }
+          if (extraReason != 0) {
+            registry.fill(HIST("unfolding/hExtraParticles"), trigger, z, track.eta(), centRec, extraReason);
+          }
+        }
+      }
+    }
+
+    // Explicit miss histograms make the identities testable for EACH trigger:
+    // truth = response projected on truth + misses;
+    // measured MC = response projected on reco + extras.
+    for (const auto& [id, event] : truth) {
+      if (!event.fiducial) {
+        continue;
+      }
+      for (int trigger = TrigSel8; trigger < TrigEnd; ++trigger) {
+        if (!event.matched[trigger]) {
+          registry.fill(HIST("unfolding/hMissEvents"), trigger, event.z, event.cent);
+        }
+      }
+    }
+    for (const auto& particle : mcParticles) {
+      const auto event = truth.find(particle.mcCollisionId());
+      if (event == truth.end() || !event->second.fiducial || !isChargedPrimary(particle) || !(std::abs(particle.eta()) < estimatorEta)) {
+        continue;
+      }
+      const auto pid = species(particle);
+      registry.fill(HIST("unfolding/hGenParticles"), event->second.z, particle.eta(), event->second.cent, pid);
+      for (int trigger = TrigSel8; trigger < TrigEnd; ++trigger) {
+        if (matchedParticles[trigger].find(particle.globalIndex()) == matchedParticles[trigger].end()) {
+          registry.fill(HIST("unfolding/hMissParticles"), trigger, event->second.z, particle.eta(), event->second.cent, pid);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(DndetaHi, processMCUnfolding, "Also store independent generated-INEL>0/reconstructed-FT0M unfolding inputs (requires McCentFT0Ms)", false);
 
   // void processTrackEfficiencyGeneral(
   //   MyCollisionsMcLabels::iterator const& collision,
@@ -746,7 +1422,7 @@ struct DndetaHi {
 
   void processCounting(
     const MyCollisionsCent& collisions,
-    const FiTracks& tracks)
+    const FiDataTracks& tracks)
   {
     runCounting(collisions, tracks);
   }

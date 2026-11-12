@@ -33,16 +33,16 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
 {
   if (TString(histClass) == "Event") {
     list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 10, 0.5f, 10.5f));
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(1, "all");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(2, "No TF border");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "No Same Bunch Pileup");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "Is Vertex ITSTPC");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "Is Good Zvtx FT0vsPV");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "FT0AND");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(8, "sel8");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(9, "|Z_{vtx}| < 10 cm");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(10, "accepted");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(1, "all");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(2, "No TF border");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "No Same Bunch Pileup");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "Is Vertex ITSTPC");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "Is Good Zvtx FT0vsPV");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "FT0AND");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(8, "sel8");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(9, "|Z_{vtx}| < 10 cm");
+    dynamic_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(10, "accepted");
 
     list->Add(new TH1F("hZvtx", "vertex z; Z_{vtx} (cm)", 100, -50, +50));
     list->Add(new TH1F("hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", 6001, -0.5, 6000.5));
@@ -254,16 +254,16 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       TH2F* hMvsPhiV_uls_same = new TH2F("hMvsPhiV_uls_same", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 72, 0, M_PI, 100, 0.0f, 0.1f);
       hMvsPhiV_uls_same->Sumw2();
       list->Add(hMvsPhiV_uls_same);
-      list->Add(reinterpret_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_lspp_same")));
-      list->Add(reinterpret_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_lsmm_same")));
+      list->Add(dynamic_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_lspp_same")));
+      list->Add(dynamic_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_lsmm_same")));
 
       if (TString(subGroup).Contains("mix")) {
-        list->Add(reinterpret_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix")));
-        list->Add(reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix")));
-        list->Add(reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix")));
-        list->Add(reinterpret_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_uls_mix")));
-        list->Add(reinterpret_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_lspp_mix")));
-        list->Add(reinterpret_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_lsmm_mix")));
+        list->Add(dynamic_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix")));
+        list->Add(dynamic_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix")));
+        list->Add(dynamic_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix")));
+        list->Add(dynamic_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_uls_mix")));
+        list->Add(dynamic_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_lspp_mix")));
+        list->Add(dynamic_cast<TH2F*>(hMvsPhiV_uls_same->Clone("hMvsPhiV_lsmm_mix")));
       }
 
       if (TString(subGroup).Contains("dca")) {
@@ -280,14 +280,14 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
         hs_dilepton_uls_dca_same->Sumw2();
         list->Add(hs_dilepton_uls_dca_same);
 
-        hs_dilepton_lspp_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lspp_dca_same"));
-        hs_dilepton_lsmm_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lsmm_dca_same"));
+        hs_dilepton_lspp_dca_same = dynamic_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lspp_dca_same"));
+        hs_dilepton_lsmm_dca_same = dynamic_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lsmm_dca_same"));
         list->Add(hs_dilepton_lspp_dca_same);
         list->Add(hs_dilepton_lsmm_dca_same);
 
-        THnSparseF* hs_dilepton_uls_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_uls_dca_mix"));
-        THnSparseF* hs_dilepton_lspp_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_dca_same->Clone("hs_dilepton_lspp_dca_mix"));
-        THnSparseF* hs_dilepton_lsmm_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_dca_same->Clone("hs_dilepton_lsmm_dca_mix"));
+        THnSparseF* hs_dilepton_uls_dca_mix = dynamic_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_uls_dca_mix"));
+        THnSparseF* hs_dilepton_lspp_dca_mix = dynamic_cast<THnSparseF*>(hs_dilepton_lspp_dca_same->Clone("hs_dilepton_lspp_dca_mix"));
+        THnSparseF* hs_dilepton_lsmm_dca_mix = dynamic_cast<THnSparseF*>(hs_dilepton_lsmm_dca_same->Clone("hs_dilepton_lsmm_dca_mix"));
         list->Add(hs_dilepton_uls_dca_mix);
         list->Add(hs_dilepton_lspp_dca_mix);
         list->Add(hs_dilepton_lsmm_dca_mix);
@@ -336,9 +336,9 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       list->Add(hs_dilepton_lsmm_same);
 
       if (TString(subGroup).Contains("mix")) {
-        list->Add(reinterpret_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix")));
-        list->Add(reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix")));
-        list->Add(reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix")));
+        list->Add(dynamic_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix")));
+        list->Add(dynamic_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix")));
+        list->Add(dynamic_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix")));
       }
     } else {
       LOGF(info, "EE or MuMu are supported.");
@@ -427,14 +427,14 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
         list->Add(new TH1F("hDistToBC", "distance to bad channel;#it{d};#it{N}_{cluster}", 100, 0, 1500));
       }
       list->Add(new TH2F("hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", 8, -0.5, 7.5, 500, 0, 50));
-      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(1, "In");
-      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(2, "Energy");
-      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(3, "NCell");
-      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(4, "M02");
-      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(5, "Timing");
-      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(6, "Track matching");
-      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(7, "Exotic");
-      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(8, "Out");
+      dynamic_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(1, "In");
+      dynamic_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(2, "Energy");
+      dynamic_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(3, "NCell");
+      dynamic_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(4, "M02");
+      dynamic_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(5, "Timing");
+      dynamic_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(6, "Track matching");
+      dynamic_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(7, "Exotic");
+      dynamic_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(8, "Out");
     }
   }
 
@@ -444,18 +444,18 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       list->Add(new TH2F("hPt_SPQ2FT0A", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FT0A}", 400, 0.0f, 20, 40, -10, +10));
       list->Add(new TH2F("hPt_SPQ2FT0C", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FT0C}", 400, 0.0f, 20, 40, -10, +10));
       list->Add(new TH2F("hPt_SPQ2FV0A", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FV0A}", 400, 0.0f, 20, 40, -10, +10));
-      reinterpret_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0M"))->Sumw2();
-      reinterpret_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0A"))->Sumw2();
-      reinterpret_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0C"))->Sumw2();
-      reinterpret_cast<TH2F*>(list->FindObject("hPt_SPQ2FV0A"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0M"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0A"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0C"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hPt_SPQ2FV0A"))->Sumw2();
     } else {
       list->Add(new TH1F("hPt", "pT of photon candidates;p_{T,#gamma} (GeV/c)", 400, 0.0f, 20));
-      reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Sumw2();
+      dynamic_cast<TH1F*>(list->FindObject("hPt"))->Sumw2();
     }
     list->Add(new TH1F("hY", "rapidity of photon candidates;y", 40, -2.0f, 2.0f));
     list->Add(new TH1F("hPhi", "azimuthal angle of photon candidates;#varphi (rad.)", 180, 0, 2 * M_PI));
-    reinterpret_cast<TH1F*>(list->FindObject("hY"))->Sumw2();
-    reinterpret_cast<TH1F*>(list->FindObject("hPhi"))->Sumw2();
+    dynamic_cast<TH1F*>(list->FindObject("hY"))->Sumw2();
+    dynamic_cast<TH1F*>(list->FindObject("hPhi"))->Sumw2();
 
     if (TString(subGroup) == "mc") {
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));           // for MC efficiency
@@ -500,18 +500,18 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       hs_same_tmp->Sumw2();
       std::string_view sp_names[4] = {"FT0M", "FT0A", "FT0C", "FV0A"};
       for (int i = 0; i < 4; i++) {
-        THnSparseF* hs = reinterpret_cast<THnSparseF*>(hs_same_tmp->Clone(Form("hs_Same_SPQ2%s", sp_names[i].data())));
+        THnSparseF* hs = dynamic_cast<THnSparseF*>(hs_same_tmp->Clone(Form("hs_Same_SPQ2%s", sp_names[i].data())));
         hs->SetTitle(Form("diphoton info %s", sp_names[i].data()));
         hs->GetAxis(2)->SetTitle(Form("u_{2}^{#gamma#gamma} #upoint Q_{2}^{%s}", sp_names[i].data()));
         list->Add(hs);
       }
     } else {
       list->Add(new TH2F("hMggPt_Same", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
-      reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     }
 
     list->Add(new TH2F("hMggPt_Mixed", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
 
     if (TString(subGroup).Contains("PCMPHOS") || TString(subGroup).Contains("PCMEMC")) {
       list->Add(new TH2F("hdEtadPhi", "#Delta#eta vs. #Delta#varphi;#Delta#varphi (rad.);#Delta#eta", 200, -1, +1, 200, -1, +1));
@@ -522,16 +522,16 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
 
     if (TString(subGroup).Contains("EMCEMC")) {
       list->Add(new TH2F("hMggPt_Same_RotatedBkg", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
-      reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same_RotatedBkg"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hMggPt_Same_RotatedBkg"))->Sumw2();
     }
   }
   if (TString(histClass) == "gammagamma_mass_pt_mc") {
     list->Add(new TH2F("hMggPt_Pi0_Primary", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
     list->Add(new TH2F("hMggPt_Pi0_FromWD", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
     list->Add(new TH2F("hMggPt_Eta_Primary", "m_{#gamma#gamma} vs. p_{T};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c)", nmgg - 1, mgg, npTgg - 1, pTgg));
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_Primary"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_FromWD"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Eta_Primary"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_Pi0_Primary"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_Pi0_FromWD"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_Eta_Primary"))->Sumw2();
   }
 
   if (TString(histClass) == "material_budget_study") {
@@ -640,36 +640,36 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
   if (TString(histClass) == "tagging_pi0") {
     list->Add(new TH2F("hMggPt_Same", "m_{ee#gamma} vs. p_{T,#gamma};m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     list->Add(new TH2F("hMggPt_Mixed", "m_{ee#gamma} vs. p_{T,#gamma};m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
   }
   if (TString(histClass) == "tagging_pi0_mc") {
     if (TString(subGroup) == "pcm") {
       list->Add(new TH1F("hPt_v0photon_Pi0_Primary", "reconstcuted v0 photon from primary #pi^{0};p_{T,#gamma} (GeV/c);N_{#gamma}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
-      reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_Primary"))->Sumw2();
+      dynamic_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_Primary"))->Sumw2();
       list->Add(new TH1F("hPt_v0photon_Pi0_FromWD", "reconstcuted v0 photon from #pi^{0} from WD;p_{T,#gamma} (GeV/c);N_{#gamma}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
-      reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_FromWD"))->Sumw2();
+      dynamic_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_FromWD"))->Sumw2();
       list->Add(new TH1F("hPt_v0photon_Pi0_hs", "reconstcuted v0 photon from #pi^{0} from hadronic shower in materials;p_{T,#gamma} (GeV/c);N_{#gamma}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
-      reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_hs"))->Sumw2();
+      dynamic_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_hs"))->Sumw2();
     } else if (TString(subGroup) == "pair") {
       list->Add(new TH2F("hMggPt_Pi0_Primary", "reconstructed m_{ee#gamma} vs. p_{T,#gamma} from primary #pi^{0};m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c);N_{#gamma}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
-      reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_Primary"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hMggPt_Pi0_Primary"))->Sumw2();
       list->Add(new TH2F("hMggPt_Pi0_FromWD", "reconstructed m_{ee#gamma} vs. p_{T,#gamma} from #pi^{0} from WD;m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c);N_{#gamma}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
-      reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_FromWD"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hMggPt_Pi0_FromWD"))->Sumw2();
       list->Add(new TH2F("hMggPt_Pi0_hs", "reconstructed m_{ee#gamma} vs. p_{T,#gamma} from #pi^{0} from hadronic shower in material;m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c);N_{#gamma}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
-      reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_hs"))->Sumw2();
+      dynamic_cast<TH2F*>(list->FindObject("hMggPt_Pi0_hs"))->Sumw2();
     }
   }
 
   if (TString(histClass) == "tag_and_probe") {
     list->Add(new TH2F("hMggPt_Probe_Same", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     list->Add(new TH2F("hMggPt_Probe_Mixed", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Probe_Same"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Probe_Mixed"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_Probe_Same"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_Probe_Mixed"))->Sumw2();
     list->Add(new TH2F("hMggPt_PassingProbe_Same", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     list->Add(new TH2F("hMggPt_PassingProbe_Mixed", "m_{#gamma#gamma} vs. p_{T,#gamma};m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_PassingProbe_Same"))->Sumw2();
-    reinterpret_cast<TH2F*>(list->FindObject("hMggPt_PassingProbe_Mixed"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_PassingProbe_Same"))->Sumw2();
+    dynamic_cast<TH2F*>(list->FindObject("hMggPt_PassingProbe_Mixed"))->Sumw2();
   }
 
   if (TString(histClass) == "photon_hbt") {
@@ -700,7 +700,7 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       hs_q_same->SetBinEdges(1, m_hbt);
       hs_q_same->SetBinEdges(2, dca_hbt);
       hs_q_same->SetBinEdges(3, dca_hbt);
-      hs_q_mix = reinterpret_cast<THnSparseF*>(hs_q_same->Clone("hs_q_mix"));
+      hs_q_mix = dynamic_cast<THnSparseF*>(hs_q_same->Clone("hs_q_mix"));
       list->Add(hs_q_same);
       list->Add(hs_q_mix);
     } else if (TString(subGroup) == "3d") {
@@ -715,7 +715,7 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       hs_q_same->SetBinEdges(1, m_hbt);
       hs_q_same->SetBinEdges(2, dca_hbt);
       hs_q_same->SetBinEdges(3, dca_hbt);
-      hs_q_mix = reinterpret_cast<THnSparseF*>(hs_q_same->Clone("hs_q_mix"));
+      hs_q_mix = dynamic_cast<THnSparseF*>(hs_q_same->Clone("hs_q_mix"));
       list->Add(hs_q_same);
       list->Add(hs_q_mix);
     }
@@ -725,7 +725,7 @@ THashList* o2::aod::pwgem::photon::histogram::AddHistClass(THashList* list, cons
 {
   if (list->FindObject(histClass)) {
     LOGF(info, "HistogramsLibrary::AddHistClass(): Cannot add histogram class %s because it already exists.", histClass);
-    return static_cast<THashList*>(list->FindObject(histClass));
+    return dynamic_cast<THashList*>(list->FindObject(histClass));
   }
 
   auto* sublist = new THashList();

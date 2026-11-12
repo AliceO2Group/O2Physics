@@ -64,17 +64,6 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter # o2-linter: disable=name/o
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(double-omega-tree-creator
-    SOURCES doubleOmegaTreeCreator.cxx
-    REUSE_FROM LfStrangenessPCH
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(double-omega-builder
-    SOURCES doubleOmegaBuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(lambdakzerofinder
     SOURCES lambdakzerofinder.cxx
     REUSE_FROM LfStrangenessPCH

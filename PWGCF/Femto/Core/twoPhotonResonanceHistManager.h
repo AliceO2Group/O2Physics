@@ -113,11 +113,11 @@ auto makeTwoPhotonResonanceQaHistSpecMap(const T& confBinningAnalysis)
 constexpr char PrefixPi0[] = "Pi0/";
 constexpr char PrefixEta[] = "Eta/";
 // same-event sibling, used only by a pair builder's same-event resonance manager
-constexpr char PrefixPi0Se[] = "Pi0Se/";
-constexpr char PrefixEtaSe[] = "EtaSe/";
+constexpr char PrefixPi0Se[] = "Pi0/SE/";
+constexpr char PrefixEtaSe[] = "Eta/SE/";
 // mixed-event sibling, used only by a pair builder's mixed-event resonance manager
-constexpr char PrefixPi0Me[] = "Pi0Me/";
-constexpr char PrefixEtaMe[] = "EtaMe/";
+constexpr char PrefixPi0Me[] = "Pi0/ME/";
+constexpr char PrefixEtaMe[] = "Eta/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";

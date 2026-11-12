@@ -40,6 +40,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
+#include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
 
@@ -86,7 +87,7 @@ using SignalRef = std::pair<int32_t, int16_t>;
 using DistanceMap = std::vector<std::vector<uint32_t>>;
 
 DistanceMap buildMinimumDistanceMap(std::vector<uint32_t> const& tfIDs,
-                                    int64_t bcSOR, int32_t nBCsPerTF,
+                                    int64_t bcSOR, int64_t nBCsPerTF,
                                     std::vector<int64_t>& activeBCs, uint32_t maxDistance,
                                     bool skipFirstExactMatch = false)
 {
@@ -100,8 +101,10 @@ DistanceMap buildMinimumDistanceMap(std::vector<uint32_t> const& tfIDs,
   // The forward-only cursor makes the scan linear after sorting
   size_t nextIndex = 0;
   for (size_t iTF = 0; iTF < tfIDs.size(); ++iTF) {
-    const int64_t tfStartBC = bcSOR + tfIDs[iTF] * nBCsPerTF;
-    for (int64_t bcInTF = 0; bcInTF < nBCsPerTF; ++bcInTF) { // TODO why int64_t
+    // Cast before multiplication to prevent 32-bit integer overflow.
+    const int64_t tfStartBC = bcSOR + static_cast<int64_t>(tfIDs[iTF]) * nBCsPerTF;
+    // Use int64_t to keep BC arithmetic in 64 bits without additional casts.
+    for (int64_t bcInTF = 0; bcInTF < nBCsPerTF; ++bcInTF) {
       const int64_t currentBC = tfStartBC + bcInTF;
       while (nextIndex < activeBCs.size() && activeBCs[nextIndex] < currentBC) {
         ++nextIndex;
@@ -271,6 +274,7 @@ struct UpcCandProducerBarrel {
   Configurable<float> minAmpFDDA{"minAmpFDDA", 1000.f, "Minimum amplitude for FDDA veto"};
   Configurable<float> minAmpFDDC{"minAmpFDDC", 1000.f, "Minimum amplitude for FDDC veto"};
 
+  Configurable<float> maxTF{"maxTF", 4.e7, "Maximum TF id"};
   Configurable<int> maxStoredDistance{"maxStoredDistance", 32, "Maximum stored veto distance"};
   Configurable<int> nBinsOccupancy{"nBinsOccupancy", 25, "Number of occupancy bins"};
   Configurable<int> nBinsTF{"nBinsTF", 100, "Number of TF bins"};
@@ -334,14 +338,13 @@ struct UpcCandProducerBarrel {
     const AxisSpec axisBCs{NBCsPerOrbit, 0., NBCsPerOrbit, "BC in orbit"};
     const AxisSpec axisVeto{maxStoredDistance + 1, -0.5, maxStoredDistance + 0.5, "veto range in BCs"};
     const AxisSpec axisOccupancy{nBinsOccupancy, 0., 250000., "FT0-based occupancy"};
-    const AxisSpec axisTFs{nBinsTF, 0., 4.e7, "TFs"}; // 100 bins -> 400000 TFs per bin (1 bin ~ 1140 seconds for 32 orbits per TF)
+    const AxisSpec axisTFs{nBinsTF, 0., maxTF, "TFs"};
 
+    registry.add("hTF", "TF counts", HistType::kTH1D, {axisTFs});
     registry.add("hTVX", "TVX counts", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXRCT", "TVX counts after RCT selection", HistType::kTH2D, {axisBCs, axisTFs});
-    registry.add("hTVXRCTnoPileupROF", "TVX counts after RCT and ROF pileup selection", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXupc", "TVX counts in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXRCTupc", "TVX counts after RCT selection in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
-    registry.add("hTVXRCTnoPileupROFupc", "TVX counts after RCT and ROF pileup selection in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
 
     registry.add("hVetoT00", "no RCT selection", HistType::kTH3D, {axisBCs, axisTFs, axisVeto});
     registry.add("hVetoTV0", "no RCT selection", HistType::kTH3D, {axisBCs, axisTFs, axisVeto});
@@ -382,8 +385,7 @@ struct UpcCandProducerBarrel {
     const auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(ccdb->instance(), runNumber);
     const int64_t orbitsPerTF = configuredOrbitsPerTF < 0 ? runInfo.orbitsPerTF : configuredOrbitsPerTF;
     const bool needsEventSelectionParams = configuredTFStartBorder < 0 || configuredTFEndBorder < 0;
-    const auto ts = (runInfo.sor + runInfo.eor) / 2;
-    const auto* eventSelectionParams = needsEventSelectionParams ? ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts) : nullptr;
+    const auto* eventSelectionParams = needsEventSelectionParams ? ccdb->getForRun<EventSelectionParams>("EventSelection/EventSelectionParams", runNumber) : nullptr;
     if (orbitsPerTF <= 0 || !runInfo.grpLHC || (needsEventSelectionParams && !eventSelectionParams)) {
       LOGF(fatal, "Incomplete run information for run %d", runNumber);
     }
@@ -394,7 +396,7 @@ struct UpcCandProducerBarrel {
     collidingBCs = runInfo.grpLHC->getBunchFilling().getBCPattern();
 
     // get ITS ROF parameters
-    auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
+    auto alppar = ccdb->getForRun<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", runNumber);
     rofOffset = alppar->roFrameBiasInBC;
     rofLength = alppar->roFrameLengthInBC;
     nRofPerTF = nBCsPerTF / rofLength;
@@ -414,9 +416,12 @@ struct UpcCandProducerBarrel {
     std::vector<size_t> localTFIndex;
     localTFIndex.reserve(bcs.size());
     // Cache the local TF slot for each BC row for collision and MC lookups
+    auto hTF = registry.get<TH1>(HIST("hTF"));
     for (const auto& bc : bcs) {
-      const auto tfID = static_cast<uint32_t>((static_cast<int64_t>(bc.globalBC()) - bcSOR) / nBCsPerTF);
+      const int64_t globalBC = bc.globalBC();
+      const uint32_t tfID = (globalBC - bcSOR) / nBCsPerTF;
       if (tfIDs.empty() || tfID != tfIDs.back()) {
+        hTF->Fill(tfID);
         tfIDs.push_back(tfID);
         tfPassesRCT.push_back(static_cast<uint8_t>(rctChecker(bc)));
       }
@@ -518,11 +523,9 @@ struct UpcCandProducerBarrel {
 
     auto hTVX = registry.get<TH2>(HIST("hTVX"));
     auto hTVXRCT = registry.get<TH2>(HIST("hTVXRCT"));
-    auto hTVXRCTnoPileupROF = registry.get<TH2>(HIST("hTVXRCTnoPileupROF"));
 
     auto hTVXupc = registry.get<TH2>(HIST("hTVXupc"));
     auto hTVXRCTupc = registry.get<TH2>(HIST("hTVXRCTupc"));
-    auto hTVXRCTnoPileupROFupc = registry.get<TH2>(HIST("hTVXRCTnoPileupROFupc"));
 
     std::vector<int64_t> bcsWithFT0, bcsWithFV0, bcsWithFDD;
     bcsWithFT0.reserve(ft0s.size());
@@ -540,7 +543,6 @@ struct UpcCandProducerBarrel {
       const auto iTF = localTFIndex[bc.globalIndex()];
       const auto tfID = tfIDs[iTF];
       const int32_t rofInTF = getRofInTF(bcInTF);
-      bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] > 1;
       bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
 
       // Multiplicity for FT0C-based occupancy estimates
@@ -568,15 +570,6 @@ struct UpcCandProducerBarrel {
       hTVXRCT->Fill(bcInOrbit, tfID);
       if (upcMode) {
         hTVXRCTupc->Fill(bcInOrbit, tfID);
-      }
-
-      if (pileupInROF) {
-        continue;
-      }
-
-      hTVXRCTnoPileupROF->Fill(bcInOrbit, tfID);
-      if (upcMode) {
-        hTVXRCTnoPileupROFupc->Fill(bcInOrbit, tfID);
       }
     }
 
@@ -670,7 +663,7 @@ struct UpcCandProducerBarrel {
         const int bcInOrbit = globalBC % NBCsPerOrbit;
         const int32_t rofInTF = getRofInTF(bcInTF);
         bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
-        bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] > 1;
+        bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] >= 1;
         const auto distanceFT0 = minDistanceFT0[iTF][bcInTF];
         const auto distanceFV0 = minDistanceFV0[iTF][bcInTF];
         const auto distanceFDD = minDistanceFDD[iTF][bcInTF];
