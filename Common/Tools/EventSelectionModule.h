@@ -24,6 +24,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/TimeStamp.h>
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
@@ -37,6 +38,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 #include <ITSMFTReconstruction/ChipMappingITS.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -127,6 +129,20 @@ struct EvselConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> confLightIonsMarginVzDiff{"VzDiffMargin", 0.2, "margin for +/- nSigma cut on vZ difference by FT0 and by tracks, cm"}; // o2-linter: disable=name/configurable (temporary fix)
 };
 
+// BC occupancy configurables
+struct BcOccConfigurables : o2::framework::ConfigurableGroup {
+  std::string prefix = "bcoccOpts";
+  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "produce BC occupancy table aod::BcOccs or not. -1: automatic; 0: no; 1: yes"}; // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> bcsForOccupancy{"bcsForOccupancy", 0, "BCs for which the occupancy is calculated: 0 - all BCs, 1 - BCs with FT0, 2 - BCs with TVX, 3 - colliding BCs (others: -1)"};
+};
+
+// dense BC occupancy configurables (all BCs of the TFs)
+struct BcOccAllConfigurables : o2::framework::ConfigurableGroup {
+  std::string prefix = "bcoccAllOpts";
+  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "produce dense BC occupancy table aod::BcOccsAll or not. -1: automatic; 0: no; 1: yes"}; // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> bcsForOccupancy{"bcsForOccupancy", 0, "BCs for which the occupancy is calculated: 0 - all BCs, 1 - colliding BCs (others: -1)"};
+};
+
 // luminosity configurables
 struct LumiConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "lumiOpts";
@@ -178,10 +194,12 @@ class BcSelectionModule
     bcselOpts = external_bcselopts;
 
     if (bcselOpts.amIneeded.value < 0) {
-      int bcSelNeeded = -1, evSelNeeded = -1;
+      int bcSelNeeded = -1, evSelNeeded = -1, bcOccNeeded = -1, bcOccAllNeeded = -1;
       bcselOpts.amIneeded.value = 0;
       o2::common::core::enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
       o2::common::core::enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcOccs", bcOccNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcOccsAll", bcOccAllNeeded);
       if (bcSelNeeded == 1) {
         bcselOpts.amIneeded.value = 1;
         LOGF(info, "BC Selection / Autodetection for aod::BcSels: subscription present, will generate.");
@@ -190,7 +208,11 @@ class BcSelectionModule
         bcselOpts.amIneeded.value = 1;
         LOGF(info, "BC Selection / Autodetection for aod::BcSels: not there, but EvSel needed. Will generate.");
       }
-      if (bcSelNeeded == 0 && evSelNeeded == 0) {
+      if ((bcOccNeeded == 1 || bcOccAllNeeded == 1) && bcSelNeeded == 0 && evSelNeeded == 0) {
+        bcselOpts.amIneeded.value = 1;
+        LOGF(info, "BC Selection / Autodetection for aod::BcSels: not there, but BcOccs or BcOccsAll needed. Will generate.");
+      }
+      if (bcSelNeeded == 0 && evSelNeeded == 0 && bcOccNeeded == 0 && bcOccAllNeeded == 0) {
         LOGF(info, "BC Selection / Autodetection for aod::BcSels: not required. Skipping generation.");
         return;
       }
@@ -615,20 +637,21 @@ class BcSelectionModule
 }; // end BcSelectionModule
 
 // Occupancy calculation (used by EventSelectionModule)
-// The occupancy wrt a reference point is calculated from other collisions ("sources") nearby in time:
+// The occupancy wrt a reference point is calculated from other collisions nearby in time:
 // in the same ITS ROF, in the previous ITS ROF and in a time window around the reference.
 
 class OccupancyCalculator
 {
  public:
   // per-collision input for the occupancy calculation
-  struct Source {
+  struct Collision {
     int64_t globalBC = 0;                 // global BC of the collision (after the collision-BC matching)
     int nTracksITS567 = 0;                // number of PV contributors with >= 5 ITS clusters
     int proxyNtracks = 0;                 // nTracksITS567, or FT0C/10 if the collision is close to an ITS ROF border
     float ampFT0C = 0;                    // FT0C amplitude in the found BC
     float vZ = 0;                         // z of the primary vertex
     bool isRejectedByTFborderCut = false; // the found BC is close to a TF border (kNoTimeFrameBorder is not set)
+    bool isUpcMode = false;               // the vertex was reconstructed in the UPC mode of ITS (Vertex::Flags::UPCMode)
   };
 
   // occupancy estimators and flags wrt a given reference
@@ -645,10 +668,17 @@ class OccupancyCalculator
     bool noHighMultCollInPrevRof = false;   // total FT0C amplitude in the previous ITS ROF below FT0CamplPerCollCutVetoOnCollInROF
   };
 
-  // prepare n sources (one per collision, same order as in the collision table) with all fields reset
-  void resetSources(size_t n) { mSources.assign(n, Source{}); }
-  // source i (for filling)
-  Source& source(int32_t i) { return mSources[i]; }
+  // prepare n collisions (same order as in the collision table) with all fields reset,
+  // and clear the list of TVX BCs (all per-DF inputs)
+  void resetCollisions(size_t n)
+  {
+    mCollisions.assign(n, Collision{});
+    mTVXBCsForTFBorderEstimate.clear();
+    mIsReadyForBCQueries = false;
+    mLastRofId = -1;
+  }
+  // collision i (for filling)
+  Collision& collision(int32_t i) { return mCollisions[i]; }
 
   // set run-dependent constants and configurables
   template <typename TEvSelOpts>
@@ -682,22 +712,70 @@ class OccupancyCalculator
     return wOccup;
   }
 
-  // occupancy wrt mSources[iRef] (the source itself is excluded)
-  template <typename TFT0CofBC>
-  Result calculateForSource(int32_t iRef, std::map<int64_t, int32_t> const& mapGlobalBcWithTVX, TFT0CofBC const& getFT0CofBC)
+  // colliding BCs with TVX and their FT0C amplitude, for the FT0C-based occupancy estimate near TF borders
+  // to be filled once per DF (after resetCollisions), in increasing order of global BC
+  void addTVXBC(int64_t globalBC, float ampFT0C) { mTVXBCsForTFBorderEstimate.push_back({globalBC, ampFT0C}); } // ampFT0C = -1 if there is no FT0 in this BC
+
+  // occupancy wrt mCollisions[iRef] (the collision itself is excluded)
+  Result calculateForCollision(int32_t iRef)
   {
-    return calculate(mSources[iRef].globalBC, mSources[iRef].vZ, iRef - 1, iRef + 1, mapGlobalBcWithTVX, getFT0CofBC);
+    return calculate(mCollisions, mCollisions[iRef].globalBC, mCollisions[iRef].vZ, iRef - 1, iRef + 1);
   }
 
-  // occupancy wrt refGlobalBC (refVz is used for the in-ROF veto on collisions with close vZ)
-  // sources are scanned backward starting from index iBefore and forward starting from index iAfter
-  // mapGlobalBcWithTVX: global BC -> BC index for colliding BCs with TVX, used for the FT0C-based estimate near TF borders
-  // getFT0CofBC(bcIndex, ampFT0C): returns false if there is no FT0 in this BC, otherwise sets ampFT0C
-  template <typename TFT0CofBC>
-  Result calculate(int64_t refGlobalBC, float refVz, int32_t iBefore, int32_t iAfter, std::map<int64_t, int32_t> const& mapGlobalBcWithTVX, TFT0CofBC const& getFT0CofBC)
+  // prepare queries wrt BCs (numCollisionsInBC, calculateForBC): copy of the collisions sorted by global BC
+  // to be called after the collisions are filled (done only once per DF)
+  void prepareBCQueries()
+  {
+    if (mIsReadyForBCQueries) {
+      return;
+    }
+    mCollisionsSortedByBC = mCollisions;
+    std::stable_sort(mCollisionsSortedByBC.begin(), mCollisionsSortedByBC.end(), [](const Collision& a, const Collision& b) { return a.globalBC < b.globalBC; });
+    mIsReadyForBCQueries = true;
+  }
+
+  // number of collisions with a given global BC (requires prepareBCQueries)
+  int numCollisionsInBC(int64_t globalBC) const
+  {
+    auto [iFirst, iEnd] = getSortedCollisionRangeInBC(globalBC);
+    return iEnd - iFirst;
+  }
+
+  // number of collisions in the ITS ROF of a given global BC, within its TF, including the collisions in this BC (requires prepareBCQueries)
+  // -1 if the ROF or TF parameters are not available (e.g. unanchored MC)
+  int numCollisionsInRof(int64_t globalBC)
+  {
+    if (!updateRofInfo(globalBC)) {
+      return -1;
+    }
+    return mLastRofNumCollisions;
+  }
+
+  // the ITS ROF of a given global BC is in UPC mode: no collisions in the ROF, or collisions reconstructed in the UPC mode (requires prepareBCQueries)
+  // false if the ROF or TF parameters are not available (e.g. unanchored MC)
+  bool isRofInUpcMode(int64_t globalBC)
+  {
+    if (!updateRofInfo(globalBC)) {
+      return false;
+    }
+    return mLastRofNumCollisions == 0 || mLastRofNumUpcCollisions > 0;
+  }
+
+  // occupancy wrt a BC (requires prepareBCQueries):
+  // collisions in this BC are excluded, the in-ROF veto on collisions with close vZ is not applied (no vZ)
+  Result calculateForBC(int64_t globalBC)
+  {
+    auto [iFirst, iEnd] = getSortedCollisionRangeInBC(globalBC);
+    return calculate(mCollisionsSortedByBC, globalBC, std::numeric_limits<float>::quiet_NaN(), iFirst - 1, iEnd);
+  }
+
+ private:
+  // occupancy wrt refGlobalBC (refVz is used for the in-ROF veto on collisions with close vZ, NaN = veto not applied)
+  // colls are scanned backward starting from index iBefore and forward starting from index iAfter
+  Result calculate(const std::vector<Collision>& colls, int64_t refGlobalBC, float refVz, int32_t iBefore, int32_t iAfter)
   {
     Result res;
-    const int32_t nSources = mSources.size();
+    const int32_t nColls = colls.size();
     const int64_t tfId = getTFid(refGlobalBC);
     const int64_t rofId = getRofId(refGlobalBC);
     const int bcInTF = (refGlobalBC - mBcSOR) % mNBCsPerTF;
@@ -710,25 +788,25 @@ class OccupancyCalculator
     int nITS567tracksForSameRofVetoStrict = 0;    // to veto events with other collisions in the same ITS ROF
     int nCollsInRofWithFT0CAboveVetoStandard = 0; // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
     int nITS567tracksForRofVetoOnCloseVz = 0;     // to veto events with nearby collisions with close vZ
-    auto addCollInSameRof = [&](const Source& src) {
-      nITS567tracksForSameRofVetoStrict += src.nTracksITS567;
-      if (src.ampFT0C > mFT0CamplCutVetoOnCollInROF)
+    auto addCollInSameRof = [&](const Collision& coll) {
+      nITS567tracksForSameRofVetoStrict += coll.nTracksITS567;
+      if (coll.ampFT0C > mFT0CamplCutVetoOnCollInROF)
         nCollsInRofWithFT0CAboveVetoStandard++;
-      if (std::fabs(src.vZ - refVz) < mEpsilonVzDiffVetoInROF)
-        nITS567tracksForRofVetoOnCloseVz += src.nTracksITS567;
+      if (std::fabs(coll.vZ - refVz) < mEpsilonVzDiffVetoInROF)
+        nITS567tracksForRofVetoOnCloseVz += coll.nTracksITS567;
     };
     // collisions in the same TF and ROF before and after the reference
     for (int32_t i = iBefore; i >= 0; i--) {
-      int64_t thisBC = mSources[i].globalBC;
+      int64_t thisBC = colls[i].globalBC;
       if (getTFid(thisBC) != tfId || getRofId(thisBC) != rofId)
         break;
-      addCollInSameRof(mSources[i]);
+      addCollInSameRof(colls[i]);
     }
-    for (int32_t i = iAfter; i < nSources; i++) {
-      int64_t thisBC = mSources[i].globalBC;
+    for (int32_t i = iAfter; i < nColls; i++) {
+      int64_t thisBC = colls[i].globalBC;
       if (getTFid(thisBC) != tfId || getRofId(thisBC) != rofId)
         break;
-      addCollInSameRof(mSources[i]);
+      addCollInSameRof(colls[i]);
     }
     res.noCollInRofStrict = (nITS567tracksForSameRofVetoStrict == 0);
     res.noCollInRofStandard = (nCollsInRofWithFT0CAboveVetoStandard == 0);
@@ -737,12 +815,12 @@ class OccupancyCalculator
     // ### occupancy in the previous ROF
     float totalFT0amplInPrevROF = 0;
     for (int32_t i = iBefore; i >= 0; i--) {
-      int64_t thisBC = mSources[i].globalBC;
+      int64_t thisBC = colls[i].globalBC;
       if (getTFid(thisBC) != tfId)
         break;
       int64_t thisRofId = getRofId(thisBC);
       if (thisRofId == rofId - 1)
-        totalFT0amplInPrevROF += mSources[i].ampFT0C;
+        totalFT0amplInPrevROF += colls[i].ampFT0C;
       else if (thisRofId < rofId - 1)
         break;
     }
@@ -759,24 +837,24 @@ class OccupancyCalculator
     int proxyTotalMultInTimeWin = 0;
     mDeltaTimeMult.clear(); // (delta time in ns, proxy for N tracks) of collisions in the time window, for the median time
     auto addCollInTimeWin = [&](int32_t i, float dtNS) {
-      const Source& src = mSources[i];
-      mDeltaTimeMult.emplace_back(dtNS, src.proxyNtracks);
-      proxyTotalMultInTimeWin = proxyTotalMultInTimeWin + static_cast<float>(src.proxyNtracks); // int + float, as in the original std::accumulate over floats
+      const Collision& coll = colls[i];
+      mDeltaTimeMult.emplace_back(dtNS, coll.proxyNtracks);
+      proxyTotalMultInTimeWin = proxyTotalMultInTimeWin + static_cast<float>(coll.proxyNtracks); // int + float, as in the original std::accumulate over floats
 
       float dt = dtNS / 1e3; // ns -> us
       // counting tracks from other collisions in fixed time windows
       if (std::fabs(dt) < mTimeRangeVetoOnCollNarrow)
-        nITS567tracksForVetoNarrow += src.proxyNtracks;
+        nITS567tracksForVetoNarrow += coll.proxyNtracks;
       if (std::fabs(dt) < mTimeRangeVetoOnCollStrict)
-        nITS567tracksForVetoStrict += src.proxyNtracks;
+        nITS567tracksForVetoStrict += coll.proxyNtracks;
 
       // veto on high-mult collisions nearby, where artificial structures in the dt-occupancy plots are observed
-      if (dt > -4.0 && dt < 2.0 && src.ampFT0C > mFT0CamplCutVetoOnCollInTimeRange) { // o2-linter: disable=magic-number (dt in us, time window for high-mult veto)
+      if (dt > -4.0 && dt < 2.0 && coll.ampFT0C > mFT0CamplCutVetoOnCollInTimeRange) { // o2-linter: disable=magic-number (dt in us, time window for high-mult veto)
         nCollsWithFT0CAboveVetoStandard++;
       }
 
       // check if we are close to TF borders => N ITS tracks is not reliable, and FT0C ampl will be used for occupancy estimation (see below)
-      if (src.isRejectedByTFborderCut) {
+      if (coll.isRejectedByTFborderCut) {
         if (iFirstRejectedByTFborderCut == -1)
           iFirstRejectedByTFborderCut = i;
         return;
@@ -788,13 +866,13 @@ class OccupancyCalculator
         if (mUseWeightsForOccupancy) {
           wOccup = calcWeightForOccupancy(dt);
         }
-        nITS567tracksInFullTimeWindow += wOccup * src.proxyNtracks;
-        sumAmpFT0CInFullTimeWindow += wOccup * src.ampFT0C;
+        nITS567tracksInFullTimeWindow += wOccup * coll.proxyNtracks;
+        sumAmpFT0CInFullTimeWindow += wOccup * coll.ampFT0C;
       }
     };
     // collisions in the time window before and after the reference
     for (int32_t i = iBefore; i >= 0; i--) {
-      int64_t thisBC = mSources[i].globalBC;
+      int64_t thisBC = colls[i].globalBC;
       if (getTFid(thisBC) != tfId)
         break;
       float dt = (thisBC - refGlobalBC) * bcNS; // ns
@@ -802,8 +880,8 @@ class OccupancyCalculator
         break;
       addCollInTimeWin(i, dt);
     }
-    for (int32_t i = iAfter; i < nSources; i++) {
-      int64_t thisBC = mSources[i].globalBC;
+    for (int32_t i = iAfter; i < nColls; i++) {
+      int64_t thisBC = colls[i].globalBC;
       if (getTFid(thisBC) != tfId)
         break;
       float dt = (thisBC - refGlobalBC) * bcNS; // ns
@@ -828,25 +906,29 @@ class OccupancyCalculator
     LOGP(debug, "   --> median time = {}", res.medianTime);
 
     // if some collisions in the time window are close to the TF border - take FT0C amplitude instead of nTracks, using TVX BCs
+    // starting from the BC of the first such collision (only if it is a TVX BC itself)
     if (isFullInfoForOccupancy && canHaveAssocCollsWithinLastDriftTime && iFirstRejectedByTFborderCut >= 0) {
-      for (auto it = mapGlobalBcWithTVX.find(mSources[iFirstRejectedByTFborderCut].globalBC); it != mapGlobalBcWithTVX.end(); ++it) {
-        int64_t thisFoundGlobalBC = it->first;
+      const int64_t firstGlobalBC = colls[iFirstRejectedByTFborderCut].globalBC;
+      auto it = std::lower_bound(mTVXBCsForTFBorderEstimate.begin(), mTVXBCsForTFBorderEstimate.end(), firstGlobalBC, [](const TVXBC& tvx, int64_t bc) { return tvx.globalBC < bc; });
+      if (it != mTVXBCsForTFBorderEstimate.end() && it->globalBC != firstGlobalBC) {
+        it = mTVXBCsForTFBorderEstimate.end(); // exact match required
+      }
+      for (; it != mTVXBCsForTFBorderEstimate.end(); ++it) {
+        int64_t thisFoundGlobalBC = it->globalBC;
         if (getTFid(thisFoundGlobalBC) != tfId)
           break;
         float dt = (thisFoundGlobalBC - refGlobalBC) * bcNS; // ns
         if (dt > mTimeWinMaxNS)
           break;
-        float multT0C = -1;
-        if (getFT0CofBC(it->second, multT0C)) {
+        float multT0C = it->ampFT0C;
+        if (multT0C > 50.) // o2-linter: disable=magic-number (multiplicity threshold for occupancy calc)
+        {
           float wOccup = 1.;
           if (mUseWeightsForOccupancy) {
             wOccup = calcWeightForOccupancy(dt / 1e3); // ns -> us
           }
-          if (multT0C > 50.) // o2-linter: disable=magic-number (multiplicity threshold for occupancy calc)
-          {
-            nITS567tracksInFullTimeWindow += wOccup * multT0C / 10.;
-            sumAmpFT0CInFullTimeWindow += wOccup * multT0C;
-          }
+          nITS567tracksInFullTimeWindow += wOccup * multT0C / 10.;
+          sumAmpFT0CInFullTimeWindow += wOccup * multT0C;
         }
       }
     }
@@ -866,8 +948,54 @@ class OccupancyCalculator
     return res;
   }
 
- private:
-  std::vector<Source> mSources; // one entry per collision, same order as in the collision table
+  // collisions in the ITS ROF of a given global BC (same ROF convention as the in-ROF vetoes, cut at the TF borders):
+  // the result for the last ROF is kept, since consecutive queries are often in the same ROF; false if the ROF or TF parameters are not available
+  bool updateRofInfo(int64_t globalBC)
+  {
+    if (mRofLength <= 0 || mNBCsPerTF <= 0) {
+      return false;
+    }
+    const int64_t rofId = getRofId(globalBC);
+    const int64_t tfId = getTFid(globalBC);
+    if (rofId != mLastRofId || tfId != mLastRofTfId) {
+      // BC range [rofStart, rofEnd) of the ROF, cut at the TF borders
+      const int64_t tfStart = mBcSOR + tfId * mNBCsPerTF;
+      const int64_t rofStart = std::max(rofId * mRofLength + mRofOffset - nBCsPerOrbit, tfStart);
+      const int64_t rofEnd = std::min(rofId * mRofLength + mRofOffset - nBCsPerOrbit + mRofLength, tfStart + mNBCsPerTF);
+      auto isBefore = [](const Collision& coll, int64_t bc) { return coll.globalBC < bc; };
+      auto itFirst = std::lower_bound(mCollisionsSortedByBC.begin(), mCollisionsSortedByBC.end(), rofStart, isBefore);
+      auto itEnd = rofEnd > rofStart ? std::lower_bound(itFirst, mCollisionsSortedByBC.end(), rofEnd, isBefore) : itFirst;
+      mLastRofId = rofId;
+      mLastRofTfId = tfId;
+      mLastRofNumCollisions = static_cast<int>(itEnd - itFirst);
+      mLastRofNumUpcCollisions = static_cast<int>(std::count_if(itFirst, itEnd, [](const Collision& coll) { return coll.isUpcMode; }));
+    }
+    return true;
+  }
+
+  // index range [first, end) of the collisions with a given global BC in mCollisionsSortedByBC
+  std::pair<int32_t, int32_t> getSortedCollisionRangeInBC(int64_t globalBC) const
+  {
+    auto itFirst = std::lower_bound(mCollisionsSortedByBC.begin(), mCollisionsSortedByBC.end(), globalBC, [](const Collision& coll, int64_t bc) { return coll.globalBC < bc; });
+    auto itEnd = std::upper_bound(itFirst, mCollisionsSortedByBC.end(), globalBC, [](int64_t bc, const Collision& coll) { return bc < coll.globalBC; });
+    return {static_cast<int32_t>(itFirst - mCollisionsSortedByBC.begin()), static_cast<int32_t>(itEnd - mCollisionsSortedByBC.begin())};
+  }
+
+  std::vector<Collision> mCollisions;           // one entry per collision, same order as in the collision table
+  std::vector<Collision> mCollisionsSortedByBC; // copy of mCollisions sorted by global BC, for queries wrt BCs
+  bool mIsReadyForBCQueries = false;            // mCollisionsSortedByBC is prepared for the current collisions
+  int64_t mLastRofId = -1;                      // last ROF queried in updateRofInfo (-1: none)
+  int64_t mLastRofTfId = -1;                    // TF of the last ROF queried
+  int mLastRofNumUpcCollisions = 0;             // number of collisions reconstructed in the UPC mode in the last ROF queried
+  int mLastRofNumCollisions = 0;                // number of collisions in the last ROF queried
+
+  struct TVXBC {
+    int64_t globalBC = 0; // global BC of a colliding BC with TVX
+    float ampFT0C = -1;   // FT0C amplitude in this BC, -1 if there is no FT0
+  };
+  // colliding BCs with TVX, also without a reconstructed collision, in increasing order of global BC:
+  // used near TF ends, where collisions are not reliably reconstructed and the occupancy is estimated from FT0C
+  std::vector<TVXBC> mTVXBCsForTFBorderEstimate;
 
   int64_t mBcSOR = -1;                       // global bc of the start of the first orbit
   int64_t mNBCsPerTF = -1;                   // duration of TF in bcs
@@ -970,6 +1098,10 @@ class EventSelectionModule
 
   OccupancyCalculator occupancyCalc; // occupancy estimators and flags (keeps its buffers between DFs)
 
+  o2::common::eventselection::BcOccConfigurables bcoccOpts;
+  o2::common::eventselection::BcOccAllConfigurables bcoccAllOpts;
+  bool isOccupancyInputReady = false; // occupancy inputs are filled for the current DF (by processRun3)
+
   template <typename TContext, typename TEvSelOpts, typename THistoRegistry, typename TMetadataInfo>
   void init(TContext& context, TEvSelOpts const& external_evselopts, THistoRegistry& histos, TMetadataInfo const& metadataInfo)
   {
@@ -978,7 +1110,13 @@ class EventSelectionModule
 
     if (evselOpts.amIneeded.value < 0) {
       o2::common::core::enableFlagIfTableRequired(context, "EvSels", evselOpts.amIneeded.value);
-      if (evselOpts.amIneeded.value == 0) {
+      int bcOccNeeded = -1, bcOccAllNeeded = -1;
+      o2::common::core::enableFlagIfTableRequired(context, "BcOccs", bcOccNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcOccsAll", bcOccAllNeeded);
+      if (evselOpts.amIneeded.value == 0 && (bcOccNeeded == 1 || bcOccAllNeeded == 1)) {
+        evselOpts.amIneeded.value = 1;
+        LOGF(info, "Event Selection / Autodetecting for aod::EvSels: not required, but BcOccs or BcOccsAll needed. Will generate.");
+      } else if (evselOpts.amIneeded.value == 0) {
         LOGF(info, "Event Selection / Autodetecting for aod::EvSels: not required, won't generate.");
         return;
       } else {
@@ -1001,6 +1139,36 @@ class EventSelectionModule
     histos.add("eventselection/hColCounterAll", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("eventselection/hColCounterTVX", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("eventselection/hColCounterAcc", "", framework::kTH1D, {{1, 0., 1.}});
+  }
+
+  template <typename TContext, typename TBcOccOpts>
+  void initBcOccupancy(TContext& context, TBcOccOpts const& external_bcoccopts)
+  {
+    // read in configurations from the task where it's used
+    bcoccOpts = external_bcoccopts;
+    if (bcoccOpts.amIneeded.value < 0) {
+      o2::common::core::enableFlagIfTableRequired(context, "BcOccs", bcoccOpts.amIneeded.value);
+      if (bcoccOpts.amIneeded.value == 0) {
+        LOGF(info, "BC occupancy / Autodetecting for aod::BcOccs: not required, won't generate.");
+      } else {
+        LOGF(info, "BC occupancy / Autodetecting for aod::BcOccs: subscription present, will generate.");
+      }
+    }
+  }
+
+  template <typename TContext, typename TBcOccAllOpts>
+  void initBcOccupancyAll(TContext& context, TBcOccAllOpts const& external_bcoccallopts)
+  {
+    // read in configurations from the task where it's used
+    bcoccAllOpts = external_bcoccallopts;
+    if (bcoccAllOpts.amIneeded.value < 0) {
+      o2::common::core::enableFlagIfTableRequired(context, "BcOccsAll", bcoccAllOpts.amIneeded.value);
+      if (bcoccAllOpts.amIneeded.value == 0) {
+        LOGF(info, "BC occupancy (all BCs) / Autodetecting for aod::BcOccsAll: not required, won't generate.");
+      } else {
+        LOGF(info, "BC occupancy (all BCs) / Autodetecting for aod::BcOccsAll: subscription present, will generate.");
+      }
+    }
   }
 
   //__________________________________________________
@@ -1161,6 +1329,7 @@ class EventSelectionModule
   template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TCollisions, typename TPVTracks, typename TFT0s, typename TSlicecache, typename TTimestamps, typename TBcSelBuffer, typename TEvselCursor>
   void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TCollisions const& cols, TPVTracks const& pvTracks, TFT0s const& ft0s, TSlicecache& cache, TTimestamps const& timestamps, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
   {
+    isOccupancyInputReady = false;
     if (evselOpts.amIneeded.value == 0) {
       return; // dummy process
     }
@@ -1206,7 +1375,6 @@ class EventSelectionModule
       }
       return;
     }
-    occupancyCalc.resetSources(cols.size());               // per-collision inputs for the occupancy calculation
     std::vector<bool> vIsVertexITSTPC(cols.size(), 0);     // at least one of vertex contributors is ITS-TPC track
     std::vector<bool> vIsVertexTOFmatched(cols.size(), 0); // at least one of vertex contributors is matched to TOF
     std::vector<bool> vIsVertexTRDmatched(cols.size(), 0); // at least one of vertex contributors is matched to TRD
@@ -1222,6 +1390,7 @@ class EventSelectionModule
     std::vector<bool> vIsVertexTPC(cols.size(), 0);
     std::vector<bool> vIsVertexHighPtTPC(cols.size(), 0);
     std::vector<int> vNcontributors(cols.size(), 0);
+    std::vector<int> vNumTracksITS567(cols.size(), 0);
     std::vector<float> vWeightedTimesTPCnoTOFnoTRD(cols.size(), 0);
     std::vector<float> vWeightedSigmaTPCnoTOFnoTRD(cols.size(), 0);
 
@@ -1232,8 +1401,6 @@ class EventSelectionModule
     // first loop to match collisions to TVX, also extract other per-collision information for further use
     for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
-      occupancyCalc.source(colIndex).vZ = col.posZ();
-
       vTrackTimesTOF.clear();
       vTrackTimesTRDnoTOF.clear();
       int nPvTracksTPCnoTOFnoTRD = 0;
@@ -1243,7 +1410,7 @@ class EventSelectionModule
       for (const auto& track : colPvTracks) {
         float trackTime = track.trackTime();
         if (track.itsNCls() >= 5) // o2-linter: disable=magic-number (number of ITS clusters >=5)
-          occupancyCalc.source(colIndex).nTracksITS567++;
+          vNumTracksITS567[colIndex]++;
         if (track.hasTRD())
           vIsVertexTRDmatched[colIndex] = 1;
         if (track.hasTPC())
@@ -1404,33 +1571,33 @@ class EventSelectionModule
       }
     }
 
-    // fill remaining per-collision inputs for the occupancy calculation
+    // fill per-collision inputs for the occupancy calculation
+    occupancyCalc.resetCollisions(cols.size()); // per-collision inputs for the occupancy calculation
     for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
-      OccupancyCalculator::Source& occupSrc = occupancyCalc.source(colIndex);
-      occupSrc.globalBC = vFoundGlobalBC[colIndex];
+      OccupancyCalculator::Collision& occupColl = occupancyCalc.collision(colIndex);
+      occupColl.vZ = col.posZ();
+      occupColl.nTracksITS567 = vNumTracksITS567[colIndex];
+      occupColl.globalBC = vFoundGlobalBC[colIndex];
       const auto& bcselEntry = bcselbuffer[vFoundBCindex[colIndex]];
       if (bcselEntry.foundFT0Id > -1) {
         // required: explicit ft0s table
         auto foundFT0 = ft0s.rawIteratorAt(bcselEntry.foundFT0Id);
-        occupSrc.ampFT0C = foundFT0.sumAmpC();
+        occupColl.ampFT0C = foundFT0.sumAmpC();
       }
       // check if we are close to ITS ROF borders => N ITS tracks is not reliable, and FT0C ampl can be used for occupancy estimation
       // denominator for ampFT0C is the approximate conversion factor b/n FT0C ampl and number of PV tracks after cuts
-      occupSrc.proxyNtracks = BITCHECK64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder) ? occupSrc.nTracksITS567 : occupSrc.ampFT0C / 10.;
-      occupSrc.isRejectedByTFborderCut = !BITCHECK64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder);
+      occupColl.proxyNtracks = BITCHECK64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder) ? occupColl.nTracksITS567 : occupColl.ampFT0C / 10.;
+      occupColl.isRejectedByTFborderCut = !BITCHECK64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder);
+      occupColl.isUpcMode = (col.flags() & o2::dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
+    }
+    // colliding TVX BCs with their FT0C amplitude, for the occupancy estimation near TF borders
+    for (const auto& [globalBC, bcIndex] : mapGlobalBcWithTVX) {
+      auto bc = bcs.iteratorAt(bcIndex);
+      occupancyCalc.addTVXBC(globalBC, bc.has_ft0() ? bc.ft0().sumAmpC() : -1.f);
     }
     occupancyCalc.configure(bcSOR, nBCsPerTF, rofOffset, rofLength, evselOpts);
-
-    // FT0C amplitude in a given BC, for the occupancy estimation near TF borders
-    auto getFT0CofBC = [&bcs](int32_t bcIndex, float& ampFT0C) {
-      auto bc = bcs.iteratorAt(bcIndex);
-      if (!bc.has_ft0()) {
-        return false;
-      }
-      ampFT0C = bc.ft0().sumAmpC();
-      return true;
-    };
+    isOccupancyInputReady = true;
 
     for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
@@ -1443,7 +1610,7 @@ class EventSelectionModule
       int32_t foundZDC = bcselEntry.foundZDCId;
 
       // occupancy estimators and flags wrt this collision
-      const OccupancyCalculator::Result occ = occupancyCalc.calculateForSource(colIndex, mapGlobalBcWithTVX, getFT0CofBC);
+      const OccupancyCalculator::Result occ = occupancyCalc.calculateForCollision(colIndex);
 
       // compare zVtx from FT0 and from PV
       bool isGoodZvtxFT0vsPV = 0;
@@ -1520,6 +1687,116 @@ class EventSelectionModule
             occ.nTracksITS567inTimeWin, occ.sumAmpFT0CinTimeWin, occ.medianTime);
     }
   } // end processRun3
+
+  //__________________________________________________
+  // occupancy wrt BCs (aod::BcOccs), to be called after processRun3 for the same DF (uses the occupancy inputs filled there)
+  // one entry per BC; for BCs without calculated occupancy: occupancies -1, median time 0, flags 0
+  template <typename TBCs, typename TBcSelBuffer, typename TBcOccCursor>
+  void processRun3BcOccupancy(TBCs const& bcs, TBcSelBuffer const& bcselbuffer, TBcOccCursor& bcocc)
+  {
+    if (bcoccOpts.amIneeded.value == 0) {
+      return;
+    }
+    if (isOccupancyInputReady) {
+      occupancyCalc.prepareBCQueries();
+    } else {
+      LOGP(warning, "BC occupancy: occupancy inputs not available for this DF, filling aod::BcOccs with default values");
+    }
+
+    const int bcsForOccupancy = bcoccOpts.bcsForOccupancy.value;
+    for (const auto& bc : bcs) {
+      if (!isOccupancyInputReady) {
+        bcocc(-1, -1.f, 0.f, 0, 0, 0);
+        continue;
+      }
+      int64_t globalBC = bc.globalBC();
+      const auto nCollsInBC = static_cast<int16_t>(std::min(occupancyCalc.numCollisionsInBC(globalBC), static_cast<int>(std::numeric_limits<int16_t>::max())));
+      const auto nCollsInRof = static_cast<int16_t>(std::min(occupancyCalc.numCollisionsInRof(globalBC), static_cast<int>(std::numeric_limits<int16_t>::max())));
+      const auto upcModeFlag = static_cast<uint8_t>(occupancyCalc.isRofInUpcMode(globalBC) ? BIT(aod::bcocc::kUpcMode) : 0); // set for all BCs
+
+      // BCs for which the occupancy is calculated
+      bool isSelected = true;
+      const auto& bcselEntry = bcselbuffer[bc.globalIndex()];
+      if (bcsForOccupancy == 1) { // o2-linter: disable=magic-number (BCs with FT0)
+        isSelected = bcselEntry.foundFT0Id > -1;
+      } else if (bcsForOccupancy == 2) { // o2-linter: disable=magic-number (BCs with TVX)
+        isSelected = BITCHECK64(bcselEntry.selection, aod::evsel::kIsTriggerTVX);
+      } else if (bcsForOccupancy == 3) { // o2-linter: disable=magic-number (colliding BCs)
+        isSelected = bcPatternB[globalBC % nBCsPerOrbit];
+      }
+      if (!isSelected) {
+        bcocc(-1, -1.f, 0.f, upcModeFlag, nCollsInBC, nCollsInRof);
+        continue;
+      }
+
+      const OccupancyCalculator::Result occ = occupancyCalc.calculateForBC(globalBC);
+      bcocc(occ.nTracksITS567inTimeWin, occ.sumAmpFT0CinTimeWin, occ.medianTime, static_cast<uint8_t>(getBcOccupancyFlags(occ) | upcModeFlag), nCollsInBC, nCollsInRof);
+    }
+  } // end processRun3BcOccupancy
+
+  //__________________________________________________
+  // occupancy wrt every BC of the TFs present in the DF (aod::BcOccsAll, not joinable), to be called after processRun3 for the same DF
+  // rows: for each TF (in increasing order) all its BCs, in increasing order of global BC
+  // for BCs without calculated occupancy: occupancies -1, median time 0, flags 0; no rows if the occupancy inputs are not available
+  template <typename TBCs, typename TBcOccAllCursor>
+  void processRun3BcOccupancyAll(TBCs const& bcs, TBcOccAllCursor& bcoccall)
+  {
+    if (bcoccAllOpts.amIneeded.value == 0) {
+      return;
+    }
+    if (!isOccupancyInputReady || nBCsPerTF <= 0) {
+      LOGP(warning, "BC occupancy (all BCs): occupancy inputs not available for this DF, no entries in aod::BcOccsAll");
+      return;
+    }
+    occupancyCalc.prepareBCQueries();
+
+    // TFs present in this DF (from the BC table): needed to write all BCs of each TF, since the BC table
+    // does not cover the TF borders, and the TFs in a DF are not necessarily consecutive (no rows for missing TFs)
+    std::vector<int64_t> tfIds;
+    for (const auto& bc : bcs) {
+      int64_t globalBC = bc.globalBC();
+      if (globalBC < bcSOR) {
+        continue;
+      }
+      int64_t tfId = (globalBC - bcSOR) / nBCsPerTF;
+      if (tfIds.empty() || tfIds.back() != tfId) {
+        tfIds.push_back(tfId);
+      }
+    }
+    std::sort(tfIds.begin(), tfIds.end());
+    tfIds.erase(std::unique(tfIds.begin(), tfIds.end()), tfIds.end());
+
+    bcoccall.reserve(static_cast<int64_t>(tfIds.size()) * nBCsPerTF);
+    const bool collidingBCsOnly = (bcoccAllOpts.bcsForOccupancy.value == 1);
+    for (const auto& tfId : tfIds) {
+      const int64_t tfStartBC = bcSOR + tfId * nBCsPerTF;
+      for (int64_t globalBC = tfStartBC; globalBC < tfStartBC + nBCsPerTF; globalBC++) {
+        const auto nCollsInBC = static_cast<int16_t>(std::min(occupancyCalc.numCollisionsInBC(globalBC), static_cast<int>(std::numeric_limits<int16_t>::max())));
+        const auto nCollsInRof = static_cast<int16_t>(std::min(occupancyCalc.numCollisionsInRof(globalBC), static_cast<int>(std::numeric_limits<int16_t>::max())));
+        const auto upcModeFlag = static_cast<uint8_t>(occupancyCalc.isRofInUpcMode(globalBC) ? BIT(aod::bcocc::kUpcMode) : 0); // set for all BCs
+        if (collidingBCsOnly && !bcPatternB[globalBC % nBCsPerOrbit]) {
+          bcoccall(static_cast<uint64_t>(globalBC), -1, -1.f, 0.f, upcModeFlag, nCollsInBC, nCollsInRof);
+          continue;
+        }
+        const OccupancyCalculator::Result occ = occupancyCalc.calculateForBC(globalBC);
+        bcoccall(static_cast<uint64_t>(globalBC), occ.nTracksITS567inTimeWin, occ.sumAmpFT0CinTimeWin, occ.medianTime, static_cast<uint8_t>(getBcOccupancyFlags(occ) | upcModeFlag), nCollsInBC, nCollsInRof);
+      }
+    }
+  } // end processRun3BcOccupancyAll
+
+  // occupancy flags of aod::BcOccs and aod::BcOccsAll (see aod::bcocc::BcOccupancyFlags; kUpcMode is set separately)
+  static uint8_t getBcOccupancyFlags(const OccupancyCalculator::Result& occ)
+  {
+    // note: BcOccupancyFlags must fit in the 8-bit bitmap
+    uint8_t flags = 0;
+    flags |= occ.noCollInTimeRangeNarrow ? BIT(aod::bcocc::kNoCollInTimeRangeNarrow) : 0;
+    flags |= occ.noCollInTimeRangeStrict ? BIT(aod::bcocc::kNoCollInTimeRangeStrict) : 0;
+    flags |= occ.noCollInTimeRangeStandard ? BIT(aod::bcocc::kNoCollInTimeRangeStandard) : 0;
+    flags |= occ.noCollInRofStrict ? BIT(aod::bcocc::kNoCollInRofStrict) : 0;
+    flags |= occ.noCollInRofStandard && occ.noCollInRofWithCloseVz ? BIT(aod::bcocc::kNoCollInRofStandard) : 0; // close-vZ part is not applied for BCs
+    flags |= occ.noHighMultCollInPrevRof ? BIT(aod::bcocc::kNoHighMultCollInPrevRof) : 0;
+    return flags;
+  }
 }; // end EventSelectionModule
 
 class LumiModule

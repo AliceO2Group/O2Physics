@@ -149,11 +149,7 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
 
   static constexpr int kXi0PDG = 3322;
 
-  /* if (skipAll || std::abs(particle.eta()) > etaCut || particle.pt() < ptMinCut || particle.pt() > ptMaxCut) {
-    return noWeights;
-  } */
-
-  if (skipAll) {
+  if (skipAll || std::abs(particle.eta()) > etaCut || particle.pt() < ptMinCut || particle.pt() > ptMaxCut) {
     return noWeights;
   }
 
@@ -177,14 +173,6 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
 
     if (skipNonPhysicalPrim && !particle.isPhysicalPrimary()) {
       return noWeights;
-    }
-
-    if (!particle.has_daughters()) {
-
-      if (particle.eta() > etaCut || particle.pt() > ptMaxCut || particle.pt() < ptMinCut) {
-
-        return noWeights;
-      }
     }
 
     // translate abs PDG code to PID variable of neural networks (0: pion, 1: kaon, 2: proton, 3: sigma)
@@ -213,8 +201,10 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
 
       // calculate particle fractions and corresponding weight for given reference particle
       std::vector<std::vector<float>> input = {{dNdEta}, {particle.pt()}, {iterMapPID->second}};
+
       float fracData = particleFractionsData.evalModel(input)[0];
       float fracMC = particleFractionsMC.evalModel(input)[0];
+
       float weight = (fracMC != 0.f) ? fracData / fracMC : 1.f;
       std::tuple<float, float, float> weights = {weight, weight, weight};
       if (!skipSec && particle.has_daughters()) {
@@ -256,10 +246,6 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
       if (skipNeutralSec && pdgParticle->Charge() == 0.) {
         return noWeights;
       }
-    }
-
-    if (particle.eta() > etaCut || particle.pt() > ptMaxCut || particle.pt() < ptMinCut) {
-      return noWeights;
     }
 
     while (particles.iteratorAt(refParticleID).has_mothers()) {

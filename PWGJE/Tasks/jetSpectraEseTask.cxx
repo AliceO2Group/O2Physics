@@ -96,6 +96,8 @@ struct JetSpectraEseTask {
 
   Configurable<bool> fLeadJetPtCut{"fLeadJetPtCut", false, "Flag for leading jet pT cut"};
   Configurable<float> leadJetPtMin{"leadJetPtMin", 20.0, "minimum leading jet pT cut"};
+  Configurable<bool> fPhiMask{"fPhiMask", false, "Enable jet phi masking in data"};
+  Configurable<std::vector<float>> phiMask{"phiMask", {2.6f, 3.6f}, "Jet phi interval to mask in radians [min, max], inclusive"};
 
   struct : ConfigurableGroup {
     Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
@@ -358,8 +360,6 @@ struct JetSpectraEseTask {
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
-
-    LOGF(info, "jetSpectraEse::init()");
 
     if (doprocessESEDataCharged) {
       LOGF(info, "JetSpectraEseTask::init() - ESE Data Process");
@@ -635,6 +635,7 @@ struct JetSpectraEseTask {
     if (doprocessMCGenTrack) {
       LOGF(info, "JetSpectraEseTask::init() - MCGen track");
       registry.add("mcgen/h3TrackPtGen", ";#it{p}_{T,track}; vtxZ; #eta", {HistType::kTH3F, {{assocTrackPt}, {vertexZAxis}, {etaAxis}}});
+      registry.add("mcgen/hTrackPtPhiEta", ";#it{p}_{T,track};#phi;#eta", {HistType::kTH3F, {{assocTrackPt}, {phiAxis}, {etaAxis}}});
       registry.add("mcgen/hTrackPtGen", "", {HistType::kTH1F, {{assocTrackPt}}});
       registry.add("mcgen/hTrackEtaGen", "", {HistType::kTH1F, {{etaAxis}}});
       registry.add("mcgen/hTrackPhiGen", "", {HistType::kTH1F, {{phiAxis}}});
@@ -642,6 +643,7 @@ struct JetSpectraEseTask {
     if (doprocessMCRecoTrack) {
       LOGF(info, "JetSpectraEseTask::init() - MCRec track");
       registry.add("mcrec/h3TrackPtReco", ";#it{p}_{T,track}; vtxZ; #eta", {HistType::kTH3F, {{assocTrackPt}, {vertexZAxis}, {etaAxis}}});
+      registry.add("mcrec/hTrackPtPhiEta", ";#it{p}_{T,track};#phi;#eta", {HistType::kTH3F, {{assocTrackPt}, {phiAxis}, {etaAxis}}});
       registry.add("mcrec/hTrackPtReco", "", {HistType::kTH1F, {{assocTrackPt}}});
       registry.add("mcrec/hTrackEtaReco", "", {HistType::kTH1F, {{etaAxis}}});
       registry.add("mcrec/hTrackPhiReco", "", {HistType::kTH1F, {{phiAxis}}});
@@ -750,6 +752,9 @@ struct JetSpectraEseTask {
 
     auto corrL = [&](const auto& j) { return j.pt() - evalRho(rhoFit.get(), jetR, j.phi(), collision.rho()) * j.area(); };
     for (const auto& jet : jets) {
+      if (fPhiMask && jet.phi() >= phiMask->at(0) && jet.phi() <= phiMask->at(1)) {
+        continue;
+      }
       if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackCuts.trackEtaMin, trackCuts.trackEtaMax)) {
         continue;
       }
@@ -911,6 +916,9 @@ struct JetSpectraEseTask {
 
       auto corrL = [&](const auto& j) { return j.pt() - evalRho(rhoFit.get(), jetR, j.phi(), c1.rho()) * j.area(); };
       for (const auto& jet : jets1) {
+        if (fPhiMask && jet.phi() >= phiMask->at(0) && jet.phi() <= phiMask->at(1)) {
+          continue;
+        }
         if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackCuts.trackEtaMin, trackCuts.trackEtaMax)) {
           continue;
         }
@@ -1133,6 +1141,9 @@ struct JetSpectraEseTask {
     auto corrL = [&](const auto& j) { return j.pt() - evalRho(rhoFit.get(), jetR, j.phi(), collision.rho()) * j.area(); };
 
     for (const auto& jet : jets) {
+      if (fPhiMask && jet.phi() >= phiMask->at(0) && jet.phi() <= phiMask->at(1)) {
+        continue;
+      }
       if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackCuts.trackEtaMin, trackCuts.trackEtaMax)) {
         continue;
       }
@@ -1357,6 +1368,7 @@ struct JetSpectraEseTask {
       }
 
       registry.fill(HIST("mcgen/h3TrackPtGen"), particle.pt(), collision.posZ(), particle.eta());
+      registry.fill(HIST("mcgen/hTrackPtPhiEta"), particle.pt(), particle.phi(), particle.eta());
       registry.fill(HIST("mcgen/hTrackPtGen"), particle.pt());
       registry.fill(HIST("mcgen/hTrackEtaGen"), particle.eta());
       registry.fill(HIST("mcgen/hTrackPhiGen"), particle.phi());
@@ -1426,6 +1438,7 @@ struct JetSpectraEseTask {
         seenMcParticles.push_back(particle.globalIndex());
 
         registry.fill(HIST("mcrec/h3TrackPtReco"), track.pt(), collision.posZ(), track.eta());
+        registry.fill(HIST("mcrec/hTrackPtPhiEta"), track.pt(), track.phi(), track.eta());
         registry.fill(HIST("mcrec/hTrackPtReco"), track.pt());
         registry.fill(HIST("mcrec/hTrackEtaReco"), track.eta());
         registry.fill(HIST("mcrec/hTrackPhiReco"), track.phi());

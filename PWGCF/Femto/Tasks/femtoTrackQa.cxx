@@ -66,7 +66,7 @@ struct FemtoTrackQa {
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<colhistmanager::PrefixQa> colHistManager;
 
   // setup tracks
   trackbuilder::ConfTrackSelection1 confTrackSelection;

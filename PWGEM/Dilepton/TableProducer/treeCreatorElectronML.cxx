@@ -774,7 +774,7 @@ struct TreeCreatorElectronML {
     }
 
     fNewLabels.clear();
-    fCounter = 0;
+    // fCounter = 0; // FIXME: unused
   } // end of process
   PROCESS_SWITCH(TreeCreatorElectronML, processPair, "produce ML input for pair level", false);
 
@@ -845,7 +845,7 @@ struct TreeCreatorElectronML {
     }
 
     fNewLabels.clear();
-    fCounter = 0;
+    // fCounter = 0; // FIXME: unused
   } // end of process
   PROCESS_SWITCH(TreeCreatorElectronML, processPairSkimmed, "produce ML input for pair level on skimmed data", false);
 };

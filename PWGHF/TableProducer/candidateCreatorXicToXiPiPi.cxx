@@ -1078,7 +1078,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
-  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
@@ -1373,7 +1373,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const& mcCollisions,
+                 soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
                  McCollisionsNoCents const& mcCollisionsNoCents,
                  BCsInfo const& bcs)
   {
@@ -1383,7 +1383,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
   void processMcCentFT0C(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
-                         aod::McCollisions const& mcCollisions,
+                         soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
                          McCollisionsFT0Cs const& mcCollisionsFT0Cs,
                          BCsInfo const& bcs)
   {
