@@ -13,6 +13,7 @@
 /// \brief Class to compute the ML response for Ωc0 → Ω- π+ (and charge-conjugate) analysis selections
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 /// \author Maria Fernanda Torres Cabrera <maria.fernanda.torres.cabrera@cern.ch>, University of Houston
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 
 #ifndef PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPIQA_H_
 #define PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPIQA_H_
@@ -32,37 +33,37 @@
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_OMEGAC0(FEATURE) \
   {                               \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE)}
+    #FEATURE, static_cast<uint8_t>(InputFeaturesOmegacToOmegaPiQa::FEATURE)}
 
 // Specific case of CHECK_AND_FILL_VEC_OMEGAC0_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_OMEGAC0(GETTER)                           \
-  case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::GETTER): { \
-    inputFeatures.emplace_back(candidate.GETTER());                  \
-    break;                                                           \
+#define CHECK_AND_FILL_VEC_OMEGAC0(GETTER)                             \
+  case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPiQa::GETTER): { \
+    inputFeatures.emplace_back(candidate.GETTER());                    \
+    break;                                                             \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_OMEGAC0_FULL(OBJECT, FEATURE, GETTER)      \
-  case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE): { \
-    inputFeatures.emplace_back(OBJECT.GETTER());                      \
-    break;                                                            \
+#define CHECK_AND_FILL_VEC_OMEGAC0_FULL(OBJECT, FEATURE, GETTER)        \
+  case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPiQa::FEATURE): { \
+    inputFeatures.emplace_back(OBJECT.GETTER());                        \
+    break;                                                              \
   }
 
 // Variation of CHECK_AND_FILL_VEC_OMEGAC0_FULL(OBJECT, FEATURE, GETTER)
 // where GETTER is a method of HfHelper
-#define CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER(OBJECT, FEATURE, GETTER)  \
-  case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE): { \
-    inputFeatures.emplace_back(HfHelperQa::GETTER(OBJECT));           \
-    break;                                                            \
+#define CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER(OBJECT, FEATURE, GETTER)    \
+  case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPiQa::FEATURE): { \
+    inputFeatures.emplace_back(HfHelperQa::GETTER(OBJECT));             \
+    break;                                                              \
   }
 
 namespace o2::analysis
 {
-enum class InputFeaturesOmegacToOmegaPi : uint8_t { // TODO: check if all the features needed are convered
+enum class InputFeaturesOmegacToOmegaPiQa : uint8_t {
   // Common variables
   impactParameterXYCharmBachelor = 0,
   impactParameterZCharmBachelor,
@@ -89,22 +90,21 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t { // TODO: check if all the fe
   chi2TopoOverNdfToPv,
   chi2GeoCascade,
   chi2TopoOverNdfCascadeToCharmHadron,
-  chi2TopoOverNdfCascadeToPv,
-
+  chi2TopoOverNdfCascadeToPv
 };
 
 template <typename TypeOutputScore = float, aod::hf_cand_casc_lf::ConstructMethod reconstructionType = aod::hf_cand_casc_lf::ConstructMethod::DcaFitter>
-class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
+class HfMlResponseOmegacToOmegaPiQa : public HfMlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  HfMlResponseOmegacToOmegaPi() = default;
+  HfMlResponseOmegacToOmegaPiQa() = default;
   /// Default destructor
-  virtual ~HfMlResponseOmegacToOmegaPi() = default;
+  virtual ~HfMlResponseOmegacToOmegaPiQa() = default;
 
   /// Method to get the input features vector needed for ML inference
-  /// \param candidate is the OMEGAC0 candidate
-  /// \param lamProngPi is the candidate's lamProngPi
+  /// \param candidate is the OmegaC0 candidate
+  /// \param lamProngPi is the candidate's pion from the Lambda decay
   /// \param cascProng is the bachelor track from the Omega decay
   /// \param charmBaryonProng is the bachelor pion from the OmegaC decay
   /// \return inputFeatures vector
@@ -201,4 +201,5 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_VEC_OMEGAC0
 #undef CHECK_AND_FILL_VEC_OMEGAC0_FULL
 #undef CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER
+
 #endif // PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPIQA_H_
