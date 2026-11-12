@@ -43,11 +43,11 @@ class EventSelectionConfigurable
   friend class EventSelectionFilterAndAnalysis;
 
  public:
-  EventSelectionConfigurable(std::string bfieldsel = "",
-                             std::string multsel = "",
-                             std::string trigsel = "",
-                             std::string zvtxsel = "",
-                             std::string pileuprej = "")
+  explicit EventSelectionConfigurable(std::string bfieldsel = "",
+                                      std::string multsel = "",
+                                      std::string trigsel = "",
+                                      std::string zvtxsel = "",
+                                      std::string pileuprej = "")
     : mBFiledSel(std::move(bfieldsel)), mMultSel{std::move(multsel)}, mTriggerSel{std::move(trigsel)}, mZVertexSel{std::move(zvtxsel)}, mPileUpRejection{std::move(pileuprej)}
   {
   }
@@ -187,7 +187,7 @@ inline bool EventSelectionFilterAndAnalysis::ComplexBrickHelper::filter(uint64_t
     /* and now the variants */
     TList& varlst = dynamic_cast<CutWithVariations<float>*>(mBrick)->getVariantBricks();
     for (int i = 0; i < varlst.GetEntries(); ++i) {
-      bool acc = filter(mask, bit, dynamic_cast<CutBrick<float>*>(varlst.At(i)), mAlternateEstimatorIndex[i]);
+      acc = filter(mask, bit, dynamic_cast<CutBrick<float>*>(varlst.At(i)), mAlternateEstimatorIndex[i]);
       atleastonealternative = atleastonealternative || acc;
     }
     acceptcollision = acceptcollision && atleastonealternative;

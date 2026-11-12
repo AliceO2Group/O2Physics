@@ -125,7 +125,7 @@ CutBrickLimit<TValueToFilter>::CutBrickLimit()
 /// \param value The limit value
 template <typename TValueToFilter>
 CutBrickLimit<TValueToFilter>::CutBrickLimit(const char* name, const TValueToFilter& value)
-  : CutBrick<TValueToFilter>(name, TString::Format("%s{lim{%f}}", name, float(value))),
+  : CutBrick<TValueToFilter>(name, TString::Format("%s{lim{%f}}", name, static_cast<float>(value))),
     mLimit(value)
 {
 }
@@ -261,7 +261,7 @@ CutBrickThreshold<TValueToFilter>::CutBrickThreshold()
 /// \param value The threshold value
 template <typename TValueToFilter>
 CutBrickThreshold<TValueToFilter>::CutBrickThreshold(const char* name, const TValueToFilter& value)
-  : CutBrick<TValueToFilter>(name, TString::Format("%s{th{%f}}", name, float(value))),
+  : CutBrick<TValueToFilter>(name, TString::Format("%s{th{%f}}", name, static_cast<float>(value))),
     mThreshold(value)
 {
 }
@@ -399,7 +399,7 @@ CutBrickRange<TValueToFilter>::CutBrickRange()
 /// \param high The high value for the cut range
 template <typename TValueToFilter>
 CutBrickRange<TValueToFilter>::CutBrickRange(const char* name, const TValueToFilter& low, const TValueToFilter& high)
-  : CutBrick<TValueToFilter>(name, TString::Format("%s{rg{%f,%f}}", name, float(low), float(high))),
+  : CutBrick<TValueToFilter>(name, TString::Format("%s{rg{%f,%f}}", name, static_cast<float>(low), static_cast<float>(high))),
     mLow(low),
     mUp(high)
 {
@@ -543,7 +543,7 @@ CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange()
 /// \param high The high value for the cut excluded range
 template <typename TValueToFilter>
 CutBrickExtToRange<TValueToFilter>::CutBrickExtToRange(const char* name, const TValueToFilter& low, const TValueToFilter& high)
-  : CutBrick<TValueToFilter>(name, TString::Format("%s{xrg{%f,%f}}", name, float(low), float(high))),
+  : CutBrick<TValueToFilter>(name, TString::Format("%s{xrg{%f,%f}}", name, static_cast<float>(low), static_cast<float>(high))),
     mLow(low),
     mUp(high)
 {
@@ -691,9 +691,10 @@ CutBrickSelectorMultipleRanges<TValueToFilter>::CutBrickSelectorMultipleRanges(c
   for (const auto& edge : edges) {
     mEdges.push_back(edge);
     if (first) {
-      title += TString::Format("%.2f", float(edge));
+      title += TString::Format("%.2f", static_cast<float>(edge));
+      first = false;
     } else {
-      title += TString::Format(",%.2f", float(edge));
+      title += TString::Format(",%.2f", static_cast<float>(edge));
     }
   }
   title += "}";

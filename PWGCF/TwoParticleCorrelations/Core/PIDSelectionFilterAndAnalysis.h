@@ -43,9 +43,9 @@ class PIDSelectionConfigurable
 
  public:
 #ifdef INCORPORATEBAYESIANPID
-  PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
-                           std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "",
-                           std::string pidbayel = "", std::string pidbaymu = "", std::string pidbaypi = "", std::string pidbayka = "", std::string pidbaypr = "")
+  explicit PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
+                                    std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "",
+                                    std::string pidbayel = "", std::string pidbaymu = "", std::string pidbaypi = "", std::string pidbayka = "", std::string pidbaypr = "")
     : mPidTpcSelEl{pidtpcel}, mPidTpcSelMu{pidtpcmu}, mPidTpcSelPi{pidtpcpi}, mPidTpcSelKa{pidtpcka}, mPidTpcSelPr{pidtpcpr}, mPidTofSelEl{pidtofel}, mPidTofSelMu{pidtofmu}, mPidTofSelPi{pidtofpi}, mPidTofSelKa{pidtofka}, mPidTofSelPr{pidtofpr}, mPidBaySelEl{pidbayel}, mPidBaySelMu{pidbaymu}, mPidBaySelPi{pidbaypi}, mPidBaySelKa{pidbayka}, mPidBaySelPr{pidbaypr}
   {
   }
@@ -53,8 +53,8 @@ class PIDSelectionConfigurable
                            std::vector<std::string> pidtofel, std::vector<std::string> pidtofmu, std::vector<std::string> pidtofpi, std::vector<std::string> pidtofka, std::vector<std::string> pidtofpr,
                            std::vector<std::string> pidbayel, std::vector<std::string> pidbaymu, std::vector<std::string> pidbaypi, std::vector<std::string> pidbayka, std::vector<std::string> pidbaypr);
 #else
-  PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
-                           std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "")
+  explicit PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
+                                    std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "")
     : mPidTpcSelEl{std::move(pidtpcel)},
       mPidTpcSelMu{std::move(pidtpcmu)},
       mPidTpcSelPi{std::move(pidtpcpi)},

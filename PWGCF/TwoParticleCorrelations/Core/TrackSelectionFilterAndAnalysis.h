@@ -42,17 +42,17 @@ class TrackSelectionConfigurable
   friend class TrackSelectionFilterAndAnalysis;
 
  public:
-  TrackSelectionConfigurable(std::string ttype = "",
-                             std::string nclstpc = "",
-                             std::string nxrtpc = "",
-                             std::string nclsits = "",
-                             std::string chi2clustpc = "",
-                             std::string chi2clusits = "",
-                             std::string xrofctpc = "",
-                             std::string dcaxy = "",
-                             std::string dcaz = "",
-                             std::string ptrange = "",
-                             std::string etarange = "")
+  explicit TrackSelectionConfigurable(std::string ttype = "",
+                                      std::string nclstpc = "",
+                                      std::string nxrtpc = "",
+                                      std::string nclsits = "",
+                                      std::string chi2clustpc = "",
+                                      std::string chi2clusits = "",
+                                      std::string xrofctpc = "",
+                                      std::string dcaxy = "",
+                                      std::string dcaz = "",
+                                      std::string ptrange = "",
+                                      std::string etarange = "")
     : mTrackTypes{std::move(ttype)},
       mNClustersTPC{std::move(nclstpc)},
       mNCrossedRowsTPC{std::move(nxrtpc)},

@@ -328,10 +328,9 @@ void TrackSelectionFilterAndAnalysis::constructCutFromString(const TString& cuts
       if (lev2str.Length() == 0) {
         break;
       }
-      regex cutregex("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
-      std::string in(lev2str.Data());
-      smatch m;
-      bool res = regex_search(in, m, cutregex);
+      cutregex = regex("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
+      in = std::string(lev2str.Data());
+      res = regex_search(in, m, cutregex);
       constexpr int ExpectedComponents = 3;
       if (not res or m.empty() or (m.size() != ExpectedComponents)) {
         Fatal("TrackSelectionFilterAndAnalysis::::ConstructCutFromString", "Wrong RE: %s, try tracksel{ttype{FB32,FB96};nclstpc{th{70}},nxr{cwv{th{70},th{80}}}} for instance", cutstr.Data());

@@ -235,10 +235,9 @@ void PIDSelectionFilterAndAnalysis::constructCutFromString(const TString& cutstr
       if (lev2str.Length() == 0) {
         break;
       }
-      regex cutregex("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
-      std::string in(lev2str.Data());
-      smatch m;
-      bool res = regex_search(in, m, cutregex);
+      cutregex = regex("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
+      in = std::string(lev2str.Data());
+      res = regex_search(in, m, cutregex);
       constexpr int ExpectedComponents = 3;
       if (not res or m.empty() or (m.size() != ExpectedComponents)) {
         LOGF(fatal, "PIDSelectionFilterAndAnalysis::::ConstructCutFromString. Wrong RE: %s, try pidsel{tpcsel{tpcpi{cwv{rg{-3.0,3.0}:rg{-2.0,2.0},rg{-3.0,5.0}}}}} for instance", cutstr.Data());

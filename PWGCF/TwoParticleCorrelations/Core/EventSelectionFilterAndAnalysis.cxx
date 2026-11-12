@@ -329,10 +329,9 @@ void EventSelectionFilterAndAnalysis::constructCutFromString(const TString& cuts
       if (lev2str.Length() == 0) {
         break;
       }
-      regex cutregex("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
-      std::string in(lev2str.Data());
-      smatch m;
-      bool res = regex_search(in, m, cutregex);
+      cutregex = regex("^(\\w+)\\{((?:[^{}]++|\\{(?2)\\})*)\\}");
+      in = (lev2str.Data());
+      res = regex_search(in, m, cutregex);
       constexpr int ExpectedComponents = 3;
 
       if (not res or m.empty() or (m.size() != ExpectedComponents)) {
