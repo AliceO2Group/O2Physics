@@ -17,7 +17,6 @@
 #define PWGDQ_CORE_DQCONSTANTS_H_
 
 #include <array>
-#include <cstdint>
 
 namespace o2::dqconstants
 {
