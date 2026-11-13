@@ -44,6 +44,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <memory>
 #include <limits>
 #include <vector>
 
@@ -60,7 +61,6 @@ using CollisionsNoMult = soa::Join<aod::Collisions, aod::EvSels>;
 using ColMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
 
 struct FlattenicityTask {
-
   Service<o2::framework::O2DatabasePDG> pdg{};
 
   // ========================================================================
