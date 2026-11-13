@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// NOLINTBEGIN(whitespace/line_length)
+
 /// \file flattenicityTask.cxx
 /// \brief Run-3 calibration task for FT0 flattenicity
 /// \author Eisha Rani
