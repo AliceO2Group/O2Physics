@@ -24,6 +24,7 @@
 #include "Common/DataModel/EventSelection.h"
 
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -118,7 +119,7 @@ struct McEventValidationTask {
     const AxisSpec axisNtracks{nBinsNch.value, 0., maxNch.value, "number of tracks"};
     const AxisSpec axisFT0C{nBinsFT0C.value, 0., maxFT0C.value, "FT0C amplitude (found BC)"};
     const AxisSpec axisB{200, 0., 20., "impact parameter b (fm)"};
-    const AxisSpec axisCategory{kNBcCategories, -0.5, kNBcCategories - 0.5, ""};
+    const AxisSpec axisCategory{kNBcCategories, -0.5, static_cast<double>(kNBcCategories) - 0.5, ""};
 
     // MC truth
     histos.add("MC/hNch", "MC collisions: charged physical primaries in |#eta|<0.5", kTH2F, {axisB, axisNch});
