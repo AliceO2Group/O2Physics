@@ -11,4 +11,4 @@
 
 add_subdirectory(Original)
 add_subdirectory(Derived)
-
+add_subdirectory(StrangenessV0s_HandsOn/o2physics/AnalysisV0)

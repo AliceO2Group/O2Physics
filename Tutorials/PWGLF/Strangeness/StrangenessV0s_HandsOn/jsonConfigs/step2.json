@@ -1,0 +1,27 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "@input_data.txt"
+    },
+    "strangeness_derived_tutorial": {
+        "nBins": "100",
+        "cutzvertex": "10",
+        "v0setting_dcav0dau": "0.5",
+        "v0setting_dcapostopv": "0.06",
+        "v0setting_dcanegtopv": "0.06",
+        "v0setting_cospa": "0.995",
+        "v0setting_radius": "0.9",
+        "v0setting_rapidity": "0.5",
+        "NSigmaTPCPion": "4",
+        "NSigmaTPCProton": "4"
+    },
+    "internal-dpl-aod-writer": "",
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-injected-dummy-sink": ""
+}
