@@ -566,6 +566,7 @@ class VarManager : public TObject
     kTPCnSigmaEl1,
     kPin_leg1,
     kTPCnSigmaKa_leg1,
+    kPin_leg2,
     kPt2,
     kEta2,
     kPhi2,
@@ -4093,6 +4094,10 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     if constexpr ((fillMap & ReducedTrackBarrel) > 0) {
       values[kITSclusterMap1] = t1.itsClusterMap();
       values[kITSclusterMap2] = t2.itsClusterMap();
+    }
+    if constexpr ((fillMap & TrackExtra) > 0 || (fillMap & ReducedTrackBarrel) > 0) {
+      values[kPin_leg1] = t1.tpcInnerParam();
+      values[kPin_leg2] = t2.tpcInnerParam();
     }
 
     if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
