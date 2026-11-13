@@ -97,7 +97,6 @@ struct FemtoUniversePairTaskTrackPhi {
   Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
 
   Configurable<float> confZVertexCut{"confZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
-  // Configurable<int> confNEventsMix{"confNEventsMix", 5, "Number of events for mixing"};
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
   using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
@@ -557,32 +556,31 @@ struct FemtoUniversePairTaskTrackPhi {
 
     if (confFillMinvBackground) {
       // Used for better fitting of invariant mass background.
-
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = o2::constants::physics::MassKPlus;
-      float mMassTwo = o2::constants::physics::MassKMinus;
+      float mMassKp = o2::constants::physics::MassKPlus;
+      float mMassKm = o2::constants::physics::MassKMinus;
 
       for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsKaons, partsKaons))) {
         if ((confFillMinvBackgroundKpKp) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
-          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
-          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassKp);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassKp);
           TLorentzVector sumVec(part1Vec);
           sumVec += part2Vec;
           registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
         }
         if ((confFillMinvBackgroundKmKm) && (kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
-          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
-          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassKm);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassKm);
 
           TLorentzVector sumVec(part1Vec);
           sumVec += part2Vec;
           registryPhiMinvBackground.fill(HIST("InvariantMassKmKm"), sumVec.M());
         }
         if ((confFillMinvBackgroundKpKm) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == -1)) {
-          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
-          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassKp);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassKm);
 
           TLorentzVector sumVec(part1Vec);
           sumVec += part2Vec;
@@ -622,7 +620,42 @@ struct FemtoUniversePairTaskTrackPhi {
     auto thegroupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhi = partsPhi->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     eventHisto.fillQA(col);
-    doSameEvent<false>(thegroupPartsTrack, thegroupPartsPhi, parts, col.magField(), col.multNtr());
+    if (!confFillMinvBackground) {
+      doSameEvent<false>(thegroupPartsTrack, thegroupPartsPhi, parts, col.magField(), col.multNtr());
+    } else {
+      // K+K+, K-K-, K+K- invariant mass background filling
+      TLorentzVector part1Vec;
+      TLorentzVector part2Vec;
+
+      float mMassOne = o2::constants::physics::MassKPlus;
+      float mMassTwo = o2::constants::physics::MassKMinus;
+
+      for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsKaons, partsKaons))) {
+        if ((confFillMinvBackgroundKpKp) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
+          TLorentzVector sumVec(part1Vec);
+          sumVec += part2Vec;
+          registryPhiMinvBackground.fill(HIST("InvariantMassKpKp"), sumVec.M());
+        }
+        if ((confFillMinvBackgroundKmKm) && (kaon1.mAntiLambda() == -1) && (kaon2.mAntiLambda() == -1)) {
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassTwo);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+
+          TLorentzVector sumVec(part1Vec);
+          sumVec += part2Vec;
+          registryPhiMinvBackground.fill(HIST("InvariantMassKmKm"), sumVec.M());
+        }
+        if ((confFillMinvBackgroundKpKm) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == -1)) {
+          part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
+          part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassTwo);
+
+          TLorentzVector sumVec(part1Vec);
+          sumVec += part2Vec;
+          registryPhiMinvBackground.fill(HIST("InvariantMassKpKm"), sumVec.M());
+        }
+      }
+    }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEvent, "Enable processing same event", true);
 
