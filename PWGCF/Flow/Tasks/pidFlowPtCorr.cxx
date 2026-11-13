@@ -565,7 +565,7 @@ struct PidFlowChargedTimeProducer {
     std::vector<double> bestDistance(tracks.size(), std::numeric_limits<double>::infinity());
     const auto globalBC = [&bcs](int64_t id) -> int64_t {
       const int64_t index = id - bcs.offset();
-      if (index < 0 || index >= static_cast<int64_t>(bcs.size())) {
+      if (index < 0 || index >= bcs.size()) {
         return -1;
       }
       return static_cast<int64_t>(bcs.rawIteratorAt(index).globalBC());
@@ -573,7 +573,7 @@ struct PidFlowChargedTimeProducer {
     for (auto const& track : tracks) {
       const int64_t index = track.globalIndex() - tracks.offset();
       const int64_t original = track.collisionId() - collisions.offset();
-      if (!track.has_collision() || original < 0 || original >= static_cast<int64_t>(collisions.size())) {
+      if (!track.has_collision() || original < 0 || original >= collisions.size()) {
         continue;
       }
       if (track.isPVContributor()) {
@@ -601,7 +601,7 @@ struct PidFlowChargedTimeProducer {
     for (auto const& pair : pairs) {
       const int64_t index = pair.trackId() - tracks.offset();
       const int64_t target = pair.collisionId() - collisions.offset();
-      if (index < 0 || index >= static_cast<int64_t>(tracks.size()) || target < 0 || target >= static_cast<int64_t>(collisions.size())) {
+      if (index < 0 || index >= static_cast<int64_t>(tracks.size()) || target < 0 || target >= collisions.size()) {
         LOGF(fatal, "TrackAssoc index is outside the full source track/collision tables");
       }
       auto track = tracks.rawIteratorAt(index);
@@ -894,7 +894,7 @@ struct PidFlowPtCorr {
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksPIDForDetectorPidQA = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;

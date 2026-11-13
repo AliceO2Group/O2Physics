@@ -161,7 +161,7 @@ struct FemtoUniverseEfficiencyBase {
   Configurable<int> confChargePart1{"confChargePart1", 1, "Charge of the first particle"};
 
   /// Partition for particle 1
-  Partition<FemtoFullParticles> partsOneMCGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confPtHighPart1) && (aod::femtouniverseparticle::pt > confPtLowPart1) && (nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.confEtaMax);
+  Partition<FemtoFullParticles> partsOneMCGen = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confPtHighPart1) && (aod::femtouniverseparticle::pt > confPtLowPart1) && (nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.confEtaMax);
 
   Partition<FemtoFullParticles> partsTrackOneMCReco = (aod::femtouniverseparticle::pt < confPtHighPart1) && (aod::femtouniverseparticle::pt > confPtLowPart1) && (nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.confEtaMax);
 
@@ -182,7 +182,7 @@ struct FemtoUniverseEfficiencyBase {
   Configurable<int> confChargePart2{"confChargePart2", 1, "Charge of the second particle"};
 
   /// Partition for particle 2
-  Partition<FemtoFullParticles> partsTwoMCGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confPtHighPart2) && (aod::femtouniverseparticle::pt > confPtLowPart2) && (nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.confEtaMax);
+  Partition<FemtoFullParticles> partsTwoMCGen = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confPtHighPart2) && (aod::femtouniverseparticle::pt > confPtLowPart2) && (nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.confEtaMax);
 
   Partition<FemtoFullParticles> partsTrackTwoMCReco = (aod::femtouniverseparticle::pt < confPtHighPart2) && (aod::femtouniverseparticle::pt > confPtLowPart2) && (nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.confEtaMax);
 
@@ -224,7 +224,7 @@ struct FemtoUniverseEfficiencyBase {
     registryTOFMatch.add("part1/hTpcPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
     registryPDG.add("part1/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
     registryPDG.add("part1/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
-    if (confParticleTypePartOne == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) {
+    if (confParticleTypePartOne == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) {
       trackHistoV0OneRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarCPABins, false, confPDGCodePartOne, confIsDebug);
       trackHistoV0OneChildPosRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, false, 0, confIsDebug, "posChildV0_1");
       trackHistoV0OneChildNegRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, false, 0, confIsDebug, "negChildV0_1");
@@ -256,7 +256,7 @@ struct FemtoUniverseEfficiencyBase {
       registryTOFMatch.add("part2/hTpcPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{confTempFitVarpTBins}}});
       registryPDG.add("part2/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
       registryPDG.add("part2/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{confTempFitVarpTBins}, {16001, -8000.5, 8000.5}}});
-      if (confParticleTypePartTwo == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) {
+      if (confParticleTypePartTwo == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) {
         trackHistoV0TwoRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarCPABins, false, confPDGCodePartTwo, confIsDebug);
         trackHistoV0TwoChildPosRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, false, 0, confIsDebug, "posChildV0_2");
         trackHistoV0TwoChildNegRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, false, 0, confIsDebug, "negChildV0_2");

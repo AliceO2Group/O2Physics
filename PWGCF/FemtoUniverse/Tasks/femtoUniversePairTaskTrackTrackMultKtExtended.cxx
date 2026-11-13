@@ -137,16 +137,16 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   } trackonefilter;
 
   /// Partition for particle 1
-  Partition<FilteredFemtoFullParticles> partsOne = (nabs(aod::track::dcaXY) < (twotracksconfigs.confDcaXYCustom1FilterCut + twotracksconfigs.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound) > as<uint8_t>(twotracksconfigs.confTrkTPCnclsMin) && (aod::femtouniverseparticle::tpcNClsCrossedRows) > as<uint8_t>(twotracksconfigs.confTrkTPCcRowsMin) && (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt<trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt> trackonefilter.confpLowPart1;
-  Partition<FilteredFemtoFullParticlesITS> partsOneITS = (nabs(aod::track::dcaXY) < (twotracksconfigs.confDcaXYCustom1FilterCut + twotracksconfigs.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound) > as<uint8_t>(twotracksconfigs.confTrkTPCnclsMin) && (aod::femtouniverseparticle::tpcNClsCrossedRows) > as<uint8_t>(twotracksconfigs.confTrkTPCcRowsMin) && (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt<trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt> trackonefilter.confpLowPart1;
+  Partition<FilteredFemtoFullParticles> partsOne = (nabs(aod::track::dcaXY) < (twotracksconfigs.confDcaXYCustom1FilterCut + twotracksconfigs.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound) > as<uint8_t>(twotracksconfigs.confTrkTPCnclsMin) && (aod::femtouniverseparticle::tpcNClsCrossedRows) > as<uint8_t>(twotracksconfigs.confTrkTPCcRowsMin) && (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt<trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt> trackonefilter.confpLowPart1;
+  Partition<FilteredFemtoFullParticlesITS> partsOneITS = (nabs(aod::track::dcaXY) < (twotracksconfigs.confDcaXYCustom1FilterCut + twotracksconfigs.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound) > as<uint8_t>(twotracksconfigs.confTrkTPCnclsMin) && (aod::femtouniverseparticle::tpcNClsCrossedRows) > as<uint8_t>(twotracksconfigs.confTrkTPCcRowsMin) && (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt<trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt> trackonefilter.confpLowPart1;
 
-  Partition<FilteredFemtoFullSigmaParticles> partsOneSigma = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
-  Partition<FilteredFemtoFullSigmaParticlesITS> partsOneSigmaITS = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
+  Partition<FilteredFemtoFullSigmaParticles> partsOneSigma = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
+  Partition<FilteredFemtoFullSigmaParticlesITS> partsOneSigmaITS = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
 
-  Partition<FemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
-  Partition<FemtoRecoParticlesITS> partsOneMCITS = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
+  Partition<FemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
+  Partition<FemtoRecoParticlesITS> partsOneMCITS = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
 
-  Partition<FemtoTruthParticles> partsOneMCTruth = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
+  Partition<FemtoTruthParticles> partsOneMCTruth = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -160,16 +160,16 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   } tracktwofilter;
 
   /// Partition for particle 2
-  Partition<FilteredFemtoFullParticles> partsTwo = (nabs(aod::track::dcaXY) < (twotracksconfigs.confDcaXYCustom1FilterCut + twotracksconfigs.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound > as<uint8_t>(twotracksconfigs.confTrkTPCnclsMin)) && aod::femtouniverseparticle::tpcNClsCrossedRows > as<uint8_t>(twotracksconfigs.confTrkTPCcRowsMin) && (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2) && aod::femtouniverseparticle::pt<tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt> tracktwofilter.confpLowPart2;
-  Partition<FilteredFemtoFullParticlesITS> partsTwoITS = (nabs(aod::track::dcaXY) < (twotracksconfigs.confDcaXYCustom1FilterCut + twotracksconfigs.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound > as<uint8_t>(twotracksconfigs.confTrkTPCnclsMin)) && aod::femtouniverseparticle::tpcNClsCrossedRows > as<uint8_t>(twotracksconfigs.confTrkTPCcRowsMin) && (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2) && aod::femtouniverseparticle::pt<tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt> tracktwofilter.confpLowPart2;
+  Partition<FilteredFemtoFullParticles> partsTwo = (nabs(aod::track::dcaXY) < (twotracksconfigs.confDcaXYCustom1FilterCut + twotracksconfigs.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound > as<uint8_t>(twotracksconfigs.confTrkTPCnclsMin)) && aod::femtouniverseparticle::tpcNClsCrossedRows > as<uint8_t>(twotracksconfigs.confTrkTPCcRowsMin) && (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2) && aod::femtouniverseparticle::pt<tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt> tracktwofilter.confpLowPart2;
+  Partition<FilteredFemtoFullParticlesITS> partsTwoITS = (nabs(aod::track::dcaXY) < (twotracksconfigs.confDcaXYCustom1FilterCut + twotracksconfigs.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound > as<uint8_t>(twotracksconfigs.confTrkTPCnclsMin)) && aod::femtouniverseparticle::tpcNClsCrossedRows > as<uint8_t>(twotracksconfigs.confTrkTPCcRowsMin) && (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2) && aod::femtouniverseparticle::pt<tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt> tracktwofilter.confpLowPart2;
 
-  Partition<FilteredFemtoFullSigmaParticles> partsTwoSigma = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
-  Partition<FilteredFemtoFullSigmaParticlesITS> partsTwoSigmaITS = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
+  Partition<FilteredFemtoFullSigmaParticles> partsTwoSigma = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
+  Partition<FilteredFemtoFullSigmaParticlesITS> partsTwoSigmaITS = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
 
-  Partition<FemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
-  Partition<FemtoRecoParticlesITS> partsTwoMCITS = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
+  Partition<FemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
+  Partition<FemtoRecoParticlesITS> partsTwoMCITS = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
 
-  Partition<FemtoTruthParticles> partsTwoMCTruth = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
+  Partition<FemtoTruthParticles> partsTwoMCTruth = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -608,7 +608,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     /// Histogramming same event
     if ((pairType == type1 || pairType == type2) && fillQA) {
       for (const auto& part : groupPartsOne) {
-        if (!isParticleNSigma((int8_t)1, part)) {
+        if (!isParticleNSigma(static_cast<int8_t>(1), part)) {
           continue;
         }
         trackHistoPartOne.fillQA<isMC, true>(part);
@@ -617,7 +617,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
 
     if ((pairType == type1 || pairType == type3) && fillQA) {
       for (const auto& part : groupPartsTwo) {
-        if (!isParticleNSigma((int8_t)2, part)) {
+        if (!isParticleNSigma(static_cast<int8_t>(2), part)) {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, true>(part);
@@ -629,11 +629,11 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       /// Now build the combinations for non-identical particle pairs
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
-        if (!isParticleNSigma((int8_t)1, p1)) {
+        if (!isParticleNSigma(static_cast<int8_t>(1), p1)) {
           continue;
         }
 
-        if (!isParticleNSigma((int8_t)2, p2)) {
+        if (!isParticleNSigma(static_cast<int8_t>(2), p2)) {
           continue;
         }
 
@@ -678,11 +678,11 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       /// Now build the combinations for identical particles pairs
       for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
 
-        if (!isParticleNSigma((int8_t)2, p1)) {
+        if (!isParticleNSigma(static_cast<int8_t>(2), p1)) {
           continue;
         }
 
-        if (!isParticleNSigma((int8_t)2, p2)) {
+        if (!isParticleNSigma(static_cast<int8_t>(2), p2)) {
           continue;
         }
 
@@ -778,7 +778,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     float const multCol = col.multV0M();
 
     for (const auto& part : thegroupPartsOne) {
-      if (!isParticleNSigma((int8_t)1, part)) {
+      if (!isParticleNSigma(static_cast<int8_t>(1), part)) {
         continue;
       }
 
@@ -790,7 +790,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     if (!isPairIdentical) {
       // fill second
       for (const auto& part : thegroupPartsTwo) {
-        if (!isParticleNSigma((int8_t)2, part)) {
+        if (!isParticleNSigma(static_cast<int8_t>(2), part)) {
           continue;
         }
         trackHistoPartTwo.fillQA<false, true>(part);
@@ -817,7 +817,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     float const multCol = col.multV0M();
 
     for (const auto& part : thegroupPartsOne) {
-      if (!isParticleNSigma((int8_t)1, part)) {
+      if (!isParticleNSigma(static_cast<int8_t>(1), part)) {
         continue;
       }
 
@@ -829,7 +829,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     if (!isPairIdentical) {
       // fill second
       for (const auto& part : thegroupPartsTwo) {
-        if (!isParticleNSigma((int8_t)2, part)) {
+        if (!isParticleNSigma(static_cast<int8_t>(2), part)) {
           continue;
         }
         trackHistoPartTwo.fillQA<false, true>(part);
@@ -941,11 +941,11 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   {
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
-      if (!isParticleNSigma((int8_t)2, p1)) {
+      if (!isParticleNSigma(static_cast<int8_t>(2), p1)) {
         continue;
       }
 
-      if (!isParticleNSigma((int8_t)2, p2)) {
+      if (!isParticleNSigma(static_cast<int8_t>(2), p2)) {
         continue;
       }
 
@@ -1157,7 +1157,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   template <typename PartType, typename PartsType, typename PartsMcType>
   void doFractions(PartType const& p1, PartType const& p2, PartsType const& parts, PartsMcType const& mparts, float magFieldTesla, int partType)
   {
-    if (!isParticleNSigma((int8_t)2, p1) || !isParticleNSigma((int8_t)2, p2)) {
+    if (!isParticleNSigma(static_cast<int8_t>(2), p1) || !isParticleNSigma(static_cast<int8_t>(2), p2)) {
       return;
     }
 

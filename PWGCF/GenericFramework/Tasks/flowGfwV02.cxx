@@ -221,7 +221,7 @@ struct FlowGfwV02 {
   O2_DEFINE_CONFIGURABLE(cfgPidWindow, int, static_cast<int>(o2::aod::gfwtrack::PidWindowNominal), "PID nSigma window for GFW derived data: 0 nominal, 1 tight, 2 loose");
 
   o2::framework::expressions::Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
-  o2::framework::expressions::Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
+  o2::framework::expressions::Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
   o2::framework::expressions::Filter gfwTrackFilter = (aod::gfwtrack::pt > cfgTrackCuts.cfgPtMin) && (aod::gfwtrack::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::gfwtrack::eta) < cfgTrackCuts.cfgEtaMax);
 
   //  Connect to ccdb

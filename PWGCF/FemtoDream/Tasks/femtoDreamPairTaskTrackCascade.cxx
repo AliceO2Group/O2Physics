@@ -102,7 +102,7 @@ struct femtoDreamPairTaskTrackCascade {
     Configurable<float> TempFitVarMax{"TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
   } Track1;
   /// Partition for particle 1
-  Partition<FDParticles> PartitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<FDParticles> PartitionTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                          (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
                                          ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
                                          (aod::femtodreamparticle::pt > Track1.PtMin) &&
@@ -113,7 +113,7 @@ struct femtoDreamPairTaskTrackCascade {
                                                 ((aod::femtodreamparticle::tempFitVar >= Track1.TempFitVarMin) &&
                                                  (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
 
-  Partition<FDMCParts> PartitionMCTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<FDMCParts> PartitionMCTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                          (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
                                          ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
                                          (aod::femtodreamparticle::pt > Track1.PtMin) &&
@@ -152,7 +152,7 @@ struct femtoDreamPairTaskTrackCascade {
     Configurable<bool> UseChildPIDCuts{"UseChildPIDCuts", true, "Use PID cuts on the children of the Cascades additional to those of the selection of the cascade builder (for debugging purposes)"};
   } Cascade2;
   /// Partition for particle 2
-  Partition<FDParticles> PartitionCascade2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
+  Partition<FDParticles> PartitionCascade2 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascade)) &&
                                              ((aod::femtodreamparticle::cut & Cascade2.CutBit) == Cascade2.CutBit) &&
                                              (aod::femtodreamparticle::pt > Cascade2.PtMin) &&
                                              (aod::femtodreamparticle::pt < Cascade2.PtMax) &&
@@ -163,7 +163,7 @@ struct femtoDreamPairTaskTrackCascade {
                                              (aod::femtodreamparticle::mAntiLambda > Cascade2.InvMassV0DaughMin) &&
                                              (aod::femtodreamparticle::mAntiLambda < Cascade2.InvMassV0DaughMax);
 
-  Partition<FDMCParts> PartitionMCCascade2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
+  Partition<FDMCParts> PartitionMCCascade2 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascade)) &&
                                              ((aod::femtodreamparticle::cut & Cascade2.CutBit) == Cascade2.CutBit) &&
                                              (aod::femtodreamparticle::pt > Cascade2.PtMin) &&
                                              (aod::femtodreamparticle::pt < Cascade2.PtMax) &&

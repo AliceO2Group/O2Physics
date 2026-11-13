@@ -102,7 +102,7 @@ struct DptDptFilterQa {
     using namespace o2::analysis::dptdptfilterqa;
     static constexpr int kNoOfIclusiveParticles = 2; /* number of inclusive charged particles, aka positive and negative */
 
-    if (collision.collisionaccepted() != uint8_t(true)) {
+    if (collision.collisionaccepted() != static_cast<uint8_t>(true)) {
       histos.fill(HIST(Dirname[dir]) + HIST("SelectedEvents"), 0.5);
     } else {
       histos.fill(HIST(Dirname[dir]) + HIST("SelectedEvents"), 1.5);
@@ -126,7 +126,7 @@ struct DptDptFilterQa {
         nTracksTwo++;
       }
     }
-    if (collision.collisionaccepted() != uint8_t(true)) {
+    if (collision.collisionaccepted() != static_cast<uint8_t>(true)) {
       /* control for non selected events */
       histos.fill(HIST(Dirname[dir]) + HIST("TracksOneUnsel"), nTracksOne);
       histos.fill(HIST(Dirname[dir]) + HIST("TracksTwoUnsel"), nTracksTwo);
@@ -140,8 +140,8 @@ struct DptDptFilterQa {
     }
   }
 
-  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
-  Filter onlyacceptedtracks = (int8_t(0) <= aod::dptdptfilter::trackacceptedid);
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == static_cast<uint8_t>(true));
+  Filter onlyacceptedtracks = (static_cast<int8_t>(0) <= aod::dptdptfilter::trackacceptedid);
 
   void processGeneratorLevel(soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
   {

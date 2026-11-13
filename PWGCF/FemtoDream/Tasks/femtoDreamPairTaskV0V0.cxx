@@ -121,7 +121,7 @@ struct femtoDreamPairTaskV0V0 {
   } V01;
 
   /// Partition for particle 1
-  Partition<FDParticles> PartitionV01 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<FDParticles> PartitionV01 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                         ((aod::femtodreamparticle::cut & V01.CutBit) == V01.CutBit) &&
                                         (aod::femtodreamparticle::pt > V01.PtMin) &&
                                         (aod::femtodreamparticle::pt < V01.PtMax) &&
@@ -159,7 +159,7 @@ struct femtoDreamPairTaskV0V0 {
   } V02;
 
   /// Partition for particle 2
-  Partition<FDParticles> PartitionV02 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<FDParticles> PartitionV02 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                         ((aod::femtodreamparticle::cut & V02.CutBit) == V02.CutBit) &&
                                         (aod::femtodreamparticle::pt > V02.PtMin) &&
                                         (aod::femtodreamparticle::pt < V02.PtMax) &&
