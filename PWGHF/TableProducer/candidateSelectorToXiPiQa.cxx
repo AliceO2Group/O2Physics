@@ -15,6 +15,7 @@
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University
 /// \author Krista Smith <krista.lizbeth.smith@cern.ch>, Pusan National University
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseXic0ToXiPiQa.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"

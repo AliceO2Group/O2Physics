@@ -15,6 +15,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 /// \author Maria Fernanda Torres Cabrera <maria.fernanda.torres.cabrera@cern.ch>, University of Houston
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseOmegacToOmegaPiQa.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"

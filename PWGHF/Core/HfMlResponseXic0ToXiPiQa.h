@@ -16,6 +16,7 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIQA_H_
 #define PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIQA_H_
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
