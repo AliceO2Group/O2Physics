@@ -175,7 +175,6 @@ constexpr static uint32_t gkMFTCovFillMap = VarManager::ObjTypes::TrackMFT | Var
 // Enum containing the ordering of statistics histograms to be written in the QA file
 enum SkimStatsHists {
   kStatsEvent = 0,
-  kStatsBcs,
   kStatsTracks,
   kStatsMuons,
   kStatsOrphanTracks,
@@ -258,14 +257,12 @@ struct TableMaker {
   // Steer QA output
   struct : ConfigurableGroup {
     Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-    Configurable<bool> fConfigFillBcStat{"cfgFillBcStat", false, "If true, fill QA histograms for normalization studies (for OO and Pb-Pb)"};
     Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
     Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddEMCalHistogram{"cfgAddEMCalHistogram", "emcal", "Comma separated list of histogram subgroups for the EMCal cluster classes"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
-    Configurable<std::string> fConfigIrEstimator{"cfgIrEstimator", "", "Estimator of the interaction rate (pp,OO --> T0VTX, Pb-Pb --> ZNC hadronic), to be used with cfgFillBcStat"};
   } fConfigHistOutput;
 
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
@@ -728,14 +725,6 @@ struct TableMaker {
     histEvents->GetYaxis()->SetBinLabel(o2::aod::evsel::kNsel + 1, "Total");
     fStatsList->AddAt(histEvents, kStatsEvent);
 
-    std::vector<TString> bcLabels{"all", "tvx", "sel8", "sel8 & Cent", "sel8 & Scent", "sel8 & (Cent | Scent)", "sel8 & (ZNA & ZNC)"};
-    TH2D* histBcs = new TH2D("BcStats", "Bc statistics;;#mu", bcLabels.size(), -0.5, bcLabels.size() - 0.5, 3000, 0, 0.3);
-    ib = 1;
-    for (auto label = bcLabels.begin(); label != bcLabels.end(); label++, ib++) {
-      histBcs->GetXaxis()->SetBinLabel(ib, (*label).Data());
-    }
-    fStatsList->AddAt(histBcs, kStatsBcs);
-
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
     TH1D* histTracks = new TH1D("TrackStats", "Track statistics", fTrackCuts.size() + 5, -0.5, fTrackCuts.size() - 0.5 + 5.0);
     ib = 1;
@@ -951,22 +940,6 @@ struct TableMaker {
     } // end loop over collisions
   }
 
-  // Function to compute the mu for pileup estimation, taken from EM code
-  double calculateMu(const auto& bc)
-  {
-    uint64_t timeStamp = bc.timestamp();
-    auto bfilling = mLHCIFdata->getBunchFilling();
-    double nbc = bfilling.getFilledBCs().size();
-
-    const double tvxRate = fConfigHistOutput.fConfigIrEstimator.value.empty()
-                             ? mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), "T0VTX")
-                             : mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), fConfigHistOutput.fConfigIrEstimator.value);
-
-    double nTriggersPerFilledBC = tvxRate / nbc / o2::constants::lhc::LHCRevFreq;
-    double mu = -std::log(1 - nTriggersPerFilledBC);
-    return mu;
-  }
-
   template <typename TEvents, typename TTracks>
   void computeCollMergingTag(TEvents const& collisions, TTracks const& tracks, Preslice<TTracks>& presliceTracks)
   {
@@ -1058,44 +1031,6 @@ struct TableMaker {
     float centFT0C = -1.0;
     float centFT0A = -1.0;
     float centFT0M = -1.0;
-
-    if (fConfigHistOutput.fConfigFillBcStat) {
-      for (const auto& bc : bcs) {
-        double muTVX = calculateMu(bc);
-
-        if (bc.has_ft0()) {
-          std::bitset<8> fT0Triggers = bc.ft0().triggerMask();
-          bool isTvx = fT0Triggers[o2::ft0::Triggers::bitVertex];
-          bool isSemiCentral = fT0Triggers[o2::ft0::Triggers::bitSCen];
-          bool isCentral = fT0Triggers[o2::ft0::Triggers::bitCen];
-
-          bool noBorder = bc.selection_bit(aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(aod::evsel::kNoITSROFrameBorder);
-          // bool isTriggerTVX = bc.selection_bit(aod::evsel::kIsTriggerTVX); // difference w.r.t fT0Triggers[o2::ft0::Triggers::bitVertex] ?
-          bool isTriggerZNA = bc.selection_bit(aod::evsel::kIsBBZNA);
-          bool isTriggerZNC = bc.selection_bit(aod::evsel::kIsBBZNC);
-
-          (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(0.0, muTVX);
-          if (isTvx) {
-            (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(1.0, muTVX);
-            if (noBorder) {
-              (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(2.0, muTVX);
-              if (isCentral) {
-                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(3.0, muTVX);
-              }
-              if (isSemiCentral) {
-                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(4.0, muTVX);
-              }
-              if (isCentral || isSemiCentral) {
-                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(5.0, muTVX);
-              }
-              if (isTriggerZNA && isTriggerZNC) {
-                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(6.0, muTVX);
-              }
-            }
-          }
-        }
-      }
-    }
 
     for (const auto& collision : collisions) {
 
@@ -1893,9 +1828,6 @@ struct TableMaker {
           } else {
             LOG(fatal) << "Unexpected number of shift values from CCDB: " << fFwdShift->size() << ", expected 1 (z), 3 (x, y, z) or 10 (top/bottom x,y,z + slopes)";
           }
-        }
-        if (fConfigHistOutput.fConfigFillBcStat) {
-          mLHCIFdata = fCCDB->getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bcs.begin().timestamp());
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();

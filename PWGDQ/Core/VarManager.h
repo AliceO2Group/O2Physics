@@ -525,6 +525,7 @@ class VarManager : public TObject
     kA2EPME_FT0A,         // A2 of VM to FT0A event plane for ME technique
     kNPairsPerEvent,      // number of pairs per event in same-event or mixed-event pairing
     kInteractionRate,
+    kMuPerBc,
 
     // Variables for event mixing with cumulant
     kV22m,

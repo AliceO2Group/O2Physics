@@ -1000,6 +1000,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAzNPeaksTrimmed3] = "";
   fgVariableNames[kInteractionRate] = "Interaction rate";
   fgVariableUnits[kInteractionRate] = "kHz";
+  fgVariableNames[kMuPerBc] = "#mu";
+  fgVariableUnits[kMuPerBc] = "";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kPt1] = "p_{T1}";
@@ -2386,6 +2388,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTwoR2EP2"] = kTwoR2EP2;
   fgVarNamesMap["kNPairsPerEvent"] = kNPairsPerEvent;
   fgVarNamesMap["kInteractionRate"] = kInteractionRate;
+  fgVarNamesMap["kMuPerBc"] = kMuPerBc;
   fgVarNamesMap["kNEventWiseVariables"] = kNEventWiseVariables;
   fgVarNamesMap["kX"] = kX;
   fgVarNamesMap["kY"] = kY;

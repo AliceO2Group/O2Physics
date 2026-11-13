@@ -59,6 +59,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "VtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ);
       hm->AddHistogram(histClass, "VtxZ_Run", "Vtx Z", true, 1, -0.5, 0.5, VarManager::kRunNo, 60, -15.0, 15.0, VarManager::kVtxZ, 1, 0, 1, VarManager::kNothing, "", "", "", VarManager::kNothing, VarManager::kNothing, false, true);
       hm->AddHistogram(histClass, "BC", "Event per BC", false, 3564, 0.0, 3564.0, VarManager::kBCOrbit);
+      hm->AddHistogram(histClass, "mu", "#mu distribution", false, 5000, 0.0, 0.5, VarManager::kMuPerBc);
     }
     if (subGroupStr.Contains("trigger")) {
       hm->AddHistogram(histClass, "IsINT7", "Is INT7", false, 2, -0.5, 1.5, VarManager::kIsINT7);
