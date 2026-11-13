@@ -391,7 +391,7 @@ struct EmcalCorrectionTask {
       emcCrossTalk.initObjects(emcCrossTalkConf);
       if (emcCrossTalkConf.createHistograms.value) {
         mHistManager.add<TH1>("hCellEnergyDistBefore", "Cell energy before cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
-        mHistManager.add<TH1>("hCellEnergyDistAfter", "Cell energy after cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
+        mHistManager.add<TH1>("hCellEnergyDistAfter", "Cell energy after cross-talk emulation and corrections", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
       }
     }
 
@@ -825,19 +825,9 @@ struct EmcalCorrectionTask {
           }
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
         }
-        auto amplitude = cell.amplitude();
-        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
-          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
-        }
-        if (mcCellEnergyShift != 1.) {
-          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
-        }
-        if (mcCellEnergyResolutionBroadening != 0.) {
-          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
-        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
+                             cell.amplitude(),
+                             cell.time(),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
@@ -869,9 +859,18 @@ struct EmcalCorrectionTask {
       } // if (isMC.value && emcCrossTalkConf.enableCrossTalk.value)
       // shaper correction has to come AFTER cross talk
       for (auto& cell : cellsBC) { // o2-linter: disable=const-ref-in-for-loop (we are changing a value here)
-        if (cell.getLowGain()) {
-          cell.setAmplitude(o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(cell.getAmplitude()));
+        auto amplitude = cell.getAmplitude();
+        if (static_cast<bool>(hasShaperCorrection) && cell.getLowGain()) { // Apply shaper correction to LG cells
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (mcCellEnergyShift != 1.) {
+          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
+        }
+        if (mcCellEnergyResolutionBroadening != 0.) {
+          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
+        }
+        cell.setAmplitude(amplitude);
+        cell.setTimeStamp(cell.getTimeStamp() + getCellTimeShift(cell.getTower(), amplitude, cell.getType(), mRunNumber));
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
@@ -1020,19 +1019,9 @@ struct EmcalCorrectionTask {
           }
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
         }
-        auto amplitude = cell.amplitude();
-        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
-          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
-        }
-        if (mcCellEnergyShift != 1.) {
-          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
-        }
-        if (mcCellEnergyResolutionBroadening != 0.) {
-          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
-        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
+                             cell.amplitude(),
+                             cell.time(),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
@@ -1064,9 +1053,18 @@ struct EmcalCorrectionTask {
       } // if (isMC.value && emcCrossTalkConf.enableCrossTalk.value)
       // shaper correction has to come AFTER cross talk
       for (auto& cell : cellsBC) { // o2-linter: disable=const-ref-in-for-loop (we are changing a value here)
-        if (cell.getLowGain()) {
-          cell.setAmplitude(o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(cell.getAmplitude()));
+        auto amplitude = cell.getAmplitude();
+        if (static_cast<bool>(hasShaperCorrection) && cell.getLowGain()) { // Apply shaper correction to LG cells
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (mcCellEnergyShift != 1.) {
+          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
+        }
+        if (mcCellEnergyResolutionBroadening != 0.) {
+          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
+        }
+        cell.setAmplitude(amplitude);
+        cell.setTimeStamp(cell.getTimeStamp() + getCellTimeShift(cell.getTower(), amplitude, cell.getType(), mRunNumber));
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
