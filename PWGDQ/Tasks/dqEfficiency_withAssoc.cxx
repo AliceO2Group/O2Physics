@@ -1714,6 +1714,8 @@ struct AnalysisSameEventPairing {
   } fConfigCuts;
 
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fConfigAmbiguousBarrelHistograms{"cfgAmbiguousBarrelHistograms", true, "If true, add the in/out-of-bunch ambiguity histogram classes for barrel pairs"};
+  Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, add the in/out-of-bunch ambiguity histogram classes for muon pairs"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
@@ -1913,7 +1915,7 @@ struct AnalysisSameEventPairing {
               Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
-            if (fConfigQA) {
+            if (fConfigQA && fConfigAmbiguousBarrelHistograms) {
               // assign separate hist directories for ambiguous tracks
               names.push_back(Form("PairsBarrelSEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelSEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
@@ -1956,12 +1958,14 @@ struct AnalysisSameEventPairing {
                 if (fConfigQA) {
                   names.push_back(Form("PairsBarrelSEPMCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
                   names.push_back(Form("PairsBarrelSEPMIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsBarrelSEPM_ambiguousInBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsBarrelSEPM_ambiguousInBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsBarrelSEPM_ambiguousInBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsBarrelSEPM_ambiguousOutOfBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsBarrelSEPM_ambiguousOutOfBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsBarrelSEPM_ambiguousOutOfBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                  if (fConfigAmbiguousBarrelHistograms) {
+                    names.push_back(Form("PairsBarrelSEPM_ambiguousInBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsBarrelSEPM_ambiguousInBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsBarrelSEPM_ambiguousInBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsBarrelSEPM_ambiguousOutOfBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsBarrelSEPM_ambiguousOutOfBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsBarrelSEPM_ambiguousOutOfBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                  }
                 }
                 for (auto const& n : names) {
                   histNames += Form("%s;", n.Data());
@@ -2004,7 +2008,7 @@ struct AnalysisSameEventPairing {
               Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
               Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
-            if (fConfigQA) {
+            if (fConfigQA && fConfigAmbiguousMuonHistograms) {
               // assign separate hist directories for ambiguous tracks
               names.push_back(Form("PairsMuonSEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsMuonSEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
@@ -2045,12 +2049,14 @@ struct AnalysisSameEventPairing {
                 if (fConfigQA) {
                   names.push_back(Form("PairsMuonSEPMCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
                   names.push_back(Form("PairsMuonSEPMIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousInBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousInBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousInBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                  if (fConfigAmbiguousMuonHistograms) {
+                    names.push_back(Form("PairsMuonSEPM_ambiguousInBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsMuonSEPM_ambiguousInBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsMuonSEPM_ambiguousInBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                    names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+                  }
                 }
                 for (auto const& n : names) {
                   histNames += Form("%s;", n.Data());
@@ -2154,12 +2160,15 @@ struct AnalysisSameEventPairing {
               if (fConfigQA) {
                 names.push_back(Form("PairsEleMuSEPMCorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
                 names.push_back(Form("PairsEleMuSEPMIncorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
-                names.push_back(Form("PairsEleMuSEPM_ambiguousInBunch_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
-                names.push_back(Form("PairsEleMuSEPM_ambiguousInBunchCorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
-                names.push_back(Form("PairsEleMuSEPM_ambiguousInBunchIncorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
-                names.push_back(Form("PairsEleMuSEPM_ambiguousOutOfBunch_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
-                names.push_back(Form("PairsEleMuSEPM_ambiguousOutOfBunchCorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
-                names.push_back(Form("PairsEleMuSEPM_ambiguousOutOfBunchIncorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
+                // the e-mu ambiguity classes mix a barrel and a muon leg, so they need both switches
+                if (fConfigAmbiguousBarrelHistograms && fConfigAmbiguousMuonHistograms) {
+                  names.push_back(Form("PairsEleMuSEPM_ambiguousInBunch_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
+                  names.push_back(Form("PairsEleMuSEPM_ambiguousInBunchCorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
+                  names.push_back(Form("PairsEleMuSEPM_ambiguousInBunchIncorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
+                  names.push_back(Form("PairsEleMuSEPM_ambiguousOutOfBunch_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
+                  names.push_back(Form("PairsEleMuSEPM_ambiguousOutOfBunchCorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
+                  names.push_back(Form("PairsEleMuSEPM_ambiguousOutOfBunchIncorrectAssoc_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), sig->GetName()));
+                }
               }
               for (auto const& n : names) {
                 histNames += Form("%s;", n.Data());
@@ -2308,6 +2317,12 @@ struct AnalysisSameEventPairing {
       histNames = fMuonHistNames;
       histNamesMC = fMuonHistNamesMCmatched;
       ncuts = fNCutsMuon;
+    }
+    // the in/out-of-bunch ambiguity hist classes are only booked (and therefore only fillable) when the
+    // corresponding switch is on; the indices below assume they are appended last in each name vector
+    bool fillAmbiguousHistos = fConfigAmbiguousBarrelHistograms;
+    if constexpr (TPairType == VarManager::kDecayToMuMu) {
+      fillAmbiguousHistos = fConfigAmbiguousMuonHistograms;
     }
 
     auto twoTrackFilter = static_cast<uint32_t>(0);
@@ -2629,7 +2644,7 @@ struct AnalysisSameEventPairing {
                     } else { // incorrect track-collision association
                       fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][4].Data(), dqefficiency_helpers::varValues());
                     }
-                    if (isAmbiInBunch) { // ambiguous in bunch
+                    if (fillAmbiguousHistos && isAmbiInBunch) { // ambiguous in bunch
                       fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][5].Data(), dqefficiency_helpers::varValues());
                       if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2) {
                         fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][6].Data(), dqefficiency_helpers::varValues());
@@ -2637,7 +2652,7 @@ struct AnalysisSameEventPairing {
                         fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][7].Data(), dqefficiency_helpers::varValues());
                       }
                     }
-                    if (isAmbiOutOfBunch) { // ambiguous out of bunch
+                    if (fillAmbiguousHistos && isAmbiOutOfBunch) { // ambiguous out of bunch
                       fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][8].Data(), dqefficiency_helpers::varValues());
                       if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2) {
                         fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][9].Data(), dqefficiency_helpers::varValues());
@@ -2647,7 +2662,7 @@ struct AnalysisSameEventPairing {
                     }
                   }
                 }
-                if (fConfigQA) {
+                if (fConfigQA && fillAmbiguousHistos) {
                   if (isAmbiInBunch) {
                     fHistMan->FillHistClass(histNames[icut][3].Data(), dqefficiency_helpers::varValues());
                   }
@@ -2664,7 +2679,7 @@ struct AnalysisSameEventPairing {
                     fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][1].Data(), dqefficiency_helpers::varValues());
                   }
                 }
-                if (fConfigQA) {
+                if (fConfigQA && fillAmbiguousHistos) {
                   if (isAmbiInBunch) {
                     fHistMan->FillHistClass(histNames[icut][4].Data(), dqefficiency_helpers::varValues());
                   }
@@ -2679,7 +2694,7 @@ struct AnalysisSameEventPairing {
                     fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][2].Data(), dqefficiency_helpers::varValues());
                   }
                 }
-                if (fConfigQA) {
+                if (fConfigQA && fillAmbiguousHistos) {
                   if (isAmbiInBunch) {
                     fHistMan->FillHistClass(histNames[icut][5].Data(), dqefficiency_helpers::varValues());
                   }
@@ -2859,6 +2874,8 @@ struct AnalysisSameEventPairing {
     const auto& histNames = fTrackMuonHistNames;
     const auto& histNamesMC = fTrackMuonHistNamesMCmatched;
     int nPairCuts = !fPairCuts.empty() ? static_cast<int>(fPairCuts.size()) : 1;
+    // e-mu pairs have one barrel and one muon leg, so the ambiguity classes need both switches
+    bool fillAmbiguousHistos = fConfigAmbiguousBarrelHistograms && fConfigAmbiguousMuonHistograms;
 
     uint32_t twoTrackFilter = 0;
     uint32_t mcDecision = 0;
@@ -3021,7 +3038,7 @@ struct AnalysisSameEventPairing {
               } else {
                 fHistMan->FillHistClass(mcNames[2].Data(), dqefficiency_helpers::varValues());
               }
-              if (!fConfigQA || mcNames.size() < 11) {
+              if (!fConfigQA || mcNames.size() < 5) {
                 continue;
               }
               // QA fills (PM only, mirroring the dilepton MC layout: indices 3..10)
@@ -3030,6 +3047,9 @@ struct AnalysisSameEventPairing {
                   fHistMan->FillHistClass(mcNames[3].Data(), dqefficiency_helpers::varValues());
                 } else {
                   fHistMan->FillHistClass(mcNames[4].Data(), dqefficiency_helpers::varValues());
+                }
+                if (!fillAmbiguousHistos || mcNames.size() < 11) {
+                  continue;
                 }
                 if (isAmbiInBunch) {
                   fHistMan->FillHistClass(mcNames[5].Data(), dqefficiency_helpers::varValues());

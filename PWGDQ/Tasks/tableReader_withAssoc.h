@@ -1485,6 +1485,7 @@ struct AnalysisSameEventPairing {
   o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   o2::framework::Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill output histograms"};
   o2::framework::Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, fill ambiguous histograms"};
+  o2::framework::Configurable<bool> fConfigAmbiguousBarrelHistograms{"cfgAmbiguousBarrelHistograms", true, "If true, add the ambiguity histogram classes for barrel pairs"};
 
   // option for TR pair fill
   o2::framework::Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
@@ -1708,21 +1709,27 @@ struct AnalysisSameEventPairing {
               Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
             histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
-            names.push_back(Form("PairsBarrelSEPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-            histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
+            // append a hist class to both the name vector and the list of classes to be created
+            auto addName = [&names, &histNames](TString const& name) {
+              names.push_back(name);
+              histNames += Form("%s;", name.Data());
+            };
+            if (fConfigAmbiguousBarrelHistograms) {
+              addName(Form("PairsBarrelSEPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+              addName(Form("PairsBarrelSEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
+              addName(Form("PairsBarrelSEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+            }
             if (fConfigTRPairs) {
-              names.push_back(Form("PairsBarrelTRPM_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelTRPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelTR_MEPM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[6].Data(), names[7].Data(), names[8].Data());
+              addName(Form("PairsBarrelTRPM_%s", objArray->At(icut)->GetName()));
+              if (fConfigAmbiguousBarrelHistograms) {
+                addName(Form("PairsBarrelTRPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+              }
+              addName(Form("PairsBarrelTR_MEPM_%s", objArray->At(icut)->GetName()));
             }
             if (fEnableBarrelMixingHistos) {
-              names.push_back(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[(fConfigTRPairs ? 9 : 6)].Data(), names[(fConfigTRPairs ? 10 : 7)].Data(), names[(fConfigTRPairs ? 11 : 8)].Data());
+              addName(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
+              addName(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
+              addName(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
             }
             fTrackHistNames[icut] = names;
 
@@ -2412,7 +2419,7 @@ struct AnalysisSameEventPairing {
             isLeg1Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 28) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)));
             isLeg2Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 29) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
             if constexpr (TPairType == VarManager::kDecayToEE) {
-              if (isLeg1Ambi && isLeg2Ambi) {
+              if (fConfigAmbiguousBarrelHistograms && isLeg1Ambi && isLeg2Ambi) {
                 std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
                 if (fAmbiguousPairs.contains(iPair)) {
                   if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
@@ -2569,7 +2576,7 @@ struct AnalysisSameEventPairing {
                 isLeg1Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 28) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)));
                 isLeg2Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 29) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
                 if constexpr (TPairType == VarManager::kDecayToEE) {
-                  if (isLeg1Ambi && isLeg2Ambi) {
+                  if (fConfigAmbiguousBarrelHistograms && isLeg1Ambi && isLeg2Ambi) {
                     std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
                     if (fAmbiguousPairs.contains(iPair)) {
                       if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
