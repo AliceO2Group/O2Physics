@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file SelectionFilterAndAnalysis.h
+/// \brief SelectionFilterAndAnalysis class for filter and selection
+/// once filtered
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_SELECTIONFILTERANDANALYSIS_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_CORE_SELECTIONFILTERANDANALYSIS_H_
 
@@ -20,26 +25,22 @@
 #include <cstdint>
 #include <vector>
 
-namespace o2
-{
-namespace analysis
-{
-namespace PWGCF
+namespace o2::analysis::pwgcf
 {
 
 /// \brief Base class for filter and selection once filetered
 class SelectionFilterAndAnalysis : public TNamed
 {
  public:
-  /// \enum selmodes
+  /// \enum Selmodes
   /// \brief the modes in which the selection can operate
-  enum selmodes {
-    kFilter = 0, ///< filter mode to produce skimmed data
-    kAnalysis    ///< analysis mode over already skimmed data
+  enum Selmodes {
+    KFilter = 0, ///< filter mode to produce skimmed data
+    KAnalysis    ///< analysis mode over already skimmed data
   };
 
   SelectionFilterAndAnalysis();
-  SelectionFilterAndAnalysis(const TString& name, selmodes mode);
+  SelectionFilterAndAnalysis(const TString& name, Selmodes mode);
 
   /// \brief get the valid (armed) mask associated to the configuration
   /// \return the armed mask
@@ -49,7 +50,7 @@ class SelectionFilterAndAnalysis : public TNamed
   /// A clear example of the optional part mask is the mask of the multiplicity classes
   /// where only one of the available in the whole mask will be flagged
   std::vector<uint64_t>& getOptMask() { return mOptArmedMask; }
-  TString printOptionalMasks() const;
+  [[nodiscard]] TString printOptionalMasks() const;
   /// \brief get the valid (armed) mandatory part mask associated to the configuration
   /// \return the armed optional mask
   /// A clear example of the mandatory part mask is the mask of the zvertex and their
@@ -59,24 +60,22 @@ class SelectionFilterAndAnalysis : public TNamed
   const TString& getCutStringSignature() { return mCutStringSignature; }
 
  private:
-  virtual int CalculateMaskLength() = 0;
-  virtual void StoreArmedMask() = 0;
+  virtual int calculateMaskLength() = 0;
+  virtual void storeArmedMask() = 0;
 
  protected:
-  selmodes mMode = kFilter;                 /// the operating mode of the selection instance
-  TString mCutStringSignature;              /// the signature of the cut string, i.e. without the alternative selection tags
-  int mMaskLength = 0;                      /// the length of the mask needed to filter the selection cuts
-  uint64_t mSelectedMask = 0UL;             /// the selection mask for the current passed collision
-  uint64_t mArmedMask = 0UL;                /// the complete armed mask identifying the applicable selection cuts
-  std::vector<uint64_t> mOptArmedMask = {}; /// the list of armed masks for options of the applicable selection cuts
-                                            /// all of them have to have at least one option active
-  uint64_t mForcedArmedMask = 0UL;          /// the mandatory armed mask of the applicable selection cuts
+  Selmodes mMode = KFilter;            /// the operating mode of the selection instance
+  TString mCutStringSignature;         /// the signature of the cut string, i.e. without the alternative selection tags
+  int mMaskLength = 0;                 /// the length of the mask needed to filter the selection cuts
+  uint64_t mSelectedMask = 0UL;        /// the selection mask for the current passed collision
+  uint64_t mArmedMask = 0UL;           /// the complete armed mask identifying the applicable selection cuts
+  std::vector<uint64_t> mOptArmedMask; /// the list of armed masks for options of the applicable selection cuts
+                                       /// all of them have to have at least one option active
+  uint64_t mForcedArmedMask = 0UL;     /// the mandatory armed mask of the applicable selection cuts
 
   ClassDefNV(SelectionFilterAndAnalysis, 1)
 };
 
-} // namespace PWGCF
-} // namespace analysis
-} // namespace o2
+} // namespace o2::analysis::pwgcf
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_SELECTIONFILTERANDANALYSIS_H_
