@@ -40,7 +40,6 @@
 #include <KFParticle.h>
 
 #include <Rtypes.h>
-#include <RtypesCore.h>
 
 #include <algorithm>
 #include <array>
