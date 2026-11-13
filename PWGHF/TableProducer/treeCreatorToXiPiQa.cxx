@@ -39,8 +39,6 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Rtypes.h>
-
 #include <cmath>
 #include <cstdint>
 

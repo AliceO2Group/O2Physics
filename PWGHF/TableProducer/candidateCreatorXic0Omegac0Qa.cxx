@@ -454,14 +454,14 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                           false, // useCascadeMomentumAtPV
                                           true)) {
       return;
-    } else {
-      float storeMass = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
-      float storePt = RecoDecay::pt(straHelper.cascade.cascadeMomentum);
-      registry.fill(HIST("hCascMass"), storeMass);
-      registry.fill(HIST("hCascPt"), storePt);
-      if (configs.fillHistograms) {
-        hCandCounter->Fill(CascReconstructed);
-      }
+    }
+
+    float storeMass = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
+    float storePt = RecoDecay::pt(straHelper.cascade.cascadeMomentum);
+    registry.fill(HIST("hCascMass"), storeMass);
+    registry.fill(HIST("hCascPt"), storePt);
+    if (configs.fillHistograms) {
+      hCandCounter->Fill(CascReconstructed);
     }
 
     //------------------------------Info of V0 and cascade------------------------------
@@ -469,7 +469,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // TODO: check if this is necessary or the covariance matrix can be directly used from straHelper.cascade.covariance
     std::array<float, 21> covCasc = {0.};
     constexpr int NumCovElement = 6;
-    constexpr int MomInd[NumCovElement] = {9, 13, 14, 18, 19, 20};
+    constexpr std::array<int, NumCovElement> MomInd = {9, 13, 14, 18, 19, 20};
     for (int i = 0; i < NumCovElement; i++) {
       covCasc[MomInd[i]] = straHelper.cascade.covariance[MomInd[i]];
       covCasc[i] = straHelper.cascade.covariance[i];
@@ -505,7 +505,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     //------------------------------Calculate physical properties-----------------------------
     // get track momenta
-    std::array<float, 3> pVecCasc, pVecCharmBach;
+    std::array<float, 3> pVecCasc{}, pVecCharmBach{};
     df.getTrack(0).getPxPyPzGlo(pVecCasc);
     df.getTrack(1).getPxPyPzGlo(pVecCharmBach);
 
@@ -521,7 +521,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                     static_cast<float>(secondaryVertex[1]),
                                     static_cast<float>(secondaryVertex[2])};
 
-    float phi, theta;
+    float phi{}, theta{};
     getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
     float errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
     float errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
@@ -646,14 +646,14 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                                 lfConfigs.kfDoDCAFitterPreMinimV0,
                                                 lfConfigs.kfDoDCAFitterPreMinimCasc)) {
       return;
-    } else {
-      float storeMass = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
-      float storePt = RecoDecay::pt(straHelper.cascade.cascadeMomentum);
-      registry.fill(HIST("hCascMass"), storeMass);
-      registry.fill(HIST("hCascPt"), storePt);
-      if (configs.fillHistograms) {
-        hCandCounter->Fill(CascReconstructed);
-      }
+    }
+
+    float storeMass = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
+    float storePt = RecoDecay::pt(straHelper.cascade.cascadeMomentum);
+    registry.fill(HIST("hCascMass"), storeMass);
+    registry.fill(HIST("hCascPt"), storePt);
+    if (configs.fillHistograms) {
+      hCandCounter->Fill(CascReconstructed);
     }
 
     //------------------------------Cascade pre-selection------------------------------
@@ -684,7 +684,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     const KFPTrack kfTrack1 = createKFPTrackFromTrack(negTrack);
     const KFPTrack kfTrackBach = createKFPTrackFromTrack(bachTrack);
 
-    bool isAnti = (bachTrack.signed1Pt() > 0 ? true : false);
+    bool isAnti = bachTrack.signed1Pt() > 0;
     int bachCharge = (bachTrack.signed1Pt() > 0 ? +1 : -1);
 
     KFParticle kfPos(kfTrack0, (isAnti ? -pdgIdOfV0DauNeg : pdgIdOfV0DauPos));
@@ -704,7 +704,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     }
 
     // Require lambda pre-selection before mass constraint
-    float massLam, sigMassLam;
+    float massLam{}, sigMassLam{};
     kfV0.GetMass(massLam, sigMassLam);
     if (std::abs(massLam - MassLambda0) > configs.lambdaMassWindow) {
       return;
@@ -736,7 +736,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       return;
     }
 
-    float massCasc, sigMassCasc, massCascRej, sigMassCascRej;
+    float massCasc{}, sigMassCasc{}, massCascRej{}, sigMassCascRej{};
     kfCasc.GetMass(massCasc, sigMassCasc);
 
     if (sigMassCasc <= 0) {
@@ -784,7 +784,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       return;
     }
 
-    float massCharmBaryon, sigMassCharmBaryon;
+    float massCharmBaryon{}, sigMassCharmBaryon{};
     kfCharmBaryon.GetMass(massCharmBaryon, sigMassCharmBaryon);
     if (sigMassCharmBaryon <= 0) {
       return;
@@ -872,21 +872,21 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     kfVertex.GetCovarianceMatrix(covMatrixPv);
     auto* covMatrixSV = kfCharmBaryon.CovarianceMatrix();
 
-    double phi, theta;
+    double phi{}, theta{};
     getPointDirection(pvCoord, svCoord, phi, theta);
     float errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPv, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
     float errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPv, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
     // Calculate normalised decay length using KFParticle
-    float dlV0, errDlV0;
+    float dlV0{}, errDlV0{};
     kfV0ToPv.GetDecayLength(dlV0, errDlV0);
     dlV0 = std::abs(dlV0); // KFParticle returns a signed decay length
 
-    float dlCasc, errDlCasc;
+    float dlCasc{}, errDlCasc{};
     kfCascToPv.GetDecayLength(dlCasc, errDlCasc);
     dlCasc = std::abs(dlCasc);
 
-    float dlCharmBaryon, dlXYCharmBaryon, errDlCharmBaryon, errDlXYCharmBaryon;
+    float dlCharmBaryon{}, dlXYCharmBaryon{}, errDlCharmBaryon{}, errDlXYCharmBaryon{};
     kfCharmBaryonToPv.GetDecayLength(dlCharmBaryon, errDlCharmBaryon);
     kfCharmBaryonToPv.GetDecayLengthXY(dlXYCharmBaryon, errDlXYCharmBaryon);
     dlCharmBaryon = std::abs(dlCharmBaryon);
@@ -1210,7 +1210,7 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
   {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-xic0-omegac0-qa") == 0) {
+      if (device.name == "hf-candidate-creator-xic0-omegac0-qa") {
         hfEvSelMc.init(device, registry);
         break;
       }
