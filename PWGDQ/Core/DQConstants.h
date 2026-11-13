@@ -26,10 +26,6 @@ inline constexpr float InvalidValueF = -9999.f;
 inline constexpr int InvalidValueI = -9999;
 inline constexpr int InvalidIndex = -1;
 
-inline constexpr std::uint8_t Flag8 = 0u;
-inline constexpr std::uint32_t Flag32 = 0u;
-inline constexpr std::uint64_t Flag64 = 0ull;
-
 inline constexpr float EmptyVariable = 0.0f;
 
 inline constexpr double MillisecondsPerMinute = 60000.0;
