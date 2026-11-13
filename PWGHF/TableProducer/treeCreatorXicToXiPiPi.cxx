@@ -894,7 +894,8 @@ struct HfTreeCreatorXicToXiPiPi {
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataWithML, "Process data with DCAFitter reconstruction and ML", false);
 
   void processMc(SelectedCandidatesMc const& candidates,
-                 MatchedGenXicToXiPiPi const& particles)
+                 MatchedGenXicToXiPiPi const& particles,
+                 o2::aod::TracksWMc const&)
   {
     // Filling candidate properties
     if (fillOnlySignal) {
