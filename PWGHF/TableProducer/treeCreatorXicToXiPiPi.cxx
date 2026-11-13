@@ -96,6 +96,12 @@ DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                        
 DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);                         //! ML score for non-prompt signal class (3-class model only, -1 otherwise)
 } // namespace full
 
+namespace mc_match
+{
+DECLARE_SOA_COLUMN(PGen, pGen, float);                     //! momentum of matched generated particle
+DECLARE_SOA_COLUMN(DecayLengthGen, decayLengthGen, float); //! decay length of matched generated particle
+} // namespace mc_match
+
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
                   full::ParticleFlag,
                   hf_cand_mc_flag::OriginMcRec,
@@ -803,6 +809,23 @@ struct HfTreeCreatorXicToXiPiPi {
     }
     const auto particleMother = particles.rawIteratorAt(indexMother);
     return particleMother;
+  }
+
+  template <typename CandType>
+  float evaluateDecayLengthGenerated(CandType const& candidate, MatchedGenXicToXiPiPi::iterator const& particle)
+  {
+    const auto mcParticlePi0 = candidate.template pi0_as<o2::aod::TracksWMc>().template mcParticle_as<MatchedGenXicToXiPiPi>();
+    const auto decayVertexX = mcParticlePi0.vx();
+    const auto decayVertexY = mcParticlePi0.vy();
+    const auto decayVertexZ = mcParticlePi0.vz();
+
+    const auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
+    const auto primaryVertexX = mcCollision.posX();
+    const auto primaryVertexY = mcCollision.posY();
+    const auto primaryVertexZ = mcCollision.posZ();
+
+    const auto decayLendth = RecoDecay::distance(std::array<float, 3>{primaryVertexX, primaryVertexY, primaryVertexZ}, std::array<float, 3>{decayVertexX, decayVertexY, decayVertexZ});
+    return decayLendth;
   }
 
   void processData(SelectedCandidates const& candidates)
