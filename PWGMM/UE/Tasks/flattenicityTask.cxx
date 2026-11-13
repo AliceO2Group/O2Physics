@@ -14,7 +14,6 @@
 /// \author Eisha Rani
 /// \since September 2026
 
-
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
