@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// NOLINTBEGIN(whitespace/line_length)
 
 /// \file flattenicityTask.cxx
 /// \brief Run-3 calibration task for FT0 flattenicity
@@ -54,7 +53,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
+using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>; // NOLINT
 
 using CollisionsWithMult = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults>;
 using CollisionsNoMult = soa::Join<aod::Collisions, aod::EvSels>;
@@ -115,11 +114,11 @@ struct FlattenicityTask {
   static constexpr float kModuleHalfWidth = 2.65f;
 
   static constexpr float kZDetA = 335.5f;
-  static constexpr float kModuleAx[NSectorsA] = {-12.2500f, -6.1500f, -0.0500f, 6.1500f, 12.2500f, -12.2500f, -6.1500f, -0.0500f, 6.1500f, 12.2500f, -13.5800f, -7.4800f, 7.4800f, 13.5800f, -12.2500f, -6.1500f, 0.0500f, 6.1500f, 12.2500f, -12.2500f, -6.1500f, 0.0500f, 6.1500f, 12.2500f};
-  static constexpr float kModuleAy[NSectorsA] = {12.2000f, 12.2000f, 13.5300f, 12.2000f, 12.2000f, 6.1000f, 6.1000f, 7.4300f, 6.1000f, 6.1000f, 0.0000f, 0.0000f, 0.0000f, 0.0000f, -6.1000f, -6.1000f, -7.4300f, -6.1000f, -6.1000f, -12.2000f, -12.2000f, -13.5300f, -12.2000f, -12.2000f};
-  static constexpr float kModuleCx[NSectorsC] = {-15.5426f, 15.5426f, -15.5069f, 15.5069f, -9.3296f, 9.3296f, -9.3296f, 9.3296f, -9.3296f, 9.3296f, -3.1011f, 3.1011f, -3.1286f, 3.1286f, 3.1010f, -3.1010f, 3.1286f, -3.1286f, 9.3295f, -9.3295f, 9.3296f, -9.3296f, 9.3296f, -9.3296f, 15.5425f, -15.5425f, 15.5068f, -15.5068f};
-  static constexpr float kModuleCy[NSectorsC] = {3.2659f, -3.2659f, 9.4726f, -9.4726f, 3.2436f, -3.2436f, 9.4726f, -9.4726f, 15.6494f, -15.6494f, 9.4725f, -9.4725f, 15.6982f, -15.6982f, 9.4724f, -9.4724f, 15.6981f, -15.6981f, 3.2435f, -3.2435f, 9.4725f, -9.4725f, 15.6493f, -15.6493f, 3.2659f, -3.2659f, 9.4725f, -9.4725f};
-  static constexpr float kModuleCz[NSectorsC] = {-85.2486f, -85.2486f, -84.7790f, -84.7790f, -86.1724f, -86.1724f, -85.7006f, -85.7006f, -84.7685f, -84.7685f, -86.1618f, -86.1618f, -85.2246f, -85.2246f, -86.1619f, -86.1619f, -85.2247f, -85.2247f, -86.1725f, -86.1725f, -85.7006f, -85.7006f, -84.7685f, -84.7685f, -85.2486f, -85.2486f, -84.7791f, -84.7791f};
+  static constexpr float kModuleAx[NSectorsA] = {-12.2500f, -6.1500f, -0.0500f, 6.1500f, 12.2500f, -12.2500f, -6.1500f, -0.0500f, 6.1500f, 12.2500f, -13.5800f, -7.4800f, 7.4800f, 13.5800f, -12.2500f, -6.1500f, 0.0500f, 6.1500f, 12.2500f, -12.2500f, -6.1500f, 0.0500f, 6.1500f, 12.2500f}; // NOLINT
+  static constexpr float kModuleAy[NSectorsA] = {12.2000f, 12.2000f, 13.5300f, 12.2000f, 12.2000f, 6.1000f, 6.1000f, 7.4300f, 6.1000f, 6.1000f, 0.0000f, 0.0000f, 0.0000f, 0.0000f, -6.1000f, -6.1000f, -7.4300f, -6.1000f, -6.1000f, -12.2000f, -12.2000f, -13.5300f, -12.2000f, -12.2000f}; // NOLINT
+  static constexpr float kModuleCx[NSectorsC] = {-15.5426f, 15.5426f, -15.5069f, 15.5069f, -9.3296f, 9.3296f, -9.3296f, 9.3296f, -9.3296f, 9.3296f, -3.1011f, 3.1011f, -3.1286f, 3.1286f, 3.1010f, -3.1010f, 3.1286f, -3.1286f, 9.3295f, -9.3295f, 9.3296f, -9.3296f, 9.3296f, -9.3296f, 15.5425f, -15.5425f, 15.5068f, -15.5068f}; // NOLINT
+  static constexpr float kModuleCy[NSectorsC] = {3.2659f, -3.2659f, 9.4726f, -9.4726f, 3.2436f, -3.2436f, 9.4726f, -9.4726f, 15.6494f, -15.6494f, 9.4725f, -9.4725f, 15.6982f, -15.6982f, 9.4724f, -9.4724f, 15.6981f, -15.6981f, 3.2435f, -3.2435f, 9.4725f, -9.4725f, 15.6493f, -15.6493f, 3.2659f, -3.2659f, 9.4725f, -9.4725f}; // NOLINT
+  static constexpr float kModuleCz[NSectorsC] = {-85.2486f, -85.2486f, -84.7790f, -84.7790f, -86.1724f, -86.1724f, -85.7006f, -85.7006f, -84.7685f, -84.7685f, -86.1618f, -86.1618f, -85.2246f, -85.2246f, -86.1619f, -86.1619f, -85.2247f, -85.2247f, -86.1725f, -86.1725f, -85.7006f, -85.7006f, -84.7685f, -84.7685f, -85.2486f, -85.2486f, -84.7791f, -84.7791f}; // NOLINT
 
   // Official FT0 channel ID -> geometry module index, built by inverting
   // localChannelOrder[] from AliceO2 Detectors/FIT/FT0/base/include/FT0Base/
@@ -128,8 +127,8 @@ struct FlattenicityTask {
   // above, so truth-level and reco-level sectors are the same physical
   // modules. FT0-C table is indexed by (official channel - 96), i.e. the
   // channelC() value stored in AO2D (see QA/hFT0ChannelC to confirm).
-  static constexpr int kChannelToModuleA[NchA] = {12, 12, 12, 12, 8, 8, 8, 8, 7, 7, 7, 7, 6, 6, 6, 6, 11, 11, 11, 11, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 13, 13, 13, 13, 9, 9, 9, 9, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 5, 5, 5, 5, 10, 10, 10, 10, 14, 14, 14, 14, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 18, 18, 18, 18};
-  static constexpr int kChannelToModuleC[NchC] = {18, 18, 18, 18, 20, 20, 20, 20, 14, 14, 14, 14, 10, 10, 10, 10, 6, 6, 6, 6, 4, 4, 4, 4, 19, 19, 19, 19, 21, 21, 21, 21, 15, 15, 15, 15, 11, 11, 11, 11, 7, 7, 7, 7, 5, 5, 5, 5, 24, 24, 24, 24, 26, 26, 26, 26, 22, 22, 22, 22, 16, 16, 16, 16, 12, 12, 12, 12, 8, 8, 8, 8, 2, 2, 2, 2, 0, 0, 0, 0, 25, 25, 25, 25, 27, 27, 27, 27, 23, 23, 23, 23, 17, 17, 17, 17, 13, 13, 13, 13, 9, 9, 9, 9, 3, 3, 3, 3, 1, 1, 1, 1};
+  static constexpr int kChannelToModuleA[NchA] = {12, 12, 12, 12, 8, 8, 8, 8, 7, 7, 7, 7, 6, 6, 6, 6, 11, 11, 11, 11, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 13, 13, 13, 13, 9, 9, 9, 9, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 5, 5, 5, 5, 10, 10, 10, 10, 14, 14, 14, 14, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 18, 18, 18, 18}; // NOLINT
+  static constexpr int kChannelToModuleC[NchC] = {18, 18, 18, 18, 20, 20, 20, 20, 14, 14, 14, 14, 10, 10, 10, 10, 6, 6, 6, 6, 4, 4, 4, 4, 19, 19, 19, 19, 21, 21, 21, 21, 15, 15, 15, 15, 11, 11, 11, 11, 7, 7, 7, 7, 5, 5, 5, 5, 24, 24, 24, 24, 26, 26, 26, 26, 22, 22, 22, 22, 16, 16, 16, 16, 12, 12, 12, 12, 8, 8, 8, 8, 2, 2, 2, 2, 0, 0, 0, 0, 25, 25, 25, 25, 27, 27, 27, 27, 23, 23, 23, 23, 17, 17, 17, 17, 13, 13, 13, 13, 9, 9, 9, 9, 3, 3, 3, 3, 1, 1, 1, 1}; // NOLINT
 
   static constexpr int NFlatBins = 10000;
   static constexpr int NCorrTitleUpdateInterval = 500; // refresh Pearson r in the titles every N filled events
@@ -201,10 +200,10 @@ struct FlattenicityTask {
   Configurable<float> cfgEtaMax{"cfgEtaMax", 0.8, "Maximum |eta| for INEL>0 and track selection"};
   Configurable<float> cfgVzMax{"cfgVzMax", 10.0, "Maximum absolute collision vertex z (cm)"};
   Configurable<bool> cfgApplySel8{"cfgApplySel8", true, "Apply sel8 event selection"};
-  Configurable<bool> cfgApplyGoodITSLayersAll{"cfgApplyGoodITSLayersAll", true, "Apply kIsGoodITSLayersAll event selection"};
+  Configurable<bool> cfgApplyGoodITSLayersAll{"cfgApplyGoodITSLayersAll", true, "Apply kIsGoodITSLayersAll event selection"}; // NOLINT
   Configurable<bool> cfgRequireInelGt0{"cfgRequireInelGt0", true, "Require INEL>0"};
   Configurable<bool> cfgPileupRejection{"cfgPileupRejection", true, "Reject same-bunch pileup (kNoSameBunchPileup)"};
-  Configurable<bool> cfgGoodZvertex{"cfgGoodZvertex", true, "Require good z-vertex agreement PV-vs-FT0 (kIsGoodZvtxFT0vsPV)"};
+  Configurable<bool> cfgGoodZvertex{"cfgGoodZvertex", true, "Require good z-vertex agreement PV-vs-FT0 (kIsGoodZvtxFT0vsPV)"}; // NOLINT
 
   Configurable<int> cfgITSreq{"cfgITSreq", 0, "ITS requirement (0 = Run3ITSibAny)"};
 
@@ -227,12 +226,12 @@ struct FlattenicityTask {
   {
     auto hComb = histos.get<TH2>(HIST("MCReco/hTruthVsRecoCombined"));
     if (hComb && hComb->GetEntries() > 0) {
-      hComb->SetTitle(Form("Combined: reco vs truth (Pearson r = %.3f);1-#rho (reco, FT0);1-#rho (truth, MC)", hComb->GetCorrelationFactor()));
+      hComb->SetTitle(Form("Combined: reco vs truth (Pearson r = %.3f);1-#rho (reco, FT0);1-#rho (truth, MC)", hComb->GetCorrelationFactor())); // NOLINT
       hComb->SetOption("COLZ");
     }
     auto hAvg = histos.get<TH2>(HIST("MCReco/hTruthVsRecoAverage"));
     if (hAvg && hAvg->GetEntries() > 0) {
-      hAvg->SetTitle(Form("Average: reco vs truth (Pearson r = %.3f);1-#rho (reco, FT0);1-#rho (truth, MC)", hAvg->GetCorrelationFactor()));
+      hAvg->SetTitle(Form("Average: reco vs truth (Pearson r = %.3f);1-#rho (reco, FT0);1-#rho (truth, MC)", hAvg->GetCorrelationFactor())); // NOLINT
       hAvg->SetOption("COLZ");
     }
   }
@@ -270,13 +269,13 @@ struct FlattenicityTask {
     const AxisSpec flatAxisSpecTruthComb{NFlatBins, 0.0, 1.0, "flattenicity (MC truth, combined)"};
     const AxisSpec flatAxisSpecRecoAvg{NFlatBins, 0.0, 1.0, "flattenicity (reco, FT0 average)"};
     const AxisSpec flatAxisSpecRecoComb{NFlatBins, 0.0, 1.0, "flattenicity (reco, FT0 combined)"};
-    hPtVsFlatTruthAvg = histos.add<TH2>("MCTruth/hPtVsFlatTruthAvg", "MC truth: pT vs flattenicity (average);flattenicity;#it{p}_{T}",
+    hPtVsFlatTruthAvg = histos.add<TH2>("MCTruth/hPtVsFlatTruthAvg", "MC truth: pT vs flattenicity (average);flattenicity;#it{p}_{T}", // NOLINT
                                         HistType::kTH2F, {flatAxisSpecTruthAvg, ptAxisSpec});
-    hPtVsFlatTruthComb = histos.add<TH2>("MCTruth/hPtVsFlatTruthComb", "MC truth: pT vs flattenicity (combined);flattenicity;#it{p}_{T}",
+    hPtVsFlatTruthComb = histos.add<TH2>("MCTruth/hPtVsFlatTruthComb", "MC truth: pT vs flattenicity (combined);flattenicity;#it{p}_{T}", // NOLINT
                                          HistType::kTH2F, {flatAxisSpecTruthComb, ptAxisSpec});
-    hPtVsFlatRecoAvg = histos.add<TH2>("MCReco/hPtVsFlatRecoAvg", "MC reco: pT vs flattenicity (FT0 average);flattenicity;#it{p}_{T}",
+    hPtVsFlatRecoAvg = histos.add<TH2>("MCReco/hPtVsFlatRecoAvg", "MC reco: pT vs flattenicity (FT0 average);flattenicity;#it{p}_{T}", // NOLINT
                                        HistType::kTH2F, {flatAxisSpecRecoAvg, ptAxisSpec});
-    hPtVsFlatRecoComb = histos.add<TH2>("MCReco/hPtVsFlatRecoComb", "MC reco: pT vs flattenicity (FT0 combined);flattenicity;#it{p}_{T}",
+    hPtVsFlatRecoComb = histos.add<TH2>("MCReco/hPtVsFlatRecoComb", "MC reco: pT vs flattenicity (FT0 combined);flattenicity;#it{p}_{T}", // NOLINT
                                         HistType::kTH2F, {flatAxisSpecRecoComb, ptAxisSpec});
   }
 
@@ -401,7 +400,7 @@ struct FlattenicityTask {
   }
 
   template <typename FT0>
-  bool computeFT0Flattenicities(const FT0& ft0, float& flattenicityAverage, float& flattenicityCombined, float& sumAmplitude)
+  bool computeFT0Flattenicities(const FT0& ft0, float& flattenicityAverage, float& flattenicityCombined, float& sumAmplitude) // NOLINT
   {
     std::array<float, NSectorsA> countsA{};
     std::array<float, NSectorsC> countsC{};
