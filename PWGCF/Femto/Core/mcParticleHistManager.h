@@ -150,12 +150,12 @@ auto makeMcParticleHistSpecMap(const T& confBinning)
 
 inline constexpr char PrefixMcParticle1[] = "McParticle1/";
 inline constexpr char PrefixMcParticle2[] = "McParticle2/";
-inline constexpr char PrefixMcParticle1Se[] = "McParticle1Se/";
-inline constexpr char PrefixMcParticle2Se[] = "McParticle2Se/";
-inline constexpr char PrefixMcParticle3Se[] = "McParticle3Se/";
-inline constexpr char PrefixMcParticle1Me[] = "McParticle1Me/";
-inline constexpr char PrefixMcParticle2Me[] = "McParticle2Me/";
-inline constexpr char PrefixMcParticle3Me[] = "McParticle3Me/";
+inline constexpr char PrefixMcParticle1Se[] = "McParticle1/SE/";
+inline constexpr char PrefixMcParticle2Se[] = "McParticle2/SE/";
+inline constexpr char PrefixMcParticle3Se[] = "McParticle3/SE/";
+inline constexpr char PrefixMcParticle1Me[] = "McParticle1/ME/";
+inline constexpr char PrefixMcParticle2Me[] = "McParticle2/ME/";
+inline constexpr char PrefixMcParticle3Me[] = "McParticle3/ME/";
 
 constexpr std::string_view McDir = "MC/";
 
