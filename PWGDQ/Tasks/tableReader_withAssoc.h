@@ -4226,9 +4226,10 @@ struct AnalysisDileptonTrack {
 
   void init(o2::framework::InitContext& context)
   {
-    bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
+    bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed") || context.mOptions.get<bool>("processDsToKKPi");
     bool isBarrelME = context.mOptions.get<bool>("processBarrelMixedEvent");
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
+    bool isDsToKKPi = context.mOptions.get<bool>("processDsToKKPi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
     bool isMuonME = context.mOptions.get<bool>("processMuonMixedEvent");
 
@@ -4631,6 +4632,18 @@ struct AnalysisDileptonTrack {
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
         }
+        if constexpr (TCandidateType == VarManager::kDsToKKPi) {
+          trackSelection = (assoc.isBarrelSelected_raw() & fTrackCutBitMap);
+          if (trackSelection == 0) {
+            continue;
+          }
+          auto track = assoc.template reducedtrack_as<TTracks>();
+          if (track.globalIndex() == dilepton.index0Id() || track.globalIndex() == dilepton.index1Id()) {
+            continue;
+          }
+          VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
+          VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
+        }
         if constexpr (TCandidateType == VarManager::kBcToThreeMuons) {
           trackSelection = (assoc.isMuonSelected_raw() & fTrackCutBitMap);
           if (trackSelection == 0) {
@@ -4731,6 +4744,25 @@ struct AnalysisDileptonTrack {
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       auto groupedDitracks = ditracks.sliceBy(ditracksPerCollision, event.globalIndex());
       runDileptonHadron<VarManager::kDstarToD0KPiPi, gkEventFillMapWithCovZdcFit, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDitracks);
+    }
+  }
+
+  void processDsToKKPi(o2::soa::Filtered<MyEventsVtxCovSelected> const& events,
+                       o2::soa::Filtered<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> const& assocs,
+                       MyBarrelTracksWithCov const& tracks,
+                       o2::soa::Filtered<MyDielectronCandidates> const& dileptons)
+  {
+    if (events.size() == 0) {
+      return;
+    }
+    if (fCurrentRun != events.begin().runNumber()) {
+      initParamsFromCCDB(events.begin().timestamp());
+      fCurrentRun = events.begin().runNumber();
+    }
+    for (auto const& event : events) {
+      auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
+      auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
+      runDileptonHadron<VarManager::kDsToKKPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons);
     }
   }
 
@@ -4910,6 +4942,7 @@ struct AnalysisDileptonTrack {
 
   PROCESS_SWITCH(AnalysisDileptonTrack, processBarrelSkimmed, "Run barrel dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processDstarToD0Pi, "Run barrel pairing of D0 daughters with pion candidate, using skimmed data", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processDsToKKPi, "Run barrel pairing of K+K- pairs with pion candidate for Ds reconstruction", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonSkimmed, "Run muon dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processBarrelMixedEvent, "Run barrel dilepton-hadron mixed event pairing", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonMixedEvent, "Run muon dilepton-hadron mixed event pairing", false);
