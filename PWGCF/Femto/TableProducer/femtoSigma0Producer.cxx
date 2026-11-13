@@ -47,7 +47,11 @@ struct FemtoSigma0Producer {
     sigma0Builder.init(&registry, filters, bits, tables, initContext);
   }
 
-  void process(Lambdas const& lambdas, Photons const& photons, o2::aod::FTracks const& tracks, o2::aod::FCols const& /**/, o2::aod::FColMasks const& /**/, o2::aod::FTrackMasks const& /**/)
+  // void process(Lambdas const& lambdas, Photons const& photons, o2::aod::FTracks const& tracks, o2::aod::FCols const& /**/, o2::aod::FColMasks const& /**/, o2::aod::FTrackMasks const& /**/)
+  // {
+  //   sigma0Builder.fillSigma0s(products, lambdas, photons, tracks);
+  // }
+    void process(Lambdas const& lambdas, Photons const& photons, o2::aod::FTracks const& tracks, o2::aod::FCols const& /**/, o2::aod::FColMasks const& /**/, o2::aod::FTrackMasks const& /**/)
   {
     sigma0Builder.fillSigma0s(products, lambdas, photons, tracks);
   }

@@ -279,7 +279,7 @@ class Sigma0Builder
 
   /// Build Sigma0 candidates from Lambda and photon tables belonging to the same collision.
   template <typename TProducts, typename TLambdas, typename TPhotons, typename TTracks>
-  void fillSigma0s(TProducts& products, TLambdas const& lambdas, TPhotons const& photons, TTracks const& tracks)
+  void fillSigma0s(TProducts& products, TLambdas const& lambdas, TPhotons const& photons, TTracks const& /*tracks*/)
   {
     if (!mFillAnyTable) {
       return;
@@ -300,8 +300,10 @@ class Sigma0Builder
       if (!selectLambda(lambda)) {
         continue;
       }
-      const auto posDau = lambda.posDau();
-      const auto negDau = lambda.negDau();
+      // const auto posDau = lambda.posDau();
+      // const auto negDau = lambda.negDau();
+      const auto& posDau = lambda.template posDau_as<TTracks>();
+      const auto& negDau = lambda.template negDau_as<TTracks>();
 
       const auto photonRows = photonRowsPerCollision.find(lambda.fColId());
       if (photonRows == photonRowsPerCollision.end()) {

@@ -57,6 +57,8 @@ enum Sigma0Hist {
   kDecayVtxY,
   kDecayVtxZ,
   kDecayVtx,
+  kPosDauEta,
+  kNegDauEta,
   // 2d qa
   kPtVsEta,
   kPtVsPhi,
@@ -110,6 +112,8 @@ struct ConfSigma0QaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis massAntiSigma0{"massAntiSigma0", {{100, 1, 1.2}}, "mass for antiparticle hypothesis"};
 };
 
+constexpr char PrefixSigma0Se[] = "Sigma0/SE/";
+constexpr char PrefixSigma0Me[] = "Sigma0/ME/";
 constexpr const char PrefixSigma0QaBinning[] = "Sigma0QaBinning";
 using ConfSigma0QaBinningDefault = ConfSigma0QaBinning<PrefixSigma0QaBinning>;
 
@@ -128,6 +132,8 @@ constexpr std::array<histmanager::HistInfo<Sigma0Hist>, kSigma0HistLast> HistTab
    {kDecayVtxY, o2::framework::HistType::kTH1F, "hDecayVtxY", "Y coordinate of decay vertex ; DV_{Y} (cm); Entries"},
    {kDecayVtxZ, o2::framework::HistType::kTH1F, "hDecayVtxZ", "Z coordinate of decay vertex ; DV_{Z} (cm); Entries"},
    {kDecayVtx, o2::framework::HistType::kTH1F, "hDecayVtx", "Distance of decay vertex from primary vertex ; DV (cm); Entries"},
+   {kPosDauEta, o2::framework::HistType::kTH1F, "hPosDAuEta", "#eta of positive v0 track ; #eta; Entries"},
+   {kNegDauEta, o2::framework::HistType::kTH1F, "hNegDAuEta", "#eta of negative v0 track ; #eta; Entries"},
    {kPtVsEta, o2::framework::HistType::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
    {kPtVsPhi, o2::framework::HistType::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}) ; #varphi"},
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
@@ -167,6 +173,8 @@ constexpr std::array<histmanager::HistInfo<Sigma0Hist>, kSigma0HistLast> HistTab
     {kDecayVtxY, {(confQa).decayVertex}},                                \
     {kDecayVtxZ, {(confQa).decayVertex}},                                \
     {kDecayVtx, {(confQa).decayVertex}},                                 \
+    {kPosDauEta, {(confAnalysis).eta}},                                  \
+    {kNegDauEta, {(confAnalysis).eta}},                                  \
     {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                 \
     {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                 \
     {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},               \
@@ -177,6 +185,7 @@ constexpr std::array<histmanager::HistInfo<Sigma0Hist>, kSigma0HistLast> HistTab
     {kPtVsAntiSigma0Mass, {(confAnalysis).pt, (confQa).massAntiSigma0}}, \
     {kSigma0MassVsAntiSigma0Mass, {(confQa).massSigma0, (confQa).massAntiSigma0}},
 
+    
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SIGMA0_HIST_MC_QA_MAP(confAnalysis, confQa)     \
   {kNoMcParticle, {(confAnalysis).pt, (confQa).cosPa}}, \
@@ -303,11 +312,16 @@ class Sigma0HistManager
     }
   }
 
-  // wrapper for tripletProcessHelpers
+  //FIXME: dummy wrapper to satisfy triplet process helpers; rehaul Sigma0 QA and find a better solution for process helpers table consumption
   template <modes::Mode mode, typename T1, typename T2>
-  void fill(T1 const& sigma0candidate, T2 const& tracks)
+  void fill(T1 const& sigma0candidate, T2 const& trackTable)
   {
     this->fillAnalysis(sigma0candidate);
+    auto posDau = trackTable.rawIteratorAt(sigma0candidate.posDauId() - trackTable.offset());
+    auto negDau = trackTable.rawIteratorAt(sigma0candidate.negDauId() - trackTable.offset());
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      this->fillQaLite(sigma0candidate, posDau, negDau);
+    }
   }
 
   // fill sigma0 + lambda + photon
@@ -329,11 +343,16 @@ class Sigma0HistManager
       this->template fillMc<mode>(sigma0candidate, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
-  // wrapper for tripletProcessHelpers
+  //FIXME: dummy wrapper to satisfy triplet process helpers; rehaul Sigma0 QA and find a better solution for process helpers table consumption
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void fill(T1 const& sigma0candidate, T2 const& trackTable, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
     this->template fillMc<mode>(sigma0candidate, col, mcParticles, mcMothers, mcPartonicMothers);
+    auto posDau = trackTable.rawIteratorAt(sigma0candidate.posDauId() - trackTable.offset());
+    auto negDau = trackTable.rawIteratorAt(sigma0candidate.negDauId() - trackTable.offset());
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      this->fillQaLite(sigma0candidate, posDau, negDau);
+    }
   }
   // fill mc + lambda + photon
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
@@ -383,6 +402,9 @@ class Sigma0HistManager
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxY, HistTable), getHistDesc(kDecayVtxY, HistTable), getHistType(kDecayVtxY, HistTable), {Sigma0Specs.at(kDecayVtxY)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxZ, HistTable), getHistDesc(kDecayVtxZ, HistTable), getHistType(kDecayVtxZ, HistTable), {Sigma0Specs.at(kDecayVtxZ)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtx, HistTable), getHistDesc(kDecayVtx, HistTable), getHistType(kDecayVtx, HistTable), {Sigma0Specs.at(kDecayVtx)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtx, HistTable), getHistDesc(kDecayVtx, HistTable), getHistType(kDecayVtx, HistTable), {Sigma0Specs.at(kDecayVtx)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPosDauEta, HistTable), getHistDesc(kPosDauEta, HistTable), getHistType(kPosDauEta, HistTable), {Sigma0Specs.at(kPosDauEta)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kNegDauEta, HistTable), getHistDesc(kNegDauEta, HistTable), getHistType(kNegDauEta, HistTable), {Sigma0Specs.at(kNegDauEta)});
 
     if (mPlot2d) {
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {Sigma0Specs.at(kPtVsEta)});
@@ -458,6 +480,15 @@ class Sigma0HistManager
     }
   }
 
+  //TODO: currently wrapper for triplet process helpers, eventually a wrapper for Tracks-only dependent QA filling
+  template <typename T1, typename T2>
+  void fillQaLite(T1 const& sigma0candidate, T2 const& posDau, T2 const& negDau)
+  {
+    this->template fillQa(sigma0candidate);
+    mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(QaDir) + HIST(getHistName(kPosDauEta, HistTable)), posDau.eta());
+    mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(QaDir) + HIST(getHistName(kNegDauEta, HistTable)), negDau.eta());
+  }
+
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
   void fillMc(T1 const& sigma0Candidate, T2 const& col, T3 const& /*mcParticles*/, T4 const& /*mcMothers*/, T5 const& /*mcPartonicMothers*/)
   {
@@ -520,4 +551,4 @@ class Sigma0HistManager
   photonhistmanager::PhotonHistManager<PrefixPhoton> mPhotonManager;
 };
 }; // namespace o2::analysis::femto::sigma0histmanager
-#endif // PWGCF_FEMTO_CORE_Sigma0HISTMANAGER_H_
+#endif  // PWGCF_FEMTO_CORE_SIGMA0HISTMANAGER_H_

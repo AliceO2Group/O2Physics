@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoTripletTrackTrackV0.cxx
-/// \brief Tasks that computes correlation between two tracks
-/// \author Anton Riedel, TU München, anton.riedel@cern.ch
+/// \file femtoTripletTrackTrackSigma0.cxx
+/// \brief Tasks that computes correlation between two tracks and a sigma0
+/// \author Yakiv Paroviak, CTU Prague, yakiv.paroviak@cern.ch
 
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/closeTripletRejection.h"
@@ -21,14 +21,14 @@
 #include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
-#include "PWGCF/Femto/Core/photonHistManager.h"
+// #include "PWGCF/Femto/Core/photonHistManager.h"
 #include "PWGCF/Femto/Core/sigma0Builder.h"
 #include "PWGCF/Femto/Core/sigma0HistManager.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/tripletBuilder.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
-#include "PWGCF/Femto/Core/v0HistManager.h"
+// #include "PWGCF/Femto/Core/v0HistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/ASoA.h>
@@ -80,8 +80,6 @@ struct FemtoTripletTrackTrackSigma0 {
   trackhistmanager::ConfTrackBinning1 confTrackBinning1;
   trackbuilder::ConfTrackSelection2 confTrackSelections2;
   trackhistmanager::ConfTrackBinning2 confTrackBinning2;
-  inline static constexpr std::string_view PrefixTrack1 = "Track1/";
-  inline static constexpr std::string_view PrefixTrack2 = "Track2/";
 
   // particle cleaners (mc only)
   particlecleaner::ConfTrackCleaner1 confTrackCleaner1;
@@ -96,11 +94,9 @@ struct FemtoTripletTrackTrackSigma0 {
   o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
   o2::framework::Preslice<FemtoTracksWithLabel> perColtracksWithLabel = o2::aod::femtobase::stored::fColId;
 
-  // setup for photon and lambda
-  v0histmanager::ConfLambdaBinning1 confLambdaBinning;
-  inline static constexpr std::string_view PrefixPhoton = "Sigma0/DauPhoton/";
-  photonhistmanager::ConfPhotonBinning confPhotonBinning;
-  inline static constexpr std::string_view PrefixLambda = "Sigma0/DauLambda/";
+  // // setup for photon and lambda
+  // v0histmanager::ConfLambdaBinning1 confLambdaBinning;
+  // photonhistmanager::ConfPhotonBinning confPhotonBinning;
 
   // setup sigma0s
   sigma0builder::ConfSigma0SelectionDefault confSigma0Selection;
@@ -117,24 +113,11 @@ struct FemtoTripletTrackTrackSigma0 {
   triplethistmanager::ConfTripletCuts confTripletCuts;
   paircleaner::ConfPairCleanerBinning confTripletCleanerBinning;
 
-  closetripletrejection::ConfCtrTrackTrackV0 confCtr;
-  closepairrejection::ConfCprTrackV0Daughter confCpr;
+  closetripletrejection::ConfCtrTrackTrackSigma0 confCtr;
+  // closepairrejection::ClosePairRejectionTrackTrack confCpr12;
+  // closepairrejection::ClosePairRejectionTrackSigma0 confCpr13;
 
-  tripletbuilder::TripletTrackTrackSigma0Builder<
-    PrefixTrack1,
-    PrefixTrack2,
-    sigma0histmanager::PrefixSigma0,
-    PrefixLambda,
-    PrefixPhoton,
-    triplethistmanager::PrefixTrackTrackSigma0Se,
-    triplethistmanager::PrefixTrackTrackSigma0Me,
-    closetripletrejection::PrefixTrack1Track2Se,
-    closetripletrejection::PrefixTrack1Sigma0Se,
-    closetripletrejection::PrefixTrack2Sigma0Se,
-    closetripletrejection::PrefixTrack1Track2Me,
-    closetripletrejection::PrefixTrack1Sigma0Me,
-    closetripletrejection::PrefixTrack2Sigma0Me>
-    tripletTrackTrackSigma0Builder;
+  tripletbuilder::TripletTrackTrackSigma0Builder tripletTrackTrackSigma0Builder;
 
   // setup mixing
   std::vector<double> defaultVtxBins{10, -10, 10};
@@ -169,12 +152,12 @@ struct FemtoTripletTrackTrackSigma0 {
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec1;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec2;
 
-    std::map<v0histmanager::V0Hist, std::vector<o2::framework::AxisSpec>> lambdaSpec;
-    std::map<photonhistmanager::PhotonHist, std::vector<o2::framework::AxisSpec>> photonSpec;
+    // std::map<v0histmanager::V0Hist, std::vector<o2::framework::AxisSpec>> lambdaSpec;
+    // std::map<photonhistmanager::PhotonHist, std::vector<o2::framework::AxisSpec>> photonSpec;
     std::map<sigma0histmanager::Sigma0Hist, std::vector<o2::framework::AxisSpec>> sigma0HistSpec;
     std::map<triplethistmanager::TripletHist, std::vector<o2::framework::AxisSpec>> tripletHistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> ctrHistSpec = closepairrejection::makeCprHistSpecMap(confCtr);
-    std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
+    // std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr12);
     std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> tripletCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confTripletCleanerBinning);
 
     if (processData) {
@@ -182,8 +165,8 @@ struct FemtoTripletTrackTrackSigma0 {
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       sigma0HistSpec = sigma0histmanager::makeSigma0HistSpecMap(confSigma0Binning);
-      lambdaSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
-      photonSpec = photonhistmanager::makePhotonHistSpecMap(confPhotonBinning);
+      // lambdaSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
+      // photonSpec = photonhistmanager::makePhotonHistSpecMap(confPhotonBinning);
       tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning, confMixing);
       tripletTrackTrackSigma0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confSigma0Selection, confTrackCleaner1, confTrackCleaner2, confSigma0Cleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, sigma0HistSpec, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
     } else {

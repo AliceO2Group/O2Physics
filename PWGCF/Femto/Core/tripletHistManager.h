@@ -52,6 +52,9 @@ enum TripletHist {
   kPt1VsQ3,
   kPt2VsQ3,
   kPt3VsQ3,
+  kM1VsQ3,
+  kM2VsQ3,
+  kM3VsQ3,
   kQ3VsMt,
   kQ3VsMult,
   kQ3VsCent,
@@ -177,6 +180,9 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       {kPt1VsQ3, o2::framework::HistType::kTH2F, "hPt1VsQ3", "p_{T,1} vs Q_{3}; p_{T,1} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
       {kPt2VsQ3, o2::framework::HistType::kTH2F, "hPt2VsQ3", "p_{T,2} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
       {kPt3VsQ3, o2::framework::HistType::kTH2F, "hPt3VsQ3", "p_{T,3} vs Q_{3}; p_{T,3} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
+      {kM1VsQ3, o2::framework::HistType::kTH2F, "hM1VsQ3", "mass_{1} vs Q_{3}; m_{1} (GeV/#it{c}^{2}); Q_{3} (GeV/#it{c})"},
+      {kM2VsQ3, o2::framework::HistType::kTH2F, "hM2VsQ3", "mass_{2} vs Q_{3}; m_{2} (GeV/#it{c}^{2}); Q_{3} (GeV/#it{c})"},
+      {kM3VsQ3, o2::framework::HistType::kTH2F, "hM3VsQ3", "mass_{3} vs Q_{3}; m_{3} (GeV/#it{c}^{2}); Q_{3} (GeV/#it{c})"},
       {kQ3VsMt, o2::framework::HistType::kTH2F, "hQ3VsMt", "Q_{3} vs m_{T}; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2})"},
       {kQ3VsMult, o2::framework::HistType::kTH2F, "hQ3VsMult", "Q_{3} vs Multiplicity; Q_{3} (GeV/#it{c}); Multiplicity"},
       {kQ3VsCent, o2::framework::HistType::kTH2F, "hQ3VsCent", "Q_{3} vs Centrality; Q_{3} (GeV/#it{c}); Centrality"},
@@ -223,6 +229,9 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
     {kPt1VsQ3, {(conf).pt1, (conf).q3}},                                                                                                      \
     {kPt2VsQ3, {(conf).pt2, (conf).q3}},                                                                                                      \
     {kPt3VsQ3, {(conf).pt3, (conf).q3}},                                                                                                      \
+    {kM1VsQ3, {(conf).mass1, (conf).q3}},                                                                                                     \
+    {kM2VsQ3, {(conf).mass2, (conf).q3}},                                                                                                     \
+    {kM3VsQ3, {(conf).mass3, (conf).q3}},                                                                                                     \
     {kQ3VsMt, {(conf).q3, (conf).mt}},                                                                                                        \
     {kQ3VsMult, {(conf).q3, (conf).multiplicity}},                                                                                            \
     {kQ3VsCent, {(conf).q3, (conf).centrality}},                                                                                              \
@@ -685,6 +694,9 @@ class TripletHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsQ3, HistTable), getHistDesc(kPt1VsQ3, HistTable), getHistType(kPt1VsQ3, HistTable), {Specs.at(kPt1VsQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsQ3, HistTable), getHistDesc(kPt2VsQ3, HistTable), getHistType(kPt2VsQ3, HistTable), {Specs.at(kPt2VsQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt3VsQ3, HistTable), getHistDesc(kPt3VsQ3, HistTable), getHistType(kPt3VsQ3, HistTable), {Specs.at(kPt3VsQ3)});
+      if (mPlotMass1VsQ3) mHistogramRegistry->add(analysisDir + getHistNameV2(kM1VsQ3, HistTable), getHistDesc(kM1VsQ3, HistTable), getHistType(kM1VsQ3, HistTable), {Specs.at(kM1VsQ3)});
+      if (mPlotMass2VsQ3) mHistogramRegistry->add(analysisDir + getHistNameV2(kM2VsQ3, HistTable), getHistDesc(kM2VsQ3, HistTable), getHistType(kM2VsQ3, HistTable), {Specs.at(kM2VsQ3)});
+      if (mPlotMass3VsQ3) mHistogramRegistry->add(analysisDir + getHistNameV2(kM3VsQ3, HistTable), getHistDesc(kM3VsQ3, HistTable), getHistType(kM3VsQ3, HistTable), {Specs.at(kM3VsQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMt, HistTable), getHistDesc(kQ3VsMt, HistTable), getHistType(kQ3VsMt, HistTable), {Specs.at(kQ3VsMt)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMult, HistTable), getHistDesc(kQ3VsMult, HistTable), getHistType(kQ3VsMult, HistTable), {Specs.at(kQ3VsMult)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsCent, HistTable), getHistDesc(kQ3VsCent, HistTable), getHistType(kQ3VsCent, HistTable), {Specs.at(kQ3VsCent)});
@@ -798,6 +810,9 @@ class TripletHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsQ3, HistTable)), mParticle1.Pt(), mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsQ3, HistTable)), mParticle2.Pt(), mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt3VsQ3, HistTable)), mParticle3.Pt(), mQ3);
+      if (mPlotMass1VsQ3) mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM1VsQ3, HistTable)), mMass1, mQ3);
+      if (mPlotMass2VsQ3) mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM2VsQ3, HistTable)), mMass2, mQ3);
+      if (mPlotMass3VsQ3) mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM3VsQ3, HistTable)), mMass3, mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMt, HistTable)), mQ3, mMt);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMult, HistTable)), mQ3, mMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsCent, HistTable)), mQ3, mCent);
@@ -899,6 +914,15 @@ class TripletHistManager
   // flags
   bool mPlot1d = true;
   bool mPlot2d = true;
+
+  // initialize mass vs Q3 histograms only if table has mass column 
+  static constexpr bool hasMassColumn(modes::Particle p)
+  {
+    return p == modes::Particle::kSigma0 || p == modes::Particle::kCascade;
+  }
+  bool mPlotMass1VsQ3 = hasMassColumn(particleType1);
+  bool mPlotMass2VsQ3 = hasMassColumn(particleType2);
+  bool mPlotMass3VsQ3 = hasMassColumn(particleType3); 
 
   bool mPlotPt1VsPt2VsPt3 = false;
   bool mPlotQ3VsPt1VsPt2VsPt3 = false;
