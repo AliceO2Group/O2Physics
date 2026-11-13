@@ -33,8 +33,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <THn.h>
 #include <TH2.h>
+#include <THn.h>
 
 #include <cmath>
 #include <string>
