@@ -237,10 +237,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteMLs, "AOD", "HFXICXI2PIMLITE",
                   hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
                   full::MlScoreBkg,
                   full::MlScorePrompt,
-                  full::MlScoreNonPrompt,
-                  // parameters of matched MC particle
-                  mc_match::PGen,
-                  mc_match::DecayLengthGen);
+                  full::MlScoreNonPrompt);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::ParticleFlag,
@@ -774,10 +771,7 @@ struct HfTreeCreatorXicToXiPiPi {
         candidate.nSigTpcPrFromLambda(),
         mlScoreBkg,
         mlScorePrompt,
-        mlScoreNonPrompt,
-        // parameters of matched MC particle
-        pGen,
-        decayLengthGen);
+        mlScoreNonPrompt);
     }
   }
 
