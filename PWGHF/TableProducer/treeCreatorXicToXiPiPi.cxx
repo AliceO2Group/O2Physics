@@ -137,7 +137,10 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
                   full::ImpactParameterNormalisedPi0,
                   full::ImpactParameterPi1,
                   full::ImpactParameterNormalisedPi1,
-                  full::MaxNormalisedDeltaIP);
+                  full::MaxNormalisedDeltaIP,
+                  // parameters of matched MC particle
+                  mc_match::PGen,
+                  mc_match::DecayLengthGen);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   full::ParticleFlag,
@@ -207,7 +210,10 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   hf_cand_xic_to_xi_pi_pi::DcaPi1Xi,
                   hf_cand_xic_to_xi_pi_pi::DcaXYPi0Pi1,
                   hf_cand_xic_to_xi_pi_pi::DcaXYPi0Xi,
-                  hf_cand_xic_to_xi_pi_pi::DcaXYPi1Xi);
+                  hf_cand_xic_to_xi_pi_pi::DcaXYPi1Xi,
+                  // parameters of matched MC particle
+                  mc_match::PGen,
+                  mc_match::DecayLengthGen);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteMLs, "AOD", "HFXICXI2PIMLITE",
                   full::ParticleFlag,
@@ -231,7 +237,10 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteMLs, "AOD", "HFXICXI2PIMLITE",
                   hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
                   full::MlScoreBkg,
                   full::MlScorePrompt,
-                  full::MlScoreNonPrompt);
+                  full::MlScoreNonPrompt,
+                  // parameters of matched MC particle
+                  mc_match::PGen,
+                  mc_match::DecayLengthGen);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::ParticleFlag,
@@ -293,7 +302,10 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus1,
                   hf_cand_xic_to_xi_pi_pi::NSigTofBachelorPi,
                   hf_cand_xic_to_xi_pi_pi::NSigTofPiFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda);
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda,
+                  // parameters of matched MC particle
+                  mc_match::PGen,
+                  mc_match::DecayLengthGen);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::ParticleFlag,
@@ -375,7 +387,10 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   hf_cand_xic_to_xi_pi_pi::DcaPi1Xi,
                   hf_cand_xic_to_xi_pi_pi::DcaXYPi0Pi1,
                   hf_cand_xic_to_xi_pi_pi::DcaXYPi0Xi,
-                  hf_cand_xic_to_xi_pi_pi::DcaXYPi1Xi);
+                  hf_cand_xic_to_xi_pi_pi::DcaXYPi1Xi,
+                  // parameters of matched MC particle
+                  mc_match::PGen,
+                  mc_match::DecayLengthGen);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   hf_cand_mc_flag::FlagMcMatchGen,
@@ -419,6 +434,7 @@ struct HfTreeCreatorXicToXiPiPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   static constexpr int kNumBinaryClasses = 2;
+  static constexpr float UndefValueFloat = -999.f;
 
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>>;
   using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi>>;
@@ -448,9 +464,15 @@ struct HfTreeCreatorXicToXiPiPi {
   {
     int8_t particleFlag = candidate.sign();
     int8_t originMc = 0;
+    float pGen{UndefValueFloat};
+    float decayLengthGen{UndefValueFloat};
     if constexpr (DoMc) {
       particleFlag = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
+      if (particle.has_value()) {
+        pGen = particle->p();
+        decayLengthGen = particle->decayLengthMcGen();
+      }
     }
     if constexpr (!DoKf && !DoMl) {
       if (fillCandidateLiteTable) {
@@ -489,7 +511,10 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.impactParameterNormalised1(),
           candidate.impactParameter2(),
           candidate.impactParameterNormalised2(),
-          candidate.maxNormalisedDeltaIP());
+          candidate.maxNormalisedDeltaIP(),
+          // parameters of matched MC particle
+          pGen,
+          decayLengthGen);
       } else {
         rowCandidateFull(
           particleFlag,
@@ -551,7 +576,10 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.nSigTofPiFromXicPlus1(),
           candidate.nSigTofBachelorPi(),
           candidate.nSigTofPiFromLambda(),
-          candidate.nSigTofPrFromLambda());
+          candidate.nSigTofPrFromLambda(),
+          // parameters of matched MC particle
+          pGen,
+          decayLengthGen);
       }
     } else if constexpr (DoKf) {
       if (fillCandidateLiteTable) {
@@ -623,7 +651,10 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.dcaPi1Xi(),
           candidate.dcaXYPi0Pi1(),
           candidate.dcaXYPi0Xi(),
-          candidate.dcaXYPi1Xi());
+          candidate.dcaXYPi1Xi(),
+          // parameters of matched MC particle
+          pGen,
+          decayLengthGen);
       } else {
         rowCandidateFullKf(
           particleFlag,
@@ -705,7 +736,10 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.dcaPi1Xi(),
           candidate.dcaXYPi0Pi1(),
           candidate.dcaXYPi0Xi(),
-          candidate.dcaXYPi1Xi());
+          candidate.dcaXYPi1Xi(),
+          // parameters of matched MC particle
+          pGen,
+          decayLengthGen);
       }
     }
     if constexpr (DoMl) {
@@ -740,7 +774,10 @@ struct HfTreeCreatorXicToXiPiPi {
         candidate.nSigTpcPrFromLambda(),
         mlScoreBkg,
         mlScorePrompt,
-        mlScoreNonPrompt);
+        mlScoreNonPrompt,
+        // parameters of matched MC particle
+        pGen,
+        decayLengthGen);
     }
   }
 
@@ -809,23 +846,6 @@ struct HfTreeCreatorXicToXiPiPi {
     }
     const auto particleMother = particles.rawIteratorAt(indexMother);
     return particleMother;
-  }
-
-  template <typename CandType>
-  float evaluateDecayLengthGenerated(CandType const& candidate, MatchedGenXicToXiPiPi::iterator const& particle)
-  {
-    const auto mcParticlePi0 = candidate.template pi0_as<o2::aod::TracksWMc>().template mcParticle_as<MatchedGenXicToXiPiPi>();
-    const auto decayVertexX = mcParticlePi0.vx();
-    const auto decayVertexY = mcParticlePi0.vy();
-    const auto decayVertexZ = mcParticlePi0.vz();
-
-    const auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
-    const auto primaryVertexX = mcCollision.posX();
-    const auto primaryVertexY = mcCollision.posY();
-    const auto primaryVertexZ = mcCollision.posZ();
-
-    const auto decayLendth = RecoDecay::distance(std::array<float, 3>{primaryVertexX, primaryVertexY, primaryVertexZ}, std::array<float, 3>{decayVertexX, decayVertexY, decayVertexZ});
-    return decayLendth;
   }
 
   void processData(SelectedCandidates const& candidates)
