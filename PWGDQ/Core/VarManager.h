@@ -587,6 +587,7 @@ class VarManager : public TObject
     // Barrel track variables
     kPin,
     kSignedPin,
+    kLocalSectorPhi,
     kTOFExpMom,
     kTrackTime,
     kTrackTimeRes,
@@ -618,6 +619,7 @@ class VarManager : public TObject
     kTPCnclsCR,
     kTPCnCRoverFindCls,
     kTPCchi2,
+    kTPCFractionSharedCls,
     kTPCsignal,
     kPhiTPCOuter,
     kTrackIsInsideTPCModule,
@@ -3086,8 +3088,10 @@ void VarManager::FillTrack(T const& track, float* values)
     if (fgUsedVars[kPhiTPCOuter]) {
       values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(0.22 * fgMagField / track.pt())));
     }
+    if (fgUsedVars[kLocalSectorPhi]) {
+      values[kLocalSectorPhi] = values[kPhiTPCOuter] - std::floor(18.0 * values[kPhiTPCOuter] / o2::constants::math::TwoPI) * (o2::constants::math::TwoPI / 18.0);
+    }
     if (fgUsedVars[kTrackIsInsideTPCModule]) {
-      float localSectorPhi = values[kPhiTPCOuter] - std::floor(18.0 * values[kPhiTPCOuter] / o2::constants::math::TwoPI) * (o2::constants::math::TwoPI / 18.0);
       float edge = fgTPCInterSectorBoundary / 2.0 / 246.6; // minimal inter-sector boundary as angle
       float curvature = 3.0 * 3.33 * track.pt() / fgMagField * (1.0 - std::sin(std::acos(0.22 * fgMagField / track.pt())));
       if (curvature / o2::dqconstants::defaults::CurvatureNormalizationFactor > edge) {
@@ -3095,7 +3099,7 @@ void VarManager::FillTrack(T const& track, float* values)
       }
       double min = edge;
       double max = o2::constants::math::TwoPI / 18.0 - edge;
-      values[kTrackIsInsideTPCModule] = (localSectorPhi > min && localSectorPhi < max ? 1.0 : 0.0);
+      values[kTrackIsInsideTPCModule] = (values[kLocalSectorPhi] > min && values[kLocalSectorPhi] < max ? 1.0 : 0.0);
     }
 
     if constexpr ((fillMap & ReducedTrack) > 0 && !((fillMap & Pair) > 0)) {
@@ -3193,6 +3197,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kITSchi2] = track.itsChi2NCl();
     values[kTPCncls] = track.tpcNClsFound();
     values[kTPCchi2] = track.tpcChi2NCl();
+    values[kTPCFractionSharedCls] = track.tpcFractionSharedCls();
     values[kTrackLength] = track.length();
     values[kTPCnclsCR] = track.tpcNClsCrossedRows();
     values[kTRDPattern] = track.trdPattern();
