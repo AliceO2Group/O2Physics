@@ -694,9 +694,12 @@ class TripletHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsQ3, HistTable), getHistDesc(kPt1VsQ3, HistTable), getHistType(kPt1VsQ3, HistTable), {Specs.at(kPt1VsQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsQ3, HistTable), getHistDesc(kPt2VsQ3, HistTable), getHistType(kPt2VsQ3, HistTable), {Specs.at(kPt2VsQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt3VsQ3, HistTable), getHistDesc(kPt3VsQ3, HistTable), getHistType(kPt3VsQ3, HistTable), {Specs.at(kPt3VsQ3)});
-      if (mPlotMass1VsQ3) mHistogramRegistry->add(analysisDir + getHistNameV2(kM1VsQ3, HistTable), getHistDesc(kM1VsQ3, HistTable), getHistType(kM1VsQ3, HistTable), {Specs.at(kM1VsQ3)});
-      if (mPlotMass2VsQ3) mHistogramRegistry->add(analysisDir + getHistNameV2(kM2VsQ3, HistTable), getHistDesc(kM2VsQ3, HistTable), getHistType(kM2VsQ3, HistTable), {Specs.at(kM2VsQ3)});
-      if (mPlotMass3VsQ3) mHistogramRegistry->add(analysisDir + getHistNameV2(kM3VsQ3, HistTable), getHistDesc(kM3VsQ3, HistTable), getHistType(kM3VsQ3, HistTable), {Specs.at(kM3VsQ3)});
+      if (mPlotMass1VsQ3)
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kM1VsQ3, HistTable), getHistDesc(kM1VsQ3, HistTable), getHistType(kM1VsQ3, HistTable), {Specs.at(kM1VsQ3)});
+      if (mPlotMass2VsQ3)
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kM2VsQ3, HistTable), getHistDesc(kM2VsQ3, HistTable), getHistType(kM2VsQ3, HistTable), {Specs.at(kM2VsQ3)});
+      if (mPlotMass3VsQ3)
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kM3VsQ3, HistTable), getHistDesc(kM3VsQ3, HistTable), getHistType(kM3VsQ3, HistTable), {Specs.at(kM3VsQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMt, HistTable), getHistDesc(kQ3VsMt, HistTable), getHistType(kQ3VsMt, HistTable), {Specs.at(kQ3VsMt)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMult, HistTable), getHistDesc(kQ3VsMult, HistTable), getHistType(kQ3VsMult, HistTable), {Specs.at(kQ3VsMult)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsCent, HistTable), getHistDesc(kQ3VsCent, HistTable), getHistType(kQ3VsCent, HistTable), {Specs.at(kQ3VsCent)});
@@ -810,9 +813,12 @@ class TripletHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsQ3, HistTable)), mParticle1.Pt(), mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsQ3, HistTable)), mParticle2.Pt(), mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt3VsQ3, HistTable)), mParticle3.Pt(), mQ3);
-      if (mPlotMass1VsQ3) mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM1VsQ3, HistTable)), mMass1, mQ3);
-      if (mPlotMass2VsQ3) mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM2VsQ3, HistTable)), mMass2, mQ3);
-      if (mPlotMass3VsQ3) mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM3VsQ3, HistTable)), mMass3, mQ3);
+      if (mPlotMass1VsQ3)
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM1VsQ3, HistTable)), mMass1, mQ3);
+      if (mPlotMass2VsQ3)
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM2VsQ3, HistTable)), mMass2, mQ3);
+      if (mPlotMass3VsQ3)
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM3VsQ3, HistTable)), mMass3, mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMt, HistTable)), mQ3, mMt);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMult, HistTable)), mQ3, mMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsCent, HistTable)), mQ3, mCent);
@@ -915,14 +921,14 @@ class TripletHistManager
   bool mPlot1d = true;
   bool mPlot2d = true;
 
-  // initialize mass vs Q3 histograms only if table has mass column 
+  // initialize mass vs Q3 histograms only if table has mass column
   static constexpr bool hasMassColumn(modes::Particle p)
   {
     return p == modes::Particle::kSigma0 || p == modes::Particle::kCascade;
   }
   bool mPlotMass1VsQ3 = hasMassColumn(particleType1);
   bool mPlotMass2VsQ3 = hasMassColumn(particleType2);
-  bool mPlotMass3VsQ3 = hasMassColumn(particleType3); 
+  bool mPlotMass3VsQ3 = hasMassColumn(particleType3);
 
   bool mPlotPt1VsPt2VsPt3 = false;
   bool mPlotQ3VsPt1VsPt2VsPt3 = false;

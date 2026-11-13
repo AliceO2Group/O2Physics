@@ -185,7 +185,6 @@ constexpr std::array<histmanager::HistInfo<Sigma0Hist>, kSigma0HistLast> HistTab
     {kPtVsAntiSigma0Mass, {(confAnalysis).pt, (confQa).massAntiSigma0}}, \
     {kSigma0MassVsAntiSigma0Mass, {(confQa).massSigma0, (confQa).massAntiSigma0}},
 
-    
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SIGMA0_HIST_MC_QA_MAP(confAnalysis, confQa)     \
   {kNoMcParticle, {(confAnalysis).pt, (confQa).cosPa}}, \
@@ -312,7 +311,7 @@ class Sigma0HistManager
     }
   }
 
-  //FIXME: dummy wrapper to satisfy triplet process helpers; rehaul Sigma0 QA and find a better solution for process helpers table consumption
+  // FIXME: dummy wrapper to satisfy triplet process helpers; rehaul Sigma0 QA and find a better solution for process helpers table consumption
   template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& sigma0candidate, T2 const& trackTable)
   {
@@ -343,7 +342,7 @@ class Sigma0HistManager
       this->template fillMc<mode>(sigma0candidate, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
-  //FIXME: dummy wrapper to satisfy triplet process helpers; rehaul Sigma0 QA and find a better solution for process helpers table consumption
+  // FIXME: dummy wrapper to satisfy triplet process helpers; rehaul Sigma0 QA and find a better solution for process helpers table consumption
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void fill(T1 const& sigma0candidate, T2 const& trackTable, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
@@ -480,7 +479,7 @@ class Sigma0HistManager
     }
   }
 
-  //TODO: currently wrapper for triplet process helpers, eventually a wrapper for Tracks-only dependent QA filling
+  // TODO: currently wrapper for triplet process helpers, eventually a wrapper for Tracks-only dependent QA filling
   template <typename T1, typename T2>
   void fillQaLite(T1 const& sigma0candidate, T2 const& posDau, T2 const& negDau)
   {
@@ -551,4 +550,4 @@ class Sigma0HistManager
   photonhistmanager::PhotonHistManager<PrefixPhoton> mPhotonManager;
 };
 }; // namespace o2::analysis::femto::sigma0histmanager
-#endif  // PWGCF_FEMTO_CORE_SIGMA0HISTMANAGER_H_
+#endif // PWGCF_FEMTO_CORE_SIGMA0HISTMANAGER_H_
