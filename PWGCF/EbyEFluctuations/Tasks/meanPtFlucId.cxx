@@ -710,6 +710,12 @@ struct MeanPtFlucId {
       hist.get<TH1>(HIST("Model/h_EventCount"))->GetXaxis()->SetBinLabel(2, "Accepted");
       hist.add("Model/h_VtxZ", "Generated vertex Z", kTH1D, {axisVtxZ});
       hist.add("Model/h_Nch", "Accepted events (including zero selected particles)", kTH1D, {axisModelMult});
+      hist.add("Model/h2_Nch_Cent", "Generated charged multiplicity vs centrality (including zero selected particles)", kTH2D, {axisModelCent, axisModelMult});
+      // The profile retains exact integer multiplicities, independent of the
+      // possibly coarse multiplicity bins in h2_Nch_Cent. Use the same event
+      // weights and calibrated event ensemble as the particle matrices.
+      const std::string modelNchProfileTitle = "Mean generated charged physical-primary multiplicity, all pT, |eta| < " + std::to_string(trackCuts.cfgCutEta.value);
+      hist.add("Model/p_Nch_Cent", modelNchProfileTitle.c_str(), kTProfile, {axisModelCent});
       auto addModelSpecies = [&](const std::string& directory, const AxisSpec& axisPtId) {
         hist.add(directory + "h_Pt", "Generated physical primaries", kTH1D, {axisPtId});
         hist.add(directory + "h_Eta", "Generated physical primaries", kTH1D, {axisEta});
@@ -1736,6 +1742,8 @@ struct MeanPtFlucId {
     hist.fill(HIST("Model/h_Centrality"), centrality, eventWeight);
     const int multiplicity = countSimMultiplicity(mcParts);
     hist.fill(HIST("Model/h_Nch"), multiplicity, eventWeight);
+    hist.fill(HIST("Model/h2_Nch_Cent"), centrality, multiplicity, eventWeight);
+    hist.fill(HIST("Model/p_Nch_Cent"), centrality, multiplicity, eventWeight);
 
     std::array<std::vector<TrackInfo>, 4> modelTracks;
     for (auto const& particle : mcParts) {
