@@ -4764,7 +4764,6 @@ struct AnalysisDileptonTrack {
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
       runDileptonHadron<VarManager::kDsToKKPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons);
     }
-
   }
 
   o2::framework::Preslice<o2::aod::ReducedMuonsAssoc> muonAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
