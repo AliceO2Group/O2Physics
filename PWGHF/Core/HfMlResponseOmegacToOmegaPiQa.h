@@ -18,6 +18,7 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPIQA_H_
 #define PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPIQA_H_
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 

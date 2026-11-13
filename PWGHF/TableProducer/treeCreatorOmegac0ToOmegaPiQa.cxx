@@ -17,6 +17,8 @@
 /// \author Maria Fernanda Torres Cabrera <maria.fernanda.torres.cabrera@cern.ch>, University of Houston
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
