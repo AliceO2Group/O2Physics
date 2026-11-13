@@ -2847,7 +2847,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
   for (const auto& d : dcazValues) {
     const double absD = std::abs(d);
 
-    for (int i = 0; i < thresholds.size(); ++i) {
+    for (std::size_t i = 0; i < thresholds.size(); ++i) {
       if (absD > thresholds[i]) {
         ++counters[i];
       }
@@ -2859,7 +2859,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
   if (totalTracks > 0) {
     const float inverseTotalTracks = 1.0f / static_cast<float>(totalTracks);
 
-    for (int i = 0; i < thresholds.size(); ++i) {
+    for (std::size_t i = 0; i < thresholds.size(); ++i) {
       values[variableIndices[i]] = static_cast<float>(counters[i]) * inverseTotalTracks;
     }
   } else {
