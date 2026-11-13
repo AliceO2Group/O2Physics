@@ -336,10 +336,10 @@ struct TableMaker {
   o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
-  AnalysisCompositeCut* fEventCut = nullptr;     //! Event selection cut
-  std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
-  std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
-  std::vector<AnalysisCompositeCut*> fEMCalCuts; //! EMCal cluster cuts
+  AnalysisCompositeCut* fEventCut = nullptr; //! Event selection cut
+  std::vector<AnalysisCut*> fTrackCuts;      //! Barrel track cuts
+  std::vector<AnalysisCut*> fMuonCuts;       //! Muon track cuts
+  std::vector<AnalysisCut*> fEMCalCuts;      //! EMCal cluster cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun = -1;       // needed to detect if the run changed and trigger update of calibrations etc.
@@ -611,7 +611,7 @@ struct TableMaker {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
 
@@ -620,7 +620,7 @@ struct TableMaker {
     if (addEMCalCutsStr != "") {
       std::vector<AnalysisCut*> addEMCalCuts = dqcuts::GetCutsFromJSON(addEMCalCutsStr.Data());
       for (const auto& t : addEMCalCuts) {
-        fEMCalCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fEMCalCuts.push_back(t);
       }
     }
 
@@ -637,7 +637,7 @@ struct TableMaker {
     if (addMuonCutsStr != "") {
       std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
       for (const auto& t : addMuonCuts) {
-        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(t);
       }
     }
 
