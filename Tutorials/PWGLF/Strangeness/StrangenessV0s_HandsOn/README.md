@@ -40,10 +40,10 @@ Alternatively, download them from CERNBox links.
 The run scripts do not contain the file paths: they read them from two text files (one path per line,
 relative to the repository folder or absolute):
 
-| File | Content | Used by |
-|---|---|---|
+| File             | Content          | Used by                           |
+|------------------|------------------|-----------------------------------|
 | `input_data.txt` | `data/AO2D.root` | `runSkeleton.sh`, `runStep0-3.sh` |
-| `input_MC.txt` | `MC/AO2D.root` | `runStep4.sh` |
+| `input_MC.txt`   | `MC/AO2D.root`   | `runStep4.sh`                     |
 
 If you save the files elsewhere, edit these two text files. To run steps 0-3 on the MC (e.g. to compare
 with data): `INPUTFILE=input_MC.txt ./runStep2.sh`.
@@ -67,24 +67,24 @@ TASK=o2-analysistutorial-lf-strangeness-derived-v0-skeleton ./runStep1.sh
 
 Without `TASK=...` the checkpoint of the step is run: useful to compare with your results.
 
-| Step | What is added | Tables | What to look at |
-|---|---|---|---|
-| skeleton | loop over events, sel8, \|z\| < 10 cm | `StraCollisions`, `StraEvSels` | `eventSelection/hVertexZRec` |
-| 0 | loop over V0s, K0S, Λ, Λbar invariant masses | `V0Cores` | `kzeroShort/hMassK0Short`, `lambda/hMassLambda` |
-| 1 | topological selections (`Filter` + dynamic columns), rapidity, competing mass rejection | `V0Cores` | `hMass*Selected`, `hV0CosPA`, `hV0Radius` |
-| 2 | TPC PID of the daughters (`posTrackExtra_as<>`) | `V0Extras`, `DauTrackExtras`, `DauTrackTPCPIDs` | `hNSigmaPos/NegPionFromK0s`, `hMass*Selected` |
-| 3 | TOF PID optimised for secondary particles (`strangenesstofpid` task) | `V0TOFNSigmas` | `hMass*SelectedWithTOF` |
-| 4 | MC truth: true reconstructed and generated V0s | `V0CoreMCLabels`, `V0MCCores`, `V0MCCollRefs` | `hPt*TrueRec`, `genParticles/hPt*Gen` |
+| Step     | What is added                                                                           | Tables                                          | What to look at                                 |
+|----------|-----------------------------------------------------------------------------------------|-------------------------------------------------|-------------------------------------------------|
+| skeleton | loop over events, sel8, \|z\| < 10 cm                                                   | `StraCollisions`, `StraEvSels`                  | `eventSelection/hVertexZRec`                    |
+| 0        | loop over V0s, K0S, Λ, Λbar invariant masses                                            | `V0Cores`                                       | `kzeroShort/hMassK0Short`, `lambda/hMassLambda` |
+| 1        | topological selections (`Filter` + dynamic columns), rapidity, competing mass rejection | `V0Cores`                                       | `hMass*Selected`, `hV0CosPA`, `hV0Radius`       |
+| 2        | TPC PID of the daughters (`posTrackExtra_as<>`)                                         | `V0Extras`, `DauTrackExtras`, `DauTrackTPCPIDs` | `hNSigmaPos/NegPionFromK0s`, `hMass*Selected`   |
+| 3        | TOF PID optimised for secondary particles (`strangenesstofpid` task)                    | `V0TOFNSigmas`                                  | `hMass*SelectedWithTOF`                         |
+| 4        | MC truth: true reconstructed and generated V0s                                          | `V0CoreMCLabels`, `V0MCCores`, `V0MCCollRefs`   | `hPt*TrueRec`, `genParticles/hPt*Gen`           |
 
 Step 1 selections (in `jsonConfigs/step1.json`):
 
-| Selection | Value | Getter | Column |
-|---|---|---|---|
-| DCA pos./neg. daughter to PV | > 0.06 cm | `dcapostopv()`, `dcanegtopv()` | standard |
-| DCA between daughters | < 0.5 cm | `dcaV0daughters()` | standard |
-| cosine of pointing angle | > 0.995 | `v0cosPA()` | **standard** in derived data |
-| decay radius | > 0.9 cm | `v0radius()` | dynamic |
-| rapidity | \|y\| < 0.5 | `yK0Short()`, `yLambda()` | dynamic |
+| Selection                    | Value       | Getter                         | Column                       |
+|------------------------------|-------------|--------------------------------|------------------------------|
+| DCA pos./neg. daughter to PV | > 0.06 cm   | `dcapostopv()`, `dcanegtopv()` | standard                     |
+| DCA between daughters        | < 0.5 cm    | `dcaV0daughters()`             | standard                     |
+| cosine of pointing angle     | > 0.995     | `v0cosPA()`                    | **standard** in derived data |
+| decay radius                 | > 0.9 cm    | `v0radius()`                   | dynamic                      |
+| rapidity                     | \|y\| < 0.5 | `yK0Short()`, `yLambda()`      | dynamic                      |
 
 Hints for the steps:
 - **Step 0**: look at the `aod::V0Cores` table in `PWGLF/DataModel/LFStrangenessTables.h` and at the getters
