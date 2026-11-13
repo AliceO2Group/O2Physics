@@ -22,6 +22,7 @@
 #include "PWGLF/Utils/decay3bodyBuilderHelper.h"
 #include "PWGLF/Utils/pidTOFGeneric.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
@@ -112,6 +113,8 @@ struct TrackedHypertritonRecoTask {
 
   Configurable<bool> requireSel8{"requireSel8", true, "Require the standard sel8 event selection"};
   Configurable<float> maxAbsZvtx{"maxAbsZvtx", 10.f, "Maximum absolute primary-vertex z; negative disables the cut"};
+  Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", false, "Reject collisions which are associated with the same found-by-T0 bunch crossing"};
+  Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Verifies the consistency between the primary vertex z position from tracking and the z position of the PV from FT0 timing"};
   Configurable<bool> skimmedProcessing{"skimmedProcessing", false, "Enable Zorro accounting and trigger selection for skimmed data"};
   Configurable<std::string> zorroCCDBPath{"zorroCCDBPath", "EventFiltering/Zorro/", "Base path of the Zorro CCDB objects"};
   Configurable<int> zorroBCTolerance{"zorroBCTolerance", 100, "Zorro BC matching tolerance"};
@@ -311,10 +314,13 @@ struct TrackedHypertritonRecoTask {
     selections.minCosPA = threeBody.minCosPA;
     selections.maxChi2 = threeBody.maxChi2;
 
-    registry.add("events", "Event selection;selection;events", HistType::kTH1D, {{2, -0.5, 1.5}});
+    registry.add("events", "Event selection;selection;events", HistType::kTH1D, {{5, -0.5, 4.5}});
     auto events = registry.get<TH1>(HIST("events"));
     events->GetXaxis()->SetBinLabel(1, "all");
-    events->GetXaxis()->SetBinLabel(2, "selected");
+    events->GetXaxis()->SetBinLabel(2, "sel8");
+    events->GetXaxis()->SetBinLabel(3, "z_{vtx}");
+    events->GetXaxis()->SetBinLabel(4, "kNoSameBunchPileup");
+    events->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
     registry.add("zorroEvents", "Zorro accounting;trigger;selection", HistType::kTH2D,
                  {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
     auto zorroEvents = registry.get<TH2>(HIST("zorroEvents"));
@@ -322,6 +328,13 @@ struct TrackedHypertritonRecoTask {
     zorroEvents->GetXaxis()->SetBinLabel(2, "fTracked3Body");
     zorroEvents->GetYaxis()->SetBinLabel(1, "before sel8");
     zorroEvents->GetYaxis()->SetBinLabel(2, "after sel8");
+
+    if (doprocessMC) {
+      auto hMcEventCounter = registry.add<TH1>("hMcEventCounter", "hMcEventCounter; Selection; Counts", HistType::kTH1D, {{2, 0.0f, 2.0f}});
+      hMcEventCounter->GetXaxis()->SetBinLabel(1, "all");
+      hMcEventCounter->GetXaxis()->SetBinLabel(2, "reconstructed");
+      hMcEventCounter->LabelsOption("v");
+    }
 
     registry.add("hTrackProtonTPCSignal", "hTrackProtonTPCSignal", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
     registry.add("hTrackPionTPCSignal", "hTrackPionTPCSignal", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
@@ -387,11 +400,21 @@ struct TrackedHypertritonRecoTask {
       if (requireSel8 && !collision.sel8()) {
         continue;
       }
+      registry.fill(HIST("events"), 1.);
       if (maxAbsZvtx >= 0.f && std::abs(collision.posZ()) > maxAbsZvtx) {
         continue;
       }
+      registry.fill(HIST("events"), 2.);
+      if (requireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+      registry.fill(HIST("events"), 3.);
+      if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        continue;
+      }
+      registry.fill(HIST("events"), 4.);
+
       goodCollision[collision.globalIndex()] = true;
-      registry.fill(HIST("events"), 1.);
       if (applyZorro) {
         for (size_t i = 0; i < kNZorroTriggers; ++i) {
           if (zorroDecision[collision.globalIndex()][i]) {
@@ -992,6 +1015,14 @@ struct TrackedHypertritonRecoTask {
                  aod::BCsWithTimestamps const&,
                  aod::McParticles const& mcParticles)
   {
+    // MC collision counting for event loss and MC closure
+    registry.fill(HIST("hMcEventCounter"), 0.5, mcCollisions.size());
+    for (const auto& collision : collisions) {
+      if (collision.has_mcCollision()) {
+        registry.fill(HIST("hMcEventCounter"), 1.5);
+      }
+    }
+
     selectCollisions(collisions, false);
     prepareMCEventInformation(collisions, mcCollisions);
     std::vector<bool> reconstructedTwoBody(mcParticles.size(), false);
