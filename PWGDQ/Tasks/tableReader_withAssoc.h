@@ -345,11 +345,11 @@ void PrintBitMap(TMap map, int nbits)
 // Function to compute the mu for pileup estimation, taken from EM code
 double calculateMu(const double interactionRate, const double nbc)
 {
-  //uint64_t timeStamp = bc.timestamp();
-  //auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
-  //auto grpo = fCCDB->getForTimeStamp<o2::parameters::GRPLHCIFData>(fConfigCCDB.GrpLhcIfPath, timestamp);
-  //auto bfilling = grpo->getBunchFilling();
-  //double nbc = bfilling.getFilledBCs().size();
+  // uint64_t timeStamp = bc.timestamp();
+  // auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
+  // auto grpo = fCCDB->getForTimeStamp<o2::parameters::GRPLHCIFData>(fConfigCCDB.GrpLhcIfPath, timestamp);
+  // auto bfilling = grpo->getBunchFilling();
+  // double nbc = bfilling.getFilledBCs().size();
 
   double nTriggersPerFilledBC = (interactionRate * 1000) / nbc / o2::constants::lhc::LHCRevFreq;
   double mu = -std::log(1 - nTriggersPerFilledBC);
@@ -570,7 +570,7 @@ struct AnalysisEventSelection {
         auto bfilling = grpo->getBunchFilling();
         double nbc = bfilling.getFilledBCs().size();
         // IR is now in kHz, but in calcualteMu it is restored to Hz
-        VarManager::fgValues[VarManager::kMuPerBc] = calculateMu(VarManager::fgValues[VarManager::kInteractionRate] , nbc);
+        VarManager::fgValues[VarManager::kMuPerBc] = calculateMu(VarManager::fgValues[VarManager::kInteractionRate], nbc);
       }
 
       bool decision = false;
