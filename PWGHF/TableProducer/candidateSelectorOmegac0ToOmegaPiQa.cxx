@@ -692,7 +692,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     // TODO: check PID logic, usually we require particles to not be TrackSelectorPID::Rejected
     registry.fill(HIST("hSelStatusPID"), 0.0);
 
-    if (!(pidPrFromLam == TrackSelectorPID::Accepted && pidPiFromLam == TrackSelectorPID::Accepted)) {
+    if (pidPrFromLam != TrackSelectorPID::Accepted || pidPiFromLam != TrackSelectorPID::Accepted) {
       return false;
     }
     registry.fill(HIST("hSelStatusPID"), 1.0);
