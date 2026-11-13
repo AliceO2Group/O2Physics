@@ -30,6 +30,8 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace o2::aod
 {
@@ -164,6 +166,110 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsTagged, isTagged, [](uint16_t bit, BJetTaggingMetho
 
 JETTAGGING_TABLES_DEF(Charged, "C");
 JETTAGGING_TABLES_DEF(Full, "F");
+
+// Tables for full inference of GNN-based b-jet tagger (including track origin, vertex predictions)
+namespace jetgnnindex
+{
+DECLARE_SOA_INDEX_COLUMN(JTrack, track);             //! index in JTracks of this GNN input track (not the parent AOD Tracks index)
+DECLARE_SOA_COLUMN(TrackIndex, trackIndex, uint8_t); //! node index (0..255) in the GNN input after track selection/truncation; need not match the constituent-array position
+// DECLARE_SOA_COLUMN(EdgeIndex, edgeIndex, uint8_t);    //! unique in-jet edge index for the (i,j) constituent-track pair, i<j, triangular order i*(2N-i-1)/2+(j-i-1)
+// DECLARE_SOA_DYNAMIC_COLUMN(TrackIds, trackIds, //! inverse of the triangular edge indexing above: for n constituent tracks, recovers the (i,j) in-jet track index pair (i<j) this edge connects
+//                           [](uint8_t edgeIndex, int n) -> std::pair<uint8_t, uint8_t> {
+//                             int i = 0;
+//                             int offset = 0;
+//                             while (offset + (n - 1 - i) <= static_cast<int>(edgeIndex)) {
+//                               offset += (n - 1 - i);
+//                               i++;
+//                             }
+//                             int j = i + 1 + (static_cast<int>(edgeIndex) - offset);
+//                             return std::pair<uint8_t, uint8_t>{static_cast<uint8_t>(i), static_cast<uint8_t>(j)};
+//                           });
+} // namespace jetgnnindex
+
+namespace jetgnnlabel
+{
+DECLARE_SOA_COLUMN(Origin, origin, uint8_t);          //! trkOrigin from vertexClustering() (0: non-physical primary, 1: charm, 2: beauty, 3: primary vertex, 4: other secondary)
+DECLARE_SOA_COLUMN(VertexIndex, vertexIndex, int8_t); //! trkVtxIndex from vertexClustering() (-1: unassigned, 0: primary vertex, >0: secondary vertex, ranked by distance to PV)
+// DECLARE_SOA_COLUMN(SameVertex, sameVertex, bool);      //! true if the (i,j) constituent-track pair of this edge share the same in-jet vertex cluster (same trkVtxIndex from vertexClustering())
+} // namespace jetgnnlabel
+
+namespace jetgnnscore
+{
+DECLARE_SOA_COLUMN(ScoreML, scoreML, float); //! GNN discriminant: one track-origin D_b per GnnTracks row
+} // namespace jetgnnscore
+
+// GnnTracks has one row per evaluated (jet, track) pair. Its jet and track indices
+// identify the pair independently of the ordering in JetConstituents.
+// GnnTrackIds is a positional jet extension: write one row for every jet in
+// Jets order, including an empty array for jets without evaluated tracks. Store
+// GnnTracks row indices (e.g. the backbone producer's lastIndex()), not JTrackIds.
+#define DECLARE_JET_GNNTRACKINDEX_TABLE(_jet_type_, _description_)                                            \
+  namespace _jet_type_##gnntrackindextable                                                                    \
+  {                                                                                                           \
+    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                                                                \
+  }                                                                                                           \
+  DECLARE_SOA_TABLE(_jet_type_##GnnTracks, "AOD", _description_,                                              \
+                    o2::soa::Index<>,                                                                         \
+                    _jet_type_##gnntrackindextable::_jet_type_##Id,                                           \
+                    jetgnnindex::JTrackId,                                                                    \
+                    jetgnnindex::TrackIndex);                                                                 \
+  namespace _jet_type_##gnntrackindices                                                                       \
+  {                                                                                                           \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(_jet_type_##GnnTrack, tracksGnn, int32_t, _jet_type_##GnnTracks, ""); \
+  }                                                                                                           \
+  DECLARE_SOA_TABLE(_jet_type_##GnnTrackIds, "AOD", _description_ "I",                                        \
+                    _jet_type_##gnntrackindices::_jet_type_##GnnTrackIds);
+
+/*
+#define DECLARE_JET_GNNEDGEINDEX_TABLE(_jet_type_, _description_)          \
+  namespace _jet_type_##gnnedgeindextable                                 \
+  {                                                                       \
+    DECLARE_SOA_INDEX_COLUMN(_jet_type_, jet);                           \
+  }                                                                      \
+  DECLARE_SOA_TABLE(_jet_type_##GnnEdges, "AOD", _description_,          \
+                    o2::soa::Index<>,                                   \
+                    _jet_type_##gnnedgeindextable::_jet_type_##Id,      \
+                    jetgnnindex::EdgeIndex,                             \
+                    jetgnnindex::TrackIds<jetgnnindex::EdgeIndex>);     \
+  namespace _jet_type_##gnnedgeindices                                  \
+  {                                                                     \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN(_jet_type_##GnnEdge, edges);         \
+  }                                                                     \
+  DECLARE_SOA_TABLE(_jet_type_##GnnEdgeIds, "AOD", _description_ "I", \
+                    _jet_type_##gnnedgeindices::_jet_type_##GnnEdgeIds);
+*/
+
+// In-jet track/edge index backbone tables (own the in-jet ordering + the back-reference to the original track)
+DECLARE_JET_GNNTRACKINDEX_TABLE(ChargedJet, "CJGNT");
+DECLARE_JET_GNNTRACKINDEX_TABLE(ChargedMCDetectorLevelJet, "CDJGNT");
+// DECLARE_JET_GNNEDGEINDEX_TABLE(ChargedJet, "CJGNE");
+// DECLARE_JET_GNNEDGEINDEX_TABLE(ChargedMCDetectorLevelJet, "CDJGNE");
+
+#undef DECLARE_JET_GNNTRACKINDEX_TABLE
+// #undef DECLARE_JET_GNNEDGEINDEX_TABLE
+
+// Truth labels from vertexClustering() (MC detector level only). Thin tables: join positionally with
+// ChargedMCDetectorLevelJetGnnTracks / ChargedMCDetectorLevelJetGnnEdges (same producer loop, same row order).
+// TrackOriginDef must have exactly one row per GnnTracks backbone row, aligned
+// with GnnTrackOriginTags after GNN input selection/truncation. It is not a JTracks
+// extension: a JTrack used by multiple jets has a truth row for each backbone row.
+// tracksGnnIds() addresses this shared row position through a join containing
+// the backbone, the origin definition and the prediction scores.
+// VertexIndexDef uses the same GnnTracks row order and keeps the full-jet vertex
+// labels, without renumbering after GNN track selection/truncation.
+DECLARE_SOA_TABLE(ChargedMCDetectorLevelJetTrackOriginDef, "AOD", "CDJTOD", jetgnnlabel::Origin);
+DECLARE_SOA_TABLE(ChargedMCDetectorLevelJetVertexIndexDef, "AOD", "CDJTVD", jetgnnlabel::VertexIndex);
+// DECLARE_SOA_TABLE(ChargedMCDetectorLevelJetEdgeDef, "AOD", "CDJEDF", jetgnnlabel::SameVertex);
+
+// GNN track-origin outputs, data and MC detector level. Thin tables: write one
+// scalar score per GnnTracks row, in the same row order as the backbone table.
+DECLARE_SOA_TABLE(ChargedJetGnnTrackOriginTags, "AOD", "CJTRKT", jetgnnscore::ScoreML);
+DECLARE_SOA_TABLE(ChargedMCDetectorLevelJetGnnTrackOriginTags, "AOD", "CDJTRKT", jetgnnscore::ScoreML);
+
+// GNN ScoreML outputs, edge level, data and MC detector level. Thin tables: join positionally with
+// ChargedJetGnnEdges / ChargedMCDetectorLevelJetGnnEdges.
+// DECLARE_SOA_TABLE(ChargedJetGnnEdgeTags, "AOD", "CJEDGT", jetgnnscore::ScoreML);
+// DECLARE_SOA_TABLE(ChargedMCDetectorLevelJetGnnEdgeTags, "AOD", "CDJEDGT", jetgnnscore::ScoreML);
 
 } // namespace o2::aod
 

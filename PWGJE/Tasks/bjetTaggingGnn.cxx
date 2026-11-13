@@ -1191,26 +1191,22 @@ struct BjetTaggingGnn {
     return false;
   }
 
-  // Shared entry checks for MCD collisions, used by processMCDJets(SV) and processMCDTracks:
-  // event selection, MC-outlier rejection (own and matched mcCollision's), and eval/train split.
-  template <typename AnalysisCollision>
-  bool isRejectedMCDCollision(AnalysisCollision const& collision)
+  // Physical collision selection matches the GNN definition/inference tasks.
+  // Keep dataset splitting separate in the MCD process entry checks.
+  template <bool isMCD, typename Collision>
+  bool isAcceptedCollision(Collision const& collision)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return true;
+    if (!(std::abs(collision.posZ()) < vertexZCut) ||
+        !jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return false;
     }
-    // Reject outlier MC collisions
-    if (collision.isOutlier()) {
-      return true;
+    if constexpr (isMCD) {
+      if (collision.isOutlier() ||
+          (collision.has_mcCollision() && collision.template mcCollision_as<AnalysisCollisionsMCP>().isOutlier())) {
+        return false;
+      }
     }
-    if (collision.has_mcCollision() && collision.template mcCollision_as<AnalysisCollisionsMCP>().isOutlier()) {
-      return true;
-    }
-    // Uses only collisionId % trainingDatasetRaioParam != 0 for evaluation dataset
-    if (trainingDatasetRatioParam && collision.collisionId() % trainingDatasetRatioParam == 0) {
-      return true;
-    }
-    return false;
+    return true;
   }
 
   template <typename AnalysisCollision>
@@ -1345,7 +1341,7 @@ struct BjetTaggingGnn {
   template <bool withSV, bool withSub, typename AnalysisJets, typename SecondaryVertices = void>
   void processDataJetsCommon(FilteredCollisions::iterator const& collision, AnalysisJets const& alljets, FilteredTracks const& allTracks, SecondaryVertices const* allSVs = nullptr)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!isAcceptedCollision<false>(collision)) {
       return;
     }
     // Keeps hCollCounter populated consistently across every process[Data,MCD]Jets(SV)(Sub) variant, not
@@ -1405,7 +1401,7 @@ struct BjetTaggingGnn {
       return;
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!isAcceptedCollision<false>(collision)) {
       return;
     }
     registry.fill(HIST("h_event_counter"), 0.0); // Coll+TVX+NoTFB+NoITSROFB+Zvtx
@@ -1435,7 +1431,7 @@ struct BjetTaggingGnn {
       return;
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!isAcceptedCollision<false>(collision)) {
       return;
     }
     registry.fill(HIST("h_event_counter"), 0.0); // Coll+TVX+NoTFB+NoITSROFB+Zvtx
@@ -1487,7 +1483,7 @@ struct BjetTaggingGnn {
 
   void processDataTracks(FilteredCollisions::iterator const& collision, AnalysisTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!isAcceptedCollision<false>(collision)) {
       return;
     }
 
@@ -1518,7 +1514,11 @@ struct BjetTaggingGnn {
   template <bool withSV, bool withSub, typename AnalysisJets, typename SecondaryVertices = void>
   void processMCDJetsCommon(FilteredCollisionsMCD::iterator const& collision, AnalysisJets const& MCDjets, FilteredTracksMCD const& allTracks, FilteredMCPJets const& MCPjets, SecondaryVertices const* allSVs = nullptr)
   {
-    if (isRejectedMCDCollision(collision)) {
+    if (!isAcceptedCollision<true>(collision)) {
+      return;
+    }
+    // Uses only collisionId % trainingDatasetRatioParam != 0 for evaluation.
+    if (trainingDatasetRatioParam && collision.collisionId() % trainingDatasetRatioParam == 0) {
       return;
     }
     bool matchedMcColl = collision.has_mcCollision();
@@ -1896,7 +1896,11 @@ struct BjetTaggingGnn {
 
   void processMCDTracks(FilteredCollisionsMCD::iterator const& collision, AnalysisTracksMCD const& tracks, AnalysisCollisionsMCP const& /*mcCollisions*/, aod::JetParticles const& allParticles)
   {
-    if (isRejectedMCDCollision(collision)) {
+    if (!isAcceptedCollision<true>(collision)) {
+      return;
+    }
+    // Uses only collisionId % trainingDatasetRatioParam != 0 for evaluation.
+    if (trainingDatasetRatioParam != 0 && collision.collisionId() % trainingDatasetRatioParam == 0) {
       return;
     }
     bool matchedMcColl = collision.has_mcCollision();
