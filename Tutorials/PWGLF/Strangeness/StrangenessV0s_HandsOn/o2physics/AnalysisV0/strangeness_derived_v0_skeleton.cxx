@@ -42,7 +42,7 @@ using namespace o2::framework::expressions;
 // Goal of the hands-on: improve this file step by step up to step 4
 // (checkpoints: strangeness_derived_v0_stepX.cxx).
 
-struct strangeness_derived_tutorial {
+struct StrangenessDerivedV0Skeleton {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -77,5 +77,5 @@ struct strangeness_derived_tutorial {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_derived_tutorial>(cfgc)};
+    adaptAnalysisTask<StrangenessDerivedV0Skeleton>(cfgc, TaskName{"strangeness-derived-v0-tutorial"})};
 }

@@ -49,7 +49,7 @@ using namespace o2::framework::expressions;
 // STEP 3
 // Apply TOF PID selections on V0 daughter tracks (if info is available)
 
-struct strangeness_derived_tutorial {
+struct StrangenessDerivedV0Step3 {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rK0Short{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -143,16 +143,18 @@ struct strangeness_derived_tutorial {
       rLambda.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
 
       // Keep only standard V0s (type 1): type 0 = not passing the standard V0 selections, 2-3 = photon-like (TPC-only)
-      if (v0.v0Type() != 1)
+      if (v0.v0Type() != 1) {
         continue;
-
+      }
       // Topological selections not applied in the Filter
       // (in V0Cores the cosine of pointing angle is a regular column: it could also be moved into the Filter)
-      if (v0.v0cosPA() < v0setting_cospa)
+      if (v0.v0cosPA() < v0setting_cospa) {
         continue;
+      }
       // Cut on dynamic columns
-      if (v0.v0radius() < v0setting_radius)
+      if (v0.v0radius() < v0setting_radius) {
         continue;
+      }
 
       // From here on, the same V0 is tested under the three mass hypotheses (K0S, Lambda, AntiLambda):
       // the hypothesis-dependent selections cannot use 'continue', they are stored in booleans
@@ -240,5 +242,5 @@ struct strangeness_derived_tutorial {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_derived_tutorial>(cfgc)};
+    adaptAnalysisTask<StrangenessDerivedV0Step3>(cfgc, TaskName{"strangeness-derived-v0-tutorial"})};
 }

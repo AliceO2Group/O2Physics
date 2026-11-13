@@ -9,7 +9,7 @@
         "step-value-enumeration": "1",
         "aod-file": "@input_data.txt"
     },
-    "strangeness_derived_tutorial": {
+    "strangeness-derived-v0-tutorial": {
         "nBins": "100",
         "cutzvertex": "10",
         "v0setting_dcav0dau": "0.5",

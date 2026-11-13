@@ -39,7 +39,7 @@ using namespace o2::framework::expressions;
 // STEP 0
 // Starting point: loop over all V0s and fill invariant mass histograms
 
-struct strangeness_derived_tutorial {
+struct StrangenessDerivedV0Step0 {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rK0Short{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -92,5 +92,5 @@ struct strangeness_derived_tutorial {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_derived_tutorial>(cfgc)};
+    adaptAnalysisTask<StrangenessDerivedV0Step0>(cfgc, TaskName{"strangeness-derived-v0-tutorial"})};
 }

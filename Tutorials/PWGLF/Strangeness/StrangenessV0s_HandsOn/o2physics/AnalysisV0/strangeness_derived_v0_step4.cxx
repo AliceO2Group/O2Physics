@@ -53,7 +53,7 @@ using namespace o2::framework::expressions;
 // STEP 4
 // Check the MC information of the V0s
 
-struct strangeness_derived_tutorial {
+struct StrangenessDerivedV0Step4 {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rK0Short{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -168,17 +168,18 @@ struct strangeness_derived_tutorial {
       rLambda.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
 
       // Keep only standard V0s (type 1): type 0 = not passing the standard V0 selections, 2-3 = photon-like (TPC-only)
-      if (v0.v0Type() != 1)
+      if (v0.v0Type() != 1) {
         continue;
-
+      }
       // Topological selections not applied in the Filter
       // (in V0Cores the cosine of pointing angle is a regular column: it could also be moved into the Filter)
-      if (v0.v0cosPA() < v0setting_cospa)
+      if (v0.v0cosPA() < v0setting_cospa) {
         continue;
+      }
       // Cut on dynamic columns
-      if (v0.v0radius() < v0setting_radius)
+      if (v0.v0radius() < v0setting_radius) {
         continue;
-
+      }
       // From here on, the same V0 is tested under the three mass hypotheses (K0S, Lambda, AntiLambda):
       // the hypothesis-dependent selections cannot use 'continue', they are stored in booleans
 
@@ -302,13 +303,15 @@ struct strangeness_derived_tutorial {
                     const soa::SmallGroups<soa::Join<aod::StraCollisions, o2::aod::StraEvSels, aod::StraCollLabels>>& collisions,
                     const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MC)
   {
-    if (collisions.size() < 1) // to process generated collisions that've been reconstructed at least once
+    if (collisions.size() < 1) { // to process generated collisions that've been reconstructed at least once
       return;
+    }
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
 
     for (const auto& v0mc : v0MC) {
-      if (!v0mc.isPhysicalPrimary())
+      if (!v0mc.isPhysicalPrimary()) {
         continue;
+      }
       // rapidityMC(i): i = 0 -> K0S mass hypothesis, 1 -> Lambda, 2 -> AntiLambda
       if (v0mc.pdgCode() == PDG_t::kK0Short && std::abs(v0mc.rapidityMC(0)) < v0setting_rapidity) {
         rGenParticles.fill(HIST("hPtK0ShortGen"), v0mc.ptMC());
@@ -322,12 +325,12 @@ struct strangeness_derived_tutorial {
     }
   }
 
-  PROCESS_SWITCH(strangeness_derived_tutorial, processRecMC, "Process Run 3 mc, reconstructed", true);
-  PROCESS_SWITCH(strangeness_derived_tutorial, processGenMC, "Process Run 3 mc, generated", true);
+  PROCESS_SWITCH(StrangenessDerivedV0Step4, processRecMC, "Process Run 3 mc, reconstructed", true);
+  PROCESS_SWITCH(StrangenessDerivedV0Step4, processGenMC, "Process Run 3 mc, generated", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_derived_tutorial>(cfgc)};
+    adaptAnalysisTask<StrangenessDerivedV0Step4>(cfgc, TaskName{"strangeness-derived-v0-tutorial"})};
 }

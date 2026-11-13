@@ -10,7 +10,7 @@
         "aod-file": "@input_data.txt"
     },
     "internal-dpl-aod-spawner": "",
-    "strangeness_derived_tutorial": {
+    "strangeness-derived-v0-tutorial": {
         "nBins": "100",
         "cutzvertex": "10"
     },

@@ -1,8 +1,21 @@
-// Checks which strangeness tables (and which versions) are present in a derived AO2D
-// and reports which steps of the V0 tutorial (o2-analysistutorial-lf-strangeness-derived-v0-*) can run.
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
-// Usage:  root -l -b -q 'checkTables.C("data/AO2D.root")' or something like root -l -b -q "checkTables.C(\"$(cat input_data.txt)\")"
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
 
+/// \file checkTables.C
+/// \brief Checks which strangeness tables (and which versions) are present in a derived AO2D
+///        and reports which steps of the V0 tutorial (o2-analysistutorial-lf-strangeness-derived-v0-*) can run.
+///
+/// Usage:  root -l -b -q 'checkTables.C("data/AO2D.root")' or something like root -l -b -q "checkTables.C(\"$(cat input_data.txt)\")"
+
+#include <TCollection.h>
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TKey.h>
@@ -14,17 +27,17 @@
 #include <vector>
 
 struct RequiredTable {
-  std::string base; // tree name without version, e.g. "o2straevsels"
-  int version;      // version required by the current O2Physics data model
-  int firstStep;    // first step that uses it (-1 = skeleton)
-  std::string hint; // converter to use if the version in the file is older
+  std::string base;  // tree name without version, e.g. "o2straevsels"
+  int version{0};    // version required by the current O2Physics data model
+  int firstStep{-1}; // first step that uses it (-1 = skeleton)
+  std::string hint;  // converter to use if the version in the file is older
 };
 
 int findVersion(TDirectory* dir, const std::string& base)
 {
   int found = -1;
   TIter next(dir->GetListOfKeys());
-  while (TKey* key = static_cast<TKey*>(next())) {
+  while (TKey* key = dynamic_cast<TKey*>(next())) {
     TString name = key->GetName();
     name.ToLower();
     if (name == base.c_str()) {
@@ -42,27 +55,27 @@ int findVersion(TDirectory* dir, const std::string& base)
 void checkTables(const char* fname = "data/AO2D.root")
 {
   const std::vector<RequiredTable> required = {
-    {"o2stracollision", 0, -1, ""},
-    {"o2straevsels", 6, -1, "o2-analysis-lf-straevselsconverterN (chain up to straevselsconverter6)"},
-    {"o2v0core", 0, 0, ""},
-    {"o2v0extra", 0, 2, ""},
-    {"o2dautrackextra", 3, 2, "o2-analysis-lf-stradautracksextraconverterN (up to stradautracksextraconverter3)"},
-    {"o2dautracktpcpid", 1, 2, "o2-analysis-lf-stradautrackstpcpidconverter"},
+    {.base = "o2stracollision", .version = 0, .firstStep = -1, .hint = ""},
+    {.base = "o2straevsels", .version = 6, .firstStep = -1, .hint = "o2-analysis-lf-straevselsconverterN (chain up to straevselsconverter6)"},
+    {.base = "o2v0core", .version = 0, .firstStep = 0, .hint = ""},
+    {.base = "o2v0extra", .version = 0, .firstStep = 2, .hint = ""},
+    {.base = "o2dautrackextra", .version = 3, .firstStep = 2, .hint = "o2-analysis-lf-stradautracksextraconverterN (up to stradautracksextraconverter3)"},
+    {.base = "o2dautracktpcpid", .version = 1, .firstStep = 2, .hint = "o2-analysis-lf-stradautrackstpcpidconverter"},
     // step 3: tables read as input by the helper task strangenesstofpid,
     // not by the analysis itself: the tutorial only uses V0s
-    {"o2strastamps", 1, 3, "o2-analysis-lf-strastampsconverter"},
-    {"o2straevtimes", 1, 3, "o2-analysis-lf-stradautrackstofpidconverter3"},
-    {"o2dautracktofpid", 3, 3, "o2-analysis-lf-stradautrackstofpidconverterN (up to stradautrackstofpidconverter4)"},
-    {"o2v0collref", 0, 3, ""},
-    {"o2casccore", 0, 3, ""},
-    {"o2cascextra", 0, 3, ""},
-    {"o2casccollref", 0, 3, ""},
+    {.base = "o2strastamps", .version = 1, .firstStep = 3, .hint = "o2-analysis-lf-strastampsconverter"},
+    {.base = "o2straevtimes", .version = 1, .firstStep = 3, .hint = "o2-analysis-lf-stradautrackstofpidconverter3"},
+    {.base = "o2dautracktofpid", .version = 3, .firstStep = 3, .hint = "o2-analysis-lf-stradautrackstofpidconverterN (up to stradautrackstofpidconverter4)"},
+    {.base = "o2v0collref", .version = 0, .firstStep = 3, .hint = ""},
+    {.base = "o2casccore", .version = 0, .firstStep = 3, .hint = ""},
+    {.base = "o2cascextra", .version = 0, .firstStep = 3, .hint = ""},
+    {.base = "o2casccollref", .version = 0, .firstStep = 3, .hint = ""},
     // step 4: MC
-    {"o2v0coremclabel", 0, 4, ""},
-    {"o2v0mccore", 2, 4, "o2-analysis-lf-v0coresconverter / v0coresconverter2"},
-    {"o2v0mccollref", 0, 4, ""},
-    {"o2stracolllabels", 0, 4, ""},
-    {"o2stramccollision", 2, 4, "o2-analysis-lf-stramccollisionconverter / stramccollisionconverter2"},
+    {.base = "o2v0coremclabel", .version = 0, .firstStep = 4, .hint = ""},
+    {.base = "o2v0mccore", .version = 2, .firstStep = 4, .hint = "o2-analysis-lf-v0coresconverter / v0coresconverter2"},
+    {.base = "o2v0mccollref", .version = 0, .firstStep = 4, .hint = ""},
+    {.base = "o2stracolllabels", .version = 0, .firstStep = 4, .hint = ""},
+    {.base = "o2stramccollision", .version = 2, .firstStep = 4, .hint = "o2-analysis-lf-stramccollisionconverter / stramccollisionconverter2"},
   };
 
   TFile* f = TFile::Open(fname);
@@ -72,7 +85,7 @@ void checkTables(const char* fname = "data/AO2D.root")
   }
   TDirectory* df = nullptr;
   TIter next(f->GetListOfKeys());
-  while (TKey* key = static_cast<TKey*>(next())) {
+  while (TKey* key = dynamic_cast<TKey*>(next())) {
     if (TString(key->GetName()).BeginsWith("DF_")) {
       df = f->GetDirectory(key->GetName());
       break;
@@ -85,7 +98,7 @@ void checkTables(const char* fname = "data/AO2D.root")
 
   std::cout << "\nTrees in " << df->GetName() << ":\n";
   TIter nextTree(df->GetListOfKeys());
-  while (TKey* key = static_cast<TKey*>(nextTree())) {
+  while (TKey* key = dynamic_cast<TKey*>(nextTree())) {
     std::cout << "  " << key->GetName() << "\n";
   }
 
@@ -116,7 +129,7 @@ void checkTables(const char* fname = "data/AO2D.root")
   std::cout << "\nSummary:\n";
   for (int s = -1; s <= 4; s++) {
     TString name = s < 0 ? "skeleton" : Form("step%d", s);
-    TString res = s >= firstBrokenStep ? "CANNOT run with this file"
+    TString res = s >= firstBrokenStep      ? "CANNOT run with this file"
                   : s >= firstConverterStep ? "ok, but converters are needed"
                                             : "ok";
     std::cout << Form("  %-8s %s\n", name.Data(), res.Data());
