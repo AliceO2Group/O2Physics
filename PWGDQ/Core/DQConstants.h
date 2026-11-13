@@ -16,6 +16,7 @@
 #ifndef PWGDQ_CORE_DQCONSTANTS_H_
 #define PWGDQ_CORE_DQCONSTANTS_H_
 
+#include <array>
 #include <cstdint>
 
 namespace o2::dqconstants
@@ -44,7 +45,7 @@ inline constexpr float InvalidDCA = 998.0f;
 inline constexpr float InvalidStdDev = -1.0;
 
 // Checks
-inline constexpr auto IsCoordinateInvalid = [](float value) constexpr -> bool {
+inline constexpr auto IsCoordinateValid = [](float value) constexpr -> bool {
   return value < 0.f;
 };
 
@@ -144,13 +145,10 @@ inline constexpr int BimodalMinDataSize = 3;
 inline constexpr float BimodalityInvalidBinWidth = -1.0;
 inline constexpr float BimodalityBinWidth = 0.005;
 
-inline constexpr float BimodalityDCAFrac001 = 0.01;
-inline constexpr float BimodalityDCAFrac002 = 0.02;
-inline constexpr float BimodalityDCAFrac005 = 0.05;
-inline constexpr float BimodalityDCAFrac01 = 0.1;
-inline constexpr float BimodalityDCAFrac02 = 0.2;
-inline constexpr float BimodalityDCAFrac05 = 0.5;
-inline constexpr float BimodalityDCAFrac1 = 1.00;
+// DCA thresholds in cm: 100 µm, 200 µm, 500 µm, 1 mm, 2 mm, 5 mm, 10 mm
+inline constexpr std::array<float, 7> BimodalityDCAThresholdsCm{
+  0.01f, 0.02f, 0.05f, 0.1f,
+  0.2f, 0.5f, 1.0f};
 
 // KFParticle defaults
 inline constexpr int KFParticleMassConstrainedConstruction = 2;

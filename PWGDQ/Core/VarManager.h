@@ -1355,7 +1355,7 @@ class VarManager : public TObject
 
   static void GetFwdShiftForY(float y, float& xShift, float& yShift, float& zShift)
   {
-    if (fgUseTopBottomShift && o2::dqconstants::IsCoordinateInvalid(y)) {
+    if (fgUseTopBottomShift && o2::dqconstants::IsCoordinateValid(y)) {
       xShift = fgxShiftFwdBottom;
       yShift = fgyShiftFwdBottom;
       zShift = fgzShiftFwdBottom;
@@ -2248,8 +2248,8 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsDoubleGap] = static_cast<float>(event.tag_bit(o2::dqconstants::defaults::EventTagStartBit + kDoubleGap) > 0);
       values[kIsSingleGapA] = static_cast<float>(event.tag_bit(o2::dqconstants::defaults::EventTagStartBit + kSingleGapA) > 0);
       values[kIsSingleGapC] = static_cast<float>(event.tag_bit(o2::dqconstants::defaults::EventTagStartBit + kSingleGapC) > 0);
-      values[kIsSingleGap] = static_cast<float>(values[kIsSingleGapA] != o2::dqconstants::EmptyVariable || values[kIsSingleGapC] != o2::dqconstants::EmptyVariable);
-      values[kIsNoGap] = static_cast<float>(values[kIsDoubleGap] == o2::dqconstants::EmptyVariable && values[kIsSingleGap] == o2::dqconstants::EmptyVariable);
+      values[kIsSingleGap] = static_cast<float>(values[kIsSingleGapA] != 0.0 || values[kIsSingleGapC] != 0.0);
+      values[kIsNoGap] = static_cast<float>(values[kIsDoubleGap] == 0.0 && values[kIsSingleGap] == 0.0);
     }
     if (fgUsedVars[kIsITSUPCMode]) {
       values[kIsITSUPCMode] = static_cast<float>(event.tag_bit(o2::dqconstants::defaults::EventTagStartBit + kITSUPCMode) > 0);
@@ -2416,12 +2416,12 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionQvect) > 0) {
-    values[kQ1X0A] = o2::dqconstants::InvalidValueI;
-    values[kQ1Y0A] = o2::dqconstants::InvalidValueI;
-    values[kQ1X0B] = o2::dqconstants::InvalidValueI;
-    values[kQ1Y0B] = o2::dqconstants::InvalidValueI;
-    values[kQ1X0C] = o2::dqconstants::InvalidValueI;
-    values[kQ1Y0C] = o2::dqconstants::InvalidValueI;
+    values[kQ1X0A] = o2::dqconstants::InvalidValueF;
+    values[kQ1Y0A] = o2::dqconstants::InvalidValueF;
+    values[kQ1X0B] = o2::dqconstants::InvalidValueF;
+    values[kQ1Y0B] = o2::dqconstants::InvalidValueF;
+    values[kQ1X0C] = o2::dqconstants::InvalidValueF;
+    values[kQ1Y0C] = o2::dqconstants::InvalidValueF;
     // values[kQ2X0A] = (event.qvecBPosRe() * event.nTrkBPos() + event.qvecBNegRe() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
     // values[kQ2Y0A] = (event.qvecBPosIm() * event.nTrkBPos() + event.qvecBNegIm() * event.nTrkBNeg()) / (event.nTrkBPos() + event.nTrkBNeg());
     values[kQ2X0A] = event.qvecBAllRe();
@@ -2439,18 +2439,18 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultANEG] = event.nTrkBNeg();
     values[kMultB] = event.sumAmplFT0A();
     values[kMultC] = event.sumAmplFT0C();
-    values[kQ3X0A] = o2::dqconstants::InvalidValueI;
-    values[kQ3Y0A] = o2::dqconstants::InvalidValueI;
-    values[kQ3X0B] = o2::dqconstants::InvalidValueI;
-    values[kQ3Y0B] = o2::dqconstants::InvalidValueI;
-    values[kQ3X0C] = o2::dqconstants::InvalidValueI;
-    values[kQ3Y0C] = o2::dqconstants::InvalidValueI;
-    values[kQ4X0A] = o2::dqconstants::InvalidValueI;
-    values[kQ4Y0A] = o2::dqconstants::InvalidValueI;
-    values[kQ4X0B] = o2::dqconstants::InvalidValueI;
-    values[kQ4Y0B] = o2::dqconstants::InvalidValueI;
-    values[kQ4X0C] = o2::dqconstants::InvalidValueI;
-    values[kQ4Y0C] = o2::dqconstants::InvalidValueI;
+    values[kQ3X0A] = o2::dqconstants::InvalidValueF;
+    values[kQ3Y0A] = o2::dqconstants::InvalidValueF;
+    values[kQ3X0B] = o2::dqconstants::InvalidValueF;
+    values[kQ3Y0B] = o2::dqconstants::InvalidValueF;
+    values[kQ3X0C] = o2::dqconstants::InvalidValueF;
+    values[kQ3Y0C] = o2::dqconstants::InvalidValueF;
+    values[kQ4X0A] = o2::dqconstants::InvalidValueF;
+    values[kQ4Y0A] = o2::dqconstants::InvalidValueF;
+    values[kQ4X0B] = o2::dqconstants::InvalidValueF;
+    values[kQ4Y0B] = o2::dqconstants::InvalidValueF;
+    values[kQ4X0C] = o2::dqconstants::InvalidValueF;
+    values[kQ4Y0C] = o2::dqconstants::InvalidValueF;
 
     values[kQ2YYAB] = values[kQ2Y0A] * values[kQ2Y0B];
     values[kQ2XXAB] = values[kQ2X0A] * values[kQ2X0B];
@@ -2526,12 +2526,12 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionQvectCentr) > 0) {
-    values[kQ1X0A] = o2::dqconstants::InvalidValueI;
-    values[kQ1Y0A] = o2::dqconstants::InvalidValueI;
-    values[kQ1X0B] = o2::dqconstants::InvalidValueI;
-    values[kQ1Y0B] = o2::dqconstants::InvalidValueI;
-    values[kQ1X0C] = o2::dqconstants::InvalidValueI;
-    values[kQ1Y0C] = o2::dqconstants::InvalidValueI;
+    values[kQ1X0A] = o2::dqconstants::InvalidValueF;
+    values[kQ1Y0A] = o2::dqconstants::InvalidValueF;
+    values[kQ1X0B] = o2::dqconstants::InvalidValueF;
+    values[kQ1Y0B] = o2::dqconstants::InvalidValueF;
+    values[kQ1X0C] = o2::dqconstants::InvalidValueF;
+    values[kQ1Y0C] = o2::dqconstants::InvalidValueF;
     values[kQ2X0A] = event.qvecTPCallRe() / event.nTrkTPCall();
     values[kQ2Y0A] = event.qvecTPCallIm() / event.nTrkTPCall();
     values[kQ2X0APOS] = event.qvecTPCposRe();
@@ -2547,18 +2547,18 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultANEG] = event.nTrkTPCneg();
     values[kMultB] = event.sumAmplFT0A();
     values[kMultC] = event.sumAmplFT0C();
-    values[kQ3X0A] = o2::dqconstants::InvalidValueI;
-    values[kQ3Y0A] = o2::dqconstants::InvalidValueI;
-    values[kQ3X0B] = o2::dqconstants::InvalidValueI;
-    values[kQ3Y0B] = o2::dqconstants::InvalidValueI;
-    values[kQ3X0C] = o2::dqconstants::InvalidValueI;
-    values[kQ3Y0C] = o2::dqconstants::InvalidValueI;
-    values[kQ4X0A] = o2::dqconstants::InvalidValueI;
-    values[kQ4Y0A] = o2::dqconstants::InvalidValueI;
-    values[kQ4X0B] = o2::dqconstants::InvalidValueI;
-    values[kQ4Y0B] = o2::dqconstants::InvalidValueI;
-    values[kQ4X0C] = o2::dqconstants::InvalidValueI;
-    values[kQ4Y0C] = o2::dqconstants::InvalidValueI;
+    values[kQ3X0A] = o2::dqconstants::InvalidValueF;
+    values[kQ3Y0A] = o2::dqconstants::InvalidValueF;
+    values[kQ3X0B] = o2::dqconstants::InvalidValueF;
+    values[kQ3Y0B] = o2::dqconstants::InvalidValueF;
+    values[kQ3X0C] = o2::dqconstants::InvalidValueF;
+    values[kQ3Y0C] = o2::dqconstants::InvalidValueF;
+    values[kQ4X0A] = o2::dqconstants::InvalidValueF;
+    values[kQ4Y0A] = o2::dqconstants::InvalidValueF;
+    values[kQ4X0B] = o2::dqconstants::InvalidValueF;
+    values[kQ4Y0B] = o2::dqconstants::InvalidValueF;
+    values[kQ4X0C] = o2::dqconstants::InvalidValueF;
+    values[kQ4Y0C] = o2::dqconstants::InvalidValueF;
 
     EventPlaneHelper epHelper;
     float Psi2A = epHelper.GetEventPlane(values[kQ2X0A], values[kQ2Y0A], 2);
@@ -2641,7 +2641,7 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedEventMC) > 0) {
     values[kMCEventGeneratorId] = event.generatorsID();
-    values[kMCEventGeneratorId] = o2::dqconstants::InvalidValueI; // to be added in reduced events
+    values[kMCEventGeneratorId] = o2::dqconstants::InvalidValueF; // to be added in reduced events
     values[kMCVtxX] = event.mcPosX();
     values[kMCVtxY] = event.mcPosY();
     values[kMCVtxZ] = event.mcPosZ();
@@ -2658,8 +2658,8 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kIsDoubleGap] = static_cast<float>((event.eventFilter() & (static_cast<uint64_t>(1) << kDoubleGap)) > 0);
     values[kIsSingleGapA] = static_cast<float>((event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0);
     values[kIsSingleGapC] = static_cast<float>((event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0);
-    values[kIsSingleGap] = static_cast<float>(values[kIsSingleGapA] != o2::dqconstants::EmptyVariable || values[kIsSingleGapC] != o2::dqconstants::EmptyVariable);
-    values[kIsNoGap] = static_cast<float>(values[kIsDoubleGap] == o2::dqconstants::EmptyVariable && values[kIsSingleGap] == o2::dqconstants::EmptyVariable);
+    values[kIsSingleGap] = static_cast<float>(values[kIsSingleGapA] != 0.0 || values[kIsSingleGapC] != 0.0);
+    values[kIsNoGap] = static_cast<float>(values[kIsDoubleGap] == 0.0 && values[kIsSingleGap] == 0.0);
     values[kIsITSUPCMode] = static_cast<float>((event.eventFilter() & (static_cast<uint64_t>(1) << kITSUPCMode)) > 0);
   }
 
@@ -2835,45 +2835,38 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
 
   // compute fraction of tracks with |DCAz| > 100um, 200um, 500um, 1mm, 2mm, 5mm, 10mm
   // make a loop over the DCAz values and count how many are above each threshold
-  int counter100um = 0;
-  int counter200um = 0;
-  int counter500um = 0;
-  int counter1mm = 0;
-  int counter2mm = 0;
-  int counter5mm = 0;
-  int counter10mm = 0;
-  for (auto const& d : dcazValues) {
-    double absD = std::abs(d);
-    if (absD > o2::dqconstants::defaults::BimodalityDCAFrac001) {
-      counter100um++;
-      if (absD > o2::dqconstants::defaults::BimodalityDCAFrac002) {
-        counter200um++;
-        if (absD > o2::dqconstants::defaults::BimodalityDCAFrac005) {
-          counter500um++;
-          if (absD > o2::dqconstants::defaults::BimodalityDCAFrac01) {
-            counter1mm++;
-            if (absD > o2::dqconstants::defaults::BimodalityDCAFrac02) {
-              counter2mm++;
-              if (absD > o2::dqconstants::defaults::BimodalityDCAFrac05) {
-                counter5mm++;
-                if (absD > o2::dqconstants::defaults::BimodalityDCAFrac1) {
-                  counter10mm++;
-                }
-              }
-            }
-          }
-        }
+  // DCA thresholds: 100 µm, 200 µm, 500 µm, 1 mm, 2 mm, 5 mm, 10 mm
+  constexpr auto& thresholds = o2::dqconstants::defaults::BimodalityDCAThresholdsCm;
+
+  constexpr std::array<int, thresholds.size()> variableIndices{
+    kDCAzFracAbove100um, kDCAzFracAbove200um, kDCAzFracAbove500um, kDCAzFracAbove1mm,
+    kDCAzFracAbove2mm, kDCAzFracAbove5mm, kDCAzFracAbove10mm};
+
+  std::array<int, thresholds.size()> counters{};
+
+  for (const auto& d : dcazValues) {
+    const double absD = std::abs(d);
+
+    for (int i = 0; i < thresholds.size(); ++i) {
+      if (absD > thresholds[i]) {
+        ++counters[i];
       }
     }
   }
-  int totalTracks = static_cast<int>(dcazValues.size());
-  values[kDCAzFracAbove100um] = static_cast<float>(counter100um) / totalTracks;
-  values[kDCAzFracAbove200um] = static_cast<float>(counter200um) / totalTracks;
-  values[kDCAzFracAbove500um] = static_cast<float>(counter500um) / totalTracks;
-  values[kDCAzFracAbove1mm] = static_cast<float>(counter1mm) / totalTracks;
-  values[kDCAzFracAbove2mm] = static_cast<float>(counter2mm) / totalTracks;
-  values[kDCAzFracAbove5mm] = static_cast<float>(counter5mm) / totalTracks;
-  values[kDCAzFracAbove10mm] = static_cast<float>(counter10mm) / totalTracks;
+
+  const auto totalTracks = dcazValues.size();
+
+  if (totalTracks > 0) {
+    const float inverseTotalTracks = 1.0f / static_cast<float>(totalTracks);
+
+    for (int i = 0; i < thresholds.size(); ++i) {
+      values[variableIndices[i]] = static_cast<float>(counters[i]) * inverseTotalTracks;
+    }
+  } else {
+    for (const auto& index : variableIndices) {
+      values[index] = o2::dqconstants::InvalidValueF;
+    }
+  }
 }
 
 template <typename T>
@@ -3966,7 +3959,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeHE] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeHE] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -3989,7 +3982,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeCS] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeCS] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -4021,7 +4014,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeGJB1] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeGJB1] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -4053,7 +4046,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeGJB2] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeGJB2] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -4076,7 +4069,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildePP] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildePP] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -4155,7 +4148,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
         double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
         double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
         if ((det1 < 0) || (det2 < 0)) {
-          values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueI;
+          values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueF;
         } else {
           double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
           double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
@@ -4295,7 +4288,7 @@ void VarManager::FillPairCollision(const C& collision, T1 const& t1, T2 const& t
       double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
       double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
       if ((det1 < 0) || (det2 < 0)) {
-        values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueI;
+        values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueF;
       } else {
         double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
         double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
@@ -4353,7 +4346,7 @@ void VarManager::FillPairCollisionMatCorr(C const& collision, T1 const& t1, T2 c
       double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
       double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
       if ((det1 < 0) || (det2 < 0)) {
-        values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueI;
+        values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueF;
       } else {
         double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
         double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
@@ -4527,7 +4520,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeHE] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeHE] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -4550,7 +4543,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeCS] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeCS] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -4582,7 +4575,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeGJB1] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeGJB1] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -4614,7 +4607,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeGJB2] = o2::dqconstants::InvalidValueI;
+          values[kPhiTildeGJB2] = o2::dqconstants::InvalidValueF;
         }
       }
     }
@@ -4637,7 +4630,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildePP] = o2::dqconstants::InvalidValueI;
+          values[kPhiTildePP] = o2::dqconstants::InvalidValueF;
         }
       }
     }
@@ -4951,7 +4944,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
             values[kMCPhiTildeHE] = RecoDecay::constrainAngle(values[kMCPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kMCPhiTildeHE] = o2::dqconstants::InvalidValueI; // not computable
+          values[kMCPhiTildeHE] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -4974,7 +4967,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
             values[kMCPhiTildeCS] = RecoDecay::constrainAngle(values[kMCPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kMCPhiTildeCS] = o2::dqconstants::InvalidValueI; // not computable
+          values[kMCPhiTildeCS] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -5006,7 +4999,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
             values[kMCPhiTildeGJB1] = RecoDecay::constrainAngle(values[kMCPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kMCPhiTildeGJB1] = o2::dqconstants::InvalidValueI; // not computable
+          values[kMCPhiTildeGJB1] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -5038,7 +5031,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
             values[kMCPhiTildeGJB2] = RecoDecay::constrainAngle(values[kMCPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kMCPhiTildeGJB2] = o2::dqconstants::InvalidValueI; // not computable
+          values[kMCPhiTildeGJB2] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -5061,7 +5054,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
             values[kMCPhiTildePP] = RecoDecay::constrainAngle(values[kMCPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kMCPhiTildePP] = o2::dqconstants::InvalidValueI; // not computable
+          values[kMCPhiTildePP] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -7562,7 +7555,7 @@ void VarManager::FillEventAlice3(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedEventMC) > 0) {
     values[kMCEventGeneratorId] = event.generatorsID();
-    values[kMCEventGeneratorId] = o2::dqconstants::InvalidValueI; // to be added in reduced events
+    values[kMCEventGeneratorId] = o2::dqconstants::InvalidValueF; // to be added in reduced events
     values[kMCVtxX] = event.mcPosX();
     values[kMCVtxY] = event.mcPosY();
     values[kMCVtxZ] = event.mcPosZ();
@@ -7842,7 +7835,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeHE] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeHE] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -7865,7 +7858,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeCS] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeCS] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -7897,7 +7890,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeGJB1] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeGJB1] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -7929,7 +7922,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildeGJB2] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildeGJB2] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -7952,7 +7945,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
             values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
-          values[kPhiTildePP] = o2::dqconstants::InvalidValueI; // not computable
+          values[kPhiTildePP] = o2::dqconstants::InvalidValueF; // not computable
         }
       }
     }
@@ -7989,7 +7982,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
       double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
       double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
       if ((det1 < 0) || (det2 < 0)) {
-        values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueI;
+        values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueF;
       } else {
         double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
         double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
