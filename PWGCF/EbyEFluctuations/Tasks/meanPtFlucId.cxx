@@ -31,6 +31,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -328,6 +329,9 @@ struct MeanPtFlucId {
       case 5:
         selectedTracks.SetRequireHitsInITSLayers(2, {0, 1, 2});
         break;
+      default:
+        LOGF(fatal, "Invalid custom ITS matching mode: %d", cuts.cfgCustomITSMatching.value);
+        break;
     }
     selectedTracks.SetRequireITSRefit(cuts.cfgCustomRequireITS.value);
     selectedTracks.SetRequireTPCRefit(cuts.cfgCustomRequireTPC.value);
@@ -428,7 +432,7 @@ struct MeanPtFlucId {
     const AxisSpec axisMultMC{multMCBins, "N_{Gen} "};
     const AxisSpec axisMultFT0M{multFT0MBins, "N_{FT0M}"};
     // Match the estimator precedence used by getConfiguredCentrality().
-    const std::string centralityLabel = eventCuts.cfgCentFT0C ? "FT0C (%)" : (eventCuts.cfgCentFV0A ? "FV0A (%)" : "FT0M (%)");
+    const std::string centralityLabel = eventCuts.cfgCentFT0C ? std::string{"FT0C (%)"} : (eventCuts.cfgCentFV0A ? std::string{"FV0A (%)"} : std::string{"FT0M (%)"});
     const AxisSpec axisCentFT0M{101, 0, 101, centralityLabel};
     const AxisSpec axisCent{centBins, centralityLabel};
     const AxisSpec axisVtxZ{80, -20., 20., "V_{Z} (cm)"};
@@ -675,7 +679,7 @@ struct MeanPtFlucId {
       if (genConfig.cfgGenCutPosZ && (!std::isfinite(genConfig.cfgGenMaxPosZ.value) || genConfig.cfgGenMaxPosZ <= 0.f)) {
         LOGF(fatal, "cfgGenMaxPosZ must be finite and positive");
       }
-      const std::string estimator = eventCuts.cfgCentFT0C ? "FT0C" : (eventCuts.cfgCentFV0A ? "FV0A" : "FT0M");
+      const std::string estimator = eventCuts.cfgCentFT0C ? std::string{"FT0C"} : (eventCuts.cfgCentFV0A ? std::string{"FV0A"} : std::string{"FT0M"});
       constexpr size_t MinimumCentralityLookupEntries = 2;
       constexpr double MinimumCentralityPercentile = 0.;
       constexpr double MaximumCentralityPercentile = 100.;
