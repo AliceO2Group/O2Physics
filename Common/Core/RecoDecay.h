@@ -59,6 +59,8 @@ struct RecoDecay {
   static constexpr int PdgBosonMax{37};                          // largest boson (gauge or H) PDG code; o2-linter: disable=pdg/explicit-code (H+ does not have a named constant.)
   static constexpr int PdgDivisorMeson{100};                     // order of magnitude of the meson PDG codes
   static constexpr int PdgDivisorBaryon{1000};                   // order of magnitude of the baryon PDG codes
+  static constexpr int PdgDiquarkSpin0Code{1};                   // last digits of a spin-0 diquark PDG code
+  static constexpr int PdgDiquarkSpin1Code{3};                   // last digits of a spin-1 diquark PDG code
 
   // Auxiliary functions
 
@@ -1179,6 +1181,31 @@ struct RecoDecay {
     return OriginType::None;
   }
 
+  /// Check whether the PDG code corresponds to a diquark state (e.g. 4101, 4201, 5101).
+  /// Diquarks are constituents used by the generators during the hadronisation and are not
+  /// hadrons. A diquark carrying a charm or beauty quark has a PDG code that satisfies the
+  /// pdg / 1000 == 4 or 5 condition used to identify charm and beauty baryons in
+  /// getParticleOrigin, so such a state would be misidentified as a heavy-flavour baryon there.
+  /// This check therefore validates the diquark structure: two quark flavours in
+  /// PDG_t::kDown..kTop (any quark pair, not only a heavy-flavour one), the first flavour not
+  /// smaller than the second, and a spin-0 or spin-1 code.
+  /// \param pdgCode PDG code of the particle
+  /// \return true if the PDG code belongs to a diquark state
+  static bool isDiquark(const int pdgCode)
+  {
+    // a diquark PDG code is composed as pdgQuark1 * PdgDivisorBaryon + pdgQuark2 * PdgDivisorMeson
+    // + spinCode, with pdgQuark1 >= pdgQuark2 the quark flavours and spinCode either
+    // PdgDiquarkSpin0Code or PdgDiquarkSpin1Code
+    const int absPdgCode = std::abs(pdgCode);
+    const int spinCode = absPdgCode % PdgDivisorMeson;
+    if (spinCode != PdgDiquarkSpin0Code && spinCode != PdgDiquarkSpin1Code) {
+      return false;
+    }
+    const int pdgQuark1 = absPdgCode / PdgDivisorBaryon;
+    const int pdgQuark2 = (absPdgCode % PdgDivisorBaryon) / PdgDivisorMeson;
+    return pdgQuark1 >= PDG_t::kDown && pdgQuark1 <= PDG_t::kTop && pdgQuark2 >= PDG_t::kDown && pdgQuark2 <= PDG_t::kTop && pdgQuark1 >= pdgQuark2;
+  }
+
   /// based on getCharmHardronOrigin in order to extend general particle
   /// Finding the origin (from charm hadronisation or beauty-hadron decay) of paritcle (b, c and others)
   /// \param particlesMC  table with MC particles
@@ -1221,6 +1248,17 @@ struct RecoDecay {
             // Check status code
             // auto motherStatusCode = std::abs(mother.getGenStatusCode());
             auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            // in the hadron-level mode, stop the walk when a parton or a diquark is reached: no
+            // heavy-flavour hadron can be found above the partonic level, and a diquark is not a
+            // hadron although its PDG code (e.g. 4101, 4201, 5101) satisfies pdg / 1000 == 4 or 5
+            // and would be misidentified as a charm/beauty baryon below. In the parton-level mode
+            // the walk has to continue through diquarks, since a charm or beauty quark can still be
+            // found above them.
+            if (!searchUpToQuark &&
+                (isDiquark(pdgParticleIMother) || pdgParticleIMother <= PdgQuarkMax ||
+                 (pdgParticleIMother >= PdgBosonMin && pdgParticleIMother <= PdgBosonMax))) {
+              break;
+            }
             // Check mother's PDG code.
             // printf("getMother: ");
             // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.

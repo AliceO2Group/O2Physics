@@ -172,6 +172,9 @@ enum PairHist {
 
   // event shape enginerring
   kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector,
+  // q in the event-plane frame (see femtomath::rotateToEventPlane):
+  // q_x along Psi_EP (in-plane), q_y perpendicular to Psi_EP (out-of-plane), q_z = q_long (beam)
+  kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle,
 
   kPairHistogramLast
 };
@@ -256,6 +259,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis qside{"qside", {{300, -1.5f, 1.5f}}, "q_{side} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qlong{"qlong", {{300, -1.5f, 1.5f}}, "q_{long} (GeV/c) in LCMS"};
   o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "(Reco/Mc) Enable 7D (q_out, q_side, q_long, mt, centrality event plane angle, qvector) histogram"};
+  o2::framework::Configurable<bool> plotEventShapeEpRotated{"plotEventShapeEpRotated", false, "(Reco/Mc) Enable 6D (q_x, q_y, q_z, mt, centrality, event plane angle) histogram with (q_out, q_side) rotated to the event-plane frame (q_x in-plane, q_y out-of-plane)"};
   o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {{10, 0.f, 1.f * o2::constants::math::TwoPI}}, "event plane angle"};
   o2::framework::ConfigurableAxis qvector{"qvector", {{o2::framework::VARIABLE_WIDTH, 0.50f, 68.50f, 100.50f, 126.50f, 151.50f, 176.50f, 203.50f, 232.50f, 269.50f, 322.50f, 833.50f}}, "qvector"};
   o2::framework::Configurable<bool> plotSH{"plotSH", false, "(Reco) Enable spherical-harmonics decomposition of the pair momentum-difference vector"};
@@ -399,6 +403,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kTrueQsideVsQside, o2::framework::HistType::kTH2F, "hTrueQsideVsQside", "q_{side,True} vs q_{side}; q_{side,True} (GeV/#it{c}); q_{side} (GeV/#it{c})"},
       {kTrueQlongVsQlong, o2::framework::HistType::kTH2F, "hTrueQlongVsQlong", "q_{long,True} vs q_{long}; q_{long,True} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
       {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, o2::framework::HistType::kTHnSparseF, "hQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); centrality (%); #varphi_{pair} - #Psi_{EP}; q-vector;"},
+      {kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, o2::framework::HistType::kTHnSparseF, "hQxVsQyVsQzVsMtVsCentVsEventPlaneAngle", "Event shape enginering, q in the event-plane frame; q_{x}^{EP} (in-plane) (GeV/#it{c}); q_{y}^{EP} (out-of-plane) (GeV/#it{c}); q_{z} = q_{long} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); centrality (%); #varphi_{pair} - #Psi_{EP};"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -461,6 +466,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kQside, {(confAnalysis).qside}},                                                                                                                                                                                                        \
     {kQlong, {(confAnalysis).qlong}},                                                                                                                                                                                                        \
     {kQoutVsQsideVsQlong, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong}},                                                                                                                                                \
+    {kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong, (confAnalysis).mt, (confAnalysis).centrality, (confAnalysis).eventPlaneAngle}},                                               \
     {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong, (confAnalysis).mt, (confAnalysis).centrality, (confAnalysis).eventPlaneAngle, (confAnalysis).qvector}},
 
 // mixing-qa entries are independent of reco vs mc-truth status — both the reco
@@ -648,6 +654,7 @@ class PairHistManager
     mPlotKstarVsBetaLabVsMtVsPt1VsPt2VsMult = ConfPairBinning.plotKstarVsBetaLabVsMtVsPt1VsPt2VsMult.value;
     mPlotBertschPratt = ConfPairBinning.plotBertschPratt.value;
     mPlotEventShape = ConfPairBinning.plotEventShape.value;
+    mPlotEventShapeEpRotated = ConfPairBinning.plotEventShapeEpRotated.value;
 
     mPlotSH = ConfPairBinning.plotSH.value;
     mShUseCent = ConfPairBinning.shUseCent.value;
@@ -1111,6 +1118,10 @@ class PairHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), getHistDesc(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), getHistType(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), {Specs.at(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector)});
     }
 
+    if (mPlotEventShapeEpRotated) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, HistTable), getHistDesc(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, HistTable), getHistType(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, HistTable), {Specs.at(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle)});
+    }
+
     if (mPlotSH) {
       const int nJM = (mShLMax + 1) * (mShLMax + 1);
       const int nCent = static_cast<int>(mShCentEdges.size()) - 1; // n edges -> n - 1 bins
@@ -1337,15 +1348,18 @@ class PairHistManager
       std::tie(mQout, mQside, mQlong) = femtomath::computeBertschPrattLCMS(mParticle1, mParticle2);
     }
 
-    if (mPlotEventShape) {
+    if (mPlotEventShape || mPlotEventShapeEpRotated) {
       if (!mPlotBertschPratt) {
         std::tie(mQout, mQside, mQlong) = femtomath::computeBertschPrattLCMS(mParticle1, mParticle2);
       }
       if constexpr (utils::HasEventShape<T4>) {
         mPairPhiFromEventPlaneAngle = femtomath::getPairPhiFromEventPlaneAngle(mParticle1, mParticle2, col);
         mQvector = col.qvec();
+        if (mPlotEventShapeEpRotated) {
+          std::tie(mQxEp, mQyEp) = femtomath::rotateToEventPlane(mQout, mQside, mPairPhiFromEventPlaneAngle);
+        }
       } else {
-        LOG(fatal) << "plotEventShape is enabled but the collision table has no event-shape columns. Breaking...";
+        LOG(fatal) << "plotEventShape or plotEventShapeEpRotated is enabled but the collision table has no event-shape columns. Breaking...";
       }
     }
 
@@ -1511,6 +1525,9 @@ class PairHistManager
     }
     if (mPlotEventShape) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable)), mQout, mQside, mQlong, mMt, mCent, mPairPhiFromEventPlaneAngle, mQvector);
+    }
+    if (mPlotEventShapeEpRotated) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, HistTable)), mQxEp, mQyEp, mQlong, mMt, mCent, mPairPhiFromEventPlaneAngle);
     }
     if (mPlotSH) {
       const float shCentValue = mShUseCent ? mCent : mMult;
@@ -1715,10 +1732,13 @@ class PairHistManager
   bool mPlotBertschPratt = false;
 
   bool mPlotEventShape = false;
+  bool mPlotEventShapeEpRotated = false;
 
   float mQout = 0.f;
   float mQside = 0.f;
   float mQlong = 0.f;
+  float mQxEp = 0.f;
+  float mQyEp = 0.f;
 
   float mDeltaEta = 0.f;
   float mDeltaPhi = 0.f;

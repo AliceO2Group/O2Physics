@@ -23,6 +23,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Array2D.h>
 // #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 // #include <Framework/AnalysisHelpers.h>
@@ -48,6 +49,7 @@
 #include <cstdlib>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -135,6 +137,16 @@ static constexpr std::array<std::string_view, 12> FCGenDir = {
   "Gen/NetPr/",
   "Gen/NetCh/"};
 
+static constexpr std::array<std::string_view, 8> CountDir = {
+  "CountCheck/Pr/",
+  "CountCheck/APr/",
+  "CountCheck/PiPos/",
+  "CountCheck/PiNeg/",
+  "CountCheck/KaPos/",
+  "CountCheck/KaNeg/",
+  "CountCheck/Pos/",
+  "CountCheck/Neg/"};
+
 static constexpr std::array<std::string_view, 6> PidDire = {
   "Ch/",
   "Pi/",
@@ -155,6 +167,425 @@ std::string getModifiedStr(const std::string& myString)
     return subString;
   }
   return myString;
+}
+
+enum PidSelectionEnum {
+  kPidPi = 0,
+  kPidKa,
+  kPidPr,
+  kPidEl,
+  kPidMu,
+  kPidDe,
+  kNPidSelection
+};
+
+enum CutSettingEnum {
+  kThrPforTOF = 0,
+  kIdCutTypeLowP,
+  kNSigmaTPCLowP,
+  kNSigmaTOFLowP,
+  kNSigmaRadLowP,
+  kIdCutTypeHighP,
+  kNSigmaTPCHighP,
+  kNSigmaTOFHighP,
+  kNSigmaRadHighP,
+  kDoVetoOthers,
+  kDoRelativeTPCcheck,
+  kDoRelativeTOFcheck,
+  kDoRelativeTPCTOFcheck,
+  kNCutSettings
+};
+
+enum VetoSettingEnum {
+  kDoVetoTPC = 0,
+  kDoVetoTOF,
+  kVetoTPC,
+  kVetoTOF,
+  kNVetoSettings
+};
+
+static constexpr std::array<std::array<double, kNCutSettings>, kNPidSelection> DefaultPIDcheckValues = {{
+  {0.7, 0, 3.0, 3.0, 9.0, 0, 3.0, 3.0, 9.0, 0, 1, 0, 1}, // Pi
+  {0.5, 0, 3.0, 3.0, 9.0, 0, 3.0, 3.0, 9.0, 0, 1, 0, 1}, // Ka
+  {0.8, 0, 3.0, 3.0, 9.0, 0, 3.0, 3.0, 9.0, 0, 1, 0, 1}, // Pr
+  {0.4, 0, 3.0, 3.0, 9.0, 0, 3.0, 3.0, 9.0, 0, 1, 0, 1}, // El
+  {0.4, 0, 3.0, 3.0, 9.0, 0, 3.0, 3.0, 9.0, 0, 1, 0, 1}, // Mu
+  {0.4, 0, 3.0, 3.0, 9.0, 0, 3.0, 3.0, 9.0, 0, 1, 0, 1}  // De
+}};
+
+static constexpr std::array<std::array<double, kNVetoSettings>, kNPidSelection> DefaultPidVetoValues = {{
+  {1, 1, 3.0, 3.0}, // Pi
+  {1, 1, 3.0, 3.0}, // Ka
+  {1, 1, 3.0, 3.0}, // Pr
+  {0, 0, 3.0, 3.0}, // El
+  {0, 0, 3.0, 3.0}, // Mu
+  {0, 0, 3.0, 3.0}  // De
+}};
+
+template <typename T>
+inline T getCfg(const auto& cfgLabelledArray, int32_t row, int32_t col)
+{
+  double val = cfgLabelledArray->get(row, col); // Always stored as double
+
+  if constexpr (std::is_same_v<T, bool>) {
+    return val != 0.0; // will return anything nonzero as true
+  } else if constexpr (std::is_same_v<T, float>) {
+    // cppcheck-suppress suspiciousFloatingPointCast
+    return static_cast<float>(val);
+  } else if constexpr (std::is_same_v<T, double>) {
+    return val;
+  } else if constexpr (std::is_same_v<T, int>) {
+    return static_cast<int>(val);
+  } else {
+    static_assert(
+      std::is_same_v<T, bool> || std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, int>,
+      "getCfg<T>() only supports T = bool, float, double or int");
+  }
+}
+
+template <int pidMode, typename T>
+bool relativeIdOthersTPC(const T& track)
+{
+  float distSpecies = 1.e6f;
+
+  if constexpr (pidMode == kPidPi) {
+    distSpecies = std::fabs(track.tpcNSigmaPi());
+  } else if constexpr (pidMode == kPidKa) {
+    distSpecies = std::fabs(track.tpcNSigmaKa());
+  } else if constexpr (pidMode == kPidPr) {
+    distSpecies = std::fabs(track.tpcNSigmaPr());
+  } else {
+    // FIX ME! : Relative check will be updated in future, currently implemented for pion, kaon and proton only
+    // else if constexpr (pidMode == kPidEl) {
+    //   distSpecies = std::fabs(track.tpcNSigmaEl());
+    // } else if constexpr (pidMode == kPidMu) {
+    //   distSpecies = std::fabs(track.tpcNSigmaMu());
+    // } else if constexpr (pidMode == kPidDe) {
+    //   distSpecies = std::fabs(track.tpcNSigmaDe());
+    // }
+
+    return true;
+  }
+
+  if constexpr (pidMode != kPidPi) {
+    if (std::fabs(track.tpcNSigmaPi()) <= distSpecies) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidKa) {
+    if (std::fabs(track.tpcNSigmaKa()) <= distSpecies) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidPr) {
+    if (std::fabs(track.tpcNSigmaPr()) <= distSpecies) {
+      return false;
+    }
+  }
+
+  // FIX ME! : Relative check will be updated in future, currently implemented for pion, kaon and proton only
+  // if constexpr (pidMode != kPidEl)
+  //   if (std::fabs(track.tpcNSigmaEl()) <= distSpecies)
+  //     return false;
+
+  // if constexpr (pidMode != kPidMu)
+  //   if (std::fabs(track.tpcNSigmaMu()) <= distSpecies)
+  //     return false;
+
+  // if constexpr (pidMode != kPidDe)
+  //   if (std::fabs(track.tpcNSigmaDe()) <= distSpecies)
+  //     return false;
+
+  return true;
+}
+
+template <int pidMode, typename T>
+bool relativeIdOthersTOF(const T& track)
+{
+  float distSpecies = 1.e6f;
+
+  if constexpr (pidMode == kPidPi) {
+    distSpecies = std::fabs(track.tofNSigmaPi());
+  } else if constexpr (pidMode == kPidKa) {
+    distSpecies = std::fabs(track.tofNSigmaKa());
+  } else if constexpr (pidMode == kPidPr) {
+    distSpecies = std::fabs(track.tofNSigmaPr());
+
+    // FIX ME! : Relative check will be updated in future, currently implemented for pion, kaon and proton only
+    // } else if constexpr (pidMode == kPidEl) {
+    //   distSpecies = std::fabs(track.tofNSigmaEl());
+    // } else if constexpr (pidMode == kPidMu) {
+    //   distSpecies = std::fabs(track.tofNSigmaMu());
+    // } else if constexpr (pidMode == kPidDe) {
+    //   distSpecies = std::fabs(track.tofNSigmaDe());
+  } else {
+    return true;
+  }
+
+  if constexpr (pidMode != kPidPi) {
+    if (std::fabs(track.tofNSigmaPi()) <= distSpecies) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidKa) {
+    if (std::fabs(track.tofNSigmaKa()) <= distSpecies) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidPr) {
+    if (std::fabs(track.tofNSigmaPr()) <= distSpecies) {
+      return false;
+    }
+  }
+  // FIX ME! : Relative check will be updated in future, currently implemented for pion, kaon and proton only
+  // if constexpr (pidMode != kPidEl)
+  //   if (std::fabs(track.tofNSigmaEl()) <= distSpecies)
+  //     return false;
+
+  // if constexpr (pidMode != kPidMu)
+  //   if (std::fabs(track.tofNSigmaMu()) <= distSpecies)
+  //     return false;
+
+  // if constexpr (pidMode != kPidDe)
+  //   if (std::fabs(track.tofNSigmaDe()) <= distSpecies)
+  //     return false;
+
+  return true;
+}
+
+template <int pidMode, typename T>
+bool relativeIdOthersTPCTOF(const T& track)
+{
+  float distSpeciesSq = 1.e6f;
+
+  if constexpr (pidMode == kPidPi) {
+    distSpeciesSq = track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi();
+  } else if constexpr (pidMode == kPidKa) {
+    distSpeciesSq = track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa();
+  } else if constexpr (pidMode == kPidPr) {
+    distSpeciesSq = track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr();
+    // FIX ME! : Relative check will be updated in future, currently implemented for pion, kaon and proton only
+    // } else if constexpr (pidMode == kPidEl) {
+    //   distSpeciesSq = track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl();
+    // } else if constexpr (pidMode == kPidMu) {
+    //   distSpeciesSq = track.tpcNSigmaMu() * track.tpcNSigmaMu() + track.tofNSigmaMu() * track.tofNSigmaMu();
+    // } else if constexpr (pidMode == kPidDe) {
+    //   distSpeciesSq = track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe();
+  } else {
+    return true;
+  }
+
+  if constexpr (pidMode != kPidPi) {
+    const float distSq = track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi();
+    if (distSq <= distSpeciesSq) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidKa) {
+    const float distSq = track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa();
+    if (distSq <= distSpeciesSq) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidPr) {
+    const float distSq = track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr();
+    if (distSq <= distSpeciesSq) {
+      return false;
+    }
+  }
+  // FIX ME! : Relative check will be updated in future, currently implemented for pion, kaon and proton only
+  // if constexpr (pidMode != kPidEl) {
+  //   const float distSq = track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl();
+  //   if (distSq <= distSpeciesSq)
+  //     return false;
+  // }
+
+  // if constexpr (pidMode != kPidMu) {
+  //   const float distSq = track.tpcNSigmaMu() * track.tpcNSigmaMu() + track.tofNSigmaMu() * track.tofNSigmaMu();
+  //   if (distSq <= distSpeciesSq)
+  //     return false;
+  // }
+
+  // if constexpr (pidMode != kPidDe) {
+  //   const float distSq = track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe();
+  //   if (distSq <= distSpeciesSq)
+  //     return false;
+  // }
+
+  return true;
+}
+
+template <int pidMode, typename T>
+bool selIdRectangularCut(const T& track, const float& nSigmaTPC, const float& nSigmaTOF)
+{
+  if constexpr (pidMode == kPidPi) {
+    return std::fabs(track.tpcNSigmaPi()) < nSigmaTPC && std::fabs(track.tofNSigmaPi()) < nSigmaTOF;
+  } else if constexpr (pidMode == kPidKa) {
+    return std::fabs(track.tpcNSigmaKa()) < nSigmaTPC && std::fabs(track.tofNSigmaKa()) < nSigmaTOF;
+  } else if constexpr (pidMode == kPidPr) {
+    return std::fabs(track.tpcNSigmaPr()) < nSigmaTPC && std::fabs(track.tofNSigmaPr()) < nSigmaTOF;
+  } else if constexpr (pidMode == kPidEl) {
+    return std::fabs(track.tpcNSigmaEl()) < nSigmaTPC && std::fabs(track.tofNSigmaEl()) < nSigmaTOF;
+  } else if constexpr (pidMode == kPidMu) {
+    return std::fabs(track.tpcNSigmaMu()) < nSigmaTPC && std::fabs(track.tofNSigmaMu()) < nSigmaTOF;
+  } else if constexpr (pidMode == kPidDe) {
+    return std::fabs(track.tpcNSigmaDe()) < nSigmaTPC && std::fabs(track.tofNSigmaDe()) < nSigmaTOF;
+  } else {
+    return false;
+  }
+}
+
+template <int pidMode, typename T>
+bool selIdEllipsoidalCut(const T& track, const float& nSigmaTPC, const float& nSigmaTOF)
+{
+  if constexpr (pidMode == kPidPi) {
+    float tpc = track.tpcNSigmaPi() / nSigmaTPC;
+    float tof = track.tofNSigmaPi() / nSigmaTOF;
+    return (tpc * tpc + tof * tof) < 1.0f;
+  } else if constexpr (pidMode == kPidKa) {
+    float tpc = track.tpcNSigmaKa() / nSigmaTPC;
+    float tof = track.tofNSigmaKa() / nSigmaTOF;
+    return (tpc * tpc + tof * tof) < 1.0f;
+  } else if constexpr (pidMode == kPidPr) {
+    float tpc = track.tpcNSigmaPr() / nSigmaTPC;
+    float tof = track.tofNSigmaPr() / nSigmaTOF;
+    return (tpc * tpc + tof * tof) < 1.0f;
+  } else if constexpr (pidMode == kPidEl) {
+    float tpc = track.tpcNSigmaEl() / nSigmaTPC;
+    float tof = track.tofNSigmaEl() / nSigmaTOF;
+    return (tpc * tpc + tof * tof) < 1.0f;
+  } else if constexpr (pidMode == kPidMu) {
+    float tpc = track.tpcNSigmaMu() / nSigmaTPC;
+    float tof = track.tofNSigmaMu() / nSigmaTOF;
+    return (tpc * tpc + tof * tof) < 1.0f;
+  } else if constexpr (pidMode == kPidDe) {
+    float tpc = track.tpcNSigmaDe() / nSigmaTPC;
+    float tof = track.tofNSigmaDe() / nSigmaTOF;
+    return (tpc * tpc + tof * tof) < 1.0f;
+  } else {
+    return false;
+  }
+}
+
+// Circular cut : (tpcNSigma^2 + tofNSigma^2) < nSigmaSquaredRad ; for 3 sigma, nSigmaSquaredRad = 9.0
+template <int pidMode, typename T>
+constexpr bool selIdCircularCut(const T& track, const float& nSigmaSquaredRad)
+{
+  float tpc = 0.f;
+  float tof = 0.f;
+
+  if constexpr (pidMode == kPidPi) {
+    tpc = track.tpcNSigmaPi();
+    tof = track.tofNSigmaPi();
+  } else if constexpr (pidMode == kPidKa) {
+    tpc = track.tpcNSigmaKa();
+    tof = track.tofNSigmaKa();
+  } else if constexpr (pidMode == kPidPr) {
+    tpc = track.tpcNSigmaPr();
+    tof = track.tofNSigmaPr();
+  } else if constexpr (pidMode == kPidEl) {
+    tpc = track.tpcNSigmaEl();
+    tof = track.tofNSigmaEl();
+  } else if constexpr (pidMode == kPidMu) {
+    tpc = track.tpcNSigmaMu();
+    tof = track.tofNSigmaMu();
+  } else if constexpr (pidMode == kPidDe) {
+    tpc = track.tpcNSigmaDe();
+    tof = track.tofNSigmaDe();
+  } else {
+    return false; // unknown pidMode
+  }
+  return (tpc * tpc + tof * tof) < nSigmaSquaredRad;
+}
+
+template <int pidMode, typename T>
+bool applyVetoOthersTPC(const T& track, const std::array<bool, kNPidSelection>& doVetoTPC, const std::array<float, kNPidSelection>& vetoTPC)
+{
+  if constexpr (pidMode != kPidPi) {
+    if (doVetoTPC[kPidPi] && std::fabs(track.tpcNSigmaPi()) < vetoTPC[kPidPi]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidKa) {
+    if (doVetoTPC[kPidKa] && std::fabs(track.tpcNSigmaKa()) < vetoTPC[kPidKa]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidPr) {
+    if (doVetoTPC[kPidPr] && std::fabs(track.tpcNSigmaPr()) < vetoTPC[kPidPr]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidEl) {
+    if (doVetoTPC[kPidEl] && std::fabs(track.tpcNSigmaEl()) < vetoTPC[kPidEl]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidMu) {
+    if (doVetoTPC[kPidMu] && std::fabs(track.tpcNSigmaMu()) < vetoTPC[kPidMu]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidDe) {
+    if (doVetoTPC[kPidDe] && std::fabs(track.tpcNSigmaDe()) < vetoTPC[kPidDe]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+template <int pidMode, typename T>
+bool applyVetoOthersTOF(const T& track, const std::array<bool, kNPidSelection>& doVetoTOF, const std::array<float, kNPidSelection>& vetoTOF)
+{
+  if constexpr (pidMode != kPidPi) {
+    if (doVetoTOF[kPidPi] && std::fabs(track.tofNSigmaPi()) < vetoTOF[kPidPi]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidKa) {
+    if (doVetoTOF[kPidKa] && std::fabs(track.tofNSigmaKa()) < vetoTOF[kPidKa]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidPr) {
+    if (doVetoTOF[kPidPr] && std::fabs(track.tofNSigmaPr()) < vetoTOF[kPidPr]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidEl) {
+    if (doVetoTOF[kPidEl] && std::fabs(track.tofNSigmaEl()) < vetoTOF[kPidEl]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidMu) {
+    if (doVetoTOF[kPidMu] && std::fabs(track.tofNSigmaMu()) < vetoTOF[kPidMu]) {
+      return false;
+    }
+  }
+
+  if constexpr (pidMode != kPidDe) {
+    if (doVetoTOF[kPidDe] && std::fabs(track.tofNSigmaDe()) < vetoTOF[kPidDe]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 struct NchCumulantsId {
@@ -223,63 +654,24 @@ struct NchCumulantsId {
     Configurable<float> cfgCutPtMaxKa{"cfgCutPtMaxKa", 1.20, "max pT for kaon eff-correction inclusion (purity cutoff)"};
     Configurable<float> cfgCutPtMinPr{"cfgCutPtMinPr", 0.40, "min pT for proton eff-correction inclusion"};
     Configurable<float> cfgCutPtMaxPr{"cfgCutPtMaxPr", 1.50, "max pT for proton eff-correction inclusion (purity cutoff)"};
+    Configurable<float> cfgMaxWeight{"cfgMaxWeight", 20.0f, "max reco weights, use high values to disable the cap"};
+    Configurable<bool> cfgGateGenByWeight{"cfgGateGenByWeight", true, "count a gen particle iff that is counted by reco looking at pt eta"};
+    Configurable<bool> cfgRequireSameMcColl{"cfgRequireSameMcColl", true, "ignore reco track that belongs to a diff collision"};
   } cfgEventSelection;
 
-  // Configurables for particle Identification
-  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", true, "cfgId01CheckVetoCut"};
-  Configurable<bool> cfgId02DoElRejection{"cfgId02DoElRejection", true, "cfgId02DoElRejection"};
-  Configurable<bool> cfgId03DoDeRejection{"cfgId03DoDeRejection", false, "cfgId03DoDeRejection"};
-  Configurable<bool> cfgId04DoPdependentId{"cfgId04DoPdependentId", true, "cfgId04DoPdependentId"};
-  Configurable<bool> cfgId05DoTpcInnerParamId{"cfgId05DoTpcInnerParamId", false, "cfgId05DoTpcInnerParamId"};
+  // PID selection: same defaults and configurables as hParticleCorrelation.cxx.
+  struct : ConfigurableGroup {
+    Configurable<LabeledArray<double>> c1142pidConfigSetting{"c1142pidConfigSetting", {DefaultPIDcheckValues[0].data(), kNPidSelection, kNCutSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"ThrPforTOF", "IdCutTypeLowP", "NSigmaTPCLowP", "NSigmaTOFLowP", "NSigmaRadLowP", "IdCutTypeHighP", "NSigmaTPCHighP", "NSigmaTOFHighP", "NSigmaRadHighP", "doVetoOthers", "doRelativeTPCCheck", "doRelativeTOFcheck", "doRelativeTPCTOFcheck"}}, "Cut values for particle identification"};
+    Configurable<LabeledArray<double>> c1143pidVetoSetting{"c1143pidVetoSetting", {DefaultPidVetoValues[0].data(), kNPidSelection, kNVetoSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"doVetoTPC", "doVetoTOF", "vetoTPC", "vetoTOF"}}, "Veto cuts for particle identification"};
+    Configurable<bool> c1144cfgId07CheckTofBeta{"c1144cfgId07CheckTofBeta", false, "Require beta > 0 for reliable TOF"};
+  } cfgIdCut;
 
-  Configurable<float> cfgIdPi01ThrPforTOF{"cfgIdPi01ThrPforTOF", 0.7, "cfgIdPi01ThrPforTOF"};
-  Configurable<int> cfgIdPi02IdCutTypeLowP{"cfgIdPi02IdCutTypeLowP", 1, "cfgIdPi02IdCutTypeLowP"};
-  Configurable<float> cfgIdPi03NSigmaTPCLowP{"cfgIdPi03NSigmaTPCLowP", 2.0, "cfgIdPi03NSigmaTPCLowP"};
-  Configurable<float> cfgIdPi04NSigmaTOFLowP{"cfgIdPi04NSigmaTOFLowP", 2.0, "cfgIdPi04NSigmaTOFLowP"};
-  Configurable<float> cfgIdPi05NSigmaRadLowP{"cfgIdPi05NSigmaRadLowP", 4.0, "cfgIdPi05NSigmaRadLowP"};
-  Configurable<int> cfgIdPi06IdCutTypeHighP{"cfgIdPi06IdCutTypeHighP", 1, "cfgIdPi06IdCutTypeHighP"};
-  Configurable<float> cfgIdPi07NSigmaTPCHighP{"cfgIdPi07NSigmaTPCHighP", 2.0, "cfgIdPi07NSigmaTPCHighP"};
-  Configurable<float> cfgIdPi08NSigmaTOFHighP{"cfgIdPi08NSigmaTOFHighP", 2.0, "cfgIdPi08NSigmaTOFHighP"};
-  Configurable<float> cfgIdPi09NSigmaRadHighP{"cfgIdPi09NSigmaRadHighP", 4.0, "cfgIdPi09NSigmaRadHighP"};
-
-  Configurable<float> cfgIdKa01ThrPforTOF{"cfgIdKa01ThrPforTOF", 0.8, "cfgIdKa01ThrPforTOF"};
-  Configurable<int> cfgIdKa02IdCutTypeLowP{"cfgIdKa02IdCutTypeLowP", 1, "cfgIdKa02IdCutTypeLowP"};
-  Configurable<float> cfgIdKa03NSigmaTPCLowP{"cfgIdKa03NSigmaTPCLowP", 2.0, "cfgIdKa03NSigmaTPCLowP"};
-  Configurable<float> cfgIdKa04NSigmaTOFLowP{"cfgIdKa04NSigmaTOFLowP", 2.0, "cfgIdKa04NSigmaTOFLowP"};
-  Configurable<float> cfgIdKa05NSigmaRadLowP{"cfgIdKa05NSigmaRadLowP", 4.0, "cfgIdKa05NSigmaRadLowP"};
-  Configurable<int> cfgIdKa06IdCutTypeHighP{"cfgIdKa06IdCutTypeHighP", 1, "cfgIdKa06IdCutTypeHighP"};
-  Configurable<float> cfgIdKa07NSigmaTPCHighP{"cfgIdKa07NSigmaTPCHighP", 2.0, "cfgIdKa07NSigmaTPCHighP"};
-  Configurable<float> cfgIdKa08NSigmaTOFHighP{"cfgIdKa08NSigmaTOFHighP", 2.0, "cfgIdKa08NSigmaTOFHighP"};
-  Configurable<float> cfgIdKa09NSigmaRadHighP{"cfgIdKa09NSigmaRadHighP", 4.0, "cfgIdKa09NSigmaRadHighP"};
-
-  Configurable<float> cfgIdPr01ThrPforTOF{"cfgIdPr01ThrPforTOF", 0.8, "cfgIdPr01ThrPforTOF"};
-  Configurable<int> cfgIdPr02IdCutTypeLowP{"cfgIdPr02IdCutTypeLowP", 1, "cfgIdPr02IdCutTypeLowP"};
-  Configurable<float> cfgIdPr03NSigmaTPCLowP{"cfgIdPr03NSigmaTPCLowP", 2.0, "cfgIdPr03NSigmaTPCLowP"};
-  Configurable<float> cfgIdPr04NSigmaTOFLowP{"cfgIdPr04NSigmaTOFLowP", 2.0, "cfgIdPr04NSigmaTOFLowP"};
-  Configurable<float> cfgIdPr05NSigmaRadLowP{"cfgIdPr05NSigmaRadLowP", 4.0, "cfgIdPr05NSigmaRadLowP"};
-  Configurable<int> cfgIdPr06IdCutTypeHighP{"cfgIdPr06IdCutTypeHighP", 1, "cfgIdPr06IdCutTypeHighP"};
-  Configurable<float> cfgIdPr07NSigmaTPCHighP{"cfgIdPr07NSigmaTPCHighP", 2.0, "cfgIdPr07NSigmaTPCHighP"};
-  Configurable<float> cfgIdPr08NSigmaTOFHighP{"cfgIdPr08NSigmaTOFHighP", 2.0, "cfgIdPr08NSigmaTOFHighP"};
-  Configurable<float> cfgIdPr09NSigmaRadHighP{"cfgIdPr09NSigmaRadHighP", 4.0, "cfgIdPr09NSigmaRadHighP"};
-
+  // Optional pre-PID electron rejection already present in NchCumulantsId.
   Configurable<float> cfgIdElRejLowNSigma{"cfgIdElRejLowNSigma", -3.0, "cfgIdElRejLowNSigma"};
   Configurable<float> cfgIdElRejHighNSigma{"cfgIdElRejHighNSigma", 5.0, "cfgIdElRejHighNSigma"};
   Configurable<float> cfgIdPiRejNSigma{"cfgIdPiRejNSigma", 3.0, "cfgIdPiRejNSigma"};
   Configurable<float> cfgIdKaRejNSigma{"cfgIdKaRejNSigma", 3.0, "cfgIdKaRejNSigma"};
   Configurable<float> cfgIdPrRejNSigma{"cfgIdPrRejNSigma", 3.0, "cfgIdPrRejNSigma"};
-
-  struct : ConfigurableGroup {
-    Configurable<float> cfgVetoId01PiTPC{"cfgVetoId01PiTPC", 3.0, "cfgVetoId01PiTPC"};
-    Configurable<float> cfgVetoId02PiTOF{"cfgVetoId02PiTOF", 3.0, "cfgVetoId02PiTOF"};
-    Configurable<float> cfgVetoId03KaTPC{"cfgVetoId03KaTPC", 3.0, "cfgVetoId03KaTPC"};
-    Configurable<float> cfgVetoId04KaTOF{"cfgVetoId04KaTOF", 3.0, "cfgVetoId04KaTOF"};
-    Configurable<float> cfgVetoId05PrTPC{"cfgVetoId05PrTPC", 3.0, "cfgVetoId05PrTPC"};
-    Configurable<float> cfgVetoId06PrTOF{"cfgVetoId06PrTOF", 3.0, "cfgVetoId06PrTOF"};
-    Configurable<float> cfgVetoId07ElTPC{"cfgVetoId07ElTPC", 3.0, "cfgVetoId07ElTPC"};
-    Configurable<float> cfgVetoId08ElTOF{"cfgVetoId08ElTOF", 3.0, "cfgVetoId08ElTOF"};
-    Configurable<float> cfgVetoId09DeTPC{"cfgVetoId09DeTPC", 3.0, "cfgVetoId09DeTPC"};
-    Configurable<float> cfgVetoId10DeTOF{"cfgVetoId10DeTOF", 3.0, "cfgVetoId10DeTOF"};
-  } cfgVetoIdCut;
 
   struct : ConfigurableGroup {
     Configurable<std::string> cfgCCDB01URL{"cfgCCDB01URL", "http://ccdb-test.cern.ch:8080", "cfgCCDB01URL"};
@@ -306,13 +698,27 @@ struct NchCumulantsId {
     double q2 = 0.;
     double q3 = 0.;
     double q4 = 0.;
+    // bookeeping for counts check not to be used for cumulants calculation
+    double n = 0.;     // track that entered this species (raw, before correction)
+    double nDrop = 0.; // track that was dropped due to weight > cfgMaxWeight
+    double sumAll = 0; // sum of all weights (including dropped)
   };
 
-  static constexpr float KmaxWeight = 10.0f; // secondary safeguard for pr and kaon eff fix
+  // static constexpr float KmaxWeight = 10.0f; // secondary safeguard for pr and kaon
+
+  inline bool usableWeight(float weight) const
+  {
+    return weight > 0.f && weight <= cfgEventSelection.cfgMaxWeight.value;
+  }
 
   inline void fillEffPower(EffPowerSums& p, float weight)
   {
-    if (weight <= 0.f || weight > KmaxWeight) {
+    p.n += 1;
+    if (weight > 0.f) {
+      p.sumAll += weight;
+    }
+    if (!usableWeight(weight)) {
+      p.nDrop += 1;
       return;
     }
 
@@ -414,6 +820,30 @@ struct NchCumulantsId {
       registry.add(std::string(Dir) + "F3_subsample", "Gen FactorialMoment3 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
       registry.add(std::string(Dir) + "F4_subsample", "Gen FactorialMoment4 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
     }
+  }
+
+  template <FCPrefixEnum Prefix>
+  void addCountCheckProfiles()
+  {
+    constexpr std::string_view Dir = CountDir[static_cast<int>(Prefix)];
+    registry.add(std::string(Dir) + "nGenAll", "Generated counted Before Weight Gate", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "nGenUsed", "Generated counted After Weight Gate", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "nRecRaw", "Reco tracks counted Before Weight Gate", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "nRecDropped", "Reco tracks dropped after correction(weight <0 or weight > maxWeight)", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "sumWUsable", "reco corrected: sum of usable weights (= Q1)", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "sumWNoCap", "reco corrected: sum of all positive weights, no cap", kTProfile, {axisCent});
+  }
+
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillCountCheck(float genAll, float genUsed, const EffPowerSums& p, float cent, Registry& hReg)
+  {
+    auto base = HIST(CountDir[static_cast<int>(Prefix)]);
+    hReg.fill(base + HIST("nGenAll"), cent, genAll);
+    hReg.fill(base + HIST("nGenUsed"), cent, genUsed);
+    hReg.fill(base + HIST("nRecRaw"), cent, p.n);
+    hReg.fill(base + HIST("nRecDropped"), cent, p.nDrop);
+    hReg.fill(base + HIST("sumWUsable"), cent, p.q1);
+    hReg.fill(base + HIST("sumWNoCap"), cent, p.sumAll);
   }
 
   template <FCPrefixEnum Prefix, typename Registry>
@@ -588,8 +1018,12 @@ struct NchCumulantsId {
         if (cfgDebug.printDebugMessages) {
           LOG(info) << "DEBUG :: Obj Name = " << hPtEtaForEffCorrection[i][j]->GetName() << " :: entries = " << hPtEtaForBinSearch->GetEntries();
         }
+        if (hPtEtaForEffCorrection[i][j]) {
+          LOG(info) << "MAPCHECK " << name << " integral=" << hPtEtaForEffCorrection[i][j]->Integral();
+        }
       }
     }
+    LOG(info) << "MAPCHECK cfgMaxWeight=" << cfgEventSelection.cfgMaxWeight;
 
     mgr.setURL("http://alice-ccdb.cern.ch"); // RESET the URL otherwise the other process functions which contains ccdb lookups will fail
 
@@ -830,6 +1264,16 @@ struct NchCumulantsId {
     addFCGenProfiles<FCPrefixEnum::NetPr>();
     addFCGenProfiles<FCPrefixEnum::NetCh>();
 
+    // profiles for counts
+    addCountCheckProfiles<FCPrefixEnum::Pr>();
+    addCountCheckProfiles<FCPrefixEnum::APr>();
+    addCountCheckProfiles<FCPrefixEnum::PiPos>();
+    addCountCheckProfiles<FCPrefixEnum::PiNeg>();
+    addCountCheckProfiles<FCPrefixEnum::KaPos>();
+    addCountCheckProfiles<FCPrefixEnum::KaNeg>();
+    addCountCheckProfiles<FCPrefixEnum::Pos>();
+    addCountCheckProfiles<FCPrefixEnum::Neg>();
+
   } // init ends
 
   static constexpr std::array<std::string_view, 11> HistRegDire2 = {
@@ -867,8 +1311,8 @@ struct NchCumulantsId {
   };
 
   enum TpcTofCutType {
-    kRectangularCut = 0,
-    kCircularCut,
+    kCircularCut = 0,
+    kRectangularCut,
     kEllipsoidalCut
   };
 
@@ -908,265 +1352,218 @@ struct NchCumulantsId {
     doSimProcessing
   };
 
-  // particle identifications
-  //  tpc Selections
-
+  // Particle identification: ported from hParticleCorrelation.cxx.
+  // 0 = circular, 1 = rectangular, 2 = ellipsoidal for combined TPC-TOF cuts.
   template <int pidMode, typename T>
   bool vetoIdOthersTPC(const T& track)
   {
-    if (pidMode != kPi) {
-      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC) {
-        return false;
-      }
-    }
-    if (pidMode != kKa) {
-      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC) {
-        return false;
-      }
-    }
-    if (pidMode != kPr) {
-      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC) {
-        return false;
-      }
-    }
-    if (cfgId02DoElRejection) {
-      if (pidMode != kEl) {
-        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC) {
-          return false;
-        }
-      }
-    }
-    if (cfgId03DoDeRejection) {
-      if (pidMode != kDe) {
-        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC) {
-          return false;
-        }
-      }
-    }
-    return true;
+    // Static is only run once, ever.
+    static const std::array<bool, kNPidSelection> doVetoTPC = {
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidPi, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidKa, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidPr, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidEl, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidMu, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidDe, kDoVetoTPC)};
+
+    static const std::array<float, kNPidSelection> vetoTPC = {
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidPi, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidKa, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidPr, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidEl, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidMu, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidDe, kVetoTPC)};
+
+    return applyVetoOthersTPC<pidMode>(track, doVetoTPC, vetoTPC);
   }
 
   template <int pidMode, typename T>
   bool vetoIdOthersTOF(const T& track)
   {
-    if (pidMode != kPi) {
-      if (std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF) {
-        return false;
-      }
-    }
-    if (pidMode != kKa) {
-      if (std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF) {
-        return false;
-      }
-    }
-    if (pidMode != kPr) {
-      if (std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF) {
-        return false;
-      }
-    }
-    if (cfgId02DoElRejection) {
-      if (pidMode != kEl) {
-        if (std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF) {
-          return false;
-        }
-      }
-    }
-    if (cfgId03DoDeRejection) {
-      if (pidMode != kDe) {
-        if (std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF) {
-          return false;
-        }
-      }
-    }
-    return true;
+    // Only computed once
+    static const std::array<bool, kNPidSelection> doVetoTOF = {
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidPi, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidKa, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidPr, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidEl, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidMu, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1143pidVetoSetting, kPidDe, kDoVetoTOF)};
+
+    static const std::array<float, kNPidSelection> vetoTOF = {
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidPi, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidKa, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidPr, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidEl, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidMu, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1143pidVetoSetting, kPidDe, kVetoTOF)};
+
+    return applyVetoOthersTOF<pidMode>(track, doVetoTOF, vetoTOF);
   }
 
   template <int pidMode, typename T>
   bool vetoIdOthersTPCTOF(const T& track)
   {
-    if (pidMode != kPi) {
-      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC && std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF) {
-        return false;
-      }
-    }
-    if (pidMode != kKa) {
-      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC && std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF) {
-        return false;
-      }
-    }
-    if (pidMode != kPr) {
-      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC && std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF) {
-        return false;
-      }
-    }
-    if (cfgId02DoElRejection) {
-      if (pidMode != kEl) {
-        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC && std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF) {
-          return false;
-        }
-      }
-    }
-    if (cfgId03DoDeRejection) {
-      if (pidMode != kDe) {
-        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC && std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF) {
-          return false;
-        }
-      }
-    }
-    return true;
+    // If either veto fails, reject
+    return vetoIdOthersTPC<pidMode>(track) && vetoIdOthersTOF<pidMode>(track);
   }
 
-  template <int pidMode, typename T>
-  bool selIdRectangularCut(const T& track, const float& nSigmaTPC, const float& nSigmaTOF)
-  {
-    switch (pidMode) {
-      case kPi:
-        return std::fabs(track.tpcNSigmaPi()) < nSigmaTPC &&
-               std::fabs(track.tofNSigmaPi()) < nSigmaTOF;
-
-      case kKa:
-        return std::fabs(track.tpcNSigmaKa()) < nSigmaTPC &&
-               std::fabs(track.tofNSigmaKa()) < nSigmaTOF;
-
-      case kPr:
-        return std::fabs(track.tpcNSigmaPr()) < nSigmaTPC &&
-               std::fabs(track.tofNSigmaPr()) < nSigmaTOF;
-
-      default:
-        return false;
-    }
-  }
-
-  template <int pidMode, typename T>
-  bool selIdEllipsoidalCut(const T& track, const float& nSigmaTPC, const float& nSigmaTOF)
-  {
-    switch (pidMode) {
-      case kPi:
-        return std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) +
-                 std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) <
-               1.0;
-
-      case kKa:
-        return std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) +
-                 std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) <
-               1.0;
-
-      case kPr:
-        return std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) +
-                 std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) <
-               1.0;
-
-      default:
-        return false;
-    }
-  }
-
-  template <int pidMode, typename T>
-  bool selIdCircularCut(const T& track, const float& nSigmaSquaredRad)
-  {
-    switch (pidMode) {
-      case kPi:
-        if (std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2) < nSigmaSquaredRad) {
-          return true;
-        }
-        break;
-      case kKa:
-        if (std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2) < nSigmaSquaredRad) {
-          return true;
-        }
-        break;
-      case kPr:
-        if (std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2) < nSigmaSquaredRad) {
-          return true;
-        }
-        break;
-      default:
-        return false;
-        break;
-    }
-    return false;
-  }
-
+  // Check if TOF is reliable
   template <typename T>
-  bool checkReliableTOF(const T& track)
+  inline bool checkReliableTOF(const T& track)
   {
-    return track.hasTOF(); // which check makes the information of TOF relaiable? should track.beta() be checked?
+    // which check makes the information of TOF relaiable? should track.beta() be checked? e.g.:
+    if (cfgIdCut.c1144cfgId07CheckTofBeta) {
+      return (track.hasTOF() && track.beta() > 0.0f);
+    }
+    return track.hasTOF();
   }
 
   template <int pidMode, typename T>
-  bool idTPC(const T& track, const float& nSigmaTPC)
+  bool idTPC(const T& track, const float& nSigmaTPC, float& nSigmaIdDistSq)
   {
-    if (cfgId01CheckVetoCut && !vetoIdOthersTPC<pidMode>(track)) {
+    if constexpr (pidMode == kPidPi) {
+      nSigmaIdDistSq = track.tpcNSigmaPi() * track.tpcNSigmaPi();
+    } else if constexpr (pidMode == kPidKa) {
+      nSigmaIdDistSq = track.tpcNSigmaKa() * track.tpcNSigmaKa();
+    } else if constexpr (pidMode == kPidPr) {
+      nSigmaIdDistSq = track.tpcNSigmaPr() * track.tpcNSigmaPr();
+    } else if constexpr (pidMode == kPidEl) {
+      nSigmaIdDistSq = track.tpcNSigmaEl() * track.tpcNSigmaEl();
+    } else if constexpr (pidMode == kPidMu) {
+      nSigmaIdDistSq = track.tpcNSigmaMu() * track.tpcNSigmaMu();
+    } else if constexpr (pidMode == kPidDe) {
+      nSigmaIdDistSq = track.tpcNSigmaDe() * track.tpcNSigmaDe();
+    } else {
+      nSigmaIdDistSq = 1000000;
+    }
+
+    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.c1142pidConfigSetting, pidMode, kDoVetoOthers);
+    if (doVetoOthers) {
+      if (!vetoIdOthersTPC<pidMode>(track)) {
+        // If vetoIdOthers = true; it passed all veto checks
+        // If vetoIdOthers = false; it failed veto check with some other particle
+        return false;
+      }
+    }
+
+    static const bool doRelativeTPCcheck = getCfg<bool>(cfgIdCut.c1142pidConfigSetting, pidMode, kDoRelativeTPCcheck);
+    if (doRelativeTPCcheck) {
+      if (!relativeIdOthersTPC<pidMode>(track)) {
+        // If relativeIdOthersTPC = true; particle has stronger nSigma compared to others
+        // If relativeIdOthersTPC = false; some particle has stronger nSigma compared to it
+        return false;
+      }
+    }
+
+    if constexpr (pidMode == kPidPi) {
+      return std::fabs(track.tpcNSigmaPi()) < nSigmaTPC;
+    } else if constexpr (pidMode == kPidKa) {
+      return std::fabs(track.tpcNSigmaKa()) < nSigmaTPC;
+    } else if constexpr (pidMode == kPidPr) {
+      return std::fabs(track.tpcNSigmaPr()) < nSigmaTPC;
+    } else if constexpr (pidMode == kPidEl) {
+      return std::fabs(track.tpcNSigmaEl()) < nSigmaTPC;
+    } else if constexpr (pidMode == kPidMu) {
+      return std::fabs(track.tpcNSigmaMu()) < nSigmaTPC;
+    } else if constexpr (pidMode == kPidDe) {
+      return std::fabs(track.tpcNSigmaDe()) < nSigmaTPC;
+    } else {
       return false;
     }
-    switch (pidMode) {
-      case kPi:
-        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC) {
-          return true;
-        }
-        break;
-      case kKa:
-        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC) {
-          return true;
-        }
-        break;
-      case kPr:
-        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC) {
-          return true;
-        }
-        break;
+  }
+
+  template <int pidMode, typename T>
+  bool idTPCTOF(const T& track, const int& pidCutType, const float& nSigmaTPC, const float& nSigmaTOF, const float& nSigmaSquaredRad, float& nSigmaIdDistSq)
+  {
+    if constexpr (pidMode == kPidPi) {
+      nSigmaIdDistSq = track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi();
+    } else if constexpr (pidMode == kPidKa) {
+      nSigmaIdDistSq = track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa();
+    } else if constexpr (pidMode == kPidPr) {
+      nSigmaIdDistSq = track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr();
+    } else if constexpr (pidMode == kPidEl) {
+      nSigmaIdDistSq = track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl();
+    } else if constexpr (pidMode == kPidMu) {
+      nSigmaIdDistSq = track.tpcNSigmaMu() * track.tpcNSigmaMu() + track.tofNSigmaMu() * track.tofNSigmaMu();
+    } else if constexpr (pidMode == kPidDe) {
+      nSigmaIdDistSq = track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe();
+    } else {
+      nSigmaIdDistSq = 1000000;
+    }
+    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.c1142pidConfigSetting, pidMode, kDoVetoOthers);
+    if (doVetoOthers) {
+      if (!vetoIdOthersTPCTOF<pidMode>(track)) {
+        // If vetoIdOthers = true; it passed all veto checks
+        // If vetoIdOthers = false; it failed veto check with some other particle
+        return false;
+      }
+    }
+
+    static const bool doRelativeTOFcheck = getCfg<bool>(cfgIdCut.c1142pidConfigSetting, pidMode, kDoRelativeTOFcheck);
+    if (doRelativeTOFcheck) {
+      if (!relativeIdOthersTOF<pidMode>(track)) {
+        // If relativeIdOthersTOF = true; particle has stronger nSigma compared to others
+        // If relativeIdOthersTOF = false; some particle has stronger nSigma compared to it
+        return false;
+      }
+    }
+
+    static const bool doRelativeTPCTOFcheck = getCfg<bool>(cfgIdCut.c1142pidConfigSetting, pidMode, kDoRelativeTPCTOFcheck);
+    if (doRelativeTPCTOFcheck) {
+      if (!relativeIdOthersTPCTOF<pidMode>(track)) {
+        // If relativeIdOthersTPCTOF = true; particle has stronger nSigma compared to others
+        // If relativeIdOthersTPCTOF = false; some particle has stronger nSigma compared to it
+        return false;
+      }
+    }
+
+    switch (pidCutType) {
+      case kCircularCut:
+        return selIdCircularCut<pidMode>(track, nSigmaSquaredRad);
+      case kRectangularCut:
+        return selIdRectangularCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
+      case kEllipsoidalCut:
+        return selIdEllipsoidalCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
       default:
         return false;
-        break;
     }
-    return false;
   }
 
   template <int pidMode, typename T>
-  bool idTPCTOF(const T& track, const int& pidCutType, const float& nSigmaTPC, const float& nSigmaTOF, const float& nSigmaSquaredRad)
+  bool selPdependent(const T& track, int& IdMethod, float& nSigmaIdDistSq)
   {
-    if (cfgId01CheckVetoCut && !vetoIdOthersTPCTOF<pidMode>(track)) {
-      return false;
-    }
-    if (pidCutType == kRectangularCut) {
-      return selIdRectangularCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
-    } else if (pidCutType == kCircularCut) {
-      return selIdCircularCut<pidMode>(track, nSigmaSquaredRad);
-    } else if (pidCutType == kEllipsoidalCut) {
-      return selIdEllipsoidalCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
-    }
-    return false;
-  }
+    // Static cache inside function - initialized once on first call
+    static const auto thrPforTOF = getCfg<float>(cfgIdCut.c1142pidConfigSetting, pidMode, kThrPforTOF);
+    static const auto idCutTypeLowP = getCfg<int>(cfgIdCut.c1142pidConfigSetting, pidMode, kIdCutTypeLowP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.c1142pidConfigSetting, pidMode, kNSigmaTPCLowP);
+    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.c1142pidConfigSetting, pidMode, kNSigmaTOFLowP);
+    static const auto nSigmaRadLowP = getCfg<float>(cfgIdCut.c1142pidConfigSetting, pidMode, kNSigmaRadLowP);
+    static const auto idCutTypeHighP = getCfg<int>(cfgIdCut.c1142pidConfigSetting, pidMode, kIdCutTypeHighP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.c1142pidConfigSetting, pidMode, kNSigmaTPCHighP);
+    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.c1142pidConfigSetting, pidMode, kNSigmaTOFHighP);
+    static const auto nSigmaRadHighP = getCfg<float>(cfgIdCut.c1142pidConfigSetting, pidMode, kNSigmaRadHighP);
 
-  template <int pidMode, typename T>
-  bool selPdependent(const T& track, int& IdMethod, const float& cfgIdThrPforTOF,
-                     const int& idCutTypeLowP, const float& nSigmaTPCLowP, const float& nSigmaTOFLowP, const float& nSigmaRadLowP,
-                     const int& idCutTypeHighP, const float& nSigmaTPCHighP, const float& nSigmaTOFHighP, const float& nSigmaRadHighP)
-  {
-    if (track.p() < cfgIdThrPforTOF) {
+    if (track.p() < thrPforTOF) {
       if (checkReliableTOF(track)) {
-        if (idTPCTOF<pidMode>(track, idCutTypeLowP, nSigmaTPCLowP, nSigmaTOFLowP, nSigmaRadLowP)) {
+        if (idTPCTOF<pidMode>(track, idCutTypeLowP, nSigmaTPCLowP, nSigmaTOFLowP, nSigmaRadLowP, nSigmaIdDistSq)) {
           IdMethod = kTPCTOFidentified;
           return true;
         }
-        return false;
       } else {
-        if (idTPC<pidMode>(track, nSigmaTPCLowP)) {
+        if (idTPC<pidMode>(track, nSigmaTPCLowP, nSigmaIdDistSq)) {
           IdMethod = kTPCidentified;
           return true;
         }
-        return false;
       }
     } else {
       if (checkReliableTOF(track)) {
-        if (idTPCTOF<pidMode>(track, idCutTypeHighP, nSigmaTPCHighP, nSigmaTOFHighP, nSigmaRadHighP)) {
+        if (idTPCTOF<pidMode>(track, idCutTypeHighP, nSigmaTPCHighP, nSigmaTOFHighP, nSigmaRadHighP, nSigmaIdDistSq)) {
           IdMethod = kTPCTOFidentified;
           return true;
         }
-        return false;
       }
-      return false;
     }
+    return false;
   }
 
   template <typename T>
@@ -1205,40 +1602,26 @@ struct NchCumulantsId {
              std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma);
   }
 
-  // Pion
+  // Existing NchCumulantsId two-argument PID interface (data / MC / purity).
   template <typename T>
   bool selPion(const T& track, int& IdMethod)
   {
-    if (cfgId04DoPdependentId) {
-      return selPdependent<kPi>(track, IdMethod,
-                                cfgIdPi01ThrPforTOF, cfgIdPi02IdCutTypeLowP, cfgIdPi03NSigmaTPCLowP, cfgIdPi04NSigmaTOFLowP, cfgIdPi05NSigmaRadLowP,
-                                cfgIdPi06IdCutTypeHighP, cfgIdPi07NSigmaTPCHighP, cfgIdPi08NSigmaTOFHighP, cfgIdPi09NSigmaRadHighP);
-    }
-    return false;
+    float nSigmaIdDistSq = -1.0f;
+    return selPdependent<kPidPi>(track, IdMethod, nSigmaIdDistSq);
   }
 
-  // Kaon
   template <typename T>
   bool selKaon(const T& track, int& IdMethod)
   {
-    if (cfgId04DoPdependentId) {
-      return selPdependent<kKa>(track, IdMethod,
-                                cfgIdKa01ThrPforTOF, cfgIdKa02IdCutTypeLowP, cfgIdKa03NSigmaTPCLowP, cfgIdKa04NSigmaTOFLowP, cfgIdKa05NSigmaRadLowP,
-                                cfgIdKa06IdCutTypeHighP, cfgIdKa07NSigmaTPCHighP, cfgIdKa08NSigmaTOFHighP, cfgIdKa09NSigmaRadHighP);
-    }
-    return false;
+    float nSigmaIdDistSq = -1.0f;
+    return selPdependent<kPidKa>(track, IdMethod, nSigmaIdDistSq);
   }
 
-  // Proton
   template <typename T>
   bool selProton(const T& track, int& IdMethod)
   {
-    if (cfgId04DoPdependentId) {
-      return selPdependent<kPr>(track, IdMethod,
-                                cfgIdPr01ThrPforTOF, cfgIdPr02IdCutTypeLowP, cfgIdPr03NSigmaTPCLowP, cfgIdPr04NSigmaTOFLowP, cfgIdPr05NSigmaRadLowP,
-                                cfgIdPr06IdCutTypeHighP, cfgIdPr07NSigmaTPCHighP, cfgIdPr08NSigmaTOFHighP, cfgIdPr09NSigmaRadHighP);
-    }
-    return false;
+    float nSigmaIdDistSq = -1.0f;
+    return selPdependent<kPidPr>(track, IdMethod, nSigmaIdDistSq);
   }
 
   template <int Mode, int pidMode, int detMode, typename H, typename T>
@@ -1478,12 +1861,12 @@ struct NchCumulantsId {
 
   using MyAllTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
                                 aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl,
-                                aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe>;
+                                aod::pidTPCFullMu, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullDe>;
   using MyCollisions = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels>;
 
   using MyTracksWithMclabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTOFmass,
-                                         aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullDe,
-                                         aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe, aod::McTrackLabels>;
+                                         aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullDe,
+                                         aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullDe, aod::McTrackLabels>;
   using MyCollisionsWithMcLabels = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels, aod::McCollisionLabels>;
 
   template <typename CollisionType>
@@ -1955,6 +2338,16 @@ struct NchCumulantsId {
       float nKaGen = 0, nAKaGen = 0;
       float nPiGen = 0, nAPiGen = 0;
 
+      std::array<float, 8> genAll{}; // candidates per species (index = FCPrefixEnum 0..7), before the weight gate
+      auto okCell = [&](FCPrefixEnum sp, int pid, int sgn, double pt, double eta) {
+        genAll[static_cast<int>(sp)] += 1.f;
+        if (!cfgEventSelection.cfgGateGenByWeight) {
+          return true;
+        }
+        const int bin = hPtEtaForBinSearch->FindBin(pt, eta);
+        return usableWeight(hPtEtaForEffCorrection[pid][sgn]->GetBinContent(bin));
+      };
+
       for (const auto& mcTrack : mcTracksTablePerMcColl) {
         if (!mcTrack.isPhysicalPrimary()) {
           continue;
@@ -1969,58 +2362,71 @@ struct NchCumulantsId {
 
         if (pdg == kPiPlus || pdg == kKPlus || pdg == kProton || pdg == kPositron || pdg == kMuonPlus || pdg == kDeuteron) {
           // fillGenTrackQA<genAnalysisDir, kPos>(genAnalysis, mcTrack);
-          nPGen++;
-
+          // nPGen++;
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h12_p"), mcTrack.p());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h13_pt"), mcTrack.pt());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h14_eta"), mcTrack.eta());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h15_phi"), mcTrack.phi());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
+
+          if (okCell(FCPrefixEnum::Pos, kCh, kPos, mcTrack.pt(), mcTrack.eta())) {
+            nPGen++;
+          }
         } else if (pdg == kPiMinus || pdg == kKMinus || pdg == kProtonBar || pdg == kElectron || pdg == kMuonMinus || pdg == -kDeuteron) {
           // fillGenTrackQA<genAnalysisDir, kNeg>(genAnalysis, mcTrack);
-          nMGen++;
-
+          // nMGen++;
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h12_p"), mcTrack.p());
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h13_pt"), mcTrack.pt());
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h14_eta"), mcTrack.eta());
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h15_phi"), mcTrack.phi());
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
+
+          if (okCell(FCPrefixEnum::Neg, kCh, kNeg, mcTrack.pt(), mcTrack.eta())) {
+            nMGen++;
+          }
         }
         // ----- Pions -----
         if (pdg == kPiPlus) {
           // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
-          nPiGen++;
+          // nPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kPos>(genAnalysis, mcTrack);
+          if (okCell(FCPrefixEnum::PiPos, kPi, kPos, mcTrack.pt(), mcTrack.eta())) {
+            nPiGen++;
+          }
         } else if (pdg == kPiMinus) {
           // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
-          nAPiGen++;
+          // nAPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
+          if (okCell(FCPrefixEnum::PiNeg, kPi, kNeg, mcTrack.pt(), mcTrack.eta())) {
+            nAPiGen++;
+          }
         } else if (pdg == kKPlus) {
           // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
-          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinKa && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxKa) {
+          fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
+          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinKa && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxKa && okCell(FCPrefixEnum::KaPos, kKa, kPos, mcTrack.pt(), mcTrack.eta())) {
             nKaGen++;
           }
-          fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
+
         } else if (pdg == kKMinus) {
           // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
-          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinKa && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxKa) {
+          fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
+          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinKa && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxKa && okCell(FCPrefixEnum::KaNeg, kKa, kNeg, mcTrack.pt(), mcTrack.eta())) {
             nAKaGen++;
           }
-          fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kProton) {
           // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
-          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinPr && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxPr) {
+          fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
+          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinPr && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxPr && okCell(FCPrefixEnum::Pr, kPr, kPos, mcTrack.pt(), mcTrack.eta())) {
             nPrGen++;
           }
-          fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kProtonBar) {
           // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
-          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinPr && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxPr) {
+          fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
+          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinPr && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxPr && okCell(FCPrefixEnum::APr, kPr, kNeg, mcTrack.pt(), mcTrack.eta())) {
             nAPrGen++;
           }
-          fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
         }
 
       } // particle/track loop for gen ends
@@ -2076,6 +2482,11 @@ struct NchCumulantsId {
         if (!mcPart.isPhysicalPrimary()) {
           continue;
         }
+
+        if (cfgEventSelection.cfgRequireSameMcColl && mcPart.mcCollisionId() != mcCollision.globalIndex()) {
+          continue;
+        }
+
         int pdg = mcPart.pdgCode();
 
         int mcTag = getMCTag(track);
@@ -2329,6 +2740,15 @@ struct NchCumulantsId {
                   nPiPur, nAPiPur, nKaPur, nAKaPur, nTPur, cent);
       }
       fillCollQA<qaEventPostSel>(col, nChRec, nTRec);
+
+      fillCountCheck<FCPrefixEnum::Pr>(genAll[0], nPrGen, prPow, cent, registry);
+      fillCountCheck<FCPrefixEnum::APr>(genAll[1], nAPrGen, aprPow, cent, registry);
+      fillCountCheck<FCPrefixEnum::PiPos>(genAll[2], nPiGen, pipPow, cent, registry);
+      fillCountCheck<FCPrefixEnum::PiNeg>(genAll[3], nAPiGen, pimPow, cent, registry);
+      fillCountCheck<FCPrefixEnum::KaPos>(genAll[4], nKaGen, kapPow, cent, registry);
+      fillCountCheck<FCPrefixEnum::KaNeg>(genAll[5], nAKaGen, kamPow, cent, registry);
+      fillCountCheck<FCPrefixEnum::Pos>(genAll[6], nPGen, posPow, cent, registry);
+      fillCountCheck<FCPrefixEnum::Neg>(genAll[7], nMGen, negPow, cent, registry);
 
       fillFCBasis<FCPrefixEnum::Pr>(prPow, cent, registry);
       fillFCBasis<FCPrefixEnum::APr>(aprPow, cent, registry);

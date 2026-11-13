@@ -1130,9 +1130,13 @@ void analyzeJetTrackInfo4GNNwExtra(AnalysisJet const& analysisJet, AnyTracks con
 
 // Looping over the track info and putting them in the input vector (for GNN b-jet tagging)
 template <typename AnalysisJet, typename AnyTracks>
-void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<std::vector<float>>& tracksParams, float trackPtMin = 0.5, float trackDcaXYMax = 10.0, float trackDcaZMax = 10.0, int64_t nMaxConstit = 40)
+void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<std::vector<float>>& tracksParams, float trackPtMin = 0.5, float trackDcaXYMax = 10.0, float trackDcaZMax = 10.0, int64_t nMaxConstit = 40, std::vector<std::size_t>* constituentIndices = nullptr)
 {
-  for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
+  // Optionally retain constituent-array positions in exactly the model-node
+  // order, including replacements when the maximum track count is exceeded.
+  auto const tracks = analysisJet.template tracks_as<AnyTracks>();
+  for (std::size_t constituentIndex = 0; constituentIndex < tracks.size(); ++constituentIndex) {
+    auto const& constituent = tracks[constituentIndex];
 
     if (constituent.pt() < trackPtMin || !trackAcceptanceWithDca(constituent, trackDcaXYMax, trackDcaZMax)) {
       continue;
@@ -1142,6 +1146,9 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
 
     if (static_cast<int64_t>(tracksParams.size()) < nMaxConstit) {
       tracksParams.emplace_back(std::vector<float>{constituent.pt(), constituent.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ()});
+      if (constituentIndices) {
+        constituentIndices->push_back(constituentIndex);
+      }
     } else {
       // If there are more than nMaxConstit constituents in the jet, select only nMaxConstit constituents with the highest DCA_XY significance.
       size_t minIdx = 0;
@@ -1149,8 +1156,12 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
         if (tracksParams[i][4] / tracksParams[i][5] < tracksParams[minIdx][4] / tracksParams[minIdx][5])
           minIdx = i;
       }
-      if (std::abs(constituent.dcaXY()) * sign / constituent.sigmadcaXY() > tracksParams[minIdx][4] / tracksParams[minIdx][5])
+      if (std::abs(constituent.dcaXY()) * sign / constituent.sigmadcaXY() > tracksParams[minIdx][4] / tracksParams[minIdx][5]) {
         tracksParams[minIdx] = std::vector<float>{constituent.pt(), constituent.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ()};
+        if (constituentIndices) {
+          (*constituentIndices)[minIdx] = constituentIndex;
+        }
+      }
     }
   }
 }
@@ -1218,6 +1229,9 @@ T getDbFromProb(const std::vector<T>& probs, double fC = 0.018)
 template <typename T>
 T getDb(const std::vector<T>& logits, double fC = 0.018)
 {
+  if (logits.size() < 3) {
+    LOG(fatal) << "getDb expects at least 3 class logits, received " << logits.size();
+  }
   auto softmax = [](const std::vector<T>& logits) {
     std::vector<T> res;
     T maxLogit = *std::max_element(logits.begin(), logits.end());
@@ -1234,11 +1248,41 @@ T getDb(const std::vector<T>& logits, double fC = 0.018)
 
   std::vector<T> softmaxLogits = softmax(logits);
 
-  if (softmaxLogits[1] == 0. && softmaxLogits[2] == 0.) {
-    LOG(debug) << "jettaggingutilities::Db, Divide by zero: softmaxLogits = (" << softmaxLogits[0] << ", " << softmaxLogits[1] << ", " << softmaxLogits[2] << ")";
+  auto denominator = fC * softmaxLogits[1] + (1. - fC) * softmaxLogits[2];
+  if (!std::isfinite(softmaxLogits[0]) || !std::isfinite(denominator) || softmaxLogits[0] <= 0. || denominator <= 0.) {
+    LOG(debug) << "jettaggingutilities::getDb, non-positive or non-finite numerator/denominator";
+    return std::numeric_limits<T>::quiet_NaN();
   }
 
-  return std::log(softmaxLogits[0] / (fC * softmaxLogits[1] + (1. - fC) * softmaxLogits[2]));
+  return std::log(softmaxLogits[0] / denominator);
+}
+
+// Track-origin discriminant. Logit order: [background, charm, beauty, PV, other SV].
+template <typename T>
+T getTrackDb(const std::vector<T>& trackLogits, double trackFC)
+{
+  constexpr std::size_t NTrackOrigins = 5;
+  if (trackLogits.size() != NTrackOrigins) {
+    LOG(fatal) << "getTrackDb expects 5 track-origin logits, received " << trackLogits.size();
+  }
+
+  std::array<T, NTrackOrigins> softmaxLogits;
+  T maxLogit = *std::max_element(trackLogits.begin(), trackLogits.end());
+  T sumLogit = 0.;
+  for (std::size_t i = 0; i < NTrackOrigins; ++i) {
+    softmaxLogits[i] = std::exp(trackLogits[i] - maxLogit);
+    sumLogit += softmaxLogits[i];
+  }
+  for (auto& probability : softmaxLogits) {
+    probability /= sumLogit;
+  }
+
+  T denominator = trackFC * softmaxLogits[1] + (1. - trackFC) * (softmaxLogits[0] + softmaxLogits[3] + softmaxLogits[4]);
+  if (!std::isfinite(softmaxLogits[2]) || !std::isfinite(denominator) || softmaxLogits[2] <= 0. || denominator <= 0.) {
+    LOG(debug) << "jettaggingutilities::getTrackDb, non-positive or non-finite numerator/denominator";
+    return std::numeric_limits<T>::quiet_NaN();
+  }
+  return std::log(softmaxLogits[2] / denominator);
 }
 
 }; // namespace jettaggingutilities
