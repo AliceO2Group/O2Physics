@@ -21,6 +21,7 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
