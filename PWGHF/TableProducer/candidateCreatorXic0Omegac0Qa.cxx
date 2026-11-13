@@ -523,8 +523,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     float phi, theta;
     getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
-    auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
-    auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
+    float errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
+    float errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
     // Impact parameters computed with propagatToDCABxByBz method
     auto trackParCovV0DauPos = getTrackParCov(posTrack);
@@ -833,6 +833,13 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     kfCharmBaryonToPv.SetProductionVertex(kfPv);
 
     //----------Calculate physical quantities -------------
+    std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
+    std::array<float, 3> svCoord = {kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()};
+    std::array<float, 3> vertexV0 = {kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()};
+    std::array<float, 3> vertexCasc = {kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()};
+    std::array<float, 3> pVecV0 = {kfV0.GetPx(), kfV0.GetPy(), kfV0.GetPz()};
+    std::array<float, 3> pVecCasc = {kfCasc.GetPx(), kfCasc.GetPy(), kfCasc.GetPz()};
+
     auto trackParCovV0DauPos = getTrackParCovFromKFP(kfPos, convertPDGIntoPID(kfPos.GetPDG()), 1);
     auto trackParCovV0DauNeg = getTrackParCovFromKFP(kfNeg, convertPDGIntoPID(kfNeg.GetPDG()), -1);
     auto trackParCovBach = getTrackParCovFromKFP(kfBachToCasc, convertPDGIntoPID(kfBachToCasc.GetPDG()), bachCharge);
@@ -860,6 +867,17 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     float kfDcaCascDaughters = kfBachToCasc.GetDistanceFromParticle(kfV0ToCasc);
     float kfDcaCharmBaryonDaughters = kfCharmBachToCharmBaryon.GetDistanceFromParticle(kfCascToCharmBaryon);
 
+    // Calculate error of decay length using covariance matrix of PV and SV, same as in DCAFitter
+    float covMatrixPv[6];
+    kfVertex.GetCovarianceMatrix(covMatrixPv);
+    auto* covMatrixSV = kfCharmBaryon.CovarianceMatrix();
+
+    double phi, theta;
+    getPointDirection(pvCoord, svCoord, phi, theta);
+    float errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPv, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
+    float errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPv, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
+
+    // Calculate normalised decay length using KFParticle
     float dlV0, errDlV0;
     kfV0ToPv.GetDecayLength(dlV0, errDlV0);
     dlV0 = std::abs(dlV0); // KFParticle returns a signed decay length
@@ -872,13 +890,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     kfCharmBaryonToPv.GetDecayLength(dlCharmBaryon, errDlCharmBaryon);
     kfCharmBaryonToPv.GetDecayLengthXY(dlXYCharmBaryon, errDlXYCharmBaryon);
     dlCharmBaryon = std::abs(dlCharmBaryon);
-
-    std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
-    std::array<float, 3> svCoord = {kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()};
-    std::array<float, 3> vertexV0 = {kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()};
-    std::array<float, 3> vertexCasc = {kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()};
-    std::array<float, 3> pVecV0 = {kfV0.GetPx(), kfV0.GetPy(), kfV0.GetPz()};
-    std::array<float, 3> pVecCasc = {kfCasc.GetPx(), kfCasc.GetPy(), kfCasc.GetPz()};
 
     float cosPaCascToPv = RecoDecay::cpa(pvCoord, vertexCasc, pVecCasc);
     float cosPaXYCascToPv = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
@@ -896,7 +907,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                      kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ(),
                      kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ(),
                      kfV0.GetX(), kfV0.GetY(), kfV0.GetZ(),
-                     errDlCharmBaryon, errDlXYCharmBaryon,
+                     errorDecayLength, errorDecayLengthXY,
                      kfCascToCharmBaryon.GetPx(), kfCascToCharmBaryon.GetPy(), kfCascToCharmBaryon.GetPz(),
                      kfCharmBachToCharmBaryon.GetPx(), kfCharmBachToCharmBaryon.GetPy(), kfCharmBachToCharmBaryon.GetPz(),
                      impactParameterCasc.getY(), impactParameterCharmBach.getY(),
