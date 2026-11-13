@@ -10,14 +10,15 @@
 /// \author Eisha Rani
 /// \since September 2026
 
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/Utils/inelGt.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
@@ -50,7 +51,7 @@ using namespace o2::soa;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
 
 using CollisionsWithMult = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults>;
-using CollisionsNoMult   = soa::Join<aod::Collisions, aod::EvSels>;
+using CollisionsNoMult = soa::Join<aod::Collisions, aod::EvSels>;
 // Reco collisions grouped per MC collision (as in the DeepSeek/Monday version)
 using ColMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
 
@@ -144,7 +145,6 @@ struct FlattenicityTask {
        "MC Truth - Combined, 52 sectors;1-#rho;Entries",
        {HistType::kTH1F, {{NFlatBins, 0.0, 1.0}}}},
 
-
       // ---- MC reco ----
       {"MCReco/hFlattenicityFT0Average_fine",
        "MC Reco - FT0 Average of FT0A and FT0C;1-#rho;Entries",
@@ -160,7 +160,6 @@ struct FlattenicityTask {
       {"Data/hFlattenicityFT0Combined_fine",
        "Data - FT0 Combined FT0A+FT0C;1-#rho;Entries",
        {HistType::kTH1F, {{NFlatBins, 0.0, 1.0}}}},
-
 
       // ---- Correlation matrices: x = measured (reco) 1-rho, y = true (MC particles) 1-rho ----
       {"MCReco/hTruthVsRecoCombined",
@@ -218,7 +217,8 @@ struct FlattenicityTask {
   // title is correct even if endOfStream runs after the histograms are written.
   int nCorrFills = 0;
 
-  void updateCorrTitles() {
+  void updateCorrTitles()
+  {
     auto hComb = histos.get<TH2>(HIST("MCReco/hTruthVsRecoCombined"));
     if (hComb && hComb->GetEntries() > 0) {
       hComb->SetTitle(Form("Combined: reco vs truth (Pearson r = %.3f);1-#rho (reco, FT0);1-#rho (truth, MC)", hComb->GetCorrelationFactor()));
@@ -234,7 +234,8 @@ struct FlattenicityTask {
   // ========================================================================
   // init
   // ========================================================================
-  void init(InitContext&) {
+  void init(InitContext&)
+  {
     gStyle->SetOptStat("em");
     auto itsMatching = static_cast<TrackSelection::GlobalTrackRun3ITSMatching>(cfgITSreq.value);
     myTrkSel = getGlobalTrackSelectionRun3ITSMatch(itsMatching);
@@ -276,20 +277,27 @@ struct FlattenicityTask {
   // ========================================================================
   // Helpers
   // ========================================================================
-  bool isChargedParticle(int pdgCode) {
+  bool isChargedParticle(int pdgCode)
+  {
     const auto* pdgParticle = pdg->GetParticle(pdgCode);
-    if (!pdgParticle) return false;
-    if (std::abs(pdgParticle->Charge()) < ChargeEpsilon) return false;
+    if (!pdgParticle)
+      return false;
+    if (std::abs(pdgParticle->Charge()) < ChargeEpsilon)
+      return false;
     return true;
   }
 
   template <std::size_t N>
-  float computeRho(const std::array<float, N>& counts) {
+  float computeRho(const std::array<float, N>& counts)
+  {
     float total = 0.0f;
-    for (std::size_t i = 0; i < N; ++i) total += counts[i];
-    if (total <= 0.0f) return -1.0f;
+    for (std::size_t i = 0; i < N; ++i)
+      total += counts[i];
+    if (total <= 0.0f)
+      return -1.0f;
     const float mean = total / static_cast<float>(N);
-    if (mean <= 0.0f) return -1.0f;
+    if (mean <= 0.0f)
+      return -1.0f;
     float sumSq = 0.0f;
     for (std::size_t i = 0; i < N; ++i) {
       const float diff = counts[i] - mean;
@@ -299,26 +307,33 @@ struct FlattenicityTask {
   }
 
   template <std::size_t N>
-  float computeFlattenicity(const std::array<float, N>& counts) {
+  float computeFlattenicity(const std::array<float, N>& counts)
+  {
     const float rho = computeRho(counts);
-    if (rho < 0.0f) return -1.0f;
+    if (rho < 0.0f)
+      return -1.0f;
     return 1.0f - rho;
   }
 
   // channel -> physical module (see kChannelToModule* above). Returns -1 for
   // an out-of-range channel ID.
-  int getFT0ASector(int channel) {
-    if (channel < 0 || channel >= NchA) return -1;
+  int getFT0ASector(int channel)
+  {
+    if (channel < 0 || channel >= NchA)
+      return -1;
     return kChannelToModuleA[channel];
   }
-  int getFT0CSector(int channel) {
-    if (channel < 0 || channel >= NchC) return -1;
+  int getFT0CSector(int channel)
+  {
+    if (channel < 0 || channel >= NchC)
+      return -1;
     return kChannelToModuleC[channel];
   }
 
   // Project a trajectory of given (eta, phi) from the IP onto the plane
   // z = zPlane (signed - negative for FT0-C) and return the (x, y) it hits.
-  static void projectToPlane(float eta, float phi, float zPlane, float vz, float& x, float& y) {
+  static void projectToPlane(float eta, float phi, float zPlane, float vz, float& x, float& y)
+  {
     // vz = z of the (MC) primary vertex: the particle flies from (0,0,vz).
     const float theta = 2.0f * std::atan(std::exp(-eta));
     const float r = (zPlane - vz) * std::tan(theta);
@@ -331,10 +346,12 @@ struct FlattenicityTask {
   // rather than an assumed uniform eta x phi grid. Returns the module
   // index (0..NSectorsA-1 for FT0-A, 0..NSectorsC-1 for FT0-C) or -1 if
   // outside both arrays' eta acceptance. isFT0A is set accordingly.
-  int assignToFT0Module(float eta, float phi, float vz, bool& isFT0A) {
+  int assignToFT0Module(float eta, float phi, float vz, bool& isFT0A)
+  {
     const bool inFT0A = (eta > FT0AEtaMin && eta < FT0AEtaMax);
     const bool inFT0C = (eta > FT0CEtaMin && eta < FT0CEtaMax);
-    if (!inFT0A && !inFT0C) return -1;
+    if (!inFT0A && !inFT0C)
+      return -1;
     isFT0A = inFT0A;
 
     float x = 0.0f, y = 0.0f;
@@ -346,10 +363,14 @@ struct FlattenicityTask {
         const float dx = x - kModuleAx[m];
         const float dy = y - kModuleAy[m];
         const float d2 = dx * dx + dy * dy;
-        if (d2 < bestD2) { bestD2 = d2; best = m; }
+        if (d2 < bestD2) {
+          bestD2 = d2;
+          best = m;
+        }
       }
       if (cfgRequireModuleHit && best >= 0 &&
-          (std::abs(x - kModuleAx[best]) > kModuleHalfWidth || std::abs(y - kModuleAy[best]) > kModuleHalfWidth)) return -1;
+          (std::abs(x - kModuleAx[best]) > kModuleHalfWidth || std::abs(y - kModuleAy[best]) > kModuleHalfWidth))
+        return -1;
       return best;
     }
     // FT0-C: project using a representative plane z (module z varies by
@@ -362,15 +383,20 @@ struct FlattenicityTask {
       const float dx = x - kModuleCx[m];
       const float dy = y - kModuleCy[m];
       const float d2 = dx * dx + dy * dy;
-      if (d2 < bestD2) { bestD2 = d2; best = m; }
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = m;
+      }
     }
     if (cfgRequireModuleHit && best >= 0 &&
-        (std::abs(x - kModuleCx[best]) > kModuleHalfWidth || std::abs(y - kModuleCy[best]) > kModuleHalfWidth)) return -1;
+        (std::abs(x - kModuleCx[best]) > kModuleHalfWidth || std::abs(y - kModuleCy[best]) > kModuleHalfWidth))
+      return -1;
     return best;
   }
 
   template <typename FT0>
-  bool computeFT0Flattenicities(const FT0& ft0, float& flattenicityAverage, float& flattenicityCombined, float& sumAmplitude) {
+  bool computeFT0Flattenicities(const FT0& ft0, float& flattenicityAverage, float& flattenicityCombined, float& sumAmplitude)
+  {
     std::array<float, NSectorsA> countsA{};
     std::array<float, NSectorsC> countsC{};
     std::array<float, NSectorsCombined> countsCombined{};
@@ -420,13 +446,18 @@ struct FlattenicityTask {
   }
 
   template <typename Track>
-  bool isTrackSelected(const Track& track) {
-    if (track.pt() <= cfgPtMin) return false;
-    if (std::abs(track.eta()) > cfgEtaMax) return false;
+  bool isTrackSelected(const Track& track)
+  {
+    if (track.pt() <= cfgPtMin)
+      return false;
+    if (std::abs(track.eta()) > cfgEtaMax)
+      return false;
 
     for (int i = 0; i < static_cast<int>(TrackSelection::TrackCuts::kNCuts); ++i) {
-      if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAxy)) continue;
-      if (!myTrkSel.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i))) return false;
+      if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAxy))
+        continue;
+      if (!myTrkSel.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i)))
+        return false;
     }
 
     const float dcaXyCut = 0.0105f + 0.0350f / std::pow(track.pt(), 1.1f);
@@ -434,11 +465,14 @@ struct FlattenicityTask {
   }
 
   template <typename Tracks>
-  int countSelectedTracks(const Tracks& tracks, int64_t collIdx) {
+  int countSelectedTracks(const Tracks& tracks, int64_t collIdx)
+  {
     int n = 0;
     for (const auto& track : tracks) {
-      if (track.collisionId() != collIdx) continue;
-      if (!isTrackSelected(track)) continue;
+      if (track.collisionId() != collIdx)
+        continue;
+      if (!isTrackSelected(track))
+        continue;
       ++n;
     }
     return n;
@@ -448,15 +482,21 @@ struct FlattenicityTask {
   // Same event conditions as the 1D fine flattenicity histograms, so the percentile
   // classes taken from those histograms are consistent with these pT spectra.
   template <typename Tracks>
-  void fillRecoPtVsFlat(const Tracks& tracks, int64_t collIdx, float flatAvg, float flatComb) {
+  void fillRecoPtVsFlat(const Tracks& tracks, int64_t collIdx, float flatAvg, float flatComb)
+  {
     const bool okAvg = (flatAvg >= 0.0f && flatAvg <= 1.0f);
     const bool okComb = (flatComb >= 0.0f && flatComb <= 1.0f);
-    if (!okAvg && !okComb) return;
+    if (!okAvg && !okComb)
+      return;
     for (const auto& track : tracks) {
-      if (track.collisionId() != collIdx) continue;
-      if (!isTrackSelected(track)) continue;
-      if (okAvg) hPtVsFlatRecoAvg->Fill(flatAvg, track.pt());
-      if (okComb) hPtVsFlatRecoComb->Fill(flatComb, track.pt());
+      if (track.collisionId() != collIdx)
+        continue;
+      if (!isTrackSelected(track))
+        continue;
+      if (okAvg)
+        hPtVsFlatRecoAvg->Fill(flatAvg, track.pt());
+      if (okComb)
+        hPtVsFlatRecoComb->Fill(flatComb, track.pt());
     }
   }
 
@@ -471,8 +511,10 @@ struct FlattenicityTask {
   void processMC(aod::McCollisions::iterator const& mcCollision,
                  ColMCRecTable const& recCols,
                  aod::McParticles const& mcParticles,
-                 aod::FT0s const& ft0s) {
-    if (std::abs(mcCollision.posZ()) > cfgVzMax) return;
+                 aod::FT0s const& ft0s)
+  {
+    if (std::abs(mcCollision.posZ()) > cfgVzMax)
+      return;
     const float vzMC = mcCollision.posZ();
 
     std::array<float, NSectorsA> truthA{};
@@ -482,10 +524,14 @@ struct FlattenicityTask {
     int nChINEL = 0;
     std::vector<float> truthPt; // primary charged, |eta| < cfgEtaMax, pT > cfgPtMin
     for (const auto& particle : mcParticles) {
-      if (particle.mcCollisionId() != mcCollision.globalIndex()) continue;
-      if ((particle.flags() & NPhysicalPrimaryBit) == 0) continue;
-      if (!isChargedParticle(particle.pdgCode())) continue;
-      if (particle.pt() <= cfgPtMin) continue;
+      if (particle.mcCollisionId() != mcCollision.globalIndex())
+        continue;
+      if ((particle.flags() & NPhysicalPrimaryBit) == 0)
+        continue;
+      if (!isChargedParticle(particle.pdgCode()))
+        continue;
+      if (particle.pt() <= cfgPtMin)
+        continue;
       if (std::abs(particle.eta()) < cfgEtaMax) {
         ++nChINEL;
         truthPt.push_back(particle.pt());
@@ -493,7 +539,8 @@ struct FlattenicityTask {
 
       bool isFT0A = false;
       const int module = assignToFT0Module(particle.eta(), particle.phi(), vzMC, isFT0A);
-      if (module < 0) continue;
+      if (module < 0)
+        continue;
 
       if (isFT0A) {
         truthA[module] += 1.0f;
@@ -521,37 +568,52 @@ struct FlattenicityTask {
 
     // pT vs truth flattenicity (same event conditions as the fine histograms above)
     for (const auto& pt : truthPt) {
-      if (truthAvg >= 0.0f && truthAvg <= 1.0f) hPtVsFlatTruthAvg->Fill(truthAvg, pt);
-      if (truthCombined >= 0.0f) hPtVsFlatTruthComb->Fill(truthCombined, pt);
+      if (truthAvg >= 0.0f && truthAvg <= 1.0f)
+        hPtVsFlatTruthAvg->Fill(truthAvg, pt);
+      if (truthCombined >= 0.0f)
+        hPtVsFlatTruthComb->Fill(truthCombined, pt);
     }
 
     // ---- correlation matrix: measured (reco) vs true ----
-    if (recCols.size() == 0) return;
+    if (recCols.size() == 0)
+      return;
     auto recCol = *recCols.begin();
 
-    if (cfgApplySel8 && !recCol.sel8()) return;
-    if (cfgPileupRejection && !recCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) return;
-    if (cfgGoodZvertex && !recCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) return;
-    if (std::abs(recCol.posZ()) > cfgVzMax) return;
+    if (cfgApplySel8 && !recCol.sel8())
+      return;
+    if (cfgPileupRejection && !recCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    if (cfgGoodZvertex && !recCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    if (std::abs(recCol.posZ()) > cfgVzMax)
+      return;
     if (cfgApplyGoodITSLayersAll &&
-        !recCol.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) return;
+        !recCol.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+      return;
 
     aod::FT0s::iterator ft0;
     bool foundFT0 = false;
     for (const auto& f : ft0s) {
-      if (f.bcId() == recCol.bcId()) { ft0 = f; foundFT0 = true; break; }
+      if (f.bcId() == recCol.bcId()) {
+        ft0 = f;
+        foundFT0 = true;
+        break;
+      }
     }
-    if (!foundFT0) return;
+    if (!foundFT0)
+      return;
 
     float flatAvg = -1.0f, flatComb = -1.0f, sumAmp = 0.0f;
-    if (!computeFT0Flattenicities(ft0, flatAvg, flatComb, sumAmp)) return;
+    if (!computeFT0Flattenicities(ft0, flatAvg, flatComb, sumAmp))
+      return;
 
     if (flatComb >= 0.0f && truthCombined >= 0.0f)
       histos.fill(HIST("MCReco/hTruthVsRecoCombined"), flatComb, truthCombined);
     if (flatAvg >= 0.0f && truthAvg >= 0.0f)
       histos.fill(HIST("MCReco/hTruthVsRecoAverage"), flatAvg, truthAvg);
 
-    if (++nCorrFills % NCorrTitleUpdateInterval == 0) updateCorrTitles();
+    if (++nCorrFills % NCorrTitleUpdateInterval == 0)
+      updateCorrTitles();
   }
 
   PROCESS_SWITCH(FlattenicityTask, processMC, "Process MC truth", true);
@@ -561,14 +623,21 @@ struct FlattenicityTask {
   // ========================================================================
   void processDataFull(CollisionsWithMult::iterator const& collision,
                        aod::FT0s const& ft0s,
-                       FullTracks const& tracks) {
-    if (cfgRequireInelGt0 && !collision.isInelGt0()) return;
-    if (cfgApplySel8 && !collision.sel8()) return;
-    if (cfgPileupRejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) return;
-    if (cfgGoodZvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) return;
-    if (std::abs(collision.posZ()) > cfgVzMax) return;
+                       FullTracks const& tracks)
+  {
+    if (cfgRequireInelGt0 && !collision.isInelGt0())
+      return;
+    if (cfgApplySel8 && !collision.sel8())
+      return;
+    if (cfgPileupRejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    if (cfgGoodZvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    if (std::abs(collision.posZ()) > cfgVzMax)
+      return;
     if (cfgApplyGoodITSLayersAll &&
-        !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) return;
+        !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+      return;
 
     const int nChINEL = countSelectedTracks(tracks, collision.globalIndex());
     histos.fill(HIST("QA/hEvents"), 3);
@@ -577,20 +646,30 @@ struct FlattenicityTask {
     aod::FT0s::iterator ft0;
     bool foundFT0 = false;
     for (const auto& f : ft0s) {
-      if (f.bcId() == collision.bcId()) { ft0 = f; foundFT0 = true; break; }
+      if (f.bcId() == collision.bcId()) {
+        ft0 = f;
+        foundFT0 = true;
+        break;
+      }
     }
-    if (!foundFT0) return;
+    if (!foundFT0)
+      return;
 
     float flatAvg = -1.0f, flatComb = -1.0f, sumFT0M = 0.0f;
-    if (!computeFT0Flattenicities(ft0, flatAvg, flatComb, sumFT0M)) return;
+    if (!computeFT0Flattenicities(ft0, flatAvg, flatComb, sumFT0M))
+      return;
 
     if (cfgIsMCReco.value) {
-      if (flatAvg  >= 0.0f && flatAvg  <= 1.0f) histos.fill(HIST("MCReco/hFlattenicityFT0Average_fine"),  flatAvg);
-      if (flatComb >= 0.0f && flatComb <= 1.0f) histos.fill(HIST("MCReco/hFlattenicityFT0Combined_fine"), flatComb);
+      if (flatAvg >= 0.0f && flatAvg <= 1.0f)
+        histos.fill(HIST("MCReco/hFlattenicityFT0Average_fine"), flatAvg);
+      if (flatComb >= 0.0f && flatComb <= 1.0f)
+        histos.fill(HIST("MCReco/hFlattenicityFT0Combined_fine"), flatComb);
       fillRecoPtVsFlat(tracks, collision.globalIndex(), flatAvg, flatComb);
     } else {
-      if (flatAvg  >= 0.0f && flatAvg  <= 1.0f) histos.fill(HIST("Data/hFlattenicityFT0Average_fine"),  flatAvg);
-      if (flatComb >= 0.0f && flatComb <= 1.0f) histos.fill(HIST("Data/hFlattenicityFT0Combined_fine"), flatComb);
+      if (flatAvg >= 0.0f && flatAvg <= 1.0f)
+        histos.fill(HIST("Data/hFlattenicityFT0Average_fine"), flatAvg);
+      if (flatComb >= 0.0f && flatComb <= 1.0f)
+        histos.fill(HIST("Data/hFlattenicityFT0Combined_fine"), flatComb);
     }
   }
 
@@ -601,13 +680,19 @@ struct FlattenicityTask {
   // ========================================================================
   void processDataNoMult(CollisionsNoMult::iterator const& collision,
                          aod::FT0s const& ft0s,
-                         FullTracks const& tracks) {
-    if (cfgApplySel8 && !collision.sel8()) return;
-    if (cfgPileupRejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) return;
-    if (cfgGoodZvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) return;
-    if (std::abs(collision.posZ()) > cfgVzMax) return;
+                         FullTracks const& tracks)
+  {
+    if (cfgApplySel8 && !collision.sel8())
+      return;
+    if (cfgPileupRejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    if (cfgGoodZvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    if (std::abs(collision.posZ()) > cfgVzMax)
+      return;
     if (cfgApplyGoodITSLayersAll &&
-        !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) return;
+        !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+      return;
     // NOTE: collision.isInelGt0() intentionally not applied here — this
     // reduced schema (CollisionsNoMult) has no aod::Mults/aod::PVMults.
 
@@ -618,20 +703,30 @@ struct FlattenicityTask {
     aod::FT0s::iterator ft0;
     bool foundFT0 = false;
     for (const auto& f : ft0s) {
-      if (f.bcId() == collision.bcId()) { ft0 = f; foundFT0 = true; break; }
+      if (f.bcId() == collision.bcId()) {
+        ft0 = f;
+        foundFT0 = true;
+        break;
+      }
     }
-    if (!foundFT0) return;
+    if (!foundFT0)
+      return;
 
     float flatAvg = -1.0f, flatComb = -1.0f, sumFT0M = 0.0f;
-    if (!computeFT0Flattenicities(ft0, flatAvg, flatComb, sumFT0M)) return;
+    if (!computeFT0Flattenicities(ft0, flatAvg, flatComb, sumFT0M))
+      return;
 
     if (cfgIsMCReco.value) {
-      if (flatAvg  >= 0.0f && flatAvg  <= 1.0f) histos.fill(HIST("MCReco/hFlattenicityFT0Average_fine"),  flatAvg);
-      if (flatComb >= 0.0f && flatComb <= 1.0f) histos.fill(HIST("MCReco/hFlattenicityFT0Combined_fine"), flatComb);
+      if (flatAvg >= 0.0f && flatAvg <= 1.0f)
+        histos.fill(HIST("MCReco/hFlattenicityFT0Average_fine"), flatAvg);
+      if (flatComb >= 0.0f && flatComb <= 1.0f)
+        histos.fill(HIST("MCReco/hFlattenicityFT0Combined_fine"), flatComb);
       fillRecoPtVsFlat(tracks, collision.globalIndex(), flatAvg, flatComb);
     } else {
-      if (flatAvg  >= 0.0f && flatAvg  <= 1.0f) histos.fill(HIST("Data/hFlattenicityFT0Average_fine"),  flatAvg);
-      if (flatComb >= 0.0f && flatComb <= 1.0f) histos.fill(HIST("Data/hFlattenicityFT0Combined_fine"), flatComb);
+      if (flatAvg >= 0.0f && flatAvg <= 1.0f)
+        histos.fill(HIST("Data/hFlattenicityFT0Average_fine"), flatAvg);
+      if (flatComb >= 0.0f && flatComb <= 1.0f)
+        histos.fill(HIST("Data/hFlattenicityFT0Combined_fine"), flatComb);
     }
   }
 
@@ -640,7 +735,8 @@ struct FlattenicityTask {
   // ========================================================================
   // endOfStream - runs once at the end of the analysis
   // ========================================================================
-  void endOfStream(EndOfStreamContext&) {
+  void endOfStream(EndOfStreamContext&)
+  {
     updateCorrTitles();
   }
 };
@@ -648,6 +744,7 @@ struct FlattenicityTask {
 // ============================================================================
 // Workflow
 // ============================================================================
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<FlattenicityTask>(cfgc)};
 }
