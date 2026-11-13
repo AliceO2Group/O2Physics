@@ -23,7 +23,6 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -80,10 +79,6 @@ struct PhotonMcTask {
 
   // configurable axis
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {400, 0., 20.}, "pT axis for the neutral meson"};
-  ConfigurableAxis thnConfigAxisERelative{"thnConfigAxisERelative", {600, -1., 5.}, "(E rec - E true) / E true axis"};
-  ConfigurableAxis thnConfigAxisPRelative{"thnConfigAxisPRelative", {300, -1., 2.}, "(P rec - P true) / P true axis"};
-  ConfigurableAxis thnConfigAxisEtaRelative{"thnConfigAxisEtaRelative", {300, -1., 2.}, "(eta rec - eta true) / eta true axis"};
-  ConfigurableAxis thnConfigAxisPhiRelative{"thnConfigAxisPhiRelative", {300, -1., 2.}, "(phi rec - phi true) / phi true axis"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, "centrality axis for the current event"};
   ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
   Configurable<bool> useCent{"useCent", false, "flag to enable usage of centrality instead of multiplicity as axis."};
@@ -276,20 +271,6 @@ struct PhotonMcTask {
     fEMEventCut.addEventHistograms(&registry);
 
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec thnAxisPtGen{thnConfigAxisPt, "#it{p}_{T,Gen} (GeV/#it{c})"};
-    const AxisSpec thnAxisPtRec{thnConfigAxisPt, "#it{p}_{T,Rec} (GeV/#it{c})"};
-    const AxisSpec thnAxisPGen{thnConfigAxisPt, "#it{p}_{Gen} (GeV/#it{c})"};
-    const AxisSpec thnAxisPRec{thnConfigAxisPt, "#it{p}_{Rec} (GeV/#it{c})"};
-    const AxisSpec thnAxisPRelative{thnConfigAxisPRelative, "#it{p}_{Rec} - #it{p}_{Gen} / #it{p}_{Gen}"};
-    const AxisSpec thnAxisEGen{thnConfigAxisPt, "#it{E}_{Gen} (GeV)"};
-    const AxisSpec thnAxisERec{thnConfigAxisPt, "#it{E}_{Rec} (GeV)"};
-    const AxisSpec thnAxisERelative{thnConfigAxisERelative, "#it{E}_{Rec} - #it{E}_{Gen} / #it{E}_{Gen}"};
-
-    const AxisSpec thnAxisEtaRelative{thnConfigAxisEtaRelative, "#it{#eta}_{Rec} - #it{#eta}_{Gen} / #it{#eta}_{Gen}"};
-    const AxisSpec thnAxisPhiRelative{thnConfigAxisPhiRelative, "#it{#varphi}_{Rec} - #it{#varphi}_{Gen} / #it{#varphi}_{Gen}"};
-
-    const AxisSpec thnAxisEtaGen{280, -0.7, 0.7, "#it{#eta}_{Gen}"};
-    const AxisSpec thnAxisPhiGen{360, 0., o2::constants::math::TwoPI, "#it{#varphi}_{Gen} (rad)"};
 
     AxisSpec thnAxisCentOrMult{1, 0., 1., "Centrality/Multiplicity"}; // placeholder, overwritten in init
     if (useCent.value) {
@@ -306,12 +287,14 @@ struct PhotonMcTask {
       registry.add("EMCal/hAccepted", "EMCal accepted photon pt vs cent/mult", HistType::kTH2D, {thnAxisPt, thnAxisCentOrMult});
       registry.add("EMCal/hMeasured", "EMCal measured photon candidate pt vs cent/mult ", HistType::kTH2D, {thnAxisPt, thnAxisCentOrMult});
       registry.add("EMCal/hMeasuredTruePhoton", "EMCal measured and validated photon pt vs cent/mult ", HistType::kTH2D, {thnAxisPt, thnAxisCentOrMult});
+      registry.add("EMCal/hMeasuredTruePhotonGenPt", "EMCal measured and validated photon gen pt vs cent/mult ", HistType::kTH2D, {thnAxisPt, thnAxisCentOrMult});
     }
 
     if (doprocessPcm || doprocessPcmEmcal) {
       registry.add("PCM/hAccepted", "PCM accepted photon pt vs cent/mult", HistType::kTH2D, {thnAxisPt, thnAxisCentOrMult});
       registry.add("PCM/hMeasured", "PCM measured photon candidate pt vs cent/mult ", HistType::kTH2D, {thnAxisPt, thnAxisCentOrMult});
       registry.add("PCM/hMeasuredTruePhoton", "PCM measured and validated photon pt vs cent/mult ", HistType::kTH2D, {thnAxisPt, thnAxisCentOrMult});
+      registry.add("PCM/hMeasuredTruePhotonGenPt", "PCM measured and validated photon gen pt vs cent/mult ", HistType::kTH2D, {thnAxisPt, thnAxisCentOrMult});
     }
 
   }; // end init
@@ -426,9 +409,6 @@ struct PhotonMcTask {
   }
 
   // TODO:
-  // - efficiency: number of found photon candidates / number of photons within accpetance
-  // - acceptance: number of photons in acceptance / number of photons generated
-  // - photon Purity: number of actual photons / number of photon candidates
   // - How to handle EMCal cluster in this regard? Sometimes both conversion leptons can end up in the same cluster.
   // What is a good check when to start treating them as a photon?
   // When they both deposite at least X% of their momentum into the cluster?
@@ -449,6 +429,8 @@ struct PhotonMcTask {
     // MC leg iterators for PCM
     auto pos1mc = mcParticles.begin();
     auto ele1mc = mcParticles.begin();
+
+    auto mcPhoton = mcParticles.begin();
 
     for (const auto& collision : collisions) {
 
@@ -487,7 +469,9 @@ struct PhotonMcTask {
         if (photonid1 < 0) {
           continue;
         }
+        mcPhoton.setCursor(photonid1);
         registry.fill(HIST("PCM/hMeasuredTruePhoton"), photon.pt(), centOrMult);
+        registry.fill(HIST("PCM/hMeasuredTruePhotonGenPt"), mcPhoton.pt(), centOrMult);
       }
     }
   }
@@ -545,6 +529,7 @@ struct PhotonMcTask {
         }
 
         registry.fill(HIST("EMCal/hMeasuredTruePhoton"), photonEMC.pt(), centOrMult);
+        registry.fill(HIST("EMCal/hMeasuredTruePhotonGenPt"), mcPhoton.pt(), centOrMult);
       }
     }
   }
@@ -616,6 +601,7 @@ struct PhotonMcTask {
         }
 
         registry.fill(HIST("EMCal/hMeasuredTruePhoton"), photonEMC.pt(), centOrMult);
+        registry.fill(HIST("EMCal/hMeasuredTruePhotonGenPt"), mcPhoton.pt(), centOrMult);
       }
 
       for (const auto& photon : photonsPCMPerCollision) {
@@ -635,7 +621,9 @@ struct PhotonMcTask {
         if (photonid1 < 0) {
           continue;
         }
+        mcPhoton.setCursor(photonid1);
         registry.fill(HIST("PCM/hMeasuredTruePhoton"), photon.pt(), centOrMult);
+        registry.fill(HIST("PCM/hMeasuredTruePhotonGenPt"), mcPhoton.pt(), centOrMult);
       }
     }
   }
