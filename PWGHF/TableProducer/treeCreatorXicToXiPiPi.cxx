@@ -838,7 +838,7 @@ struct HfTreeCreatorXicToXiPiPi {
     if (indexMother < 0) {
       return std::nullopt;
     }
-    const auto particleMother = particles.rawIteratorAt(indexMother);
+    auto particleMother = particles.rawIteratorAt(indexMother);
     return particleMother;
   }
 
@@ -1111,7 +1111,7 @@ struct HfTreeCreatorXicToXiPiPi {
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMcWithML, "Process MC with DCAFitter reconstruction and ML", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorXicToXiPiPi>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorXicToXiPiPi>(context)};
 }
