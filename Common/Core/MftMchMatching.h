@@ -6538,7 +6538,9 @@ inline MuonHfOrigin classifyHfOrigin(const Node& muon, const Search& ancestors)
       if (isOpenHeavyHadron(it->second.pdg, 5)) {
         return MuonHfOrigin::BeautyCharm;
       }
-      todo.insert(todo.end(), it->second.mothers.begin(), it->second.mothers.end());
+      for (auto const mother : it->second.mothers) {
+        todo.push_back(mother);
+      }
     }
   }
   // Incomplete genealogy cannot distinguish B from an unseen BC cascade.
