@@ -18,6 +18,10 @@
 
 #include "Common/Core/MftMchMatching.h"
 
+#include <Framework/Variant.h>
+
+#include <vector>
+
 void customize(std::vector<o2::framework::ConfigParamSpec>& options)
 {
   options.push_back({"matching-output-mode", o2::framework::VariantType::String, "auto", {"auto reads matching-output.cfgOutputMode from local JSON; tree, sparse or both overrides it"}});

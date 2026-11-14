@@ -19,11 +19,14 @@
 #include "Common/Core/MftMchMatching.h"
 #include "Common/DataModel/MatchMFTMuonData.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Variant.h>
 void customize(std::vector<o2::framework::ConfigParamSpec>& options)
 {
   options.push_back({"matching-output-mode", o2::framework::VariantType::String, "auto", {"auto reads matching-output.cfgOutputMode from local JSON; tree, sparse or both overrides it"}});
@@ -32,6 +35,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& options)
 #include <Framework/runDataProcessing.h>
 
 #include <TMCProcess.h>
+#include <TNamed.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
@@ -594,7 +598,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& context)
     workflow.push_back(adaptAnalysisTask<McDimuonTruth<true>>(context, TaskName{"mc-dimuon-truth"}));
     workflow.push_back(adaptAnalysisTask<MatchingMcOutputSparse<true>>(context, TaskName{"matching-mc-output"}));
   } else {
-    if (o2::analysis::mftmch::matchingTreeStorage.mchPopulation) {
+    if (o2::analysis::mftmch::matchingTreeStorage().mchPopulation) {
       workflow.push_back(adaptAnalysisTask<MftMchMcTruth<false>>(context, TaskName{"mft-mch-mc-truth"}));
     } else {
       workflow.push_back(adaptAnalysisTask<MftMchMcTruth<false, true>>(context, TaskName{"mft-mch-mc-truth"}));

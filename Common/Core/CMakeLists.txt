@@ -115,3 +115,9 @@ o2physics_add_header_only_library(MftMchMatching
     HEADERS MftMchMatching.h
     INTERFACE_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::DataModel
                             O2::GlobalTracking O2::MCHGeometryTransformer O2::DCAFitter O2Physics::PWGDQCore O2Physics::MLCore ROOT::RIO ROOT::Net)
+
+# Give standalone header checks their own compilation-database entry instead of
+# borrowing AnalysisCore flags, which do not include the DQ/KFParticle headers.
+set_source_files_properties(MftMchMatching.h PROPERTIES LANGUAGE CXX HEADER_FILE_ONLY FALSE)
+add_library(O2PhysicsMftMchMatchingHeaderCheck OBJECT MftMchMatching.h)
+target_link_libraries(O2PhysicsMftMchMatchingHeaderCheck PRIVATE O2Physics::MftMchMatching)

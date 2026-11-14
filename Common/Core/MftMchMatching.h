@@ -16,6 +16,7 @@
 #ifndef COMMON_CORE_MFTMCHMATCHING_H_
 #define COMMON_CORE_MFTMCHMATCHING_H_
 
+#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGUD/Core/UDHelpers.h"
@@ -45,13 +46,17 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
+#include <Framework/EndOfStreamContext.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/TableBuilder.h>
 #include <Framework/TimingInfo.h>
+#include <Framework/WorkflowSpec.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHGeometryTransformer/Transformations.h>
 #include <MCHTracking/TrackExtrap.h>
@@ -63,26 +68,30 @@
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
+#include <TAxis.h>
 #include <TDatabasePDG.h> // o2-linter: disable=pdg/database (Keep the existing PDG table and exact reconstruction masses.)
 #include <TFile.h>
 #include <TGeoGlobalMagField.h>
+#include <TGeoManager.h>
 #include <TGeoMaterial.h>
 #include <TGeoMedium.h>
 #include <TGeoNode.h>
 #include <TGeoShape.h>
 #include <TGeoVolume.h>
 #include <TGrid.h>
+#include <TH1.h>
 #include <THnSparse.h>
 #include <TLorentzVector.h> // o2-linter: disable=root/lorentz-vector (Preserve the exact existing spectrum arithmetic and rounding.)
-#include <TMatrixDSymEigen.h>
+#include <TMath.h>
+#include <TNamed.h>
 #include <TPDGCode.h>
 #include <TUUID.h>
 #include <TVector2.h>
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-
-#include <RtypesCore.h>
+#include <boost/property_tree/ptree_fwd.hpp>
+#include <fairlogger/Logger.h>
 
 #include <algorithm>
 #include <array>
@@ -96,10 +105,10 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <ios>
 #include <limits>
 #include <map>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <random>
 #include <set>
@@ -1592,8 +1601,16 @@ struct MftMchJointTransport {
 
 // Bernoulli thinning is applied to final published training pairs, AFTER MC
 // eligibility and donor-group normalization. Both matching planes share a draw.
-inline double mixedPairSaveFraction = 1.;
-inline uint64_t mixedPairSamplingSeed = 0;
+inline double& mixedPairSaveFraction()
+{
+  static double value = 1.;
+  return value;
+}
+inline uint64_t& mixedPairSamplingSeed()
+{
+  static uint64_t value = 0;
+  return value;
+}
 struct MixedPairSampler {
   using Key = std::tuple<uint64_t, uint64_t, uint64_t, int64_t, int64_t, int64_t, int>;
   std::mt19937_64 random;
@@ -1602,7 +1619,7 @@ struct MixedPairSampler {
   MixedPairSampler()
   {
     std::random_device entropy;
-    const auto seed = mixedPairSamplingSeed != 0 ? mixedPairSamplingSeed : (static_cast<uint64_t>(entropy()) << 32) ^ static_cast<uint64_t>(entropy());
+    const auto seed = mixedPairSamplingSeed() != 0 ? mixedPairSamplingSeed() : (static_cast<uint64_t>(entropy()) << 32) ^ static_cast<uint64_t>(entropy());
     random.seed(seed);
   }
   template <typename Row>
@@ -1613,16 +1630,16 @@ struct MixedPairSampler {
     if (found != decisions.end()) {
       return found->second;
     }
-    const bool selected = mixedPairSaveFraction >= 1. || (mixedPairSaveFraction > 0. && std::bernoulli_distribution(mixedPairSaveFraction)(random));
+    const bool selected = mixedPairSaveFraction() >= 1. || (mixedPairSaveFraction() > 0. && std::bernoulli_distribution(mixedPairSaveFraction())(random));
     decisions.emplace(key, selected);
     ++attempted;
     saved += selected;
     return selected;
   }
-  std::string metadata() const
+  [[nodiscard]] std::string metadata() const
   {
     std::ostringstream text;
-    text << "{\"save_fraction\":" << mixedPairSaveFraction << ",\"sampling_seed\":" << mixedPairSamplingSeed
+    text << "{\"save_fraction\":" << mixedPairSaveFraction() << ",\"sampling_seed\":" << mixedPairSamplingSeed()
          << ",\"attempted_pairs\":" << attempted << ",\"saved_pairs\":" << saved
          << ",\"mixing_weight\":\"original donor normalization; divide by save_fraction for unbiased total counts\"}";
     return text.str();
@@ -1651,7 +1668,11 @@ using MatchingOutcomes = std::map<int64_t, std::array<MatchingOutcome, 2>>;
 
 // Public audit cursors stay empty in sparse mode. Internal transport carries
 // the same rows to MC/sparse devices, independently of a pipeline's AOD writer.
-inline bool sparseAuditStorage = false;
+inline bool& sparseAuditStorage()
+{
+  static bool value = false;
+  return value;
+}
 struct MatchingTreeStorage {
   bool mcTruth = true;
   bool candidateTruth = true;
@@ -1660,24 +1681,28 @@ struct MatchingTreeStorage {
   bool mixedTruth = true;
   bool mchPopulation = true;
 };
-inline MatchingTreeStorage matchingTreeStorage;
+inline MatchingTreeStorage& matchingTreeStorage()
+{
+  static MatchingTreeStorage value{};
+  return value;
+}
 
 template <typename T>
 inline bool useInternalAuditStorage()
 {
   if constexpr (std::is_same_v<T, o2::aod::MixedMftMchMatchTruths>) {
     // Mixed labels are training rows, retained in every output mode by default.
-    return !(matchingTreeStorage.mcTruth && matchingTreeStorage.mixedTruth);
+    return !(matchingTreeStorage().mcTruth && matchingTreeStorage().mixedTruth);
   } else if constexpr (std::is_same_v<T, o2::aod::MatchingMchPopulation>) {
-    return sparseAuditStorage || !matchingTreeStorage.mchPopulation;
+    return sparseAuditStorage() || !matchingTreeStorage().mchPopulation;
   } else if constexpr (std::is_same_v<T, o2::aod::MatchingCandidateTruths>) {
-    return sparseAuditStorage || !(matchingTreeStorage.mcTruth && matchingTreeStorage.candidateTruth);
+    return sparseAuditStorage() || !(matchingTreeStorage().mcTruth && matchingTreeStorage().candidateTruth);
   } else if constexpr (std::is_same_v<T, o2::aod::MatchingCandidateRelations>) {
-    return sparseAuditStorage || !(matchingTreeStorage.mcTruth && matchingTreeStorage.candidateRelations);
+    return sparseAuditStorage() || !(matchingTreeStorage().mcTruth && matchingTreeStorage().candidateRelations);
   } else if constexpr (std::is_same_v<T, o2::aod::MatchingMchTruths>) {
-    return sparseAuditStorage || !(matchingTreeStorage.mcTruth && matchingTreeStorage.mchTruth);
+    return sparseAuditStorage() || !(matchingTreeStorage().mcTruth && matchingTreeStorage().mchTruth);
   }
-  return sparseAuditStorage;
+  return sparseAuditStorage();
 }
 template <typename T>
 struct MatchingInternalTable;
@@ -1749,10 +1774,10 @@ constexpr uint8_t matchingAuditStorageBit()
 }
 inline uint8_t matchingAuditStorageMask()
 {
-  return (!matchingTreeStorage.mchPopulation ? 1 : 0) |
-         (!(matchingTreeStorage.mcTruth && matchingTreeStorage.candidateTruth) ? 2 : 0) |
-         (!(matchingTreeStorage.mcTruth && matchingTreeStorage.candidateRelations) ? 4 : 0) |
-         (!(matchingTreeStorage.mcTruth && matchingTreeStorage.mchTruth) ? 8 : 0);
+  return (!matchingTreeStorage().mchPopulation ? 1 : 0) |
+         (!(matchingTreeStorage().mcTruth && matchingTreeStorage().candidateTruth) ? 2 : 0) |
+         (!(matchingTreeStorage().mcTruth && matchingTreeStorage().candidateRelations) ? 4 : 0) |
+         (!(matchingTreeStorage().mcTruth && matchingTreeStorage().mchTruth) ? 8 : 0);
 }
 // Choose typed staged inputs before DPL builds its graph. Merely changing an
 // InputSpec matcher does not change the table reference used by InputRecord.
@@ -2454,7 +2479,7 @@ struct MatchingInference {
   static bool validVertexCovariance(Fwd const& track)
   {
     // This check is local to covariance-weighted vertexing, never matching chi2.
-    double lower[TrackParameterCount][TrackParameterCount]{};
+    std::array<std::array<double, TrackParameterCount>, TrackParameterCount> lower{};
     auto const& cov = track.getCovariances();
     for (int i = 0; i < TrackParameterCount; ++i) {
       for (int j = 0; j <= i; ++j) {
@@ -2550,7 +2575,7 @@ struct MatchingInference {
     fitter.setMaxDXIni(-1.); // No hidden four-centimetre preselection.
     fitter.setMaxChi2(std::numeric_limits<float>::max());
     try {
-      if (!fitter.process(first, second)) {
+      if (fitter.process(first, second) == 0) {
         return result;
       }
       auto const& p = fitter.getPCACandidate();
@@ -2910,7 +2935,7 @@ struct MatchingInference {
       }
       if (c.cfgEnableDimuonVertexing.value) {
         u.vertexPV = {col.posX(), col.posY(), col.posZ()};
-        u.vertexTrack = hybrid;
+        u.vertexTrack = static_cast<const Fwd&>(hybrid);
         u.hasVertexTrack = true;
         if (c.cfgDimuonVertexUseCovariance.value && mftCovarianceIds.contains(mf.globalIndex())) {
           auto covarianceState = o2::aod::fwdtrackutils::refitGlobalMuonCov(pvCache.at(tr.globalIndex()), mftStates.at(mf.globalIndex()));
@@ -2922,7 +2947,7 @@ struct MatchingInference {
           }
           covarianceState.setParameters(hybrid.getParameters());
           covarianceState.setZ(hybrid.getZ());
-          u.vertexTrack = covarianceState;
+          u.vertexTrack = static_cast<const Fwd&>(covarianceState);
           u.hasVertexCovariance = validVertexCovariance(u.vertexTrack);
         }
       }
@@ -3218,7 +3243,7 @@ struct ProtectedMftAssociation {
     o2::soa::SelectionVector validAmbiguousRows;
     for (const auto& row : nativeAmbiguous) {
       const auto slice = row.bcIds();
-      if (slice[0] >= 0 && slice[1] >= slice[0] && slice[1] < static_cast<int64_t>(nativeBCs.size())) {
+      if (slice[0] >= 0 && slice[1] >= slice[0] && slice[1] < nativeBCs.size()) {
         validAmbiguousRows.push_back(row.globalIndex());
       }
     }
@@ -5171,7 +5196,7 @@ struct MftMchMatchingTask {
     std::map<int64_t, int> preselectedMftCounts;
     for (auto const& [collisionId, ids] : candidateMfts) {
       for (auto id : ids) {
-        preselectedMftCounts[collisionId] += mftTrackPars.contains(id);
+        preselectedMftCounts[collisionId] += static_cast<int>(mftTrackPars.contains(id));
       }
     }
     MatchingOutcomes outcomes;
@@ -5901,11 +5926,11 @@ struct MixedMatchPlanePublisher {
 // disk persistence changes; reconstruction, populations and failure rows do not.
 inline std::string matchingOutputMode(o2::framework::ConfigContext const& context)
 {
-  std::string mode = context.options().get<std::string>("matching-output-mode");
+  auto mode = context.options().get<std::string>("matching-output-mode");
   std::string configuredMode = "tree";
-  mixedPairSaveFraction = 1.;
-  mixedPairSamplingSeed = 0;
-  matchingTreeStorage = {};
+  mixedPairSaveFraction() = 1.;
+  mixedPairSamplingSeed() = 0;
+  matchingTreeStorage() = {};
   for (int i = 1; i < context.argc(); ++i) {
     std::string arg = context.argv()[i], source;
     if (arg == "--configuration" && i + 1 < context.argc()) {
@@ -5917,14 +5942,14 @@ inline std::string matchingOutputMode(o2::framework::ConfigContext const& contex
       boost::property_tree::ptree config;
       boost::property_tree::read_json(source.substr(7), config);
       configuredMode = config.get<std::string>("matching-output.cfgOutputMode", "tree");
-      mixedPairSaveFraction = config.get<double>("matching-output.cfgMixedPairSaveFraction", 1.);
-      mixedPairSamplingSeed = config.get<uint64_t>("matching-output.cfgMixedPairSamplingSeed", 0);
-      matchingTreeStorage.mcTruth = config.get<bool>("matching-output.cfgSaveMcTruthTables", true);
-      matchingTreeStorage.candidateTruth = config.get<bool>("matching-output.cfgSaveCandidateTruthTable", true);
-      matchingTreeStorage.candidateRelations = config.get<bool>("matching-output.cfgSaveCandidateRelationsTable", true);
-      matchingTreeStorage.mchTruth = config.get<bool>("matching-output.cfgSaveMchTruthTable", true);
-      matchingTreeStorage.mixedTruth = config.get<bool>("matching-output.cfgSaveMixedTruthTable", true);
-      matchingTreeStorage.mchPopulation = config.get<bool>("matching-output.cfgSaveMchPopulationTable", true);
+      mixedPairSaveFraction() = config.get<double>("matching-output.cfgMixedPairSaveFraction", 1.);
+      mixedPairSamplingSeed() = config.get<uint64_t>("matching-output.cfgMixedPairSamplingSeed", 0);
+      matchingTreeStorage().mcTruth = config.get<bool>("matching-output.cfgSaveMcTruthTables", true);
+      matchingTreeStorage().candidateTruth = config.get<bool>("matching-output.cfgSaveCandidateTruthTable", true);
+      matchingTreeStorage().candidateRelations = config.get<bool>("matching-output.cfgSaveCandidateRelationsTable", true);
+      matchingTreeStorage().mchTruth = config.get<bool>("matching-output.cfgSaveMchTruthTable", true);
+      matchingTreeStorage().mixedTruth = config.get<bool>("matching-output.cfgSaveMixedTruthTable", true);
+      matchingTreeStorage().mchPopulation = config.get<bool>("matching-output.cfgSaveMchPopulationTable", true);
     } else if (!source.empty() && mode == "auto") {
       LOGF(fatal, "Storage auto mode requires local json:// configuration; use --matching-output-mode for other providers");
     }
@@ -5935,7 +5960,7 @@ inline std::string matchingOutputMode(o2::framework::ConfigContext const& contex
   if (mode != "tree" && mode != "sparse" && mode != "both") {
     LOGF(fatal, "Matching output mode must be tree, sparse or both");
   }
-  if (!std::isfinite(mixedPairSaveFraction) || mixedPairSaveFraction < 0. || mixedPairSaveFraction > 1.) {
+  if (!std::isfinite(mixedPairSaveFraction()) || mixedPairSaveFraction() < 0. || mixedPairSaveFraction() > 1.) {
     LOGF(fatal, "cfgMixedPairSaveFraction must be finite and between 0 and 1");
   }
   return mode;
@@ -6240,12 +6265,12 @@ template <bool Mc = false>
 inline o2::framework::WorkflowSpec makeMatchingWorkflow(o2::framework::ConfigContext const& cfgc, bool modernDefaults = false)
 {
   const auto mode = matchingOutputMode(cfgc);
-  sparseAuditStorage = mode == "sparse";
+  sparseAuditStorage() = mode == "sparse";
   o2::framework::WorkflowSpec workflow{o2::framework::adaptAnalysisTask<MftMchMatchingTask>(cfgc, o2::framework::TaskName{"match_mft_mch_data_mc"},
                                                                                             modernDefaults ? o2::framework::SetDefaultProcesses{{{"processLegacy", false}, {"processMatchingPlane", true}}} : o2::framework::SetDefaultProcesses{}),
                                        o2::framework::adaptAnalysisTask<MchDimuonMassAtPv>(cfgc, o2::framework::TaskName{"mch-dimuon-mass-at-pv"}),
                                        o2::framework::adaptAnalysisTask<MlMatchedDimuonMassAtPv>(cfgc, o2::framework::TaskName{"ml-matched-dimuon-mass-at-pv"}),
-                                       (sparseAuditStorage ? o2::framework::adaptAnalysisTask<MchJpsiMatchFlags<true>>(cfgc, o2::framework::TaskName{"mch-jpsi-match-flags"}) : o2::framework::adaptAnalysisTask<MchJpsiMatchFlags<false>>(cfgc, o2::framework::TaskName{"mch-jpsi-match-flags"}))};
+                                       (sparseAuditStorage() ? o2::framework::adaptAnalysisTask<MchJpsiMatchFlags<true>>(cfgc, o2::framework::TaskName{"mch-jpsi-match-flags"}) : o2::framework::adaptAnalysisTask<MchJpsiMatchFlags<false>>(cfgc, o2::framework::TaskName{"mch-jpsi-match-flags"}))};
   if (!modernDefaults) {
     workflow.push_back(o2::framework::adaptAnalysisTask<MixedMatchPlanePublisher>(cfgc, o2::framework::TaskName{"mixed-match-plane-publisher"}));
   }
@@ -6714,7 +6739,7 @@ struct MchDimuonOutput {
                                axes.axis(axes.cfgDimuonPhiEdges, "dimuon phi (rad; [0,2pi))"),
                                {5, -2.5, 2.5, "charge sum: -2=LSmm, 0=ULS, +2=LSpp"}};
       if constexpr (Mc) {
-        if (!mixed) {
+        if (mixed == 0) {
           aa.push_back({3, -.5, 2.5, "nPairableMuons: correct MFT exists in candidate set"});
           aa.push_back({3, -1.5, 1.5, "isSameMother: -1=unknown, 0=no, 1=shared hadron MC ID"});
           aa.push_back(signalOriginAxis());
@@ -6723,13 +6748,13 @@ struct MchDimuonOutput {
           aa.push_back({15, -.5, 14.5, "hfPairType: N=no HF, C=Charm, B=Beauty, BC=Beauty-Charm, U=Unknown"});
         }
       }
-      spectra[mixed] = histos.add<THnSparse>(mixed ? "MCHDimuonMixed" : "MCHDimuonSame", "MCH+MID PV dimuons; canonical event pool and weights", HistType::kTHnSparseD, aa, true);
+      spectra[mixed] = histos.add<THnSparse>((mixed != 0) ? "MCHDimuonMixed" : "MCHDimuonSame", "MCH+MID PV dimuons; canonical event pool and weights", HistType::kTHnSparseD, aa, true);
       auto charge = spectra[mixed]->GetAxis(4);
       charge->SetBinLabel(1, "LSmm (-2)");
       charge->SetBinLabel(3, "ULS (0)");
       charge->SetBinLabel(5, "LSpp (+2)");
       if constexpr (Mc) {
-        if (!mixed) {
+        if (mixed == 0) {
           auto flag = spectra[mixed]->GetAxis(6);
           flag->SetBinLabel(1, "Unknown ancestry/label");
           flag->SetBinLabel(2, "No common hadron");
@@ -6754,8 +6779,8 @@ struct MchDimuonOutput {
     }
     createSpectra();
     for (auto const& row : pairs) {
-      const double x[]{row.mass(), row.pairPt(), row.pairRapidity(), row.phi(), static_cast<double>(row.pairCharge())};
-      spectra[row.isMixed()]->Fill(x, row.weight());
+      const std::array<double, 5> x{row.mass(), row.pairPt(), row.pairRapidity(), row.phi(), static_cast<double>(row.pairCharge())};
+      spectra[static_cast<size_t>(row.isMixed())]->Fill(x.data(), row.weight());
     }
   }
   PROCESS_SWITCH(MchDimuonOutput, processData, "Data MCH dimuon sparse", !Mc);
@@ -6795,15 +6820,15 @@ struct MchDimuonOutput {
     std::map<std::pair<int64_t, int64_t>, std::pair<int, int>> mothers;
     for (auto const& row : pairs) {
       if (row.isMixed()) {
-        const double x[]{row.mass(), row.pairPt(), row.pairRapidity(), row.phi(), static_cast<double>(row.pairCharge())};
-        spectra[1]->Fill(x, row.weight());
+        const std::array<double, 5> x{row.mass(), row.pairPt(), row.pairRapidity(), row.phi(), static_cast<double>(row.pairCharge())};
+        spectra[1]->Fill(x.data(), row.weight());
         continue;
       }
       auto a = currentTruth.find(row.mchId1()), b = currentTruth.find(row.mchId2());
       if (a == currentTruth.end() || b == currentTruth.end()) {
         LOGF(fatal, "Missing Same MCH dimuon truth");
       }
-      std::array<double, 10> x{row.mass(), row.pairPt(), row.pairRapidity(), row.phi(), static_cast<double>(row.pairCharge()), static_cast<double>(a->second.pairable + b->second.pairable)};
+      std::array<double, 10> x{row.mass(), row.pairPt(), row.pairRapidity(), row.phi(), static_cast<double>(row.pairCharge()), static_cast<double>(static_cast<int>(a->second.pairable) + static_cast<int>(b->second.pairable))};
       const std::pair<int64_t, int64_t> key{std::min(row.mchId1(), row.mchId2()), std::max(row.mchId1(), row.mchId2())};
       auto [it, inserted] = mothers.try_emplace(key);
       if (inserted) {
@@ -6811,7 +6836,7 @@ struct MchDimuonOutput {
       }
       x[6] = it->second.first;
       x[7] = it->second.second;
-      x[8] = a->second.decay + b->second.decay;
+      x[8] = static_cast<int>(a->second.decay) + static_cast<int>(b->second.decay);
       x[9] = hfPairType(a->second.hf, b->second.hf);
       spectra[0]->Fill(x.data(), row.weight());
     }
@@ -7016,8 +7041,8 @@ struct GlobalDimuonOutput {
       if (inserted) {
         it->second = commonDimuonMother(a->second, b->second, getNode, cfgMcAncestryMaxDepth.value, cfgMcAncestryMaxNodes.value);
       }
-      fill(row, {a->second.pairable + b->second.pairable, it->second.first, it->second.second,
-                 a->second.decay + b->second.decay, hfPairType(a->second.hf, b->second.hf), ca->second + cb->second});
+      fill(row, {static_cast<int>(a->second.pairable) + static_cast<int>(b->second.pairable), it->second.first, it->second.second,
+                 static_cast<int>(a->second.decay) + static_cast<int>(b->second.decay), hfPairType(a->second.hf, b->second.hf), ca->second + cb->second});
     }
   }
   PROCESS_SWITCH(GlobalDimuonOutput, processMC, "MC Same with 6 truth axes; inclusive Mixed without MC axes", Mc);
