@@ -492,9 +492,81 @@ struct HfHelper {
   }
 
   template <typename T>
+  static auto invMassOmegaczeroToXiPi(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
   static auto invMassOmegaczeroToOmegaPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  static auto invMassOmegaczeroToOmegaK(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  static auto yXiczero(const T& candidate)
+  {
+    return candidate.y(o2::constants::physics::MassXiC0);
+  }
+
+  template <typename T>
+  static auto eXiczero(const T& candidate)
+  {
+    return candidate.e(o2::constants::physics::MassXiC0);
+  }
+
+  template <typename T>
+  static auto ctXiczero(const T& candidate)
+  {
+    return candidate.ct(o2::constants::physics::MassXiC0);
+  }
+
+  template <typename T>
+  static auto cosThetaStarXiczeroToXiPi(const T& candidate)
+  {
+    return candidate.cosThetaStar(std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassXiC0, 1);
+  }
+
+  template <typename T>
+  static auto yOmegaczero(const T& candidate)
+  {
+    return candidate.y(o2::constants::physics::MassOmegaC0);
+  }
+
+  template <typename T>
+  static auto eOmegaczero(const T& candidate)
+  {
+    return candidate.e(o2::constants::physics::MassOmegaC0);
+  }
+
+  template <typename T>
+  static auto ctOmegaczero(const T& candidate)
+  {
+    return candidate.ct(o2::constants::physics::MassOmegaC0);
+  }
+
+  template <typename T>
+  static auto cosThetaStarOmegaczeroToXiPi(const T& candidate)
+  {
+    return candidate.cosThetaStar(std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassOmegaC0, 1);
+  }
+
+  template <typename T>
+  static auto cosThetaStarOmegaczeroToOmegaPi(const T& candidate)
+  {
+    return candidate.cosThetaStar(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassOmegaC0, 1);
+  }
+
+  template <typename T>
+  static auto cosThetaStarOmegaczeroToOmegaK(const T& candidate)
+  {
+    return candidate.cosThetaStar(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus}, o2::constants::physics::MassOmegaC0, 1);
   }
 
   // hf_cand_casc_lf_3prong

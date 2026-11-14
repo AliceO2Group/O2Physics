@@ -27,7 +27,6 @@ namespace o2::hf_decay
 
 // TODO
 // - HF cascades (Λc+ → p K0short)
-// - HF cascades to LF cascades (Ωc0/Ξc0 → Ξ+ π−, Ξc+ → Ξ+ π− π+)
 // - Σc
 
 using HfDecayChannel = int8_t;
@@ -295,6 +294,21 @@ enum DecayChannelMain : HfDecayChannel {
   NChannelsMain = ScStarPlusPlusToPKPiPi // last channel
 };
 } // namespace hf_cand_sigmac
+
+// @brief XiC0 and OmegaC0 candidates: main channels
+namespace hf_cand_casc_bach_qa
+{
+enum DecayChannelMain : HfDecayChannel {
+  // XiC0
+  Xic0ToXiPi = 1,   // Xi- π+ → Λ π- π+ → p π- π- π+
+  Xic0ToOmegaK = 2, // Ω- K+ → Λ K- K+ → p π- K- K+
+  // OmegaC0
+  Omegac0ToOmegaPi = 3,         // Ω- π+ → Λ π- π+ → p π- π- π+
+  Omegac0ToOmegaK = 4,          // Ω- K+ → Λ K- K+ → p π- K- K+
+  Omegac0ToXiPi = 5,            // Xi- π+ → Λ π- π+ → p π- π- π+
+  NChannelsMain = Omegac0ToXiPi // last channel
+};
+} // namespace hf_cand_casc_bach_qa
 
 } // namespace o2::hf_decay
 
