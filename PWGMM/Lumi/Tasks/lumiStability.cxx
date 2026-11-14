@@ -104,7 +104,7 @@ struct LumiStabilityTask {
     const AxisSpec axisTime{1000, -10, 40};
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
-    const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
+    const AxisSpec axisOrbits{(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
     const AxisSpec axisTimeRate{static_cast<int>(static_cast<double>(43200) / (nOrbitsPerTF * 89e-6)), 0., 43200, ""}; // t in seconds. Histo for 12 hrs. Each bin contain one time frame (128/32 orbits for 2022/2023).
     const AxisSpec timeAxis{1200, 0., 1200., "#bf{t-t_{SOF} (min)}"};
 
