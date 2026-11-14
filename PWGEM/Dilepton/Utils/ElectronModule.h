@@ -87,6 +87,8 @@ struct electronCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.5, "max. TOF n sigma for electron inclusion"};
+  o2::framework::Configurable<float> minTPCNsigmaMu{"minTPCNsigmaMu", 0.0, "min. TPC n sigma for muon exclusion"};
+  o2::framework::Configurable<float> maxTPCNsigmaMu{"maxTPCNsigmaMu", 0.0, "max. TPC n sigma for muon exclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.5, "max. TPC n sigma for pion exclusion"};
   o2::framework::Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -1e+10 for nominalB
   o2::framework::Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.5, "max. TPC n sigma for kaon exclusion"};
@@ -137,6 +139,8 @@ struct electronPFCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.0, "max. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.0, "max. TOF n sigma for electron inclusion"};
+  o2::framework::Configurable<float> minTPCNsigmaMu{"minTPCNsigmaMu", 0.0, "min. TPC n sigma for muon exclusion"};
+  o2::framework::Configurable<float> maxTPCNsigmaMu{"maxTPCNsigmaMu", 0.0, "max. TPC n sigma for muon exclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
   o2::framework::Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0.0, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -1e+10 for nominalB
   o2::framework::Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 0.0, "max. TPC n sigma for kaon exclusion"};
@@ -513,6 +517,7 @@ class ElectronModule
     registry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     registry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     registry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    registry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -936,6 +941,9 @@ class ElectronModule
     if (track.tpcNSigmaEl() < eCut.minTPCNsigmaEl.value || eCut.maxTPCNsigmaEl.value < track.tpcNSigmaEl()) {
       return false;
     }
+    if (track.tpcNSigmaMu() < eCut.minTPCNsigmaMu.value || eCut.maxTPCNsigmaMu.value < track.tpcNSigmaMu()) {
+      return false;
+    }
     if (eCut.minTPCNsigmaPi.value < track.tpcNSigmaPi() && track.tpcNSigmaPi() < eCut.maxTPCNsigmaPi.value && track.tpcInnerParam() < eCut.max_pin_for_pion_rejection.value) {
       return false;
     }
@@ -1048,7 +1056,7 @@ class ElectronModule
                            dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusPID(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                            track.tpcChi2NCl(), track.tpcInnerParam(),
-                           track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                           track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                            beta, tofNSigmaEl,
                            track.itsClusterSizes(),
                            track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
@@ -1125,6 +1133,7 @@ class ElectronModule
     registry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
     registry.fill(HIST("Track/hTPCdEdxMC"), track.tpcInnerParam(), mcTunedTPCSignal);
     registry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+    registry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
     registry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
     registry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
     registry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
