@@ -328,7 +328,9 @@ struct DndetaMFTPbPb {
 
   struct : ConfigurableGroup {
     Configurable<float> etaRangeMidrap{"etaRangeMidrap", 1.0f, "Eta range for midrapidity tracks"};
-    Configurable<bool> usephiCut{"usephiCut", false, "use azimuthal angle cut"};
+    Configurable<bool> usePhiCut{"usePhiCut", false, "use azimuthal angle cut"};
+    Configurable<bool> usePhiCutGen{"usePhiCutGen", false, "use azimuthal angle cut for particles"};
+    Configurable<bool> usePhiCutExtra{"usePhiCutExtra", false, "use additional azimuthal angle cut"};
     Configurable<float> phiCut{"phiCut", 0.1f, "Cut on azimuthal angle of MFT tracks"};
     Configurable<float> minPhi{"minPhi", 0.f, ""};
     Configurable<float> maxPhi{"maxPhi", 6.2832, ""};
@@ -1141,19 +1143,24 @@ struct DndetaMFTPbPb {
     }
     float phi = track.phi();
     o2::math_utils::bringTo02Pi(phi);
-    if (phi < trackCuts.minPhi || trackCuts.maxPhi < phi) {
+    if (phi < 0.f || TwoPI < phi) {
       return false;
     }
     if constexpr (fillHis) {
       registryQC.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelPhi));
     }
-    if (trackCuts.usephiCut) {
-      if ((phi < trackCuts.phiCut) ||
-          ((phi > PI - trackCuts.phiCut) && (phi < PI + trackCuts.phiCut)) ||
-          (phi > TwoPI - trackCuts.phiCut) ||
-          ((phi > ((PIHalf - 0.1) * PI) - trackCuts.phiCut) &&
-           (phi < ((PIHalf - 0.1) * PI) + trackCuts.phiCut))) {
+    if (trackCuts.usePhiCut) {
+      if (phi < trackCuts.minPhi || trackCuts.maxPhi < phi) {
         return false;
+      }
+      if (trackCuts.usePhiCutExtra) {
+        if ((phi < trackCuts.phiCut) ||
+            ((phi > PI - trackCuts.phiCut) && (phi < PI + trackCuts.phiCut)) ||
+            (phi > TwoPI - trackCuts.phiCut) ||
+            ((phi > ((PIHalf - 0.1) * PI) - trackCuts.phiCut) &&
+             (phi < ((PIHalf - 0.1) * PI) + trackCuts.phiCut))) {
+          return false;
+        }
       }
     }
     if constexpr (fillHis) {
@@ -1336,16 +1343,21 @@ struct DndetaMFTPbPb {
     }
     float phi = particle.phi();
     o2::math_utils::bringTo02Pi(phi);
-    if (phi < trackCuts.minPhi || trackCuts.maxPhi < phi) {
+    if (phi < 0.f || TwoPI < phi) {
       return false;
     }
-    if (trackCuts.usephiCut) {
-      if ((phi < trackCuts.phiCut) ||
-          ((phi > PI - trackCuts.phiCut) && (phi < PI + trackCuts.phiCut)) ||
-          (phi > TwoPI - trackCuts.phiCut) ||
-          ((phi > ((PIHalf - 0.1) * PI) - trackCuts.phiCut) &&
-           (phi < ((PIHalf - 0.1) * PI) + trackCuts.phiCut))) {
+    if (trackCuts.usePhiCutGen) {
+      if (phi < trackCuts.minPhi || trackCuts.maxPhi < phi) {
         return false;
+      }
+      if (trackCuts.usePhiCutExtra) {
+        if ((phi < trackCuts.phiCut) ||
+            ((phi > PI - trackCuts.phiCut) && (phi < PI + trackCuts.phiCut)) ||
+            (phi > TwoPI - trackCuts.phiCut) ||
+            ((phi > ((PIHalf - 0.1) * PI) - trackCuts.phiCut) &&
+             (phi < ((PIHalf - 0.1) * PI) + trackCuts.phiCut))) {
+          return false;
+        }
       }
     }
     return true;
@@ -1513,6 +1525,9 @@ struct DndetaMFTPbPb {
       }
       float phi = particle.phi();
       o2::math_utils::bringTo02Pi(phi);
+      if (phi < 0.f || TwoPI < phi) {
+        continue;
+      }
       if constexpr (isCent) {
         registryMC.fill(HIST("Tracks/Centrality/EtaZvtxGen_t"), particle.eta(), zvtx, c, occ);
         registryMC.fill(HIST("Tracks/Centrality/PhiEtaGen_t"), phi, particle.eta(), c, occ);
