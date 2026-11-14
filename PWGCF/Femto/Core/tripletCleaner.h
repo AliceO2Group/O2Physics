@@ -26,6 +26,8 @@ constexpr char PrefixTripletCleanerTrackTrackV0Se[] = "TrackTrackV0Cleaner/SE/";
 constexpr char PrefixTripletCleanerTrackTrackV0Me[] = "TrackTrackV0Cleaner/ME/";
 constexpr char PrefixTripletCleanerTrackTrackCascadeSe[] = "TrackTrackCascadeCleaner/SE/";
 constexpr char PrefixTripletCleanerTrackTrackCascadeMe[] = "TrackTrackCascadeCleaner/ME/";
+constexpr char PrefixTripletCleanerTrackTrackSigma0Se[] = "TrackTrackSigma0Cleaner/SE/";
+constexpr char PrefixTripletCleanerTrackTrackSigma0Me[] = "TrackTrackSigma0Cleaner/ME/";
 constexpr char PrefixTripletCleanerMcParticleMcParticleMcParticleSe[] = "McParticleMcParticleMcParticleCleaner/SE/";
 constexpr char PrefixTripletCleanerMcParticleMcParticleMcParticleMe[] = "McParticleMcParticleMcParticleCleaner/ME/";
 
@@ -165,6 +167,59 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner<pref
     return true;
   }
 };
+
+template <auto& prefix>
+class TrackTrackSigma0TripletCleaner : public paircleaner::BasePairCleaner<prefix>
+{
+ public:
+  TrackTrackSigma0TripletCleaner() = default;
+  ~TrackTrackSigma0TripletCleaner() override = default;
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& sigma0, T4 const& trackTable, T5 const& tripletHistManager) const
+  {
+    this->fillAll();
+    auto posDaughter = trackTable.rawIteratorAt(sigma0.posDauId() - trackTable.offset());
+    auto negDaughter = trackTable.rawIteratorAt(sigma0.negDauId() - trackTable.offset());
+    bool isClean = this->isCleanParticlePair(track1, track2) &&
+                   this->isCleanParticlePair(track1, posDaughter) &&
+                   this->isCleanParticlePair(track1, negDaughter) &&
+                   this->isCleanParticlePair(track2, posDaughter) &&
+                   this->isCleanParticlePair(track2, negDaughter);
+    if (!isClean) {
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
+    }
+    return isClean;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& sigma0, T4 const& trackTable, T5 const& mcParticles, T6 const& partonicMothers, T7 const& tripletHistManager) const
+  {
+    if (!this->isCleanTriplet(track1, track2, sigma0, trackTable, tripletHistManager)) {
+      return false;
+    }
+    // pair is clean
+    // no check if we require common or non-common ancestry
+    auto posDaughter = trackTable.rawIteratorAt(sigma0.posDauId() - trackTable.offset());
+    auto negDaughter = trackTable.rawIteratorAt(sigma0.negDauId() - trackTable.offset());
+    if (this->mMixPairsWithCommonAncestor) {
+      return this->pairHasCommonAncestor(track1, track2, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track1, posDaughter, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track1, negDaughter, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track2, posDaughter, mcParticles, partonicMothers) &&
+             this->pairHasCommonAncestor(track2, negDaughter, mcParticles, partonicMothers);
+    }
+    if (this->mMixPairsWithNonCommonAncestor) {
+      return this->pairHasNonCommonAncestor(track1, track2, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track1, posDaughter, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track1, negDaughter, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track2, posDaughter, mcParticles, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track2, negDaughter, mcParticles, partonicMothers);
+    }
+    return true;
+  }
+};
+
 // triplet of generated particles; there are no daughters to share, so only the
 // (non-)common ancestry requirement can reject a triplet
 template <auto& prefix>
