@@ -3308,7 +3308,9 @@ struct StrangenessInJetsIons {
             continue;
 
           int absPdg = std::abs(particle.pdgCode());
-          if (absPdg != kK0Short && absPdg != kLambda0)
+          const bool isSelectedV0 = (absPdg == kK0Short || absPdg == kLambda0) && particleOfInterestDict[ParticleOfInterest::kV0Particles];
+          const bool isSelectedCascade = (absPdg == kXiMinus || absPdg == kOmegaMinus) && particleOfInterestDict[ParticleOfInterest::kCascades];
+          if (!isSelectedV0 && !isSelectedCascade)
             continue;
 
           TVector3 momVec(particle.px(), particle.py(), particle.pz());
