@@ -22,12 +22,14 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/DecayChannelsLegacy.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
 #include "PWGHF/Core/HfMlResponseDstarToD0Pi.h"
 #include "PWGHF/Core/HfMlResponseLcToPKPi.h"
 #include "PWGHF/Core/HfMlResponseXicToXiPiPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/D2H/Utils/utilsSigmac.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -67,6 +69,7 @@
 
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <numeric>
 #include <string>
@@ -102,7 +105,8 @@ enum DecayChannel { DplusToPiKPi = 0,
                     LcToPKPi,
                     D0ToPiK,
                     DstarToD0Pi,
-                    XicToXiPiPi
+                    XicToXiPiPi,
+                    ScToLcPi
 };
 
 enum class D0CandFlag : uint8_t {
@@ -121,6 +125,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     Produces<aod::FDHfCand3ProngXicQa> rowCandCharm3ProngXicQa;
     Produces<aod::FDHfCand2Prong> rowCandCharm2Prong;
     Produces<aod::FDHfCandDstar> rowCandCharmDstar;
+    Produces<aod::FDHfCandSc> rowCandCharmSc;
     Produces<aod::FDHfCandMC> rowCandMcCharmHad;
     Produces<aod::FDHfCandMCGen> rowCandCharmHadGen;
     Produces<aod::FDParticlesIndex> outputPartsIndex;
@@ -200,6 +205,15 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   } mlCfg;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "sigmac";
+    Configurable<float> deltaMassMin{"deltaMassMin", static_cast<float>(o2::constants::physics::MassPiPlus), "Minimum retained DeltaM, including sidebands (GeV/c2)"};
+    Configurable<float> deltaMassMax{"deltaMassMax", 0.190f, "Maximum retained DeltaM, including sidebands (GeV/c2)"};
+    Configurable<float> lcMassWindow{"lcMassWindow", 0.03f, "Maximum |M(Lc)-PDG|, also limited by the HF creator (GeV/c2)"};
+    Configurable<float> yMax{"yMax", 0.8f, "Maximum |y| using the SigmaC(2455) mass"};
+    Configurable<bool> rejectAmbiguousHypothesis{"rejectAmbiguousHypothesis", false, "Reject candidates with both accepted Lc hypotheses"};
+  } sigmacCfg;
+
   FemtoDreamTrackSelection trackCuts;
 
   o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponseLc;
@@ -261,7 +275,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
   void init(InitContext&)
   {
-    std::array<bool, 29> processes = {doprocessDataDplusToPiKPi, doprocessMcDplusToPiKPi, doprocessDataDplusToPiKPiWithML, doprocessMcDplusToPiKPiWithML, doprocessMcDplusToPiKPiGen,
+    std::array<bool, 34> processes = {doprocessDataScToLcPi, doprocessDataScToLcPiWithML, doprocessMcScToLcPi, doprocessMcScToLcPiWithML, doprocessMcScToLcPiGen,
+                                      doprocessDataDplusToPiKPi, doprocessMcDplusToPiKPi, doprocessDataDplusToPiKPiWithML, doprocessMcDplusToPiKPiWithML, doprocessMcDplusToPiKPiGen,
                                       doprocessDataLcToPKPi, doprocessMcLcToPKPi, doprocessDataLcToPKPiWithML, doprocessMcLcToPKPiWithML, doprocessMcLcToPKPiGen,
                                       doprocessDataD0ToPiK, doprocessMcD0ToPiK, doprocessDataD0ToPiKWithML, doprocessMcD0ToPiKWithML, doprocessMcD0ToPiKGen,
                                       doprocessDataDstarToD0Pi, doprocessMcDstarToD0Pi, doprocessDataDstarToD0PiWithML, doprocessMcDstarToD0PiWithML, doprocessMcDstarToD0PiGen,
@@ -269,6 +284,16 @@ struct HfProducerCharmHadronsTrackFemtoDream {
                                       doprocessMcXicToXiPiPi, doprocessMcXicToXiPiPiKf, doprocessMcXicToXiPiPiWithML, doprocessMcXicToXiPiPiWithMLKf, doprocessMcXicToXiPiPiGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
+    }
+
+    if ((doprocessDataScToLcPi || doprocessDataScToLcPiWithML || doprocessMcScToLcPi || doprocessMcScToLcPiWithML) &&
+        (sigmacCfg.deltaMassMin.value >= sigmacCfg.deltaMassMax.value || sigmacCfg.lcMassWindow.value <= 0.f || sigmacCfg.yMax.value <= 0.f)) {
+      LOG(fatal) << "Invalid SigmaC mass or rapidity window.";
+    }
+    if (doprocessDataScToLcPi || doprocessDataScToLcPiWithML || doprocessMcScToLcPi || doprocessMcScToLcPiWithML) {
+      qaRegistry.add("Sigmac/hPtVsDeltaMass", ";pT(SigmaC) (GeV/c);DeltaM (GeV/c2)", kTH2F, {{180, 0., 36.}, {300, 0.138, 0.198}});
+      qaRegistry.add("Sigmac/hLcMass", ";M(Lc) (GeV/c2);Entries", kTH1F, {{300, 2.15, 2.42}});
+      qaRegistry.add("Sigmac/hSoftPiPt", ";pT(soft pi) (GeV/c);Entries", kTH1F, {{200, 0., 2.}});
     }
 
     int const cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
@@ -319,7 +344,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     int64_t const now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    bool useLcMl = doprocessDataLcToPKPiWithML || doprocessMcLcToPKPiWithML;
+    bool useLcMl = doprocessDataLcToPKPiWithML || doprocessMcLcToPKPiWithML || doprocessDataScToLcPiWithML || doprocessMcScToLcPiWithML;
     bool useDplusMl = doprocessDataDplusToPiKPiWithML || doprocessMcDplusToPiKPiWithML;
     bool useD0Ml = doprocessDataD0ToPiKWithML || doprocessMcD0ToPiKWithML;
     bool useDstarMl = doprocessDataDstarToD0PiWithML || doprocessMcDstarToD0PiWithML;
@@ -1084,10 +1109,10 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   /// \param TC type of the femto track cuts
   /// \return whether or not the tracks fulfills the all selections
   template <typename C, typename T, typename TC>
-  bool isNoSelectedTracks(C const& /*col*/, T const& tracks, TC& trackCuts)
+  bool isNoSelectedTracks(C const& /*col*/, T const& tracks, TC& trackSelection)
   {
     for (auto const& track : tracks) {
-      if (trackCuts.isSelectedMinimal(track)) {
+      if (trackSelection.isSelectedMinimal(track)) {
         return false;
       }
     }
@@ -1377,6 +1402,210 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     fillCharmHadMcGen<DecayChannel::LcToPKPi>(particles);
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcLcToPKPiGen, "Provide Mc Generated lctopkpi", false);
+
+  template <bool IsMc, bool UseCharmMl, typename TrackType, typename CollisionType, typename ScType, typename LcType, typename DaughterTracks>
+  void fillSigmacHadronTable(CollisionType const& col, TrackType const& tracks, ScType const& candidates,
+                             LcType const& /*lcs*/, DaughterTracks const& /*daughterTracks*/, aod::McParticles const* mcParticles = nullptr)
+  {
+    const auto vtxZ = col.posZ();
+    const auto sizeCand = candidates.size();
+    const auto spher = 2.; // dummy value for the moment
+    float mult = 0;
+    int multNtr = 0;
+    if (generalCfg.isRun3) {
+      if (generalCfg.useCent) {
+        mult = col.centFT0M();
+      } else {
+        mult = 0;
+      }
+      multNtr = col.multNTracksPV();
+    } else {
+      mult = 1; // multiplicity percentile is know in Run 2
+      multNtr = col.multTracklets();
+    }
+
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(col, mult, ccdb, qaRegistry);
+
+    qaRegistry.fill(HIST("hEventQA"), 1 + Event::All);
+
+    /// monitor the satisfied event selections
+    hfEvSel.fillHistograms(col, rejectionMask, mult);
+    if (rejectionMask != 0) {
+      /// at least one event selection not satisfied --> reject the candidate
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejEveSel);
+      return;
+    }
+
+    if (isNoSelectedTracks(col, tracks, trackCuts) && sizeCand <= 0) {
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejNoTracksAndCharm);
+      return;
+    }
+
+    tables.outputCollision(vtxZ, mult, multNtr, spher, magField);
+    if constexpr (IsMc) {
+      fillMcCollision(col);
+    }
+
+    int nSelectedSc = 0;
+    constexpr std::size_t NumMlScores = 3;
+    constexpr int NumHypotheses = 2;
+    constexpr int ChargeDoublyCharged = 2;
+    auto bc = col.template bc_as<aod::BCsWithTimestamps>();
+    for (auto const& sc : candidates) {
+      if (sc.charge() != 0 && std::abs(sc.charge()) != ChargeDoublyCharged) {
+        continue;
+      }
+      auto const rapidity = sc.charge() == 0 ? HfHelper::ySc0(sc) : HfHelper::yScPlusPlus(sc);
+      if (!std::isfinite(rapidity) || std::abs(rapidity) > sigmacCfg.yMax.value) {
+        continue;
+      }
+      auto lc = sc.template prongLc_as<LcType>();
+      if (lc.collisionId() != sc.collisionId()) {
+        continue;
+      }
+      auto p0 = lc.template prong0_as<DaughterTracks>();
+      auto p1 = lc.template prong1_as<DaughterTracks>();
+      auto p2 = lc.template prong2_as<DaughterTracks>();
+      auto softPi = sc.template prong1_as<DaughterTracks>();
+      if (softPi.globalIndex() == p0.globalIndex() || softPi.globalIndex() == p1.globalIndex() || softPi.globalIndex() == p2.globalIndex()) {
+        continue;
+      }
+      std::array<double, NumHypotheses> const lcMass{HfHelper::invMassLcToPKPi(lc), HfHelper::invMassLcToPiKP(lc)};
+      std::array<double, NumHypotheses> const scMass{HfHelper::invMassScRecoLcToPKPi(sc, lc), HfHelper::invMassScRecoLcToPiKP(sc, lc)};
+      auto const decayMask = o2::hf_sigmac_utils::isDecayToPKPiToPiKP(lc, sc);
+      std::array<bool, NumHypotheses> accepted{};
+      std::array<std::vector<float>, NumHypotheses> scores{std::vector<float>(NumMlScores, -1.f), std::vector<float>(NumMlScores, -1.f)};
+      for (int h = 0; h < NumHypotheses; ++h) {
+        int const selected = h == 0 ? lc.isSelLcToPKPi() : lc.isSelLcToPiKP();
+        accepted[h] = (decayMask & (1 << h)) && selected >= generalCfg.selectionFlagHadron.value &&
+                      std::isfinite(lcMass[h]) && std::abs(lcMass[h] - o2::constants::physics::MassLambdaCPlus) <= sigmacCfg.lcMassWindow.value;
+        if (!accepted[h]) {
+          continue;
+        }
+        if constexpr (UseCharmMl) {
+          if (mlCfg.applyMlMode == FillMlFromSelector) {
+            auto const& probabilities = h == 0 ? lc.mlProbLcToPKPi() : lc.mlProbLcToPiKP();
+            accepted[h] = probabilities.size() >= NumMlScores;
+            if (accepted[h]) {
+              scores[h].assign(probabilities.begin(), probabilities.begin() + NumMlScores);
+            }
+          } else if (mlCfg.applyMlMode == FillMlFromNewBDT) {
+            auto features = hfMlResponseLc.getInputFeatures(lc, h == 0);
+            accepted[h] = hfMlResponseLc.isSelectedMl(features, lc.pt(), scores[h]);
+            accepted[h] = accepted[h] && scores[h].size() >= NumMlScores;
+          } else if (mlCfg.applyMlMode != NoMl) {
+            LOG(fatal) << "Invalid ML mode for SigmaC LambdaC daughter.";
+          }
+        }
+      }
+      if (sigmacCfg.rejectAmbiguousHypothesis.value && accepted[0] && accepted[1]) {
+        continue;
+      }
+      for (int h = 0; h < NumHypotheses; ++h) {
+        double const deltaMass = scMass[h] - lcMass[h];
+        if (!accepted[h] || !std::isfinite(deltaMass) || deltaMass < sigmacCfg.deltaMassMin.value || deltaMass > sigmacCfg.deltaMassMax.value) {
+          continue;
+        }
+        tables.rowCandCharmSc(tables.outputCollision.lastIndex(), bc.timestamp(), sc.charge(),
+                              p0.globalIndex(), p1.globalIndex(), p2.globalIndex(), p0.pt(), p1.pt(), p2.pt(),
+                              p0.eta(), p1.eta(), p2.eta(), p0.phi(), p1.phi(), p2.phi(),
+                              1 << h, scores[h][0], scores[h][1], scores[h][2],
+                              sc.pt(), sc.eta(), sc.phi(), softPi.globalIndex(), softPi.pt(), softPi.eta(), softPi.phi(),
+                              p0.sign(), lcMass[h], deltaMass, sc.globalIndex(), sc.softPiDcaXY(), sc.softPiDcaZ());
+        if constexpr (IsMc) {
+          // HF matches the complete SigmaC chain. Invalidate the wrong p/pi
+          // assignment separately so a reflection cannot masquerade as signal.
+          int flag = sc.flagMcMatchRec();
+          int origin = sc.originMcRec();
+          int const expectedPdg0 = h == 0 ? kProton : kPiPlus;
+          if (!p0.has_mcParticle() || std::abs(p0.mcParticle().pdgCode()) != expectedPdg0) {
+            flag = 0;
+            origin = 0;
+          }
+          tables.rowCandMcCharmHad(flag, origin);
+        }
+        ++nSelectedSc;
+        qaRegistry.fill(HIST("Sigmac/hPtVsDeltaMass"), sc.pt(), deltaMass);
+        qaRegistry.fill(HIST("Sigmac/hLcMass"), lcMass[h]);
+        qaRegistry.fill(HIST("Sigmac/hSoftPiPt"), softPi.pt());
+      }
+    }
+    bool const isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks, mcParticles);
+    aod::femtodreamcollision::BitMaskType const bitTrack = isTrackFilled ? 1 : 0;
+    aod::femtodreamcollision::BitMaskType const bitCand = nSelectedSc > 0 ? 1 : 0;
+    if (isTrackFilled) {
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::TrackSelected);
+    }
+    if (nSelectedSc > 0) {
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::CharmSelected);
+    }
+    if (isTrackFilled && nSelectedSc > 0) {
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::PairSelected);
+    }
+    tables.rowMasks(bitTrack, bitCand, 0);
+  }
+
+  void processDataScToLcPi(FemtoFullCollision const& col,
+                           aod::BCsWithTimestamps const&,
+                           FemtoHFTracks const& tracks,
+                           aod::Tracks const& daughterTracks,
+                           CandidateLc const& lcs,
+                           aod::HfCandSc const& candidates)
+  {
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillSigmacHadronTable<false, false>(col, tracks, candidates, lcs, daughterTracks);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataScToLcPi, "SigmaC(2455) -> Lc pi femto data", false);
+
+  void processDataScToLcPiWithML(FemtoFullCollision const& col,
+                                 aod::BCsWithTimestamps const&,
+                                 FemtoHFTracks const& tracks,
+                                 aod::Tracks const& daughterTracks,
+                                 soa::Join<CandidateLc, aod::HfMlLcToPKPi> const& lcs,
+                                 aod::HfCandSc const& candidates)
+  {
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillSigmacHadronTable<false, true>(col, tracks, candidates, lcs, daughterTracks);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataScToLcPiWithML, "SigmaC(2455) -> Lc pi femto data with Lc ML", false);
+
+  void processMcScToLcPi(FemtoFullCollisionMc const& col,
+                         aod::BCsWithTimestamps const&,
+                         FemtoHFMcTracks const& tracks,
+                         aod::TracksWMc const& daughterTracks,
+                         CandidateLcMc const& lcs,
+                         soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidates,
+                         aod::McParticles const& mcParticles)
+  {
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillSigmacHadronTable<true, false>(col, tracks, candidates, lcs, daughterTracks, &mcParticles);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcScToLcPi, "SigmaC(2455) -> Lc pi femto MC", false);
+
+  void processMcScToLcPiWithML(FemtoFullCollisionMc const& col,
+                               aod::BCsWithTimestamps const&,
+                               FemtoHFMcTracks const& tracks,
+                               aod::TracksWMc const& daughterTracks,
+                               soa::Join<CandidateLcMc, aod::HfMlLcToPKPi> const& lcs,
+                               soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidates,
+                               aod::McParticles const& mcParticles)
+  {
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillSigmacHadronTable<true, true>(col, tracks, candidates, lcs, daughterTracks, &mcParticles);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcScToLcPiWithML, "SigmaC(2455) -> Lc pi femto MC with Lc ML", false);
+
+  void processMcScToLcPiGen(soa::Join<aod::McParticles, aod::HfCandScMcGen> const& particles)
+  {
+    for (auto const& particle : particles) {
+      int const flag = std::abs(particle.flagMcMatchGen());
+      if (flag == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi ||
+          flag == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi) {
+        tables.rowCandCharmHadGen(particle.mcCollisionId(), particle.flagMcMatchGen(), particle.originMcGen());
+      }
+    }
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcScToLcPiGen, "Generated SigmaC(2455) -> Lc pi", false);
 
   /// XicToXiPiPi
   void processDataXicToXiPiPi(FemtoFullCollision const& col,
