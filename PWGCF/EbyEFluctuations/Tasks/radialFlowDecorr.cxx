@@ -81,6 +81,10 @@ struct RadialFlowDecorr {
   // 0 = nominal (0.2, 3], 1 = (0.5, 3] (suffix _pt1), 2 = (0.2, 5] (suffix _pt2). Tracks and MC particles are
   // selected in the map range [KPtMin, KPtMax] in every pass; each range is applied by ptRangeMask.
   static constexpr int KNPtMax = 3;
+  static constexpr int KNFlatAxes = 5;            // flattening weight maps: (vz, sign, pT, eta, phi); raw maps add the weight-type axis
+  static constexpr std::size_t KMinEdges = 2;     // a binning needs at least two edges
+  static constexpr std::size_t KNAlignHalves = 2; // FT0 / FV0 alignment: one entry per detector half
+  static constexpr float KFwdTruthEtaMin = 1.5f;  // forward truth signal: charged primaries with |eta| >= this
   static constexpr std::array<std::array<float, 2>, KNPtMax> KPtRanges = {{{0.2f, 3.f}, {0.5f, 3.f}, {0.2f, 5.f}}};
 
   // Bootstrap: at most KMaxBoot replicas; range 0 in histosBoot, the further pT ranges in histosBoot2, each registry
@@ -701,19 +705,9 @@ struct RadialFlowDecorr {
     std::array<std::array<std::array<double, KNHarmComp>, KNHarm>, KNEtaMax> harm{};
     void reset()
     {
-      for (auto& a : harm) {
-        for (auto& b : a) {
-          b.fill(0.);
-        }
-      }
-      for (auto& a : pmwk) {
-        for (auto& b : a) {
-          b.fill(0.);
-        }
-      }
-      for (auto& a : wk) {
-        a.fill(0.);
-      }
+      harm = {};
+      pmwk = {};
+      wk = {};
     }
     void add(int ieta, double pt, double w)
     {
@@ -785,9 +779,9 @@ struct RadialFlowDecorr {
   std::array<std::array<PtSums, kNLevels>, kNSyst> sums{};
   void resetSums(int v)
   {
-    for (auto& lev : sums[v]) {
+    for (int l = 0; l < kNLevels; ++l) {
       for (int ipt = 0; ipt < ptRange.n; ++ipt) {
-        lev[ipt].reset();
+        sums[v][l][ipt].reset();
       }
     }
   }
@@ -1140,7 +1134,7 @@ struct RadialFlowDecorr {
   int etaBinsOf(float eta, std::array<int, 2>& bins) const
   {
     int n = 0;
-    for (int ieta = 0; ieta < nEta && n < 2; ++ieta) {
+    for (int ieta = 0; ieta < nEta && n < static_cast<int>(bins.size()); ++ieta) {
       if (eta > etaLw[ieta] && eta <= etaUp[ieta]) {
         bins[n++] = ieta;
       }
@@ -1224,7 +1218,7 @@ struct RadialFlowDecorr {
     if (!h) {
       return 0.0;
     }
-    std::array<int, 5> bins{};
+    std::array<int, KNFlatAxes> bins{};
     bins[0] = h->GetAxis(0)->FindBin(vz);
     bins[1] = h->GetAxis(1)->FindBin(chg);
     bins[2] = h->GetAxis(2)->FindBin(pt);
@@ -1340,7 +1334,7 @@ struct RadialFlowDecorr {
   int fwdSubBin(int det, float eta) const
   {
     const auto& e = fwdEdges[det];
-    if (e.size() < 2 || eta < e.front() || eta >= e.back()) {
+    if (e.size() < KMinEdges || eta < e.front() || eta >= e.back()) {
       return -1;
     }
     const int i = static_cast<int>(std::upper_bound(e.begin(), e.end(), eta) - e.begin()) - 1;
@@ -1399,7 +1393,7 @@ struct RadialFlowDecorr {
 
     auto* alFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", ts);
     auto* alFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", ts);
-    if (!alFT0 || alFT0->size() < 2 || !alFV0 || alFV0->size() < 2) {
+    if (!alFT0 || alFT0->size() < KNAlignHalves || !alFV0 || alFV0->size() < KNAlignHalves) {
       LOGF(fatal, "Could not load FT0/FV0 alignment (FT0/Calib/Align, FV0/Calib/Align) for timestamp %llu", ts);
       return;
     }
@@ -1509,7 +1503,7 @@ struct RadialFlowDecorr {
         continue;
       }
       const float eta = particle.eta();
-      if (std::abs(eta) < 1.5f) {
+      if (std::abs(eta) < KFwdTruthEtaMin) {
         continue;
       }
       auto* pd = pdg->GetParticle(particle.pdgCode());
@@ -2061,8 +2055,8 @@ struct RadialFlowDecorr {
   }
   static void dropBinSumw2(const FlucHists& h)
   {
-    for (const auto* p : {&h.obs, &h.c2Sub2D, &h.cNN2D, &h.c2TA2D, &h.c1Sub2D, &h.c3Sub2D, &h.gapSum2D, &h.c3GapSum2D, &h.covFwdPt, &h.covFwdN, &h.covFwdFwd}) {
-      dropBinSumw2(*p);
+    for (const auto& p : {h.obs, h.c2Sub2D, h.cNN2D, h.c2TA2D, h.c1Sub2D, h.c3Sub2D, h.gapSum2D, h.c3GapSum2D, h.covFwdPt, h.covFwdN, h.covFwdFwd}) {
+      dropBinSumw2(p);
     }
     for (const auto& p : h.cn2D) {
       dropBinSumw2(p);
@@ -2143,11 +2137,12 @@ struct RadialFlowDecorr {
     declareFlat(maskFlat, "");
     if (TESTBIT(maskAll, kSystFlat) && cfgFlatRunSplit > 0) {
       auto& h = hists.flat[kSystFlat];
-      for (auto* m : {&h.early, &h.late}) {
-        const char* nm = (m == &h.early) ? "hFlatMapsEarly" : "hFlatMapsLate";
-        *m = reg(kSystFlat).add<THnSparse>((systPrefix(kSystFlat) + nm).c_str(), ";vz;sign;pt;eta;phi;weight", kTHnSparseF,
-                                           {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}, {kNFlatType, -0.5, static_cast<double>(kNFlatType) - 0.5}});
-      }
+      auto book = [&](const char* nm) {
+        return reg(kSystFlat).add<THnSparse>((systPrefix(kSystFlat) + nm).c_str(), ";vz;sign;pt;eta;phi;weight", kTHnSparseF,
+                                             {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}, {kNFlatType, -0.5, static_cast<double>(kNFlatType) - 0.5}});
+      };
+      h.early = book("hFlatMapsEarly");
+      h.late = book("hFlatMapsLate");
     }
   }
 
@@ -2192,26 +2187,26 @@ struct RadialFlowDecorr {
   // Dense weight map (THnF): the builder sets every cell, so a sparse map would hold all of them anyway.
   THnF* buildWeightMapFromRaw(const THnSparse* hRaw, int type, const char* mapName)
   {
-    if (!hRaw || hRaw->GetNdimensions() != 6) {
+    if (!hRaw || hRaw->GetNdimensions() != KNFlatAxes + 1) {
       LOGF(error, "Raw eta-phi map for '%s' is null or not 6D; no flattening will be applied.", mapName);
       return nullptr;
     }
-    std::array<int, 5> nb{};
-    for (int i = 0; i < 5; ++i) {
+    std::array<int, KNFlatAxes> nb{};
+    for (int i = 0; i < KNFlatAxes; ++i) {
       nb[i] = hRaw->GetAxis(i)->GetNbins();
     }
-    std::array<double, 5> xMin{}, xMax{};
-    for (int i = 0; i < 5; ++i) {
+    std::array<double, KNFlatAxes> xMin{}, xMax{};
+    for (int i = 0; i < KNFlatAxes; ++i) {
       xMin[i] = hRaw->GetAxis(i)->GetXmin();
       xMax[i] = hRaw->GetAxis(i)->GetXmax();
     }
-    auto* hWMap = new THnF(mapName, Form("Flattening Weight Map %s (w_{#phi} = <N_{#phi}> / N_{#phi})", mapName), 5, nb.data(), xMin.data(), xMax.data());
-    for (int i = 0; i < 5; ++i) {
+    auto* hWMap = new THnF(mapName, Form("Flattening Weight Map %s (w_{#phi} = <N_{#phi}> / N_{#phi})", mapName), KNFlatAxes, nb.data(), xMin.data(), xMax.data());
+    for (int i = 0; i < KNFlatAxes; ++i) {
       copyAxis(hWMap->GetAxis(i), hRaw->GetAxis(i));
     }
 
-    std::array<int, 6> bins{};
-    std::array<int, 5> wbins{};
+    std::array<int, KNFlatAxes + 1> bins{};
+    std::array<int, KNFlatAxes> wbins{};
     bins[5] = type + 1;
     for (int iv = 1; iv <= nb[0]; ++iv) {
       bins[0] = wbins[0] = iv;
@@ -2498,7 +2493,7 @@ struct RadialFlowDecorr {
       nFwd = kNFwdDet;
       for (int det = 0; det < kNFwdDet; ++det) {
         auto& e = fwdEdges[det];
-        if (e.size() < 2 || !std::is_sorted(e.begin(), e.end())) {
+        if (e.size() < KMinEdges || !std::is_sorted(e.begin(), e.end())) {
           LOGF(fatal, "%s eta edges must be >= 2 increasing values", detName[det]);
         }
         fwdOffset[det] = nFwd;
