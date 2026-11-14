@@ -19,16 +19,16 @@ which o2-analysistutorial-lf-strangeness-derived-v0-skeleton    # must exist
 which o2-analysistutorial-lf-strangeness-derived-v0-step0       # checkpoint
 ```
 
-Clone this repository:
+Go to the folder of the hands-on in your O2Physics source directory:
 
 ```bash
-git clone https://github.com/<USER>StrangenessV0s_HandsOn
-cd StrangenessV0s_HandsOn
+cd ~/alice/O2Physics/Tutorials/PWGLF/Strangeness/Derived/AnalysisV0
 ```
 
 Download the two input files (strangeness derived data, ~<200> MB each):
 
 ```bash
+mkdir -p data MC
 # real data -> data/AO2D.root   (used by skeleton and steps 0-3)
 rsync -r -u --progress USERNAME@lxplus.cern.ch:/eos/user/<u>/<user>/tutorialData/data/AO2D.root data
 # Monte Carlo -> MC/AO2D.root   (used by step 4, which needs the MC truth)
@@ -38,20 +38,20 @@ rsync -r -u --progress USERNAME@lxplus.cern.ch:/eos/user/<u>/<user>/tutorialData
 Alternatively, download them from CERNBox links.
 
 The run scripts do not contain the file paths: they read them from two text files (one path per line,
-relative to the repository folder or absolute):
+relative to this folder or absolute), which you have to create (the paths are also given in the slides):
 
-| File | Content | Used by |
-|---|---|---|
-| `input_data.txt` | `data/AO2D.root` | `runSkeleton.sh`, `runStep0-3.sh` |
-| `input_MC.txt` | `MC/AO2D.root` | `runStep4.sh` |
+```bash
+echo "data/AO2D.root" > input_data.txt   # used by runSkeleton.sh, runStep0-3.sh
+echo "MC/AO2D.root" > input_MC.txt       # used by runStep4.sh
+```
 
 If you save the files elsewhere, edit these two text files. To run steps 0-3 on the MC (e.g. to compare
 with data): `INPUTFILE=input_MC.txt ./runStep2.sh`.
 
 ## How to work
 
-The code you will modify is the skeleton in O2Physics:
-`Tutorials/PWGLF/Strangeness/StrangenessV0s_HandsOn/o2physics/AnalysisV0/strangeness_derived_v0_skeleton.cxx`.
+The code you will modify is the skeleton in this folder:
+`Tutorials/PWGLF/Strangeness/Derived/AnalysisV0/strangeness_derived_v0_skeleton.cxx`.
 The checkpoints of each step are in the same folder (`strangeness_derived_v0_stepX.cxx`).
 
 ```bash
