@@ -102,6 +102,11 @@ o2physics_add_dpl_workflow(data-creator-hidden-charm-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(dplus-combinatorics
+                    SOURCES dplusCombinatorics.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 # Converters
 
 o2physics_add_dpl_workflow(converter-reduced-3-prongs-ml
