@@ -2673,7 +2673,7 @@ struct MatchingInference {
       return !c.cfgRequireDimuonVertexSuccess.value && !active;
     }
     const bool lxyCut = limits[5][0] > -1.e30 || limits[5][1] < 1.e30;
-    return v.success && nonnegativeRange(v.dca, limits[0]) && nonnegativeRange(v.xy, limits[1]) &&
+    return nonnegativeRange(v.dca, limits[0]) && nonnegativeRange(v.xy, limits[1]) &&
            nonnegativeRange(std::abs(v.dz), limits[2]) && nonnegativeRange(v.distance, limits[3]) &&
            nonnegativeRange(v.objective, limits[4]) && v.dz >= limits[6][0] && v.dz <= limits[6][1] &&
            (!lxyCut || (std::isfinite(v.lxy) && v.lxy >= limits[5][0] && v.lxy <= limits[5][1]));
