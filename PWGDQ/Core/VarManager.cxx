@@ -1049,6 +1049,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPin] = "GeV/c";
   fgVariableNames[kPin_leg1] = "p_{IN}";
   fgVariableUnits[kPin_leg1] = "GeV/c";
+  fgVariableNames[kPin_leg2] = "p_{IN}";
+  fgVariableUnits[kPin_leg2] = "GeV/c";
   fgVariableNames[kSignedPin] = "p_{IN} x charge";
   fgVariableUnits[kSignedPin] = "GeV/c";
   fgVariableNames[kTOFExpMom] = "TOF expected momentum";
@@ -2436,6 +2438,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTPCnSigmaEl1"] = kTPCnSigmaEl1;
   fgVarNamesMap["kPin_leg1"] = kPin_leg1;
   fgVarNamesMap["kTPCnSigmaKa_leg1"] = kTPCnSigmaKa_leg1;
+  fgVarNamesMap["kPin_leg2"] = kPin_leg2;
   fgVarNamesMap["kPt2"] = kPt2;
   fgVarNamesMap["kEta2"] = kEta2;
   fgVarNamesMap["kPhi2"] = kPhi2;
