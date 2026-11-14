@@ -1601,15 +1601,16 @@ struct MftMchJointTransport {
 
 // Bernoulli thinning is applied to final published training pairs, AFTER MC
 // eligibility and donor-group normalization. Both matching planes share a draw.
-inline double& mixedPairSaveFraction()
+struct MatchingProcessSettings {
+  double mixedPairSaveFraction = 1.;
+  uint64_t mixedPairSamplingSeed = 0;
+  // Public audit tables remain empty in sparse mode; internal transport stays active.
+  bool sparseAuditStorage = false;
+};
+inline MatchingProcessSettings& matchingProcessSettings()
 {
-  static double value = 1.;
-  return value;
-}
-inline uint64_t& mixedPairSamplingSeed()
-{
-  static uint64_t value = 0;
-  return value;
+  static MatchingProcessSettings settings{};
+  return settings;
 }
 struct MixedPairSampler {
   using Key = std::tuple<uint64_t, uint64_t, uint64_t, int64_t, int64_t, int64_t, int>;
@@ -1619,7 +1620,7 @@ struct MixedPairSampler {
   MixedPairSampler()
   {
     std::random_device entropy;
-    const auto seed = mixedPairSamplingSeed() != 0 ? mixedPairSamplingSeed() : (static_cast<uint64_t>(entropy()) << 32) ^ static_cast<uint64_t>(entropy());
+    const auto seed = matchingProcessSettings().mixedPairSamplingSeed != 0 ? matchingProcessSettings().mixedPairSamplingSeed : (static_cast<uint64_t>(entropy()) << 32) ^ static_cast<uint64_t>(entropy());
     random.seed(seed);
   }
   template <typename Row>
@@ -1630,7 +1631,7 @@ struct MixedPairSampler {
     if (found != decisions.end()) {
       return found->second;
     }
-    const bool selected = mixedPairSaveFraction() >= 1. || (mixedPairSaveFraction() > 0. && std::bernoulli_distribution(mixedPairSaveFraction())(random));
+    const bool selected = matchingProcessSettings().mixedPairSaveFraction >= 1. || (matchingProcessSettings().mixedPairSaveFraction > 0. && std::bernoulli_distribution(matchingProcessSettings().mixedPairSaveFraction)(random));
     decisions.emplace(key, selected);
     ++attempted;
     saved += selected;
@@ -1639,7 +1640,7 @@ struct MixedPairSampler {
   [[nodiscard]] std::string metadata() const
   {
     std::ostringstream text;
-    text << "{\"save_fraction\":" << mixedPairSaveFraction() << ",\"sampling_seed\":" << mixedPairSamplingSeed()
+    text << "{\"save_fraction\":" << matchingProcessSettings().mixedPairSaveFraction << ",\"sampling_seed\":" << matchingProcessSettings().mixedPairSamplingSeed
          << ",\"attempted_pairs\":" << attempted << ",\"saved_pairs\":" << saved
          << ",\"mixing_weight\":\"original donor normalization; divide by save_fraction for unbiased total counts\"}";
     return text.str();
@@ -1668,11 +1669,6 @@ using MatchingOutcomes = std::map<int64_t, std::array<MatchingOutcome, 2>>;
 
 // Public audit cursors stay empty in sparse mode. Internal transport carries
 // the same rows to MC/sparse devices, independently of a pipeline's AOD writer.
-inline bool& sparseAuditStorage()
-{
-  static bool value = false;
-  return value;
-}
 struct MatchingTreeStorage {
   bool mcTruth = true;
   bool candidateTruth = true;
@@ -1694,15 +1690,15 @@ inline bool useInternalAuditStorage()
     // Mixed labels are training rows, retained in every output mode by default.
     return !(matchingTreeStorage().mcTruth && matchingTreeStorage().mixedTruth);
   } else if constexpr (std::is_same_v<T, o2::aod::MatchingMchPopulation>) {
-    return sparseAuditStorage() || !matchingTreeStorage().mchPopulation;
+    return matchingProcessSettings().sparseAuditStorage || !matchingTreeStorage().mchPopulation;
   } else if constexpr (std::is_same_v<T, o2::aod::MatchingCandidateTruths>) {
-    return sparseAuditStorage() || !(matchingTreeStorage().mcTruth && matchingTreeStorage().candidateTruth);
+    return matchingProcessSettings().sparseAuditStorage || !(matchingTreeStorage().mcTruth && matchingTreeStorage().candidateTruth);
   } else if constexpr (std::is_same_v<T, o2::aod::MatchingCandidateRelations>) {
-    return sparseAuditStorage() || !(matchingTreeStorage().mcTruth && matchingTreeStorage().candidateRelations);
+    return matchingProcessSettings().sparseAuditStorage || !(matchingTreeStorage().mcTruth && matchingTreeStorage().candidateRelations);
   } else if constexpr (std::is_same_v<T, o2::aod::MatchingMchTruths>) {
-    return sparseAuditStorage() || !(matchingTreeStorage().mcTruth && matchingTreeStorage().mchTruth);
+    return matchingProcessSettings().sparseAuditStorage || !(matchingTreeStorage().mcTruth && matchingTreeStorage().mchTruth);
   }
-  return sparseAuditStorage();
+  return matchingProcessSettings().sparseAuditStorage;
 }
 template <typename T>
 struct MatchingInternalTable;
@@ -5928,8 +5924,8 @@ inline std::string matchingOutputMode(o2::framework::ConfigContext const& contex
 {
   auto mode = context.options().get<std::string>("matching-output-mode");
   std::string configuredMode = "tree";
-  mixedPairSaveFraction() = 1.;
-  mixedPairSamplingSeed() = 0;
+  matchingProcessSettings().mixedPairSaveFraction = 1.;
+  matchingProcessSettings().mixedPairSamplingSeed = 0;
   matchingTreeStorage() = {};
   for (int i = 1; i < context.argc(); ++i) {
     std::string arg = context.argv()[i], source;
@@ -5942,8 +5938,8 @@ inline std::string matchingOutputMode(o2::framework::ConfigContext const& contex
       boost::property_tree::ptree config;
       boost::property_tree::read_json(source.substr(7), config);
       configuredMode = config.get<std::string>("matching-output.cfgOutputMode", "tree");
-      mixedPairSaveFraction() = config.get<double>("matching-output.cfgMixedPairSaveFraction", 1.);
-      mixedPairSamplingSeed() = config.get<uint64_t>("matching-output.cfgMixedPairSamplingSeed", 0);
+      matchingProcessSettings().mixedPairSaveFraction = config.get<double>("matching-output.cfgMixedPairSaveFraction", 1.);
+      matchingProcessSettings().mixedPairSamplingSeed = config.get<uint64_t>("matching-output.cfgMixedPairSamplingSeed", 0);
       matchingTreeStorage().mcTruth = config.get<bool>("matching-output.cfgSaveMcTruthTables", true);
       matchingTreeStorage().candidateTruth = config.get<bool>("matching-output.cfgSaveCandidateTruthTable", true);
       matchingTreeStorage().candidateRelations = config.get<bool>("matching-output.cfgSaveCandidateRelationsTable", true);
@@ -5960,7 +5956,7 @@ inline std::string matchingOutputMode(o2::framework::ConfigContext const& contex
   if (mode != "tree" && mode != "sparse" && mode != "both") {
     LOGF(fatal, "Matching output mode must be tree, sparse or both");
   }
-  if (!std::isfinite(mixedPairSaveFraction()) || mixedPairSaveFraction() < 0. || mixedPairSaveFraction() > 1.) {
+  if (!std::isfinite(matchingProcessSettings().mixedPairSaveFraction) || matchingProcessSettings().mixedPairSaveFraction < 0. || matchingProcessSettings().mixedPairSaveFraction > 1.) {
     LOGF(fatal, "cfgMixedPairSaveFraction must be finite and between 0 and 1");
   }
   return mode;
@@ -6265,12 +6261,12 @@ template <bool Mc = false>
 inline o2::framework::WorkflowSpec makeMatchingWorkflow(o2::framework::ConfigContext const& cfgc, bool modernDefaults = false)
 {
   const auto mode = matchingOutputMode(cfgc);
-  sparseAuditStorage() = mode == "sparse";
+  matchingProcessSettings().sparseAuditStorage = mode == "sparse";
   o2::framework::WorkflowSpec workflow{o2::framework::adaptAnalysisTask<MftMchMatchingTask>(cfgc, o2::framework::TaskName{"match_mft_mch_data_mc"},
                                                                                             modernDefaults ? o2::framework::SetDefaultProcesses{{{"processLegacy", false}, {"processMatchingPlane", true}}} : o2::framework::SetDefaultProcesses{}),
                                        o2::framework::adaptAnalysisTask<MchDimuonMassAtPv>(cfgc, o2::framework::TaskName{"mch-dimuon-mass-at-pv"}),
                                        o2::framework::adaptAnalysisTask<MlMatchedDimuonMassAtPv>(cfgc, o2::framework::TaskName{"ml-matched-dimuon-mass-at-pv"}),
-                                       (sparseAuditStorage() ? o2::framework::adaptAnalysisTask<MchJpsiMatchFlags<true>>(cfgc, o2::framework::TaskName{"mch-jpsi-match-flags"}) : o2::framework::adaptAnalysisTask<MchJpsiMatchFlags<false>>(cfgc, o2::framework::TaskName{"mch-jpsi-match-flags"}))};
+                                       (matchingProcessSettings().sparseAuditStorage ? o2::framework::adaptAnalysisTask<MchJpsiMatchFlags<true>>(cfgc, o2::framework::TaskName{"mch-jpsi-match-flags"}) : o2::framework::adaptAnalysisTask<MchJpsiMatchFlags<false>>(cfgc, o2::framework::TaskName{"mch-jpsi-match-flags"}))};
   if (!modernDefaults) {
     workflow.push_back(o2::framework::adaptAnalysisTask<MixedMatchPlanePublisher>(cfgc, o2::framework::TaskName{"mixed-match-plane-publisher"}));
   }
