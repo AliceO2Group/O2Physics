@@ -219,8 +219,8 @@ struct sigmaminustask {
     }
 
     // Cast configurables to std::vector
-    cast_mothPdgCodes = (std::vector<int>)mothPdgCodes;
-    cast_daugPdgCodes = (std::vector<int>)daugPdgCodes;
+    cast_mothPdgCodes = std::vector<int>(mothPdgCodes);
+    cast_daugPdgCodes = std::vector<int>(daugPdgCodes);
   }
 
   void initCCDB(aod::BCs::iterator const& bc)

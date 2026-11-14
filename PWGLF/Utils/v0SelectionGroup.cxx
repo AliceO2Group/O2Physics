@@ -32,54 +32,54 @@ bool v0SelectionGroup::verifyMask(uint64_t bitmap, uint64_t mask) const
 // provides standard masks given current event selection criteria.
 void v0SelectionGroup::provideMasks(uint64_t& maskTopological, uint64_t& maskTrackProperties, uint64_t& maskK0ShortSpecific, uint64_t& maskLambdaSpecific, uint64_t& maskAntiLambdaSpecific) const
 {
-  maskTopological = (uint64_t(1) << v0data::selCosPA) | (uint64_t(1) << v0data::selRadius) | (uint64_t(1) << v0data::selDCANegToPV) | (uint64_t(1) << v0data::selDCAPosToPV) | (uint64_t(1) << v0data::selDCAV0Dau) | (uint64_t(1) << v0data::selRadiusMax);
-  maskK0ShortSpecific = (uint64_t(1) << v0data::selK0ShortRapidity) | (uint64_t(1) << v0data::selK0ShortCTau) | (uint64_t(1) << v0data::selK0ShortArmenteros) | (uint64_t(1) << v0data::selConsiderK0Short);
-  maskLambdaSpecific = (uint64_t(1) << v0data::selLambdaRapidity) | (uint64_t(1) << v0data::selLambdaCTau) | (uint64_t(1) << v0data::selConsiderLambda);
-  maskAntiLambdaSpecific = (uint64_t(1) << v0data::selLambdaRapidity) | (uint64_t(1) << v0data::selLambdaCTau) | (uint64_t(1) << v0data::selConsiderAntiLambda);
+  maskTopological = (static_cast<uint64_t>(1) << v0data::selCosPA) | (static_cast<uint64_t>(1) << v0data::selRadius) | (static_cast<uint64_t>(1) << v0data::selDCANegToPV) | (static_cast<uint64_t>(1) << v0data::selDCAPosToPV) | (static_cast<uint64_t>(1) << v0data::selDCAV0Dau) | (static_cast<uint64_t>(1) << v0data::selRadiusMax);
+  maskK0ShortSpecific = (static_cast<uint64_t>(1) << v0data::selK0ShortRapidity) | (static_cast<uint64_t>(1) << v0data::selK0ShortCTau) | (static_cast<uint64_t>(1) << v0data::selK0ShortArmenteros) | (static_cast<uint64_t>(1) << v0data::selConsiderK0Short);
+  maskLambdaSpecific = (static_cast<uint64_t>(1) << v0data::selLambdaRapidity) | (static_cast<uint64_t>(1) << v0data::selLambdaCTau) | (static_cast<uint64_t>(1) << v0data::selConsiderLambda);
+  maskAntiLambdaSpecific = (static_cast<uint64_t>(1) << v0data::selLambdaRapidity) | (static_cast<uint64_t>(1) << v0data::selLambdaCTau) | (static_cast<uint64_t>(1) << v0data::selConsiderAntiLambda);
 
   // ask for specific TPC/TOF PID v0data::selections
   maskTrackProperties = 0;
   if (requirePosITSonly) {
-    maskTrackProperties = maskTrackProperties | (uint64_t(1) << v0data::selPosItsOnly) | (uint64_t(1) << v0data::selPosGoodITSTrack);
+    maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << v0data::selPosItsOnly) | (static_cast<uint64_t>(1) << v0data::selPosGoodITSTrack);
   } else {
-    maskTrackProperties = maskTrackProperties | (uint64_t(1) << v0data::selPosGoodTPCTrack) | (uint64_t(1) << v0data::selPosGoodITSTrack);
+    maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << v0data::selPosGoodTPCTrack) | (static_cast<uint64_t>(1) << v0data::selPosGoodITSTrack);
     // TPC signal is available: ask for positive track PID
     if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << v0data::selTPCPIDPositivePion);
-      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << v0data::selTPCPIDPositiveProton);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << v0data::selTPCPIDPositivePion);
+      maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << v0data::selTPCPIDPositivePion);
+      maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selTPCPIDPositiveProton);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selTPCPIDPositivePion);
     }
     // TOF PID
     if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
-      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << v0data::selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << v0data::selTOFDeltaTPositivePionK0Short);
+      maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << v0data::selTOFNSigmaPositivePionK0Short) | (static_cast<uint64_t>(1) << v0data::selTOFDeltaTPositivePionK0Short);
     if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << v0data::selTOFNSigmaPositiveProtonLambda) | (uint64_t(1) << v0data::selTOFDeltaTPositiveProtonLambda);
+      maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selTOFNSigmaPositiveProtonLambda) | (static_cast<uint64_t>(1) << v0data::selTOFDeltaTPositiveProtonLambda);
     if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << v0data::selTOFNSigmaPositivePionLambda) | (uint64_t(1) << v0data::selTOFDeltaTPositivePionLambda);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selTOFNSigmaPositivePionLambda) | (static_cast<uint64_t>(1) << v0data::selTOFDeltaTPositivePionLambda);
   }
   if (requireNegITSonly) {
-    maskTrackProperties = maskTrackProperties | (uint64_t(1) << v0data::selNegItsOnly) | (uint64_t(1) << v0data::selNegGoodITSTrack);
+    maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << v0data::selNegItsOnly) | (static_cast<uint64_t>(1) << v0data::selNegGoodITSTrack);
   } else {
-    maskTrackProperties = maskTrackProperties | (uint64_t(1) << v0data::selNegGoodTPCTrack) | (uint64_t(1) << v0data::selNegGoodITSTrack);
+    maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << v0data::selNegGoodTPCTrack) | (static_cast<uint64_t>(1) << v0data::selNegGoodITSTrack);
     // TPC signal is available: ask for negative track PID
     if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << v0data::selTPCPIDNegativePion);
-      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << v0data::selTPCPIDNegativePion);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << v0data::selTPCPIDNegativeProton);
+      maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << v0data::selTPCPIDNegativePion);
+      maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selTPCPIDNegativePion);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selTPCPIDNegativeProton);
     }
     // TOF PID
     if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
-      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << v0data::selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << v0data::selTOFDeltaTNegativePionK0Short);
+      maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << v0data::selTOFNSigmaNegativePionK0Short) | (static_cast<uint64_t>(1) << v0data::selTOFDeltaTNegativePionK0Short);
     if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << v0data::selTOFNSigmaNegativePionLambda) | (uint64_t(1) << v0data::selTOFDeltaTNegativePionLambda);
+      maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selTOFNSigmaNegativePionLambda) | (static_cast<uint64_t>(1) << v0data::selTOFDeltaTNegativePionLambda);
     if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << v0data::selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << v0data::selTOFDeltaTNegativeProtonLambda);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selTOFNSigmaNegativeProtonLambda) | (static_cast<uint64_t>(1) << v0data::selTOFDeltaTNegativeProtonLambda);
   }
 
   if (skipTPConly) {
-    maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << v0data::selPosNotTPCOnly) | (uint64_t(1) << v0data::selNegNotTPCOnly);
-    maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << v0data::selPosNotTPCOnly) | (uint64_t(1) << v0data::selNegNotTPCOnly);
-    maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << v0data::selPosNotTPCOnly) | (uint64_t(1) << v0data::selNegNotTPCOnly);
+    maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << v0data::selPosNotTPCOnly) | (static_cast<uint64_t>(1) << v0data::selNegNotTPCOnly);
+    maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selPosNotTPCOnly) | (static_cast<uint64_t>(1) << v0data::selNegNotTPCOnly);
+    maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << v0data::selPosNotTPCOnly) | (static_cast<uint64_t>(1) << v0data::selNegNotTPCOnly);
   }
 }
 

@@ -93,7 +93,7 @@ struct lambdakzeromcfinder {
   void init(InitContext&)
   {
     // initialize histograms
-    const AxisSpec axisNTimesRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
+    const AxisSpec axisNTimesRecoed{10, -0.5f, +9.5f, ""};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesRecoed});
 
