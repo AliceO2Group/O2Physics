@@ -141,7 +141,7 @@ o2physics_add_dpl_workflow(task-lc
 o2physics_add_dpl_workflow(task-upc-lc
                     SOURCES taskUpcLc.cxx
                     REUSE_FROM HfCandidatesPCH
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-lc-to-k0s-p
