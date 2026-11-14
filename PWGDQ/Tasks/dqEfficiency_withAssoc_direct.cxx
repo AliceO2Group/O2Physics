@@ -926,7 +926,7 @@ struct AnalysisTrackSelection {
     // cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
   }
   void processWithCent(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsWithCentAndMults const& events, MyBarrelTracksWithCov const& tracks,
-                      McCollisions const& eventsMC, McParticles const& tracksMC)
+                       McCollisions const& eventsMC, McParticles const& tracksMC)
   {
     // cout << "AnalysisTrackSelection::processWithCent() called" << endl;
     runTrackSelection<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks, eventsMC, tracksMC);
