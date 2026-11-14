@@ -20,24 +20,24 @@ o2physics_add_dpl_workflow(trackextension
 o2physics_add_dpl_workflow(trackselection
                     SOURCES trackselection.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(event-selection-service
                     SOURCES eventSelectionService.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
                                           O2::DataFormatsITSMFT
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(event-selection-service-run2
                     SOURCES eventSelectionServiceRun2.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
                                           O2::DataFormatsITSMFT
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(multcenttable
                     SOURCES multCentTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(multiplicity-extra-table
                     SOURCES multiplicityExtraTable.cxx
@@ -52,12 +52,12 @@ o2physics_add_dpl_workflow(weak-decay-indices
 o2physics_add_dpl_workflow(ft0-corrected-table
                     SOURCES ft0CorrectedTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                COMPONENT_NAME Analysis)
+                COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(propagationservice
                     SOURCES propagationService.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(propagationservice-v2
                     SOURCES propagationServiceV2.cxx
@@ -67,12 +67,12 @@ o2physics_add_dpl_workflow(propagationservice-v2
 o2physics_add_dpl_workflow(propagationservice-run2
                     SOURCES propagationServiceRun2.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(track-dca-cov-filler-run2
                     SOURCES trackDcaCovFillerRun2.cxx
                     PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(calo-clusters
                     SOURCES caloClusterProducer.cxx
@@ -90,7 +90,7 @@ o2physics_add_dpl_workflow(fwdtrackextension
 o2physics_add_dpl_workflow(track-to-collision-associator
                     SOURCES trackToCollisionAssociator.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(fwdtrack-to-collision-associator
                     SOURCES fwdtrackToCollisionAssociator.cxx
