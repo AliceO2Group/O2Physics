@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file flattenicityTask.cxx
+/// \brief Run-1 calibration task for FT0 flattenicity (fine-binned histograms for percentile extraction)
+/// \author Eisha Rani
+/// \since September 2026
+
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
