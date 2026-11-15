@@ -5,7 +5,6 @@
 //
 // Optional overlay: pass the 5 Bethe-Bloch parameters (+ MIP, charge factor, mass, Z) of a species to draw its curve.
 
-#include <Rtypes.h>
 #include <TCanvas.h>
 #include <TColor.h>
 #include <TDirectory.h>
@@ -15,6 +14,8 @@
 #include <TLatex.h>
 #include <TString.h>
 #include <TStyle.h>
+
+#include <Rtypes.h>
 
 #include <array>
 #include <cmath>
