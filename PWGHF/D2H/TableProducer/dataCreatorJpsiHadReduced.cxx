@@ -843,7 +843,8 @@ struct HfDataCreatorJpsiHadReduced {
     const auto mcParticlesPerMcColl = particlesMc.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
 
     // Match generated particles.
-    for (const auto& particle : mcParticlesPerMcColl) {
+    for (int iPart{0}; iPart < mcParticlesPerMcColl.size(); ++iPart) {
+      const auto particle = mcParticlesPerMcColl.iteratorAt(iPart);
       int8_t sign = particle.pdgCode() > 0 ? 1 : -1;
       int8_t flag{0}, channel{0};
       if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
@@ -946,7 +947,7 @@ struct HfDataCreatorJpsiHadReduced {
           }
           const auto& phiPart = particlesMc.rawIteratorAt(particle.daughtersIds().back());
           // Check phi -> K+K-
-          if (RecoDecay::isMatchedMCGen(particlesMc, phiPart, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true)) {
+          if (RecoDecay::isMatchedMCGen(particlesMc, phiPart, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, false)) {
             channel = o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
           }
         }
