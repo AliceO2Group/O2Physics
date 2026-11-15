@@ -337,6 +337,36 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet> const& input
 }
 
 /**
+ * Applies the particle status and charge selections shared by jet finding and background QA.
+ * Kinematic acceptance cuts are applied to the input particle table separately.
+ */
+template <typename T, typename U>
+bool isParticleSelected(T const& particle, const std::string& particleSelection, int jetTypeParticleLevel, U const& pdgDatabase)
+{
+  if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) {
+    return false;
+  } else if (particleSelection == "HepMCStatus" && particle.getHepMCStatusCode() != 1) {
+    return false;
+  } else if (particleSelection == "GenStatus" && particle.getGenStatusCode() != 1) {
+    return false;
+  } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
+    return false;
+  }
+  if (std::isinf(particle.eta())) {
+    return false;
+  }
+  auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
+  auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
+  if (jetTypeParticleLevel == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
+    return false;
+  }
+  if (jetTypeParticleLevel == static_cast<int>(JetType::neutral) && pdgCharge != 0.0) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Adds particles to a fastjet inputParticles list
  *
  * @param inputParticles fastjet container
@@ -350,26 +380,10 @@ template <bool checkIsDaughter, typename T, typename U>
 void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std::string& particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, const U* candidate = nullptr)
 {
   for (auto& particle : particles) {
-    if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?
-      continue;
-    } else if (particleSelection == "HepMCStatus" && particle.getHepMCStatusCode() != 1) { // do we need isPhysicalPrimary as well? Note: Might give unforseen results if the generator isnt PYTHIA
-      continue;
-    } else if (particleSelection == "GenStatus" && particle.getGenStatusCode() != 1) {
-      continue;
-    } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
-      continue;
-    }
-    if (std::isinf(particle.eta())) {
+    if (!isParticleSelected(particle, particleSelection, jetTypeParticleLevel, pdgDatabase)) {
       continue;
     }
     auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-    auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
-    if (jetTypeParticleLevel == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
-      continue;
-    }
-    if (jetTypeParticleLevel == static_cast<int>(JetType::neutral) && pdgCharge != 0.0) {
-      continue;
-    }
     if constexpr (jetcandidateutilities::isMcCandidate<U>() && !jetv0utilities::isV0McCandidate<U>()) {
       if (candidate != nullptr) {
         if ((*candidate).mcParticleId() == particle.globalIndex()) {
