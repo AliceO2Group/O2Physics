@@ -209,6 +209,8 @@ DECLARE_SOA_TABLE(UPCBarrelCands, "AOD", "UPCBARRELCANDS",
 DECLARE_SOA_TABLE(UPCBarrelMcColls, "AOD", "UPCBMCCOLL",
                   upc_cand_prod_bar::TfId,
                   upc_cand_prod_bar::GlobalBC,
+                  upc_cand_prod_bar::Flags,
+                  upc_cand_prod_bar::OccupancyFT0C,
                   upc_cand_prod_bar::PosX,
                   upc_cand_prod_bar::PosY,
                   upc_cand_prod_bar::PosZ,
@@ -343,8 +345,6 @@ struct UpcCandProducerBarrel {
     registry.add("hTF", "TF counts", HistType::kTH1D, {axisTFs});
     registry.add("hTVX", "TVX counts", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXRCT", "TVX counts after RCT selection", HistType::kTH2D, {axisBCs, axisTFs});
-    registry.add("hTVXupc", "TVX counts in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
-    registry.add("hTVXRCTupc", "TVX counts after RCT selection in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
 
     registry.add("hVetoT00", "no RCT selection", HistType::kTH3D, {axisBCs, axisTFs, axisVeto});
     registry.add("hVetoTV0", "no RCT selection", HistType::kTH3D, {axisBCs, axisTFs, axisVeto});
@@ -429,8 +429,113 @@ struct UpcCandProducerBarrel {
     }
     LOGP(info, "Starting new DF. Number of TFs = {}", tfIDs.size());
 
+    std::vector<int64_t> bcsWithFT0, bcsWithFV0, bcsWithFDD;
+    bcsWithFT0.reserve(ft0s.size());
+    bcsWithFV0.reserve(fv0s.size());
+    bcsWithFDD.reserve(fdds.size());
+
+    LOGP(debug, "Filling FT0 activity arrays");
+    for (const auto& ft0 : ft0s) {
+      const float sumAmpFT0A = ft0.sumAmpA();
+      const float sumAmpFT0C = ft0.sumAmpC();
+      if ((ft0.timeA() < MaxFITTime && sumAmpFT0A >= minAmpFT0A) || (ft0.timeC() < MaxFITTime && sumAmpFT0C >= minAmpFT0C)) {
+        bcsWithFT0.push_back(ft0.bc_as<BCsWithSels>().globalBC());
+      }
+    }
+
+    LOGP(debug, "Filling FV0 activity arrays");
+    for (const auto& fv0 : fv0s) {
+      const float sumAmpFV0A = std::accumulate(fv0.amplitude().begin(), fv0.amplitude().end(), 0.f);
+      if (fv0.time() < MaxFITTime && sumAmpFV0A >= minAmpFV0A) {
+        bcsWithFV0.push_back(fv0.bc_as<BCsWithSels>().globalBC());
+      }
+    }
+
+    LOGP(debug, "Filling FDD activity arrays");
+    for (const auto& fdd : fdds) {
+      const float sumAmpFDDA = std::accumulate(std::begin(fdd.chargeA()), std::end(fdd.chargeA()), 0.f);
+      const float sumAmpFDDC = std::accumulate(std::begin(fdd.chargeC()), std::end(fdd.chargeC()), 0.f);
+      if ((fdd.timeA() < MaxFITTime && sumAmpFDDA >= minAmpFDDA) || (fdd.timeC() < MaxFITTime && sumAmpFDDC >= minAmpFDDC)) {
+        bcsWithFDD.push_back(fdd.bc_as<BCsWithSels>().globalBC());
+      }
+    }
+
+    LOGP(debug, "Collect number of all collisions and upc-mode collisions per ROF");
+    std::vector<std::map<int32_t, float>> vMultTracks(tfIDs.size(), std::map<int32_t, float>());
+    std::vector<std::vector<int>> vCollisionsPerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
+    std::vector<std::vector<int>> vUpcModePerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
+    for (const auto& collision : collisions) {
+      auto bc = collision.template bc_as<BCsWithSels>();
+      const int64_t globalBC = bc.globalBC();
+      const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+      const auto iTF = localTFIndex[bc.globalIndex()];
+      const int32_t rofInTF = getRofInTF(bcInTF);
+      vCollisionsPerROF[iTF][rofInTF]++;
+      const bool upcMode = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
+      if (upcMode) {
+        vUpcModePerROF[iTF][rofInTF]++;
+      }
+    }
+
+    auto hTVX = registry.get<TH2>(HIST("hTVX"));
+    auto hTVXRCT = registry.get<TH2>(HIST("hTVXRCT"));
+
+    LOGP(debug, "Starting lumi accounting");
+    std::vector<std::map<int32_t, float>> vMultFT0C(tfIDs.size(), std::map<int32_t, float>());
+    for (const auto& ft0 : ft0s) {
+      const auto bc = ft0.bc_as<BCsWithSels>();
+      const auto globalBC = bc.globalBC();
+      const auto bcInOrbit = globalBC % NBCsPerOrbit;
+      const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+      const auto iTF = localTFIndex[bc.globalIndex()];
+      const auto tfID = tfIDs[iTF];
+
+      // Multiplicity for FT0C-based occupancy estimates
+      if (ft0.timeC() < MaxFITTime && ft0.sumAmpC() >= minAmpFT0C) {
+        vMultFT0C[iTF][bcInTF] = ft0.sumAmpC();
+      }
+
+      if (!collidingBCs[bcInOrbit] || !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex)) {
+        continue;
+      }
+
+      if (useTCE && !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) {
+        continue;
+      }
+
+      hTVX->Fill(bcInOrbit, tfID);
+
+      if (!bc.selection_bit(aod::evsel::kNoTimeFrameBorder) || !rctChecker(bc)) {
+        continue;
+      }
+
+      hTVXRCT->Fill(bcInOrbit, tfID);
+    }
+
+    LOGP(debug, "Starting occupancy calculation");
+    std::vector<std::vector<float>> vOccupancyFT0C(tfIDs.size(), std::vector<float>(nBCsPerTF, 0.f));
+    int deltaBcPast = 1600;
+    int deltaBcFuture = 4000;
+    // TODO: calculate weights only once per task
+    std::vector<float> weights(deltaBcPast + deltaBcFuture + 1);
+    for (int d = -deltaBcPast; d <= deltaBcFuture; ++d) {
+      weights[d + deltaBcPast] = calcWeightForOccupancy(d * o2::constants::lhc::LHCBunchSpacingMUS);
+    }
+
+    for (size_t iTF = 0; iTF < tfIDs.size(); ++iTF) {
+      for (const auto& [bc, multFT0C] : vMultFT0C[iTF]) {
+        LOGP(debug, "iTF={} bc={} mult={}", iTF, bc, multFT0C);
+        const int bcInTFMin = std::max(bc - deltaBcFuture, 0);
+        const int bcInTFMax = std::min(bc + deltaBcPast, nBCsPerTF - 1);
+        for (int bcInTF = bcInTFMin; bcInTF <= bcInTFMax; ++bcInTF) {
+          vOccupancyFT0C[iTF][bcInTF] += weights[bc - bcInTF + deltaBcPast] * multFT0C;
+        }
+      }
+    }
+
     std::unordered_map<int64_t, SignalRef> signalParticleRefs;
     if constexpr (isMC) {
+      LOGP(debug, "Collecting MC info. Number of MC collisions = {}", mcCollisions->size());
       std::unordered_set<int64_t> ambiguousTrackIds;
       ambiguousTrackIds.reserve(ambiguousTracks->size());
       for (const auto& ambiguousTrack : *ambiguousTracks) {
@@ -447,12 +552,21 @@ struct UpcCandProducerBarrel {
 
       for (const auto& mcCollision : *mcCollisions) {
         const auto bc = mcCollision.template bc_as<BCsWithSels>();
-        const auto globalBC = bc.globalBC();
+        const int64_t globalBC = bc.globalBC();
         const auto iTF = localTFIndex[bc.globalIndex()];
-        const auto bcInTF = (static_cast<int64_t>(globalBC) - bcSOR) % nBCsPerTF;
+        const int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+        LOGP(debug, "setting flags for MC collision");
+        const int32_t rofInTF = getRofInTF(bcInTF);
+        const bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
+        const bool noPileupInRof = vCollisionsPerROF[iTF][rofInTF] <= 1;
+        uint8_t bcFlags = 0;
+        bcFlags |= upcMode << 0;
+        bcFlags |= noPileupInRof << 1;
+        const auto occupancyFT0C = vOccupancyFT0C[iTF][bcInTF];
+
         const auto particles = mcParticles->sliceBy(particlesPerMCCollision, mcCollision.globalIndex());
         const bool isSignal = mcCollision.getSourceId() == signalSourceId.value;
-
+        LOGP(debug, "sourceId = {}", mcCollision.getSourceId());
         std::vector<float> px, py, pz;
         std::vector<int32_t> pdg, recoCollisionIds;
         std::vector<uint8_t> recoFlags;
@@ -497,126 +611,10 @@ struct UpcCandProducerBarrel {
           // Remap original particle IDs to output index for candidate labels
           signalParticleRefs.emplace(particle.globalIndex(), SignalRef{newMCCollisionId, newMCParticleId});
         }
-        selectedMCCollisions(tfIDs[iTF], globalBC, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+        selectedMCCollisions(tfIDs[iTF], globalBC, bcFlags, occupancyFT0C,
+                             mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                              px, py, pz, pdg, mult, minDistanceMC[iTF][bcInTF],
                              recoFlags, recoCollisionIds, isSignal);
-      }
-    }
-
-    // collect number of all collisions and upc-mode collisions per ROF
-    LOGP(debug, "Collect number of all collisions and upc-mode collisions per ROF");
-    std::vector<std::map<int32_t, float>> vMultTracks(tfIDs.size(), std::map<int32_t, float>());
-    std::vector<std::vector<int>> vCollisionsPerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
-    std::vector<std::vector<int>> vUpcModePerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
-    for (const auto& collision : collisions) {
-      auto bc = collision.template bc_as<BCsWithSels>();
-      const int64_t globalBC = bc.globalBC();
-      const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-      const auto iTF = localTFIndex[bc.globalIndex()];
-      const int32_t rofInTF = getRofInTF(bcInTF);
-      vCollisionsPerROF[iTF][rofInTF]++;
-      const bool upcMode = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
-      if (upcMode) {
-        vUpcModePerROF[iTF][rofInTF]++;
-      }
-    }
-
-    auto hTVX = registry.get<TH2>(HIST("hTVX"));
-    auto hTVXRCT = registry.get<TH2>(HIST("hTVXRCT"));
-
-    auto hTVXupc = registry.get<TH2>(HIST("hTVXupc"));
-    auto hTVXRCTupc = registry.get<TH2>(HIST("hTVXRCTupc"));
-
-    std::vector<int64_t> bcsWithFT0, bcsWithFV0, bcsWithFDD;
-    bcsWithFT0.reserve(ft0s.size());
-    bcsWithFV0.reserve(fv0s.size());
-    bcsWithFDD.reserve(fdds.size());
-
-    LOGP(debug, "Starting lumi accounting");
-    // lumi accounting
-    std::vector<std::map<int32_t, float>> vMultFT0C(tfIDs.size(), std::map<int32_t, float>());
-    for (const auto& ft0 : ft0s) {
-      const auto bc = ft0.bc_as<BCsWithSels>();
-      const auto globalBC = bc.globalBC();
-      const auto bcInOrbit = globalBC % NBCsPerOrbit;
-      const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-      const auto iTF = localTFIndex[bc.globalIndex()];
-      const auto tfID = tfIDs[iTF];
-      const int32_t rofInTF = getRofInTF(bcInTF);
-      bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
-
-      // Multiplicity for FT0C-based occupancy estimates
-      if (ft0.timeC() < MaxFITTime && ft0.sumAmpC() >= minAmpFT0C) {
-        vMultFT0C[iTF][bcInTF] = ft0.sumAmpC();
-      }
-
-      if (!collidingBCs[bcInOrbit] || !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex)) {
-        continue;
-      }
-
-      if (useTCE && !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) {
-        continue;
-      }
-
-      hTVX->Fill(bcInOrbit, tfID);
-      if (upcMode) {
-        hTVXupc->Fill(bcInOrbit, tfID);
-      }
-
-      if (!bc.selection_bit(aod::evsel::kNoTimeFrameBorder) || !rctChecker(bc)) {
-        continue;
-      }
-
-      hTVXRCT->Fill(bcInOrbit, tfID);
-      if (upcMode) {
-        hTVXRCTupc->Fill(bcInOrbit, tfID);
-      }
-    }
-
-    LOGP(debug, "Filling FT0 activity arrays");
-    for (const auto& ft0 : ft0s) {
-      const float sumAmpFT0A = ft0.sumAmpA();
-      const float sumAmpFT0C = ft0.sumAmpC();
-      if ((ft0.timeA() < MaxFITTime && sumAmpFT0A >= minAmpFT0A) || (ft0.timeC() < MaxFITTime && sumAmpFT0C >= minAmpFT0C)) {
-        bcsWithFT0.push_back(ft0.bc_as<BCsWithSels>().globalBC());
-      }
-    }
-
-    LOGP(debug, "Filling FV0 activity arrays");
-    for (const auto& fv0 : fv0s) {
-      const float sumAmpFV0A = std::accumulate(fv0.amplitude().begin(), fv0.amplitude().end(), 0.f);
-      if (fv0.time() < MaxFITTime && sumAmpFV0A >= minAmpFV0A) {
-        bcsWithFV0.push_back(fv0.bc_as<BCsWithSels>().globalBC());
-      }
-    }
-
-    LOGP(debug, "Filling FDD activity arrays");
-    for (const auto& fdd : fdds) {
-      const float sumAmpFDDA = std::accumulate(std::begin(fdd.chargeA()), std::end(fdd.chargeA()), 0.f);
-      const float sumAmpFDDC = std::accumulate(std::begin(fdd.chargeC()), std::end(fdd.chargeC()), 0.f);
-      if ((fdd.timeA() < MaxFITTime && sumAmpFDDA >= minAmpFDDA) || (fdd.timeC() < MaxFITTime && sumAmpFDDC >= minAmpFDDC)) {
-        bcsWithFDD.push_back(fdd.bc_as<BCsWithSels>().globalBC());
-      }
-    }
-
-    LOGP(debug, "Starting occupancy calculation");
-    std::vector<std::vector<float>> vOccupancyFT0C(tfIDs.size(), std::vector<float>(nBCsPerTF, 0.f));
-    int deltaBcPast = 1600;
-    int deltaBcFuture = 4000;
-    // TODO: calculate weights only once per task
-    std::vector<float> weights(deltaBcPast + deltaBcFuture + 1);
-    for (int d = -deltaBcPast; d <= deltaBcFuture; ++d) {
-      weights[d + deltaBcPast] = calcWeightForOccupancy(d * o2::constants::lhc::LHCBunchSpacingMUS);
-    }
-
-    for (size_t iTF = 0; iTF < tfIDs.size(); ++iTF) {
-      for (const auto& [bc, multFT0C] : vMultFT0C[iTF]) {
-        LOGP(debug, "iTF={} bc={} mult={}", iTF, bc, multFT0C);
-        const int bcInTFMin = std::max(bc - deltaBcFuture, 0);
-        const int bcInTFMax = std::min(bc + deltaBcPast, nBCsPerTF - 1);
-        for (int bcInTF = bcInTFMin; bcInTF <= bcInTFMax; ++bcInTF) {
-          vOccupancyFT0C[iTF][bcInTF] += weights[bc - bcInTF + deltaBcPast] * multFT0C;
-        }
       }
     }
 
