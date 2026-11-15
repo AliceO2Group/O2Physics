@@ -186,6 +186,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   using FilteredCharmMcCandDstars = soa::Filtered<soa::Join<aod::FDHfCandDstar, aod::FDHfCandMC>>;
   using FilteredCharmMcCandDstar = FilteredCharmMcCandDstars::iterator;
 
+  using CharmGenCand3Prongs = soa::Join<aod::FDHfCand3Prong, aod::FDHfCandMC, aod::FDMCLabels>;
   using CharmGenCandDstars = soa::Join<aod::FDHfCandDstar, aod::FDHfCandMC, aod::FDMCLabels>;
   using FilteredFDGenParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDTrkTimeStamp>>;
 
@@ -305,7 +306,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   void init(InitContext& /*context*/)
   {
-    std::array<bool, 11> processes = {doprocessDataLcTrk, doprocessDataDplusTrk, doprocessDataD0Trk, doprocessDataDstarTrk, doprocessDataXicTrk, doprocessMcLcTrk, doprocessMcDplusTrk, doprocessMcD0Trk, doprocessMcDstarTrk, doprocessMcXicTrk, doprocessMcDstarTrkGen};
+    std::array<bool, 12> processes = {doprocessDataLcTrk, doprocessDataDplusTrk, doprocessDataD0Trk, doprocessDataDstarTrk, doprocessDataXicTrk, doprocessMcLcTrk, doprocessMcDplusTrk, doprocessMcD0Trk, doprocessMcDstarTrk, doprocessMcXicTrk, doprocessMcDstarTrkGen, doprocessMcDplusTrkGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
@@ -1313,10 +1314,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcDstarTrk, "Enable processing DstarToD0Pi and Tracks correlation for Monte Carlo", false);
 
-  void processMcDstarTrkGen(FilteredMcColisions const& cols,
-                            FilteredFDGenParts const&,
-                            CharmGenCandDstars const& candidates,
-                            aod::FDMCParticles const&)
+  template <DecayChannel Channel, typename CandidateType>
+  void processMcGen(FilteredMcColisions const& cols, CandidateType const& candidates)
   {
     constexpr int SameEvent = 1;
     constexpr int MixedEvent = 2;
@@ -1335,8 +1334,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         if (particle.pt() < charmSel.charmHadMinPt || particle.pt() > charmSel.charmHadMaxPt) {
           continue;
         }
-        float invMass = getCharmHadronMass<DecayChannel::DstarToD0Pi>(p2);
-        float deltaInvMassPair = getCharmHadronTrackMass<DecayChannel::DstarToD0Pi>(p2, p1, trackSel.pdgCodeTrack1.value) - invMass;
+        float invMass = getCharmHadronMass<Channel>(p2);
+        float deltaInvMassPair = getCharmHadronTrackMass<Channel>(p2, p1, trackSel.pdgCodeTrack1.value) - invMass;
         float chargeTrack = 0.;
         if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
           chargeTrack = PositiveCharge;
@@ -1385,26 +1384,45 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       for (auto const& part : sliceGenCharmHad) {
         const auto particle = part.fdMCParticle();
-        float invMass = getCharmHadronMass<DecayChannel::DstarToD0Pi>(part);
-        float invMassD0 = getCharmHadronMass<DecayChannel::DstarToD0Pi>(part, true);
+        float invMass = getCharmHadronMass<Channel>(part);
         registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), particle.pt(), invMass);
-        rowFemtoResultCharmDstar(
-          col.globalIndex(),
-          part.timeStamp(),
-          invMass,
-          invMassD0,
-          particle.pt(),
-          particle.eta(),
-          particle.phi(),
-          part.prong0Id(),
-          part.prong1Id(),
-          part.prong2Id(),
-          part.charge(),
-          part.bdtBkg(),
-          part.bdtPrompt(),
-          part.bdtFD(),
-          part.flagMc(),
-          part.originMcRec());
+        if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+          float invMassD0 = getCharmHadronMass<Channel>(part, true);
+          rowFemtoResultCharmDstar(
+            col.globalIndex(),
+            part.timeStamp(),
+            invMass,
+            invMassD0,
+            particle.pt(),
+            particle.eta(),
+            particle.phi(),
+            part.prong0Id(),
+            part.prong1Id(),
+            part.prong2Id(),
+            part.charge(),
+            part.bdtBkg(),
+            part.bdtPrompt(),
+            part.bdtFD(),
+            part.flagMc(),
+            part.originMcRec());
+        } else {
+          rowFemtoResultCharm3Prong(
+            col.globalIndex(),
+            part.timeStamp(),
+            invMass,
+            particle.pt(),
+            particle.eta(),
+            particle.phi(),
+            part.prong0Id(),
+            part.prong1Id(),
+            part.prong2Id(),
+            part.charge(),
+            part.bdtBkg(),
+            part.bdtPrompt(),
+            part.bdtFD(),
+            part.flagMc(),
+            part.originMcRec());
+        }
       }
       for (auto const& part : sliceGenTrk1) {
         float chargeTrack = ((part.cut() & CutBitChargePositive) == CutBitChargePositive)
@@ -1462,7 +1480,24 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
     }
   }
+
+  void processMcDstarTrkGen(FilteredMcColisions const& cols,
+                            FilteredFDGenParts const&,
+                            CharmGenCandDstars const& candidates,
+                            aod::FDMCParticles const&)
+  {
+    processMcGen<DecayChannel::DstarToD0Pi>(cols, candidates);
+  }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcDstarTrkGen, "Enable generated Dstar and proton correlation for Monte Carlo", false);
+
+  void processMcDplusTrkGen(FilteredMcColisions const& cols,
+                            FilteredFDGenParts const&,
+                            CharmGenCand3Prongs const& candidates,
+                            aod::FDMCParticles const&)
+  {
+    processMcGen<DecayChannel::DplusToPiKPi>(cols, candidates);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcDplusTrkGen, "Enable generated Dplus and proton correlation for Monte Carlo", false);
 
   void processMcXicTrk(FilteredMcColisions const& cols,
                        FilteredFDMcParts const& parts,
