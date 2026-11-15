@@ -947,7 +947,7 @@ struct HfDataCreatorJpsiHadReduced {
           }
           const auto& phiPart = particlesMc.rawIteratorAt(particle.daughtersIds().back());
           // Check phi -> K+K-
-          if (RecoDecay::isMatchedMCGen(particlesMc, phiPart, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true)) {
+          if (RecoDecay::isMatchedMCGen(particlesMc, phiPart, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, false)) {
             channel = o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
           }
         }
