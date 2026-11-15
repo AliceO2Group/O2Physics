@@ -417,8 +417,8 @@ struct TrackEfficiency {
     }
 
     if (doprocessCollisionsFromData || doprocessCollisionsFromMc || doprocessCollisionsFromMcWeighted) {
-      registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
-      registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
+      registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
+      registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {5, 0.0, 5.0}}});
       registry.add("h2_intrate_collisions", "Interaction rate;interaction rate (kHz);collisions", {HistType::kTH2F, {intRateAxis, {5, 0.0, 5.0}}});
     }
     if (doprocessMcCollisions || doprocessMcCollisionsWeighted) {
@@ -431,8 +431,8 @@ struct TrackEfficiency {
       registry.add("h_fakecollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     }
     if (doprocessCollisionsFromMcWeighted) {
-      registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
-      registry.add("h2_centrality_collisions_weighted", "centrality vs mccollisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
+      registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
+      registry.add("h2_centrality_collisions_weighted", "centrality vs mccollisions; centrality; collisions", {HistType::kTH2F, {centAxis, {5, 0.0, 5.0}}});
       registry.add("h2_intrate_collisions_weighted", "Interaction rate;interaction rate (kHz);collisions", {HistType::kTH2F, {intRateAxis, {5, 0.0, 5.0}}});
     }
     if (doprocessMcCollisionsWeighted) {
