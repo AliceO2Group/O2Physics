@@ -843,7 +843,8 @@ struct HfDataCreatorJpsiHadReduced {
     const auto mcParticlesPerMcColl = particlesMc.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
 
     // Match generated particles.
-    for (const auto& particle : mcParticlesPerMcColl) {
+    for (int iPart{0}; iPart < mcParticlesPerMcColl.size(); ++iPart) {
+      const auto particle = mcParticlesPerMcColl.iteratorAt(iPart);
       int8_t sign = particle.pdgCode() > 0 ? 1 : -1;
       int8_t flag{0}, channel{0};
       if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
