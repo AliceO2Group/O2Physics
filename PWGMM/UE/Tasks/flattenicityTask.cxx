@@ -14,17 +14,13 @@
 /// \author Eisha Rani
 /// \since September 2026
 
-#include "PWGLF/Utils/inelGt.h"
-
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -35,15 +31,14 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
 #include <TH2.h>
 #include <TString.h>
 #include <TStyle.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <vector>
