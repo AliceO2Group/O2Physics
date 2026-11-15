@@ -3502,7 +3502,7 @@ struct AnalysisDileptonTrackTrack {
     uint32_t mcDecision = static_cast<uint32_t>(0);
     // size_t isig = 0;
 
-    for (auto dilepton : dileptons) {
+    for (const auto& dilepton : dileptons) {
       // get full track info of tracks based on the index
 
       int indexLepton1 = dilepton.index0Id();
