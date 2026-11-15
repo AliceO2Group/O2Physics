@@ -559,9 +559,9 @@ struct UpcCandProducerBarrel {
         const int32_t rofInTF = getRofInTF(bcInTF);
         const bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
         const bool noPileupInRof = vCollisionsPerROF[iTF][rofInTF] <= 1;
-        uint8_t flags = 0;
-        flags |= upcMode << 0;
-        flags |= noPileupInRof << 1;
+        uint8_t bcFlags = 0;
+        bcFlags |= upcMode << 0;
+        bcFlags |= noPileupInRof << 1;
         const auto occupancyFT0C = vOccupancyFT0C[iTF][bcInTF];
 
         const auto particles = mcParticles->sliceBy(particlesPerMCCollision, mcCollision.globalIndex());
@@ -611,7 +611,7 @@ struct UpcCandProducerBarrel {
           // Remap original particle IDs to output index for candidate labels
           signalParticleRefs.emplace(particle.globalIndex(), SignalRef{newMCCollisionId, newMCParticleId});
         }
-        selectedMCCollisions(tfIDs[iTF], globalBC, flags, occupancyFT0C,
+        selectedMCCollisions(tfIDs[iTF], globalBC, bcFlags, occupancyFT0C,
                              mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                              px, py, pz, pdg, mult, minDistanceMC[iTF][bcInTF],
                              recoFlags, recoCollisionIds, isSignal);
