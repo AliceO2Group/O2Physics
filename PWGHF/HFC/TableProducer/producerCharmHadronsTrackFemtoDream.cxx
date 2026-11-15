@@ -1091,10 +1091,10 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   /// \param TC type of the femto track cuts
   /// \return whether or not the tracks fulfills the all selections
   template <typename C, typename T, typename TC>
-  bool isNoSelectedTracks(C const& /*col*/, T const& tracks, TC& trackCuts)
+  bool isNoSelectedTracks(C const& /*col*/, T const& tracks, TC& trackSelections)
   {
     for (auto const& track : tracks) {
-      if (trackCuts.isSelectedMinimal(track)) {
+      if (trackSelections.isSelectedMinimal(track)) {
         return false;
       }
     }
