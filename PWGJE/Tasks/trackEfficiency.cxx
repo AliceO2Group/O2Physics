@@ -419,6 +419,7 @@ struct TrackEfficiency {
     if (doprocessCollisionsFromData || doprocessCollisionsFromMc || doprocessCollisionsFromMcWeighted) {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
+      registry.add("h2_intrate_collisions", "Interaction rate;interaction rate (kHz);collisions", {HistType::kTH2F, {intRateAxis, {5, 0.0, 5.0}}});
     }
     if (doprocessMcCollisions || doprocessMcCollisionsWeighted) {
       registry.add("h_mccollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
@@ -432,6 +433,7 @@ struct TrackEfficiency {
     if (doprocessCollisionsFromMcWeighted) {
       registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions_weighted", "centrality vs mccollisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
+      registry.add("h2_intrate_collisions_weighted", "Interaction rate;interaction rate (kHz);collisions", {HistType::kTH2F, {intRateAxis, {5, 0.0, 5.0}}});
     }
     if (doprocessMcCollisionsWeighted) {
       registry.add("h_mccollisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
@@ -1104,21 +1106,25 @@ struct TrackEfficiency {
 
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 0.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 1.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 1.5);
     if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 2.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 2.5);
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     registry.fill(HIST("h_collisions"), 3.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 3.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 3.5);
   }
   PROCESS_SWITCH(TrackEfficiency, processCollisionsFromData, "QA for reconstructed collisions in data", false);
 
@@ -1133,21 +1139,25 @@ struct TrackEfficiency {
     }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 0.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 1.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 1.5);
     if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 2.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 2.5);
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     registry.fill(HIST("h_collisions"), 3.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 3.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 3.5);
 
     float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
@@ -1155,6 +1165,7 @@ struct TrackEfficiency {
     }
     registry.fill(HIST("h_collisions"), 4.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 4.5);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 4.5);
   }
   PROCESS_SWITCH(TrackEfficiency, processCollisionsFromMc, "QA for reconstructed collisions in MC without weights", false);
 
@@ -1170,21 +1181,29 @@ struct TrackEfficiency {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 0.5);
+    registry.fill(HIST("h2_intrate_collisions_weighted"), collision.hadronicRate(), 0.5, eventWeight);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 1.5);
+    registry.fill(HIST("h2_intrate_collisions_weighted"), collision.hadronicRate(), 1.5, eventWeight);
     if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 2.5);
+    registry.fill(HIST("h2_intrate_collisions_weighted"), collision.hadronicRate(), 2.5, eventWeight);
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     registry.fill(HIST("h_collisions"), 3.5);
     registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 3.5);
+    registry.fill(HIST("h2_intrate_collisions_weighted"), collision.hadronicRate(), 3.5, eventWeight);
 
     float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
@@ -1192,6 +1211,8 @@ struct TrackEfficiency {
     }
     registry.fill(HIST("h_collisions"), 4.5);
     registry.fill(HIST("h_collisions_weighted"), 4.5, eventWeight);
+    registry.fill(HIST("h2_intrate_collisions"), collision.hadronicRate(), 4.5);
+    registry.fill(HIST("h2_intrate_collisions_weighted"), collision.hadronicRate(), 4.5, eventWeight);
   }
   PROCESS_SWITCH(TrackEfficiency, processCollisionsFromMcWeighted, "QA for reconstructed collisions in weighted MC", false);
 
