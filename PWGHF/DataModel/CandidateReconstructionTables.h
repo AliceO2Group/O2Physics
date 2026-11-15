@@ -1224,6 +1224,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtKaFromCasc, ptKaFromCasc,
 
 DECLARE_SOA_DYNAMIC_COLUMN(NormDecayLenCharmBar, normDecayLenCharmBar,
                            [](float decLen, float errDecLen) -> float { return decLen / errDecLen; });
+DECLARE_SOA_DYNAMIC_COLUMN(NormImpParCascade, normImpParCascade,
+                           [](float impactPar, float errImpactPar) -> float { return impactPar / errImpactPar; });
+DECLARE_SOA_DYNAMIC_COLUMN(NormImpParPiFromCharmBar, normImpParPiFromCharmBar,
+                           [](float impactPar, float errImpactPar) -> float { return impactPar / errImpactPar; });
 
 } // end of namespace hf_cand_xic0_omegac0
 
@@ -1292,7 +1296,9 @@ DECLARE_SOA_TABLE(HfCandToOmegaPi, "AOD", "HFCANDTOOMEGAPI",
                   hf_cand_xic0_omegac0::DcaZToPvV0Dau0, hf_cand_xic0_omegac0::DcaZToPvV0Dau1, hf_cand_xic0_omegac0::DcaZToPvCascDau,
                   hf_cand_xic0_omegac0::DcaCascDau, hf_cand_xic0_omegac0::DcaV0Dau, hf_cand_xic0_omegac0::DcaCharmBaryonDau,
                   hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon, hf_track_index::HFflag,
-                  hf_cand_xic0_omegac0::NormDecayLenCharmBar<hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon>);
+                  hf_cand_xic0_omegac0::NormDecayLenCharmBar<hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon>,
+                  hf_cand_xic0_omegac0::NormImpParCascade<hf_cand_xic0_omegac0::ImpactParCascXY, hf_cand_xic0_omegac0::ErrImpactParCascXY>,
+                  hf_cand_xic0_omegac0::NormImpParPiFromCharmBar<hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonXY, hf_cand_xic0_omegac0::ErrImpactParBachFromCharmBaryonXY>);
 
 DECLARE_SOA_TABLE(HfCandToOmegaK, "AOD", "HFCANDTOOMEGAK",
                   o2::soa::Index<>,
