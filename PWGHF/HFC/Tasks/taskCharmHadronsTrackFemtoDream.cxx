@@ -186,6 +186,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   using FilteredCharmMcCandDstars = soa::Filtered<soa::Join<aod::FDHfCandDstar, aod::FDHfCandMC>>;
   using FilteredCharmMcCandDstar = FilteredCharmMcCandDstars::iterator;
 
+  using CharmGenCandDstars = soa::Join<aod::FDHfCandDstar, aod::FDHfCandMC, aod::FDMCLabels>;
+  using FilteredFDGenParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDTrkTimeStamp>>;
+
   using FilteredCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks>>;
   using FilteredCollision = FilteredCollisions::iterator;
 
@@ -224,6 +227,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                                                  ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
 
   Partition<FilteredFDMcParts> partitionMcTrk1Ka = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
+
+  Partition<FilteredFDGenParts> partitionGenTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (aod::femtodreamparticle::pidcut == static_cast<aod::femtodreamparticle::cutContainerType>(kProton));
 
   /// Partition for particle 2
   Partition<FilteredCharmCand3Prongs> partitionCharmHadron3Prong = aod::fdhf::bdtBkg < charmSel.charmHadBkgBDTmax && aod::fdhf::bdtFD < charmSel.charmHadFdBDTmax && aod::fdhf::bdtFD > charmSel.charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmSel.charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmSel.charmHadPromptBDTmin;
@@ -300,7 +305,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   void init(InitContext& /*context*/)
   {
-    std::array<bool, 10> processes = {doprocessDataLcTrk, doprocessDataDplusTrk, doprocessDataD0Trk, doprocessDataDstarTrk, doprocessDataXicTrk, doprocessMcLcTrk, doprocessMcDplusTrk, doprocessMcD0Trk, doprocessMcDstarTrk, doprocessMcXicTrk};
+    std::array<bool, 11> processes = {doprocessDataLcTrk, doprocessDataDplusTrk, doprocessDataD0Trk, doprocessDataDstarTrk, doprocessDataXicTrk, doprocessMcLcTrk, doprocessMcDplusTrk, doprocessMcD0Trk, doprocessMcDstarTrk, doprocessMcXicTrk, doprocessMcDstarTrkGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
@@ -1307,6 +1312,157 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcDstarTrk, "Enable processing DstarToD0Pi and Tracks correlation for Monte Carlo", false);
+
+  void processMcDstarTrkGen(FilteredMcColisions const& cols,
+                            FilteredFDGenParts const&,
+                            CharmGenCandDstars const& candidates,
+                            aod::FDMCParticles const&)
+  {
+    constexpr int SameEvent = 1;
+    constexpr int MixedEvent = 2;
+    constexpr int InvalidMixingBin = -1;
+    const int64_t timeStamp = -1; // No timestamp is available in this Gen process.
+    const uint8_t nCls = 0; // Gen particles have no detector clusters.
+    const float nSigma = 999.f; // Gen particles have no detector PID response.
+
+    auto fillPairs = [&](auto const& sliceGenTrk1, auto const& sliceGenCharmHad, auto const& col, auto& container) {
+      for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceGenTrk1, sliceGenCharmHad))) {
+        const auto particle = p2.fdMCParticle();
+        float kstar = FemtoDreamMath::getkstar(p1, massOne, particle, massTwo);
+        if (kstar > highkstarCut) {
+          continue;
+        }
+        if (particle.pt() < charmSel.charmHadMinPt || particle.pt() > charmSel.charmHadMaxPt) {
+          continue;
+        }
+        float invMass = getCharmHadronMass<DecayChannel::DstarToD0Pi>(p2);
+        float deltaInvMassPair = getCharmHadronTrackMass<DecayChannel::DstarToD0Pi>(p2, p1, trackSel.pdgCodeTrack1.value) - invMass;
+        float chargeTrack = 0.;
+        if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
+          chargeTrack = PositiveCharge;
+        } else {
+          chargeTrack = NegativeCharge;
+        }
+        int pairSign = PairNotDefined;
+        if (chargeTrack == p2.charge()) {
+          pairSign = LikeSignPair;
+        } else if (chargeTrack == -p2.charge()) {
+          pairSign = UnLikeSignPair;
+        } else {
+          pairSign = ReflectedPair;
+        }
+        rowFemtoResultPairs(
+          invMass,
+          particle.pt(),
+          p1.pt(),
+          p2.bdtBkg(),
+          p2.bdtPrompt(),
+          p2.bdtFD(),
+          kstar,
+          FemtoDreamMath::getkT(p1, massOne, particle, massTwo),
+          FemtoDreamMath::getmT(p1, massOne, particle, massTwo),
+          col.multNtr(),
+          col.multV0M(),
+          p2.charge(),
+          pairSign,
+          deltaInvMassPair,
+          processType,
+          p2.flagMc(),
+          p2.originMcRec());
+        container.template setPair_base<aod::femtodreamMCparticle::MCType::kTruth>(kstar, FemtoDreamMath::getmT(p1, massOne, particle, massTwo), p1, particle, col.multNtr(), col.multV0M(), pairQASetting.use4D, pairQASetting.extendedPlots);
+      }
+    };
+
+    for (const auto& col : cols) {
+      eventHisto.fillQA(col);
+      auto sliceGenTrk1 = partitionGenTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto sliceGenCharmHad = candidates.sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
+        continue;
+      }
+      if (fillTableWithCharm.value && sliceGenCharmHad.size() == 0) {
+        continue;
+      }
+      for (auto const& part : sliceGenCharmHad) {
+        const auto particle = part.fdMCParticle();
+        float invMass = getCharmHadronMass<DecayChannel::DstarToD0Pi>(part);
+        float invMassD0 = getCharmHadronMass<DecayChannel::DstarToD0Pi>(part, true);
+        registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), particle.pt(), invMass);
+        rowFemtoResultCharmDstar(
+          col.globalIndex(),
+          part.timeStamp(),
+          invMass,
+          invMassD0,
+          particle.pt(),
+          particle.eta(),
+          particle.phi(),
+          part.prong0Id(),
+          part.prong1Id(),
+          part.prong2Id(),
+          part.charge(),
+          part.bdtBkg(),
+          part.bdtPrompt(),
+          part.bdtFD(),
+          part.flagMc(),
+          part.originMcRec());
+      }
+      for (auto const& part : sliceGenTrk1) {
+        float chargeTrack = ((part.cut() & CutBitChargePositive) == CutBitChargePositive)
+                              ? PositiveCharge
+                              : NegativeCharge;
+        rowFemtoResultTrk(
+          col.globalIndex(),
+          part.timeStamp(),
+          part.pt(),
+          part.eta(),
+          part.phi(),
+          part.trackId(),
+          chargeTrack,
+          nCls,
+          nCls,
+          nCls,
+          nSigma,
+          nSigma);
+      }
+      if (sliceGenCharmHad.size() > 0 || sliceGenTrk1.size() > 0) {
+        rowFemtoResultColl(col.globalIndex(), timeStamp, col.posZ(), col.multNtr());
+      }
+      fillCollision(col);
+      processType = SameEvent;
+      fillPairs(sliceGenTrk1, sliceGenCharmHad, col, sameEventCont);
+    }
+
+    if (mixSetting.doMixEvent) {
+      Partition<FilteredMcColisions> partitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & bitMask) == bitMask;
+      partitionMaskedCol1.bindTable(cols);
+      Partition<FilteredMcColisions> partitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & bitMask) == bitMask;
+      partitionMaskedCol2.bindTable(cols);
+      auto mixEvents = [&](auto const& policy) {
+        processType = MixedEvent;
+        for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockFullIndexPolicy(policy, mixSetting.mixingDepth, InvalidMixingBin, *partitionMaskedCol1.mFiltered, *partitionMaskedCol2.mFiltered))) {
+          if (collision1.globalIndex() == collision2.globalIndex()) {
+            continue;
+          }
+          registryMixQa.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), collision1.multNtr()}));
+          auto sliceGenTrk1 = partitionGenTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+          auto sliceGenCharmHad = candidates.sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+          fillPairs(sliceGenTrk1, sliceGenCharmHad, collision1, mixedEventCont);
+        }
+      };
+      switch (mixSetting.mixingBinPolicy) {
+        case femtodreamcollision::kMult:
+          mixEvents(colBinningMult);
+          break;
+        case femtodreamcollision::kMultPercentile:
+          mixEvents(colBinningMultPercentile);
+          break;
+        case femtodreamcollision::kMultMultPercentile:
+          mixEvents(colBinningMultMultPercentile);
+          break;
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcDstarTrkGen, "Enable generated Dstar and proton correlation for Monte Carlo", false);
 
   void processMcXicTrk(FilteredMcColisions const& cols,
                        FilteredFDMcParts const& parts,
