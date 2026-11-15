@@ -1321,8 +1321,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     constexpr int MixedEvent = 2;
     constexpr int InvalidMixingBin = -1;
     const int64_t timeStamp = -1; // No timestamp is available in this Gen process.
-    const uint8_t nCls = 0; // Gen particles have no detector clusters.
-    const float nSigma = 999.f; // Gen particles have no detector PID response.
+    const uint8_t nCls = 0;       // Gen particles have no detector clusters.
+    const float nSigma = 999.f;   // Gen particles have no detector PID response.
 
     auto fillPairs = [&](auto const& sliceGenTrk1, auto const& sliceGenCharmHad, auto const& col, auto& container) {
       for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceGenTrk1, sliceGenCharmHad))) {
