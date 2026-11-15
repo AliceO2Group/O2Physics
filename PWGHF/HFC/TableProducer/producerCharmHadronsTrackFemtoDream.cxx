@@ -1109,8 +1109,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       constexpr int InvalidMcIndex = -1;
       const int64_t timeStamp = -1; // No need for Gen process.
-      const float bdtScore = -1.f; // No need for Gen particles.
-      const float dcaXY = 999.f; // No need for Gen particles.
+      const float bdtScore = -1.f;  // No need for Gen particles.
+      const float dcaXY = 999.f;    // No need for Gen particles.
       const float sphericity = 2.f; // Not computed.
       const aod::femtodreamparticle::cutContainerType bitPos = 1u << 1;
       const aod::femtodreamparticle::cutContainerType bitNeg = 1u << 0;
@@ -1159,12 +1159,12 @@ struct HfProducerCharmHadronsTrackFemtoDream {
           const auto prong1 = particles.rawIteratorAt(prong1Id);
           const auto prong2 = particles.rawIteratorAt(prong2Id);
           tables.rowCandCharm3Prong(tables.outputCollision.lastIndex(), timeStamp,
-                                   particle.pdgCode() > 0 ? PositiveCharge : NegativeCharge,
-                                   prong0Id, prong1Id, prong2Id,
-                                   prong0.pt(), prong1.pt(), prong2.pt(),
-                                   prong0.eta(), prong1.eta(), prong2.eta(),
-                                   prong0.phi(), prong1.phi(), prong2.phi(),
-                                   true, bdtScore, bdtScore, bdtScore);
+                                    particle.pdgCode() > 0 ? PositiveCharge : NegativeCharge,
+                                    prong0Id, prong1Id, prong2Id,
+                                    prong0.pt(), prong1.pt(), prong2.pt(),
+                                    prong0.eta(), prong1.eta(), prong2.eta(),
+                                    prong0.phi(), prong1.phi(), prong2.phi(),
+                                    true, bdtScore, bdtScore, bdtScore);
           const auto particleOrigin = particle.originMcGen() == RecoDecay::OriginType::Prompt
                                         ? aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary
                                         : aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryFromHF;
@@ -1219,8 +1219,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
       constexpr int InvalidMcIndex = -1;
       const int64_t timeStamp = -1; // No need for Gen process.
-      const float bdtScore = -1.f; // No need for Gen particles.
-      const float dcaXY = 999.f; // No need for Gen particles.
+      const float bdtScore = -1.f;  // No need for Gen particles.
+      const float dcaXY = 999.f;    // No need for Gen particles.
       const float sphericity = 2.f; // Not computed.
       const aod::femtodreamparticle::cutContainerType bitPos = 1u << 1;
       const aod::femtodreamparticle::cutContainerType bitNeg = 1u << 0;
