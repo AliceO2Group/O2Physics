@@ -870,6 +870,41 @@ class V0BuilderDerivedToDerived
     }
   }
 
+  /// Same as processLambdas, but also resolves the daughters' MC labels (via the
+  /// MC-aware trackBuilder.getDaughterIndex overload) and writes the lambda's own
+  /// FLambdaLabels row. lambdaTable must be joined with FLambdaLabels upstream.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14>
+  void processLambdasWithMc(T1 const& col, T2 const& /*lambdaTable*/, T3 const& oldTrackTable, T4& partitionLambda, T5& trackBuilder, T6& cache, T7& newLambdaTable, T8& newTrackTable, T9& newCollisionTable,
+                            T10& mcBuilder, T11 const& mcCols, T12 const& mcParticles, T13 const& mcMothers, T14 const& mcPartonicMothers, auto& mcProducts)
+  {
+    if (mLimitLambda == 0) { // lambdas disabled
+      return;
+    }
+
+    auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& lambda : lambdaSlice) {
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(lambda.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(lambda.negDauId(), oldTrackTable));
+
+      int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+      int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+
+      newLambdaTable.producedLambdas(newCollisionTable.producedCollision.lastIndex(),
+                                     lambda.signedPt(),
+                                     lambda.eta(),
+                                     lambda.phi(),
+                                     lambda.mass(),
+                                     posDaughterIndex,
+                                     negDaughterIndex);
+      newLambdaTable.producedLambdaMasks(lambda.mask());
+      if constexpr (utils::HasCosPa<decltype(lambda)>) {
+        newLambdaTable.producedLambdaFrac(lambda.cosPa());
+      }
+      mcBuilder.fillLambdaWithLabel(lambda, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+    }
+  }
+
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
   void processK0shorts(T1 const& col, T2 const& /*k0shortTable*/, T3 const& oldTrackTable, T4& partitionK0short, T5& trackBuilder, T6& cache, T7& newK0shortTable, T8& newTrackTable, T9& newCollisionTable)
   {

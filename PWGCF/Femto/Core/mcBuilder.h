@@ -781,6 +781,8 @@ struct McBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFSigmaLabels> producedSigmaLabels;
   o2::framework::Produces<o2::aod::StoredFSigmaPlusLabels> producedSigmaPlusLabels;
   o2::framework::Produces<o2::aod::StoredFSigmaPlusPcmLabels> producedSigmaPlusPcmLabels;
+  o2::framework::Produces<o2::aod::StoredFLambdaLabels> producedLambdaLabels;
+  o2::framework::Produces<o2::aod::StoredFXiLabels> producedXiLabels;
 };
 
 struct ConfMcTablesDerivedToDerived : o2::framework::ConfigurableGroup {
@@ -873,6 +875,32 @@ class McBuilderDerivedToDerived
     }
     auto mcParticle = sigmaPlusPcm.template fMcParticle_as<T3>();
     mcProducts.producedSigmaPlusPcmLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  /// Write one FLambdaLabels row. lambda must be joined with FLambdaLabels upstream.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillLambdaWithLabel(T1 const& lambda, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!lambda.has_fMcParticle()) {
+      mcProducts.producedLambdaLabels(-1);
+      return;
+    }
+    auto mcParticle = lambda.template fMcParticle_as<T3>();
+    mcProducts.producedLambdaLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  /// Write one FXiLabels row. xi must be joined with FXiLabels upstream.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillXiWithLabel(T1 const& xi, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!xi.has_fMcParticle()) {
+      mcProducts.producedXiLabels(-1);
+      return;
+    }
+    auto mcParticle = xi.template fMcParticle_as<T3>();
+    mcProducts.producedXiLabels(
       this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
   }
 
