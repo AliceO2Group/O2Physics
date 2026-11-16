@@ -286,11 +286,13 @@ struct JetDerivedDataWriter {
 
   uint32_t precisionPositionMask;
   uint32_t precisionMomentumMask;
+  uint32_t precisionVertexMask;
 
   void init(InitContext&)
   {
     precisionPositionMask = 0xFFFFFC00; // 13 bits
     precisionMomentumMask = 0xFFFFFC00; // 13 bits  this is currently keept at 13 bits wihich gives roughly a resolution of 1/8000. This can be increased to 15 bits if really needed
+    precisionVertexMask = 0xFFFFFC00;   // 13 bits  tentative value
   }
 
   template <typename T>
@@ -741,6 +743,10 @@ struct JetDerivedDataWriter {
         const auto particlesPerMcCollision = particles.sliceBy(preslices.ParticlesPerMcCollision, mcCollision.globalIndex());
 
         for (const auto& particle : particlesPerMcCollision) {
+          // Assign output indices only to particles that will actually be stored.
+          if (!config.savePartonLevelInfo && !particle.isPhysicalPrimary()) {
+            continue;
+          }
           particleMapping[particle.globalIndex()] = particleTableIndex;
           particleTableIndex++;
         }
@@ -770,7 +776,7 @@ struct JetDerivedDataWriter {
               continue;
             }
           }
-          products.storedJMcParticlesTable(mcCollisionMapping[mcCollision.globalIndex()], o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.statusCode(), particle.flags(), mothersIds, daughtersIds);
+          products.storedJMcParticlesTable(mcCollisionMapping[mcCollision.globalIndex()], o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.statusCode(), particle.flags(), o2::math_utils::detail::truncateFloatFraction(particle.vx(), precisionVertexMask), o2::math_utils::detail::truncateFloatFraction(particle.vy(), precisionVertexMask), o2::math_utils::detail::truncateFloatFraction(particle.vz(), precisionVertexMask), mothersIds, daughtersIds);
           products.storedJParticlesParentIndexTable(particle.mcParticleId());
         }
       }
