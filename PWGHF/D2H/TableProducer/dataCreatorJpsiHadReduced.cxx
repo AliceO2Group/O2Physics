@@ -617,7 +617,7 @@ struct HfDataCreatorJpsiHadReduced {
       // B0 → J/Psi K0* → (µ+µ-) (K+pi-)
       int indexRec = -1;
       // We set acceptIncompleteReco to true to accept the case of bremsstrahlung
-      indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kMuonMinus, +kMuonMinus, +kKPlus, -kPiPlus}, true, &sign, 2 );
+      indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kMuonMinus, +kMuonMinus, +kKPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         const auto& bParticle = particlesMc.rawIteratorAt(indexRec);
         std::vector<int> dauIndices{};
@@ -638,11 +638,15 @@ struct HfDataCreatorJpsiHadReduced {
             // we also test pi(K)-mu swapping
             if (indexRec < 0) {
               indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[3]}, Pdg::kK0Star892, std::array{+kKPlus, -kPiPlus}, true, &sign, 1);
-              flagSwapped = true;
+              if (indexRec > -1) {
+                flagSwapped = true;
+              }
             }
             if (indexRec < 0) {
               indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[1]}, Pdg::kK0Star892, std::array{+kKPlus, -kPiPlus}, true, &sign, 1);
-              flagSwapped = true;
+              if (indexRec > -1) {
+                flagSwapped = true;
+              }
             }
             if (indexRec > -1) {
               channel = o2::hf_decay::hf_cand_beauty::B0ToJpsiKstar0;
@@ -684,11 +688,15 @@ struct HfDataCreatorJpsiHadReduced {
                 // we also test pi(K)-mu swapping
                 if (indexRec < 0) {
                   indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[3]}, Pdg::kK0Star892, std::array{+kKPlus, -kPiPlus}, true, &sign, 1);
-                  flagSwapped = true;
+                  if (indexRec > -1) {
+                    flagSwapped = true;
+                  }
                 }
                 if (indexRec < 0) {
                   indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[1]}, Pdg::kK0Star892, std::array{+kKPlus, -kPiPlus}, true, &sign, 1);
-                  flagSwapped = true;
+                  if (indexRec > -1) {
+                    flagSwapped = true;
+                  }
                 }
                 if (indexRec > -1) {
                   channel = o2::hf_decay::hf_cand_beauty::B0ToJpsiKstar0;
@@ -755,11 +763,15 @@ struct HfDataCreatorJpsiHadReduced {
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kPhi, std::array{+kKPlus, -kKPlus}, true, &sign, 1);
             if (indexRec < 0) {
               indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[3]}, Pdg::kPhi, std::array{+kKPlus, -kKPlus}, true, &sign, 1);
-              flagSwapped = true;
+              if (indexRec > -1) {
+                flagSwapped = true;
+              }
             }
             if (indexRec < 0) {
               indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[1]}, Pdg::kPhi, std::array{+kKPlus, -kKPlus}, true, &sign, 1);
-              flagSwapped = true;
+              if (indexRec > -1) {
+                flagSwapped = true;
+              }
             }
             if (indexRec > -1) {
               channel = o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
@@ -800,11 +812,15 @@ struct HfDataCreatorJpsiHadReduced {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kPhi, std::array{+kKPlus, -kKPlus}, true, &sign, 1);
                 if (indexRec < 0) {
                   indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[3]}, Pdg::kPhi, std::array{+kKPlus, -kKPlus}, true, &sign, 1);
-                  flagSwapped = true;
+                  if (indexRec > -1) {
+                    flagSwapped = true;
+                  }
                 }
                 if (indexRec < 0) {
                   indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[1]}, Pdg::kPhi, std::array{+kKPlus, -kKPlus}, true, &sign, 1);
-                  flagSwapped = true;
+                  if (indexRec > -1) {
+                    flagSwapped = true;
+                  }
                 }
                 if (indexRec > -1) {
                   channel = o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
