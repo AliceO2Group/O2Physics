@@ -888,8 +888,8 @@ using HfRedCandLb = soa::Join<HfCandLbExt, HfRedLbProngs>;
 
 namespace hf_cand_mc_flag
 {
-DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); //! reconstruction level
-DECLARE_SOA_COLUMN(IsHadronLeptonSwapped, isHadronLeptonSwapped, bool); //! reconstruction level
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);     //! reconstruction level
+DECLARE_SOA_COLUMN(IsHadronLeptonSwapped, isHadronLeptonSwapped, bool); //! flag to tag candidates with swapped hypotheses between leptons and hadrons
 }
 
 namespace hf_b0_mc
