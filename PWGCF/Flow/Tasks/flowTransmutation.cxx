@@ -743,7 +743,7 @@ struct FlowTransmutation {
       }
     }
   }
-  inline void fillFlowContainer(const GFW::CorrConfig& nCorrConfig, const double& xAxis, const int& iBin, const double& rndm, const std::string corrName)
+  inline void fillFlowContainer(const GFW::CorrConfig& nCorrConfig, const double& xAxis, const int& iBin, const double& rndm, const std::string& corrName)
   {
     auto dnx = fGFW->Calculate(nCorrConfig, iBin, kTRUE).real();
     if (dnx == 0) {
