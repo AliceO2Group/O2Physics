@@ -77,7 +77,7 @@ struct ChargedParticles {
   double getParticleUniform(const P& particle) const
   {
     uint64_t hash = seedOffset.value;
-    for (const float val : {particle.px(), particle.py(), particle.pz(), particle.vx(), particle.vy(), particle.vz()}) {
+    for (const auto& val : {particle.px(), particle.py(), particle.pz(), particle.vx(), particle.vy(), particle.vz()}) {
       hash = splitMix64(hash ^ std::bit_cast<uint32_t>(val));
     }
     hash = splitMix64(hash ^ static_cast<uint32_t>(particle.pdgCode()));
@@ -98,7 +98,10 @@ struct ChargedParticles {
   HistogramRegistry histos;
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  Configurable<int> dataRun{"dataRun", 0, "lhc run of the data: 0 = auto (from ao2d metadata), 2 = run 2 (converted), 3 = run 3"};
+  enum DataRun : int { kRunAuto = 0,
+                       kRun2 = 2,
+                       kRun3 = 3 };
+  Configurable<int> dataRun{"dataRun", kRunAuto, "lhc run of the data: 0 = auto (from ao2d metadata), 2 = run 2 (converted), 3 = run 3"};
   bool isRun3{true}; // from dataRun
   Configurable<std::string> collisionSystem{"collisionSystem", "pp", "collision system (sets multiplicity axes and event selection default): pp, pPb, pO, OO, NeNe, XeXe, PbPb"};
   int maxMultMeas{100}; // from collisionSystem
@@ -112,8 +115,8 @@ struct ChargedParticles {
                     kTriggered,
                     kINEL,
                     kNClasses };
-  static constexpr std::array<std::string_view, kNClasses + 1> kClassDir = {"fiducial/", "inelgt0/", "triggered/", "inel/", ""}; // last: flat output
-  static constexpr std::array<std::string_view, kNClasses> kClassName = {"fiducial", "inelgt0", "triggered", "inel"};
+  static constexpr std::array<std::string_view, kNClasses + 1> ClassDir = {"fiducial/", "inelgt0/", "triggered/", "inel/", ""}; // last: flat output
+  static constexpr std::array<std::string_view, kNClasses> ClassName = {"fiducial", "inelgt0", "triggered", "inel"};
   uint8_t enabledDirs{0}; // output directories in use (bit kNClasses: flat output for a single class)
   int flatClass{kFiducial};
   // call f(std::integral_constant<int, dir>) for every output directory in use
@@ -121,16 +124,16 @@ struct ChargedParticles {
   void forEachDir(F const& f)
   {
     static_for<0, kNClasses>([&](auto i) {
-      constexpr int kDir = i.value;
-      if (((enabledDirs >> kDir) & 1) != 0) {
-        f(std::integral_constant<int, kDir>{});
+      constexpr int Dir = i.value;
+      if (((enabledDirs >> Dir) & 1) != 0) {
+        f(std::integral_constant<int, Dir>{});
       }
     });
   }
   // is the current mc event in the class of output directory dir
   bool isInDir(int dir) const { return ((vars.classMask >> (dir == kNClasses ? flatClass : dir)) & 1) != 0; }
-  static constexpr int kNStagesMC = 8;
-  static constexpr int kNLayersITS = 7;
+  static constexpr int NStagesMC = 8;
+  static constexpr int NLayersITS = 7;
   std::string metaLabel; // qa: ao2d metadata label
   int lastRunNumber{-1}; // qa: cached run label
   struct ParticleTracks {
@@ -276,24 +279,24 @@ void ChargedParticles::init(InitContext const&)
   }
 
   // lhc run: from the ao2d metadata unless set explicitly; a contradiction stops the task
-  int runFromMetadata = 0;
+  int runFromMetadata = kRunAuto;
   if (metadataInfo.isInitialized()) {
     const std::string run = metadataInfo.get("Run");
     if (run == "2" || run == "3") {
       runFromMetadata = std::stoi(run);
     }
   }
-  if (dataRun != 0 && dataRun != 2 && dataRun != 3) {
+  if (dataRun != kRunAuto && dataRun != kRun2 && dataRun != kRun3) {
     LOGP(fatal, "invalid dataRun {} (0 = auto, 2, 3)", dataRun.value);
   }
-  if (dataRun == 0 && runFromMetadata == 0) {
+  if (dataRun == kRunAuto && runFromMetadata == kRunAuto) {
     LOGP(fatal, "dataRun = 0 (auto) but the ao2d metadata has no run: set dataRun to 2 or 3");
   }
-  if (dataRun != 0 && runFromMetadata != 0 && dataRun != runFromMetadata) {
+  if (dataRun != kRunAuto && runFromMetadata != kRunAuto && dataRun != runFromMetadata) {
     LOGP(fatal, "dataRun {} contradicts the ao2d metadata (run {})", dataRun.value, runFromMetadata);
   }
-  isRun3 = ((dataRun != 0) ? dataRun.value : runFromMetadata) == 3;
-  LOGP(info, "data from run {} ({})", isRun3 ? 3 : 2, (dataRun != 0) ? "dataRun" : "ao2d metadata");
+  isRun3 = ((dataRun != kRunAuto) ? dataRun.value : runFromMetadata) == kRun3;
+  LOGP(info, "data from run {} ({})", isRun3 ? 3 : 2, (dataRun != kRunAuto) ? "dataRun" : "ao2d metadata");
   if (!isRun3 && evSelBits.value != "auto") {
     LOGP(fatal, "evSelBits '{}' is not applied to run 2 data (run 2 uses sel7 and kINT7): keep evSelBits = auto", evSelBits.value);
   }
@@ -334,7 +337,7 @@ void ChargedParticles::init(InitContext const&)
     start = end + 1;
     int cls = -1;
     for (int c = 0; c < kNClasses; ++c) {
-      if (name == kClassName[c]) {
+      if (name == ClassName[c]) {
         cls = c;
       }
     }
@@ -449,7 +452,7 @@ void ChargedParticles::init(InitContext const&)
       if (((enabledDirs >> d) & 1) == 0) {
         continue;
       }
-      const std::string dir(kClassDir[d]);
+      const std::string dir(ClassDir[d]);
       histos.add((dir + "multDist_evt_gen").c_str(), "", kTH1D, {multTrueAxis});                        // generated event distribution  (from events within specified class and with proper vertex position)
       histos.add((dir + "multDist_evt_gen_trig").c_str(), "", kTH1D, {multTrueAxis});                   // generated event distribution (from events within specified class and with proper vertex position) that in addition fulfils the trigger condition [to disentangle trigger eff from reco eff ]
       histos.add((dir + "multCorrel_evt").c_str(), "", kTHnSparseD, {multMeasAxis, multTrueAxis});      // multiplicity correlation of measured events (excluding background events)
@@ -464,7 +467,7 @@ void ChargedParticles::init(InitContext const&)
       histos.add((dir + "multPtSpec_trk_inter").c_str(), "", kTH2D, {multTrueAxis, ptMeasAxis});
       if (isNominal) {
         histos.add((dir + "QA/events/multTrueBits").c_str(), "", kTH2D, {multTrueAxis, bitAxis});
-        histos.add((dir + "QA/events/eventSelectionMC").c_str(), "", kTH1D, {{kNStagesMC, -0.5, kNStagesMC - 0.5}});
+        histos.add((dir + "QA/events/eventSelectionMC").c_str(), "", kTH1D, {{NStagesMC, -0.5, NStagesMC - 0.5}});
         histos.add((dir + "QA/tracks/deltaPt").c_str(), "", kTH2D, {ptMeasAxis, {100, 0., 0.3, "#Delta(#it{p}_{T}) / #it{p}^{ meas}_{T}"}});
       }
     }
@@ -498,18 +501,18 @@ void ChargedParticles::init(InitContext const&)
     axisCuts->SetBinLabel(nCuts + 2, "w/o dca");
     axisCuts->SetBinLabel(nCuts + 3, "all cuts");
     auto* axisHits = histos.get<TH1>(HIST("QA/tracks/itsHits"))->GetXaxis();
-    for (int i = 0; i < kNLayersITS; ++i) {
+    for (int i = 0; i < NLayersITS; ++i) {
       axisHits->SetBinLabel(i + 1, ("L" + std::to_string(i)).c_str());
     }
     metaLabel = metadataInfo.isInitialized() ? metadataInfo.makeMetadataLabel() + ", O2 " + metadataInfo.getO2Version() : std::string("no ao2d metadata");
     if (doprocessMC || doprocessMCnoPCC) {
       metaLabel += ", " + eventClasses.value;
       forEachDir([&](auto dir) {
-        constexpr int kDir = decltype(dir)::value;
-        setBitLabels(histos.get<TH2>(HIST(kClassDir[kDir]) + HIST("QA/events/multTrueBits"))->GetYaxis());
-        auto* axisMC = histos.get<TH1>(HIST(kClassDir[kDir]) + HIST("QA/events/eventSelectionMC"))->GetXaxis();
+        constexpr int Dir = decltype(dir)::value;
+        setBitLabels(histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/events/multTrueBits"))->GetYaxis());
+        auto* axisMC = histos.get<TH1>(HIST(ClassDir[Dir]) + HIST("QA/events/eventSelectionMC"))->GetXaxis();
         int bin = 1;
-        for (const auto* label : {"all", "|z_{true}| < maxVtxZ", "event class", "tvx", "reco collision", "sel8", "evSelBits", "|z| < maxVtxZ"}) {
+        for (const auto& label : {"all", "|z_{true}| < maxVtxZ", "event class", "tvx", "reco collision", "sel8", "evSelBits", "|z| < maxVtxZ"}) {
           axisMC->SetBinLabel(bin++, label);
         }
       });
@@ -651,11 +654,11 @@ void ChargedParticles::processMCImpl(CollisionTableMCTrue::iterator const& mcCol
     histos.fill(HIST("QA/events/zVtxGen"), mcCollision.posZ());
     // cumulative mc event flow
     forEachDir([&](auto dir) {
-      constexpr int kDir = decltype(dir)::value;
-      const std::array<bool, kNStagesMC> stages = {true, vars.isGoodZPosMC, isInDir(kDir), vars.isTriggeredMC, collisions.size() > 0,
-                                                   isSel8Representative, hasBitsRepresentative, isAcceptedRepresentative};
-      for (int i = 0; i < kNStagesMC && stages[i]; ++i) {
-        histos.fill(HIST(kClassDir[kDir]) + HIST("QA/events/eventSelectionMC"), i);
+      constexpr int Dir = decltype(dir)::value;
+      const std::array<bool, NStagesMC> stages = {true, vars.isGoodZPosMC, isInDir(Dir), vars.isTriggeredMC, collisions.size() > 0,
+                                                  isSel8Representative, hasBitsRepresentative, isAcceptedRepresentative};
+      for (int i = 0; i < NStagesMC && stages[i]; ++i) {
+        histos.fill(HIST(ClassDir[Dir]) + HIST("QA/events/eventSelectionMC"), i);
       }
     });
   }
@@ -857,7 +860,7 @@ void ChargedParticles::fillTrackCutQA(const T& track)
   const auto passes = [&](int bit) { return (flags & (1 << bit)) != 0; };
   int nFailed = 0;
   int failedBit = -1;
-  for (const int bit : trackCutBits) {
+  for (const auto& bit : trackCutBits) {
     if (!passes(bit)) {
       ++nFailed;
       failedBit = bit;
@@ -872,7 +875,7 @@ void ChargedParticles::fillTrackCutQA(const T& track)
   }
   const auto dcaMask = (1 << static_cast<int>(TrackSelection::TrackCuts::kDCAxy)) | (1 << static_cast<int>(TrackSelection::TrackCuts::kDCAz));
   bool passesWoDca = true;
-  for (const int bit : trackCutBits) {
+  for (const auto& bit : trackCutBits) {
     if (!((1 << bit) & dcaMask) && !passes(bit)) {
       passesWoDca = false;
     }
@@ -905,7 +908,7 @@ void ChargedParticles::fillTrackQA(const T& track)
   histos.fill(HIST("QA/tracks/eta"), track.eta());
   histos.fill(HIST("QA/tracks/phi"), track.phi());
   histos.fill(HIST("QA/tracks/itsNCls"), track.itsNCls());
-  for (int i = 0; i < kNLayersITS; ++i) {
+  for (int i = 0; i < NLayersITS; ++i) {
     if (track.itsClusterMap() & (1 << i)) {
       histos.fill(HIST("QA/tracks/itsHits"), i);
     }
@@ -940,7 +943,7 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
   int stage = 1;
   histos.fill(HIST("QA/events/eventSelection"), stage);
   bool passes = true;
-  for (const int bit : evSelBitList) {
+  for (const auto& bit : evSelBitList) {
     passes = passes && ((collision.selection_raw() >> bit) & 1ULL);
     ++stage;
     if (passes) {
@@ -974,9 +977,9 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
     if constexpr (IS_MC) {
       if (isRepresentative) {
         forEachDir([&](auto dir) {
-          constexpr int kDir = decltype(dir)::value;
-          if (isInDir(kDir)) {
-            histos.fill(HIST(kClassDir[kDir]) + HIST("QA/events/multTrueBits"), vars.multTrue, bin);
+          constexpr int Dir = decltype(dir)::value;
+          if (isInDir(Dir)) {
+            histos.fill(HIST(ClassDir[Dir]) + HIST("QA/events/multTrueBits"), vars.multTrue, bin);
           }
         });
       }
@@ -1013,11 +1016,11 @@ void ChargedParticles::processTrue(const P& particles)
   }
 
   forEachDir([&](auto dir) {
-    constexpr int kDir = decltype(dir)::value;
-    if (isInDir(kDir)) {
-      histos.fill(HIST(kClassDir[kDir]) + HIST("multDist_evt_gen"), vars.multTrue);
+    constexpr int Dir = decltype(dir)::value;
+    if (isInDir(Dir)) {
+      histos.fill(HIST(ClassDir[Dir]) + HIST("multDist_evt_gen"), vars.multTrue);
       if (vars.isTriggeredMC) {
-        histos.fill(HIST(kClassDir[kDir]) + HIST("multDist_evt_gen_trig"), vars.multTrue);
+        histos.fill(HIST(ClassDir[Dir]) + HIST("multDist_evt_gen_trig"), vars.multTrue);
       }
     }
   });
@@ -1026,11 +1029,11 @@ void ChargedParticles::processTrue(const P& particles)
     if (initParticle(particle) && vars.isChargedPrimary) {
       for (auto i = 0u; i < vars.nRepetitions; ++i) {
         forEachDir([&](auto dir) {
-          constexpr int kDir = decltype(dir)::value;
-          if (isInDir(kDir)) {
-            histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
+          constexpr int Dir = decltype(dir)::value;
+          if (isInDir(Dir)) {
+            histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
             if (!vars.isAcceptedEvent) {
-              histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
+              histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
             }
           }
         });
@@ -1060,9 +1063,9 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
 
   if constexpr (IS_MC) {
     forEachDir([&](auto dir) {
-      constexpr int kDir = decltype(dir)::value;
-      if (isTrueEvent(kDir)) {
-        histos.fill(HIST(kClassDir[kDir]) + HIST("multCorrel_evt"), vars.multMeas, vars.multTrue);
+      constexpr int Dir = decltype(dir)::value;
+      if (isTrueEvent(Dir)) {
+        histos.fill(HIST(ClassDir[Dir]) + HIST("multCorrel_evt"), vars.multMeas, vars.multTrue);
       }
     });
   }
@@ -1091,10 +1094,10 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
         if (isValidParticle && vars.isChargedPrimary) {
           const float relDeltaPt = std::abs(track.pt() - track.template mcParticle_as<P>().pt()) / track.pt();
           forEachDir([&](auto dir) {
-            constexpr int kDir = decltype(dir)::value;
-            if (isTrueEvent(kDir)) {
+            constexpr int Dir = decltype(dir)::value;
+            if (isTrueEvent(Dir)) {
               for (auto i = 0u; i < nRepetitions; ++i) {
-                histos.fill(HIST(kClassDir[kDir]) + HIST("QA/tracks/deltaPt"), track.pt(), relDeltaPt);
+                histos.fill(HIST(ClassDir[Dir]) + HIST("QA/tracks/deltaPt"), track.pt(), relDeltaPt);
               }
             }
           });
@@ -1123,21 +1126,21 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
 
       if constexpr (IS_MC) {
         forEachDir([&](auto dir) {
-          constexpr int kDir = decltype(dir)::value;
-          if (!isTrueEvent(kDir)) {
-            histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_trk_meas_evtcont"), vars.multMeas, track.pt());
+          constexpr int Dir = decltype(dir)::value;
+          if (!isTrueEvent(Dir)) {
+            histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_trk_meas_evtcont"), vars.multMeas, track.pt());
             return;
           }
-          histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_trk_inter"), vars.multTrue, track.pt());
+          histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_trk_inter"), vars.multTrue, track.pt());
           if (isValidParticle) {
             if (!vars.isChargedPrimary) {
-              histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());
+              histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());
             } else {
               const auto& particle = track.template mcParticle_as<P>();
-              histos.fill(HIST(kClassDir[kDir]) + HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
-              histos.fill(HIST(kClassDir[kDir]) + HIST("ptCorrel_prim"), track.pt(), particle.pt());
-              histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
-              histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
+              histos.fill(HIST(ClassDir[Dir]) + HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
+              histos.fill(HIST(ClassDir[Dir]) + HIST("ptCorrel_prim"), track.pt(), particle.pt());
+              histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
+              histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
             }
           }
         });
