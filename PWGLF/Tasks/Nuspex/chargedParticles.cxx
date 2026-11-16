@@ -33,6 +33,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TAxis.h>
@@ -46,6 +47,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <string_view>
+#include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -102,16 +106,40 @@ struct ChargedParticles {
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
   Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
   Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
-  Configurable<std::string> eventClass{"eventClass", "fiducial", "mc event class: fiducial (N_ch > 0), inelgt0, triggered (tvx), inel"};
+  Configurable<std::string> eventClasses{"eventClasses", "fiducial", "mc event classes, comma separated: fiducial (N_ch > 0), inelgt0, triggered (tvx), inel; one class: flat output, several: one subfolder per class"};
   enum EventClass { kFiducial,
                     kINELGT0,
                     kTriggered,
-                    kINEL };
-  EventClass eventClassType{kFiducial};
+                    kINEL,
+                    kNClasses };
+  static constexpr std::array<std::string_view, kNClasses + 1> kClassDir = {"fiducial/", "inelgt0/", "triggered/", "inel/", ""}; // last: flat output
+  static constexpr std::array<std::string_view, kNClasses> kClassName = {"fiducial", "inelgt0", "triggered", "inel"};
+  uint8_t enabledDirs{0}; // output directories in use (bit kNClasses: flat output for a single class)
+  int flatClass{kFiducial};
+  // call f(std::integral_constant<int, dir>) for every output directory in use
+  template <typename F>
+  void forEachDir(F const& f)
+  {
+    static_for<0, kNClasses>([&](auto i) {
+      constexpr int kDir = i.value;
+      if (((enabledDirs >> kDir) & 1) != 0) {
+        f(std::integral_constant<int, kDir>{});
+      }
+    });
+  }
+  // is the current mc event in the class of output directory dir
+  bool isInDir(int dir) const { return ((vars.classMask >> (dir == kNClasses ? flatClass : dir)) & 1) != 0; }
   static constexpr int kNStagesMC = 8;
   static constexpr int kNLayersITS = 7;
   std::string metaLabel; // qa: ao2d metadata label
   int lastRunNumber{-1}; // qa: cached run label
+  struct ParticleTracks {
+    float pt{0.f};
+    int nTracks{0};
+    int nCollisions{0};
+    int64_t lastCollision{-1};
+  };
+  std::unordered_map<int64_t, ParticleTracks> tracksPerParticle; // qa: selected tracks per mc particle in the current mc event
   std::string lastRunLabel;
   Configurable<std::string> evSelBits{"evSelBits", "auto", "event selection bits on top of sel8 (names as in EventSelectionParams), comma separated; auto = default of the collision system (currently kNoSameBunchPileup for all)"};
   Configurable<float> maxVtxZ{"maxVtxZ", 10.f, "max |z| of the reco and true vertex"};
@@ -150,7 +178,7 @@ struct ChargedParticles {
     uint32_t multMeas{0u};
     uint32_t multTrue{0u};
     bool isAcceptedEvent{false};
-    bool isAcceptedEventMC{false};
+    uint8_t classMask{0};      // mc event classes the event belongs to (each with good true z)
     bool isGoodZPosMC{false};  // true vertex within |z| cut
     bool isTriggeredMC{false}; // tvx in the bc of the mc collision
     bool isINELGT0EventMC{false};
@@ -252,17 +280,35 @@ void ChargedParticles::init(InitContext const&)
     LOGP(fatal, "unknown collisionSystem '{}' (pp, pPb, pO, OO, NeNe, XeXe, PbPb)", collisionSystem.value);
   }
 
-  if (eventClass.value == "fiducial") {
-    eventClassType = kFiducial;
-  } else if (eventClass.value == "inelgt0") {
-    eventClassType = kINELGT0;
-  } else if (eventClass.value == "triggered") {
-    eventClassType = kTriggered;
-  } else if (eventClass.value == "inel") {
-    eventClassType = kINEL;
-  } else {
-    LOGP(fatal, "unknown eventClass '{}' (fiducial, inelgt0, triggered, inel)", eventClass.value);
+  // event classes: one class -> flat output, several -> one subfolder per class
+  int nClasses = 0;
+  uint8_t classes = 0;
+  for (size_t start = 0; start < eventClasses.value.size();) {
+    size_t end = eventClasses.value.find(',', start);
+    if (end == std::string::npos) {
+      end = eventClasses.value.size();
+    }
+    std::string name = eventClasses.value.substr(start, end - start);
+    name.erase(0, name.find_first_not_of(' '));
+    name.erase(name.find_last_not_of(' ') + 1);
+    start = end + 1;
+    int cls = -1;
+    for (int c = 0; c < kNClasses; ++c) {
+      if (name == kClassName[c]) {
+        cls = c;
+      }
+    }
+    if (cls < 0 || ((classes >> cls) & 1) != 0) {
+      LOGP(fatal, "unknown or duplicate event class '{}' in eventClasses (fiducial, inelgt0, triggered, inel)", name);
+    }
+    classes |= (1 << cls);
+    flatClass = cls;
+    ++nClasses;
   }
+  if (nClasses == 0) {
+    LOGP(fatal, "no event class given in eventClasses");
+  }
+  enabledDirs = (nClasses == 1) ? (1 << kNClasses) : classes;
 
   // event selection bits required on top of sel8
   const std::string bits = (evSelBits.value == "auto") ? evSelBitsDefault : evSelBits.value;
@@ -353,28 +399,37 @@ void ChargedParticles::init(InitContext const&)
     histos.add("collision_ambiguity", "", kTH1D, {{6, -0.5, 5.5, "reco collisions per true collision"}}); // log the number of collisions that were reconstructed for a MC collision
     histos.add("track_ambiguity", "", kTH1D, {{6, 0.5, 6.5, "reco tracks per true particle"}});           // log the number of tracks that were reconstructed for a MC particle
 
-    histos.add("multDist_evt_gen", "", kTH1D, {multTrueAxis}); // generated event distribution  (from events within specified class and with proper vertex position)
     if (isNominal) {
-      histos.add("QA/events/multTrueBits", "", kTH2D, {multTrueAxis, bitAxis});
       histos.add("QA/events/zVtxGen", "", kTH1D, {{61, -30.5, 30.5, "#it{V}_{z} (cm)"}});
-      histos.add("QA/events/eventSelectionMC", "", kTH1D, {{kNStagesMC, -0.5, kNStagesMC - 0.5}});
-      histos.add("QA/tracks/deltaPt", "", kTH2D, {ptMeasAxis, {100, 0., 0.3, "#Delta(#it{p}_{T}) / #it{p}^{ meas}_{T}"}});
+      histos.add("QA/tracks/tracksPerParticle", "", kTH2D, {ptTrueAxis, {6, 0.5, 6.5, "selected tracks per particle"}});
+      histos.add("QA/tracks/collisionsPerParticle", "", kTH2D, {ptTrueAxis, {4, 0.5, 4.5, "reco collisions per particle"}});
     }
-    histos.add("multDist_evt_gen_trig", "", kTH1D, {multTrueAxis}); // generated event distribution (from events within specified class and with proper vertex position) that in addition fulfils the trigger condition [to disentangle trigger eff from reco eff ]
+    // class-dependent histograms: flat (one class) or one subfolder per class
+    for (int d = 0; d <= kNClasses; ++d) {
+      if (((enabledDirs >> d) & 1) == 0) {
+        continue;
+      }
+      const std::string dir(kClassDir[d]);
+      histos.add((dir + "multDist_evt_gen").c_str(), "", kTH1D, {multTrueAxis});      // generated events (in class, good z)
+      histos.add((dir + "multDist_evt_gen_trig").c_str(), "", kTH1D, {multTrueAxis}); // generated events that also fired the trigger
+      histos.add((dir + "multCorrel_evt").c_str(), "", kTHnSparseD, {multMeasAxis, multTrueAxis});
+      histos.add((dir + "multCorrel_prim").c_str(), "", kTHnSparseD, {multMeasAxis, multTrueAxis});
+      histos.add((dir + "ptCorrel_prim").c_str(), "", kTH2D, {ptMeasAxis, ptTrueAxis});
+      histos.add((dir + "multPtSpec_prim_gen").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});
+      histos.add((dir + "multPtSpec_prim_gen_evtloss").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});
+      histos.add((dir + "multPtSpec_prim_meas").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});
+      histos.add((dir + "multPtSpec_trk_prim_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});
+      histos.add((dir + "multPtSpec_trk_sec_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});
+      histos.add((dir + "multPtSpec_trk_meas_evtcont").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});
+      histos.add((dir + "multPtSpec_trk_inter").c_str(), "", kTH2D, {multTrueAxis, ptMeasAxis});
+      if (isNominal) {
+        histos.add((dir + "QA/events/multTrueBits").c_str(), "", kTH2D, {multTrueAxis, bitAxis});
+        histos.add((dir + "QA/events/eventSelectionMC").c_str(), "", kTH1D, {{kNStagesMC, -0.5, kNStagesMC - 0.5}});
+        histos.add((dir + "QA/tracks/deltaPt").c_str(), "", kTH2D, {ptMeasAxis, {100, 0., 0.3, "#Delta(#it{p}_{T}) / #it{p}^{ meas}_{T}"}});
+      }
+    }
 
-    histos.add("multCorrel_evt", "", kTHnSparseD, {multMeasAxis, multTrueAxis});  // multiplicity correlation of measured events (excluding background events)
-    histos.add("multCorrel_prim", "", kTHnSparseD, {multMeasAxis, multTrueAxis}); // multiplicity correlation of measured primary charged particles (excluding particles from background events)
-    histos.add("ptCorrel_prim", "", kTH2D, {ptMeasAxis, ptTrueAxis});             // pT correlation of measured primary charged particles  (excluding particles from background events)
-
-    histos.add("multPtSpec_prim_gen", "", kTH2D, {multTrueAxis, ptTrueAxis});         // generated primary charged particles as function of true properties (from events within specified class and with proper vertex position)
-    histos.add("multPtSpec_prim_gen_evtloss", "", kTH2D, {multTrueAxis, ptTrueAxis}); // generated primary charged particles of events that did not pass the event selection as function of multiplicity and pt
-    histos.add("multPtSpec_prim_gen_notrig", "", kTH2D, {multTrueAxis, ptTrueAxis});  // generated primary charged particles of untriggered events (tvx) with good z, independent of the event class
-    histos.add("multPtSpec_prim_meas", "", kTH2D, {multTrueAxis, ptTrueAxis});        // measured primary charged particles as function of true properties (no contamination from background events)
-
-    histos.add("multPtSpec_trk_prim_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});    // tracks from measured primaries (no contamination from secondaries, particles smeared into acceptance or background events)
-    histos.add("multPtSpec_trk_sec_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});     // tracks from measured secondaries (no contamination from particles smeared into acceptance or background events)  [for QA to disentangle secondaries from other contamination]
-    histos.add("multPtSpec_trk_meas_evtcont", "", kTH2D, {multMeasAxis, ptMeasAxis}); // tracks from events that are measured, but do not belong to the desired class of events
-    histos.add("multPtSpec_trk_inter", "", kTH2D, {multTrueAxis, ptMeasAxis});
+    histos.add("multPtSpec_prim_gen_notrig", "", kTH2D, {multTrueAxis, ptTrueAxis}); // generated primary charged particles of untriggered events (tvx) with good z, independent of the event class
   }
 
   auto setBitLabels = [](TAxis* axis) {
@@ -408,13 +463,16 @@ void ChargedParticles::init(InitContext const&)
     }
     metaLabel = metadataInfo.isInitialized() ? metadataInfo.makeMetadataLabel() + ", O2 " + metadataInfo.getO2Version() : std::string("no ao2d metadata");
     if (doprocessMC || doprocessMCnoPCC) {
-      metaLabel += ", " + eventClass.value;
-      setBitLabels(histos.get<TH2>(HIST("QA/events/multTrueBits"))->GetYaxis());
-      auto* axisMC = histos.get<TH1>(HIST("QA/events/eventSelectionMC"))->GetXaxis();
-      int bin = 1;
-      for (const auto* label : {"all", "|z_{true}| < maxVtxZ", "event class", "tvx", "reco collision", "sel8", "evSelBits", "|z| < maxVtxZ"}) {
-        axisMC->SetBinLabel(bin++, label);
-      }
+      metaLabel += ", " + eventClasses.value;
+      forEachDir([&](auto dir) {
+        constexpr int kDir = decltype(dir)::value;
+        setBitLabels(histos.get<TH2>(HIST(kClassDir[kDir]) + HIST("QA/events/multTrueBits"))->GetYaxis());
+        auto* axisMC = histos.get<TH1>(HIST(kClassDir[kDir]) + HIST("QA/events/eventSelectionMC"))->GetXaxis();
+        int bin = 1;
+        for (const auto* label : {"all", "|z_{true}| < maxVtxZ", "event class", "tvx", "reco collision", "sel8", "evSelBits", "|z| < maxVtxZ"}) {
+          axisMC->SetBinLabel(bin++, label);
+        }
+      });
     }
   }
 
@@ -506,6 +564,7 @@ template <typename P>
 void ChargedParticles::processMCImpl(CollisionTableMCTrue::iterator const& mcCollision, TrackTableMC const& tracks, CollisionTableMC const& collisions, P const& particles, aod::FT0s const& ft0s)
 {
   histos.fill(HIST("collision_ambiguity"), collisions.size());
+  tracksPerParticle.clear();
 
   initEventMC(mcCollision, particles);
 
@@ -535,15 +594,24 @@ void ChargedParticles::processMCImpl(CollisionTableMCTrue::iterator const& mcCol
     }
   }
   vars.isAcceptedEvent = isAcceptedRepresentative; // event loss refers to the representative; processTrue must come after this
+  if (isNominal) {
+    for (const auto& [id, entry] : tracksPerParticle) {
+      histos.fill(HIST("QA/tracks/tracksPerParticle"), entry.pt, entry.nTracks);
+      histos.fill(HIST("QA/tracks/collisionsPerParticle"), entry.pt, entry.nCollisions);
+    }
+  }
 
   if (isNominal) {
     histos.fill(HIST("QA/events/zVtxGen"), mcCollision.posZ());
     // cumulative mc event flow
-    const std::array<bool, kNStagesMC> stages = {true, vars.isGoodZPosMC, vars.isAcceptedEventMC, vars.isTriggeredMC, collisions.size() > 0,
-                                                 isSel8Representative, hasBitsRepresentative, isAcceptedRepresentative};
-    for (int i = 0; i < kNStagesMC && stages[i]; ++i) {
-      histos.fill(HIST("QA/events/eventSelectionMC"), i);
-    }
+    forEachDir([&](auto dir) {
+      constexpr int kDir = decltype(dir)::value;
+      const std::array<bool, kNStagesMC> stages = {true, vars.isGoodZPosMC, isInDir(kDir), vars.isTriggeredMC, collisions.size() > 0,
+                                                   isSel8Representative, hasBitsRepresentative, isAcceptedRepresentative};
+      for (int i = 0; i < kNStagesMC && stages[i]; ++i) {
+        histos.fill(HIST(kClassDir[kDir]) + HIST("QA/events/eventSelectionMC"), i);
+      }
+    });
   }
   processTrue(particles);
 }
@@ -687,15 +755,13 @@ void ChargedParticles::initEventMC(const C& collision, const P& particles)
   }
   vars.isGoodZPosMC = std::abs(collision.posZ()) < maxVtxZ;
   vars.isTriggeredMC = collision.template bc_as<BCsWithSel>().selection_bit(aod::evsel::kIsTriggerTVX);
-  bool isGoodEventClass = vars.multTrue > 0;
-  if (eventClassType == kINELGT0) {
-    isGoodEventClass = vars.isINELGT0EventMC;
-  } else if (eventClassType == kTriggered) {
-    isGoodEventClass = vars.isTriggeredMC;
-  } else if (eventClassType == kINEL) {
-    isGoodEventClass = true; // all generated events
+  vars.classMask = 0;
+  if (vars.isGoodZPosMC) {
+    vars.classMask |= (vars.multTrue > 0) ? (1 << kFiducial) : 0;
+    vars.classMask |= vars.isINELGT0EventMC ? (1 << kINELGT0) : 0;
+    vars.classMask |= vars.isTriggeredMC ? (1 << kTriggered) : 0;
+    vars.classMask |= (1 << kINEL); // all generated events
   }
-  vars.isAcceptedEventMC = isGoodEventClass && vars.isGoodZPosMC;
 }
 
 //**************************************************************************************************
@@ -827,11 +893,17 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
     return;
   }
   const uint64_t selection = collision.selection_raw();
-  const bool fillTrue = IS_MC && isRepresentative && vars.isAcceptedEventMC;
   auto fillBit = [&](int bin) {
     histos.fill(HIST("QA/events/multMeasBits"), vars.multMeas, bin);
-    if (fillTrue) {
-      histos.fill(HIST("QA/events/multTrueBits"), vars.multTrue, bin);
+    if constexpr (IS_MC) {
+      if (isRepresentative) {
+        forEachDir([&](auto dir) {
+          constexpr int kDir = decltype(dir)::value;
+          if (isInDir(kDir)) {
+            histos.fill(HIST(kClassDir[kDir]) + HIST("QA/events/multTrueBits"), vars.multTrue, bin);
+          }
+        });
+      }
     }
   };
   fillBit(aod::evsel::kNsel); // sel8
@@ -860,26 +932,32 @@ void ChargedParticles::processTrue(const P& particles)
 {
   // untriggered primaries independent of the event class (trigger bias)
   const bool isUntriggeredGoodZPos = vars.isGoodZPosMC && !vars.isTriggeredMC;
-  if (!vars.isAcceptedEventMC && !isUntriggeredGoodZPos) {
+  if (vars.classMask == 0 && !isUntriggeredGoodZPos) {
     return;
   }
 
-  if (vars.isAcceptedEventMC) {
-    histos.fill(HIST("multDist_evt_gen"), vars.multTrue);
-    if (vars.isTriggeredMC) {
-      histos.fill(HIST("multDist_evt_gen_trig"), vars.multTrue);
+  forEachDir([&](auto dir) {
+    constexpr int kDir = decltype(dir)::value;
+    if (isInDir(kDir)) {
+      histos.fill(HIST(kClassDir[kDir]) + HIST("multDist_evt_gen"), vars.multTrue);
+      if (vars.isTriggeredMC) {
+        histos.fill(HIST(kClassDir[kDir]) + HIST("multDist_evt_gen_trig"), vars.multTrue);
+      }
     }
-  }
+  });
 
   for (const auto& particle : particles) {
     if (initParticle(particle) && vars.isChargedPrimary) {
       for (auto i = 0u; i < vars.nRepetitions; ++i) {
-        if (vars.isAcceptedEventMC) {
-          histos.fill(HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
-          if (!vars.isAcceptedEvent) {
-            histos.fill(HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
+        forEachDir([&](auto dir) {
+          constexpr int kDir = decltype(dir)::value;
+          if (isInDir(kDir)) {
+            histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
+            if (!vars.isAcceptedEvent) {
+              histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
+            }
           }
-        }
+        });
         if (isUntriggeredGoodZPos) {
           histos.fill(HIST("multPtSpec_prim_gen_notrig"), vars.multTrue, particle.pt());
         }
@@ -899,21 +977,28 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
   if (!vars.isAcceptedEvent) {
     return;
   }
-  // mc: only the representative collision corresponds to the true event
-  [[maybe_unused]] const bool isTrueEvent = vars.isAcceptedEventMC && isRepresentative;
+  // mc: only the representative collision corresponds to the true event (per event class)
+  [[maybe_unused]] auto isTrueEvent = [&](int dir) { return isRepresentative && isInDir(dir); };
 
   histos.fill(HIST("multDist_evt_meas"), vars.multMeas);
 
   if constexpr (IS_MC) {
-    if (isTrueEvent) {
-      histos.fill(HIST("multCorrel_evt"), vars.multMeas, vars.multTrue);
-    }
+    forEachDir([&](auto dir) {
+      constexpr int kDir = decltype(dir)::value;
+      if (isTrueEvent(kDir)) {
+        histos.fill(HIST(kClassDir[kDir]) + HIST("multCorrel_evt"), vars.multMeas, vars.multTrue);
+      }
+    });
   }
 
   std::vector<int> foundParticles;
   for (const auto& track : tracks) {
-    if (isNominal) {
-      fillTrackCutQA(track);
+    if (isNominal) { // qa with the pcc repetitions (= 1 without pcc)
+      bool isValidCandidate{false};
+      const uint32_t nRepCandidate = getTrackRepetitions<IS_MC, P>(track, isValidCandidate);
+      for (auto i = 0u; i < nRepCandidate; ++i) {
+        fillTrackCutQA(track);
+      }
     }
     if (!initTrack(track)) {
       continue;
@@ -923,16 +1008,37 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
     bool isValidParticle{false};
     const uint32_t nRepetitions = getTrackRepetitions<IS_MC, P>(track, isValidParticle);
     if (isNominal) {
-      fillTrackQA(track);
+      for (auto i = 0u; i < nRepetitions; ++i) {
+        fillTrackQA(track);
+      }
       if constexpr (IS_MC) {
-        if (isTrueEvent && isValidParticle && vars.isChargedPrimary) {
-          histos.fill(HIST("QA/tracks/deltaPt"), track.pt(), std::abs(track.pt() - track.template mcParticle_as<P>().pt()) / track.pt());
+        if (isValidParticle && vars.isChargedPrimary) {
+          const float relDeltaPt = std::abs(track.pt() - track.template mcParticle_as<P>().pt()) / track.pt();
+          forEachDir([&](auto dir) {
+            constexpr int kDir = decltype(dir)::value;
+            if (isTrueEvent(kDir)) {
+              for (auto i = 0u; i < nRepetitions; ++i) {
+                histos.fill(HIST(kClassDir[kDir]) + HIST("QA/tracks/deltaPt"), track.pt(), relDeltaPt);
+              }
+            }
+          });
         }
       }
     }
     if constexpr (IS_MC) {
       if (track.has_mcParticle()) {
         foundParticles.push_back(track.mcParticleId());
+        if (isNominal) { // tracks and collisions per particle over all reco collisions of the mc event
+          auto& entry = tracksPerParticle[track.mcParticleId()];
+          if (entry.nTracks == 0) {
+            entry.pt = track.template mcParticle_as<P>().pt();
+          }
+          ++entry.nTracks;
+          if (entry.lastCollision != track.collisionId()) {
+            ++entry.nCollisions;
+            entry.lastCollision = track.collisionId();
+          }
+        }
       }
     }
 
@@ -940,23 +1046,25 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
       histos.fill(HIST("multPtSpec_trk_meas"), vars.multMeas, track.pt());
 
       if constexpr (IS_MC) {
-        if (!isTrueEvent) {
-          histos.fill(HIST("multPtSpec_trk_meas_evtcont"), vars.multMeas, track.pt());
-          continue;
-        }
-
-        histos.fill(HIST("multPtSpec_trk_inter"), vars.multTrue, track.pt());
-        if (isValidParticle) {
-          if (!vars.isChargedPrimary) {
-            histos.fill(HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());
-          } else {
-            const auto& particle = track.template mcParticle_as<P>();
-            histos.fill(HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
-            histos.fill(HIST("ptCorrel_prim"), track.pt(), particle.pt());
-            histos.fill(HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
-            histos.fill(HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
+        forEachDir([&](auto dir) {
+          constexpr int kDir = decltype(dir)::value;
+          if (!isTrueEvent(kDir)) {
+            histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_trk_meas_evtcont"), vars.multMeas, track.pt());
+            return;
           }
-        }
+          histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_trk_inter"), vars.multTrue, track.pt());
+          if (isValidParticle) {
+            if (!vars.isChargedPrimary) {
+              histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());
+            } else {
+              const auto& particle = track.template mcParticle_as<P>();
+              histos.fill(HIST(kClassDir[kDir]) + HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
+              histos.fill(HIST(kClassDir[kDir]) + HIST("ptCorrel_prim"), track.pt(), particle.pt());
+              histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
+              histos.fill(HIST(kClassDir[kDir]) + HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
+            }
+          }
+        });
       }
     }
   }
