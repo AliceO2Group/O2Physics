@@ -1106,7 +1106,7 @@ class TrackHistManager
         mHistogramRegistry->fill(HIST(prefix) + HIST(FitVarsDir) + HIST(getHistName(kTpctofPurity, HistTable)), mAbsCharge * track.pt(), std::hypot(tpcNSigma, tofNSigma));
       }
     }
-    if constexpr (requires(T t) { t.dcaXY(); }) {
+    if constexpr (utils::HasDca<T>) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(FitVarsDir) + HIST(getHistName(kFractionDca, HistTable)), mAbsCharge * track.pt(), track.dcaXY(), track.dcaZ());
     }
   }

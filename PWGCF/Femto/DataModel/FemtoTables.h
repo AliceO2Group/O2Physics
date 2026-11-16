@@ -841,6 +841,7 @@ using FLambdaExtras = FLambdaExtras_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaFrac_001, "FLAMBDAFRAC", 1, //! lambda cpa for fraction extraction
                                    femtov0s::CosPa);
 using FLambdaFrac = FLambdaFrac_001;
+using StoredFLambdaFrac = StoredFLambdaFrac_001;
 
 // table for basic k0short information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shorts_001, "FK0SHORT", 1, //! femto k0shorts
@@ -1500,6 +1501,7 @@ using FXiExtras = FXiExtras_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiFrac_001, "FXIFRAC", 1, //! xi cpa for fraction extraction
                                    femtocascades::CascadeCosPa);
 using FXiFrac = FXiFrac_001;
+using StoredFXiFrac = StoredFXiFrac_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
                                    o2::soa::Index<>,
@@ -1572,6 +1574,7 @@ using FOmegaExtras = FOmegaExtras_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaFrac_001, "FOMEGAFRAC", 1, //! omega cpa for fraction extraction
                                    femtocascades::CascadeCosPa);
 using FOmegaFrac = FOmegaFrac_001;
+using StoredFOmegaFrac = StoredFOmegaFrac_001;
 
 namespace femtocharmhadrons
 {
