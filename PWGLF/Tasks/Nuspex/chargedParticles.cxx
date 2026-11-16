@@ -287,15 +287,18 @@ void ChargedParticles::init(InitContext const&)
   isRun3 = ((dataRun != 0) ? dataRun.value : runFromMetadata) == 3;
   LOGP(info, "data from run {} ({})", isRun3 ? 3 : 2, (dataRun != 0) ? "dataRun" : "ao2d metadata");
 
-  // collision system: multiplicity axes (run 2 values; light ions estimated) and event selection default
+  // collision system: multiplicity axes (run 2 values; light ions from the 2025 data, oo/nene above the tail) and event selection default
   // todo: measure the event selection default per system (data vs mc rejection, qa/events/multMeasBits)
   std::string evSelBitsDefault = "kNoSameBunchPileup";
   if (collisionSystem.value == "pp") {
     maxMultMeas = 100;
     maxMultTrue = 100;
-  } else if (collisionSystem.value == "pPb" || collisionSystem.value == "pO") {
+  } else if (collisionSystem.value == "pPb") {
     maxMultMeas = 200;
     maxMultTrue = 200;
+  } else if (collisionSystem.value == "pO") {
+    maxMultMeas = 300;
+    maxMultTrue = 350;
   } else if (collisionSystem.value == "OO" || collisionSystem.value == "NeNe") {
     maxMultMeas = 400;
     maxMultTrue = 600;
