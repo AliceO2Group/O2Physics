@@ -775,8 +775,8 @@ struct nucleiInJets {
       jetHist.add<TH3>("recInc/eff/tpcTrack3D", "Pt vs ParticleType vs Centrality (tpc)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
       jetHist.add<TH3>("recInc/eff/tpcTofTrack3D", "Pt vs ParticleType vs Centrality (tpc-tof)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
 
-      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3D", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{PtAxis}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}});            // pt, parttype, cent, dcaxy, partOrigin
-      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{PtAxis}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}}); // pt, parttype, cent, dcaxy, partOrigin
+      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3D", "Reconstructed tracks before PID;reconstructed pT;true particle type;centrality;DCAxy;origin", HistType::kTHnSparseF, {{PtAxis}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}}); // pt, parttype, cent, dcaxy, partOrigin
+      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected", "Species-matched TPC PID;reconstructed pT;true particle type;centrality;DCAxy;origin", HistType::kTHnSparseF, {{PtAxis}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}}); // pt, parttype, cent, dcaxy, partOrigin
 
       // inside jet
       jetHist.add<TH3>("tracks/mc/proton/h3PtVsProtonNSigmaTPCVsPtJet_jet", "pT(p) vs NSigmaTPC (p) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
@@ -3385,9 +3385,26 @@ struct nucleiInJets {
       }
 
       // Fill DCAxy histograms
-      jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
-      if (passItsPidPr && std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr)
-        jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
+      jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3D"), track.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
+      bool passSpeciesPid = false;
+      switch (std::abs(mcTrack.pdgCode())) {
+        case PDG_t::kProton:
+          passSpeciesPid = passItsPidPr && std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr;
+          break;
+        case Pdg::kDeuteron:
+          passSpeciesPid = passItsPidDe && std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe;
+          break;
+        case Pdg::kTriton:
+          passSpeciesPid = std::abs(track.tpcNSigmaTr()) < cfgnTPCPIDTr;
+          break;
+        case Pdg::kHelium3:
+          passSpeciesPid = passItsPidHe && std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe;
+          break;
+        default:
+          break;
+      }
+      if (passSpeciesPid)
+        jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected"), track.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
 
       if (!isMcPrimary)
         continue;
