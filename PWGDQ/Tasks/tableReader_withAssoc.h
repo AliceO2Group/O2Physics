@@ -290,6 +290,7 @@ using MyMuonTracksWithCov = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::Reduce
 using MyMuonTracksWithCovWithAmbiguities = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra, o2::aod::ReducedMuonsCov, o2::aod::MuonAmbiguities>;
 using MyMuonTracksSelectedWithColl = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra, o2::aod::ReducedMuonsInfo, o2::aod::MuonTrackCuts>;
 
+constexpr static uint32_t gkEventFillMapWithCovQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventFillMapWithZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ReducedZdc;
@@ -339,6 +340,20 @@ void PrintBitMap(TMap map, int nbits)
     bits += ((map & (TMap(1) << i)) > 0 ? '1' : '0');
   }
   LOG(info) << bits;
+}
+
+// Function to compute the mu for pileup estimation, taken from EM code
+double calculateMu(const double interactionRate, const double nbc)
+{
+  // uint64_t timeStamp = bc.timestamp();
+  // auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
+  // auto grpo = fCCDB->getForTimeStamp<o2::parameters::GRPLHCIFData>(fConfigCCDB.GrpLhcIfPath, timestamp);
+  // auto bfilling = grpo->getBunchFilling();
+  // double nbc = bfilling.getFilledBCs().size();
+
+  double nTriggersPerFilledBC = (interactionRate * 1000) / nbc / o2::constants::lhc::LHCRevFreq;
+  double mu = -std::log(1 - nTriggersPerFilledBC);
+  return mu;
 }
 
 // Analysis task that produces event decisions (analysis cut, in bunch pileup and split collision check) and the Hash table used in event mixing
@@ -550,6 +565,12 @@ struct AnalysisEventSelection {
       // Get the instantaneous IR from the CCDB
       if (fConfigFetchInteractionRate.value) {
         VarManager::fgValues[VarManager::kInteractionRate] = rateFetcher.fetch(fCCDB.service, event.timestamp(), fCurrentRun, fConfigIRSource.value, true) / 1000.; // kHz
+        // Compute Mu
+        auto grpo = fCCDB->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", event.timestamp());
+        auto bfilling = grpo->getBunchFilling();
+        double nbc = bfilling.getFilledBCs().size();
+        // IR is now in kHz, but in calcualteMu it is restored to Hz
+        VarManager::fgValues[VarManager::kMuPerBc] = calculateMu(VarManager::fgValues[VarManager::kInteractionRate], nbc);
       }
 
       bool decision = false;
@@ -802,7 +823,7 @@ struct AnalysisTrackSelection {
   o2::ccdb::CcdbApi fCCDBApi;
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
 
   int fCurrentRun = 0; // current run kept to detect run changes and trigger loading params from CCDB
 
@@ -830,7 +851,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = o2::aod::dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto const& t : addTrackCuts) {
-        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
 
@@ -1084,7 +1105,7 @@ struct AnalysisMuonSelection {
   o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fMuonCuts;
+  std::vector<AnalysisCut*> fMuonCuts;
 
   int fCurrentRun = 0; // current run kept to detect run changes and trigger loading params from CCDB
 
@@ -1111,7 +1132,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = o2::aod::dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto const& t : addCuts) {
-        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(t);
       }
     }
 
@@ -1583,7 +1604,7 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmed") || context.mOptions.get<bool>("processBarrelOnlyDiKaons") || context.mOptions.get<bool>("processBarrelOnlyDiProtons") || context.mOptions.get<bool>("processBarrelOnlySkimmedWithGlobalMult");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrVtxCovSkimmed") || context.mOptions.get<bool>("processBarrelOnlyDiKaons") || context.mOptions.get<bool>("processBarrelOnlyDiProtons") || context.mOptions.get<bool>("processBarrelOnlySkimmedWithGlobalMult");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processMixingBarrelSkimmedGlobalMult");
     fEnableBarrelMixingHistos |= fConfigRunMixingAcrossTFs;
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow") || context.mOptions.get<bool>("processMuonOnlyVertexingSkimmed");
@@ -3271,6 +3292,14 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToPrAPr, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
+  // New process function with Qvector, Centrality and Vertex Covariance.
+  void processBarrelOnlyWithQvectorCentrVtxCovSkimmed(MyEventsVtxCovSelectedQvector const& events,
+                                                      o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
+                                                      MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCovQvectorCentr, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  }
+
   void processBarrelOnlySkimmedWithGlobalMult(MyEventsVtxCovGlobalMultSelected const& events,
                                               o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                               MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
@@ -3389,6 +3418,8 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingMuonSkimmed, "Run muon type mixing pairing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingMuonSkimmedFlow, "Run muon type mixing pairing, with skimmed muons and flow", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingElectronMuonSkimmed, "Run electron-muon mixing pairing, with skimmed tracks/muons", false);
+  // Process switch added for pairing with Qvector from central framework and event vertex covariance
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentrVtxCovSkimmed, "Run barrel only pairing, with skimmed tracks with covariances, event vertex covariance, and Qvector from central framework", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
 };
 

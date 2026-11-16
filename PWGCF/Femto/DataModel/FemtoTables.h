@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/modes.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -245,6 +246,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! momentum
 DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! theta
                            [](float eta) -> float {
                              return 2.f * std::atan(std::exp(-eta));
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! rapidity -- mass is not a stored column, so it is passed in as an
+                                 //! extra free argument at the call site, e.g. mother.y(mass)
+                           [](float signedPt, float eta, float mass) -> float {
+                             return RecoDecayPtEtaPhi::y(std::fabs(signedPt), eta, mass);
                            });
 } // namespace dynamic
 
@@ -835,6 +841,7 @@ using FLambdaExtras = FLambdaExtras_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaFrac_001, "FLAMBDAFRAC", 1, //! lambda cpa for fraction extraction
                                    femtov0s::CosPa);
 using FLambdaFrac = FLambdaFrac_001;
+using StoredFLambdaFrac = StoredFLambdaFrac_001;
 
 // table for basic k0short information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shorts_001, "FK0SHORT", 1, //! femto k0shorts
@@ -1494,6 +1501,7 @@ using FXiExtras = FXiExtras_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiFrac_001, "FXIFRAC", 1, //! xi cpa for fraction extraction
                                    femtocascades::CascadeCosPa);
 using FXiFrac = FXiFrac_001;
+using StoredFXiFrac = StoredFXiFrac_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
                                    o2::soa::Index<>,
@@ -1566,6 +1574,7 @@ using FOmegaExtras = FOmegaExtras_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaFrac_001, "FOMEGAFRAC", 1, //! omega cpa for fraction extraction
                                    femtocascades::CascadeCosPa);
 using FOmegaFrac = FOmegaFrac_001;
+using StoredFOmegaFrac = StoredFOmegaFrac_001;
 
 namespace femtocharmhadrons
 {
@@ -1761,7 +1770,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first dir
                                    femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>,
+                                   femtobase::dynamic::Y<femtobase::stored::SignedPt, femtobase::stored::Eta>); // mass is a free argument, e.g. mother.y(mass)
 
 using FMcMothers = FMcMothers_001;
 using FMcMother = FMcMothers::iterator;

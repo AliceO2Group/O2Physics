@@ -609,7 +609,7 @@ struct AnalysisTrackSelection {
   Service<o2::pid::tof::TOFResponse> fTofResponse{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
   std::vector<MCSignal*> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
@@ -640,7 +640,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -925,6 +925,13 @@ struct AnalysisTrackSelection {
     runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks, eventsMC, tracksMC);
     // cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
   }
+  void processWithCent(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelectedWithCentAndMults const& events, MyBarrelTracksWithCov const& tracks,
+                       McCollisions const& eventsMC, McParticles const& tracksMC)
+  {
+    // cout << "AnalysisTrackSelection::processWithCent() called" << endl;
+    runTrackSelection<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks, eventsMC, tracksMC);
+    // cout << "AnalysisTrackSelection::processWithCent() completed" << endl;
+  }
   void processWithCovTOFService(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCovNoTOF const& tracks,
                                 McCollisions const& eventsMC, McParticles const& tracksMC)
   {
@@ -945,6 +952,7 @@ struct AnalysisTrackSelection {
   }
 
   PROCESS_SWITCH(AnalysisTrackSelection, processWithCov, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processWithCent, "Run barrel track selection on DQ skimmed tracks w/ centrality", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processWithCovTOFService, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations, with TOF service", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processWithDalitzBits, "Run barrel track selection on DQ skimmed tracks w/ dalitz bits obtained from DalitzSelection task", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
@@ -3494,7 +3502,7 @@ struct AnalysisDileptonTrackTrack {
     uint32_t mcDecision = static_cast<uint32_t>(0);
     // size_t isig = 0;
 
-    for (auto dilepton : dileptons) {
+    for (const auto& dilepton : dileptons) {
       // get full track info of tracks based on the index
 
       int indexLepton1 = dilepton.index0Id();

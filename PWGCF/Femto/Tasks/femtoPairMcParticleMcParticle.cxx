@@ -57,7 +57,7 @@ struct FemtoPairMcParticleMcParticle {
   mcbuilder::ConfMcCollisionFilters collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_MC_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<colhistmanager::PrefixQa> colHistManager;
 
   // setup mc particles
   mcbuilder::ConfMcParticleSelection1 confMcParticleSelection1;

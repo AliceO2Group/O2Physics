@@ -241,6 +241,27 @@ class MlResponse
     return output;
   }
 
+  /// Get vector of vectors with predictions from every output head of a multi-output model (e.g. GNN)
+  /// \param input a vector containing the values of features used in the model
+  /// \param nModel is the model index
+  /// \return one vector per output head, in the order of the ONNX model's output nodes
+  template <typename T1, typename T2>
+  std::vector<std::vector<TypeOutputScore>> getModelOutputs(T1& input, const T2& nModel)
+  {
+    if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
+      LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
+    }
+
+    const int numInputNodes = mModels[nModel].getNumInputNodes();
+    const int numInputFeatures = static_cast<int>(input.size());
+
+    if (numInputNodes != numInputFeatures && numInputNodes >= 0) {
+      LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
+    }
+
+    return mModels[nModel].template evalModelFull<TypeOutputScore>(input);
+  }
+
   /// ML selections
   /// \param input is the input features
   /// \param candVar is the variable value (e.g. pT) used to select which model to use

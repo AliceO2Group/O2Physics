@@ -921,8 +921,9 @@ struct ResonancesGfwFlow {
     return true;
   }
 
-  template <typename TTrack, typename vector, char... chars, typename TCollision>
-  void resurrectPhi(const TTrack& trackplus, const TTrack& trackminus, const TCollision& collision, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist)
+  template <typename TTrack, typename vector, typename TName, typename TCollision>
+    requires is_const_str<TName>::value
+  void resurrectPhi(const TTrack& trackplus, const TTrack& trackminus, const TCollision& collision, vector plusdaug, vector minusdaug, vector mom, double plusmass, const TName& hist)
   {
     for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(trackplus, trackminus))) {
       histos.fill(HIST("hPhiCount"), 0.5);
@@ -981,8 +982,9 @@ struct ResonancesGfwFlow {
     return;
   }
 
-  template <typename TTrack, char... chars, typename TCollision>
-  void likeSignPhi(const TTrack& track, const TCollision& collision, double plusmass, const ConstStr<chars...>& hist)
+  template <typename TTrack, typename TName, typename TCollision>
+    requires is_const_str<TName>::value
+  void likeSignPhi(const TTrack& track, const TCollision& collision, double plusmass, const TName& hist)
   {
     ROOT::Math::PxPyPzMVector daug1, daug2, mom;
     for (auto const& [part1, part2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(track, track))) {

@@ -482,6 +482,7 @@ DECLARE_SOA_TABLE(ReducedTracksBarrel, "AOD", "RTBARREL", //!
                   track::IsPVContributor<track::Flags>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   reducedtrack::HasITS<reducedtrack::DetectorMap>, reducedtrack::HasTRD<reducedtrack::DetectorMap>,
                   reducedtrack::HasTOF<reducedtrack::DetectorMap>, reducedtrack::HasTPC<reducedtrack::DetectorMap>);
 

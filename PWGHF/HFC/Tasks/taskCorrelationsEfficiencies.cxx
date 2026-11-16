@@ -122,6 +122,7 @@ struct HfTaskCorrelationsEfficiencies {
   Configurable<bool> usePtDiffDcaXYCut{"usePtDiffDcaXYCut", false, "Use pt-differential DCAxy cut for associated tracks"};
   Configurable<float> dcaXYTrkNSigmaMax{"dcaXYTrkNSigmaMax", 7, "Cut on number of sigma deviations from expected DCA in the transverse direction"};
   Configurable<std::string> dcaXYPtPrimTrkFunc{"dcaXYPtPrimTrkFunc", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
+  Configurable<bool> rejNonRecoCollisions{"rejNonRecoCollisions", false, "Reject generated collisions that are not reconstructed"};
 
   // Configurables for tree filling
   Configurable<bool> fillRecoTrees{"fillRecoTrees", false, "Fill trees of reconstructed charmed hadrons and associated tracks"};
@@ -139,7 +140,7 @@ struct HfTaskCorrelationsEfficiencies {
   std::unique_ptr<TF1> funcDcaXYPtCutPrimTrk{nullptr};
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  using McCollisionsWMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using McCollisionsWMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
   using RecoCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
   using McCandsDs = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi, aod::HfCand3ProngMcRec>>;
   using McCandsDplus = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi, aod::HfCand3ProngMcRec>>;
@@ -220,7 +221,7 @@ struct HfTaskCorrelationsEfficiencies {
     const AxisSpec axisPhiTrig = {binsPhi, "#it{#varphi}"};
     const AxisSpec axisMlScore0 = {binsMlOne, "ML score 0"};
     const AxisSpec axisMlScore1 = {binsMlTwo, "ML score 1"};
-    std::vector<AxisSpec> axesCharmReco = {axisPtTrig, axisPvContrib, axisEtaTrig, axisPhiTrig, axisMlScore0, axisMlScore1};
+    std::vector<AxisSpec> axesCharmReco = {axisPtTrig, axisEtaTrig, axisPhiTrig, axisPvContrib, axisMlScore0, axisMlScore1};
 
     registry.add("hCharmPromptGen", "Generated prompt charm-hadron candidates;;", HistType::kTHnSparseF, {{axisPtTrig}, {axisEtaTrig}, {axisPhiTrig}});
     registry.add("hCharmFdGen", "Generated non-prompt charm-hadron candidates;;", HistType::kTHnSparseF, {{axisPtTrig}, {axisEtaTrig}, {axisPhiTrig}});
@@ -290,10 +291,10 @@ struct HfTaskCorrelationsEfficiencies {
       // Fill the sparse
       std::array<float, 2> outputMl = hfcFlowHelper.getCandMlScores<CandType>(cand);
       if (cand.originMcRec() == RecoDecay::OriginType::Prompt) {
-        registry.fill(HIST("hCharmPromptReco"), cand.pt(), numContrib, cand.eta(), cand.phi(), outputMl[0], outputMl[1]);
+        registry.fill(HIST("hCharmPromptReco"), cand.pt(), cand.eta(), cand.phi(), numContrib, outputMl[0], outputMl[1]);
       }
       if (cand.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-        registry.fill(HIST("hCharmFdReco"), cand.pt(), numContrib, cand.eta(), cand.phi(), outputMl[0], outputMl[1]);
+        registry.fill(HIST("hCharmFdReco"), cand.pt(), cand.eta(), cand.phi(), numContrib, outputMl[0], outputMl[1]);
       }
 
       if (fillRecoTrees) {
@@ -316,13 +317,13 @@ struct HfTaskCorrelationsEfficiencies {
                        aod::McCollisions const&)
   {
     for (const auto& coll : recoCollisions) {
-      auto candsInColl = candsDplus.sliceBy(candsDplusPerColl, coll.globalIndex());
-      if (candsInColl.size() < 1) {
-        continue;
-      }
       float cent{-1.}, mult{-1.};
       CentralityEstimator centDetector = CentralityEstimator::None;
       if (!hfcFlowHelper.selectRecoCollision(hfEvSel, ccdb, registry, coll, centDetector, cent, mult)) {
+        continue;
+      }
+      auto candsInColl = candsDplus.sliceBy(candsDplusPerColl, coll.globalIndex());
+      if (candsInColl.size() < 1) {
         continue;
       }
       fillCharmEfficiencies<TriggerChannels::DplusToPiKPi>(candsInColl, coll.numContrib());
@@ -415,7 +416,7 @@ struct HfTaskCorrelationsEfficiencies {
         }
         int assTrkOrigin = mcParticle.isPhysicalPrimary() ? 0 : 1; // 0 for primary, 1 for secondary
 
-        std::vector<double> values = {assTrk.pt(), assTrk.eta(), assTrk.phi(), mcCollision.posZ(), static_cast<double>(matchedSpecie), static_cast<double>(assTrkOrigin)};
+        std::vector<double> values = {mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcCollision.posZ(), static_cast<double>(matchedSpecie), static_cast<double>(assTrkOrigin)};
 
         // Fill histograms for associated tracks
         registry.get<THnSparse>(HIST("hAssTrackReco"))->Fill(values.data());
@@ -423,12 +424,13 @@ struct HfTaskCorrelationsEfficiencies {
         if (fillRecoTrees) {
           // Downsample tracks based on pt
           if (downSampleTracks < 1.) {
-            float const pseudoRndm = assTrk.pt() * 1000. - static_cast<int64_t>(assTrk.pt() * 1000);
-            if (assTrk.pt() < ptMaxDownSampleTracks && pseudoRndm >= downSampleTracks) {
+            // Generate a pseudo-random number between 0 and 1
+            float const pseudoRndm = mcParticle.pt() * 1000. - static_cast<int64_t>(mcParticle.pt() * 1000);
+            if (mcParticle.pt() < ptMaxDownSampleTracks && pseudoRndm >= downSampleTracks) {
               continue;
             }
           }
-          rowAssocMc(assTrk.pt(), assTrk.eta(), assTrk.phi(), mcCollision.posZ(), matchedSpecie, assTrkOrigin);
+          rowAssocMc(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcCollision.posZ(), matchedSpecie, assTrkOrigin);
           rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
         }
       }
@@ -441,6 +443,11 @@ struct HfTaskCorrelationsEfficiencies {
       const auto recoColls = recoCollisions.sliceBy(colPerMcCollision, mcColl.globalIndex());
       CentralityEstimator centDetector = CentralityEstimator::None;
       if (!hfcFlowHelper.selectGenCollision<BCsInfo>(hfEvSelMc, mcColl, recoColls, centDetector, cent, mult)) {
+        continue;
+      }
+      // If rejNonRecoCollisions==false, the pure tracking efficiency
+      // is convoluted with the event reconstruction efficiency
+      if (rejNonRecoCollisions && recoColls.size() < 1) { // Skipping MC events that have no reconstructed collisions
         continue;
       }
 

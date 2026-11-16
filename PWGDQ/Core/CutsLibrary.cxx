@@ -3707,6 +3707,16 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "pairD0TopologyTight") {
+    cut->AddCut(GetAnalysisCut("pairD0TopologyTight"));
+    return cut;
+  }
+
+  if (nameStr == "pairLambdaCTopology") {
+    cut->AddCut(GetAnalysisCut("pairLambdaCTopology"));
+    return cut;
+  }
+
   if (nameStr == "pairD0HighPt1") {
     cut->AddCut(GetAnalysisCut("pairLxyzProjected3sigma"));
     cut->AddCut(GetAnalysisCut("pairPtLow5"));
@@ -7200,6 +7210,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kCosPointingAngle, 0.85, 1.0, false, VarManager::kPt, 4.0, 50.0);
     cut->AddCut(VarManager::kD0DcaDaughters, 0.0, 0.01, false, VarManager::kPt, 0.0, 50.0);
     cut->AddCut(VarManager::kVertexingLxy, 0.01, 10.0);
+    cut->AddCut(VarManager::kRap, -2.0, 2.0);
+    return cut;
+  }
+
+  if (nameStr == "pairD0TopologyTight") {
+    cut->AddCut(VarManager::kCosPointingAngle, 0.8, 1.0, false, VarManager::kPt, 0.0, 1.0);
+    cut->AddCut(VarManager::kCosPointingAngle, 0.9, 1.0, false, VarManager::kPt, 1.0, 4.0);
+    cut->AddCut(VarManager::kCosPointingAngle, 0.85, 1.0, false, VarManager::kPt, 4.0, 50.0);
+    cut->AddCut(VarManager::kD0DcaDaughters, 0.0, 0.01, false, VarManager::kPt, 0.0, 50.0);
+    cut->AddCut(VarManager::kDCATrackProd, -1.e10, -2.e-4);
+    cut->AddCut(VarManager::kVertexingLxy, 0.01, 10.);
     cut->AddCut(VarManager::kRap, -2.0, 2.0);
     return cut;
   }

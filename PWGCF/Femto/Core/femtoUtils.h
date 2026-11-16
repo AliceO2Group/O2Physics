@@ -50,6 +50,26 @@ inline std::optional<T2> getIndex(const T1& index, const std::unordered_map<T1, 
   return std::nullopt;
 }
 
+/// require a V0 (lambda/k0short) row with a CosPa column -- used to gate derived-to-derived
+/// re-writes of the fraction-extraction tables (FLambdaFrac/FK0shortFrac) to only the input
+/// variants that actually carry them (e.g. the WithFitVars task-level process functions)
+template <typename T>
+concept HasCosPa = requires(T t) { t.cosPa(); };
+
+/// require a cascade (xi/omega) row with a CascadeCosPa column -- same purpose as HasCosPa
+/// above, but for the FXiFrac/FOmegaFrac re-writes
+template <typename T>
+concept HasCascadeCosPa = requires(T t) { t.cascadeCosPa(); };
+
+/// require a track row with DCA (xy and z) columns -- i.e. joined with FTrackDcas
+template <typename T>
+concept HasDca = requires(T t) { t.dcaXY(); t.dcaZ(); };
+
+/// require a track row with ITS PID columns -- checking one species (pion) is enough
+/// since all seven (El/Pi/Ka/Pr/De/Tr/He) always come from the same upstream join
+template <typename T>
+concept HasItsNSigma = requires(T t) { t.itsNSigmaPi(); };
+
 /// Translate a global daughter index into a row of the current track table frame.
 /// Aborts if the index does not fall inside the frame, which would otherwise
 /// silently produce an out-of-range iterator.
@@ -81,6 +101,26 @@ float itsSignal(T const& track)
   double signal = (static_cast<double>(sumClusterSizes) / numLayers) * cosLamnda;
   return static_cast<float>(signal);
 };
+
+// Delta(1232) baryons: no kXxx enum entry exists for these in TPDGCode.h (only the raw codes used
+// internally by TDatabasePDG's particle-table construction) and no mass constant exists in
+// PhysicsConstants.h either, so both the codes and the mass are hardcoded here, same as kRho770_0/
+// kRho770Plus below.
+constexpr int DeltaMinus1232 = 1114;
+constexpr int Delta01232 = 2114;
+constexpr int DeltaPlus1232 = 2214;
+constexpr int DeltaPlusPlus1232 = 2224;
+
+// Xi(1530) baryons: same situation as Delta(1232) above -- no enum entry and no mass constant
+// exists anywhere in O2, so both are hardcoded here.
+constexpr int Xi01530 = 3324;
+constexpr int XiMinus1530 = 3314;
+
+// Sigma(1385) baryons: same situation as Delta(1232)/Xi(1530) above -- no enum entry and no
+// mass constant exists anywhere in O2, so both are hardcoded here.
+constexpr int SigmaMinus1385 = 3114;
+constexpr int Sigma01385 = 3214;
+constexpr int SigmaPlus1385 = 3224;
 
 inline double getPdgMass(int pdgCode)
 {
@@ -116,6 +156,12 @@ inline double getPdgMass(int pdgCode)
     case o2::constants::physics::Pdg::kK0Star892:
       mass = o2::constants::physics::MassK0Star892;
       break;
+    case o2::constants::physics::Pdg::kKPlusStar892:
+      mass = o2::constants::physics::MassKPlusStar892;
+      break;
+    case o2::constants::physics::Pdg::kOmega:
+      mass = o2::constants::physics::MassOmega;
+      break;
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
       break;
@@ -137,8 +183,14 @@ inline double getPdgMass(int pdgCode)
     case kSigmaPlus:
       mass = o2::constants::physics::MassSigmaPlus;
       break;
+    case kSigma0:
+      mass = o2::constants::physics::MassSigma0;
+      break;
     case kXiMinus:
       mass = o2::constants::physics::MassXiMinus;
+      break;
+    case o2::constants::physics::Pdg::kXi0:
+      mass = o2::constants::physics::MassXi0;
       break;
     case kOmegaMinus:
       mass = o2::constants::physics::MassOmegaMinus;
@@ -148,6 +200,54 @@ inline double getPdgMass(int pdgCode)
       break;
     case o2::constants::physics::kEta:
       mass = o2::constants::physics::MassEta;
+      break;
+    case kNeutron:
+      mass = o2::constants::physics::MassNeutron;
+      break;
+    case kK0:
+      mass = o2::constants::physics::MassK0;
+      break;
+    case kLambda1520:
+      mass = o2::constants::physics::MassLambda1520;
+      break;
+    case kDown:
+      mass = o2::constants::physics::MassDown;
+      break;
+    case kUp:
+      mass = o2::constants::physics::MassUp;
+      break;
+    case kStrange:
+      mass = o2::constants::physics::MassStrange;
+      break;
+    case kCharm:
+      mass = o2::constants::physics::MassCharm;
+      break;
+    case kBottom:
+      mass = o2::constants::physics::MassBottom;
+      break;
+    case kTop:
+      mass = o2::constants::physics::MassTop;
+      break;
+    case kGluon:
+      mass = o2::constants::physics::MassGluon;
+      break;
+    case kElectron:
+      mass = o2::constants::physics::MassElectron;
+      break;
+    case DeltaMinus1232:
+    case Delta01232:
+    case DeltaPlus1232:
+    case DeltaPlusPlus1232:
+      mass = 1.232; // not defined in O2?
+      break;
+    case Xi01530:
+    case XiMinus1530:
+      mass = 1.532; // not defined in O2?
+      break;
+    case SigmaMinus1385:
+    case Sigma01385:
+    case SigmaPlus1385:
+      mass = 1.3837; // not defined in O2?
       break;
     default:
       LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";

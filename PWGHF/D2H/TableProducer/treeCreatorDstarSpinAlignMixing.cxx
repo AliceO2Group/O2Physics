@@ -431,7 +431,6 @@ struct HfTreeCreatorDstarSpinAlignMixing {
         fillCandidateTable<true>(collision, dstarCandidate, tracks, bcWithTimeStamps);
       }
     }
-    rowGenMcParticles.reserve(mcParticles.size());
 
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());

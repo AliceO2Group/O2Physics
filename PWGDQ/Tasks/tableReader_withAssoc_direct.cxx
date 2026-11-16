@@ -675,7 +675,7 @@ struct AnalysisTrackSelection {
   Service<o2::pid::tof::TOFResponse> fTofResponse{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
   std::vector<TString> fHistNamesReco;
 
   int fCurrentRun = 0; // current run (needed to detect run changes for loading CCDB parameters)
@@ -706,7 +706,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
 
@@ -1119,7 +1119,7 @@ struct AnalysisMuonSelection {
   Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fMuonCuts;
+  std::vector<AnalysisCut*> fMuonCuts;
 
   int fCurrentRun = 0;
 
@@ -1146,7 +1146,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto& t : addCuts) {
-        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(t);
       }
     }
 
