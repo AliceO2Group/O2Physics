@@ -152,7 +152,7 @@ struct ChargedParticles {
 
   // systematic variations, numbering as in run 2 where the cut exists (unfolding framework expects these ids);
   // 107-110 (shared tpc clusters, golden chi2) and 118-119 (geometric cut) do not exist in run 3 (fatal);
-  // 116-117 are tpc crossed rows (run 2: geometric length cut)
+  // 116-117 are tpc crossed rows (run 2: geometric length cut); 130+ are new in run 3
   enum : uint32_t {
     kSystNominal = 100,
     kSystDownChi2PerClusterITS,      // 101
@@ -169,10 +169,12 @@ struct ChargedParticles {
     kSystDownTPCCrossedRows, // 116
     kSystUpTPCCrossedRows,   // 117
     kSystDownPCC = 120,
-    kSystUpPCC // 121
+    kSystUpPCC,         // 121
+    kSystDownVtxZ = 130 // |z| < 7 cm (reco and true vertex)
   };
   Configurable<uint32_t> systMode{"systMode", kSystNominal, "variation for systematic uncertainties"};
-  uint16_t trackSelMask{TrackSelectionFlags::kGlobalTrackWoPtEta}; // track selection bitmask (without cut that is being varied)
+  float vtxZCut() const { return (systMode.value == kSystDownVtxZ) ? 7.f : maxVtxZ.value; } // applied |z| cut (reco and true vertex)
+  uint16_t trackSelMask{TrackSelectionFlags::kGlobalTrackWoPtEta};                          // track selection bitmask (without cut that is being varied)
   uint16_t cutVarFlag{0};
   TrackSelection trackSel;
   TrackSelection::TrackCuts trackSelFlag;
@@ -557,8 +559,8 @@ void ChargedParticles::init(InitContext const&)
     if (!doprocessMC) {
       LOGP(fatal, "systMode {} (pcc variation) needs processMC (with pcc)", systMode.value);
     }
-  } else if (systMode != kSystNominal) {
-    LOGP(fatal, "undefined systMode {} (valid: 100-106, 111-117, 120-121)", systMode.value);
+  } else if (systMode != kSystNominal && systMode != kSystDownVtxZ) {
+    LOGP(fatal, "undefined systMode {} (valid: 100-106, 111-117, 120-121, 130)", systMode.value);
   }
   trackSelMask &= (~cutVarFlag);
 }
@@ -754,7 +756,7 @@ void ChargedParticles::initEvent(const C& collision, const T& tracks)
   }
 
   vars.isAcceptedEvent = false;
-  if (std::abs(collision.posZ()) < maxVtxZ) {
+  if (std::abs(collision.posZ()) < vtxZCut()) {
     if (isRun3) {
       if (collision.sel8() && (collision.selection_raw() & evSelMask) == evSelMask) {
         vars.isAcceptedEvent = true;
@@ -790,7 +792,7 @@ void ChargedParticles::initEventMC(const C& collision, const P& particles)
       vars.multTrue += vars.nRepetitions;
     }
   }
-  vars.isGoodZPosMC = std::abs(collision.posZ()) < maxVtxZ;
+  vars.isGoodZPosMC = std::abs(collision.posZ()) < vtxZCut();
   // trigger of the mc collision's bunch crossing: tvx (run 3), v0and as for kINT7 (run 2)
   const auto& bc = collision.template bc_as<BCsWithSel>();
   vars.isTriggeredMC = isRun3 ? bc.selection_bit(aod::evsel::kIsTriggerTVX) : (bc.selection_bit(aod::evsel::kIsBBV0A) && bc.selection_bit(aod::evsel::kIsBBV0C));
@@ -910,7 +912,7 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
       histos.fill(HIST("QA/events/eventSelection"), stage);
     }
   }
-  if (passes && std::abs(collision.posZ()) < maxVtxZ) {
+  if (passes && std::abs(collision.posZ()) < vtxZCut()) {
     histos.fill(HIST("QA/events/eventSelection"), stage + 1);
   }
   histos.fill(HIST("QA/events/zVtxMeas"), collision.posZ());
@@ -928,7 +930,7 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
     histos.get<TH1>(HIST("QA/events/runStatistics"))->Fill(lastRunLabel.c_str(), 1.);
     histos.get<TH1>(HIST("QA/events/metaInfo"))->Fill(metaLabel.c_str(), 1.);
   }
-  if (std::abs(collision.posZ()) >= maxVtxZ) {
+  if (std::abs(collision.posZ()) >= vtxZCut()) {
     return;
   }
   const uint64_t selection = collision.selection_raw();
