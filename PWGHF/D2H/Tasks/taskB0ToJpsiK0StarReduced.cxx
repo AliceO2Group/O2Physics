@@ -231,7 +231,8 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_b0tojpsik0star_lite::FlagWrongCollision,
-                  hf_cand_b0tojpsik0star_lite::PtGen);
+                  hf_cand_b0tojpsik0star_lite::PtGen,
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 } // namespace o2::aod
 
@@ -425,10 +426,12 @@ struct HfTaskB0ToJpsiK0StarReduced {
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
     bool isSignal = false;
+    bool swapped{false};
     if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
+      swapped = candidate.isHadronLeptonSwapped();
       isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::B0ToJpsiPiKToMuMuPiK &&
                  flagMcDecayChanRec == o2::hf_decay::hf_cand_beauty::B0ToJpsiKstar0;
     }
@@ -654,7 +657,8 @@ struct HfTaskB0ToJpsiK0StarReduced {
         flagMcDecayChanRec,
         isSignal,
         flagWrongCollision,
-        ptMother);
+        ptMother,
+        swapped);
     };
 
     if (statusB0KPi >= selectionFlagB0) {
@@ -716,7 +720,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
   } // processDataWithB0Ml
   PROCESS_SWITCH(HfTaskB0ToJpsiK0StarReduced, processDataWithB0Ml, "Process data with ML for B0", false);
 
-  void processMc(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s> const& candidates,
+  void processMc(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s, aod::HfMcRecBJpSwaps> const& candidates,
                  aod::HfMcGenRedB0s const& mcParticles,
                  JPsis const& candidatesJpsi,
                  aod::HfRedBach0Tracks const& kaon0Tracks,
@@ -737,7 +741,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
   } // processMc
   PROCESS_SWITCH(HfTaskB0ToJpsiK0StarReduced, processMc, "Process MC without ML for B0", false);
 
-  void processMcWithB0Ml(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s> const& candidates,
+  void processMcWithB0Ml(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s, aod::HfMcRecBJpSwaps> const& candidates,
                          aod::HfMcGenRedB0s const& mcParticles,
                          JPsis const& candidatesJpsi,
                          aod::HfRedBach0Tracks const& kaon0Tracks,

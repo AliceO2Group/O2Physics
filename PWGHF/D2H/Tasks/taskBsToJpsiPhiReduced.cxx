@@ -216,7 +216,8 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_bstojpsiphi_lite::FlagWrongCollision,
-                  hf_cand_bstojpsiphi_lite::PtGen);
+                  hf_cand_bstojpsiphi_lite::PtGen,
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 // DECLARE_SOA_TABLE(HfRedBsMcCheck, "AOD", "HFREDBPMCCHECK", //! Table with MC decay type check
 //                   hf_cand_mc_flag::FlagMcMatchRec,
@@ -412,10 +413,12 @@ struct HfTaskBsToJpsiPhiReduced {
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
     bool isSignal = false;
+    bool swapped{false};
     if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
+      swapped = candidate.isHadronLeptonSwapped();
       isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::BsToJpsiKKToMuMuKK &&
                  flagMcDecayChanRec == o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
     }
@@ -557,7 +560,8 @@ struct HfTaskBsToJpsiPhiReduced {
         flagMcDecayChanRec,
         isSignal,
         flagWrongCollision,
-        ptMother);
+        ptMother,
+        swapped);
     }
   }
 
@@ -612,7 +616,7 @@ struct HfTaskBsToJpsiPhiReduced {
   } // processDataWithBsMl
   PROCESS_SWITCH(HfTaskBsToJpsiPhiReduced, processDataWithBsMl, "Process data with ML for Bs", false);
 
-  void processMc(soa::Join<aod::HfRedCandBsToJpsiPhi, aod::HfMcRecRedBss> const& candidates,
+  void processMc(soa::Join<aod::HfRedCandBsToJpsiPhi, aod::HfMcRecRedBss, aod::HfMcRecBJpSwaps> const& candidates,
                  aod::HfMcGenRedBss const& mcParticles,
                  JPsis const& candidatesJpsi,
                  aod::HfRedBach0Tracks const& kaon0Tracks,
@@ -633,7 +637,7 @@ struct HfTaskBsToJpsiPhiReduced {
   } // processMc
   PROCESS_SWITCH(HfTaskBsToJpsiPhiReduced, processMc, "Process MC without ML for Bs", false);
 
-  void processMcWithBsMl(soa::Join<aod::HfRedCandBsToJpsiPhi, aod::HfMcRecRedBss> const& candidates,
+  void processMcWithBsMl(soa::Join<aod::HfRedCandBsToJpsiPhi, aod::HfMcRecRedBss, aod::HfMcRecBJpSwaps> const& candidates,
                          aod::HfMcGenRedBss const& mcParticles,
                          JPsis const& candidatesJpsi,
                          aod::HfRedBach0Tracks const& kaon0Tracks,
