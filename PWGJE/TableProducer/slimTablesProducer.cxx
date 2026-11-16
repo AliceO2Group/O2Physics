@@ -147,6 +147,8 @@ struct SlimTablesProducer {
     hMCP->GetXaxis()->SetBinLabel(2, "Zvertex");
     hMCP->GetXaxis()->SetBinLabel(3, "selectMcCollision");
 
+    histos.add("p_xSection", "generated cross section;;#sigma_{gen} (pb)", {HistType::kTProfile, {{1, 0.0, 1.0}}});
+
     histos.add("Ntracks_pT", "track pT distribution;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, -0.5, 199.5}}}, doSumw2);
     histos.add("Nparticles_pT", "particle pT distribution;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, -0.5, 199.5}}}, doSumw2);
 
@@ -202,6 +204,7 @@ struct SlimTablesProducer {
                  soa::Filtered<aod::JetParticles> const& particles)
   {
     float eventWeightMC = mccollision.weight();
+    histos.fill(HIST("p_xSection"), 0.5, mccollision.xsectGen());
 
     if (collisions.size() != 1) { // skip the mccollision if it has mre than 1 associated rec collision
       return;
