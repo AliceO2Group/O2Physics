@@ -353,7 +353,7 @@ struct lambdaspincorrderived {
   Configurable<int> cfgV5NeighborPhi{"cfgV5NeighborPhi", 0, "v5: neighbor bins in phi (use symmetric ±N, periodic wrap)"};
   Configurable<int> cfgV5MaxMatches{"cfgV5MaxMatches", 50, "v5: max ME replacements per SE pair (after all cuts)"};
 
-  Configurable<int> cfgV6MinMatches{"cfgV6MinMatches", 5,"Minimum accepted ME pairs per replacement branch; <=0 disables threshold"};
+  Configurable<int> cfgV6MinMatches{"cfgV6MinMatches", 5, "Minimum accepted ME pairs per replacement branch; <=0 disables threshold"};
 
   Configurable<uint64_t> cfgMixSeed{"cfgMixSeed", 0xdecafbadULL, "RNG seed for downsampling matches (deterministic)"};
   Configurable<bool> cfgV6CarryUnmatched{"cfgV6CarryUnmatched", false, "Carry data and MC V6 replacement branches with zero matches to later data frames"};
@@ -623,8 +623,6 @@ struct lambdaspincorrderived {
 
       histos.add("hNMEperSE_leg1_aftercut", "ME replacements per SE pair, leg1", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
       histos.add("hNMEperSE_leg2_aftercut", "ME replacements per SE pair, leg2", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
-
-
     }
 
     if (fillHistConfig.fillWeightQAHistos) {
@@ -942,7 +940,7 @@ struct lambdaspincorrderived {
     }
 
     if (v0Configurations.useAdditionalCut) {
-    
+
       if (std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma ||
           std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma) {
         return false;
@@ -3315,10 +3313,8 @@ struct lambdaspincorrderived {
           continue;
         }
 
-
         histos.fill(HIST("hNMEperSE_leg2_aftercut"), nFill2);
         histos.fill(HIST("hNMEperSE_leg1_aftercut"), nFill1);
-
 
         // Residual-weight QA needs a leg-specific normalization:
         // TGT_leg is filled once per same-event target candidate with weight 1.
