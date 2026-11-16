@@ -449,10 +449,10 @@ struct zdcvector {
       }
 
       if (sumA <= 1e-4 || sumC <= 1e-4) {
-        qxZDCA = 0.0;
-        qxZDCC = 0.0;
-        qyZDCA = 0.0;
-        qyZDCC = 0.0;
+        // qxZDCA = 0.0; // FIXME: unused
+        // qxZDCC = 0.0; // FIXME: unused
+        // qyZDCA = 0.0; // FIXME: unused
+        // qyZDCC = 0.0; // FIXME: unused
         triggerevent = false;
         // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, 0.0, 0.0, 0.0, 0.0);
         fillTables(triggerevent, 0.f, 0.f, 0.f, 0.f);

@@ -835,8 +835,9 @@ struct LongRangeDihadronCor {
     return true;
   }
 
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     double dnx, val;
     dnx = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kTRUE).real();

@@ -30,7 +30,7 @@ void merger()
   TFile* fout = new TFile("mergedOutput.root", "recreate");
   TTree* tin = new TTree("EventInfo_merged", "");
 
-  TList* list = fin->GetListOfKeys();
+  // TList* list = fin->GetListOfKeys(); // FIXME: unused
   TIter next(fin->GetListOfKeys());
 
   ULong64_t fTimeStamp;

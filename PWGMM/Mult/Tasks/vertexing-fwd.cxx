@@ -148,7 +148,7 @@ struct vertexingfwd {
 
     for (auto& atrack : atracks) {
 
-      dcaXY = 999; // DCAxy
+      // dcaXY = 999; // DCAxy // FIXME: unused
       bestDCA = 999;
 
       auto track = atrack.mfttrack_as<MFTTracksLabeled>();

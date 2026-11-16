@@ -309,13 +309,15 @@ struct FemtoDndetaPair {
 
   void processTrackTrack(FemtoCollision const& col, FemtoTracks const& tracks)
   {
-    dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [&]() { return pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, cache); });
+    bool const found = pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, cache);
+    dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [found]() { return found; }, found ? pairTrackTrackBuilder.getMinimumAcceptedKstar() : -1.f);
   }
   PROCESS_SWITCH(FemtoDndetaPair, processTrackTrack, "Data, track-track trigger", false);
 
   void processTrackV0(FemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& lambdas)
   {
-    dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [&]() { return pairTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, lambdas, lambdaPartition, cache); });
+    bool const found = pairTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, lambdas, lambdaPartition, cache);
+    dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [found]() { return found; }, found ? pairTrackLambdaBuilder.getMinimumAcceptedKstar() : -1.f);
   }
   PROCESS_SWITCH(FemtoDndetaPair, processTrackV0, "Data, track-lambda trigger", false);
 
@@ -340,9 +342,8 @@ struct FemtoDndetaPair {
 
   void processTrackTrackWithStrangeness(FemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoK0shorts const& /*k0shorts*/)
   {
-    if (dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [&]() {
-          return pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, cache);
-        })) {
+    bool const found = pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, cache);
+    if (dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [found]() { return found; }, found ? pairTrackTrackBuilder.getMinimumAcceptedKstar() : -1.f)) {
       fillStrangeness(col);
     }
   }
@@ -350,9 +351,8 @@ struct FemtoDndetaPair {
 
   void processTrackV0WithStrangeness(FemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& lambdas, FemtoK0shorts const& /*k0shorts*/)
   {
-    if (dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [&]() {
-          return pairTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, lambdas, lambdaPartition, cache);
-        })) {
+    bool const found = pairTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, lambdas, lambdaPartition, cache);
+    if (dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [found]() { return found; }, found ? pairTrackLambdaBuilder.getMinimumAcceptedKstar() : -1.f)) {
       fillStrangeness(col);
     }
   }
@@ -361,30 +361,44 @@ struct FemtoDndetaPair {
   // mc
   void processMinimumBiasMc(FemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& /*tracks*/, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers)
   {
+    float triggerKstar = -1.f; // unused for minimum bias, but processMc() needs an lvalue
     dndetaBuilder.processMc(
       cols, mcCols, dndetaTrackWithLabelPartitionGlobal, dndetaTrackWithLabelPartitionItsOnly, cache, mcParticles, mcMothers, perMcColParticles, pdg,
       [](auto const& /*col*/) {
         return true;
       },
-      [](auto const& /*mcCol*/) { return true; });
+      [](auto const& /*mcCol*/) { return true; },
+      triggerKstar);
   }
   PROCESS_SWITCH(FemtoDndetaPair, processMinimumBiasMc, "MC, no trigger", false);
 
   void processTrackTrackMc(FemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    float triggerKstar = -1.f;
     dndetaBuilder.processMc(
       cols, mcCols, dndetaTrackWithLabelPartitionGlobal, dndetaTrackWithLabelPartitionItsOnly, cache, mcParticles, mcMothers, perMcColParticles, pdg,
-      [&](auto const& col) { return pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache); },
-      [&](auto const& mcCol) { return pairMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(mcCol, mcParticles, mcMothers, mcPartonicMothers, mcParticlePartition1, mcParticlePartition2, cache); });
+      [&](auto const& col) {
+        bool const found = pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache);
+        triggerKstar = found ? pairTrackTrackBuilder.getMinimumAcceptedKstar() : -1.f;
+        return found;
+      },
+      [&](auto const& mcCol) { return pairMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(mcCol, mcParticles, mcMothers, mcPartonicMothers, mcParticlePartition1, mcParticlePartition2, cache); },
+      triggerKstar);
   }
   PROCESS_SWITCH(FemtoDndetaPair, processTrackTrackMc, "MC, track-track trigger", false);
 
   void processTrackV0Mc(FemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& lambdas, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    float triggerKstar = -1.f;
     dndetaBuilder.processMc(
       cols, mcCols, dndetaTrackWithLabelPartitionGlobal, dndetaTrackWithLabelPartitionItsOnly, cache, mcParticles, mcMothers, perMcColParticles, pdg,
-      [&](auto const& col) { return pairTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, lambdas, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache); },
-      [&](auto const& mcCol) { return pairMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(mcCol, mcParticles, mcMothers, mcPartonicMothers, mcParticlePartition1, mcParticlePartition2, cache); });
+      [&](auto const& col) {
+        bool const found = pairTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, lambdas, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+        triggerKstar = found ? pairTrackLambdaBuilder.getMinimumAcceptedKstar() : -1.f;
+        return found;
+      },
+      [&](auto const& mcCol) { return pairMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(mcCol, mcParticles, mcMothers, mcPartonicMothers, mcParticlePartition1, mcParticlePartition2, cache); },
+      triggerKstar);
   }
   PROCESS_SWITCH(FemtoDndetaPair, processTrackV0Mc, "MC, track-lambda trigger", false);
 };

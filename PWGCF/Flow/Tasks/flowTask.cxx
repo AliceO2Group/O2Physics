@@ -837,8 +837,9 @@ struct FlowTask {
     th3sPerRun.insert(std::make_pair(runNumber, histPhiEtaVtxz));
   }
 
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -853,8 +854,9 @@ struct FlowTask {
     return;
   }
 
-  template <char... chars, char... chars2>
-  void fillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& vnWeff, const ConstStr<chars2...>& vnpT, const double& cent)
+  template <typename TName, typename TName2>
+    requires(is_const_str<TName>::value && is_const_str<TName2>::value)
+  void fillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const TName& vnWeff, const TName2& vnpT, const double& cent)
   {
     double meanPt = sum_pt / WeffEvent;
     double dnx, val;

@@ -45,7 +45,7 @@ double tmax;
 
 int Countig;
 
-void chi2(Int_t& npar, Double_t* gin, Double_t& f, Double_t* par, Int_t flag)
+void chi2(Int_t& /*npar*/, Double_t* /*gin*/, Double_t& f, Double_t* par, Int_t /*flag*/)
 {
   TMatrixD sigma(2, 2);
   double results = 0.;
@@ -241,4 +241,5 @@ void non_fac()
   for (int i = 0; i < 10; i++) {
     hParam[i]->Write();
   }
+  fout->Close();
 }

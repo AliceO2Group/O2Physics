@@ -74,6 +74,11 @@ o2physics_add_dpl_workflow(task-flow
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-correlations-efficiencies
+                    SOURCES taskCorrelationsEfficiencies.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/PWGCF/Core)
 
 o2physics_add_dpl_workflow(task-charm-hadrons-charm-femto-dream

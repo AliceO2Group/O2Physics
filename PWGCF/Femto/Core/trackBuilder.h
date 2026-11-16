@@ -828,49 +828,49 @@ class TrackBuilder
     }
     if (mProduceElectronPids) {
       float itsEl = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaEl(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsEl = track.itsNSigmaEl();
       }
       trackProducts.producedElectronPids(itsEl, track.tpcNSigmaEl(), track.tofNSigmaEl());
     }
     if (mProducePionPids) {
       float itsPi = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaPi(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsPi = track.itsNSigmaPi();
       }
       trackProducts.producedPionPids(itsPi, track.tpcNSigmaPi(), track.tofNSigmaPi());
     }
     if (mProduceKaonPids) {
       float itsKa = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaKa(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsKa = track.itsNSigmaKa();
       }
       trackProducts.producedKaonPids(itsKa, track.tpcNSigmaKa(), track.tofNSigmaKa());
     }
     if (mProduceProtonPids) {
       float itsPr = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaPr(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsPr = track.itsNSigmaPr();
       }
       trackProducts.producedProtonPids(itsPr, track.tpcNSigmaPr(), track.tofNSigmaPr());
     }
     if (mProduceDeuteronPids) {
       float itsDe = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaDe(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsDe = track.itsNSigmaDe();
       }
       trackProducts.producedDeuteronPids(itsDe, track.tpcNSigmaDe(), track.tofNSigmaDe());
     }
     if (mProduceTritonPids) {
       float itsTr = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaTr(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsTr = track.itsNSigmaTr();
       }
       trackProducts.producedTritonPids(itsTr, track.tpcNSigmaTr(), track.tofNSigmaTr());
     }
     if (mProduceHeliumPids) {
       float itsHe = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaHe(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsHe = track.itsNSigmaHe();
       }
       trackProducts.producedHeliumPids(itsHe, track.tpcNSigmaHe(), track.tofNSigmaHe());
@@ -883,7 +883,7 @@ class TrackBuilder
       std::array<float, PuritySpeciesLast> tpcNSigma = {track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
       std::array<float, PuritySpeciesLast> tofNSigma = {track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
 
-      if constexpr (requires(T1 t) { t.itsNSigmaEl(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsNSigma = {track.itsNSigmaEl(), track.itsNSigmaPi(), track.itsNSigmaKa(), track.itsNSigmaPr(), track.itsNSigmaDe(), track.itsNSigmaTr(), track.itsNSigmaHe()};
       }
 
@@ -1111,7 +1111,7 @@ class TrackBuilderDerivedToDerived
       trackProducts.producedTpcPurity(track.tpcPackedNSigma());
       trackProducts.producedTofPurity(track.tofPackedNSigma(), track.purityHasTof());
     }
-    if constexpr (requires(T1 t) { t.dcaXY(); }) {
+    if constexpr (utils::HasDca<T1>) {
       trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
     }
 

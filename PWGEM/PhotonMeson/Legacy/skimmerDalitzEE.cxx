@@ -338,8 +338,8 @@ struct skimmerDalitzEE {
     return npair;
   }
 
-  Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
-  Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
   void processAnalysis(MyCollisions const& collisions, MyTracks const&)
   {
     for (auto& collision : collisions) {
@@ -367,8 +367,8 @@ struct skimmerDalitzEE {
   }
   PROCESS_SWITCH(skimmerDalitzEE, processAnalysis, "Process dalitz ee for analysis", true);
 
-  Partition<MyTracksCEFP> posTracks_cefp = o2::aod::emprimaryelectron::sign > int8_t(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
-  Partition<MyTracksCEFP> negTracks_cefp = o2::aod::emprimaryelectron::sign < int8_t(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  Partition<MyTracksCEFP> posTracks_cefp = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  Partition<MyTracksCEFP> negTracks_cefp = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
   void processCEFP(aod::Collisions const& collisions, MyTracksCEFP const&, aod::BCsWithTimestamps const&)
   {
     for (auto& collision : collisions) {

@@ -74,6 +74,7 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -126,6 +127,7 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights");
     O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms");
     O2_DEFINE_CONFIGURABLE(cfgFillV0QA, bool, true, "Fill QA histograms for V0 reconstruction");
+    O2_DEFINE_CONFIGURABLE(cfgRejectXiFeeddown, bool, false, "Veto reconstructed MC Lambdas from charged or neutral Xi decays");
     O2_DEFINE_CONFIGURABLE(cfgFillRunByRunQA, bool, false, "Fill histograms on a run-by-run basis");
     O2_DEFINE_CONFIGURABLE(cfgAnalyseChargedHadrons, bool, true, "Store radial-flow and fraction outputs for charged tracks, pions, kaons, and protons");
     O2_DEFINE_CONFIGURABLE(cfgAnalyseK0Lambda, bool, true, "Store radial-flow and fraction outputs for K0 and Lambda candidates");
@@ -540,6 +542,9 @@ struct FlowGenericFramework {
 
   void init(InitContext const&)
   {
+    if (doprocessMC || doprocessMCReco || doprocessMCGen) {
+      fRndm->SetSeed(42);
+    }
     LOGF(info, "FlowGenericFramework::init()");
     if (!cfgFill.cfgAnalyseChargedHadrons && !cfgFill.cfgAnalyseK0Lambda) {
       LOGF(fatal, "Enable at least one radial-flow analysis channel");
@@ -2495,6 +2500,15 @@ struct FlowGenericFramework {
         if (fillLambda) {
           auto lambdaSelection = selectLambda(collision, v0, tracks);
           if (lambdaSelection.selected) {
+            const double lambdaMass = lambdaSelection.isL ? v0.mLambda() : v0.mAntiLambda();
+            if constexpr (requires { postrack.has_mcParticle(); }) {
+              if (cfgFill.cfgRejectXiFeeddown) {
+                const auto xi = findLambdaXiParent(postrack, negtrack, false);
+                if (xi && (xi->pdgCode() > 0) == lambdaSelection.isL) {
+                  return;
+                }
+              }
+            }
             for (auto setup = 0; setup < FractionSetupCount; ++setup) {
               auto fractionSetup = static_cast<FractionSetup>(setup);
               if (!selectionLambdaDaughterEta(postrack, negtrack, lambdaSelection, fractionSetup)) {
@@ -2505,14 +2519,13 @@ struct FlowGenericFramework {
               if (cfgFill.cfgFillV0QA && fractionSetup == FractionV02) {
                 fillV0QA(lambdaSelection, v0, postrack, negtrack, centrality, weff);
               }
-              const double lambdaMass = lambdaSelection.isL ? v0.mLambda() : v0.mAntiLambda();
               if (lambdaMass > cfgPIDCuts.cfgLambdaSideBand1Min && lambdaMass < cfgPIDCuts.cfgLambdaSideBand1Max) {
                 histosResoNpt[fractionSetup][LambdaSideband1]->Fill(v0.pt(), (cfgEventSelection.cfgUseNchCorrection) ? weff : 1.0);
               }
-              if (v0.mLambda() > cfgPIDCuts.cfgLambdaSignalMin && v0.mLambda() < cfgPIDCuts.cfgLambdaSignalMax) {
+              if (lambdaMass > cfgPIDCuts.cfgLambdaSignalMin && lambdaMass < cfgPIDCuts.cfgLambdaSignalMax) {
                 histosResoNpt[fractionSetup][LambdaSignal]->Fill(v0.pt(), (cfgEventSelection.cfgUseNchCorrection) ? weff : 1.0);
               }
-              if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand2Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand2Max) {
+              if (lambdaMass > cfgPIDCuts.cfgLambdaSideBand2Min && lambdaMass < cfgPIDCuts.cfgLambdaSideBand2Max) {
                 histosResoNpt[fractionSetup][LambdaSideband2]->Fill(v0.pt(), (cfgEventSelection.cfgUseNchCorrection) ? weff : 1.0);
               }
             }
@@ -3047,7 +3060,7 @@ struct FlowGenericFramework {
   }
 
   o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  o2::framework::expressions::Filter trackFilter = (aod::track::eta > cfgKinematics.cfgEta->first) && (aod::track::eta < cfgKinematics.cfgEta->second) && (aod::track::pt > cfgKinematics.cfgPtMin) && (aod::track::pt < cfgKinematics.cfgPtmax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
+  o2::framework::expressions::Filter trackFilter = (aod::track::eta > cfgKinematics.cfgEta->first) && (aod::track::eta < cfgKinematics.cfgEta->second) && (aod::track::pt > cfgKinematics.cfgPtMin) && (aod::track::pt < cfgKinematics.cfgPtmax) && (requireGlobalTrackInFilter() || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
 
   using GFWCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>;
   using GFWMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::McCollisionLabels>;
@@ -3463,63 +3476,63 @@ struct FlowGenericFramework {
     }
   }
 
+  template <typename TTrack>
+  std::optional<aod::McParticles::iterator> findLambdaXiParent(const TTrack& postrack, const TTrack& negtrack, bool useResponseSelection)
+  {
+    if (!postrack.has_mcParticle() || !negtrack.has_mcParticle()) {
+      return std::nullopt;
+    }
+    const auto posMcParticle = postrack.template mcParticle_as<aod::McParticles>();
+    const auto negMcParticle = negtrack.template mcParticle_as<aod::McParticles>();
+    if (!posMcParticle.has_mothers() || !negMcParticle.has_mothers()) {
+      return std::nullopt;
+    }
+    for (const auto& posMother : posMcParticle.template mothers_as<aod::McParticles>()) {
+      if (std::abs(posMother.pdgCode()) != PDG_t::kLambda0 || !posMother.has_mothers()) {
+        continue;
+      }
+      for (const auto& negMother : negMcParticle.template mothers_as<aod::McParticles>()) {
+        if (posMother.globalIndex() != negMother.globalIndex()) {
+          continue;
+        }
+        for (const auto& xi : posMother.template mothers_as<aod::McParticles>()) {
+          const int absPdg = std::abs(xi.pdgCode());
+          if (absPdg != PDG_t::kXiMinus && absPdg != o2::constants::physics::Pdg::kXi0) {
+            continue;
+          }
+          if ((xi.pdgCode() > 0) != (posMother.pdgCode() > 0) || (useResponseSelection && !isGeneratedFeeddownXi(xi))) {
+            continue;
+          }
+          return xi;
+        }
+      }
+    }
+    return std::nullopt;
+  }
+
   template <typename TV0, typename TCollision, typename TTracks>
   void fillLambdaFeeddownReco(const TV0& v0, const TCollision& collision, const TTracks& tracks, float centrality)
   {
     if (resoSwitchVals[UseParticle][Lambda] == 0) {
       return;
     }
-
     using V0TrackTable = std::decay_t<TTracks>;
-    auto postrack = v0.template posTrack_as<V0TrackTable>();
-    auto negtrack = v0.template negTrack_as<V0TrackTable>();
-
-    if (!postrack.has_mcParticle() || !negtrack.has_mcParticle()) {
+    const auto postrack = v0.template posTrack_as<V0TrackTable>();
+    const auto negtrack = v0.template negTrack_as<V0TrackTable>();
+    const auto xi = findLambdaXiParent(postrack, negtrack, true);
+    if (!xi) {
       return;
     }
-
-    auto posMcParticle = postrack.template mcParticle_as<aod::McParticles>();
-    auto negMcParticle = negtrack.template mcParticle_as<aod::McParticles>();
-    if (!posMcParticle.has_mothers() || !negMcParticle.has_mothers()) {
+    const auto selection = selectLambda(collision, v0, tracks, false);
+    if (!selection.selected || (xi->pdgCode() > 0 ? !selection.isL : !selection.isAL)) {
       return;
     }
-
-    for (const auto& posMother : posMcParticle.template mothers_as<aod::McParticles>()) {
-      for (const auto& negMother : negMcParticle.template mothers_as<aod::McParticles>()) {
-        if (posMother.globalIndex() != negMother.globalIndex() || std::abs(posMother.pdgCode()) != PDG_t::kLambda0) {
-          continue;
-        }
-
-        if (!posMother.has_mothers()) {
-          continue;
-        }
-        for (const auto& xiMother : posMother.template mothers_as<aod::McParticles>()) {
-          if (!isGeneratedFeeddownXi(xiMother)) {
-            continue;
-          }
-
-          const bool isLambda = posMother.pdgCode() == PDG_t::kLambda0 && xiMother.pdgCode() == PDG_t::kXiMinus;
-          const bool isAntiLambda = posMother.pdgCode() == -PDG_t::kLambda0 && xiMother.pdgCode() == -PDG_t::kXiMinus;
-          if (!isLambda && !isAntiLambda) {
-            continue;
-          }
-
-          auto selection = selectLambda(collision, v0, tracks, false);
-          if (!selection.selected || (isLambda && !selection.isL) || (isAntiLambda && !selection.isAL)) {
-            return;
-          }
-          if (!isWithinEfficiencyEtaAcceptance(posMcParticle) || !isWithinEfficiencyEtaAcceptance(negMcParticle)) {
-            return;
-          }
-          if (!isWithinEfficiencyEtaAcceptance(postrack) || !isWithinEfficiencyEtaAcceptance(negtrack)) {
-            return;
-          }
-
-          registry.fill(HIST("Efficiency/lambdaFeeddownRecoXi"), v0.pt(), xiMother.pt(), centrality, getLambdaFeeddownSpeciesFromXi(xiMother));
-          return;
-        }
-      }
+    if (!isWithinEfficiencyEtaAcceptance(postrack.template mcParticle_as<aod::McParticles>()) ||
+        !isWithinEfficiencyEtaAcceptance(negtrack.template mcParticle_as<aod::McParticles>()) ||
+        !isWithinEfficiencyEtaAcceptance(postrack) || !isWithinEfficiencyEtaAcceptance(negtrack)) {
+      return;
     }
+    registry.fill(HIST("Efficiency/lambdaFeeddownRecoXi"), v0.pt(), xi->pt(), centrality, getLambdaFeeddownSpeciesFromXi(*xi));
   }
 
   template <typename TTrack>

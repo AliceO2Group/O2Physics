@@ -723,7 +723,11 @@ class pidTPCModule
     }
     auto trackiterator = tracks.begin();
     if constexpr (requires { trackiterator.mcParticleId(); }) {
-      gRandom->SetSeed(0); // Ensure unique seed from UUID for each process call
+      if (bcs.size() != 0) {
+        const auto timestamp = bcs.begin().timestamp();
+        LOG(info) << "gRandom is seeded with timestamp of the 0-th bunch crossing (" << timestamp << ")";
+        gRandom->SetSeed(timestamp);
+      }
     }
 
     // preparatory step: we need the multiplicities for each collision

@@ -2510,7 +2510,7 @@ struct HfTaskFlow {
       auto reassociatedMftTrackDcaXY = 0.f;
       auto reassociatedMftTrackDcaZ = 0.f;
 
-      if constexpr (std::is_same_v<soa::SmallGroups<soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels, aod::MFTTrkCompColls>>, TTracksAssoc>) {
+      if constexpr (std::is_same_v<soa::SmallGroups<soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels, aod::MFTTrkCompColls>>, TTracksTrig>) {
         if (!reassociatedMftTrack.has_mcParticle()) {
           continue;
         }

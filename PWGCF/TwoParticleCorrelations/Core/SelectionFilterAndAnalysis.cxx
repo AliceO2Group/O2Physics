@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file SelectionFilterAndAnalysis.cxx
+/// \brief Implementation of the SelectionFilterAndAnalysis class for filter and selection
+/// once filtered
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #include "SelectionFilterAndAnalysis.h"
 
 #include <TNamed.h>
@@ -18,33 +23,20 @@
 #include <Rtypes.h>
 
 using namespace o2;
-using namespace o2::analysis::PWGCF;
+using namespace o2::analysis::pwgcf;
 
 ClassImp(SelectionFilterAndAnalysis);
 
 /// \brief Default constructor
 SelectionFilterAndAnalysis::SelectionFilterAndAnalysis()
-  : TNamed(),
-    mMode(kFilter),
-    mCutStringSignature(),
-    mMaskLength(0),
-    mSelectedMask(0UL),
-    mArmedMask(0UL),
-    mOptArmedMask{},
-    mForcedArmedMask(0UL)
-{
-}
+
+  = default;
 
 /// \brief Named constructor for a concrete operating mode
-SelectionFilterAndAnalysis::SelectionFilterAndAnalysis(const TString& name, selmodes mode)
+SelectionFilterAndAnalysis::SelectionFilterAndAnalysis(const TString& name, Selmodes mode)
   : TNamed(name, name),
-    mMode(mode),
-    mCutStringSignature(),
-    mMaskLength(0),
-    mSelectedMask(0UL),
-    mArmedMask(0UL),
-    mOptArmedMask{},
-    mForcedArmedMask(0UL)
+    mMode(mode)
+
 {
 }
 
@@ -52,7 +44,7 @@ TString SelectionFilterAndAnalysis::printOptionalMasks() const
 {
   TString str = "(";
   bool first = true;
-  for (auto option : mOptArmedMask) {
+  for (const auto& option : mOptArmedMask) {
     if (not first) {
       str += ", ";
     }

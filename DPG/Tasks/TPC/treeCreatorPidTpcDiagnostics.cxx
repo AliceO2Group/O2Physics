@@ -293,6 +293,16 @@ struct TreeCreatorPidTpcDiagnostics {
     }
   }
 
+  void process(const aod::Collisions& collisions,
+               const aod::BCsWithTimestamps&)
+  {
+    if (collisions.size() != 0) {
+      const auto timestamp = collisions.begin().bc_as<aod::BCsWithTimestamps>().timestamp();
+      LOG(info) << "mRnd is seeded with timestamp of the 0-th bunch crossing (" << timestamp << ")";
+      mRnd.SetSeed(timestamp);
+    }
+  }
+
 #define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong, Unused)                                                                                         \
   void process##ParticleNameLong(CollisionsExtra const& collisions,                                                                                                 \
                                  soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks,                                                          \

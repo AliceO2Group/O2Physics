@@ -2380,13 +2380,14 @@ struct PidFlowPtCorr {
   /**
    * @brief fill graphs like c22, c24, etc.
    *
-   * @tparam chars
+   * @tparam TName
    * @param corrconf
    * @param tarName graph name
    * @param cent
    */
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     // calculate #sum exp{i * 0 (#phi_{i} - #phi_{j})} == N_{pairs}
     // note that weight is ignored in the formula but not in the calculation, for c24 is similar
@@ -2453,7 +2454,7 @@ struct PidFlowPtCorr {
    * @note why we need weightedc22? when calculating cov(v2,pt), we need N_{pair} * N_{charged} to be weight
    *       NOTICE!!! when filling weighted, value gave to param ptSum is nch, when filling diffpt, its just ptsum
    *
-   * @tparam chars
+   * @tparam TName
    * @param corrconf
    * @param tarName
    * @param cent
@@ -2461,8 +2462,9 @@ struct PidFlowPtCorr {
    * @param nch
    * @param meanPt
    */
-  template <char... chars>
-  void fillProfilevnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch, const double& meanPt = 0)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilevnpt(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent, const double& ptSum, const double& nch, const double& meanPt = 0)
   {
     double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
@@ -2475,8 +2477,9 @@ struct PidFlowPtCorr {
     }
   }
 
-  template <char... chars>
-  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch, const double& rndm)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent, const double& ptSum, const double& nch, const double& rndm)
   {
     double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
@@ -2496,8 +2499,9 @@ struct PidFlowPtCorr {
    *          counts are added before division. The PID mean pT is only the profile
    *          coordinate, so the profile is weighted by the combined pair count alone.
    */
-  template <char... chars>
-  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconfA, const GFW::CorrConfig& corrconfB, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nPid, const double& rndm)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconfA, const GFW::CorrConfig& corrconfB, const TName& tarName, const double& cent, const double& ptSum, const double& nPid, const double& rndm)
   {
     const double dnxA = fGFW->Calculate(corrconfA, 0, true).real();
     const double dnxB = fGFW->Calculate(corrconfB, 0, true).real();

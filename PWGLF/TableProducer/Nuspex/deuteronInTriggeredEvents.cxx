@@ -40,7 +40,9 @@
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -272,6 +274,9 @@ struct DeuteronInTriggeredEvents {
   Zorro zorro;                                 // Definition of Zorro: helpful for skimmed data
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
+  // Initialize ITS PID Response object
+  o2::aod::ITSResponse itsResponse;
+
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
 
   struct : o2::framework::ConfigurableGroup {
@@ -287,6 +292,12 @@ struct DeuteronInTriggeredEvents {
     Configurable<int> tpcNClsMin{"tpcNClsMin", 80, "Minimum number of TPC clusters"};
     Configurable<float> tpcRigidityMin{"tpcRigidityMin", 0.5f, "Minimum TPC rigidity for tracks"};
     Configurable<LabeledArray<double>> tpcNSigmaMax{"tpcNSigmaMax", {nuclei::NSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
+    // Part related to ITS cut
+    Configurable<bool> applyItsPid{"applyItsPid", false, "Apply ITS PID"};
+    Configurable<bool> setMCDefaultParams{"setMCDefaultParams", false, "Use params in MC ITS PID"};
+    Configurable<float> ptMaxItsPid{"ptMaxItsPid", 1.0, "Max pt for ITS PID"};
+    Configurable<float> nSigmaItsMin{"nSigmaItsMin", -3.0, "Min nsigma in ITS"};
+    Configurable<float> nSigmaItsMax{"nSigmaItsMax", 3.0, "Max nsigma in ITS"};
   } cfgTrackCut;
 
   Configurable<float> cfgCutPtMinTree{"cfgCutPtMinTree", 0.2f, "Minimum track transverse momentum for tree saving"};
@@ -303,6 +314,8 @@ struct DeuteronInTriggeredEvents {
   Configurable<int> cfgFillGenSecondaries{"cfgFillGenSecondaries", 0, "Fill generated secondaries (0: no, 1: only weak decays, 2: all of them)"};
   Configurable<LabeledArray<int>> cfgDCAHists{"cfgDCAHists", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::dcaConfigNames}, "DCA hist configuration"};
 
+  Configurable<bool> cfgRemoveTOFtrack{"cfgRemoveTOFtrack", false, "Remove TOF tracks with TPC PID incorrect"};
+  Configurable<float> cfgNsigmaTPCvetoLF{"cfgNsigmaTPCvetoLF", 3.f, "TPC nsigma cut for tracks compatible with light flavor hadrons"};
   Configurable<double> cfgNsigmaTPCcutDCAhists{"cfgNsigmaTPCcutDCAhists", 3., "TPC nsigma cut for DCA hists"};
   Configurable<double> cfgDeltaTOFmassCutDCAhists{"cfgDeltaTOFmassCutDCAhists", 0.2, "Delta TOF mass cut for DCA hists"};
   Configurable<double> cfgNsigmaTPCcutTOFhists{"cfgNsigmaTPCcutTOFhists", 3., "TPC nsigma cut for TOF analysis"};
@@ -351,7 +364,7 @@ struct DeuteronInTriggeredEvents {
   // Utility object for jet background subtraction methods
   JetBkgSubUtils backgroundSub;
 
-  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA>;
+  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -473,6 +486,11 @@ struct DeuteronInTriggeredEvents {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    // Set default MC parametrization for ITS response
+    if (cfgTrackCut.setMCDefaultParams) {
+      itsResponse.setMCDefaultParameters();
+    }
+
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
     const AxisSpec tofMassAxis{cfgTOFmassBins, "TOF mass - PDG mass"};
     const AxisSpec ptResAxis{cfgMomResBins, "#Delta#it{p}_{T}/#it{p}_{T}"};
@@ -525,6 +543,7 @@ struct DeuteronInTriggeredEvents {
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
+    spectra.add("hItsNsigmaDeuteron", "n#sigma_{ITS}", HistType::kTH2F, {{1000, 0., 5., "#it{p}_{T} (GeV/#it{c})"}, {600, -6., 6., "n#sigma_{ITS}"}});
 
     for (unsigned int iC{0}; iC < nuclei::matter.size(); ++iC) {
       nuclei::hGloTOFtracks[iC] = spectra.add<TH2>(fmt::format("hTPCTOFtracks{}", nuclei::matter[iC]).data(), fmt::format("Global vs TOF matched {} tracks in a collision", nuclei::chargeLabelNames[iC]).data(), HistType::kTH2D, {{300, -0.5, 300.5, "Number of global tracks"}, {300, -0.5, 300.5, "Number of TOF matched tracks"}});
@@ -781,7 +800,16 @@ struct DeuteronInTriggeredEvents {
           track.itsChi2NCl() > cfgTrackCut.itsChi2ClusMax) {
         continue;
       }
-      // temporary fix: tpcInnerParam() returns the momentum in all the software tags before --- CM: what does it mean
+
+      double nSigmaIts = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
+      spectra.fill(HIST("hItsNsigmaDeuteron"), track.pt(), nSigmaIts);
+
+      // ITS Logic for PID Selection
+      if (cfgTrackCut.applyItsPid && track.pt() < cfgTrackCut.ptMaxItsPid && (nSigmaIts < cfgTrackCut.nSigmaItsMin || nSigmaIts > cfgTrackCut.nSigmaItsMax)) {
+        continue;
+      }
+
+      // temporary fix: tpcInnerParam() returns the momentum in all the software tags before
       bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
       float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
 
@@ -799,6 +827,7 @@ struct DeuteronInTriggeredEvents {
 
       bool selectedTPC[5]{false}, goodToAnalyse{false};
       std::array<float, 5> nSigmaTPC;
+
       // This part apply a selection on tracks:
       // if the nsigma of the track is less than a certain value, it is accepted
       for (int iS{0}; iS < nuclei::Species; ++iS) { // The first index here is set to 0 because it is TPC analysis
@@ -844,6 +873,15 @@ struct DeuteronInTriggeredEvents {
         flag |= kITSrof;
       }
 
+      // Part for identifying tracks which are compatible to proton, kaons and pions
+      bool isCompatibleWithLF{false};
+      double nSigmaTpcPion = track.tpcNSigmaPi();
+      double nSigmaTpcKaon = track.tpcNSigmaKa();
+      double nSigmaTpcProt = track.tpcNSigmaPr();
+
+      if (cfgRemoveTOFtrack && (std::abs(nSigmaTpcPion) < cfgNsigmaTPCvetoLF || std::abs(nSigmaTpcKaon) < cfgNsigmaTPCvetoLF || std::abs(nSigmaTpcProt) < cfgNsigmaTPCvetoLF))
+        isCompatibleWithLF = true;
+
       for (int iS{0}; iS < nuclei::Species; ++iS) {
         bool selectedTOF{false};
         if (std::abs(dcaInfo[1]) > cfgTrackCut.dcaMax->get(iS, 1)) {
@@ -870,7 +908,7 @@ struct DeuteronInTriggeredEvents {
                   nuclei::hNsigma[iPID][iS][iC]->Fill(fvector.pt(), nSigma[iPID][iS]);
                   nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
                 }
-                if (iPID && std::abs(nSigmaTPC[iS]) < cfgNsigmaTPCcutTOFhists) { // Apply nsigmaTPC cut on TOF tracks
+                if (iPID && std::abs(nSigmaTPC[iS]) < cfgNsigmaTPCcutTOFhists && !isCompatibleWithLF) { // Apply nsigmaTPC cut on TOF tracks
                   nuclei::hTOFmass[iS][iC]->Fill(fvector.pt(), tofMasses[iS]);
                   nuclei::hTOFmassEta[iS][iC]->Fill(fvector.eta(), fvector.pt(), tofMasses[iS]);
                 }
@@ -994,7 +1032,7 @@ struct DeuteronInTriggeredEvents {
     std::vector<bool> isReconstructed(particlesMC.size(), false);
     for (auto& c : nuclei::candidates) { // o2-linter: disable=const-ref-in-for-loop (candidate is modified in loop)
       auto label = tracks.iteratorAt(c.globalIndex);
-      if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+      if (label.mcParticleId() < 0 || label.mcParticleId() >= particlesMC.size()) {
         continue;
       }
       auto particle = particlesMC.iteratorAt(label.mcParticleId());
@@ -1002,7 +1040,7 @@ struct DeuteronInTriggeredEvents {
       for (int iS{0}; iS < nuclei::Species; ++iS) {
         if (std::abs(particle.pdgCode()) == nuclei::Codes[iS]) {
           if (c.fillTree && !storeIt) {
-            nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::Charges[iS]), 1. - std::abs(c.pt * nuclei::Charges[iS]) / particle.pt());
+            nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(std::abs(c.pt * nuclei::Charges[iS]), 1. - std::abs(c.pt * nuclei::Charges[iS]) / particle.pt());
             storeIt = cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u); /// store only the particles of interest
           }
           auto coll = collisions.iteratorAt(c.collTrackIndex);
@@ -1071,7 +1109,7 @@ struct DeuteronInTriggeredEvents {
         float motherDecRadius = -1;
         if (particle.isPhysicalPrimary()) {
           flags |= kIsPhysicalPrimary;
-          nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
+          nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(particle.pt());
           // antinuclei from B hadrons are classified as physical primaries
           if (particle.has_mothers()) {
             for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
@@ -1142,7 +1180,7 @@ struct DeuteronInTriggeredEvents {
       if (c.fillTree) {
         auto label = tracks.iteratorAt(c.globalIndex);
 
-        if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+        if (label.mcParticleId() < 0 || label.mcParticleId() >= particlesMC.size()) {
           continue;
         }
 

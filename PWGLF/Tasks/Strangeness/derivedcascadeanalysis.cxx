@@ -264,10 +264,10 @@ struct Derivedcascadeanalysis {
   TH1F* hOmegaLambdaPointingAngleSelection = nullptr;
 
   o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   ctpRateFetcher rateFetcher;
 
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
 
   uint16_t selectionCheckMask = 0;
   double selectionCheck = -1;
@@ -581,7 +581,7 @@ struct Derivedcascadeanalysis {
       }
     }
   }
-  void initCosPASelectionHistograms(float timeStamp)
+  void initCosPASelectionHistograms(long timeStamp)
   {
 
     auto* listHistograms = ccdb->getForTimeStamp<TList>(histoCCDBPath, timeStamp);
@@ -1170,15 +1170,23 @@ struct Derivedcascadeanalysis {
 
     return true;
   }
-  void fillHistOccupancyCheck(double pt, double mass, float occup, float centrality, bool isPos)
+  void fillHistOccupancyCheck(double pt, double mass, float occup, float centrality, bool isPos, bool isMC)
   {
     static_for<0, 9>([&](auto i) {
       constexpr int In = i.value;
       if (centrality < CentralityIntervals[In + 1] && centrality > CentralityIntervals[In]) {
         if (isPos) {
-          histos.fill(HIST("InvMassAfterSelCent") + HIST(CentIndex[In]) + HIST("/hPositiveCascade"), pt, mass, occup);
+          if (isMC) {
+            histos.fill(HIST("InvMassAfterSelCent") + HIST(CentIndex[In]) + HIST("/hPositiveCascadeMCTruth"), pt, mass, occup);
+          } else {
+            histos.fill(HIST("InvMassAfterSelCent") + HIST(CentIndex[In]) + HIST("/hPositiveCascade"), pt, mass, occup);
+          }
         } else {
-          histos.fill(HIST("InvMassAfterSelCent") + HIST(CentIndex[In]) + HIST("/hNegativeCascade"), pt, mass, occup);
+          if (isMC) {
+            histos.fill(HIST("InvMassAfterSelCent") + HIST(CentIndex[In]) + HIST("/hNegativeCascadeMCTruth"), pt, mass, occup);
+          } else {
+            histos.fill(HIST("InvMassAfterSelCent") + HIST(CentIndex[In]) + HIST("/hNegativeCascade"), pt, mass, occup);
+          }
         }
       }
     });
@@ -1637,9 +1645,9 @@ struct Derivedcascadeanalysis {
       }
 
       if (qaFlags.doOccupancyCheck) {
-        fillHistOccupancyCheck(recoPt, invmass, occupancy, centrality, isPositive);
+        fillHistOccupancyCheck(recoPt, invmass, occupancy, centrality, isPositive, false);
         if (isTrueMCCascadeDecay) {
-          fillHistOccupancyCheckMC(ptmc, invmass, occupancy, centrality, isPositive);
+          fillHistOccupancyCheck(ptmc, invmass, occupancy, centrality, isPositive, true);
         }
       }
       if (isPositive) {
@@ -1909,8 +1917,8 @@ struct Derivedcascadeanalysis {
   PROCESS_SWITCH(Derivedcascadeanalysis, processCascadesMCforEffRun2, "cascade analysis, run2 rec MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Derivedcascadeanalysis>(cfgc)};
+    adaptAnalysisTask<Derivedcascadeanalysis>(context)};
 }

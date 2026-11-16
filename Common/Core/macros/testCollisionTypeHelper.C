@@ -26,5 +26,5 @@ void testCollisionTypeHelper(int runNumber = 544124)
   o2::parameters::GRPLHCIFData* grpo = ccdb.getSpecificForRun<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF",
                                                                                             runNumber);
   grpo->print();
-  int collsys = o2::common::core::CollisionSystemType::getCollisionTypeFromGrp(grpo);
+  [[maybe_unused]] int collsys = o2::common::core::CollisionSystemType::getCollisionTypeFromGrp(grpo);
 }

@@ -653,11 +653,11 @@ struct JetTaggerHFTask {
 
         auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
         float db = jettaggingutilities::getDb(modelOutput, fC);
-        if (!std::isnan(db)) {
+        if (std::isfinite(db)) {
           scoreML[jet.globalIndex()] = db;
         } else {
           scoreML[jet.globalIndex()] = 999.;
-          LOGF(debug, "doprocessAlgorithmGNNwExtra, Db is NaN (%d)", jet.globalIndex());
+          LOGF(debug, "doprocessAlgorithmGNNwExtra, Db is non-finite (%d)", jet.globalIndex());
         }
       } else {
         scoreML[jet.globalIndex()] = -999.;
@@ -682,11 +682,11 @@ struct JetTaggerHFTask {
 
         auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
         float db = jettaggingutilities::getDb(modelOutput, fC);
-        if (!std::isnan(db)) {
+        if (std::isfinite(db)) {
           scoreML[jet.globalIndex()] = db;
         } else {
           scoreML[jet.globalIndex()] = 999.;
-          LOGF(debug, "doprocessAlgorithmGNN, Db is NaN (%d)", jet.globalIndex());
+          LOGF(debug, "doprocessAlgorithmGNN, Db is non-finite (%d)", jet.globalIndex());
         }
       } else {
         scoreML[jet.globalIndex()] = -999.;

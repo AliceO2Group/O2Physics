@@ -558,6 +558,7 @@ struct nucleiSpectra {
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kINELgt0 + 2, "IsINELgt0");
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
+    spectra.add("hCentralityEvents", "selected events", HistType::kTH1D, {centAxis});
     if (doprocessMC) {
       spectra.add("hGenVtxZ", " generated collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     }
@@ -655,6 +656,7 @@ struct nucleiSpectra {
     gRandom->SetSeed(bc.timestamp());
 
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
+    spectra.fill(HIST("hCentralityEvents"), getCentrality(collision));
 
     if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       spectra.fill(HIST("hRecVtxZDataITSrof"), collision.posZ());

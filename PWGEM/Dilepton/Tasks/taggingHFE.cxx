@@ -2684,7 +2684,7 @@ struct taggingHFE {
   // std::vector<std::pair<int, int>> stored_trackIds;
 
   //! type of V0. 0: built solely for cascades (does not pass standard V0 cut), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
-  Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > v0Cut.cfg_min_cospa&& o2::aod::v0data::dcaV0daughters<v0Cut.cfg_max_dca2legs && nabs(o2::aod::v0data::dcanegtopv)> v0Cut.cfg_min_dcaxy&& nabs(o2::aod::v0data::dcanegtopv) > v0Cut.cfg_min_dcaxy;
+  Filter v0Filter = o2::aod::v0data::v0Type == static_cast<uint8_t>(1) && o2::aod::v0data::v0cosPA > v0Cut.cfg_min_cospa&& o2::aod::v0data::dcaV0daughters<v0Cut.cfg_max_dca2legs && nabs(o2::aod::v0data::dcanegtopv)> v0Cut.cfg_min_dcaxy&& nabs(o2::aod::v0data::dcanegtopv) > v0Cut.cfg_min_dcaxy;
   using filteredV0s = soa::Filtered<MyV0s>;
 
   Filter cascadeFilter = nabs(o2::aod::cascdata::dcanegtopv) > cascadeCut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcanegtopv) > cascadeCut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcabachtopv) > cascadeCut.cfg_min_dcaxy_bachelor;

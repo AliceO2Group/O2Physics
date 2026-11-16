@@ -78,8 +78,8 @@ void selectivityPlot(int runNumber = 550781, const TString& inputfile = "Analysi
   line->Draw();
   TArrow* arrow = new TArrow(mFiltered->GetXaxis()->GetXmax(), 0.0005, mFiltered->GetXaxis()->GetXmax() + 1, 0.0005, 0.01, "<|");
 
-  Int_t ci;      // for color index setting
-  TColor* color; // for color definition with alpha
+  Int_t ci; // for color index setting
+  // TColor* color; // for color definition with alpha // FIXME: unused
   ci = TColor::GetColor("#0000ff");
   arrow->SetFillColor(ci);
   arrow->SetFillStyle(1001);

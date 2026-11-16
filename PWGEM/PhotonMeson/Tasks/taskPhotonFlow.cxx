@@ -20,7 +20,7 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+#include "PWGEM/PhotonMeson/Utils/EventUtilities.h"
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
@@ -48,7 +48,6 @@
 
 #include <array>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <string>
@@ -61,16 +60,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
-
-enum QvecEstimator {
-  FT0M = 0,
-  FT0A = 1,
-  FT0C = 2,
-  TPCPos = 3,
-  TPCNeg = 4,
-  TPCTot = 5,
-  FV0A = 6
-};
+using namespace o2::aod::pwgem::pm::utils::event;
 
 enum CentralityEstimator {
   None = 0,
@@ -78,18 +68,6 @@ enum CentralityEstimator {
   CFT0C = 2,
   CFT0M = 3,
   NCentralityEstimators = 4
-};
-
-enum Harmonics {
-  kNone = 0,
-  kDirect = 1,
-  kElliptic = 2,
-  kTriangluar = 3,
-  kQuadrangular = 4,
-  kPentagonal = 5,
-  kHexagonal = 6,
-  kHeptagonal = 7,
-  kOctagonal = 8
 };
 
 enum class MapLevel {
@@ -220,8 +198,6 @@ struct TaskPhotonFlow {
   Partition<EMCalPhotons> emcalPhotons = aod::mincluster::storedPhi < MaxPhiEMCalUint;
   Partition<EMCalPhotons> dcalPhotons = aod::mincluster::storedPhi >= MaxPhiEMCalUint;
 
-  static constexpr std::size_t NQVecEntries = 6;
-
   PresliceOptional<aod::EMCEMEventIds> perCollisionEMC = o2::aod::emccluster::pmeventId;
   PresliceOptional<aod::V0KFEMEventIds> perCollisionPCM = aod::v0photonkf::pmeventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
@@ -274,6 +250,11 @@ struct TaskPhotonFlow {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
+    fEMEventCut.SetRequireGoodQvec(true);
+    fEMEventCut.SetQvecHarmonic(harmonic);
+    fEMEventCut.SetMaxQvec(cfgMaxQVector);
+    fEMEventCut.SetQvecDetectors({qvecDetector.value, qvecSubADetector.value, qvecSubBDetector.value});
   }
 
   void defineEMCCut()
@@ -342,7 +323,7 @@ struct TaskPhotonFlow {
     fEMCCut.addQAHistograms(&registry);
     definePCMCut();
     fV0PhotonCut.addQAHistograms(&registry);
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
+    fEMEventCut.addEventHistograms(&registry);
 
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality (%)"};
@@ -428,117 +409,12 @@ struct TaskPhotonFlow {
     return cent;
   }
 
-  /// Get all used Q vector
-  /// \param collision is the collision with the Q vector information
-  template <o2::soa::is_iterator TCollision>
-  std::array<float, NQVecEntries> getAllQvec(TCollision const& collision)
-  {
-    // Retrieve the Q vectors using the helper function for each detector
-    auto [xQVecMain, yQVecMain] = getQvec(collision, qvecDetector);
-    auto [xQVecSubA, yQVecSubA] = getQvec(collision, qvecSubADetector);
-    auto [xQVecSubB, yQVecSubB] = getQvec(collision, qvecSubBDetector);
-
-    return {xQVecMain, yQVecMain, xQVecSubA, yQVecSubA, xQVecSubB, yQVecSubB};
-  }
-
   /// Get the Q vector
   /// \param collision is the collision with the Q vector information
   template <o2::soa::is_iterator TCollision>
   std::pair<float, float> getQvec(TCollision const& collision, int detector)
   {
-    float xQVec = -999.f;
-    float yQVec = -999.f;
-
-    switch (detector) {
-      case QvecEstimator::FT0M:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xft0m();
-          yQVec = collision.q2yft0m();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xft0m();
-          yQVec = collision.q3yft0m();
-        }
-        break;
-      case QvecEstimator::FT0A:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xft0a();
-          yQVec = collision.q2yft0a();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xft0a();
-          yQVec = collision.q3yft0a();
-        }
-        break;
-      case QvecEstimator::FT0C:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xft0c();
-          yQVec = collision.q2yft0c();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xft0c();
-          yQVec = collision.q3yft0c();
-        }
-        break;
-      case QvecEstimator::TPCPos:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xbpos();
-          yQVec = collision.q2ybpos();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xbpos();
-          yQVec = collision.q3ybpos();
-        }
-        break;
-      case QvecEstimator::TPCNeg:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xbneg();
-          yQVec = collision.q2ybneg();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xbneg();
-          yQVec = collision.q3ybneg();
-        }
-        break;
-      case QvecEstimator::TPCTot:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xbtot();
-          yQVec = collision.q2ybtot();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xbtot();
-          yQVec = collision.q3ybtot();
-        }
-        break;
-      case QvecEstimator::FV0A:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xfv0a();
-          yQVec = collision.q2yfv0a();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xfv0a();
-          yQVec = collision.q3yfv0a();
-        }
-        break;
-      default:
-        LOG(warning) << "Q vector estimator not valid. Falling back to FT0M";
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xft0m();
-          yQVec = collision.q2yft0m();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xft0m();
-          yQVec = collision.q3yft0m();
-        }
-        break;
-    }
-    return {xQVec, yQVec};
-  }
-
-  /// Check if the QVector values are within reasonable range
-  /// \param collision is the collision with the Q vector information
-  bool isQvecGood(std::array<float, NQVecEntries> const& QVecs)
-  {
-    bool isgood = true;
-    for (const auto& QVec : QVecs) {
-      if (std::fabs(QVec) > cfgMaxQVector) {
-        isgood = false;
-        break;
-      }
-    }
-    return isgood;
+    return o2::aod::pwgem::pm::utils::event::getQvec(collision, detector, harmonic);
   }
 
   bool isTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
@@ -638,14 +514,10 @@ struct TaskPhotonFlow {
   bool isFullEventSelected(TCollision const& collision, bool fillHisto = false)
   {
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
+      fEMEventCut.fillEventInfo<0>(&registry, collision);
     }
     if (!(fEMEventCut.IsSelected(collision))) {
       // general event selection
-      return false;
-    }
-    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-      // occupancy selection
       return false;
     }
     float cent = getCentrality(collision);
@@ -653,14 +525,9 @@ struct TaskPhotonFlow {
       // event selection
       return false;
     }
-    if (!isQvecGood(getAllQvec(collision))) {
-      // selection based on QVector
-      return false;
-    }
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
-      registry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      fEMEventCut.fillEventInfo<1>(&registry, collision);
+      fEMEventCut.fillAccepted(&registry);
     }
     return true;
   }

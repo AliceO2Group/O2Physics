@@ -50,3 +50,9 @@ o2physics_add_dpl_workflow(generated-quarkonia-mc
                     REUSE_FROM DQAnalysisPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(global-track-estimator
+                    SOURCES globalTrackEstimator.cxx
+                    REUSE_FROM DQAnalysisPCH
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)

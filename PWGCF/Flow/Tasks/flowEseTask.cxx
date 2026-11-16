@@ -50,6 +50,7 @@
 #include <TF1.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <THnSparse.h>
 #include <TObject.h>
 #include <TProfile2D.h>
@@ -150,10 +151,10 @@ struct FlowEseTask {
   Configurable<std::string> cfgAccCorPath{"cfgAccCorPath", "", "path for pseudo acceptance correction"};
 
   struct : ConfigurableGroup {
-    Configurable<bool> cfgGfwEffCor{"cfgGfwEffCor", false, "flag to apply charged-track efficiency correction for GFW"};
-    Configurable<std::string> cfgGfwEffCorPath{"cfgGfwEffCorPath", "", "CCDB path to charged-track efficiency correction for GFW"};
-    Configurable<bool> cfgGfwAccCor{"cfgGfwAccCor", false, "flag to apply charged-track acceptance correction for GFW"};
-    Configurable<std::string> cfgGfwAccCorPath{"cfgGfwAccCorPath", "", "CCDB path to charged-track acceptance correction for GFW"};
+    Configurable<bool> cfgGfwEffCor{"cfgGfwEffCor", false, "flag to apply charged-track efficiency correction for EP and GFW"};
+    Configurable<std::string> cfgGfwEffCorPath{"cfgGfwEffCorPath", "", "CCDB path to charged-track efficiency correction for EP and GFW"};
+    Configurable<bool> cfgGfwAccCor{"cfgGfwAccCor", false, "flag to apply charged-track acceptance correction for EP and GFW"};
+    Configurable<std::string> cfgGfwAccCorPath{"cfgGfwAccCorPath", "", "CCDB path to charged-track acceptance correction for EP and GFW"};
   } cfgGfwParam;
 
   Configurable<bool> cfgCalcCum{"cfgCalcCum", false, "flag to calculate cumulants of cossin"};
@@ -187,6 +188,9 @@ struct FlowEseTask {
 
   static constexpr float MinAmplitudeThreshold = 1e-5f;
   static constexpr int ShiftLevel = 10;
+  static constexpr int CorrectionWeightBins = 100;
+  static constexpr int CorrectionSummaryBins = 8;
+  static constexpr double LargeNUAWeightThreshold = 10.0;
   static constexpr int LambdaId = 3122;
   static constexpr int SecondHarmonic = 2;
   static constexpr int ThirdHarmonic = 3;
@@ -380,6 +384,7 @@ struct FlowEseTask {
     for (int iGroup = 0; iGroup < NEseGroups; ++iGroup) {
       const auto suffix = eseGroupSuffix(iGroup);
       addEseHistogram<THnSparse>(Form("histV%d_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis});
+      getEseHistogram<THnSparse>(Form("histV%d_%s", cfgEseHarmonic.value, suffix.c_str()))->Sumw2();
       addEseHistogram<THnSparse>(Form("psi%d/h_lambda_cos_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
       addEseHistogram<THnSparse>(Form("psi%d/h_alambda_cos_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
       addEseHistogram<THnSparse>(Form("psi%d/h_lambda_cos2_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
@@ -389,6 +394,26 @@ struct FlowEseTask {
     }
     histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
     histos.add("QA/PVzDist", "", {HistType::kTH1F, {pVzQaAxis}});
+    AxisSpec phiQaAxis = {72, 0.0, o2::constants::math::TwoPI};
+    AxisSpec correctionStageAxis = {3, -0.5, 2.5, "0: raw, 1: NUE, 2: NUE*NUA"};
+    AxisSpec weightTypeAxis = {3, -0.5, 2.5, "0: NUE, 1: NUA, 2: total"};
+    std::vector<double> weightBins;
+    for (int i = 0; i <= CorrectionWeightBins; ++i) {
+      weightBins.push_back(std::pow(10.0, -2.0 + 0.06 * i));
+    }
+    AxisSpec weightAxis = {weightBins, "Correction weight"};
+    histos.add("QA/hPhiRaw", ";#varphi;Counts", {HistType::kTH1D, {phiQaAxis}});
+    histos.add("QA/hPhiNUA", ";#varphi;Weighted counts", {HistType::kTH1D, {phiQaAxis}});
+    histos.add("QA/hPtCentStage", "", {HistType::kTH3D, {ptAxis, centAxis, correctionStageAxis}});
+    histos.add("QA/hWeightPtType", "", {HistType::kTH3D, {ptAxis, weightAxis, weightTypeAxis}});
+    histos.add("QA/hCorrectionSummary", "", {HistType::kTH1D, {{8, 0.5, 8.5}}});
+    const char* correctionLabels[] = {"selected", "ptOutsideEffAxis", "invalidEfficiency", "accepted", "sumW", "sumW2", "NUAWeightAbove10", "invalidWeight"};
+    for (int i = 0; i < CorrectionSummaryBins; ++i) {
+      histos.get<TH1>(HIST("QA/hCorrectionSummary"))->GetXaxis()->SetBinLabel(i + 1, correctionLabels[i]);
+    }
+    histos.get<TH1>(HIST("QA/hPhiNUA"))->Sumw2();
+    histos.get<TH3>(HIST("QA/hPtCentStage"))->Sumw2();
+    histos.get<TH1>(HIST("QA/hCorrectionSummary"))->Sumw2();
     histos.add("psi2/h_Ref03Gap22", "", {HistType::kTProfile, {centAxis}});
     histos.add("psi2/h_PoiN03Gap22", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
     histos.add("psi2/h_PoiP03Gap22", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
@@ -955,18 +980,20 @@ struct FlowEseTask {
         if (!selectionTrack(trk)) {
           continue;
         }
-        if (fillEse) {
-          const std::array<double, 3> values = {centrality, trk.pt(), std::cos(static_cast<float>(nmode) * (trk.phi() - esePlane))};
-          histEseVn->Fill(values.data());
-        }
-        if (!fillGfw) {
-          continue;
+        if (fillGfw) {
+          histos.fill(HIST("QA/hCorrectionSummary"), 1.0);
         }
         double weff = 1.0;
         double wacc = 1.0;
         if (cfgGfwParam.cfgGfwEffCor && gfwState.gfwEffMap != nullptr) {
+          if (fillGfw && (trk.pt() < gfwState.gfwEffMap->GetXaxis()->GetXmin() || trk.pt() >= gfwState.gfwEffMap->GetXaxis()->GetXmax())) {
+            histos.fill(HIST("QA/hCorrectionSummary"), 2.0);
+          }
           const double efficiency = gfwState.gfwEffMap->GetBinContent(gfwState.gfwEffMap->FindBin(trk.pt()));
           if (efficiency <= 0.0) {
+            if (fillGfw) {
+              histos.fill(HIST("QA/hCorrectionSummary"), 3.0);
+            }
             continue;
           }
           weff = 1.0 / efficiency;
@@ -975,6 +1002,31 @@ struct FlowEseTask {
           wacc = gfwState.gfwAccWeights->getNUA(trk.phi(), trk.eta(), collision.posZ());
         }
         const double trackWeight = weff * wacc;
+        if (fillEse) {
+          const std::array<double, 3> values = {centrality, trk.pt(), std::cos(static_cast<float>(nmode) * (trk.phi() - esePlane))};
+          histEseVn->Fill(values.data(), trackWeight);
+        }
+        if (!fillGfw) {
+          continue;
+        }
+        if (std::isfinite(trackWeight) && trackWeight > 0.0) {
+          histos.fill(HIST("QA/hPhiRaw"), trk.phi());
+          histos.fill(HIST("QA/hPhiNUA"), trk.phi(), wacc);
+          histos.fill(HIST("QA/hPtCentStage"), trk.pt(), centrality, 0.0);
+          histos.fill(HIST("QA/hPtCentStage"), trk.pt(), centrality, 1.0, weff);
+          histos.fill(HIST("QA/hPtCentStage"), trk.pt(), centrality, 2.0, trackWeight);
+          histos.fill(HIST("QA/hWeightPtType"), trk.pt(), weff, 0.0);
+          histos.fill(HIST("QA/hWeightPtType"), trk.pt(), wacc, 1.0);
+          histos.fill(HIST("QA/hWeightPtType"), trk.pt(), trackWeight, 2.0);
+          histos.fill(HIST("QA/hCorrectionSummary"), 4.0);
+          histos.fill(HIST("QA/hCorrectionSummary"), 5.0, trackWeight);
+          histos.fill(HIST("QA/hCorrectionSummary"), 6.0, trackWeight * trackWeight);
+          if (wacc > LargeNUAWeightThreshold) {
+            histos.fill(HIST("QA/hCorrectionSummary"), 7.0);
+          }
+        } else {
+          histos.fill(HIST("QA/hCorrectionSummary"), 8.0);
+        }
         const int ptBin = histPoiN22->GetXaxis()->FindBin(trk.pt()) - 1;
         gfwState.fGFW->Fill(trk.eta(), ptBin, trk.phi(), trackWeight, GFWRefMask);
         gfwState.fGFW->Fill(trk.eta(), ptBin, trk.phi(), trackWeight, GFWPoiMask);

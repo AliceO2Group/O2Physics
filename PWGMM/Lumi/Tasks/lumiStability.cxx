@@ -276,11 +276,11 @@ struct LumiStabilityTask {
     int executionCounter = 0;
     int nbin = o2::constants::lhc::LHCMaxBunches;
     uint32_t nOrbitsPerTF = 0; // 128 in 2022, 32 in 2023
-    if (is2022Data) {
-      nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
-    } else {
-      nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
-    }
+    // if (is2022Data) {
+    //   nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023 // FIXME: unused
+    // } else {
+    //   nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023 // FIXME: unused
+    // }
     int runNumber = bcs.iteratorAt(0).runNumber();
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
@@ -497,8 +497,8 @@ struct LumiStabilityTask {
             pastActivityFDDVertex |= (vertexPast);
           }
         }
-        deltaIndex = 0;
-        deltaBC = 0;
+        // deltaIndex = 0; // FIXME: unused
+        // deltaBC = 0; // FIXME: unused
 
         if (pastActivityFDDVertex == false) {
           histos.fill(HIST("FDD/hCounts"), 2);
@@ -645,8 +645,8 @@ struct LumiStabilityTask {
               pastActivityFDDTriggerCCoincidenceC |= (triggerCPast & isCoinCPast);
             }
           }
-          deltaIndex = 0;
-          deltaBC = 0;
+          // deltaIndex = 0; // FIXME: unused
+          // deltaBC = 0; // FIXME: unused
 
           if (pastActivityFDDVertexCoincidences == false) {
             histos.fill(HIST("FDD/hCounts"), 4);
@@ -782,8 +782,8 @@ struct LumiStabilityTask {
             pastActivityFT0TriggerC |= triggerCPast;
           }
         }
-        deltaIndex = 0;
-        deltaBC = 0;
+        // deltaIndex = 0; // FIXME: unused
+        // deltaBC = 0; // FIXME: unused
 
         histos.fill(HIST("FT0/hCounts"), 1);
         if (pastActivityFT0Vertex == false) {

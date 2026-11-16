@@ -379,23 +379,23 @@ struct Kstarqa {
     if (doprocessRecPhi) {
       hInvMass.add("PhiMCChecks", "PhiMCChecks", kTHnSparseF, {ptAxis, etaAxis, phiAxis, subAxis, subAxis, subAxis}); // pT, eta, phi, deltaEta, deltaPhi, deltaR
 
-      hShift.add("h2D_dpx_vs_px_KaonFromPhi", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpy_vs_py_KaonFromPhi", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpz_vs_pz_KaonFromPhi", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpx_vs_pt_KaonFromPhi", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpy_vs_pt_KaonFromPhi", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpz_vs_pt_KaonFromPhi", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
       hShift.add("h2D_dpt_vs_pt_KaonFromPhi", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h2D_dpx_vs_px_AllKaons", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpy_vs_py_AllKaons", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpz_vs_pz_AllKaons", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpx_vs_pt_AllKaons", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpy_vs_pt_AllKaons", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpz_vs_pt_AllKaons", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
       hShift.add("h2D_dpt_vs_pt_AllKaons", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h2D_dpx_vs_px_Phi", "Pion from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpy_vs_py_Phi", "Pion from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpz_vs_pz_Phi", "Pion from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpx_vs_pt_Phi", "Pion from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpy_vs_pt_Phi", "Pion from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpz_vs_pt_Phi", "Pion from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
       hShift.add("h2D_dpt_vs_pt_Phi", "Pion from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h1D_MassPhiGen", "Invariant mass of generated Phi meson", kTH1F, {{300, 1.0, 1.06}});
-      hShift.add("h1D_MassPhiRec", "Invariant mass of reconstructed Phi meson", kTH1F, {{300, 1.0, 1.06}});
+      hShift.add("h2D_MassPhiGenVsPt", "Invariant mass of generated Phi meson", kTH2F, {{300, 1.0, 1.06}, {ptAxis}});
+      hShift.add("h2D_MassPhiRecVsPt", "Invariant mass of reconstructed Phi meson", kTH2F, {{300, 1.0, 1.06}, {ptAxis}});
       hShift.add("h2D_pt_massShiftPhi", "pT vs mass shift of Phi meson", kTH2F, {{ptAxis}, {300, -0.1, 0.1}});
     }
 
@@ -3171,9 +3171,9 @@ struct Kstarqa {
         double dpz_all = mctrack1_all.pz() - track1.pz();
         double dpt_all = mctrack1_all.pt() - track1.pt();
 
-        hShift.fill(HIST("h2D_dpx_vs_px_AllKaons"), dpx_all, track1.px());
-        hShift.fill(HIST("h2D_dpy_vs_py_AllKaons"), dpy_all, track1.py());
-        hShift.fill(HIST("h2D_dpz_vs_pz_AllKaons"), dpz_all, track1.pz());
+        hShift.fill(HIST("h2D_dpx_vs_pt_AllKaons"), dpx_all, track1.pt());
+        hShift.fill(HIST("h2D_dpy_vs_pt_AllKaons"), dpy_all, track1.pt());
+        hShift.fill(HIST("h2D_dpz_vs_pt_AllKaons"), dpz_all, track1.pt());
         hShift.fill(HIST("h2D_dpt_vs_pt_AllKaons"), dpt_all, track1.pt());
       }
 
@@ -3294,8 +3294,8 @@ struct Kstarqa {
               recMass = mother.M();
               genMass = genMother.M();
 
-              hShift.fill(HIST("h1D_MassPhiGen"), genMass);
-              hShift.fill(HIST("h1D_MassPhiRec"), recMass);
+              hShift.fill(HIST("h2D_MassPhiGenVsPt"), genMass, genMother.pt());
+              hShift.fill(HIST("h2D_MassPhiRecVsPt"), recMass, mother.pt());
               hShift.fill(HIST("h2D_pt_massShiftPhi"), mother.pt(), genMass - recMass);
 
               auto genpTPhi = mothertrack1.pt();
@@ -3310,9 +3310,9 @@ struct Kstarqa {
               double dpz_k1 = mctrack1.pz() - track1.pz();
               double dpt_k1 = mctrack1.pt() - track1.pt();
 
-              hShift.fill(HIST("h2D_dpx_vs_px_KaonFromPhi"), dpx_k1, track1.px());
-              hShift.fill(HIST("h2D_dpy_vs_py_KaonFromPhi"), dpy_k1, track1.py());
-              hShift.fill(HIST("h2D_dpz_vs_pz_KaonFromPhi"), dpz_k1, track1.pz());
+              hShift.fill(HIST("h2D_dpx_vs_pt_KaonFromPhi"), dpx_k1, track1.pt());
+              hShift.fill(HIST("h2D_dpy_vs_pt_KaonFromPhi"), dpy_k1, track1.pt());
+              hShift.fill(HIST("h2D_dpz_vs_pt_KaonFromPhi"), dpz_k1, track1.pt());
               hShift.fill(HIST("h2D_dpt_vs_pt_KaonFromPhi"), dpt_k1, track1.pt());
 
               double dpx_k2 = mctrack2.px() - track2.px();
@@ -3320,9 +3320,9 @@ struct Kstarqa {
               double dpz_k2 = mctrack2.pz() - track2.pz();
               double dpt_k2 = mctrack2.pt() - track2.pt();
 
-              hShift.fill(HIST("h2D_dpx_vs_px_KaonFromPhi"), dpx_k2, track2.px());
-              hShift.fill(HIST("h2D_dpy_vs_py_KaonFromPhi"), dpy_k2, track2.py());
-              hShift.fill(HIST("h2D_dpz_vs_pz_KaonFromPhi"), dpz_k2, track2.pz());
+              hShift.fill(HIST("h2D_dpx_vs_pt_KaonFromPhi"), dpx_k2, track2.pt());
+              hShift.fill(HIST("h2D_dpy_vs_pt_KaonFromPhi"), dpy_k2, track2.pt());
+              hShift.fill(HIST("h2D_dpz_vs_pt_KaonFromPhi"), dpz_k2, track2.pt());
               hShift.fill(HIST("h2D_dpt_vs_pt_KaonFromPhi"), dpt_k2, track2.pt());
 
               // Phi Meson
@@ -3331,9 +3331,9 @@ struct Kstarqa {
               double dpz_phi = mothertrack1.pz() - mother.Pz();
               double dpt_phi = mothertrack1.pt() - mother.Pt();
 
-              hShift.fill(HIST("h2D_dpx_vs_px_Phi"), dpx_phi, mother.Px());
-              hShift.fill(HIST("h2D_dpy_vs_py_Phi"), dpy_phi, mother.Py());
-              hShift.fill(HIST("h2D_dpz_vs_pz_Phi"), dpz_phi, mother.Pz());
+              hShift.fill(HIST("h2D_dpx_vs_pt_Phi"), dpx_phi, mother.Pt());
+              hShift.fill(HIST("h2D_dpy_vs_pt_Phi"), dpy_phi, mother.Pt());
+              hShift.fill(HIST("h2D_dpz_vs_pt_Phi"), dpz_phi, mother.Pt());
               hShift.fill(HIST("h2D_dpt_vs_pt_Phi"), dpt_phi, mother.Pt());
             }
           }

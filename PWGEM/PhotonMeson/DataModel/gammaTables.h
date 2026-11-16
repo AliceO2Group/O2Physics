@@ -292,6 +292,31 @@ DECLARE_SOA_TABLE_VERSIONED(V0LegsDeDxMCTmp, "AOD", "V0LEGDEDXMCTMP", 0, mcpidtp
 // iterators
 using V0LegDeDxMCTmp = V0LegsDeDxMCTmp::iterator;
 
+namespace v0legcov
+{
+DECLARE_SOA_COLUMN(X, x, float);                 //! x of the leg parameters given to the V0 fit (innermost update, cm)
+DECLARE_SOA_COLUMN(Alpha, alpha, float);         //! frame angle
+DECLARE_SOA_COLUMN(Y, y, float);                 //! local y (cm)
+DECLARE_SOA_COLUMN(Z, z, float);                 //! z (cm), TPC-only legs after the drift correction to the V0's collision
+DECLARE_SOA_COLUMN(Snp, snp, float);             //! sin(phi) in the local frame
+DECLARE_SOA_COLUMN(Tgl, tgl, float);             //! tan(lambda)
+DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float); //! q/pT (c/GeV)
+DECLARE_SOA_COLUMN(Cov, cov, float[15]);         // NOLINT(modernize-avoid-c-arrays) //! covariance matrix, o2::track::TrackParCov order
+} // namespace v0legcov
+
+// leg track parameters as used in the V0 fit, one row per V0Legs row (optional builder output, joinable with V0Legs)
+DECLARE_SOA_TABLE_VERSIONED(V0LegsCov_000, "AOD", "V0LEGCOV", 0, //!
+                            v0legcov::X, v0legcov::Alpha, v0legcov::Y, v0legcov::Z, v0legcov::Snp, v0legcov::Tgl, v0legcov::Signed1Pt, v0legcov::Cov);
+using V0LegsCov = V0LegsCov_000;
+// iterators
+using V0LegCov = V0LegsCov::iterator;
+
+// copy of V0LegsCov table
+DECLARE_SOA_TABLE_VERSIONED(V0LegsCovTmp, "AOD", "V0LEGCOVTMP", 0, //!
+                            v0legcov::X, v0legcov::Alpha, v0legcov::Y, v0legcov::Z, v0legcov::Snp, v0legcov::Tgl, v0legcov::Signed1Pt, v0legcov::Cov);
+// iterators
+using V0LegCovTmp = V0LegsCovTmp::iterator;
+
 namespace emevent
 {
 DECLARE_SOA_COLUMN(NgPCM, ngpcm, int);
@@ -540,6 +565,17 @@ DECLARE_SOA_INDEX_COLUMN(PMEvent, pmevent); //!
 DECLARE_SOA_COLUMN(PhiV, phiv, float);      //!
 DECLARE_SOA_COLUMN(PsiPair, psipair, float);
 } // namespace v0photonsphivpsi
+// KF quality of the photon: the stored v0photonkf::ChiSquareNDF is the chi2/ndf AFTER the topological constraint to the PV;
+// these two separate the conversion-vertex fit from the pointing to the PV (row-by-row extension of the photon table, join by index)
+namespace v0photonkfchi2
+{
+DECLARE_SOA_COLUMN(Chi2NDFVtx, chi2NDFVtx, float); //! chi2/ndf of the two-leg conversion-vertex fit (incl. the mass constraint if applied), before the PV constraint
+DECLARE_SOA_COLUMN(Chi2PV, chi2PV, float);         //! chi2 deviation of the photon from the primary vertex (KFParticle::GetDeviationFromVertex)
+} // namespace v0photonkfchi2
+DECLARE_SOA_TABLE(V0PhotonsKFChi2, "AOD", "V0PHKFCHI2", o2::soa::Index<>, v0photonkfchi2::Chi2NDFVtx, v0photonkfchi2::Chi2PV);       //!
+DECLARE_SOA_TABLE(V0PhotonsKFChi2Tmp, "AOD", "V0PHKFCHI2TMP", o2::soa::Index<>, v0photonkfchi2::Chi2NDFVtx, v0photonkfchi2::Chi2PV); //!
+DECLARE_SOA_TABLE(V0PhotonsKFChi2Mix, "AOD", "V0PHKFCHI2MIX", o2::soa::Index<>, v0photonkfchi2::Chi2NDFVtx, v0photonkfchi2::Chi2PV); //! builder run 2
+
 DECLARE_SOA_TABLE(V0PhotonsPhiVPsi, "AOD", "V0PHOTONPHIVPSI", //!
                   o2::soa::Index<>, v0photonsphivpsi::PhiV, v0photonsphivpsi::PsiPair);
 // iterators
@@ -550,6 +586,217 @@ DECLARE_SOA_TABLE(V0PhotonsPhiVPsiTmp, "AOD", "V0PHOTONPHIVTMP", //!
                   o2::soa::Index<>, v0photonsphivpsi::PhiV, v0photonsphivpsi::PsiPair);
 // iterators
 using V0PhotonsPhiVPsiTmp = V0PhotonsPhiVPsiTmp;
+
+// co-reconstructed mixed event: artificial events made by photon-mixed-event-producer from the photons of builder run 1,
+// rebuilt from their legs by builder run 2 (photon-conversion-builder-mixed)
+namespace pcmmixcol
+{
+DECLARE_SOA_COLUMN(IsMixed, isMixed, bool);                    //! false: the photons of one event, true: N photons from N different events
+DECLARE_SOA_COLUMN(SourceCollisionId, sourceCollisionId, int); //! collision (this DF) whose vertex the artificial event has
+DECLARE_SOA_COLUMN(SourceEventUid, sourceEventUid, int64_t);   //! mixer event counter of that collision
+DECLARE_SOA_COLUMN(ZBin, zBin, int);                           //! pool z bin
+DECLARE_SOA_COLUMN(OccBin, occBin, int);                       //! pool occupancy bin
+DECLARE_SOA_COLUMN(Occupancy, occupancy, float);               //! occupancy of the source collision
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);                 //! centralities of the source collision (V0 fit input)
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);                 //!
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);                 //!
+DECLARE_SOA_COLUMN(FirstLeg, firstLeg, int);                   //! first PCMMixLegs row of this artificial event
+DECLARE_SOA_COLUMN(NLegs, nLegs, int);                         //! number of PCMMixLegs rows (2 per photon, contiguous)
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);                 //! run of the source collision (CCDB: B field, TPC drift velocity)
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);            //! CCDB timestamp of the source collision (builder run 2 on derived data: no BCs)
+DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int); //! PV contributors with |eta| < 1 of the source collision
+DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);                 //! FT0A + FT0C amplitude of the source collision
+} // namespace pcmmixcol
+DECLARE_SOA_TABLE(PCMMixCollisions, "AOD", "PCMMIXCOL", //!
+                  o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ,
+                  collision::CovXX, collision::CovXY, collision::CovXZ, collision::CovYY, collision::CovYZ, collision::CovZZ,
+                  collision::Chi2, collision::NumContrib,
+                  pcmmixcol::CentFT0M, pcmmixcol::CentFT0A, pcmmixcol::CentFT0C,
+                  pcmmixcol::IsMixed, pcmmixcol::SourceCollisionId, pcmmixcol::SourceEventUid,
+                  pcmmixcol::ZBin, pcmmixcol::OccBin, pcmmixcol::Occupancy, pcmmixcol::FirstLeg, pcmmixcol::NLegs,
+                  pcmmixcol::RunNumber, pcmmixcol::MultNTracksPVeta1, pcmmixcol::MultFT0M, pcmmixcol::Timestamp);
+using PCMMixCollision = PCMMixCollisions::iterator;
+
+namespace pcmmixleg
+{
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                //! PCMMixCollisions row
+DECLARE_SOA_COLUMN(Pt, pt, float);                                //! pT of the AO2D track (track-like interface for the builder)
+DECLARE_SOA_COLUMN(Phi, phi, float);                              //! phi of the AO2D track
+DECLARE_SOA_COLUMN(CYY, cYY, float);                              //! covariance, o2::track::TrackParCov order (from V0LegsCov)
+DECLARE_SOA_COLUMN(CZY, cZY, float);                              //!
+DECLARE_SOA_COLUMN(CZZ, cZZ, float);                              //!
+DECLARE_SOA_COLUMN(CSnpY, cSnpY, float);                          //!
+DECLARE_SOA_COLUMN(CSnpZ, cSnpZ, float);                          //!
+DECLARE_SOA_COLUMN(CSnpSnp, cSnpSnp, float);                      //!
+DECLARE_SOA_COLUMN(CTglY, cTglY, float);                          //!
+DECLARE_SOA_COLUMN(CTglZ, cTglZ, float);                          //!
+DECLARE_SOA_COLUMN(CTglSnp, cTglSnp, float);                      //!
+DECLARE_SOA_COLUMN(CTglTgl, cTglTgl, float);                      //!
+DECLARE_SOA_COLUMN(C1PtY, c1PtY, float);                          //!
+DECLARE_SOA_COLUMN(C1PtZ, c1PtZ, float);                          //!
+DECLARE_SOA_COLUMN(C1PtSnp, c1PtSnp, float);                      //!
+DECLARE_SOA_COLUMN(C1PtTgl, c1PtTgl, float);                      //!
+DECLARE_SOA_COLUMN(C1Pt21Pt2, c1Pt21Pt2, float);                  //!
+DECLARE_SOA_COLUMN(SourceEventUid, sourceEventUid, int64_t);      //! mixer event counter of the event the leg comes from
+DECLARE_SOA_COLUMN(SourcePhotonUid, sourcePhotonUid, int64_t);    //! mixer photon counter of the run-1 photon the leg belonged to
+DECLARE_SOA_COLUMN(SourceV0Id, sourceV0Id, int);                  //! v0Id of that photon in run 1 (< 0: not an SVertexer V0)
+DECLARE_SOA_COLUMN(SourcePx, sourcePx, float);                    //! run-1 photon momentum at the PV
+DECLARE_SOA_COLUMN(SourcePy, sourcePy, float);                    //!
+DECLARE_SOA_COLUMN(SourcePz, sourcePz, float);                    //!
+DECLARE_SOA_COLUMN(SourceVx, sourceVx, float);                    //! run-1 conversion point
+DECLARE_SOA_COLUMN(SourceVy, sourceVy, float);                    //!
+DECLARE_SOA_COLUMN(SourceVz, sourceVz, float);                    //!
+DECLARE_SOA_COLUMN(SourcePvX, sourcePvX, float);                  //! primary vertex of the source event (run 2: refit of the original at its own vertex)
+DECLARE_SOA_COLUMN(SourcePvY, sourcePvY, float);                  //!
+DECLARE_SOA_COLUMN(SourcePvZ, sourcePvZ, float);                  //!
+DECLARE_SOA_COLUMN(SourcePvCovXX, sourcePvCovXX, float);          //!
+DECLARE_SOA_COLUMN(SourcePvCovXY, sourcePvCovXY, float);          //!
+DECLARE_SOA_COLUMN(SourcePvCovXZ, sourcePvCovXZ, float);          //!
+DECLARE_SOA_COLUMN(SourcePvCovYY, sourcePvCovYY, float);          //!
+DECLARE_SOA_COLUMN(SourcePvCovYZ, sourcePvCovYZ, float);          //!
+DECLARE_SOA_COLUMN(SourcePvCovZZ, sourcePvCovZZ, float);          //!
+DECLARE_SOA_COLUMN(SourcePvChi2, sourcePvChi2, float);            //!
+DECLARE_SOA_COLUMN(SourcePvNContrib, sourcePvNContrib, uint16_t); //!
+DECLARE_SOA_COLUMN(OrigTrackId, origTrackId, int);                //! AO2D track (DF of the source event)
+DECLARE_SOA_COLUMN(McParticleId, mcParticleId, int);              //! MC: particle of the leg (DF of the source event), -1 without
+DECLARE_SOA_COLUMN(McMotherId, mcMotherId, int);                  //! MC: first mother (DF of the source event), -1 without
+DECLARE_SOA_COLUMN(McPdg, mcPdg, int);                            //! MC: PDG of the leg
+DECLARE_SOA_COLUMN(McMotherPdg, mcMotherPdg, int);                //! MC: PDG of the mother
+DECLARE_SOA_COLUMN(McMotherPx, mcMotherPx, float);                //! MC: true momentum of the mother
+DECLARE_SOA_COLUMN(McMotherPy, mcMotherPy, float);                //!
+DECLARE_SOA_COLUMN(McMotherPz, mcMotherPz, float);                //!
+DECLARE_SOA_COLUMN(McGrandMotherId, mcGrandMotherId, int);        //! MC: first mother of the mother (DF of the source event), -1 without
+DECLARE_SOA_COLUMN(McGrandMotherPdg, mcGrandMotherPdg, int);      //! MC: PDG of the grandmother
+DECLARE_SOA_COLUMN(McAncestorId, mcAncestorId, int);              //! MC: first physical primary along the mothers of the leg's mother (itself if primary), -1 without
+DECLARE_SOA_COLUMN(McGGMotherId, mcGGMotherId, int);              //! MC: mother of the grandmother (e.g. the eta of eta -> 3 pi0), -1 without
+DECLARE_SOA_COLUMN(McGGMotherPdg, mcGGMotherPdg, int);            //! MC: PDG of that particle
+DECLARE_SOA_COLUMN(McRootId, mcRootId, int);                      //! MC: last particle along the first mothers of the leg's mother (no mother), -1 without
+DECLARE_SOA_COLUMN(McRootPdg, mcRootPdg, int);                    //! MC: PDG of the root
+DECLARE_SOA_COLUMN(McRootDepth, mcRootDepth, int);                //! MC: generations from the leg's mother to the root
+DECLARE_SOA_COLUMN(McVx, mcVx, float);                            //! MC: production vertex of the leg = true conversion point (lab frame of the source event; translated with the photon), 0 without
+DECLARE_SOA_COLUMN(McVy, mcVy, float);                            //!
+DECLARE_SOA_COLUMN(McVz, mcVz, float);                            //!
+} // namespace pcmmixleg
+// one row per leg of an artificial event; the columns the builder reads from a track carry the same names as in the AO2D
+DECLARE_SOA_TABLE(PCMMixLegs, "AOD", "PCMMIXLEG", //!
+                  o2::soa::Index<>, pcmmixleg::CollisionId, v0leg::Sign,
+                  track::X, track::Alpha, track::Y, track::Z, track::Snp, track::Tgl, track::Signed1Pt, pcmmixleg::Pt, pcmmixleg::Phi,
+                  pcmmixleg::CYY, pcmmixleg::CZY, pcmmixleg::CZZ, pcmmixleg::CSnpY, pcmmixleg::CSnpZ, pcmmixleg::CSnpSnp,
+                  pcmmixleg::CTglY, pcmmixleg::CTglZ, pcmmixleg::CTglSnp, pcmmixleg::CTglTgl,
+                  pcmmixleg::C1PtY, pcmmixleg::C1PtZ, pcmmixleg::C1PtSnp, pcmmixleg::C1PtTgl, pcmmixleg::C1Pt21Pt2,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                  track::TPCChi2NCl, track::TPCInnerParam, track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
+                  pcmmixleg::SourceEventUid, pcmmixleg::SourcePhotonUid, pcmmixleg::SourceV0Id,
+                  pcmmixleg::SourcePx, pcmmixleg::SourcePy, pcmmixleg::SourcePz, pcmmixleg::SourceVx, pcmmixleg::SourceVy, pcmmixleg::SourceVz,
+                  pcmmixleg::SourcePvX, pcmmixleg::SourcePvY, pcmmixleg::SourcePvZ, pcmmixleg::SourcePvCovXX, pcmmixleg::SourcePvCovXY, pcmmixleg::SourcePvCovXZ,
+                  pcmmixleg::SourcePvCovYY, pcmmixleg::SourcePvCovYZ, pcmmixleg::SourcePvCovZZ, pcmmixleg::SourcePvChi2, pcmmixleg::SourcePvNContrib,
+                  pcmmixleg::OrigTrackId, pcmmixleg::McParticleId, pcmmixleg::McMotherId, pcmmixleg::McPdg, pcmmixleg::McMotherPdg,
+                  pcmmixleg::McMotherPx, pcmmixleg::McMotherPy, pcmmixleg::McMotherPz, pcmmixleg::McGrandMotherId, pcmmixleg::McGrandMotherPdg, pcmmixleg::McAncestorId,
+                  pcmmixleg::McGGMotherId, pcmmixleg::McGGMotherPdg, pcmmixleg::McRootId, pcmmixleg::McRootPdg, pcmmixleg::McRootDepth, pcmmixleg::McVx, pcmmixleg::McVy, pcmmixleg::McVz,
+
+                  // dynamic column
+                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>);
+using PCMMixLeg = PCMMixLegs::iterator;
+
+// free electron legs of builder run 1 (fillFreeLegs): tracks that pass the leg cuts and are the leg of no stored photon; the
+// parameters as the V0 fit would use them (TPC-only legs moved to their own collision). The mixer pools them with the photons
+// (cfgPoolFreeLegs), so that run 2 can pair them in the same and the mixed event alike.
+namespace pcmfreeleg
+{
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //! collision of the track
+DECLARE_SOA_COLUMN(TrackId, trackId, int);         //! AO2D track
+} // namespace pcmfreeleg
+DECLARE_SOA_TABLE(PCMFreeLegs, "AOD", "PCMFREELEG", //!
+                  o2::soa::Index<>, pcmfreeleg::CollisionId, pcmfreeleg::TrackId, v0leg::Sign,
+                  v0legcov::X, v0legcov::Alpha, v0legcov::Y, v0legcov::Z, v0legcov::Snp, v0legcov::Tgl, v0legcov::Signed1Pt, v0legcov::Cov,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                  track::TPCChi2NCl, track::TPCInnerParam, track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
+
+                  // dynamic column
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>);
+using PCMFreeLeg = PCMFreeLegs::iterator;
+
+// free legs as AO2D track indices only (linked derived data): run 1 writes (collision, track) of every free leg of a selected
+// collision; associate-photon-to-emevent adds the derived event row. The mixer on linked derived data reads the tracks from the parent AO2D.
+namespace pcmfreelegid
+{
+DECLARE_SOA_INDEX_COLUMN(PMEvent, pmevent);          //! derived event of the free leg (-1: collision not in PMEvents)
+DECLARE_SOA_COLUMN(TrackIdDelta, trackIdDelta, int); //! AO2D track index minus the one of the previous row of this DF (first row: the index): small numbers, ~5x smaller on disk
+} // namespace pcmfreelegid
+DECLARE_SOA_TABLE(PCMFreeLegIds, "AOD", "PCMFREELEGID", //! rows in increasing track order; track index = running sum of TrackIdDelta over the DF
+                  o2::soa::Index<>, pcmfreeleg::CollisionId, pcmfreelegid::TrackIdDelta);
+using PCMFreeLegId = PCMFreeLegIds::iterator;
+DECLARE_SOA_TABLE(PCMFreeLegEMEventIds, "AOD", "PCMFREELEGEVID", pcmfreelegid::PMEventId); //! to be joined with PCMFreeLegIds
+
+// builder run 2 output (same columns as the run-1 tables; collisionId = PCMMixCollisions row, trackId = PCMMixLegs row,
+// v0Id >= 0: original pairing of run 1, -1: crossed pairing)
+DECLARE_SOA_TABLE(V0LegsMix, "AOD", "V0LEGMIX", //!
+                  o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign,
+                  v0leg::Px, v0leg::Py, v0leg::Pz,
+                  track::DcaXY, track::DcaZ,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                  track::TPCChi2NCl, track::TPCInnerParam,
+                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
+
+                  // dynamic column
+                  v0leg::P<v0leg::Px, v0leg::Py, v0leg::Pz>,
+                  v0leg::Pt<v0leg::Px, v0leg::Py>,
+                  v0leg::Eta<v0leg::Px, v0leg::Py, v0leg::Pz>,
+                  v0leg::Phi<v0leg::Px, v0leg::Py>,
+                  v0leg::Tgl<v0leg::Px, v0leg::Py, v0leg::Pz>,
+
+                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                  v0leg::MeanClusterSizeITS<track::ITSClusterSizes>,
+                  v0leg::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                  v0leg::MeanClusterSizeITSob<track::ITSClusterSizes>);
+using V0LegMix = V0LegsMix::iterator;
+
+namespace v0photonkfmix
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0LegsMix, "_Pos");                            //!
+DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, V0LegsMix, "_Neg");                            //!
+DECLARE_SOA_DYNAMIC_COLUMN(PMEventId, pmeventId, [](int collisionId) -> int { return collisionId; }); //! event index as in V0KFEMEventIds (= PCMMixCollisions row), for V0PhotonCut
+} // namespace v0photonkfmix
+DECLARE_SOA_TABLE(V0PhotonsKFMix, "AOD", "V0PHOTONKFMIX", //!
+                  o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0Id, v0photonkfmix::PosTrackId, v0photonkfmix::NegTrackId,
+                  v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
+                  v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
+                  v0photonkf::MGamma,
+                  v0photonkf::DCAxyToPV, v0photonkf::DCAzToPV,
+                  v0photonkf::CosPA, v0photonkf::CosPAXY, v0photonkf::CosPARZ, v0photonkf::PCA,
+                  v0photonkf::Alpha, v0photonkf::QtArm,
+                  v0photonkf::ChiSquareNDF,
+
+                  // dynamic column
+                  v0photonkf::E<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::Pt<v0photonkf::Px, v0photonkf::Py>,
+                  v0photonkf::Eta<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::Phi<v0photonkf::Px, v0photonkf::Py>,
+                  v0photonkf::P<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>,
+                  v0photonkfmix::PMEventId<v0photonkf::CollisionId>);
+using V0PhotonKFMix = V0PhotonsKFMix::iterator;
+
+DECLARE_SOA_TABLE(V0LegsXYZMix, "AOD", "V0LEGXYZMIX", track::X, track::Y, track::Z);                                                   //!
+DECLARE_SOA_TABLE(V0LegsDeDxMCMix, "AOD", "V0LEGDEDXMCMIX", mcpidtpc::DeDxTunedMc, o2::soa::Marker<3>);                                //! stays empty (run 2 runs without MC)
+DECLARE_SOA_TABLE(V0PhotonsPhiVPsiMix, "AOD", "V0PHOTONPHIVMIX", o2::soa::Index<>, v0photonsphivpsi::PhiV, v0photonsphivpsi::PsiPair); //!
+DECLARE_SOA_TABLE(V0LegsCovMix, "AOD", "V0LEGCOVMIX",                                                                                  //!
+                  v0legcov::X, v0legcov::Alpha, v0legcov::Y, v0legcov::Z, v0legcov::Snp, v0legcov::Tgl, v0legcov::Signed1Pt, v0legcov::Cov);
 
 namespace dalitzee
 {

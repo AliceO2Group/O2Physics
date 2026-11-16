@@ -18,6 +18,8 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/collisionTagger.h"
+#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
 #include "PWGCF/Femto/Core/pairCleaner.h"
@@ -33,11 +35,13 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <map>
@@ -60,6 +64,10 @@ struct FemtoPairTrackCharmHadron {
   using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
   using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
 
+  // opt-in: carries FColTags, only needed by processD0MixedEventWithTagging/processLcMixedEventWithTagging.
+  using FemtoCollisionsWithTags = o2::soa::Join<FemtoCollisions, o2::aod::FColTags>;
+  using FilteredFemtoCollisionsWithTags = o2::soa::Filtered<FemtoCollisionsWithTags>;
+
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
   using FemtoD0sWithLabel = o2::soa::Join<FemtoD0s, o2::aod::FD0Labels>;
   using FemtoLcsWithLabel = o2::soa::Join<FemtoLcs, o2::aod::FLcLabels>;
@@ -71,6 +79,11 @@ struct FemtoPairTrackCharmHadron {
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+
+  // opt-in, only needed by processD0MixedEventWithTagging/processLcMixedEventWithTagging -- two
+  // separate instances since D0 and Lc are tagged independently (see init()).
+  collisiontagger::ConfTagging<collisiontagger::role::TrackD0Pair> confTaggingD0;
+  collisiontagger::ConfTagging<collisiontagger::role::TrackLcPair> confTaggingLc;
 
   // setup tracks
   trackbuilder::ConfTrackSelection1 confTrackSelection;
@@ -174,11 +187,11 @@ struct FemtoPairTrackCharmHadron {
   closepairrejection::ConfCprTrackLcKaon confCprLcKaon;
   closepairrejection::ConfCprTrackLcPion confCprLcPion;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
-    bool processD0 = doprocessD0SameEvent || doprocessD0MixedEvent;
+    bool processD0 = doprocessD0SameEvent || doprocessD0MixedEvent || doprocessD0MixedEventWithTagging;
     bool processD0Mc = doprocessD0SameEventMc || doprocessD0MixedEventMc;
-    bool processLc = doprocessLcSameEvent || doprocessLcMixedEvent;
+    bool processLc = doprocessLcSameEvent || doprocessLcMixedEvent || doprocessLcMixedEventWithTagging;
     bool processLcMc = doprocessLcSameEventMc || doprocessLcMixedEventMc;
 
     if ((static_cast<int>(processD0) + static_cast<int>(processD0Mc) + static_cast<int>(processLc) + static_cast<int>(processLcMc)) > 1) {
@@ -186,6 +199,31 @@ struct FemtoPairTrackCharmHadron {
     }
 
     bool processData = processD0 || processLc;
+
+    // Each species discovers its own tag bit independently (see Core/collisionTagger.h).
+    if (doprocessD0MixedEventWithTagging || doprocessLcMixedEventWithTagging) {
+      auto const& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
+      auto const& ownDevice = context.services().get<o2::framework::DeviceSpec const>();
+      auto roles = collisiontagger::discoverTaggedRoles(workflows);
+      if (doprocessD0MixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingD0.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processD0MixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackD0 enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingD0.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (D0): " << bit;
+      }
+      if (doprocessLcMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingLc.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processLcMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackLc enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingLc.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (Lc): " << bit;
+      }
+    }
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
@@ -255,6 +293,16 @@ struct FemtoPairTrackCharmHadron {
   }
   PROCESS_SWITCH(FemtoPairTrackCharmHadron, processD0SameEvent, "Enable processing same event processing for tracks and D0s", true);
 
+  // Opt-in counterpart of processD0MixedEvent() below -- same "Partition declared and bound
+  // inside process()" idiom as femtoPairTrackTrack.cxx's processMixedEventWithTagging.
+  void processD0MixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoD0s const& /*d0s*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingD0.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackD0Builder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, trackPartition, d0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCharmHadron, processD0MixedEventWithTagging, "Enable processing mixed event processing for tracks and D0s, pre-filtered using the collision tagger", false);
+
   void processD0MixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoD0s const& /*d0s*/)
   {
     pairTrackD0Builder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, d0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -278,6 +326,15 @@ struct FemtoPairTrackCharmHadron {
     pairTrackLcBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition, lcs, lcPartition, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackCharmHadron, processLcSameEvent, "Enable processing same event processing for tracks and Lcs", false);
+
+  // Opt-in counterpart of processLcMixedEvent() below -- same idiom as processD0MixedEventWithTagging above.
+  void processLcMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoLcs const& /*lcs*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingLc.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackLcBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, trackPartition, lcPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCharmHadron, processLcMixedEventWithTagging, "Enable processing mixed event processing for tracks and Lcs, pre-filtered using the collision tagger", false);
 
   void processLcMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoLcs const& /*lcs*/)
   {

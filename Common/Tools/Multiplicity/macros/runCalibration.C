@@ -40,7 +40,7 @@ void runCalibration(const TString& lInputFileName = "results/AR_544122_glauberNB
 
   TH1F* hData = dynamic_cast<TH1F*>(file->Get("hV0MUltraFine"));
   TH1F* hGlauberParameters = dynamic_cast<TH1F*>(file->Get("hGlauberParameters"));
-  TH1F* hGlauberFitRange = dynamic_cast<TH1F*>(file->Get("hGlauberFitRange"));
+  [[maybe_unused]] TH1F* hGlauberFitRange = dynamic_cast<TH1F*>(file->Get("hGlauberFitRange"));
   hData->SetName("hData");
   TH1F* hStitched = dynamic_cast<TH1F*>(hData->Clone("hStitched"));
   TH1F* hFit = dynamic_cast<TH1F*>(file->Get("hGlauber"));

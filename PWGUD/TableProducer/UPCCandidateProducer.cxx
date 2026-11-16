@@ -876,7 +876,7 @@ struct UpcCandProducer {
         ++curit;
         if (curit == v.end())
           break;
-        curbc = curit->first;
+        // curbc = curit->first; // FIXME: unused
       }
       uint32_t size = curit->second.size();
       if (size > 1) // too many tracks per BC -> possibly another event
