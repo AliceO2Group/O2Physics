@@ -44,8 +44,10 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TNamed.h>
 #include <TRandom3.h>
 #include <TString.h>
+#inlcude < RtypesCore.h>
 
 #include <sys/types.h>
 
