@@ -1150,6 +1150,7 @@ struct LongrangecorrDerived {
 
   using CollStandardTable = soa::Join<aod::Collisions, aod::EvSels>;
   using TrksStandardTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  Preslice<aod::V0Datas> perColV0Data = aod::v0data::collisionId;
 
   template <typename TTracks>
   float countFallbackMultiplicity(TTracks const& tracks, float vz)
@@ -1409,7 +1410,7 @@ struct LongrangecorrDerived {
       }
 
       if ((cfgSel.cfgGetV0CleanSample || cfgSel.cfgFillAfterCutWithV0) && cfgSel.cfgGetdEdx) {
-        auto v0sThisCol = V0s.sliceByCached(aod::v0data::collisionId, rawCol.globalIndex(), this->cache);
+        auto v0sThisCol = V0s.sliceBy(perColV0Data, rawCol.globalIndex());
         for (auto const& v0 : v0sThisCol) {
           auto const& posTrack = v0.template posTrack_as<TrksStandardTable>();
           auto const& negTrack = v0.template negTrack_as<TrksStandardTable>();
