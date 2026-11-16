@@ -1030,9 +1030,9 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCharge2] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
-  fgVariableNames[kPin_leg1] = "p_{IN}";
+  fgVariableNames[kPin_leg1] = "p_{IN, 1}";
   fgVariableUnits[kPin_leg1] = "GeV/c";
-  fgVariableNames[kPin_leg2] = "p_{IN}";
+  fgVariableNames[kPin_leg2] = "p_{IN, 2}";
   fgVariableUnits[kPin_leg2] = "GeV/c";
   fgVariableNames[kSignedPin] = "p_{IN} x charge";
   fgVariableUnits[kSignedPin] = "GeV/c";
