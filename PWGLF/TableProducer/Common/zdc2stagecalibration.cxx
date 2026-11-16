@@ -233,7 +233,7 @@ struct zdc2stagecalibration {
       histos.add("EnergyResponseQA/pPhysicalMomentsA", "ZNA common energy vs linear-energy centroid;centrality (%);moment;<value>", kTProfile2D, {centralityAxis, energyMomentAxis});
       histos.add("EnergyResponseQA/pPhysicalMomentsC", "ZNC common energy vs linear-energy centroid;centrality (%);moment;<value>", kTProfile2D, {centralityAxis, energyMomentAxis});
       const std::array<const char*, 6> fNames{"1", "x", "y", "x2", "y2", "xy"};
-      auto label = [&](auto profile) {
+      auto label = [&](const auto& profile) {
         int bin = 1;
         for (int i = 0; i < 6; ++i)
           for (int j = i; j < 6; ++j) {
