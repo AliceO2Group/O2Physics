@@ -99,7 +99,8 @@ struct ChargedParticles {
   HistogramRegistry histos;
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
+  Configurable<int> dataRun{"dataRun", 0, "lhc run of the data: 0 = auto (from ao2d metadata), 2 = run 2 (converted), 3 = run 3"};
+  bool isRun3{true}; // from dataRun
   Configurable<std::string> collisionSystem{"collisionSystem", "pp", "collision system (sets multiplicity axes and event selection default): pp, pPb, pO, OO, NeNe, XeXe, PbPb"};
   int maxMultMeas{100}; // from collisionSystem
   int maxMultTrue{100};
@@ -149,23 +150,26 @@ struct ChargedParticles {
   bool isNominal{true};          // qa only for the nominal setting
   Configurable<uint32_t> seedOffset{"seedOffset", 0, "offset for the (deterministic) random numbers of the particle composition correction"};
 
+  // systematic variations, numbering as in run 2 where the cut exists (unfolding framework expects these ids);
+  // 107-110 (shared tpc clusters, golden chi2) and 118-119 (geometric cut) do not exist in run 3 (fatal);
+  // 116-117 are tpc crossed rows (run 2: geometric length cut)
   enum : uint32_t {
     kSystNominal = 100,
-    kSystDownChi2PerClusterITS,
-    kSystUpChi2PerClusterITS,
-    kSystDownChi2PerClusterTPC,
-    kSystUpChi2PerClusterTPC,
-    kSystDownTPCCrossedRowsOverNCls,
-    kSystUpTPCCrossedRowsOverNCls,
+    kSystDownChi2PerClusterITS,      // 101
+    kSystUpChi2PerClusterITS,        // 102
+    kSystDownChi2PerClusterTPC,      // 103
+    kSystUpChi2PerClusterTPC,        // 104
+    kSystDownTPCCrossedRowsOverNCls, // 105
+    kSystUpTPCCrossedRowsOverNCls,   // 106
     kSystDownDCAxy = 111,
-    kSystUpDCAxy,
-    kSystDownDCAz,
-    kSystUpDCAz,
-    kSystITSHits, // only relevant for converted data
-    kSystDownTPCCrossedRows,
-    kSystUpTPCCrossedRows,
+    kSystUpDCAxy,            // 112
+    kSystDownDCAz,           // 113
+    kSystUpDCAz,             // 114
+    kSystITSHits,            // 115, only relevant for converted data
+    kSystDownTPCCrossedRows, // 116
+    kSystUpTPCCrossedRows,   // 117
     kSystDownPCC = 120,
-    kSystUpPCC
+    kSystUpPCC // 121
   };
   Configurable<uint32_t> systMode{"systMode", kSystNominal, "variation for systematic uncertainties"};
   uint16_t trackSelMask{TrackSelectionFlags::kGlobalTrackWoPtEta}; // track selection bitmask (without cut that is being varied)
@@ -261,6 +265,26 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 //**************************************************************************************************
 void ChargedParticles::init(InitContext const&)
 {
+  // lhc run: from the ao2d metadata unless set explicitly; a contradiction stops the task
+  int runFromMetadata = 0;
+  if (metadataInfo.isInitialized()) {
+    const std::string run = metadataInfo.get("Run");
+    if (run == "2" || run == "3") {
+      runFromMetadata = std::stoi(run);
+    }
+  }
+  if (dataRun != 0 && dataRun != 2 && dataRun != 3) {
+    LOGP(fatal, "invalid dataRun {} (0 = auto, 2, 3)", dataRun.value);
+  }
+  if (dataRun == 0 && runFromMetadata == 0) {
+    LOGP(fatal, "dataRun = 0 (auto) but the ao2d metadata has no run: set dataRun to 2 or 3");
+  }
+  if (dataRun != 0 && runFromMetadata != 0 && dataRun != runFromMetadata) {
+    LOGP(fatal, "dataRun {} contradicts the ao2d metadata (run {})", dataRun.value, runFromMetadata);
+  }
+  isRun3 = ((dataRun != 0) ? dataRun.value : runFromMetadata) == 3;
+  LOGP(info, "data from run {} ({})", isRun3 ? 3 : 2, (dataRun != 0) ? "dataRun" : "ao2d metadata");
+
   // collision system: multiplicity axes (run 2 values; light ions estimated) and event selection default
   // todo: measure the event selection default per system (data vs mc rejection, qa/events/multMeasBits)
   std::string evSelBitsDefault = "kNoSameBunchPileup";
@@ -529,6 +553,12 @@ void ChargedParticles::init(InitContext const&)
     trackSel.SetMinNCrossedRowsTPC(80);
     cutVarFlag = TrackSelectionFlags::kTPCCrossedRows;
     trackSelFlag = TrackSelection::TrackCuts::kTPCCrossedRows;
+  } else if (systMode == kSystDownPCC || systMode == kSystUpPCC) {
+    if (!doprocessMC) {
+      LOGP(fatal, "systMode {} (pcc variation) needs processMC (with pcc)", systMode.value);
+    }
+  } else if (systMode != kSystNominal) {
+    LOGP(fatal, "undefined systMode {} (valid: 100-106, 111-117, 120-121)", systMode.value);
   }
   trackSelMask &= (~cutVarFlag);
 }
@@ -754,7 +784,9 @@ void ChargedParticles::initEventMC(const C& collision, const P& particles)
     }
   }
   vars.isGoodZPosMC = std::abs(collision.posZ()) < maxVtxZ;
-  vars.isTriggeredMC = collision.template bc_as<BCsWithSel>().selection_bit(aod::evsel::kIsTriggerTVX);
+  // trigger of the mc collision's bunch crossing: tvx (run 3), v0and as for kINT7 (run 2)
+  const auto& bc = collision.template bc_as<BCsWithSel>();
+  vars.isTriggeredMC = isRun3 ? bc.selection_bit(aod::evsel::kIsTriggerTVX) : (bc.selection_bit(aod::evsel::kIsBBV0A) && bc.selection_bit(aod::evsel::kIsBBV0C));
   vars.classMask = 0;
   if (vars.isGoodZPosMC) {
     vars.classMask |= (vars.multTrue > 0) ? (1 << kFiducial) : 0;
