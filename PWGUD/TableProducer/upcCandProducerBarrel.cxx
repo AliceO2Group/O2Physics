@@ -77,10 +77,11 @@ constexpr uint16_t MCTrackFakeMask = 1u << 15;
 enum MCParticleFlag : uint8_t {
   kNoFlags = 0,
   kPhysicalPrimary = 1u << 0,           // generated physical primary
-  kHasRecoTrack = 1u << 1,              // has at least one non-fake reconstructed track
+  kHasRecoTrack = 1u << 1,              // has at least one non-fake ITS-TPC track passing the configured kinematic cuts
   kHighMultiplicityCollision = 1u << 2, // matched track belongs to a collision with extra contributors
   kHasPVContributor = 1u << 3,          // has a track contributing to the PV
-  kHasAmbiguousTrack = 1u << 4          // has an ambiguous track
+  kHasAmbiguousTrack = 1u << 4,         // has an ambiguous track
+  kHasRecoTrackTOF = 1u << 5            // has a selected ITS-TPC track matched to TOF
 };
 
 using SignalRef = std::pair<int32_t, int16_t>;
@@ -594,7 +595,9 @@ struct UpcCandProducerBarrel {
               continue;
             }
             ++nRecoTracks;
-            flags |= kHasRecoTrack;
+            const bool goodRecoTrack = track.hasITS() && track.hasTPC() && std::abs(track.eta()) <= maxAbsEta.value && track.pt() >= minPt.value;
+            flags |= goodRecoTrack ? kHasRecoTrack : kNoFlags;
+            flags |= (goodRecoTrack && track.hasTOF()) ? kHasRecoTrackTOF : kNoFlags;
             flags |= track.isPVContributor() ? kHasPVContributor : kNoFlags;
             flags |= ambiguousTrackIds.contains(track.globalIndex()) ? kHasAmbiguousTrack : kNoFlags;
             if (track.has_collision()) {
