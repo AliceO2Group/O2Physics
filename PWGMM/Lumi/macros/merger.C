@@ -55,8 +55,8 @@ void merger()
   tin->Branch("fVertexChi2", &fVertexChi2, "fVertexChi2/D");
   tin->Branch("fNContrib", &fNContrib, "fNContrib/I");
 
-  while (TDirectoryFile* dir = (TDirectoryFile*)next()) {
-    tadd = (TTree*)fin->Get(Form("%s/O2eventinfo", dir->GetName()));
+  while (TDirectoryFile* dir = dynamic_cast<TDirectoryFile*>(next())) {
+    tadd = dynamic_cast<TTree*>(fin->Get(Form("%s/O2eventinfo", dir->GetName())));
 
     tadd->SetBranchAddress("fTimeStamp", &fTimeStamp);
 
