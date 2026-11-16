@@ -50,7 +50,6 @@
 #include <string_view>
 #include <type_traits>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -107,7 +106,7 @@ struct ChargedParticles {
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
   Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
   Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
-  Configurable<std::string> eventClasses{"eventClasses", "fiducial", "mc event classes, comma separated: fiducial (N_ch > 0), inelgt0, triggered (tvx), inel; one class: flat output, several: one subfolder per class"};
+  Configurable<std::string> eventClasses{"eventClasses", "fiducial", "mc event classes, comma separated: fiducial (N_ch > 0), inelgt0, triggered (tvx; run 2: v0and, 2010/2011: int1), inel; one class: flat output, several: one subfolder per class"};
   enum EventClass { kFiducial,
                     kINELGT0,
                     kTriggered,
@@ -177,7 +176,12 @@ struct ChargedParticles {
   uint16_t trackSelMask{TrackSelectionFlags::kGlobalTrackWoPtEta};                          // track selection bitmask (without cut that is being varied)
   uint16_t cutVarFlag{0};
   TrackSelection trackSel;
-  TrackSelection::TrackCuts trackSelFlag;
+  TrackSelection::TrackCuts trackSelFlag{};
+  static bool isINT1Period(int runNumber)
+  {
+    // int1 trigger (spd or v0a or v0c) in 2010 and part of 2011: run ranges as in the event selection
+    return runNumber <= 136377 || (runNumber >= 144871 && runNumber <= 159582); // o2-linter: disable=magic-number (int1 run ranges)
+  }
 
   // helper struct to store transient properties
   struct VarContainer {
@@ -267,6 +271,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 //**************************************************************************************************
 void ChargedParticles::init(InitContext const&)
 {
+  if (static_cast<int>(doprocessData.value) + static_cast<int>(doprocessMC.value) + static_cast<int>(doprocessMCnoPCC.value) != 1) {
+    LOGP(fatal, "enable exactly one of processData, processMC, processMCnoPCC");
+  }
+
   // lhc run: from the ao2d metadata unless set explicitly; a contradiction stops the task
   int runFromMetadata = 0;
   if (metadataInfo.isInitialized()) {
@@ -286,6 +294,9 @@ void ChargedParticles::init(InitContext const&)
   }
   isRun3 = ((dataRun != 0) ? dataRun.value : runFromMetadata) == 3;
   LOGP(info, "data from run {} ({})", isRun3 ? 3 : 2, (dataRun != 0) ? "dataRun" : "ao2d metadata");
+  if (!isRun3 && evSelBits.value != "auto") {
+    LOGP(fatal, "evSelBits '{}' is not applied to run 2 data (run 2 uses sel7 and kINT7): keep evSelBits = auto", evSelBits.value);
+  }
 
   // collision system: multiplicity axes (run 2 values; light ions from the 2025 data, oo/nene above the tail) and event selection default
   // todo: measure the event selection default per system (data vs mc rejection, qa/events/multMeasBits)
@@ -765,7 +776,22 @@ void ChargedParticles::initEvent(const C& collision, const T& tracks)
         vars.isAcceptedEvent = true;
       }
     } else {
-      if (collision.sel7() && ((doprocessMC || doprocessMCnoPCC) ? true : collision.alias_bit(kINT7))) {
+      int runNumber = -1;
+      if constexpr (IS_MC) {
+        runNumber = collision.template bc_as<BCsWithSel>().runNumber();
+      } else {
+        runNumber = collision.template bc_as<aod::BCs>().runNumber();
+      }
+      const bool isMC = doprocessMC || doprocessMCnoPCC;
+      if (isINT1Period(runNumber)) {
+        // int1 selection of the event selection (sel1, not stored there)
+        const uint64_t sel = collision.selection_raw();
+        const bool sel1 = std::ranges::all_of(std::array{aod::evsel::kIsINT1, aod::evsel::kNoBGV0A, aod::evsel::kNoBGV0C, aod::evsel::kNoTPCLaserWarmUp, aod::evsel::kNoTPCHVdip},
+                                              [sel](int bit) { return ((sel >> bit) & 1ULL) != 0; });
+        if (sel1 && (isMC || collision.alias_bit(kINT1))) {
+          vars.isAcceptedEvent = true;
+        }
+      } else if (collision.sel7() && (isMC || collision.alias_bit(kINT7))) {
         vars.isAcceptedEvent = true;
       }
     }
@@ -796,9 +822,15 @@ void ChargedParticles::initEventMC(const C& collision, const P& particles)
     }
   }
   vars.isGoodZPosMC = std::abs(collision.posZ()) < vtxZCut();
-  // trigger of the mc collision's bunch crossing: tvx (run 3), v0and as for kINT7 (run 2)
+  // trigger of the mc collision's bunch crossing: tvx (run 3), v0and as for kINT7 (run 2), int1 (2010/2011)
   const auto& bc = collision.template bc_as<BCsWithSel>();
-  vars.isTriggeredMC = isRun3 ? bc.selection_bit(aod::evsel::kIsTriggerTVX) : (bc.selection_bit(aod::evsel::kIsBBV0A) && bc.selection_bit(aod::evsel::kIsBBV0C));
+  if (isRun3) {
+    vars.isTriggeredMC = bc.selection_bit(aod::evsel::kIsTriggerTVX);
+  } else if (isINT1Period(bc.runNumber())) {
+    vars.isTriggeredMC = bc.selection_bit(aod::evsel::kIsINT1);
+  } else {
+    vars.isTriggeredMC = bc.selection_bit(aod::evsel::kIsBBV0A) && bc.selection_bit(aod::evsel::kIsBBV0C);
+  }
   vars.classMask = 0;
   if (vars.isGoodZPosMC) {
     vars.classMask |= (vars.multTrue > 0) ? (1 << kFiducial) : 0;
@@ -1113,8 +1145,11 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
     }
   }
 
-  std::unordered_set<int32_t> uniqueIndices(foundParticles.begin(), foundParticles.end());
-  for (const auto& mcParticleID : uniqueIndices) {
-    histos.fill(HIST("track_ambiguity"), std::count(foundParticles.begin(), foundParticles.end(), mcParticleID));
+  std::unordered_map<int32_t, int> nTracksPerParticle;
+  for (const auto& mcParticleID : foundParticles) {
+    ++nTracksPerParticle[mcParticleID];
+  }
+  for (const auto& entry : nTracksPerParticle) {
+    histos.fill(HIST("track_ambiguity"), entry.second);
   }
 }
