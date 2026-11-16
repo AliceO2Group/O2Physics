@@ -24,6 +24,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
@@ -341,7 +342,6 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet> const& input
 template <typename T, typename U>
 bool isParticleSelected(T const& particle, const std::string& particleSelection, int jetTypeParticleLevel, U const& pdgDatabase, TParticlePDG const*& pdgParticle)
 {
-  pdgParticle = nullptr;
   if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) {
     return false;
   } else if (particleSelection == "HepMCStatus" && particle.getHepMCStatusCode() != 1) {
@@ -355,7 +355,10 @@ bool isParticleSelected(T const& particle, const std::string& particleSelection,
     return false;
   }
   pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-  auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
+  if (pdgParticle == nullptr) {
+    return false;
+  }
+  auto pdgCharge = std::abs(pdgParticle->Charge());
   if (jetTypeParticleLevel == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
     return false;
   }
@@ -390,7 +393,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std
 {
   for (auto& particle : particles) {
     TParticlePDG const* pdgParticle = nullptr;
-    if (!isParticleSelected(particle, particleSelection, jetTypeParticleLevel, pdgDatabase, pdgParticle) || pdgParticle == nullptr) {
+    if (!isParticleSelected(particle, particleSelection, jetTypeParticleLevel, pdgDatabase, pdgParticle)) {
       continue;
     }
     if constexpr (jetcandidateutilities::isMcCandidate<U>() && !jetv0utilities::isV0McCandidate<U>()) {
