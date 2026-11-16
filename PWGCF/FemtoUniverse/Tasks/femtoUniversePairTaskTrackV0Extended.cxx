@@ -34,6 +34,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
@@ -221,6 +222,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     Configurable<bool> confRandomizeCPR{"confRandomizeCPR", false, "Fill Dete-Dphi histograms in random order: v01, v02 or v02, v01 - does not apply to track-V0"};
     ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
     ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
+    Configurable<LabeledArray<double>> confCPRTrackV0Cuts{"confCPRTrackV0Cuts", {cpr_track_v0_cuts::Cuts[0], cpr_track_v0_cuts::NDaughters, cpr_track_v0_cuts::NCutVars, cpr_track_v0_cuts::labelsDaughter, cpr_track_v0_cuts::labelsCutVar}, "Per-daughter CPR DeltaPhi*/DeltaEta cuts for track-V0 (rows: posChild/negChild, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax). The track-V0 branch applies an elliptic cut, so only dPhiStarMax/dEtaMax are used. A row left at all zeros falls back to the scalar confCPRdeltaPhi/dEtaCutMin/Max; when a row is used, all four of its columns apply"};
+    Configurable<LabeledArray<double>> confCPRV0V0Cuts{"confCPRV0V0Cuts", {cpr_v0_v0_cuts::Cuts[0], cpr_v0_v0_cuts::NPairs, cpr_v0_v0_cuts::NCutVars, cpr_v0_v0_cuts::labelsPair, cpr_v0_v0_cuts::labelsCutVar}, "Per-pair CPR DeltaPhi*/DeltaEta cuts for V0-V0 (rows: pos-pos/neg-neg, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax). All columns are used for the rectangular cut (confRectV0V0CPR=true); only dPhiStarMax/dEtaMax for the elliptic cut. A row left at all zeros falls back to the scalar confCPRdeltaPhi/dEtaCutMin/Max; when a row is used, all four of its columns apply"};
   } ConfCPR;
 
   // Efficiency
@@ -457,7 +460,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
     pairCleanerV0.init(&qaRegistry);
     if (ConfCPR.confIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejection.setCPRCuts(ConfCPR.confCPRTrackV0Cuts.value);
       pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejectionV0.setCPRCuts(ConfCPR.confCPRV0V0Cuts.value);
     }
 
     if (!ccdbEffLoader.confLocalEfficiency.value.empty()) {

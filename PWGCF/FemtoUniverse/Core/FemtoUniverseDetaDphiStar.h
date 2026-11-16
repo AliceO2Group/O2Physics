@@ -24,6 +24,7 @@
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Array2D.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
@@ -49,6 +50,98 @@ namespace o2::analysis
 {
 namespace femto_universe
 {
+
+/// \namespace cpr_track_cascade_cuts
+/// \brief Default per-daughter CPR cut table for the track-cascade combination.
+/// Rows correspond to the cascade daughters in the order used by FemtoUniverseDetaDphiStar
+/// (posChild, negChild, bachelor); columns to the DeltaPhi*/DeltaEta cut values.
+namespace cpr_track_cascade_cuts
+{
+static constexpr int NDaughters = 3;
+static constexpr int NCutVars = 4;
+
+// default values for the cuts (all 0.0: rows fall back to the scalar CPR cuts)
+constexpr double Cuts[NDaughters][NCutVars] = {{0.0, 0.0, 0.0, 0.0},  /* posChild */
+                                               {0.0, 0.0, 0.0, 0.0},  /* negChild */
+                                               {0.0, 0.0, 0.0, 0.0}}; /* bachelor */
+
+// row labels
+static const std::vector<std::string> labelsDaughter = {"posChild", "negChild", "bachelor"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"dPhiStarMin", "dPhiStarMax", "dEtaMin", "dEtaMax"};
+} // namespace cpr_track_cascade_cuts
+
+/// \namespace cpr_cascade_cascade_cuts
+/// \brief Default per-pair CPR cut table for the cascade-cascade combination.
+/// Rows correspond to the daughter pairs in the order of CascChildTable
+/// (offsets relative to the cascade index: -3 posChild, -2 negChild, -1 bachelor);
+/// columns to the DeltaPhi*/DeltaEta cut values.
+namespace cpr_cascade_cascade_cuts
+{
+static constexpr int NPairs = 7;
+static constexpr int NCutVars = 4;
+
+// daughter pair table: row i = {offset of daughter of cascade 1, offset of daughter of cascade 2}
+// ordered from pos to bach (both indices sorted pos < neg < bach)
+constexpr int CascChildTable[NPairs][2] = {{-3, -3}, {-3, -1}, {-2, -2}, {-2, -1}, {-1, -1}, {-1, -2}, {-1, -3}};
+
+// default values for the cuts (all 0.0: rows fall back to the scalar CPR cuts)
+constexpr double Cuts[NPairs][NCutVars] = {{0.0, 0.0, 0.0, 0.0},  /* pos-pos   */
+                                           {0.0, 0.0, 0.0, 0.0},  /* pos-bach  */
+                                           {0.0, 0.0, 0.0, 0.0},  /* neg-neg   */
+                                           {0.0, 0.0, 0.0, 0.0},  /* neg-bach  */
+                                           {0.0, 0.0, 0.0, 0.0},  /* bach-bach */
+                                           {0.0, 0.0, 0.0, 0.0},  /* bach-neg  */
+                                           {0.0, 0.0, 0.0, 0.0}}; /* bach-pos  */
+
+// row labels
+static const std::vector<std::string> labelsPair = {"pos-pos", "pos-bach", "neg-neg", "neg-bach", "bach-bach", "bach-neg", "bach-pos"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"dPhiStarMin", "dPhiStarMax", "dEtaMin", "dEtaMax"};
+} // namespace cpr_cascade_cascade_cuts
+
+/// \namespace cpr_track_v0_cuts
+/// \brief Default per-daughter CPR cut table for the track-V0 combination.
+/// Rows correspond to the V0 daughters in the order used by FemtoUniverseDetaDphiStar
+/// (posChild, negChild); columns to the DeltaPhi*/DeltaEta cut values.
+/// Note: the track-V0 branch applies an elliptic cut, so only dPhiStarMax and dEtaMax are used.
+namespace cpr_track_v0_cuts
+{
+static constexpr int NDaughters = 2;
+static constexpr int NCutVars = 4;
+
+// default values for the cuts (all 0.0: rows fall back to the scalar CPR cuts)
+constexpr double Cuts[NDaughters][NCutVars] = {{0.0, 0.0, 0.0, 0.0},  /* posChild */
+                                               {0.0, 0.0, 0.0, 0.0}}; /* negChild */
+
+// row labels
+static const std::vector<std::string> labelsDaughter = {"posChild", "negChild"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"dPhiStarMin", "dPhiStarMax", "dEtaMin", "dEtaMax"};
+} // namespace cpr_track_v0_cuts
+
+/// \namespace cpr_v0_v0_cuts
+/// \brief Default per-pair CPR cut table for the V0-V0 combination.
+/// Rows correspond to the daughter pairs checked by FemtoUniverseDetaDphiStar
+/// (pos-pos, neg-neg); columns to the DeltaPhi*/DeltaEta cut values.
+namespace cpr_v0_v0_cuts
+{
+static constexpr int NPairs = 2;
+static constexpr int NCutVars = 4;
+
+// default values for the cuts (all 0.0: rows fall back to the scalar CPR cuts)
+constexpr double Cuts[NPairs][NCutVars] = {{0.0, 0.0, 0.0, 0.0},  /* pos-pos */
+                                           {0.0, 0.0, 0.0, 0.0}}; /* neg-neg */
+
+// row labels
+static const std::vector<std::string> labelsPair = {"pos-pos", "neg-neg"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"dPhiStarMin", "dPhiStarMax", "dEtaMin", "dEtaMax"};
+} // namespace cpr_v0_v0_cuts
 
 /// \class FemtoUniverseDetaDphiStar
 /// \brief Class to check particles for the close pair rejection.
@@ -200,6 +293,19 @@ class FemtoUniverseDetaDphiStar
     }
   }
 
+  /// Set the per-daughter/pair CPR cut table for this combination.
+  /// For track-cascade: rows = posChild, negChild, bachelor.
+  /// For cascade-cascade: rows = the daughter pairs of cpr_cascade_cascade_cuts::CascChildTable.
+  /// For track-V0: rows = posChild, negChild (elliptic cut: only dPhiStarMax/dEtaMax are used).
+  /// For V0-V0: rows = pos-pos, neg-neg (all columns used for the rectangular cut;
+  /// only dPhiStarMax/dEtaMax for the elliptic cut).
+  /// Columns: dPhiStarMin, dPhiStarMax, dEtaMin, dEtaMax.
+  /// A row left at all zeros falls back to the scalar cuts set in init().
+  void setCPRCuts(const o2::framework::LabeledArray<double>& lCPRCuts)
+  {
+    mCPRCuts = lCPRCuts;
+  }
+
   template <typename t1, typename t2, typename t3>
   void init_kT(o2::framework::HistogramRegistry* registry, t1& ktbins, t3& fDeltaEtaAxis, t3& fDeltaPhiStarAxis, t2& ldeltaphistarcutmin, t2& ldeltaphistarcutmax, t2& ldeltaetacutmin, t2& ldeltaetacutmax, t2& ldeltaphistarcutFractionmin, t2& ldeltaphistarcutFractionmax, t2& ldeltaetacutFractionmin, t2& ldeltaetacutFractionmax, bool filldEtadPhiTPCcls)
   {
@@ -294,7 +400,19 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
+        // Per-daughter cuts from the LabeledArray; rows left at all zeros fall back to the scalar cuts
+        // (the track-V0 branch applies an elliptic cut, so only the Max values are used)
+        float dPhiStarMax = cutDeltaPhiStarMax;
+        float dEtaMax = cutDeltaEtaMax;
+        if (mCPRCuts.rows() > 0 && i < static_cast<int>(mCPRCuts.rows())) {
+          double* cutsDaughter = mCPRCuts.getRow(i);
+          if (cutsDaughter[0] != 0. || cutsDaughter[1] != 0. || cutsDaughter[2] != 0. || cutsDaughter[3] != 0.) {
+            dPhiStarMax = static_cast<float>(cutsDaughter[1]);
+            dEtaMax = static_cast<float>(cutsDaughter[3]);
+          }
+        }
+
+        if (std::pow(dphiAvg, 2) / std::pow(dPhiStarMax, 2) + std::pow(deta, 2) / std::pow(dEtaMax, 2) < 1.) {
           pass = true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -331,9 +449,24 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if (V0V0rect && (dphiAvg > cutDeltaPhiStarMin) && (dphiAvg < cutDeltaPhiStarMax) && (deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) {
+        // Per-pair cuts from the LabeledArray; rows left at all zeros fall back to the scalar cuts
+        float dPhiStarMin = cutDeltaPhiStarMin;
+        float dPhiStarMax = cutDeltaPhiStarMax;
+        float dEtaMin = cutDeltaEtaMin;
+        float dEtaMax = cutDeltaEtaMax;
+        if (mCPRCuts.rows() > 0 && i < static_cast<int>(mCPRCuts.rows())) {
+          double* cutsPair = mCPRCuts.getRow(i);
+          if (cutsPair[0] != 0. || cutsPair[1] != 0. || cutsPair[2] != 0. || cutsPair[3] != 0.) {
+            dPhiStarMin = static_cast<float>(cutsPair[0]);
+            dPhiStarMax = static_cast<float>(cutsPair[1]);
+            dEtaMin = static_cast<float>(cutsPair[2]);
+            dEtaMax = static_cast<float>(cutsPair[3]);
+          }
+        }
+
+        if (V0V0rect && (dphiAvg > dPhiStarMin) && (dphiAvg < dPhiStarMax) && (deta > dEtaMin) && (deta < dEtaMax)) {
           pass = true;
-        } else if (!V0V0rect && std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
+        } else if (!V0V0rect && std::pow(dphiAvg, 2) / std::pow(dPhiStarMax, 2) + std::pow(deta, 2) / std::pow(dEtaMax, 2) < 1.) {
           pass = true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -354,10 +487,9 @@ class FemtoUniverseDetaDphiStar
       }
 
       bool pass = false;
-      static constexpr int CascChildTable[][2] = {{-1, -1}, {-1, -2}, {-1, -3}, {-2, -2}, {-3, -3}, {-2, -1}, {-3, -1}};
-      for (int i = 0; i < 7; i++) {
-        auto indexOfDaughterpart1 = (ChosenEventType == femto_universe_container::EventType::mixed ? part1.globalIndex() : part1.index()) + CascChildTable[i][0];
-        auto indexOfDaughterpart2 = (ChosenEventType == femto_universe_container::EventType::mixed ? part2.globalIndex() : part2.index()) + CascChildTable[i][1];
+      for (int i = 0; i < cpr_cascade_cascade_cuts::NPairs; i++) {
+        auto indexOfDaughterpart1 = (ChosenEventType == femto_universe_container::EventType::mixed ? part1.globalIndex() : part1.index()) + cpr_cascade_cascade_cuts::CascChildTable[i][0];
+        auto indexOfDaughterpart2 = (ChosenEventType == femto_universe_container::EventType::mixed ? part2.globalIndex() : part2.index()) + cpr_cascade_cascade_cuts::CascChildTable[i][1];
         auto daughterpart1 = particles.begin() + indexOfDaughterpart1;
         auto daughterpart2 = particles.begin() + indexOfDaughterpart2;
         if (isSameSignCPR && (daughterpart1.mAntiLambda() != daughterpart2.mAntiLambda())) // mAntiLambda() is used here as sign getter
@@ -372,7 +504,22 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if ((dphiAvg > cutDeltaPhiStarMin) && (dphiAvg < cutDeltaPhiStarMax) && (deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) {
+        // Per-pair cuts from the LabeledArray; rows left at all zeros fall back to the scalar cuts
+        float dPhiStarMin = cutDeltaPhiStarMin;
+        float dPhiStarMax = cutDeltaPhiStarMax;
+        float dEtaMin = cutDeltaEtaMin;
+        float dEtaMax = cutDeltaEtaMax;
+        if (mCPRCuts.rows() > 0 && i < static_cast<int>(mCPRCuts.rows())) {
+          double* cutsPair = mCPRCuts.getRow(i);
+          if (cutsPair[0] != 0. || cutsPair[1] != 0. || cutsPair[2] != 0. || cutsPair[3] != 0.) {
+            dPhiStarMin = static_cast<float>(cutsPair[0]);
+            dPhiStarMax = static_cast<float>(cutsPair[1]);
+            dEtaMin = static_cast<float>(cutsPair[2]);
+            dEtaMax = static_cast<float>(cutsPair[3]);
+          }
+        }
+
+        if ((dphiAvg > dPhiStarMin) && (dphiAvg < dPhiStarMax) && (deta > dEtaMin) && (deta < dEtaMax)) {
           pass = true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -408,7 +555,22 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if ((dphiAvg > cutDeltaPhiStarMin) && (dphiAvg < cutDeltaPhiStarMax) && (deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) {
+        // Per-daughter cuts from the LabeledArray; rows left at all zeros fall back to the scalar cuts
+        float dPhiStarMin = cutDeltaPhiStarMin;
+        float dPhiStarMax = cutDeltaPhiStarMax;
+        float dEtaMin = cutDeltaEtaMin;
+        float dEtaMax = cutDeltaEtaMax;
+        if (mCPRCuts.rows() > 0 && i < static_cast<int>(mCPRCuts.rows())) {
+          double* cutsDaughter = mCPRCuts.getRow(i);
+          if (cutsDaughter[0] != 0. || cutsDaughter[1] != 0. || cutsDaughter[2] != 0. || cutsDaughter[3] != 0.) {
+            dPhiStarMin = static_cast<float>(cutsDaughter[0]);
+            dPhiStarMax = static_cast<float>(cutsDaughter[1]);
+            dEtaMin = static_cast<float>(cutsDaughter[2]);
+            dEtaMax = static_cast<float>(cutsDaughter[3]);
+          }
+        }
+
+        if ((dphiAvg > dPhiStarMin) && (dphiAvg < dPhiStarMax) && (deta > dEtaMin) && (deta < dEtaMax)) {
           pass = true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -890,6 +1052,7 @@ class FemtoUniverseDetaDphiStar
   float cutDeltaPhiStarMin;
   float cutDeltaEtaMax;
   float cutDeltaEtaMin;
+  o2::framework::LabeledArray<double> mCPRCuts{}; ///< Per-daughter/pair CPR cuts for this combination (rows: daughters or daughter pairs, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax)
 
   std::vector<float> cutDeltaPhiStarMaxVector;
   std::vector<float> cutDeltaPhiStarMinVector;

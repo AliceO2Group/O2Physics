@@ -31,6 +31,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
@@ -124,6 +125,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.0, "Delta Eta cut for Close Pair Rejection"};
     Configurable<bool> confIsSameSignCPR{"confIsSameSignCPR", false, "Close Pair Rejection for same sign children of cascades"};
+    Configurable<LabeledArray<double>> confCPRTrackCascCuts{"confCPRTrackCascCuts", {cpr_track_cascade_cuts::Cuts[0], cpr_track_cascade_cuts::NDaughters, cpr_track_cascade_cuts::NCutVars, cpr_track_cascade_cuts::labelsDaughter, cpr_track_cascade_cuts::labelsCutVar}, "Per-daughter CPR DeltaPhi*/DeltaEta cuts for track-cascade (rows: posChild/negChild/bachelor, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax). A row left at all zeros falls back to the scalar confCPRdeltaPhi/dEtaCutMin/Max; when a row is used, all four of its columns apply"};
+    Configurable<LabeledArray<double>> confCPRCascCascCuts{"confCPRCascCascCuts", {cpr_cascade_cascade_cuts::Cuts[0], cpr_cascade_cascade_cuts::NPairs, cpr_cascade_cascade_cuts::NCutVars, cpr_cascade_cascade_cuts::labelsPair, cpr_cascade_cascade_cuts::labelsCutVar}, "Per-pair CPR DeltaPhi*/DeltaEta cuts for cascade-cascade (rows: pos-pos/pos-bach/neg-neg/neg-bach/bach-bach/bach-neg/bach-pos, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax). A row left at all zeros falls back to the scalar confCPRdeltaPhi/dEtaCutMin/Max; when a row is used, all four of its columns apply"};
   } cprconfigs;
 
   /// configurations for correlation part
@@ -390,12 +393,16 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     pairCleanerCasc.init(&qaRegistry);
 
     if (cprconfigs.confIsCPR.value) {
-      if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask)
+      if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
         pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, cprconfigs.confCPRdeltaPhiCutMin.value, cprconfigs.confCPRdeltaPhiCutMax.value, cprconfigs.confCPRdeltaEtaCutMin.value, cprconfigs.confCPRdeltaEtaCutMax.value, cprconfigs.confCPRChosenRadii.value, cprconfigs.confCPRPlotPerRadii.value, 0, 0, cprconfigs.confIsSameSignCPR.value);
+        pairCloseRejection.setCPRCuts(cprconfigs.confCPRTrackCascCuts.value);
+      }
       if (doprocessSameEventTrack || doprocessSameEventTrackBitmask || doprocessMixedEventTrack || doprocessMixedEventTrackBitmask)
         pairCloseRejectionTrack.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, cprconfigs.confCPRdeltaPhiCutMin.value, cprconfigs.confCPRdeltaPhiCutMax.value, cprconfigs.confCPRdeltaEtaCutMin.value, cprconfigs.confCPRdeltaEtaCutMax.value, cprconfigs.confCPRChosenRadii.value, cprconfigs.confCPRPlotPerRadii.value, 0, 0, cprconfigs.confIsSameSignCPR.value);
-      if (doprocessSameEventCasc || doprocessSameEventCascBitmask || doprocessMixedEventCasc || doprocessMixedEventCascBitmask)
+      if (doprocessSameEventCasc || doprocessSameEventCascBitmask || doprocessMixedEventCasc || doprocessMixedEventCascBitmask) {
         pairCloseRejectionCasc.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, cprconfigs.confCPRdeltaPhiCutMin.value, cprconfigs.confCPRdeltaPhiCutMax.value, cprconfigs.confCPRdeltaEtaCutMin.value, cprconfigs.confCPRdeltaEtaCutMax.value, cprconfigs.confCPRChosenRadii.value, cprconfigs.confCPRPlotPerRadii.value, 0, 0, cprconfigs.confIsSameSignCPR.value);
+        pairCloseRejectionCasc.setCPRCuts(cprconfigs.confCPRCascCascCuts.value);
+      }
     }
 
     if (!ccdbEffLoader.confLocalEfficiency.value.empty()) {
