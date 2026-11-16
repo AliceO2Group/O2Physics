@@ -143,13 +143,9 @@ struct StronglyIntensiveCorr {
 
     // Seven physical, non-overlapping FB gaps:
     // DeltaEta = 0.0, 0.2, ..., 1.2.
-    std::vector<double> physicalGapEdges = {
-      -0.1, 0.1, 0.3, 0.5,
-      0.7, 0.9, 1.1, 1.3};
+    std::vector<double> physicalGapEdges = {-0.1, 0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3};
 
-    AxisSpec physicalGapAxis = {
-      physicalGapEdges,
-      "#Delta#eta"};
+    AxisSpec physicalGapAxis = {physicalGapEdges, "#Delta#eta"};
     AxisSpec nAxis = {500, 0.0, 500.0, "N"};
     AxisSpec counterAxis = {20, 0.5, 20.5, "counter"};
     AxisSpec ptAxis = {{0.2, 0.5, 0.8, 1.0, 1.5, 2.0, 5.0}, "#it{p}_{T} (GeV/#it{c})"};
@@ -187,17 +183,9 @@ struct StronglyIntensiveCorr {
 
     // Event-level multiplicity QA for every physical gap.
     // Axes: centrality x DeltaEta x multiplicity.
-    histos.add(
-      "QA/fbAllGaps/nFvsCentGap",
-      "Forward multiplicity;centrality (%);#Delta#eta;n_{F}",
-      kTH3D,
-      {centAxis, physicalGapAxis, nAxis});
+    histos.add("QA/fbAllGaps/nFvsCentGap", "Forward multiplicity;centrality (%);#Delta#eta;n_{F}", kTH3D, {centAxis, physicalGapAxis, nAxis});
 
-    histos.add(
-      "QA/fbAllGaps/nBvsCentGap",
-      "Backward multiplicity;centrality (%);#Delta#eta;n_{B}",
-      kTH3D,
-      {centAxis, physicalGapAxis, nAxis});
+    histos.add("QA/fbAllGaps/nBvsCentGap", "Backward multiplicity;centrality (%);#Delta#eta;n_{B}", kTH3D, {centAxis, physicalGapAxis, nAxis});
 
     histos.add("QA/mcReco/nRecoAll", "MC reco all selected;n;Counts", kTH1D, {nAxis});
     histos.add("QA/mcReco/nRecoPrimary", "MC reco primary selected;n;Counts", kTH1D, {nAxis});
@@ -650,15 +638,12 @@ struct StronglyIntensiveCorr {
     histos.fill(HIST("QA/fb/nFplusNB"), nf + nb);
   }
 
-  void fillAllGapMultiplicityQA(
-    float cent,
-    std::array<double, NEtaGaps> const& nF,
-    std::array<double, NEtaGaps> const& nB)
+  void fillAllGapMultiplicityQA(float cent,
+                                std::array<double, NEtaGaps> const& nF,
+                                std::array<double, NEtaGaps> const& nB)
   {
     for (int i = 0; i < NEtaGaps; ++i) {
-      const double gap =
-        2.0 * (etaCenter[i] -
-               cfgEtaWidth.value / 2.0);
+      const double gap = 2.0 * (etaCenter[i] - cfgEtaWidth.value / 2.0);
 
       // etaCenter = 0 corresponds to overlapping windows and
       // gives DeltaEta = -0.2. Keep only the seven physical,
@@ -667,17 +652,9 @@ struct StronglyIntensiveCorr {
         continue;
       }
 
-      histos.fill(
-        HIST("QA/fbAllGaps/nFvsCentGap"),
-        cent,
-        gap,
-        nF[i]);
+      histos.fill(HIST("QA/fbAllGaps/nFvsCentGap"), cent, gap, nF[i]);
 
-      histos.fill(
-        HIST("QA/fbAllGaps/nBvsCentGap"),
-        cent,
-        gap,
-        nB[i]);
+      histos.fill(HIST("QA/fbAllGaps/nBvsCentGap"), cent, gap, nB[i]);
     }
   }
 
