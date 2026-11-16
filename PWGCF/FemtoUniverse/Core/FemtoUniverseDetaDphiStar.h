@@ -46,9 +46,7 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis
-{
-namespace femto_universe
+namespace o2::analysis::femto_universe
 {
 
 /// \namespace cpr_track_cascade_cuts
@@ -61,9 +59,11 @@ static constexpr int NDaughters = 3;
 static constexpr int NCutVars = 4;
 
 // default values for the cuts (all 0.0: rows fall back to the scalar CPR cuts)
-constexpr double Cuts[NDaughters][NCutVars] = {{0.0, 0.0, 0.0, 0.0},  /* posChild */
-                                               {0.0, 0.0, 0.0, 0.0},  /* negChild */
-                                               {0.0, 0.0, 0.0, 0.0}}; /* bachelor */
+constexpr std::array<std::array<double, NCutVars>, NDaughters> Cuts = {{
+  {0.0, 0.0, 0.0, 0.0}, /* posChild */
+  {0.0, 0.0, 0.0, 0.0}, /* negChild */
+  {0.0, 0.0, 0.0, 0.0}  /* bachelor */
+}};
 
 // row labels
 static const std::vector<std::string> labelsDaughter = {"posChild", "negChild", "bachelor"};
@@ -84,16 +84,18 @@ static constexpr int NCutVars = 4;
 
 // daughter pair table: row i = {offset of daughter of cascade 1, offset of daughter of cascade 2}
 // ordered from pos to bach (both indices sorted pos < neg < bach)
-constexpr int CascChildTable[NPairs][2] = {{-3, -3}, {-3, -1}, {-2, -2}, {-2, -1}, {-1, -1}, {-1, -2}, {-1, -3}};
+constexpr std::array<std::array<int, 2>, NPairs> CascChildTable = {{{-3, -3}, {-3, -1}, {-2, -2}, {-2, -1}, {-1, -1}, {-1, -2}, {-1, -3}}};
 
 // default values for the cuts (all 0.0: rows fall back to the scalar CPR cuts)
-constexpr double Cuts[NPairs][NCutVars] = {{0.0, 0.0, 0.0, 0.0},  /* pos-pos   */
-                                           {0.0, 0.0, 0.0, 0.0},  /* pos-bach  */
-                                           {0.0, 0.0, 0.0, 0.0},  /* neg-neg   */
-                                           {0.0, 0.0, 0.0, 0.0},  /* neg-bach  */
-                                           {0.0, 0.0, 0.0, 0.0},  /* bach-bach */
-                                           {0.0, 0.0, 0.0, 0.0},  /* bach-neg  */
-                                           {0.0, 0.0, 0.0, 0.0}}; /* bach-pos  */
+constexpr std::array<std::array<double, NCutVars>, NPairs> Cuts = {{
+  {0.0, 0.0, 0.0, 0.0}, /* pos-pos   */
+  {0.0, 0.0, 0.0, 0.0}, /* pos-bach  */
+  {0.0, 0.0, 0.0, 0.0}, /* neg-neg   */
+  {0.0, 0.0, 0.0, 0.0}, /* neg-bach  */
+  {0.0, 0.0, 0.0, 0.0}, /* bach-bach */
+  {0.0, 0.0, 0.0, 0.0}, /* bach-neg  */
+  {0.0, 0.0, 0.0, 0.0}  /* bach-pos  */
+}};
 
 // row labels
 static const std::vector<std::string> labelsPair = {"pos-pos", "pos-bach", "neg-neg", "neg-bach", "bach-bach", "bach-neg", "bach-pos"};
@@ -113,8 +115,10 @@ static constexpr int NDaughters = 2;
 static constexpr int NCutVars = 4;
 
 // default values for the cuts (all 0.0: rows fall back to the scalar CPR cuts)
-constexpr double Cuts[NDaughters][NCutVars] = {{0.0, 0.0, 0.0, 0.0},  /* posChild */
-                                               {0.0, 0.0, 0.0, 0.0}}; /* negChild */
+constexpr std::array<std::array<double, NCutVars>, NDaughters> Cuts = {{
+  {0.0, 0.0, 0.0, 0.0}, /* posChild */
+  {0.0, 0.0, 0.0, 0.0}  /* negChild */
+}};
 
 // row labels
 static const std::vector<std::string> labelsDaughter = {"posChild", "negChild"};
@@ -133,8 +137,10 @@ static constexpr int NPairs = 2;
 static constexpr int NCutVars = 4;
 
 // default values for the cuts (all 0.0: rows fall back to the scalar CPR cuts)
-constexpr double Cuts[NPairs][NCutVars] = {{0.0, 0.0, 0.0, 0.0},  /* pos-pos */
-                                           {0.0, 0.0, 0.0, 0.0}}; /* neg-neg */
+constexpr std::array<std::array<double, NCutVars>, NPairs> Cuts = {{
+  {0.0, 0.0, 0.0, 0.0}, /* pos-pos */
+  {0.0, 0.0, 0.0, 0.0}  /* neg-neg */
+}};
 
 // row labels
 static const std::vector<std::string> labelsPair = {"pos-pos", "neg-neg"};
@@ -327,7 +333,11 @@ class FemtoUniverseDetaDphiStar
       for (int j = 1; j < static_cast<int>(ktBins.size() - 1); j++) {
         std::string histSuffixkT1 = std::to_string(static_cast<int>(ktBins[j] * 100.0));
         std::string histSuffixkT2 = std::to_string(static_cast<int>(ktBins[j + 1] * 100.0));
-        std::string histFolderkT = "kT_" + histSuffixkT1 + "_" + histSuffixkT2 + "/";
+        std::string histFolderkT = "kT_";
+        histFolderkT += histSuffixkT1;
+        histFolderkT += "_";
+        histFolderkT += histSuffixkT2;
+        histFolderkT += "/";
         histdetadphisamebeforekT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiBeforeSame").c_str(), "; #Delta #eta; #Delta #phi", o2::framework::HistType::kTH2F, {{fDeltaEtaAxis}, {fDeltaPhiStarAxis}});
         histdetadphimixedbeforekT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiBeforeMixed").c_str(), "; #Delta #eta; #Delta #phi", o2::framework::HistType::kTH2F, {{fDeltaEtaAxis}, {fDeltaPhiStarAxis}});
         histdetadphisameafterkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterSame").c_str(), "; #Delta #eta; #Delta #phi", o2::framework::HistType::kTH2F, {{fDeltaEtaAxis}, {fDeltaPhiStarAxis}});
@@ -367,16 +377,15 @@ class FemtoUniverseDetaDphiStar
 
       if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
         return true;
-      } else {
-        if (ChosenEventType == femto_universe_container::EventType::same) {
-          histdetadpisame[0][1]->Fill(deta, dphiAvg);
-        } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
-          histdetadpimixed[0][1]->Fill(deta, dphiAvg);
-        } else {
-          LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
-        }
-        return false;
       }
+      if (ChosenEventType == femto_universe_container::EventType::same) {
+        histdetadpisame[0][1]->Fill(deta, dphiAvg);
+      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+        histdetadpimixed[0][1]->Fill(deta, dphiAvg);
+      } else {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+      }
+      return false;
 
     } else if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
       /// Track-V0 combination
@@ -464,9 +473,9 @@ class FemtoUniverseDetaDphiStar
           }
         }
 
-        if (V0V0rect && (dphiAvg > dPhiStarMin) && (dphiAvg < dPhiStarMax) && (deta > dEtaMin) && (deta < dEtaMax)) {
-          pass = true;
-        } else if (!V0V0rect && std::pow(dphiAvg, 2) / std::pow(dPhiStarMax, 2) + std::pow(deta, 2) / std::pow(dEtaMax, 2) < 1.) {
+        const bool isClose = V0V0rect ? ((dphiAvg > dPhiStarMin) && (dphiAvg < dPhiStarMax) && (deta > dEtaMin) && (deta < dEtaMax))
+                                      : (std::pow(dphiAvg, 2) / std::pow(dPhiStarMax, 2) + std::pow(deta, 2) / std::pow(dEtaMax, 2) < 1.);
+        if (isClose) {
           pass = true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -752,16 +761,15 @@ class FemtoUniverseDetaDphiStar
 
       if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
         return true;
-      } else {
-        if (ChosenEventType == femto_universe_container::EventType::same) {
-          histdetadpisame[0][1]->Fill(deta, dphiAvg);
-        } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
-          histdetadpimixed[0][1]->Fill(deta, dphiAvg);
-        } else {
-          LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
-        }
-        return false;
       }
+      if (ChosenEventType == femto_universe_container::EventType::same) {
+        histdetadpisame[0][1]->Fill(deta, dphiAvg);
+      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+        histdetadpimixed[0][1]->Fill(deta, dphiAvg);
+      } else {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+      }
+      return false;
     } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
       return false;
@@ -1047,11 +1055,11 @@ class FemtoUniverseDetaDphiStar
   static constexpr uint32_t kSignPlusMask = 1 << 1;
   static constexpr uint32_t kValue0 = 0;
 
-  float chosenRadii;
-  float cutDeltaPhiStarMax;
-  float cutDeltaPhiStarMin;
-  float cutDeltaEtaMax;
-  float cutDeltaEtaMin;
+  float chosenRadii = 0.f;
+  float cutDeltaPhiStarMax = 0.f;
+  float cutDeltaPhiStarMin = 0.f;
+  float cutDeltaEtaMax = 0.f;
+  float cutDeltaEtaMin = 0.f;
   o2::framework::LabeledArray<double> mCPRCuts{}; ///< Per-daughter/pair CPR cuts for this combination (rows: daughters or daughter pairs, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax)
 
   std::vector<float> cutDeltaPhiStarMaxVector;
@@ -1064,10 +1072,10 @@ class FemtoUniverseDetaDphiStar
   std::vector<float> cutDeltaEtaFractionMaxVector;
   std::vector<float> cutDeltaEtaFractionMinVector;
 
-  float magfield;
+  float magfield = 0.f;
   bool plotForEveryRadii = false;
-  float cutPhiInvMassLow;
-  float cutPhiInvMassHigh;
+  float cutPhiInvMassLow = 0.f;
+  float cutPhiInvMassHigh = 0.f;
   bool isSameSignCPR = false;
   std::vector<double> ktBins;
 
@@ -1213,7 +1221,6 @@ class FemtoUniverseDetaDphiStar
   }
 };
 
-} /* namespace femto_universe */
-} /* namespace o2::analysis */
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
