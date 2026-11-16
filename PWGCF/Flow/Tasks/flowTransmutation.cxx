@@ -790,7 +790,7 @@ struct FlowTransmutation {
     }
     if (cfgGFWSettings.cfgUseGFW) {
       double xAxis = (cfgGFWSettings.cfgUseNch) ? nchCorrected : cent;
-      for (auto& corr : corrConfigs) {
+      for (const auto& corr : corrConfigs) {
         if (!corr.pTDif) {
           fillFlowContainer(corr, xAxis, 0, rndm, corr.Head);
         } else {
