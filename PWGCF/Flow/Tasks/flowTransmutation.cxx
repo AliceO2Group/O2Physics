@@ -146,7 +146,7 @@ struct FlowTransmutation {
   HistogramRegistry registryQA{"registryQA"};
   HistogramRegistry registryCorr{"registryCorr"};
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEventSelection.cfgCutVertex);
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   Service<ccdb::BasicCCDBManager> ccdb{};
   RCTFlagsChecker rctChecker{"CBT"};
   enum TrackSelectionGroup {
@@ -522,7 +522,7 @@ struct FlowTransmutation {
       firstRunOfFill = *std::min_element(cfgFirstFillRunsList.value.begin(), cfgFirstFillRunsList.value.end());
     }
     std::array<std::string, 9> predefRegions = {"Standard", "Gap00", "Gap02", "Gap04", "Gap06", "Gap08", "Gap10", "Gap12", "Gap14"};
-    TObjArray* oba = new TObjArray();
+    auto* oba = new TObjArray();
     if (cfgGFWSettings.cfgUseGFW) {
       readMatrix(cfgGFWSettings.cfgDefineGFWRegions->getData(), gfwRegions); // read matrix to get initial settings for GFW regions
       LOGF(info, "GFW regions Defined:");
@@ -783,7 +783,7 @@ struct FlowTransmutation {
     }
   }
   template <typename T>
-  void fillOutputObjects(const float& cent, const int& nchRaw, const int& nchCorrected, const double& rndm, const std::array<T, EtaGapCounter>& trackCorr)
+  void fillOutputObjects(const float& cent, const int& nchRaw, const float& nchCorrected, const double& rndm, const std::array<T, EtaGapCounter>& trackCorr)
   {
     if (cfgGetNumberOfCorr) {
       fillCorelationCounter(nchRaw, trackCorr);
@@ -819,7 +819,7 @@ struct FlowTransmutation {
     if (!isRef && !isPOI) {
       return;
     }
-    double wNUE = (weight.hEfficiency != nullptr) ? 1. / dynamic_cast<TH1D*>(weight.hEfficiency)->GetBinContent(dynamic_cast<TH1D*>(weight.hEfficiency)->FindBin(track.pt())) : 1.0;
+    double wNUE = (weight.hEfficiency != nullptr) ? 1. / weight.hEfficiency->GetBinContent(weight.hEfficiency)->FindBin(track.pt()) : 1.0;
     double wNUA = (weight.hAcceptance != nullptr) ? weight.hAcceptance->getNUA(track.phi(), track.eta(), vtxZ) : 1.0;
     if (weight.hAcceptance != nullptr) {
       registryQA.fill(HIST("cutObs/hPhiCorrected"), track.phi(), wNUA);
@@ -841,7 +841,7 @@ struct FlowTransmutation {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
     float nch = 0;
-    float nchCorrCounter = 0;
+    int nchCorrCounter = 0;
     float nchCorrected = 0;
     double lRandom = fRndm->Rndm();
     std::array<TrackRegion, 8> trackCorr{TrackRegion{.forward = 0, .backward = 0, .gap = 0.}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.1}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.2}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.3}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.4}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.5}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.6}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.7}};
@@ -883,7 +883,7 @@ struct FlowTransmutation {
       if (trackSelected<TrkSelNch>(track)) {
         fillTrackQA<TrkSelNch>(track, vtxz);
         if (weight.hEfficiencyNch != nullptr) {
-          nchCorrected += 1. / dynamic_cast<TH1D*>(weight.hEfficiency)->GetBinContent(dynamic_cast<TH1D*>(weight.hEfficiencyNch)->FindBin(track.pt()));
+          nchCorrected += 1. / weight.hEfficiency->GetBinContent(weight.hEfficiencyNch->FindBin(track.pt()));
         } else {
           nchCorrected++;
         }
