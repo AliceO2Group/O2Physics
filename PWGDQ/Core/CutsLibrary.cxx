@@ -7772,7 +7772,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kEta, -0.8, 0.8, false, VarManager::kP, 0.6, 1000.0);
     cut->AddCut(VarManager::kHasRICHSigEl, 0.5f, 1.5f, false, VarManager::kP, 0.6, 1000.0);
     cut->AddCut(VarManager::kRICHnSigmaEl, -3.0f, 3.0f, false, VarManager::kP, 0.6, 1000.0);
-    
+
     cut->AddCut(VarManager::kRICHnSigmaEl, -3.0, 3.0, true, VarManager::kP, 4.0, 1000.0, false, VarManager::kHasRICHSigEl, 0.5, 1.5);
     cut->AddCut(VarManager::kRICHnSigmaPi, -3.0, 3.0, true, VarManager::kP, 2.0, 1000.0, false, VarManager::kHasRICHSigKa, 0.5, 1.5);
     cut->AddCut(VarManager::kRICHnSigmaKa, -3.0, 3.0, true, VarManager::kP, 2.0, 1000.0, false, VarManager::kHasRICHSigPr, 0.5, 1.5);
