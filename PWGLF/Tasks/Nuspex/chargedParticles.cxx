@@ -450,17 +450,17 @@ void ChargedParticles::init(InitContext const&)
         continue;
       }
       const std::string dir(kClassDir[d]);
-      histos.add((dir + "multDist_evt_gen").c_str(), "", kTH1D, {multTrueAxis});      // generated events (in class, good z)
-      histos.add((dir + "multDist_evt_gen_trig").c_str(), "", kTH1D, {multTrueAxis}); // generated events that also fired the trigger
-      histos.add((dir + "multCorrel_evt").c_str(), "", kTHnSparseD, {multMeasAxis, multTrueAxis});
-      histos.add((dir + "multCorrel_prim").c_str(), "", kTHnSparseD, {multMeasAxis, multTrueAxis});
-      histos.add((dir + "ptCorrel_prim").c_str(), "", kTH2D, {ptMeasAxis, ptTrueAxis});
-      histos.add((dir + "multPtSpec_prim_gen").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});
-      histos.add((dir + "multPtSpec_prim_gen_evtloss").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});
-      histos.add((dir + "multPtSpec_prim_meas").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});
-      histos.add((dir + "multPtSpec_trk_prim_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});
-      histos.add((dir + "multPtSpec_trk_sec_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});
-      histos.add((dir + "multPtSpec_trk_meas_evtcont").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});
+      histos.add((dir + "multDist_evt_gen").c_str(), "", kTH1D, {multTrueAxis});                        // generated event distribution  (from events within specified class and with proper vertex position)
+      histos.add((dir + "multDist_evt_gen_trig").c_str(), "", kTH1D, {multTrueAxis});                   // generated event distribution (from events within specified class and with proper vertex position) that in addition fulfils the trigger condition [to disentangle trigger eff from reco eff ]
+      histos.add((dir + "multCorrel_evt").c_str(), "", kTHnSparseD, {multMeasAxis, multTrueAxis});      // multiplicity correlation of measured events (excluding background events)
+      histos.add((dir + "multCorrel_prim").c_str(), "", kTHnSparseD, {multMeasAxis, multTrueAxis});     // multiplicity correlation of measured primary charged particles (excluding particles from background events)
+      histos.add((dir + "ptCorrel_prim").c_str(), "", kTH2D, {ptMeasAxis, ptTrueAxis});                 // pT correlation of measured primary charged particles  (excluding particles from background events)
+      histos.add((dir + "multPtSpec_prim_gen").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});         // generated primary charged particles as function of true properties (from events within specified class and with proper vertex position)
+      histos.add((dir + "multPtSpec_prim_gen_evtloss").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis}); // generated primary charged particles of events that did not pass the event selection as function of multiplicity and pt
+      histos.add((dir + "multPtSpec_prim_meas").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});        // measured primary charged particles as function of true properties (no contamination from background events)
+      histos.add((dir + "multPtSpec_trk_prim_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});    // tracks from measured primaries (no contamination from secondaries, particles smeared into acceptance or background events)
+      histos.add((dir + "multPtSpec_trk_sec_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});     // tracks from measured secondaries (no contamination from particles smeared into acceptance or background events)  [for QA to disentangle secondaries from other contamination]
+      histos.add((dir + "multPtSpec_trk_meas_evtcont").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis}); // tracks from events that are measured, but do not belong to the desired class of events
       histos.add((dir + "multPtSpec_trk_inter").c_str(), "", kTH2D, {multTrueAxis, ptMeasAxis});
       if (isNominal) {
         histos.add((dir + "QA/events/multTrueBits").c_str(), "", kTH2D, {multTrueAxis, bitAxis});
@@ -469,7 +469,7 @@ void ChargedParticles::init(InitContext const&)
       }
     }
 
-    histos.add("multPtSpec_prim_gen_notrig", "", kTH2D, {multTrueAxis, ptTrueAxis}); // generated primary charged particles of untriggered events (tvx) with good z, independent of the event class
+    histos.add("multPtSpec_prim_gen_notrig", "", kTH2D, {multTrueAxis, ptTrueAxis}); // generated primary charged particles of events that did not fulfil physics selection and trigger condition as function of multiplicity and pt
   }
 
   auto setBitLabels = [](TAxis* axis) {
