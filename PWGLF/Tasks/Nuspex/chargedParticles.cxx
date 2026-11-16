@@ -674,6 +674,13 @@ bool ChargedParticles::initParticle(const P& particle)
   }
   vars.nRepetitions = getNRepetitons(pccWeight, particle);
 
+  // run 2 mc with pileup: particles of the embedded pileup events are not part of this event
+  // (in run 3 the flag marks the main event itself, so it is not used there)
+  if (!isRun3 && particle.fromBackgroundEvent()) {
+    vars.isChargedPrimary = false;
+    return false;
+  }
+
   if (std::abs(particle.eta()) >= etaCut) {
     return false;
   }
