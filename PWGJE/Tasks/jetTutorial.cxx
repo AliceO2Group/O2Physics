@@ -72,7 +72,15 @@ struct JetTutorial {
                               {"h_recoil_jet_dphi", "hadron-jet #Delta#phi;#Delta#phi_{jet,trigger hadron};entries", {HistType::kTH1F, {{40, -2.0, 2.0}}}},
                               {"h_matched_jets_pt", "#it{p}_{T,jet part}; #it{p}_{T,jet det}", {HistType::kTH2F, {{100, 0., 20.}, {100, 0., 20.0}}}},
                               {"h_matched_jets_eta", "#eta_{jet part}; #eta_{jet det}", {HistType::kTH2F, {{100, -1.0, 1.0}, {100, -1.0, 1.0}}}},
-                              {"h_matched_jets_phi", "#phi_{jet part}; #phi_{jet det}", {HistType::kTH2F, {{80, -1.0, 7.}, {80, -1.0, 7.}}}}}};
+                              {"h_matched_jets_phi", "#phi_{jet part}; #phi_{jet det}", {HistType::kTH2F, {{80, -1.0, 7.}, {80, -1.0, 7.}}}},
+                              {"h_jet_pt_embedding", "jets;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+                              {"h_jet_pt_sub_embedding", "subtracted jets;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+                              {"h_jet_pt_mcd_embedding", "detector-level jets;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+                              {"h_jet_pt_mcp_embedding", "particle-level jets;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+                              {"h_jet_detector_response", "detector response matrix;#it{p}_{T,jet} particle (GeV/#it{c});#it{p}_{T,jet} detector (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
+                              {"h_jet_response", "response matrix;#it{p}_{T,jet} particle (GeV/#it{c});#it{p}_{T,jet} embedded subtracted (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
+                              {"h_jet_background_response", "background response matrix;#it{p}_{T,jet} detector (GeV/#it{c});#it{p}_{T,jet} embedded (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
+                              {"h_jet_backgroundfluctuations_response", "background fluctuations response matrix;#it{p}_{T,jet} embedded subtracted (GeV/#it{c});#it{p}_{T,jet} embedded (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}}}};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
@@ -309,6 +317,12 @@ struct JetTutorial {
     double trackpTMin = 6.0;
     double trackpTMax = 10.0;
     for (const auto& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+      if (track.eta() > 0.9 || track.eta() < -0.9) {
+        continue;
+      }
       if (track.pt() > trackpTMin && track.pt() < trackpTMax) {
         if (track.pt() > leadingTrackpT) {
           leadingTrackpT = track.pt();
@@ -391,6 +405,37 @@ struct JetTutorial {
     }
   }
   PROCESS_SWITCH(JetTutorial, processDataTriggered, "jets triggered", false);
+
+  void processEmbedding(aod::ChargedJets const& jets, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets> const& subJets, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetsMatchedToChargedEventWiseSubtractedJets> const& mcdJets, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const& mcpJets)
+  {
+
+    for (auto const& jet : jets) {
+      registry.fill(HIST("h_jet_pt_embedding"), jet.pt());
+    }
+    for (auto const& jet : subJets) {
+      registry.fill(HIST("h_jet_pt_sub_embedding"), jet.pt());
+    }
+    for (auto const& jet : mcdJets) {
+      registry.fill(HIST("h_jet_pt_mcd_embedding"), jet.pt());
+    }
+    for (auto const& jet : mcpJets) {
+      registry.fill(HIST("h_jet_pt_mcp_embedding"), jet.pt());
+    }
+
+    for (auto const& mcpJet : mcpJets) {
+      for (auto const& mcdJet : mcpJet.matchedJetGeo_as<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetsMatchedToChargedEventWiseSubtractedJets>>()) {
+        registry.fill(HIST("h_jet_detector_response"), mcpJet.pt(), mcdJet.pt());
+        for (auto const& subJet : mcdJet.matchedJetGeo_as<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>>()) {
+          registry.fill(HIST("h_jet_response"), mcpJet.pt(), subJet.pt());
+          for (auto const& jet : subJet.matchedJetGeo_as<aod::ChargedJets>()) {
+            registry.fill(HIST("h_jet_background_response"), mcdJet.pt(), jet.pt());
+            registry.fill(HIST("h_jet_backgroundfluctuations_response"), subJet.pt(), jet.pt());
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTutorial, processEmbedding, "embedding", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetTutorial>(cfgc)}; }
